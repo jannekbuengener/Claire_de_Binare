@@ -1,6 +1,6 @@
 # Controlled-Lab Evidence Pack — run_001
 
-**Status:** Observation-only regime scorecard
+**Status:** Observation-only regime scorecard with unavailable signal/trade attribution
 **Evidence class:** `controlled_lab_evidence`
 **Source:** `artifacts/backtests/primary_breakout_v1/20260418-212643/dataset.candles.json`
 **Generated:** 2026-06-12 via `tools/build_candle_trace.py` + `arvp_regime_scorecard_runner`
@@ -14,8 +14,8 @@
 
 ## What this artifact does NOT show
 
-- **signals_emitted=0** — per-step signal counts are not available. The trace was derived from candle data alone, not a full backtest replay. The original backtest produced 44 signals (22 BUY + 22 SELL) but these cannot be attributed to individual candles without re-running.
-- **trades=[]** — per-trade closure data (exit regime, R-multiple return) is not available. The original backtest produced 22 closed trades but individual trade records are not exposed.
+- **Per-step signal counts are unavailable** — the observation-only trace sets `signals_available=false` and omits `signals_emitted` from steps. The original backtest produced 44 signals (22 BUY + 22 SELL) but these cannot be attributed to individual candles without re-running.
+- **Per-trade closure attribution is unavailable** — the observation-only trace sets `trades_available=false` and carries `trades=[]` only as an empty placeholder list. The original backtest produced 22 closed trades but individual trade records are not exposed.
 - **No signal/trade attribution to regimes** — this scorecard cannot answer "how many signals fired in TREND vs RANGE?" or "what was the PnL distribution per regime?"
 
 ## Governance caveats

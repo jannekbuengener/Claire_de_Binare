@@ -90,7 +90,30 @@ def test_summary_generation_contains_table() -> None:
     assert "TREND" in summary
 
 
+def test_observation_only_trace_preserves_unavailable_signal_and_trade_data() -> None:
+    trace = {
+        "run_id": "candle-trace-01f30b10fb3e7712",
+        "signals_available": False,
+        "steps": [{"ts_ms": 1, "regime_id": 0}],
+        "trades_available": False,
+        "trades": [],
+    }
+
+    scorecard = build_replay_regime_scorecard_from_trace(trace)
+
+    assert scorecard.status == "ok"
+    assert any("unavailable_signal_counts" in n for n in scorecard.notes)
+    assert any("unavailable_trade_closures" in n for n in scorecard.notes)
+
+    trend = next(s for s in scorecard.segments if s.regime_id == "TREND")
+    assert trend.observation_count == 1
+    assert trend.signal_count is None
+    assert trend.trade_close_count is None
+
+    summary = build_scorecard_summary(scorecard)
+    assert "| TREND | 1 | — | — | — |" in summary
+
+
 def test_trace_rejects_invalid_shape() -> None:
     with pytest.raises(ARVPRegimeScorecardError, match="steps must be a list"):
         build_replay_regime_scorecard_from_trace({"run_id": "x", "steps": {}, "trades": []})  # type: ignore[arg-type]
-

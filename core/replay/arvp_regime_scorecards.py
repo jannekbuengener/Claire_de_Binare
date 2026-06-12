@@ -72,7 +72,9 @@ def _optional_decimal(value: object, name: str) -> Decimal | None:
         try:
             return Decimal(value)
         except (InvalidOperation, ValueError) as exc:
-            raise ARVPRegimeScorecardError(f"{name} must be a Decimal string: {exc}") from exc
+            raise ARVPRegimeScorecardError(
+                f"{name} must be a Decimal string: {exc}"
+            ) from exc
     raise ARVPRegimeScorecardError(f"{name} must be a string or null")
 
 
@@ -106,8 +108,8 @@ def _regime_str_from_raw(raw: object) -> str | None:
 class RegimeSegmentScore:
     regime_id: str
     observation_count: int
-    signal_count: int
-    trade_close_count: int
+    signal_count: int | None
+    trade_close_count: int | None
     pnl_sum_r: Decimal | None
 
     def to_dict(self) -> dict[str, object]:
@@ -161,8 +163,12 @@ def build_scorecard_summary(scorecard: ARVPRegimeScorecard) -> str:
     if scorecard.segments:
         for seg in scorecard.segments:
             pnl = str(seg.pnl_sum_r) if seg.pnl_sum_r is not None else "—"
+            signals = str(seg.signal_count) if seg.signal_count is not None else "—"
+            trade_closes = (
+                str(seg.trade_close_count) if seg.trade_close_count is not None else "—"
+            )
             lines.append(
-                f"| {seg.regime_id} | {seg.observation_count} | {seg.signal_count} | {seg.trade_close_count} | {pnl} |"
+                f"| {seg.regime_id} | {seg.observation_count} | {signals} | {trade_closes} | {pnl} |"
             )
     else:
         lines.append("| — | — | — | — | — |")
@@ -179,8 +185,11 @@ def build_replay_regime_scorecard_from_trace(
 
     Expected minimal trace shape (v1; intentionally permissive):
       - run_id: string
-      - steps: list[{ ts_ms:int, regime_id:(int|str|None), signals_emitted:int }]
+      - steps: list[{ ts_ms:int, regime_id:(int|str|None), signals_emitted?:int }]
       - trades: list[{ exit_ts_ms:int, exit_regime_id:(int|str|None), r_return:(str|None) }]
+      - optional top-level availability flags:
+          - signals_available: bool (default True)
+          - trades_available: bool (default True)
     """
     t = _require_mapping(trace, "trace")
     run_id = _require_non_empty_string(t.get("run_id"), "run_id")
@@ -190,6 +199,9 @@ def build_replay_regime_scorecard_from_trace(
     trades = t.get("trades")
     if not isinstance(trades, list):
         raise ARVPRegimeScorecardError("trades must be a list")
+
+    signals_available = bool(t.get("signals_available", True))
+    trades_available = bool(t.get("trades_available", True))
 
     obs_counts: dict[str, int] = {}
     signal_counts: dict[str, int] = {}
@@ -201,37 +213,44 @@ def build_replay_regime_scorecard_from_trace(
     for idx, raw in enumerate(steps):
         step = _require_mapping(raw, f"steps[{idx}]")
         _require_int(step.get("ts_ms"), f"steps[{idx}].ts_ms")
-        signals_emitted = _require_int(
-            step.get("signals_emitted"), f"steps[{idx}].signals_emitted"
-        )
-        if signals_emitted < 0:
-            raise ARVPRegimeScorecardError(
-                f"steps[{idx}].signals_emitted must be >= 0"
-            )
         regime = _regime_str_from_raw(step.get("regime_id"))
         if regime is None:
             missing_regime_steps += 1
             continue
         obs_counts[regime] = obs_counts.get(regime, 0) + 1
-        signal_counts[regime] = signal_counts.get(regime, 0) + signals_emitted
+
+        if signals_available:
+            signals_emitted = _require_int(
+                step.get("signals_emitted"), f"steps[{idx}].signals_emitted"
+            )
+            if signals_emitted < 0:
+                raise ARVPRegimeScorecardError(
+                    f"steps[{idx}].signals_emitted must be >= 0"
+                )
+            signal_counts[regime] = signal_counts.get(regime, 0) + signals_emitted
 
     missing_regime_trades = 0
-    for idx, raw in enumerate(trades):
-        tr = _require_mapping(raw, f"trades[{idx}]")
-        _require_int(tr.get("exit_ts_ms"), f"trades[{idx}].exit_ts_ms")
-        regime = _regime_str_from_raw(tr.get("exit_regime_id"))
-        if regime is None:
-            missing_regime_trades += 1
-            continue
-        close_counts[regime] = close_counts.get(regime, 0) + 1
-        r_return = _optional_non_empty_string(tr.get("r_return"), f"trades[{idx}].r_return")
-        if r_return is not None:
-            try:
-                pnl_sums[regime] = pnl_sums.get(regime, Decimal("0")) + Decimal(r_return)
-            except (InvalidOperation, ValueError) as exc:
-                raise ARVPRegimeScorecardError(
-                    f"trades[{idx}].r_return must be Decimal-like: {exc}"
-                ) from exc
+    if trades_available:
+        for idx, raw in enumerate(trades):
+            tr = _require_mapping(raw, f"trades[{idx}]")
+            _require_int(tr.get("exit_ts_ms"), f"trades[{idx}].exit_ts_ms")
+            regime = _regime_str_from_raw(tr.get("exit_regime_id"))
+            if regime is None:
+                missing_regime_trades += 1
+                continue
+            close_counts[regime] = close_counts.get(regime, 0) + 1
+            r_return = _optional_non_empty_string(
+                tr.get("r_return"), f"trades[{idx}].r_return"
+            )
+            if r_return is not None:
+                try:
+                    pnl_sums[regime] = pnl_sums.get(regime, Decimal("0")) + Decimal(
+                        r_return
+                    )
+                except (InvalidOperation, ValueError) as exc:
+                    raise ARVPRegimeScorecardError(
+                        f"trades[{idx}].r_return must be Decimal-like: {exc}"
+                    ) from exc
 
     if not obs_counts and missing_regime_steps:
         status = _STATUS_UNAVAILABLE
@@ -241,12 +260,26 @@ def build_replay_regime_scorecard_from_trace(
         notes.append("insufficient-data: no steps in trace")
     else:
         status = _STATUS_OK
+        if not signals_available:
+            notes.append(
+                "unavailable_signal_counts: replay trace omits per-step signal attribution"
+            )
+        if not trades_available:
+            notes.append(
+                "unavailable_trade_closures: replay trace omits per-trade attribution"
+            )
         if missing_regime_steps:
-            notes.append(f"partial_regime_coverage_steps: missing={missing_regime_steps}")
+            notes.append(
+                f"partial_regime_coverage_steps: missing={missing_regime_steps}"
+            )
         if missing_regime_trades:
-            notes.append(f"partial_regime_coverage_trades: missing={missing_regime_trades}")
+            notes.append(
+                f"partial_regime_coverage_trades: missing={missing_regime_trades}"
+            )
 
-    all_regimes = sorted(set(obs_counts) | set(signal_counts) | set(close_counts) | set(pnl_sums))
+    all_regimes = sorted(
+        set(obs_counts) | set(signal_counts) | set(close_counts) | set(pnl_sums)
+    )
     segments: list[RegimeSegmentScore] = []
     for regime in all_regimes:
         pnl = pnl_sums.get(regime)
@@ -254,8 +287,12 @@ def build_replay_regime_scorecard_from_trace(
             RegimeSegmentScore(
                 regime_id=regime,
                 observation_count=obs_counts.get(regime, 0),
-                signal_count=signal_counts.get(regime, 0),
-                trade_close_count=close_counts.get(regime, 0),
+                signal_count=(
+                    signal_counts.get(regime, 0) if signals_available else None
+                ),
+                trade_close_count=(
+                    close_counts.get(regime, 0) if trades_available else None
+                ),
                 pnl_sum_r=pnl,
             )
         )
@@ -326,7 +363,9 @@ def build_comparison_regime_scorecard_or_unavailable(
     segments: list[RegimeSegmentScore] = []
     for idx, raw in enumerate(raw_segments):
         seg = _require_mapping(raw, f"regime_segments[{idx}]")
-        regime = _require_non_empty_string(seg.get("regime_id"), f"regime_segments[{idx}].regime_id").upper()
+        regime = _require_non_empty_string(
+            seg.get("regime_id"), f"regime_segments[{idx}].regime_id"
+        ).upper()
         observation_count = _require_int(
             seg.get("observation_count"), f"regime_segments[{idx}].observation_count"
         )
@@ -336,7 +375,9 @@ def build_comparison_regime_scorecard_or_unavailable(
         trade_close_count = _require_int(
             seg.get("trade_close_count"), f"regime_segments[{idx}].trade_close_count"
         )
-        pnl_sum_r = _optional_decimal(seg.get("pnl_sum_r"), f"regime_segments[{idx}].pnl_sum_r")
+        pnl_sum_r = _optional_decimal(
+            seg.get("pnl_sum_r"), f"regime_segments[{idx}].pnl_sum_r"
+        )
         segments.append(
             RegimeSegmentScore(
                 regime_id=regime,
@@ -389,4 +430,3 @@ def write_regime_scorecard_bundle(
             f"Failed to write regime scorecard bundle to {output_dir}: {exc}"
         ) from exc
     return json_path, md_path
-

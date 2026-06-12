@@ -43,7 +43,9 @@ class TestBuildTrace:
     def test_empty_candles(self):
         trace = build_trace([])
         assert trace["run_id"].startswith("candle-trace-")
+        assert trace["signals_available"] is False
         assert trace["steps"] == []
+        assert trace["trades_available"] is False
         assert trace["trades"] == []
 
     def test_single_candle(self):
@@ -53,7 +55,7 @@ class TestBuildTrace:
         step = trace["steps"][0]
         assert step["ts_ms"] == 1000
         assert step["regime_id"] == 0
-        assert step["signals_emitted"] == 0
+        assert "signals_emitted" not in step
         assert trace["trades"] == []
 
     def test_multiple_candles_different_regimes(self):

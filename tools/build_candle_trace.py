@@ -6,7 +6,7 @@ Usage:
         --input-candles dataset.candles.json \\
         --output trace.json
 
-Observation-only trace: all signals_emitted=0, trades=[].
+Observation-only trace: per-step signal counts and trade closures are unavailable.
 
 The run_id is auto-derived from dataset SHA256 for determinism.
 """
@@ -78,13 +78,14 @@ def build_trace(
             {
                 "ts_ms": ts_ms,
                 "regime_id": candle.get("regime_id"),
-                "signals_emitted": 0,
             }
         )
 
     return {
         "run_id": run_id,
+        "signals_available": False,
         "steps": steps,
+        "trades_available": False,
         "trades": [],
     }
 

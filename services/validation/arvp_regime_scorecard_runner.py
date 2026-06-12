@@ -41,9 +41,16 @@ _DEFAULT_EVIDENCE_CLASS = "controlled_lab_evidence"
 
 def _parse_args(argv: list[str]) -> argparse.Namespace:
     p = argparse.ArgumentParser(prog="arvp_regime_scorecard_runner")
-    p.add_argument("--run-id", required=True, help="Logical run id for output folder naming.")
-    p.add_argument("--replay-trace", help="Path to replay trace JSON (for replay-side scorecard).")
-    p.add_argument("--comparison", help="Path to comparison JSON (optional; supports regime_segments).")
+    p.add_argument(
+        "--run-id", required=True, help="Logical run id for output folder naming."
+    )
+    p.add_argument(
+        "--replay-trace", help="Path to replay trace JSON (for replay-side scorecard)."
+    )
+    p.add_argument(
+        "--comparison",
+        help="Path to comparison JSON (optional; supports regime_segments).",
+    )
     p.add_argument(
         "--output-dir",
         default="artifacts/arvp_regime_scorecards",
@@ -79,16 +86,20 @@ def main(argv: list[str] | None = None) -> int:
         if args.comparison:
             comparison_payload = load_json(Path(args.comparison))
             scorecards.append(
-                build_comparison_regime_scorecard_or_unavailable(comparison_payload, run_id=run_id)
+                build_comparison_regime_scorecard_or_unavailable(
+                    comparison_payload, run_id=run_id
+                )
             )
 
         if not scorecards:
-            raise ARVPRegimeScorecardError("At least one of --replay-trace or --comparison is required")
+            raise ARVPRegimeScorecardError(
+                "At least one of --replay-trace or --comparison is required"
+            )
 
         # If both are provided, prefer replay-side scorecard as primary output.
         scorecard = scorecards[0]
 
-        metadata: dict[str, str] = {
+        metadata: dict[str, object] = {
             "evidence_class": evidence_class,
             "evidence_class_version": "1.0",
             "produced_by": "arvp_regime_scorecard_runner",
@@ -96,6 +107,13 @@ def main(argv: list[str] | None = None) -> int:
             "scenario_source": args.replay_trace or args.comparison or "unknown",
             "reproducibility_contract": scorecard.scorecard_fingerprint,
         }
+        if args.replay_trace:
+            metadata["signal_counts_available"] = bool(
+                trace_payload.get("signals_available", True)
+            )
+            metadata["trade_closures_available"] = bool(
+                trace_payload.get("trades_available", True)
+            )
         if warning_banner:
             metadata["warning_banner"] = warning_banner
 
@@ -123,4 +141,3 @@ def main(argv: list[str] | None = None) -> int:
 
 if __name__ == "__main__":
     raise SystemExit(main())
-
