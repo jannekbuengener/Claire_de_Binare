@@ -1,0 +1,51 @@
+{
+  "schema_version": "profitability_league_table_report.v1",
+  "report_id": "pltr-primary-breakout-v1-park-seed-3032",
+  "model_id": "pltm-profitability-v1",
+  "generated_at": "2026-06-13T13:35:00Z",
+  "table_status": "PARTIAL",
+  "candidate_rankings": [
+    {
+      "candidate_id": "cand-primary-breakout-v1-btcusdt-mexc-3032",
+      "rank": 1,
+      "total_score": 0.0,
+      "ranking_ready": false,
+      "net_return": -0.1221562421,
+      "dimension_scores": [
+        {
+          "dimension": "NET_RETURN",
+          "score": 0.0
+        },
+        {
+          "dimension": "ROBUSTNESS",
+          "score": 0.0
+        },
+        {
+          "dimension": "EVIDENCE_COMPLETENESS",
+          "score": 0.0
+        },
+        {
+          "dimension": "SAFETY_STATUS",
+          "score": 0.0
+        },
+        {
+          "dimension": "STRESS_RESILIENCE",
+          "score": 0.0
+        }
+      ],
+      "recommendation": "PARK",
+      "limitations_summary": [
+        "Aggregate economics are materially negative: net_pnl_quote=-9258.98 and fee_adjusted_return_r=-0.122156.",
+        "Evidence class remains controlled_lab_evidence only; no natural-paper evidence exists.",
+        "ranking_ready=false because the repo has no numeric scoring formula for an honest full ranking; zero scores are a fail-closed sentinel, not a comparative metric.",
+        "No promotion, no paper-ready implication, no live-ready implication."
+      ]
+    }
+  ],
+  "limitations": [
+    "This is a seed report for a single candidate and is intentionally PARTIAL.",
+    "The league-table schema requires numeric scores, but the repo does not define a numeric scoring formula; zero scores here are a fail-closed sentinel only.",
+    "The candidate is visible for ranking governance, but not honestly full-rankable yet.",
+    "League-table output is advisory only and cannot authorize promotion, paper deployment, or live capital."
+  ]
+}

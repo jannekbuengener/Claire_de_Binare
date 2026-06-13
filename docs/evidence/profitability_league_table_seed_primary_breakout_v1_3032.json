@@ -1,0 +1,88 @@
+{
+  "schema_version": "profitability_league_table_seed.v1",
+  "seed_id": "plts-primary-breakout-v1-3032-park-seed",
+  "generated_at": "2026-06-13T13:35:00Z",
+  "parent_issue": "#3032",
+  "issue": "#3153",
+  "candidate_id": "cand-primary-breakout-v1-btcusdt-mexc-3032",
+  "candidate_name": "primary_breakout_v1",
+  "source_evidence_refs": [
+    "docs/evidence/profitability_mexc_multi_window_evidence_3032.md",
+    "docs/evidence/profitability_execution_economics_primary_breakout_v1_mexc_multi_window_3032.json",
+    "docs/evidence/profitability_evidence_packet_primary_breakout_v1_mexc_multi_window_3032.json"
+  ],
+  "contract_refs": [
+    "docs/contracts/profitability_league_table_model.v1.schema.json",
+    "docs/contracts/profitability_league_table_report.v1.schema.json",
+    "docs/strategy/CDB_PROFITABILITY_LEAGUE_TABLE_V1.md",
+    "docs/strategy/CDB_PROFITABILITY_EXECUTION_ECONOMICS_V1.md",
+    "docs/strategy/CDB_PROFITABILITY_ENGINE_CANON.md"
+  ],
+  "evidence_snapshot": {
+    "total_windows": 20,
+    "successful_windows": 20,
+    "windows_with_trades": 17,
+    "closed_trades_total": 39,
+    "trades_win_count": 6,
+    "trades_loss_count": 33,
+    "gross_pnl_quote": -5769.6050808033,
+    "net_pnl_quote": -9258.9769548033,
+    "fees_total_quote": 3489.371874,
+    "gross_return_r": -0.07540146169999999,
+    "fee_adjusted_return_r": -0.1221562421,
+    "win_rate": 0.15384615384615385,
+    "sample_size_verdict": "PASS",
+    "evidence_class": "controlled_lab_evidence"
+  },
+  "ranking_contract_interpretation": {
+    "allowed_recommendations": [
+      "REJECT",
+      "PARK",
+      "PROMOTE_TO_NEXT_RESEARCH_GATE",
+      "UNSAFE",
+      "NO_RECOMMENDATION"
+    ],
+    "gross_only_ranking_allowed": false,
+    "ranking_ready_required": true,
+    "seed_report_table_status": "PARTIAL",
+    "ranking_ready": false,
+    "reason": "The merged evidence supports an explicit PARK decision, but not an honest full ranking. The report schema requires numeric scores while the repo does not define a numeric scoring formula. This seed therefore uses a fail-closed zero-score sentinel and marks ranking_ready=false."
+  },
+  "classification": {
+    "decision": "PARK",
+    "reject_considered": true,
+    "reject_not_taken_reason": "The candidate remains useful as a baseline/regression control and the evidence is controlled_lab_evidence only, not natural-paper evidence.",
+    "decision_basis": [
+      "sample-size PASS was reached in controlled-lab evidence",
+      "aggregate economics are materially negative",
+      "no promotion is allowed",
+      "no natural-paper evidence exists",
+      "the candidate may remain useful as a baseline/regression fixture"
+    ]
+  },
+  "report_seed_policy": {
+    "total_score_sentinel": 0.0,
+    "dimension_score_sentinel": 0.0,
+    "score_is_comparative": false,
+    "score_note": "Zero scores in the seed report are a fail-closed sentinel for a not-ranking-ready candidate, not a comparative quantitative ranking method."
+  },
+  "safety_boundaries": {
+    "promotion_allowed": false,
+    "live_go": false,
+    "real_money_go": false,
+    "lr_status": "NO-GO",
+    "new_replay_run": false,
+    "db_access": false,
+    "runtime_actions": false,
+    "docker_actions": false,
+    "strategy_change": false,
+    "production_config_change": false
+  },
+  "limitations": [
+    "controlled_lab_evidence only",
+    "windows are independent fragments, not one continuous market history",
+    "public.candles_1m has no source or venue column; MEXC attribution is inherited from prior same-venue evidence",
+    "the league-table report schema requires numeric scores, but the repo does not define a numeric scoring formula",
+    "the report seed therefore uses a fail-closed zero-score sentinel with ranking_ready=false"
+  ]
+}
