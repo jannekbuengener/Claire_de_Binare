@@ -1,0 +1,1574 @@
+{
+  "schema_version": "execution_economics_summary.v1",
+  "summary_id": "econ-primary-breakout-v1-btcusdt-mexc-multi-window-3032",
+  "evidence_packet_ref": "docs/evidence/profitability_evidence_packet_primary_breakout_v1_mexc_multi_window_3032.json",
+  "candidate_id": "cand-primary-breakout-v1-btcusdt-mexc-3032",
+  "generated_at": "2026-06-13T12:58:00Z",
+  "dataset_id": "mexc_multi_window_3032",
+  "selection": {
+    "minimum_window_rows": 720,
+    "selection_cap": 20,
+    "replay_warmup_candles": 240,
+    "window_count": 20
+  },
+  "aggregate_trade_metrics": {
+    "signals_total": 85,
+    "closed_trades_total": 39,
+    "trades_win_count": 6,
+    "trades_loss_count": 33,
+    "windows_with_trades": 17,
+    "win_rate": 0.15384615384615385
+  },
+  "aggregate_return_metrics_quote": {
+    "gross_pnl_quote": -5769.6050808033,
+    "net_pnl_quote": -9258.9769548033,
+    "fees_total_quote": 3489.371874
+  },
+  "aggregate_return_metrics_r": {
+    "gross_return_r": -0.07540146169999999,
+    "fee_adjusted_return_r": -0.1221562421,
+    "note": "Summed per-window gross_return_r across independent windows. Windows are independent fragments, not one continuous market history."
+  },
+  "window_results": [
+    {
+      "window_id": "window_001",
+      "source_segment_id": 10,
+      "dataset_id": "mexc_multi_window_3032_window_001",
+      "derived_dataset_id": "mexc_multi_window_3032_window_001_regime_calibrated",
+      "row_count": 7575,
+      "duration_hours": 126.25,
+      "start_ts_ms": 1768556340000,
+      "end_ts_ms": 1769010780000,
+      "start_utc": "2026-01-16T09:39:00Z",
+      "end_utc": "2026-01-21T15:53:00Z",
+      "atr_p75_threshold": 45.66,
+      "regime_distribution": {
+        "TREND": {
+          "count": 2494,
+          "pct": 32.924
+        },
+        "RANGE": {
+          "count": 3125,
+          "pct": 41.254
+        },
+        "HIGH_VOL_CHAOTIC": {
+          "count": 1956,
+          "pct": 25.822
+        }
+      },
+      "replay": {
+        "window_id": "window_001",
+        "status": "ok",
+        "exit_code": 0,
+        "bundle_dir": "artifacts/replay_reports/mexc_multi_window_3032/window_001/replay-efab7828b8ea-0002",
+        "report_path": "artifacts/replay_reports/mexc_multi_window_3032/window_001/replay-efab7828b8ea-0002/report.json",
+        "run_id": "replay-efab7828b8ea-0002",
+        "deterministic_replay_ok": true,
+        "gate_result": "FAIL",
+        "gate_failed_criteria": [
+          "min_closed_trades_total",
+          "min_profit_factor",
+          "min_expectancy_r"
+        ],
+        "signals_total": 10,
+        "buy_signals_total": 5,
+        "sell_signals_total": 5,
+        "closed_trades_total": 5,
+        "trades_win_count": 0,
+        "trades_loss_count": 5,
+        "win_rate": 0.0,
+        "profit_factor": 0.0,
+        "gross_return_r": -0.0161532575,
+        "expectancy_r": -0.0032306515,
+        "fee_adjusted_expectancy_r": -0.0044287141,
+        "fee_adjusted_profit_factor": 0.0,
+        "max_drawdown_r": 0.0161532575,
+        "gross_pnl_quote": -1504.5093212114,
+        "net_pnl_quote": -2067.2914292114,
+        "fees_total_quote": 562.782108,
+        "avg_win_r": null,
+        "avg_loss_r": -0.0032306515,
+        "largest_win_r": null,
+        "largest_loss_r": -0.0069703464,
+        "sample_size_verdict": "weak",
+        "metrics_availability": {
+          "absolute_drawdown_quote_available": false,
+          "absolute_drawdown_quote_note": "Max drawdown available as r-multiple only (max_drawdown_r). Absolute quote drawdown requires an equity curve with per-bar nav.",
+          "equity_curve_available": false,
+          "equity_curve_note": "Per-bar equity snapshots not available. Drawdown computed from end-of-trade point estimates only.",
+          "fee_adjusted_returns_available": true,
+          "sharpe_ratio_available": false,
+          "sharpe_ratio_note": "Requires return time series (per-bar or per-trade with durations). Not computable from end-of-trade point returns alone.",
+          "slippage_note": "Execution simulator slippage is accounted for in fill prices. Per-trade slippage breakdown not exposed in trade dict.",
+          "slippage_per_trade_available": false,
+          "trade_level_pnl_available": true
+        },
+        "data_integrity_ok": true
+      }
+    },
+    {
+      "window_id": "window_002",
+      "source_segment_id": 66,
+      "dataset_id": "mexc_multi_window_3032_window_002",
+      "derived_dataset_id": "mexc_multi_window_3032_window_002_regime_calibrated",
+      "row_count": 4607,
+      "duration_hours": 76.78,
+      "start_ts_ms": 1775036700000,
+      "end_ts_ms": 1775313060000,
+      "start_utc": "2026-04-01T09:45:00Z",
+      "end_utc": "2026-04-04T14:31:00Z",
+      "atr_p75_threshold": 44.0,
+      "regime_distribution": {
+        "TREND": {
+          "count": 1266,
+          "pct": 27.48
+        },
+        "RANGE": {
+          "count": 2154,
+          "pct": 46.755
+        },
+        "HIGH_VOL_CHAOTIC": {
+          "count": 1187,
+          "pct": 25.765
+        }
+      },
+      "replay": {
+        "window_id": "window_002",
+        "status": "ok",
+        "exit_code": 0,
+        "bundle_dir": "artifacts/replay_reports/mexc_multi_window_3032/window_002/replay-4bb7b3e46e1b-0002",
+        "report_path": "artifacts/replay_reports/mexc_multi_window_3032/window_002/replay-4bb7b3e46e1b-0002/report.json",
+        "run_id": "replay-4bb7b3e46e1b-0002",
+        "deterministic_replay_ok": true,
+        "gate_result": "FAIL",
+        "gate_failed_criteria": [
+          "min_closed_trades_total",
+          "min_profit_factor",
+          "min_expectancy_r",
+          "data_integrity_ok"
+        ],
+        "signals_total": 3,
+        "buy_signals_total": 2,
+        "sell_signals_total": 1,
+        "closed_trades_total": 1,
+        "trades_win_count": 0,
+        "trades_loss_count": 1,
+        "win_rate": 0.0,
+        "profit_factor": 0.0,
+        "gross_return_r": -0.0045338196,
+        "expectancy_r": -0.0045338196,
+        "fee_adjusted_expectancy_r": -0.005731098,
+        "fee_adjusted_profit_factor": 0.0,
+        "max_drawdown_r": 0.0045338196,
+        "gross_pnl_quote": -304.0406435257,
+        "net_pnl_quote": -384.3308495257,
+        "fees_total_quote": 80.290206,
+        "avg_win_r": null,
+        "avg_loss_r": -0.0045338196,
+        "largest_win_r": null,
+        "largest_loss_r": -0.0045338196,
+        "sample_size_verdict": "insufficient",
+        "metrics_availability": {
+          "absolute_drawdown_quote_available": false,
+          "absolute_drawdown_quote_note": "Max drawdown available as r-multiple only (max_drawdown_r). Absolute quote drawdown requires an equity curve with per-bar nav.",
+          "equity_curve_available": false,
+          "equity_curve_note": "Per-bar equity snapshots not available. Drawdown computed from end-of-trade point estimates only.",
+          "fee_adjusted_returns_available": true,
+          "sharpe_ratio_available": false,
+          "sharpe_ratio_note": "Requires return time series (per-bar or per-trade with durations). Not computable from end-of-trade point returns alone.",
+          "slippage_note": "Execution simulator slippage is accounted for in fill prices. Per-trade slippage breakdown not exposed in trade dict.",
+          "slippage_per_trade_available": false,
+          "trade_level_pnl_available": true
+        },
+        "data_integrity_ok": false
+      }
+    },
+    {
+      "window_id": "window_003",
+      "source_segment_id": 130,
+      "dataset_id": "mexc_multi_window_3032_window_003",
+      "derived_dataset_id": "mexc_multi_window_3032_window_003_regime_calibrated",
+      "row_count": 4415,
+      "duration_hours": 73.58,
+      "start_ts_ms": 1781090520000,
+      "end_ts_ms": 1781355360000,
+      "start_utc": "2026-06-10T11:22:00Z",
+      "end_utc": "2026-06-13T12:56:00Z",
+      "atr_p75_threshold": 52.74,
+      "regime_distribution": {
+        "TREND": {
+          "count": 1606,
+          "pct": 36.376
+        },
+        "RANGE": {
+          "count": 1688,
+          "pct": 38.233
+        },
+        "HIGH_VOL_CHAOTIC": {
+          "count": 1121,
+          "pct": 25.391
+        }
+      },
+      "replay": {
+        "window_id": "window_003",
+        "status": "ok",
+        "exit_code": 0,
+        "bundle_dir": "artifacts/replay_reports/mexc_multi_window_3032/window_003/replay-8e8561f42f4d-0001",
+        "report_path": "artifacts/replay_reports/mexc_multi_window_3032/window_003/replay-8e8561f42f4d-0001/report.json",
+        "run_id": "replay-8e8561f42f4d-0001",
+        "deterministic_replay_ok": true,
+        "gate_result": "FAIL",
+        "gate_failed_criteria": [
+          "min_closed_trades_total",
+          "min_profit_factor",
+          "min_expectancy_r",
+          "data_integrity_ok"
+        ],
+        "signals_total": 9,
+        "buy_signals_total": 5,
+        "sell_signals_total": 4,
+        "closed_trades_total": 4,
+        "trades_win_count": 1,
+        "trades_loss_count": 3,
+        "win_rate": 0.25,
+        "profit_factor": 0.8414994369,
+        "gross_return_r": -0.0016569279,
+        "expectancy_r": -0.000414232,
+        "fee_adjusted_expectancy_r": -0.0016139837,
+        "fee_adjusted_profit_factor": 0.5404208623,
+        "max_drawdown_r": 0.0104537664,
+        "gross_pnl_quote": -120.662129561,
+        "net_pnl_quote": -424.894043561,
+        "fees_total_quote": 304.231914,
+        "avg_win_r": 0.0087968385,
+        "avg_loss_r": -0.0034845888,
+        "largest_win_r": 0.0087968385,
+        "largest_loss_r": -0.0047349919,
+        "sample_size_verdict": "insufficient",
+        "metrics_availability": {
+          "absolute_drawdown_quote_available": false,
+          "absolute_drawdown_quote_note": "Max drawdown available as r-multiple only (max_drawdown_r). Absolute quote drawdown requires an equity curve with per-bar nav.",
+          "equity_curve_available": false,
+          "equity_curve_note": "Per-bar equity snapshots not available. Drawdown computed from end-of-trade point estimates only.",
+          "fee_adjusted_returns_available": true,
+          "sharpe_ratio_available": false,
+          "sharpe_ratio_note": "Requires return time series (per-bar or per-trade with durations). Not computable from end-of-trade point returns alone.",
+          "slippage_note": "Execution simulator slippage is accounted for in fill prices. Per-trade slippage breakdown not exposed in trade dict.",
+          "slippage_per_trade_available": false,
+          "trade_level_pnl_available": true
+        },
+        "data_integrity_ok": false
+      }
+    },
+    {
+      "window_id": "window_004",
+      "source_segment_id": 103,
+      "dataset_id": "mexc_multi_window_3032_window_004",
+      "derived_dataset_id": "mexc_multi_window_3032_window_004_regime_calibrated",
+      "row_count": 4411,
+      "duration_hours": 73.52,
+      "start_ts_ms": 1778958660000,
+      "end_ts_ms": 1779223260000,
+      "start_utc": "2026-05-16T19:11:00Z",
+      "end_utc": "2026-05-19T20:41:00Z",
+      "atr_p75_threshold": 40.78,
+      "regime_distribution": {
+        "TREND": {
+          "count": 1392,
+          "pct": 31.557
+        },
+        "RANGE": {
+          "count": 1858,
+          "pct": 42.122
+        },
+        "HIGH_VOL_CHAOTIC": {
+          "count": 1161,
+          "pct": 26.321
+        }
+      },
+      "replay": {
+        "window_id": "window_004",
+        "status": "ok",
+        "exit_code": 0,
+        "bundle_dir": "artifacts/replay_reports/mexc_multi_window_3032/window_004/replay-524e2c03102a-0002",
+        "report_path": "artifacts/replay_reports/mexc_multi_window_3032/window_004/replay-524e2c03102a-0002/report.json",
+        "run_id": "replay-524e2c03102a-0002",
+        "deterministic_replay_ok": true,
+        "gate_result": "FAIL",
+        "gate_failed_criteria": [
+          "min_closed_trades_total",
+          "min_profit_factor",
+          "min_expectancy_r",
+          "data_integrity_ok"
+        ],
+        "signals_total": 5,
+        "buy_signals_total": 3,
+        "sell_signals_total": 2,
+        "closed_trades_total": 2,
+        "trades_win_count": 0,
+        "trades_loss_count": 2,
+        "win_rate": 0.0,
+        "profit_factor": 0.0,
+        "gross_return_r": -0.0070903627,
+        "expectancy_r": -0.0035451813,
+        "fee_adjusted_expectancy_r": -0.0047430576,
+        "fee_adjusted_profit_factor": 0.0,
+        "max_drawdown_r": 0.0070903627,
+        "gross_pnl_quote": -549.4813598373,
+        "net_pnl_quote": -735.9471458373,
+        "fees_total_quote": 186.465786,
+        "avg_win_r": null,
+        "avg_loss_r": -0.0035451813,
+        "largest_win_r": null,
+        "largest_loss_r": -0.0059133354,
+        "sample_size_verdict": "insufficient",
+        "metrics_availability": {
+          "absolute_drawdown_quote_available": false,
+          "absolute_drawdown_quote_note": "Max drawdown available as r-multiple only (max_drawdown_r). Absolute quote drawdown requires an equity curve with per-bar nav.",
+          "equity_curve_available": false,
+          "equity_curve_note": "Per-bar equity snapshots not available. Drawdown computed from end-of-trade point estimates only.",
+          "fee_adjusted_returns_available": true,
+          "sharpe_ratio_available": false,
+          "sharpe_ratio_note": "Requires return time series (per-bar or per-trade with durations). Not computable from end-of-trade point returns alone.",
+          "slippage_note": "Execution simulator slippage is accounted for in fill prices. Per-trade slippage breakdown not exposed in trade dict.",
+          "slippage_per_trade_available": false,
+          "trade_level_pnl_available": true
+        },
+        "data_integrity_ok": false
+      }
+    },
+    {
+      "window_id": "window_005",
+      "source_segment_id": 84,
+      "dataset_id": "mexc_multi_window_3032_window_005",
+      "derived_dataset_id": "mexc_multi_window_3032_window_005_regime_calibrated",
+      "row_count": 3668,
+      "duration_hours": 61.13,
+      "start_ts_ms": 1776962940000,
+      "end_ts_ms": 1777182960000,
+      "start_utc": "2026-04-23T16:49:00Z",
+      "end_utc": "2026-04-26T05:56:00Z",
+      "atr_p75_threshold": 39.63,
+      "regime_distribution": {
+        "TREND": {
+          "count": 1353,
+          "pct": 36.887
+        },
+        "RANGE": {
+          "count": 1394,
+          "pct": 38.004
+        },
+        "HIGH_VOL_CHAOTIC": {
+          "count": 921,
+          "pct": 25.109
+        }
+      },
+      "replay": {
+        "window_id": "window_005",
+        "status": "ok",
+        "exit_code": 0,
+        "bundle_dir": "artifacts/replay_reports/mexc_multi_window_3032/window_005/replay-26d50b3b97a6-0002",
+        "report_path": "artifacts/replay_reports/mexc_multi_window_3032/window_005/replay-26d50b3b97a6-0002/report.json",
+        "run_id": "replay-26d50b3b97a6-0002",
+        "deterministic_replay_ok": true,
+        "gate_result": "FAIL",
+        "gate_failed_criteria": [
+          "min_closed_trades_total",
+          "min_profit_factor",
+          "min_expectancy_r",
+          "data_integrity_ok"
+        ],
+        "signals_total": 3,
+        "buy_signals_total": 2,
+        "sell_signals_total": 1,
+        "closed_trades_total": 1,
+        "trades_win_count": 0,
+        "trades_loss_count": 1,
+        "win_rate": 0.0,
+        "profit_factor": 0.0,
+        "gross_return_r": -0.0024169194,
+        "expectancy_r": -0.0024169194,
+        "fee_adjusted_expectancy_r": -0.0036154709,
+        "fee_adjusted_profit_factor": 0.0,
+        "max_drawdown_r": 0.0024169194,
+        "gross_pnl_quote": -187.9418550632,
+        "net_pnl_quote": -281.1423150632,
+        "fees_total_quote": 93.20046,
+        "avg_win_r": null,
+        "avg_loss_r": -0.0024169194,
+        "largest_win_r": null,
+        "largest_loss_r": -0.0024169194,
+        "sample_size_verdict": "insufficient",
+        "metrics_availability": {
+          "absolute_drawdown_quote_available": false,
+          "absolute_drawdown_quote_note": "Max drawdown available as r-multiple only (max_drawdown_r). Absolute quote drawdown requires an equity curve with per-bar nav.",
+          "equity_curve_available": false,
+          "equity_curve_note": "Per-bar equity snapshots not available. Drawdown computed from end-of-trade point estimates only.",
+          "fee_adjusted_returns_available": true,
+          "sharpe_ratio_available": false,
+          "sharpe_ratio_note": "Requires return time series (per-bar or per-trade with durations). Not computable from end-of-trade point returns alone.",
+          "slippage_note": "Execution simulator slippage is accounted for in fill prices. Per-trade slippage breakdown not exposed in trade dict.",
+          "slippage_per_trade_available": false,
+          "trade_level_pnl_available": true
+        },
+        "data_integrity_ok": false
+      }
+    },
+    {
+      "window_id": "window_006",
+      "source_segment_id": 73,
+      "dataset_id": "mexc_multi_window_3032_window_006",
+      "derived_dataset_id": "mexc_multi_window_3032_window_006_regime_calibrated",
+      "row_count": 3641,
+      "duration_hours": 60.68,
+      "start_ts_ms": 1775635680000,
+      "end_ts_ms": 1775854080000,
+      "start_utc": "2026-04-08T08:08:00Z",
+      "end_utc": "2026-04-10T20:48:00Z",
+      "atr_p75_threshold": 57.48,
+      "regime_distribution": {
+        "TREND": {
+          "count": 1041,
+          "pct": 28.591
+        },
+        "RANGE": {
+          "count": 1665,
+          "pct": 45.729
+        },
+        "HIGH_VOL_CHAOTIC": {
+          "count": 935,
+          "pct": 25.68
+        }
+      },
+      "replay": {
+        "window_id": "window_006",
+        "status": "ok",
+        "exit_code": 0,
+        "bundle_dir": "artifacts/replay_reports/mexc_multi_window_3032/window_006/replay-db39444832dc-0002",
+        "report_path": "artifacts/replay_reports/mexc_multi_window_3032/window_006/replay-db39444832dc-0002/report.json",
+        "run_id": "replay-db39444832dc-0002",
+        "deterministic_replay_ok": true,
+        "gate_result": "FAIL",
+        "gate_failed_criteria": [
+          "min_closed_trades_total",
+          "min_profit_factor",
+          "min_expectancy_r"
+        ],
+        "signals_total": 4,
+        "buy_signals_total": 2,
+        "sell_signals_total": 2,
+        "closed_trades_total": 2,
+        "trades_win_count": 0,
+        "trades_loss_count": 2,
+        "win_rate": 0.0,
+        "profit_factor": 0.0,
+        "gross_return_r": -0.0112148258,
+        "expectancy_r": -0.0056074129,
+        "fee_adjusted_expectancy_r": -0.0068040479,
+        "fee_adjusted_profit_factor": 0.0,
+        "max_drawdown_r": 0.0112148258,
+        "gross_pnl_quote": -809.0520880692,
+        "net_pnl_quote": -981.7057660692,
+        "fees_total_quote": 172.653678,
+        "avg_win_r": null,
+        "avg_loss_r": -0.0056074129,
+        "largest_win_r": null,
+        "largest_loss_r": -0.0084547735,
+        "sample_size_verdict": "insufficient",
+        "metrics_availability": {
+          "absolute_drawdown_quote_available": false,
+          "absolute_drawdown_quote_note": "Max drawdown available as r-multiple only (max_drawdown_r). Absolute quote drawdown requires an equity curve with per-bar nav.",
+          "equity_curve_available": false,
+          "equity_curve_note": "Per-bar equity snapshots not available. Drawdown computed from end-of-trade point estimates only.",
+          "fee_adjusted_returns_available": true,
+          "sharpe_ratio_available": false,
+          "sharpe_ratio_note": "Requires return time series (per-bar or per-trade with durations). Not computable from end-of-trade point returns alone.",
+          "slippage_note": "Execution simulator slippage is accounted for in fill prices. Per-trade slippage breakdown not exposed in trade dict.",
+          "slippage_per_trade_available": false,
+          "trade_level_pnl_available": true
+        },
+        "data_integrity_ok": true
+      }
+    },
+    {
+      "window_id": "window_007",
+      "source_segment_id": 126,
+      "dataset_id": "mexc_multi_window_3032_window_007",
+      "derived_dataset_id": "mexc_multi_window_3032_window_007_regime_calibrated",
+      "row_count": 3496,
+      "duration_hours": 58.27,
+      "start_ts_ms": 1780753380000,
+      "end_ts_ms": 1780963080000,
+      "start_utc": "2026-06-06T13:43:00Z",
+      "end_utc": "2026-06-08T23:58:00Z",
+      "atr_p75_threshold": 61.82,
+      "regime_distribution": {
+        "TREND": {
+          "count": 849,
+          "pct": 24.285
+        },
+        "RANGE": {
+          "count": 1697,
+          "pct": 48.541
+        },
+        "HIGH_VOL_CHAOTIC": {
+          "count": 950,
+          "pct": 27.174
+        }
+      },
+      "replay": {
+        "window_id": "window_007",
+        "status": "ok",
+        "exit_code": 0,
+        "bundle_dir": "artifacts/replay_reports/mexc_multi_window_3032/window_007/replay-d47c7c2c48b1-0002",
+        "report_path": "artifacts/replay_reports/mexc_multi_window_3032/window_007/replay-d47c7c2c48b1-0002/report.json",
+        "run_id": "replay-d47c7c2c48b1-0002",
+        "deterministic_replay_ok": true,
+        "gate_result": "FAIL",
+        "gate_failed_criteria": [
+          "min_closed_trades_total",
+          "min_profit_factor",
+          "min_expectancy_r"
+        ],
+        "signals_total": 8,
+        "buy_signals_total": 4,
+        "sell_signals_total": 4,
+        "closed_trades_total": 4,
+        "trades_win_count": 1,
+        "trades_loss_count": 3,
+        "win_rate": 0.25,
+        "profit_factor": 0.517272534,
+        "gross_return_r": -0.014218334,
+        "expectancy_r": -0.0035545835,
+        "fee_adjusted_expectancy_r": -0.0047524499,
+        "fee_adjusted_profit_factor": 0.4245816038,
+        "max_drawdown_r": 0.0206284168,
+        "gross_pnl_quote": -918.0281407209,
+        "net_pnl_quote": -1217.3056627209,
+        "fees_total_quote": 299.277522,
+        "avg_win_r": 0.0152358301,
+        "avg_loss_r": -0.0098180547,
+        "largest_win_r": 0.0152358301,
+        "largest_loss_r": -0.010912841,
+        "sample_size_verdict": "insufficient",
+        "metrics_availability": {
+          "absolute_drawdown_quote_available": false,
+          "absolute_drawdown_quote_note": "Max drawdown available as r-multiple only (max_drawdown_r). Absolute quote drawdown requires an equity curve with per-bar nav.",
+          "equity_curve_available": false,
+          "equity_curve_note": "Per-bar equity snapshots not available. Drawdown computed from end-of-trade point estimates only.",
+          "fee_adjusted_returns_available": true,
+          "sharpe_ratio_available": false,
+          "sharpe_ratio_note": "Requires return time series (per-bar or per-trade with durations). Not computable from end-of-trade point returns alone.",
+          "slippage_note": "Execution simulator slippage is accounted for in fill prices. Per-trade slippage breakdown not exposed in trade dict.",
+          "slippage_per_trade_available": false,
+          "trade_level_pnl_available": true
+        },
+        "data_integrity_ok": true
+      }
+    },
+    {
+      "window_id": "window_008",
+      "source_segment_id": 102,
+      "dataset_id": "mexc_multi_window_3032_window_008",
+      "derived_dataset_id": "mexc_multi_window_3032_window_008_regime_calibrated",
+      "row_count": 3267,
+      "duration_hours": 54.45,
+      "start_ts_ms": 1778757180000,
+      "end_ts_ms": 1778953140000,
+      "start_utc": "2026-05-14T11:13:00Z",
+      "end_utc": "2026-05-16T17:39:00Z",
+      "atr_p75_threshold": 45.38,
+      "regime_distribution": {
+        "TREND": {
+          "count": 965,
+          "pct": 29.538
+        },
+        "RANGE": {
+          "count": 1458,
+          "pct": 44.628
+        },
+        "HIGH_VOL_CHAOTIC": {
+          "count": 844,
+          "pct": 25.834
+        }
+      },
+      "replay": {
+        "window_id": "window_008",
+        "status": "ok",
+        "exit_code": 0,
+        "bundle_dir": "artifacts/replay_reports/mexc_multi_window_3032/window_008/replay-5a8820be7608-0002",
+        "report_path": "artifacts/replay_reports/mexc_multi_window_3032/window_008/replay-5a8820be7608-0002/report.json",
+        "run_id": "replay-5a8820be7608-0002",
+        "deterministic_replay_ok": true,
+        "gate_result": "FAIL",
+        "gate_failed_criteria": [
+          "min_closed_trades_total",
+          "min_profit_factor",
+          "min_expectancy_r",
+          "data_integrity_ok"
+        ],
+        "signals_total": 5,
+        "buy_signals_total": 3,
+        "sell_signals_total": 2,
+        "closed_trades_total": 2,
+        "trades_win_count": 0,
+        "trades_loss_count": 2,
+        "win_rate": 0.0,
+        "profit_factor": 0.0,
+        "gross_return_r": -0.0102699407,
+        "expectancy_r": -0.0051349704,
+        "fee_adjusted_expectancy_r": -0.0063318899,
+        "fee_adjusted_profit_factor": 0.0,
+        "max_drawdown_r": 0.0102699407,
+        "gross_pnl_quote": -838.5428010926,
+        "net_pnl_quote": -1033.8858210926,
+        "fees_total_quote": 195.34302,
+        "avg_win_r": null,
+        "avg_loss_r": -0.0051349704,
+        "largest_win_r": null,
+        "largest_loss_r": -0.0081443563,
+        "sample_size_verdict": "insufficient",
+        "metrics_availability": {
+          "absolute_drawdown_quote_available": false,
+          "absolute_drawdown_quote_note": "Max drawdown available as r-multiple only (max_drawdown_r). Absolute quote drawdown requires an equity curve with per-bar nav.",
+          "equity_curve_available": false,
+          "equity_curve_note": "Per-bar equity snapshots not available. Drawdown computed from end-of-trade point estimates only.",
+          "fee_adjusted_returns_available": true,
+          "sharpe_ratio_available": false,
+          "sharpe_ratio_note": "Requires return time series (per-bar or per-trade with durations). Not computable from end-of-trade point returns alone.",
+          "slippage_note": "Execution simulator slippage is accounted for in fill prices. Per-trade slippage breakdown not exposed in trade dict.",
+          "slippage_per_trade_available": false,
+          "trade_level_pnl_available": true
+        },
+        "data_integrity_ok": false
+      }
+    },
+    {
+      "window_id": "window_009",
+      "source_segment_id": 83,
+      "dataset_id": "mexc_multi_window_3032_window_009",
+      "derived_dataset_id": "mexc_multi_window_3032_window_009_regime_calibrated",
+      "row_count": 3156,
+      "duration_hours": 52.6,
+      "start_ts_ms": 1776773460000,
+      "end_ts_ms": 1776962760000,
+      "start_utc": "2026-04-21T12:11:00Z",
+      "end_utc": "2026-04-23T16:46:00Z",
+      "atr_p75_threshold": 66.13,
+      "regime_distribution": {
+        "TREND": {
+          "count": 887,
+          "pct": 28.105
+        },
+        "RANGE": {
+          "count": 1463,
+          "pct": 46.356
+        },
+        "HIGH_VOL_CHAOTIC": {
+          "count": 806,
+          "pct": 25.539
+        }
+      },
+      "replay": {
+        "window_id": "window_009",
+        "status": "ok",
+        "exit_code": 0,
+        "bundle_dir": "artifacts/replay_reports/mexc_multi_window_3032/window_009/replay-d5ef812e6953-0002",
+        "report_path": "artifacts/replay_reports/mexc_multi_window_3032/window_009/replay-d5ef812e6953-0002/report.json",
+        "run_id": "replay-d5ef812e6953-0002",
+        "deterministic_replay_ok": true,
+        "gate_result": "FAIL",
+        "gate_failed_criteria": [
+          "min_closed_trades_total"
+        ],
+        "signals_total": 6,
+        "buy_signals_total": 3,
+        "sell_signals_total": 3,
+        "closed_trades_total": 3,
+        "trades_win_count": 1,
+        "trades_loss_count": 2,
+        "win_rate": 0.3333333333,
+        "profit_factor": 3.8242106424,
+        "gross_return_r": 0.0176473941,
+        "expectancy_r": 0.0058824647,
+        "fee_adjusted_expectancy_r": 0.0046789316,
+        "fee_adjusted_profit_factor": 2.6237142677,
+        "max_drawdown_r": 0.0062486111,
+        "gross_pnl_quote": 1326.6226728578,
+        "net_pnl_quote": 1046.1844908578,
+        "fees_total_quote": 280.438182,
+        "avg_win_r": 0.0238960052,
+        "avg_loss_r": -0.0031243056,
+        "largest_win_r": 0.0238960052,
+        "largest_loss_r": -0.0062340833,
+        "sample_size_verdict": "insufficient",
+        "metrics_availability": {
+          "absolute_drawdown_quote_available": false,
+          "absolute_drawdown_quote_note": "Max drawdown available as r-multiple only (max_drawdown_r). Absolute quote drawdown requires an equity curve with per-bar nav.",
+          "equity_curve_available": false,
+          "equity_curve_note": "Per-bar equity snapshots not available. Drawdown computed from end-of-trade point estimates only.",
+          "fee_adjusted_returns_available": true,
+          "sharpe_ratio_available": false,
+          "sharpe_ratio_note": "Requires return time series (per-bar or per-trade with durations). Not computable from end-of-trade point returns alone.",
+          "slippage_note": "Execution simulator slippage is accounted for in fill prices. Per-trade slippage breakdown not exposed in trade dict.",
+          "slippage_per_trade_available": false,
+          "trade_level_pnl_available": true
+        },
+        "data_integrity_ok": true
+      }
+    },
+    {
+      "window_id": "window_010",
+      "source_segment_id": 55,
+      "dataset_id": "mexc_multi_window_3032_window_010",
+      "derived_dataset_id": "mexc_multi_window_3032_window_010_regime_calibrated",
+      "row_count": 2889,
+      "duration_hours": 48.15,
+      "start_ts_ms": 1774372920000,
+      "end_ts_ms": 1774546200000,
+      "start_utc": "2026-03-24T17:22:00Z",
+      "end_utc": "2026-03-26T17:30:00Z",
+      "atr_p75_threshold": 55.31,
+      "regime_distribution": {
+        "TREND": {
+          "count": 863,
+          "pct": 29.872
+        },
+        "RANGE": {
+          "count": 1271,
+          "pct": 43.994
+        },
+        "HIGH_VOL_CHAOTIC": {
+          "count": 755,
+          "pct": 26.134
+        }
+      },
+      "replay": {
+        "window_id": "window_010",
+        "status": "ok",
+        "exit_code": 0,
+        "bundle_dir": "artifacts/replay_reports/mexc_multi_window_3032/window_010/replay-5173e99d0844-0002",
+        "report_path": "artifacts/replay_reports/mexc_multi_window_3032/window_010/replay-5173e99d0844-0002/report.json",
+        "run_id": "replay-5173e99d0844-0002",
+        "deterministic_replay_ok": true,
+        "gate_result": "FAIL",
+        "gate_failed_criteria": [
+          "min_closed_trades_total",
+          "min_profit_factor",
+          "min_expectancy_r"
+        ],
+        "signals_total": 8,
+        "buy_signals_total": 4,
+        "sell_signals_total": 4,
+        "closed_trades_total": 4,
+        "trades_win_count": 0,
+        "trades_loss_count": 4,
+        "win_rate": 0.0,
+        "profit_factor": 0.0,
+        "gross_return_r": -0.0144319301,
+        "expectancy_r": -0.0036079825,
+        "fee_adjusted_expectancy_r": -0.0048058169,
+        "fee_adjusted_profit_factor": 0.0,
+        "max_drawdown_r": 0.0144319301,
+        "gross_pnl_quote": -1027.345471326,
+        "net_pnl_quote": -1368.410533326,
+        "fees_total_quote": 341.065062,
+        "avg_win_r": null,
+        "avg_loss_r": -0.0036079825,
+        "largest_win_r": null,
+        "largest_loss_r": -0.0042839661,
+        "sample_size_verdict": "insufficient",
+        "metrics_availability": {
+          "absolute_drawdown_quote_available": false,
+          "absolute_drawdown_quote_note": "Max drawdown available as r-multiple only (max_drawdown_r). Absolute quote drawdown requires an equity curve with per-bar nav.",
+          "equity_curve_available": false,
+          "equity_curve_note": "Per-bar equity snapshots not available. Drawdown computed from end-of-trade point estimates only.",
+          "fee_adjusted_returns_available": true,
+          "sharpe_ratio_available": false,
+          "sharpe_ratio_note": "Requires return time series (per-bar or per-trade with durations). Not computable from end-of-trade point returns alone.",
+          "slippage_note": "Execution simulator slippage is accounted for in fill prices. Per-trade slippage breakdown not exposed in trade dict.",
+          "slippage_per_trade_available": false,
+          "trade_level_pnl_available": true
+        },
+        "data_integrity_ok": true
+      }
+    },
+    {
+      "window_id": "window_011",
+      "source_segment_id": 54,
+      "dataset_id": "mexc_multi_window_3032_window_011",
+      "derived_dataset_id": "mexc_multi_window_3032_window_011_regime_calibrated",
+      "row_count": 2882,
+      "duration_hours": 48.03,
+      "start_ts_ms": 1774199760000,
+      "end_ts_ms": 1774372620000,
+      "start_utc": "2026-03-22T17:16:00Z",
+      "end_utc": "2026-03-24T17:17:00Z",
+      "atr_p75_threshold": 73.0,
+      "regime_distribution": {
+        "TREND": {
+          "count": 1003,
+          "pct": 34.802
+        },
+        "RANGE": {
+          "count": 1147,
+          "pct": 39.799
+        },
+        "HIGH_VOL_CHAOTIC": {
+          "count": 732,
+          "pct": 25.399
+        }
+      },
+      "replay": {
+        "window_id": "window_011",
+        "status": "ok",
+        "exit_code": 0,
+        "bundle_dir": "artifacts/replay_reports/mexc_multi_window_3032/window_011/replay-9bffb5578b98-0002",
+        "report_path": "artifacts/replay_reports/mexc_multi_window_3032/window_011/replay-9bffb5578b98-0002/report.json",
+        "run_id": "replay-9bffb5578b98-0002",
+        "deterministic_replay_ok": true,
+        "gate_result": "FAIL",
+        "gate_failed_criteria": [
+          "min_closed_trades_total"
+        ],
+        "signals_total": 6,
+        "buy_signals_total": 3,
+        "sell_signals_total": 3,
+        "closed_trades_total": 3,
+        "trades_win_count": 1,
+        "trades_loss_count": 2,
+        "win_rate": 0.3333333333,
+        "profit_factor": 1.8027727675,
+        "gross_return_r": 0.0056556981,
+        "expectancy_r": 0.0018852327,
+        "fee_adjusted_expectancy_r": 0.0006841004,
+        "fee_adjusted_profit_factor": 1.2173823101,
+        "max_drawdown_r": 0.0064553167,
+        "gross_pnl_quote": 402.3642712537,
+        "net_pnl_quote": 150.9203932537,
+        "fees_total_quote": 251.443878,
+        "avg_win_r": 0.0127009023,
+        "avg_loss_r": -0.0035226021,
+        "largest_win_r": 0.0127009023,
+        "largest_loss_r": -0.0064553167,
+        "sample_size_verdict": "insufficient",
+        "metrics_availability": {
+          "absolute_drawdown_quote_available": false,
+          "absolute_drawdown_quote_note": "Max drawdown available as r-multiple only (max_drawdown_r). Absolute quote drawdown requires an equity curve with per-bar nav.",
+          "equity_curve_available": false,
+          "equity_curve_note": "Per-bar equity snapshots not available. Drawdown computed from end-of-trade point estimates only.",
+          "fee_adjusted_returns_available": true,
+          "sharpe_ratio_available": false,
+          "sharpe_ratio_note": "Requires return time series (per-bar or per-trade with durations). Not computable from end-of-trade point returns alone.",
+          "slippage_note": "Execution simulator slippage is accounted for in fill prices. Per-trade slippage breakdown not exposed in trade dict.",
+          "slippage_per_trade_available": false,
+          "trade_level_pnl_available": true
+        },
+        "data_integrity_ok": true
+      }
+    },
+    {
+      "window_id": "window_012",
+      "source_segment_id": 82,
+      "dataset_id": "mexc_multi_window_3032_window_012",
+      "derived_dataset_id": "mexc_multi_window_3032_window_012_regime_calibrated",
+      "row_count": 2838,
+      "duration_hours": 47.3,
+      "start_ts_ms": 1776602460000,
+      "end_ts_ms": 1776772680000,
+      "start_utc": "2026-04-19T12:41:00Z",
+      "end_utc": "2026-04-21T11:58:00Z",
+      "atr_p75_threshold": 57.99,
+      "regime_distribution": {
+        "TREND": {
+          "count": 859,
+          "pct": 30.268
+        },
+        "RANGE": {
+          "count": 1232,
+          "pct": 43.411
+        },
+        "HIGH_VOL_CHAOTIC": {
+          "count": 747,
+          "pct": 26.321
+        }
+      },
+      "replay": {
+        "window_id": "window_012",
+        "status": "ok",
+        "exit_code": 0,
+        "bundle_dir": "artifacts/replay_reports/mexc_multi_window_3032/window_012/replay-d7c600737cb3-0002",
+        "report_path": "artifacts/replay_reports/mexc_multi_window_3032/window_012/replay-d7c600737cb3-0002/report.json",
+        "run_id": "replay-d7c600737cb3-0002",
+        "deterministic_replay_ok": true,
+        "gate_result": "FAIL",
+        "gate_failed_criteria": [
+          "min_closed_trades_total",
+          "min_profit_factor",
+          "min_expectancy_r",
+          "data_integrity_ok"
+        ],
+        "signals_total": 3,
+        "buy_signals_total": 2,
+        "sell_signals_total": 1,
+        "closed_trades_total": 1,
+        "trades_win_count": 0,
+        "trades_loss_count": 1,
+        "win_rate": 0.0,
+        "profit_factor": 0.0,
+        "gross_return_r": -0.0065244256,
+        "expectancy_r": -0.0065244256,
+        "fee_adjusted_expectancy_r": -0.0077205115,
+        "fee_adjusted_profit_factor": 0.0,
+        "max_drawdown_r": 0.0065244256,
+        "gross_pnl_quote": -499.4970849568,
+        "net_pnl_quote": -591.0670509568,
+        "fees_total_quote": 91.569966,
+        "avg_win_r": null,
+        "avg_loss_r": -0.0065244256,
+        "largest_win_r": null,
+        "largest_loss_r": -0.0065244256,
+        "sample_size_verdict": "insufficient",
+        "metrics_availability": {
+          "absolute_drawdown_quote_available": false,
+          "absolute_drawdown_quote_note": "Max drawdown available as r-multiple only (max_drawdown_r). Absolute quote drawdown requires an equity curve with per-bar nav.",
+          "equity_curve_available": false,
+          "equity_curve_note": "Per-bar equity snapshots not available. Drawdown computed from end-of-trade point estimates only.",
+          "fee_adjusted_returns_available": true,
+          "sharpe_ratio_available": false,
+          "sharpe_ratio_note": "Requires return time series (per-bar or per-trade with durations). Not computable from end-of-trade point returns alone.",
+          "slippage_note": "Execution simulator slippage is accounted for in fill prices. Per-trade slippage breakdown not exposed in trade dict.",
+          "slippage_per_trade_available": false,
+          "trade_level_pnl_available": true
+        },
+        "data_integrity_ok": false
+      }
+    },
+    {
+      "window_id": "window_013",
+      "source_segment_id": 88,
+      "dataset_id": "mexc_multi_window_3032_window_013",
+      "derived_dataset_id": "mexc_multi_window_3032_window_013_regime_calibrated",
+      "row_count": 2775,
+      "duration_hours": 46.25,
+      "start_ts_ms": 1777315380000,
+      "end_ts_ms": 1777481820000,
+      "start_utc": "2026-04-27T18:43:00Z",
+      "end_utc": "2026-04-29T16:57:00Z",
+      "atr_p75_threshold": 41.5,
+      "regime_distribution": {
+        "TREND": {
+          "count": 940,
+          "pct": 33.874
+        },
+        "RANGE": {
+          "count": 1108,
+          "pct": 39.928
+        },
+        "HIGH_VOL_CHAOTIC": {
+          "count": 727,
+          "pct": 26.198
+        }
+      },
+      "replay": {
+        "window_id": "window_013",
+        "status": "ok",
+        "exit_code": 0,
+        "bundle_dir": "artifacts/replay_reports/mexc_multi_window_3032/window_013/replay-c1cb982adba1-0002",
+        "report_path": "artifacts/replay_reports/mexc_multi_window_3032/window_013/replay-c1cb982adba1-0002/report.json",
+        "run_id": "replay-c1cb982adba1-0002",
+        "deterministic_replay_ok": true,
+        "gate_result": "FAIL",
+        "gate_failed_criteria": [
+          "min_closed_trades_total",
+          "min_profit_factor",
+          "min_expectancy_r"
+        ],
+        "signals_total": 6,
+        "buy_signals_total": 3,
+        "sell_signals_total": 3,
+        "closed_trades_total": 3,
+        "trades_win_count": 1,
+        "trades_loss_count": 2,
+        "win_rate": 0.3333333333,
+        "profit_factor": 0.3248416904,
+        "gross_return_r": -0.003082347,
+        "expectancy_r": -0.001027449,
+        "fee_adjusted_expectancy_r": -0.0022268332,
+        "fee_adjusted_profit_factor": 0.0405205557,
+        "max_drawdown_r": 0.0034574603,
+        "gross_pnl_quote": -240.1476432891,
+        "net_pnl_quote": -518.1444072891,
+        "fees_total_quote": 277.996764,
+        "avg_win_r": 0.0014830222,
+        "avg_loss_r": -0.0022826846,
+        "largest_win_r": 0.0014830222,
+        "largest_loss_r": -0.0034574603,
+        "sample_size_verdict": "insufficient",
+        "metrics_availability": {
+          "absolute_drawdown_quote_available": false,
+          "absolute_drawdown_quote_note": "Max drawdown available as r-multiple only (max_drawdown_r). Absolute quote drawdown requires an equity curve with per-bar nav.",
+          "equity_curve_available": false,
+          "equity_curve_note": "Per-bar equity snapshots not available. Drawdown computed from end-of-trade point estimates only.",
+          "fee_adjusted_returns_available": true,
+          "sharpe_ratio_available": false,
+          "sharpe_ratio_note": "Requires return time series (per-bar or per-trade with durations). Not computable from end-of-trade point returns alone.",
+          "slippage_note": "Execution simulator slippage is accounted for in fill prices. Per-trade slippage breakdown not exposed in trade dict.",
+          "slippage_per_trade_available": false,
+          "trade_level_pnl_available": true
+        },
+        "data_integrity_ok": true
+      }
+    },
+    {
+      "window_id": "window_014",
+      "source_segment_id": 98,
+      "dataset_id": "mexc_multi_window_3032_window_014",
+      "derived_dataset_id": "mexc_multi_window_3032_window_014_regime_calibrated",
+      "row_count": 2726,
+      "duration_hours": 45.43,
+      "start_ts_ms": 1778342280000,
+      "end_ts_ms": 1778505780000,
+      "start_utc": "2026-05-09T15:58:00Z",
+      "end_utc": "2026-05-11T13:23:00Z",
+      "atr_p75_threshold": 35.23,
+      "regime_distribution": {
+        "TREND": {
+          "count": 667,
+          "pct": 24.468
+        },
+        "RANGE": {
+          "count": 1324,
+          "pct": 48.569
+        },
+        "HIGH_VOL_CHAOTIC": {
+          "count": 735,
+          "pct": 26.963
+        }
+      },
+      "replay": {
+        "window_id": "window_014",
+        "status": "ok",
+        "exit_code": 0,
+        "bundle_dir": "artifacts/replay_reports/mexc_multi_window_3032/window_014/replay-db2a6fde2f0c-0002",
+        "report_path": "artifacts/replay_reports/mexc_multi_window_3032/window_014/replay-db2a6fde2f0c-0002/report.json",
+        "run_id": "replay-db2a6fde2f0c-0002",
+        "deterministic_replay_ok": true,
+        "gate_result": "FAIL",
+        "gate_failed_criteria": [
+          "min_closed_trades_total",
+          "min_profit_factor"
+        ],
+        "signals_total": 0,
+        "buy_signals_total": 0,
+        "sell_signals_total": 0,
+        "closed_trades_total": 0,
+        "trades_win_count": 0,
+        "trades_loss_count": 0,
+        "win_rate": 0.0,
+        "profit_factor": 0.0,
+        "gross_return_r": 0.0,
+        "expectancy_r": 0.0,
+        "fee_adjusted_expectancy_r": null,
+        "fee_adjusted_profit_factor": null,
+        "max_drawdown_r": 0.0,
+        "gross_pnl_quote": 0.0,
+        "net_pnl_quote": 0.0,
+        "fees_total_quote": 0.0,
+        "avg_win_r": null,
+        "avg_loss_r": null,
+        "largest_win_r": null,
+        "largest_loss_r": null,
+        "sample_size_verdict": "no_trades",
+        "metrics_availability": {
+          "absolute_drawdown_quote_available": false,
+          "absolute_drawdown_quote_note": "Max drawdown available as r-multiple only (max_drawdown_r). Absolute quote drawdown requires an equity curve with per-bar nav.",
+          "equity_curve_available": false,
+          "equity_curve_note": "Per-bar equity snapshots not available. Drawdown computed from end-of-trade point estimates only.",
+          "fee_adjusted_returns_available": false,
+          "sharpe_ratio_available": false,
+          "sharpe_ratio_note": "Requires return time series (per-bar or per-trade with durations). Not computable from end-of-trade point returns alone.",
+          "slippage_note": "Execution simulator slippage is accounted for in fill prices. Per-trade slippage breakdown not exposed in trade dict.",
+          "slippage_per_trade_available": false,
+          "trade_level_pnl_available": false
+        },
+        "data_integrity_ok": true
+      }
+    },
+    {
+      "window_id": "window_015",
+      "source_segment_id": 101,
+      "dataset_id": "mexc_multi_window_3032_window_015",
+      "derived_dataset_id": "mexc_multi_window_3032_window_015_regime_calibrated",
+      "row_count": 2721,
+      "duration_hours": 45.35,
+      "start_ts_ms": 1778543400000,
+      "end_ts_ms": 1778706600000,
+      "start_utc": "2026-05-11T23:50:00Z",
+      "end_utc": "2026-05-13T21:10:00Z",
+      "atr_p75_threshold": 38.85,
+      "regime_distribution": {
+        "TREND": {
+          "count": 1017,
+          "pct": 37.376
+        },
+        "RANGE": {
+          "count": 1026,
+          "pct": 37.707
+        },
+        "HIGH_VOL_CHAOTIC": {
+          "count": 678,
+          "pct": 24.917
+        }
+      },
+      "replay": {
+        "window_id": "window_015",
+        "status": "ok",
+        "exit_code": 0,
+        "bundle_dir": "artifacts/replay_reports/mexc_multi_window_3032/window_015/replay-37fd2f7ee6c2-0002",
+        "report_path": "artifacts/replay_reports/mexc_multi_window_3032/window_015/replay-37fd2f7ee6c2-0002/report.json",
+        "run_id": "replay-37fd2f7ee6c2-0002",
+        "deterministic_replay_ok": true,
+        "gate_result": "FAIL",
+        "gate_failed_criteria": [
+          "min_closed_trades_total",
+          "min_profit_factor"
+        ],
+        "signals_total": 0,
+        "buy_signals_total": 0,
+        "sell_signals_total": 0,
+        "closed_trades_total": 0,
+        "trades_win_count": 0,
+        "trades_loss_count": 0,
+        "win_rate": 0.0,
+        "profit_factor": 0.0,
+        "gross_return_r": 0.0,
+        "expectancy_r": 0.0,
+        "fee_adjusted_expectancy_r": null,
+        "fee_adjusted_profit_factor": null,
+        "max_drawdown_r": 0.0,
+        "gross_pnl_quote": 0.0,
+        "net_pnl_quote": 0.0,
+        "fees_total_quote": 0.0,
+        "avg_win_r": null,
+        "avg_loss_r": null,
+        "largest_win_r": null,
+        "largest_loss_r": null,
+        "sample_size_verdict": "no_trades",
+        "metrics_availability": {
+          "absolute_drawdown_quote_available": false,
+          "absolute_drawdown_quote_note": "Max drawdown available as r-multiple only (max_drawdown_r). Absolute quote drawdown requires an equity curve with per-bar nav.",
+          "equity_curve_available": false,
+          "equity_curve_note": "Per-bar equity snapshots not available. Drawdown computed from end-of-trade point estimates only.",
+          "fee_adjusted_returns_available": false,
+          "sharpe_ratio_available": false,
+          "sharpe_ratio_note": "Requires return time series (per-bar or per-trade with durations). Not computable from end-of-trade point returns alone.",
+          "slippage_note": "Execution simulator slippage is accounted for in fill prices. Per-trade slippage breakdown not exposed in trade dict.",
+          "slippage_per_trade_available": false,
+          "trade_level_pnl_available": false
+        },
+        "data_integrity_ok": true
+      }
+    },
+    {
+      "window_id": "window_016",
+      "source_segment_id": 58,
+      "dataset_id": "mexc_multi_window_3032_window_016",
+      "derived_dataset_id": "mexc_multi_window_3032_window_016_regime_calibrated",
+      "row_count": 2683,
+      "duration_hours": 44.72,
+      "start_ts_ms": 1774552080000,
+      "end_ts_ms": 1774713000000,
+      "start_utc": "2026-03-26T19:08:00Z",
+      "end_utc": "2026-03-28T15:50:00Z",
+      "atr_p75_threshold": 47.16,
+      "regime_distribution": {
+        "TREND": {
+          "count": 976,
+          "pct": 36.377
+        },
+        "RANGE": {
+          "count": 1026,
+          "pct": 38.241
+        },
+        "HIGH_VOL_CHAOTIC": {
+          "count": 681,
+          "pct": 25.382
+        }
+      },
+      "replay": {
+        "window_id": "window_016",
+        "status": "ok",
+        "exit_code": 0,
+        "bundle_dir": "artifacts/replay_reports/mexc_multi_window_3032/window_016/replay-a7cf11ebde6b-0002",
+        "report_path": "artifacts/replay_reports/mexc_multi_window_3032/window_016/replay-a7cf11ebde6b-0002/report.json",
+        "run_id": "replay-a7cf11ebde6b-0002",
+        "deterministic_replay_ok": true,
+        "gate_result": "FAIL",
+        "gate_failed_criteria": [
+          "min_closed_trades_total",
+          "min_profit_factor",
+          "min_expectancy_r",
+          "data_integrity_ok"
+        ],
+        "signals_total": 3,
+        "buy_signals_total": 2,
+        "sell_signals_total": 1,
+        "closed_trades_total": 1,
+        "trades_win_count": 0,
+        "trades_loss_count": 1,
+        "win_rate": 0.0,
+        "profit_factor": 0.0,
+        "gross_return_r": -0.0007670152,
+        "expectancy_r": -0.0007670152,
+        "fee_adjusted_expectancy_r": -0.0019665554,
+        "fee_adjusted_profit_factor": 0.0,
+        "max_drawdown_r": 0.0007670152,
+        "gross_pnl_quote": -50.9285218046,
+        "net_pnl_quote": -130.5759778046,
+        "fees_total_quote": 79.647456,
+        "avg_win_r": null,
+        "avg_loss_r": -0.0007670152,
+        "largest_win_r": null,
+        "largest_loss_r": -0.0007670152,
+        "sample_size_verdict": "insufficient",
+        "metrics_availability": {
+          "absolute_drawdown_quote_available": false,
+          "absolute_drawdown_quote_note": "Max drawdown available as r-multiple only (max_drawdown_r). Absolute quote drawdown requires an equity curve with per-bar nav.",
+          "equity_curve_available": false,
+          "equity_curve_note": "Per-bar equity snapshots not available. Drawdown computed from end-of-trade point estimates only.",
+          "fee_adjusted_returns_available": true,
+          "sharpe_ratio_available": false,
+          "sharpe_ratio_note": "Requires return time series (per-bar or per-trade with durations). Not computable from end-of-trade point returns alone.",
+          "slippage_note": "Execution simulator slippage is accounted for in fill prices. Per-trade slippage breakdown not exposed in trade dict.",
+          "slippage_per_trade_available": false,
+          "trade_level_pnl_available": true
+        },
+        "data_integrity_ok": false
+      }
+    },
+    {
+      "window_id": "window_017",
+      "source_segment_id": 109,
+      "dataset_id": "mexc_multi_window_3032_window_017",
+      "derived_dataset_id": "mexc_multi_window_3032_window_017_regime_calibrated",
+      "row_count": 2359,
+      "duration_hours": 39.32,
+      "start_ts_ms": 1779558360000,
+      "end_ts_ms": 1779699840000,
+      "start_utc": "2026-05-23T17:46:00Z",
+      "end_utc": "2026-05-25T09:04:00Z",
+      "atr_p75_threshold": 34.5,
+      "regime_distribution": {
+        "TREND": {
+          "count": 812,
+          "pct": 34.421
+        },
+        "RANGE": {
+          "count": 942,
+          "pct": 39.932
+        },
+        "HIGH_VOL_CHAOTIC": {
+          "count": 605,
+          "pct": 25.646
+        }
+      },
+      "replay": {
+        "window_id": "window_017",
+        "status": "ok",
+        "exit_code": 0,
+        "bundle_dir": "artifacts/replay_reports/mexc_multi_window_3032/window_017/replay-da49329ac7ac-0002",
+        "report_path": "artifacts/replay_reports/mexc_multi_window_3032/window_017/replay-da49329ac7ac-0002/report.json",
+        "run_id": "replay-da49329ac7ac-0002",
+        "deterministic_replay_ok": true,
+        "gate_result": "FAIL",
+        "gate_failed_criteria": [
+          "min_closed_trades_total",
+          "min_profit_factor",
+          "min_expectancy_r"
+        ],
+        "signals_total": 2,
+        "buy_signals_total": 1,
+        "sell_signals_total": 1,
+        "closed_trades_total": 1,
+        "trades_win_count": 0,
+        "trades_loss_count": 1,
+        "win_rate": 0.0,
+        "profit_factor": 0.0,
+        "gross_return_r": -0.0010139143,
+        "expectancy_r": -0.0010139143,
+        "fee_adjusted_expectancy_r": -0.0022133065,
+        "fee_adjusted_profit_factor": 0.0,
+        "max_drawdown_r": 0.0010139143,
+        "gross_pnl_quote": -78.1678330226,
+        "net_pnl_quote": -170.6351110226,
+        "fees_total_quote": 92.467278,
+        "avg_win_r": null,
+        "avg_loss_r": -0.0010139143,
+        "largest_win_r": null,
+        "largest_loss_r": -0.0010139143,
+        "sample_size_verdict": "insufficient",
+        "metrics_availability": {
+          "absolute_drawdown_quote_available": false,
+          "absolute_drawdown_quote_note": "Max drawdown available as r-multiple only (max_drawdown_r). Absolute quote drawdown requires an equity curve with per-bar nav.",
+          "equity_curve_available": false,
+          "equity_curve_note": "Per-bar equity snapshots not available. Drawdown computed from end-of-trade point estimates only.",
+          "fee_adjusted_returns_available": true,
+          "sharpe_ratio_available": false,
+          "sharpe_ratio_note": "Requires return time series (per-bar or per-trade with durations). Not computable from end-of-trade point returns alone.",
+          "slippage_note": "Execution simulator slippage is accounted for in fill prices. Per-trade slippage breakdown not exposed in trade dict.",
+          "slippage_per_trade_available": false,
+          "trade_level_pnl_available": true
+        },
+        "data_integrity_ok": true
+      }
+    },
+    {
+      "window_id": "window_018",
+      "source_segment_id": 14,
+      "dataset_id": "mexc_multi_window_3032_window_018",
+      "derived_dataset_id": "mexc_multi_window_3032_window_018_regime_calibrated",
+      "row_count": 2309,
+      "duration_hours": 38.48,
+      "start_ts_ms": 1769272620000,
+      "end_ts_ms": 1769411100000,
+      "start_utc": "2026-01-24T16:37:00Z",
+      "end_utc": "2026-01-26T07:05:00Z",
+      "atr_p75_threshold": 59.07,
+      "regime_distribution": {
+        "TREND": {
+          "count": 827,
+          "pct": 35.816
+        },
+        "RANGE": {
+          "count": 883,
+          "pct": 38.242
+        },
+        "HIGH_VOL_CHAOTIC": {
+          "count": 599,
+          "pct": 25.942
+        }
+      },
+      "replay": {
+        "window_id": "window_018",
+        "status": "ok",
+        "exit_code": 0,
+        "bundle_dir": "artifacts/replay_reports/mexc_multi_window_3032/window_018/replay-f822121c945b-0002",
+        "report_path": "artifacts/replay_reports/mexc_multi_window_3032/window_018/replay-f822121c945b-0002/report.json",
+        "run_id": "replay-f822121c945b-0002",
+        "deterministic_replay_ok": true,
+        "gate_result": "FAIL",
+        "gate_failed_criteria": [
+          "min_closed_trades_total",
+          "min_profit_factor"
+        ],
+        "signals_total": 0,
+        "buy_signals_total": 0,
+        "sell_signals_total": 0,
+        "closed_trades_total": 0,
+        "trades_win_count": 0,
+        "trades_loss_count": 0,
+        "win_rate": 0.0,
+        "profit_factor": 0.0,
+        "gross_return_r": 0.0,
+        "expectancy_r": 0.0,
+        "fee_adjusted_expectancy_r": null,
+        "fee_adjusted_profit_factor": null,
+        "max_drawdown_r": 0.0,
+        "gross_pnl_quote": 0.0,
+        "net_pnl_quote": 0.0,
+        "fees_total_quote": 0.0,
+        "avg_win_r": null,
+        "avg_loss_r": null,
+        "largest_win_r": null,
+        "largest_loss_r": null,
+        "sample_size_verdict": "no_trades",
+        "metrics_availability": {
+          "absolute_drawdown_quote_available": false,
+          "absolute_drawdown_quote_note": "Max drawdown available as r-multiple only (max_drawdown_r). Absolute quote drawdown requires an equity curve with per-bar nav.",
+          "equity_curve_available": false,
+          "equity_curve_note": "Per-bar equity snapshots not available. Drawdown computed from end-of-trade point estimates only.",
+          "fee_adjusted_returns_available": false,
+          "sharpe_ratio_available": false,
+          "sharpe_ratio_note": "Requires return time series (per-bar or per-trade with durations). Not computable from end-of-trade point returns alone.",
+          "slippage_note": "Execution simulator slippage is accounted for in fill prices. Per-trade slippage breakdown not exposed in trade dict.",
+          "slippage_per_trade_available": false,
+          "trade_level_pnl_available": false
+        },
+        "data_integrity_ok": true
+      }
+    },
+    {
+      "window_id": "window_019",
+      "source_segment_id": 97,
+      "dataset_id": "mexc_multi_window_3032_window_019",
+      "derived_dataset_id": "mexc_multi_window_3032_window_019_regime_calibrated",
+      "row_count": 2038,
+      "duration_hours": 33.97,
+      "start_ts_ms": 1778157240000,
+      "end_ts_ms": 1778279460000,
+      "start_utc": "2026-05-07T12:34:00Z",
+      "end_utc": "2026-05-08T22:31:00Z",
+      "atr_p75_threshold": 50.85,
+      "regime_distribution": {
+        "TREND": {
+          "count": 756,
+          "pct": 37.095
+        },
+        "RANGE": {
+          "count": 758,
+          "pct": 37.193
+        },
+        "HIGH_VOL_CHAOTIC": {
+          "count": 524,
+          "pct": 25.711
+        }
+      },
+      "replay": {
+        "window_id": "window_019",
+        "status": "ok",
+        "exit_code": 0,
+        "bundle_dir": "artifacts/replay_reports/mexc_multi_window_3032/window_019/replay-74efab6903ef-0002",
+        "report_path": "artifacts/replay_reports/mexc_multi_window_3032/window_019/replay-74efab6903ef-0002/report.json",
+        "run_id": "replay-74efab6903ef-0002",
+        "deterministic_replay_ok": true,
+        "gate_result": "FAIL",
+        "gate_failed_criteria": [
+          "min_closed_trades_total"
+        ],
+        "signals_total": 2,
+        "buy_signals_total": 1,
+        "sell_signals_total": 1,
+        "closed_trades_total": 1,
+        "trades_win_count": 1,
+        "trades_loss_count": 0,
+        "win_rate": 1.0,
+        "profit_factor": 655172426.1945263,
+        "gross_return_r": 0.0006551724,
+        "expectancy_r": 0.0006551724,
+        "fee_adjusted_expectancy_r": -0.0005452202,
+        "fee_adjusted_profit_factor": 0.0,
+        "max_drawdown_r": 0.0,
+        "gross_pnl_quote": 52.4073493208,
+        "net_pnl_quote": -43.6122526792,
+        "fees_total_quote": 96.019602,
+        "avg_win_r": 0.0006551724,
+        "avg_loss_r": null,
+        "largest_win_r": 0.0006551724,
+        "largest_loss_r": null,
+        "sample_size_verdict": "insufficient",
+        "metrics_availability": {
+          "absolute_drawdown_quote_available": false,
+          "absolute_drawdown_quote_note": "Max drawdown available as r-multiple only (max_drawdown_r). Absolute quote drawdown requires an equity curve with per-bar nav.",
+          "equity_curve_available": false,
+          "equity_curve_note": "Per-bar equity snapshots not available. Drawdown computed from end-of-trade point estimates only.",
+          "fee_adjusted_returns_available": true,
+          "sharpe_ratio_available": false,
+          "sharpe_ratio_note": "Requires return time series (per-bar or per-trade with durations). Not computable from end-of-trade point returns alone.",
+          "slippage_note": "Execution simulator slippage is accounted for in fill prices. Per-trade slippage breakdown not exposed in trade dict.",
+          "slippage_per_trade_available": false,
+          "trade_level_pnl_available": true
+        },
+        "data_integrity_ok": true
+      }
+    },
+    {
+      "window_id": "window_020",
+      "source_segment_id": 40,
+      "dataset_id": "mexc_multi_window_3032_window_020",
+      "derived_dataset_id": "mexc_multi_window_3032_window_020_regime_calibrated",
+      "row_count": 1902,
+      "duration_hours": 31.7,
+      "start_ts_ms": 1773241260000,
+      "end_ts_ms": 1773355320000,
+      "start_utc": "2026-03-11T15:01:00Z",
+      "end_utc": "2026-03-12T22:42:00Z",
+      "atr_p75_threshold": 67.63,
+      "regime_distribution": {
+        "TREND": {
+          "count": 586,
+          "pct": 30.81
+        },
+        "RANGE": {
+          "count": 835,
+          "pct": 43.901
+        },
+        "HIGH_VOL_CHAOTIC": {
+          "count": 481,
+          "pct": 25.289
+        }
+      },
+      "replay": {
+        "window_id": "window_020",
+        "status": "ok",
+        "exit_code": 0,
+        "bundle_dir": "artifacts/replay_reports/mexc_multi_window_3032/window_020/replay-30ab25ce2374-0002",
+        "report_path": "artifacts/replay_reports/mexc_multi_window_3032/window_020/replay-30ab25ce2374-0002/report.json",
+        "run_id": "replay-30ab25ce2374-0002",
+        "deterministic_replay_ok": true,
+        "gate_result": "FAIL",
+        "gate_failed_criteria": [
+          "min_closed_trades_total",
+          "min_profit_factor",
+          "min_expectancy_r"
+        ],
+        "signals_total": 2,
+        "buy_signals_total": 1,
+        "sell_signals_total": 1,
+        "closed_trades_total": 1,
+        "trades_win_count": 0,
+        "trades_loss_count": 1,
+        "win_rate": 0.0,
+        "profit_factor": 0.0,
+        "gross_return_r": -0.0059857065,
+        "expectancy_r": -0.0059857065,
+        "fee_adjusted_expectancy_r": -0.0071821127,
+        "fee_adjusted_profit_factor": 0.0,
+        "max_drawdown_r": 0.0059857065,
+        "gross_pnl_quote": -422.6544807552,
+        "net_pnl_quote": -507.1334727552,
+        "fees_total_quote": 84.478992,
+        "avg_win_r": null,
+        "avg_loss_r": -0.0059857065,
+        "largest_win_r": null,
+        "largest_loss_r": -0.0059857065,
+        "sample_size_verdict": "insufficient",
+        "metrics_availability": {
+          "absolute_drawdown_quote_available": false,
+          "absolute_drawdown_quote_note": "Max drawdown available as r-multiple only (max_drawdown_r). Absolute quote drawdown requires an equity curve with per-bar nav.",
+          "equity_curve_available": false,
+          "equity_curve_note": "Per-bar equity snapshots not available. Drawdown computed from end-of-trade point estimates only.",
+          "fee_adjusted_returns_available": true,
+          "sharpe_ratio_available": false,
+          "sharpe_ratio_note": "Requires return time series (per-bar or per-trade with durations). Not computable from end-of-trade point returns alone.",
+          "slippage_note": "Execution simulator slippage is accounted for in fill prices. Per-trade slippage breakdown not exposed in trade dict.",
+          "slippage_per_trade_available": false,
+          "trade_level_pnl_available": true
+        },
+        "data_integrity_ok": true
+      }
+    }
+  ],
+  "sample_size_gate": {
+    "verdict": "PASS",
+    "closed_trades_total": 39,
+    "windows_with_trades": 17,
+    "required_closed_trades": 20,
+    "required_windows_with_trades": 3,
+    "note": "PASS only if total closed trades >= 20 and at least 3 windows have trades; otherwise INSUFFICIENT."
+  },
+  "execution_quality": {
+    "successful_windows": 20,
+    "failed_windows": 0,
+    "deterministic_replay_ok_all_successful": true
+  },
+  "verdict": {
+    "overall": "PARK",
+    "economic_assessment": "Aggregate economics are materially negative. Do not promote.",
+    "next_recommended_step": "Multi-window sample threshold reached, but aggregate economics are materially negative. Create a narrow PARK/REJECT decision slice and, if useful, a seed league-table entry explicitly marked PARK."
+  },
+  "evidence_class": "controlled_lab_evidence",
+  "lr_status": "NO-GO",
+  "parent_issue": "#3032",
+  "child_issue": "#3152"
+}

@@ -1,0 +1,53 @@
+{
+  "schema_version": "mexc_multi_window_calibration_manifest.v1",
+  "generated_at": "2026-06-13T12:57:55Z",
+  "parent_issue": "#3032",
+  "child_issue": "#3152",
+  "dataset_id": "mexc_multi_window_3032_window_017",
+  "derived_dataset_id": "mexc_multi_window_3032_window_017_regime_calibrated",
+  "method": "offline_heuristic_adx_atr",
+  "method_detail": "Deterministic offline ADX/ATR regime classification reusing the existing #3145/#3147 logic. ADX thresholds stay committed; ATR high-vol threshold is selected from this window's ATR(14) distribution at p75.",
+  "calibration_rule": "distribution_based_p75",
+  "calibration_rule_refs": [
+    "#3145",
+    "#3147"
+  ],
+  "calibration_parameters": {
+    "atr_period": 14,
+    "adx_period": 14,
+    "adx_trend_threshold": 25.0,
+    "adx_range_threshold": 20.0,
+    "confirmation_bars": 3,
+    "buffer_maxlen": 70,
+    "atr_p75_threshold": 34.5,
+    "atr_distribution_p50": 23.412102,
+    "atr_distribution_p75": 34.496549,
+    "atr_distribution_p90": 51.345297
+  },
+  "estimation": true,
+  "estimation_note": "All regime labels are estimated=true and evidence_class=controlled_lab_evidence. No runtime regime service was used.",
+  "evidence_class": "controlled_lab_evidence",
+  "distribution": {
+    "0": {
+      "regime_name": "TREND",
+      "count": 812,
+      "pct": 34.421
+    },
+    "1": {
+      "regime_name": "RANGE",
+      "count": 942,
+      "pct": 39.932
+    },
+    "2": {
+      "regime_name": "HIGH_VOL_CHAOTIC",
+      "count": 605,
+      "pct": 25.646
+    }
+  },
+  "hashes": {
+    "raw_candles_sha256": "88fe12dd9d5c8499b2acb2b168f37c0fb7392415d6e0a2d7687809b893ba6631",
+    "derived_candles_sha256": "a31f3c44fa0a1f5566204fa04dd77d13466e0ee8ebc55ac9a5d82991e85813b5",
+    "dataset_spec_sha256": "8f2cf986c047de75e27fafb40a730f0f307c0ee1dc7807568248c92ca03c58da"
+  },
+  "no_threshold_selection_by_profit": true
+}

@@ -1,0 +1,18 @@
+{
+  "spec_version": "1.0",
+  "dataset_id": "mexc_multi_window_3032_window_009_regime_calibrated",
+  "derived_from": "mexc_multi_window_3032_window_009",
+  "source": "file",
+  "file_path": "artifacts/candles/mexc_multi_window_3032/window_009/regime_calibrated/candles.jsonl",
+  "symbol": "BTCUSDT",
+  "interval": "1m",
+  "venue": "mexc",
+  "venue_match": true,
+  "row_count": 3156,
+  "replay_warmup_candles": 240,
+  "regime_assigned": true,
+  "regime_calibrated": true,
+  "candles_sha256": "ba70efb61ae3c3f3f0da3aaf2b98a9334b5b63cb130e747e8e1fbf4f488c107e",
+  "evidence_class": "controlled_lab_evidence",
+  "estimation": true
+}

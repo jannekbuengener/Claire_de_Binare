@@ -1,0 +1,25 @@
+{
+  "spec_version": "1.0",
+  "dataset_id": "mexc_multi_window_3032_window_004",
+  "source": "file",
+  "file_path": "artifacts/candles/mexc_multi_window_3032/window_004/candles.jsonl",
+  "symbol": "BTCUSDT",
+  "interval": "1m",
+  "venue": "mexc",
+  "venue_match": true,
+  "venue_provenance_inherited": true,
+  "venue_provenance_refs": [
+    "docs/evidence/mexc_future_capture_3091.md",
+    "docs/evidence/profitability_mexc_sample_size_expansion_3032.md"
+  ],
+  "venue_provenance_limitations": "public.candles_1m has no source/venue column. MEXC attribution for this BTCUSDT series is inherited from prior same-venue evidence and runtime canon, not from per-row DB labels.",
+  "row_count": 4411,
+  "start_ts_ms": 1778958660000,
+  "end_ts_ms": 1779223260000,
+  "start_utc": "2026-05-16T19:11:00Z",
+  "end_utc": "2026-05-19T20:41:00Z",
+  "replay_warmup_candles": 240,
+  "candles_sha256": "8f551c4eb4ebfa16efbf1ca4e7fde7a8e51a2aac30a8e472dd65f3ff0e1c2fe6",
+  "exact_1m_cadence": true,
+  "evidence_class": "controlled_lab_evidence"
+}

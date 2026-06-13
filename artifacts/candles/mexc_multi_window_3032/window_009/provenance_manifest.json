@@ -1,0 +1,61 @@
+{
+  "schema_version": "mexc_multi_window_provenance_manifest.v1",
+  "generated_at": "2026-06-13T12:57:39Z",
+  "parent_issue": "#3032",
+  "child_issue": "#3152",
+  "window_id": "window_009",
+  "source_segment_id": 83,
+  "selection_rank": 9,
+  "query_semantics": {
+    "dsn_env": "POSTGRES_READONLY_PASSWORD_DSN",
+    "table": "public.candles_1m",
+    "symbol_filter": "BTCUSDT",
+    "ordering": "ORDER BY ts_ms ASC",
+    "exact_contiguity_rule": "next_ts_ms - current_ts_ms == 60000",
+    "selection_rule": "top windows by exact continuity and row_count only"
+  },
+  "readonly_identity": {
+    "current_user": "cdb_readonly",
+    "session_user": "cdb_readonly",
+    "privileges": {
+      "select": true,
+      "insert": false,
+      "update": false,
+      "delete": false
+    }
+  },
+  "window": {
+    "row_count": 3156,
+    "start_ts_ms": 1776773460000,
+    "end_ts_ms": 1776962760000,
+    "start_utc": "2026-04-21T12:11:00Z",
+    "end_utc": "2026-04-23T16:46:00Z",
+    "duration_hours": 52.6,
+    "gap_before_ms": 780000,
+    "gap_after_ms": 180000,
+    "exact_1m_cadence": true
+  },
+  "hashes": {
+    "candles_sha256": "f4c87ef789bb5de2e949e546c03730b39daf54b64798686a17074f872c62318a",
+    "dataset_spec_sha256": "0937de995fece7f9cf9ef0e94ed75dffe1777fb40cc1965527fe56ba875242b1"
+  },
+  "venue": {
+    "value": "mexc",
+    "inherited_from_prior_evidence": true,
+    "refs": [
+      "docs/evidence/mexc_future_capture_3091.md",
+      "docs/evidence/profitability_mexc_sample_size_expansion_3032.md"
+    ],
+    "limitations": "public.candles_1m has no source/venue column. MEXC attribution for this BTCUSDT series is inherited from prior same-venue evidence and runtime canon, not from per-row DB labels."
+  },
+  "safety": {
+    "db_writes": false,
+    "runtime_capture": false,
+    "docker_actions": false,
+    "strategy_change": false,
+    "production_config_change": false,
+    "live_go": false,
+    "real_money_go": false,
+    "lr_status": "NO-GO"
+  }
+}
