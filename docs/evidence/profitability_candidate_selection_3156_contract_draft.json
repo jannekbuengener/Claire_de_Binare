@@ -1,0 +1,66 @@
+{
+  "schema_version": "profitability_candidate_contract.v1",
+  "candidate_id": "cand-range-mean-reversion-v1-btcusdt-mexc",
+  "strategy_family": "range_mean_reversion",
+  "symbol_universe": [
+    "BTCUSDT"
+  ],
+  "timeframe": "1m",
+  "direction": "long_short",
+  "regime_scope": {
+    "allowed_regimes": [
+      "RANGE"
+    ],
+    "blocked_regimes": [
+      "HIGH_VOL_CHAOTIC",
+      "PANIC",
+      "UNKNOWN"
+    ],
+    "freshness_required": true
+  },
+  "parameter_set": {
+    "zscore_lookback_periods": 20,
+    "entry_zscore_threshold": 2.0,
+    "exit_zscore_threshold": 0.0,
+    "position_sizing_pct": 0.01,
+    "atr_stop_multiplier": 2.0
+  },
+  "hypothesis": "In RANGE regime (low ADX, mean-reverting price action), BTCUSDT prices revert to short-term central tendency. Entering contrarian positions at z-score extremes (oversold/overbought) and exiting at mean reversion can produce positive net expectancy given controlled friction costs. This hypothesis is fundamentally distinct from primary_breakout_v1 which requires TREND regime and trend-following entry logic.",
+  "risk_assumptions": [
+    "Core Risk Service, kill-switch, and LR gates remain authoritative.",
+    "Candidate evidence cannot override runtime risk blocks.",
+    "Mean reversion in low-volume regime transitions may produce extended losses if regime shifts to TREND mid-trade.",
+    "long_short direction requires valid short signal execution path in replay."
+  ],
+  "execution_assumptions": [
+    "Fees, spread, and slippage must be accounted for before ranking.",
+    "Existing MEXC same-venue data is available for file-backed replay.",
+    "Backtest, ARVP, and paper evidence do not imply live execution readiness.",
+    "Short-side execution in replay simulator must produce valid fills."
+  ],
+  "status": "SPECIFIED",
+  "allowed_next_gate": "BACKTESTED",
+  "reject_reason": null,
+  "unsafe_zones": [
+    {
+      "zone": "live-capital",
+      "reason": "LR remains NO-GO and this contract is research-only."
+    },
+    {
+      "zone": "regime-transition",
+      "reason": "Mean reversion positions held during TREND or HIGH_VOL_CHAOTIC regime transitions may produce extended adverse moves."
+    },
+    {
+      "zone": "short-execution",
+      "reason": "Short-side execution realism is unvalidated in the current replay infrastructure."
+    }
+  ],
+  "limitations": [
+    "Single-symbol v1 candidate (BTCUSDT only).",
+    "No productive DB registry is created by this draft.",
+    "Parameter set is initial research estimate; requires calibration from replay evidence.",
+    "RANGE regime detection uses existing ADX-based regime service thresholds.",
+    "Controlled_lab_evidence only until natural-paper replay path exists.",
+    "No DB, runtime capture, or code change occurred in this selection slice."
+  ]
+}
