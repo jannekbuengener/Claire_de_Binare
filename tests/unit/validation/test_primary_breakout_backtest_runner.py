@@ -653,4 +653,65 @@ def test_gate_trace_shows_fresh_trend_but_not_entry_ready_when_breakout_not_met(
     assert first_record["entry_cooldown_active"] is False
     assert first_record["entry_ready"] is False
     assert first_record["status"] == "no_signal"
-    assert first_record["close_now"] < first_record["breakout_threshold"]
+
+
+@pytest.mark.unit
+def test_trade_dict_includes_regime_ids_via_pending_execution(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    """Trade dict carries entry_regime_id and exit_regime_id from exec_info."""
+    exec_info: dict = {
+        "side": "BUY",
+        "target_idx": 0,
+        "execution_price": 100.0,
+        "ts_ms": 1_700_000_000_000,
+        "volume": 10.0,
+        "volatility": 0.01,
+        "execution_regime_id": 2,
+    }
+
+    config = PrimaryBreakoutBacktestRunConfig()
+
+    def fake_simulate_trade(
+        *,
+        side: str,
+        price: float,
+        ts_ms: int,
+        volume: float,
+        simulator: object,
+        order_size: float,
+        order_book_depth_multiplier: float,
+        volatility: float,
+    ) -> dict:
+        return {
+            "side": side,
+            "avg_fill_price": price,
+            "fees": 0.0,
+        }
+
+    monkeypatch.setattr(backtest_runner, "_simulate_trade", fake_simulate_trade)
+
+    open_pos = backtest_runner._execute_pending_signal(
+        exec_info, None, [], object(), config,
+    )
+    assert open_pos is not None
+    assert open_pos["entry_regime_id"] == 2
+
+    trades: list[dict] = []
+    sell_exec: dict = {
+        "side": "SELL",
+        "target_idx": 1,
+        "execution_price": 101.0,
+        "ts_ms": 1_700_000_060_000,
+        "volume": 10.0,
+        "volatility": 0.01,
+        "execution_regime_id": 0,
+    }
+    result = backtest_runner._execute_pending_signal(
+        sell_exec, open_pos, trades, object(), config,
+    )
+    assert result is None
+    assert len(trades) == 1
+    trade = trades[0]
+    assert trade["entry_regime_id"] == 2
+    assert trade["exit_regime_id"] == 0

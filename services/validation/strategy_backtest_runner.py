@@ -197,6 +197,9 @@ def _build_pending_execution(
         "ts_ms": int(execution_request.market_event["ts_ms"]),
         "volume": _first_number(execution_request.market_snapshot.get("volume")) or 0.0,
         "volatility": _execution_bar_volatility(execution_request, execution_price),
+        "execution_regime_id": execution_request.market_event.get(
+            "market_state", {}
+        ).get("regime_id"),
     }
 
 
@@ -339,6 +342,7 @@ def _execute_pending_signal(
             "entry_price": fill["avg_fill_price"],
             "entry_ts_ms": ts_ms,
             "entry_fee": fill["fees"],
+            "entry_regime_id": exec_info.get("execution_regime_id"),
         }
     elif side == "SELL" and open_position is not None:
         fill = _simulate_trade(
@@ -363,6 +367,8 @@ def _execute_pending_signal(
                 "entry_fee": float(open_position["entry_fee"]),
                 "exit_fee": float(fill["fees"]),
                 "r_return": trade_r,
+                "entry_regime_id": open_position.get("entry_regime_id"),
+                "exit_regime_id": exec_info.get("execution_regime_id"),
             }
         )
         return None
@@ -926,6 +932,7 @@ def run_primary_breakout_backtest(
                         "entry_price": fill["avg_fill_price"],
                         "entry_ts_ms": ts_ms,
                         "entry_fee": fill["fees"],
+                        "entry_regime_id": market_state.get("regime_id"),
                     }
                 elif signal.side == "SELL" and open_position is not None:
                     fill = _simulate_trade(
@@ -950,6 +957,8 @@ def run_primary_breakout_backtest(
                             "entry_fee": float(open_position["entry_fee"]),
                             "exit_fee": float(fill["fees"]),
                             "r_return": trade_r,
+                            "entry_regime_id": open_position.get("entry_regime_id"),
+                            "exit_regime_id": market_state.get("regime_id"),
                         }
                     )
                     open_position = None
