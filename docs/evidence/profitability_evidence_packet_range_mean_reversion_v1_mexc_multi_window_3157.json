@@ -1,0 +1,221 @@
+{
+  "avg_loss": -0.0010204434038817729,
+  "avg_win": 0.0005889064630331163,
+  "board_stage": "trade-capable",
+  "board_stage_note": "Board stage is orthogonal to LR. Does not authorize live trading.",
+  "candidate_id": "cand-range-mean-reversion-v1-btcusdt-mexc",
+  "contract_ref": "docs/evidence/profitability_candidate_range_mean_reversion_v1_3157.json",
+  "dataset_fingerprint": "sha256:1fabe6fff073476f639a3c0dcd8f6159cf800362f8496b748ca46d762ceae052",
+  "dataset_id": "mexc_multi_window_3032",
+  "evidence_class": "controlled_lab_evidence",
+  "evidence_packet_id": "pep-range-mean-reversion-v1-btcusdt-mexc-3157",
+  "expectancy": -0.0007843085475624325,
+  "fees": 40543.11610668052,
+  "generated_at": "2026-06-13T13:57:47.611852+00:00",
+  "gross_return": -0.3474486865701576,
+  "kill_switch_events": 0,
+  "limitations": [
+    "controlled_lab_evidence only.",
+    "Windows are independent fragments, not one continuous market history.",
+    "Long-only first pass only; short-side blocked (HOLD_SHORT_SIDE_BLOCKER).",
+    "No production config change.",
+    "No strategy change.",
+    "No runtime capture.",
+    "No Live-Go, no Echtgeld-Go, LR remains NO-GO.",
+    "Candidate contract specifies long_only_first_pass direction."
+  ],
+  "loss_streak": 0,
+  "lr_status": "NO-GO",
+  "max_drawdown": 0.34745388065999466,
+  "net_return": -0.8788407991798681,
+  "parent_issue": "#3157",
+  "profit_factor": 0.09923821742468154,
+  "recommendation": "NO_RECOMMENDATION",
+  "regime_scorecard": {
+    "artifact_ref": "artifacts\\candles\\mexc_multi_window_3032\\selection_manifest.json",
+    "status": "ok",
+    "summary": "Per-window regime labels were estimated via offline ADX/ATR heuristic using a distribution-based ATR p75 calibration rule. controlled_lab_evidence only."
+  },
+  "replay_vs_paper_status": "not_run",
+  "risk_blocks": 0,
+  "safety_boundaries": [
+    "LR remains NO-GO.",
+    "No Live-Go, no Echtgeld-Go.",
+    "No runtime or Docker actions.",
+    "No production config changes.",
+    "controlled_lab_evidence only.",
+    "No primary_breakout_v1 tuning occurred."
+  ],
+  "sample_size_verdict": "pass",
+  "scenario_results": [
+    {
+      "max_drawdown": null,
+      "net_return": null,
+      "notes": "See economics summary for per-window results.",
+      "scenario_id": "range_mean_reversion_v1_mexc_multi_window_3157",
+      "status": "PASS"
+    },
+    {
+      "max_drawdown": null,
+      "net_return": null,
+      "notes": "See economics summary for per-window results.",
+      "scenario_id": "range_mean_reversion_v1_mexc_multi_window_3157",
+      "status": "PASS"
+    },
+    {
+      "max_drawdown": null,
+      "net_return": null,
+      "notes": "See economics summary for per-window results.",
+      "scenario_id": "range_mean_reversion_v1_mexc_multi_window_3157",
+      "status": "PASS"
+    },
+    {
+      "max_drawdown": null,
+      "net_return": null,
+      "notes": "See economics summary for per-window results.",
+      "scenario_id": "range_mean_reversion_v1_mexc_multi_window_3157",
+      "status": "PASS"
+    },
+    {
+      "max_drawdown": null,
+      "net_return": null,
+      "notes": "See economics summary for per-window results.",
+      "scenario_id": "range_mean_reversion_v1_mexc_multi_window_3157",
+      "status": "PASS"
+    },
+    {
+      "max_drawdown": null,
+      "net_return": null,
+      "notes": "See economics summary for per-window results.",
+      "scenario_id": "range_mean_reversion_v1_mexc_multi_window_3157",
+      "status": "PASS"
+    },
+    {
+      "max_drawdown": null,
+      "net_return": null,
+      "notes": "See economics summary for per-window results.",
+      "scenario_id": "range_mean_reversion_v1_mexc_multi_window_3157",
+      "status": "PASS"
+    },
+    {
+      "max_drawdown": null,
+      "net_return": null,
+      "notes": "See economics summary for per-window results.",
+      "scenario_id": "range_mean_reversion_v1_mexc_multi_window_3157",
+      "status": "PASS"
+    },
+    {
+      "max_drawdown": null,
+      "net_return": null,
+      "notes": "See economics summary for per-window results.",
+      "scenario_id": "range_mean_reversion_v1_mexc_multi_window_3157",
+      "status": "PASS"
+    },
+    {
+      "max_drawdown": null,
+      "net_return": null,
+      "notes": "See economics summary for per-window results.",
+      "scenario_id": "range_mean_reversion_v1_mexc_multi_window_3157",
+      "status": "PASS"
+    },
+    {
+      "max_drawdown": null,
+      "net_return": null,
+      "notes": "See economics summary for per-window results.",
+      "scenario_id": "range_mean_reversion_v1_mexc_multi_window_3157",
+      "status": "PASS"
+    },
+    {
+      "max_drawdown": null,
+      "net_return": null,
+      "notes": "See economics summary for per-window results.",
+      "scenario_id": "range_mean_reversion_v1_mexc_multi_window_3157",
+      "status": "PASS"
+    },
+    {
+      "max_drawdown": null,
+      "net_return": null,
+      "notes": "See economics summary for per-window results.",
+      "scenario_id": "range_mean_reversion_v1_mexc_multi_window_3157",
+      "status": "PASS"
+    },
+    {
+      "max_drawdown": null,
+      "net_return": null,
+      "notes": "See economics summary for per-window results.",
+      "scenario_id": "range_mean_reversion_v1_mexc_multi_window_3157",
+      "status": "PASS"
+    },
+    {
+      "max_drawdown": null,
+      "net_return": null,
+      "notes": "See economics summary for per-window results.",
+      "scenario_id": "range_mean_reversion_v1_mexc_multi_window_3157",
+      "status": "PASS"
+    },
+    {
+      "max_drawdown": null,
+      "net_return": null,
+      "notes": "See economics summary for per-window results.",
+      "scenario_id": "range_mean_reversion_v1_mexc_multi_window_3157",
+      "status": "PASS"
+    },
+    {
+      "max_drawdown": null,
+      "net_return": null,
+      "notes": "See economics summary for per-window results.",
+      "scenario_id": "range_mean_reversion_v1_mexc_multi_window_3157",
+      "status": "PASS"
+    },
+    {
+      "max_drawdown": null,
+      "net_return": null,
+      "notes": "See economics summary for per-window results.",
+      "scenario_id": "range_mean_reversion_v1_mexc_multi_window_3157",
+      "status": "PASS"
+    },
+    {
+      "max_drawdown": null,
+      "net_return": null,
+      "notes": "See economics summary for per-window results.",
+      "scenario_id": "range_mean_reversion_v1_mexc_multi_window_3157",
+      "status": "PASS"
+    },
+    {
+      "max_drawdown": null,
+      "net_return": null,
+      "notes": "See economics summary for per-window results.",
+      "scenario_id": "range_mean_reversion_v1_mexc_multi_window_3157",
+      "status": "PASS"
+    }
+  ],
+  "schema_version": "profitability_evidence_packet.v1",
+  "simulator_drift": "not_assessed",
+  "slippage_cost": 0.0,
+  "source_run_refs": [
+    "range_mean_reversion_v1_mexc_multi_window_3157/window_001/rmr-4ee38dcc-0001/report.json",
+    "range_mean_reversion_v1_mexc_multi_window_3157/window_002/rmr-351eccda-0002/report.json",
+    "range_mean_reversion_v1_mexc_multi_window_3157/window_003/rmr-db8244e8-0003/report.json",
+    "range_mean_reversion_v1_mexc_multi_window_3157/window_004/rmr-16d48e93-0004/report.json",
+    "range_mean_reversion_v1_mexc_multi_window_3157/window_005/rmr-730aabea-0005/report.json",
+    "range_mean_reversion_v1_mexc_multi_window_3157/window_006/rmr-ea85f4eb-0006/report.json",
+    "range_mean_reversion_v1_mexc_multi_window_3157/window_007/rmr-ffb51006-0007/report.json",
+    "range_mean_reversion_v1_mexc_multi_window_3157/window_008/rmr-9a3c7042-0008/report.json",
+    "range_mean_reversion_v1_mexc_multi_window_3157/window_009/rmr-c3e9c37e-0009/report.json",
+    "range_mean_reversion_v1_mexc_multi_window_3157/window_010/rmr-f28161c0-0010/report.json",
+    "range_mean_reversion_v1_mexc_multi_window_3157/window_011/rmr-fae36825-0011/report.json",
+    "range_mean_reversion_v1_mexc_multi_window_3157/window_012/rmr-dcd19929-0012/report.json",
+    "range_mean_reversion_v1_mexc_multi_window_3157/window_013/rmr-d68d335c-0013/report.json",
+    "range_mean_reversion_v1_mexc_multi_window_3157/window_014/rmr-e5afa975-0014/report.json",
+    "range_mean_reversion_v1_mexc_multi_window_3157/window_015/rmr-4d44a413-0015/report.json",
+    "range_mean_reversion_v1_mexc_multi_window_3157/window_016/rmr-5f069c2a-0016/report.json",
+    "range_mean_reversion_v1_mexc_multi_window_3157/window_017/rmr-5cf74b8f-0017/report.json",
+    "range_mean_reversion_v1_mexc_multi_window_3157/window_018/rmr-f47e7e79-0018/report.json",
+    "range_mean_reversion_v1_mexc_multi_window_3157/window_019/rmr-e6ee1816-0019/report.json",
+    "range_mean_reversion_v1_mexc_multi_window_3157/window_020/rmr-2ec6cc3c-0020/report.json"
+  ],
+  "spread_cost": 0.0,
+  "strategy_id": "range_mean_reversion_v1",
+  "trade_count": 443,
+  "win_rate": 0.14672686230248308
+}

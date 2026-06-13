@@ -1,0 +1,276 @@
+{
+  "candidate_id": "cand-range-mean-reversion-v1-btcusdt-mexc",
+  "config_snapshot": {
+    "atr_period": 14,
+    "atr_stop_multiplier": 1.5,
+    "cooldown_minutes": 60,
+    "entry_threshold": 2.0,
+    "exit_threshold": 0.0,
+    "order_book_depth_multiplier": 10000.0,
+    "order_size": 1.0,
+    "strategy_id": "range_mean_reversion_v1",
+    "zscore_lookback": 20
+  },
+  "dataset_summary": {
+    "candles_total": 2683,
+    "effective_candle_count": 2443,
+    "period_end_ts_ms": 1774713000000,
+    "period_start_ts_ms": 1774552080000,
+    "regime_distribution": {
+      "HIGH_VOL_CHAOTIC": {
+        "count": 681,
+        "pct": 25.382
+      },
+      "RANGE": {
+        "count": 1026,
+        "pct": 38.241
+      },
+      "TREND": {
+        "count": 976,
+        "pct": 36.377
+      }
+    },
+    "symbol": "BTCUSDT",
+    "timeframe": "1m"
+  },
+  "metrics": {
+    "avg_loss_r": -0.0008329482379023128,
+    "avg_win_r": 0.00032680967028604884,
+    "closed_trades_total": 17,
+    "data_integrity_ok": true,
+    "entry_reasons": [
+      "zscore_entry",
+      "zscore_entry",
+      "zscore_entry",
+      "zscore_entry",
+      "zscore_entry",
+      "zscore_entry",
+      "zscore_entry",
+      "zscore_entry",
+      "zscore_entry",
+      "zscore_entry",
+      "zscore_entry",
+      "zscore_entry",
+      "zscore_entry",
+      "zscore_entry",
+      "zscore_entry",
+      "zscore_entry",
+      "zscore_entry"
+    ],
+    "exit_reasons": [
+      "atr_stop",
+      "mean_reversion",
+      "atr_stop",
+      "atr_stop",
+      "atr_stop",
+      "mean_reversion",
+      "mean_reversion",
+      "mean_reversion",
+      "atr_stop",
+      "atr_stop",
+      "atr_stop",
+      "atr_stop",
+      "mean_reversion",
+      "mean_reversion",
+      "atr_stop",
+      "atr_stop",
+      "mean_reversion"
+    ],
+    "expectancy_r": -0.0006282850776337784,
+    "fee_adjusted_expectancy_r": -0.001827908702793987,
+    "fee_adjusted_profit_factor": 0.0,
+    "fee_adjusted_return_r": -0.031074447947497776,
+    "fees_total_quote": 1368.7865836987994,
+    "gross_pnl_quote": -718.6902446088934,
+    "gross_return_r": -0.01068084631977423,
+    "max_drawdown_r": 0.01068084631977423,
+    "net_pnl_quote": -2087.476828307693,
+    "profit_factor": 0.08407562492609279,
+    "sample_size_verdict": "weak",
+    "signals_total": 17,
+    "trades_loss_count": 14,
+    "trades_win_count": 3,
+    "win_rate": 0.17647058823529413
+  },
+  "run_metadata": {
+    "generated_at": "2026-06-13T13:57:47.471934+00:00",
+    "run_id": "rmr-5f069c2a-0016",
+    "source": "historical_backtest_v1"
+  },
+  "schema_version": "strategy_validation_report.v1",
+  "source_segment_id": 58,
+  "strategy_id": "range_mean_reversion_v1",
+  "trades": [
+    {
+      "entry_fee": 41.220533999999994,
+      "entry_price": 68736.00708239886,
+      "entry_ts_ms": 1774567440000,
+      "exit_fee": 41.210423176874315,
+      "exit_price": 68648.68419700956,
+      "exit_ts_ms": 1774567500000,
+      "r_return": -0.0012704096309322781,
+      "reason": "atr_stop"
+    },
+    {
+      "entry_fee": 41.339999999999996,
+      "entry_price": 68935.05343024222,
+      "entry_ts_ms": 1774579260000,
+      "exit_fee": 41.37916799999999,
+      "exit_price": 68930.16565123887,
+      "exit_ts_ms": 1774579860000,
+      "r_return": -7.09041156875291e-05,
+      "reason": "mean_reversion"
+    },
+    {
+      "entry_fee": 41.270855999999995,
+      "entry_price": 68819.76590746905,
+      "entry_ts_ms": 1774583700000,
+      "exit_fee": 41.27283540616331,
+      "exit_price": 68753.10236745575,
+      "exit_ts_ms": 1774583760000,
+      "r_return": -0.00096866850873812,
+      "reason": "atr_stop"
+    },
+    {
+      "entry_fee": 41.202078,
+      "entry_price": 68705.15892606604,
+      "entry_ts_ms": 1774594020000,
+      "exit_fee": 41.20156070649168,
+      "exit_price": 68634.30261952904,
+      "exit_ts_ms": 1774594680000,
+      "r_return": -0.0010313098411320915,
+      "reason": "atr_stop"
+    },
+    {
+      "entry_fee": 41.048142,
+      "entry_price": 68448.79885539574,
+      "entry_ts_ms": 1774599420000,
+      "exit_fee": 41.03069467320454,
+      "exit_price": 68349.30746575148,
+      "exit_ts_ms": 1774599540000,
+      "r_return": -0.0014535154934485265,
+      "reason": "atr_stop"
+    },
+    {
+      "entry_fee": 40.584005999999995,
+      "entry_price": 67674.71269714771,
+      "entry_ts_ms": 1774605660000,
+      "exit_fee": 40.62700799999999,
+      "exit_price": 67676.90126006058,
+      "exit_ts_ms": 1774606560000,
+      "r_return": 3.233944889667355e-05,
+      "reason": "mean_reversion"
+    },
+    {
+      "entry_fee": 39.973068,
+      "entry_price": 66656.09636411187,
+      "entry_ts_ms": 1774613400000,
+      "exit_fee": 40.030344,
+      "exit_price": 66682.84321796511,
+      "exit_ts_ms": 1774613460000,
+      "r_return": 0.00040126643041223597,
+      "reason": "mean_reversion"
+    },
+    {
+      "entry_fee": 39.919326,
+      "entry_price": 66566.29336644431,
+      "entry_ts_ms": 1774617000000,
+      "exit_fee": 39.982085999999995,
+      "exit_price": 66602.69335543858,
+      "exit_ts_ms": 1774617600000,
+      "r_return": 0.000546823131549237,
+      "reason": "mean_reversion"
+    },
+    {
+      "entry_fee": 39.666,
+      "entry_price": 66143.70349763127,
+      "entry_ts_ms": 1774647360000,
+      "exit_fee": 39.66627115006323,
+      "exit_price": 66076.79624131782,
+      "exit_ts_ms": 1774647420000,
+      "r_return": -0.0010115438473421766,
+      "reason": "atr_stop"
+    },
+    {
+      "entry_fee": 39.60528,
+      "entry_price": 66042.39051681246,
+      "entry_ts_ms": 1774652580000,
+      "exit_fee": 39.608634703356486,
+      "exit_price": 65980.08946403282,
+      "exit_ts_ms": 1774652700000,
+      "r_return": -0.0009433494501351096,
+      "reason": "atr_stop"
+    },
+    {
+      "entry_fee": 39.787242,
+      "entry_price": 66345.9324539599,
+      "entry_ts_ms": 1774660080000,
+      "exit_fee": 39.783339283739146,
+      "exit_price": 66271.76357751673,
+      "exit_ts_ms": 1774660200000,
+      "r_return": -0.0011179114332991464,
+      "reason": "atr_stop"
+    },
+    {
+      "entry_fee": 39.630635999999996,
+      "entry_price": 66084.94003452187,
+      "entry_ts_ms": 1774664220000,
+      "exit_fee": 39.61828824725866,
+      "exit_price": 65996.66394369828,
+      "exit_ts_ms": 1774665000000,
+      "r_return": -0.001335797396161363,
+      "reason": "atr_stop"
+    },
+    {
+      "entry_fee": 39.71100599999999,
+      "entry_price": 66218.62826801927,
+      "entry_ts_ms": 1774670460000,
+      "exit_fee": 39.738996,
+      "exit_price": 66198.06485215193,
+      "exit_ts_ms": 1774670640000,
+      "r_return": -0.00031053823380491164,
+      "reason": "mean_reversion"
+    },
+    {
+      "entry_fee": 39.790092,
+      "entry_price": 66350.88800043722,
+      "entry_ts_ms": 1774677780000,
+      "exit_fee": 39.815453999999995,
+      "exit_price": 66325.10084014309,
+      "exit_ts_ms": 1774677900000,
+      "r_return": -0.00038864830707255224,
+      "reason": "mean_reversion"
+    },
+    {
+      "entry_fee": 39.895812,
+      "entry_price": 66526.71404776105,
+      "entry_ts_ms": 1774687020000,
+      "exit_fee": 39.90387489207127,
+      "exit_price": 66472.51394920671,
+      "exit_ts_ms": 1774687080000,
+      "r_return": -0.0008147117940535937,
+      "reason": "atr_stop"
+    },
+    {
+      "entry_fee": 39.763571999999996,
+      "entry_price": 66306.46725632322,
+      "entry_ts_ms": 1774693200000,
+      "exit_fee": 39.76894745957686,
+      "exit_price": 66247.80382617751,
+      "exit_ts_ms": 1774693260000,
+      "r_return": -0.0008847316494623607,
+      "reason": "atr_stop"
+    },
+    {
+      "entry_fee": 39.851376,
+      "entry_price": 66452.71778211855,
+      "entry_ts_ms": 1774704300000,
+      "exit_fee": 39.889632,
+      "exit_price": 66448.78141355787,
+      "exit_ts_ms": 1774704600000,
+      "r_return": -5.9235629362620895e-05,
+      "reason": "mean_reversion"
+    }
+  ],
+  "window_id": "window_016"
+}

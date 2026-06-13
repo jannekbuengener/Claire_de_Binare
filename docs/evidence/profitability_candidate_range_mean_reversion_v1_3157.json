@@ -1,0 +1,69 @@
+{
+  "schema_version": "profitability_candidate_contract.v1",
+  "candidate_id": "cand-range-mean-reversion-v1-btcusdt-mexc",
+  "strategy_id": "range_mean_reversion_v1",
+  "strategy_family": "range_mean_reversion",
+  "parent_issue": "#3157",
+  "predecessor_contract_ref": "docs/evidence/profitability_candidate_selection_3156_contract_draft.json",
+  "predecessor_issue": "#3156",
+  "symbol_universe": ["BTCUSDT"],
+  "timeframe": "1m",
+  "direction": "long_only_first_pass",
+  "original_direction_in_predecessor": "long_short",
+  "hold_short_side_blocker": true,
+  "hold_short_side_blocker_reason": "Short-side execution is not supported in the current replay simulator without core runner changes. Independent short entries cannot be represented truthfully. First pass is long-only only.",
+  "regime_scope": {
+    "allowed_regimes": ["RANGE"],
+    "blocked_regimes": ["TREND", "HIGH_VOL_CHAOTIC", "PANIC", "UNKNOWN"],
+    "freshness_required": true,
+    "freshness_note": "Offline calibrated regime labels are estimated=true; freshness assumed true for all candles in controlled-lab context."
+  },
+  "parameter_set": {
+    "zscore_lookback_periods": 20,
+    "entry_zscore_threshold": 2.0,
+    "exit_zscore_threshold": 0.0,
+    "position_sizing_pct": 0.01,
+    "atr_period": 14,
+    "atr_stop_multiplier": 1.5,
+    "cooldown_minutes": 60
+  },
+  "hypothesis": "In RANGE regime (low ADX, mean-reverting price action), BTCUSDT prices revert to short-term central tendency. Entering contrarian long positions at negative z-score extremes (oversold) and exiting at mean reversion (z-score crosses zero) can produce positive net expectancy given controlled friction costs. First pass is long-only due to HOLD_SHORT_SIDE_BLOCKER.",
+  "risk_assumptions": [
+    "Core Risk Service, kill-switch, and LR gates remain authoritative.",
+    "Candidate evidence cannot override runtime risk blocks.",
+    "Mean reversion in low-volume regime transitions may produce extended losses if regime shifts to TREND mid-trade."
+  ],
+  "execution_assumptions": [
+    "Fees, spread, and slippage are simulated via ExecutionSimulator.",
+    "Existing MEXC same-venue multi-window data is used for file-backed replay.",
+    "Backtest and controlled-lab evidence do not imply live execution readiness.",
+    "Long-only first pass: short-side not supported in this slice."
+  ],
+  "status": "SPECIFIED",
+  "allowed_next_gate": "BACKTESTED",
+  "reject_reason": null,
+  "evidence_class": "controlled_lab_evidence",
+  "unsafe_zones": [
+    {
+      "zone": "live-capital",
+      "reason": "LR remains NO-GO and this contract is research-only."
+    },
+    {
+      "zone": "regime-transition",
+      "reason": "Mean reversion positions held during TREND or HIGH_VOL_CHAOTIC regime transitions may produce extended adverse moves."
+    },
+    {
+      "zone": "short-execution",
+      "reason": "Short-side execution not supported in this first pass. Original long_short direction is deferred."
+    }
+  ],
+  "limitations": [
+    "Single-symbol v1 candidate (BTCUSDT only).",
+    "No productive DB registry is created by this artifact.",
+    "Parameter set is initial research estimate; requires calibration from replay evidence.",
+    "RANGE regime detection uses existing ADX-based offline heuristic regime labels.",
+    "controlled_lab_evidence only.",
+    "Long-only first pass only; short-side blocked.",
+    "No primary_breakout_v1 tuning occurred."
+  ]
+}
