@@ -256,7 +256,10 @@ class ARVPReplayConfig:
                     "db_dataset_window must be None when dataset_source='file'."
                 )
         else:
-            if self.db_dataset_window is None or not str(self.db_dataset_window).strip():
+            if (
+                self.db_dataset_window is None
+                or not str(self.db_dataset_window).strip()
+            ):
                 raise ValueError(
                     "dataset_source='db' requires db_dataset_window (use --db-dataset-window)"
                 )
@@ -504,7 +507,9 @@ def _get_code_commit() -> str:
             if _CODE_COMMIT_RE.match(commit):
                 return commit
     except Exception:
-        logging.getLogger(__name__).debug("Could not read code commit from git, using fallback", exc_info=True)
+        logging.getLogger(__name__).debug(
+            "Could not read code commit from git, using fallback", exc_info=True
+        )
     return _FALLBACK_CODE_COMMIT
 
 
@@ -515,6 +520,18 @@ def _redact_env() -> dict[str, str]:
 
 def _utc_now_iso() -> str:
     return utcnow().replace(tzinfo=timezone.utc).isoformat()
+
+
+def _utc_now_iso_not_before(started_at_utc: str) -> str:
+    """Return _utc_now_iso() clamped to never be before started_at_utc.
+
+    Guards against sub-second clock-edge conditions where a second call to
+    utcnow() returns a timestamp slightly before the first. Without this,
+    ReplayRunRecord validation (finished_at_utc >= started_at_utc) would
+    raise RunRegistryError on fast CI runners or HPET-skewed hosts.
+    """
+    now = _utc_now_iso()
+    return now if now >= started_at_utc else started_at_utc
 
 
 def _build_provenance_config_snapshot(
@@ -585,9 +602,7 @@ def _load_dataset_result(
         )
 
     if dataset_source == "db":
-        start_ts_ms, end_ts_ms = _parse_db_dataset_window(
-            str(config.db_dataset_window)
-        )
+        start_ts_ms, end_ts_ms = _parse_db_dataset_window(str(config.db_dataset_window))
         spec = DatasetSpec(
             symbol=config.symbol,
             timeframe="1m",
@@ -610,7 +625,9 @@ def _load_dataset_result(
             try:
                 conn.close()
             except Exception:
-                logging.getLogger(__name__).debug("conn.close() raised in finally block (ignored)", exc_info=True)
+                logging.getLogger(__name__).debug(
+                    "conn.close() raised in finally block (ignored)", exc_info=True
+                )
 
     raise ReplayRunnerError(f"unsupported dataset_source: {config.dataset_source!r}")
 
@@ -692,7 +709,7 @@ def _append_failed_record(
         deterministic_replay_ok=deterministic_replay_ok,
         failure_reason=failure_reason,
         started_at_utc=started_at_utc,
-        finished_at_utc=_utc_now_iso(),
+        finished_at_utc=_utc_now_iso_not_before(started_at_utc),
     )
     registry.append(record)
     return record
@@ -1155,7 +1172,7 @@ def run_arvp_replay(config: ARVPReplayConfig) -> int:
         gate_status=gate_status,
         deterministic_replay_ok=deterministic_replay_ok,
         started_at_utc=started_at_utc,
-        finished_at_utc=_utc_now_iso(),
+        finished_at_utc=_utc_now_iso_not_before(started_at_utc),
     )
     try:
         registry.append(completed_record)
@@ -1346,7 +1363,9 @@ def _run_scenario_group_path(
                 run_cfg.bridge.entry_lookback_minutes,
                 run_cfg.bridge.exit_lookback_minutes,
             )
-            resolved_overrides = _apply_scenario_overrides(config, spec.config_overrides)
+            resolved_overrides = _apply_scenario_overrides(
+                config, spec.config_overrides
+            )
             scenario_candles = _apply_replay_data_overrides(
                 candles,
                 resolved_overrides.replay_data_overrides,

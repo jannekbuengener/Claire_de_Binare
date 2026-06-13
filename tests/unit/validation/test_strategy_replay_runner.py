@@ -25,6 +25,7 @@ from services.validation.strategy_replay_runner import (
     _DEFAULT_OUTPUT_DIR,
     _DEFAULT_STRATEGY_ID,
     _DEFAULT_SYMBOL,
+    _utc_now_iso_not_before,
     ARVPReplayConfig,
     ReplayRunnerError,
     _apply_replay_data_overrides,
@@ -110,7 +111,11 @@ def _minimal_backtest_report(
                 "require_deterministic_replay_ok": True,
             },
         },
-        "gate_result": {"status": gate_status, "failed_criteria": [], "review_flags": []},
+        "gate_result": {
+            "status": gate_status,
+            "failed_criteria": [],
+            "review_flags": [],
+        },
     }
 
 
@@ -118,6 +123,32 @@ def _minimal_valid_config(**overrides) -> ARVPReplayConfig:
     defaults = {"input_candles_file": "candles.json"}
     defaults.update(overrides)
     return ARVPReplayConfig(**defaults)
+
+
+# ---------------------------------------------------------------------------
+# TestTimestampClamp
+# ---------------------------------------------------------------------------
+@pytest.mark.unit
+class TestTimestampClamp:
+    def test_returns_now_when_after_started(self) -> None:
+        started = "2026-01-01T00:00:00.000000+00:00"
+        result = _utc_now_iso_not_before(started)
+        assert isinstance(result, str)
+        assert result >= started
+
+    def test_returns_started_when_now_before_started(self) -> None:
+        future = "2099-12-31T23:59:59.999999+00:00"
+        result = _utc_now_iso_not_before(future)
+        assert result == future
+
+    def test_returns_started_when_now_equals_started(self) -> None:
+        started = "2026-06-13T12:00:00.000000+00:00"
+        result = _utc_now_iso_not_before(started)
+        if result < started:
+            # Now is before started (impossible in normal flow), clamp must hold
+            assert result == started
+        else:
+            assert result >= started
 
 
 # ---------------------------------------------------------------------------
@@ -149,7 +180,9 @@ class TestARVPReplayConfig:
 
     def test_validate_fails_missing_input_file(self):
         cfg = ARVPReplayConfig(input_candles_file="")
-        with pytest.raises(ValueError, match="dataset_source='file' requires input_candles_file"):
+        with pytest.raises(
+            ValueError, match="dataset_source='file' requires input_candles_file"
+        ):
             cfg.validate()
 
     def test_validate_passes_db_source_with_db_dataset_window(self):
@@ -223,9 +256,7 @@ class TestARVPReplayConfig:
             cfg.validate()
 
     def test_validate_fails_unsupported_symbol(self):
-        cfg = ARVPReplayConfig(
-            input_candles_file="x.json", symbol="ETHUSDT"
-        )
+        cfg = ARVPReplayConfig(input_candles_file="x.json", symbol="ETHUSDT")
         with pytest.raises(ValueError, match="unsupported symbol"):
             cfg.validate()
 
@@ -245,16 +276,12 @@ class TestARVPReplayConfig:
             cfg.validate()
 
     def test_validate_fails_zero_order_size(self):
-        cfg = ARVPReplayConfig(
-            input_candles_file="x.json", order_size=0.0
-        )
+        cfg = ARVPReplayConfig(input_candles_file="x.json", order_size=0.0)
         with pytest.raises(ValueError, match="order_size must be > 0"):
             cfg.validate()
 
     def test_validate_fails_negative_order_size(self):
-        cfg = ARVPReplayConfig(
-            input_candles_file="x.json", order_size=-1.0
-        )
+        cfg = ARVPReplayConfig(input_candles_file="x.json", order_size=-1.0)
         with pytest.raises(ValueError, match="order_size must be > 0"):
             cfg.validate()
 
@@ -288,8 +315,13 @@ class TestBuildReplayReportInput:
         assert result.run_spec.code_commit == "abc1234"
         assert result.run_spec.run_mode == "shadow"
         assert result.run_spec.symbol == "BTCUSDT"
-        assert result.run_spec.start_ts_ms == report["dataset_summary"]["period_start_ts_ms"]
-        assert result.run_spec.end_ts_ms == report["dataset_summary"]["period_end_ts_ms"]
+        assert (
+            result.run_spec.start_ts_ms
+            == report["dataset_summary"]["period_start_ts_ms"]
+        )
+        assert (
+            result.run_spec.end_ts_ms == report["dataset_summary"]["period_end_ts_ms"]
+        )
 
     def test_execution_result_fields(self, tmp_path):
         report = _minimal_backtest_report(
@@ -327,7 +359,9 @@ class TestBuildReplayReportInput:
 
         assert result.replay_integrity.integrity_ok is False
         assert len(result.replay_integrity.failed_checks) > 0
-        assert "deterministic_replay_check_failed" in result.replay_integrity.failed_checks
+        assert (
+            "deterministic_replay_check_failed" in result.replay_integrity.failed_checks
+        )
 
     def test_gate_result_passed_through(self, tmp_path):
         report = _minimal_backtest_report(gate_status="FAIL")
@@ -371,7 +405,10 @@ class TestBuildReplayReportInput:
         r1 = _build_replay_report_input(report, cfg, "abc1234", tmp_path)
         r2 = _build_replay_report_input(report, cfg, "abc1234", tmp_path)
 
-        assert r1.replay_integrity.envelope_chain_hash == r2.replay_integrity.envelope_chain_hash
+        assert (
+            r1.replay_integrity.envelope_chain_hash
+            == r2.replay_integrity.envelope_chain_hash
+        )
         assert r1.replay_integrity.envelope_chain_hash == canonical_hash([])
 
     def test_embeds_scheduler_metadata_in_dataset_summary(self, tmp_path):
@@ -405,9 +442,17 @@ class TestRunARVPReplay:
     """Full-flow tests with run_primary_breakout_backtest and ReplayReporter mocked."""
 
     def _make_candles_file(self, tmp_path: Path, count: int = 300) -> Path:
-        candles = [{"ts_ms": 1_000_000 + i * 60_000, "close": 50000.0,
-                    "high": 51000.0, "low": 49000.0, "regime_id": 0,
-                    "symbol": "BTCUSDT"} for i in range(count)]
+        candles = [
+            {
+                "ts_ms": 1_000_000 + i * 60_000,
+                "close": 50000.0,
+                "high": 51000.0,
+                "low": 49000.0,
+                "regime_id": 0,
+                "symbol": "BTCUSDT",
+            }
+            for i in range(count)
+        ]
         f = tmp_path / "candles.json"
         f.write_text(json.dumps(candles), encoding="utf-8")
         return f
@@ -551,7 +596,9 @@ class TestRunARVPReplay:
 
     @patch("services.validation.strategy_replay_runner.run_primary_breakout_backtest")
     def test_failed_run_writes_failed_state_with_reason(self, mock_backtest, tmp_path):
-        from services.validation.strategy_backtest_runner import PrimaryBreakoutBacktestError
+        from services.validation.strategy_backtest_runner import (
+            PrimaryBreakoutBacktestError,
+        )
 
         mock_backtest.side_effect = PrimaryBreakoutBacktestError("boom")
         f = self._make_candles_file(tmp_path)
@@ -623,8 +670,13 @@ class TestRunARVPReplay:
         assert exit_code == 0
         report_input = mock_write.call_args.args[0]
         assert report_input.run_spec.replay_run_id.startswith("replay-")
-        assert report_input.run_spec.metadata["execution_provenance_id"].startswith("bt-")
-        assert Path(report_input.artifact_manifest.report_artifact_uri).name == "report.json"
+        assert report_input.run_spec.metadata["execution_provenance_id"].startswith(
+            "bt-"
+        )
+        assert (
+            Path(report_input.artifact_manifest.report_artifact_uri).name
+            == "report.json"
+        )
         assert (
             Path(
                 report_input.artifact_manifest.supplementary_artifacts[
@@ -675,6 +727,7 @@ class TestRunARVPReplay:
     @patch("services.validation.strategy_replay_runner.run_primary_breakout_backtest")
     def test_bridge_error_returns_2(self, mock_backtest, tmp_path):
         from core.replay.historical_bridge import HistoricalBridgeError
+
         mock_backtest.side_effect = HistoricalBridgeError("bad candles")
 
         f = self._make_candles_file(tmp_path)
@@ -687,7 +740,10 @@ class TestRunARVPReplay:
 
     @patch("services.validation.strategy_replay_runner.run_primary_breakout_backtest")
     def test_backtest_error_returns_2(self, mock_backtest, tmp_path):
-        from services.validation.strategy_backtest_runner import PrimaryBreakoutBacktestError
+        from services.validation.strategy_backtest_runner import (
+            PrimaryBreakoutBacktestError,
+        )
+
         mock_backtest.side_effect = PrimaryBreakoutBacktestError("boom")
 
         f = self._make_candles_file(tmp_path)
@@ -702,6 +758,7 @@ class TestRunARVPReplay:
     @patch.object(ReplayReporter, "write_bundle")
     def test_reporter_error_returns_2(self, mock_write, mock_backtest, tmp_path):
         from services.validation.replay_reporter import ReplayReporterError
+
         mock_backtest.return_value = _minimal_backtest_report()
         mock_write.side_effect = ReplayReporterError("schema fail")
 
@@ -789,6 +846,33 @@ class TestRunARVPReplay:
             input_candles_file=str(f),
             output_directory=str(tmp_path),
             deterministic_verify=True,
+        )
+        exit_code = run_arvp_replay(cfg)
+        assert exit_code == 0
+
+    @patch("services.validation.strategy_replay_runner._utc_now_iso")
+    @patch("services.validation.strategy_replay_runner.run_primary_breakout_backtest")
+    @patch.object(ReplayReporter, "write_bundle")
+    def test_completed_record_tolerates_clock_going_backward(
+        self, mock_write, mock_backtest, mock_utcnow, tmp_path
+    ):
+        """Simulate finished_at_utc < started_at_utc (clock edge).
+        The _utc_now_iso_not_before clamp must prevent RunRegistryError."""
+        clock_values = iter(
+            [
+                "2026-06-13T12:00:00.000000+00:00",  # started_at_utc (1st call)
+                "2026-06-13T11:59:59.999000+00:00",  # finished (BEFORE started)
+            ]
+        )
+        mock_utcnow.side_effect = lambda: next(clock_values)
+
+        mock_backtest.return_value = _minimal_backtest_report(deterministic_ok=True)
+        self._mock_bundle_dir(mock_write, tmp_path)
+
+        f = self._make_candles_file(tmp_path)
+        cfg = ARVPReplayConfig(
+            input_candles_file=str(f),
+            output_directory=str(tmp_path),
         )
         exit_code = run_arvp_replay(cfg)
         assert exit_code == 0
@@ -1111,8 +1195,10 @@ class TestMainArgParse:
         candles = [{"ts_ms": 1_000_000}]
         f = tmp_path / "c.json"
         f.write_text(json.dumps(candles))
-        with patch("sys.argv", ["prog", "--input-candles", str(f),
-                                "--strategy-id", "bad_strategy"]):
+        with patch(
+            "sys.argv",
+            ["prog", "--input-candles", str(f), "--strategy-id", "bad_strategy"],
+        ):
             result = main()
         assert result == 1
 
@@ -1225,9 +1311,10 @@ class TestMainArgParse:
             "services.validation.strategy_replay_runner.run_arvp_replay",
             side_effect=capture,
         ):
-            with patch("sys.argv", [
-                "prog", "--input-candles", str(f), "--output-dir", custom_dir
-            ]):
+            with patch(
+                "sys.argv",
+                ["prog", "--input-candles", str(f), "--output-dir", custom_dir],
+            ):
                 main()
 
         assert captured[0].output_directory == custom_dir
@@ -1265,9 +1352,10 @@ class TestMainArgParse:
             "services.validation.strategy_replay_runner.run_arvp_replay",
             side_effect=capture,
         ):
-            with patch("sys.argv", [
-                "prog", "--input-candles", str(f), "--deterministic-verify"
-            ]):
+            with patch(
+                "sys.argv",
+                ["prog", "--input-candles", str(f), "--deterministic-verify"],
+            ):
                 main()
 
         assert captured[0].deterministic_verify is True
@@ -1286,7 +1374,10 @@ class TestMainArgParse:
             "services.validation.strategy_replay_runner.run_arvp_replay",
             side_effect=capture,
         ):
-            with patch("sys.argv", ["prog", "--input-candles", str(f), "--speedup-profile", "5x"]):
+            with patch(
+                "sys.argv",
+                ["prog", "--input-candles", str(f), "--speedup-profile", "5x"],
+            ):
                 main()
 
         assert captured[0].speedup_profile == "5x"
@@ -1306,9 +1397,16 @@ class TestMainArgParse:
             "services.validation.strategy_replay_runner.run_arvp_replay",
             side_effect=capture,
         ):
-            with patch("sys.argv", [
-                "prog", "--input-candles", str(f), "--gate-trace-path", str(trace_path)
-            ]):
+            with patch(
+                "sys.argv",
+                [
+                    "prog",
+                    "--input-candles",
+                    str(f),
+                    "--gate-trace-path",
+                    str(trace_path),
+                ],
+            ):
                 main()
 
         assert captured[0].gate_trace_path == trace_path
@@ -1326,8 +1424,17 @@ class TestMainArgParse:
         from services.validation.strategy_replay_runner import run_arvp_replay
 
         f = tmp_path / "c.json"
-        candles = [{"ts_ms": 1_000_000 + i * 60_000, "close": 100.0, "high": 101.0,
-                   "low": 99.0, "regime_id": 0, "symbol": "BTCUSDT"} for i in range(250)]
+        candles = [
+            {
+                "ts_ms": 1_000_000 + i * 60_000,
+                "close": 100.0,
+                "high": 101.0,
+                "low": 99.0,
+                "regime_id": 0,
+                "symbol": "BTCUSDT",
+            }
+            for i in range(250)
+        ]
         f.write_text(json.dumps(candles))
 
         trace_path = tmp_path / "gate.jsonl"
@@ -1337,7 +1444,9 @@ class TestMainArgParse:
             gate_trace_path=trace_path,
         )
 
-        with patch("services.validation.strategy_replay_runner.run_primary_breakout_backtest") as mock_bt:
+        with patch(
+            "services.validation.strategy_replay_runner.run_primary_breakout_backtest"
+        ) as mock_bt:
             mock_bt.return_value = _minimal_backtest_report()
             with patch.object(ReplayReporter, "write_bundle") as mock_write:
                 mock_write.return_value = tmp_path / "bundle"
