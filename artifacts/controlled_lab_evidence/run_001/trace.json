@@ -1,6 +1,7 @@
 {
-  "run_id": "candle-trace-01f30b10fb3e7712",
+  "run_id": "controlled-lab-001",
   "signals_available": false,
+  "trades_available": false,
   "steps": [
     {
       "ts_ms": 1775001600000,
@@ -80643,6 +80644,16 @@
       "regime_id": 0
     }
   ],
-  "trades_available": false,
-  "trades": []
+  "trades": [],
+  "scenario_source": {
+    "source_path": "D:\\Dev\\Workspaces\\Repos\\Claire_de_Binare\\artifacts\\backtests\\primary_breakout_v1\\20260418-212643\\dataset.candles.json",
+    "dataset_sha256": "3be2430b5e30845b1db8d3330fc5e6b5d2b322dabf834db4bc2efaad379b30a7",
+    "candle_count": 20160,
+    "regime_id_distribution": {
+      "0": 20160
+    },
+    "trace_start_ts_ms": 1775001600000,
+    "trace_end_ts_ms": 1776211140000,
+    "generator": "build_regime_trace_from_candles.py"
+  }
 }

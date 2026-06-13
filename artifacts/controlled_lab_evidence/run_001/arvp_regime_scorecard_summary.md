@@ -1,9 +1,9 @@
 # ARVP Regime Scorecard Summary
 
 Status:      ok
-Run:         candle-trace-01f30b10fb3e7712
+Run:         controlled-lab-001
 Source:      replay_trace
-Fingerprint: 972a39fa685fa09df51b8a2b2d5dbf14dc96ef7cbd180c69f09517f598b8ff6b
+Fingerprint: 8bda6a9dd6038484904d58a2887aa0205384a16169e29d126d33005637c03fbf
 
 ## Per-Regime
 
