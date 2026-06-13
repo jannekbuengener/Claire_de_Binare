@@ -1,0 +1,916 @@
+{
+  "aggregate_return_metrics_quote": {
+    "fees_total_quote": 24920.445507652672,
+    "gross_pnl_quote": -15523.107558894357,
+    "net_pnl_quote": -40443.55306654703
+  },
+  "aggregate_return_metrics_r": {
+    "fee_adjusted_return_r": -0.5350017521726411,
+    "gross_return_r": -0.20632542790661013,
+    "note": "Summed per-window gross_return_r across independent windows. Windows are independent fragments, not one continuous market history."
+  },
+  "aggregate_trade_metrics": {
+    "closed_trades_total": 274,
+    "signals_total": 274,
+    "trades_loss_count": 258,
+    "trades_win_count": 16,
+    "win_rate": 0.058394160583941604,
+    "windows_with_trades": 20
+  },
+  "candidate_id": "cand-momentum-capture-v1-btcusdt-mexc",
+  "dataset_fingerprint": "sha256:1fabe6fff073476f639a3c0dcd8f6159cf800362f8496b748ca46d762ceae052",
+  "dataset_id": "mexc_multi_window_3032",
+  "evidence_packet_ref": "docs\\evidence\\profitability_evidence_packet_momentum_capture_v1_mexc_multi_window_3166.json",
+  "generated_at": "2026-06-13T15:45:14.712886+00:00",
+  "schema_version": "execution_economics_summary.v1",
+  "selection": {
+    "minimum_window_rows": 720,
+    "replay_warmup_candles": 240,
+    "selection_cap": 20,
+    "window_count": 20
+  },
+  "strategy_id": "momentum_capture_v1",
+  "summary_id": "econ-momentum-capture-v1-btcusdt-mexc-multi-window-3166",
+  "window_results": [
+    {
+      "dataset_id": "mexc_multi_window_3032_window_001",
+      "derived_dataset_id": "mexc_multi_window_3032_window_window_001_regime_calibrated",
+      "end_ts_ms": 1769010780000,
+      "regime_distribution": {
+        "HIGH_VOL_CHAOTIC": {
+          "count": 1956,
+          "pct": 25.822
+        },
+        "RANGE": {
+          "count": 3125,
+          "pct": 41.254
+        },
+        "TREND": {
+          "count": 2494,
+          "pct": 32.924
+        }
+      },
+      "replay": {
+        "closed_trades_total": 35,
+        "data_integrity_ok": true,
+        "expectancy_r": -0.0008894713399783342,
+        "fee_adjusted_expectancy_r": -0.0020889376086150164,
+        "fee_adjusted_return_r": -0.07311281630152557,
+        "fees_total_quote": 3834.2941142134523,
+        "gross_pnl_quote": -2844.09098739663,
+        "gross_return_r": -0.031131496899241697,
+        "hvc_window_pct": 25.822,
+        "max_drawdown_r": 0.031131496899241697,
+        "net_pnl_quote": -6678.3851016100825,
+        "profit_factor": 0.012468575447610155,
+        "sample_size_verdict": "adequate",
+        "signals_total": 35,
+        "status": "ok",
+        "trades_loss_count": 33,
+        "trades_win_count": 2,
+        "win_rate": 0.05714285714285714,
+        "window_id": "window_001"
+      },
+      "row_count": 7575,
+      "source_segment_id": 10,
+      "start_ts_ms": 1768556340000,
+      "window_id": "window_001"
+    },
+    {
+      "dataset_id": "mexc_multi_window_3032_window_002",
+      "derived_dataset_id": "mexc_multi_window_3032_window_window_002_regime_calibrated",
+      "end_ts_ms": 1775313060000,
+      "regime_distribution": {
+        "HIGH_VOL_CHAOTIC": {
+          "count": 1187,
+          "pct": 25.765
+        },
+        "RANGE": {
+          "count": 2154,
+          "pct": 46.755
+        },
+        "TREND": {
+          "count": 1266,
+          "pct": 27.48
+        }
+      },
+      "replay": {
+        "closed_trades_total": 19,
+        "data_integrity_ok": true,
+        "expectancy_r": -0.0009617593844366052,
+        "fee_adjusted_expectancy_r": -0.002161184050149495,
+        "fee_adjusted_return_r": -0.0410624969528404,
+        "fees_total_quote": 1535.5712860722913,
+        "gross_pnl_quote": -1231.4259838927683,
+        "gross_return_r": -0.0182734283042955,
+        "hvc_window_pct": 25.765,
+        "max_drawdown_r": 0.0182734283042955,
+        "net_pnl_quote": -2766.99726996506,
+        "profit_factor": 0.0,
+        "sample_size_verdict": "weak",
+        "signals_total": 19,
+        "status": "ok",
+        "trades_loss_count": 19,
+        "trades_win_count": 0,
+        "win_rate": 0.0,
+        "window_id": "window_002"
+      },
+      "row_count": 4607,
+      "source_segment_id": 66,
+      "start_ts_ms": 1775036700000,
+      "window_id": "window_002"
+    },
+    {
+      "dataset_id": "mexc_multi_window_3032_window_003",
+      "derived_dataset_id": "mexc_multi_window_3032_window_window_003_regime_calibrated",
+      "end_ts_ms": 1781355360000,
+      "regime_distribution": {
+        "HIGH_VOL_CHAOTIC": {
+          "count": 1121,
+          "pct": 25.391
+        },
+        "RANGE": {
+          "count": 1688,
+          "pct": 38.233
+        },
+        "TREND": {
+          "count": 1606,
+          "pct": 36.376
+        }
+      },
+      "replay": {
+        "closed_trades_total": 16,
+        "data_integrity_ok": true,
+        "expectancy_r": -0.0006543321635783608,
+        "fee_adjusted_expectancy_r": -0.0018539390660106904,
+        "fee_adjusted_return_r": -0.029663025056171046,
+        "fees_total_quote": 1202.1583261094047,
+        "gross_pnl_quote": -650.2196620118702,
+        "gross_return_r": -0.010469314617253773,
+        "hvc_window_pct": 25.391,
+        "max_drawdown_r": 0.014411425274514299,
+        "net_pnl_quote": -1852.377988121275,
+        "profit_factor": 0.3389499391176623,
+        "sample_size_verdict": "weak",
+        "signals_total": 16,
+        "status": "ok",
+        "trades_loss_count": 14,
+        "trades_win_count": 2,
+        "win_rate": 0.125,
+        "window_id": "window_003"
+      },
+      "row_count": 4415,
+      "source_segment_id": 130,
+      "start_ts_ms": 1781090520000,
+      "window_id": "window_003"
+    },
+    {
+      "dataset_id": "mexc_multi_window_3032_window_004",
+      "derived_dataset_id": "mexc_multi_window_3032_window_window_004_regime_calibrated",
+      "end_ts_ms": 1779223260000,
+      "regime_distribution": {
+        "HIGH_VOL_CHAOTIC": {
+          "count": 1161,
+          "pct": 26.321
+        },
+        "RANGE": {
+          "count": 1858,
+          "pct": 42.122
+        },
+        "TREND": {
+          "count": 1392,
+          "pct": 31.557
+        }
+      },
+      "replay": {
+        "closed_trades_total": 21,
+        "data_integrity_ok": true,
+        "expectancy_r": -0.0008812272841181043,
+        "fee_adjusted_expectancy_r": -0.002080699649741313,
+        "fee_adjusted_return_r": -0.04369469264456757,
+        "fees_total_quote": 1940.3624401069744,
+        "gross_pnl_quote": -1425.3576288834302,
+        "gross_return_r": -0.01850577296648019,
+        "hvc_window_pct": 26.321,
+        "max_drawdown_r": 0.01850577296648019,
+        "net_pnl_quote": -3365.720068990405,
+        "profit_factor": 0.0,
+        "sample_size_verdict": "adequate",
+        "signals_total": 21,
+        "status": "ok",
+        "trades_loss_count": 21,
+        "trades_win_count": 0,
+        "win_rate": 0.0,
+        "window_id": "window_004"
+      },
+      "row_count": 4411,
+      "source_segment_id": 103,
+      "start_ts_ms": 1778958660000,
+      "window_id": "window_004"
+    },
+    {
+      "dataset_id": "mexc_multi_window_3032_window_005",
+      "derived_dataset_id": "mexc_multi_window_3032_window_window_005_regime_calibrated",
+      "end_ts_ms": 1777182960000,
+      "regime_distribution": {
+        "HIGH_VOL_CHAOTIC": {
+          "count": 921,
+          "pct": 25.109
+        },
+        "RANGE": {
+          "count": 1394,
+          "pct": 38.004
+        },
+        "TREND": {
+          "count": 1353,
+          "pct": 36.887
+        }
+      },
+      "replay": {
+        "closed_trades_total": 13,
+        "data_integrity_ok": true,
+        "expectancy_r": -0.0006853304346140844,
+        "fee_adjusted_expectancy_r": -0.0018849202589191214,
+        "fee_adjusted_return_r": -0.024503963365948577,
+        "fees_total_quote": 1216.748235759047,
+        "gross_pnl_quote": -694.9405034412921,
+        "gross_return_r": -0.008909295649983096,
+        "hvc_window_pct": 25.109,
+        "max_drawdown_r": 0.008909295649983096,
+        "net_pnl_quote": -1911.6887392003391,
+        "profit_factor": 0.10474759013184423,
+        "sample_size_verdict": "weak",
+        "signals_total": 13,
+        "status": "ok",
+        "trades_loss_count": 12,
+        "trades_win_count": 1,
+        "win_rate": 0.07692307692307693,
+        "window_id": "window_005"
+      },
+      "row_count": 3668,
+      "source_segment_id": 84,
+      "start_ts_ms": 1776962940000,
+      "window_id": "window_005"
+    },
+    {
+      "dataset_id": "mexc_multi_window_3032_window_006",
+      "derived_dataset_id": "mexc_multi_window_3032_window_window_006_regime_calibrated",
+      "end_ts_ms": 1775854080000,
+      "regime_distribution": {
+        "HIGH_VOL_CHAOTIC": {
+          "count": 935,
+          "pct": 25.68
+        },
+        "RANGE": {
+          "count": 1665,
+          "pct": 45.729
+        },
+        "TREND": {
+          "count": 1041,
+          "pct": 28.591
+        }
+      },
+      "replay": {
+        "closed_trades_total": 15,
+        "data_integrity_ok": true,
+        "expectancy_r": 0.00012980143695083237,
+        "fee_adjusted_expectancy_r": -0.0010702765547845772,
+        "fee_adjusted_return_r": -0.016054148321768658,
+        "fees_total_quote": 1294.1326929242093,
+        "gross_pnl_quote": 126.29223242556327,
+        "gross_return_r": 0.0019470215542624866,
+        "hvc_window_pct": 25.68,
+        "max_drawdown_r": 0.008095935744121815,
+        "net_pnl_quote": -1167.840460498646,
+        "profit_factor": 1.1447302865698163,
+        "sample_size_verdict": "weak",
+        "signals_total": 15,
+        "status": "ok",
+        "trades_loss_count": 13,
+        "trades_win_count": 2,
+        "win_rate": 0.13333333333333333,
+        "window_id": "window_006"
+      },
+      "row_count": 3641,
+      "source_segment_id": 73,
+      "start_ts_ms": 1775635680000,
+      "window_id": "window_006"
+    },
+    {
+      "dataset_id": "mexc_multi_window_3032_window_007",
+      "derived_dataset_id": "mexc_multi_window_3032_window_window_007_regime_calibrated",
+      "end_ts_ms": 1780963080000,
+      "regime_distribution": {
+        "HIGH_VOL_CHAOTIC": {
+          "count": 950,
+          "pct": 27.174
+        },
+        "RANGE": {
+          "count": 1697,
+          "pct": 48.541
+        },
+        "TREND": {
+          "count": 849,
+          "pct": 24.285
+        }
+      },
+      "replay": {
+        "closed_trades_total": 16,
+        "data_integrity_ok": true,
+        "expectancy_r": -0.001077101168653397,
+        "fee_adjusted_expectancy_r": -0.002276455204816272,
+        "fee_adjusted_return_r": -0.036423283277060355,
+        "fees_total_quote": 1207.1406880432062,
+        "gross_pnl_quote": -1084.6668896513438,
+        "gross_return_r": -0.017233618698454353,
+        "hvc_window_pct": 27.174,
+        "max_drawdown_r": 0.017233618698454353,
+        "net_pnl_quote": -2291.8075776945498,
+        "profit_factor": 0.02265600717457764,
+        "sample_size_verdict": "weak",
+        "signals_total": 16,
+        "status": "ok",
+        "trades_loss_count": 15,
+        "trades_win_count": 1,
+        "win_rate": 0.0625,
+        "window_id": "window_007"
+      },
+      "row_count": 3496,
+      "source_segment_id": 126,
+      "start_ts_ms": 1780753380000,
+      "window_id": "window_007"
+    },
+    {
+      "dataset_id": "mexc_multi_window_3032_window_008",
+      "derived_dataset_id": "mexc_multi_window_3032_window_window_008_regime_calibrated",
+      "end_ts_ms": 1778953140000,
+      "regime_distribution": {
+        "HIGH_VOL_CHAOTIC": {
+          "count": 844,
+          "pct": 25.834
+        },
+        "RANGE": {
+          "count": 1458,
+          "pct": 44.628
+        },
+        "TREND": {
+          "count": 965,
+          "pct": 29.538
+        }
+      },
+      "replay": {
+        "closed_trades_total": 15,
+        "data_integrity_ok": true,
+        "expectancy_r": -0.0006221368328224586,
+        "fee_adjusted_expectancy_r": -0.0018217638921978038,
+        "fee_adjusted_return_r": -0.02732645838296706,
+        "fees_total_quote": 1442.475595683777,
+        "gross_pnl_quote": -755.2105528284301,
+        "gross_return_r": -0.009332052492336878,
+        "hvc_window_pct": 25.834,
+        "max_drawdown_r": 0.010495818436639336,
+        "net_pnl_quote": -2197.686148512207,
+        "profit_factor": 0.24255937493626387,
+        "sample_size_verdict": "weak",
+        "signals_total": 15,
+        "status": "ok",
+        "trades_loss_count": 14,
+        "trades_win_count": 1,
+        "win_rate": 0.06666666666666667,
+        "window_id": "window_008"
+      },
+      "row_count": 3267,
+      "source_segment_id": 102,
+      "start_ts_ms": 1778757180000,
+      "window_id": "window_008"
+    },
+    {
+      "dataset_id": "mexc_multi_window_3032_window_009",
+      "derived_dataset_id": "mexc_multi_window_3032_window_window_009_regime_calibrated",
+      "end_ts_ms": 1776962760000,
+      "regime_distribution": {
+        "HIGH_VOL_CHAOTIC": {
+          "count": 806,
+          "pct": 25.539
+        },
+        "RANGE": {
+          "count": 1463,
+          "pct": 46.356
+        },
+        "TREND": {
+          "count": 887,
+          "pct": 28.105
+        }
+      },
+      "replay": {
+        "closed_trades_total": 12,
+        "data_integrity_ok": true,
+        "expectancy_r": 2.395055323041498e-05,
+        "fee_adjusted_expectancy_r": -0.0011760635994989294,
+        "fee_adjusted_return_r": -0.014112763193987153,
+        "fees_total_quote": 1113.8787422926375,
+        "gross_pnl_quote": 23.745978929451667,
+        "gross_return_r": 0.00028740663876497985,
+        "hvc_window_pct": 25.539,
+        "max_drawdown_r": 0.005366926384646874,
+        "net_pnl_quote": -1090.1327633631859,
+        "profit_factor": 1.031226770175002,
+        "sample_size_verdict": "weak",
+        "signals_total": 12,
+        "status": "ok",
+        "trades_loss_count": 9,
+        "trades_win_count": 3,
+        "win_rate": 0.25,
+        "window_id": "window_009"
+      },
+      "row_count": 3156,
+      "source_segment_id": 83,
+      "start_ts_ms": 1776773460000,
+      "window_id": "window_009"
+    },
+    {
+      "dataset_id": "mexc_multi_window_3032_window_010",
+      "derived_dataset_id": "mexc_multi_window_3032_window_window_010_regime_calibrated",
+      "end_ts_ms": 1774546200000,
+      "regime_distribution": {
+        "HIGH_VOL_CHAOTIC": {
+          "count": 755,
+          "pct": 26.134
+        },
+        "RANGE": {
+          "count": 1271,
+          "pct": 43.994
+        },
+        "TREND": {
+          "count": 863,
+          "pct": 29.872
+        }
+      },
+      "replay": {
+        "closed_trades_total": 12,
+        "data_integrity_ok": true,
+        "expectancy_r": -0.0010215950502605567,
+        "fee_adjusted_expectancy_r": -0.0022209825711718865,
+        "fee_adjusted_return_r": -0.026651790854062638,
+        "fees_total_quote": 1013.9594609244622,
+        "gross_pnl_quote": -863.8053042737738,
+        "gross_return_r": -0.01225914060312668,
+        "hvc_window_pct": 26.134,
+        "max_drawdown_r": 0.01225914060312668,
+        "net_pnl_quote": -1877.764765198236,
+        "profit_factor": 0.0,
+        "sample_size_verdict": "weak",
+        "signals_total": 12,
+        "status": "ok",
+        "trades_loss_count": 12,
+        "trades_win_count": 0,
+        "win_rate": 0.0,
+        "window_id": "window_010"
+      },
+      "row_count": 2889,
+      "source_segment_id": 55,
+      "start_ts_ms": 1774372920000,
+      "window_id": "window_010"
+    },
+    {
+      "dataset_id": "mexc_multi_window_3032_window_011",
+      "derived_dataset_id": "mexc_multi_window_3032_window_window_011_regime_calibrated",
+      "end_ts_ms": 1774372620000,
+      "regime_distribution": {
+        "HIGH_VOL_CHAOTIC": {
+          "count": 732,
+          "pct": 25.399
+        },
+        "RANGE": {
+          "count": 1147,
+          "pct": 39.799
+        },
+        "TREND": {
+          "count": 1003,
+          "pct": 34.802
+        }
+      },
+      "replay": {
+        "closed_trades_total": 13,
+        "data_integrity_ok": true,
+        "expectancy_r": -0.001306039603591496,
+        "fee_adjusted_expectancy_r": -0.0025052562715157647,
+        "fee_adjusted_return_r": -0.03256833152970494,
+        "fees_total_quote": 1086.9955000424566,
+        "gross_pnl_quote": -1185.7066344546474,
+        "gross_return_r": -0.016978514846689448,
+        "hvc_window_pct": 25.399,
+        "max_drawdown_r": 0.016978514846689448,
+        "net_pnl_quote": -2272.702134497104,
+        "profit_factor": 0.0,
+        "sample_size_verdict": "weak",
+        "signals_total": 13,
+        "status": "ok",
+        "trades_loss_count": 13,
+        "trades_win_count": 0,
+        "win_rate": 0.0,
+        "window_id": "window_011"
+      },
+      "row_count": 2882,
+      "source_segment_id": 54,
+      "start_ts_ms": 1774199760000,
+      "window_id": "window_011"
+    },
+    {
+      "dataset_id": "mexc_multi_window_3032_window_012",
+      "derived_dataset_id": "mexc_multi_window_3032_window_window_012_regime_calibrated",
+      "end_ts_ms": 1776772680000,
+      "regime_distribution": {
+        "HIGH_VOL_CHAOTIC": {
+          "count": 747,
+          "pct": 26.321
+        },
+        "RANGE": {
+          "count": 1232,
+          "pct": 43.411
+        },
+        "TREND": {
+          "count": 859,
+          "pct": 30.268
+        }
+      },
+      "replay": {
+        "closed_trades_total": 11,
+        "data_integrity_ok": true,
+        "expectancy_r": -0.0005785709850822555,
+        "fee_adjusted_expectancy_r": -0.0017782236214779804,
+        "fee_adjusted_return_r": -0.019560459836257784,
+        "fees_total_quote": 991.0284015026597,
+        "gross_pnl_quote": -478.3983238562505,
+        "gross_return_r": -0.0063642808359048115,
+        "hvc_window_pct": 26.321,
+        "max_drawdown_r": 0.00870100385780759,
+        "net_pnl_quote": -1469.42672535891,
+        "profit_factor": 0.4052783349970412,
+        "sample_size_verdict": "weak",
+        "signals_total": 11,
+        "status": "ok",
+        "trades_loss_count": 10,
+        "trades_win_count": 1,
+        "win_rate": 0.09090909090909091,
+        "window_id": "window_012"
+      },
+      "row_count": 2838,
+      "source_segment_id": 82,
+      "start_ts_ms": 1776602460000,
+      "window_id": "window_012"
+    },
+    {
+      "dataset_id": "mexc_multi_window_3032_window_013",
+      "derived_dataset_id": "mexc_multi_window_3032_window_window_013_regime_calibrated",
+      "end_ts_ms": 1777481820000,
+      "regime_distribution": {
+        "HIGH_VOL_CHAOTIC": {
+          "count": 727,
+          "pct": 26.198
+        },
+        "RANGE": {
+          "count": 1108,
+          "pct": 39.928
+        },
+        "TREND": {
+          "count": 940,
+          "pct": 33.874
+        }
+      },
+      "replay": {
+        "closed_trades_total": 13,
+        "data_integrity_ok": true,
+        "expectancy_r": -0.000880414142534413,
+        "fee_adjusted_expectancy_r": -0.0020798874630536183,
+        "fee_adjusted_return_r": -0.027038537019697037,
+        "fees_total_quote": 1194.2624095530334,
+        "gross_pnl_quote": -876.5066868950671,
+        "gross_return_r": -0.011445383852947369,
+        "hvc_window_pct": 26.198,
+        "max_drawdown_r": 0.011445383852947369,
+        "net_pnl_quote": -2070.7690964481008,
+        "profit_factor": 0.0,
+        "sample_size_verdict": "weak",
+        "signals_total": 13,
+        "status": "ok",
+        "trades_loss_count": 13,
+        "trades_win_count": 0,
+        "win_rate": 0.0,
+        "window_id": "window_013"
+      },
+      "row_count": 2775,
+      "source_segment_id": 88,
+      "start_ts_ms": 1777315380000,
+      "window_id": "window_013"
+    },
+    {
+      "dataset_id": "mexc_multi_window_3032_window_014",
+      "derived_dataset_id": "mexc_multi_window_3032_window_window_014_regime_calibrated",
+      "end_ts_ms": 1778505780000,
+      "regime_distribution": {
+        "HIGH_VOL_CHAOTIC": {
+          "count": 735,
+          "pct": 26.963
+        },
+        "RANGE": {
+          "count": 1324,
+          "pct": 48.569
+        },
+        "TREND": {
+          "count": 667,
+          "pct": 24.468
+        }
+      },
+      "replay": {
+        "closed_trades_total": 11,
+        "data_integrity_ok": true,
+        "expectancy_r": -0.0007122030161956994,
+        "fee_adjusted_expectancy_r": -0.0019117768143782064,
+        "fee_adjusted_return_r": -0.02102954495816027,
+        "fees_total_quote": 1072.1447820287306,
+        "gross_pnl_quote": -636.994046085325,
+        "gross_return_r": -0.007834233178152693,
+        "hvc_window_pct": 26.963,
+        "max_drawdown_r": 0.008212909423191592,
+        "net_pnl_quote": -1709.1388281140555,
+        "profit_factor": 0.046107442019218445,
+        "sample_size_verdict": "weak",
+        "signals_total": 11,
+        "status": "ok",
+        "trades_loss_count": 10,
+        "trades_win_count": 1,
+        "win_rate": 0.09090909090909091,
+        "window_id": "window_014"
+      },
+      "row_count": 2726,
+      "source_segment_id": 98,
+      "start_ts_ms": 1778342280000,
+      "window_id": "window_014"
+    },
+    {
+      "dataset_id": "mexc_multi_window_3032_window_015",
+      "derived_dataset_id": "mexc_multi_window_3032_window_window_015_regime_calibrated",
+      "end_ts_ms": 1778706600000,
+      "regime_distribution": {
+        "HIGH_VOL_CHAOTIC": {
+          "count": 678,
+          "pct": 24.917
+        },
+        "RANGE": {
+          "count": 1026,
+          "pct": 37.707
+        },
+        "TREND": {
+          "count": 1017,
+          "pct": 37.376
+        }
+      },
+      "replay": {
+        "closed_trades_total": 11,
+        "data_integrity_ok": true,
+        "expectancy_r": -0.0007283972608389023,
+        "fee_adjusted_expectancy_r": -0.001927960436331066,
+        "fee_adjusted_return_r": -0.021207564799641726,
+        "fees_total_quote": 1061.056618645065,
+        "gross_pnl_quote": -643.5833897202829,
+        "gross_return_r": -0.008012369869227926,
+        "hvc_window_pct": 24.917,
+        "max_drawdown_r": 0.008012369869227926,
+        "net_pnl_quote": -1704.640008365348,
+        "profit_factor": 0.07054959804778825,
+        "sample_size_verdict": "weak",
+        "signals_total": 11,
+        "status": "ok",
+        "trades_loss_count": 10,
+        "trades_win_count": 1,
+        "win_rate": 0.09090909090909091,
+        "window_id": "window_015"
+      },
+      "row_count": 2721,
+      "source_segment_id": 101,
+      "start_ts_ms": 1778543400000,
+      "window_id": "window_015"
+    },
+    {
+      "dataset_id": "mexc_multi_window_3032_window_016",
+      "derived_dataset_id": "mexc_multi_window_3032_window_window_016_regime_calibrated",
+      "end_ts_ms": 1774713000000,
+      "regime_distribution": {
+        "HIGH_VOL_CHAOTIC": {
+          "count": 681,
+          "pct": 25.382
+        },
+        "RANGE": {
+          "count": 1026,
+          "pct": 38.241
+        },
+        "TREND": {
+          "count": 976,
+          "pct": 36.377
+        }
+      },
+      "replay": {
+        "closed_trades_total": 12,
+        "data_integrity_ok": true,
+        "expectancy_r": -0.0010142816232970532,
+        "fee_adjusted_expectancy_r": -0.0022136731710127194,
+        "fee_adjusted_return_r": -0.02656407805215263,
+        "fees_total_quote": 959.5815141074997,
+        "gross_pnl_quote": -811.3213545345498,
+        "gross_return_r": -0.012171379479564641,
+        "hvc_window_pct": 25.382,
+        "max_drawdown_r": 0.012171379479564641,
+        "net_pnl_quote": -1770.9028686420495,
+        "profit_factor": 0.0,
+        "sample_size_verdict": "weak",
+        "signals_total": 12,
+        "status": "ok",
+        "trades_loss_count": 12,
+        "trades_win_count": 0,
+        "win_rate": 0.0,
+        "window_id": "window_016"
+      },
+      "row_count": 2683,
+      "source_segment_id": 58,
+      "start_ts_ms": 1774552080000,
+      "window_id": "window_016"
+    },
+    {
+      "dataset_id": "mexc_multi_window_3032_window_017",
+      "derived_dataset_id": "mexc_multi_window_3032_window_window_017_regime_calibrated",
+      "end_ts_ms": 1779699840000,
+      "regime_distribution": {
+        "HIGH_VOL_CHAOTIC": {
+          "count": 605,
+          "pct": 25.646
+        },
+        "RANGE": {
+          "count": 942,
+          "pct": 39.932
+        },
+        "TREND": {
+          "count": 812,
+          "pct": 34.421
+        }
+      },
+      "replay": {
+        "closed_trades_total": 10,
+        "data_integrity_ok": true,
+        "expectancy_r": -0.0008161783977749937,
+        "fee_adjusted_expectancy_r": -0.0020156891229120197,
+        "fee_adjusted_return_r": -0.020156891229120198,
+        "fees_total_quote": 922.4737472256295,
+        "gross_pnl_quote": -627.644105282292,
+        "gross_return_r": -0.008161783977749937,
+        "hvc_window_pct": 25.646,
+        "max_drawdown_r": 0.008161783977749937,
+        "net_pnl_quote": -1550.1178525079215,
+        "profit_factor": 0.0,
+        "sample_size_verdict": "weak",
+        "signals_total": 10,
+        "status": "ok",
+        "trades_loss_count": 10,
+        "trades_win_count": 0,
+        "win_rate": 0.0,
+        "window_id": "window_017"
+      },
+      "row_count": 2359,
+      "source_segment_id": 109,
+      "start_ts_ms": 1779558360000,
+      "window_id": "window_017"
+    },
+    {
+      "dataset_id": "mexc_multi_window_3032_window_018",
+      "derived_dataset_id": "mexc_multi_window_3032_window_window_018_regime_calibrated",
+      "end_ts_ms": 1769411100000,
+      "regime_distribution": {
+        "HIGH_VOL_CHAOTIC": {
+          "count": 599,
+          "pct": 25.942
+        },
+        "RANGE": {
+          "count": 883,
+          "pct": 38.242
+        },
+        "TREND": {
+          "count": 827,
+          "pct": 35.816
+        }
+      },
+      "replay": {
+        "closed_trades_total": 8,
+        "data_integrity_ok": true,
+        "expectancy_r": -1.0493500299124715e-05,
+        "fee_adjusted_expectancy_r": -0.001210487269395464,
+        "fee_adjusted_return_r": -0.009683898155163712,
+        "fees_total_quote": 835.968824676389,
+        "gross_pnl_quote": -10.556960389760206,
+        "gross_return_r": -8.394800239299848e-05,
+        "hvc_window_pct": 25.942,
+        "max_drawdown_r": 0.007311918501451481,
+        "net_pnl_quote": -846.5257850661492,
+        "profit_factor": 0.988519018315599,
+        "sample_size_verdict": "insufficient",
+        "signals_total": 8,
+        "status": "ok",
+        "trades_loss_count": 7,
+        "trades_win_count": 1,
+        "win_rate": 0.125,
+        "window_id": "window_018"
+      },
+      "row_count": 2309,
+      "source_segment_id": 14,
+      "start_ts_ms": 1769272620000,
+      "window_id": "window_018"
+    },
+    {
+      "dataset_id": "mexc_multi_window_3032_window_019",
+      "derived_dataset_id": "mexc_multi_window_3032_window_window_019_regime_calibrated",
+      "end_ts_ms": 1778279460000,
+      "regime_distribution": {
+        "HIGH_VOL_CHAOTIC": {
+          "count": 524,
+          "pct": 25.711
+        },
+        "RANGE": {
+          "count": 758,
+          "pct": 37.193
+        },
+        "TREND": {
+          "count": 756,
+          "pct": 37.095
+        }
+      },
+      "replay": {
+        "closed_trades_total": 6,
+        "data_integrity_ok": true,
+        "expectancy_r": -0.0009049861736239329,
+        "fee_adjusted_expectancy_r": -0.0021044431254555068,
+        "fee_adjusted_return_r": -0.01262665875273304,
+        "fees_total_quote": 574.8560413297838,
+        "gross_pnl_quote": -433.7315357661864,
+        "gross_return_r": -0.0054299170417435975,
+        "hvc_window_pct": 25.711,
+        "max_drawdown_r": 0.0054299170417435975,
+        "net_pnl_quote": -1008.5875770959702,
+        "profit_factor": 0.0,
+        "sample_size_verdict": "insufficient",
+        "signals_total": 6,
+        "status": "ok",
+        "trades_loss_count": 6,
+        "trades_win_count": 0,
+        "win_rate": 0.0,
+        "window_id": "window_019"
+      },
+      "row_count": 2038,
+      "source_segment_id": 97,
+      "start_ts_ms": 1778157240000,
+      "window_id": "window_019"
+    },
+    {
+      "dataset_id": "mexc_multi_window_3032_window_020",
+      "derived_dataset_id": "mexc_multi_window_3032_window_window_020_regime_calibrated",
+      "end_ts_ms": 1773355320000,
+      "regime_distribution": {
+        "HIGH_VOL_CHAOTIC": {
+          "count": 481,
+          "pct": 25.289
+        },
+        "RANGE": {
+          "count": 835,
+          "pct": 43.901
+        },
+        "TREND": {
+          "count": 586,
+          "pct": 30.81
+        }
+      },
+      "replay": {
+        "closed_trades_total": 5,
+        "data_integrity_ok": true,
+        "expectancy_r": -0.001192784956818411,
+        "fee_adjusted_expectancy_r": -0.002392069897822142,
+        "fee_adjusted_return_r": -0.011960349489110709,
+        "fees_total_quote": 421.356086411962,
+        "gross_pnl_quote": -418.9852208854718,
+        "gross_return_r": -0.005963924784092055,
+        "hvc_window_pct": 25.289,
+        "max_drawdown_r": 0.005963924784092055,
+        "net_pnl_quote": -840.3413072974338,
+        "profit_factor": 0.0,
+        "sample_size_verdict": "insufficient",
+        "signals_total": 5,
+        "status": "ok",
+        "trades_loss_count": 5,
+        "trades_win_count": 0,
+        "win_rate": 0.0,
+        "window_id": "window_020"
+      },
+      "row_count": 1902,
+      "source_segment_id": 40,
+      "start_ts_ms": 1773241260000,
+      "window_id": "window_020"
+    }
+  ]
+}

@@ -1,0 +1,67 @@
+{
+  "schema_version": "profitability_candidate_contract.v1",
+  "candidate_id": "cand-momentum-capture-v1-btcusdt-mexc",
+  "strategy_id": "momentum_capture_v1",
+  "strategy_family": "momentum_capture",
+  "parent_issue": "#3166",
+  "predecessor_contract_ref": "docs/evidence/profitability_third_candidate_selection_3164.md",
+  "predecessor_issue": "#3164",
+  "symbol_universe": ["BTCUSDT"],
+  "timeframe": "1m",
+  "direction": "long_only_first_pass",
+  "original_direction_in_predecessor": "long_only_first_pass",
+  "regime_scope": {
+    "allowed_regimes": ["HIGH_VOL_CHAOTIC"],
+    "blocked_regimes": ["TREND", "RANGE", "UNKNOWN"],
+    "freshness_required": true,
+    "freshness_note": "Offline calibrated regime labels are estimated=true; freshness assumed true for all candles in controlled-lab context."
+  },
+  "parameter_set": {
+    "directional_candle_atr_multiple": 1.0,
+    "exit_atr_contraction_multiple": 0.6,
+    "exit_trailing_stop_atr_multiple": 0.5,
+    "max_hold_bars": 240,
+    "cooldown_minutes": 60,
+    "position_sizing_pct": 0.01
+  },
+  "hypothesis": "In HIGH_VOL_CHAOTIC regime (high ATR, elevated volatility), BTCUSDT directional candle expansions capture momentum. Entering long positions on significant upward directional candles during HVC and exiting on volatility contraction (ATR shrinks below threshold) or trailing stop produces net positive returns. First pass is long-only; short-side realism deferred.",
+  "risk_assumptions": [
+    "Core Risk Service, kill-switch, and LR gates remain authoritative.",
+    "Candidate evidence cannot override runtime risk blocks.",
+    "HVC by definition has wide spreads and potential slippage that the replay simulator may not fully capture."
+  ],
+  "execution_assumptions": [
+    "Fees, spread, and slippage are simulated via ExecutionSimulator.",
+    "Existing MEXC same-venue multi-window data is used for file-backed replay.",
+    "Backtest and controlled-lab evidence do not imply live execution readiness.",
+    "Long-only first pass: short-side not supported in this slice."
+  ],
+  "status": "SPECIFIED",
+  "allowed_next_gate": "BACKTESTED",
+  "reject_reason": null,
+  "evidence_class": "controlled_lab_evidence",
+  "unsafe_zones": [
+    {
+      "zone": "live-capital",
+      "reason": "LR remains NO-GO and this contract is research-only."
+    },
+    {
+      "zone": "regime-misclassification",
+      "reason": "HVC regime labels are offline-estimated; runtime regime service may produce different classification."
+    },
+    {
+      "zone": "short-execution",
+      "reason": "Short-side execution not supported in this first pass."
+    }
+  ],
+  "limitations": [
+    "Single-symbol v1 candidate (BTCUSDT only).",
+    "No productive DB registry is created by this artifact.",
+    "Parameter set is initial research estimate; requires calibration from replay evidence.",
+    "HIGH_VOL_CHAOTIC regime detection uses existing ATR-based offline heuristic regime labels.",
+    "HVC window share is small (10-27%) in p75 calibrated dataset.",
+    "controlled_lab_evidence only.",
+    "Long-only first pass only; short-side deferred.",
+    "No primary_breakout_v1 or range_mean_reversion_v1 tuning occurred."
+  ]
+}

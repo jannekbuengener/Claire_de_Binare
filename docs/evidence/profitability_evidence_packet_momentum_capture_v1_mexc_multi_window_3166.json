@@ -1,0 +1,222 @@
+{
+  "avg_loss": -0.0009843403393055069,
+  "avg_win": 0.0029771487271381615,
+  "board_stage": "trade-capable",
+  "board_stage_note": "Board stage is orthogonal to LR. Does not authorize live trading.",
+  "candidate_id": "cand-momentum-capture-v1-btcusdt-mexc",
+  "contract_ref": "docs/evidence/profitability_candidate_momentum_capture_v1_3166.json",
+  "dataset_fingerprint": "sha256:1fabe6fff073476f639a3c0dcd8f6159cf800362f8496b748ca46d762ceae052",
+  "dataset_id": "mexc_multi_window_3032",
+  "evidence_class": "controlled_lab_evidence",
+  "evidence_packet_id": "pep-momentum-capture-v1-btcusdt-mexc-3166",
+  "expectancy": -0.0007530125106080663,
+  "fees": 24920.445507652672,
+  "generated_at": "2026-06-13T15:45:14.715894+00:00",
+  "gross_return": -0.20632542790661013,
+  "kill_switch_events": 0,
+  "limitations": [
+    "controlled_lab_evidence only.",
+    "Windows are independent fragments, not one continuous market history.",
+    "Long-only first pass only; short-side deferred.",
+    "No production config change.",
+    "No strategy code change.",
+    "No runtime capture.",
+    "No Live-Go, no Echtgeld-Go, LR remains NO-GO.",
+    "Candidate contract specifies long_only_first_pass direction.",
+    "ATR p75 (61.82 USD) calibration used; HVC window share ~27%."
+  ],
+  "loss_streak": 0,
+  "lr_status": "NO-GO",
+  "max_drawdown": 0.20632542790661013,
+  "net_return": -0.5350017521726411,
+  "parent_issue": "#3166",
+  "profit_factor": 0.18756660786393914,
+  "recommendation": "NO_RECOMMENDATION",
+  "regime_scorecard": {
+    "artifact_ref": "artifacts\\candles\\mexc_multi_window_3032\\selection_manifest.json",
+    "status": "ok",
+    "summary": "Per-window regime labels were estimated via offline ADX/ATR heuristic using a distribution-based ATR p75 calibration rule (61.82 USD). controlled_lab_evidence only."
+  },
+  "replay_vs_paper_status": "not_run",
+  "risk_blocks": 0,
+  "safety_boundaries": [
+    "LR remains NO-GO.",
+    "No Live-Go, no Echtgeld-Go.",
+    "No runtime or Docker actions.",
+    "No production config changes.",
+    "controlled_lab_evidence only.",
+    "No primary_breakout_v1 or range_mean_reversion_v1 tuning occurred."
+  ],
+  "sample_size_verdict": "pass",
+  "scenario_results": [
+    {
+      "max_drawdown": null,
+      "net_return": null,
+      "notes": "See economics summary for per-window results.",
+      "scenario_id": "momentum_capture_v1_mexc_multi_window_3166",
+      "status": "PASS"
+    },
+    {
+      "max_drawdown": null,
+      "net_return": null,
+      "notes": "See economics summary for per-window results.",
+      "scenario_id": "momentum_capture_v1_mexc_multi_window_3166",
+      "status": "PASS"
+    },
+    {
+      "max_drawdown": null,
+      "net_return": null,
+      "notes": "See economics summary for per-window results.",
+      "scenario_id": "momentum_capture_v1_mexc_multi_window_3166",
+      "status": "PASS"
+    },
+    {
+      "max_drawdown": null,
+      "net_return": null,
+      "notes": "See economics summary for per-window results.",
+      "scenario_id": "momentum_capture_v1_mexc_multi_window_3166",
+      "status": "PASS"
+    },
+    {
+      "max_drawdown": null,
+      "net_return": null,
+      "notes": "See economics summary for per-window results.",
+      "scenario_id": "momentum_capture_v1_mexc_multi_window_3166",
+      "status": "PASS"
+    },
+    {
+      "max_drawdown": null,
+      "net_return": null,
+      "notes": "See economics summary for per-window results.",
+      "scenario_id": "momentum_capture_v1_mexc_multi_window_3166",
+      "status": "PASS"
+    },
+    {
+      "max_drawdown": null,
+      "net_return": null,
+      "notes": "See economics summary for per-window results.",
+      "scenario_id": "momentum_capture_v1_mexc_multi_window_3166",
+      "status": "PASS"
+    },
+    {
+      "max_drawdown": null,
+      "net_return": null,
+      "notes": "See economics summary for per-window results.",
+      "scenario_id": "momentum_capture_v1_mexc_multi_window_3166",
+      "status": "PASS"
+    },
+    {
+      "max_drawdown": null,
+      "net_return": null,
+      "notes": "See economics summary for per-window results.",
+      "scenario_id": "momentum_capture_v1_mexc_multi_window_3166",
+      "status": "PASS"
+    },
+    {
+      "max_drawdown": null,
+      "net_return": null,
+      "notes": "See economics summary for per-window results.",
+      "scenario_id": "momentum_capture_v1_mexc_multi_window_3166",
+      "status": "PASS"
+    },
+    {
+      "max_drawdown": null,
+      "net_return": null,
+      "notes": "See economics summary for per-window results.",
+      "scenario_id": "momentum_capture_v1_mexc_multi_window_3166",
+      "status": "PASS"
+    },
+    {
+      "max_drawdown": null,
+      "net_return": null,
+      "notes": "See economics summary for per-window results.",
+      "scenario_id": "momentum_capture_v1_mexc_multi_window_3166",
+      "status": "PASS"
+    },
+    {
+      "max_drawdown": null,
+      "net_return": null,
+      "notes": "See economics summary for per-window results.",
+      "scenario_id": "momentum_capture_v1_mexc_multi_window_3166",
+      "status": "PASS"
+    },
+    {
+      "max_drawdown": null,
+      "net_return": null,
+      "notes": "See economics summary for per-window results.",
+      "scenario_id": "momentum_capture_v1_mexc_multi_window_3166",
+      "status": "PASS"
+    },
+    {
+      "max_drawdown": null,
+      "net_return": null,
+      "notes": "See economics summary for per-window results.",
+      "scenario_id": "momentum_capture_v1_mexc_multi_window_3166",
+      "status": "PASS"
+    },
+    {
+      "max_drawdown": null,
+      "net_return": null,
+      "notes": "See economics summary for per-window results.",
+      "scenario_id": "momentum_capture_v1_mexc_multi_window_3166",
+      "status": "PASS"
+    },
+    {
+      "max_drawdown": null,
+      "net_return": null,
+      "notes": "See economics summary for per-window results.",
+      "scenario_id": "momentum_capture_v1_mexc_multi_window_3166",
+      "status": "PASS"
+    },
+    {
+      "max_drawdown": null,
+      "net_return": null,
+      "notes": "See economics summary for per-window results.",
+      "scenario_id": "momentum_capture_v1_mexc_multi_window_3166",
+      "status": "PASS"
+    },
+    {
+      "max_drawdown": null,
+      "net_return": null,
+      "notes": "See economics summary for per-window results.",
+      "scenario_id": "momentum_capture_v1_mexc_multi_window_3166",
+      "status": "PASS"
+    },
+    {
+      "max_drawdown": null,
+      "net_return": null,
+      "notes": "See economics summary for per-window results.",
+      "scenario_id": "momentum_capture_v1_mexc_multi_window_3166",
+      "status": "PASS"
+    }
+  ],
+  "schema_version": "profitability_evidence_packet.v1",
+  "simulator_drift": "not_assessed",
+  "slippage_cost": 0.0,
+  "source_run_refs": [
+    "momentum_capture_v1_mexc_multi_window_3166/window_001/mc-d2d2b5b3-0001/report.json",
+    "momentum_capture_v1_mexc_multi_window_3166/window_002/mc-f65a010e-0002/report.json",
+    "momentum_capture_v1_mexc_multi_window_3166/window_003/mc-19f27feb-0003/report.json",
+    "momentum_capture_v1_mexc_multi_window_3166/window_004/mc-807b906c-0004/report.json",
+    "momentum_capture_v1_mexc_multi_window_3166/window_005/mc-ddf6f91a-0005/report.json",
+    "momentum_capture_v1_mexc_multi_window_3166/window_006/mc-4797f056-0006/report.json",
+    "momentum_capture_v1_mexc_multi_window_3166/window_007/mc-ab17b145-0007/report.json",
+    "momentum_capture_v1_mexc_multi_window_3166/window_008/mc-c7832b9b-0008/report.json",
+    "momentum_capture_v1_mexc_multi_window_3166/window_009/mc-1c294263-0009/report.json",
+    "momentum_capture_v1_mexc_multi_window_3166/window_010/mc-0e6bfdea-0010/report.json",
+    "momentum_capture_v1_mexc_multi_window_3166/window_011/mc-fbc11b22-0011/report.json",
+    "momentum_capture_v1_mexc_multi_window_3166/window_012/mc-6e51335c-0012/report.json",
+    "momentum_capture_v1_mexc_multi_window_3166/window_013/mc-dce03932-0013/report.json",
+    "momentum_capture_v1_mexc_multi_window_3166/window_014/mc-c5d5e914-0014/report.json",
+    "momentum_capture_v1_mexc_multi_window_3166/window_015/mc-3d2e0663-0015/report.json",
+    "momentum_capture_v1_mexc_multi_window_3166/window_016/mc-1ef57abd-0016/report.json",
+    "momentum_capture_v1_mexc_multi_window_3166/window_017/mc-4a8f6815-0017/report.json",
+    "momentum_capture_v1_mexc_multi_window_3166/window_018/mc-c0c59d3d-0018/report.json",
+    "momentum_capture_v1_mexc_multi_window_3166/window_019/mc-ed3d1afb-0019/report.json",
+    "momentum_capture_v1_mexc_multi_window_3166/window_020/mc-837caead-0020/report.json"
+  ],
+  "spread_cost": 0.0,
+  "strategy_id": "momentum_capture_v1",
+  "trade_count": 274,
+  "win_rate": 0.058394160583941604
+}

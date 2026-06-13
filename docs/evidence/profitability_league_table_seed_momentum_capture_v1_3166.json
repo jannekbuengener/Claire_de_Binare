@@ -1,0 +1,93 @@
+{
+  "schema_version": "profitability_league_table_seed.v1",
+  "seed_id": "plts-momentum-capture-v1-3166-park-seed",
+  "generated_at": "2026-06-13T15:45:15Z",
+  "parent_issue": "#3166",
+  "candidate_id": "cand-momentum-capture-v1-btcusdt-mexc",
+  "candidate_name": "momentum_capture_v1",
+  "source_evidence_refs": [
+    "docs/evidence/profitability_execution_economics_momentum_capture_v1_mexc_multi_window_3166.json",
+    "docs/evidence/profitability_evidence_packet_momentum_capture_v1_mexc_multi_window_3166.json",
+    "docs/evidence/profitability_candidate_momentum_capture_v1_3166.json"
+  ],
+  "contract_refs": [
+    "docs/contracts/profitability_league_table_model.v1.schema.json",
+    "docs/contracts/profitability_league_table_report.v1.schema.json",
+    "docs/strategy/CDB_PROFITABILITY_LEAGUE_TABLE_V1.md",
+    "docs/strategy/CDB_PROFITABILITY_EXECUTION_ECONOMICS_V1.md",
+    "docs/strategy/CDB_PROFITABILITY_ENGINE_CANON.md"
+  ],
+  "evidence_snapshot": {
+    "total_windows": 20,
+    "successful_windows": 20,
+    "windows_with_trades": 20,
+    "closed_trades_total": 274,
+    "trades_win_count": 16,
+    "trades_loss_count": 258,
+    "gross_pnl_quote": -15523.107558894357,
+    "net_pnl_quote": -40443.55306654703,
+    "fees_total_quote": 24920.445507652672,
+    "gross_return_r": -0.20632542790661013,
+    "fee_adjusted_return_r": -0.5350017521726411,
+    "win_rate": 0.058394160583941604,
+    "sample_size_verdict": "pass",
+    "evidence_class": "controlled_lab_evidence"
+  },
+  "ranking_contract_interpretation": {
+    "allowed_recommendations": [
+      "REJECT",
+      "PARK",
+      "PROMOTE_TO_NEXT_RESEARCH_GATE",
+      "UNSAFE",
+      "NO_RECOMMENDATION"
+    ],
+    "gross_only_ranking_allowed": false,
+    "ranking_ready_required": true,
+    "seed_report_table_status": "PARTIAL",
+    "ranking_ready": false,
+    "reason": "The merged evidence supports an explicit PARK decision, but not an honest full ranking. The report schema requires numeric scores while the repo does not define a numeric scoring formula. This seed therefore uses a fail-closed zero-score sentinel and marks ranking_ready=false."
+  },
+  "classification": {
+    "decision": "PARK",
+    "reject_considered": true,
+    "reject_not_taken_reason": "The candidate provides the third league-table entry, achieving the explicit #3164 goal of regime coverage across TREND, RANGE, and HIGH_VOL_CHAOTIC. Strong negative evidence supports the hypothesis that BTCUSDT MEXC 1m offers no profitable edge regardless of regime. Candidate is ring-fenced as PARK/controlled_lab_evidence only, creating no capital or reputational risk.",
+    "decision_basis": [
+      "sample-size PASS was reached in controlled-lab evidence (274 closed trades across 20 windows)",
+      "aggregate economics are materially negative: fee_adjusted_return_r=-0.5350, net_pnl=-40443.55",
+      "fee drag dominates economics (91.2% of gross loss), similar to range_mean_reversion_v1 pattern",
+      "win_rate (5.84%) is the worst across all three PARK candidates",
+      "no promotion is allowed",
+      "the candidate provides the third league-table entry, completing regime coverage"
+    ]
+  },
+  "report_seed_policy": {
+    "total_score_sentinel": 0.0,
+    "dimension_score_sentinel": 0.0,
+    "score_is_comparative": false,
+    "score_note": "Zero scores in the seed report are a fail-closed sentinel for a not-ranking-ready candidate, not a comparative quantitative ranking method."
+  },
+  "safety_boundaries": {
+    "promotion_allowed": false,
+    "live_go": false,
+    "real_money_go": false,
+    "lr_status": "NO-GO",
+    "new_replay_run": false,
+    "db_access": false,
+    "runtime_actions": false,
+    "docker_actions": false,
+    "strategy_change": false,
+    "production_config_change": false
+  },
+  "limitations": [
+    "controlled_lab_evidence only",
+    "windows are independent fragments, not one continuous market history",
+    "public.candles_1m has no source or venue column; MEXC attribution is inherited from prior same-venue evidence",
+    "the league-table report schema requires numeric scores, but the repo does not define a numeric scoring formula",
+    "the report seed therefore uses a fail-closed zero-score sentinel with ranking_ready=false",
+    "momentum_capture_v1 is long-only first pass only; short-side blocked (HOLD_SHORT_SIDE_BLOCKER)",
+    "operational HOLD: parameter set uses ATR p75 (61.82 USD) directional threshold; p90 and p50 variants not tested",
+    "operational HOLD: exit parameters (ATR trailing stop multiple, ATR contraction multiple, max hold bars) are initial research estimates",
+    "operational HOLD: single-symbol candidate (BTCUSDT only)",
+    "high win_rate suggests directional candles in HVC may be noise rather than signal"
+  ]
+}
