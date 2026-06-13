@@ -1,0 +1,57 @@
+[
+  {
+    "entry_ts_ms": 1768597140000,
+    "exit_ts_ms": 1768612380000,
+    "entry_price": 95602.8540539082,
+    "exit_price": 95385.4273296623,
+    "entry_fee": 57.333,
+    "exit_fee": 57.260616,
+    "r_return": -0.0022742702233899932,
+    "entry_regime_id": 0,
+    "exit_regime_id": 1
+  },
+  {
+    "entry_ts_ms": 1768662360000,
+    "exit_ts_ms": 1768666920000,
+    "entry_price": 95686.84437083802,
+    "exit_price": 95302.18023543099,
+    "entry_fee": 57.383399999999995,
+    "exit_fee": 57.209999999999994,
+    "r_return": -0.004020031572117167,
+    "entry_regime_id": 0,
+    "exit_regime_id": 1
+  },
+  {
+    "entry_ts_ms": 1768760880000,
+    "exit_ts_ms": 1768777380000,
+    "entry_price": 95411.44913487368,
+    "exit_price": 95176.0386298513,
+    "entry_fee": 57.218226,
+    "exit_fee": 57.134232,
+    "r_return": -0.002467319248967668,
+    "entry_regime_id": 0,
+    "exit_regime_id": 1
+  },
+  {
+    "entry_ts_ms": 1768810680000,
+    "exit_ts_ms": 1768827900000,
+    "entry_price": 92962.2532289678,
+    "exit_price": 92923.08915565415,
+    "entry_fee": 55.74941999999999,
+    "exit_fee": 55.781796,
+    "r_return": -0.000421290060786256,
+    "entry_regime_id": 0,
+    "exit_regime_id": 0
+  },
+  {
+    "entry_ts_ms": 1768967040000,
+    "exit_ts_ms": 1768980720000,
+    "entry_price": 89599.02781302159,
+    "exit_price": 89445.71114255102,
+    "entry_fee": 53.732532,
+    "exit_fee": 53.69430599999999,
+    "r_return": -0.0017111421207662216,
+    "entry_regime_id": 0,
+    "exit_regime_id": 1
+  }
+]

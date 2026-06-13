@@ -232,6 +232,10 @@
                     "entry_fee": {
                       "type": "number",
                       "minimum": 0.0
+                    },
+                    "entry_regime_id": {
+                      "description": "Regime ID at BUY entry time. Null when unavailable.",
+                      "oneOf": [{"type": "integer"}, {"type": "null"}]
                     }
                   }
                 }
@@ -275,9 +279,13 @@
                     "minimum": 0.0
                   },
                   "volatility": {
-                    "type": "number",
-                    "minimum": 0.0
-                  }
+                      "type": "number",
+                      "minimum": 0.0
+                    },
+                    "execution_regime_id": {
+                      "description": "Regime ID at delayed execution bar. Null when unavailable.",
+                      "oneOf": [{"type": "integer"}, {"type": "null"}]
+                    }
                 }
               }
             }
@@ -457,6 +465,34 @@
         "notes": {
           "type": "string",
           "maxLength": 2000
+        }
+      }
+    },
+    "trades": {
+      "description": "Per-trade lifecycle records with entry/exit regime attribution. Present since runner patch #3178.",
+      "type": "array",
+      "items": {
+        "type": "object",
+        "additionalProperties": true,
+        "required": [
+          "entry_ts_ms",
+          "exit_ts_ms",
+          "entry_price",
+          "exit_price",
+          "entry_fee",
+          "exit_fee",
+          "r_return"
+        ],
+        "properties": {
+          "entry_ts_ms": { "type": "integer", "minimum": 0 },
+          "exit_ts_ms": { "type": "integer", "minimum": 0 },
+          "entry_price": { "type": "number" },
+          "exit_price": { "type": "number" },
+          "entry_fee": { "type": "number", "minimum": 0 },
+          "exit_fee": { "type": "number", "minimum": 0 },
+          "r_return": { "type": "number" },
+          "entry_regime_id": { "oneOf": [{"type": "integer"}, {"type": "null"}] },
+          "exit_regime_id": { "oneOf": [{"type": "integer"}, {"type": "null"}] }
         }
       }
     }

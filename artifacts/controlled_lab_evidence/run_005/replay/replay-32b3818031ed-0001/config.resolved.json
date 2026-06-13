@@ -1,0 +1,19 @@
+{
+  "adapter_id": "primary_breakout_runner_v1",
+  "breakout_buffer": 0.0005,
+  "code_commit": "f9ed75b0",
+  "dataset_source": "file",
+  "db_dataset_window": null,
+  "deterministic_verify": false,
+  "dry_run": false,
+  "entry_lookback_minutes": 240,
+  "exit_lookback_minutes": 120,
+  "input_candles_file": "artifacts/candles/mexc_sample_expansion_3032_1m_cadence_regime_calibrated/candles.jsonl",
+  "min_minutes_between_entries": 60,
+  "order_book_depth_multiplier": 10000.0,
+  "order_size": 1.0,
+  "output_directory": "artifacts/controlled_lab_evidence/run_005/replay",
+  "speedup_profile": "instant",
+  "strategy_id": "primary_breakout_v1",
+  "symbol": "BTCUSDT"
+}

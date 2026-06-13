@@ -529,7 +529,8 @@ def _evaluate_primary_breakout_request(
                 "symbol": request.symbol,
                 "close_now": close_now,
                 "highest_high": highest_high,
-                "breakout_threshold": highest_high * (1 + config.bridge.breakout_buffer),
+                "breakout_threshold": highest_high
+                * (1 + config.bridge.breakout_buffer),
                 "breakout_buffer": config.bridge.breakout_buffer,
                 "market_state_fresh": market_state_fresh,
                 "regime_fresh": regime_fresh,
@@ -638,22 +639,25 @@ def _build_report(
 
     order_size = float(run_config.order_size)
     gross_pnl_quote = sum(
-        (float(t["exit_price"]) - float(t["entry_price"])) * order_size
-        for t in trades
+        (float(t["exit_price"]) - float(t["entry_price"])) * order_size for t in trades
     )
     fees_total = sum(
-        float(t.get("entry_fee", 0.0)) + float(t.get("exit_fee", 0.0))
-        for t in trades
+        float(t.get("entry_fee", 0.0)) + float(t.get("exit_fee", 0.0)) for t in trades
     )
     net_pnl_quote = gross_pnl_quote - fees_total
 
     # Fee-adjusted trade returns for r-multiple metrics
-    fee_adj_trade_returns = [
-        float(trade.get("exit_price", 0.0)) / float(trade.get("entry_price", 1.0)) - 1.0
-        - (float(trade.get("entry_fee", 0.0)) + float(trade.get("exit_fee", 0.0)))
-        / (float(trade.get("entry_price", 1.0)) * order_size)
-        for trade in trades
-    ] if trades else []
+    fee_adj_trade_returns = (
+        [
+            float(trade.get("exit_price", 0.0)) / float(trade.get("entry_price", 1.0))
+            - 1.0
+            - (float(trade.get("entry_fee", 0.0)) + float(trade.get("exit_fee", 0.0)))
+            / (float(trade.get("entry_price", 1.0)) * order_size)
+            for trade in trades
+        ]
+        if trades
+        else []
+    )
     if fee_adj_trade_returns:
         fee_adj_equity = 0.0
         fee_adj_peak = 0.0
@@ -672,9 +676,7 @@ def _build_report(
         if fee_adj_gross_loss <= 0 and fee_adj_gross_profit > 0:
             fee_adj_gross_loss = _EPSILON
         fee_adj_profit_factor = (
-            fee_adj_gross_profit / fee_adj_gross_loss
-            if fee_adj_gross_loss > 0
-            else 0.0
+            fee_adj_gross_profit / fee_adj_gross_loss if fee_adj_gross_loss > 0 else 0.0
         )
     else:
         fee_adj_expectancy_r = None
@@ -786,6 +788,7 @@ def _build_report(
             "period_end_ts_ms": last_ts_ms,
         },
         "metrics": metrics,
+        "trades": list(trades),
         "thresholds_applied": thresholds,
         "gate_result": gate_result,
     }
