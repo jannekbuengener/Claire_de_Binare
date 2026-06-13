@@ -1,0 +1,95 @@
+{
+  "schema_version": "profitability_league_table_report.v1",
+  "report_id": "pltr-range-mr-v1-park-seed-3162",
+  "model_id": "pltm-profitability-v1",
+  "generated_at": "2026-06-13T16:30:00Z",
+  "table_status": "PARTIAL",
+  "candidate_rankings": [
+    {
+      "candidate_id": "cand-primary-breakout-v1-btcusdt-mexc-3032",
+      "rank": 1,
+      "total_score": 0.0,
+      "ranking_ready": false,
+      "net_return": -0.1221562421,
+      "dimension_scores": [
+        {
+          "dimension": "NET_RETURN",
+          "score": 0.0
+        },
+        {
+          "dimension": "ROBUSTNESS",
+          "score": 0.0
+        },
+        {
+          "dimension": "EVIDENCE_COMPLETENESS",
+          "score": 0.0
+        },
+        {
+          "dimension": "SAFETY_STATUS",
+          "score": 0.0
+        },
+        {
+          "dimension": "STRESS_RESILIENCE",
+          "score": 0.0
+        }
+      ],
+      "recommendation": "PARK",
+      "limitations_summary": [
+        "Aggregate economics are materially negative: net_pnl_quote=-9258.98 and fee_adjusted_return_r=-0.122156.",
+        "Evidence class remains controlled_lab_evidence only; no natural-paper evidence exists.",
+        "ranking_ready=false because the repo has no numeric scoring formula for an honest full ranking; zero scores are a fail-closed sentinel, not a comparative metric.",
+        "No promotion, no paper-ready implication, no live-ready implication."
+      ]
+    },
+    {
+      "candidate_id": "cand-range-mean-reversion-v1-btcusdt-mexc",
+      "rank": 2,
+      "total_score": 0.0,
+      "ranking_ready": false,
+      "net_return": -0.8788407991798681,
+      "dimension_scores": [
+        {
+          "dimension": "NET_RETURN",
+          "score": 0.0
+        },
+        {
+          "dimension": "ROBUSTNESS",
+          "score": 0.0
+        },
+        {
+          "dimension": "EVIDENCE_COMPLETENESS",
+          "score": 0.0
+        },
+        {
+          "dimension": "SAFETY_STATUS",
+          "score": 0.0
+        },
+        {
+          "dimension": "STRESS_RESILIENCE",
+          "score": 0.0
+        }
+      ],
+      "recommendation": "PARK",
+      "limitations_summary": [
+        "Aggregate economics are severely negative: net_pnl_quote=-67189.13 and fee_adjusted_return_r=-0.8788.",
+        "Evidence class remains controlled_lab_evidence only; no natural-paper evidence exists.",
+        "ranking_ready=false because the repo has no numeric scoring formula for an honest full ranking; zero scores are a fail-closed sentinel, not a comparative metric.",
+        "No promotion, no paper-ready implication, no live-ready implication.",
+        "Long-only first pass only; short-side blocked (HOLD_SHORT_SIDE_BLOCKER).",
+        "Operational HOLD: parameter set is initial research estimate requiring calibration.",
+        "Single-symbol candidate (BTCUSDT only).",
+        "Win_rate comparison corrected: primary_breakout_v1 actual win_rate is 15.38% (not 51.3% as stated in issue #3162 body)."
+      ]
+    }
+  ],
+  "limitations": [
+    "This is a seed report for two candidates and is intentionally PARTIAL (table_status=PARTIAL).",
+    "The league-table schema requires numeric scores, but the repo does not define a numeric scoring formula; zero scores here are a fail-closed sentinel only.",
+    "The candidates are visible for ranking governance, but not honestly full-rankable yet.",
+    "League-table output is advisory only and cannot authorize promotion, paper deployment, or live capital.",
+    "Both candidates are PARK with ranking_ready=false; no comparative ranking exists despite shown rank positions.",
+    "Range_mean_reversion_v1 is long-only first pass only; short-side blocked.",
+    "Rank positions are static (1=primary_breakout_v1, 2=range_mean_reversion_v1) based solely on net_return_r (less negative is rank 1); this is not a scored ranking.",
+    "A third candidate is recommended for meaningful multi-candidate comparison before a scoring formula can be developed."
+  ]
+}
