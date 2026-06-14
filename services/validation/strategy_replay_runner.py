@@ -64,7 +64,7 @@ import sys
 from dataclasses import dataclass
 from datetime import timezone
 from pathlib import Path
-from typing import Any
+from typing import Any, Callable
 
 from core.replay.canonical_json import canonical_hash, canonical_json_dumps
 from core.replay.dataset_provider import (
@@ -79,6 +79,8 @@ from core.replay.historical_bridge import (
     PrimaryBreakoutBridgeConfig,
     PRIMARY_BREAKOUT_STRATEGY_ID,
     PRIMARY_BREAKOUT_SYMBOL,
+    RANGE_MEAN_REVERSION_STRATEGY_ID,
+    RANGE_MEAN_REVERSION_SYMBOL,
     build_primary_breakout_historical_bridge,
 )
 from core.replay.replay_contracts import (
@@ -118,6 +120,12 @@ from core.replay.replay_report_builder import (
 from core.utils.clock import utcnow
 from core.utils.postgres_client import create_postgres_connection
 from services.validation.replay_reporter import ReplayReporter, ReplayReporterError
+from scripts.profitability.run_range_mean_reversion_pipeline_3157 import (
+    WARMUP_CANDLES as RMR_WARMUP_CANDLES,
+)
+from services.validation.rmr_backtest_runner import (
+    run_range_mean_reversion_backtest,
+)
 from services.validation.strategy_backtest_runner import (
     PrimaryBreakoutBacktestError,
     PrimaryBreakoutBacktestRunConfig,
@@ -128,9 +136,18 @@ from services.validation.strategy_backtest_runner import (
 # ---------------------------------------------------------------------------
 # Supported constants (fail-closed validation anchors)
 # ---------------------------------------------------------------------------
-_SUPPORTED_STRATEGY_IDS: frozenset[str] = frozenset({PRIMARY_BREAKOUT_STRATEGY_ID})
-_SUPPORTED_SYMBOLS: frozenset[str] = frozenset({PRIMARY_BREAKOUT_SYMBOL})
-_SUPPORTED_ADAPTER_IDS: frozenset[str] = frozenset({"primary_breakout_runner_v1"})
+_SUPPORTED_STRATEGY_IDS: frozenset[str] = frozenset({
+    PRIMARY_BREAKOUT_STRATEGY_ID,
+    RANGE_MEAN_REVERSION_STRATEGY_ID,
+})
+_SUPPORTED_SYMBOLS: frozenset[str] = frozenset({
+    PRIMARY_BREAKOUT_SYMBOL,
+    RANGE_MEAN_REVERSION_SYMBOL,
+})
+_SUPPORTED_ADAPTER_IDS: frozenset[str] = frozenset({
+    "primary_breakout_runner_v1",
+    "range_mean_reversion_runner_v1",
+})
 
 _DEFAULT_OUTPUT_DIR = "artifacts/replay_reports"
 _DEFAULT_STRATEGY_ID = PRIMARY_BREAKOUT_STRATEGY_ID
@@ -880,6 +897,27 @@ def run_arvp_replay(config: ARVPReplayConfig) -> int:
     Returns:
         Exit code integer: 0 success, 1 config error, 2 runtime/input error.
     """
+    # Strategy-aware warmup count
+    if config.strategy_id == RANGE_MEAN_REVERSION_STRATEGY_ID:
+        warmup_count = RMR_WARMUP_CANDLES
+    else:
+        warmup_count = max(
+            config.entry_lookback_minutes,
+            config.exit_lookback_minutes,
+        )
+
+    # Scenario group path (supported for all strategies)
+    if config.scenario_ids:
+        return _run_scenario_group_path_with_candles(config, warmup_count=warmup_count)
+
+    # Single-run path is PB-only for now (RMR #3196 only requires group dispatch)
+    if config.strategy_id == RANGE_MEAN_REVERSION_STRATEGY_ID:
+        print(
+            "ERROR: Single-run replay not yet supported for RMR (use --scenario-group)",
+            file=sys.stderr,
+        )
+        return 2
+
     run_cfg = PrimaryBreakoutBacktestRunConfig(
         bridge=PrimaryBreakoutBridgeConfig(
             entry_lookback_minutes=config.entry_lookback_minutes,
@@ -890,14 +928,6 @@ def run_arvp_replay(config: ARVPReplayConfig) -> int:
         order_size=config.order_size,
         order_book_depth_multiplier=config.order_book_depth_multiplier,
     )
-    warmup_count = max(
-        run_cfg.bridge.entry_lookback_minutes,
-        run_cfg.bridge.exit_lookback_minutes,
-    )
-
-    # Scenario group path
-    if config.scenario_ids:
-        return _run_scenario_group_path_with_candles(config, warmup_count=warmup_count)
 
     try:
         dataset_result = _load_dataset_result(config, warmup_count=warmup_count)
@@ -1316,37 +1346,12 @@ def _build_argument_parser() -> argparse.ArgumentParser:
     return parser
 
 
-def _run_scenario_group_path_with_candles(
-    config: ARVPReplayConfig,
-    *,
-    warmup_count: int,
-) -> int:
-    try:
-        dataset_result = _load_dataset_result(config, warmup_count=warmup_count)
-    except ReplayRunnerError as exc:
-        print(f"ERROR: {exc}", file=sys.stderr)
-        return 2
-
-    candles: list[dict[str, Any]] = [dict(candle) for candle in dataset_result.candles]
-
-    if config.dry_run:
-        print(
-            "DRY-RUN: scenario group valid, dataset loaded. "
-            f"source={config.dataset_source!r}, candles_total={len(candles)}."
-        )
-        return 0
-
-    return _run_scenario_group_path(config, candles)
-
-
-def _run_scenario_group_path(
-    config: ARVPReplayConfig,
+def _make_pb_run_single_fn(
     candles: list[dict[str, Any]],
-) -> int:
-    """Run scenario group via harness."""
-    output_dir = Path(config.output_directory)
-    code_commit = _get_code_commit()
-
+    config: ARVPReplayConfig,
+    code_commit: str | None,
+    output_dir: Path,
+) -> Callable[[ScenarioSpec], ScenarioRunResult]:
     def run_single(spec: ScenarioSpec) -> ScenarioRunResult:
         try:
             run_cfg = PrimaryBreakoutBacktestRunConfig(
@@ -1397,6 +1402,96 @@ def _run_scenario_group_path(
                 exit_code=2,
                 failure_reason=str(exc),
             )
+
+    return run_single
+
+
+def _make_rmr_run_single_fn(
+    candles: list[dict[str, Any]],
+    config: ARVPReplayConfig,
+    code_commit: str | None,
+    output_dir: Path,
+) -> Callable[[ScenarioSpec], ScenarioRunResult]:
+    def run_single(spec: ScenarioSpec) -> ScenarioRunResult:
+        try:
+            resolved_overrides = _apply_scenario_overrides(
+                config, spec.config_overrides
+            )
+            warmup_count = RMR_WARMUP_CANDLES
+            scenario_candles = _apply_replay_data_overrides(
+                candles,
+                resolved_overrides.replay_data_overrides,
+                warmup_count=warmup_count,
+            )
+
+            backtest_report = run_range_mean_reversion_backtest(
+                scenario_candles,
+                run_config=None,
+                simulator_config=resolved_overrides.simulator_config,
+                code_commit=code_commit,
+            )
+
+            run_id = backtest_report["run_metadata"]["run_id"]
+            return ScenarioRunResult(
+                scenario_id=spec.scenario_id,
+                exit_code=0,
+                run_id=run_id,
+            )
+        except ReplayRunnerError as exc:
+            return ScenarioRunResult(
+                scenario_id=spec.scenario_id,
+                exit_code=2,
+                failure_reason=str(exc),
+            )
+        except Exception as exc:
+            return ScenarioRunResult(
+                scenario_id=spec.scenario_id,
+                exit_code=2,
+                failure_reason=str(exc),
+            )
+
+    return run_single
+
+
+def _run_scenario_group_path_with_candles(
+    config: ARVPReplayConfig,
+    *,
+    warmup_count: int,
+) -> int:
+    try:
+        dataset_result = _load_dataset_result(config, warmup_count=warmup_count)
+    except ReplayRunnerError as exc:
+        print(f"ERROR: {exc}", file=sys.stderr)
+        return 2
+
+    candles: list[dict[str, Any]] = [dict(candle) for candle in dataset_result.candles]
+
+    if config.dry_run:
+        print(
+            "DRY-RUN: scenario group valid, dataset loaded. "
+            f"source={config.dataset_source!r}, candles_total={len(candles)}."
+        )
+        return 0
+
+    return _run_scenario_group_path(config, candles)
+
+
+def _run_scenario_group_path(
+    config: ARVPReplayConfig,
+    candles: list[dict[str, Any]],
+) -> int:
+    """Run scenario group via harness."""
+    output_dir = Path(config.output_directory)
+    code_commit = _get_code_commit()
+
+    if config.strategy_id == RANGE_MEAN_REVERSION_STRATEGY_ID:
+        run_single = _make_rmr_run_single_fn(
+            candles, config, code_commit, output_dir
+        )
+    else:
+        run_single = _make_pb_run_single_fn(
+            candles, config, code_commit, output_dir
+        )
 
     try:
         manifest = run_builtin_scenario_group(

@@ -267,6 +267,15 @@ class TestARVPReplayConfig:
         with pytest.raises(ValueError, match="unsupported adapter_id"):
             cfg.validate()
 
+    def test_validate_accepts_rmr_strategy_and_adapter(self):
+        cfg = ARVPReplayConfig(
+            input_candles_file="x.json",
+            strategy_id="range_mean_reversion_v1",
+            symbol="BTCUSDT",
+            adapter_id="range_mean_reversion_runner_v1",
+        )
+        cfg.validate()
+
     def test_validate_fails_unsupported_speedup_profile(self):
         cfg = ARVPReplayConfig(
             input_candles_file="x.json",
@@ -1081,6 +1090,87 @@ class TestDryRun:
         assert exit_code == 2
         captured = capsys.readouterr()
         assert f"ERROR: {message}" in captured.err
+
+
+# ---------------------------------------------------------------------------
+# TestRMRDispatch
+# ---------------------------------------------------------------------------
+@pytest.mark.unit
+class TestRMRDispatch:
+    """RMR strategy dispatch: config, scenario group dry-run, single-run guard."""
+
+    def _make_candles(self, count: int = 245) -> list[dict]:
+        return [
+            {
+                "ts_ms": 1_000_000 + i * 60_000,
+                "open": float(100 + i % 10),
+                "high": float(101 + i % 10),
+                "low": float(99 + i % 10),
+                "close": float(100 + i % 10),
+                "volume": 10.0,
+                "regime_id": 1,
+            }
+            for i in range(count)
+        ]
+
+    def test_rmr_scenario_group_dry_run_returns_0(self, tmp_path, capsys):
+        f = tmp_path / "candles.json"
+        f.write_text(json.dumps(self._make_candles(245)))
+
+        cfg = ARVPReplayConfig(
+            input_candles_file=str(f),
+            output_directory=str(tmp_path),
+            dry_run=True,
+            strategy_id="range_mean_reversion_v1",
+            symbol="BTCUSDT",
+            adapter_id="range_mean_reversion_runner_v1",
+            scenario_ids=("baseline", "delayed_execution"),
+        )
+
+        exit_code = run_arvp_replay(cfg)
+        assert exit_code == 0
+        captured = capsys.readouterr()
+        assert "DRY-RUN" in captured.out
+        assert "scenario group" in captured.out
+
+    def test_rmr_without_scenario_ids_returns_2(self, tmp_path):
+        f = tmp_path / "candles.json"
+        f.write_text(json.dumps(self._make_candles(245)))
+
+        cfg = ARVPReplayConfig(
+            input_candles_file=str(f),
+            output_directory=str(tmp_path),
+            strategy_id="range_mean_reversion_v1",
+            symbol="BTCUSDT",
+            adapter_id="range_mean_reversion_runner_v1",
+        )
+
+        exit_code = run_arvp_replay(cfg)
+        assert exit_code == 2
+
+    def test_rmr_runtime_error_in_scenario_group_returns_2(self, tmp_path, capsys):
+        f = tmp_path / "candles.json"
+        f.write_text(json.dumps(self._make_candles(245)))
+        harness_error = ScenarioHarnessError("RMR scenario harness failure")
+
+        cfg = ARVPReplayConfig(
+            input_candles_file=str(f),
+            output_directory=str(tmp_path),
+            strategy_id="range_mean_reversion_v1",
+            symbol="BTCUSDT",
+            adapter_id="range_mean_reversion_runner_v1",
+            scenario_ids=("baseline",),
+        )
+
+        with patch(
+            "services.validation.strategy_replay_runner.run_builtin_scenario_group",
+            side_effect=harness_error,
+        ):
+            exit_code = run_arvp_replay(cfg)
+
+        assert exit_code == 2
+        captured = capsys.readouterr()
+        assert "RMR scenario harness failure" in captured.err
 
 
 # ---------------------------------------------------------------------------

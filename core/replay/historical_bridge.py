@@ -16,6 +16,8 @@ from core.contracts.external_adapter_contracts import StrategyAdapterRequest
 
 PRIMARY_BREAKOUT_STRATEGY_ID = "primary_breakout_v1"
 PRIMARY_BREAKOUT_SYMBOL = "BTCUSDT"
+RANGE_MEAN_REVERSION_STRATEGY_ID = "range_mean_reversion_v1"
+RANGE_MEAN_REVERSION_SYMBOL = "BTCUSDT"
 ONE_MINUTE_MS = 60_000
 
 VALID_PRICE_POLICIES = frozenset({"close", "high", "hlc3", "ohlc4"})
