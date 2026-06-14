@@ -14,7 +14,7 @@ This roadmap defines a sequential, evidence-gated path from **ARVP product-compl
 
 **ARVP must reach product-complete before Live-Go work meaningfully resumes.**
 
-ARVP exists as a *paper-phase multiplier* — it accelerates evidence generation by replaying historical market data through the real strategy/execution path, comparing against actual paper behavior, and surfacing simulator drift. Right now ARVP infrastructure is landed, but calibration evidence is a single 1-minute pilot window on one symbol. That is not product-complete.
+ARVP exists as a *paper-phase multiplier* — it accelerates evidence generation by replaying historical market data through the real strategy/execution path, comparing against actual paper behavior, and surfacing simulator drift. The original single-window pilot limitation is no longer the only truth: Phase A remains blocked on the natural-paper gate, while the bounded controlled-lab follow-up lane `#3172-#3184` delivered multi-regime attribution and ended with **PARK primary_breakout_v1**. That controlled-lab lane does not clear Product-Complete.
 
 Live-Go (LR-050) is currently **NO-GO** with seven open blockers documented in `LR-050-FINAL-RECONCILE.md`. Three of those blockers (canary values, execution-realism, calibration-informed risk bounds) depend on ARVP evidence to be materially informed; the remaining four (receiver proof, secrets readiness, venue/testnet audit, human approval wording) can be prepared in parallel without ARVP complete. However, Phase A (ARVP product-complete) remains the sequencing prerequisite because calibrated replay-vs-paper evidence is needed before any honest canary-parameter decision can be made — and right now, that evidence does not exist at multi-window scale.
 
@@ -36,9 +36,12 @@ This roadmap sequences work into five phases (A–E), each with explicit gates. 
 | ARVP replay-vs-paper comparison | **Delivered** (#1902, PR #1916) | `arvp_platform.md` §4.9 |
 | ARVP calibration report | **Delivered** (#1903, PR #1918) | `arvp_platform.md` §4.9 |
 | ARVP regime scorecards | **Delivered** (#1904, PR #1920) | `arvp_platform.md` §4.7 |
-| ARVP execution realism | **PARKED** (#1905) | `#1900` comment 2026-05-14 |
-| Pilot evidence | **1 window** (BTCUSDT, 1-minute, pessimistic drift) | `arvp_calibration_pilot_1932_2026-04-26.md` |
-| Calibration batch seed | **1 window** (same pilot, HOLD for additional windows) | `arvp_calibration_batch_2961_2026-06-04.md` |
+| ARVP Product-Complete gate | **BLOCKED** (`#2974` closed) | `arvp_product_complete_review_2974.md` |
+| Natural-paper §5.2.4 path | **Still blocked** after Option-E split | `arvp_option_e_waiver_split_decision_3087_3095.md` |
+| Controlled-lab evidence lane | **Delivered** (`#3172-#3184`) | `arvp_post_run_005_primary_breakout_v1_decision_3181.md`, `arvp_exit_regime_decay_diagnosis_3183.md` |
+| `primary_breakout_v1` status | **PARKED** | `arvp_exit_regime_decay_diagnosis_3183.md` |
+| ARVP execution realism | **`#1905` CLOSED/PARKED**; no unpark from this lane | GitHub live `#1905`, `#2970` decision |
+| Next active research lane | **Candidate selection/spec only** | `arvp_roadmap_reconcile_after_primary_breakout_park_2985_1900.md` |
 | LR-050 blockers | 7 open (runtime dry-run, receiver proof, canary values, venue audit, secrets, observability, human approval) | `LR-050-FINAL-RECONCILE.md` §3 |
 | P0–P4 | All **DONE** | `LR-AUDIT-STATUS-2026-03-05.md` §B |
 | P5 prestart pack | **Committed** (does not authorize live capital) | `reports/p5_canary/2026-04-04/` |
@@ -90,11 +93,11 @@ ARVP is "product-complete" when it can serve its stated purpose — **paper-phas
 
 | Criterion | Metric | Current Gap | Issue |
 |-----------|--------|-------------|-------|
-| Paper Reference Window Bank | At least 2 (target: 3+) comparison-grade windows; window width data-driven (prefer 5+ minutes); BTCUSDT-only acceptable for first canary product path; multi-symbol is an extension, not a blocker for product-complete; market-condition diversity best-effort, repo-backed | Only 1 narrow pilot window (1 minute, BTCUSDT) exists; `HOLD_MISSING_COMPARISON_GRADE_WINDOWS` | #2961 |
-| Replay-vs-Paper Batch Compare | Reproducible batch comparison across the window bank with per-window deltas and fingerprints | Batch exists for 1 window; multi-window comparison not evidenced | #2961 |
-| Calibration + Drift Classification | Systematic drift classification (optimistic/pessimistic/timing_delta/execution_semantics_gap/missing_data) per window | Classification surface exists; only pessimistic drift demonstrated on 1 narrow window | #1903, #2961 |
-| Regime Interpretation | Regime-scorecard output per window with activity/coverage metrics; no regime inference without data | Scorecard surface exists; `unavailable` on pilot (no `regime_segments`) | #1904, #2961 |
-| Execution Realism Gap Identification | Ranked, data-driven gap identification from calibration findings; narrow, testable improvement scope | #1905 PARKED; no ranked findings beyond pilot pessimistic drift | #1905 |
+| Paper Reference Window Bank | At least 2 (target: 3+) comparison-grade windows; window width data-driven (prefer 5+ minutes); BTCUSDT-only acceptable for first canary product path; multi-symbol is an extension, not a blocker for product-complete; market-condition diversity best-effort, repo-backed | 2-window bank exists, but no natural-paper window with non-empty `regime_segments`; 3+ remains a quality target, not a cleared gate | #2974, #3087 |
+| Replay-vs-Paper Batch Compare | Reproducible batch comparison across the window bank with per-window deltas and fingerprints | 2-window batch compare is delivered; the remaining gap is gate-clearing natural-paper evidence, not missing batch machinery | #2974 |
+| Calibration + Drift Classification | Systematic drift classification (optimistic/pessimistic/timing_delta/execution_semantics_gap/missing_data) per window | 2-window classification is delivered; certainty remains bounded and does not reopen the parked `primary_breakout_v1` lane | #2970, #2974 |
+| Regime Interpretation | Regime-scorecard output per window with activity/coverage metrics; no regime inference without data | Natural-paper scorecards remain unavailable on the current bank; later controlled-lab multi-regime attribution does not clear the natural-paper gate | #2974, #3174, #3175, #3179 |
+| Execution Realism Gap Identification | Ranked, data-driven gap identification from calibration findings; narrow, testable improvement scope | Ranked gap identification was completed, but `#1905` stayed CLOSED/PARKED and no continuation path was opened from the parked `primary_breakout_v1` lane | #2970, #1905 |
 
 ### 5.2 Product-Complete Gate
 
@@ -116,7 +119,7 @@ ARVP product-complete is reached when:
 
 **Contract:** `arvp_paper_reference_contract.md` (v1, #1901)
 
-**Current state:** 1 window (`replay-ae0be21cc75e-0001`, BTCUSDT, 1-minute)
+**Current state:** 2 comparison-grade windows were delivered for the existing batch path, but no natural-paper window with non-empty `regime_segments` exists.
 
 **First step — attempt extraction from existing data (no runtime, no stack start):**
 - Use `paper_reference_window_runner.py` with readonly PostgreSQL access against the existing `correlation_ledger`
@@ -130,15 +133,15 @@ ARVP product-complete is reached when:
 - Window width is data-driven (prefer 5+ minutes); 1h per window is aspirational, not a hard minimum
 - Multi-symbol replay requires `historical_bridge.py` adapter expansion (currently primary_breakout_v1/BTCUSDT-only); single-symbol BTCUSDT product-complete is acceptable for canary start
 
-**Blocking issue:** #2961 (HOLD for additional windows)
+**Blocking issue:** no gate-clearing natural-paper window with non-empty `regime_segments` is currently available.
 
-**Issue anchor:** #2961
+**Issue anchor:** historical `#2961`; later gate review `#2974`; later split decision `#3087`
 
 ### Workstream A2: Replay-vs-Paper Batch Compare
 
 **Goal:** Reproducible batch comparison across all bank windows with per-window deltas and fingerprints.
 
-**Current state:** Surface exists (#1902), single-window comparison evidenced.
+**Current state:** Surface exists (#1902); 2-window batch comparison was delivered and reviewed.
 
 **Required next step:**
 - Run ARVP replay against each window-bank entry
@@ -151,7 +154,7 @@ ARVP product-complete is reached when:
 
 **Goal:** Systematic calibration report per window with drift classification.
 
-**Current state:** Surface exists (#1903), one pessimistic classification demonstrated.
+**Current state:** Surface exists (#1903); 2-window drift classification was delivered, with bounded certainty and no rescue path for the later parked `primary_breakout_v1` lane.
 
 **Required next step:**
 - For each batch window, classify drift as one of: `simulator_optimistic`, `simulator_pessimistic`, `timing_delta`, `execution_semantics_gap`, `missing_data`
@@ -164,7 +167,7 @@ ARVP product-complete is reached when:
 
 **Goal:** Regime scorecard per window with meaningful regime segments.
 
-**Current state:** Surface exists (#1904); pilot scorecard `unavailable` (no `regime_segments`).
+**Current state:** Surface exists (#1904); natural-paper scorecards on the existing bank remain `unavailable`, while the later controlled-lab lane produced multi-regime attribution without clearing the natural-paper gate.
 
 **Required next step:**
 - Longer windows (1h+) will naturally produce regime segments
@@ -177,12 +180,12 @@ ARVP product-complete is reached when:
 
 **Goal:** Ranked, data-driven execution realism improvements identified from calibration.
 
-**Current state:** #1905 PARKED / evidence-blocked.
+**Current state:** Ranked execution-realism gap identification was completed and documented via `#2970`, while `#1905` remains **CLOSED/PARKED** and `#2980` did not open a legitimate continuation path for the parked `primary_breakout_v1` lane. The later controlled-lab follow-up chain `#3172-#3184` ended with **PARK primary_breakout_v1**.
 
 **Required next step:**
-- After A3 produces multi-window calibration with classified drift, the top-ranked gap(s) can be identified
-- Scope a narrow, testable improvement (not a generic "add all realism features" bucket)
-- Only then unpark #1905
+- Do not tune or rescue `primary_breakout_v1` inside this lane.
+- Keep `#1905` parked/closed.
+- Treat the next honest research move as **candidate selection/specification** from existing repo-backed profitability and candidate evidence.
 
 **Dependency:** A3 (needs ranked calibration findings first)
 
@@ -190,10 +193,10 @@ ARVP product-complete is reached when:
 
 **Goal:** An operator can execute ARVP end-to-end and interpret results without deep code diving.
 
-**Current state:** No consolidated operator runbook for ARVP exists. The `strategy_replay_runner.py` CLI is the front door, but end-to-end guidance (data preparation → replay → compare → calibrate → interpret) is not documented as a single operational document.
+**Current state:** Delivered via `#2972` / PR `#3010`. `docs/runbooks/ARVP_OPERATOR_RUNBOOK.md` exists on `main` and covers the end-to-end ARVP operating order and interpretation path.
 
 **Required next step:**
-- Write `docs/runbooks/ARVP_OPERATOR_RUNBOOK.md` covering: window selection, replay execution, batch comparison, calibration reading, drift classification interpretation
+- Keep the runbook aligned with live control truth and future candidate-selection follow-ups. No new runbook creation work is currently needed in this roadmap slice.
 
 **Dependency:** A1–A3 (needs working pipeline first)
 
@@ -229,7 +232,7 @@ These workstreams are sequenced AFTER ARVP product-complete. They cannot be hone
 
 **Gate:** A5 completed (ranked gaps identified).
 
-**Issue anchor:** #1905 (unparked after A5)
+**Issue anchor:** no active issue is being advanced from this lane while `primary_breakout_v1` is parked; any future fix lane requires a new bounded issue after candidate selection.
 
 ### Workstream C1: Canary Caps and Symbolset
 
@@ -384,8 +387,8 @@ The following are **absolute stop rules** for any agent working on this roadmap:
 | Roadmap Element | Issue Anchor | Role |
 |-----------------|-------------|------|
 | ARVP north-star meta | #1900 | ARVP product-intent anchor; remains open until product-complete |
-| ARVP calibration batch | #2961 | Current batch-window gap; HOLD for additional windows |
-| ARVP execution realism | #1905 | PARKED; unpark only after A5 ranked findings |
+| ARVP calibration batch | #2961 | Historical batch anchor; delivered and no longer the active gap issue |
+| ARVP execution realism | #1905 | Closed/parked historical anchor; no current reopen path from the parked `primary_breakout_v1` lane |
 | ARVP paper reference contract | #1901 | Delivered (PR #1914) |
 | ARVP comparison surface | #1902 | Delivered (PR #1916) |
 | ARVP calibration surface | #1903 | Delivered (PR #1918) |
@@ -406,31 +409,24 @@ The following are **absolute stop rules** for any agent working on this roadmap:
 
 ---
 
-## 11. Recommended Next 5 Issues to Create or Update
+## 11. Reconciled Next Slice
 
-### Create
+The earlier create/update list for this roadmap is stale. `#2961`, `#2970`, `#2972`, `#2974`, `#3087`, `#3094`, and the bounded controlled-lab lane `#3172-#3184` have already landed or closed.
 
-1. **`[ARVP][WINDOW-BANK] Extract comparison-grade paper reference windows from existing correlation_ledger`**
-   - Scope: Use `paper_reference_window_runner.py` (readonly Postgres) to extract 2+ additional `paper_reference_window.v1` entries from the existing `correlation_ledger`. No runtime, no Docker, no stack start. If the 14-day paper trading period (#1784) left comparison-grade data, extraction is possible without new runtime. Only if existing data is insufficient: plan a new staged/shadow paper trading period.
-   - Parent: #1900, #2961
-   - **Note:** This is the critical bottleneck. The first attempt should be readonly extraction — no new runtime until existing data is exhausted. `historical_bridge.py` currently supports only BTCUSDT; multi-symbol replay requires adapter expansion.
+### Current next action
 
-2. **`[ARVP][RUNBOOK] Create ARVP operator runbook`**
-   - Scope: Document end-to-end ARVP execution (data prep → replay → compare → calibrate → interpret) as a single operational guide
-   - Parent: #1900
-   - Can be started in parallel with A1 (documentation task, no runtime needed)
+1. **Create one bounded candidate-selection issue after the `primary_breakout_v1` PARK decision.**
+   - Scope: read-only triage of existing repo-backed candidate evidence, shortlist, reject/park reasons, and one recommended next executable slice.
+   - Parent: `#1900`
+   - Refs: `#2985`, `#3181`, `#3183`
+   - Explicitly out of scope: implementation, optimization, runtime changes, Live-Go, Echtgeld-Go, and any `primary_breakout_v1` rescue path.
 
-### Update
+### Explicitly not next
 
-3. **#2961 — Update scope to reference this roadmap and Phase A1**
-   - Current: "Run replay-vs-paper calibration batch on real reference windows"
-   - Add: Reference to ARVP-to-Live-Go roadmap Phase A1; make window-bank collection an explicit prerequisite
-
-4. **#1905 — Keep PARKED but annotate with roadmap dependency**
-   - Add: "Unblock requires Phase A5 — ranked calibration findings from multi-window batch. Do not unpark before A3 is complete."
-
-5. **#2535 — Annotate with roadmap cross-reference**
-   - Add: Reference to this roadmap for the Phase B–E sequencing of LR-050 blocker closure
+- No `primary_breakout_v1` parameter tuning or strategy change.
+- No `#1905` unpark.
+- No Product-Complete claim.
+- No LR-050 Phase B-E advancement from this controlled-lab lane.
 
 ---
 
