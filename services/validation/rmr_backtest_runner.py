@@ -33,10 +33,14 @@ from services.execution.simulator import ExecutionSimulator
 
 logger = logging.getLogger(__name__)
 
-SCENARIO_OVERRIDE_KEYS = frozenset({
-    "BASE_SLIPPAGE_BPS", "VOLATILITY_SLIPPAGE_FACTOR",
-    "FILL_THRESHOLD", "PRICE_IMPACT_FACTOR",
-})
+SCENARIO_OVERRIDE_KEYS = frozenset(
+    {
+        "BASE_SLIPPAGE_BPS",
+        "VOLATILITY_SLIPPAGE_FACTOR",
+        "FILL_THRESHOLD",
+        "PRICE_IMPACT_FACTOR",
+    }
+)
 
 
 def run_range_mean_reversion_backtest(
@@ -44,6 +48,7 @@ def run_range_mean_reversion_backtest(
     run_config: dict[str, Any] | None = None,
     simulator_config: dict[str, Any] | None = None,
     code_commit: str | None = None,
+    run_id: str | None = None,
 ) -> dict[str, Any]:
     """Single-pass RMR backtest returning a report dict.
 
@@ -53,15 +58,17 @@ def run_range_mean_reversion_backtest(
         run_config: Optional override dict (entry_threshold, etc.).
         simulator_config: Optional overrides for ExecutionSimulator.
         code_commit: Optional commit SHA for provenance.
+        run_id: Optional deterministic run ID. When provided, used instead of
+            generate_uuid() in the report.
 
     Returns:
         Report dict with run_metadata, metrics, trades, etc.
     """
     if not candles:
-        return _build_minimal_report("no_data", code_commit)
+        return _build_minimal_report("no_data", code_commit, run_id=run_id)
 
     if len(candles) <= WARMUP_CANDLES:
-        return _build_minimal_report("insufficient_candles", code_commit)
+        return _build_minimal_report("insufficient_candles", code_commit, run_id=run_id)
 
     # Extract price arrays
     closes = [float(c["close"]) for c in candles]
@@ -155,16 +162,18 @@ def run_range_mean_reversion_backtest(
             ) / open_position["entry_price"]
             exit_reasons.append(decision.reason)
 
-            trades.append({
-                "entry_ts_ms": open_position["entry_ts_ms"],
-                "exit_ts_ms": ts_ms,
-                "entry_price": open_position["entry_price"],
-                "exit_price": fill.avg_fill_price,
-                "entry_fee": open_position["entry_fee"],
-                "exit_fee": fill.fees,
-                "r_return": trade_r,
-                "reason": decision.reason,
-            })
+            trades.append(
+                {
+                    "entry_ts_ms": open_position["entry_ts_ms"],
+                    "exit_ts_ms": ts_ms,
+                    "entry_price": open_position["entry_price"],
+                    "exit_price": fill.avg_fill_price,
+                    "entry_fee": open_position["entry_fee"],
+                    "exit_fee": fill.fees,
+                    "r_return": trade_r,
+                    "reason": decision.reason,
+                }
+            )
             open_position = None
 
     return _build_full_report(
@@ -176,6 +185,7 @@ def run_range_mean_reversion_backtest(
         run_config=run_config,
         simulator_config=simulator_config,
         code_commit=code_commit,
+        run_id=run_id,
     )
 
 
@@ -188,6 +198,7 @@ def _build_full_report(
     run_config: dict[str, Any] | None = None,
     simulator_config: dict[str, Any] | None = None,
     code_commit: str | None = None,
+    run_id: str | None = None,
 ) -> dict[str, Any]:
     """Build a full report dict matching the schema expected by dispatch."""
     closed_count = len(trades)
@@ -236,16 +247,14 @@ def _build_full_report(
     gross_return_r = equity
     avg_win_r = sum(wins) / win_count if win_count > 0 else None
     avg_loss_r = sum(losses) / loss_count if loss_count > 0 else None
-    gross_pnl = sum(
-        (t["exit_price"] - t["entry_price"]) * ORDER_SIZE for t in trades
-    )
+    gross_pnl = sum((t["exit_price"] - t["entry_price"]) * ORDER_SIZE for t in trades)
     fees_total = sum(t["entry_fee"] + t["exit_fee"] for t in trades)
     net_pnl = gross_pnl - fees_total
     fee_adj_return_r = sum(fee_adj_returns)
 
     first_ts = candles[0]["ts_ms"]
     last_ts = candles[-1]["ts_ms"]
-    run_id = generate_uuid()
+    run_id = run_id or generate_uuid()
 
     return {
         "schema_version": "strategy_validation_report.v1",
@@ -260,14 +269,10 @@ def _build_full_report(
             "entry_threshold": (run_config or {}).get(
                 "entry_threshold", ENTRY_THRESHOLD
             ),
-            "exit_threshold": (run_config or {}).get(
-                "exit_threshold", EXIT_THRESHOLD
-            ),
+            "exit_threshold": (run_config or {}).get("exit_threshold", EXIT_THRESHOLD),
             "zs_lookback": ZS_LOOKBACK,
             "atr_period": ATR_PERIOD,
-            "atr_stop_mult": (run_config or {}).get(
-                "atr_stop_mult", ATR_STOP_MULT
-            ),
+            "atr_stop_mult": (run_config or {}).get("atr_stop_mult", ATR_STOP_MULT),
             "cooldown_minutes": COOLDOWN_MINUTES,
             "warmup_candles": WARMUP_CANDLES,
             "order_size": ORDER_SIZE,
@@ -277,8 +282,8 @@ def _build_full_report(
             "timeframe": "1m",
             "candles_total": len(candles),
             "candles_live": max(0, len(candles) - WARMUP_CANDLES),
-            "period_start_ms": first_ts,
-            "period_end_ms": last_ts,
+            "period_start_ts_ms": first_ts,
+            "period_end_ts_ms": last_ts,
             "warmup_candles": WARMUP_CANDLES,
         },
         "metrics": {
@@ -312,14 +317,16 @@ def _build_full_report(
 
 
 def _build_minimal_report(
-    reason: str, code_commit: str | None = None
+    reason: str,
+    code_commit: str | None = None,
+    run_id: str | None = None,
 ) -> dict[str, Any]:
     """Minimal report for early-exit conditions (no trades possible)."""
     return {
         "schema_version": "strategy_validation_report.v1",
         "strategy_id": RANGE_MEAN_REVERSION_STRATEGY_ID,
         "run_metadata": {
-            "run_id": generate_uuid(),
+            "run_id": run_id or generate_uuid(),
             "generated_at": _utc_now_iso(),
             "source": "rmr_backtest_runner",
             "code_commit": code_commit or "unknown",

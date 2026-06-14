@@ -122,6 +122,11 @@ from core.utils.postgres_client import create_postgres_connection
 from services.validation.replay_reporter import ReplayReporter, ReplayReporterError
 from scripts.profitability.run_range_mean_reversion_pipeline_3157 import (
     WARMUP_CANDLES as RMR_WARMUP_CANDLES,
+    ENTRY_THRESHOLD as RMR_ENTRY_THRESHOLD,
+    EXIT_THRESHOLD as RMR_EXIT_THRESHOLD,
+    ZS_LOOKBACK as RMR_ZS_LOOKBACK,
+    ATR_PERIOD as RMR_ATR_PERIOD,
+    ATR_STOP_MULT as RMR_ATR_STOP_MULT,
 )
 from services.validation.rmr_backtest_runner import (
     run_range_mean_reversion_backtest,
@@ -136,18 +141,24 @@ from services.validation.strategy_backtest_runner import (
 # ---------------------------------------------------------------------------
 # Supported constants (fail-closed validation anchors)
 # ---------------------------------------------------------------------------
-_SUPPORTED_STRATEGY_IDS: frozenset[str] = frozenset({
-    PRIMARY_BREAKOUT_STRATEGY_ID,
-    RANGE_MEAN_REVERSION_STRATEGY_ID,
-})
-_SUPPORTED_SYMBOLS: frozenset[str] = frozenset({
-    PRIMARY_BREAKOUT_SYMBOL,
-    RANGE_MEAN_REVERSION_SYMBOL,
-})
-_SUPPORTED_ADAPTER_IDS: frozenset[str] = frozenset({
-    "primary_breakout_runner_v1",
-    "range_mean_reversion_runner_v1",
-})
+_SUPPORTED_STRATEGY_IDS: frozenset[str] = frozenset(
+    {
+        PRIMARY_BREAKOUT_STRATEGY_ID,
+        RANGE_MEAN_REVERSION_STRATEGY_ID,
+    }
+)
+_SUPPORTED_SYMBOLS: frozenset[str] = frozenset(
+    {
+        PRIMARY_BREAKOUT_SYMBOL,
+        RANGE_MEAN_REVERSION_SYMBOL,
+    }
+)
+_SUPPORTED_ADAPTER_IDS: frozenset[str] = frozenset(
+    {
+        "primary_breakout_runner_v1",
+        "range_mean_reversion_runner_v1",
+    }
+)
 
 _DEFAULT_OUTPUT_DIR = "artifacts/replay_reports"
 _DEFAULT_STRATEGY_ID = PRIMARY_BREAKOUT_STRATEGY_ID
@@ -554,6 +565,16 @@ def _utc_now_iso_not_before(started_at_utc: str) -> str:
 def _build_provenance_config_snapshot(
     config: ARVPReplayConfig,
 ) -> dict[str, Any]:
+    if config.strategy_id == RANGE_MEAN_REVERSION_STRATEGY_ID:
+        return {
+            "order_size": config.order_size,
+            "order_book_depth_multiplier": config.order_book_depth_multiplier,
+            "zs_lookback": RMR_ZS_LOOKBACK,
+            "atr_period": RMR_ATR_PERIOD,
+            "atr_stop_mult": RMR_ATR_STOP_MULT,
+            "entry_threshold": RMR_ENTRY_THRESHOLD,
+            "exit_threshold": RMR_EXIT_THRESHOLD,
+        }
     return {
         "order_size": config.order_size,
         "order_book_depth_multiplier": config.order_book_depth_multiplier,
@@ -684,6 +705,49 @@ def _build_execution_provenance_id(
         raise ReplayRunnerError(
             f"failed to derive execution provenance id: {exc}"
         ) from exc
+
+
+def _build_rmr_execution_provenance_id(
+    candles: list[dict[str, Any]],
+    code_commit: str,
+) -> str:
+    """Deterministic execution provenance ID for RMR single-run.
+
+    Uses canonical_hash of the candle data combined with a lightweight config
+    payload. The candles hash keeps the payload bounded while remaining
+    deterministic across identical inputs.
+    """
+    import hashlib
+
+    candles_hash = canonical_hash(
+        [
+            {
+                k: c.get(k)
+                for k in (
+                    "ts_ms",
+                    "open",
+                    "high",
+                    "low",
+                    "close",
+                    "volume",
+                    "regime_id",
+                )
+            }
+            for c in candles
+        ]
+    )
+    payload = {
+        "code_commit": code_commit,
+        "candles_hash": candles_hash,
+        "strategy_id": RANGE_MEAN_REVERSION_STRATEGY_ID,
+        "entry_threshold": RMR_ENTRY_THRESHOLD,
+        "exit_threshold": RMR_EXIT_THRESHOLD,
+        "zs_lookback": RMR_ZS_LOOKBACK,
+        "atr_period": RMR_ATR_PERIOD,
+        "atr_stop_mult": RMR_ATR_STOP_MULT,
+    }
+    digest = hashlib.sha256(canonical_json_dumps(payload).encode("utf-8")).hexdigest()
+    return f"bt-{digest[:16]}"
 
 
 def _write_operator_summary_artifact(
@@ -910,25 +974,7 @@ def run_arvp_replay(config: ARVPReplayConfig) -> int:
     if config.scenario_ids:
         return _run_scenario_group_path_with_candles(config, warmup_count=warmup_count)
 
-    # Single-run path is PB-only for now (RMR #3196 only requires group dispatch)
-    if config.strategy_id == RANGE_MEAN_REVERSION_STRATEGY_ID:
-        print(
-            "ERROR: Single-run replay not yet supported for RMR (use --scenario-group)",
-            file=sys.stderr,
-        )
-        return 2
-
-    run_cfg = PrimaryBreakoutBacktestRunConfig(
-        bridge=PrimaryBreakoutBridgeConfig(
-            entry_lookback_minutes=config.entry_lookback_minutes,
-            exit_lookback_minutes=config.exit_lookback_minutes,
-            breakout_buffer=config.breakout_buffer,
-            min_minutes_between_entries=config.min_minutes_between_entries,
-        ),
-        order_size=config.order_size,
-        order_book_depth_multiplier=config.order_book_depth_multiplier,
-    )
-
+    # Single-run path: strategy-aware dispatch
     try:
         dataset_result = _load_dataset_result(config, warmup_count=warmup_count)
     except ReplayRunnerError as exc:
@@ -951,11 +997,27 @@ def run_arvp_replay(config: ARVPReplayConfig) -> int:
             dataset_result,
             speedup_profile=config.speedup_profile,
         )
-        execution_provenance_id = _build_execution_provenance_id(
-            candles,
-            run_config=run_cfg,
-            code_commit=code_commit,
-        )
+        if config.strategy_id == RANGE_MEAN_REVERSION_STRATEGY_ID:
+            execution_provenance_id = _build_rmr_execution_provenance_id(
+                candles,
+                code_commit=code_commit,
+            )
+        else:
+            run_cfg = PrimaryBreakoutBacktestRunConfig(
+                bridge=PrimaryBreakoutBridgeConfig(
+                    entry_lookback_minutes=config.entry_lookback_minutes,
+                    exit_lookback_minutes=config.exit_lookback_minutes,
+                    breakout_buffer=config.breakout_buffer,
+                    min_minutes_between_entries=config.min_minutes_between_entries,
+                ),
+                order_size=config.order_size,
+                order_book_depth_multiplier=config.order_book_depth_multiplier,
+            )
+            execution_provenance_id = _build_execution_provenance_id(
+                candles,
+                run_config=run_cfg,
+                code_commit=code_commit,
+            )
         provenance_fingerprint = build_replay_provenance_fingerprint(
             strategy_id=config.strategy_id,
             symbol=config.symbol,
@@ -998,14 +1060,23 @@ def run_arvp_replay(config: ARVPReplayConfig) -> int:
         print(f"ERROR: Failed to write running run record: {exc}", file=sys.stderr)
         return 2
 
-    # Delegate to the existing backtest surface (business logic lives here)
+    # Delegate to the strategy-specific backtest surface
     try:
-        backtest_report = run_primary_breakout_backtest(
-            candles,
-            run_config=run_cfg,
-            code_commit=code_commit,
-            gate_trace_path=config.gate_trace_path,
-        )
+        if config.strategy_id == RANGE_MEAN_REVERSION_STRATEGY_ID:
+            backtest_report = run_range_mean_reversion_backtest(
+                candles,
+                run_config=None,
+                simulator_config=None,
+                code_commit=code_commit,
+                run_id=run_id,
+            )
+        else:
+            backtest_report = run_primary_breakout_backtest(
+                candles,
+                run_config=run_cfg,
+                code_commit=code_commit,
+                gate_trace_path=config.gate_trace_path,
+            )
     except (HistoricalBridgeError, PrimaryBreakoutBacktestError) as exc:
         try:
             _append_failed_record(
@@ -1141,17 +1212,27 @@ def run_arvp_replay(config: ARVPReplayConfig) -> int:
         return 2
 
     # Determinism check
-    metrics = backtest_report.get("metrics", {})
-    deterministic_replay_ok = bool(metrics.get("deterministic_replay_ok", False))
     gate_status = (backtest_report.get("gate_result") or {}).get("status")
+    is_rmr = config.strategy_id == RANGE_MEAN_REVERSION_STRATEGY_ID
+    if is_rmr:
+        deterministic_replay_ok = False
+    else:
+        metrics = backtest_report.get("metrics", {})
+        deterministic_replay_ok = bool(metrics.get("deterministic_replay_ok", False))
 
     if not deterministic_replay_ok:
-        print(
-            "WARNING: deterministic_replay_ok=False — two-pass check produced "
-            "inconsistent outputs.",
-            file=sys.stderr,
-        )
-        if config.deterministic_verify:
+        if is_rmr:
+            print(
+                "INFO: deterministic_replay_ok=False — RMR has no two-pass check.",
+                file=sys.stderr,
+            )
+        else:
+            print(
+                "WARNING: deterministic_replay_ok=False — two-pass check produced "
+                "inconsistent outputs.",
+                file=sys.stderr,
+            )
+        if config.deterministic_verify and not is_rmr:
             failed_record: ReplayRunRecord | None = None
             try:
                 failed_record = _append_failed_record(
@@ -1485,13 +1566,9 @@ def _run_scenario_group_path(
     code_commit = _get_code_commit()
 
     if config.strategy_id == RANGE_MEAN_REVERSION_STRATEGY_ID:
-        run_single = _make_rmr_run_single_fn(
-            candles, config, code_commit, output_dir
-        )
+        run_single = _make_rmr_run_single_fn(candles, config, code_commit, output_dir)
     else:
-        run_single = _make_pb_run_single_fn(
-            candles, config, code_commit, output_dir
-        )
+        run_single = _make_pb_run_single_fn(candles, config, code_commit, output_dir)
 
     try:
         manifest = run_builtin_scenario_group(

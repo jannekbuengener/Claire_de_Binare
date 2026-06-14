@@ -125,6 +125,59 @@ def _minimal_valid_config(**overrides) -> ARVPReplayConfig:
     return ARVPReplayConfig(**defaults)
 
 
+def _minimal_rmr_backtest_report(
+    *,
+    run_id: str = "bt-abc1234567890123",
+    signals_total: int = 4,
+    closed_trades_total: int = 2,
+    candles_total: int = 300,
+    period_start_ts_ms: int = 1_700_000_000_000,
+    period_end_ts_ms: int = 1_700_100_000_000,
+) -> dict:
+    return {
+        "schema_version": "strategy_validation_report.v1",
+        "strategy_id": "range_mean_reversion_v1",
+        "run_metadata": {
+            "run_id": run_id,
+            "generated_at": "2023-11-14T00:00:00+00:00",
+            "source": "rmr_backtest_runner",
+            "code_commit": "abc1234",
+        },
+        "config_snapshot": {
+            "entry_threshold": -2.0,
+            "exit_threshold": 0.0,
+            "zs_lookback": 21,
+            "atr_period": 14,
+            "atr_stop_mult": 2.0,
+            "cooldown_minutes": 60,
+            "warmup_candles": 240,
+            "order_size": 1.0,
+        },
+        "dataset_summary": {
+            "symbol": "BTCUSDT",
+            "timeframe": "1m",
+            "candles_total": candles_total,
+            "candles_live": candles_total - 240,
+            "period_start_ts_ms": period_start_ts_ms,
+            "period_end_ts_ms": period_end_ts_ms,
+            "warmup_candles": 240,
+        },
+        "metrics": {
+            "signals_total": signals_total,
+            "closed_trades_total": closed_trades_total,
+            "gross_return_r": 0.05,
+            "profit_factor": 1.2,
+            "expectancy_r": 0.02,
+            "max_drawdown_r": 0.5,
+            "win_rate": 0.5,
+        },
+        "trades": [],
+        "thresholds_applied": {},
+        "entry_reasons": [],
+        "exit_reasons": [],
+    }
+
+
 # ---------------------------------------------------------------------------
 # TestTimestampClamp
 # ---------------------------------------------------------------------------
@@ -1133,9 +1186,10 @@ class TestRMRDispatch:
         assert "DRY-RUN" in captured.out
         assert "scenario group" in captured.out
 
-    def test_rmr_without_scenario_ids_returns_2(self, tmp_path):
+    def test_rmr_without_scenario_ids_runs_single_run(self, tmp_path):
+        """RMR single run is now supported (#3198) — exit 0 expected."""
         f = tmp_path / "candles.json"
-        f.write_text(json.dumps(self._make_candles(245)))
+        f.write_text(json.dumps(self._make_candles(300)))
 
         cfg = ARVPReplayConfig(
             input_candles_file=str(f),
@@ -1145,8 +1199,20 @@ class TestRMRDispatch:
             adapter_id="range_mean_reversion_runner_v1",
         )
 
-        exit_code = run_arvp_replay(cfg)
-        assert exit_code == 2
+        with (
+            patch(
+                "services.validation.strategy_replay_runner.run_range_mean_reversion_backtest",
+            ) as mock_bt,
+            patch.object(ReplayReporter, "write_bundle") as mock_write,
+        ):
+            mock_bt.return_value = _minimal_rmr_backtest_report()
+            bundle_dir = tmp_path / "bundle_dir"
+            bundle_dir.mkdir(parents=True, exist_ok=True)
+            mock_write.return_value = bundle_dir
+
+            exit_code = run_arvp_replay(cfg)
+
+        assert exit_code == 0
 
     def test_rmr_runtime_error_in_scenario_group_returns_2(self, tmp_path, capsys):
         f = tmp_path / "candles.json"
@@ -1171,6 +1237,245 @@ class TestRMRDispatch:
         assert exit_code == 2
         captured = capsys.readouterr()
         assert "RMR scenario harness failure" in captured.err
+
+
+# ---------------------------------------------------------------------------
+# TestRMRSingleRun
+# ---------------------------------------------------------------------------
+@pytest.mark.unit
+class TestRMRSingleRun:
+    """RMR single-run dispatch: exit 0, bt-<16hex> provenance, bundle/registry."""
+
+    def _make_candles_file(self, tmp_path: Path, count: int = 300) -> Path:
+        candles = [
+            {
+                "ts_ms": 1_000_000 + i * 60_000,
+                "open": float(100 + i % 10),
+                "high": float(101 + i % 10),
+                "low": float(99 + i % 10),
+                "close": float(100 + i % 10),
+                "volume": 10.0,
+                "regime_id": 1,
+            }
+            for i in range(count)
+        ]
+        f = tmp_path / "candles.json"
+        f.write_text(json.dumps(candles), encoding="utf-8")
+        return f
+
+    def _mock_bundle_dir(self, mock_write, tmp_path: Path):
+        def _side_effect(report_input, output_dir):
+            bundle_dir = Path(output_dir) / report_input.run_spec.replay_run_id
+            bundle_dir.mkdir(parents=True, exist_ok=True)
+            # Create expected artifacts (mimics real write_bundle)
+            (bundle_dir / "report.json").write_text("{}", encoding="utf-8")
+            (bundle_dir / "config.resolved.json").write_text("{}", encoding="utf-8")
+            (bundle_dir / "env_redacted.txt").write_text("", encoding="utf-8")
+            return bundle_dir
+
+        mock_write.side_effect = _side_effect
+
+    @patch(
+        "services.validation.strategy_replay_runner.run_range_mean_reversion_backtest"
+    )
+    @patch.object(ReplayReporter, "write_bundle")
+    def test_successful_run_returns_0(self, mock_write, mock_backtest, tmp_path):
+        mock_backtest.return_value = _minimal_rmr_backtest_report()
+        self._mock_bundle_dir(mock_write, tmp_path)
+
+        f = self._make_candles_file(tmp_path)
+        cfg = ARVPReplayConfig(
+            input_candles_file=str(f),
+            output_directory=str(tmp_path),
+            strategy_id="range_mean_reversion_v1",
+            symbol="BTCUSDT",
+            adapter_id="range_mean_reversion_runner_v1",
+        )
+        exit_code = run_arvp_replay(cfg)
+        assert exit_code == 0
+
+    @patch(
+        "services.validation.strategy_replay_runner.run_range_mean_reversion_backtest"
+    )
+    @patch.object(ReplayReporter, "write_bundle")
+    def test_execution_provenance_id_format(self, mock_write, mock_backtest, tmp_path):
+        import re
+
+        mock_backtest.return_value = _minimal_rmr_backtest_report()
+        self._mock_bundle_dir(mock_write, tmp_path)
+
+        f = self._make_candles_file(tmp_path)
+        cfg = ARVPReplayConfig(
+            input_candles_file=str(f),
+            output_directory=str(tmp_path),
+            strategy_id="range_mean_reversion_v1",
+            symbol="BTCUSDT",
+            adapter_id="range_mean_reversion_runner_v1",
+        )
+        run_arvp_replay(cfg)
+
+        report_input = mock_write.call_args.args[0]
+        ep_id = report_input.run_spec.metadata["execution_provenance_id"]
+        assert re.match(
+            r"^bt-[0-9a-f]{16}$", ep_id
+        ), f"execution_provenance_id={ep_id!r} does not match bt-<16hex>"
+
+    @patch(
+        "services.validation.strategy_replay_runner.run_range_mean_reversion_backtest"
+    )
+    @patch.object(ReplayReporter, "write_bundle")
+    def test_provenance_fields(self, mock_write, mock_backtest, tmp_path):
+        mock_backtest.return_value = _minimal_rmr_backtest_report()
+        self._mock_bundle_dir(mock_write, tmp_path)
+
+        f = self._make_candles_file(tmp_path)
+        cfg = ARVPReplayConfig(
+            input_candles_file=str(f),
+            output_directory=str(tmp_path),
+            strategy_id="range_mean_reversion_v1",
+            symbol="BTCUSDT",
+            adapter_id="range_mean_reversion_runner_v1",
+        )
+        run_arvp_replay(cfg)
+
+        report_input = mock_write.call_args.args[0]
+        # Registry records written before bundle — load from file
+        registry = ReplayRunRegistry(tmp_path / "run_registry.jsonl")
+        records = registry.load_all()
+        completed = records[-1]
+        assert completed.status == "completed"
+        assert completed.strategy_id == "range_mean_reversion_v1"
+        assert completed.execution_provenance_id.startswith("bt-")
+        assert len(completed.execution_provenance_id) == 19  # "bt-" + 16 hex
+        assert completed.deterministic_replay_ok is False
+
+    @patch(
+        "services.validation.strategy_replay_runner.run_range_mean_reversion_backtest"
+    )
+    @patch.object(ReplayReporter, "write_bundle")
+    def test_bundle_and_registry_written(self, mock_write, mock_backtest, tmp_path):
+        mock_backtest.return_value = _minimal_rmr_backtest_report()
+        self._mock_bundle_dir(mock_write, tmp_path)
+
+        f = self._make_candles_file(tmp_path)
+        cfg = ARVPReplayConfig(
+            input_candles_file=str(f),
+            output_directory=str(tmp_path),
+            strategy_id="range_mean_reversion_v1",
+            symbol="BTCUSDT",
+            adapter_id="range_mean_reversion_runner_v1",
+        )
+        run_arvp_replay(cfg)
+
+        # Registry present
+        registry_path = tmp_path / "run_registry.jsonl"
+        assert registry_path.exists()
+        registry = ReplayRunRegistry(registry_path)
+        records = registry.load_all()
+        assert len(records) == 2  # running + completed
+        assert [r.status for r in records] == ["running", "completed"]
+
+        # Bundle directory and report artifact
+        report_input = mock_write.call_args.args[0]
+        bundle_dir = tmp_path / report_input.run_spec.replay_run_id
+        assert bundle_dir.exists()
+        assert (bundle_dir / "report.json").exists()
+        assert (bundle_dir / "config.resolved.json").exists()
+        assert (bundle_dir / "env_redacted.txt").exists()
+
+    @patch(
+        "services.validation.strategy_replay_runner.run_range_mean_reversion_backtest"
+    )
+    @patch.object(ReplayReporter, "write_bundle")
+    def test_supplementary_artifacts_written(self, mock_write, mock_backtest, tmp_path):
+        mock_backtest.return_value = _minimal_rmr_backtest_report()
+        self._mock_bundle_dir(mock_write, tmp_path)
+
+        f = self._make_candles_file(tmp_path)
+        cfg = ARVPReplayConfig(
+            input_candles_file=str(f),
+            output_directory=str(tmp_path),
+            strategy_id="range_mean_reversion_v1",
+            symbol="BTCUSDT",
+            adapter_id="range_mean_reversion_runner_v1",
+        )
+        run_arvp_replay(cfg)
+
+        report_input = mock_write.call_args.args[0]
+        bundle_dir = Path(tmp_path) / report_input.run_spec.replay_run_id
+        assert (bundle_dir / "config.resolved.json").exists()
+        assert (bundle_dir / "env_redacted.txt").exists()
+
+    @patch(
+        "services.validation.strategy_replay_runner.run_range_mean_reversion_backtest"
+    )
+    def test_error_path_returns_2(self, mock_backtest, tmp_path):
+        mock_backtest.side_effect = RuntimeError("RMR backtest crashed")
+
+        f = self._make_candles_file(tmp_path)
+        cfg = ARVPReplayConfig(
+            input_candles_file=str(f),
+            output_directory=str(tmp_path),
+            strategy_id="range_mean_reversion_v1",
+            symbol="BTCUSDT",
+            adapter_id="range_mean_reversion_runner_v1",
+        )
+
+        exit_code = run_arvp_replay(cfg)
+        assert exit_code == 2
+
+        # Registry should have running + failed records
+        registry = ReplayRunRegistry(tmp_path / "run_registry.jsonl")
+        records = registry.load_all()
+        assert [r.status for r in records] == ["running", "failed"]
+        assert "RMR backtest crashed" in records[-1].failure_reason
+
+    @patch(
+        "services.validation.strategy_replay_runner.run_range_mean_reversion_backtest"
+    )
+    @patch.object(ReplayReporter, "write_bundle")
+    def test_deterministic_verify_flag_exit_0(
+        self, mock_write, mock_backtest, tmp_path
+    ):
+        """RMR always reports deterministic_replay_ok=False; flag must not abort."""
+        mock_backtest.return_value = _minimal_rmr_backtest_report()
+        self._mock_bundle_dir(mock_write, tmp_path)
+
+        f = self._make_candles_file(tmp_path)
+        cfg = ARVPReplayConfig(
+            input_candles_file=str(f),
+            output_directory=str(tmp_path),
+            strategy_id="range_mean_reversion_v1",
+            symbol="BTCUSDT",
+            adapter_id="range_mean_reversion_runner_v1",
+            deterministic_verify=True,
+        )
+        exit_code = run_arvp_replay(cfg)
+        assert exit_code == 0
+
+    @patch(
+        "services.validation.strategy_replay_runner.run_range_mean_reversion_backtest"
+    )
+    @patch.object(ReplayReporter, "write_bundle")
+    def test_backtest_called_with_run_id(self, mock_write, mock_backtest, tmp_path):
+        mock_backtest.return_value = _minimal_rmr_backtest_report()
+        self._mock_bundle_dir(mock_write, tmp_path)
+
+        f = self._make_candles_file(tmp_path)
+        cfg = ARVPReplayConfig(
+            input_candles_file=str(f),
+            output_directory=str(tmp_path),
+            strategy_id="range_mean_reversion_v1",
+            symbol="BTCUSDT",
+            adapter_id="range_mean_reversion_runner_v1",
+        )
+        run_arvp_replay(cfg)
+
+        mock_backtest.assert_called_once()
+        call_kwargs = mock_backtest.call_args
+        # run_id should be passed through
+        assert "run_id" in call_kwargs[1]
+        assert call_kwargs[1]["run_id"] is not None
 
 
 # ---------------------------------------------------------------------------
