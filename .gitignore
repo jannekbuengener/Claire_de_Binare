@@ -10,6 +10,7 @@
 !tests/**/*.js
 !services/validation/strategy_backtest_runner.py
 !services/validation/rmr_backtest_runner.py
+!services/validation/momentum_backtest_runner.py
 !cdb_agent_sdk/tests/**/*.py
 !cdb_agent_sdk/tests/**/*.js
 debug_*.py

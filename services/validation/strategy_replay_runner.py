@@ -81,6 +81,8 @@ from core.replay.historical_bridge import (
     PRIMARY_BREAKOUT_SYMBOL,
     RANGE_MEAN_REVERSION_STRATEGY_ID,
     RANGE_MEAN_REVERSION_SYMBOL,
+    MOMENTUM_CAPTURE_STRATEGY_ID,
+    MOMENTUM_CAPTURE_SYMBOL,
     build_primary_breakout_historical_bridge,
 )
 from core.replay.replay_contracts import (
@@ -120,6 +122,16 @@ from core.replay.replay_report_builder import (
 from core.utils.clock import utcnow
 from core.utils.postgres_client import create_postgres_connection
 from services.validation.replay_reporter import ReplayReporter, ReplayReporterError
+from scripts.profitability.run_momentum_capture_pipeline_3166 import (
+    WARMUP_CANDLES as MOMENTUM_WARMUP_CANDLES,
+    DIRECTIONAL_CANDLE_ATR_MULTIPLE as MOMENTUM_DIRECTIONAL_CANDLE_ATR_MULTIPLE,
+    EXIT_ATR_CONTRACTION_MULTIPLE as MOMENTUM_EXIT_ATR_CONTRACTION_MULTIPLE,
+    EXIT_TRAILING_STOP_ATR_MULTIPLE as MOMENTUM_EXIT_TRAILING_STOP_ATR_MULTIPLE,
+    MAX_HOLD_BARS as MOMENTUM_MAX_HOLD_BARS,
+    COOLDOWN_MINUTES as MOMENTUM_COOLDOWN_MINUTES,
+    ATR_PERIOD as MOMENTUM_ATR_PERIOD,
+    REGIME_HVC as MOMENTUM_REGIME_HVC,
+)
 from scripts.profitability.run_range_mean_reversion_pipeline_3157 import (
     WARMUP_CANDLES as RMR_WARMUP_CANDLES,
     ENTRY_THRESHOLD as RMR_ENTRY_THRESHOLD,
@@ -130,6 +142,9 @@ from scripts.profitability.run_range_mean_reversion_pipeline_3157 import (
 )
 from services.validation.rmr_backtest_runner import (
     run_range_mean_reversion_backtest,
+)
+from services.validation.momentum_backtest_runner import (
+    run_momentum_capture_backtest,
 )
 from services.validation.strategy_backtest_runner import (
     PrimaryBreakoutBacktestError,
@@ -145,18 +160,21 @@ _SUPPORTED_STRATEGY_IDS: frozenset[str] = frozenset(
     {
         PRIMARY_BREAKOUT_STRATEGY_ID,
         RANGE_MEAN_REVERSION_STRATEGY_ID,
+        MOMENTUM_CAPTURE_STRATEGY_ID,
     }
 )
 _SUPPORTED_SYMBOLS: frozenset[str] = frozenset(
     {
         PRIMARY_BREAKOUT_SYMBOL,
         RANGE_MEAN_REVERSION_SYMBOL,
+        MOMENTUM_CAPTURE_SYMBOL,
     }
 )
 _SUPPORTED_ADAPTER_IDS: frozenset[str] = frozenset(
     {
         "primary_breakout_runner_v1",
         "range_mean_reversion_runner_v1",
+        "momentum_capture_runner_v1",
     }
 )
 
@@ -575,6 +593,18 @@ def _build_provenance_config_snapshot(
             "entry_threshold": RMR_ENTRY_THRESHOLD,
             "exit_threshold": RMR_EXIT_THRESHOLD,
         }
+    if config.strategy_id == MOMENTUM_CAPTURE_STRATEGY_ID:
+        return {
+            "order_size": config.order_size,
+            "order_book_depth_multiplier": config.order_book_depth_multiplier,
+            "atr_period": MOMENTUM_ATR_PERIOD,
+            "directional_candle_atr_multiple": MOMENTUM_DIRECTIONAL_CANDLE_ATR_MULTIPLE,
+            "exit_atr_contraction_multiple": MOMENTUM_EXIT_ATR_CONTRACTION_MULTIPLE,
+            "exit_trailing_stop_atr_multiple": MOMENTUM_EXIT_TRAILING_STOP_ATR_MULTIPLE,
+            "max_hold_bars": MOMENTUM_MAX_HOLD_BARS,
+            "cooldown_minutes": MOMENTUM_COOLDOWN_MINUTES,
+            "regime_hvc": MOMENTUM_REGIME_HVC,
+        }
     return {
         "order_size": config.order_size,
         "order_book_depth_multiplier": config.order_book_depth_multiplier,
@@ -745,6 +775,33 @@ def _build_rmr_execution_provenance_id(
         "zs_lookback": RMR_ZS_LOOKBACK,
         "atr_period": RMR_ATR_PERIOD,
         "atr_stop_mult": RMR_ATR_STOP_MULT,
+    }
+    digest = hashlib.sha256(canonical_json_dumps(payload).encode("utf-8")).hexdigest()
+    return f"bt-{digest[:16]}"
+
+
+def _build_momentum_execution_provenance_id(
+    candles: list[dict[str, Any]],
+    code_commit: str,
+) -> str:
+    """Deterministic execution provenance ID for momentum_capture_v1 single-run."""
+    import hashlib
+
+    candles_hash = canonical_hash(
+        [
+            {k: c.get(k) for k in ("ts_ms", "open", "high", "low", "close", "volume", "regime_id")}
+            for c in candles
+        ]
+    )
+    payload = {
+        "code_commit": code_commit,
+        "candles_hash": candles_hash,
+        "strategy_id": MOMENTUM_CAPTURE_STRATEGY_ID,
+        "atr_period": MOMENTUM_ATR_PERIOD,
+        "directional_candle_atr_multiple": MOMENTUM_DIRECTIONAL_CANDLE_ATR_MULTIPLE,
+        "exit_atr_contraction_multiple": MOMENTUM_EXIT_ATR_CONTRACTION_MULTIPLE,
+        "exit_trailing_stop_atr_multiple": MOMENTUM_EXIT_TRAILING_STOP_ATR_MULTIPLE,
+        "max_hold_bars": MOMENTUM_MAX_HOLD_BARS,
     }
     digest = hashlib.sha256(canonical_json_dumps(payload).encode("utf-8")).hexdigest()
     return f"bt-{digest[:16]}"
@@ -964,6 +1021,8 @@ def run_arvp_replay(config: ARVPReplayConfig) -> int:
     # Strategy-aware warmup count
     if config.strategy_id == RANGE_MEAN_REVERSION_STRATEGY_ID:
         warmup_count = RMR_WARMUP_CANDLES
+    elif config.strategy_id == MOMENTUM_CAPTURE_STRATEGY_ID:
+        warmup_count = MOMENTUM_WARMUP_CANDLES
     else:
         warmup_count = max(
             config.entry_lookback_minutes,
@@ -999,6 +1058,11 @@ def run_arvp_replay(config: ARVPReplayConfig) -> int:
         )
         if config.strategy_id == RANGE_MEAN_REVERSION_STRATEGY_ID:
             execution_provenance_id = _build_rmr_execution_provenance_id(
+                candles,
+                code_commit=code_commit,
+            )
+        elif config.strategy_id == MOMENTUM_CAPTURE_STRATEGY_ID:
+            execution_provenance_id = _build_momentum_execution_provenance_id(
                 candles,
                 code_commit=code_commit,
             )
@@ -1064,6 +1128,14 @@ def run_arvp_replay(config: ARVPReplayConfig) -> int:
     try:
         if config.strategy_id == RANGE_MEAN_REVERSION_STRATEGY_ID:
             backtest_report = run_range_mean_reversion_backtest(
+                candles,
+                run_config=None,
+                simulator_config=None,
+                code_commit=code_commit,
+                run_id=run_id,
+            )
+        elif config.strategy_id == MOMENTUM_CAPTURE_STRATEGY_ID:
+            backtest_report = run_momentum_capture_backtest(
                 candles,
                 run_config=None,
                 simulator_config=None,
@@ -1214,7 +1286,8 @@ def run_arvp_replay(config: ARVPReplayConfig) -> int:
     # Determinism check
     gate_status = (backtest_report.get("gate_result") or {}).get("status")
     is_rmr = config.strategy_id == RANGE_MEAN_REVERSION_STRATEGY_ID
-    if is_rmr:
+    is_momentum = config.strategy_id == MOMENTUM_CAPTURE_STRATEGY_ID
+    if is_rmr or is_momentum:
         deterministic_replay_ok = False
     else:
         metrics = backtest_report.get("metrics", {})
@@ -1226,13 +1299,18 @@ def run_arvp_replay(config: ARVPReplayConfig) -> int:
                 "INFO: deterministic_replay_ok=False — RMR has no two-pass check.",
                 file=sys.stderr,
             )
+        elif is_momentum:
+            print(
+                "INFO: deterministic_replay_ok=False — momentum_capture_v1 has no two-pass check.",
+                file=sys.stderr,
+            )
         else:
             print(
                 "WARNING: deterministic_replay_ok=False — two-pass check produced "
                 "inconsistent outputs.",
                 file=sys.stderr,
             )
-        if config.deterministic_verify and not is_rmr:
+        if config.deterministic_verify and not is_rmr and not is_momentum:
             failed_record: ReplayRunRecord | None = None
             try:
                 failed_record = _append_failed_record(
@@ -1534,6 +1612,53 @@ def _make_rmr_run_single_fn(
     return run_single
 
 
+def _make_momentum_run_single_fn(
+    candles: list[dict[str, Any]],
+    config: ARVPReplayConfig,
+    code_commit: str | None,
+    output_dir: Path,
+) -> Callable[[ScenarioSpec], ScenarioRunResult]:
+    def run_single(spec: ScenarioSpec) -> ScenarioRunResult:
+        try:
+            resolved_overrides = _apply_scenario_overrides(
+                config, spec.config_overrides
+            )
+            warmup_count = MOMENTUM_WARMUP_CANDLES
+            scenario_candles = _apply_replay_data_overrides(
+                candles,
+                resolved_overrides.replay_data_overrides,
+                warmup_count=warmup_count,
+            )
+
+            backtest_report = run_momentum_capture_backtest(
+                scenario_candles,
+                run_config=None,
+                simulator_config=resolved_overrides.simulator_config,
+                code_commit=code_commit,
+            )
+
+            run_id = backtest_report["run_metadata"]["run_id"]
+            return ScenarioRunResult(
+                scenario_id=spec.scenario_id,
+                exit_code=0,
+                run_id=run_id,
+            )
+        except ReplayRunnerError as exc:
+            return ScenarioRunResult(
+                scenario_id=spec.scenario_id,
+                exit_code=2,
+                failure_reason=str(exc),
+            )
+        except Exception as exc:
+            return ScenarioRunResult(
+                scenario_id=spec.scenario_id,
+                exit_code=2,
+                failure_reason=str(exc),
+            )
+
+    return run_single
+
+
 def _run_scenario_group_path_with_candles(
     config: ARVPReplayConfig,
     *,
@@ -1567,6 +1692,8 @@ def _run_scenario_group_path(
 
     if config.strategy_id == RANGE_MEAN_REVERSION_STRATEGY_ID:
         run_single = _make_rmr_run_single_fn(candles, config, code_commit, output_dir)
+    elif config.strategy_id == MOMENTUM_CAPTURE_STRATEGY_ID:
+        run_single = _make_momentum_run_single_fn(candles, config, code_commit, output_dir)
     else:
         run_single = _make_pb_run_single_fn(candles, config, code_commit, output_dir)
 
