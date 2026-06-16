@@ -254,7 +254,36 @@ ruff check .
 pytest -q -k "not test_mcp_time_server_runtime" --no-header
 ```
 
-### 4. Repo Brain / Context Preflight
+### 4. Onboarding Doctor (One-Command Preflight)
+
+```bash
+# Cross-platform Python doctor (recommended)
+python -m tools.onboarding_doctor
+
+# JSON output
+python -m tools.onboarding_doctor --format json
+
+# PowerShell v1 front door (Windows)
+.\tools\cdb.ps1 onboarding doctor
+
+# Make target (all platforms)
+make onboarding-doctor
+```
+
+This read-only tool validates your entire local developer setup without
+requiring a running stack, Docker mutation, or secret exposure. It checks:
+- Git installed and branch state
+- Python version (3.11+ required)
+- Docker and Docker Compose presence (optional)
+- gh CLI and authentication (optional)
+- `.env` file presence
+- SECRETS_PATH existence (not contents)
+- All key onboarding files exist
+- `make context-doctor` reachability
+
+It does **not** output secret values. Exit codes: 0 = all good, 1 = blocking.
+
+### 5. Repo Brain / Context Preflight
 
 ```bash
 make context-doctor
@@ -580,6 +609,7 @@ Read [`CONTRIBUTING.md`](CONTRIBUTING.md) for:
 | **Lint** | `ruff check .` |
 | **Format** | `black .` |
 | **Type check** | `mypy core/ services/` |
+| **Onboarding doctor** | `python -m tools.onboarding_doctor` or `.\tools\cdb.ps1 onboarding doctor` or `make onboarding-doctor` |
 | **Context preflight** | `make context-doctor` |
 | **Core smoke test** | `.\tools\cdb.ps1 runtime smoke` |
 

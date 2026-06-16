@@ -27,9 +27,11 @@ before touching implementation work.
    [`../../services/README.md`](../../services/README.md),
    [`../../tests/README.md`](../../tests/README.md),
    [`../../tools/README.md`](../../tools/README.md).
-5. Use the examples in [`examples/README.md`](examples/README.md) before drafting
+5. Run the onboarding doctor to verify your local setup:
+   `python -m tools.onboarding_doctor` or `make onboarding-doctor`.
+6. Use the examples in [`examples/README.md`](examples/README.md) before drafting
    your first issue-to-PR workflow.
-6. Use the templates in [`templates/`](templates/) for prompts, evidence docs,
+7. Use the templates in [`templates/`](templates/) for prompts, evidence docs,
    and docs/onboarding PR bodies.
 
 ## Start Path For Agents

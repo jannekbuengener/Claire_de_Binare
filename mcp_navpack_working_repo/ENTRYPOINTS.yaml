@@ -80,6 +80,13 @@ read_order:
     path: "AGENTS.md"
     intent: "Clarify agent-doc ownership boundaries"
     expected_signal: "Root pointer resolves to local agents/AGENTS.md in this working repo"
+  - id: "16"
+    path: "tools/onboarding_doctor.py"
+    intent: "Run one-command developer onboarding preflight"
+    expected_signal: "PASS/WARN/FAIL for git, python, docker, .env, SECRETS_PATH, key docs"
+    commands:
+      - "python -m tools.onboarding_doctor"
+      - "python -m tools.onboarding_doctor --format json"
 minimal_context_bundle:
   - "README.md"
   - "docs/index.md"

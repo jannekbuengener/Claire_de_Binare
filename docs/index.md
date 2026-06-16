@@ -54,6 +54,7 @@ sondern ein Pointer auf die bestehenden Docs, Runbooks und Source Trees.
 |-------|-------|-------|
 | Einen visuellen Developer-Start mit Mermaid-Flow brauchst | [`DEVELOPER_VISUAL_START_HERE.md`](onboarding/DEVELOPER_VISUAL_START_HERE.md) | Mermaid-Flussdiagramme, Beispiele, Vorlagen — erstellt in #3238 |
 | Das vollständige lokale Setup brauchst | [`DEVELOPER_ONBOARDING.md`](../DEVELOPER_ONBOARDING.md) | Secrets, Stack-Bootstrap, erste PR-Schritte |
+| Einen One-Command-Setup-Check brauchst | `python -m tools.onboarding_doctor` or `make onboarding-doctor` | Read-only Developer-Onboarding Preflight |
 | Ein Issue-to-PR-Beispiel durchspielen willst | [`first_issue_to_pr_flow.md`](onboarding/examples/first_issue_to_pr_flow.md) | Kleinster Issue-to-PR-Workflow |
 | Den Repo-Brain-Erstkontakt brauchst | [`repo_brain_first_use.md`](onboarding/examples/repo_brain_first_use.md) | Context Intelligence / Repo Brain als read-only Orientation |
 | Das vollständige Repo-Brain-Onboarding brauchst | [`repo_brain_context_intelligence.md`](onboarding/repo_brain_context_intelligence.md) | Brain Evidence Block, Safety Boundaries, First-Use-Flow |
@@ -62,6 +63,7 @@ sondern ein Pointer auf die bestehenden Docs, Runbooks und Source Trees.
 ## Repo Brain / Context Intelligence
 
 - [`docs/surrealdb/README.md`](surrealdb/README.md) — Context-/MCP-Docs-Index und lokaler Context-Runtime-Einstieg
+- `make onboarding-doctor` — Read-only Preflight für Developer-Onboarding-Prüfung
 - `make context-doctor` — Read-only Preflight für lokale Context-Tooling-Prüfung
 - [`mcp_navpack_working_repo/ENTRYPOINTS.yaml`](../mcp_navpack_working_repo/ENTRYPOINTS.yaml) — maschinenlesbare Read-Order (navpack)
 - [`mcp_navpack_working_repo/CHEATSHEET.md`](../mcp_navpack_working_repo/CHEATSHEET.md) — schnelle menschliche Nav-Quickref

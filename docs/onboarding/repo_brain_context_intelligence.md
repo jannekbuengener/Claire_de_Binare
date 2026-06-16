@@ -164,6 +164,24 @@ When you start working with Repo Brain / Context Intelligence for the first time
 
 ## Local Readiness Check
 
+Start with the **developer onboarding doctor** for a general setup check:
+
+```bash
+# Cross-platform Python doctor
+python -m tools.onboarding_doctor
+
+# JSON output
+python -m tools.onboarding_doctor --format json
+
+# PowerShell v1 front door (Windows)
+.\tools\cdb.ps1 onboarding doctor
+
+# Make target (all platforms)
+make onboarding-doctor
+```
+
+Then run the **context doctor** for Context Intelligence preflight:
+
 ```bash
 # One-command preflight
 make context-doctor
@@ -172,17 +190,23 @@ make context-doctor
 python -m tools.surrealdb.context_onboarding_doctor --format json
 ```
 
-The command is **read-only**. It does not modify any files, does not start any
-service, and does not require a running Docker stack. It validates:
+Both commands are **read-only**. They do not modify any files, do not start any
+service, and do not require a running Docker stack. Together they validate:
 
+- Git installed and branch state
+- Python version (3.11+)
+- Docker and Docker Compose presence (optional)
+- gh CLI and authentication (optional)
+- `.env` file presence
+- SECRETS_PATH existence (not contents)
+- All key onboarding files exist
 - Python venv and dependencies
 - Secret directory presence (not contents)
-- Key repo file references
-- No live-key or LR violations
 - Local MCP config accessibility
+- Context Intelligence prerequisites
 
-**Security:** The doctor never outputs secret values. Do not modify the doctor to
-display secret values.
+**Security:** Neither doctor ever outputs secret values. Do not modify either
+doctor to display secret values.
 
 ## MCP / Agent Templates
 

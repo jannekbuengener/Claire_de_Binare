@@ -24,6 +24,7 @@ Usage:
   .\tools\cdb.ps1 runtime smoke [args]
   .\tools\cdb.ps1 stack verify [args]
   .\tools\cdb.ps1 service logs [args]
+  .\tools\cdb.ps1 onboarding doctor [--format json]
 
 Examples:
   .\tools\cdb.ps1 secrets init
@@ -65,6 +66,7 @@ $targetRelativePath = switch ($commandKey) {
     'runtime smoke' { 'infrastructure\scripts\smoke_test.ps1' }
     'stack verify' { 'tools\verify_stack.ps1' }
     'service logs' { 'tools\cdb-service-logs.ps1' }
+    'onboarding doctor' { 'tools\onboarding_doctor.py' }
     default { $null }
 }
 
@@ -79,32 +81,48 @@ if (-not (Test-Path -LiteralPath $targetPath)) {
     exit 1
 }
 
-$shellCommand = if ($PSVersionTable.PSEdition -eq 'Core') {
-    Get-Command pwsh -ErrorAction SilentlyContinue
+if ($targetRelativePath -like '*.py') {
+    $pythonCmd = Get-Command python -ErrorAction SilentlyContinue
+    if (-not $pythonCmd) {
+        Write-Error "Missing required Python interpreter (expected python in PATH)."
+        exit 1
+    }
+    $invokeArgs = @($targetPath) + $RemainingArgs
+    Push-Location -LiteralPath $repoRoot
+    try {
+        & $pythonCmd.Source @invokeArgs
+        exit $LASTEXITCODE
+    } finally {
+        Pop-Location
+    }
 } else {
-    Get-Command powershell.exe -ErrorAction SilentlyContinue
-}
-if (-not $shellCommand) {
-    $shellCommand = Get-Command pwsh -ErrorAction SilentlyContinue
-}
-if (-not $shellCommand) {
-    $shellCommand = Get-Command powershell.exe -ErrorAction SilentlyContinue
-}
-if (-not $shellCommand) {
-    Write-Error "Missing required PowerShell host (expected pwsh or powershell.exe)."
-    exit 1
-}
+    $shellCommand = if ($PSVersionTable.PSEdition -eq 'Core') {
+        Get-Command pwsh -ErrorAction SilentlyContinue
+    } else {
+        Get-Command powershell.exe -ErrorAction SilentlyContinue
+    }
+    if (-not $shellCommand) {
+        $shellCommand = Get-Command pwsh -ErrorAction SilentlyContinue
+    }
+    if (-not $shellCommand) {
+        $shellCommand = Get-Command powershell.exe -ErrorAction SilentlyContinue
+    }
+    if (-not $shellCommand) {
+        Write-Error "Missing required PowerShell host (expected pwsh or powershell.exe)."
+        exit 1
+    }
 
-$invokeArgs = @(
-    '-NoProfile',
-    '-ExecutionPolicy', 'Bypass',
-    '-File', $targetPath
-) + $RemainingArgs
+    $invokeArgs = @(
+        '-NoProfile',
+        '-ExecutionPolicy', 'Bypass',
+        '-File', $targetPath
+    ) + $RemainingArgs
 
-Push-Location -LiteralPath $repoRoot
-try {
-    & $shellCommand.Source @invokeArgs
-    exit $LASTEXITCODE
-} finally {
-    Pop-Location
+    Push-Location -LiteralPath $repoRoot
+    try {
+        & $shellCommand.Source @invokeArgs
+        exit $LASTEXITCODE
+    } finally {
+        Pop-Location
+    }
 }

@@ -10,6 +10,7 @@
   - Full onboarding: `docs/onboarding/repo_brain_context_intelligence.md`
   - Context/MCP index: `docs/surrealdb/README.md`
   - Local preflight: `make context-doctor`
+- **Developer onboarding doctor:** `python -m tools.onboarding_doctor` or `make onboarding-doctor` or `.\tools\cdb.ps1 onboarding doctor` (Windows).
 - **First Repo Brain use:** `docs/onboarding/examples/repo_brain_first_use.md`.
 - Check `.github/workflows/ci.yml` and `Makefile` together to understand what CI enforces and what you can run locally.
 - Read `AGENTS.md` before assuming docs ownership; it resolves to the local canonical registry at `agents/AGENTS.md`.
