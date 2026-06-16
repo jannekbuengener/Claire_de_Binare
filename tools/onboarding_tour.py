@@ -191,7 +191,9 @@ def _normalize_role(role: str | None) -> str | None:
 def _validate_output_safe(text: str) -> None:
     for pattern in FORBIDDEN_OUTPUT_PATTERNS:
         if pattern.search(text):
-            raise ValueError("output contains forbidden pattern - potential secret leak")
+            raise ValueError(
+                "output contains forbidden pattern - potential secret leak"
+            )
 
 
 def _format_steps(title: str, steps: list[tuple[str, str]]) -> list[str]:
