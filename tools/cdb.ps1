@@ -25,6 +25,7 @@ Usage:
   .\tools\cdb.ps1 stack verify [args]
   .\tools\cdb.ps1 service logs [args]
   .\tools\cdb.ps1 onboarding doctor [--format json]
+  .\tools\cdb.ps1 onboarding tour [--role developer|agent|docs|validation|evidence]
 
 Examples:
   .\tools\cdb.ps1 secrets init
@@ -34,6 +35,7 @@ Examples:
   .\tools\cdb.ps1 stack verify -Verbose
   .\tools\cdb.ps1 service logs -ServiceName cdb_risk -Lines 100
   .\tools\cdb.ps1 runtime smoke -Verbose
+  .\tools\cdb.ps1 onboarding tour --role developer
 
 Non-interactive:
   pwsh -ExecutionPolicy Bypass -File .\tools\cdb.ps1 runtime up
@@ -67,6 +69,7 @@ $targetRelativePath = switch ($commandKey) {
     'stack verify' { 'tools\verify_stack.ps1' }
     'service logs' { 'tools\cdb-service-logs.ps1' }
     'onboarding doctor' { 'tools\onboarding_doctor.py' }
+    'onboarding tour' { 'tools\onboarding_tour.py' }
     default { $null }
 }
 

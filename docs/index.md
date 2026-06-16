@@ -55,6 +55,7 @@ sondern ein Pointer auf die bestehenden Docs, Runbooks und Source Trees.
 |-------|-------|-------|
 | Einen frischen Clone sicher bis zur ersten Grundsicherheit durchlaufen willst | [`fresh_clone_rehearsal.md`](onboarding/fresh_clone_rehearsal.md) | Read-only-by-default Rehearsal von README uber Docs-Navigation bis zum ersten sicheren Issue/PR-Flow |
 | Einen visuellen Developer-Start mit Mermaid-Flow brauchst | [`DEVELOPER_VISUAL_START_HERE.md`](onboarding/DEVELOPER_VISUAL_START_HERE.md) | Mermaid-Flussdiagramme, Beispiele, Vorlagen — erstellt in #3238 |
+| Einen kurzen guided onboarding tour command brauchst | `python -m tools.onboarding_tour` oder `.\tools\cdb.ps1 onboarding tour` | Read-only Rollenpfad fuer Developer, Agent, Docs Maintainer und Validation/Evidence |
 | Das vollständige lokale Setup brauchst | [`DEVELOPER_ONBOARDING.md`](../DEVELOPER_ONBOARDING.md) | Secrets, Stack-Bootstrap, erste PR-Schritte |
 | Einen One-Command-Setup-Check brauchst | `python -m tools.onboarding_doctor` or `make onboarding-doctor` | Read-only Developer-Onboarding Preflight |
 | Ein Issue-to-PR-Beispiel durchspielen willst | [`first_issue_to_pr_flow.md`](onboarding/examples/first_issue_to_pr_flow.md) | Kleinster Issue-to-PR-Workflow |
