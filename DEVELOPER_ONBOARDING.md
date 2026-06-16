@@ -40,6 +40,7 @@ Bevor du Code auscheckst, lies die aktuelle Projektlage:
 | [`docs/live-readiness/LR-AUDIT-STATUS-2026-03-05.md`](docs/live-readiness/LR-AUDIT-STATUS-2026-03-05.md) | SSOT fuer Echtgeld Go/No-Go (**NO-GO**) |
 | [`docs/runbooks/CONTROL_REGISTER.md`](docs/runbooks/CONTROL_REGISTER.md) | Board-Stage und operativer Fokus |
 | [`CURRENT_STATUS.md`](CURRENT_STATUS.md) | Repo-/Engineering-Ledger (keine Live-Wahrheit) |
+| [`docs/onboarding/cdb_glossary.md`](docs/onboarding/cdb_glossary.md) | CDB-Terminologie-Referenz fuer alle Onboarding-Flaechen |
 | [`docs/surrealdb/README.md`](docs/surrealdb/README.md) | Context-/MCP-Docs-Index und Repo-Brain-Einstieg |
 
 Wichtige Statusregeln:

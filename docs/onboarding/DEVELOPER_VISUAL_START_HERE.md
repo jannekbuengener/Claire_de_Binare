@@ -114,6 +114,12 @@ flowchart TD
 - Evidence doc template: [`templates/evidence_doc_template.md`](templates/evidence_doc_template.md)
 - PR body template: [`templates/pr_body_template.md`](templates/pr_body_template.md)
 
+## CDB Glossary
+
+The [CDB Glossary](cdb_glossary.md) defines all CDB-specific terminology
+used across onboarding docs, flow diagrams, and agent prompts. Look here
+first when you encounter an unfamiliar term.
+
 ## Core System Eventflows
 
 The [Core System Eventflows](core-eventflows/README.md) pack visualizes CDB's primary

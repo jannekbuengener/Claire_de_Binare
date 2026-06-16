@@ -76,14 +76,13 @@ Die Dokumente bauen inhaltlich aufeinander auf. Lies sie in dieser Reihenfolge:
 - [`docs/runbooks/CONTROL_REGISTER.md`](../../docs/runbooks/CONTROL_REGISTER.md)
 - [`docs/onboarding/DEVELOPER_VISUAL_START_HERE.md`](../DEVELOPER_VISUAL_START_HERE.md)
 
-## Glossary Dependency
+## Glossary
 
-Die Begriffe in diesen Flow-Dokumenten setzen ein gemeinsames Verständnis von
-CDB-Terminologie voraus. Ein kanonisches Glossary wird in
-[#3247](https://github.com/jannekbuengener/Claire_de_Binare/issues/3247) geplant
-und in [#3262](https://github.com/jannekbuengener/Claire_de_Binare/issues/3262) um
-Core-System-Flow-Begriffe erweitert. Zum Zeitpunkt der Erstellung dieses Packs
-existiert die Glossar-Datei noch nicht (`HOLD_PARTIAL_GLOSSARY`).
+Die Begriffe in diesen Flow-Dokumenten werden im kanonischen
+[CDB Glossary](../cdb_glossary.md) definiert. Es vereint die allgemeine CDB-Terminologie
+aus [#3247](https://github.com/jannekbuengener/Claire_de_Binare/issues/3247)
+und die Core-System-Flow-Begriffe aus
+[#3262](https://github.com/jannekbuengener/Claire_de_Binare/issues/3262).
 
 ## Hinweis: Board trade-capable ist kein Live-Go
 

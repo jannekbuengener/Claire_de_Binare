@@ -16,6 +16,7 @@ sondern ein Pointer auf die bestehenden Docs, Runbooks und Source Trees.
 | SurrealDB Context/MCP | [SurrealDB README](surrealdb/README.md) | Lokaler Context-Runtime-Index |
 | Toggles, Secrets, Defaults oder operative Env-Variablen suchst | [Env Index](env/index.md) | Einstieg fuer Schalter, Secret Stores und Consumer |
 | Schema, Migrations, Privileges, Fixtures oder DB-Validierung suchst | [DB Index](db/index.md) | Einstieg fuer Postgres-Canon und Surreal-Mirror |
+| eine Begriffserklärung für CDB-Terminologie brauchst | [CDB Glossary](onboarding/cdb_glossary.md) | Zentrale Terminologie-Referenz für alle Onboarding-Flächen |
 | den Echtgeld-Go/No-Go-Stand brauchst | [docs/live-readiness/README.md](live-readiness/README.md) | Single Source of Truth fuer Live-Readiness |
 | Board-, Milestone- oder Project-v2-Automation brauchst | [docs/runbooks/project_board_automation.md](runbooks/project_board_automation.md) | Operativer Leitfaden fuer Board-Automation |
 | Paper-Trading-Runner (Port 8004) | [tools/paper_trading/README.md](../tools/paper_trading/README.md) | Compose-Service `cdb_paper_runner` |

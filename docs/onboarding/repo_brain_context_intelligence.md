@@ -25,6 +25,7 @@ for agents and developers working in this repo. It provides:
   `context.search`, `context.required_reads`, `context.readiness`) when available
   in the active agent surface
 - **Stale-doc detection** — Compare repo-backed evidence against canonical sources
+- **CDB Glossary** — A centralized terminology reference at [`cdb_glossary.md`](cdb_glossary.md) for all CDB-specific terms
 - **Brain Evidence Block** — A structured gate output required before any plan
   when scope includes Strategy, Runtime, Module, Service, Contract, Context,
   SurrealDB, MCP tools, DB-backed Memory, or Evidence

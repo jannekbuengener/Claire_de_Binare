@@ -10,6 +10,7 @@ Diese Root-README ist die GitHub-Haupt-Landingpage. Der aktive Pfad bleibt Shado
 - Agenten-Bootloader: [`AGENTS.md`](AGENTS.md) -> [`agents/AGENTS.md`](agents/AGENTS.md)
 - Repo Brain / Context Intelligence: [`docs/surrealdb/README.md`](docs/surrealdb/README.md)
 - GitHub-Control-Plane-Unterdokument: [`.github/CONTROL_PLANE.md`](.github/CONTROL_PLANE.md)
+- CDB Glossary: [`docs/onboarding/cdb_glossary.md`](docs/onboarding/cdb_glossary.md)
 - Repo-/Engineering-Ledger: [`CURRENT_STATUS.md`](CURRENT_STATUS.md)
 
 ## Safety / LR Status
