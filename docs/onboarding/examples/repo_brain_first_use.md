@@ -24,8 +24,9 @@ Read:
 3. the full Read Order from `agents/AGENTS.md`
 4. `agents/OPEN_CODE_AGENTS.md`
 
-The Brain Evidence Gate applies before any plan when Context, SurrealDB, MCP,
-DB-backed memory, or evidence is in scope.
+The Brain Evidence Gate applies before any plan when Strategy, Runtime, Module,
+Service, Contract, Context, SurrealDB, MCP tools, DB-backed memory, or Evidence
+is in scope.
 
 ## Step 2: Ask What Evidence You Actually Have
 

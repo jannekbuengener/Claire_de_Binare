@@ -41,13 +41,16 @@ agent prompt.
    [`../../agents/AGENTS.md`](../../agents/AGENTS.md) ->
    [`../../agents/OPEN_CODE_AGENTS.md`](../../agents/OPEN_CODE_AGENTS.md).
 2. Read the full Read Order from `agents/AGENTS.md` before planning.
-3. If scope includes Context, SurrealDB, MCP, DB-backed memory, or evidence,
-   output the Brain Evidence block before the plan.
+3. If scope includes Strategy, Runtime, Module, Service, Contract, Context,
+   SurrealDB, MCP tools, DB-backed memory, or Evidence, output the Brain
+   Evidence block before the plan.
 4. Prefer verified Context/MCP evidence when available; otherwise declare
    `brain_source=repo-only` and use repo/GitHub live cross-checks.
 5. For issue work, verify GitHub live state before writing.
-6. Respect the single-writer lock and issue/PR comments required by
-   `CDB_AGENT_POLICY.md` section 4.
+6. Respect the single-writer lock from `CDB_AGENT_POLICY.md` section 4. Do not
+   treat an issue-only status comment as satisfying the policy lock; the required
+   `LOCK:` must be the first PR comment on the associated PR before further
+   push, PR update, or follow-up GitHub mutation.
 
 ## Safety And LR Boundaries
 

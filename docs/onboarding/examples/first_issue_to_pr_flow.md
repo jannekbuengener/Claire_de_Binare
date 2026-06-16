@@ -47,20 +47,34 @@ Stop if the repo is not on `main`, local `main` differs from `origin/main`, the
 issue is closed, a matching open PR already exists, or scope drifts into GUI,
 runtime, Docker, trading, live, DB write, memory write, or LR changes.
 
-## 3. Lock, Branch, And Change
+## 3. Branch, Change, And PR Lock
 
-Post the single-writer lock before becoming the issue writer:
+Before writing, check the target issue and open PRs for an active writer. If a
+matching open PR already exists, inspect its comments first and stop if another
+agent owns the `LOCK:`.
 
-```text
-LOCK: agent=<agent-id> issue=#<issue> ts=<ISO8601> mode=single-writer
-
-START: <one-sentence scoped task and safety boundary>
-```
-
-Create a branch from current `main`:
+If no matching PR exists, create the branch from current `main` and make the
+smallest local change:
 
 ```bash
 git switch -c docs/<short-scope>-<issue>
+```
+
+After pushing and creating the PR, post the exact single-writer lock as the
+first PR comment before any further push, PR update, or follow-up GitHub
+mutation:
+
+```text
+LOCK: agent=<agent-id> issue=#<issue> ts=<ISO8601> mode=single-writer
+```
+
+An issue-level `START:` comment is useful for status, but it does not satisfy
+the PR lock requirement from `CDB_AGENT_POLICY.md` section 4.1.
+
+Example status comment on the issue:
+
+```text
+START: <one-sentence scoped task and safety boundary; PR lock will be first PR comment>
 ```
 
 Make the smallest docs change that satisfies the issue. Avoid opportunistic
@@ -90,6 +104,8 @@ Use a narrow commit message:
 git add docs/<scope>
 git commit -m "docs(onboarding): add visual developer start pack"
 git push -u origin docs/<short-scope>-<issue>
+gh pr create --base main --head docs/<short-scope>-<issue>
+gh pr comment <pr-number> --body "LOCK: agent=<agent-id> issue=#<issue> ts=<ISO8601> mode=single-writer"
 ```
 
 PR body should include summary, changed files, validation, scope boundaries,

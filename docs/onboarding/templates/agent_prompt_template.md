@@ -46,8 +46,9 @@ If a canonical file or Read Order entry is missing, stop and report it exactly.
 
 ## Brain Evidence
 
-If scope touches Context, SurrealDB, MCP, DB-backed memory, evidence, service,
-contract, module, runtime, or strategy, output this block before any plan:
+If scope touches Strategy, Runtime, Module, Service, Contract, Context,
+SurrealDB, MCP tools, DB-backed memory, or Evidence, output this block before
+any plan:
 
 ```text
 ## Brain Evidence
@@ -119,11 +120,15 @@ rg -n "Live-Go|Echtgeld-Go|LR bleibt NO-GO|Docs/UI sind Orientierung" <target-pa
 
 ## Issue-/PR-Regeln
 
-- Set a single-writer LOCK before becoming the writer for the issue.
-- Create a branch from current `main`.
+- Check the target issue and matching open PRs for existing `LOCK:` comments
+  before becoming the writer.
+- Create a branch from current `main` only after the writer surface is clear.
 - Commit only intended files.
 - Open a PR with summary, changed files, validation, scope boundary,
   Safety/LR statement, and issue links.
+- Post the exact `LOCK:` as the first PR comment on the associated PR before
+  further push, PR update, or follow-up GitHub mutation; an issue-only status
+  comment does not satisfy the PR lock requirement.
 - Do not merge while required checks are red or scope is unclear.
 - Comment the target issue with the PR link after PR creation.
 - After merge, comment and close only if the merged diff satisfies acceptance.
