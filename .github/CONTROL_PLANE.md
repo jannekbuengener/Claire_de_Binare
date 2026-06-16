@@ -1,4 +1,6 @@
-# .github — Control Plane Entrypoint
+# .github - Control Plane Entrypoint
+
+This document moved off the `.github` README entrypoint so the root `README.md` remains the public GitHub landing page for the repository.
 
 **Repo:** Claire de Binare (`jannekbuengener/Claire_de_Binare`)
 **Default branch:** `main`

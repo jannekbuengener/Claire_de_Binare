@@ -6,7 +6,7 @@
 # runs logged "No phase detected (or unmapped). Skipping." — pure runner noise.
 # Auto-trigger removed. Retained as workflow_dispatch with a deprecation notice
 # job only; the stale github-script logic is removed to avoid a broken manual path.
-# See .github/README.md for current control-plane documentation.
+# See .github/CONTROL_PLANE.md for current control-plane documentation.
 
 name: Issue Governance (Milestones)
 
@@ -25,4 +25,4 @@ jobs:
           echo "⚠️  Issue Governance (Milestones) is deprecated."
           echo "The M1-M9 milestone mapping was retired during milestone consolidation."
           echo "Auto-trigger was removed in #1642 — this job exists only as a safe dispatch stub."
-          echo "See .github/README.md for current control-plane documentation."
+          echo "See .github/CONTROL_PLANE.md for current control-plane documentation."

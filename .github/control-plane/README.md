@@ -112,7 +112,7 @@ The validator's `--generate` flag produces `generated/workflow-register.json` �
 
 Future consumers (#1640):
 - `docs/runbooks/GITHUB_WORKFLOW_REGISTER.md` generated from this register
-- `.github/README.md` navigation sections
+- `.github/CONTROL_PLANE.md` navigation sections
 - `GITHUB_CONTROL_PLANE_GRAPH.md` relationship map
 
 Generation must flow through a PR — no silent direct mutation to `main`.
@@ -143,7 +143,7 @@ Full automation as a scheduled GitHub Actions workflow is **#1642 scope**.
 - Initial `workflow-register.json` generation
 
 **Out of scope (linked issues):**
-- `.github/README.md` entrypoint → #1640
+- `.github/CONTROL_PLANE.md` entrypoint -> #1640
 - Human-readable register/graph docs → #1640
 - Path-filter-based changed-surface CI workflow → #1642
 - Anti-drift scheduled scan workflow → #1642

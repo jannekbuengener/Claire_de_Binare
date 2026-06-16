@@ -6,7 +6,7 @@
 # - Duplicate functionality with auto-label.yml; both fired on every issue event.
 # - No operative benefit for current issues (all outside the hardcoded ranges).
 # Auto-trigger removed. Retained as workflow_dispatch dispatch stub only.
-# See .github/README.md for current control-plane documentation.
+# See .github/CONTROL_PLANE.md for current control-plane documentation.
 
 name: 'Comprehensive Issue Auto-Labeling'
 
@@ -26,4 +26,4 @@ jobs:
           echo "The live issues: [opened, edited] trigger was removed in #1642."
           echo "Hardcoded issue ranges (91-106, 156-200 etc.) are fully obsolete."
           echo "Auto-trigger removed — dispatch stub only."
-          echo "See .github/README.md for current control-plane documentation."
+          echo "See .github/CONTROL_PLANE.md for current control-plane documentation."

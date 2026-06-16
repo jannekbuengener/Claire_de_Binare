@@ -1,9 +1,18 @@
 # Claire de Binare
 
-Deterministisches, governance-first Trading-System im Working Repo Canon.
-Der aktive Pfad bleibt Shadow/Paper-first; Live-Kapital ist nicht freigegeben.
+Claire de Binare (CDB) ist ein deterministisches, governance-first Trading-System im Working Repo Canon.
+Diese Root-README ist die GitHub-Haupt-Landingpage. Der aktive Pfad bleibt Shadow/Paper-first; Live-Kapital ist nicht freigegeben.
 
-## Current Operating Reality (current main)
+## Start Here
+
+- Neue Entwickler: [`DEVELOPER_ONBOARDING.md`](DEVELOPER_ONBOARDING.md)
+- Kurzer Docs-Index: [`docs/index.md`](docs/index.md)
+- Agenten-Bootloader: [`AGENTS.md`](AGENTS.md) -> [`agents/AGENTS.md`](agents/AGENTS.md)
+- Repo Brain / Context Intelligence: [`docs/surrealdb/README.md`](docs/surrealdb/README.md)
+- GitHub-Control-Plane-Unterdokument: [`.github/CONTROL_PLANE.md`](.github/CONTROL_PLANE.md)
+- Repo-/Engineering-Ledger: [`CURRENT_STATUS.md`](CURRENT_STATUS.md)
+
+## Safety / LR Status
 
 - **Control-Board Stage:** `trade-capable` (Board-Kontext, nicht LR-Freigabe)
 - **Live-Readiness Verdict:** **NO-GO** (SSOT: `docs/live-readiness/LR-AUDIT-STATUS-2026-03-05.md`)
@@ -20,7 +29,27 @@ Der aktive Pfad bleibt Shadow/Paper-first; Live-Kapital ist nicht freigegeben.
 
 Stage und LR sind orthogonale Systeme: `trade-capable` autorisiert kein Live-Trading.
 
-## Current-main Landing Snapshot
+## New Developer Entry
+
+- [`DEVELOPER_ONBOARDING.md`](DEVELOPER_ONBOARDING.md) - lokales Setup, Secrets, Stack-Bootstrap
+- [`docs/index.md`](docs/index.md) - kuerzester aktiver Docs-Einstieg
+- [`services/README.md`](services/README.md) - Service-Grenzen und Topologie
+- [`tests/README.md`](tests/README.md) - Test-Taxonomie und Einstiege
+- [`tools/README.md`](tools/README.md) - lokale Helfer, PowerShell Front Door, Diagnosepfade
+
+## Agent Entry
+
+- Bootloader-Reihenfolge: [`AGENTS.md`](AGENTS.md) -> [`agents/AGENTS.md`](agents/AGENTS.md) -> [`agents/OPEN_CODE_AGENTS.md`](agents/OPEN_CODE_AGENTS.md)
+- Status-Surfaces zuerst getrennt lesen: [`docs/runbooks/CONTROL_REGISTER.md`](docs/runbooks/CONTROL_REGISTER.md), [`CURRENT_STATUS.md`](CURRENT_STATUS.md), [`docs/live-readiness/LR-AUDIT-STATUS-2026-03-05.md`](docs/live-readiness/LR-AUDIT-STATUS-2026-03-05.md)
+
+## Repo Brain / Context Intelligence
+
+- Context-/MCP-Docs-Index: [`docs/surrealdb/README.md`](docs/surrealdb/README.md)
+- Read-only Preflight fuer lokale Context-Tooling-Pruefung: `make context-doctor`
+- Default posture auf `main`: `PERSIST_ALLOWED=False`, `MUTATION_ALLOWED=False`
+- GitHub-/Repo-Live-Wahrheit gewinnt gegen Brain-/Ledger-Claims; LR bleibt `NO-GO`
+
+## Current-main Snapshot
 
 Auf `origin/main` sind die juengsten Kern-Cluster gelandet, u. a.:
 
@@ -33,7 +62,7 @@ Operatives Cockpit: GitHub Issue `#1445`. Aktiver Engineering-Fokus (nicht exhau
 
 Details und Session-Ledger: `CURRENT_STATUS.md`.
 
-## Canonical Entrypoints
+## Docs / Canonical Entrypoints
 
 1. `docs/runbooks/CONTROL_REGISTER.md`
 2. GitHub Issue `#1445` (inkl. neuestem Wochenkommentar)
@@ -41,17 +70,23 @@ Details und Session-Ledger: `CURRENT_STATUS.md`.
 4. `docs/live-readiness/LR-AUDIT-STATUS-2026-03-05.md`
 5. `docs/meta/WORKING_REPO_CANON.md`
 6. `agents/AGENTS.md`
+7. `docs/index.md`
+8. `DEVELOPER_ONBOARDING.md`
 
-## Active Main Paths
+## Tooling / Tests / Services
 
-- `core/` — gemeinsame Domain-/Contract-Logik
-- `services/` — laufende Runtime-Services (Signal/Risk/Execution/etc.)
-- `infrastructure/compose/` — Compose-Canon (`compose.blue.yml` + `compose.red.yml`)
-- `docs/runbooks/` — operative Runbooks inkl. Control Register
-- `docs/live-readiness/` — LR-Audit- und Gate-Artefakte
-- `knowledge/` — aktive Knowledge-/Governance-Flaeche
-- `tools/` — PowerShell Front Doors und Ops-Helfer
-- `tests/` — Unit/Integration/E2E/Replay/Chaos
+- Tooling: [`tools/README.md`](tools/README.md)
+- Services: [`services/README.md`](services/README.md)
+- Tests: [`tests/README.md`](tests/README.md)
+
+- `core/` - gemeinsame Domain-/Contract-Logik
+- `services/` - laufende Runtime-Services (Signal/Risk/Execution/etc.)
+- `infrastructure/compose/` - Compose-Canon (`compose.blue.yml` + `compose.red.yml`)
+- `docs/runbooks/` - operative Runbooks inkl. Control Register
+- `docs/live-readiness/` - LR-Audit- und Gate-Artefakte
+- `knowledge/` - aktive Knowledge-/Governance-Flaeche
+- `tools/` - PowerShell Front Doors und Ops-Helfer
+- `tests/` - Unit/Integration/E2E/Replay/Chaos
 
 ## Dev / Test (CI mode, no containers)
 
@@ -86,6 +121,12 @@ Docker CI Lab Baseline:
 ```bash
 docker compose -f infrastructure/compose/base.yml -f infrastructure/compose/test.yml up --abort-on-container-exit
 ```
+
+## .github Control Plane
+
+- Landing-page-Regel: diese Root-README bleibt die Repo-Front-Door.
+- Preserved control-plane doc: [`.github/CONTROL_PLANE.md`](.github/CONTROL_PLANE.md)
+- Deep-dive runbooks: [`docs/runbooks/GITHUB_CONTROL_PLANE_RUNBOOK.md`](docs/runbooks/GITHUB_CONTROL_PLANE_RUNBOOK.md) and [`docs/runbooks/GITHUB_WORKFLOW_REGISTER.md`](docs/runbooks/GITHUB_WORKFLOW_REGISTER.md)
 
 ## Navigation
 

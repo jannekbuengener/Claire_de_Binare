@@ -3,7 +3,7 @@
 **Authority:** Canonical governance policy for `.github/` changes.
 **Owner:** `@jannekbuengener` (CODEOWNERS)
 **Introduced:** #1643
-**Linked to:** `.github/README.md`, `docs/runbooks/GITHUB_CONTROL_PLANE_RUNBOOK.md`
+**Linked to:** `.github/CONTROL_PLANE.md`, `docs/runbooks/GITHUB_CONTROL_PLANE_RUNBOOK.md`
 
 ---
 
@@ -48,7 +48,7 @@ Every `.github/` change belongs to exactly one class:
 
 | Class | What it covers | Examples |
 |---|---|---|
-| `doc-only` | Comment, annotation, README update. No workflow/script logic change. | Add `# PARKED` comment; fix typo in `.github/README.md` |
+| `doc-only` | Comment, annotation, README update. No workflow/script logic change. | Add `# PARKED` comment; fix typo in `.github/CONTROL_PLANE.md` |
 | `behavior-neutral` | Rename, reformat, pin action SHA. Triggers, permissions, and outputs unchanged. | Pin action to SHA; normalize YAML indentation |
 | `behavior-change` | Workflow trigger, permission, script logic, or job step change. Runtime output may differ. | Change `schedule:` cron; add `issues: write` permission; modify script logic |
 | `new-surface` | Add a new workflow, script, prompt, command, template, or root file. | New `*.yml` workflow; new script under `scripts/` |
@@ -68,7 +68,7 @@ Sync surfaces that **must** be updated:
 | `doc-only` | None unless the change affects a documented register field |
 | `behavior-neutral` | If rename/move: update register references + graph if coupling changed |
 | `behavior-change` | `GITHUB_WORKFLOW_REGISTER.md` row (trigger/permission/output fields); side effects declared in PR |
-| `new-surface` | New `GITHUB_WORKFLOW_REGISTER.md` entry; `GITHUB_CONTROL_PLANE_GRAPH.md` if new coupling; `.github/README.md` folder layout if new category added |
+| `new-surface` | New `GITHUB_WORKFLOW_REGISTER.md` entry; `GITHUB_CONTROL_PLANE_GRAPH.md` if new coupling; `.github/CONTROL_PLANE.md` folder layout if new category added |
 | `removal/deprecation` | Register status updated; graph coupling removed; `CONTROL_REGISTER.md` if was an active infra workflow |
 | `governance-only` | This seal doc if policy changed; Runbook linked-docs section if reference added |
 
@@ -167,7 +167,7 @@ What keeps this seal working over time:
 
 | Document | Role |
 |---|---|
-| `.github/README.md` | Canonical entrypoint; folder layout; navigation guide |
+| `.github/CONTROL_PLANE.md` | Canonical entrypoint; folder layout; navigation guide |
 | `docs/runbooks/GITHUB_CONTROL_PLANE_RUNBOOK.md` | Technical operator guide; pre-edit checklist |
 | `docs/runbooks/GITHUB_WORKFLOW_REGISTER.md` | Full 65-workflow register |
 | `docs/runbooks/GITHUB_CONTROL_PLANE_GRAPH.md` | Relationship matrix + Mermaid graph |
