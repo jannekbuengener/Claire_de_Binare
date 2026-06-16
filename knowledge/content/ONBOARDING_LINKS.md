@@ -1,212 +1,59 @@
 # CDB Documentation - Consolidated Links
 
-> **⚠️ Legacy / Historical**
+> **⚠️ Legacy / Historical — Pointer Only**
 > This file is a legacy onboarding pack from 2025-12-29. It contains multiple
 > references to missing or non-canonical paths (`docs/CONTRACTS.md`,
 > `docs/TEST_HARNESS_V1.md`, `docs/PATCHSET_PLAN_345.md`, `docs/services/`,
-> `docs/architecture/`, `docs/workflows/`).
+> `docs/architecture/`, `docs/workflows/`). Do not treat this file as active
+> onboarding truth.
 >
 > **Use the current active start chain instead:**
 > 1. [`README.md`](../../README.md) — Root landing page
 > 2. [`docs/index.md`](../../docs/index.md) — Docs navigation
 > 3. [`docs/onboarding/DEVELOPER_VISUAL_START_HERE.md`](../../docs/onboarding/DEVELOPER_VISUAL_START_HERE.md) — Visual developer start
 > 4. [`DEVELOPER_ONBOARDING.md`](../../DEVELOPER_ONBOARDING.md) — Setup guide
+> 5. [`docs/surrealdb/README.md`](../../docs/surrealdb/README.md) — Repo Brain / Context Intelligence
 >
-> Full content repair follows in [#3229](https://github.com/jannekbuengener/Claire_de_Binare/issues/3229).
+> Full content repair was tracked in [#3229](https://github.com/jannekbuengener/Claire_de_Binare/issues/3229).
+> This file is retained as historical reference only and may be removed in a
+> future cleanup pass.
 
 **Team:** B (Dev-Stream)
 **Purpose:** Consolidated documentation reference
 **Date:** 2025-12-29
-**Status:** Deliverable - Onboarding Pointer Pack [LEGACY - see active chain above]
+**Status:** DELIVERED — Onboarding Pointer Pack [LEGACY — see active chain above]
 
 ---
 
-## 📁 Documentation Hub Structure
+The body below is retained as historical reference. All content is stale and
+should not be used for current onboarding. See the active chain above instead.
 
-```
-Claire_de_Binare/
-├── CLAUDE.md                    ← Session Lead governance
-├── README.md                    ← Project overview (add onboarding section)
-├── CURRENT_STATUS.md            ← Working repo / engineering status
-├── knowledge/                   ← Knowledge base (canonical docs)
-│   ├── SYSTEM.CONTEXT.md       ← Architecture, data flow
-│   ├── CURRENT_STATUS.md       ← Historical knowledge snapshot
-│   └── roadmap/
-│       └── EXPANDED_ECOSYSTEM_ROADMAP.md  ← Milestones, timeline
-├── agents/
-│   └── AGENTS.md               ← Multi-agent coordination rules
-├── docs/                       ← Technical documentation
-│   ├── TEST_HARNESS_V1.md     ← How to run tests (NEW)
-│   ├── CONTRACTS.md           ← Message schemas (NEW)
-│   ├── PATCHSET_PLAN_345.md   ← Example fix workflow (NEW)
-│   ├── ONBOARDING_QUICK_START.md  ← Getting started (NEW)
-│   ├── ONBOARDING_LINKS.md    ← This file (NEW)
-│   ├── services/              ← Service runbooks
-│   ├── architecture/          ← System design
-│   ├── governance/            ← Policies, ADRs
-│   └── security/              ← Security guidelines
-└── tests/                     ← Test suite (228+ tests)
-```
+## References (stale — do not follow)
 
----
+The following paths are broken or non-canonical and are listed here only to
+document the legacy state:
 
-## 🎯 Quick Navigation
+- `docs/CONTRACTS.md` — missing; moved to `docs/contracts/README.md`
+- `docs/TEST_HARNESS_V1.md` — missing; test guidance in `tests/README.md`
+- `docs/PATCHSET_PLAN_345.md` — missing; historical patchset plan
+- `docs/services/` — missing; per-service runbooks in `services/`
+- `docs/architecture/` — missing; architecture in `knowledge/`
+- `docs/workflows/` — missing; workflows in `.github/workflows/`
+- `docs/services/WS_SERVICE_RUNBOOK.md` — missing; never created beyond stub
+- `knowledge/SYSTEM.CONTEXT.md` — renamed; see `knowledge/CDB_KNOWLEDGE_HUB.md`
+- `knowledge/ACTIVE_ROADMAP.md` — missing; see GitHub Issue `#1445`
 
-### New Developer? Start Here:
-1. `README.md` -> [`CURRENT_STATUS.md`](../../CURRENT_STATUS.md) -> [`LR-AUDIT-STATUS-2026-03-05.md`](../../docs/live-readiness/LR-AUDIT-STATUS-2026-03-05.md) -> [`knowledge/ACTIVE_ROADMAP.md`](../ACTIVE_ROADMAP.md) (canonical entry chain)
-2. [knowledge/SYSTEM.CONTEXT.md](../SYSTEM.CONTEXT.md) (architecture)
-3. [TEST_HARNESS_V1.md](TEST_HARNESS_V1.md) (how to test)
+## Active replacements
 
-### Working on Code? Check:
-1. 📄 [CONTRACTS.md](CONTRACTS.md) (message schemas)
-2. 📄 [docs/services/](services/) (service runbooks)
-3. 📄 [tests/](../tests/) (test examples)
-
-### Fixing Bugs? See:
-1. 📄 [PATCHSET_PLAN_345.md](PATCHSET_PLAN_345.md) (example workflow)
-2. 📄 [CURRENT_STATUS.md](../../CURRENT_STATUS.md) (current repo / engineering status)
-3. 📄 [knowledge/CURRENT_STATUS.md](../CURRENT_STATUS.md) (historical context and older known issues)
-4. 📄 [TEST_HARNESS_V1.md](TEST_HARNESS_V1.md) (testing strategy)
-
----
-
-## 📚 Documentation by Category
-
-### Governance & Process
-| Document | Purpose | Location |
-|----------|---------|----------|
-| CLAUDE.md | Session Lead rules | `/CLAUDE.md` |
-| AGENTS.md | Multi-agent coordination | `/agents/AGENTS.md` |
-| Roadmap | Milestones, timeline | `/knowledge/roadmap/EXPANDED_ECOSYSTEM_ROADMAP.md` |
-
-### Architecture & Design
-| Document | Purpose | Location |
-|----------|---------|----------|
-| SYSTEM.CONTEXT.md | Architecture overview | `/knowledge/SYSTEM.CONTEXT.md` |
-| CONTRACTS.md | Message schemas | `/docs/CONTRACTS.md` |
-| Service Runbooks | Per-service operations | `/docs/services/<SERVICE>_RUNBOOK.md` |
-
-### Testing & Quality
-| Document | Purpose | Location |
-|----------|---------|----------|
-| TEST_HARNESS_V1.md | Test execution guide | `/docs/TEST_HARNESS_V1.md` |
-| Test Suite | All tests | `/tests/` |
-| pytest.ini | Test configuration | `/pytest.ini` |
-
-### Development
-| Document | Purpose | Location |
-|----------|---------|----------|
-| PATCHSET_PLAN_345.md | Example fix workflow | `/docs/PATCHSET_PLAN_345.md` |
-| CURRENT_STATUS.md | Working repo / engineering status | `/CURRENT_STATUS.md` |
-| knowledge/CURRENT_STATUS.md | Historical knowledge snapshot | `/knowledge/CURRENT_STATUS.md` |
-| requirements-dev.txt | Dev dependencies | `/requirements-dev.txt` |
-
-### Infrastructure
-| Document | Purpose | Location |
-|----------|---------|----------|
-| Compose Layers | Canonical runtime topology | `/infrastructure/compose/COMPOSE_LAYERS.md` |
-| BLUE+RED Runtime | Canonical compose (operator/runtime) | `/infrastructure/compose/compose.blue.yml` + `compose.red.yml` |
-| Legacy Compose | CI/test and explicit debug only | `/infrastructure/compose/base.yml` + `dev.yml` |
-| Monitoring Config | Prometheus/Grafana | `/infrastructure/monitoring/` |
-
----
-
-## 🔗 Legacy Archive (Local)
-
-### Docs Hub Snapshot
-📍 **Location:** `docs/archive/docs_hub_snapshot/`
-
-**Contents:**
-- historical strategic planning documents
-- legacy research and review artifacts
-- old session-log style material
-- prior navpacks, templates, and migration evidence
-
-**Rule:** The working repo now contains the productive canon. The snapshot is for
-historical lookup only.
-
----
-
-## 📖 Service-Specific Runbooks
-
-| Service | Runbook | Key Topics |
-|---------|---------|------------|
-| WebSocket (cdb_ws) | [WS_SERVICE_RUNBOOK.md](services/WS_SERVICE_RUNBOOK.md) | MEXC V3 API, trade decoding, Redis publishing |
-| Signal Engine (cdb_signal) | TBD | Signal generation, PriceBuffer, thresholds |
-| Risk Manager (cdb_risk) | TBD | Portfolio checks, circuit breakers, allocation |
-| Execution (cdb_execution) | TBD | Order routing, API calls, confirmations |
-| DB Writer (cdb_db_writer) | TBD | Event persistence, batch writes |
-
-**Status:** Only WS_SERVICE_RUNBOOK.md exists (2025-12-29)
-**TODO:** Create runbooks for other services
-
----
-
-## 🧪 Test Documentation
-
-### Test Categories
-| Category | Location | Purpose | Docker Required? |
-|----------|----------|---------|------------------|
-| Unit | `tests/unit/` | Isolated component tests | No |
-| E2E | `tests/e2e/` | Full pipeline tests | Yes |
-| Integration | `tests/integration/` | Multi-service tests | Partial |
-| Chaos | `tests/chaos/` | Resilience tests | Yes |
-| Performance | `tests/performance/` | Latency/throughput | Yes |
-
-### Test Execution Guide
-📄 **Primary Reference:** [TEST_HARNESS_V1.md](TEST_HARNESS_V1.md)
-
----
-
-## 🎯 Working Group Specific Links
-
-### Team A (Infra-Stream)
-- Infrastructure configs: `/infrastructure/`
-- Monitoring: `/infrastructure/monitoring/`
-- Secrets architecture: `/knowledge/SYSTEM.CONTEXT.md` (secrets section)
-- **Handovers from Team B:** [HANDOVERS_TO_TEAM_A.md](HANDOVERS_TO_TEAM_A.md)
-
-### Team B (Dev-Stream)
-- Test Harness: [TEST_HARNESS_V1.md](TEST_HARNESS_V1.md)
-- Contracts: [CONTRACTS.md](CONTRACTS.md)
-- Patchset Plan: [PATCHSET_PLAN_345.md](PATCHSET_PLAN_345.md)
-- Onboarding: [ONBOARDING_QUICK_START.md](ONBOARDING_QUICK_START.md)
-
----
-
-## 🔄 Document Maintenance
-
-### Update Frequency
-- `CURRENT_STATUS.md`: After every session
-- `TEST_HARNESS_V1.md`: When test infrastructure changes
-- `CONTRACTS.md`: When message schemas change
-- Service Runbooks: When service behavior changes
-
-### Ownership
-- **Canonical Docs** (knowledge/): Session Lead + Orchestrator
-- **Technical Docs** (docs/): Relevant Team (A or B)
-- **Service Runbooks** (docs/services/): Service owner
-
----
-
-## 📝 TODO: Missing Documentation
-
-### High Priority
-- [ ] Create runbooks for remaining services (signal, risk, execution, db_writer)
-- [ ] Add README.md onboarding section (link to ONBOARDING_QUICK_START.md)
-- [ ] Create SECRET_LEAK_RESPONSE.md (security incident response)
-
-### Medium Priority
-- [ ] Expand CONTRACTS.md with `orders` schema
-- [ ] Add CI/CD documentation (GitHub Actions guide)
-- [ ] Create TROUBLESHOOTING.md (common issues + solutions)
-
-### Low Priority
-- [ ] Add Grafana dashboard documentation
-- [ ] Create performance tuning guide
-- [ ] Add observability best practices
-
----
-
-**Deliverable:** Onboarding Pointer Pack (2/2) ✅
-**Status:** Complete - Ready for Team A handover
+| Legacy path | Active replacement |
+|---|---|
+| `docs/CONTRACTS.md` | `docs/contracts/README.md` |
+| `docs/TEST_HARNESS_V1.md` | `tests/README.md` |
+| `docs/PATCHSET_PLAN_345.md` | `DEVELOPER_ONBOARDING.md` |
+| `docs/services/` | `services/README.md` and per-service READMEs |
+| `docs/architecture/` | `knowledge/CDB_KNOWLEDGE_HUB.md` |
+| `docs/workflows/` | `.github/workflows/`, `docs/runbooks/` |
+| `docs/services/WS_SERVICE_RUNBOOK.md` | `services/ws/README.md` |
+| `knowledge/SYSTEM.CONTEXT.md` | `knowledge/CDB_KNOWLEDGE_HUB.md` |
+| `knowledge/ACTIVE_ROADMAP.md` | GitHub Issue `#1445` |
+| `docs/security/SECRET_LEAK_RESPONSE.md` | `knowledge/governance/SECRETS_POLICY.md` |

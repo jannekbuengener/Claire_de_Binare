@@ -1,220 +1,55 @@
 # CDB Onboarding - Quick Start
 
-> **⚠️ Legacy / Historical**
+> **⚠️ Legacy / Historical — Pointer Only**
 > This file is a legacy onboarding pack from 2025-12-29. It contains multiple
 > references to missing or non-canonical docs (`docs/CONTRACTS.md`,
 > `docs/TEST_HARNESS_V1.md`, `docs/PATCHSET_PLAN_345.md`) and routes developers
-> through stale paths.
+> through stale paths. Do not treat this file as active onboarding truth.
 >
 > **Use the current active start chain instead:**
 > 1. [`README.md`](../../README.md) — Root landing page
 > 2. [`docs/index.md`](../../docs/index.md) — Docs navigation
 > 3. [`docs/onboarding/DEVELOPER_VISUAL_START_HERE.md`](../../docs/onboarding/DEVELOPER_VISUAL_START_HERE.md) — Visual developer start
 > 4. [`DEVELOPER_ONBOARDING.md`](../../DEVELOPER_ONBOARDING.md) — Setup guide
+> 5. [`docs/surrealdb/README.md`](../../docs/surrealdb/README.md) — Repo Brain / Context Intelligence
 >
-> Full content repair follows in [#3229](https://github.com/jannekbuengener/Claire_de_Binare/issues/3229).
+> Full content repair was tracked in [#3229](https://github.com/jannekbuengener/Claire_de_Binare/issues/3229).
+> This file is retained as historical reference only and may be removed in a
+> future cleanup pass.
 
 **Team:** B (Dev-Stream)
 **Version:** 1.0
 **Date:** 2025-12-29
-**Status:** Deliverable - Onboarding Pointer Pack [LEGACY - see active chain above]
+**Status:** DELIVERED — Onboarding Pointer Pack [LEGACY — see active chain above]
 
 ---
 
-## 🎯 Essential Reading (30 min)
+The body below is retained as historical reference. All content is stale and
+should not be used for current onboarding. See the active chain above instead.
 
-### 1. README + Current Entry Chain (5 min)
-📍 **Start:** `README.md` then [`CURRENT_STATUS.md`](../../CURRENT_STATUS.md), [`LR-AUDIT-STATUS-2026-03-05.md`](../../docs/live-readiness/LR-AUDIT-STATUS-2026-03-05.md), [`knowledge/ACTIVE_ROADMAP.md`](../ACTIVE_ROADMAP.md)
-**What:** Project overview, current runtime model, canonical compose layers, getting started
+## References (stale — do not follow)
 
-### 2. System Context (5 min)
-📍 **Location:** `knowledge/SYSTEM.CONTEXT.md`
-**What:** Architecture, components, data flow
+The following paths are broken or non-canonical and are listed here only to
+document the legacy state:
 
-### 3. Current Status (3 min)
-📍 **Location:** `CURRENT_STATUS.md` + `docs/live-readiness/LR-AUDIT-STATUS-2026-03-05.md`
-**What:** Current repo/test/engineering status plus the current operational Go/No-Go verdict
-**Historical context only:** `knowledge/CURRENT_STATUS.md`
+- `docs/CONTRACTS.md` — missing; contract docs moved to `docs/contracts/README.md`
+- `docs/TEST_HARNESS_V1.md` — missing; test guidance in `tests/README.md`
+- `docs/PATCHSET_PLAN_345.md` — missing; historical patchset plan
+- `docs/services/` — missing; service runbooks are per-service in `services/`
+- `docs/security/SECRET_LEAK_RESPONSE.md` — missing; not created
+- `docs/architecture/` — missing; architecture in `knowledge/governance/`
+- `docs/workflows/` — missing; workflows in `.github/workflows/`
 
-### 4. Roadmap (10 min)
-📍 **Location:** `knowledge/roadmap/EXPANDED_ECOSYSTEM_ROADMAP.md`
-**What:** Milestones, timelines, epic structure
+## Active replacements
 
-### 5. CLAUDE.md (Session Lead Rules) (7 min)
-📍 **Location:** `CLAUDE.md`
-**What:** Governance, session workflow, tool usage rules
-
----
-
-## 🔧 Developer Setup (20 min)
-
-### Prerequisites
-- Docker Desktop installed
-- Git configured
-- Python 3.11+ with venv
-
-### Quick Setup
-```powershell
-# 1. Clone repo
-git clone https://github.com/jannekbuengener/Claire_de_Binare.git
-cd Claire_de_Binare
-
-# 2. Setup venv
-python -m venv .venv
-.\.venv\Scripts\Activate.ps1
-
-# 3. Install dev dependencies
-pip install -r requirements-dev.txt
-
-# 4. Setup secrets (kanonischer Pfad: ~/Documents/.secrets/.cdb/)
-# Secrets anlegen: .\tools\secrets\Rotate-Secrets.ps1 apply
-# Docs: knowledge/governance/SECRETS_POLICY.md
-
-# 5. Start Docker stack (canonical BLUE+RED runtime)
-docker network create cdb_network 2>$null
-docker compose -f infrastructure/compose/compose.blue.yml up -d
-docker compose -f infrastructure/compose/compose.red.yml up -d
-
-# 6. Verify stack
-docker ps --filter "name=cdb_"
-
-# 7. Run smoke tests
-.venv/Scripts/python.exe -m pytest tests/unit/test_models.py -v
-```
-
----
-
-## 📚 Key Documentation
-
-### Architecture & Design
-- `docs/architecture/` - System design documents
-- `docs/services/` - Service-specific runbooks
-- `docs/workflows/` - Process documentation
-
-### Governance & Policy
-- `docs/governance/` - Decision records, policies
-- `docs/security/` - Security guidelines, threat models
-
-### Testing & Quality
-- 📄 `docs/TEST_HARNESS_V1.md` - How to run tests ✅
-- 📄 `docs/CONTRACTS.md` - Message schemas ✅
-- `tests/` - Test suite (228+ tests)
-
-### Development
-- 📄 `docs/PATCHSET_PLAN_345.md` - Example fix workflow ✅
-- `.github/workflows/` - CI/CD pipelines
-- `infrastructure/` - Docker, compose, monitoring config
-
----
-
-## 🔍 Finding Things
-
-### "I need to understand the signal generation flow"
-1. Start: `knowledge/SYSTEM.CONTEXT.md` (data flow diagram)
-2. Code: `services/signal/service.py` (SignalEngine class)
-3. Contract: `docs/CONTRACTS.md` (message schemas)
-4. Tests: `tests/unit/signal/test_service.py`
-
-### "I need to debug why my service won't start"
-1. Logs: `docker logs cdb_<service>`
-2. Runbook: `docs/services/<SERVICE>_RUNBOOK.md`
-3. Health: `curl http://localhost:<port>/health`
-4. Metrics: `curl http://localhost:<port>/metrics`
-
-### "I need to add a new test"
-1. Guide: `docs/TEST_HARNESS_V1.md`
-2. Fixtures: `tests/conftest.py`, `tests/fixtures/`
-3. Examples: `tests/unit/test_models.py`
-4. Run: `.venv/Scripts/python.exe -m pytest <your_test.py> -v`
-
-### "I need to understand how secrets work"
-1. Architecture: `knowledge/SYSTEM.CONTEXT.md` (secrets section)
-2. Config: canonical BLUE+RED compose files (`infrastructure/compose/compose.blue.yml`)
-3. Local setup: `~/Documents/.secrets/.cdb/` (kanonischer Secrets-Pfad, `SECRETS_PATH`)
-
----
-
-## 🚨 Common Pitfalls
-
-### ❌ "pytest: command not found"
-**Solution:** Use venv python: `.venv/Scripts/python.exe -m pytest`
-
-### ❌ "Services won't start - connection refused"
-**Solution:** Check Docker stack: `docker-compose up -d`
-
-### ❌ "Tests fail with 'No module named X'"
-**Solution:** Install deps: `pip install -r requirements-dev.txt`
-
-### ❌ "I committed secrets to git!"
-**Solution:** See `docs/security/SECRET_LEAK_RESPONSE.md` (TODO: create)
-
----
-
-## 🤝 Getting Help
-
-### Documentation Issues
-- Check `CURRENT_STATUS.md` and `docs/live-readiness/LR-AUDIT-STATUS-2026-03-05.md` for the latest status
-- Review relevant runbook in `docs/services/`
-- Search GitHub issues for keywords
-
-### Code Questions
-- Read service's `service.py` (main entry point)
-- Check `tests/unit/<service>/` for examples
-- Review `docs/CONTRACTS.md` for data schemas
-
-### Process Questions
-- Read `CLAUDE.md` for session workflow
-- Check `agents/AGENTS.md` for agent coordination
-- Review recent commits for examples
-
----
-
-## 📖 Deep Dives (When You Have Time)
-
-### Week 1: Core Concepts
-- [ ] Read full `knowledge/SYSTEM.CONTEXT.md`
-- [ ] Explore `services/` directory structure
-- [ ] Run full unit test suite
-- [ ] Review recent PR commits
-
-### Week 2: Pipeline Understanding
-- [ ] Trace a trade through the full pipeline (ws → signal → risk → execution)
-- [ ] Read all service runbooks
-- [ ] Understand Redis Pub/Sub + Streams architecture
-- [ ] Review `docs/CONTRACTS.md` schemas
-
-### Week 3: Testing & Quality
-- [ ] Run E2E test suite
-- [ ] Add a new unit test
-- [ ] Fix a failing test
-- [ ] Review coverage report
-
-### Week 4: Contribution
-- [ ] Pick a "good first issue" from GitHub
-- [ ] Create a feature branch
-- [ ] Implement + test
-- [ ] Submit PR with test coverage
-
----
-
-## 🔗 External Resources
-
-### Docker & Compose
-- [Docker Desktop](https://www.docker.com/products/docker-desktop/)
-- [Docker Compose V2](https://docs.docker.com/compose/)
-
-### Python & Testing
-- [pytest Documentation](https://docs.pytest.org/)
-- [Python Type Hints](https://docs.python.org/3/library/typing.html)
-
-### Redis
-- [Redis Pub/Sub](https://redis.io/docs/manual/pubsub/)
-- [Redis Streams](https://redis.io/docs/data-types/streams/)
-
-### MEXC API
-- [MEXC V3 WebSocket](https://mexcdevelop.github.io/apidocs/spot_v3_en/#websocket-market-streams)
-
----
-
-**Deliverable:** Onboarding Pointer Pack (1/2) ✅
-**Next:** ONBOARDING_LINKS.md (consolidated reference)
+| Legacy path | Active replacement |
+|---|---|
+| `docs/CONTRACTS.md` | `docs/contracts/README.md` |
+| `docs/TEST_HARNESS_V1.md` | `tests/README.md` |
+| `docs/PATCHSET_PLAN_345.md` | `DEVELOPER_ONBOARDING.md` |
+| `docs/services/` | `services/README.md` and per-service READMEs |
+| `docs/security/SECRET_LEAK_RESPONSE.md` | `knowledge/governance/SECRETS_POLICY.md` |
+| `docs/architecture/` | `knowledge/CDB_KNOWLEDGE_HUB.md` |
+| `docs/workflows/` | `.github/workflows/`, `docs/runbooks/` |
+| `knowledge/SYSTEM.CONTEXT.md` | `knowledge/CDB_KNOWLEDGE_HUB.md` |
+| `knowledge/ACTIVE_ROADMAP.md` | GitHub Issue `#1445` |
