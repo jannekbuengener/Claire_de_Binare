@@ -22,16 +22,17 @@ before touching implementation work.
 
 1. Read the root landing page: [`../../README.md`](../../README.md).
 2. Read the shortest docs index: [`../index.md`](../index.md).
-3. Read the developer setup guide: [`../../DEVELOPER_ONBOARDING.md`](../../DEVELOPER_ONBOARDING.md).
-4. Read service, test, and tool indexes when they match your task:
+3. Rehearse the fresh-clone path: [`fresh_clone_rehearsal.md`](fresh_clone_rehearsal.md).
+4. Read the developer setup guide: [`../../DEVELOPER_ONBOARDING.md`](../../DEVELOPER_ONBOARDING.md).
+5. Read service, test, and tool indexes when they match your task:
    [`../../services/README.md`](../../services/README.md),
    [`../../tests/README.md`](../../tests/README.md),
    [`../../tools/README.md`](../../tools/README.md).
-5. Run the onboarding doctor to verify your local setup:
+6. Run the onboarding doctor to verify your local setup:
    `python -m tools.onboarding_doctor` or `make onboarding-doctor`.
-6. Use the examples in [`examples/README.md`](examples/README.md) before drafting
+7. Use the examples in [`examples/README.md`](examples/README.md) before drafting
    your first issue-to-PR workflow.
-7. Use the templates in [`templates/`](templates/) for prompts, evidence docs,
+8. Use the templates in [`templates/`](templates/) for prompts, evidence docs,
    and docs/onboarding PR bodies.
 
 ## Start Path For Agents
@@ -107,6 +108,7 @@ flowchart TD
 ## Examples And Templates
 
 - Examples index: [`examples/README.md`](examples/README.md)
+- Fresh-clone rehearsal: [`fresh_clone_rehearsal.md`](fresh_clone_rehearsal.md)
 - First issue-to-PR flow: [`examples/first_issue_to_pr_flow.md`](examples/first_issue_to_pr_flow.md)
 - Repo Brain / Context Intelligence onboarding: [`repo_brain_context_intelligence.md`](repo_brain_context_intelligence.md)
 - First Repo Brain / Context use: [`examples/repo_brain_first_use.md`](examples/repo_brain_first_use.md)

@@ -39,6 +39,7 @@ ACTIVE_ONBOARDING_SURFACES: list[str] = [
     "tools/README.md",
     "docs/surrealdb/README.md",
     "docs/onboarding/DEVELOPER_VISUAL_START_HERE.md",
+    "docs/onboarding/fresh_clone_rehearsal.md",
     "docs/onboarding/repo_brain_context_intelligence.md",
     "docs/onboarding/examples/README.md",
     "docs/onboarding/examples/first_issue_to_pr_flow.md",
