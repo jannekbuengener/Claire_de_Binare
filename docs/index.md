@@ -47,3 +47,26 @@ sondern ein Pointer auf die bestehenden Docs, Runbooks und Source Trees.
   - Service-Index inkl. Paper-Runner unter `tools/paper_trading/`.
 - [`tests/fixtures/README.md`](../tests/fixtures/README.md)
   - Deterministische DB-Fixtures und Seed-Daten.
+
+## Developer Onboarding
+
+| Wenn du ... | Geh hierhin | Warum |
+|-------|-------|-------|
+| Einen visuellen Developer-Start mit Mermaid-Flow brauchst | [`DEVELOPER_VISUAL_START_HERE.md`](onboarding/DEVELOPER_VISUAL_START_HERE.md) | Mermaid-Flussdiagramme, Beispiele, Vorlagen — erstellt in #3238 |
+| Das vollständige lokale Setup brauchst | [`DEVELOPER_ONBOARDING.md`](../DEVELOPER_ONBOARDING.md) | Secrets, Stack-Bootstrap, erste PR-Schritte |
+| Ein Issue-to-PR-Beispiel durchspielen willst | [`first_issue_to_pr_flow.md`](onboarding/examples/first_issue_to_pr_flow.md) | Kleinster Issue-to-PR-Workflow |
+| Den Repo-Brain-Erstkontakt brauchst | [`repo_brain_first_use.md`](onboarding/examples/repo_brain_first_use.md) | Context Intelligence / Repo Brain als read-only Orientation |
+| Prompt-, Evidence- oder PR-Body-Vorlagen brauchst | [`onboarding/templates/`](onboarding/templates/) | Agent-Prompt-, Evidence-Doc- und PR-Body-Vorlagen |
+
+## Repo Brain / Context Intelligence
+
+- [`docs/surrealdb/README.md`](surrealdb/README.md) — Context-/MCP-Docs-Index und lokaler Context-Runtime-Einstieg
+- `make context-doctor` — Read-only Preflight für lokale Context-Tooling-Prüfung
+- [`mcp_navpack_working_repo/ENTRYPOINTS.yaml`](../mcp_navpack_working_repo/ENTRYPOINTS.yaml) — maschinenlesbare Read-Order (navpack)
+- [`mcp_navpack_working_repo/CHEATSHEET.md`](../mcp_navpack_working_repo/CHEATSHEET.md) — schnelle menschliche Nav-Quickref
+
+## Tooling / Tests / Services
+
+- [`tools/README.md`](../tools/README.md) — PowerShell-Front-Door, Diagnosepfade, Ops-Helfer
+- [`tests/README.md`](../tests/README.md) — Test-Taxonomie (Unit/Integration/E2E/Replay/Chaos)
+- [`services/README.md`](../services/README.md) — Service-Grenzen und Topologie (BLUE+RED-Stack)

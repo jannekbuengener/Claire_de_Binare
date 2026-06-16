@@ -31,6 +31,7 @@ Stage und LR sind orthogonale Systeme: `trade-capable` autorisiert kein Live-Tra
 
 ## New Developer Entry
 
+- [`docs/onboarding/DEVELOPER_VISUAL_START_HERE.md`](docs/onboarding/DEVELOPER_VISUAL_START_HERE.md) - visueller Developer-Start (Mermaid-Flow, Beispiele, Vorlagen)
 - [`DEVELOPER_ONBOARDING.md`](DEVELOPER_ONBOARDING.md) - lokales Setup, Secrets, Stack-Bootstrap
 - [`docs/index.md`](docs/index.md) - kuerzester aktiver Docs-Einstieg
 - [`services/README.md`](services/README.md) - Service-Grenzen und Topologie

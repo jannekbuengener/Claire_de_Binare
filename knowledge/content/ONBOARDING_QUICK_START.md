@@ -1,9 +1,23 @@
 # CDB Onboarding - Quick Start
 
+> **⚠️ Legacy / Historical**
+> This file is a legacy onboarding pack from 2025-12-29. It contains multiple
+> references to missing or non-canonical docs (`docs/CONTRACTS.md`,
+> `docs/TEST_HARNESS_V1.md`, `docs/PATCHSET_PLAN_345.md`) and routes developers
+> through stale paths.
+>
+> **Use the current active start chain instead:**
+> 1. [`README.md`](../../README.md) — Root landing page
+> 2. [`docs/index.md`](../../docs/index.md) — Docs navigation
+> 3. [`docs/onboarding/DEVELOPER_VISUAL_START_HERE.md`](../../docs/onboarding/DEVELOPER_VISUAL_START_HERE.md) — Visual developer start
+> 4. [`DEVELOPER_ONBOARDING.md`](../../DEVELOPER_ONBOARDING.md) — Setup guide
+>
+> Full content repair follows in [#3229](https://github.com/jannekbuengener/Claire_de_Binare/issues/3229).
+
 **Team:** B (Dev-Stream)
 **Version:** 1.0
 **Date:** 2025-12-29
-**Status:** Deliverable - Onboarding Pointer Pack
+**Status:** Deliverable - Onboarding Pointer Pack [LEGACY - see active chain above]
 
 ---
 

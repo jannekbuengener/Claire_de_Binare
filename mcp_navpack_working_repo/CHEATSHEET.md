@@ -4,9 +4,18 @@
 
 - Read `README.md` first for the repo-wide picture and the current live-readiness framing.
 - Jump to `docs/index.md` if you want the shortest local navigation page instead of the long root overview.
-- Use `DEVELOPER_ONBOARDING.md` plus `infrastructure/compose/README.md` for local setup and stack bring-up.
+- **New developer visual start:** `docs/onboarding/DEVELOPER_VISUAL_START_HERE.md` — Mermaid flow, examples, templates.
+- **Developer setup:** `DEVELOPER_ONBOARDING.md` plus `infrastructure/compose/README.md` for local setup and stack bring-up.
+- **Repo Brain / Context Intelligence:** `docs/surrealdb/README.md` + `make context-doctor`.
 - Check `.github/workflows/ci.yml` and `Makefile` together to understand what CI enforces and what you can run locally.
 - Read `AGENTS.md` before assuming docs ownership; it resolves to the local canonical registry at `agents/AGENTS.md`.
+- **Navpack:** `mcp_navpack_working_repo/ENTRYPOINTS.yaml` (machine-readable read order) and this CHEATSHEET.
+
+## Safety
+
+- LR bleibt **NO-GO**. Board-Stage `trade-capable` ist kein Live-Go. Kein Echtgeld-Go.
+- `CURRENT_STATUS.md` is a ledger, not live truth. GitHub live and repo live win.
+- No runtime, Docker, trading, or LR changes are authorized by this navpack.
 
 ## Common locations
 
