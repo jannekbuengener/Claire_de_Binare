@@ -1,0 +1,43 @@
+---
+title: Execution, Paper/Mock and Order Result Feedback
+---
+
+flowchart LR
+    subgraph Input["Input"]
+        ORD[orders Stream]
+    end
+
+    subgraph Exec["Execution Service (cdb_execution)"]
+        EP[Execution Processor]
+        MOCK{Mock/Paper Boundary<br/>default mode}
+        DPL[Deployment Logic<br/>paper vs live]
+    end
+
+    subgraph Exchange["Exchange Boundary"]
+        EX_LIVE[Live Exchange<br/>GATED FUTURE<br/>requires explicit LR gate]
+    end
+
+    subgraph Feedback["Order Result Feedback"]
+        FR[stream.fills Redis Stream]
+        ORI[order_results Redis Stream]
+    end
+
+    subgraph Consumers["Consumers"]
+        RK[cdb_risk<br/>position/exposure update]
+        DW[cdb_db_writer<br/>persistence]
+    end
+
+    ORD --> EP
+    EP --> MOCK
+    MOCK -->|Paper/Mock mode (default)| DPL
+    MOCK -->|Live mode| EX_LIVE
+    DPL --> FR
+    DPL --> ORI
+    EX_LIVE -->|fills + results| FR
+    EX_LIVE -->|fills + results| ORI
+    ORI --> RK
+    ORI --> DW
+    FR --> RK
+    FR --> DW
+
+    style EX_LIVE fill:#f99,stroke:#c33,stroke-dasharray: 5 5

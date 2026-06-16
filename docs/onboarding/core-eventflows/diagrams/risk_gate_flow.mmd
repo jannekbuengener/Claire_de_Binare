@@ -1,0 +1,47 @@
+---
+title: Risk Gate, Circuit Breaker and KillSwitch Flow
+---
+
+flowchart TD
+    subgraph Input["Input"]
+        SIG[Signal<br/>from signals Stream]
+    end
+
+    subgraph RiskGate["Risk Service (cdb_risk)"]
+        MSC[Market State Contract<br/>freshness, validity]
+        EXP[Exposure Check<br/>current vs limit]
+        DD[Drawdown Check<br/>max drawdown guard]
+        LIM[Additional Limits<br/>position size, rate]
+        CB{Circuit Breaker<br/>auto-trip on threshold}
+        KS{KillSwitch<br/>manual/admin override}
+    end
+
+    subgraph Decision["Decision Path"]
+        AP[Approved Order]
+        BL[Blocked Decision]
+        EV[risk_events<br/>and blocked_decisions]
+    end
+
+    subgraph Output["Output"]
+        ORD[orders Stream]
+        ALRT[alerts channel]
+    end
+
+    SIG --> MSC
+    MSC --> EXP
+    EXP --> DD
+    DD --> LIM
+    LIM --> CB
+    CB -->|Breaker Tripped| BL
+    CB -->|OK| KS
+    KS -->|KillSwitch Active| BL
+    KS -->|KillSwitch Inactive| AP
+
+    AP --> ORD
+    BL --> EV
+    AP --> EV
+    EV --> ALRT
+
+    style BL fill:#f99,stroke:#c33
+    style CB fill:#ff9,stroke:#c90
+    style KS fill:#ff9,stroke:#c90

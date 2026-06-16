@@ -1,0 +1,42 @@
+---
+title: ARVP Replay and Replay-vs-Paper Validation Flow
+---
+
+flowchart TD
+    subgraph Dataset["Dataset Layer"]
+        DS[Dataset Source<br/>file | db]
+        DP[DatasetProvider<br/>FileBacked | DBBacked]
+        DQ[DatasetSpec<br/>fingerprint, window]
+    end
+
+    subgraph Replay["Replay Execution"]
+        HB[Historical Bridge<br/>file-backed historical input]
+        SR[Strategy Replay Runner<br/>strategy_backtest_runner.py]
+        SC[Scheduler<br/>event-time, speed profiles]
+        RR[Replay Reporter<br/>report.json, manifest, audit.log]
+    end
+
+    subgraph Compare["Replay-vs-Paper Compare"]
+        RC[Replay vs Paper Compare<br/>replay_vs_paper_compare.py]
+        SCMP[Shadow Comparison<br/>shadow_comparison.json]
+        CR[Calibration Report<br/>simulator_calibration_report.json]
+    end
+
+    subgraph Evidence["Evidence / Gate"]
+        RS[Regime Scorecards<br/>arvp_regime_scorecard.json]
+        AG[ARVP Gate Verdict<br/>pass / fail / blocked]
+    end
+
+    DS --> DP
+    DP --> DQ
+    DQ --> HB
+    HB --> SR
+    SC --> SR
+    SR --> RR
+    RR --> RC
+    RC --> SCMP
+    SCMP --> CR
+    RC --> RS
+    RS --> AG
+    SCMP --> AG
+    CR --> AG

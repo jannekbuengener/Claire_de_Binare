@@ -114,6 +114,19 @@ flowchart TD
 - Evidence doc template: [`templates/evidence_doc_template.md`](templates/evidence_doc_template.md)
 - PR body template: [`templates/pr_body_template.md`](templates/pr_body_template.md)
 
+## Core System Eventflows
+
+The [Core System Eventflows](core-eventflows/README.md) pack visualizes CDB's primary
+runtime dataflows: Eventbus, BLUE/RED Topology, Signal Decision, Risk Gate,
+Execution/Paper Feedback, Persistence/Audit Chain, ARVP Replay Validation, and
+the Profitability Candidate Lifecycle.
+
+These visuals are **orientation, not authority**. They help new developers and
+agents understand the system flow before touching runtime code. The canonical
+sources remain the files named in the bootloader read order.
+
+> **LR remains NO-GO.** Board stage `trade-capable` is not Live-Go. No Echtgeld-Go.
+
 ## Authority Boundary
 
 This pack is a developer-facing start surface. It does not replace:
