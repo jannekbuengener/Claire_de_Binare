@@ -2,6 +2,13 @@
 
 Dokumentation für Context Brain, MCP-Tools, Memory-Gates und SurrealDB-Mirror — **read-only / gate-bound** auf `main`.
 
+## Developer Onboarding
+
+If you are new to Repo Brain / Context Intelligence, start here:
+
+- [`../onboarding/repo_brain_context_intelligence.md`](../onboarding/repo_brain_context_intelligence.md) — developer onboarding page with first-use flow, safety boundaries, Brain Evidence Block guide, and local readiness check
+- `make context-doctor` — one-command local readiness preflight
+
 ## Operator entry (read first)
 
 | Doc | Zweck |

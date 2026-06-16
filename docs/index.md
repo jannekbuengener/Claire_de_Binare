@@ -56,6 +56,7 @@ sondern ein Pointer auf die bestehenden Docs, Runbooks und Source Trees.
 | Das vollständige lokale Setup brauchst | [`DEVELOPER_ONBOARDING.md`](../DEVELOPER_ONBOARDING.md) | Secrets, Stack-Bootstrap, erste PR-Schritte |
 | Ein Issue-to-PR-Beispiel durchspielen willst | [`first_issue_to_pr_flow.md`](onboarding/examples/first_issue_to_pr_flow.md) | Kleinster Issue-to-PR-Workflow |
 | Den Repo-Brain-Erstkontakt brauchst | [`repo_brain_first_use.md`](onboarding/examples/repo_brain_first_use.md) | Context Intelligence / Repo Brain als read-only Orientation |
+| Das vollständige Repo-Brain-Onboarding brauchst | [`repo_brain_context_intelligence.md`](onboarding/repo_brain_context_intelligence.md) | Brain Evidence Block, Safety Boundaries, First-Use-Flow |
 | Prompt-, Evidence- oder PR-Body-Vorlagen brauchst | [`onboarding/templates/`](onboarding/templates/) | Agent-Prompt-, Evidence-Doc- und PR-Body-Vorlagen |
 
 ## Repo Brain / Context Intelligence

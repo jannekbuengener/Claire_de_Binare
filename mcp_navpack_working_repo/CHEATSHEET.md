@@ -6,7 +6,11 @@
 - Jump to `docs/index.md` if you want the shortest local navigation page instead of the long root overview.
 - **New developer visual start:** `docs/onboarding/DEVELOPER_VISUAL_START_HERE.md` — Mermaid flow, examples, templates.
 - **Developer setup:** `DEVELOPER_ONBOARDING.md` plus `infrastructure/compose/README.md` for local setup and stack bring-up.
-- **Repo Brain / Context Intelligence:** `docs/surrealdb/README.md` + `make context-doctor`.
+- **Repo Brain / Context Intelligence:**
+  - Full onboarding: `docs/onboarding/repo_brain_context_intelligence.md`
+  - Context/MCP index: `docs/surrealdb/README.md`
+  - Local preflight: `make context-doctor`
+- **First Repo Brain use:** `docs/onboarding/examples/repo_brain_first_use.md`.
 - Check `.github/workflows/ci.yml` and `Makefile` together to understand what CI enforces and what you can run locally.
 - Read `AGENTS.md` before assuming docs ownership; it resolves to the local canonical registry at `agents/AGENTS.md`.
 - **Navpack:** `mcp_navpack_working_repo/ENTRYPOINTS.yaml` (machine-readable read order) and this CHEATSHEET.

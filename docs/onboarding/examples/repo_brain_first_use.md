@@ -50,7 +50,8 @@ evidence.
 
 Repo-backed references for Context onboarding are:
 
-- [`../../surrealdb/README.md`](../../surrealdb/README.md)
+- [`../../onboarding/repo_brain_context_intelligence.md`](../../onboarding/repo_brain_context_intelligence.md) — canonical developer onboarding page for Repo Brain / Context Intelligence
+- [`../../surrealdb/README.md`](../../surrealdb/README.md) — Context-/MCP-Docs-Index
 - [`../../runbooks/surrealdb_context_mcp_access.md`](../../runbooks/surrealdb_context_mcp_access.md)
 - `make context-doctor` as the read-only local Context onboarding preflight
 - `python -m tools.surrealdb.context_onboarding_doctor --format json`

@@ -267,7 +267,22 @@ running stack. It checks:
 - Key file references
 - No live-key or LR violations
 
-### 5. Docs / Onboarding Pointer Check
+### 5. Repo Brain / Context Intelligence
+
+After the basic quick verification, review the dedicated Repo Brain onboarding:
+
+```bash
+# Start here for Repo Brain / Context Intelligence
+# docs/onboarding/repo_brain_context_intelligence.md
+```
+
+This page covers:
+- What Repo Brain / Context Intelligence is and is not
+- Brain Evidence Block guide (source values, examples)
+- Developer first-use flow
+- Safety boundaries (LR NO-GO, no Live-Go, no Echtgeld-Go)
+
+### 6. Docs / Onboarding Pointer Check
 
 Verify the active start chain is accessible:
 
