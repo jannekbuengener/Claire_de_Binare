@@ -24,7 +24,7 @@ Usage:
   .\tools\cdb.ps1 runtime smoke [args]
   .\tools\cdb.ps1 stack verify [args]
   .\tools\cdb.ps1 service logs [args]
-  .\tools\cdb.ps1 onboarding doctor [--format json]
+  .\tools\cdb.ps1 onboarding doctor [--format json] [--report PATH]
   .\tools\cdb.ps1 onboarding tour [--role developer|agent|docs|validation|evidence]
 
 Examples:

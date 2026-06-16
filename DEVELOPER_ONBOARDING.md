@@ -268,6 +268,9 @@ python -m tools.onboarding_doctor --format json
 # PowerShell v1 front door (Windows)
 .\tools\cdb.ps1 onboarding doctor
 
+# Write a Markdown evidence report
+python -m tools.onboarding_doctor --report docs/evidence/local_onboarding_check.md
+
 # Make target (all platforms)
 make onboarding-doctor
 ```
@@ -284,6 +287,11 @@ requiring a running stack, Docker mutation, or secret exposure. It checks:
 - `make context-doctor` reachability
 
 It does **not** output secret values. Exit codes: 0 = all good, 1 = blocking.
+
+The `--report PATH` option writes a Markdown evidence report including the
+repo HEAD, branch, a check summary, active onboarding surfaces, and safety
+boundaries. The report is only written when `--report` is explicitly set;
+the default doctor run remains read-only and writes no files.
 
 ### 5. Repo Brain / Context Preflight
 

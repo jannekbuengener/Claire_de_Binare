@@ -2,9 +2,11 @@
 
 from __future__ import annotations
 
+import io
 import json
 import os
 import re
+import sys
 from pathlib import Path
 from subprocess import CompletedProcess
 
@@ -292,6 +294,7 @@ def test_doctor_output_to_dict(tmp_path: Path) -> None:
         git_found="PASS",
         git_branch="main",
         git_dirty="PASS",
+        repo_head="abcd1234",
         python_found="PASS",
         python_version="3.12.0",
         python_version_ok="PASS",
@@ -302,6 +305,222 @@ def test_doctor_output_to_dict(tmp_path: Path) -> None:
     )
     d = r.to_dict()
     assert d["repo_root"] == "PASS"
+    assert d["repo_head"] == "abcd1234"
     assert d["git"]["branch"] == "main"
+    assert d["git"]["head"] == "abcd1234"
     assert d["lr_note"] == "NO-GO"
     assert "checks" in d
+
+
+class TestFormatMarkdownReport:
+    def _build_sample_report(self) -> doctor.DoctorOutput:
+        r = doctor.DoctorOutput(
+            repo_root_found="PASS",
+            git_found="PASS",
+            git_branch="feat/test",
+            git_dirty="PASS",
+            repo_head="deadbeef1234",
+            python_found="PASS",
+            python_version="3.12.0",
+            python_version_ok="PASS",
+            docker_found="WARN",
+            compose_found="SKIP",
+            env_file="PASS",
+            secrets_path="PASS",
+            secrets_resolved_dir="/home/user/.secrets/.cdb",
+            onboarding_files="PASS",
+            context_doctor_reachable="PASS",
+        )
+        r.checks = [
+            doctor.CheckItem(name="Repo root", status="PASS"),
+            doctor.CheckItem(name="Git", status="PASS", detail="feat/test"),
+            doctor.CheckItem(name="Docker", status="WARN"),
+            doctor.CheckItem(name="gh CLI", status="SKIP"),
+        ]
+        return r
+
+    def test_contains_safety_statement(self) -> None:
+        r = self._build_sample_report()
+        md = doctor.format_markdown_report(r, "2026-06-16T12:00:00+00:00")
+        assert "LR remains **NO-GO**" in md
+        assert "Board stage `trade-capable` is **not** a Live-Go" in md
+        assert "No Echtgeld-Go" in md
+
+    def test_contains_repo_head(self) -> None:
+        r = self._build_sample_report()
+        md = doctor.format_markdown_report(r, "2026-06-16T12:00:00+00:00")
+        assert "deadbeef1234" in md
+
+    def test_contains_generated_timestamp(self) -> None:
+        r = self._build_sample_report()
+        ts = "2026-06-16T12:00:00+00:00"
+        md = doctor.format_markdown_report(r, ts)
+        assert ts in md
+
+    def test_contains_summary_counts(self) -> None:
+        r = self._build_sample_report()
+        md = doctor.format_markdown_report(r, "2026-06-16T12:00:00+00:00")
+        assert "**PASS**: 2" in md
+        assert "**WARN**: 1" in md
+        assert "**FAIL**: 0" in md
+        assert "**Overall**: WARN" in md
+
+    def test_contains_onboarding_surfaces(self) -> None:
+        r = self._build_sample_report()
+        md = doctor.format_markdown_report(r, "2026-06-16T12:00:00+00:00")
+        assert "## Active Onboarding Surfaces" in md
+        assert "README.md" in md
+        assert "DEVELOPER_ONBOARDING.md" in md
+
+    def test_contains_limitations(self) -> None:
+        r = self._build_sample_report()
+        md = doctor.format_markdown_report(r, "2026-06-16T12:00:00+00:00")
+        assert "## Limitations" in md
+        assert "Local checks only" in md
+
+    def test_no_secret_leak(self) -> None:
+        r = self._build_sample_report()
+        md = doctor.format_markdown_report(r, "2026-06-16T12:00:00+00:00")
+        for pattern in doctor.FORBIDDEN_OUTPUT_PATTERNS:
+            assert not pattern.search(md), f"forbidden pattern found: {pattern.pattern}"
+
+    def test_with_warnings(self) -> None:
+        r = self._build_sample_report()
+        r.warnings = ["Missing onboarding files: tests/README.md"]
+        md = doctor.format_markdown_report(r, "2026-06-16T12:00:00+00:00")
+        assert "## Warnings" in md
+        assert "tests/README.md" in md
+
+    def test_without_warnings_section_omitted(self) -> None:
+        r = self._build_sample_report()
+        r.warnings = []
+        md = doctor.format_markdown_report(r, "2026-06-16T12:00:00+00:00")
+        assert "## Warnings" not in md
+
+    def test_overall_fail(self) -> None:
+        r = self._build_sample_report()
+        r.checks.append(doctor.CheckItem(name="Fail check", status="FAIL"))
+        md = doctor.format_markdown_report(r, "2026-06-16T12:00:00+00:00")
+        assert "**Overall**: FAIL" in md
+
+    def test_overall_pass(self) -> None:
+        r = doctor.DoctorOutput(
+            repo_root_found="PASS",
+            git_found="PASS",
+            git_branch="main",
+            git_dirty="PASS",
+            repo_head="abc123",
+        )
+        r.checks = [doctor.CheckItem(name="x", status="PASS")]
+        md = doctor.format_markdown_report(r, "2026-06-16T12:00:00+00:00")
+        assert "**Overall**: PASS" in md
+
+    def test_generated_at_defaults_to_utc(self) -> None:
+        r = self._build_sample_report()
+        md = doctor.format_markdown_report(r)
+        assert "**Generated**:" in md
+
+    def test_pipe_character_escaped_in_detail(self) -> None:
+        r = self._build_sample_report()
+        r.checks = [doctor.CheckItem(name="Test", status="PASS", detail="a|b")]
+        md = doctor.format_markdown_report(r, "2026-06-16T12:00:00+00:00")
+        assert "a\\|b" in md
+
+
+class TestCLIReportArg:
+    def _mock_build_report(self, monkeypatch: pytest.MonkeyPatch) -> doctor.DoctorOutput:
+        r = doctor.DoctorOutput(
+            repo_root_found="PASS",
+            git_found="PASS",
+            git_branch="main",
+            git_dirty="PASS",
+            repo_head="testsha123",
+            python_found="PASS",
+            python_version="3.12.0",
+            python_version_ok="PASS",
+            env_file="PASS",
+            secrets_path="PASS",
+            onboarding_files="PASS",
+            context_doctor_reachable="PASS",
+        )
+        r.checks = [doctor.CheckItem(name="test", status="PASS")]
+        monkeypatch.setattr(doctor, "build_report", lambda **kw: r)
+        return r
+
+    def test_report_writes_file(self, tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:
+        self._mock_build_report(monkeypatch)
+        report_file = tmp_path / "report.md"
+        exit_code = doctor.main(["--report", str(report_file)])
+        assert exit_code == 0
+        assert report_file.is_file()
+        content = report_file.read_text(encoding="utf-8")
+        assert "# CDB Onboarding Doctor Report" in content
+        assert "testsha123" in content
+
+    def test_report_creates_parent_dirs(self, tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:
+        self._mock_build_report(monkeypatch)
+        report_file = tmp_path / "nested" / "dir" / "report.md"
+        exit_code = doctor.main(["--report", str(report_file)])
+        assert exit_code == 0
+        assert report_file.is_file()
+
+    def test_default_no_file_write(
+        self, tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+    ) -> None:
+        self._mock_build_report(monkeypatch)
+        initial_files = set(p.name for p in tmp_path.iterdir())
+        exit_code = doctor.main([])
+        assert exit_code == 0
+        final_files = set(p.name for p in tmp_path.iterdir())
+        assert final_files == initial_files
+
+    def test_report_invalid_path_returns_2(
+        self, tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+    ) -> None:
+        self._mock_build_report(monkeypatch)
+        exit_code = doctor.main(["--report", "Z:\\INVALID\\PATH\\report.md"])
+        assert exit_code == 2
+
+    def test_json_output_remains_parseable(
+        self, tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+    ) -> None:
+        r = self._mock_build_report(monkeypatch)
+        r.repo_head = "abcd1234"
+        monkeypatch.setattr(doctor, "build_report", lambda **kw: r)
+
+        import io
+        out = io.StringIO()
+        monkeypatch.setattr(sys, "stdout", out)
+        exit_code = doctor.main(["--format", "json"])
+        assert exit_code == 0
+        data = json.loads(out.getvalue())
+        assert data["repo_root"] == "PASS"
+        assert data["repo_head"] == "abcd1234"
+        assert data["git"]["branch"] == "main"
+        assert data["git"]["head"] == "abcd1234"
+        assert data["lr_note"] == "NO-GO"
+        assert "checks" in data
+
+    def test_report_contains_secret_validation(
+        self, tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+    ) -> None:
+        r = self._mock_build_report(monkeypatch)
+        r.secrets_resolved_dir = "C:\\Users\\user\\Documents\\.secrets\\.cdb"
+        monkeypatch.setattr(doctor, "build_report", lambda **kw: r)
+        report_file = tmp_path / "report.md"
+        exit_code = doctor.main(["--report", str(report_file)])
+        assert exit_code == 0
+        content = report_file.read_text(encoding="utf-8")
+        for pattern in doctor.FORBIDDEN_OUTPUT_PATTERNS:
+            assert not pattern.search(content), f"forbidden pattern found: {pattern.pattern}"
+
+    def test_report_and_text_output_coexist(
+        self, tmp_path: Path, monkeypatch: pytest.MonkeyPatch, capsys: pytest.CaptureFixture[str]
+    ) -> None:
+        self._mock_build_report(monkeypatch)
+        report_file = tmp_path / "report.md"
+        exit_code = doctor.main(["--format", "text", "--report", str(report_file)])
+        assert exit_code == 0
+        assert report_file.is_file()
+        captured = capsys.readouterr()
+        assert "=== CDB Onboarding Doctor ===" in captured.out
