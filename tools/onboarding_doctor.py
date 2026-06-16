@@ -33,7 +33,6 @@ from dataclasses import dataclass, field
 from pathlib import Path
 from typing import Any, Callable
 
-
 CheckResult = str  # "PASS" | "WARN" | "FAIL" | "SKIP"
 EnvVarCheck = str  # "set" | "unset" | "invalid"
 
@@ -86,7 +85,12 @@ def _run_cmd(
         out = (proc.stdout or "").strip()
         err = (proc.stderr or "").strip()
         return proc.returncode, out, err
-    except (FileNotFoundError, OSError, subprocess.TimeoutExpired, UnicodeDecodeError) as exc:
+    except (
+        FileNotFoundError,
+        OSError,
+        subprocess.TimeoutExpired,
+        UnicodeDecodeError,
+    ) as exc:
         return -1, "", str(exc)
 
 
@@ -156,7 +160,12 @@ class DoctorOutput:
             "lr_note": self.lr_note,
             "warnings": self.warnings,
             "checks": [
-                {"name": c.name, "status": c.status, "detail": c.detail, "action": c.action}
+                {
+                    "name": c.name,
+                    "status": c.status,
+                    "detail": c.detail,
+                    "action": c.action,
+                }
                 for c in self.checks
             ],
         }
@@ -196,7 +205,10 @@ def _check_env_file() -> tuple[CheckResult, str]:
         return "PASS", ".env found"
     example = Path.cwd() / ".env.example"
     if example.is_file():
-        return "WARN", ".env missing, but .env.example exists (run: cp .env.example .env)"
+        return (
+            "WARN",
+            ".env missing, but .env.example exists (run: cp .env.example .env)",
+        )
     return "FAIL", ".env missing and no .env.example found"
 
 
@@ -353,14 +365,24 @@ def build_report(
         CheckItem(name="Repo root", status=report.repo_root_found),
         CheckItem(name="Git", status=report.git_found, detail=report.git_branch),
         CheckItem(name="Git branch", status=report.git_dirty, detail=report.git_branch),
-        CheckItem(name="Python", status=report.python_found, detail=report.python_version),
-        CheckItem(name="Python version", status=report.python_version_ok, detail=report.python_version),
+        CheckItem(
+            name="Python", status=report.python_found, detail=report.python_version
+        ),
+        CheckItem(
+            name="Python version",
+            status=report.python_version_ok,
+            detail=report.python_version,
+        ),
         CheckItem(name="gh CLI", status=report.gh_found),
         CheckItem(name="gh auth", status=report.gh_auth),
         CheckItem(name="Docker", status=report.docker_found),
         CheckItem(name="Docker Compose", status=report.compose_found),
         CheckItem(name=".env file", status=report.env_file),
-        CheckItem(name="SECRETS_PATH", status=report.secrets_path, detail=report.secrets_resolved_dir),
+        CheckItem(
+            name="SECRETS_PATH",
+            status=report.secrets_path,
+            detail=report.secrets_resolved_dir,
+        ),
         CheckItem(name="Onboarding files", status=report.onboarding_files),
         CheckItem(name="make context-doctor", status=report.context_doctor_reachable),
     ]
@@ -394,7 +416,9 @@ def format_report(report: DoctorOutput, fmt: str) -> str:
         lines.append(line)
 
     lines.append("")
-    lines.append(f"  >> Secrets path: {_safe_summary(report.secrets_resolved_dir, 100)}")
+    lines.append(
+        f"  >> Secrets path: {_safe_summary(report.secrets_resolved_dir, 100)}"
+    )
     lines.append(f"  >> .env: {report.env_file}")
 
     if report.warnings:
@@ -409,7 +433,9 @@ def format_report(report: DoctorOutput, fmt: str) -> str:
         lines.append("     Context Intelligence preflight.")
     else:
         lines.append("")
-        lines.append("  >> Run 'make context-query-config-init' then 'make context-doctor'")
+        lines.append(
+            "  >> Run 'make context-query-config-init' then 'make context-doctor'"
+        )
         lines.append("     for Context Intelligence preflight.")
 
     return "\n".join(lines)
@@ -475,36 +501,42 @@ def format_markdown_report(
         detail = check.detail.replace("|", "\\|") if check.detail else ""
         lines.append(f"| {check.name} | {check.status} | {detail} |")
 
-    lines.extend([
-        "",
-        "## Active Onboarding Surfaces",
-        "",
-    ])
+    lines.extend(
+        [
+            "",
+            "## Active Onboarding Surfaces",
+            "",
+        ]
+    )
     for rel_path in ONBOARDING_FILE_CHECKS:
         lines.append(f"- `{rel_path}`")
 
     if report.warnings:
-        lines.extend([
-            "",
-            "## Warnings",
-            "",
-        ])
+        lines.extend(
+            [
+                "",
+                "## Warnings",
+                "",
+            ]
+        )
         for w in report.warnings:
             lines.append(f"- {_safe_summary(w, 200)}")
 
-    lines.extend([
-        "",
-        "## Limitations",
-        "",
-        "- Local checks only; no runtime, Docker, DB, or MCP mutation.",
-        "- Context Doctor reachability is a check only, not a full preflight.",
-        "- No container, network, or stack validation.",
-        "- No external-API or exchange-connectivity validation.",
-        "",
-        "---",
-        "",
-        f"*Report generated by `tools/onboarding_doctor.py` ({overall})*",
-    ])
+    lines.extend(
+        [
+            "",
+            "## Limitations",
+            "",
+            "- Local checks only; no runtime, Docker, DB, or MCP mutation.",
+            "- Context Doctor reachability is a check only, not a full preflight.",
+            "- No container, network, or stack validation.",
+            "- No external-API or exchange-connectivity validation.",
+            "",
+            "---",
+            "",
+            f"*Report generated by `tools/onboarding_doctor.py` ({overall})*",
+        ]
+    )
 
     return "\n".join(lines) + "\n"
 

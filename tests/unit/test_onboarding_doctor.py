@@ -188,7 +188,9 @@ def test_json_output_no_secret_leak(tmp_path: Path) -> None:
     )
     payload = doctor.format_report(report, "json")
     for pattern in doctor.FORBIDDEN_OUTPUT_PATTERNS:
-        assert not pattern.search(payload), f"forbidden pattern found in JSON output: {pattern.pattern}"
+        assert not pattern.search(
+            payload
+        ), f"forbidden pattern found in JSON output: {pattern.pattern}"
 
 
 def test_text_output_no_secret_leak(tmp_path: Path) -> None:
@@ -224,9 +226,7 @@ def test_compute_exit_code() -> None:
     assert doctor.compute_exit_code(warn) == 0
 
 
-def test_main_exit_codes(
-    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
-) -> None:
+def test_main_exit_codes(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:
     def mock_report(*args, **kwargs):
         r = doctor.DoctorOutput()
         r.repo_root_found = "PASS"
@@ -285,7 +285,6 @@ def test_onboarding_files_warn_few_missing(tmp_path: Path) -> None:
     # 7 present, 2 missing (tests/README.md, services/README.md) = WARN
     assert status == "WARN"
     assert 2 <= len(missing) <= 2
-
 
 
 def test_doctor_output_to_dict(tmp_path: Path) -> None:
@@ -428,7 +427,9 @@ class TestFormatMarkdownReport:
 
 
 class TestCLIReportArg:
-    def _mock_build_report(self, monkeypatch: pytest.MonkeyPatch) -> doctor.DoctorOutput:
+    def _mock_build_report(
+        self, monkeypatch: pytest.MonkeyPatch
+    ) -> doctor.DoctorOutput:
         r = doctor.DoctorOutput(
             repo_root_found="PASS",
             git_found="PASS",
@@ -447,7 +448,9 @@ class TestCLIReportArg:
         monkeypatch.setattr(doctor, "build_report", lambda **kw: r)
         return r
 
-    def test_report_writes_file(self, tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:
+    def test_report_writes_file(
+        self, tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+    ) -> None:
         self._mock_build_report(monkeypatch)
         report_file = tmp_path / "report.md"
         exit_code = doctor.main(["--report", str(report_file)])
@@ -457,7 +460,9 @@ class TestCLIReportArg:
         assert "# CDB Onboarding Doctor Report" in content
         assert "testsha123" in content
 
-    def test_report_creates_parent_dirs(self, tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:
+    def test_report_creates_parent_dirs(
+        self, tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+    ) -> None:
         self._mock_build_report(monkeypatch)
         report_file = tmp_path / "nested" / "dir" / "report.md"
         exit_code = doctor.main(["--report", str(report_file)])
@@ -489,6 +494,7 @@ class TestCLIReportArg:
         monkeypatch.setattr(doctor, "build_report", lambda **kw: r)
 
         import io
+
         out = io.StringIO()
         monkeypatch.setattr(sys, "stdout", out)
         exit_code = doctor.main(["--format", "json"])
@@ -512,10 +518,15 @@ class TestCLIReportArg:
         assert exit_code == 0
         content = report_file.read_text(encoding="utf-8")
         for pattern in doctor.FORBIDDEN_OUTPUT_PATTERNS:
-            assert not pattern.search(content), f"forbidden pattern found: {pattern.pattern}"
+            assert not pattern.search(
+                content
+            ), f"forbidden pattern found: {pattern.pattern}"
 
     def test_report_and_text_output_coexist(
-        self, tmp_path: Path, monkeypatch: pytest.MonkeyPatch, capsys: pytest.CaptureFixture[str]
+        self,
+        tmp_path: Path,
+        monkeypatch: pytest.MonkeyPatch,
+        capsys: pytest.CaptureFixture[str],
     ) -> None:
         self._mock_build_report(monkeypatch)
         report_file = tmp_path / "report.md"
