@@ -114,6 +114,7 @@ help:
 	@echo "  make context-live-invoke     - All-tools live bridge matrix, minimal profile (#2849)"
 	@echo "  make context-live-invoke-full - Same harness with inline records, 27 PASS (#2852)"
 	@echo "  make context-negative-controls - Write-intent/mutation negative-control regression (#2854)"
+	@echo "  make onboarding-docs-guard   - Validate active onboarding docs links/entrypoints (#3233)"
 	@echo "  make context-root-inventory  - Cross-repo root + GitHub target inventory (#2853)"
 # ============================================================================
 # CI-Tests (schnell, mit Mocks)
@@ -401,6 +402,10 @@ context-schema-check:
 onboarding-doctor:
 	@echo "=== CDB Onboarding Doctor (developer setup preflight) ==="
 	@$(PYTHON) -m tools.onboarding_doctor
+
+onboarding-docs-guard:
+	@echo "=== Onboarding Docs Guard (validate links/entrypoints) ==="
+	@$(PYTHON) -m tools.validate_onboarding_docs
 
 context-doctor:
 	@echo "=== Context Onboarding Doctor (read-only preflight) ==="

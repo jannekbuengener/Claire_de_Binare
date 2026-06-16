@@ -25,6 +25,7 @@ Important:
 | `.\tools\cdb.ps1 service logs -ServiceName cdb_risk -Lines 100` | `tools/cdb-service-logs.ps1` |
 | `.\tools\cdb.ps1 runtime smoke` | `infrastructure/scripts/smoke_test.ps1` |
 | `.\tools\cdb.ps1 onboarding doctor` | `tools/onboarding_doctor.py` |
+| `make onboarding-docs-guard` | `tools/validate_onboarding_docs.py` — validiert aktive Onboarding-Dokumente: Links, Einstiegspunkte, Secret-Leaks (#3233) |
 
 Non-interactive form:
 - `pwsh -ExecutionPolicy Bypass -File .\tools\cdb.ps1 runtime up`
