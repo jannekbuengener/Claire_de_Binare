@@ -23,7 +23,6 @@ Parent: #3226
 from __future__ import annotations
 
 import argparse
-from datetime import datetime, timezone
 import json
 import os
 import re
@@ -32,6 +31,8 @@ import sys
 from dataclasses import dataclass, field
 from pathlib import Path
 from typing import Any, Callable
+
+from core.utils.clock import utcnow as cdb_utcnow
 
 CheckResult = str  # "PASS" | "WARN" | "FAIL" | "SKIP"
 EnvVarCheck = str  # "set" | "unset" | "invalid"
@@ -446,7 +447,7 @@ def format_markdown_report(
     generated_at: str | None = None,
 ) -> str:
     if generated_at is None:
-        generated_at = datetime.now(timezone.utc).isoformat(timespec="seconds")
+        generated_at = cdb_utcnow().isoformat(timespec="seconds")
 
     fail_count = sum(1 for c in report.checks if c.status == "FAIL")
     warn_count = sum(1 for c in report.checks if c.status == "WARN")
@@ -593,7 +594,7 @@ def main(argv: list[str] | None = None) -> int:
 
     if args.report:
         try:
-            generated_at = datetime.now(timezone.utc).isoformat(timespec="seconds")
+            generated_at = cdb_utcnow().isoformat(timespec="seconds")
             md = format_markdown_report(report, generated_at)
             _validate_output_safe(md)
             report_path = Path(args.report)

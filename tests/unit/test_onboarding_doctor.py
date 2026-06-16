@@ -483,7 +483,10 @@ class TestCLIReportArg:
         self, tmp_path: Path, monkeypatch: pytest.MonkeyPatch
     ) -> None:
         self._mock_build_report(monkeypatch)
-        exit_code = doctor.main(["--report", "Z:\\INVALID\\PATH\\report.md"])
+        blocker = tmp_path / "blocker"
+        blocker.write_text("block")
+        report_file = blocker / "subdir" / "report.md"
+        exit_code = doctor.main(["--report", str(report_file)])
         assert exit_code == 2
 
     def test_json_output_remains_parseable(
