@@ -163,8 +163,8 @@ COMMON_SURFACES: list[tuple[str, str]] = [
         "Prompt, evidence, and PR-body templates.",
     ),
     (
-        "#3251 planned next surface; use docs/onboarding/examples/first_issue_to_pr_flow.md until it lands.",
-        "First-issue sandbox is not live yet, so the tour keeps it as a planned surface only.",
+        "docs/onboarding/first_issue_sandbox.md",
+        "Guided rehearsal path for the first safe docs-only issue-to-PR workflow.",
     ),
 ]
 

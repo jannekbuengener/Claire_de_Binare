@@ -109,7 +109,8 @@ flowchart TD
 
 - Examples index: [`examples/README.md`](examples/README.md)
 - Fresh-clone rehearsal: [`fresh_clone_rehearsal.md`](fresh_clone_rehearsal.md)
-- First issue-to-PR flow: [`examples/first_issue_to_pr_flow.md`](examples/first_issue_to_pr_flow.md)
+- First-issue sandbox (guided rehearsal): [`first_issue_sandbox.md`](first_issue_sandbox.md)
+- First issue-to-PR flow (companion example): [`examples/first_issue_to_pr_flow.md`](examples/first_issue_to_pr_flow.md)
 - Repo Brain / Context Intelligence onboarding: [`repo_brain_context_intelligence.md`](repo_brain_context_intelligence.md)
 - First Repo Brain / Context use: [`examples/repo_brain_first_use.md`](examples/repo_brain_first_use.md)
 - Agent prompt template: [`templates/agent_prompt_template.md`](templates/agent_prompt_template.md)

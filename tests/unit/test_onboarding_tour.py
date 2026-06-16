@@ -24,8 +24,8 @@ def test_render_tour_default_contains_core_surfaces() -> None:
     assert "docs/onboarding/cdb_glossary.md" in output
     assert "docs/onboarding/fresh_clone_rehearsal.md" in output
     assert ".\\tools\\cdb.ps1 onboarding doctor" in output
-    assert "#3251 planned next surface" in output
-    assert "docs/onboarding/examples/first_issue_to_pr_flow.md" in output
+    assert "docs/onboarding/first_issue_sandbox.md" in output
+    assert "docs/onboarding/examples/first_issue_to_pr_flow.md" not in output
 
 
 @pytest.mark.parametrize(

@@ -44,6 +44,7 @@ ACTIVE_ONBOARDING_SURFACES: list[str] = [
     "docs/onboarding/examples/README.md",
     "docs/onboarding/examples/first_issue_to_pr_flow.md",
     "docs/onboarding/examples/repo_brain_first_use.md",
+    "docs/onboarding/first_issue_sandbox.md",
     "docs/onboarding/templates/agent_prompt_template.md",
     "docs/onboarding/templates/evidence_doc_template.md",
     "docs/onboarding/templates/pr_body_template.md",

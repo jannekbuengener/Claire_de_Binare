@@ -14,6 +14,7 @@ Echtgeld-Go.
 
 | Example | Use it when | File |
 |---|---|---|
+| First-issue sandbox | You want a guided rehearsal through the full first-issue workflow with safety gates, HOLD conditions, and separate human/agent paths | [`../first_issue_sandbox.md`](../first_issue_sandbox.md) |
 | First issue flow | You need to read one scoped issue, verify live state, set LOCK/START, branch, and make a bounded change | [`first_issue_to_pr_flow.md`](first_issue_to_pr_flow.md) |
 | First PR flow | You need to validate, commit, push, open a PR, wait for checks, merge, and comment the issue | [`first_issue_to_pr_flow.md`](first_issue_to_pr_flow.md) |
 | Repo Brain first use | You need to use Context Intelligence or Repo Brain as read-only orientation without DB-backed claims | [`repo_brain_first_use.md`](repo_brain_first_use.md) |

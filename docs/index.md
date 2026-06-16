@@ -58,7 +58,8 @@ sondern ein Pointer auf die bestehenden Docs, Runbooks und Source Trees.
 | Einen kurzen guided onboarding tour command brauchst | `python -m tools.onboarding_tour` oder `.\tools\cdb.ps1 onboarding tour` | Read-only Rollenpfad fuer Developer, Agent, Docs Maintainer und Validation/Evidence |
 | Das vollständige lokale Setup brauchst | [`DEVELOPER_ONBOARDING.md`](../DEVELOPER_ONBOARDING.md) | Secrets, Stack-Bootstrap, erste PR-Schritte |
 | Einen One-Command-Setup-Check brauchst | `python -m tools.onboarding_doctor` or `make onboarding-doctor` | Read-only Developer-Onboarding Preflight |
-| Ein Issue-to-PR-Beispiel durchspielen willst | [`first_issue_to_pr_flow.md`](onboarding/examples/first_issue_to_pr_flow.md) | Kleinster Issue-to-PR-Workflow |
+| Deinen ersten sicheren Issue-to-PR-Workflow durchspielen willst (Sandbox) | [`first_issue_sandbox.md`](onboarding/first_issue_sandbox.md) | Gefuehrter Rehearsal-Pfad fuer die erste sichere Contribution |
+| Ein Issue-to-PR-Beispiel als Referenz sehen willst | [`first_issue_to_pr_flow.md`](onboarding/examples/first_issue_to_pr_flow.md) | Kleinster Issue-to-PR-Workflow als Example/Referenz |
 | Den Repo-Brain-Erstkontakt brauchst | [`repo_brain_first_use.md`](onboarding/examples/repo_brain_first_use.md) | Context Intelligence / Repo Brain als read-only Orientation |
 | Das vollständige Repo-Brain-Onboarding brauchst | [`repo_brain_context_intelligence.md`](onboarding/repo_brain_context_intelligence.md) | Brain Evidence Block, Safety Boundaries, First-Use-Flow |
 | Prompt-, Evidence- oder PR-Body-Vorlagen brauchst | [`onboarding/templates/`](onboarding/templates/) | Agent-Prompt-, Evidence-Doc- und PR-Body-Vorlagen |

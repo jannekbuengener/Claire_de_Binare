@@ -36,6 +36,7 @@ Bevor du Code auscheckst, lies die aktuelle Projektlage:
 | [`README.md`](README.md) | GitHub-Landingpage; aktueller Status und Navigation |
 | [`docs/index.md`](docs/index.md) | Kuerzester aktiver Docs-Einstieg |
 | [`docs/onboarding/DEVELOPER_VISUAL_START_HERE.md`](docs/onboarding/DEVELOPER_VISUAL_START_HERE.md) | Visueller Developer-Start (Mermaid-Flow, Beispiele, Vorlagen) |
+| [`docs/onboarding/first_issue_sandbox.md`](docs/onboarding/first_issue_sandbox.md) | Gefuehrter Rehearsal-Pfad fuer den ersten sicheren Issue-to-PR-Workflow |
 | [`docs/onboarding/fresh_clone_rehearsal.md`](docs/onboarding/fresh_clone_rehearsal.md) | Read-only-by-default Fresh-Clone-Pfad bis zur ersten Grundsicherheit |
 | [`AGENTS.md`](AGENTS.md) | Root-Pointer -> [`agents/AGENTS.md`](agents/AGENTS.md) (Agenten-Read-Order) |
 | [`docs/live-readiness/LR-AUDIT-STATUS-2026-03-05.md`](docs/live-readiness/LR-AUDIT-STATUS-2026-03-05.md) | SSOT fuer Echtgeld Go/No-Go (**NO-GO**) |
