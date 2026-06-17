@@ -28,11 +28,12 @@ Gilt für **alle** OpenCode Agents (egal welcher Provider).
 ## OpenCode Skill Routing
 
 - Bootloader immer zuerst: `AGENTS.md` -> `agents/AGENTS.md` -> `agents/OPEN_CODE_AGENTS.md`
+- **Context Brain Preflight immer vor Repo-Reads:** Pflichtfeld `context_brain_attempted=true`; MCP-Tool-Check vor Planung. Bei `tool_blocked` oder anderem validem Grund: `repo_fallback_used=true` mit exaktem `repo_fallback_reason`. Siehe `agents/AGENTS.md` § Context Brain Preflight Gate.
 - Für CDB-Repo-Arbeit danach `cdb-session-start`
 - Danach `cdb-control-intake`
 - Bei Issue-Arbeit danach `cdb-issue-to-session-plan`
 - Bei Context-, SurrealDB-, MCP-Tool-, ContextBridge- oder DB-backed-Memory-Scope: MCP Capability Resolution Gate ausführen vor Implementierung oder toolabhängiger Planung — Repo-Präsenz ist nicht gleich MCP-Verfügbarkeit. Referenz: `docs/runbooks/surrealdb_context_mcp_access.md` § 1.5.
-- Bei Strategy-, Runtime-, Module-, Service-, Contract-, Context-, SurrealDB-, MCP-, Memory- oder Evidence-Scope: **Brain Evidence Gate** aus `agents/AGENTS.md` § Brain Evidence Gate ausführen **vor jeder Planung** — der Agent MUSS den vollständigen Brain-Evidence-Block mit `brain_source`, `brain_status`, `tools_or_queries`, `records_or_results`, `repo_crosscheck`, `impact_on_plan` und `limitations` ausgeben.
+- Bei Strategy-, Runtime-, Module-, Service-, Contract-, Context-, SurrealDB-, MCP-, Memory- oder Evidence-Scope: **Brain Evidence Gate** aus `agents/AGENTS.md` § Brain Evidence Gate ausführen **vor jeder Planung** — der Agent MUSS den vollständigen Brain-Evidence-Block mit `brain_source`, `brain_status`, `tools_or_queries`, `records_or_results`, `repo_crosscheck`, `impact_on_plan` und `limitations` sowie `context_brain_attempted`, `context_brain_used`, `repo_fallback_used`, `repo_fallback_reason` ausgeben.
 - **Source priority** (SSOT: `knowledge/decisions/CDB_CONTEXT_BRAIN_DEFAULT_POSTURE.md`): live GitHub → repo files → SurrealDB context package (guarded) → ledger → fallback. `CURRENT_STATUS.md` ist Ledger, nicht Live-Wahrheit.
 - Context-/MCP-/Briefing-Ergebnisse erzeugen **keine** automatische Code-, Issue- oder Write-Aktion; `PERSIST_ALLOWED=False` und `MUTATION_ALLOWED=False` bleiben Default auf `main`.
 - Für `context.briefing`-basierte Handoffs ist `briefing.session_context` die bevorzugte Kurzzeit-/Session-Handoff-Fläche für Context-, MCP-, Memory- und Evidence-Scope. Diese Fläche ist immer `working_memory` mit `session_only=true`, ist nicht als persistente DB-Memory zu behandeln und erlaubt DB-backed Brain-Claims nur bei `brain_source=surrealdb-local` und nutzbarem `brain_status` (`used` oder `partial`). `blocked` und `not-used` bleiben fail-closed.

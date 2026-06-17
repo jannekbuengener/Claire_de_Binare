@@ -267,6 +267,7 @@ OpenCode skill surface zusaetzlich: `.opencode/skills/` (gezielt laden, nicht pa
 
 ## Agent Operating Rules
 
+- **Context Brain first.** Jeder Agenten-Prompt MUSS vor Repo-Reads einen Context Brain Preflight versuchen. Repo-Fallback ist nur nach belegtem Fehlversuch erlaubt. Siehe `agents/AGENTS.md` § Context Brain Preflight Gate.
 - Read `knowledge/governance/CDB_AGENT_POLICY.md` section 4 before any write.
 - Respect single-writer locks, explicit stop signals, and write gates.
 - `DELIVERY_APPROVED.yaml` is human-controlled; agents must not modify it.
