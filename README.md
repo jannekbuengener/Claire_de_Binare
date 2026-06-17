@@ -41,6 +41,7 @@ Stage und LR sind orthogonale Systeme: `trade-capable` autorisiert kein Live-Tra
 
 ## Agent Entry
 
+- `/onboarding` — schnellster Discovery-Einstieg fuer frische Agenten (Skill: `.opencode/skills/onboarding/`)
 - Bootloader-Reihenfolge: [`AGENTS.md`](AGENTS.md) -> [`agents/AGENTS.md`](agents/AGENTS.md) -> [`agents/OPEN_CODE_AGENTS.md`](agents/OPEN_CODE_AGENTS.md)
 - Status-Surfaces zuerst getrennt lesen: [`docs/runbooks/CONTROL_REGISTER.md`](docs/runbooks/CONTROL_REGISTER.md), [`CURRENT_STATUS.md`](CURRENT_STATUS.md), [`docs/live-readiness/LR-AUDIT-STATUS-2026-03-05.md`](docs/live-readiness/LR-AUDIT-STATUS-2026-03-05.md)
 
