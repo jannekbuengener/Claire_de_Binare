@@ -7,6 +7,7 @@ in ein evidence-faehiges Context-/Brain-Paket ueberfuehren.
 **Erster operativer Slice:** [#3288](https://github.com/jannekbuengener/Claire_de_Binare/issues/3288)
 **Report-only Workflow:** [#3287](https://github.com/jannekbuengener/Claire_de_Binare/issues/3287) — DIESER
 **Agent Briefing Seed:** [#3290](https://github.com/jannekbuengener/Claire_de_Binare/issues/3290) — aus Context-Refresh-Artefakten
+**Drift Radar:** [#3291](https://github.com/jannekbuengener/Claire_de_Binare/issues/3291) — DIESER SLICE — siehe §6
 **Naechster Slice (Brain Apply):** [#3289](https://github.com/jannekbuengener/Claire_de_Binare/issues/3289) — benoetigt validiertes Package aus #3288
 
 **LR-Status:** `NO-GO`
@@ -192,11 +193,11 @@ Delta-Paket bauen (context_delta.json + validation_report.json)
     v
 Agent Briefing Seed (#3290) — aus 3 Artefakten
     |
-    v (optional, nach Briefing)
-Lokaler append-only Brain Apply (#3289) — spaeter
-    |
     v
-Drift Report (#3291) — spaeter
+Drift Radar (#3291, DIESER SLICE) — aus Delta + Validation + optional Briefing
+    |
+    v (optional, nach Drift Radar)
+Lokaler append-only Brain Apply (#3289) — spaeter
 ```
 
 ---
@@ -312,10 +313,136 @@ Das Briefing Seed enthaelt dieselben Safety-Grenzen wie das Context Package:
 ### Eingeschraenkte Scope-Grenzen
 
 - Kein Brain Apply (#3289) — separater Follow-up-Slice
-- Kein Drift Radar (#3291) — separater Follow-up-Slice
+- Drift Radar (#3291) — DIESER SLICE — siehe §6
 - Kein Onboarding (#3292) — separater Follow-up-Slice
 - Keine Live-/Echtgeld-Implikation
 - Keine DB-Writes
+
+---
+
+## 6. Drift Radar (#3291)
+
+Der Drift Radar ist ein read-only Scanner, der stale Dokumentation und
+widerspruechliche Canon-/Ledger-/GitHub-Signale sichtbar macht.
+
+**Generator:** `tools/context/generate_context_drift_radar.py`
+
+### Input-Artefakte
+
+| Artefakt | Pflicht | Beschreibung |
+|----------|---------|-------------|
+| `context_delta.json` | Ja | Aus dem Report-Workflow (#3287) |
+| `validation_report.json` | Ja | Aus dem Report-Workflow (#3287) |
+| `agent_briefing_seed.json` | Optional | Aus dem Briefing-Generator (#3290) |
+
+### Drift-Kategorien
+
+| Kategorie | Beschreibung | Default Severity |
+|-----------|-------------|-----------------|
+| `canon_pointer_drift` | Canon-Pointer-Dateien (AGENTS.md, WORKING_REPO_CANON) geaendert | medium |
+| `ledger_vs_github_drift` | Offene Context-/Drift-Issues im Widerspruch zum Ledger | medium |
+| `lr_status_ambiguity` | LR-Status weicht von NO-GO ab | high |
+| `stale_architecture_docs` | Architecture-/Knowledge-Hub-Dateien geaendert | medium |
+| `stale_onboarding_docs` | Onboarding-bezogene Dateien geaendert | medium |
+| `stale_agent_bootloader_instructions` | Bootloader-/Agent-Surfaces geaendert | medium |
+| `workflow_check_drift` | Validation-Report blockiert/warnt | high/medium |
+| `unknown_high_risk_delta` | Limitations mit Live-/Echtgeld-/Secret-Indikatoren | high |
+
+### Output-Artefakte
+
+| Artefakt | Format | Beschreibung |
+|----------|--------|-------------|
+| `stale_claims.json` | JSON | Maschinenlesbare Claims (schema_version, generated_at_utc, source_artifacts, claims, summary, degraded, limitations) |
+| `impact_radar.md` | Markdown | Menschlesbarer Impact-Bericht mit allen required sections |
+
+Optional (via `--json`):
+| `impact_radar.json` | JSON | Maschinenlesbare Impact-Radar-Struktur |
+
+### Required Fields (stale_claims.json)
+
+| Feld | Beschreibung |
+|------|-------------|
+| `schema_version` | Version des Claim-Formats (`stale_claims.v1`) |
+| `generated_at_utc` | ISO-8601 UTC-Zeitstempel |
+| `source_artifacts` | Verwendete Input-Artefakte mit Version |
+| `claims[]` | Liste der Drift-Claims |
+| `claims[].claim` | Beschreibung des Drifts |
+| `claims[].drift_category` | Eine der 8 Drift-Kategorien |
+| `claims[].severity` | high / medium / low |
+| `claims[].source_ref` | Quelle des Claims im Input |
+| `claims[].current_truth_ref` | Referenz auf aktuelle Wahrheit |
+| `claims[].status` | blocking / changed / open / needs_review / stale_or_unknown / warning |
+| `claims[].recommended_action` | Empfohlene Massnahme |
+| `claims[].blocks_brain_apply` | true/false — blockiert dieser Claim Brain Apply? |
+| `summary` | Zusammenfassung (total_claims, blocking, high/medium/low severity, blocks_brain_apply) |
+| `degraded` | Ob das Radar degraded lief |
+| `limitations` | Bekannte Einschraenkungen |
+
+### Required Sections (impact_radar.md)
+
+- `Context Drift / Impact Radar` — Header mit Metadaten
+- `Source Artifacts` — Verwendete Input-Quellen
+- `High-Risk Drift` — Claims mit severity=high
+- `Brain Apply Blockers` — Claims mit blocks_brain_apply=true
+- `Stale Claims` — Alle erkannten Drift-Claims
+- `Canon / Ledger / GitHub Conflicts` — Kategorisierte Konflikte
+- `Workflow / Check Drift` — Validierungs-Warnungen/Blockierungen
+- `Recommended Follow-up Issues` — Report-only Issue-Empfehlungen (keine Auto-Anlage)
+- `Safety Boundaries` — LR/Echtgeld/Security-Grenzen
+- `Limitations` — Bekannte Einschraenkungen
+
+### Brain-Apply-Blocking Policy
+
+High-risk Drift blockiert Brain Apply (#3289) unter folgenden Bedingungen:
+
+| Bedingung | Grund |
+|-----------|-------|
+| `severity == high` | Jeder high-severity Claim blockiert vorsorglich |
+| `category == lr_status_ambiguity` | LR-Status-Abweichung ist immer blocking |
+| `category == unknown_high_risk_delta` | Unbekannte high-risk Deltas blockieren |
+| Claim impliziert Live-Go/Echtgeld-Go | Nur LR-SSOT darf Live-Status setzen |
+| Claim involviert Secrets/Orders/Fills/Positions/Risk-State | Safety-Grenze |
+| Erforderliche Canon-Quelle fehlt | Unvollstaendige Basis |
+| GitHub/Repo-live widerspricht Briefing/Ledger-Claim | Live-Wahrheit gewinnt |
+
+**Verdikt:** Der Radar bewertet Brain Apply als `blocked` oder `recommended_hold`.
+Brain Apply (#3289) wird hier nicht implementiert — nur der Blocker-Report.
+
+### Exit Codes
+
+- **0:** PASS — Radar erfolgreich generiert, keine blocking Claims
+- **1:** BLOCKED — High-risk Drift erkannt, Brain Apply blockiert
+- **2:** FAIL — Unerwarteter Fehler (beide Pflicht-Inputs fehlen)
+
+### CLI-Usage
+
+```bash
+# Aus Context-Refresh-Artefakten generieren
+python tools/context/generate_context_drift_radar.py \
+    --delta artifacts/context_delta.json \
+    --validation artifacts/validation_report.json \
+    --briefing artifacts/agent_briefing_seed.json \
+    --output-dir artifacts/
+
+# Mit optionalem JSON-Output
+python tools/context/generate_context_drift_radar.py \
+    --delta artifacts/context_delta.json \
+    --validation artifacts/validation_report.json \
+    --json \
+    --output-dir artifacts/
+
+# Hilfe
+python tools/context/generate_context_drift_radar.py --help
+```
+
+### Safety Boundaries
+
+- Drift Radar ist read-only: keine DB-Writes, kein Brain Apply (#3289), kein Onboarding (#3292).
+- LR bleibt NO-GO. Kein Live-Go. Kein Echtgeld-Go.
+- Reports empfehlen Folge-Issues, legen sie aber nicht automatisch an.
+- High-risk Drift blockiert Brain Apply, aber der Radar fuehrt keinen Apply aus.
+- Keine Secrets in Outputs (Secret-Indikatoren in Inputs werden als Limitation gemeldet).
+- Keine Runtime-/Docker-/Trading-Aenderungen.
 
 ---
 
@@ -342,6 +469,8 @@ Das Briefing Seed enthaelt dieselben Safety-Grenzen wie das Context Package:
   oder SurrealDB-Verbindungen eingespielt.
 - **#3289 Brain Apply ist nicht Teil dieses Workflows.** Brain Apply kommt in
   einem spaeteren Slice.
+- **#3291 Drift Radar (§6) ist read-only.** Es erzeugt Reports und blockiert
+  ggf. Brain Apply, fuehrt aber keinen Apply aus.
 - **#3292 Onboarding Scenario bleibt zuletzt.**
 
 ---
@@ -351,9 +480,9 @@ Das Briefing Seed enthaelt dieselben Safety-Grenzen wie das Context Package:
 | Issue | Beschreibung | Status |
 |-------|-------------|--------|
 | #3286 | Parent Epic: Context Refresh Workflow | OFFEN |
-| #3287 | Report-only GitHub Actions Workflow | DIESES |
+| #3287 | Report-only GitHub Actions Workflow | ERLEDIGT (#3294) |
 | #3288 | Context Package Schema + Validator | ERLEDIGT (#3293) |
 | #3289 | Lokaler append-only Brain Apply | OFFEN — spaeter |
-| #3290 | Agent Briefing Seed | DIESES — DONE_MERGED_CLOSED |
-| #3291 | Stale Documentation / Impact Radar | OFFEN — spaeter |
+| #3290 | Agent Briefing Seed | ERLEDIGT (#3295) |
+| #3291 | Stale Documentation / Impact Radar | DIESES — SIEHE §6 |
 | #3292 | Onboarding Scenario (bewusst zuletzt) | OFFEN — zuletzt |
