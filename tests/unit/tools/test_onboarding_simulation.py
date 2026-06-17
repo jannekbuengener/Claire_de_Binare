@@ -391,7 +391,7 @@ class TestSimulationOutputContract:
 
     def test_verdict_is_valid_enum(self) -> None:
         output = render_simulation()
-        verdict_line = [l for l in output.split("\n") if "Final Verdict:" in l][0]
+        verdict_line = [line for line in output.split("\n") if "Final Verdict:" in line][0]
         verdict = verdict_line.split(": ", 1)[1].strip()
         assert verdict in VERDICT_ENUM, f"Verdict '{verdict}' not in VERDICT_ENUM"
 
