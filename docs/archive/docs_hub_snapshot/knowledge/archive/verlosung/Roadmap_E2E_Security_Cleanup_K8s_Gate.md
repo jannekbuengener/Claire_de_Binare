@@ -540,7 +540,7 @@ Verification: ...
 
 ```
 1. Erstelle Test-Inventory-Baseline: pytest --collect-only > test_inventory.txt && kategorisiere nach unit/integration/e2e
-2. Upgrade Postgres auf 16-alpine und Redis auf 7.4-alpine3.21 – Gordon-Prompt vorbereiten für Image-Pull und Compose-Update
+2. Upgrade Postgres auf 16-alpine und Redis auf 7.4-alpine3.21 – Prompt vorbereiten für Image-Pull und Compose-Update
 3. Führe docker builder prune -f aus nach dem nächsten erfolgreichen Build (3.66 GB freigeben)
 ```
 

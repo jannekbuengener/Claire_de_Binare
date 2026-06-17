@@ -1,13 +1,10 @@
-# Gordon Brief: Phase 8B - Deterministic risk_events Persistence
+# Historical Brief: Phase 8B - Deterministic risk_events Persistence
 
-> **Orphaned / historisch** — Gordon/Docker-AI/MCP_DOCKER als Review-Gate ist
-> **dekommissioniert** (#2689). Inhalt unten ist Archiv-Evidence; keine aktive
-> Freigabe oder Blocker-Warteschlange. Entscheidungen: Jannek Human-GO +
-> GitHub-live-before-ledger.
+> **Orphaned / historisch** — Historical review artifact. Active gate: explicit Jannek Human-GO + repo evidence.
 
 **Date:** 2026-02-15  
 **Requester:** Claude Opus 4.5  
-**Status:** ORPHANED (historisch: AWAITING GORDON REVIEW)
+**Status:** ORPHANED (historisch)
 
 ---
 
@@ -22,7 +19,7 @@ Phase 8B requires deterministic, idempotent persistence of risk_events. Current 
 
 ---
 
-## Questions for Gordon
+## Historical Review Questions
 
 ### Q1: Write-Path Architecture
 
@@ -42,7 +39,7 @@ Phase 8B requires deterministic, idempotent persistence of risk_events. Current 
 - db_writer currently does NOT consume risk_events (only signals/orders/trades via Pub/Sub)
 - Simpler, fewer moving parts
 
-**Gordon's Input Requested:** Confirm Option A or recommend Option B with justification.
+**Historical Review Input Requested:** Confirm Option A or recommend Option B with justification.
 
 ---
 
@@ -66,7 +63,7 @@ Where `input_snapshot_hash` = SHA256 of sorted JSON containing:
 
 **Existing `decision_id`** stays as correlation ID (not PK).
 
-**Gordon's Input Requested:** Confirm hash inputs or suggest alternatives.
+**Historical Review Input Requested:** Confirm hash inputs or suggest alternatives.
 
 ---
 
@@ -83,7 +80,7 @@ Where `input_snapshot_hash` = SHA256 of sorted JSON containing:
 - Decision logic remains independent (fail-closed on risk side)
 - Persist failure = evidence debt (tracked via metric, not silent)
 
-**Gordon's Input Requested:** Confirm retry params or adjust.
+**Historical Review Input Requested:** Confirm retry params or adjust.
 
 ---
 
@@ -107,11 +104,11 @@ Pitfalls: [any additional concerns]
 
 ---
 
-**Historisch:** Review wurde extern simuliert; kein aktiver Gordon-Gate mehr.
+**Historisch:** Review wurde extern simuliert; kein aktiver externer Advisor-Gate mehr.
 
 ---
 
-## Gordon Response (via MCP_DOCKER) — historisch, nicht operativ
+## Historical Review Response — historisch, nicht operativ
 
 **Consultation Date:** 2026-02-15
 **Method:** Docker infrastructure inspection
@@ -141,7 +138,7 @@ Pitfalls: [any additional concerns]
 ❌ Failed to persist risk_event: relation "risk_events" does not exist
 ```
 
-### Gordon's Decisions
+### Historical Review Decisions
 
 **Q1: Write-Path** → **OPTION A CONFIRMED**
 - Risk service already writes directly to Postgres (existing pattern)
@@ -159,7 +156,7 @@ Pitfalls: [any additional concerns]
 - Note: Current state shows table doesn't exist - migration MUST be applied first
 - Metric `risk_events_persist_ok` required for evidence debt tracking
 
-### Additional Concerns (Gordon)
+### Additional Concerns (Historical)
 
 1. **Migration Gap:** Migration 004 exists in codebase but NOT applied to running DB
    - Schema version shows only 1.0.1, 1.0.2
@@ -169,7 +166,7 @@ Pitfalls: [any additional concerns]
 
 3. **Env Consistency:** Both cdb_risk and cdb_db_writer use same POSTGRES_HOST/USER - good
 
-### Gordon's Verdict
+### Historical Verdict
 
 ✅ **PROCEED WITH OPTION A**
 - Apply migration 004 first (create risk_events table)
@@ -178,4 +175,4 @@ Pitfalls: [any additional concerns]
 
 ---
 
-**Status (historisch):** GORDON APPROVED — Archiv only; Implementation-GO nur via Jannek + Live-Evidence
+**Status (historisch):** Historically approved — Archiv only; Implementation-GO nur via Jannek + Live-Evidence

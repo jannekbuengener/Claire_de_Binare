@@ -4,7 +4,7 @@ Hier ist der **Prompt für Claude Code** (copy/paste):
 
 ---
 
-Gordon, du sollst Issue #342 fixen. Problem ist jetzt eingegrenzt und reproduzierbar.
+Issue #342 fixen. Problem ist jetzt eingegrenzt und reproduzierbar.
 
 Kontext / Evidence:
 

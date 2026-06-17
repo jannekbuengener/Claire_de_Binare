@@ -1,9 +1,9 @@
 # EXECUTION_QUEUE.md
 
 > **Historischer Snapshot (orphaned)** — generiert 2026-01-07. Nicht als aktive
-> Queue, Merge-Plan oder Deployment-Owner-SSOT verwenden. Gordon/Docker-AI
-> Erwähnungen unten sind **historisch**; operatives Gate ist Jannek Human-GO +
-> GitHub-live-before-ledger. Aktueller Repo-Stand: `CURRENT_STATUS.md`,
+> Queue, Merge-Plan oder Deployment-Owner-SSOT verwenden. Obsolete external advisor
+> references below are **historical**. Active gate: explicit Jannek Human-GO +
+> GitHub/Repo evidence. Aktueller Repo-Stand: `CURRENT_STATUS.md`,
 > `docs/runbooks/CONTROL_REGISTER.md`.
 
 **Generiert:** 2026-01-07  
@@ -134,17 +134,17 @@
 
 ---
 
-### 2. Issue #499 - Follow-up: Gordon Docker setup (historisch) — Scout/Trivy/Metrics + Dockerfile strategy
+### 2. Issue #499 - Follow-up: Docker setup (historisch) — Scout/Trivy/Metrics + Dockerfile strategy
 **Labels:** prio:must, prio:should, type:security, scope:infra, docker, review, follow-up
-**Warum (historisch):** Docker security — frühere Gordon-Setup-Review; kein operatives Gate
+**Warum (historisch):** Docker security — frühere Setup-Review; kein operatives Gate
 **Abhängigkeiten:** PR #497
 **Done:** Scout/Trivy configured, Metrics setup, Dockerfile strategy documented
 
 ---
 
-### 3. Issue #498 - Review: Gordon Docker setup (historisch) + CI workflow claims
+### 3. Issue #498 - Review: Docker setup (historisch) + CI workflow claims
 **Labels:** prio:must, prio:should, type:security, agent:gemini, agent:copilot
-**Warum (historisch):** Docker review — frühere Gordon-CI-Claims; Jannek/GitHub-live Gate
+**Warum (historisch):** Docker review — frühere CI-Claims; Jannek/GitHub-live Gate
 **Abhängigkeiten:** PR #497, Issue #499
 **Done:** Review complete, CI workflow claims verified/adjusted
 
@@ -270,7 +270,7 @@ done
 
 ## Blocker PRs (Konflikt-auflösung nötig)
 
-- PR #497 - CONFLICTING - Gordon Docker setup (historisch; kein Gordon-Gate)
+- PR #497 - CONFLICTING - Docker setup (historisch; kein aktives Advisor-Gate)
 - PR #504 - CONFLICTING - CI fetch fix
 - PR #476 - CONFLICTING - CI path filters
 - PR #481 - CONFLICTING - CI emoji report

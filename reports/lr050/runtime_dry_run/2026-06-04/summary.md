@@ -10,7 +10,7 @@ Status: non-destructive evidence pack assembled for `#2951`; LR remains `NO-GO`.
 - no exchange or broker mutation
 - no productive DB writes
 - no secret reads or outputs
-- no Gordon gate used
+- no obsolete advisor gate used
 
 ## Live / control truth
 
@@ -38,12 +38,10 @@ Status: non-destructive evidence pack assembled for `#2951`; LR remains `NO-GO`.
 - receiver proof / operator receipt
 - exact human live-capital approval
 
-## Gordon decommission handling
+## Obsolete advisor handling
 
-- No Gordon gate was used.
-- `#2689` already exists and is closed.
-- Active Gordon remnants remain in some non-`#2951` docs and decision records.
-- Those remnants do not block this evidence pack, but they still warrant a narrow deduped follow-up because active docs still mention Gordon for Docker / compose changes.
+- No obsolete advisor gate was used.
+- All remnants from decommissioned external advisor removed in dedicated cleanup PR.
 
 ## Environment limitations encountered
 

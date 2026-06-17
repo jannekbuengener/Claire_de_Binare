@@ -35,7 +35,7 @@ records_or_results:
   - #3221 OPEN; #3222 CLOSED; #3223 MERGED
   - #3219 CLOSED; #3220 MERGED; #3217 CLOSED; #3218 MERGED
   - #2985 OPEN; #1900 OPEN; #2977 OPEN (LR-050 refresh BLOCKED)
-  - Gordon gate confirmed obsolete (#3222/PR #3223)
+  - Obsolete external advisor gate confirmed removed (#3222/PR #3223)
   - Jannek Human-GO: EXPLICITLY GRANTED (first prompt line: "Jannek Human-GO for Runtime/Docker/Backfill/Replay for #3221 June 6 1h replay slice")
   - MEXC BTCUSDT 1m candles backfilled: 300 total (240 warmup + 60 window)
   - Dataset: artifacts/datasets/3221_june6_1h/
@@ -78,7 +78,7 @@ Verified boundaries:
 
 - Board stage `trade-capable` is not Live-Go.
 - LR SSOT remains `docs/live-readiness/LR-AUDIT-STATUS-2026-03-05.md` (NO-GO).
-- Gordon gate is obsolete; confirmed via #3222/PR #3223.
+- Obsolete external advisor gate confirmed removed; confirmed via #3222/PR #3223.
 - System stage per CONTROL_REGISTER (2026-04-08): `stage:trade-capable` (ratified via #1492).
 - No secret values printed, committed, or inspected.
 
@@ -313,7 +313,7 @@ Note: `artifacts/` output is gitignored; dataset JSONL, dataset_spec.json, and r
 | No Product-Complete claim | Enforced |
 | No Candidate #4 | Enforced |
 | No PB1/RMR/Momentum rescue | Enforced |
-| No Gordon gate reintroduced | Enforced |
+| No obsolete advisor gate reintroduced | Enforced |
 | No regime_segments inference | Enforced — reported as unavailable |
 
 ---

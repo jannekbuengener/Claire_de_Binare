@@ -1,8 +1,8 @@
 # Execution-Service - Entwicklungsstatus
 
 > **Historischer Snapshot (orphaned)** — Stand 2025-10-23. Nicht als aktiver
-> Deployment- oder Debug-Status verwenden. Gordon als Deployment-Owner ist
-> historisch/decommissioned; Stack-Ops und Container-Änderungen erfordern Jannek Human-GO.
+> Deployment- oder Debug-Status verwenden. Obsolete external advisor reference removed.
+> Stack-Ops und Container-Änderungen erfordern Jannek Human-GO.
 > Aktueller Service-Canon: Repo unter `services/execution/`, Ledger:
 > `CURRENT_STATUS.md`.
 
@@ -127,7 +127,7 @@ CMD ["python", "-u", "service.py"]
 
 **Symptom**: Container startet und crasht sofort  
 **Impact**: 🔴 Kritisch - Service nicht deployed  
-**Status**: 🟡 Container-Debug offen (historisch; kein externer Gordon-Gate, nicht operativ)
+**Status**: 🟡 Container-Debug offen (historisch; kein externer Advisor-Gate, nicht operativ)
 
 ### Diagnose-Schritte (historisch — Operator / solo-maintainer)
 

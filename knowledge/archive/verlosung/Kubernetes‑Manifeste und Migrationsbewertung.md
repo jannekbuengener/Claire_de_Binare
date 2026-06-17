@@ -2,7 +2,7 @@
 
 ## Kontext und Zielsetzung
 
-Dieser Bericht bewertet die von Gordon generierten Kubernetes‑Manifeste für den Claire‑de‑Binare‑Stack. Die Aufgabe war zu prüfen, ob die YAML‑Definitionen produktionstauglich sind und wie sie im Vergleich zur aktuellen Docker‑Compose‑Architektur einzuordnen sind.
+Dieser Bericht bewertet die generierten Kubernetes‑Manifeste für den Claire‑de‑Binare‑Stack. Die Aufgabe war zu prüfen, ob die YAML‑Definitionen produktionstauglich sind und wie sie im Vergleich zur aktuellen Docker‑Compose‑Architektur einzuordnen sind.
 
 ## Analyse der bereitgestellten Manifeste
 

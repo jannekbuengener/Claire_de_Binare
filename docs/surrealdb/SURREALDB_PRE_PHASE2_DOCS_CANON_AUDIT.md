@@ -65,7 +65,7 @@ Verified via `gh issue view` / `gh pr list` on 2026-06-02.
 | Active docs imply Live-Go / Echtgeld-Go | **No** — wave/runbook docs state LR **NO-GO** or deny Echtgeld-Go |
 | `PERSIST_ALLOWED=True` / `MUTATION_ALLOWED=True` as default in active `docs/surrealdb` | **No** — only negations or “not on main” |
 | Trading state in SurrealDB as SSoT | **No** — `context-intelligence-system.md` forbids |
-| Gordon / Docker AI as operational gate | **No** in active runbooks; `reports/GORDON_*.md` marked orphaned/historical (#2689/#2793) |
+| Obsolete external advisor as operational gate | **No** in active runbooks; `reports/HISTORICAL_*.md` marked orphaned/historical (#2689/#2793) |
 | MCP tool count in operator runbook | **27** — matches `create_bridge().list_tools()` |
 | `make context-certify` (default) | **certified**, LR NO-GO, gates False |
 
@@ -82,7 +82,7 @@ Verified via `gh issue view` / `gh pr list` on 2026-06-02.
 | `knowledge/decisions/` | `CDB_CONTEXT_BRAIN_DEFAULT_POSTURE.md` | Governance decision #2775 |
 | `tools/mcp/context_bridge.py` | 27 tools | Live MCP inventory |
 | `Makefile` | `context-*`, `context-certify`, `context-doctor` | Operator entrypoints |
-| `reports/GORDON_*.md` | 3+ files | **Historical** (#2689) |
+| `reports/HISTORICAL_*.md` | 3+ files | **Historical** (#2689) |
 | `knowledge/logs/sessions/*surreal*` | ~25 files | Session evidence (historical) |
 
 Full per-file classification: see [Classification Table](#classification-table) below.
@@ -127,7 +127,7 @@ All `*-runbook.md`, `*-contract*.md`, `context-*-contract*.md`, `memory-write-ga
 | --- | --- |
 | `context-pr-slicing-plan.md`, early wave gates (wave7–14) | historical |
 | `docs/surrealdb/context-intelligence/external-reference-scan.md` | historical scan |
-| `reports/GORDON_*.md`, `reports/EXECUTION_QUEUE.md` (Gordon refs) | historical (bannered) |
+| `reports/HISTORICAL_*.md`, `reports/EXECUTION_QUEUE.md` (historical advisor refs) | historical (bannered) |
 | `knowledge/logs/sessions/2026-05-*` | historical evidence |
 
 **Note:** 81 files under `docs/surrealdb/` are predominantly **runbook**, **design**, or **historical wave gates**; only ~10 files are day-to-day **canonical** planning inputs for Phase 2.
@@ -147,7 +147,7 @@ All `*-runbook.md`, `*-contract*.md`, `context-*-contract*.md`, `memory-write-ga
 | C7 | Wave `*-completion-gates.md` OPEN issue checklists | Many child issues now CLOSED | **deferred** | Mark wave gates historical; do not use as live issue tracker |
 | C8 | `CURRENT_STATUS.md` vs GitHub | Ledger; may lag merges | **acceptable** | Treat as ledger only (per canon) |
 | C9 | `context-agent-handoff.md` generic `state = OPEN` | Template example, not issue claim | **no fix** | Clarified in audit |
-| C10 | Gordon in `services/execution/EXECUTION_SERVICE_STATUS.md` | Historical note present | **deferred** | Out of surrealdb path; #2689 closed |
+| C10 | Obsolete advisor ref in `services/execution/EXECUTION_SERVICE_STATUS.md` | Historical note present | **deferred** | Out of surrealdb path; #2689 closed |
 
 **No contradiction found** implying Live-Go, default `PERSIST_ALLOWED=True`, or default `MUTATION_ALLOWED=True` in active `docs/surrealdb/`.
 

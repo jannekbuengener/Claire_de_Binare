@@ -18,7 +18,7 @@ Gemini's Migrationsplan ist **strukturell solide, governance-konform und technis
 - ✅ Plan ist vollständig und detailliert (3 Tabellen: Governance, T1, T2/T3)
 - ✅ Ziel-Struktur entspricht `CDB_REPO_STRUCTURE.md`
 - ⚠️ **Git-History-Abhängigkeit kritisch**: t1/t2/t3 existieren nicht im HEAD
-- ⚠️ **Docker-Infrastruktur-Integration erforderlich**: Gordon's Empfehlungen müssen berücksichtigt werden
+- ⚠️ **Docker-Infrastruktur-Integration erforderlich**: Historische Architektur-Empfehlungen berücksichtigen
 - ✅ Service-Umbenennungen logisch und konsistent
 - ⚠️ requirements.txt DROP erfordert Dependency-Migration-Strategie
 
@@ -45,7 +45,7 @@ Gemini's Migrationsplan ist **strukturell solide, governance-konform und technis
 |---------|--------|-----------|
 | `/core/` | ✅ MATCH | Leer, bereit für Migration |
 | `/services/` | ✅ MATCH | 5 Services geplant (market, signal, risk, execution, db_writer) |
-| `/infrastructure/` | ⚠️ PARTIAL | Fehlt: `/compose/` Unterordner (Gordon-Empfehlung!) |
+| `/infrastructure/` | ⚠️ PARTIAL | Fehlt: `/compose/` Unterordner (historische Empfehlung) |
 | `/tests/` | ✅ MATCH | unit/, integration/, replay/ geplant |
 | `/knowledge/governance/` | ✅ MATCH | Bereits befüllt, weitere Moves geplant |
 | Root-Files | ✅ MATCH | docker-compose.yml, Makefile, pytest.ini korrekt |
@@ -103,9 +103,9 @@ WIRD REINGEHOLT WENN ORDNUNG IST!
 
 ## 3. Docker-Infrastruktur-Integration
 
-### 3.1 Gordon's Empfehlungen vs. Gemini's Plan
+### 3.1 Historische Empfehlungen vs. Gemini's Plan
 
-**Gordon's Architektur (2025-12-12):**
+**Historische Architektur (2025-12-12):**
 ```
 /infrastructure/compose/
   ├─ base.yml      # Basis-Services (PostgreSQL, Redis, Netzwerke)
@@ -120,7 +120,7 @@ WIRD REINGEHOLT WENN ORDNUNG IST!
 
 ### 3.2 Konflikt-Analyse
 
-| Item | Gemini's Plan | Gordon's Empfehlung | Konflikt? |
+| Item | Gemini's Plan | Historische Empfehlung | Konflikt? |
 |------|--------------|---------------------|-----------|
 | docker-compose.yml Ort | Root | Root (als Haupt-Datei OK) | ❌ Kein Konflikt |
 | Modulare Fragmente | Nicht erwähnt | `/infrastructure/compose/{base,dev,prod}.yml` | ⚠️ **FEHLEND** |
@@ -250,7 +250,7 @@ t1/cdb_paper_runner/requirements.txt
 
 ## 7. K8s-Readiness-Bewertung
 
-### 7.1 Gordon's K8s-Readiness-Checkliste
+### 7.1 K8s-Readiness-Checkliste
 
 | Kriterium | Gemini's Plan | Status |
 |-----------|--------------|--------|
@@ -334,7 +334,7 @@ t1/cdb_paper_runner/requirements.txt
 
 4. ✅ **Docker-Infrastruktur erweitern:**
    - `/infrastructure/compose/{base,dev,prod}.yml` anlegen
-   - Modulare Compose-Strategie gemäß Gordon's Empfehlungen
+   - Modulare Compose-Strategie gemäß historischer Empfehlungen
 
 5. ✅ **K8s-Readiness sicherstellen:**
    - `/infrastructure/k8s/` Skelett anlegen
@@ -394,7 +394,7 @@ t1/cdb_paper_runner/requirements.txt
 **Für Claude (Session Lead):**
 1. Post-Migration-Checkliste erstellen
 2. CDB_KNOWLEDGE_HUB.md aktualisieren (Decision Log)
-3. `/infrastructure/compose/` Blueprint vorbereiten (gemäß Gordon)
+3. `/infrastructure/compose/` Blueprint vorbereiten (gemäß historischer Architektur)
 
 **Für Codex (Execution Agent):**
 1. Warten auf finalen Source-Commit/Archiv-Parameter
@@ -403,7 +403,7 @@ t1/cdb_paper_runner/requirements.txt
 
 ---
 
-## Anhang A: Gordon's Docker-Empfehlungen (Integration)
+## Anhang A: Historische Docker-Empfehlungen (Integration)
 
 **Referenz:** Session 2025-12-12, CDB_KNOWLEDGE_HUB.md
 
