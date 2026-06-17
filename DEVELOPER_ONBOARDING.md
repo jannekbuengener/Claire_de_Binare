@@ -556,6 +556,23 @@ pip install -r requirements-dev.txt
 
 ## Next Steps
 
+### Final Restart / Tool Reload Required
+
+**After completing setup and onboarding, you MUST restart your current tool.**
+
+1. Close your current tool: Cursor, OpenCode, Claude Code / Codex, Terminal/Shell, PowerShell, IDE
+2. Reopen it / start a new session
+3. Only then continue with CDB work
+
+**Why:** Env (PATH, venv), MCP configuration, secrets (SECRETS_PATH), and agent/skill
+definitions may have changed during onboarding. Sessions started before onboarding
+can have stale caches. Without a restart:
+- new MCP/agent configuration may not be loaded
+- new PATH/Env values may not take effect
+- new Cursor/OpenCode agents may not be discovered
+- CLI/terminal sessions may use stale process state
+- onboarding appears complete, but tooling runs with old context — phantom errors result
+
 ### 1. Explore the Codebase
 
 - **Service Architecture**: See [`services/README.md`](services/README.md)
@@ -621,6 +638,8 @@ Read [`CONTRIBUTING.md`](CONTRIBUTING.md) for:
 | **Format** | `black .` |
 | **Type check** | `mypy core/ services/` |
 | **Onboarding doctor** | `python -m tools.onboarding_doctor` or `.\tools\cdb.ps1 onboarding doctor` or `make onboarding-doctor` |
+| **Onboarding simulation** | `python -m tools.onboarding_simulation` or `.\tools\cdb.ps1 onboarding simulate` |
+| **Restart after onboarding** | **Required:** Close and reopen your tool/IDE/shell after onboarding |
 | **Context preflight** | `make context-doctor` |
 | **Core smoke test** | `.\tools\cdb.ps1 runtime smoke` |
 
