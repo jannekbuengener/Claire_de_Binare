@@ -5,6 +5,7 @@ in ein evidence-faehiges Context-/Brain-Paket ueberfuehren.
 
 **Parent Epic:** [#3286](https://github.com/jannekbuengener/Claire_de_Binare/issues/3286)
 **Erster operativer Slice:** [#3288](https://github.com/jannekbuengener/Claire_de_Binare/issues/3288)
+**Report-only Workflow:** [#3287](https://github.com/jannekbuengener/Claire_de_Binare/issues/3287) — DIESER
 **Naechster Slice (Brain Apply):** [#3289](https://github.com/jannekbuengener/Claire_de_Binare/issues/3289) — benoetigt validiertes Package aus #3288
 
 **LR-Status:** `NO-GO`
@@ -133,30 +134,77 @@ python tools/context/validate_context_package.py --help
 
 ---
 
-## 3. Workflow (Uebersicht)
+## 3. Report-only Workflow
+
+Der GitHub Actions Workflow `.github/workflows/cdb-context-refresh-report.yml`
+erzeugt zweimal pro Woche einen report-only Context Refresh Report.
+
+### Schedule
+
+| Tag | UTC | Europe/Berlin (CEST) | Europe/Berlin (CET) |
+|-----|-----|---------------------|---------------------|
+| Montag | 08:00 UTC | 10:00 | 09:00 |
+| Donnerstag | 08:00 UTC | 10:00 | 09:00 |
+
+Zusaetzlich ist `workflow_dispatch` fuer manuelle Ausfuehrungen moeglich.
+
+### Permissions
+
+- `contents: read`, `issues: read`, `pull-requests: read`, `actions: read`
+- **Keine** write-Permissions
+- **Keine** Secrets-Referenzen
+- **Keine** Runtime-/Docker-Kommandos
+
+### Artefakte
+
+| Artefakt | Format | Beschreibung |
+|----------|--------|-------------|
+| `context_delta.json` | JSON | Maschinenlesbares Delta (Schema, Ref-Info, Open Issues/PRs, geaenderte Canon-Pfade, Safety-Boundaries, Limitations) |
+| `context_refresh_summary.md` | Markdown | Menschlesbare Zusammenfassung (Timestamp, Schedule-Erklaerung UTC vs Berlin, Issue/PR-Kontext, Validator-Ergebnis, Safety-Grenzen) |
+| `validation_report.json` | JSON | Validator-Selbsteinschaetzung (PASS / PASS_WITH_LIMITATIONS / BLOCKED, blocked_reasons, warnings, artifact_paths) |
+
+### Report-Generator
+
+Der Workflow nutzt `tools/context/generate_context_refresh_report.py` (Python, stdlib only).
+Das Script sammelt lokale Git-Informationen und ruft `gh` fuer GitHub Issue/PR-Daten ab.
+
+**Fail-closed:** Bei fehlenden Git-Refs oder nicht verfuegbarem `gh` erzeugt das Script
+einen degraded Report mit Limitations, aber hartem Exit-Code 1 bei Core-Data-Fehlern.
+
+### Safety Boundaries
+
+- Report-only: keine DB-Writes, kein Brain Apply (#3289), keine Runtime-Aenderung.
+- LR bleibt NO-GO. Kein Live-Go. Kein Echtgeld-Go.
+- validation_report.json ist ein Selbst-Report des Generators, kein Context-Package-Validator (#3288).
+- context_delta.json hat kein `records`-Feld und ist kein validiertes Context Package.
+
+---
+
+## 4. Pipeline (Gesamtuebersicht)
 
 ```
-Repo live lesen (#3287)
+Repo live lesen (#3287, dieser Workflow)
     |
     v
-Delta-Paket bauen (Context Package)
+Delta-Paket bauen (context_delta.json)
     |
     v
-Package validieren (#3288) ← dieses Schema/Validator
+Package validieren (#3288: validate_context_package.py)
     |
     v (nur bei PASS)
-Lokaler append-only Brain Apply (#3289)
+Lokaler append-only Brain Apply (#3289) — spaeter
     |
     v
-Agent Briefing (#3290) / Drift Report (#3291)
+Agent Briefing (#3290) / Drift Report (#3291) — spaeter
 ```
 
 ---
 
-## 4. Safety-Grenzen (Nicht-Ziele)
+## 5. Safety-Grenzen (Nicht-Ziele)
 
 - **Report/Validation only:** Dieses Schema und der Validator fuehren keinen
-  Brain Apply durch. Das ist Scope von #3289.
+  Brain Apply durch. Das ist Scope von #3289. Der Workflow (#3287) ist ebenfalls
+  report-only und erzeugt keine persistierenden Aenderungen.
 - **Keine produktiven DB-Writes:** Context Packages sind read-only Artefakte.
   Sie schreiben nicht in SurrealDB, PostgreSQL oder Redis.
 - **Keine Secrets-Ingestion:** Secret-Patterns werden blockiert. Keine
@@ -169,17 +217,20 @@ Agent Briefing (#3290) / Drift Report (#3291)
   BLUE/RED-Stack-Eingriff.
 - **Kein MCP-Mutation:** Context Packages werden nicht automatisch in MCP-Tools
   oder SurrealDB-Verbindungen eingespielt.
+- **#3289 Brain Apply ist nicht Teil dieses Workflows.** Brain Apply kommt in
+  einem spaeteren Slice.
+- **#3292 Onboarding Scenario bleibt zuletzt.**
 
 ---
 
-## 5. Verwandte Issues
+## 6. Verwandte Issues
 
 | Issue | Beschreibung | Status |
 |-------|-------------|--------|
 | #3286 | Parent Epic: Context Refresh Workflow | OFFEN |
-| #3287 | Report-only GitHub Actions Workflow | OFFEN |
-| #3288 | Context Package Schema + Validator | DIESES |
-| #3289 | Lokaler append-only Brain Apply | OFFEN |
-| #3290 | Agent Briefing Resolver | OFFEN |
-| #3291 | Stale Documentation / Impact Radar | OFFEN |
-| #3292 | Onboarding Scenario (bewusst zuletzt) | OFFEN |
+| #3287 | Report-only GitHub Actions Workflow | DIESES |
+| #3288 | Context Package Schema + Validator | ERLEDIGT (#3293) |
+| #3289 | Lokaler append-only Brain Apply | OFFEN — spaeter |
+| #3290 | Agent Briefing Resolver | OFFEN — spaeter |
+| #3291 | Stale Documentation / Impact Radar | OFFEN — spaeter |
+| #3292 | Onboarding Scenario (bewusst zuletzt) | OFFEN — zuletzt |
