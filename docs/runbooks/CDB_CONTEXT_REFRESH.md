@@ -197,7 +197,7 @@ Agent Briefing Seed (#3290) — aus 3 Artefakten
 Drift Radar (#3291, DIESER SLICE) — aus Delta + Validation + optional Briefing
     |
     v (optional, nach Drift Radar)
-Lokaler append-only Brain Apply (#3289) — spaeter
+Lokaler append-only Brain Apply (#3289) — siehe §7
 ```
 
 ---
@@ -446,7 +446,135 @@ python tools/context/generate_context_drift_radar.py --help
 
 ---
 
-## 7. Safety-Grenzen (Nicht-Ziele)
+## 7. Lokaler append-only Brain Apply (#3289)
+
+Der lokale append-only Brain Apply ueberfuehrt ein validiertes Context Package
+in ein lokales, auditiertes Ledger/Artifact. Der Apply ist immer append-only:
+bestehende Records werden niemals mutiert, geloescht oder ueberschrieben.
+
+**Tool:** `tools/context/apply_context_brain_local.py`
+
+### Pipeline-Stellung
+
+Der Brain Apply ist der letzte Schritt nach Schema-Validierung (#3288),
+Agent Briefing Seed (#3290) und Drift Radar (#3291). Er wird nur auf bereits
+validierte Packages angewendet.
+
+### CLI-Usage
+
+```bash
+# Dry-run (Default — keine Writes)
+python tools/context/apply_context_brain_local.py \
+    --package artifacts/context_package.json \
+    --output-dir artifacts/
+
+# Mit Drift-Radar-Check
+python tools/context/apply_context_brain_local.py \
+    --package artifacts/context_package.json \
+    --drift-radar artifacts/impact_radar.json \
+    --output-dir artifacts/
+
+# Expliziter Apply (append-only Writes)
+python tools/context/apply_context_brain_local.py \
+    --package artifacts/context_package.json \
+    --apply \
+    --output-dir artifacts/
+
+# Maschinenlesbarer JSON-Output
+python tools/context/apply_context_brain_local.py \
+    --package artifacts/context_package.json --json
+
+# Hilfe
+python tools/context/apply_context_brain_local.py --help
+```
+
+### Exit Codes
+
+- **0:** OK — dry-run passed, oder apply erfolgreich (auch bei Duplicate-Skip)
+- **1:** BLOCKED — Precondition-Fehler, Drift-Radar blockiert, Secrets/Tags
+- **2:** FAIL — unerwarteter Fehler (Datei nicht gefunden, JSON-Fehler)
+
+### Preconditions (fail-closed)
+
+| Bedingung | Code | Auswirkung |
+|-----------|------|-----------|
+| Ungueltiges oder fehlendes Package | `missing_package_id`, `missing_source_commit` | BLOCKED |
+| Nicht unterstuetzte Schema-Version | `unsupported_schema_version` | BLOCKED |
+| Drift Radar `blocks_brain_apply=true` | divers | BLOCKED — Drift-Risiko |
+| Secret-Indikator in summary/source_path | `secret_content` | BLOCKED |
+| Verbotener Tag (live-trade, echtgeld, order, fill, position) | `forbidden_tag` | BLOCKED |
+
+### Append-only Semantik
+
+- Der Ledger (`_brain_ledger/brain_apply_ledger.json`) ist ein JSON-Array.
+- Jeder Apply-Run fuegt ein neues Element hinzu (append).
+- Bestehende Elemente werden niemals veraendert, geloescht oder ueberschrieben.
+- Bei identischem Package-Fingerprint (gleiche package_id + source_commit +
+  sortierte record_ids) wird der Run als `skipped_duplicate` markiert und
+  produziert **keine** neuen Records im Ledger.
+
+### Ausgabe-Struktur
+
+**Ledger-Eintrag (pro Apply-Run):**
+
+| Feld | Beschreibung |
+|------|-------------|
+| `apply_run_id` | Deterministische ID aus Fingerprint + Sequence |
+| `source_package_fingerprint` | SHA-256-Fingerprint des Input-Packages |
+| `schema_version` | `brain_apply.v1` (fest) |
+| `package_id` | Originale Package-ID aus dem Input |
+| `source_path` | Absoluter Pfad der Input-Datei |
+| `generated_at_utc` | ISO-8601 UTC-Zeitstempel des Apply |
+| `duplicate_fingerprint` | true/false — ob identischer Fingerprint bereits existierte |
+| `duplicate_of_run_id` | run_id des Original-Runs bei Duplikat |
+| `status` | `applied` oder `skipped_duplicate` |
+| `summary` | records_applied, records_skipped, records_blocked, total |
+| `records[]` | Angewandte Records (leer bei Duplikat) |
+
+**Ledger-Record (pro angewandtem Context-Record):**
+
+| Feld | Beschreibung |
+|------|-------------|
+| `entry_id` | Deterministische ID aus Content-Hash |
+| `package_record_id` | Originale record_id aus dem Package |
+| `content_hash` | SHA-256 des Record-Inhalts |
+| `record_type` | Record-Typ (doc_record, decision_record, etc.) |
+| `source_path` | Pfad der Quelldatei |
+| `summary` | Zusammenfassung des Records |
+
+### Deterministische Fingerprints
+
+- **Package-Fingerprint:** SHA-256 von `package_id | source_commit | sortierte_record_ids`
+- **Content-Hash:** SHA-256 von kanonischem JSON der Record-Felder
+  (record_id, record_type, source_path, source_commit, source_hash, confidence)
+- Keine Abhaengigkeit von Wall-Clock oder Laufzeitumgebung.
+
+### Blocking Policy
+
+| Ausloeser | Ergebnis |
+|-----------|----------|
+| Package-Schema ungueltig | BLOCKED — Apply nicht moeglich |
+| Drift Radar blockiert | BLOCKED — Drift-Risiko verhindert Apply |
+| Secret-Indikator gefunden | BLOCKED — keine Secrets im Ledger |
+| Verbotene Tags | BLOCKED — Live/Echtgeld/Trading-Content |
+| Gleicher Fingerprint bereits im Ledger | SKIPPED — idempotent, keine neuen Records |
+| Alles OK | APPLIED — Records in Ledger geschrieben |
+
+### Safety Boundaries
+
+- **Keine produktiven DB-Writes:** Nur lokales JSON-Ledger (append-only).
+- **Keine SurrealDB-, MCP- oder Runtime-Mutation.**
+- **Keine Secrets in Outputs:** Secret-Indikatoren werden gemeldet, aber
+  keine konkreten Secret-Werte ausgegeben.
+- **Keine Trading-State-Ingestion:** Live-Trade-Tags werden blockiert.
+- **LR bleibt NO-GO:** Unveraendert.
+- **Kein Netzwerkzugriff:** Das Tool ist komplett offline.
+- **Keine `PERSIST_ALLOWED`/`MUTATION_ALLOWED` Semantik.**
+- **Default: dry-run/report-only.** Nur `--apply` triggert echte Writes.
+
+---
+
+## 8. Safety-Grenzen (Nicht-Ziele)
 
 - **Briefing Seed (#3290) ist Kontext, keine Autorisierung:** Das Agent Briefing
   Seed erzeugt einen kompakten evidence-faehigen Kontext-Snapshot. Es autorisiert
@@ -467,22 +595,22 @@ python tools/context/generate_context_drift_radar.py --help
   BLUE/RED-Stack-Eingriff.
 - **Kein MCP-Mutation:** Context Packages werden nicht automatisch in MCP-Tools
   oder SurrealDB-Verbindungen eingespielt.
-- **#3289 Brain Apply ist nicht Teil dieses Workflows.** Brain Apply kommt in
-  einem spaeteren Slice.
+- **#3289 Brain Apply (§7) ist implementiert:** Lokaler append-only Apply auf
+  validierte Packages. Default dry-run. Keine produktiven DB/SurrealDB/MCP-Writes.
 - **#3291 Drift Radar (§6) ist read-only.** Es erzeugt Reports und blockiert
   ggf. Brain Apply, fuehrt aber keinen Apply aus.
 - **#3292 Onboarding Scenario bleibt zuletzt.**
 
 ---
 
-## 8. Verwandte Issues
+## 9. Verwandte Issues
 
 | Issue | Beschreibung | Status |
 |-------|-------------|--------|
 | #3286 | Parent Epic: Context Refresh Workflow | OFFEN |
 | #3287 | Report-only GitHub Actions Workflow | ERLEDIGT (#3294) |
 | #3288 | Context Package Schema + Validator | ERLEDIGT (#3293) |
-| #3289 | Lokaler append-only Brain Apply | OFFEN — spaeter |
+| #3289 | Lokaler append-only Brain Apply | DIESER — SIEHE §7 |
 | #3290 | Agent Briefing Seed | ERLEDIGT (#3295) |
 | #3291 | Stale Documentation / Impact Radar | DIESES — SIEHE §6 |
 | #3292 | Onboarding Scenario (bewusst zuletzt) | OFFEN — zuletzt |
