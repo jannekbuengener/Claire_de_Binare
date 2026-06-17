@@ -6,6 +6,7 @@ in ein evidence-faehiges Context-/Brain-Paket ueberfuehren.
 **Parent Epic:** [#3286](https://github.com/jannekbuengener/Claire_de_Binare/issues/3286)
 **Erster operativer Slice:** [#3288](https://github.com/jannekbuengener/Claire_de_Binare/issues/3288)
 **Report-only Workflow:** [#3287](https://github.com/jannekbuengener/Claire_de_Binare/issues/3287) — DIESER
+**Agent Briefing Seed:** [#3290](https://github.com/jannekbuengener/Claire_de_Binare/issues/3290) — aus Context-Refresh-Artefakten
 **Naechster Slice (Brain Apply):** [#3289](https://github.com/jannekbuengener/Claire_de_Binare/issues/3289) — benoetigt validiertes Package aus #3288
 
 **LR-Status:** `NO-GO`
@@ -186,22 +187,144 @@ einen degraded Report mit Limitations, aber hartem Exit-Code 1 bei Core-Data-Feh
 Repo live lesen (#3287, dieser Workflow)
     |
     v
-Delta-Paket bauen (context_delta.json)
+Delta-Paket bauen (context_delta.json + validation_report.json)
     |
     v
-Package validieren (#3288: validate_context_package.py)
+Agent Briefing Seed (#3290) — aus 3 Artefakten
     |
-    v (nur bei PASS)
+    v (optional, nach Briefing)
 Lokaler append-only Brain Apply (#3289) — spaeter
     |
     v
-Agent Briefing (#3290) / Drift Report (#3291) — spaeter
+Drift Report (#3291) — spaeter
 ```
 
 ---
 
-## 5. Safety-Grenzen (Nicht-Ziele)
+## 5. Agent Briefing Seed (#3290)
 
+Das Agent Briefing Seed erzeugt aus den drei Context-Refresh-Artefakten
+(`context_delta.json`, `context_refresh_summary.md`, `validation_report.json`)
+einen kompakten, evidence-faehigen Kontext-Snapshot fuer schnelleren Agentenstart.
+
+**Generator:** `tools/context/generate_agent_briefing_seed.py`
+
+### Output-Artefakte
+
+| Artefakt | Format | Beschreibung |
+|----------|--------|-------------|
+| `agent_briefing_seed.json` | JSON | Maschinenlesbarer Briefing-Seed (schema_version, brain_evidence_status, recommended_read_order, new_merges, open_context_prs/issues, changed_canon_files, new_evidence_files, stale_claims, stop_conditions, safety_boundaries, limitations) |
+| `agent_briefing_seed.md` | Markdown | Menschlesbare Zusammenfassung mit allen required sections |
+
+### CLI-Usage
+
+```bash
+# Aus Context-Refresh-Artefakten generieren
+python tools/context/generate_agent_briefing_seed.py \
+    --delta artifacts/context_delta.json \
+    --summary artifacts/context_refresh_summary.md \
+    --validation artifacts/validation_report.json \
+    --output-dir artifacts/
+
+# Ohne gh-CLI-Zugriff (nur Dateien)
+python tools/context/generate_agent_briefing_seed.py \
+    --delta artifacts/context_delta.json \
+    --summary artifacts/context_refresh_summary.md \
+    --validation artifacts/validation_report.json \
+    --no-gh
+
+# Hilfe
+python tools/context/generate_agent_briefing_seed.py --help
+```
+
+### Exit Codes
+
+- **0:** PASS — Briefing Seed erfolgreich generiert
+- **1:** DEGRADED — mindestens ein Input-Artefakt fehlt oder ist unlesbar
+- **2:** FAIL — unerwarteter Fehler
+
+### Required Fields (JSON)
+
+Das JSON-Output enthaelt folgende Pflichtfelder:
+
+| Feld | Beschreibung |
+|------|-------------|
+| `schema_version` | Version des Briefing-Seed-Formats (`agent_briefing_seed.v1`) |
+| `generated_at_utc` | ISO-8601 UTC-Zeitstempel |
+| `source_artifacts` | Verwendete Input-Artefakte mit Version |
+| `source_commit` | Git-Commit-SHA der Quelle |
+| `brain_evidence_status` | Ob Brain-Evidence aus DB/Repo/nicht verfuegbar |
+| `recommended_read_order` | Empfohlene Agent-Read-Reihenfolge (Primaervorschlag) |
+| `new_merges` | Seit letztem Refresh gemergte PRs |
+| `open_context_prs` | Offene PRs mit Kontextwirkung |
+| `open_context_issues` | Offene Issues mit Kontextwirkung |
+| `changed_canon_files` | Geaenderte Canon-Dateien |
+| `new_evidence_files` | Neue Evidence-Dateien |
+| `stale_claims` | Stale/unknown Claims aus Limitations/Warnings |
+| `stop_conditions` | Safety-Stop-Conditions (built-in + aus Limitations) |
+| `safety_boundaries` | Safety-Grenzen (LR NO-GO, kein Live-Go, etc.) |
+| `limitations` | Bekannte Einschraenkungen |
+
+### Required Sections (Markdown)
+
+Das Markdown-Output enthaelt folgende Pflicht-Sections:
+
+- `Agent Briefing Seed` - Header mit Metadaten
+- `Source Artifacts` - Verwendete Input-Quellen
+- `Brain Evidence Status` - Quelle und Status der Brain-Evidence
+- `Recommended Read Order` - Prioritierte Lesereihenfolge
+- `Context-Relevant Changes` - Canon- und Evidence-Aenderungen
+- `Open PRs / Issues` - Aktuelle PRs/Issues mit Kontextwirkung
+- `Stale or Unknown Claims` - Markierte Stale/Unknown Claims
+- `Stop Conditions` - Safety-Stop-Conditions
+- `Safety Boundaries` - LR/Echtgeld/Security-Grenzen
+- `Limitations` - Bekannte Einschraenkungen
+
+### Safety Boundaries
+
+Das Briefing Seed enthaelt dieselben Safety-Grenzen wie das Context Package:
+
+```json
+{
+  "lr_status": "NO-GO",
+  "board_stage_is_live_go": false,
+  "real_money_go": false,
+  "productive_db_writes_allowed": false,
+  "secrets_in_outputs_allowed": false,
+  "trading_state_ingestion_allowed": false,
+  "brain_apply_allowed": false,
+  "drift_radar_allowed": false,
+  "onboarding_allowed": false,
+  "auto_issue_creation_allowed": false,
+  "agent_authorization_allowed": false
+}
+```
+
+### Evidence-Regeln
+
+- Jeder Claim verweist auf Source/Commit/Hash, soweit die Input-Artefakte es liefern.
+- Stale/unknown Claims werden explizit markiert (confidence: low/medium, marked_as: stale_or_unknown/blocking).
+- Kein Briefing darf LR-/Live-/Echtgeld-Freigabe implizieren.
+- Repo-/GitHub-live Claims haben Vorrang vor Ledger Claims.
+- Wenn Input-Artefakte fehlen: degraded_report mit ehrlicher Statusmeldung; keine Fake-Fakten.
+- Das Briefing ist **Kontext, keine Autorisierung**. Briefings duerfen nicht als Entscheidungsbefugnis interpretiert werden.
+
+### Eingeschraenkte Scope-Grenzen
+
+- Kein Brain Apply (#3289) — separater Follow-up-Slice
+- Kein Drift Radar (#3291) — separater Follow-up-Slice
+- Kein Onboarding (#3292) — separater Follow-up-Slice
+- Keine Live-/Echtgeld-Implikation
+- Keine DB-Writes
+
+---
+
+## 7. Safety-Grenzen (Nicht-Ziele)
+
+- **Briefing Seed (#3290) ist Kontext, keine Autorisierung:** Das Agent Briefing
+  Seed erzeugt einen kompakten evidence-faehigen Kontext-Snapshot. Es autorisiert
+  keine Live-Trades, keine Runtime-Aenderungen und keine DB-Writes. Es ist keine
+  Alternative zum Brain Apply (#3289).
 - **Report/Validation only:** Dieses Schema und der Validator fuehren keinen
   Brain Apply durch. Das ist Scope von #3289. Der Workflow (#3287) ist ebenfalls
   report-only und erzeugt keine persistierenden Aenderungen.
@@ -223,7 +346,7 @@ Agent Briefing (#3290) / Drift Report (#3291) — spaeter
 
 ---
 
-## 6. Verwandte Issues
+## 8. Verwandte Issues
 
 | Issue | Beschreibung | Status |
 |-------|-------------|--------|
@@ -231,6 +354,6 @@ Agent Briefing (#3290) / Drift Report (#3291) — spaeter
 | #3287 | Report-only GitHub Actions Workflow | DIESES |
 | #3288 | Context Package Schema + Validator | ERLEDIGT (#3293) |
 | #3289 | Lokaler append-only Brain Apply | OFFEN — spaeter |
-| #3290 | Agent Briefing Resolver | OFFEN — spaeter |
+| #3290 | Agent Briefing Seed | DIESES — DONE_MERGED_CLOSED |
 | #3291 | Stale Documentation / Impact Radar | OFFEN — spaeter |
 | #3292 | Onboarding Scenario (bewusst zuletzt) | OFFEN — zuletzt |
