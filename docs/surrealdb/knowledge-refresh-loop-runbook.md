@@ -123,7 +123,7 @@ Expected: all tests pass; ruff clean; no network/DB activity in pure-report path
 
 | Item | Notes |
 |---|---|
-| #2689 Gordon/Docker AI cleanup | Separate doc decommission track |
+| #2689 Obsolete advisor cleanup | Separate doc decommission track |
 | #2606 memory persistence | Not required for read-only MVP |
 | CI automation (#2202 follow-up) | Future slice |
 | DB-backed default bundle | Depends on #2603 maturity |

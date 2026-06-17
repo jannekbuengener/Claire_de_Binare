@@ -1,18 +1,15 @@
-# Gordon Review Response - Blue/Red Stack Split
+# Historical Review: Blue/Red Stack Split
 
 > **Status: historical/orphaned snapshot**  
-> **Not an active operational gate.** Do not treat Gordon/Docker-AI as an available
-> approval, review, deployment, stack, or debugging authority. Operatives Gate:
-> Jannek Human-GO + GitHub-live-before-ledger + repo-backed evidence. Siehe
-> #2689 / `.cursor/agents/_CDB_SUBAGENT_CONTRACT.md`.
+> Historical review artifact. Active gate: explicit Jannek Human-GO + GitHub/Repo evidence.
 
 **Review Date:** 2026-01-29 (historisch)  
-**Reviewer:** Gordon (system-architect agent — decommissioned; Archiv only)  
+**Reviewer:** Historical system-architect agent (decommissioned)  
 **Status (historisch):** ✅ ALL CONDITIONS RESOLVED — merged to main; kein offener Gate
 
 ---
 
-## Gordon's Verdict
+## Historical Review Verdict
 
 **Design Gate:** ✅ PASS
 **Governance Gate:** ✅ PASS
@@ -23,7 +20,7 @@
 
 ## Critical Blocker: db_writer + paper_runner
 
-### Gordon's Concern
+### Historical Review Note
 > "In deinem Spec/Request tauchten db_writer und paper_runner als BLUE auf. In compose.blue.yml fehlen sie aktuell."
 
 ### Resolution: ✅ ALREADY ADDRESSED
@@ -63,8 +60,8 @@ $ git show f01e541:infrastructure/compose/compose.blue.yml | grep -E "^\s+cdb_(d
 5. cdb_allocation
 6. cdb_risk
 7. cdb_execution
-8. cdb_db_writer      ← Gordon's concern
-9. cdb_paper_runner   ← Gordon's concern
+8. cdb_db_writer      ← historical review concern
+9. cdb_paper_runner   ← historical review concern
 ```
 
 ---
@@ -72,17 +69,17 @@ $ git show f01e541:infrastructure/compose/compose.blue.yml | grep -E "^\s+cdb_(d
 ## Non-Blocking Recommendations
 
 ### 1. Network Edge Case
-**Gordon's Note:** "wenn cdb_network gelöscht wird, sind BLUE/RED getrennt"
+**Historical note:** "wenn cdb_network gelöscht wird, sind BLUE/RED getrennt"
 **Status:** ✅ ADDRESSED
 **Solution:** `setup_blue_red.ps1` creates network automatically with error handling
 
 ### 2. .env Drift
-**Gordon's Note:** "Compose hängt von vielen .env.* ab"
+**Historical note:** "Compose hängt von vielen .env.* ab"
 **Status:** ✅ DOCUMENTED
 **Solution:** `QUICK_START.md` documents all required secret files with examples
 
 ### 3. Docker Desktop Grouping
-**Gordon's Note:** "Docker Desktop gruppiert nur nach Compose Project"
+**Historical note:** "Docker Desktop gruppiert nur nach Compose Project"
 **Status:** ✅ DOCUMENTED
 **Solution:** `QUICK_START.md` shows `docker ps --filter "name=cdb_"` for unified view
 
@@ -123,13 +120,13 @@ $ git show f01e541:infrastructure/compose/compose.blue.yml | grep -E "^\s+cdb_(d
 ✅ **ALREADY COMPLETE** - SERVICE_MAPPING.md shows 9 BLUE services with table
 
 ### D) PR erstellen
-✅ **COMPLETE (historisch)** — PR merged; Gordon-Gate nicht mehr operativ
+✅ **COMPLETE (historisch)** — PR merged; obsolete external advisor gate
 
 ---
 
 ## PR Checklist
 
-- [x] Gordon Review conditions addressed
+- [x] Historical review conditions addressed
 - [x] db_writer + paper_runner in BLUE
 - [x] All 9 BLUE services documented
 - [x] Smoke tests PASSED (BLUE-only, BLUE+RED, RED crash)
@@ -155,8 +152,8 @@ $ git show f01e541:infrastructure/compose/compose.blue.yml | grep -E "^\s+cdb_(d
 - QUICK_START.md (ops guide)
 - SERVICE_MAPPING.md (quick reference)
 
-**All Gordon Conditions:** ✅ RESOLVED
+**All Historical Review Conditions:** ✅ RESOLVED
 
 ---
 
-**Status (historisch):** Delivered and merged — archive only; no active Gordon gate
+**Status (historisch):** Delivered and merged — archive only; no active external advisor gate

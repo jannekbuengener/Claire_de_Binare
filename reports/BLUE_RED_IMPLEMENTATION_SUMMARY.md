@@ -1,13 +1,12 @@
 # Blue/Red Stack Split - Implementation Summary
 
 > **Status: historical/orphaned snapshot**  
-> **Not an active operational gate.** Gordon/Docker-AI ist decommissioned. Review/
-> Merge-Gate: Jannek Human-GO + GitHub-live + repo evidence. Aktueller Canon:
-> `infrastructure/docs/BLUE_RED_SPLIT.md`, `CURRENT_STATUS.md`.
+> Historical review artifact. Active gate: explicit Jannek Human-GO + GitHub/Repo evidence.
+> Aktueller Canon: `infrastructure/docs/BLUE_RED_SPLIT.md`, `CURRENT_STATUS.md`.
 
 **Date:** 2026-01-29 (historisch)  
 **Status:** ✅ Complete — delivered and merged  
-**Review (historisch):** Jannek Human-GO + smoke evidence (kein Gordon-Gate)
+**Review (historisch):** Jannek Human-GO + smoke evidence
 
 ---
 
@@ -264,7 +263,7 @@ reports/
 
 ### 1. Human Review (historisch abgeschlossen)
 
-**Gate:** Jannek Human-GO + repo-backed smoke evidence (kein Gordon/Docker-AI)
+**Gate:** Jannek Human-GO + repo-backed smoke evidence
 
 **Review Points (historisch):**
 - [ ] Evidence chain correct? (risk/service.py dependencies)
@@ -330,7 +329,7 @@ docker compose -f infrastructure/compose/compose.red.yml down
 ✅ **Governance:**
 - Evidence-based decisions documented
 - File:line references for all claims
-- Human review completed (historisch; kein Gordon-Gate)
+- Human review completed (historisch)
 
 ---
 

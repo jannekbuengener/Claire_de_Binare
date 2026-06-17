@@ -36,7 +36,7 @@ pytest -v -m local_only tests/local/surrealdb/test_memory_db_read_proof.py
 - LR: NO-GO (unchanged)
 - Board stage: trade-capable (unchanged)
 - Issue #2606: OPEN — PR uses `Refs #2606`, does not close epic
-- Gordon: unavailable in session; local smoke skip fail-closed when preflight missing
+- External advisor: unavailable in session; local smoke skip fail-closed when preflight missing
 
 ## Remaining gaps
 

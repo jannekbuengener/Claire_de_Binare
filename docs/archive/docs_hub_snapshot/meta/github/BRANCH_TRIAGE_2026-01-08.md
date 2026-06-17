@@ -94,7 +94,7 @@ Active branches with recent commits or ongoing work:
 - bugfix/224-order-results-publish
 - cleanup/470-worktrees-backup
 - fix/* (ruff-f841-auth, pytest-scaffold, must-read-pointers)
-- feature/gordon-docker-setup
+- feature/docker-setup (historical)
 - feature/487-hardening-threshold-contract
 - feature/145-smart-pr-auto-labeling
 - ci/477-* (multiple CI improvements)
