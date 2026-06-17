@@ -57,7 +57,7 @@ shared contract § Zone A vs Write-Zone).
 Invocation: `/cdb-<name>` (e.g. `/cdb-governance-gatekeeper`).
 
 Related surfaces (not subagents): `.cursor/skills/` (session skills),
-`.opencode/skills/` (OpenCode), `.codex/cdb_skills/` (Codex).
+`.opencode/skills/` (OpenCode), `.claude/skills/` (Claude Code), `.codex/cdb_skills/` (Codex).
 
 ## Canonical Domains
 
