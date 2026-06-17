@@ -18,39 +18,50 @@ Show how orders from Risk are processed by Execution, how the paper/mock boundar
 See [`diagrams/execution_paper_order_result_flow.mmd`](diagrams/execution_paper_order_result_flow.mmd) for the source file.
 
 ```mermaid
-flowchart LR
-    subgraph Input["Input"]
-        ORD[orders Stream]
+flowchart TB
+    subgraph INPUT["INPUT: Orders Stream"]
+        RISK["cdb_risk<br/>risk-approved orders"] --> ORD["orders Redis Stream"]
     end
-    subgraph Exec["Execution Service (cdb_execution)"]
-        EP[Execution Processor]
-        MOCK{Mock/Paper Boundary<br/>default mode}
-        DPL[Deployment Logic<br/>paper vs live}
+
+    subgraph EXEC["EXECUTION SERVICE (cdb_execution)"]
+        EP["Execution Processor"]
+        BOUNDARY{"Execution<br/>Boundary"}
     end
-    subgraph Exchange["Exchange Boundary"]
-        EX_LIVE[Live Exchange<br/>GATED FUTURE<br/>requires explicit LR gate]
+
+    subgraph PAPER["PAPER / MOCK — default path · active"]
+        SIM["Paper Engine<br/>simulated fills · results"]
+        SIM --> FR["stream.fills"]
+        SIM --> ORI["order_results"]
     end
-    subgraph Feedback["Order Result Feedback"]
-        FR[stream.fills Redis Stream]
-        ORI[order_results Redis Stream]
+
+    subgraph LIVE["LIVE EXCHANGE — gated · blocked"]
+        EXL["Exchange Adapter"]
+        LR_BLOCK["LR NO-GO · future only<br/>requires explicit human gate"]
     end
-    subgraph Consumers["Consumers"]
-        RK[cdb_risk<br/>position/exposure update]
-        DW[cdb_db_writer<br/>persistence]
+
+    subgraph FEEDBACK["FEEDBACK LOOP"]
+        RISK2["cdb_risk<br/>position · exposure update"]
+        DW["cdb_db_writer<br/>persistence"]
     end
+
     ORD --> EP
-    EP --> MOCK
-    MOCK -->|Paper/Mock mode (default)| DPL
-    MOCK -->|Live mode| EX_LIVE
-    DPL --> FR
-    DPL --> ORI
-    EX_LIVE --> FR
-    EX_LIVE --> ORI
-    ORI --> RK
-    ORI --> DW
-    FR --> RK
+    EP --> BOUNDARY
+    BOUNDARY -->|"default"| SIM
+    BOUNDARY -.->|"gated · blocked"| EXL
+    EXL -.->|"blocked"| LR_BLOCK
+
+    FR --> RISK2
+    ORI --> RISK2
     FR --> DW
-    style EX_LIVE fill:#f99,stroke:#c33,stroke-dasharray: 5 5
+    ORI --> DW
+
+    RISK2 -.->|"exposure feedback"| RISK
+
+    style EXL fill:#f99,stroke:#c33,stroke-dasharray:5 5
+    style LR_BLOCK fill:#fcc,stroke:#c33
+    style BOUNDARY fill:#ff9,stroke:#c93
+    style PAPER fill:#efe,stroke:#6a6
+    style LIVE fill:#fee,stroke:#c66
 ```
 
 ## What New Developers Must Understand

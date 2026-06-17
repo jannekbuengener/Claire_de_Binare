@@ -2,41 +2,47 @@
 title: ARVP Replay and Replay-vs-Paper Validation Flow
 ---
 
-flowchart TD
-    subgraph Dataset["Dataset Layer"]
-        DS[Dataset Source<br/>file | db]
-        DP[DatasetProvider<br/>FileBacked | DBBacked]
-        DQ[DatasetSpec<br/>fingerprint, window]
+flowchart TB
+    subgraph DATA["DATA LAYER"]
+        DS["Dataset Source<br/>file | db"] --> DP["DatasetProvider<br/>FileBacked | DBBacked"]
+        DP --> DQ["DatasetSpec<br/>fingerprint · window · checks"]
+        DQ --> CHK{"Data<br/>Sufficient?"}
+        CHK -->|"yes"| HB["Historical Bridge<br/>file-backed input"]
+        CHK -->|"HOLD"| H1["HOLD<br/>insufficient data"]
     end
 
-    subgraph Replay["Replay Execution"]
-        HB[Historical Bridge<br/>file-backed historical input]
-        SR[Strategy Replay Runner<br/>strategy_backtest_runner.py]
-        SC[Scheduler<br/>event-time, speed profiles]
-        RR[Replay Reporter<br/>report.json, manifest, audit.log]
+    subgraph ENGINE["REPLAY ENGINE (deterministic · event-time · offline)"]
+        HB --> SCH["Scheduler<br/>event-time · speed profiles"]
+        SCH --> SR["Strategy Replay Runner<br/>strategy_backtest_runner.py"]
+        SR --> RR["Replay Reporter<br/>report.json · manifest · audit.log"]
     end
 
-    subgraph Compare["Replay-vs-Paper Compare"]
-        RC[Replay vs Paper Compare<br/>replay_vs_paper_compare.py]
-        SCMP[Shadow Comparison<br/>shadow_comparison.json]
-        CR[Calibration Report<br/>simulator_calibration_report.json]
+    subgraph COMPARE["COMPARISON & CALIBRATION"]
+        RR --> RC["Replay vs Paper Compare<br/>replay_vs_paper_compare.py"]
+        RC --> PAPER{"Paper<br/>Reference?"}
+        PAPER -->|"yes"| SCMP["Shadow Comparison<br/>shadow_comparison.json"]
+        PAPER -->|"HOLD"| H2["HOLD<br/>missing paper reference"]
+        SCMP --> CR["Calibration Report<br/>simulator_calibration_report.json"]
+        CR --> DRIFT{"Simulator Drift<br/>within threshold?"}
+        DRIFT -->|"yes"| RS["Regime Scorecards<br/>arvp_regime_scorecard.json"]
+        DRIFT -->|"HOLD"| H3["HOLD<br/>simulator drift"]
     end
 
-    subgraph Evidence["Evidence / Gate"]
-        RS[Regime Scorecards<br/>arvp_regime_scorecard.json]
-        AG[ARVP Gate Verdict<br/>pass / fail / blocked]
+    subgraph GATE["ARVP GATE (validation evidence only · NOT LIVE-GO)"]
+        RS --> AG{"ARVP Gate<br/>Verdict"}
+        AG -->|"PASS"| PASS["VALIDATION_PASS<br/>replay evidence consistent<br/>does not authorize Live-Go"]
+        AG -->|"BLOCKED"| BLOCK["BLOCKED<br/>gate not met"]
+        AG -->|"HOLD"| HOLD["HOLD<br/>needs human review"]
     end
 
-    DS --> DP
-    DP --> DQ
-    DQ --> HB
-    HB --> SR
-    SC --> SR
-    SR --> RR
-    RR --> RC
-    RC --> SCMP
-    SCMP --> CR
-    RC --> RS
-    RS --> AG
-    SCMP --> AG
-    CR --> AG
+    DATA --> ENGINE
+    ENGINE --> COMPARE
+    COMPARE --> GATE
+
+    style H1 fill:#f99,stroke:#c33
+    style H2 fill:#f99,stroke:#c33
+    style H3 fill:#f99,stroke:#c33
+    style BLOCK fill:#f99,stroke:#c33
+    style HOLD fill:#fc3,stroke:#c93
+    style PASS fill:#9f9,stroke:#393
+    style AG fill:#ff9,stroke:#c93
