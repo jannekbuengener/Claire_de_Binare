@@ -298,6 +298,12 @@ class TestBuildLiveTruthPlan:
         text = "\n".join(lines)
         assert "LR-AUDIT-STATUS" in text
 
+    def test_contains_evidence_abgrenzung(self) -> None:
+        lines = _build_live_truth_plan()
+        text = "\n".join(lines)
+        assert "Evidence-Abgrenzung" in text
+        assert "Repo-/Canon-Prüfung" in text
+
 
 class TestBuildHoldConditions:
     def test_contains_context_brain_fail(self) -> None:

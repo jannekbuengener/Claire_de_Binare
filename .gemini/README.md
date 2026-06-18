@@ -22,6 +22,25 @@ Bei `/onboarding`-Intent: `python -m tools.onboarding_orchestrator`
 
 Default: Read-only Status Card. Kein `.env`, keine Secrets, kein Docker, kein Issue/PR ohne explizite Auswahl.
 
+## Evidence-Abgrenzung (Response Contract)
+
+Nach `/onboarding` MUSS die Antwort enthalten:
+
+| Feld | Erforderlich |
+|------|-------------|
+| Status, State | Ja |
+| warnings, allowed_next_actions | Ja |
+| check_scope, skipped_checks | Ja |
+| Evidence-Abgrenzung (was geprüft, was nicht) | **Ja** |
+| Safety-Grenzen | Ja |
+
+**Wording-Regeln:**
+- Ohne ausgeführte `git`/`gh`/`check`-Kommandos: "Repo-/Canon-Prüfung durchgeführt; GitHub-/Check-Live nicht geprüft."
+- `CURRENT_STATUS.md` ist Engineering-Ledger, nicht Live-Wahrheit.
+- LR-SSOT: `docs/live-readiness/LR-AUDIT-STATUS-2026-03-05.md`
+- `trade-capable` ist Board-/Stage-Kontext, kein Live-Go.
+- Keine freie Management-Zusammenfassung ohne Evidence-Abgrenzung.
+
 ## Safety Boundaries
 
 - LR remains **NO-GO**
