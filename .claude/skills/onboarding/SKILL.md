@@ -156,9 +156,9 @@ Guided rehearsal intent (`onboarding rehearsal`, `guided rehearsal`, `rehearsal 
 `nicht staendig fragen`, `realitaetsnah simulieren`, `onboarding als test-szenario`):
 run `python -m tools.onboarding_simulation --mode guided-rehearsal --role developer`.
 Guided rehearsal ist kein Setup-GO und kein Live-Go. Mutierende Schritte werden nur simuliert.
-**Nach guided-rehearsal-Lauf:** NICHT nummerierte Nachfolgemenues anhaengen.
-Kein "Wenn du willst..." mit 1/2/3 Optionen.
-Nur Ergebnis zusammenfassen, Safety-Grenzen nennen, genau einen naechsten Schritt empfehlen. STOP.
+**Nach guided-rehearsal-Lauf:** KEINE Anschlussfrage, keine Einladung, kein "Wenn du willst...".
+Keine nummerierten Nachfolgemenues (1/2/3).
+Der letzte Ausgabe-Absatz MUSS ein Abschluss sein: Status, ein naechster empfohlener Schritt, STOP.
 
 ```bash
 # Default: status card
