@@ -229,7 +229,9 @@ HOLD is required when:
 - Canonical bootloader files are missing or unreadable.
 - Canonical sources contradict each other and the conflict cannot be resolved via
   GitHub live or repo live evidence.
-- Context evidence is contradictory, stale, unavailable, or not provable.
+- Context evidence is contradictory or not provable after applying the valid
+  fallback matrix. A truly absent Context Tool may use
+  `repo_fallback_reason=unavailable` without automatic HOLD.
 - Runtime drift is suspected but cannot be classified without Jannek-Ops-GO.
 - Unrelated local changes or untracked paths risk being staged.
 - GitHub issue/PR state is unavailable or conflicts with repo state.
