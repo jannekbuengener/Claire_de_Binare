@@ -19,15 +19,18 @@ function Show-Usage {
 CDB PowerShell v1 front door
 
 Usage:
+  .\tools\cdb.ps1 onboarding             Smart single entrypoint (read-only status card)
+  .\tools\cdb.ps1 onboarding doctor [--format json] [--report PATH]
+  .\tools\cdb.ps1 onboarding tour [--role developer|agent|docs|validation|evidence]
   .\tools\cdb.ps1 secrets init [args]
   .\tools\cdb.ps1 runtime up [args]
   .\tools\cdb.ps1 runtime smoke [args]
   .\tools\cdb.ps1 stack verify [args]
   .\tools\cdb.ps1 service logs [args]
-  .\tools\cdb.ps1 onboarding doctor [--format json] [--report PATH]
-  .\tools\cdb.ps1 onboarding tour [--role developer|agent|docs|validation|evidence]
 
 Examples:
+  .\tools\cdb.ps1 onboarding
+  .\tools\cdb.ps1 onboarding doctor
   .\tools\cdb.ps1 secrets init
   .\tools\cdb.ps1 secrets init -Force
   .\tools\cdb.ps1 runtime up
@@ -38,18 +41,8 @@ Examples:
   .\tools\cdb.ps1 onboarding tour --role developer
 
 Non-interactive:
-  pwsh -ExecutionPolicy Bypass -File .\tools\cdb.ps1 runtime up
+  pwsh -ExecutionPolicy Bypass -File .\tools\cdb.ps1 onboarding
 '@ | Write-Host
-}
-
-if ([string]::IsNullOrWhiteSpace($Area) -or $Area -in @('help', '--help', '-h', '/?')) {
-    Show-Usage
-    exit 0
-}
-
-if ([string]::IsNullOrWhiteSpace($Action)) {
-    Show-Usage
-    exit 1
 }
 
 $scriptDir = $PSScriptRoot
@@ -58,6 +51,35 @@ if (-not $scriptDir) {
     $scriptDir = if ($definition) { Split-Path -Parent $definition } else { Get-Location }
 }
 $repoRoot = Split-Path -Parent $scriptDir
+
+if ([string]::IsNullOrWhiteSpace($Area) -or $Area -in @('help', '--help', '-h', '/?')) {
+    Show-Usage
+    exit 0
+}
+
+if ([string]::IsNullOrWhiteSpace($Action)) {
+    if ($Area -eq 'onboarding') {
+        $targetPath = Join-Path $repoRoot 'tools\onboarding_orchestrator.py'
+        if (-not (Test-Path -LiteralPath $targetPath)) {
+            Write-Error "Missing orchestrator script: $targetPath"
+            exit 1
+        }
+        $pythonCmd = Get-Command python -ErrorAction SilentlyContinue
+        if (-not $pythonCmd) {
+            Write-Error "Missing required Python interpreter (expected python in PATH)."
+            exit 1
+        }
+        Push-Location -LiteralPath $repoRoot
+        try {
+            & $pythonCmd.Source $targetPath @RemainingArgs
+            exit $LASTEXITCODE
+        } finally {
+            Pop-Location
+        }
+    }
+    Show-Usage
+    exit 1
+}
 
 $areaText = if ([string]::IsNullOrWhiteSpace($Area)) { '' } else { $Area.Trim().ToLowerInvariant() }
 $actionText = if ([string]::IsNullOrWhiteSpace($Action)) { '' } else { $Action.Trim().ToLowerInvariant() }
