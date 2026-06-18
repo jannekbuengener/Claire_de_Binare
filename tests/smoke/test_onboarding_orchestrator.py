@@ -67,18 +67,27 @@ class TestOrchestratorSmoke:
             "trade-capable ist kein Live-Go" in result.stdout
         ), "Output must contain 'trade-capable ist kein Live-Go'"
 
-    def test_orchestrator_output_next_paths_contains_yes_no(self):
+    def test_orchestrator_output_contains_setup_prompt(self):
         result = _run_orchestrator()
         assert (
-            "Soll ich jetzt den sicheren Onboarding-Workflow starten? (ja/nein)"
-            in result.stdout
-        ), "Output must contain the yes/no onboarding question"
+            "Möchtest du das Onboarding-Setup jetzt ausführen?" in result.stdout
+        ), "Output must contain the setup confirmation prompt"
 
-    def test_orchestrator_output_next_paths_contains_setup_plan(self):
+    def test_orchestrator_output_contains_only_two_setup_options(self):
         result = _run_orchestrator()
-        assert (
-            "Oder möchtest du vorher den Setup-Plan ansehen?" in result.stdout
-        ), "Output must contain the setup-plan alternative"
+        assert "1. Ja" in result.stdout
+        assert "2. Abbruch" in result.stdout
+
+    def test_orchestrator_does_not_contain_removed_setup_prompt_variants(self):
+        result = _run_orchestrator()
+        removed_patterns = [
+            "Soll ich jetzt den sicheren Onboarding-Workflow starten? (ja/nein)",
+            "Oder möchtest du vorher den Setup-Plan ansehen?",
+        ]
+        for pattern in removed_patterns:
+            assert (
+                pattern not in result.stdout
+            ), f"Output must not contain removed prompt variant: {pattern}"
 
     def test_orchestrator_does_not_contain_old_options(self):
         result = _run_orchestrator()

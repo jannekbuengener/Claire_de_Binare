@@ -13,7 +13,7 @@ Exit codes:
 
 This tool is read-only by default:
     - No file writes, no report, no setup mutation, no Docker, no secrets.
-    - Status card ends with two clear next paths (yes/no question + setup-plan hint).
+    - Status card ends with a strict two-option setup confirmation prompt.
 
 Read Order:
     agents/AGENTS.md § Read Order -> Context Brain Preflight -> Live Truth ->
@@ -27,8 +27,10 @@ Output contract:
     LR remains NO-GO.
     trade-capable ist kein Live-Go.
 
-    Soll ich jetzt den sicheren Onboarding-Workflow starten? (ja/nein)
-    Oder möchtest du vorher den Setup-Plan ansehen?
+    Möchtest du das Onboarding-Setup jetzt ausführen?
+
+    1. Ja
+    2. Abbruch
 """
 
 from __future__ import annotations
@@ -70,10 +72,18 @@ FORBIDDEN_OUTPUT_PATTERNS: list[re.Pattern] = [
     re.compile(r"https?://[^\s\"']+"),
 ]
 
-NEXT_PATHS: list[str] = [
-    "Soll ich jetzt den sicheren Onboarding-Workflow starten? (ja/nein)",
-    "Oder möchtest du vorher den Setup-Plan ansehen?",
+SETUP_PROMPT_LINES: list[str] = [
+    "Möchtest du das Onboarding-Setup jetzt ausführen?",
+    "",
+    "1. Ja",
+    "2. Abbruch",
 ]
+
+SETUP_APPROVED = "setup-approved"
+SETUP_ABORTED = "setup-aborted"
+
+SETUP_APPROVAL_INPUTS = {"1", "ja", "yes"}
+SETUP_ABORT_INPUTS = {"2", "nein", "no", "abbruch", "cancel"}
 
 
 def _run_cmd(
@@ -134,6 +144,35 @@ class OrchestratorOutput:
             "blockers": self.blockers,
             "details": self.details,
         }
+
+
+def get_setup_prompt_text() -> str:
+    return "\n".join(SETUP_PROMPT_LINES)
+
+
+def normalize_setup_prompt_input(value: str) -> str | None:
+    normalized = value.strip().lower()
+    if normalized in SETUP_APPROVAL_INPUTS:
+        return SETUP_APPROVED
+    if normalized in SETUP_ABORT_INPUTS:
+        return SETUP_ABORTED
+    return None
+
+
+def prompt_for_setup_confirmation(
+    input_fn: Callable[[str], str] = input,
+    output_fn: Callable[[str], None] | None = None,
+) -> str:
+    prompt_text = get_setup_prompt_text()
+    while True:
+        if output_fn is not None:
+            output_fn(prompt_text)
+            raw_value = input_fn("")
+        else:
+            raw_value = input_fn(f"{prompt_text}\n")
+        decision = normalize_setup_prompt_input(raw_value)
+        if decision is not None:
+            return decision
 
 
 def _check_bootloader_files(root: Path) -> tuple[str, list[str]]:
@@ -310,7 +349,7 @@ def format_output(report: OrchestratorOutput, fmt: str) -> str:
     lines.append("trade-capable ist kein Live-Go.")
     lines.append("")
 
-    lines.extend(NEXT_PATHS)
+    lines.extend(SETUP_PROMPT_LINES)
 
     return "\n".join(lines)
 
