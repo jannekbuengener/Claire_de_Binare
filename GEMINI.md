@@ -40,14 +40,23 @@
    - Wenn Plan Mode keine Live-Kommandos oder Dateiänderungen erlaubt, darf Gemini keine operative Repo-/PR-Hygiene, keine GitHub-Writes und keine Docs-Änderungen simulieren.
    - Dann stoppen statt Plan-Dateien schreiben.
 
-5. **Antwort-Standard**
+5. **Antwort-Standard (Evidence-Abgrenzung)**
     Jede CDB-Antwort beginnt mit:
     - Tool-/Skill-/Agent-/MCP-/Extensions-Check
     - Gelesene Canon-Dateien
-    - Live-Wahrheit geprüft: ja/nein
-    - Stop-Grund, falls nein
+    - Evidence-Abgrenzung: Repo-/Canon-/Onboarding-Status geprüft; GitHub-/Check-Live nicht geprüft, sofern keine konkreten git/gh/check-Kommandos ausgeführt wurden.
+    - GitHub-/Repo-Live geprüft nur mit konkreten git/gh/check-Kommandos und Ergebnissen.
+    - Stop-Grund, falls kein Live-Check möglich
 
-6. **Onboarding-Intent-Router**
+6. **Wording Contract**
+    - `tools.onboarding_orchestrator` zählt als Onboarding-Statusprüfung, nicht als GitHub-/Check-Live-Wahrheit.
+    - `trade-capable` ist Board-/Stage-Kontext, kein Live-Go.
+    - `CURRENT_STATUS.md` ist Engineering-Ledger, nicht Live-Wahrheit.
+    - LR-SSOT ist `docs/live-readiness/LR-AUDIT-STATUS-2026-03-05.md`.
+    - Setup nur nach explizitem Setup-GO; kann lokale Dateien erzeugen.
+    - Ohne Setup-GO: read-only bleiben. Kein "Führt cp .env.example .env aus" als UI-Erklärung.
+
+7. **Onboarding-Intent-Router**
    - If the user says `/onboarding`, `onboarding`, `onboarding durchführen`, `mach onboarding`, `fresh agent onboarding`, or equivalent, run: `python -m tools.onboarding_orchestrator`
    - Do not start `cdb-session-start` or `onboarding_doctor` as the primary path for onboarding intent.
    - Default output is the CDB Onboarding status card.
