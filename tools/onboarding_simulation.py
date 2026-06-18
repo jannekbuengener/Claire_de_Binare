@@ -229,7 +229,9 @@ def _build_context_brain_note() -> list[str]:
 def _validate_output_safe(text: str) -> None:
     for pattern in FORBIDDEN_OUTPUT_PATTERNS:
         if pattern.search(text):
-            raise ValueError("output contains forbidden pattern - potential secret leak")
+            raise ValueError(
+                "output contains forbidden pattern - potential secret leak"
+            )
 
 
 def render_simulation(role: str = "agent", mode: str = "first-issue-dry-run") -> str:
@@ -273,7 +275,9 @@ def render_simulation(role: str = "agent", mode: str = "first-issue-dry-run") ->
     return "\n".join(lines)
 
 
-def render_simulation_json(role: str = "agent", mode: str = "first-issue-dry-run") -> str:
+def render_simulation_json(
+    role: str = "agent", mode: str = "first-issue-dry-run"
+) -> str:
     resolved_role = _normalize_role(role)
     resolved_mode = _normalize_mode(mode)
     verdict = _build_final_verdict(resolved_role, resolved_mode)
