@@ -70,8 +70,7 @@ class TestOrchestratorSmoke:
     def test_orchestrator_output_contains_setup_prompt(self):
         result = _run_orchestrator()
         assert (
-            "Möchtest du das Onboarding-Setup jetzt ausführen?"
-            in result.stdout
+            "Möchtest du das Onboarding-Setup jetzt ausführen?" in result.stdout
         ), "Output must contain the setup confirmation prompt"
 
     def test_orchestrator_output_contains_only_two_setup_options(self):

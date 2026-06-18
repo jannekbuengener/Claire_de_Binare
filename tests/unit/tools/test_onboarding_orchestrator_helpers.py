@@ -15,9 +15,7 @@ def _iter_input(values: list[str]) -> Iterator[str]:
 
 def test_get_setup_prompt_text_is_exact() -> None:
     assert onboarding_orchestrator.get_setup_prompt_text() == (
-        "Möchtest du das Onboarding-Setup jetzt ausführen?\n\n"
-        "1. Ja\n"
-        "2. Abbruch"
+        "Möchtest du das Onboarding-Setup jetzt ausführen?\n\n" "1. Ja\n" "2. Abbruch"
     )
 
 
