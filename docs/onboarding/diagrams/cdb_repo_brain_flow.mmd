@@ -1,0 +1,11 @@
+flowchart TD
+    A[Task Scope] --> B[Bootloader Read Order]
+    B --> C[Brain Evidence Gate]
+    C --> D{Verified Context or DB records?}
+    D -- Yes --> E[Use Record-Backed Orientation]
+    D -- No --> F[Declare repo-only fallback]
+    E --> G[Cross-check Repo Files]
+    F --> G
+    G --> H[Cross-check GitHub Live]
+    H --> I[Plan Within Scope]
+    I --> J[No Live-Go / No Echtgeld-Go]

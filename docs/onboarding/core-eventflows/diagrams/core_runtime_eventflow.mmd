@@ -1,0 +1,58 @@
+---
+title: Core Runtime Eventflow
+---
+
+flowchart LR
+    subgraph External["External"]
+        WS[cdb_ws<br/>WebSocket Service]
+    end
+
+    subgraph Redis["Redis Layer"]
+        MD[market_data<br/>Pub/Sub channel]
+        SIG[signals<br/>Redis Stream]
+        ORD[orders<br/>Redis Stream]
+        FR[stream.fills<br/>Redis Stream]
+        OR[order_results<br/>Redis Stream]
+    end
+
+    subgraph BLUE["BLUE Core Services"]
+        MK[cdb_market<br/>Market Service]
+        CA[cdb_candles<br/>Candles Service]
+        RG[cdb_regime<br/>Regime Service]
+        AL[cdb_allocation<br/>Allocation Service]
+        RK[cdb_risk<br/>Risk Service]
+        EX[cdb_execution<br/>Execution Service]
+        DW[cdb_db_writer<br/>DB Writer]
+    end
+
+    subgraph RED["RED Signal Services"]
+        SG[cdb_signal<br/>Signal Service]
+        PR[cdb_paper_runner<br/>Paper Runner]
+    end
+
+    subgraph Storage["Persistent Storage"]
+        PG[(PostgreSQL)]
+    end
+
+    WS --> MD
+    MD --> MK
+    MD --> CA
+    MD --> SG
+    MD --> PR
+
+    SG --> SIG
+
+    SIG --> RK
+    SIG --> DW
+
+    RK --> ORD
+
+    ORD --> EX
+
+    EX --> FR
+    EX --> OR
+
+    OR --> RK
+    OR --> DW
+
+    DW --> PG

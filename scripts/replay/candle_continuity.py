@@ -370,6 +370,7 @@ def fetch_mexc_klines(
     requested_urls: list[str] = []
     while current <= end_ts_ms:
         params = {
+            "endTime": end_ts_ms + ONE_MINUTE_MS - 1,
             "interval": "1m",
             "limit": 1000,
             "startTime": current,

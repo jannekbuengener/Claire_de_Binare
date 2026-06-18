@@ -206,15 +206,7 @@ insufficient condition for natural_paper_evidence.
 
 ## 9. Active Gate
 
-Gordon/Docker-AI is historical/decommissioned and is not an active operational gate.
-
-For future Docker/Infra/Runtime actions, the active gate is:
-- explicit Jannek Human-GO
-- GitHub-live evidence
-- repo-backed evidence
-- required checks where applicable
-
-No Gordon-based checks apply.
+Active gate: explicit Jannek Human-GO + GitHub/Repo evidence. Required checks where applicable.
 LR remains NO-GO.
 
 ---

@@ -57,7 +57,10 @@ shared contract § Zone A vs Write-Zone).
 Invocation: `/cdb-<name>` (e.g. `/cdb-governance-gatekeeper`).
 
 Related surfaces (not subagents): `.cursor/skills/` (session skills),
-`.opencode/skills/` (OpenCode), `.codex/cdb_skills/` (Codex).
+`.opencode/skills/` (OpenCode), `.claude/skills/` (Claude Code), `.codex/cdb_skills/` (Codex).
+
+Root surface matrix: [`docs/onboarding/AGENT_ROOT_SURFACE_MATRIX.md`](../docs/onboarding/AGENT_ROOT_SURFACE_MATRIX.md) —
+versionierte Root-Flächen für `.claude/`, `.codex/`, `.cursor/`, `.gemini/`, `.opencode/`, `.vscode/`.
 
 ## Canonical Domains
 
@@ -100,6 +103,68 @@ Related surfaces (not subagents): `.cursor/skills/` (session skills),
 - Das lokale Archiv `docs/archive/docs_hub_snapshot/` ist nur noch ein optionaler historischer Rueckgriff.
 - Externe Docs-Repo-Pfade sind kein produktiver Default mehr.
 
+## Context Brain Preflight Gate
+
+Jeder Agenten-Prompt MUSS vor Repo-Reads einen **Context Brain Preflight** versuchen.
+Repo-Fallback ist nur nach belegtem Fehlversuch erlaubt.
+
+### Evidence-Felder (Pflicht)
+
+```text
+context_brain_attempted: true
+context_brain_used: true | false
+repo_fallback_used: true | false
+repo_fallback_reason: none | unavailable | stale | contradictory | insufficient_evidence | missing_record | tool_blocked
+context_tool_status: available | partial | blocked | absent
+context_trust_level: high | medium | low | none
+records_found: <count> | none
+```
+
+### Fallback-Klassifikationsmatrix
+
+Welcher `repo_fallback_reason` bei welchem tatsächlichen Tool-Zustand korrekt ist:
+
+| Tool-Status | Trust-Level | Records Found | Korrekter `repo_fallback_reason` |
+|---|---|---|---|
+| `available` | `high` | >=1 | `none` (kein Fallback nötig) |
+| `available` | `low` | 0 | `insufficient_evidence` |
+| `available` | `medium` | 0 | `missing_record` |
+| `available` | `low` | >=1 (stale) | `stale` |
+| `available` | `any` | widersprüchlich | `contradictory` |
+| `partial` | `low` | 0 | `insufficient_evidence` |
+| `blocked` | `none` | 0 | `tool_blocked` |
+| `absent` | `none` | 0 | `unavailable` |
+
+**Härteregel:** `repo_fallback_reason=unavailable` ist NUR erlaubt, wenn der
+Context-Brain-Tool-Zugang wirklich fehlt (Tool nicht importierbar, nicht aufrufbar,
+nicht im aktiven MCP-Surface). Ein verfügbares Tool, das LOW Trust oder keine
+Records liefert, ist **nicht** `unavailable`.
+
+### Regeln
+
+1. **Context Brain / Context-DB / MCP-Context ist der verpflichtende erste
+   Aufloesungsversuch** fuer Bootloader-, Read-Order-, Governance- und Kontext-Briefing.
+2. Repo ist nur Fallback, wenn Context Brain:
+   - nicht verfuegbar ist (`unavailable`),
+   - stale wirkt (`stale`),
+   - widerspruechlich ist (`contradictory`),
+   - keine belegbare Tool-/Query-/Record-Evidence liefert (`insufficient_evidence`),
+   - die benoetigte Information dort nicht belastbar aufloesbar ist (`missing_record`),
+   - oder die MCP-Tools blockiert sind (`tool_blocked`).
+3. Bei `repo_fallback_used=true` MUSS der Agent den konkreten Grund dokumentieren.
+4. Keine DB-backed Claims ohne Tool-/Query-/Record-Evidence.
+5. Context Brain / MCP-Ergebnisse autorisieren **keine** automatischen Code-,
+   Issue- oder Write-Aktionen; Human-GO erforderlich.
+6. `context_brain_used=true` nur mit echter Tool-/Query-/Record-Evidence.
+   Context Briefing, session memory oder caller-supplied metadata allein
+   sind keine DB-backed Evidence.
+7. Falsche Fallback-Klassifikation (z. B. `unavailable` bei verfügbarem Tool mit
+   LOW/no Records) löst `HOLD_BOOTLOADER_EVIDENCE_MISCLASSIFIED` aus und blockiert
+   den weiteren Workflow bis zur Korrektur.
+8. Lokale Context-Refresh-/Brain-Apply-Artefakte aus #3287-#3291 sind als
+   repo-backed Brain-Evidence-Kandidaten zu prüfen, wenn Context Tools keine
+   Records liefern.
+
 ## Brain Evidence Gate
 
 For sessions whose scope includes **Strategy, Runtime, Module, Service, Contract,
@@ -120,6 +185,13 @@ impact_on_plan:
   - <Was dadurch anders geplant wurde>
 limitations:
   - <Was nicht bewiesen ist>
+context_brain_attempted: true
+context_brain_used: true | false
+repo_fallback_used: true | false
+repo_fallback_reason: none | unavailable | stale | contradictory | insufficient_evidence | missing_record | tool_blocked
+context_tool_status: available | partial | blocked | absent
+context_trust_level: high | medium | low | none
+records_found: <count> | none
 ```
 
 ### Field Logic
@@ -130,6 +202,19 @@ limitations:
   Brain-Claims.
 - `brain_source=repo-only`: Klar `brain-not-used` melden.
 - `brain_source=unavailable`: Klar `blocked` oder `repo-only fallback` melden.
+- `context_brain_attempted`: IMMER `true` — der Preflight-Versuch ist Pflicht.
+- `context_brain_used`: `true` nur wenn echte Tool-/Query-/Record-Evidence vorliegt.
+  Context Briefing, session memory oder caller-supplied metadata allein sind
+  keine DB-backed Evidence.
+- `repo_fallback_used`: `true` wenn nach Preflight auf Repo-Reads zurueckgefallen wurde.
+- `repo_fallback_reason`: Exakter Grund fuer Repo-Fallback (Enum). Siehe
+  Fallback-Klassifikationsmatrix oben: `unavailable` ist NUR bei echt fehlendem
+  Tool-Zugang erlaubt, nicht bei LOW/no Records.
+- `context_tool_status`: Tatsaechlicher Status des Context-Brain-Tools nach
+  Preflight-Versuch.
+- `context_trust_level`: Vertrauensniveau der gelieferten Evidence (kann auf
+  Tool-Metadaten oder Bundle-Signalen basieren).
+- `records_found`: Anzahl der gefundenen Records (0 bei `none`).
 
 ### Default posture (SSOT)
 
@@ -170,6 +255,9 @@ Higher wins; fail-closed when lower layers conflict:
 - GitHub/Repo/Live evidence wins over Brain/CIS claims.
 - Board-Stage `trade-capable` is not Live-Go.
 - LR remains NO-GO.
+- Falsche Fallback-Klassifikation (z. B. `unavailable` bei verfügbarem Tool mit
+  LOW/no Records) löst `HOLD_BOOTLOADER_EVIDENCE_MISCLASSIFIED` aus. Der Workflow
+  muss bis zur Korrektur blockiert bleiben.
 
 ## Legacy Note
 

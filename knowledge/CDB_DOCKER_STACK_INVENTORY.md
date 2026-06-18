@@ -6,7 +6,7 @@
 
 - **Operator/runtime canon:** `infrastructure/compose/compose.blue.yml` + `infrastructure/compose/compose.red.yml`
 - **Canonical start helper:** `infrastructure/scripts/setup_blue_red.ps1`
-- **Canonical runtime references:** `knowledge/systems/STACK_LIFECYCLE.md`, `knowledge/OPERATIONS_RUNBOOK.md`, `knowledge/content/ONBOARDING_LINKS.md`, `infrastructure/compose/COMPOSE_LAYERS.md`
+- **Canonical runtime references:** `knowledge/systems/STACK_LIFECYCLE.md`, `knowledge/OPERATIONS_RUNBOOK.md`, `infrastructure/compose/COMPOSE_LAYERS.md`
 
 ## Compose layers + intent
 

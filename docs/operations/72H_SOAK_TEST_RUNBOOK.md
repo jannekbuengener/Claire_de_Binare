@@ -158,7 +158,7 @@ grep -B2 "soak_test: abort" infrastructure/monitoring/alerts.yml
 ## Stop / Abort Procedure
 
 ```bash
-# 1. Remove cron
+# 1. Remove cron (Linux)
 crontab -l | grep -v soak_monitor | crontab -
 
 # 2. Capture final state
@@ -168,6 +168,11 @@ docker stats --no-stream > artifacts/final_resources.txt
 
 # 3. Stop stack (optional — may keep running for investigation)
 docker compose -f infrastructure/compose/compose.blue.yml down
+```
+
+```powershell
+# Windows: Scheduler-Tasks deaktivieren statt Cron (nicht loeschen, #3304)
+Get-ScheduledTask -TaskName "CDB_LR040_SoakMonitor", "CDB_Soak_Sidecar" -ErrorAction SilentlyContinue | Disable-ScheduledTask
 ```
 
 ## Post-run
