@@ -24,6 +24,7 @@ Wichtige kanonische Dateien:
 - [`knowledge/runbooks/CDB_CONTROL_BOARD_RUNBOOK.md`](knowledge/runbooks/CDB_CONTROL_BOARD_RUNBOOK.md)
 - [`PROJECT_STATUS.md`](PROJECT_STATUS.md)
 - [`agents/OPEN_CODE_AGENTS.md`](agents/OPEN_CODE_AGENTS.md)
+- [`docs/onboarding/AGENT_ROOT_SURFACE_MATRIX.md`](docs/onboarding/AGENT_ROOT_SURFACE_MATRIX.md)
 
 Aktueller Projektstand:
 - Working Repo ist der produktive Canon fuer Agenten-, Governance-, Knowledge- und Navigationsdoku.
@@ -236,6 +237,20 @@ except InvalidOperation:
 - No blackbox decisions; all logic must be traceable.
 
 ---
+
+## Agent Root Surfaces
+
+Alle sechs repo-kanonischen Agent-Root-Flächen sind versioniert und onboarding-fähig.
+Siehe [`docs/onboarding/AGENT_ROOT_SURFACE_MATRIX.md`](docs/onboarding/AGENT_ROOT_SURFACE_MATRIX.md).
+
+| Surface | Purpose |
+|---------|---------|
+| `.claude/` | Claude Code — Bootloader, Session-Skills |
+| `.codex/` | Codex CLI — Session-Skills |
+| `.cursor/` | Cursor IDE — Subagents, Regeln, Session-Skills |
+| `.gemini/` | Gemini — IDE-Konfiguration, Onboarding-Router |
+| `.opencode/` | OpenCode CLI — Session-Skills |
+| `.vscode/` | VS Code — Helper-Surface (keine Autorität) |
 
 ## Selected repo skills (not exhaustive)
 

@@ -50,8 +50,11 @@ wheels/
 *.egg
 MANIFEST
 
-# IDE
-.vscode/
+# IDE — repo-safe files tracked via allowlist
+.vscode/*
+!.vscode/README.md
+!.vscode/extensions.json
+!.vscode/settings.json
 .idea/
 *.swp
 *.swo
@@ -155,7 +158,11 @@ Claire_de_Binare_Docs/
 /.claude/scheduled_tasks.lock
 /.claude/settings.json
 
-.gemini/
+# Gemini — curated surfaces versioned, local state ignored
+.gemini/*
+!.gemini/README.md
+!.gemini/settings.json
+!.gemini/onboarding.md
 .agent_briefings/
 gha-creds-*.json
 .codex-worktree-*/
