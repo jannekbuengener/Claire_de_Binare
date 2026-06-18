@@ -18,6 +18,11 @@ It delegates to `tools/onboarding_orchestrator.py` which produces a read-only
 status card with bootloader check, scenario integrity, LR status, doctor/validator
 reachability, and numbered next-option hints.
 
+If the user says `/onboarding`, `onboarding`, `onboarding durchführen`, `mach onboarding`,
+`fresh agent onboarding`, or equivalent, run: `python -m tools.onboarding_orchestrator`
+
+Do not start `cdb-session-start` or `onboarding_doctor` as the primary path for onboarding intent.
+
 **This is a session-skill / command-skill, not a subagent.**
 
 ## Default Invocation
@@ -74,6 +79,8 @@ Optional aliases exist, but `/onboarding` remains canonical:
 The orchestrator is **read-only by default**: no file writes, no report,
 no setup mutation, no Docker, no secrets. The output ends with numbered
 next-option hints (no open yes/no question).
+
+Do not create `.env`, initialize secrets, initialize context, write reports, create issues, or run Docker unless the user explicitly selects a next option after the status card.
 
 ## Referenced V2 Surfaces
 

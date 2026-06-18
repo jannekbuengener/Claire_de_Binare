@@ -14,8 +14,8 @@ description: >
 ## Purpose
 
 `/onboarding` is the canonical, simple slash entrypoint for CDB onboarding.
-It orchestrates the completed Onboarding V2 surfaces into a single, safe,
-deterministic flow without inventing new truth.
+It routes first to `tools/onboarding_orchestrator.py`, which produces the
+read-only CDB Onboarding status card before any optional next step.
 
 **This is a session-skill / command-skill, not a subagent.**
 
@@ -58,14 +58,13 @@ Optional aliases exist, but `/onboarding` remains canonical:
 
 ## Orchestrated Flow
 
-1. **Bootloader:** `AGENTS.md` -> `agents/AGENTS.md` -> full Read Order.
-2. **Context Brain Preflight:** `context_brain_attempted=true` required before repo reads.
-3. **Live Truth:** GitHub live + repo live before ledger.
-4. **Onboarding Tour:** Role-specific path via `tools/onboarding_tour.py`.
-5. **Doctor / Validator:** `tools/onboarding_doctor.py` + `tools/validate_onboarding_docs.py`.
-6. **First-Issue Sandbox:** Simulate docs-only issue-to-PR workflow via
-   `tools/onboarding_simulation.py` or `docs/onboarding/first_issue_sandbox.md`.
-7. **Final Verdict:** `READY_FOR_REAL_FIRST_ISSUE` or `HOLD_ONBOARDING_GAP`.
+1. **Primary route:** `python -m tools.onboarding_orchestrator`
+2. **Bootloader:** `AGENTS.md` -> `agents/AGENTS.md` -> full Read Order.
+3. **Context Brain Preflight:** `context_brain_attempted=true` required before repo reads.
+4. **Live Truth:** GitHub live + repo live before ledger.
+5. **Optional next steps only after the status card:** role-specific tour,
+   doctor/validator, or first-issue sandbox.
+6. **Final Verdict:** CDB Onboarding status card with numbered next options.
 
 ## Referenced V2 Surfaces
 
@@ -74,6 +73,7 @@ Optional aliases exist, but `/onboarding` remains canonical:
 | `AGENTS.md` | Root pointer -> canonical agent registry |
 | `agents/AGENTS.md` | Read Order, Brain Evidence Gate, Context Brain Preflight Gate |
 | `agents/OPEN_CODE_AGENTS.md` | OpenCode shared contract, skill routing |
+| `tools/onboarding_orchestrator.py` | **Single smart entrypoint** (status card + verdict) |
 | `tools/onboarding_tour.py` | Role-specific read-only tour |
 | `tools/onboarding_doctor.py` | Local developer setup preflight |
 | `tools/validate_onboarding_docs.py` | Active onboarding docs integrity validator |
@@ -92,6 +92,7 @@ Optional aliases exist, but `/onboarding` remains canonical:
 - **No Echtgeld-Go**
 - **Read-only by default** — no file writes, no GitHub writes, no branch creation,
   no PR creation, no runtime/Docker/DB/MCP mutation, no secrets.
+- **Do not start `cdb-session-start` or `onboarding_doctor` as the primary path for onboarding intent.**
 - **No subagent replacement** — `/onboarding` is a slash-skill, not a subagent.
   CDB subagents (`/cdb-governance-gatekeeper`, etc.) remain unchanged.
 
@@ -109,12 +110,31 @@ The flow produces `HOLD_ONBOARDING_GAP` if:
 - Diff shows scope growth beyond allowed surfaces
 - Secrets or LR/Live boundaries are touched
 
-## Run the Simulation Runner
+## Run the Orchestrator
 
-The `/onboarding` skill delegates to the deterministic simulation runner:
+If the user says `/onboarding`, `onboarding`, `onboarding durchführen`, `mach onboarding`,
+`fresh agent onboarding`, or equivalent, run:
 
 ```bash
-# Default: agent role, first-issue-dry-run mode
+# Default: status card
+python -m tools.onboarding_orchestrator
+
+# JSON output
+python -m tools.onboarding_orchestrator --format json
+
+# Check-only mode
+python -m tools.onboarding_orchestrator --mode check-only
+
+# PowerShell front door
+.\tools\cdb.ps1 onboarding
+```
+
+Do not create `.env`, initialize secrets, initialize context, write reports, create issues, or run Docker unless the user explicitly selects a next option after the status card.
+
+Optional next steps after explicit user selection:
+
+```bash
+# Agent role, first-issue dry-run
 python -m tools.onboarding_simulation
 
 # Developer role
@@ -126,8 +146,6 @@ python -m tools.onboarding_simulation --mode check-only
 # JSON output
 python -m tools.onboarding_simulation --format json
 
-# PowerShell front door
-.\tools\cdb.ps1 onboarding simulate
 ```
 
 ## Final Restart / Tool Reload Required

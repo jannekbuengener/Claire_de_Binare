@@ -8,6 +8,7 @@ Spiegelt die Cursor-Skill-Oberfläche unter [`.cursor/skills/README.md`](../../.
 
 | Skill | Wann |
 |---|---|
+| [`onboarding`](onboarding/SKILL.md) | Bei `/onboarding` oder natuerlichem Onboarding-Intent |
 | [`cdb-session-start`](cdb-session-start/SKILL.md) | Vor Repo-/GitHub-/Implementierungsarbeit |
 | [`cdb-session-close`](cdb-session-close/SKILL.md) | Nach Implementierung/Validierung |
 
