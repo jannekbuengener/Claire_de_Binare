@@ -4,6 +4,17 @@ Wenn ein Gemini-Agent einen `/onboarding`-, `onboarding`-, `onboarding durchfüh
 
 1. **Führe aus**: `python -m tools.onboarding_orchestrator`
 2. **Starte nicht** `cdb-session-start` oder `onboarding_doctor` als primären Pfad.
+
+Wenn der Intent auf eine geführte Generalprobe zielt (`onboarding rehearsal`, `guided rehearsal`,
+`rehearsal mode`, `generalprobe`, `tu so als waere ich neuer entwickler`, `reisefuehrer`,
+`nicht staendig fragen`, `realitaetsnah simulieren`, `onboarding als test-szenario`):
+
+1. **Führe aus**: `python -m tools.onboarding_simulation --mode guided-rehearsal --role developer`
+2. **Guided rehearsal ist kein Setup-GO und kein Live-Go.** Mutierende Schritte werden nur simuliert.
+3. **Der Agent führt als Reiseführer autonom.** Kein Fragebogen, keine endlosen Rückfragen.
+4. **Nur bei echten Human-Gates rückfragen** (z.B. "Soll ich jetzt wirklich das Setup ausführen?").
+5. **Read-only-Prüfungen ausführen** (git, gh view, python tools), wenn sicher und sinnvoll.
+6. **Mutierende Schritte (Docker, .env, deps) nur beschreiben und simulieren**, nicht ausführen.
 3. **Default output is the CDB Onboarding status card.**
 4. **Read-only by default.** Do not create `.env`, initialize secrets, initialize context, write reports, create issues, or run Docker unless the user explicitly selects a next option after the status card.
 5. **Routing-Hierarchie**: Dieser Router ist der kanonische Gemini-Onboarding-Pfad. Der Gemini-Bootloader in `GEMINI.md` (Repo-Root) verweist ergänzend auf diesen Router.
