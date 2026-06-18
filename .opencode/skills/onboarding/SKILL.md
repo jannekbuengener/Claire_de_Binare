@@ -40,7 +40,7 @@ github_writes: disabled
 lr: NO-GO
 ```
 
-Expected initial output — a status card ending with two clear next paths:
+Expected initial output — a status card ending with the strict two-option setup prompt:
 
 ```text
 === CDB Onboarding ===
@@ -50,8 +50,10 @@ Keine Änderungen vorgenommen.
 LR remains NO-GO.
 trade-capable ist kein Live-Go.
 
-Soll ich jetzt den sicheren Onboarding-Workflow starten? (ja/nein)
-Oder möchtest du vorher den Setup-Plan ansehen?
+Möchtest du das Onboarding-Setup jetzt ausführen?
+
+1. Ja
+2. Abbruch
 ```
 
 ## Optional Forms
@@ -75,8 +77,8 @@ Optional aliases exist, but `/onboarding` remains canonical:
 6. **Final Verdict:** `PASS` | `SETUP_WARN` | `BLOCKED`.
 
 The orchestrator is **read-only by default**: no file writes, no report,
-no setup mutation, no Docker, no secrets. The output ends with two clear
-next paths (a yes/no question and a setup-plan hint).
+no setup mutation, no Docker, no secrets. The output ends with a strict
+two-option setup confirmation prompt.
 
 Do not create `.env`, initialize secrets, initialize context, write reports, create issues, or run Docker unless the user explicitly selects a next option after the status card.
 
@@ -139,14 +141,13 @@ Non-blocking warnings (`SETUP_WARN`):
 
 ## Allowed Next Paths
 
-Default output shows exactly two paths:
+Default output shows exactly one two-option prompt:
 
-1. **Primär:** `Soll ich jetzt den sicheren Onboarding-Workflow starten? (ja/nein)`
-2. **Alternative:** `Oder möchtest du vorher den Setup-Plan ansehen?`
+1. `Möchtest du das Onboarding-Setup jetzt ausführen?`
+2. `1. Ja` / `2. Abbruch`
 
-The old specialized paths (Setup vorbereiten, Onboarding-Report schreiben,
-Ersten sicheren Issue-Workflow simulieren) are removed from the default
-output but remain available as explicit CLI/docs details.
+`1. Ja` maps only to setup approval / an allowed next action boundary in this
+slice. It does not create `.env` or perform any local setup mutation.
 
 All paths require explicit GO before execution. Default mode produces
 no report and no setup mutation.
