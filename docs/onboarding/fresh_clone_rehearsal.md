@@ -267,6 +267,65 @@ Minimum content for the rehearsal report:
 - No MCP mutations.
 - Docs/UI are orientation, not authority.
 
+## Guided Rehearsal Mode (Geführte Generalprobe)
+
+Zusätzlich zum eigenständigen Durchlauf der Schritte 1-9 gibt es den
+**guided-rehearsal mode** für Agenten (insb. Cursor, OpenCode, Claude Code, Gemini):
+
+```
+python -m tools.onboarding_simulation --mode guided-rehearsal --role developer
+```
+
+### Was guided-rehearsal anders macht
+
+- **Der Agent führt als Reiseführer autonom.** Kein Fragebogen, keine endlosen Rückfragen.
+- **Read-only-Prüfungen werden ausgeführt**, wenn sie sicher sind (git, gh view, python tools).
+- **Mutierende Schritte (Docker, .env, deps) werden nur beschrieben und simuliert.**
+- **Nur bei echten Human-Gates wird rückgefragt** (z.B. "Soll ich das Setup jetzt ausführen?").
+- **Kein freies Rollenspiel ohne Pipeline-Bezug.**
+- **Kein endloser Auswahlbaum.**
+
+### Aufruf über Agenten-Oberflächen
+
+Jede Agenten-Oberfläche kennt den guided-rehearsal Modus:
+
+| Surface | Intent-Erkennung |
+|---------|-----------------|
+| `.claude/skills/onboarding/SKILL.md` | `onboarding rehearsal`, `guided rehearsal`, `generalprobe`, ... |
+| `.codex/cdb_skills/onboarding/SKILL.md` | gleiche Intent-Liste |
+| `.cursor/skills/onboarding/SKILL.md` | gleiche Intent-Liste |
+| `.opencode/skills/onboarding/SKILL.md` | gleiche Intent-Liste |
+| `.gemini/onboarding.md` | gleiche Intent-Liste |
+
+### Safety für guided-rehearsal
+
+- Kein Docker / kein Stack-Start / keine .env-Erzeugung
+- Keine Writes / keine DB/MCP/SurrealDB/Secrets
+- Kein Live-Go, kein Echtgeld-Go
+- Guided rehearsal ist kein Setup-GO
+- Board stage trade-capable ist nicht Live-Go
+
+### Output-Erwartung
+
+Der Output enthält:
+
+- `Status: GUIDED_REHEARSAL`
+- `Mode: guided-rehearsal`
+- Rolle/Zielgruppe
+- Startannahme: frischer Entwickler/Agent mit frisch gezogenem Repo
+- Repo-/Canon-/Onboarding-Status
+- Read-only-Prüfungen (tatsächlich ausgeführt)
+- Setup-Simulation (mutierende Schritte markiert)
+- Docker-/Stack-Simulation
+- Governance-/LR-Grenzen
+- Was der neue Entwickler jetzt darf
+- Was erst nach explizitem GO erlaubt wäre
+- Sinnvoller realer nächster Schritt
+- Evidence-Abgrenzung
+- Safety-Bestätigung
+
+---
+
 ## Troubleshooting
 
 - If you cannot tell which status source wins, return to `AGENTS.md` ->

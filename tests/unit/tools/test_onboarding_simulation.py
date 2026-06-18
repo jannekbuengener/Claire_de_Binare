@@ -61,6 +61,9 @@ class TestNormalizeMode:
     def test_check_only(self) -> None:
         assert _normalize_mode("check-only") == "check-only"
 
+    def test_guided_rehearsal(self) -> None:
+        assert _normalize_mode("guided-rehearsal") == "guided-rehearsal"
+
     def test_unknown_mode_raises(self) -> None:
         with pytest.raises(ValueError, match="unsupported mode"):
             _normalize_mode("live")
@@ -84,6 +87,17 @@ class TestBuildFinalVerdict:
 
     def test_check_only_hold_developer(self) -> None:
         assert _build_final_verdict("developer", "check-only") == "HOLD_ONBOARDING_GAP"
+
+    def test_guided_rehearsal_done(self) -> None:
+        assert (
+            _build_final_verdict("developer", "guided-rehearsal")
+            == "GUIDED_REHEARSAL_DONE"
+        )
+
+    def test_guided_rehearsal_agent(self) -> None:
+        assert (
+            _build_final_verdict("agent", "guided-rehearsal") == "GUIDED_REHEARSAL_DONE"
+        )
 
 
 class TestRenderSimulationDefaults:
@@ -195,6 +209,76 @@ class TestRenderSimulationByMode:
         assert "READY_FOR_REAL_FIRST_ISSUE" in output
 
 
+class TestRenderSimulationGuidedRehearsal:
+    def test_guided_rehearsal_contains_status(self) -> None:
+        output = render_simulation(mode="guided-rehearsal")
+        assert "GUIDED_REHEARSAL" in output
+
+    def test_guided_rehearsal_contains_mode(self) -> None:
+        output = render_simulation(mode="guided-rehearsal")
+        assert "mode: guided-rehearsal" in output
+
+    def test_guided_rehearsal_contains_reisefuehrer(self) -> None:
+        output = render_simulation(mode="guided-rehearsal")
+        assert "Reisefuehrer" in output or "Reiseführer" in output
+
+    def test_guided_rehearsal_contains_simuliert(self) -> None:
+        output = render_simulation(mode="guided-rehearsal")
+        assert "simuliert" in output.lower()
+
+    def test_guided_rehearsal_contains_docker_simulation(self) -> None:
+        output = render_simulation(mode="guided-rehearsal")
+        assert "Docker" in output
+        assert "NICHT ausgefuehrt" in output or "NICHT" in output
+
+    def test_guided_rehearsal_contains_setup_simulation(self) -> None:
+        output = render_simulation(mode="guided-rehearsal")
+        assert "Setup" in output
+        assert "simuliert" in output.lower()
+
+    def test_guided_rehearsal_no_question_tree(self) -> None:
+        output = render_simulation(mode="guided-rehearsal")
+        forbidden = [
+            "Welche Rolle soll ich",
+            "Welche Startoberflaeche",
+            "Soll ich den naechsten Schritt",
+            "Antworte einfach mit der Nummer",
+            "1. Ja",
+            "2. Nein",
+        ]
+        for phrase in forbidden:
+            assert phrase not in output, f"Forbidden phrase found: {phrase}"
+
+    def test_guided_rehearsal_developer_role(self) -> None:
+        output = render_simulation(role="developer", mode="guided-rehearsal")
+        assert "role: Developer" in output
+        assert "GUIDED_REHEARSAL_DONE" in output
+
+    def test_guided_rehearsal_agent_role(self) -> None:
+        output = render_simulation(role="agent", mode="guided-rehearsal")
+        assert "role: Agent" in output
+
+    def test_guided_rehearsal_verdict(self) -> None:
+        output = render_simulation(mode="guided-rehearsal")
+        assert "GUIDED_REHEARSAL_DONE" in output
+
+    def test_guided_rehearsal_contains_governance_boundary(self) -> None:
+        output = render_simulation(mode="guided-rehearsal")
+        assert "Governance" in output or "LR-Grenzen" in output
+
+    def test_guided_rehearsal_contains_next_steps(self) -> None:
+        output = render_simulation(mode="guided-rehearsal")
+        assert "naechster Schritt" in output or "nächster Schritt" in output
+
+    def test_guided_rehearsal_json_sections(self) -> None:
+        output = render_simulation_json(mode="guided-rehearsal")
+        data = json.loads(output)
+        assert data["mode"] == "guided-rehearsal"
+        assert data["verdict"] == "GUIDED_REHEARSAL_DONE"
+        assert "sections" in data
+        assert "guided_rehearsal" in data["sections"]
+
+
 class TestRenderSimulationJson:
     def test_valid_json(self) -> None:
         output = render_simulation_json()
@@ -253,8 +337,11 @@ class TestVerdictEnum:
     def test_blocked_governance(self) -> None:
         assert "BLOCKED_GOVERNANCE" in VERDICT_ENUM
 
+    def test_guided_rehearsal_done_in_enum(self) -> None:
+        assert "GUIDED_REHEARSAL_DONE" in VERDICT_ENUM
+
     def test_enum_length(self) -> None:
-        assert len(VERDICT_ENUM) == 5
+        assert len(VERDICT_ENUM) == 6
 
 
 class TestBuildBootloaderPlan:

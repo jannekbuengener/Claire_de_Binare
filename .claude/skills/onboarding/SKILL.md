@@ -151,6 +151,12 @@ The flow produces `HOLD_ONBOARDING_GAP` if:
 If the user says `/onboarding`, `onboarding`, `onboarding durchführen`, `mach onboarding`,
 `fresh agent onboarding`, or equivalent, run:
 
+Guided rehearsal intent (`onboarding rehearsal`, `guided rehearsal`, `rehearsal mode`,
+`generalprobe`, `tu so als waere ich neuer entwickler`, `reisefuehrer`,
+`nicht staendig fragen`, `realitaetsnah simulieren`, `onboarding als test-szenario`):
+run `python -m tools.onboarding_simulation --mode guided-rehearsal --role developer`.
+Guided rehearsal ist kein Setup-GO und kein Live-Go. Mutierende Schritte werden nur simuliert.
+
 ```bash
 # Default: status card
 python -m tools.onboarding_orchestrator

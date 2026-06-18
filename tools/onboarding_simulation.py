@@ -5,9 +5,17 @@ simulation of the full CDB onboarding flow without any file writes, GitHub
 mutations, branch creation, PR creation, runtime/Docker/DB/MCP actions, or
 secret exposure.
 
+Modes:
+    first-issue-dry-run  — Walk through a docs-only issue/PR workflow.
+    check-only           — Verify prerequisites without simulating a PR.
+    guided-rehearsal     — Full guided onboarding rehearsal: agent leads like a
+                           tour guide, mutating steps are simulated only,
+                           no question-tree, autonomous safe defaults.
+
 Usage:
     python -m tools.onboarding_simulation
     python -m tools.onboarding_simulation --role agent --mode first-issue-dry-run
+    python -m tools.onboarding_simulation --role developer --mode guided-rehearsal
     python -m tools.onboarding_simulation --role developer --format json
     .\\tools\\cdb.ps1 onboarding simulate
 
@@ -16,11 +24,15 @@ Output contract:
     Doctor / Validator Plan -> First-Issue Dry Run -> PR / LOCK Simulation ->
     HOLD Conditions -> Final Verdict
 
+    guided-rehearsal mode adds: GUIDED_REHEARSAL status, Setup Simulation,
+    Docker/Stack Simulation, Governance/LR Boundaries, guided next steps.
+
 Final verdict enum:
     READY_FOR_REAL_FIRST_ISSUE | HOLD_ONBOARDING_GAP |
     BLOCKED_BOOTLOADER | BLOCKED_LIVE_TRUTH | BLOCKED_GOVERNANCE
+    GUIDED_REHEARSAL_DONE (guided-rehearsal mode only)
 
-Issue: #3273
+Issue: #3339
 Parent: #3271
 """
 
@@ -56,6 +68,7 @@ VERDICT_ENUM: tuple[str, ...] = (
     "BLOCKED_BOOTLOADER",
     "BLOCKED_LIVE_TRUTH",
     "BLOCKED_GOVERNANCE",
+    "GUIDED_REHEARSAL_DONE",
 )
 
 FORBIDDEN_OUTPUT_PATTERNS: list[re.Pattern] = [
@@ -92,7 +105,7 @@ def _normalize_role(role: str) -> str:
 
 
 def _normalize_mode(mode: str) -> str:
-    allowed = ("first-issue-dry-run", "check-only")
+    allowed = ("first-issue-dry-run", "check-only", "guided-rehearsal")
     if mode not in allowed:
         raise ValueError(
             f"unsupported mode '{mode}'. Allowed modes: {', '.join(allowed)}"
@@ -205,7 +218,82 @@ def _build_hold_conditions() -> list[str]:
 def _build_final_verdict(role: str, mode: str) -> str:
     if mode == "check-only":
         return "HOLD_ONBOARDING_GAP"
+    if mode == "guided-rehearsal":
+        return "GUIDED_REHEARSAL_DONE"
     return "READY_FOR_REAL_FIRST_ISSUE"
+
+
+def _build_guided_rehearsal(role: str) -> list[str]:
+    role_label = ROLE_LABELS.get(role, role)
+    return [
+        "=== Guided Onboarding Rehearsal ===",
+        f"Role: {role_label}",
+        "Mode: guided-rehearsal",
+        "Status: GUIDED_REHEARSAL",
+        "",
+        "Startannahme: Frischer Entwickler / frischer Agent mit frisch gezogenem Repo.",
+        "Der Agent fuehrt als Reisefuehrer durch das Onboarding.",
+        "Kein Fragebogen – der Agent entscheidet sichere Defaults autonom.",
+        "",
+        "--- Repo / Canon / Onboarding-Status ---",
+        "  - AGENTS.md und agents/AGENTS.md vorhanden und lesbar.",
+        "  - Working Repo ist produktiver Canon.",
+        "  - Board-Stage: trade-capable (ratifiziert via #1492).",
+        "  - LR-Status: NO-GO (SSOT: docs/live-readiness/LR-AUDIT-STATUS-2026-03-05.md).",
+        "  - CURRENT_STATUS.md ist Engineering-Ledger, nicht Live-Wahrheit.",
+        "",
+        "--- Read-Only-Prüfungen ---",
+        "  - Git-Status: main aktuell (origin/main eingeholt).",
+        "  - ONBOARDING_SCENARIO_001 vorhanden und vollstaendig.",
+        "  - Bootloader-Dateien vorhanden.",
+        "  - python -m tools.onboarding_doctor (verfuegbar / nicht verfuegbar).",
+        "  - python -m tools.validate_onboarding_docs (bestanden).",
+        "",
+        "--- Setup-Simulation (mutierende Schritte werden NUR simuliert) ---",
+        "  - .venv anlegen: NICHT ausgefuehrt – simuliert.",
+        "  - requirements-dev.txt installieren: NICHT ausgefuehrt – simuliert.",
+        "  - .env.example -> .env kopieren: NICHT ausgefuehrt – simuliert.",
+        "  - gh auth: NICHT ausgefuehrt – simuliert.",
+        "  - SECRETS_PATH vorbereiten: NICHT ausgefuehrt – simuliert.",
+        "",
+        "--- Docker / Stack-Simulation ---",
+        "  - BLUE+RED Compose: NICHT gestartet – simuliert.",
+        "  - docker compose up: NICHT ausgefuehrt – simuliert.",
+        "  - Health-Probes: NICHT geprueft – simuliert.",
+        "  - make docker-up: NICHT ausgefuehrt – simuliert.",
+        "  Hinweis: Docker und Stack sind fuer diese Rehearsal nicht erforderlich.",
+        "",
+        "--- Governance / LR-Grenzen ---",
+        "  - LR bleibt NO-GO – kein Live-Kapital.",
+        "  - Board stage trade-capable ist kein Live-Go.",
+        "  - Kein Echtgeld-Go.",
+        "  - Kein automatischer Setup, keine Runtime-Aenderung.",
+        "  - Keine DB/MCP/SurrealDB/Secrets-Writes.",
+        "",
+        "--- Was der neue Entwickler jetzt darf ---",
+        "  - Docs lesen (README, docs/index, onboarding-Surfaces).",
+        "  - Tools ausfuehren: onboarding_orchestrator, onboarding_doctor.",
+        "  - Bootloader-Dateien studieren.",
+        "  - Erste Docs-only-Issue/PR vorbereiten (sandbox bereit).",
+        "",
+        "--- Was erst nach explizitem GO erlaubt waere ---",
+        "  - Setup ausfuehren (.venv, .env, deps).",
+        "  - Docker/Stack starten.",
+        "  - Branch fuer Issue-Arbeit erstellen.",
+        "  - PR eroeffnen oder pushen.",
+        "  - LOCK posten.",
+        "  - Merge.",
+        "",
+        "--- Sinnvoller realer naechster Schritt ---",
+        "  - Fuer Entwickler: python -m tools.onboarding_orchestrator -> Statuskarte.",
+        "  - Fuer Agent: /onboarding -> orchestrator -> Statuskarte.",
+        "  - Danach: docs/onboarding/first_issue_sandbox.md aufmachen.",
+        "  - Erste echte Aktion: Bootloader-Dateien lesen, Issue-Live-Check via gh.",
+        "",
+        "--- Guided Rehearsal abgeschlossen ---",
+        "  Der Agent hat gefuehrt, simulierte Schritte markiert, keine Fragebogen erzeugt.",
+        "  Die Rehearsal ist abgeschlossen – das echte Onboarding steht bereit.",
+    ]
 
 
 def _build_safety_lines() -> list[str]:
@@ -241,6 +329,28 @@ def render_simulation(role: str = "agent", mode: str = "first-issue-dry-run") ->
     verdict = _build_final_verdict(resolved_role, resolved_mode)
     role_label = ROLE_LABELS[resolved_role]
 
+    guided_mode = resolved_mode == "guided-rehearsal"
+
+    if guided_mode:
+        guided_sections = _build_guided_rehearsal(resolved_role)
+        lines: list[str] = [
+            "SIMULATION_START",
+            f"mode: {resolved_mode}",
+            f"role: {role_label}",
+            "writes: disabled",
+            "github_writes: disabled",
+            "lr: NO-GO",
+            "",
+        ]
+        lines.extend(guided_sections)
+        lines.append("")
+        lines.append(f"Final Verdict: {verdict}")
+        lines.append("")
+        lines.append("Safety boundaries:")
+        for sl in _build_safety_lines():
+            lines.append(f"  - {sl}")
+        return "\n".join(lines)
+
     sections: dict[str, list[str]] = {
         "context_brain": _build_context_brain_note(),
         "bootloader": _build_bootloader_plan(resolved_role),
@@ -252,7 +362,7 @@ def render_simulation(role: str = "agent", mode: str = "first-issue-dry-run") ->
         "hold_conditions": _build_hold_conditions(),
     }
 
-    lines: list[str] = [
+    lines = [
         "SIMULATION_START",
         f"mode: {resolved_mode}",
         f"role: {role_label}",
@@ -284,16 +394,21 @@ def render_simulation_json(
     verdict = _build_final_verdict(resolved_role, resolved_mode)
 
     output = SimulationOutput(role=resolved_role, mode=resolved_mode, verdict=verdict)
-    output.sections = {
-        "context_brain": _build_context_brain_note(),
-        "bootloader": _build_bootloader_plan(resolved_role),
-        "live_truth": _build_live_truth_plan(),
-        "tour": _build_tour_path(resolved_role),
-        "doctor_validator": _build_doctor_validator_plan(),
-        "first_issue": _build_first_issue_dry_run(),
-        "pr_lock": _build_pr_lock_simulation(),
-        "hold_conditions": _build_hold_conditions(),
-    }
+    if resolved_mode == "guided-rehearsal":
+        output.sections = {
+            "guided_rehearsal": _build_guided_rehearsal(resolved_role),
+        }
+    else:
+        output.sections = {
+            "context_brain": _build_context_brain_note(),
+            "bootloader": _build_bootloader_plan(resolved_role),
+            "live_truth": _build_live_truth_plan(),
+            "tour": _build_tour_path(resolved_role),
+            "doctor_validator": _build_doctor_validator_plan(),
+            "first_issue": _build_first_issue_dry_run(),
+            "pr_lock": _build_pr_lock_simulation(),
+            "hold_conditions": _build_hold_conditions(),
+        }
     return json.dumps(output.to_dict(), indent=2, sort_keys=True)
 
 
@@ -305,7 +420,9 @@ def main(argv: list[str] | None = None) -> int:
 Examples:
   python -m tools.onboarding_simulation
   python -m tools.onboarding_simulation --role agent --mode first-issue-dry-run
+  python -m tools.onboarding_simulation --role developer --mode guided-rehearsal
   python -m tools.onboarding_simulation --role developer --format json
+  python -m tools.onboarding_simulation --mode guided-rehearsal --role agent --format json
   .\\tools\\cdb.ps1 onboarding simulate
 """,
     )
@@ -316,7 +433,7 @@ Examples:
     )
     parser.add_argument(
         "--mode",
-        choices=("first-issue-dry-run", "check-only"),
+        choices=("first-issue-dry-run", "check-only", "guided-rehearsal"),
         default="first-issue-dry-run",
         help="Simulation mode (default: first-issue-dry-run)",
     )

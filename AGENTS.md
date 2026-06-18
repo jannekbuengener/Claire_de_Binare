@@ -46,6 +46,8 @@ Hinweis:
 
 Quick Intent Router:
 - If the user says `/onboarding`, `onboarding`, `onboarding durchführen`, `mach onboarding`, `fresh agent onboarding`, or equivalent, run: `python -m tools.onboarding_orchestrator`
+- If the user says `onboarding rehearsal`, `guided rehearsal`, `rehearsal mode`, `generalprobe`, `tu so als waere ich neuer entwickler`, `reisefuehrer`, `nicht staendig fragen`, `realitaetsnah simulieren`, `onboarding als test-szenario`, or equivalent, run: `python -m tools.onboarding_simulation --mode guided-rehearsal --role developer`
+- Guided rehearsal ist kein Setup-GO und kein Live-Go. Mutierende Schritte werden nur simuliert.
 - Do not start `cdb-session-start` or `onboarding_doctor` as the primary path for onboarding intent.
 - Default output is the CDB Onboarding status card.
 - Do not create `.env`, initialize secrets, initialize context, write reports, create issues, or run Docker unless the user explicitly selects a next option after the status card.

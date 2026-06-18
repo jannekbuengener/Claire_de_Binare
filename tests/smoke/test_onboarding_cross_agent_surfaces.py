@@ -13,6 +13,19 @@ CANONICAL_ROUTER_TEXT = (
     "`python -m tools.onboarding_orchestrator`"
 )
 
+GUIDED_REHEARSAL_ROUTER_TEXT = (
+    "onboarding_simulation --mode guided-rehearsal --role developer"
+)
+
+GUIDED_REHEARSAL_INTENT_PHRASES = [
+    "onboarding rehearsal",
+    "guided rehearsal",
+    "rehearsal mode",
+    "generalprobe",
+    "reisefuehrer",
+    "realitaetsnah simulieren",
+]
+
 PRIMARY_ROUTE = "python -m tools.onboarding_orchestrator"
 READ_ONLY_DEFAULT = "Read-only by default"
 STATE_CONTRACT = "allowed_next_actions"
@@ -149,6 +162,77 @@ class TestSafetyGuardrails:
             assert "NO-GO" in text
             assert "trade-capable" in text
             assert "Live-Go" in text
+
+
+GUIDED_REHEARSAL_SURFACES = [
+    ".codex/cdb_skills/onboarding/SKILL.md",
+    ".claude/skills/onboarding/SKILL.md",
+    ".cursor/skills/onboarding/SKILL.md",
+    ".opencode/skills/onboarding/SKILL.md",
+    ".gemini/onboarding.md",
+]
+
+
+class TestGuidedRehearsalRouting:
+    def test_guided_rehearsal_routes_correctly(self):
+        for relative_path in GUIDED_REHEARSAL_SURFACES:
+            text = read_text(relative_path)
+            assert (
+                GUIDED_REHEARSAL_ROUTER_TEXT in text
+            ), f"{relative_path}: missing guided-rehearsal route"
+
+    def test_guided_rehearsal_states_no_setup_go(self):
+        for relative_path in GUIDED_REHEARSAL_SURFACES:
+            text = read_text(relative_path)
+            assert (
+                "kein Setup-GO" in text.lower()
+                or "guided rehearsal ist kein" in text.lower()
+            ), f"{relative_path}: missing 'kein Setup-GO' guardrail"
+
+    def test_guided_rehearsal_mentions_simulation(self):
+        for relative_path in GUIDED_REHEARSAL_SURFACES:
+            text = read_text(relative_path)
+            assert (
+                "simuliert" in text.lower() or "simulierten" in text.lower()
+            ), f"{relative_path}: missing simulation mention"
+
+    def test_guided_rehearsal_mentions_mutating_steps(self):
+        for relative_path in GUIDED_REHEARSAL_SURFACES:
+            text = read_text(relative_path)
+            assert (
+                "mutierende" in text.lower()
+                or "Mutierende" in text
+                or "mutating" in text.lower()
+            ), f"{relative_path}: missing mutating steps mention"
+
+    def test_root_agents_has_guided_rehearsal_router(self):
+        text = read_text("AGENTS.md")
+        assert GUIDED_REHEARSAL_ROUTER_TEXT in text
+
+    def test_gemini_root_has_guided_rehearsal(self):
+        text = read_text("GEMINI.md")
+        assert GUIDED_REHEARSAL_ROUTER_TEXT in text
+
+    def test_gemini_agent_has_guided_rehearsal(self):
+        text = read_text("agents/GEMINI.md")
+        assert "guided-rehearsal" in text
+
+    def test_guided_rehearsal_does_not_break_normal_routing(self):
+        for relative_path in GUIDED_REHEARSAL_SURFACES:
+            text = read_text(relative_path)
+            assert (
+                PRIMARY_ROUTE in text
+            ), f"{relative_path}: guided-rehearsal added but lost normal route"
+
+    def test_guided_rehearsal_intent_phrases_present(self):
+        for relative_path in GUIDED_REHEARSAL_SURFACES:
+            text = read_text(relative_path)
+            found_any = any(
+                phrase in text for phrase in GUIDED_REHEARSAL_INTENT_PHRASES
+            )
+            assert (
+                found_any
+            ), f"{relative_path}: no guided-rehearsal intent phrases found"
 
 
 # Forbidden phrases are expected to appear in "Verbotene Phrasen" or "Nicht"

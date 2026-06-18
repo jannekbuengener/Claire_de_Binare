@@ -88,7 +88,20 @@ Wenn der Task-Scope **Context, SurrealDB, MCP tools, ContextBridge, DB-backed Me
 - Brain Evidence Gate: `agents/AGENTS.md` § Brain Evidence Gate
 - `cdb_context` Server-Entry: `claire-de-binare.mcp.json`
 
-## 3b. Nutzung externer Evidenzquellen (MCP-Server)
+## 3b. Guided Rehearsal Mode (Geführte Onboarding-Generalprobe)
+
+Wenn der Intent auf eine geführte Generalprobe zielt (`onboarding rehearsal`, `guided rehearsal`,
+`rehearsal mode`, `generalprobe`, `tu so als waere ich neuer entwickler`, `reisefuehrer`,
+`nicht staendig fragen`, `realitaetsnah simulieren`):
+
+1. **Führe aus**: `python -m tools.onboarding_simulation --mode guided-rehearsal --role developer`
+2. **Guided rehearsal ist kein Setup-GO und kein Live-Go.** Mutierende Schritte werden nur simuliert.
+3. **Der Agent führt als Reiseführer autonom.** Kein Fragebogen, keine endlosen Rückfragen.
+4. **Nur bei echten Human-Gates rückfragen** (z.B. "Soll ich jetzt wirklich das Setup ausführen?").
+5. **Read-only-Prüfungen ausführen** (git, gh view, python tools), wenn sicher und sinnvoll.
+6. **Mutierende Schritte (Docker, .env, deps) nur beschreiben und simulieren**, nicht ausführen.
+
+## 3c. Nutzung externer Evidenzquellen (MCP-Server)
 
 Bei Analysen zu **Systemzustand, Stabilität, Fehlerszenarien, Incidents oder Ursachenbewertungen**
 MUSS Gemini prüfen, ob belastbare Evidenz über angebundene **MCP-Server** verfügbar ist,
