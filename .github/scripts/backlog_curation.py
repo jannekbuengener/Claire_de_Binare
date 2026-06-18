@@ -63,14 +63,14 @@ SENSITIVE_TEXT_PATTERNS = (
 WORKFLOW_DOC_SURFACES = {
     "docs/runbooks/CONTROL_REGISTER.md",
     "docs/runbooks/GITHUB_WORKFLOW_REGISTER.md",
-    ".github/README.md",
+    ".github/CONTROL_PLANE.md",
 }
 ARCHITECTURE_SURFACES = {
     "knowledge/ARCHITECTURE_MAP.md",
     "knowledge/governance/SERVICE_CATALOG.md",
 }
 GENERIC_FALLBACK_SURFACES = {
-    ".github/README.md",
+    ".github/CONTROL_PLANE.md",
     "CURRENT_STATUS.md",
     "docs/runbooks/CONTROL_REGISTER.md",
     "docs/runbooks/GITHUB_WORKFLOW_REGISTER.md",
@@ -276,7 +276,7 @@ SURFACE_SPECS = (
         change_hint="Use this to verify workflow-run wiring and artifact handoff compatibility.",
     ),
     SurfaceSpec(
-        path=".github/README.md",
+        path=".github/CONTROL_PLANE.md",
         default_role="background",
         reason="Control-plane entrypoint documenting workflow inventory and where backlog curation fits in the GitHub layer.",
         section_hint="workflow inventory / reporting control signals",
@@ -339,7 +339,7 @@ NEIGHBOR_MAP = {
     ".github/workflows/cdb-backlog-curation.yml": [
         ".github/scripts/backlog_curation.py",
         ".github/workflows/cdb-backlog-anomaly-escalation.yml",
-        ".github/README.md",
+        ".github/CONTROL_PLANE.md",
     ],
     ".github/scripts/backlog_anomaly_escalation.py": [
         ".github/workflows/cdb-backlog-anomaly-escalation.yml",

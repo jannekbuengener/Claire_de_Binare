@@ -324,7 +324,7 @@ Legacy copy of `ci.yml`. Coexists silently. Risk of accidental activation. Shoul
 
 ## 10. Cross-links
 
-- `.github/README.md` — canonical entrypoint
+- `.github/CONTROL_PLANE.md` — canonical entrypoint
 - `docs/runbooks/GITHUB_CONTROL_PLANE_RUNBOOK.md` — how to read and debug workflows
 - `docs/runbooks/GITHUB_WORKFLOW_REGISTER.md` — full 65-workflow register
 - `docs/runbooks/GITHUB_CONTROL_PLANE_RUNBOOK.md` § "Issue templates as control-plane surface" — intake/policy depth

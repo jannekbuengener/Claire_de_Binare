@@ -1,0 +1,37 @@
+---
+title: Strategy Signal Decision Flow
+---
+
+flowchart TD
+    subgraph Input["Input Layer"]
+        MC[Market Data<br/>from cdb_ws]
+        CD[Candles 1m]
+        RM[Regime Context]
+    end
+
+    subgraph Strategy["Strategy Context (primary_breakout_v1)"]
+        WH[Time-Window History<br/>High/Low with ts_ms]
+        LO[Time-Window Lookback<br/>entry/exit in minutes]
+        WU[Warmup Check<br/>full window span required]
+        DEC[Decision Logic<br/>evaluate BEFORE append]
+        APP[Append tick/candle<br/>to history AFTER decision]
+    end
+
+    subgraph Output["Output Layer"]
+        SP[Signal Payload<br/>direction, price, confidence]
+        CH[signals channel<br/>Redis Stream]
+    end
+
+    MC --> WH
+    CD --> WH
+    RM --> DEC
+    WH --> LO
+    LO --> WU
+    WU -->|pass| DEC
+    WU -->|fail: warmup| NO[No Signal<br/>warmup not met]
+    DEC -->|evaluate| APP
+    APP --> WH
+    DEC --> SP
+    SP --> CH
+
+    style NO fill:#f99,stroke:#c33

@@ -167,5 +167,5 @@ Paths normalized to forward slashes and matched by prefix:
 |---|---|
 | #1976 | Parent epic |
 | #2204, #2603–#2606 | Related context/memory epics |
-| #2689 | Out of scope (Gordon/Docker AI doc cleanup) |
+| #2689 | Out of scope (obsolete advisor doc cleanup) |
 | #2606 | Not blocking while MVP stays read-only |

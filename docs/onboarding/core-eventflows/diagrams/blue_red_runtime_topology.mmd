@@ -1,0 +1,46 @@
+---
+title: BLUE/RED Runtime Topology
+---
+
+flowchart TD
+    subgraph BLUE["BLUE Stack (compose.blue.yml) — Core, Always-On"]
+        PG[PostgreSQL<br/>cdb_postgres :5432]
+        RD[Redis<br/>cdb_redis :6379]
+        MK[Market<br/>cdb_market :8009]
+        CA[Candles<br/>cdb_candles :8007]
+        RE[Regime<br/>cdb_regime :8008]
+        AL[Allocation<br/>cdb_allocation :8006]
+        RK[Risk<br/>cdb_risk :8002]
+        EX[Execution<br/>cdb_execution :8003]
+        DW[DB Writer<br/>cdb_db_writer]
+        PR[Paper Runner<br/>cdb_paper_runner :8004]
+    end
+
+    subgraph RED["RED Stack (compose.red.yml) — Signal + Monitoring"]
+        WS[WebSocket<br/>cdb_ws :8000]
+        SG[Signal<br/>cdb_signal :8005]
+        RP[Reports<br/>cdb_reports]
+        PM[Prometheus<br/>cdb_prometheus :19090→9090]
+        GF[Grafana<br/>cdb_grafana :3000]
+        PX[Postgres Exporter<br/>cdb_postgres_exporter :9187]
+        RX[Redis Exporter<br/>cdb_redis_exporter :9121]
+        CAV[cAdvisor<br/>cdb_cadvisor]
+    end
+
+    subgraph LOG["Logging Overlay (logging.yml) — Optional"]
+        LK[Loki<br/>cdb_loki]
+        PT[Promtail<br/>cdb_promtail]
+        AM[Alertmanager<br/>cdb_alertmanager]
+    end
+
+    WS -->|market_data Pub/Sub| MK
+    WS -->|market_data Pub/Sub| CA
+    WS -->|market_data Pub/Sub| SG
+    WS -->|market_data Pub/Sub| PR
+
+    SG -->|signals Stream| RK
+    RK -->|orders Stream| EX
+    EX -->|order_results Stream| RK
+    EX -->|order_results Stream| DW
+    PR -->|portfolio_snapshots Stream| DW
+    DW --> PG

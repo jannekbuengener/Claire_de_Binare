@@ -4,6 +4,12 @@ Repo-versionierte Session-Skills für OpenCode. Jeder Skill lebt in `<name>/SKIL
 
 Spiegelt die Cursor-Skill-Oberfläche unter [`.cursor/skills/README.md`](../../.cursor/skills/README.md). Das entfernte `cdb_agent_sdk/`-Paket wurde durch repo-lokale Skill-Packs ersetzt (PR #2994).
 
+## Onboarding (Pflicht fuer neue Agenten/Entwickler)
+
+| Skill | Wann |
+|---|---|
+| [`onboarding`](onboarding/SKILL.md) | Erste Session, Bootloader, Context Brain Preflight, Tour, Doctor, First-Issue Sandbox |
+
 ## Session boundary (Pflicht)
 
 | Skill | Wann |

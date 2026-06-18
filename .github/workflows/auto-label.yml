@@ -4,7 +4,7 @@
 # is no longer aligned with the current governance label ontology, and the workflow
 # generated noise and occasional ontology drift on current issues.
 # Auto-trigger removed. Retained as workflow_dispatch dispatch stub only.
-# See .github/README.md for current control-plane documentation.
+# See .github/CONTROL_PLANE.md for current control-plane documentation.
 
 name: 'Auto Label Issues'
 
@@ -24,4 +24,4 @@ jobs:
           echo "The live issues: [opened, edited] trigger was removed in #1642."
           echo "Keyword-matching label logic is no longer aligned with the current governance label ontology."
           echo "Auto-trigger removed — dispatch stub only."
-          echo "See .github/README.md for current control-plane documentation."
+          echo "See .github/CONTROL_PLANE.md for current control-plane documentation."

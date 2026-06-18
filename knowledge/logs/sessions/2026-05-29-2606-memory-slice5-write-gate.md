@@ -86,7 +86,7 @@ Epic remains **OPEN**.
 - No productive memory write, DB write, MCP write, importer hooks
 - No local-only write smoke (Slice 6 / #2694)
 - No Auto-Memory, BLUE/RED runtime mutation, trading/risk/execution changes
-- #2689 Gordon decommission not touched
+- #2689 Obsolete advisor cleanup not touched
 - LR remains NO-GO
 
 ## Remaining uncertainties
