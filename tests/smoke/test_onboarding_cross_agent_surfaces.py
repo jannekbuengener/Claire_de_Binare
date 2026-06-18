@@ -241,17 +241,17 @@ class TestWordingContract:
         for surface in NO_FORBIDDEN_ALLOWED_SURFACES:
             text = read_text(surface)
             for phrase in ALL_FORBIDDEN_PHRASES:
-                assert phrase not in text, (
-                    f"{surface}: contains forbidden phrase '{phrase}'"
-                )
+                assert (
+                    phrase not in text
+                ), f"{surface}: contains forbidden phrase '{phrase}'"
 
     def test_no_free_management_summary_phrasing(self):
         """No surface should contain conclusory live-truth claims outside documented context."""
         for surface in ALL_ONBOARDING_RESPONSE_SURFACES:
             text = read_text(surface)
-            assert "Evidence-Abgrenzung" in text or "Management-Zusammenfassung" in text, (
-                f"{surface}: keine Abgrenzung gegen freie Management-Zusammenfassung"
-            )
+            assert (
+                "Evidence-Abgrenzung" in text or "Management-Zusammenfassung" in text
+            ), f"{surface}: keine Abgrenzung gegen freie Management-Zusammenfassung"
 
     def test_required_evidence_patterns_present(self):
         missing: list[str] = []
@@ -265,16 +265,16 @@ class TestWordingContract:
     def test_all_response_surfaces_have_evidence_abgrenzung(self):
         for surface in ALL_ONBOARDING_RESPONSE_SURFACES:
             text = read_text(surface)
-            assert "Evidence-Abgrenzung" in text, (
-                f"{surface}: missing Evidence-Abgrenzung section"
-            )
+            assert (
+                "Evidence-Abgrenzung" in text
+            ), f"{surface}: missing Evidence-Abgrenzung section"
 
     def test_all_response_surfaces_have_lr_ssot_reference(self):
         for surface in ALL_ONBOARDING_RESPONSE_SURFACES:
             text = read_text(surface)
-            assert "LR-AUDIT-STATUS" in text or "docs/live-readiness" in text, (
-                f"{surface}: missing LR-SSOT reference"
-            )
+            assert (
+                "LR-AUDIT-STATUS" in text or "docs/live-readiness" in text
+            ), f"{surface}: missing LR-SSOT reference"
 
     def test_all_response_surfaces_declare_trade_capable_not_live_go(self):
         for surface in ALL_ONBOARDING_RESPONSE_SURFACES:
