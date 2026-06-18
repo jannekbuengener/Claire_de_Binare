@@ -28,8 +28,7 @@ read-only CDB Onboarding status card before any optional next step.
 Equivalent default config:
 
 ```yaml
-role: agent
-mode: first-issue-dry-run
+mode: default
 writes: disabled
 github_writes: disabled
 lr: NO-GO
@@ -38,11 +37,11 @@ lr: NO-GO
 Expected initial output:
 
 ```text
-ONBOARDING_START
-mode: first-issue-dry-run
-role: Agent
-writes: disabled
-lr: NO-GO
+=== CDB Onboarding ===
+Status: PASS | SETUP_WARN | BLOCKED
+State: STATUS_ONLY | SETUP_CONFIRMATION_PENDING | SETUP_REQUIRED | DRY_RUN_COMPLETE | BLOCKED
+check_scope: onboarding_status_default | onboarding_status_check_only
+allowed_next_actions: <machine-readable list>
 ```
 
 ## Optional Forms
@@ -64,7 +63,15 @@ Optional aliases exist, but `/onboarding` remains canonical:
 4. **Live Truth:** GitHub live + repo live before ledger.
 5. **Optional next steps only after the status card:** role-specific tour,
    doctor/validator, or first-issue sandbox.
-6. **Final Verdict:** CDB Onboarding status card with numbered next options.
+6. **Final Verdict:** CDB Onboarding status card with explicit state and allowed next actions.
+   The two-option setup prompt appears only when `State: SETUP_CONFIRMATION_PENDING`.
+
+## Agent Response Guardrails
+
+- Report only `Status`, `State`, warnings, `allowed_next_actions`, `check_scope`, and `skipped_checks`.
+- Do not invent or renumber options.
+- Do not offer setup execution after `--mode check-only`.
+- If a doctor output is partial, say that it is a partial check.
 
 ## Referenced V2 Surfaces
 

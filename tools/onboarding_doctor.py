@@ -26,6 +26,7 @@ import argparse
 import json
 import os
 import re
+import shlex
 import subprocess
 import sys
 from dataclasses import dataclass, field
@@ -68,7 +69,7 @@ FORBIDDEN_OUTPUT_PATTERNS: list[re.Pattern] = [
 
 
 def _run_cmd(
-    cmd: str,
+    cmd: str | list[str],
     timeout: float = 15.0,
     runner: Callable[..., subprocess.CompletedProcess] | None = None,
 ) -> tuple[int, str, str]:
@@ -78,15 +79,22 @@ def _run_cmd(
         "timeout": timeout,
         "errors": "replace",
     }
-    if os.name == "nt":
-        kwargs["shell"] = True
+    if isinstance(cmd, str):
+        run_cmd: str | list[str]
+        if os.name == "nt":
+            run_cmd = cmd
+            kwargs["shell"] = True
+        else:
+            run_cmd = shlex.split(cmd)
+            kwargs["shell"] = False
     else:
+        run_cmd = list(cmd)
         kwargs["shell"] = False
     try:
         if runner is not None:
-            proc = runner(cmd, **kwargs)
+            proc = runner(run_cmd, **kwargs)
         else:
-            proc = subprocess.run(cmd, **kwargs)  # noqa: S603
+            proc = subprocess.run(run_cmd, **kwargs)  # noqa: S603
         out = (proc.stdout or "").strip()
         err = (proc.stderr or "").strip()
         return proc.returncode, out, err
@@ -103,6 +111,10 @@ def _repo_root() -> Path:
     return Path(__file__).resolve().parent.parent
 
 
+def _module_cmd(module: str, *args: str) -> list[str]:
+    return [sys.executable, "-m", module, *args]
+
+
 @dataclass
 class CheckItem:
     name: str
@@ -113,6 +125,8 @@ class CheckItem:
 
 @dataclass
 class DoctorOutput:
+    check_scope: str = "full_local_onboarding"
+    skipped_checks: list[str] = field(default_factory=list)
     repo_root_found: CheckResult = "FAIL"
     git_found: CheckResult = "FAIL"
     git_branch: str = ""
@@ -131,11 +145,17 @@ class DoctorOutput:
     onboarding_files: CheckResult = "FAIL"
     context_doctor_reachable: CheckResult = "SKIP"
     lr_note: str = "NO-GO"
+    blocking: bool = True
+    warning_semantics: str = (
+        "WARN means a non-blocking gap or follow-up is present, but the onboarding surface remains usable."
+    )
     warnings: list[str] = field(default_factory=list)
     checks: list[CheckItem] = field(default_factory=list)
 
     def to_dict(self) -> dict[str, Any]:
         return {
+            "check_scope": self.check_scope,
+            "skipped_checks": self.skipped_checks,
             "repo_root": self.repo_root_found,
             "repo_head": self.repo_head,
             "git": {
@@ -163,6 +183,8 @@ class DoctorOutput:
             "onboarding_files": self.onboarding_files,
             "context_doctor_reachable": self.context_doctor_reachable,
             "lr_note": self.lr_note,
+            "blocking": self.blocking,
+            "warning_semantics": self.warning_semantics,
             "warnings": self.warnings,
             "checks": [
                 {
@@ -232,7 +254,13 @@ def _onboarding_files_exist(root: Path) -> tuple[CheckResult, list[str]]:
 def _check_context_doctor_reachable(
     runner: Callable[..., subprocess.CompletedProcess] | None = None,
 ) -> CheckResult:
-    cmd = "python -m tools.surrealdb.context_onboarding_doctor --skip-mcp --skip-schema"
+    cmd = _module_cmd(
+        "tools.surrealdb.context_onboarding_doctor",
+        "--skip-mcp",
+        "--skip-schema",
+        "--format",
+        "json",
+    )
     rc, _, _ = _run_cmd(cmd, timeout=10.0, runner=runner)
     return "PASS" if rc == 0 else "WARN"
 
@@ -301,7 +329,7 @@ def build_report(
         report.repo_head = ""
 
     # Python
-    python_cmd = "python --version"
+    python_cmd = [sys.executable, "--version"]
     rc, pout, perr = _run_cmd(python_cmd, runner=python_runner)
     py_output = pout or perr or ""
     if rc == 0 or (rc != -1 and py_output):
@@ -391,6 +419,7 @@ def build_report(
         CheckItem(name="Onboarding files", status=report.onboarding_files),
         CheckItem(name="make context-doctor", status=report.context_doctor_reachable),
     ]
+    report.blocking = compute_exit_code(report) == 1
 
     return report
 
@@ -406,6 +435,9 @@ def format_report(report: DoctorOutput, fmt: str) -> str:
 
     lines: list[str] = [
         "=== CDB Onboarding Doctor ===",
+        f"check_scope: {report.check_scope}",
+        f"skipped_checks: {', '.join(report.skipped_checks) if report.skipped_checks else 'none'}",
+        f"blocking: {'yes' if report.blocking else 'no'}",
         f"lr_note: {report.lr_note}",
         "",
     ]
@@ -431,6 +463,7 @@ def format_report(report: DoctorOutput, fmt: str) -> str:
         lines.append("warnings:")
         for w in report.warnings:
             lines.append(f"  - {_safe_summary(w, 120)}")
+        lines.append(f"  - warning semantics: {report.warning_semantics}")
 
     if report.context_doctor_reachable == "PASS":
         lines.append("")

@@ -1,4 +1,4 @@
-"""CDB onboarding orchestrator — single smart read-only entrypoint.
+"""CDB onboarding orchestrator - single smart read-only entrypoint.
 
 Usage:
     python -m tools.onboarding_orchestrator
@@ -13,7 +13,7 @@ Exit codes:
 
 This tool is read-only by default:
     - No file writes, no report, no setup mutation, no Docker, no secrets.
-    - Status card ends with a strict two-option setup confirmation prompt.
+    - The two-option setup confirmation prompt appears only in setup-confirmation state.
 
 Read Order:
     agents/AGENTS.md § Read Order -> Context Brain Preflight -> Live Truth ->
@@ -23,11 +23,11 @@ Output contract:
     CDB Onboarding
     Status: PASS | SETUP_WARN | BLOCKED
     ...
-    Keine Änderungen vorgenommen.
+    No changes made.
     LR remains NO-GO.
-    trade-capable ist kein Live-Go.
+    trade-capable is not Live-Go.
 
-    Möchtest du das Onboarding-Setup jetzt ausführen?
+    Moechtest du das Onboarding-Setup jetzt ausfuehren?
 
     1. Ja
     2. Abbruch
@@ -39,6 +39,7 @@ import argparse
 import json
 import os
 import re
+import shlex
 import subprocess
 import sys
 from dataclasses import dataclass, field
@@ -73,7 +74,7 @@ FORBIDDEN_OUTPUT_PATTERNS: list[re.Pattern] = [
 ]
 
 SETUP_PROMPT_LINES: list[str] = [
-    "Möchtest du das Onboarding-Setup jetzt ausführen?",
+    "Moechtest du das Onboarding-Setup jetzt ausfuehren?",
     "",
     "1. Ja",
     "2. Abbruch",
@@ -82,12 +83,23 @@ SETUP_PROMPT_LINES: list[str] = [
 SETUP_APPROVED = "setup-approved"
 SETUP_ABORTED = "setup-aborted"
 
+STATUS_ONLY = "STATUS_ONLY"
+SETUP_REQUIRED = "SETUP_REQUIRED"
+SETUP_CONFIRMATION_PENDING = "SETUP_CONFIRMATION_PENDING"
+DRY_RUN_COMPLETE = "DRY_RUN_COMPLETE"
+BLOCKED_STATE = "BLOCKED"
+
+ACTION_STATUS_ONLY = "status_only"
+ACTION_APPROVE_SETUP = "approve_setup"
+ACTION_REQUEST_SETUP_GO = "request_setup_go"
+ACTION_ABORT = "abort"
+
 SETUP_APPROVAL_INPUTS = {"1", "ja", "yes"}
 SETUP_ABORT_INPUTS = {"2", "nein", "no", "abbruch", "cancel"}
 
 
 def _run_cmd(
-    cmd: str,
+    cmd: str | list[str],
     timeout: float = 15.0,
     runner: Callable[..., subprocess.CompletedProcess] | None = None,
 ) -> tuple[int, str, str]:
@@ -97,15 +109,22 @@ def _run_cmd(
         "timeout": timeout,
         "errors": "replace",
     }
-    if os.name == "nt":
-        kwargs["shell"] = True
+    if isinstance(cmd, str):
+        run_cmd: str | list[str]
+        if os.name == "nt":
+            run_cmd = cmd
+            kwargs["shell"] = True
+        else:
+            run_cmd = shlex.split(cmd)
+            kwargs["shell"] = False
     else:
+        run_cmd = list(cmd)
         kwargs["shell"] = False
     try:
         if runner is not None:
-            proc = runner(cmd, **kwargs)
+            proc = runner(run_cmd, **kwargs)
         else:
-            proc = subprocess.run(cmd, **kwargs)
+            proc = subprocess.run(run_cmd, **kwargs)
         out = (proc.stdout or "").strip()
         err = (proc.stderr or "").strip()
         return proc.returncode, out, err
@@ -120,26 +139,46 @@ def _run_cmd(
 
 @dataclass
 class OrchestratorOutput:
+    mode: str = "default"
     status: str = "BLOCKED"
+    state: str = BLOCKED_STATE
+    check_scope: str = "onboarding_status_default"
+    skipped_checks: list[str] = field(default_factory=list)
     bootloader_ok: str = "FAIL"
     scenario_ok: str = "FAIL"
     lr_ok: str = "FAIL"
     doctor_reachable: str = "SKIP"
     env_file: str = "FAIL"
     context_doctor: str = "SKIP"
+    blocking: bool = True
+    requires_explicit_setup_go: bool = False
+    setup_prompt_visible: bool = False
+    allowed_next_actions: list[str] = field(default_factory=list)
+    warning_semantics: str = (
+        "WARN means onboarding remains read-only usable, but setup or follow-up is still required."
+    )
     warnings: list[str] = field(default_factory=list)
     blockers: list[str] = field(default_factory=list)
     details: dict[str, str] = field(default_factory=dict)
 
     def to_dict(self) -> dict[str, Any]:
         return {
+            "mode": self.mode,
             "status": self.status,
+            "state": self.state,
+            "check_scope": self.check_scope,
+            "skipped_checks": self.skipped_checks,
             "bootloader": self.bootloader_ok,
             "scenario": self.scenario_ok,
             "lr_note": self.lr_ok,
             "doctor_reachable": self.doctor_reachable,
             "env_file": self.env_file,
             "context_doctor": self.context_doctor,
+            "blocking": self.blocking,
+            "requires_explicit_setup_go": self.requires_explicit_setup_go,
+            "setup_prompt_visible": self.setup_prompt_visible,
+            "allowed_next_actions": self.allowed_next_actions,
+            "warning_semantics": self.warning_semantics,
             "warnings": self.warnings,
             "blockers": self.blockers,
             "details": self.details,
@@ -173,6 +212,10 @@ def prompt_for_setup_confirmation(
         decision = normalize_setup_prompt_input(raw_value)
         if decision is not None:
             return decision
+
+
+def _module_cmd(module: str, *args: str) -> list[str]:
+    return [sys.executable, "-m", module, *args]
 
 
 def _check_bootloader_files(root: Path) -> tuple[str, list[str]]:
@@ -215,31 +258,61 @@ def _check_lr_doc(root: Path) -> tuple[str, str]:
 def _check_env_file(root: Path) -> tuple[str, str]:
     env_path = root / ".env"
     if env_path.is_file():
-        return "WARN", ".env exists (setup may be partially complete)"
+        return "PASS", ".env found"
     example = root / ".env.example"
     if example.is_file():
-        return "SETUP_WARN", ".env fehlt (setup warn, kein blocker)"
-    return "SETUP_WARN", ".env fehlt und kein .env.example"
+        return "WARN", ".env missing (setup required, non-blocking)"
+    return "WARN", ".env missing and no .env.example found"
 
 
 def _check_doctor_reachable(
     runner: Callable[..., subprocess.CompletedProcess] | None = None,
 ) -> tuple[str, str]:
-    cmd = "python -m tools.onboarding_doctor --format json"
+    cmd = _module_cmd("tools.onboarding_doctor", "--format", "json")
     rc, out, _ = _run_cmd(cmd, timeout=15.0, runner=runner)
     if rc == 0:
+        try:
+            payload = json.loads(out) if out else {}
+        except json.JSONDecodeError:
+            payload = {}
+        warnings = payload.get("warnings") if isinstance(payload, dict) else None
+        if isinstance(warnings, list) and warnings:
+            return "WARN", f"onboarding_doctor warning: {warnings[0]}"
         return "PASS", "onboarding_doctor reachable"
-    return "SETUP_WARN", "Context Doctor nicht initialisiert (setup warn, kein blocker)"
+    return "WARN", "onboarding_doctor requires setup follow-up"
 
 
 def _check_context_doctor(
     runner: Callable[..., subprocess.CompletedProcess] | None = None,
 ) -> tuple[str, str]:
-    cmd = "python -m tools.surrealdb.context_onboarding_doctor --skip-mcp --skip-schema 2>&1"
-    rc, _, _ = _run_cmd(cmd, timeout=15.0, runner=runner)
+    cmd = _module_cmd(
+        "tools.surrealdb.context_onboarding_doctor",
+        "--skip-mcp",
+        "--skip-schema",
+        "--format",
+        "json",
+    )
+    rc, out, _ = _run_cmd(cmd, timeout=15.0, runner=runner)
     if rc == 0:
+        try:
+            payload = json.loads(out) if out else {}
+        except json.JSONDecodeError:
+            payload = {}
+        warnings = payload.get("warnings") if isinstance(payload, dict) else None
+        scope = payload.get("check_scope") if isinstance(payload, dict) else None
+        skipped = payload.get("skipped_checks") if isinstance(payload, dict) else None
+        if isinstance(warnings, list) and warnings:
+            return "WARN", f"context_doctor warning: {warnings[0]}"
+        if scope or skipped:
+            skipped_text = (
+                ", ".join(skipped) if isinstance(skipped, list) and skipped else "none"
+            )
+            return (
+                "PASS",
+                f"context_doctor {scope or 'partial check'} (skipped: {skipped_text})",
+            )
         return "PASS", "context_doctor reachable"
-    return "SETUP_WARN", "Context Doctor nicht initialisiert (setup warn, kein blocker)"
+    return "WARN", "context_doctor requires setup follow-up"
 
 
 def _validate_output_safe(text: str) -> None:
@@ -253,11 +326,17 @@ def _validate_output_safe(text: str) -> None:
 def build_verdict(
     root: Path | None = None,
     *,
+    mode: str = "default",
     doctor_runner: Callable[..., subprocess.CompletedProcess] | None = None,
     context_doctor_runner: Callable[..., subprocess.CompletedProcess] | None = None,
 ) -> OrchestratorOutput:
     r = root or REPO_ROOT
-    output = OrchestratorOutput()
+    output = OrchestratorOutput(mode=mode)
+    output.check_scope = (
+        "onboarding_status_check_only"
+        if mode == "check-only"
+        else "onboarding_status_default"
+    )
 
     # 1. Bootloader files
     bl_status, bl_missing = _check_bootloader_files(r)
@@ -281,28 +360,47 @@ def build_verdict(
     # 4. Env file (setup warn only)
     env_status, env_detail = _check_env_file(r)
     output.env_file = env_status
-    if env_status == "SETUP_WARN":
+    output.details["env_file"] = env_detail
+    if env_status == "WARN":
         output.warnings.append(env_detail)
 
     # 5. Doctor reachability
     doc_status, doc_detail = _check_doctor_reachable(runner=doctor_runner)
     output.doctor_reachable = doc_status
-    if doc_status == "SETUP_WARN":
+    output.details["doctor"] = doc_detail
+    if doc_status == "WARN":
         output.warnings.append(doc_detail)
 
     # 6. Context doctor
     ctx_status, ctx_detail = _check_context_doctor(runner=context_doctor_runner)
     output.context_doctor = ctx_status
-    if ctx_status == "SETUP_WARN":
+    output.details["context_doctor"] = ctx_detail
+    if ctx_status == "WARN":
         output.warnings.append(ctx_detail)
 
     # Final status
     if output.blockers:
         output.status = "BLOCKED"
+        output.state = BLOCKED_STATE
+        output.blocking = True
+        output.allowed_next_actions = [ACTION_ABORT]
     elif output.warnings:
         output.status = "SETUP_WARN"
+        output.blocking = False
+        if mode == "check-only":
+            output.state = SETUP_REQUIRED
+            output.allowed_next_actions = [ACTION_REQUEST_SETUP_GO, ACTION_ABORT]
+            output.setup_prompt_visible = False
+        else:
+            output.state = SETUP_CONFIRMATION_PENDING
+            output.allowed_next_actions = [ACTION_APPROVE_SETUP, ACTION_ABORT]
+            output.setup_prompt_visible = True
+        output.requires_explicit_setup_go = True
     else:
         output.status = "PASS"
+        output.blocking = False
+        output.state = DRY_RUN_COMPLETE if mode == "check-only" else STATUS_ONLY
+        output.allowed_next_actions = [ACTION_STATUS_ONLY, ACTION_ABORT]
 
     return output
 
@@ -320,16 +418,25 @@ def format_output(report: OrchestratorOutput, fmt: str) -> str:
     lines: list[str] = [
         "=== CDB Onboarding ===",
         f"Status: {report.status}",
+        f"State: {report.state}",
+        f"check_scope: {report.check_scope}",
+        f"requires_explicit_setup_go: {'yes' if report.requires_explicit_setup_go else 'no'}",
+        f"allowed_next_actions: {', '.join(report.allowed_next_actions) if report.allowed_next_actions else 'none'}",
+        f"skipped_checks: {', '.join(report.skipped_checks) if report.skipped_checks else 'none'}",
         "",
     ]
 
-    lines.append("Prüfungen:")
+    lines.append("Checks:")
     lines.append(f"  Bootloader: [{report.bootloader_ok}]")
-    lines.append(f"  Szenario-Dokument: [{report.scenario_ok}]")
-    lines.append(f"  LR-Status: [{report.lr_ok}] — {report.details.get('lr', '')}")
-    lines.append(f"  .env: [{report.env_file}]")
-    lines.append(f"  onboarding_doctor: [{report.doctor_reachable}]")
-    lines.append(f"  context_doctor: [{report.context_doctor}]")
+    lines.append(f"  Scenario document: [{report.scenario_ok}]")
+    lines.append(f"  LR-Status: [{report.lr_ok}] - {report.details.get('lr', '')}")
+    lines.append(f"  .env: [{report.env_file}] - {report.details.get('env_file', '')}")
+    lines.append(
+        f"  onboarding_doctor: [{report.doctor_reachable}] - {report.details.get('doctor', '')}"
+    )
+    lines.append(
+        f"  context_doctor: [{report.context_doctor}] - {report.details.get('context_doctor', '')}"
+    )
     lines.append("")
 
     if report.blockers:
@@ -339,17 +446,25 @@ def format_output(report: OrchestratorOutput, fmt: str) -> str:
         lines.append("")
 
     if report.warnings:
-        lines.append("WARNINGS:")
+        lines.append("Warnings:")
         for w in report.warnings:
             lines.append(f"  * {_safe_summary(w, 120)}")
         lines.append("")
+        lines.append(f"Warning semantics: {report.warning_semantics}")
+        lines.append("")
 
-    lines.append("Keine Änderungen vorgenommen.")
+    if report.mode == "check-only":
+        lines.append("check-only mode is dry-run only.")
+        lines.append("No setup mutation is allowed from this run.")
+    if report.requires_explicit_setup_go:
+        lines.append("Would only run setup after explicit setup GO.")
+    lines.append("No changes made.")
     lines.append("LR remains NO-GO.")
-    lines.append("trade-capable ist kein Live-Go.")
+    lines.append("trade-capable is not Live-Go.")
     lines.append("")
 
-    lines.extend(SETUP_PROMPT_LINES)
+    if report.setup_prompt_visible:
+        lines.extend(SETUP_PROMPT_LINES)
 
     return "\n".join(lines)
 
@@ -384,7 +499,7 @@ Exit codes:
     )
     args = parser.parse_args(argv)
 
-    report = build_verdict()
+    report = build_verdict(mode=args.mode)
 
     try:
         output = format_output(report, args.format)

@@ -81,9 +81,9 @@ class TestBuildFinalVerdict:
 
 
 class TestRenderSimulationDefaults:
-    def test_contains_onboarding_start(self) -> None:
+    def test_contains_simulation_start(self) -> None:
         output = render_simulation()
-        assert "ONBOARDING_START" in output
+        assert "SIMULATION_START" in output
 
     def test_contains_mode(self) -> None:
         output = render_simulation()
@@ -375,7 +375,7 @@ class TestSimulationOutputContract:
     def test_contains_all_required_sections(self) -> None:
         output = render_simulation()
         required_prefixes = [
-            "ONBOARDING_START",
+            "SIMULATION_START",
             "Context Brain Note:",
             "Bootloader Plan:",
             "Live Truth Plan:",

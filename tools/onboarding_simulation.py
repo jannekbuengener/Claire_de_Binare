@@ -12,7 +12,7 @@ Usage:
     .\\tools\\cdb.ps1 onboarding simulate
 
 Output contract:
-    ONBOARDING_START -> Bootloader Plan -> Live Truth Plan -> Tour Path ->
+    SIMULATION_START -> Bootloader Plan -> Live Truth Plan -> Tour Path ->
     Doctor / Validator Plan -> First-Issue Dry Run -> PR / LOCK Simulation ->
     HOLD Conditions -> Final Verdict
 
@@ -250,7 +250,7 @@ def render_simulation(role: str = "agent", mode: str = "first-issue-dry-run") ->
     }
 
     lines: list[str] = [
-        "ONBOARDING_START",
+        "SIMULATION_START",
         f"mode: {resolved_mode}",
         f"role: {role_label}",
         "writes: disabled",

@@ -12,6 +12,8 @@ CANONICAL_ROUTER_TEXT = (
 
 PRIMARY_ROUTE = "python -m tools.onboarding_orchestrator"
 READ_ONLY_DEFAULT = "Read-only by default"
+STATE_CONTRACT = "allowed_next_actions"
+CHECK_ONLY_GUARDRAIL = "check-only"
 NO_ENV_DEFAULT = (
     "Do not create `.env`, initialize secrets, initialize context, write "
     "reports, create issues, or run Docker unless the user explicitly selects "
@@ -69,16 +71,19 @@ class TestSharedOnboardingSkills:
         assert PRIMARY_ROUTE in text
         assert "tools/onboarding_orchestrator.py" in text
         assert "Read-only by default" in text
+        assert STATE_CONTRACT in text
 
     def test_claude_onboarding_present_and_routed(self):
         text = read_text(".claude/skills/onboarding/SKILL.md")
         assert PRIMARY_ROUTE in text
         assert "tools/onboarding_orchestrator.py" in text
+        assert STATE_CONTRACT in text
 
     def test_cursor_onboarding_present_and_routed(self):
         text = read_text(".cursor/skills/onboarding/SKILL.md")
         assert PRIMARY_ROUTE in text
         assert "tools/onboarding_orchestrator.py" in text
+        assert STATE_CONTRACT in text
 
 
 class TestSessionStartDelegation:
@@ -115,6 +120,19 @@ class TestSafetyGuardrails:
             text = read_text(relative_path)
             assert NO_ENV_DEFAULT in text
             assert "context-query-config-init" not in text
+
+    def test_main_surfaces_document_check_only_guardrail(self):
+        surfaces = [
+            ".codex/cdb_skills/onboarding/SKILL.md",
+            ".claude/skills/onboarding/SKILL.md",
+            ".cursor/skills/onboarding/SKILL.md",
+            ".opencode/skills/onboarding/SKILL.md",
+            ".gemini/onboarding.md",
+        ]
+        for relative_path in surfaces:
+            text = read_text(relative_path)
+            assert CHECK_ONLY_GUARDRAIL in text
+            assert "setup-plan" not in text
 
     def test_all_surfaces_preserve_lr_no_go_boundary(self):
         surfaces = [

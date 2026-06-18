@@ -7,6 +7,8 @@ Wenn ein Gemini-Agent einen `/onboarding`-, `onboarding`-, `onboarding durchfüh
 3. **Default output is the CDB Onboarding status card.**
 4. **Read-only by default.** Do not create `.env`, initialize secrets, initialize context, write reports, create issues, or run Docker unless the user explicitly selects a next option after the status card.
 5. **Routing-Hierarchie**: Dieser Router ist der kanonische Gemini-Onboarding-Pfad. Der Gemini-Bootloader in `GEMINI.md` (Repo-Root) verweist ergänzend auf diesen Router.
+6. **Antwortvertrag**: Berichte nur `Status`, `State`, warnings, `allowed_next_actions`, `check_scope` und `skipped_checks`.
+7. **Keine erfundenen Optionen**: kein Legacy-Setup-Ast, keine Umnummerierung, keine direkte Setup-Ausfuehrung nach `check-only`.
 
 ## Safety Boundaries
 

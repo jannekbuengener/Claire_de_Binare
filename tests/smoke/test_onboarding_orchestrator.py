@@ -40,6 +40,11 @@ class TestOrchestratorSmoke:
         result = _run_orchestrator()
         assert "Status:" in result.stdout, "Output must contain 'Status:' line"
 
+    def test_orchestrator_output_contains_state_and_actions(self):
+        result = _run_orchestrator()
+        assert "State:" in result.stdout
+        assert "allowed_next_actions:" in result.stdout
+
     def test_orchestrator_output_status_is_valid(self):
         result = _run_orchestrator()
         valid_statuses = ("PASS", "SETUP_WARN", "BLOCKED")
@@ -52,8 +57,8 @@ class TestOrchestratorSmoke:
     def test_orchestrator_output_keine_aenderungen(self):
         result = _run_orchestrator()
         assert (
-            "Keine Änderungen vorgenommen." in result.stdout
-        ), "Output must contain 'Keine Änderungen vorgenommen.'"
+            "No changes made." in result.stdout
+        ), "Output must contain 'No changes made.'"
 
     def test_orchestrator_output_lr_no_go(self):
         result = _run_orchestrator()
@@ -64,19 +69,26 @@ class TestOrchestratorSmoke:
     def test_orchestrator_output_trade_capable(self):
         result = _run_orchestrator()
         assert (
-            "trade-capable ist kein Live-Go" in result.stdout
-        ), "Output must contain 'trade-capable ist kein Live-Go'"
+            "trade-capable is not Live-Go" in result.stdout
+        ), "Output must contain 'trade-capable is not Live-Go'"
 
     def test_orchestrator_output_contains_setup_prompt(self):
         result = _run_orchestrator()
-        assert (
-            "Möchtest du das Onboarding-Setup jetzt ausführen?" in result.stdout
-        ), "Output must contain the setup confirmation prompt"
+        if "State: SETUP_CONFIRMATION_PENDING" in result.stdout:
+            assert (
+                "Moechtest du das Onboarding-Setup jetzt ausfuehren?" in result.stdout
+            ), "Pending setup state must contain the setup confirmation prompt"
+        else:
+            assert (
+                "Moechtest du das Onboarding-Setup jetzt ausfuehren?"
+                not in result.stdout
+            ), "Non-pending states must not contain the setup confirmation prompt"
 
     def test_orchestrator_output_contains_only_two_setup_options(self):
         result = _run_orchestrator()
-        assert "1. Ja" in result.stdout
-        assert "2. Abbruch" in result.stdout
+        if "State: SETUP_CONFIRMATION_PENDING" in result.stdout:
+            assert "1. Ja" in result.stdout
+            assert "2. Abbruch" in result.stdout
 
     def test_orchestrator_does_not_contain_removed_setup_prompt_variants(self):
         result = _run_orchestrator()
@@ -127,9 +139,29 @@ class TestOrchestratorSmoke:
         result = _run_orchestrator("--format", "json")
         data = json.loads(result.stdout)
         assert "status" in data
+        assert "state" in data
+        assert "check_scope" in data
+        assert "allowed_next_actions" in data
+        assert "requires_explicit_setup_go" in data
+        assert "setup_prompt_visible" in data
         assert "bootloader" in data
         assert "scenario" in data
         assert "lr_note" in data
+
+    def test_orchestrator_check_only_has_no_setup_prompt(self):
+        result = _run_orchestrator("--mode", "check-only")
+        assert result.returncode in (0, 1)
+        assert "State: SETUP_CONFIRMATION_PENDING" not in result.stdout
+        assert (
+            "Moechtest du das Onboarding-Setup jetzt ausfuehren?" not in result.stdout
+        )
+        assert "check-only mode is dry-run only." in result.stdout
+
+    def test_orchestrator_check_only_json_uses_check_only_scope(self):
+        result = _run_orchestrator("--mode", "check-only", "--format", "json")
+        data = json.loads(result.stdout)
+        assert data["check_scope"] == "onboarding_status_check_only"
+        assert data["state"] in ("DRY_RUN_COMPLETE", "SETUP_REQUIRED", "BLOCKED")
 
     def test_orchestrator_safe_output(self):
         result = _run_orchestrator()
