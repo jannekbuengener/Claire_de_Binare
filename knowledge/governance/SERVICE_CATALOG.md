@@ -157,8 +157,9 @@ Services, die aus dem aktiven BLUE+RED-Runtime-Canon entfernt wurden. Kein Conta
 | Service | Entfernt | Grund | Alternative |
 |---------|----------|-------|-------------|
 | `cdb_node_exporter` | 2026-04-09 (#1528, PR #1535) | Windows/WSL2-Mount-Propagation-Probleme; kein unterstuetztes Host-Node-Exporter-Surface im aktuellen Stack | cAdvisor fuer Container-Metriken; keine Host-Node-Metriken im aktuellen Canon |
+| `cdb_market_eth` | 2026-06-18 (#3303) | Branch/#1206-V3 Runtime-Artefakt, nie main-backed. Container schrieb mit MARKET_V3_LIVE_WRITE=true auf market_state:ETHUSDT — Race Condition mit cdb_market. Kein Code (mexc_v3_client.py) und keine Compose-Definition auf main. | cdb_market (Port 8009) ist der einzige kanonische Market-Service |
 
-Erwarteter Runtime-Zustand: `absent` — kein `cdb_node_exporter`-Container im BLUE/RED-Stack. Ein laufender Container ist unerwarteter Runtime-Drift (Pruefpfad: `docs/runbooks/legacy_service_drift.md`).
+Erwarteter Runtime-Zustand: `absent` — kein `cdb_node_exporter`- oder `cdb_market_eth`-Container im BLUE/RED-Stack. Ein laufender Container ist unerwarteter Runtime-Drift (Pruefpfad: `docs/runbooks/legacy_service_drift.md`).
 
 Referenz: `infrastructure/compose/SERVICE_MAPPING.md`, `infrastructure/docs/BLUE_RED_SPLIT.md`, `infrastructure/monitoring/METRICS_MATRIX.md`.
 
