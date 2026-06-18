@@ -21,7 +21,7 @@ ruff==0.15.17
 
 # Security Scanning
 bandit==1.9.4
-pip-audit==2.6.1
+pip-audit==2.10.1
 
 # Core Dependencies for Tests
 redis==8.0.0
