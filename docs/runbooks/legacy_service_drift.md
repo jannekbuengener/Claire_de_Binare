@@ -1,8 +1,8 @@
 # Legacy Service Drift — Operator-Prüfpfad
 
-**Erstellt:** 2026-06-18 (Audit #3302, #3304)
-**Scope:** Erkennung und Klassifikation unerwarteter Legacy-Container im BLUE+RED-Stack inkl. Soak-Monitore und Scheduler-Tasks
-**Referenz:** `knowledge/governance/SERVICE_CATALOG.md` § Entfernte Services (Legacy)
+**Erstellt:** 2026-06-18 (Audit #3302, #3304, #3305)
+**Scope:** Erkennung und Klassifikation unerwarteter Legacy-/Referenz-Container im BLUE+RED-Stack inkl. Soak-Monitore, Scheduler-Tasks und MockX Valkey
+**Referenz:** `knowledge/governance/SERVICE_CATALOG.md` § Entfernte Services (Legacy) und § Referenz-/Dev-Test-Infrastruktur
 
 ---
 
@@ -14,6 +14,7 @@
 | `cdb_market_eth` | LEGACY (entfernt 2026-06-18, #3303) | `absent` — kein Container im BLUE/RED-Stack |
 | `lr030_soak_monitor` | LEGACY (decommissioned 2026-06-18, #3304) | `absent` — kein Container; Windows-Task `CDB_Soak_Sidecar` deaktiviert |
 | `lr040_soak_monitor` | LEGACY (decommissioned 2026-06-18, #3304) | `absent` — kein Container; Windows-Task `CDB_LR040_SoakMonitor` deaktiviert |
+| `mockx-valkey` | Non-canonical dev/test reference infra (#3305, #1648) | `absent by default` — nur waehrend expliziter MockX test-pack Session |
 
 ---
 
@@ -40,6 +41,13 @@ docker ps --filter "name=lr040_soak_monitor" --format "table {{.Names}}\t{{.Stat
 
 # Soak Scheduler-Tasks — Prüfen, ob Windows-Tasks noch aktiv sind
 Get-ScheduledTask -TaskName "CDB_LR040_SoakMonitor", "CDB_Soak_Sidecar" -ErrorAction SilentlyContinue | Format-Table TaskName, State
+
+# mockx-valkey — Pruefen, ob ein Container laeuft (MockX reference/dev-test only)
+docker ps --filter "name=mockx-valkey" --format "table {{.Names}}\t{{.Image}}\t{{.Status}}\t{{.Ports}}"
+docker ps -a --filter "name=mockx-valkey" --format "table {{.Names}}\t{{.Image}}\t{{.Status}}\t{{.Ports}}"
+
+# mockx-valkey — Herkunft redacted pruefen (keine Env-/Passwort-Ausgabe)
+docker inspect mockx-valkey --format "Name={{.Name}}{{println}}Image={{.Config.Image}}{{println}}Status={{.State.Status}}{{println}}RestartPolicy={{.HostConfig.RestartPolicy.Name}}{{println}}Ports={{json .NetworkSettings.Ports}}{{println}}Mounts={{range .Mounts}}{{.Name}}:{{.Destination}}:{{.Type}};{{end}}{{println}}ComposeProject={{index .Config.Labels `"com.docker.compose.project"`}}{{println}}ComposeService={{index .Config.Labels `"com.docker.compose.service"`}}{{println}}ComposeWorkingDir={{index .Config.Labels `"com.docker.compose.project.working_dir"`}}{{println}}ComposeConfigFiles={{index .Config.Labels `"com.docker.compose.project.config_files"`}}" 2>$null
 ```
 
 ---
@@ -49,23 +57,29 @@ Get-ScheduledTask -TaskName "CDB_LR040_SoakMonitor", "CDB_Soak_Sidecar" -ErrorAc
 | Befund | Klassifikation | Aktion |
 |--------|---------------|--------|
 | Kein Container | **OK** — erwarteter Zustand | Keine Aktion |
-| Container läuft, Compose-Projekt = `claire_de_binare` oder `cdb_*` | **Unerwarteter Runtime-Drift** — Container aus historischem Compose-Projekt (vor #1528-Bereinigung) | Gordon-Gate einholen; keine selbstständige Container-Mutation |
-| Container läuft, kein Compose-Projekt-Label | **Unerwarteter Runtime-Drift** — Container manuell oder extern gestartet | Gordon-Gate einholen; keine selbstständige Container-Mutation |
+| Container läuft, Compose-Projekt = `claire_de_binare` oder `cdb_*` | **Unerwarteter Runtime-Drift** — Container aus historischem Compose-Projekt (vor #1528-Bereinigung) | Jannek-Ops-GO einholen; keine selbstständige Container-Mutation |
+| Container läuft, kein Compose-Projekt-Label | **Unerwarteter Runtime-Drift** — Container manuell oder extern gestartet | Jannek-Ops-GO einholen; keine selbstständige Container-Mutation |
+| `mockx-valkey` läuft ausserhalb einer expliziten MockX test-pack Session | **Unerwarteter Reference-Infra-Drift** — non-canonical MockX Valkey ist nicht `cdb_redis` | Jannek-Ops-GO einholen; keine selbststaendige Container-Mutation; Volume/Image separat gate-pflichtig |
 
 ---
 
-## Bereinigung (nur mit Gordon-Gate)
+## Bereinigung (nur mit Jannek-Ops-GO)
 
 ```powershell
-# cdb_node_exporter — Container stoppen und entfernen (nur nach explizitem Gordon-Go)
+# cdb_node_exporter — Container stoppen und entfernen (nur nach explizitem Jannek-Ops-GO)
 docker stop cdb_node_exporter
 docker rm cdb_node_exporter
 
-# cdb_market_eth — Container stoppen und entfernen (nur nach explizitem Gordon-Go)
-# Image-Remove erfordert separates Gordon-Go (forensische Nachvollziehbarkeit).
+# cdb_market_eth — Container stoppen und entfernen (nur nach explizitem Jannek-Ops-GO)
+# Image-Remove erfordert separates Jannek-Ops-GO (forensische Nachvollziehbarkeit).
 # Keine Reaktivierung ohne eigenes Design-/Evidence-Issue.
 docker stop cdb_market_eth
 docker rm cdb_market_eth
+
+# mockx-valkey — Container stoppen und entfernen (nur nach explizitem Jannek-Ops-GO)
+# Volume/Image bleiben erhalten, ausser ein separates Jannek-Ops-GO erlaubt deren Cleanup.
+docker stop mockx-valkey
+docker rm mockx-valkey
 ```
 
 ---
@@ -82,3 +96,5 @@ docker rm cdb_market_eth
 - Issue #1596 — 503-Bug cdb_market/cdb_market_eth (CLOSED)
 - Issue #1206 — ursprünglicher V3-Market-Branch (nicht auf main)
 - Issue #3304 — Audit + Decommission `lr030_soak_monitor` / `lr040_soak_monitor` + Scheduler `CDB_LR040_SoakMonitor` / `CDB_Soak_Sidecar`
+- Issue #3305 — Audit + Cleanup `mockx-valkey` reference-infra drift
+- Issue #1648 — Formalized `tools/test_pack/mock_exchange/` as local reference copy, not active CDB integration

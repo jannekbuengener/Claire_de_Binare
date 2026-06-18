@@ -150,6 +150,18 @@ Aktivierung: `docker compose -f infrastructure/compose/compose.blue.yml -f infra
 
 ---
 
+## Referenz-/Dev-Test-Infrastruktur (nicht BLUE/RED-kanonisch)
+
+Diese Artefakte sind keine aktiven CDB-Services und gehoeren nicht zum Standard-BLUE/RED-Runtime-Canon.
+
+| Artefakt | Container | Status | Expected-State | Purpose | Lifecycle / Boundary |
+|---|---|---|---|---|---|
+| MockX Valkey (`tools/test_pack/mock_exchange/`, `.codex/cdb_skills/mockexchange/` quarantine/reference copies) | `mockx-valkey` | Non-canonical dev/test reference infra (#3305, #1648) | `absent by default` | Optional Redis-compatible persistence layer for explicit MockX test-pack/reference sessions only | Present only during an explicit MockX test-pack session; stop/remove container after the session. `mockx-valkey` is not CDB-canonical Redis and must never replace `cdb_redis`. Volume/image cleanup is separate Jannek-Ops-GO scope. |
+
+Read-only drift path: `docs/runbooks/legacy_service_drift.md`.
+
+---
+
 ## Entfernte Services (Legacy)
 
 Services, die aus dem aktiven BLUE+RED-Runtime-Canon entfernt wurden. Kein Container im BLUE/RED-Stack erwartet.
@@ -230,6 +242,7 @@ Referenz: `infrastructure/compose/SERVICE_MAPPING.md`, PR #2670.
 - [ ] BEREIT-Services bewusst deaktiviert (Begründung aktuell)
 - [ ] Keine unbekannten Container im Stack
 - [ ] Legacy-Services (cdb_node_exporter) nicht im Stack (Pruefpfad: `docs/runbooks/legacy_service_drift.md`)
+- [ ] `mockx-valkey` ist `absent by default` und nur waehrend expliziter MockX test-pack Sessions zulaessig (Pruefpfad: `docs/runbooks/legacy_service_drift.md`)
 
 ---
 
@@ -261,6 +274,7 @@ Referenz: `infrastructure/compose/SERVICE_MAPPING.md`, PR #2670.
 | 2026-06-08 | PR #3081 Nachzug: `historical_bridge.py` + `evaluate_price_policies.py` als Replay-Infrastruktur-Komponenten im Core-Libraries-Katalog ergänzt; `price_policy`-Support vermerkt (Issue #3082) | Codex |
 | 2026-06-18 | Audit #3302: Entfernte-Services-Sektion ergänzt; cdb_node_exporter als LEGACY mit Decommission-Datum, Grund, Alternative, erwartetem Runtime-Zustand und Runbook-Prüfpfad dokumentiert; Prüf-Checkliste um Legacy-Check ergänzt | Codex |
 | 2026-06-18 | Audit #3304: `lr030_soak_monitor` + `lr040_soak_monitor` als LEGACY dokumentiert; Container decommissioned, Windows-Tasks `CDB_LR040_SoakMonitor` + `CDB_Soak_Sidecar` deaktiviert; Runbooks um Windows-Scheduler-Cleanup ergänzt | OpenCode |
+| 2026-06-18 | Audit #3305: MockX Valkey als non-canonical dev/test reference infra dokumentiert; Expected-State `absent by default`; Boundary `mockx-valkey` ist nicht CDB-canonical Redis und darf `cdb_redis` nie ersetzen; Refs #1648 | OpenCode |
 ## PostgreSQL Schema Artefacts
 
 | Artefakt | Migration | Status | Bedeutung |
