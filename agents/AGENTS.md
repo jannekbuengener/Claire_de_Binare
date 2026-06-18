@@ -59,6 +59,9 @@ Invocation: `/cdb-<name>` (e.g. `/cdb-governance-gatekeeper`).
 Related surfaces (not subagents): `.cursor/skills/` (session skills),
 `.opencode/skills/` (OpenCode), `.claude/skills/` (Claude Code), `.codex/cdb_skills/` (Codex).
 
+Root surface matrix: [`docs/onboarding/AGENT_ROOT_SURFACE_MATRIX.md`](../docs/onboarding/AGENT_ROOT_SURFACE_MATRIX.md) —
+versionierte Root-Flächen für `.claude/`, `.codex/`, `.cursor/`, `.gemini/`, `.opencode/`, `.vscode/`.
+
 ## Canonical Domains
 
 - `agents/`
