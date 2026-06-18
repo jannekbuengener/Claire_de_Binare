@@ -27,12 +27,40 @@ python -m tools.onboarding_orchestrator --mode check-only
 
 ## Guardrails
 
+### Safety
+
 - Read-only by default.
 - LR remains NO-GO.
 - Board stage `trade-capable` is not Live-Go.
 - No Echtgeld-Go.
 - No file writes, no GitHub writes, no branch creation, no PR creation, no runtime/Docker/DB/MCP mutation, no secrets.
+
+### Response Contract (required fields)
+
 - Report only the orchestrator `Status`, `State`, warnings, and `allowed_next_actions`.
+- Include `check_scope`, `skipped_checks`, and **Evidence-Abgrenzung** (was geprüft, was nicht).
+- Include **Safety-Grenzen**: LR NO-GO, kein Live-Go, kein Echtgeld-Go.
+
+### Wording Contract (Evidence-Abgrenzung)
+
+- Ohne git/gh/check-Kommandos: "Repo-/Canon-Prüfung durchgeführt; GitHub-/Check-Live nicht geprüft."
+- Mit Live-Kommandos: "GitHub-/Repo-Live geprüft: <konkrete Kommandos und Ergebnis>."
+- CURRENT_STATUS.md → Engineering-Ledger, nicht Live-Wahrheit.
+- LR-SSOT → docs/live-readiness/LR-AUDIT-STATUS-2026-03-05.md.
+- trade-capable → Board-/Stage-Kontext, kein Live-Go.
+
+### Verbotene Phrasen
+
+- "Live-Wahrheit geprüft: Ja" (nur mit konkreten Kommandos erlaubt)
+- "trade-capable ist deaktiviert/aktiviert"
+- "alle systemischen Invarianten erfasst"
+- "CURRENT_STATUS.md ist Live-Wahrheit"
+- "trade-capable erlaubt Live" / "ist Live-Go"
+- Freie Management-Zusammenfassung ohne Evidence-Abgrenzung
+
+### Weitere Regeln
+
 - Do not invent extra onboarding options or reintroduce the removed legacy setup branch.
 - `--mode check-only` is dry-run only and must not imply setup execution.
 - The `1. Ja / 2. Abbruch` prompt is only valid when the orchestrator reports `State: SETUP_CONFIRMATION_PENDING`.
+- Board-Stage nie als Schalter oder Freigabe darstellen.

@@ -60,7 +60,7 @@ Optional aliases exist, but `/onboarding` remains canonical:
 1. **Primary route:** `python -m tools.onboarding_orchestrator`
 2. **Bootloader:** `AGENTS.md` -> `agents/AGENTS.md` -> full Read Order.
 3. **Context Brain Preflight:** `context_brain_attempted=true` required before repo reads.
-4. **Live Truth:** GitHub live + repo live before ledger.
+4. **Live Checks (evidence-pflichtig):** `git fetch`, `gh issue view`, `gh pr list` — Ergebnisse dokumentieren. Ohne diese Kommandos: "GitHub-/Check-Live nicht geprüft."
 5. **Optional next steps only after the status card:** role-specific tour,
    doctor/validator, or first-issue sandbox.
 6. **Final Verdict:** CDB Onboarding status card with explicit state and allowed next actions.
@@ -68,10 +68,39 @@ Optional aliases exist, but `/onboarding` remains canonical:
 
 ## Agent Response Guardrails
 
+### Response Contract (required fields)
+
 - Report only `Status`, `State`, warnings, `allowed_next_actions`, `check_scope`, and `skipped_checks`.
+- Include **Evidence-Abgrenzung**: was wurde geprüft, was nicht (siehe Wording Contract).
+- Include **Safety-Grenzen**: LR NO-GO, kein Live-Go, kein Echtgeld-Go.
+
+### Wording Contract (Evidence-Abgrenzung)
+
+- **Ohne ausgeführte git/gh/check-Kommandos**:
+  "Repo-/Canon-Prüfung durchgeführt; GitHub-/Check-Live nicht geprüft."
+- **Mit Live-Kommandos**:
+  "GitHub-/Repo-Live geprüft: <konkrete Kommandos und Ergebnis>."
+- **CURRENT_STATUS.md** → Engineering-Ledger, nicht Live-Wahrheit.
+- **LR-SSOT** → `docs/live-readiness/LR-AUDIT-STATUS-2026-03-05.md`
+- **trade-capable** → Board-/Stage-Kontext, kein Live-Go.
+- **Invarianten** → "Zentrale Sicherheitsgrenzen erkannt."
+
+### Verbotene Phrasen
+
+- "Live-Wahrheit geprüft: Ja" (nur mit konkreten Kommandos erlaubt)
+- "trade-capable ist deaktiviert" / "trade-capable ist aktiviert"
+- "alle systemischen Invarianten erfasst" / "vollständige Live-Wahrheit geprüft"
+- "CURRENT_STATUS.md ist Live-Wahrheit"
+- "trade-capable erlaubt Live" / "trade-capable ist Live-Go"
+- Freie Management-Zusammenfassung ohne Evidence-Abgrenzung
+
+### Weitere Regeln
+
 - Do not invent or renumber options.
 - Do not offer setup execution after `--mode check-only`.
 - If a doctor output is partial, say that it is a partial check.
+- Board-Stage nie als Schalter oder Freigabe darstellen.
+- Vollständigkeitsclaims nach Teilreads vermeiden.
 
 ## Referenced V2 Surfaces
 

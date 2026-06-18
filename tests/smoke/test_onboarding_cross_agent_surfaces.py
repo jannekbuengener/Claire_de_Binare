@@ -1,6 +1,9 @@
 from __future__ import annotations
 
+import re
 from pathlib import Path
+
+import pytest
 
 REPO_ROOT = Path(__file__).resolve().parents[2]
 
@@ -144,5 +147,137 @@ class TestSafetyGuardrails:
         for relative_path in surfaces:
             text = read_text(relative_path)
             assert "NO-GO" in text
+            assert "trade-capable" in text
+            assert "Live-Go" in text
+
+
+# Forbidden phrases are expected to appear in "Verbotene Phrasen" or "Nicht"
+# sections of the contract files (as documented examples of prohibited wording).
+# The test verifies they don't appear OUTSIDE these documented context sections.
+FORBIDDEN_WORDING_PATTERNS: list[tuple[str, str]] = [
+    ("Live-Wahrheit gepr\u00fcft: Ja", ".gemini/onboarding.md"),
+    ("trade-capable ist deaktiviert", ".gemini/onboarding.md"),
+    ("alle systemischen Invarianten erfasst", ".gemini/onboarding.md"),
+    ("CURRENT_STATUS.md ist Live-Wahrheit", ".gemini/onboarding.md"),
+]
+
+# These files must NOT contain the forbidden phrases at all (they're response
+# contracts, not forbidden-phrase documentation):
+NO_FORBIDDEN_ALLOWED_SURFACES: list[str] = [
+    ".opencode/README.md",
+    ".codex/README.md",
+    ".claude/README.md",
+    ".cursor/README.md",
+    ".gemini/README.md",
+    "docs/onboarding/ONBOARDING_SCENARIO_001_FRESH_AGENT_SAFE_WORK_DRILL.md",
+]
+
+# Context lines that make a forbidden phrase acceptable (it's being documented as forbidden)
+ALLOWED_CONTEXT_PREFIXES = [
+    "Nicht:",
+    "Verbotene Phrasen",
+    "forbidden phrase",
+    "Verbotene",
+]
+
+REQUIRED_EVIDENCE_PATTERNS: dict[str, list[str]] = {
+    "Evidence-Abgrenzung": [
+        ".gemini/onboarding.md",
+        ".opencode/skills/onboarding/SKILL.md",
+        ".codex/cdb_skills/onboarding/SKILL.md",
+        ".claude/skills/onboarding/SKILL.md",
+        ".cursor/skills/onboarding/SKILL.md",
+        ".gemini/README.md",
+    ],
+    "Repo-/Canon-Prüfung durchgeführt; GitHub-/Check-Live nicht geprüft": [
+        ".gemini/onboarding.md",
+        ".opencode/skills/onboarding/SKILL.md",
+        ".codex/cdb_skills/onboarding/SKILL.md",
+        ".claude/skills/onboarding/SKILL.md",
+        ".cursor/skills/onboarding/SKILL.md",
+    ],
+    "Engineering-Ledger, nicht Live-Wahrheit": [
+        ".gemini/onboarding.md",
+        ".opencode/skills/onboarding/SKILL.md",
+        ".codex/cdb_skills/onboarding/SKILL.md",
+        ".claude/skills/onboarding/SKILL.md",
+        ".cursor/skills/onboarding/SKILL.md",
+    ],
+    "Board-/Stage-Kontext, kein Live-Go": [
+        ".gemini/onboarding.md",
+        ".opencode/skills/onboarding/SKILL.md",
+        ".codex/cdb_skills/onboarding/SKILL.md",
+        ".claude/skills/onboarding/SKILL.md",
+        ".cursor/skills/onboarding/SKILL.md",
+    ],
+}
+
+ALL_ONBOARDING_RESPONSE_SURFACES = [
+    ".gemini/onboarding.md",
+    ".opencode/skills/onboarding/SKILL.md",
+    ".codex/cdb_skills/onboarding/SKILL.md",
+    ".claude/skills/onboarding/SKILL.md",
+    ".cursor/skills/onboarding/SKILL.md",
+]
+
+ALL_FORBIDDEN_PHRASES = [
+    "Live-Wahrheit gepr\u00fcft: Ja",
+    "trade-capable ist deaktiviert",
+    "trade-capable ist aktiviert",
+    "alle systemischen Invarianten erfasst",
+    "vollst\u00e4ndige Live-Wahrheit gepr\u00fcft",
+    "CURRENT_STATUS.md ist Live-Wahrheit",
+    "trade-capable erlaubt Live",
+    "trade-capable ist Live-Go",
+]
+
+
+class TestWordingContract:
+    """Verify forbidden phrases only appear in documented context and required evidence patterns present."""
+
+    def test_forbidden_phrases_only_in_documented_context(self):
+        """Forbidden phrases may appear in 'Verbotene Phrasen' / 'Nicht' context
+        in response-surface docs, but must NOT appear in README/scenario surfaces."""
+        for surface in NO_FORBIDDEN_ALLOWED_SURFACES:
+            text = read_text(surface)
+            for phrase in ALL_FORBIDDEN_PHRASES:
+                assert phrase not in text, (
+                    f"{surface}: contains forbidden phrase '{phrase}'"
+                )
+
+    def test_no_free_management_summary_phrasing(self):
+        """No surface should contain conclusory live-truth claims outside documented context."""
+        for surface in ALL_ONBOARDING_RESPONSE_SURFACES:
+            text = read_text(surface)
+            assert "Evidence-Abgrenzung" in text or "Management-Zusammenfassung" in text, (
+                f"{surface}: keine Abgrenzung gegen freie Management-Zusammenfassung"
+            )
+
+    def test_required_evidence_patterns_present(self):
+        missing: list[str] = []
+        for pattern, surfaces in REQUIRED_EVIDENCE_PATTERNS.items():
+            for surface in surfaces:
+                text = read_text(surface)
+                if pattern not in text:
+                    missing.append(f"{surface}: missing required pattern '{pattern}'")
+        assert not missing, "\n".join(missing)
+
+    def test_all_response_surfaces_have_evidence_abgrenzung(self):
+        for surface in ALL_ONBOARDING_RESPONSE_SURFACES:
+            text = read_text(surface)
+            assert "Evidence-Abgrenzung" in text, (
+                f"{surface}: missing Evidence-Abgrenzung section"
+            )
+
+    def test_all_response_surfaces_have_lr_ssot_reference(self):
+        for surface in ALL_ONBOARDING_RESPONSE_SURFACES:
+            text = read_text(surface)
+            assert "LR-AUDIT-STATUS" in text or "docs/live-readiness" in text, (
+                f"{surface}: missing LR-SSOT reference"
+            )
+
+    def test_all_response_surfaces_declare_trade_capable_not_live_go(self):
+        for surface in ALL_ONBOARDING_RESPONSE_SURFACES:
+            text = read_text(surface)
             assert "trade-capable" in text
             assert "Live-Go" in text

@@ -79,7 +79,9 @@ Optional aliases exist, but `/onboarding` remains canonical:
 4. **Doctor / Validator reachability:** `tools/onboarding_doctor.py` and
    `tools.surrealdb.context_onboarding_doctor` respond.
 5. **Env check:** `.env` presence is a setup-warn only (non-blocking).
-6. **Final Verdict:** `PASS` | `SETUP_WARN` | `BLOCKED`.
+6. **Live Checks (evidence-pflichtig):** `git fetch`, `gh issue view`, `gh pr list`
+   — Ergebnisse dokumentieren. Ohne diese Kommandos: "GitHub-/Check-Live nicht geprüft."
+7. **Final Verdict:** `PASS` | `SETUP_WARN` | `BLOCKED`.
 
 The orchestrator is **read-only by default**: no file writes, no report,
 no setup mutation, no Docker, no secrets. Check-only is a dry-run only and
@@ -159,11 +161,42 @@ slice. It does not create `.env` or perform any local setup mutation.
 
 ## Agent Response Guardrails
 
+### Response Contract (required fields)
+
 - Report the orchestrator `Status`, `State`, warnings, and `allowed_next_actions`.
+- Include `check_scope` and `skipped_checks` as part of the report.
+- Include **Evidence-Abgrenzung**: was wurde geprüft, was nicht (siehe Wording Contract).
+- Include **Safety-Grenzen**: LR NO-GO, kein Live-Go, kein Echtgeld-Go.
+
+### Wording Contract (Evidence-Abgrenzung)
+
+Trenne sauber zwischen geprüften und nicht geprüften Bereichen:
+
+- **Ohne ausgeführte git/gh/check-Kommandos**:
+  erlaubt → "Repo-/Canon-Prüfung durchgeführt; GitHub-/Check-Live nicht geprüft."
+- **Mit Live-Kommandos**:
+  erlaubt → "GitHub-/Repo-Live geprüft: <konkrete Kommandos und Ergebnis>."
+- **`CURRENT_STATUS.md`** → "Engineering-Ledger, nicht Live-Wahrheit."
+- **LR-SSOT** → "`docs/live-readiness/LR-AUDIT-STATUS-2026-03-05.md`"
+- **trade-capable** → "Board-/Stage-Kontext, kein Live-Go."
+- **Invarianten** → "Zentrale Sicherheitsgrenzen erkannt."
+
+### Verbotene Phrasen
+
+- "Live-Wahrheit geprüft: Ja" (nur mit konkreten git/gh/check-Kommandos erlaubt)
+- "trade-capable ist deaktiviert" / "trade-capable ist aktiviert"
+- "alle systemischen Invarianten erfasst" / "vollständige Live-Wahrheit geprüft"
+- "CURRENT_STATUS.md ist Live-Wahrheit"
+- "trade-capable erlaubt Live" / "trade-capable ist Live-Go"
+- Freie Management-Zusammenfassung ohne Evidence-Abgrenzung
+
+### Weitere Regeln
+
 - Do not invent, renumber, or expand options beyond the orchestrator contract.
 - Do not offer direct setup execution after `--mode check-only` / dry-run.
-- Treat `check_scope` and `skipped_checks` as part of the report contract.
 - If doctor output is partial, say so explicitly instead of presenting it as a full check.
+- Board-Stage nie als Schalter oder Freigabe darstellen.
+- Vollständigkeitsclaims nach Teilreads vermeiden.
 
 All paths require explicit GO before execution. Default mode produces
 no report and no setup mutation.

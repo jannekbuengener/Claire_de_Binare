@@ -20,6 +20,8 @@ Bei `/onboarding`-Intent: `python -m tools.onboarding_orchestrator`
 
 Default: Read-only Status Card. Kein `.env`, keine Secrets, kein Docker, kein Issue/PR ohne explizite Auswahl.
 
+**Evidence-Abgrenzung nach /onboarding:** Antwort muss enthalten: Status, State, warnings, allowed_next_actions, check_scope, skipped_checks, Evidence-Abgrenzung (was geprüft, was nicht) und Safety-Grenzen. Ohne git/gh/check-Kommandos: "Repo-/Canon-Prüfung durchgeführt; GitHub-/Check-Live nicht geprüft."
+
 ## Safety Boundaries
 
 - LR remains **NO-GO**

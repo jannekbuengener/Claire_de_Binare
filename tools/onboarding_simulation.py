@@ -127,6 +127,7 @@ def _build_live_truth_plan() -> list[str]:
         "  3. Ledger: CURRENT_STATUS.md (context only, not live truth).",
         "  4. LR SSOT: docs/live-readiness/LR-AUDIT-STATUS-2026-03-05.md (NO-GO).",
         "  5. Control: docs/runbooks/CONTROL_REGISTER.md (stage:trade-capable).",
+        "  6. Evidence-Abgrenzung: ohne ausgeführte git/gh-Kommandos 'Repo-/Canon-Prüfung durchgeführt; GitHub-/Check-Live nicht geprüft' melden.",
     ]
 
 

@@ -99,6 +99,7 @@ The fresh agent must perform and report these checks:
 - `/onboarding` als aktuellen kanonischen Einstieg erkennen.
 - `.opencode/skills/onboarding/` prüfen.
 - Alte oder erfundene Slash-Commands nicht als canonical behaupten.
+- **Evidence-Abgrenzung (Wording Contract) einhalten**: Nach read-only Onboarding keine unbewiesenen Live-/Statusclaims formulieren. Ohne ausgeführte git/gh/check-Kommandos: "Repo-/Canon-Prüfung durchgeführt; GitHub-/Check-Live nicht geprüft." `CURRENT_STATUS.md` als Ledger einordnen, nicht als Live-Wahrheit. Board-Stage `trade-capable` nie als Schalter oder Live-Go darstellen. Keine freie Management-Zusammenfassung ohne Evidence-Abgrenzung.
 - `knowledge/governance/SERVICE_CATALOG.md` prüfen.
 - `docs/runbooks/legacy_service_drift.md` prüfen.
 - Untracked unrelated local files erkennen und unangetastet lassen.

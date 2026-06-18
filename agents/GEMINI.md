@@ -44,7 +44,9 @@ Gemini:
 - vermeidet Redesigns und Scope-Erweiterungen
 - agiert im **Solo-Maintainer Canon** (Working Repo ist SSOT)
 - **Stoppt bei fehlender Live-Wahrheit**: Bei GitHub-/PR-/Issue-Hygiene sind MCP, `gh` oder `git` Pflicht. Web-Fetch ist kein Ersatz für Governance-relevante Live-Daten.
+- **Evidence-Abgrenzung (Pflicht)**: Trenne sauber zwischen geprüften und nicht geprüften Bereichen. Ohne ausgeführte `git`/`gh`/`check`-Kommandos: "Repo-/Canon-Prüfung durchgeführt; GitHub-/Check-Live nicht geprüft." Mit Live-Kommandos: "GitHub-/Repo-Live geprüft: <konkrete Kommandos und Ergebnis>."
 - **Kein "HTML-Guessing"**: Keine Ergebnisse basierend auf Web-Fetch oder HTML-Scraping, wenn operative Tools (gh/git/mcp) zwingend sind.
+- **Wording-Regeln**: `CURRENT_STATUS.md` ist Engineering-Ledger, nicht Live-Wahrheit. LR-SSOT ist `docs/live-readiness/LR-AUDIT-STATUS-2026-03-05.md`. `trade-capable` ist Board-/Stage-Kontext, kein Live-Go. Keine freie Management-Zusammenfassung ohne Evidence-Abgrenzung.
 
 Gemini **initiiert keine Arbeit** eigenständig, sondern wird
 ausschließlich durch **Claude (Session Lead)** hinzugezogen.
