@@ -150,6 +150,20 @@ Aktivierung: `docker compose -f infrastructure/compose/compose.blue.yml -f infra
 
 ---
 
+## Entfernte Services (Legacy)
+
+Services, die aus dem aktiven BLUE+RED-Runtime-Canon entfernt wurden. Kein Container im BLUE/RED-Stack erwartet.
+
+| Service | Entfernt | Grund | Alternative |
+|---------|----------|-------|-------------|
+| `cdb_node_exporter` | 2026-04-09 (#1528, PR #1535) | Windows/WSL2-Mount-Propagation-Probleme; kein unterstuetztes Host-Node-Exporter-Surface im aktuellen Stack | cAdvisor fuer Container-Metriken; keine Host-Node-Metriken im aktuellen Canon |
+
+Erwarteter Runtime-Zustand: `absent` — kein `cdb_node_exporter`-Container im BLUE/RED-Stack. Ein laufender Container ist unerwarteter Runtime-Drift (Pruefpfad: `docs/runbooks/legacy_service_drift.md`).
+
+Referenz: `infrastructure/compose/SERVICE_MAPPING.md`, `infrastructure/docs/BLUE_RED_SPLIT.md`, `infrastructure/monitoring/METRICS_MATRIX.md`.
+
+---
+
 ## GAP-Analyse
 
 ### Aktuell keine kritischen GAPs
@@ -212,6 +226,7 @@ Referenz: `infrastructure/compose/SERVICE_MAPPING.md`, PR #2670.
 - [ ] GAP-Services bewusst nicht gestartet (dokumentiert)
 - [ ] BEREIT-Services bewusst deaktiviert (Begründung aktuell)
 - [ ] Keine unbekannten Container im Stack
+- [ ] Legacy-Services (cdb_node_exporter) nicht im Stack (Pruefpfad: `docs/runbooks/legacy_service_drift.md`)
 
 ---
 
@@ -241,6 +256,7 @@ Referenz: `infrastructure/compose/SERVICE_MAPPING.md`, PR #2670.
 | 2026-06-05 | PRs #2999/#3001/#3003 Nachzug: § Navigation READMEs + README-Spalte; Paper Runner Code `tools/paper_trading/` explizit; Replay/DB README-Links (Issues #3000/#3004) | Cursor |
 | 2026-06-06 | PRs #3016/#3019/#3022 Nachzug: Stimulus-Determinismus und Wall-Clock-Override für Freshness (RC_004) in Market & Candles dokumentiert (Issues #3017/#3020/#3023) | Codex |
 | 2026-06-08 | PR #3081 Nachzug: `historical_bridge.py` + `evaluate_price_policies.py` als Replay-Infrastruktur-Komponenten im Core-Libraries-Katalog ergänzt; `price_policy`-Support vermerkt (Issue #3082) | Codex |
+| 2026-06-18 | Audit #3302: Entfernte-Services-Sektion ergänzt; cdb_node_exporter als LEGACY mit Decommission-Datum, Grund, Alternative, erwartetem Runtime-Zustand und Runbook-Prüfpfad dokumentiert; Prüf-Checkliste um Legacy-Check ergänzt | Codex |
 ## PostgreSQL Schema Artefacts
 
 | Artefakt | Migration | Status | Bedeutung |
