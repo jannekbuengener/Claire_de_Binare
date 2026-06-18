@@ -32,3 +32,7 @@ python -m tools.onboarding_orchestrator --mode check-only
 - Board stage `trade-capable` is not Live-Go.
 - No Echtgeld-Go.
 - No file writes, no GitHub writes, no branch creation, no PR creation, no runtime/Docker/DB/MCP mutation, no secrets.
+- Report only the orchestrator `Status`, `State`, warnings, and `allowed_next_actions`.
+- Do not invent extra onboarding options or reintroduce the removed legacy setup branch.
+- `--mode check-only` is dry-run only and must not imply setup execution.
+- The `1. Ja / 2. Abbruch` prompt is only valid when the orchestrator reports `State: SETUP_CONFIRMATION_PENDING`.

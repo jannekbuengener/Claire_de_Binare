@@ -144,6 +144,8 @@ def test_build_report_repo_root(tmp_path: Path) -> None:
         context_doctor_runner=mock_runner,
     )
     assert report.repo_root_found == "PASS"
+    assert report.check_scope == "full_local_onboarding"
+    assert report.skipped_checks == []
 
 
 def test_build_report_python_not_found(tmp_path: Path) -> None:
@@ -187,6 +189,10 @@ def test_json_output_no_secret_leak(tmp_path: Path) -> None:
         context_doctor_runner=mock_runner,
     )
     payload = doctor.format_report(report, "json")
+    parsed = json.loads(payload)
+    assert parsed["check_scope"] == "full_local_onboarding"
+    assert parsed["skipped_checks"] == []
+    assert "blocking" in parsed
     for pattern in doctor.FORBIDDEN_OUTPUT_PATTERNS:
         assert not pattern.search(
             payload
@@ -209,6 +215,8 @@ def test_text_output_no_secret_leak(tmp_path: Path) -> None:
         context_doctor_runner=mock_runner,
     )
     text = doctor.format_report(report, "text")
+    assert "check_scope: full_local_onboarding" in text
+    assert "skipped_checks: none" in text
     assert "super-secret" not in text.lower()
 
 

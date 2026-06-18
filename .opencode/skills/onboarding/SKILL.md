@@ -40,17 +40,22 @@ github_writes: disabled
 lr: NO-GO
 ```
 
-Expected initial output — a status card ending with the strict two-option setup prompt:
+Expected initial output - a status card with explicit state and allowed next actions:
 
 ```text
 === CDB Onboarding ===
 Status: PASS | SETUP_WARN | BLOCKED
+State: STATUS_ONLY | SETUP_CONFIRMATION_PENDING | SETUP_REQUIRED | DRY_RUN_COMPLETE | BLOCKED
+check_scope: onboarding_status_default | onboarding_status_check_only
+allowed_next_actions: <machine-readable list>
 ...
-Keine Änderungen vorgenommen.
+No changes made.
 LR remains NO-GO.
-trade-capable ist kein Live-Go.
+trade-capable is not Live-Go.
 
-Möchtest du das Onboarding-Setup jetzt ausführen?
+Only when `State: SETUP_CONFIRMATION_PENDING`:
+
+Moechtest du das Onboarding-Setup jetzt ausfuehren?
 
 1. Ja
 2. Abbruch
@@ -77,8 +82,8 @@ Optional aliases exist, but `/onboarding` remains canonical:
 6. **Final Verdict:** `PASS` | `SETUP_WARN` | `BLOCKED`.
 
 The orchestrator is **read-only by default**: no file writes, no report,
-no setup mutation, no Docker, no secrets. The output ends with a strict
-two-option setup confirmation prompt.
+no setup mutation, no Docker, no secrets. Check-only is a dry-run only and
+must not show or imply setup execution.
 
 Do not create `.env`, initialize secrets, initialize context, write reports, create issues, or run Docker unless the user explicitly selects a next option after the status card.
 
@@ -141,13 +146,24 @@ Non-blocking warnings (`SETUP_WARN`):
 
 ## Allowed Next Paths
 
-Default output shows exactly one two-option prompt:
+Default output may expose these machine-readable next actions only:
 
-1. `Möchtest du das Onboarding-Setup jetzt ausführen?`
-2. `1. Ja` / `2. Abbruch`
+- `status_only`
+- `approve_setup`
+- `request_setup_go`
+- `abort`
 
+The two-option prompt appears only when `State: SETUP_CONFIRMATION_PENDING`.
 `1. Ja` maps only to setup approval / an allowed next action boundary in this
 slice. It does not create `.env` or perform any local setup mutation.
+
+## Agent Response Guardrails
+
+- Report the orchestrator `Status`, `State`, warnings, and `allowed_next_actions`.
+- Do not invent, renumber, or expand options beyond the orchestrator contract.
+- Do not offer direct setup execution after `--mode check-only` / dry-run.
+- Treat `check_scope` and `skipped_checks` as part of the report contract.
+- If doctor output is partial, say so explicitly instead of presenting it as a full check.
 
 All paths require explicit GO before execution. Default mode produces
 no report and no setup mutation.

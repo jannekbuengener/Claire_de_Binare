@@ -267,6 +267,8 @@ def check_schema_readonly(
 
 @dataclass
 class DoctorReport:
+    check_scope: str = "full_context_onboarding"
+    skipped_checks: list[str] = field(default_factory=list)
     mcp_server_status: ReachableStatus = "skipped"
     surrealdb_status: ReachableStatus = "skipped"
     surrealdb_health: CheckStatus = "skipped"
@@ -280,10 +282,17 @@ class DoctorReport:
     config_context_query_local: ConfigStatus = "missing"
     next_action: str = "no action required"
     lr_note: str = "NO-GO"
+    blocking: bool = True
+    warning_semantics: str = (
+        "Warnings indicate partial validation or non-blocking follow-up; blocking findings explain why setup is not yet usable."
+    )
+    blocking_findings: list[str] = field(default_factory=list)
     warnings: list[str] = field(default_factory=list)
 
     def to_dict(self) -> dict[str, Any]:
         return {
+            "check_scope": self.check_scope,
+            "skipped_checks": list(self.skipped_checks),
             "mcp_server": {"status": self.mcp_server_status},
             "surrealdb": {
                 "status": self.surrealdb_status,
@@ -305,8 +314,30 @@ class DoctorReport:
             },
             "next_action": self.next_action,
             "lr_note": self.lr_note,
+            "blocking": self.blocking,
+            "warning_semantics": self.warning_semantics,
+            "blocking_findings": list(self.blocking_findings),
             "warnings": list(self.warnings),
         }
+
+
+def collect_blocking_findings(report: DoctorReport) -> list[str]:
+    findings: list[str] = []
+    if report.secrets_canon_store == "missing":
+        findings.append("canonical secrets directory missing")
+    if report.secrets_surrealdb_env == "missing":
+        findings.append("SURREALDB_ENV missing")
+    if report.config_context_query_local == "missing":
+        findings.append("context_query_local missing")
+    if report.surrealdb_status == "not_reachable":
+        findings.append("local SurrealDB not reachable")
+    if report.surrealdb_health == "fail":
+        findings.append("SurrealDB health endpoint failed")
+    if report.surrealdb_version == "fail":
+        findings.append("SurrealDB version endpoint failed")
+    if report.surrealdb_schema == "fail":
+        findings.append("SurrealDB schema check failed")
+    return findings
 
 
 def prioritize_next_action(report: DoctorReport) -> str:
@@ -345,16 +376,7 @@ def prioritize_next_action(report: DoctorReport) -> str:
 
 
 def compute_exit_code(report: DoctorReport) -> int:
-    blocking = (
-        report.secrets_canon_store == "missing"
-        or report.secrets_surrealdb_env == "missing"
-        or report.config_context_query_local == "missing"
-        or report.surrealdb_status == "not_reachable"
-        or report.surrealdb_health == "fail"
-        or report.surrealdb_version == "fail"
-        or report.surrealdb_schema == "fail"
-    )
-    return 1 if blocking else 0
+    return 1 if collect_blocking_findings(report) else 0
 
 
 def build_report(
@@ -369,6 +391,18 @@ def build_report(
 ) -> DoctorReport:
     root = _repo_root() if repo_root is None else repo_root
     report = DoctorReport()
+    if skip_mcp or skip_schema:
+        report.check_scope = "partial_context_onboarding"
+    if skip_mcp:
+        report.skipped_checks.append("mcp_server")
+        report.warnings.append(
+            "Partial validation: MCP reachability skipped via --skip-mcp"
+        )
+    if skip_schema:
+        report.skipped_checks.append("surrealdb_schema")
+        report.warnings.append(
+            "Partial validation: schema check skipped via --skip-schema"
+        )
 
     report.secrets_path_env = evaluate_env_var("SECRETS_PATH", environ)
     report.cdb_context_secrets_path_env = evaluate_env_var(
@@ -442,6 +476,8 @@ def build_report(
             report.surrealdb_schema = "skipped"
 
     report.next_action = prioritize_next_action(report)
+    report.blocking_findings = collect_blocking_findings(report)
+    report.blocking = bool(report.blocking_findings)
     return report
 
 
@@ -453,6 +489,9 @@ def format_report(report: DoctorReport, fmt: str) -> str:
 
     lines = [
         "=== Context Onboarding Doctor ===",
+        f"check_scope: {report.check_scope}",
+        f"skipped_checks: {', '.join(report.skipped_checks) if report.skipped_checks else 'none'}",
+        f"blocking: {'yes' if report.blocking else 'no'}",
         f"lr_note: {report.lr_note}",
         "",
         f"mcp_server.status: {report.mcp_server_status}",
@@ -475,6 +514,12 @@ def format_report(report: DoctorReport, fmt: str) -> str:
         lines.append("warnings:")
         for warning in report.warnings:
             lines.append(f"  - {warning}")
+        lines.append(f"  - warning semantics: {report.warning_semantics}")
+    if report.blocking_findings:
+        lines.append("")
+        lines.append("blocking_findings:")
+        for finding in report.blocking_findings:
+            lines.append(f"  - {finding}")
     return "\n".join(lines)
 
 

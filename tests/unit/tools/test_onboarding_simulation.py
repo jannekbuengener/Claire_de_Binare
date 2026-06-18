@@ -68,10 +68,16 @@ class TestNormalizeMode:
 
 class TestBuildFinalVerdict:
     def test_agent_first_issue_ready(self) -> None:
-        assert _build_final_verdict("agent", "first-issue-dry-run") == "READY_FOR_REAL_FIRST_ISSUE"
+        assert (
+            _build_final_verdict("agent", "first-issue-dry-run")
+            == "READY_FOR_REAL_FIRST_ISSUE"
+        )
 
     def test_developer_first_issue_ready(self) -> None:
-        assert _build_final_verdict("developer", "first-issue-dry-run") == "READY_FOR_REAL_FIRST_ISSUE"
+        assert (
+            _build_final_verdict("developer", "first-issue-dry-run")
+            == "READY_FOR_REAL_FIRST_ISSUE"
+        )
 
     def test_check_only_hold(self) -> None:
         assert _build_final_verdict("agent", "check-only") == "HOLD_ONBOARDING_GAP"
@@ -81,9 +87,9 @@ class TestBuildFinalVerdict:
 
 
 class TestRenderSimulationDefaults:
-    def test_contains_onboarding_start(self) -> None:
+    def test_contains_simulation_start(self) -> None:
         output = render_simulation()
-        assert "ONBOARDING_START" in output
+        assert "SIMULATION_START" in output
 
     def test_contains_mode(self) -> None:
         output = render_simulation()
@@ -375,7 +381,7 @@ class TestSimulationOutputContract:
     def test_contains_all_required_sections(self) -> None:
         output = render_simulation()
         required_prefixes = [
-            "ONBOARDING_START",
+            "SIMULATION_START",
             "Context Brain Note:",
             "Bootloader Plan:",
             "Live Truth Plan:",
@@ -391,7 +397,9 @@ class TestSimulationOutputContract:
 
     def test_verdict_is_valid_enum(self) -> None:
         output = render_simulation()
-        verdict_line = [line for line in output.split("\n") if "Final Verdict:" in line][0]
+        verdict_line = [
+            line for line in output.split("\n") if "Final Verdict:" in line
+        ][0]
         verdict = verdict_line.split(": ", 1)[1].strip()
         assert verdict in VERDICT_ENUM, f"Verdict '{verdict}' not in VERDICT_ENUM"
 
@@ -405,4 +413,6 @@ class TestForbiddenPatternsInOutput:
     def test_no_token_patterns_in_rendered_output(self) -> None:
         output = render_simulation()
         for pattern in FORBIDDEN_OUTPUT_PATTERNS:
-            assert not pattern.search(output), f"Output matches forbidden pattern: {pattern.pattern}"
+            assert not pattern.search(
+                output
+            ), f"Output matches forbidden pattern: {pattern.pattern}"
