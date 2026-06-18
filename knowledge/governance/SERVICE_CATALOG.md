@@ -158,8 +158,10 @@ Services, die aus dem aktiven BLUE+RED-Runtime-Canon entfernt wurden. Kein Conta
 |---------|----------|-------|-------------|
 | `cdb_node_exporter` | 2026-04-09 (#1528, PR #1535) | Windows/WSL2-Mount-Propagation-Probleme; kein unterstuetztes Host-Node-Exporter-Surface im aktuellen Stack | cAdvisor fuer Container-Metriken; keine Host-Node-Metriken im aktuellen Canon |
 | `cdb_market_eth` | 2026-06-18 (#3303) | Branch/#1206-V3 Runtime-Artefakt, nie main-backed. Container schrieb mit MARKET_V3_LIVE_WRITE=true auf market_state:ETHUSDT — Race Condition mit cdb_market. Kein Code (mexc_v3_client.py) und keine Compose-Definition auf main. | cdb_market (Port 8009) ist der einzige kanonische Market-Service |
+| `lr030_soak_monitor` | 2026-06-18 (#3304) | LR-030 Soak-Phase (#2440) abgeschlossen (PASS 2026-05-17). Container lief standalone ausserhalb Compose mit `ubuntu:22.04` + `soak_entrypoint.sh`. Windows-Task `CDB_Soak_Sidecar` ebenfalls deaktiviert. | `cdb_prometheus` + `cdb_cadvisor` für Runtime-Monitoring |
+| `lr040_soak_monitor` | 2026-06-18 (#3304) | LR-040 Soak-Phase (#1420/#786) abgeschlossen (PASS 2026-04-04). Container lief standalone ausserhalb Compose mit `ubuntu:22.04` + `soak_entrypoint.sh`. Windows-Task `CDB_LR040_SoakMonitor` ebenfalls deaktiviert. | `cdb_prometheus` + `cdb_cadvisor` für Runtime-Monitoring |
 
-Erwarteter Runtime-Zustand: `absent` — kein `cdb_node_exporter`- oder `cdb_market_eth`-Container im BLUE/RED-Stack. Ein laufender Container ist unerwarteter Runtime-Drift (Pruefpfad: `docs/runbooks/legacy_service_drift.md`).
+Erwarteter Runtime-Zustand: `absent` — kein `cdb_node_exporter`-, `cdb_market_eth`-, `lr030_soak_monitor`- oder `lr040_soak_monitor`-Container im BLUE/RED-Stack. Ein laufender Container ist unerwarteter Runtime-Drift (Pruefpfad: `docs/runbooks/legacy_service_drift.md`).
 
 Referenz: `infrastructure/compose/SERVICE_MAPPING.md`, `infrastructure/docs/BLUE_RED_SPLIT.md`, `infrastructure/monitoring/METRICS_MATRIX.md`.
 
@@ -258,6 +260,7 @@ Referenz: `infrastructure/compose/SERVICE_MAPPING.md`, PR #2670.
 | 2026-06-06 | PRs #3016/#3019/#3022 Nachzug: Stimulus-Determinismus und Wall-Clock-Override für Freshness (RC_004) in Market & Candles dokumentiert (Issues #3017/#3020/#3023) | Codex |
 | 2026-06-08 | PR #3081 Nachzug: `historical_bridge.py` + `evaluate_price_policies.py` als Replay-Infrastruktur-Komponenten im Core-Libraries-Katalog ergänzt; `price_policy`-Support vermerkt (Issue #3082) | Codex |
 | 2026-06-18 | Audit #3302: Entfernte-Services-Sektion ergänzt; cdb_node_exporter als LEGACY mit Decommission-Datum, Grund, Alternative, erwartetem Runtime-Zustand und Runbook-Prüfpfad dokumentiert; Prüf-Checkliste um Legacy-Check ergänzt | Codex |
+| 2026-06-18 | Audit #3304: `lr030_soak_monitor` + `lr040_soak_monitor` als LEGACY dokumentiert; Container decommissioned, Windows-Tasks `CDB_LR040_SoakMonitor` + `CDB_Soak_Sidecar` deaktiviert; Runbooks um Windows-Scheduler-Cleanup ergänzt | OpenCode |
 ## PostgreSQL Schema Artefacts
 
 | Artefakt | Migration | Status | Bedeutung |

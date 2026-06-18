@@ -1,7 +1,7 @@
 # Legacy Service Drift — Operator-Prüfpfad
 
-**Erstellt:** 2026-06-18 (Audit #3302)
-**Scope:** Erkennung und Klassifikation unerwarteter Legacy-Container im BLUE+RED-Stack
+**Erstellt:** 2026-06-18 (Audit #3302, #3304)
+**Scope:** Erkennung und Klassifikation unerwarteter Legacy-Container im BLUE+RED-Stack inkl. Soak-Monitore und Scheduler-Tasks
 **Referenz:** `knowledge/governance/SERVICE_CATALOG.md` § Entfernte Services (Legacy)
 
 ---
@@ -12,6 +12,8 @@
 |---------|--------|---------------------------|
 | `cdb_node_exporter` | LEGACY (entfernt 2026-04-09, #1528/PR #1535) | `absent` — kein Container im BLUE/RED-Stack |
 | `cdb_market_eth` | LEGACY (entfernt 2026-06-18, #3303) | `absent` — kein Container im BLUE/RED-Stack |
+| `lr030_soak_monitor` | LEGACY (decommissioned 2026-06-18, #3304) | `absent` — kein Container; Windows-Task `CDB_Soak_Sidecar` deaktiviert |
+| `lr040_soak_monitor` | LEGACY (decommissioned 2026-06-18, #3304) | `absent` — kein Container; Windows-Task `CDB_LR040_SoakMonitor` deaktiviert |
 
 ---
 
@@ -29,6 +31,15 @@ docker ps --filter "name=cdb_market_eth" --format "table {{.Names}}\t{{.Status}}
 
 # cdb_market_eth — V3-Env redacted prüfen (MARKET_V3_SYMBOL, MARKET_V3_CLIENT_ENABLED, MARKET_V3_LIVE_WRITE)
 docker inspect cdb_market_eth --format "{{range .Config.Env}}{{println .}}{{end}}" 2>$null | Select-String "MARKET_V3|MARKET_PORT"
+
+# lr030_soak_monitor — Prüfen, ob ein Container läuft (Image ubuntu:22.04, kein Compose)
+docker ps --filter "name=lr030_soak_monitor" --format "table {{.Names}}\t{{.Status}}\t{{.Image}}"
+
+# lr040_soak_monitor — Prüfen, ob ein Container läuft (Image ubuntu:22.04, kein Compose)
+docker ps --filter "name=lr040_soak_monitor" --format "table {{.Names}}\t{{.Status}}\t{{.Image}}"
+
+# Soak Scheduler-Tasks — Prüfen, ob Windows-Tasks noch aktiv sind
+Get-ScheduledTask -TaskName "CDB_LR040_SoakMonitor", "CDB_Soak_Sidecar" -ErrorAction SilentlyContinue | Format-Table TaskName, State
 ```
 
 ---
@@ -70,3 +81,4 @@ docker rm cdb_market_eth
 - Issue #3303 — Audit + Decommission `cdb_market_eth`
 - Issue #1596 — 503-Bug cdb_market/cdb_market_eth (CLOSED)
 - Issue #1206 — ursprünglicher V3-Market-Branch (nicht auf main)
+- Issue #3304 — Audit + Decommission `lr030_soak_monitor` / `lr040_soak_monitor` + Scheduler `CDB_LR040_SoakMonitor` / `CDB_Soak_Sidecar`
