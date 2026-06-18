@@ -1,7 +1,7 @@
 # cdb\_screener\_ws – Rolle und Setup im Gesamtsystem
 
 > **Status: historical/deep-research snapshot.** Links zu `GORDON_SETUP_GUIDE.md`
-> sind Legacy-Referenzen — kein Gordon/Docker-AI operatives Gate (#2689).
+> sind Legacy-Referenzen — kein aktives Advisor-Gate.
 
 ## Überblick und Rolle im Gesamtsystem
 

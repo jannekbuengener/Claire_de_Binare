@@ -18,7 +18,7 @@ tools_or_queries:
   - read: canonical read-order per AGENTS.md
   - read: docs/evidence/arvp_three_window_replay_vs_paper_calibration_3219.md
   - read: docs/evidence/arvp_guarded_natural_paper_window_execution_3217.md
-  - read: docs/evidence/obsolete_gordon_gate_residue_cleanup_3222.md
+  - read: docs/evidence/obsolete_external_advisor_residue_cleanup_3222.md
   - read: artifacts/paper_reference_windows/paper_reference_window_june6_1h.json
   - read: docs/roadmaps/ARVP_TO_LIVE_GO_ROADMAP_2026-06.md
   - read: services/validation/strategy_replay_runner.py (entrypoint)
@@ -32,7 +32,7 @@ records_or_results:
   - #3221 OPEN; #3222 CLOSED; #3223 MERGED at f1d2c25d
   - #3219 CLOSED; #3220 MERGED at c004473b; #3217 CLOSED; #3218 MERGED at d2ba9b8b
   - #2985 OPEN; #1900 OPEN; #2977 OPEN (LR-050 refresh BLOCKED)
-  - Gordon cleanup confirmed: PR #3223 merged, evidence doc committed
+  - Obsolete advisor cleanup confirmed: PR #3223 merged, evidence doc committed
   - No repo-backed MEXC BTCUSDT 1m candle dataset exists for 2026-06-05T23:30:00Z to 2026-06-06T00:30:00Z
   - Nearest dataset: mexc_strict_window_3091 starts at 2026-06-06T13:43:00Z (13h13m too late)
   - Replay entrypoint: python -m services.validation.strategy_replay_runner --dataset-source file --input-candles <path>
@@ -42,7 +42,7 @@ records_or_results:
 repo_crosscheck:
   - arvp_three_window_replay_vs_paper_calibration_3219.md (3-window assessment, A2 WARN A3 WARN A4 FAIL)
   - arvp_guarded_natural_paper_window_execution_3217.md (window extraction)
-  - obsolete_gordon_gate_residue_cleanup_3222.md (Gordon cleanup confirmed)
+  - obsolete_external_advisor_residue_cleanup_3222.md (advisor cleanup confirmed)
   - services/validation/strategy_replay_runner.py (entrypoint code)
   - core/replay/dataset_spec.py, core/replay/dataset_provider.py (dataset layer)
   - core/replay/replay_contracts.py, core/replay/replay_vs_paper_compare.py
@@ -80,9 +80,9 @@ Verified boundaries:
 - `CURRENT_STATUS.md` treated as ledger, not live truth.
 - LR SSOT remains `docs/live-readiness/LR-AUDIT-STATUS-2026-03-05.md` (NO-GO).
 - Board stage `trade-capable` is not Live-Go.
-- Gordon gate is obsolete; cleanup confirmed via #3222/PR #3223.
+- Obsolete external advisor gate removed; cleanup confirmed via #3222/PR #3223.
 - No secret values printed, committed, or inspected.
-- No stop condition triggered: read order aufloesbar, LR status klar, GitHub live state konsistent, kein Gordon-Gate.
+- No stop condition triggered: read order aufloesbar, LR status klar, GitHub live state konsistent, kein obsolete advisor gate.
 
 ---
 
@@ -117,7 +117,7 @@ No live-truth conflict found.
 Per issue #3221 comments (Gate Policy Correction at 2026-06-15T21:09:58Z) and cleanup #3222/PR #3223:
 
 - **Runtime/Docker/Backfill/Replay/Infra actions require explicit Jannek Human-GO.**
-- No Gordon gate — Gordon is obsolete and must not be used as gate, blocker, advisor requirement, or bootloader step.
+- No obsolete advisor gate — obsolete external advisor must not be used as gate, blocker, advisor requirement, or bootloader step.
 - This issue grants: read-only inspection, branch creation, evidence artifact creation, commit, PR creation, merge after green required checks.
 - This issue does NOT grant: Docker/Compose runtime, candle dataset backfill, replay execution, replay report generation, workflow dispatch, DB mutation, MCP mutation, secrets/env reads, Live-Go or Echtgeld-Go.
 
@@ -311,7 +311,7 @@ This is not:
 | No Product-Complete claim | Enforced |
 | No Candidate #4 | Enforced |
 | No PB1/RMR/Momentum rescue | Enforced |
-| No Gordon gate reintroduced | Enforced — confirmed obsolete via #3222 |
+| No obsolete advisor gate reintroduced | Enforced — confirmed removed via #3222 |
 | No regime_segments inference | Enforced — not inferred, reported as unavailable |
 
 ---

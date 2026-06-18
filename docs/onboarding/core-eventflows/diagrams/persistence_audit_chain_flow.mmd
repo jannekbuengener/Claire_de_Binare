@@ -1,0 +1,46 @@
+---
+title: Persistence and Correlation/Audit Event Chain
+---
+
+flowchart LR
+    subgraph Streams["Redis Streams"]
+        SIG[signals]
+        ORD[orders]
+        ORI[order_results]
+        PS[portfolio_snapshots]
+    end
+
+    subgraph RiskEvents["Risk Events (DB)"]
+        RE[risk_events]
+        BD[blocked_decisions]
+    end
+
+    subgraph Writer["DB Writer (cdb_db_writer)"]
+        DW[Stream Consumer<br/>fan-out persistence]
+        CL[correlation_ledger<br/>SIGNAL→DECISION→ORDER→FILL]
+    end
+
+    subgraph DB["PostgreSQL"]
+        PG[(Persistent Store)]
+    end
+
+    subgraph Audit["Audit / Evidence Chain"]
+        EC[Event Chain<br/>fully traceable]
+        PW[Paper Reference Windows<br/>for replay-vs-paper compare]
+    end
+
+    SIG --> DW
+    ORD --> DW
+    ORI --> DW
+    PS --> DW
+    RE --> DW
+    BD --> DW
+
+    DW --> CL
+    CL --> PG
+
+    PG --> EC
+    PG --> PW
+
+    EC -.->|audit reference| Audit
+    PW -.->|comparison reference| Audit

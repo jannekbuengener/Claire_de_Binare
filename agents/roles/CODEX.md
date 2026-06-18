@@ -31,6 +31,10 @@ MUST READ FIRST:
 - [`../../PROJECT_STATUS.md`](../../PROJECT_STATUS.md) und `../../knowledge/CURRENT_STATUS.md` sind historische Snapshots und duerfen nicht als aktueller SSOT gelesen werden.
 - Eine Board-Stage darf nie als Live-Kapital-Freigabe oder Strategie-Validierung interpretiert werden.
 - Bei Statuskonflikten gilt die SSOT-Regel aus [`../../docs/meta/WORKING_REPO_CANON.md`](../../docs/meta/WORKING_REPO_CANON.md).
+- If the user says `/onboarding`, `onboarding`, `onboarding durchführen`, `mach onboarding`, `fresh agent onboarding`, or equivalent, run: `python -m tools.onboarding_orchestrator`
+- Do not start `cdb-session-start` or `onboarding_doctor` as the primary path for onboarding intent.
+- Default output is the CDB Onboarding status card.
+- Do not create `.env`, initialize secrets, initialize context, write reports, create issues, or run Docker unless the user explicitly selects a next option after the status card.
 
 ---
 

@@ -280,18 +280,17 @@ Grundsätze:
 
 ---
 
-## 5.1 Docker AI / Ask Gordon (Tool Context)
+## 5.1 Docker AI Tool Context (Historical)
 
 ### Status
-- Tool: **Ask Gordon (Docker AI)**
-- Reifegrad: **Beta**
-- Umgebung: Docker Desktop UI & `docker ai` CLI
+- Tool: Docker AI (historical)
+- Reifegrad: **Beta** (decommissioned)
 - Nutzung ausschließlich **analyse- und vorschlagsorientiert**
 
 ---
 
-### Zweck (verbindlich)
-Ask Gordon dient Gemini **ausschließlich** zur:
+### Zweck (verbindlich, historisch)
+Dient ausschließlich zur:
 - Analyse von Dockerfiles
 - Erklärung von Images & Containern
 - Diagnose von Build- und Runtime-Fehlern
@@ -303,7 +302,7 @@ Ask Gordon dient Gemini **ausschließlich** zur:
 
 ---
 
-### Zugriffsregeln (hart)
+### Zugriffsregeln (hart, historisch)
 - Datei- oder Verzeichniszugriff **nur nach expliziter Nutzerfreigabe**
 - CLI-Zugriff beschränkt auf aktuelles Working Directory
 - Image-Analyse nur auf **lokal vorhandene Images**
@@ -314,7 +313,7 @@ Ask Gordon dient Gemini **ausschließlich** zur:
 
 ---
 
-### Erlaubte Agent-Aktionen
+### Erlaubte Agent-Aktionen (historisch)
 Gemini **DARF**:
 - Dockerfiles lesen, erklären, strukturieren
 - Risiken, Anti-Patterns und Best Practices benennen
@@ -328,7 +327,7 @@ Gemini **DARF NICHT**:
 
 ---
 
-### Typischer Analyse-Flow (implizit)
+### Typischer Analyse-Flow (implizit, historisch)
 1. Kontext anfordern (Dockerfile / Image / Error)
 2. Analyse durchführen
 3. Ursache → Wirkung klar trennen
@@ -337,8 +336,8 @@ Gemini **DARF NICHT**:
 
 ---
 
-### Konsistenzregel
-Ask Gordon ist ein **Hilfswerkzeug**, kein Agent.
+### Konsistenzregel (historisch)
+Docker AI war ein **Hilfswerkzeug**, kein Agent.
 Alle Ergebnisse unterliegen:
 1. Canon
 2. Governance

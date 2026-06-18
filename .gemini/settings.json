@@ -1,0 +1,83 @@
+{
+  "ui": {
+    "footer": {
+      "hideSandboxStatus": false,
+      "hideModelInfo": true,
+      "hideContextPercentage": true
+    },
+    "showStatusInTitle": true,
+    "hideContextSummary": false,
+    "showMemoryUsage": false,
+    "showCitations": true,
+    "accessibility": {
+      "screenReader": false
+    },
+    "terminalBuffer": false,
+    "useAlternateBuffer": false,
+    "showModelInfoInChat": false,
+    "inlineThinkingMode": "off",
+    "hideWindowTitle": false,
+    "terminalBackgroundPollingInterval": 60,
+    "dynamicWindowTitle": false,
+    "incrementalRendering": true,
+    "renderProcess": true
+  },
+  "output": {
+    "format": "text"
+  },
+  "general": {
+    "sessionRetention": {
+      "enabled": true
+    },
+    "previewFeatures": true,
+    "debugKeystrokeLogging": true,
+    "defaultApprovalMode": "plan",
+    "enableNotifications": true
+  },
+  "context": {
+    "loadMemoryFromIncludeDirectories": true,
+    "discoveryMaxDirs": 400,
+    "fileFiltering": {
+      "enableFuzzySearch": false
+    }
+  },
+  "tools": {
+    "shell": {
+      "showColor": true
+    },
+    "sandboxAllowedPaths": [],
+    "sandboxNetworkAccess": false
+  },
+  "security": {
+    "folderTrust": {
+      "enabled": true
+    },
+    "environmentVariableRedaction": {
+      "enabled": true
+    },
+    "enablePermanentToolApproval": true,
+    "disableYoloMode": false
+  },
+  "experimental": {
+    "generalistProfile": true,
+    "memoryManager": true
+  },
+  "mcpServers": {
+    "cdb_context": {
+      "command": "D:\\Dev\\Workspaces\\Repos\\Claire_de_Binare\\.venv\\Scripts\\python.exe",
+      "args": [
+        "-m",
+        "tools.mcp.server"
+      ],
+      "type": "stdio",
+      "cwd": "D:\\Dev\\Workspaces\\Repos\\Claire_de_Binare"
+    }
+  },
+  "model": {
+    "name": "",
+    "disableLoopDetection": true
+  },
+  "hooksConfig": {
+    "enabled": false
+  }
+}

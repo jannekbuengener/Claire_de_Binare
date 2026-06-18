@@ -9,7 +9,6 @@ This staging copy is not a runtime source of truth and must not be maintained as
 - `knowledge/CDB_DOCKER_STACK_INVENTORY.md`
 - `knowledge/systems/STACK_LIFECYCLE.md`
 - `knowledge/OPERATIONS_RUNBOOK.md`
-- `knowledge/content/ONBOARDING_LINKS.md`
 
 ## Reason
 

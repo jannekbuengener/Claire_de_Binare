@@ -21,7 +21,7 @@ Technischer Patch für Issue #1244: Docker MCP read-only Provider + Docs-Root-En
 - `DOCKER_QUERIES`: hardcodierte Format-Strings, kein User-Input
 - `probeDockerCli()`: Docker-Desktop-Verfügbarkeit für Preflight
 - `registerDockerTools()`: in `registerTools()` eingehängt, nur wenn Flag gesetzt
-- `mcp_preflight`: docker-mcp-Statuszeile + Ask-Gordon-NOT-VERIFIED-Zeile
+- `mcp_preflight`: docker-mcp-Statuszeile
 - Optionaler Bearer-Token `MCP_BEARER_TOKEN`: Middleware auf `/mcp`, explizit nicht für ChatGPT-Deployments
 
 ### Docs-Root-Entfernung
@@ -41,11 +41,11 @@ Technischer Patch für Issue #1244: Docker MCP read-only Provider + Docs-Root-En
 - 4 Roots aktiv: working, db, mcp, config
 
 ## Verbotene Fähigkeiten (nicht implementiert)
-exec, run, start, stop, rm, build, push, compose, inspect, Ask Gordon
+exec, run, start, stop, rm, build, push, compose, inspect
 
 ## Restblocker
 - Kein Remote → lokales Repo, kein Push/PR möglich
-- Ask Gordon: NOT VERIFIED, kein programmatischer Pfad implementiert
+- Docker AI: NOT VERIFIED, kein programmatischer Pfad implementiert
 - Smoke: docker_info-Call selbst noch nicht im Smoke-Test (nur Gating-Check)
 
 ## Ergebnis

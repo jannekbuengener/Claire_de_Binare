@@ -1,0 +1,65 @@
+name: CDB Context Refresh Report
+
+on:
+  schedule:
+    - cron: "0 8 * * 1"
+    - cron: "0 8 * * 4"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  issues: read
+  pull-requests: read
+  actions: read
+
+jobs:
+  context-refresh:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@df4cb1c069e1874edd31b4311f1884172cec0e10 # v6.0.3
+
+      - name: Setup Python
+        uses: actions/setup-python@8d9ed9ac5c53483de85588cdf95a591a75ab9f55 # v5.5.0
+        with:
+          python-version: "3.12"
+
+      - name: Generate context refresh report
+        id: generate
+        shell: bash
+        run: |
+          set -euo pipefail
+          python tools/context/generate_context_refresh_report.py \
+            --repo-path "${{ github.workspace }}" \
+            --output-dir "${{ runner.temp }}/context-refresh-artifacts" \
+            --base-ref "origin/main" \
+            --head-ref "HEAD" \
+            --repo "Claire_de_Binare"
+
+      - name: Validate generated context delta
+        shell: bash
+        run: |
+          set -euo pipefail
+          python tools/context/validate_context_package.py \
+            "${{ runner.temp }}/context-refresh-artifacts/context_delta.json" \
+            --json || true
+
+      - name: Upload context refresh artifacts
+        uses: actions/upload-artifact@4cec3d8aa04e39d1a68397de0c4cd6fb9dce8ec1 # v7.2.0
+        with:
+          name: context-refresh-${{ github.run_id }}
+          path: ${{ runner.temp }}/context-refresh-artifacts/
+          retention-days: 30
+
+      - name: Step summary
+        shell: bash
+        run: |
+          set -euo pipefail
+          SUMMARY_FILE="${{ runner.temp }}/context-refresh-artifacts/context_refresh_summary.md"
+          if [[ -f "$SUMMARY_FILE" ]]; then
+            cat "$SUMMARY_FILE" >> "$GITHUB_STEP_SUMMARY"
+          else
+            echo "::error::Summary file not found at $SUMMARY_FILE"
+            exit 1
+          fi

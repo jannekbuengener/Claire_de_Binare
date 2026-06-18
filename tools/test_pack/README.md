@@ -100,6 +100,20 @@ Rationale:
   that is not justified without a specific integration target.
 - The path is browsable locally as a reference without any Git or build risk.
 
+### Runtime lifecycle
+
+MockX Valkey (`mockx-valkey`) is optional, session-local, reference/dev-test-only
+infrastructure. It is not part of the CDB BLUE/RED runtime and is `absent by default`.
+
+Expected use:
+- Start it only for an explicit MockX test-pack or reference session.
+- Stop/remove the `mockx-valkey` container after that session.
+- Do not leave it running as persistent background runtime.
+
+Boundary: `mockx-valkey` is not CDB-canonical Redis, is not a failover target, and
+must never replace `cdb_redis`. See `docs/runbooks/redis_aof_corruption_recovery.md`
+and `docs/runbooks/legacy_service_drift.md`.
+
 ### Future integration path (when a concrete use case emerges)
 
 If CDB needs the Engine package for adapter or backtest testing, install directly from the

@@ -3,7 +3,7 @@
 **Date:** 2026-05-29 (Europe/Berlin)  
 **Scope:** Plan-GO Redis-AOF-Recovery (read/write ops on Docker runtime only; no LR/trading change)  
 **Git:** `main` @ `d8432dc569b88cf0e361c9dab9f917bbc96c8394` (clean worktree)  
-**Gordon:** `GORDON_NOT_AVAILABLE` (no CDB Gordon MCP/agent integration). Recovery proceeded under explicit Plan-GO with backup-before-repair and log-backed root cause.
+**External advisor:** not available (no integration). Recovery proceeded under explicit Plan-GO with backup-before-repair and log-backed root cause.
 
 ---
 
