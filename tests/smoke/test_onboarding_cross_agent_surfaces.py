@@ -182,6 +182,7 @@ ALLOWED_CONTEXT_PREFIXES = [
 
 REQUIRED_EVIDENCE_PATTERNS: dict[str, list[str]] = {
     "Evidence-Abgrenzung": [
+        "GEMINI.md",
         ".gemini/onboarding.md",
         ".opencode/skills/onboarding/SKILL.md",
         ".codex/cdb_skills/onboarding/SKILL.md",
@@ -189,7 +190,19 @@ REQUIRED_EVIDENCE_PATTERNS: dict[str, list[str]] = {
         ".cursor/skills/onboarding/SKILL.md",
         ".gemini/README.md",
     ],
-    "Repo-/Canon-Prüfung durchgeführt; GitHub-/Check-Live nicht geprüft": [
+    "Repo-/Canon-/Onboarding-Status gepr\u00fcft; GitHub-/Check-Live nicht gepr\u00fcft": [
+        "GEMINI.md",
+    ],
+    "`tools.onboarding_orchestrator` z\u00e4hlt als Onboarding-Statuspr\u00fcfung": [
+        "GEMINI.md",
+    ],
+    "`CURRENT_STATUS.md` ist Engineering-Ledger, nicht Live-Wahrheit": [
+        "GEMINI.md",
+    ],
+    "`trade-capable` ist Board-/Stage-Kontext, kein Live-Go": [
+        "GEMINI.md",
+    ],
+    "Repo-/Canon-Pr\u00fcfung durchgef\u00fchrt; GitHub-/Check-Live nicht gepr\u00fcft": [
         ".gemini/onboarding.md",
         ".opencode/skills/onboarding/SKILL.md",
         ".codex/cdb_skills/onboarding/SKILL.md",
@@ -222,6 +235,10 @@ ALL_ONBOARDING_RESPONSE_SURFACES = [
 
 ALL_FORBIDDEN_PHRASES = [
     "Live-Wahrheit gepr\u00fcft: Ja",
+    "Live-Wahrheit gepr\u00fcft: ja",
+    "Live-Wahrheit gepr\u00fcft: ja/nein",
+    "via tools.onboarding_orchestrator",
+    "F\u00fchrt cp .env.example .env aus",
     "trade-capable ist deaktiviert",
     "trade-capable ist aktiviert",
     "alle systemischen Invarianten erfasst",
