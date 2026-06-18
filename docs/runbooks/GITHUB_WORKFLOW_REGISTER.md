@@ -6,7 +6,7 @@
 **Non-workflow file in `/workflows/`:** `labels.json` (label spec — consumed by `sync-labels.yml`)
 
 **Related docs:**
-- `.github/README.md` — folder layout and navigation
+- `.github/CONTROL_PLANE.md` — folder layout and navigation
 - `docs/runbooks/GITHUB_CONTROL_PLANE_RUNBOOK.md` — how to read and edit workflows
 - `docs/runbooks/GITHUB_CONTROL_PLANE_GRAPH.md` — relationship matrix + Mermaid graph
 - `docs/runbooks/CONTROL_REGISTER.md` — Board stage, LR verdict, active infra workflows
@@ -53,7 +53,7 @@ If a field cannot be resolved from row + profile + override, treat it as **not s
 ### Register-wide defaults (all workflow entries)
 
 - **Owner:** `@jannekbuengener` via `.github/CODEOWNERS`
-- **Canonical doc set:** `.github/README.md`, this register, `docs/runbooks/GITHUB_CONTROL_PLANE_RUNBOOK.md`, `docs/runbooks/GITHUB_CONTROL_PLANE_GRAPH.md`
+- **Canonical doc set:** `.github/CONTROL_PLANE.md`, this register, `docs/runbooks/GITHUB_CONTROL_PLANE_RUNBOOK.md`, `docs/runbooks/GITHUB_CONTROL_PLANE_GRAPH.md`
 - **Human review rule:** merge/closure decisions are human-gated; no automatic acceptance inference from this document alone
 
 ### Permission and primary-input profiles

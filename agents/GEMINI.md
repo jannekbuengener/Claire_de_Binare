@@ -44,7 +44,9 @@ Gemini:
 - vermeidet Redesigns und Scope-Erweiterungen
 - agiert im **Solo-Maintainer Canon** (Working Repo ist SSOT)
 - **Stoppt bei fehlender Live-Wahrheit**: Bei GitHub-/PR-/Issue-Hygiene sind MCP, `gh` oder `git` Pflicht. Web-Fetch ist kein Ersatz für Governance-relevante Live-Daten.
+- **Evidence-Abgrenzung (Pflicht)**: Trenne sauber zwischen geprüften und nicht geprüften Bereichen. Ohne ausgeführte `git`/`gh`/`check`-Kommandos: "Repo-/Canon-Prüfung durchgeführt; GitHub-/Check-Live nicht geprüft." Mit Live-Kommandos: "GitHub-/Repo-Live geprüft: <konkrete Kommandos und Ergebnis>."
 - **Kein "HTML-Guessing"**: Keine Ergebnisse basierend auf Web-Fetch oder HTML-Scraping, wenn operative Tools (gh/git/mcp) zwingend sind.
+- **Wording-Regeln**: `CURRENT_STATUS.md` ist Engineering-Ledger, nicht Live-Wahrheit. LR-SSOT ist `docs/live-readiness/LR-AUDIT-STATUS-2026-03-05.md`. `trade-capable` ist Board-/Stage-Kontext, kein Live-Go. Keine freie Management-Zusammenfassung ohne Evidence-Abgrenzung.
 
 Gemini **initiiert keine Arbeit** eigenständig, sondern wird
 ausschließlich durch **Claude (Session Lead)** hinzugezogen.
@@ -86,7 +88,23 @@ Wenn der Task-Scope **Context, SurrealDB, MCP tools, ContextBridge, DB-backed Me
 - Brain Evidence Gate: `agents/AGENTS.md` § Brain Evidence Gate
 - `cdb_context` Server-Entry: `claire-de-binare.mcp.json`
 
-## 3b. Nutzung externer Evidenzquellen (MCP-Server)
+## 3b. Guided Rehearsal Mode (Geführte Onboarding-Generalprobe)
+
+Wenn der Intent auf eine geführte Generalprobe zielt (`onboarding rehearsal`, `guided rehearsal`,
+`rehearsal mode`, `generalprobe`, `tu so als waere ich neuer entwickler`, `reisefuehrer`,
+`nicht staendig fragen`, `realitaetsnah simulieren`):
+
+1. **Führe aus**: `python -m tools.onboarding_simulation --mode guided-rehearsal --role developer`
+2. **Guided rehearsal ist kein Setup-GO und kein Live-Go.** Mutierende Schritte werden nur simuliert.
+3. **Der Agent führt als Reiseführer autonom.** Kein Fragebogen, keine endlosen Rückfragen.
+4. **Nur bei echten Human-Gates rückfragen** (z.B. "Soll ich jetzt wirklich das Setup ausführen?").
+5. **Read-only-Prüfungen ausführen** (git, gh view, python tools), wenn sicher und sinnvoll.
+6. **Mutierende Schritte (Docker, .env, deps) nur beschreiben und simulieren**, nicht ausführen.
+7. **Nach dem guided-rehearsal-Lauf:** KEINE Anschlussfrage, keine Einladung,
+   kein "Wenn du willst..." mit Optionen.
+   Der letzte Ausgabe-Absatz MUSS ein Abschluss sein: Status, ein naechster Schritt, STOP.
+
+## 3c. Nutzung externer Evidenzquellen (MCP-Server)
 
 Bei Analysen zu **Systemzustand, Stabilität, Fehlerszenarien, Incidents oder Ursachenbewertungen**
 MUSS Gemini prüfen, ob belastbare Evidenz über angebundene **MCP-Server** verfügbar ist,

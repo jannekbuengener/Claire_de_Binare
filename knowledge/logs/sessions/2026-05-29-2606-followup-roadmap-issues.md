@@ -32,7 +32,7 @@ Already closed / out of scope:
 - #2691, #2687 — DB read smoke blockers (done)
 - #2009, #2571 — write policy design (done)
 - #2153–#2160 — Wave-16 stale bundle-only (no DB)
-- #2689 — Gordon decommission (separate epic, stays OPEN)
+- #2689 — Obsolete advisor cleanup (separate epic, stays OPEN)
 
 Related open epics (scope boundary, not duplicates): #1976, #2603, #2605, #2604.
 

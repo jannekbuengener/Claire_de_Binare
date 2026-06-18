@@ -68,4 +68,4 @@ Stage `trade-capable` autorisiert kein Live-Trading.
 
 - [`../index.md`](../index.md) — Docs-Hub
 - [`../../knowledge/runbooks/README.md`](../../knowledge/runbooks/README.md) — Knowledge-Runbooks (operating rules)
-- [`../../.github/README.md`](../../.github/README.md) — Control plane entry
+- [`../../.github/CONTROL_PLANE.md`](../../.github/CONTROL_PLANE.md) — Control plane entry

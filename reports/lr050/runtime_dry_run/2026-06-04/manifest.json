@@ -16,7 +16,7 @@
   },
   "brain_source": "repo-only",
   "brain_status": "not-used",
-  "gordon_gate_used": false,
+  "obsolete_advisor_gate_used": false,
   "lr_status": "NO-GO",
   "overall_verdict": "repo-backed non-destructive evidence pack assembled; live blockers remain open",
   "artifact_files": [

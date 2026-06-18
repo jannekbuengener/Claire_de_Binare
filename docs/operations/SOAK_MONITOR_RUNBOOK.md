@@ -210,11 +210,21 @@ python infrastructure/scripts/lr030_soak_supervisor.py \
 ## Disable / Rollback
 
 ```bash
-# Remove cron entry
+# Remove cron entry (Linux)
 crontab -e   # delete the soak_monitor line
 
 # Or comment out temporarily
 # 0 * * * * cd /path/to/repo && ./infrastructure/scripts/soak_monitor.sh ...
+```
+
+```powershell
+# Windows Task Scheduler — Soak-Tasks deaktivieren (nach Phasenabschluss, #3304)
+Get-ScheduledTask -TaskName "CDB_LR040_SoakMonitor", "CDB_Soak_Sidecar" -ErrorAction SilentlyContinue | Disable-ScheduledTask
+
+# Tasks nicht loeschen (forensische Nachvollziehbarkeit).
+# Container nach Scheduler-Deaktivierung stoppen + entfernen:
+#   docker stop lr030_soak_monitor lr040_soak_monitor
+#   docker rm lr030_soak_monitor lr040_soak_monitor
 ```
 
 No rollback needed for the script itself; it is read-only against the stack.

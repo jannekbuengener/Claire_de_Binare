@@ -1,7 +1,7 @@
 -- Migration 006: Correlation IDs End-to-End (Phase 8C)
 -- Date: 2026-02-15
 -- Reason: End-to-end correlation tracking + eliminate silent blocks
--- Historical note: Phase 8C review recorded in conversation; Gordon gate decommissioned (#2689). Human-GO only.
+-- Historical note: Phase 8C review recorded in conversation; obsolete external advisor reference removed. Human-GO only.
 
 -- ============================================================================
 -- TABLE: correlation_ledger (append-only audit trail)

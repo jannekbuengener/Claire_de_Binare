@@ -1,0 +1,65 @@
+---
+title: Profitability Candidate Lifecycle and Evidence Gate Flow
+---
+
+flowchart LR
+    subgraph Active["Active States"]
+        IDEA[IDEA]
+        SPEC[SPECIFIED]
+        BT[BACKTESTED]
+        ARV[ARVP_VALIDATED]
+        ST[STRESS_TESTED]
+        PC[PAPER_CANDIDATE]
+        PV[PAPER_VALIDATED]
+        MLC[MICRO_LIVE_CANDIDATE]
+    end
+
+    subgraph Terminal["Terminal States"]
+        REJ[REJECTED]
+        PRK[PARKED]
+        UNS[UNSAFE]
+        SUP[SUPERSEDED]
+        STL[STALE]
+    end
+
+    IDEA --> SPEC
+    SPEC --> BT
+    BT --> ARV
+    ARV --> ST
+    ST --> PC
+    PC --> PV
+    PV --> MLC
+
+    IDEA --> REJ
+    SPEC --> REJ
+    BT --> REJ
+    ARV --> REJ
+    ST --> REJ
+
+    SPEC --> PRK
+    BT --> PRK
+    ARV --> PRK
+    ST --> PRK
+    PV --> PRK
+
+    SPEC --> UNS
+    BT --> UNS
+    ARV --> UNS
+    ST --> UNS
+    PC --> UNS
+    PV --> UNS
+
+    SPEC --> SUP
+    BT --> SUP
+    ARV --> SUP
+    ST --> SUP
+
+    PC --> STL
+    PV --> STL
+
+    style MLC fill:#9cf,stroke:#069
+    style REJ fill:#f99,stroke:#c33
+    style PRK fill:#ff9,stroke:#c90
+    style UNS fill:#f66,stroke:#c00
+    style SUP fill:#ddd,stroke:#999
+    style STL fill:#ddd,stroke:#999
