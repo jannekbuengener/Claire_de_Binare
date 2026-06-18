@@ -223,6 +223,15 @@ def _build_final_verdict(role: str, mode: str) -> str:
     return "READY_FOR_REAL_FIRST_ISSUE"
 
 
+def _single_next_step(role: str, role_label: str) -> str:
+    if role in ("developer", "docs", "validation"):
+        return (
+            f"Fuer {role_label}: python -m tools.onboarding_orchestrator aufrufen"
+            " und die Onboarding-Statuskarte lesen."
+        )
+    return f"Fuer {role_label}: /onboarding aufrufen und die Statuskarte lesen."
+
+
 def _build_guided_rehearsal(role: str) -> list[str]:
     role_label = ROLE_LABELS.get(role, role)
     return [
@@ -285,14 +294,20 @@ def _build_guided_rehearsal(role: str) -> list[str]:
         "  - Merge.",
         "",
         "--- Sinnvoller realer naechster Schritt ---",
-        "  - Fuer Entwickler: python -m tools.onboarding_orchestrator -> Statuskarte.",
-        "  - Fuer Agent: /onboarding -> orchestrator -> Statuskarte.",
-        "  - Danach: docs/onboarding/first_issue_sandbox.md aufmachen.",
-        "  - Erste echte Aktion: Bootloader-Dateien lesen, Issue-Live-Check via gh.",
+        f"  {_single_next_step(role, role_label)}",
         "",
         "--- Guided Rehearsal abgeschlossen ---",
         "  Der Agent hat gefuehrt, simulierte Schritte markiert, keine Fragebogen erzeugt.",
         "  Die Rehearsal ist abgeschlossen – das echte Onboarding steht bereit.",
+        "",
+        "--- Agent Instructions (Post-Run) ---",
+        "  THIS OUTPUT IS SELF-CONTAINED. DO NOT append a numbered follow-up menu.",
+        '  DO NOT ask "Wenn du willst..." with 1/2/3 options.',
+        "  DO NOT generate a numbered follow-up menu.",
+        "  Summarize the guided-rehearsal result.",
+        "  State safety boundaries.",
+        "  Recommend exactly ONE next step.",
+        "  STOP.",
     ]
 
 

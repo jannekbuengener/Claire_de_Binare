@@ -67,6 +67,7 @@
    - Guided rehearsal ist kein Setup-GO und kein Live-Go.
    - Mutierende Schritte werden nur simuliert.
    - Der Agent fuehrt als Reisefuehrer autonom, kein Fragebogen.
+   - **Nach dem Lauf:** NICHT nummerierte Nachfolgemenues anhaengen. Kein "Wenn du willst..." mit Optionen. Ergebnis zusammenfassen, Safety nennen, einen naechsten Schritt empfehlen. STOP.
 
 ---
 
