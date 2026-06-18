@@ -32,15 +32,13 @@ class TestOrchestratorSmoke:
 
     def test_orchestrator_output_contains_onboarding(self):
         result = _run_orchestrator()
-        assert "CDB Onboarding" in result.stdout, (
-            "Output must contain 'CDB Onboarding' header"
-        )
+        assert (
+            "CDB Onboarding" in result.stdout
+        ), "Output must contain 'CDB Onboarding' header"
 
     def test_orchestrator_output_contains_status(self):
         result = _run_orchestrator()
-        assert "Status:" in result.stdout, (
-            "Output must contain 'Status:' line"
-        )
+        assert "Status:" in result.stdout, "Output must contain 'Status:' line"
 
     def test_orchestrator_output_status_is_valid(self):
         result = _run_orchestrator()
@@ -53,59 +51,61 @@ class TestOrchestratorSmoke:
 
     def test_orchestrator_output_keine_aenderungen(self):
         result = _run_orchestrator()
-        assert "Keine Änderungen vorgenommen." in result.stdout, (
-            "Output must contain 'Keine Änderungen vorgenommen.'"
-        )
+        assert (
+            "Keine Änderungen vorgenommen." in result.stdout
+        ), "Output must contain 'Keine Änderungen vorgenommen.'"
 
     def test_orchestrator_output_lr_no_go(self):
         result = _run_orchestrator()
-        assert "LR remains NO-GO" in result.stdout, (
-            "Output must contain 'LR remains NO-GO'"
-        )
+        assert (
+            "LR remains NO-GO" in result.stdout
+        ), "Output must contain 'LR remains NO-GO'"
 
     def test_orchestrator_output_trade_capable(self):
         result = _run_orchestrator()
-        assert "trade-capable ist kein Live-Go" in result.stdout, (
-            "Output must contain 'trade-capable ist kein Live-Go'"
-        )
+        assert (
+            "trade-capable ist kein Live-Go" in result.stdout
+        ), "Output must contain 'trade-capable ist kein Live-Go'"
 
-    def test_orchestrator_output_options(self):
+    def test_orchestrator_output_next_paths_contains_yes_no(self):
         result = _run_orchestrator()
-        assert "Nächste Optionen:" in result.stdout, (
-            "Output must contain 'Nächste Optionen:'"
-        )
+        assert (
+            "Soll ich jetzt den sicheren Onboarding-Workflow starten? (ja/nein)"
+            in result.stdout
+        ), "Output must contain the yes/no onboarding question"
 
-    def test_orchestrator_option_1(self):
+    def test_orchestrator_output_next_paths_contains_setup_plan(self):
         result = _run_orchestrator()
-        assert "Setup-Plan anzeigen" in result.stdout
+        assert (
+            "Oder möchtest du vorher den Setup-Plan ansehen?" in result.stdout
+        ), "Output must contain the setup-plan alternative"
 
-    def test_orchestrator_option_2(self):
+    def test_orchestrator_does_not_contain_old_options(self):
         result = _run_orchestrator()
-        assert "Setup vorbereiten" in result.stdout
+        old_patterns = [
+            "1. Setup-Plan anzeigen",
+            "2. Setup vorbereiten",
+            "3. Onboarding-Report schreiben",
+            "4. Ersten sicheren Issue-Workflow simulieren",
+        ]
+        for pattern in old_patterns:
+            assert (
+                pattern not in result.stdout
+            ), f"Output must not contain old numbered option: {pattern}"
 
-    def test_orchestrator_option_3(self):
+    def test_orchestrator_does_not_contain_naechste_optionen_header(self):
         result = _run_orchestrator()
-        assert "Onboarding-Report schreiben" in result.stdout
-
-    def test_orchestrator_option_4(self):
-        result = _run_orchestrator()
-        assert "Ersten sicheren Issue-Workflow simulieren" in result.stdout
-
-    def test_orchestrator_no_open_question(self):
-        result = _run_orchestrator()
-        output = result.stdout
-        has_question = "?" in output.split("Nächste Optionen:")[-1] if "Nächste Optionen:" in output else False
-        assert not has_question, (
-            "Output must not contain open yes/no question after options"
-        )
+        assert (
+            "Nächste Optionen:" not in result.stdout
+        ), "Output must not contain 'Nächste Optionen:' header"
 
     def test_orchestrator_stderr_empty_or_info(self):
         result = _run_orchestrator()
         stderr = result.stderr.strip()
         if stderr:
-            assert "ERROR" not in stderr.upper(), (
-                f"stderr must not contain ERROR: {stderr}"
-            )
+            assert (
+                "ERROR" not in stderr.upper()
+            ), f"stderr must not contain ERROR: {stderr}"
 
     def test_orchestrator_json_format(self):
         result = _run_orchestrator("--format", "json")
@@ -125,8 +125,13 @@ class TestOrchestratorSmoke:
     def test_orchestrator_safe_output(self):
         result = _run_orchestrator()
         secret_patterns = [
-            "api_key", "api_secret", "password",
-            "ghp_", "gho_", "ghu_", "ghs_",
+            "api_key",
+            "api_secret",
+            "password",
+            "ghp_",
+            "gho_",
+            "ghu_",
+            "ghs_",
         ]
         lower = result.stdout.lower()
         for pattern in secret_patterns:

@@ -4,7 +4,7 @@ description: >
   Canonical CDB onboarding slash command for agents, developers, and docs
   maintainers. Single smart read-only entrypoint: runs bootloader checks,
   scenario integrity, LR status, doctor/validator reachability. Produces a
-  status card and numbered next-option hints. Read-only by default. No
+  status card with two clear next paths. Read-only by default. No
   Live-Go, no Echtgeld-Go, no runtime/Docker/DB/MCP mutation. Safe for
   fresh clones and first-time agent sessions.
 ---
@@ -16,7 +16,7 @@ description: >
 `/onboarding` is the **single smart developer entrypoint** for CDB onboarding.
 It delegates to `tools/onboarding_orchestrator.py` which produces a read-only
 status card with bootloader check, scenario integrity, LR status, doctor/validator
-reachability, and numbered next-option hints.
+reachability, and two clear next paths.
 
 If the user says `/onboarding`, `onboarding`, `onboarding durchführen`, `mach onboarding`,
 `fresh agent onboarding`, or equivalent, run: `python -m tools.onboarding_orchestrator`
@@ -40,7 +40,7 @@ github_writes: disabled
 lr: NO-GO
 ```
 
-Expected initial output — a status card ending with numbered options:
+Expected initial output — a status card ending with two clear next paths:
 
 ```text
 === CDB Onboarding ===
@@ -49,11 +49,9 @@ Status: PASS | SETUP_WARN | BLOCKED
 Keine Änderungen vorgenommen.
 LR remains NO-GO.
 trade-capable ist kein Live-Go.
-Nächste Optionen:
-  1. Setup-Plan anzeigen
-  2. Setup vorbereiten
-  3. Onboarding-Report schreiben
-  4. Ersten sicheren Issue-Workflow simulieren
+
+Soll ich jetzt den sicheren Onboarding-Workflow starten? (ja/nein)
+Oder möchtest du vorher den Setup-Plan ansehen?
 ```
 
 ## Optional Forms
@@ -77,8 +75,8 @@ Optional aliases exist, but `/onboarding` remains canonical:
 6. **Final Verdict:** `PASS` | `SETUP_WARN` | `BLOCKED`.
 
 The orchestrator is **read-only by default**: no file writes, no report,
-no setup mutation, no Docker, no secrets. The output ends with numbered
-next-option hints (no open yes/no question).
+no setup mutation, no Docker, no secrets. The output ends with two clear
+next paths (a yes/no question and a setup-plan hint).
 
 Do not create `.env`, initialize secrets, initialize context, write reports, create issues, or run Docker unless the user explicitly selects a next option after the status card.
 
@@ -139,16 +137,18 @@ Non-blocking warnings (`SETUP_WARN`):
 - Context Doctor nicht initialisiert (setup warn, kein blocker)
 - `onboarding_doctor` nicht erreichbar
 
-## Allowed Next Options (numbered, no open question)
+## Allowed Next Paths
 
-```text
-1. Setup-Plan anzeigen
-2. Setup vorbereiten
-3. Onboarding-Report schreiben
-4. Ersten sicheren Issue-Workflow simulieren
-```
+Default output shows exactly two paths:
 
-All four options require explicit GO before execution. Default mode produces
+1. **Primär:** `Soll ich jetzt den sicheren Onboarding-Workflow starten? (ja/nein)`
+2. **Alternative:** `Oder möchtest du vorher den Setup-Plan ansehen?`
+
+The old specialized paths (Setup vorbereiten, Onboarding-Report schreiben,
+Ersten sicheren Issue-Workflow simulieren) are removed from the default
+output but remain available as explicit CLI/docs details.
+
+All paths require explicit GO before execution. Default mode produces
 no report and no setup mutation.
 
 ## Non-Goals
@@ -158,4 +158,3 @@ no report and no setup mutation.
 - No runtime, Docker, trading, strategy, LR, productive DB, SurrealDB, or MCP mutation.
 - No automatic setup, report, or runtime action.
 - No replacement of existing CDB subagents.
-- No open yes/no question in default output.

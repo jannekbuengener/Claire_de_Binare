@@ -13,7 +13,7 @@ Exit codes:
 
 This tool is read-only by default:
     - No file writes, no report, no setup mutation, no Docker, no secrets.
-    - Status card ends with numbered next-option hints (no open yes/no question).
+    - Status card ends with two clear next paths (yes/no question + setup-plan hint).
 
 Read Order:
     agents/AGENTS.md § Read Order -> Context Brain Preflight -> Live Truth ->
@@ -26,11 +26,9 @@ Output contract:
     Keine Änderungen vorgenommen.
     LR remains NO-GO.
     trade-capable ist kein Live-Go.
-    Nächste Optionen:
-    1. Setup-Plan anzeigen
-    2. Setup vorbereiten
-    3. Onboarding-Report schreiben
-    4. Ersten sicheren Issue-Workflow simulieren
+
+    Soll ich jetzt den sicheren Onboarding-Workflow starten? (ja/nein)
+    Oder möchtest du vorher den Setup-Plan ansehen?
 """
 
 from __future__ import annotations
@@ -52,9 +50,7 @@ CANONICAL_BOOTLOADER_FILES: list[str] = [
     "agents/AGENTS.md",
 ]
 
-SCENARIO_FILE = (
-    "docs/onboarding/ONBOARDING_SCENARIO_001_FRESH_AGENT_SAFE_WORK_DRILL.md"
-)
+SCENARIO_FILE = "docs/onboarding/ONBOARDING_SCENARIO_001_FRESH_AGENT_SAFE_WORK_DRILL.md"
 
 REQUIRED_SCENARIO_TERMS: list[str] = [
     "onboarding-scenario-001",
@@ -74,11 +70,9 @@ FORBIDDEN_OUTPUT_PATTERNS: list[re.Pattern] = [
     re.compile(r"https?://[^\s\"']+"),
 ]
 
-NEXT_OPTIONS: list[str] = [
-    "1. Setup-Plan anzeigen",
-    "2. Setup vorbereiten",
-    "3. Onboarding-Report schreiben",
-    "4. Ersten sicheren Issue-Workflow simulieren",
+NEXT_PATHS: list[str] = [
+    "Soll ich jetzt den sicheren Onboarding-Workflow starten? (ja/nein)",
+    "Oder möchtest du vorher den Setup-Plan ansehen?",
 ]
 
 
@@ -105,7 +99,12 @@ def _run_cmd(
         out = (proc.stdout or "").strip()
         err = (proc.stderr or "").strip()
         return proc.returncode, out, err
-    except (FileNotFoundError, OSError, subprocess.TimeoutExpired, UnicodeDecodeError) as exc:
+    except (
+        FileNotFoundError,
+        OSError,
+        subprocess.TimeoutExpired,
+        UnicodeDecodeError,
+    ) as exc:
         return -1, "", str(exc)
 
 
@@ -207,7 +206,9 @@ def _check_context_doctor(
 def _validate_output_safe(text: str) -> None:
     for pattern in FORBIDDEN_OUTPUT_PATTERNS:
         if pattern.search(text):
-            raise ValueError("output contains forbidden pattern — potential secret leak")
+            raise ValueError(
+                "output contains forbidden pattern — potential secret leak"
+            )
 
 
 def build_verdict(
@@ -223,9 +224,7 @@ def build_verdict(
     bl_status, bl_missing = _check_bootloader_files(r)
     output.bootloader_ok = bl_status
     if bl_status == "FAIL":
-        output.blockers.append(
-            f"Fehlender Bootloader: {', '.join(bl_missing)}"
-        )
+        output.blockers.append(f"Fehlender Bootloader: {', '.join(bl_missing)}")
 
     # 2. Scenario file
     sc_status, sc_issues = _check_scenario_file(r)
@@ -311,9 +310,7 @@ def format_output(report: OrchestratorOutput, fmt: str) -> str:
     lines.append("trade-capable ist kein Live-Go.")
     lines.append("")
 
-    lines.append("Nächste Optionen:")
-    for opt in NEXT_OPTIONS:
-        lines.append(f"  {opt}")
+    lines.extend(NEXT_PATHS)
 
     return "\n".join(lines)
 
