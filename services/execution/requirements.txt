@@ -15,10 +15,10 @@ psycopg2-binary==2.9.9
 requests==2.33.0
 
 # Async Support
-aiohttp==3.14.0
+aiohttp==3.14.1
 
 # Crypto & Signing (für MEXC API)
-cryptography==46.0.7
+cryptography==48.0.1
 
 # Environment Variables
 python-dotenv==1.2.2
