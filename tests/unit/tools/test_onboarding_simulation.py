@@ -298,9 +298,9 @@ class TestRenderSimulationGuidedRehearsal:
 
     def test_guided_rehearsal_contains_anti_menu_instructions(self) -> None:
         output = render_simulation(mode="guided-rehearsal")
-        assert "DO NOT append" in output
+        assert "NO follow-up question" in output
         assert "Agent Instructions" in output
-        assert "DO NOT generate" in output
+        assert "NO invite" in output or "no invitation" in output.lower()
 
     def test_guided_rehearsal_contains_post_run_stop(self) -> None:
         output = render_simulation(mode="guided-rehearsal")
@@ -308,7 +308,8 @@ class TestRenderSimulationGuidedRehearsal:
 
     def test_guided_rehearsal_recommends_exactly_one_next_step(self) -> None:
         output = render_simulation(mode="guided-rehearsal")
-        assert "exactly ONE" in output or "exactly one" in output.lower()
+        assert "one recommended next step" in output.lower()
+        assert "STOP" in output
 
 
 class TestRenderSimulationJson:

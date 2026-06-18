@@ -242,9 +242,11 @@ GUIDED_REHEARSAL_ALL_ROUTER_SURFACES = GUIDED_REHEARSAL_SURFACES + [
 ]
 
 ANTI_MENU_KEYWORDS = [
-    "NICHT nummerierte Nachfolgemenues",
+    "KEINE Anschlussfrage",
+    "keine Einladung",
     'Kein "Wenn du willst..."',
     "genau einen naechsten Schritt",
+    "ein naechster empfohlener Schritt",
     "Nach dem guided-rehearsal-Lauf",
     "After guided-rehearsal run",
 ]
@@ -273,9 +275,9 @@ class TestGuidedRehearsalAntiMenuPostRun:
 
     def test_guided_rehearsal_tool_output_has_anti_menu(self):
         text = read_text("tools/onboarding_simulation.py")
-        assert "DO NOT append" in text
+        assert "NO follow-up question" in text
         assert "Agent Instructions" in text
-        assert "DO NOT generate" in text
+        assert "SELF-CONTAINED" in text
 
 
 # Forbidden phrases are expected to appear in "Verbotene Phrasen" or "Nicht"

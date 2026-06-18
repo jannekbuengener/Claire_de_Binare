@@ -301,13 +301,11 @@ def _build_guided_rehearsal(role: str) -> list[str]:
         "  Die Rehearsal ist abgeschlossen – das echte Onboarding steht bereit.",
         "",
         "--- Agent Instructions (Post-Run) ---",
-        "  THIS OUTPUT IS SELF-CONTAINED. DO NOT append a numbered follow-up menu.",
-        '  DO NOT ask "Wenn du willst..." with 1/2/3 options.',
-        "  DO NOT generate a numbered follow-up menu.",
-        "  Summarize the guided-rehearsal result.",
-        "  State safety boundaries.",
-        "  Recommend exactly ONE next step.",
-        "  STOP.",
+        "  THIS OUTPUT IS SELF-CONTAINED. NO follow-up question, no invitation.",
+        '  DO NOT ask "Wenn du willst..." with options.',
+        "  DO NOT generate a numbered follow-up menu (1/2/3).",
+        "  The last output paragraph MUST be a closing:",
+        "  status + one recommended next step + STOP.",
     ]
 
 
