@@ -44,13 +44,15 @@ agent prompt.
    [`../../agents/AGENTS.md`](../../agents/AGENTS.md) ->
    [`../../agents/OPEN_CODE_AGENTS.md`](../../agents/OPEN_CODE_AGENTS.md).
 2. Read the full Read Order from `agents/AGENTS.md` before planning.
-3. If scope includes Strategy, Runtime, Module, Service, Contract, Context,
+3. For the canonical Fresh-Agent drill contract, read
+   [`ONBOARDING_SCENARIO_001_FRESH_AGENT_SAFE_WORK_DRILL.md`](ONBOARDING_SCENARIO_001_FRESH_AGENT_SAFE_WORK_DRILL.md).
+4. If scope includes Strategy, Runtime, Module, Service, Contract, Context,
    SurrealDB, MCP tools, DB-backed memory, or Evidence, output the Brain
    Evidence block before the plan.
-4. Prefer verified Context/MCP evidence when available; otherwise declare
+5. Prefer verified Context/MCP evidence when available; otherwise declare
    `brain_source=repo-only` and use repo/GitHub live cross-checks.
-5. For issue work, verify GitHub live state before writing.
-6. Respect the single-writer lock from `CDB_AGENT_POLICY.md` section 4. Do not
+6. For issue work, verify GitHub live state before writing.
+7. Respect the single-writer lock from `CDB_AGENT_POLICY.md` section 4. Do not
    treat an issue-only status comment as satisfying the policy lock; the required
    `LOCK:` must be the first PR comment on the associated PR before further
    push, PR update, or follow-up GitHub mutation.
@@ -108,6 +110,7 @@ flowchart TD
 ## Examples And Templates
 
 - Examples index: [`examples/README.md`](examples/README.md)
+- Fresh-Agent drill scenario: [`ONBOARDING_SCENARIO_001_FRESH_AGENT_SAFE_WORK_DRILL.md`](ONBOARDING_SCENARIO_001_FRESH_AGENT_SAFE_WORK_DRILL.md)
 - Fresh-clone rehearsal: [`fresh_clone_rehearsal.md`](fresh_clone_rehearsal.md)
 - First-issue sandbox (guided rehearsal): [`first_issue_sandbox.md`](first_issue_sandbox.md)
 - First issue-to-PR flow (companion example): [`examples/first_issue_to_pr_flow.md`](examples/first_issue_to_pr_flow.md)
