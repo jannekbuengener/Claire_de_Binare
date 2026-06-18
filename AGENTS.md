@@ -43,6 +43,12 @@ Hinweis:
 - Das Working Repo ist der produktive Standardpfad fuer Agenten-, Governance- und Navigationsdoku.
 - Das lokale Archiv unter `docs/archive/docs_hub_snapshot/` ist nur noch historischer Rueckgriff und nicht mehr Canon.
 
+Quick Intent Router:
+- If the user says `/onboarding`, `onboarding`, `onboarding durchführen`, `mach onboarding`, `fresh agent onboarding`, or equivalent, run: `python -m tools.onboarding_orchestrator`
+- Do not start `cdb-session-start` or `onboarding_doctor` as the primary path for onboarding intent.
+- Default output is the CDB Onboarding status card.
+- Do not create `.env`, initialize secrets, initialize context, write reports, create issues, or run Docker unless the user explicitly selects a next option after the status card.
+
 ---
 
 ## Quick Reference

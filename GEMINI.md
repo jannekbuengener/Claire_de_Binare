@@ -41,11 +41,17 @@
    - Dann stoppen statt Plan-Dateien schreiben.
 
 5. **Antwort-Standard**
-   Jede CDB-Antwort beginnt mit:
-   - Tool-/Skill-/Agent-/MCP-/Extensions-Check
-   - Gelesene Canon-Dateien
-   - Live-Wahrheit geprüft: ja/nein
-   - Stop-Grund, falls nein
+    Jede CDB-Antwort beginnt mit:
+    - Tool-/Skill-/Agent-/MCP-/Extensions-Check
+    - Gelesene Canon-Dateien
+    - Live-Wahrheit geprüft: ja/nein
+    - Stop-Grund, falls nein
+
+6. **Onboarding-Intent-Router**
+   - If the user says `/onboarding`, `onboarding`, `onboarding durchführen`, `mach onboarding`, `fresh agent onboarding`, or equivalent, run: `python -m tools.onboarding_orchestrator`
+   - Do not start `cdb-session-start` or `onboarding_doctor` as the primary path for onboarding intent.
+   - Default output is the CDB Onboarding status card.
+   - Do not create `.env`, initialize secrets, initialize context, write reports, create issues, or run Docker unless the user explicitly selects a next option after the status card.
 
 ---
 
