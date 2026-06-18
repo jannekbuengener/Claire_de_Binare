@@ -100,6 +100,9 @@ Wenn der Intent auf eine geführte Generalprobe zielt (`onboarding rehearsal`, `
 4. **Nur bei echten Human-Gates rückfragen** (z.B. "Soll ich jetzt wirklich das Setup ausführen?").
 5. **Read-only-Prüfungen ausführen** (git, gh view, python tools), wenn sicher und sinnvoll.
 6. **Mutierende Schritte (Docker, .env, deps) nur beschreiben und simulieren**, nicht ausführen.
+7. **Nach dem guided-rehearsal-Lauf:** NICHT nummerierte Nachfolgemenues anhaengen.
+   Kein "Wenn du willst..." mit 1/2/3 Optionen.
+   Nur Ergebnis zusammenfassen, Safety-Grenzen nennen, genau einen naechsten Schritt empfehlen. STOP.
 
 ## 3c. Nutzung externer Evidenzquellen (MCP-Server)
 

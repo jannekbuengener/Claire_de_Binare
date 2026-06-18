@@ -268,7 +268,25 @@ class TestRenderSimulationGuidedRehearsal:
 
     def test_guided_rehearsal_contains_next_steps(self) -> None:
         output = render_simulation(mode="guided-rehearsal")
-        assert "naechster Schritt" in output or "nächster Schritt" in output
+        assert "naechster Schritt" in output or "n\u00e4chster Schritt" in output
+
+    def test_guided_rehearsal_next_steps_is_one_line(self) -> None:
+        output = render_simulation(mode="guided-rehearsal")
+        lines = output.split("\n")
+        in_next_steps = False
+        bullets_in_section = 0
+        for line in lines:
+            if "Sinnvoller realer naechster Schritt" in line:
+                in_next_steps = True
+                continue
+            if in_next_steps:
+                if line.strip().startswith("---") and "Schritt" not in line:
+                    break
+                if line.strip().startswith("-"):
+                    bullets_in_section += 1
+        assert (
+            bullets_in_section <= 1
+        ), f"Expected <=1 bullet in next-steps section, found {bullets_in_section}"
 
     def test_guided_rehearsal_json_sections(self) -> None:
         output = render_simulation_json(mode="guided-rehearsal")
@@ -277,6 +295,20 @@ class TestRenderSimulationGuidedRehearsal:
         assert data["verdict"] == "GUIDED_REHEARSAL_DONE"
         assert "sections" in data
         assert "guided_rehearsal" in data["sections"]
+
+    def test_guided_rehearsal_contains_anti_menu_instructions(self) -> None:
+        output = render_simulation(mode="guided-rehearsal")
+        assert "DO NOT append" in output
+        assert "Agent Instructions" in output
+        assert "DO NOT generate" in output
+
+    def test_guided_rehearsal_contains_post_run_stop(self) -> None:
+        output = render_simulation(mode="guided-rehearsal")
+        assert "STOP." in output
+
+    def test_guided_rehearsal_recommends_exactly_one_next_step(self) -> None:
+        output = render_simulation(mode="guided-rehearsal")
+        assert "exactly ONE" in output or "exactly one" in output.lower()
 
 
 class TestRenderSimulationJson:

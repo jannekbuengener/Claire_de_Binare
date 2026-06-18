@@ -235,6 +235,49 @@ class TestGuidedRehearsalRouting:
             ), f"{relative_path}: no guided-rehearsal intent phrases found"
 
 
+GUIDED_REHEARSAL_ALL_ROUTER_SURFACES = GUIDED_REHEARSAL_SURFACES + [
+    "AGENTS.md",
+    "GEMINI.md",
+    "agents/GEMINI.md",
+]
+
+ANTI_MENU_KEYWORDS = [
+    "NICHT nummerierte Nachfolgemenues",
+    'Kein "Wenn du willst..."',
+    "genau einen naechsten Schritt",
+    "Nach dem guided-rehearsal-Lauf",
+    "After guided-rehearsal run",
+]
+
+
+class TestGuidedRehearsalAntiMenuPostRun:
+    def test_all_surfaces_have_anti_menu_rule(self):
+        for relative_path in GUIDED_REHEARSAL_ALL_ROUTER_SURFACES:
+            text = read_text(relative_path)
+            found_any = any(kw in text for kw in ANTI_MENU_KEYWORDS)
+            assert found_any, f"{relative_path}: missing anti-menu post-run rule"
+
+    def test_no_surface_has_followup_menu_template(self):
+        forbidden_phrases = [
+            "1. Bootloader",
+            "2. Statuskarte",
+            "3. echtes read-only Repo-Onboarding",
+        ]
+        for relative_path in GUIDED_REHEARSAL_SURFACES:
+            text = read_text(relative_path)
+            for phrase in forbidden_phrases:
+                assert phrase not in text, (
+                    f"{relative_path}: contains forbidden post-run menu "
+                    f"phrase '{phrase}'"
+                )
+
+    def test_guided_rehearsal_tool_output_has_anti_menu(self):
+        text = read_text("tools/onboarding_simulation.py")
+        assert "DO NOT append" in text
+        assert "Agent Instructions" in text
+        assert "DO NOT generate" in text
+
+
 # Forbidden phrases are expected to appear in "Verbotene Phrasen" or "Nicht"
 # sections of the contract files (as documented examples of prohibited wording).
 # The test verifies they don't appear OUTSIDE these documented context sections.
