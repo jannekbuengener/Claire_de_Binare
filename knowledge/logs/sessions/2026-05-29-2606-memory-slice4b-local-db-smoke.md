@@ -68,7 +68,7 @@ impact_on_plan:
 - The Slice did not start `context-up` because the local query config required by
   the real `surrealdb-local` read path was missing.
 - No `source=surrealdb-local` DB-backed evidence is claimed.
-- Gordon integration was not present in the visible MCP/tool inventory; the
+- Obsolete external advisor integration was not present in the visible MCP/tool inventory; the
   session used only documented repo Context Runtime commands.
 
 limitations:
@@ -87,10 +87,9 @@ limitations:
 - Board stage `trade-capable` remains orthogonal and does not authorize live
   capital or trading runtime.
 
-## Gordon / Infra Gate
+## External Advisor / Infra Gate
 
-- `gordon_status: unavailable`
-- No Gordon integration was available in the visible MCP/tool inventory.
+- No obsolete external advisor integration was available in the visible MCP/tool inventory.
 - Only documented Context Runtime targets were used.
 - No BLUE/RED mutation was performed.
 

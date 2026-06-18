@@ -40,12 +40,34 @@
    - Wenn Plan Mode keine Live-Kommandos oder Dateiänderungen erlaubt, darf Gemini keine operative Repo-/PR-Hygiene, keine GitHub-Writes und keine Docs-Änderungen simulieren.
    - Dann stoppen statt Plan-Dateien schreiben.
 
-5. **Antwort-Standard**
-   Jede CDB-Antwort beginnt mit:
-   - Tool-/Skill-/Agent-/MCP-/Extensions-Check
-   - Gelesene Canon-Dateien
-   - Live-Wahrheit geprüft: ja/nein
-   - Stop-Grund, falls nein
+5. **Antwort-Standard (Evidence-Abgrenzung)**
+    Jede CDB-Antwort beginnt mit:
+    - Tool-/Skill-/Agent-/MCP-/Extensions-Check
+    - Gelesene Canon-Dateien
+    - Evidence-Abgrenzung: Repo-/Canon-/Onboarding-Status geprüft; GitHub-/Check-Live nicht geprüft, sofern keine konkreten git/gh/check-Kommandos ausgeführt wurden.
+    - GitHub-/Repo-Live geprüft nur mit konkreten git/gh/check-Kommandos und Ergebnissen.
+    - Stop-Grund, falls kein Live-Check möglich
+
+6. **Wording Contract**
+    - `tools.onboarding_orchestrator` zählt als Onboarding-Statusprüfung, nicht als GitHub-/Check-Live-Wahrheit.
+    - `trade-capable` ist Board-/Stage-Kontext, kein Live-Go.
+    - `CURRENT_STATUS.md` ist Engineering-Ledger, nicht Live-Wahrheit.
+    - LR-SSOT ist `docs/live-readiness/LR-AUDIT-STATUS-2026-03-05.md`.
+    - Setup nur nach explizitem Setup-GO; kann lokale Dateien erzeugen.
+    - Ohne Setup-GO: read-only bleiben. Kein "Führt cp .env.example .env aus" als UI-Erklärung.
+
+7. **Onboarding-Intent-Router**
+   - If the user says `/onboarding`, `onboarding`, `onboarding durchführen`, `mach onboarding`, `fresh agent onboarding`, or equivalent, run: `python -m tools.onboarding_orchestrator`
+   - Do not start `cdb-session-start` or `onboarding_doctor` as the primary path for onboarding intent.
+   - Default output is the CDB Onboarding status card.
+   - Do not create `.env`, initialize secrets, initialize context, write reports, create issues, or run Docker unless the user explicitly selects a next option after the status card.
+
+8. **Guided-Rehearsal-Intent**
+   - If the user says `onboarding rehearsal`, `guided rehearsal`, `rehearsal mode`, `generalprobe`, `tu so als waere ich neuer entwickler`, `reisefuehrer`, `nicht staendig fragen`, `realitaetsnah simulieren`, `onboarding als test-szenario`, or equivalent, run: `python -m tools.onboarding_simulation --mode guided-rehearsal --role developer`
+   - Guided rehearsal ist kein Setup-GO und kein Live-Go.
+   - Mutierende Schritte werden nur simuliert.
+   - Der Agent fuehrt als Reisefuehrer autonom, kein Fragebogen.
+   - **Nach dem Lauf:** KEINE Anschlussfrage, keine Einladung, kein "Wenn du willst..." mit Optionen. Der letzte Absatz MUSS Abschluss sein: Status, ein naechster Schritt, STOP.
 
 ---
 

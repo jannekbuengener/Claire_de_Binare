@@ -85,7 +85,7 @@ git reset --hard 863d58a  # Previous main head
 
 ## Related Documentation
 
-- **Sync Report:** [docs/julius_sync_report.md](https://github.com/jannekbuengener/Claire_de_Binare/blob/main/docs/julius_sync_report.md)
+- **Sync Report:** [sync_report.md](./sync_report.md)
 - **PR Evidence:** [#703 Comments](https://github.com/jannekbuengener/Claire_de_Binare/pull/703#issuecomment-3807230386)
 - **Merge Commit:** [c20ff77](https://github.com/jannekbuengener/Claire_de_Binare/commit/c20ff775f3ffa7d84c9780cc2be31485ec3fca47)
 

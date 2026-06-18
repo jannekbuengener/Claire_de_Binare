@@ -24,6 +24,7 @@ Wichtige kanonische Dateien:
 - [`knowledge/runbooks/CDB_CONTROL_BOARD_RUNBOOK.md`](knowledge/runbooks/CDB_CONTROL_BOARD_RUNBOOK.md)
 - [`PROJECT_STATUS.md`](PROJECT_STATUS.md)
 - [`agents/OPEN_CODE_AGENTS.md`](agents/OPEN_CODE_AGENTS.md)
+- [`docs/onboarding/AGENT_ROOT_SURFACE_MATRIX.md`](docs/onboarding/AGENT_ROOT_SURFACE_MATRIX.md)
 
 Aktueller Projektstand:
 - Working Repo ist der produktive Canon fuer Agenten-, Governance-, Knowledge- und Navigationsdoku.
@@ -42,6 +43,15 @@ Status-Regel:
 Hinweis:
 - Das Working Repo ist der produktive Standardpfad fuer Agenten-, Governance- und Navigationsdoku.
 - Das lokale Archiv unter `docs/archive/docs_hub_snapshot/` ist nur noch historischer Rueckgriff und nicht mehr Canon.
+
+Quick Intent Router:
+- If the user says `/onboarding`, `onboarding`, `onboarding durchführen`, `mach onboarding`, `fresh agent onboarding`, or equivalent, run: `python -m tools.onboarding_orchestrator`
+- If the user says `onboarding rehearsal`, `guided rehearsal`, `rehearsal mode`, `generalprobe`, `tu so als waere ich neuer entwickler`, `reisefuehrer`, `nicht staendig fragen`, `realitaetsnah simulieren`, `onboarding als test-szenario`, or equivalent, run: `python -m tools.onboarding_simulation --mode guided-rehearsal --role developer`
+- Guided rehearsal ist kein Setup-GO und kein Live-Go. Mutierende Schritte werden nur simuliert.
+- After guided-rehearsal run: NO follow-up question, no invitation, no "Wenn du willst..." with options. Do NOT append numbered follow-up menus. The last output paragraph MUST be a closing: status, one recommended next step, STOP.
+- Do not start `cdb-session-start` or `onboarding_doctor` as the primary path for onboarding intent.
+- Default output is the CDB Onboarding status card.
+- Do not create `.env`, initialize secrets, initialize context, write reports, create issues, or run Docker unless the user explicitly selects a next option after the status card.
 
 ---
 
@@ -231,6 +241,20 @@ except InvalidOperation:
 
 ---
 
+## Agent Root Surfaces
+
+Alle sechs repo-kanonischen Agent-Root-Flächen sind versioniert und onboarding-fähig.
+Siehe [`docs/onboarding/AGENT_ROOT_SURFACE_MATRIX.md`](docs/onboarding/AGENT_ROOT_SURFACE_MATRIX.md).
+
+| Surface | Purpose |
+|---------|---------|
+| `.claude/` | Claude Code — Bootloader, Session-Skills |
+| `.codex/` | Codex CLI — Session-Skills |
+| `.cursor/` | Cursor IDE — Subagents, Regeln, Session-Skills |
+| `.gemini/` | Gemini — IDE-Konfiguration, Onboarding-Router |
+| `.opencode/` | OpenCode CLI — Session-Skills |
+| `.vscode/` | VS Code — Helper-Surface (keine Autorität) |
+
 ## Selected repo skills (not exhaustive)
 
 Codex skill surface: `.codex/cdb_skills/`
@@ -267,10 +291,12 @@ OpenCode skill surface zusaetzlich: `.opencode/skills/` (gezielt laden, nicht pa
 
 ## Agent Operating Rules
 
+- **Context Brain first.** Jeder Agenten-Prompt MUSS vor Repo-Reads einen Context Brain Preflight versuchen. Repo-Fallback ist nur nach belegtem Fehlversuch erlaubt. Siehe `agents/AGENTS.md` § Context Brain Preflight Gate (inkl. Fallback-Klassifikationsmatrix).
+- **Fallback-Klassifikation hart:** `repo_fallback_reason=unavailable` ist NUR erlaubt, wenn Context Tools wirklich nicht verfuegbar sind. Bei verfuegbarem Tool + LOW/no Records ist `insufficient_evidence` oder `missing_record` korrekt. Falsche Klassifikation blockiert den Workflow (`HOLD_BOOTLOADER_EVIDENCE_MISCLASSIFIED`).
 - Read `knowledge/governance/CDB_AGENT_POLICY.md` section 4 before any write.
 - Respect single-writer locks, explicit stop signals, and write gates.
 - `DELIVERY_APPROVED.yaml` is human-controlled; agents must not modify it.
-- Before planning for strategy/runtime/module/service/contract/context scope, output a `Brain Evidence` block (see `agents/AGENTS.md` § Brain Evidence Gate).
+- Before planning for strategy/runtime/module/service/contract/context scope, output a `Brain Evidence` block (see `agents/AGENTS.md` § Brain Evidence Gate). Der Block MUSS die Felder `context_tool_status`, `context_trust_level` und `records_found` enthalten.
 - LR status remains NO-GO for live trading unless explicitly changed by canon/human approval.
 
 ---

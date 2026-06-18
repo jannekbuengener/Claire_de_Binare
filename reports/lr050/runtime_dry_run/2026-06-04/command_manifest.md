@@ -17,7 +17,7 @@ No command in this pack was allowed to:
 | `gh pr list --state open --json ...` | detect existing PR / lock collision | `[]`; no open PR to continue |
 | `gh issue view 1445 --json ...` | control-first live anchor | confirms `#1445` as cockpit anchor and `NO-GO` posture |
 | `gh issue view 1492 --json ...` | separate Stage from LR | confirms historical stage ratification only; not live-go |
-| `gh issue view 2689 --json ...` | dedupe Gordon cleanup follow-up | `#2689 CLOSED`; active Gordon remnants remain outside `#2951` scope |
+| `gh issue view 2689 --json ...` | dedupe obsolete advisor cleanup follow-up | `#2689 CLOSED` |
 
 ## Repo / config inspection
 

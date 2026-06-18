@@ -16,6 +16,7 @@ sondern ein Pointer auf die bestehenden Docs, Runbooks und Source Trees.
 | SurrealDB Context/MCP | [SurrealDB README](surrealdb/README.md) | Lokaler Context-Runtime-Index |
 | Toggles, Secrets, Defaults oder operative Env-Variablen suchst | [Env Index](env/index.md) | Einstieg fuer Schalter, Secret Stores und Consumer |
 | Schema, Migrations, Privileges, Fixtures oder DB-Validierung suchst | [DB Index](db/index.md) | Einstieg fuer Postgres-Canon und Surreal-Mirror |
+| eine Begriffserklärung für CDB-Terminologie brauchst | [CDB Glossary](onboarding/cdb_glossary.md) | Zentrale Terminologie-Referenz für alle Onboarding-Flächen |
 | den Echtgeld-Go/No-Go-Stand brauchst | [docs/live-readiness/README.md](live-readiness/README.md) | Single Source of Truth fuer Live-Readiness |
 | Board-, Milestone- oder Project-v2-Automation brauchst | [docs/runbooks/project_board_automation.md](runbooks/project_board_automation.md) | Operativer Leitfaden fuer Board-Automation |
 | Paper-Trading-Runner (Port 8004) | [tools/paper_trading/README.md](../tools/paper_trading/README.md) | Compose-Service `cdb_paper_runner` |
@@ -47,3 +48,32 @@ sondern ein Pointer auf die bestehenden Docs, Runbooks und Source Trees.
   - Service-Index inkl. Paper-Runner unter `tools/paper_trading/`.
 - [`tests/fixtures/README.md`](../tests/fixtures/README.md)
   - Deterministische DB-Fixtures und Seed-Daten.
+
+## Developer Onboarding
+
+| Wenn du ... | Geh hierhin | Warum |
+|-------|-------|-------|
+| Einen frischen Clone sicher bis zur ersten Grundsicherheit durchlaufen willst | [`fresh_clone_rehearsal.md`](onboarding/fresh_clone_rehearsal.md) | Read-only-by-default Rehearsal von README uber Docs-Navigation bis zum ersten sicheren Issue/PR-Flow |
+| Einen visuellen Developer-Start mit Mermaid-Flow brauchst | [`DEVELOPER_VISUAL_START_HERE.md`](onboarding/DEVELOPER_VISUAL_START_HERE.md) | Mermaid-Flussdiagramme, Beispiele, Vorlagen — erstellt in #3238 |
+| Einen kurzen guided onboarding tour command brauchst | `python -m tools.onboarding_tour` oder `.\tools\cdb.ps1 onboarding tour` | Read-only Rollenpfad fuer Developer, Agent, Docs Maintainer und Validation/Evidence |
+| Das vollständige lokale Setup brauchst | [`DEVELOPER_ONBOARDING.md`](../DEVELOPER_ONBOARDING.md) | Secrets, Stack-Bootstrap, erste PR-Schritte |
+| Einen One-Command-Setup-Check brauchst | `python -m tools.onboarding_doctor` or `make onboarding-doctor` | Read-only Developer-Onboarding Preflight |
+| Deinen ersten sicheren Issue-to-PR-Workflow durchspielen willst (Sandbox) | [`first_issue_sandbox.md`](onboarding/first_issue_sandbox.md) | Gefuehrter Rehearsal-Pfad fuer die erste sichere Contribution |
+| Ein Issue-to-PR-Beispiel als Referenz sehen willst | [`first_issue_to_pr_flow.md`](onboarding/examples/first_issue_to_pr_flow.md) | Kleinster Issue-to-PR-Workflow als Example/Referenz |
+| Den Repo-Brain-Erstkontakt brauchst | [`repo_brain_first_use.md`](onboarding/examples/repo_brain_first_use.md) | Context Intelligence / Repo Brain als read-only Orientation |
+| Das vollständige Repo-Brain-Onboarding brauchst | [`repo_brain_context_intelligence.md`](onboarding/repo_brain_context_intelligence.md) | Brain Evidence Block, Safety Boundaries, First-Use-Flow |
+| Prompt-, Evidence- oder PR-Body-Vorlagen brauchst | [`onboarding/templates/`](onboarding/templates/) | Agent-Prompt-, Evidence-Doc- und PR-Body-Vorlagen |
+
+## Repo Brain / Context Intelligence
+
+- [`docs/surrealdb/README.md`](surrealdb/README.md) — Context-/MCP-Docs-Index und lokaler Context-Runtime-Einstieg
+- `make onboarding-doctor` — Read-only Preflight für Developer-Onboarding-Prüfung
+- `make context-doctor` — Read-only Preflight für lokale Context-Tooling-Prüfung
+- [`mcp_navpack_working_repo/ENTRYPOINTS.yaml`](../mcp_navpack_working_repo/ENTRYPOINTS.yaml) — maschinenlesbare Read-Order (navpack)
+- [`mcp_navpack_working_repo/CHEATSHEET.md`](../mcp_navpack_working_repo/CHEATSHEET.md) — schnelle menschliche Nav-Quickref
+
+## Tooling / Tests / Services
+
+- [`tools/README.md`](../tools/README.md) — PowerShell-Front-Door, Diagnosepfade, Ops-Helfer
+- [`tests/README.md`](../tests/README.md) — Test-Taxonomie (Unit/Integration/E2E/Replay/Chaos)
+- [`services/README.md`](../services/README.md) — Service-Grenzen und Topologie (BLUE+RED-Stack)

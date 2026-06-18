@@ -1,0 +1,243 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "$id": "tools/context/schemas/context_package.schema.json",
+  "title": "CDB Context Package Schema",
+  "description": "Fail-closed JSON Schema for CDB repo context refresh packages. This schema validates the structure and safety boundaries of context packages before any brain-apply step (#3289). Live-/Echtgeld-claims require explicit LR-SSOT reference. Orders/Fills/Positions/Risk-State records are forbidden. LR remains NO-GO. No productive DB writes. No secrets ingestion.",
+  "type": "object",
+  "required": ["package", "meta"],
+  "additionalProperties": false,
+  "properties": {
+    "package": {
+      "type": "object",
+      "required": ["package_id", "package_type", "created_at", "source_commit", "source_repo", "records"],
+      "additionalProperties": false,
+      "properties": {
+        "package_id": {
+          "type": "string",
+          "description": "Unique package identifier. Convention: cdb-context-package-<YYYY-MM-DD>-<seq>"
+        },
+        "package_type": {
+          "type": "string",
+          "enum": ["context_package"],
+          "description": "Fixed value 'context_package' for this schema version."
+        },
+        "created_at": {
+          "type": "string",
+          "format": "date-time",
+          "description": "ISO-8601 UTC timestamp of package creation."
+        },
+        "source_commit": {
+          "type": "string",
+          "description": "Git commit SHA at time of package assembly."
+        },
+        "source_repo": {
+          "type": "string",
+          "pattern": "^[a-zA-Z0-9_/-]+$",
+          "description": "Repository identifier (e.g. 'Claire_de_Binare')."
+        },
+        "records": {
+          "type": "array",
+          "minItems": 0,
+          "items": {
+            "$ref": "#/definitions/record"
+          }
+        }
+      }
+    },
+    "meta": {
+      "type": "object",
+      "required": ["version", "validator_ref", "schema_ref", "safety_boundaries"],
+      "additionalProperties": false,
+      "properties": {
+        "version": {
+          "type": "string",
+          "enum": ["1.0"],
+          "description": "Schema version identifier."
+        },
+        "validator_ref": {
+          "type": "string",
+          "description": "Path to the canonical validator script."
+        },
+        "schema_ref": {
+          "type": "string",
+          "description": "Path to this schema file."
+        },
+        "safety_boundaries": {
+          "type": "object",
+          "required": ["lr_status", "board_stage_is_live_go", "real_money_go", "productive_db_writes_allowed", "secrets_in_outputs_allowed", "trading_state_ingestion_allowed"],
+          "additionalProperties": false,
+          "properties": {
+            "lr_status": {
+              "type": "string",
+              "enum": ["NO-GO"],
+              "description": "Live readiness status. Fixed NO-GO. Only LR-SSOT can change this."
+            },
+            "board_stage_is_live_go": {
+              "type": "boolean",
+              "enum": [false],
+              "description": "Board stage must never be interpreted as live-go."
+            },
+            "real_money_go": {
+              "type": "boolean",
+              "enum": [false],
+              "description": "No real-money trading authorized."
+            },
+            "productive_db_writes_allowed": {
+              "type": "boolean",
+              "enum": [false],
+              "description": "No productive DB writes from context packages."
+            },
+            "secrets_in_outputs_allowed": {
+              "type": "boolean",
+              "enum": [false],
+              "description": "No secrets may appear in validation outputs."
+            },
+            "trading_state_ingestion_allowed": {
+              "type": "boolean",
+              "enum": [false],
+              "description": "No orders, fills, positions, or live risk state ingestion."
+            }
+          }
+        }
+      }
+    }
+  },
+  "definitions": {
+    "record": {
+      "type": "object",
+      "required": [
+        "record_id",
+        "record_type",
+        "repo",
+        "source_path",
+        "source_commit",
+        "source_hash",
+        "observed_at",
+        "confidence",
+        "supersedes",
+        "tags",
+        "summary",
+        "evidence_refs"
+      ],
+      "additionalProperties": false,
+      "properties": {
+        "record_id": {
+          "type": "string",
+          "description": "Unique record identifier within the package."
+        },
+        "record_type": {
+          "type": "string",
+          "enum": [
+            "doc_record",
+            "code_snapshot",
+            "decision_record",
+            "evidence_record",
+            "claim_record",
+            "memory_record",
+            "dependency_edge",
+            "context_package_ref"
+          ],
+          "description": "Canonical record type. Unknown or unspecified types are blocked."
+        },
+        "repo": {
+          "type": "string",
+          "description": "Repository identifier where the source artifact lives."
+        },
+        "source_path": {
+          "type": "string",
+          "description": "Relative file path in the source repo."
+        },
+        "source_commit": {
+          "type": "string",
+          "description": "Git commit SHA of the source artifact."
+        },
+        "source_hash": {
+          "type": "string",
+          "minLength": 1,
+          "description": "Content hash of the source artifact (e.g. SHA-256 hex). Must be non-empty."
+        },
+        "observed_at": {
+          "type": "string",
+          "format": "date-time",
+          "description": "ISO-8601 UTC timestamp when the observation was made."
+        },
+        "confidence": {
+          "type": "string",
+          "enum": ["high", "medium", "low", "unverified"],
+          "description": "Confidence level of the record content."
+        },
+        "supersedes": {
+          "oneOf": [
+            { "type": "null" },
+            { "type": "string", "description": "record_id of the superseded record, if any." }
+          ],
+          "description": "Optional reference to a previously superseded record."
+        },
+        "tags": {
+          "type": "array",
+          "items": { "type": "string" },
+          "description": "Arbitrary string tags for categorization."
+        },
+        "summary": {
+          "type": "string",
+          "description": "Human-readable summary of the record content."
+        },
+        "evidence_refs": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "required": ["ref", "source"],
+            "additionalProperties": false,
+            "properties": {
+              "ref": {
+                "type": "string",
+                "description": "Reference identifier (e.g. file path, URL, record_id)."
+              },
+              "source": {
+                "type": "string",
+                "description": "Source type (e.g. 'repo', 'github_issue', 'github_pr', 'run_artifact', 'mcp_tool')."
+              }
+            }
+          },
+          "description": "Evidence references supporting the record content."
+        },
+        "canon_read_evidence": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "required": ["path", "commit"],
+            "additionalProperties": false,
+            "properties": {
+              "path": {
+                "type": "string",
+                "description": "Canonical file path that was read."
+              },
+              "commit": {
+                "type": "string",
+                "description": "Commit SHA at time of read."
+              }
+            }
+          },
+          "description": "Optional evidence of canon file reads supporting this record."
+        },
+        "live_or_echtgeld_claim": {
+          "type": "object",
+          "description": "If present, the record makes a live- or echtgeld-related claim. Requires explicit LR-SSOT reference. Absent by default.",
+          "required": ["lr_ssot_ref", "claim_type"],
+          "additionalProperties": false,
+          "properties": {
+            "lr_ssot_ref": {
+              "type": "string",
+              "description": "Explicit reference to the LR SSOT document (e.g. 'docs/live-readiness/LR-AUDIT-STATUS-2026-03-05.md')."
+            },
+            "claim_type": {
+              "type": "string",
+              "enum": ["lr_status", "live_gate", "echtgeld_gate", "canary_status"],
+              "description": "Type of live/echtgeld claim."
+            }
+          }
+        }
+      }
+    }
+  }
+}

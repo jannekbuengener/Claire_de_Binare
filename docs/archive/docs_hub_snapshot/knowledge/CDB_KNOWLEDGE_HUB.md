@@ -239,7 +239,7 @@ Ergebnis: t1/ vollständig bereinigt
 
 Handoff: Technische Validierung offen
 
-2025-12-12A – Docker-Architektur (Gordon)
+2025-12-12A – Docker-Architektur (historical)
 
 Modulare Compose-Strategie bestätigt
 

@@ -3,7 +3,7 @@
 **Repo:** Claire de Binare
 **Scope:** `.github/` — workflows, scripts, prompts, commands, templates, collection layer
 **SSOT for stage/LR:** `docs/runbooks/CONTROL_REGISTER.md` + `docs/live-readiness/LR-AUDIT-STATUS-2026-03-05.md`
-**Canonical entrypoint:** `.github/README.md`
+**Canonical entrypoint:** `.github/CONTROL_PLANE.md`
 
 ---
 
@@ -30,7 +30,7 @@ Layer 3: Collection manifest (introduced #1644)
   .github/control-plane/generated/workflow-register.json
 
 Layer 4: Documentation (introduced #1640)
-  .github/README.md            Canonical entrypoint
+  .github/CONTROL_PLANE.md     Canonical entrypoint
   docs/runbooks/GITHUB_CONTROL_PLANE_RUNBOOK.md  (this file)
   docs/runbooks/GITHUB_WORKFLOW_REGISTER.md
   docs/runbooks/GITHUB_CONTROL_PLANE_GRAPH.md
@@ -62,7 +62,7 @@ Issue templates under `.github/ISSUE_TEMPLATE/` are in-scope control-plane asset
 
 Cross-reference:
 - `docs/runbooks/GITHUB_CONTROL_PLANE_GRAPH.md` (`Workflow -> Issue Template Relationships`)
-- `.github/README.md` (`Issue templates as control-plane surface (in scope)`)
+- `.github/CONTROL_PLANE.md` (`Issue templates as control-plane surface (in scope)`)
 - `docs/runbooks/GITHUB_WORKFLOW_REGISTER.md` (`#1640 minimum-field coverage model`)
 
 ## 1b. Merge and closure guardrail (Option A / #1661)
@@ -324,7 +324,7 @@ pytest tests/test_control_plane.py -v
 
 ## 9. Linked documentation
 
-- `.github/README.md` — canonical entrypoint with folder layout
+- `.github/CONTROL_PLANE.md` — canonical entrypoint with folder layout
 - `docs/runbooks/GITHUB_WORKFLOW_REGISTER.md` — full 66-workflow register
 - `docs/runbooks/GITHUB_CONTROL_PLANE_GRAPH.md` — relationship matrix + Mermaid graph
 - `.github/control-plane/README.md` — collection layer usage

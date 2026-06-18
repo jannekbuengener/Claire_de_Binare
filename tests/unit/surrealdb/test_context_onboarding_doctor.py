@@ -84,6 +84,10 @@ def test_config_exists_missing(tmp_path: Path) -> None:
         environ={},
     )
     assert report.config_context_query_local == "missing"
+    assert report.check_scope == "partial_context_onboarding"
+    assert report.skipped_checks == ["mcp_server", "surrealdb_schema"]
+    assert report.blocking is True
+    assert "context_query_local missing" in report.blocking_findings
 
 
 def test_config_exists_when_present(tmp_path: Path) -> None:
@@ -100,6 +104,8 @@ def test_config_exists_when_present(tmp_path: Path) -> None:
         environ={},
     )
     assert report.config_context_query_local == "exists"
+    assert report.check_scope == "partial_context_onboarding"
+    assert report.skipped_checks == ["mcp_server", "surrealdb_schema"]
 
 
 def test_mcp_reachable_and_not_reachable() -> None:
@@ -314,8 +320,27 @@ def test_json_output_contains_no_secret_values(tmp_path: Path) -> None:
     assert "SURREAL_PASS" not in payload
     assert "SURREAL_USER=root" not in payload
     parsed = json.loads(payload)
+    assert parsed["check_scope"] == "partial_context_onboarding"
+    assert parsed["skipped_checks"] == ["mcp_server", "surrealdb_schema"]
     assert parsed["lr_note"] == "NO-GO"
     assert parsed["secrets"]["canon_store"] == "exists"
+
+
+def test_text_output_includes_scope_skip_and_blocking(tmp_path: Path) -> None:
+    report = doctor.build_report(
+        tmp_path,
+        skip_mcp=True,
+        skip_schema=True,
+        tcp_checker=lambda _h, _p, _t: False,
+        environ={},
+    )
+
+    text = doctor.format_report(report, "text")
+    assert "check_scope: partial_context_onboarding" in text
+    assert "skipped_checks: mcp_server, surrealdb_schema" in text
+    assert "blocking: yes" in text
+    assert "warning semantics:" in text
+    assert "blocking_findings:" in text
 
 
 def test_text_output_contains_no_secret_values(tmp_path: Path) -> None:

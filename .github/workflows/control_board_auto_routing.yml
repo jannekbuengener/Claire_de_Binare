@@ -17,7 +17,7 @@
 # `route_control_board.py` requires a GitHub event payload (`issues`,
 # `pull_request`, or `repository_dispatch`) which `workflow_dispatch` does not
 # provide. Re-enable per-event routing requires a separate scoped issue.
-# See .github/README.md for current control-plane documentation.
+# See .github/CONTROL_PLANE.md for current control-plane documentation.
 
 name: Control Board Auto Routing
 
@@ -43,4 +43,4 @@ jobs:
           echo "vars.CDB_CONTROL_BOARD_AUTOMATION_ENABLED)."
           echo "This dispatch stub prints the diagnostic only; no Project API"
           echo "mutations are performed."
-          echo "See .github/README.md for current control-plane documentation."
+          echo "See .github/CONTROL_PLANE.md for current control-plane documentation."

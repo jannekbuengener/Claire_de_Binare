@@ -12,7 +12,7 @@
 # `workflow_dispatch` stub only; it does NOT call createDispatchEvent because
 # the consumer listener was intentionally withdrawn.
 # Re-enable per-label dispatch requires a separate scoped issue.
-# See .github/README.md for current control-plane documentation.
+# See .github/CONTROL_PLANE.md for current control-plane documentation.
 
 name: Control Board Routing Label Dispatch
 
@@ -38,4 +38,4 @@ jobs:
           echo "vars.CDB_CONTROL_BOARD_AUTOMATION_ENABLED)."
           echo "This dispatch stub prints the diagnostic only; no Dispatch API"
           echo "calls are performed."
-          echo "See .github/README.md for current control-plane documentation."
+          echo "See .github/CONTROL_PLANE.md for current control-plane documentation."

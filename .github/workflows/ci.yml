@@ -63,3 +63,6 @@ jobs:
 
       - name: Tests
         run: pytest -q -k "not test_mcp_time_server_runtime"
+
+      - name: Onboarding Docs Guard
+        run: python -m tools.validate_onboarding_docs
