@@ -1,0 +1,137 @@
+from __future__ import annotations
+
+import json
+import subprocess
+import sys
+from pathlib import Path
+
+import pytest
+
+REPO_ROOT = Path(__file__).resolve().parents[2]
+
+ORCHESTRATOR_MODULE = "tools.onboarding_orchestrator"
+
+
+def _run_orchestrator(*args: str) -> subprocess.CompletedProcess:
+    return subprocess.run(
+        [sys.executable, "-m", ORCHESTRATOR_MODULE, *args],
+        capture_output=True,
+        text=True,
+        cwd=REPO_ROOT,
+        timeout=30,
+    )
+
+
+class TestOrchestratorSmoke:
+    def test_orchestrator_runs(self):
+        result = _run_orchestrator()
+        assert result.returncode in (0, 1), (
+            f"Orchestrator exited with unexpected code {result.returncode}. "
+            f"stderr: {result.stderr}"
+        )
+
+    def test_orchestrator_output_contains_onboarding(self):
+        result = _run_orchestrator()
+        assert "CDB Onboarding" in result.stdout, (
+            "Output must contain 'CDB Onboarding' header"
+        )
+
+    def test_orchestrator_output_contains_status(self):
+        result = _run_orchestrator()
+        assert "Status:" in result.stdout, (
+            "Output must contain 'Status:' line"
+        )
+
+    def test_orchestrator_output_status_is_valid(self):
+        result = _run_orchestrator()
+        valid_statuses = ("PASS", "SETUP_WARN", "BLOCKED")
+        found = any(s in result.stdout for s in valid_statuses)
+        assert found, (
+            f"Output must contain one of {valid_statuses}. "
+            f"Got: {result.stdout[:200]}"
+        )
+
+    def test_orchestrator_output_keine_aenderungen(self):
+        result = _run_orchestrator()
+        assert "Keine Änderungen vorgenommen." in result.stdout, (
+            "Output must contain 'Keine Änderungen vorgenommen.'"
+        )
+
+    def test_orchestrator_output_lr_no_go(self):
+        result = _run_orchestrator()
+        assert "LR remains NO-GO" in result.stdout, (
+            "Output must contain 'LR remains NO-GO'"
+        )
+
+    def test_orchestrator_output_trade_capable(self):
+        result = _run_orchestrator()
+        assert "trade-capable ist kein Live-Go" in result.stdout, (
+            "Output must contain 'trade-capable ist kein Live-Go'"
+        )
+
+    def test_orchestrator_output_options(self):
+        result = _run_orchestrator()
+        assert "Nächste Optionen:" in result.stdout, (
+            "Output must contain 'Nächste Optionen:'"
+        )
+
+    def test_orchestrator_option_1(self):
+        result = _run_orchestrator()
+        assert "Setup-Plan anzeigen" in result.stdout
+
+    def test_orchestrator_option_2(self):
+        result = _run_orchestrator()
+        assert "Setup vorbereiten" in result.stdout
+
+    def test_orchestrator_option_3(self):
+        result = _run_orchestrator()
+        assert "Onboarding-Report schreiben" in result.stdout
+
+    def test_orchestrator_option_4(self):
+        result = _run_orchestrator()
+        assert "Ersten sicheren Issue-Workflow simulieren" in result.stdout
+
+    def test_orchestrator_no_open_question(self):
+        result = _run_orchestrator()
+        output = result.stdout
+        has_question = "?" in output.split("Nächste Optionen:")[-1] if "Nächste Optionen:" in output else False
+        assert not has_question, (
+            "Output must not contain open yes/no question after options"
+        )
+
+    def test_orchestrator_stderr_empty_or_info(self):
+        result = _run_orchestrator()
+        stderr = result.stderr.strip()
+        if stderr:
+            assert "ERROR" not in stderr.upper(), (
+                f"stderr must not contain ERROR: {stderr}"
+            )
+
+    def test_orchestrator_json_format(self):
+        result = _run_orchestrator("--format", "json")
+        assert result.returncode == 0 or result.returncode == 1
+        data = json.loads(result.stdout)
+        assert "status" in data
+        assert data["status"] in ("PASS", "SETUP_WARN", "BLOCKED")
+
+    def test_orchestrator_json_status_field(self):
+        result = _run_orchestrator("--format", "json")
+        data = json.loads(result.stdout)
+        assert "status" in data
+        assert "bootloader" in data
+        assert "scenario" in data
+        assert "lr_note" in data
+
+    def test_orchestrator_safe_output(self):
+        result = _run_orchestrator()
+        secret_patterns = [
+            "api_key", "api_secret", "password",
+            "ghp_", "gho_", "ghu_", "ghs_",
+        ]
+        lower = result.stdout.lower()
+        for pattern in secret_patterns:
+            if pattern in ("ghp_", "gho_", "ghu_", "ghs_"):
+                if pattern in result.stdout:
+                    pytest.fail(f"Potential GitHub token leak: {pattern}")
+            elif pattern in lower:
+                pytest.fail(f"Potential secret pattern: {pattern}")

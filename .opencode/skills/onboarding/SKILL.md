@@ -2,20 +2,21 @@
 name: onboarding
 description: >
   Canonical CDB onboarding slash command for agents, developers, and docs
-  maintainers. Orchestrates bootloader reads, Context Brain Preflight, live
-  truth checks, role-specific tour path, onboarding doctor/validator, and
-  first-issue dry-run simulation. Read-only by default. No Live-Go, no
-  Echtgeld-Go, no runtime/Docker/DB/MCP mutation. Safe for fresh clones and
-  first-time agent sessions.
+  maintainers. Single smart read-only entrypoint: runs bootloader checks,
+  scenario integrity, LR status, doctor/validator reachability. Produces a
+  status card and numbered next-option hints. Read-only by default. No
+  Live-Go, no Echtgeld-Go, no runtime/Docker/DB/MCP mutation. Safe for
+  fresh clones and first-time agent sessions.
 ---
 
 # /onboarding — Canonical CDB Onboarding Slash Skill
 
 ## Purpose
 
-`/onboarding` is the canonical, simple slash entrypoint for CDB onboarding.
-It orchestrates the completed Onboarding V2 surfaces into a single, safe,
-deterministic flow without inventing new truth.
+`/onboarding` is the **single smart developer entrypoint** for CDB onboarding.
+It delegates to `tools/onboarding_orchestrator.py` which produces a read-only
+status card with bootloader check, scenario integrity, LR status, doctor/validator
+reachability, and numbered next-option hints.
 
 **This is a session-skill / command-skill, not a subagent.**
 
@@ -28,21 +29,26 @@ deterministic flow without inventing new truth.
 Equivalent default config:
 
 ```yaml
-role: agent
-mode: first-issue-dry-run
+mode: default
 writes: disabled
 github_writes: disabled
 lr: NO-GO
 ```
 
-Expected initial output:
+Expected initial output — a status card ending with numbered options:
 
 ```text
-ONBOARDING_START
-mode: first-issue-dry-run
-role: Agent
-writes: disabled
-lr: NO-GO
+=== CDB Onboarding ===
+Status: PASS | SETUP_WARN | BLOCKED
+...
+Keine Änderungen vorgenommen.
+LR remains NO-GO.
+trade-capable ist kein Live-Go.
+Nächste Optionen:
+  1. Setup-Plan anzeigen
+  2. Setup vorbereiten
+  3. Onboarding-Report schreiben
+  4. Ersten sicheren Issue-Workflow simulieren
 ```
 
 ## Optional Forms
@@ -50,22 +56,24 @@ lr: NO-GO
 Optional aliases exist, but `/onboarding` remains canonical:
 
 ```text
-/onboarding agent       # Agent onboarding path
-/onboarding developer   # Developer onboarding path
-/onboarding check       # Check-only mode (no simulated PR)
-/onboarding first-issue # Full first-issue dry-run (default)
+/onboarding developer    # Developer onboarding path (alias)
+/onboarding check        # Check-only mode
 ```
 
 ## Orchestrated Flow
 
-1. **Bootloader:** `AGENTS.md` -> `agents/AGENTS.md` -> full Read Order.
-2. **Context Brain Preflight:** `context_brain_attempted=true` required before repo reads.
-3. **Live Truth:** GitHub live + repo live before ledger.
-4. **Onboarding Tour:** Role-specific path via `tools/onboarding_tour.py`.
-5. **Doctor / Validator:** `tools/onboarding_doctor.py` + `tools/validate_onboarding_docs.py`.
-6. **First-Issue Sandbox:** Simulate docs-only issue-to-PR workflow via
-   `tools/onboarding_simulation.py` or `docs/onboarding/first_issue_sandbox.md`.
-7. **Final Verdict:** `READY_FOR_REAL_FIRST_ISSUE` or `HOLD_ONBOARDING_GAP`.
+1. **Bootloader check:** `AGENTS.md` + `agents/AGENTS.md` exist and are readable.
+2. **Scenario integrity:** `ONBOARDING_SCENARIO_001_FRESH_AGENT_SAFE_WORK_DRILL.md`
+   exists and contains required governance terms.
+3. **LR status:** `docs/live-readiness/LR-AUDIT-STATUS-2026-03-05.md` confirms NO-GO.
+4. **Doctor / Validator reachability:** `tools/onboarding_doctor.py` and
+   `tools.surrealdb.context_onboarding_doctor` respond.
+5. **Env check:** `.env` presence is a setup-warn only (non-blocking).
+6. **Final Verdict:** `PASS` | `SETUP_WARN` | `BLOCKED`.
+
+The orchestrator is **read-only by default**: no file writes, no report,
+no setup mutation, no Docker, no secrets. The output ends with numbered
+next-option hints (no open yes/no question).
 
 ## Referenced V2 Surfaces
 
@@ -73,17 +81,32 @@ Optional aliases exist, but `/onboarding` remains canonical:
 |---------|---------|
 | `AGENTS.md` | Root pointer -> canonical agent registry |
 | `agents/AGENTS.md` | Read Order, Brain Evidence Gate, Context Brain Preflight Gate |
-| `agents/OPEN_CODE_AGENTS.md` | OpenCode shared contract, skill routing |
+| `tools/onboarding_orchestrator.py` | **Single smart entrypoint** (status card + verdict) |
 | `tools/onboarding_tour.py` | Role-specific read-only tour |
 | `tools/onboarding_doctor.py` | Local developer setup preflight |
 | `tools/validate_onboarding_docs.py` | Active onboarding docs integrity validator |
-| `tools/onboarding_simulation.py` | Deterministic simulation runner (new, issue #3273) |
+| `tools/onboarding_simulation.py` | Deterministic simulation runner |
 | `docs/onboarding/first_issue_sandbox.md` | Guided first-issue rehearsal |
 | `docs/onboarding/fresh_clone_rehearsal.md` | Read-only fresh-clone path |
 | `docs/onboarding/DEVELOPER_VISUAL_START_HERE.md` | Visual onboarding map |
 | `docs/onboarding/cdb_glossary.md` | CDB terminology reference |
-| `docs/onboarding/repo_brain_context_intelligence.md` | Repo Brain first-use guide |
 | `DEVELOPER_ONBOARDING.md` | Developer setup and first PR workflow |
+
+## Run the Orchestrator
+
+```bash
+# Default: status card
+python -m tools.onboarding_orchestrator
+
+# JSON output
+python -m tools.onboarding_orchestrator --format json
+
+# Check-only mode
+python -m tools.onboarding_orchestrator --mode check-only
+
+# PowerShell front door
+.\tools\cdb.ps1 onboarding
+```
 
 ## Safety Boundaries
 
@@ -95,69 +118,37 @@ Optional aliases exist, but `/onboarding` remains canonical:
 - **No subagent replacement** — `/onboarding` is a slash-skill, not a subagent.
   CDB subagents (`/cdb-governance-gatekeeper`, etc.) remain unchanged.
 
-## HOLD Conditions
+## BLOCKER Conditions
 
-The flow produces `HOLD_ONBOARDING_GAP` if:
+The flow produces `BLOCKED` if:
 
-- `git fetch` / `gh issue view` fail
-- Worktree is dirty with unknown changes
-- Local main is behind origin/main
-- Target issue is not readable via `gh`
-- Context Brain Preflight fails without valid fallback reason
-- Bootloader files are missing or unreadable
-- Required checks are red and not scope-fixable
-- Diff shows scope growth beyond allowed surfaces
-- Secrets or LR/Live boundaries are touched
+- Bootloader files (`AGENTS.md`, `agents/AGENTS.md`) are missing or unreadable
+- Scenario document `ONBOARDING_SCENARIO_001_FRESH_AGENT_SAFE_WORK_DRILL.md`
+  is missing or unreadable
 
-## Run the Simulation Runner
+Non-blocking warnings (`SETUP_WARN`):
 
-The `/onboarding` skill delegates to the deterministic simulation runner:
+- `.env` fehlt (setup warn, kein blocker)
+- Context Doctor nicht initialisiert (setup warn, kein blocker)
+- `onboarding_doctor` nicht erreichbar
 
-```bash
-# Default: agent role, first-issue-dry-run mode
-python -m tools.onboarding_simulation
+## Allowed Next Options (numbered, no open question)
 
-# Developer role
-python -m tools.onboarding_simulation --role developer
-
-# Check-only mode (no simulated PR)
-python -m tools.onboarding_simulation --mode check-only
-
-# JSON output
-python -m tools.onboarding_simulation --format json
-
-# PowerShell front door
-.\tools\cdb.ps1 onboarding simulate
+```text
+1. Setup-Plan anzeigen
+2. Setup vorbereiten
+3. Onboarding-Report schreiben
+4. Ersten sicheren Issue-Workflow simulieren
 ```
 
-## Final Restart / Tool Reload Required
-
-**After completing onboarding, a tool restart is mandatory.**
-
-After successful onboarding:
-
-1. Close your current tool (Cursor, OpenCode, Claude Code / Codex, Terminal/Shell/PowerShell, IDE)
-2. Reopen it / start a new session
-3. Only then continue with CDB work
-
-**Why:** Env, PATH, MCP configuration, secrets, and agent/skill definitions
-may have changed during onboarding. Old sessions can have stale:
-- MCP/agent configuration cached in memory
-- PATH/Env values that do not reflect new setup
-- Cursor/OpenCode agents that have been added after session start
-- CLI/terminal sessions using stale process state
-
-Without a restart, onboarding appears complete but tooling runs with old context,
-causing phantom errors.
-
-This applies to: **Cursor, OpenCode, Claude Code / Codex, CLI/Terminal/Shell,
-PowerShell, IDEs, and editor processes.**
+All four options require explicit GO before execution. Default mode produces
+no report and no setup mutation.
 
 ## Non-Goals
 
 - No Live-Go.
 - No Echtgeld-Go.
 - No runtime, Docker, trading, strategy, LR, productive DB, SurrealDB, or MCP mutation.
+- No automatic setup, report, or runtime action.
 - No replacement of existing CDB subagents.
-- No broad onboarding rewrite.
-- No new active truth outside existing Onboarding V2 surfaces.
+- No open yes/no question in default output.
