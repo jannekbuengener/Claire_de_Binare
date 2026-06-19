@@ -7,6 +7,8 @@ from datetime import UTC, datetime, timedelta
 from pathlib import Path
 from typing import Any, Sequence
 
+from core.utils.clock import utcnow as cdb_utcnow
+
 from .snapshot import SNAPSHOT_SCHEMA_VERSION, SAFETY_BANNER
 
 ALERT_REPORT_SCHEMA_VERSION = "cdb.evidence_harvester.alert_report.v1"
@@ -553,7 +555,7 @@ def validate_24h_window(
     else:
         verdict = "PASS"
 
-    now = datetime.now(UTC)
+    now = cdb_utcnow().astimezone(UTC)
     return ValidationReport(
         schema_version="cdb.evidence_harvester.24h_validation.v1",
         validated_at_utc=_format_ts(now),
@@ -598,7 +600,7 @@ def validate_24h_window_from_dir(
     if not alert_paths:
         alert_paths = sorted(artifact_dir.glob("alerts_*.json"))
 
-    window_end = window_end_utc or datetime.now(UTC)
+    window_end = window_end_utc or cdb_utcnow().astimezone(UTC)
     if window_start_utc is None:
         window_start = window_end - timedelta(hours=DEFAULT_EXPECTED_WINDOW_HOURS)
     else:
@@ -658,7 +660,7 @@ def report_to_markdown(report: ValidationReport) -> str:
 
 
 def _now_utc() -> datetime:
-    return datetime.now(UTC)
+    return cdb_utcnow().astimezone(UTC)
 
 
 def parse_args(argv: list[str] | None = None) -> Any:
