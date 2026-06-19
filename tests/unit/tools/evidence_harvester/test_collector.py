@@ -110,7 +110,9 @@ def test_collector_rejects_unknown_evidence_class() -> None:
         ("last_ts_utc", "not-a-time", "ISO-8601 UTC timestamp"),
     ],
 )
-def test_collector_rejects_invalid_counts_and_timestamps(field: str, value: object, match: str) -> None:
+def test_collector_rejects_invalid_counts_and_timestamps(
+    field: str, value: object, match: str
+) -> None:
     payload = _fixture_payload()
     payload["candle_coverages"][0][field] = value
 
@@ -119,18 +121,22 @@ def test_collector_rejects_invalid_counts_and_timestamps(field: str, value: obje
 
 
 @pytest.mark.unit
-def test_cli_fixture_mode_writes_json_report(tmp_path: Path, capsys: pytest.CaptureFixture[str]) -> None:
+def test_cli_fixture_mode_writes_json_report(
+    tmp_path: Path, capsys: pytest.CaptureFixture[str]
+) -> None:
     fixture_path = tmp_path / "collector_input.json"
     output_path = tmp_path / "collector_report.json"
     fixture_path.write_text(json.dumps(_fixture_payload()), encoding="utf-8")
 
-    exit_code = main([
-        "--fixture",
-        str(fixture_path),
-        "--output",
-        str(output_path),
-        "--pretty",
-    ])
+    exit_code = main(
+        [
+            "--fixture",
+            str(fixture_path),
+            "--output",
+            str(output_path),
+            "--pretty",
+        ]
+    )
 
     assert exit_code == 0
     assert output_path.exists()
