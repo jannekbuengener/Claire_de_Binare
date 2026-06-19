@@ -72,9 +72,11 @@ def _fixture_payload() -> dict[str, object]:
 
 def _collector_report_dict() -> dict[str, object]:
     collector_input = CollectorInput.from_mapping(_fixture_payload())
-    return EvidenceHarvesterCollector(stale_after_minutes=60).collect(
-        collector_input
-    ).to_dict()
+    return (
+        EvidenceHarvesterCollector(stale_after_minutes=60)
+        .collect(collector_input)
+        .to_dict()
+    )
 
 
 @pytest.mark.unit
@@ -85,8 +87,12 @@ def test_snapshot_is_deterministic_for_same_report_and_time() -> None:
 
     assert snapshot_a.to_dict() == snapshot_b.to_dict()
     assert snapshot_a.to_dict()["metadata"]["schema_version"] == SNAPSHOT_SCHEMA_VERSION
-    assert snapshot_a.to_dict()["metadata"]["generated_at_utc"] == "2026-06-19T16:00:00Z"
-    assert snapshot_a.to_dict()["metadata"]["collector_report_hash"].startswith("sha256:")
+    assert (
+        snapshot_a.to_dict()["metadata"]["generated_at_utc"] == "2026-06-19T16:00:00Z"
+    )
+    assert snapshot_a.to_dict()["metadata"]["collector_report_hash"].startswith(
+        "sha256:"
+    )
 
 
 @pytest.mark.unit

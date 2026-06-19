@@ -9,16 +9,13 @@ from datetime import UTC, datetime
 from pathlib import Path
 from typing import Any, Mapping, Sequence
 
-
 SNAPSHOT_SCHEMA_VERSION = "cdb.evidence_harvester.snapshot.v1"
 COLLECTOR_REPORT_SCHEMA_VERSION = "evidence_harvester.collector_report.v1"
 ALLOWED_SOURCE_MODES = {"fixture", "future_readonly"}
 ALLOWED_ROW_STATUSES = {"info", "warning", "blocking"}
 ALLOWED_PROVENANCE_STATUSES = {"allowed", "unknown", "contaminated"}
 
-SAFETY_BANNER = (
-    "Paper/research evidence only; no LR-Go, no Live-Go, no Echtgeld-Go."
-)
+SAFETY_BANNER = "Paper/research evidence only; no LR-Go, no Live-Go, no Echtgeld-Go."
 
 
 class SnapshotValidationError(ValueError):
@@ -55,9 +52,7 @@ def _parse_ts(value: Any, field_name: str) -> datetime:
                 f"{field_name} must be an ISO-8601 UTC timestamp"
             ) from exc
     else:
-        raise SnapshotValidationError(
-            f"{field_name} must be an ISO-8601 UTC timestamp"
-        )
+        raise SnapshotValidationError(f"{field_name} must be an ISO-8601 UTC timestamp")
 
     if parsed.tzinfo is None:
         raise SnapshotValidationError(f"{field_name} must be timezone-aware UTC")
@@ -181,7 +176,9 @@ def _next_action_hints(gap_items: Sequence[Mapping[str, Any]]) -> tuple[str, ...
         if gap_type in hints_by_type:
             hints.append(hints_by_type[gap_type])
     if not hints:
-        hints.append("No immediate gap-driven action; continue passive evidence collection.")
+        hints.append(
+            "No immediate gap-driven action; continue passive evidence collection."
+        )
     return tuple(hints)
 
 
@@ -196,7 +193,8 @@ def _validate_raw_evidence(payload: Any) -> dict[str, int]:
     ]
     _require_exact_keys(mapping, "raw_evidence", keys)
     return {
-        key: _require_non_negative_int(mapping[key], f"raw_evidence.{key}") for key in keys
+        key: _require_non_negative_int(mapping[key], f"raw_evidence.{key}")
+        for key in keys
     }
 
 
@@ -463,10 +461,7 @@ def _validate_paper_chain_rows(payload: Any) -> list[dict[str, Any]]:
                 "observation_window_hours": round(
                     _require_float(
                         mapping["observation_window_hours"],
-                        (
-                            "paper_chain_coverages"
-                            f"[{index}].observation_window_hours"
-                        ),
+                        ("paper_chain_coverages" f"[{index}].observation_window_hours"),
                     ),
                     6,
                 ),
@@ -497,10 +492,7 @@ def _validate_paper_chain_rows(payload: Any) -> list[dict[str, Any]]:
                 "signal_density_per_hour": round(
                     _require_float(
                         mapping["signal_density_per_hour"],
-                        (
-                            "paper_chain_coverages"
-                            f"[{index}].signal_density_per_hour"
-                        ),
+                        ("paper_chain_coverages" f"[{index}].signal_density_per_hour"),
                     ),
                     6,
                 ),
@@ -527,7 +519,9 @@ def _validate_provenance(payload: Any) -> dict[str, Any]:
             _require_sequence(mapping["allowed_sources"], "provenance.allowed_sources")
         )
     )
-    source_rows = _require_sequence(mapping["source_findings"], "provenance.source_findings")
+    source_rows = _require_sequence(
+        mapping["source_findings"], "provenance.source_findings"
+    )
     normalized_sources: list[dict[str, Any]] = []
     source_keys = ["source", "observed_count", "status"]
     for index, row in enumerate(source_rows):
@@ -579,7 +573,9 @@ def _validate_provenance(payload: Any) -> dict[str, Any]:
         "unknown_source_count": unknown_count,
         "contaminated_source_count": contaminated_count,
         "source_findings": tuple(
-            sorted(normalized_sources, key=lambda item: (item["status"], item["source"]))
+            sorted(
+                normalized_sources, key=lambda item: (item["status"], item["source"])
+            )
         ),
     }
 
@@ -587,7 +583,14 @@ def _validate_provenance(payload: Any) -> dict[str, Any]:
 def _validate_gap_findings(payload: Any) -> dict[str, Any]:
     rows = _require_sequence(payload, "gap_findings")
     normalized: list[dict[str, Any]] = []
-    expected_keys = ["gap_id", "gap_type", "severity", "message", "scope", "source_refs"]
+    expected_keys = [
+        "gap_id",
+        "gap_type",
+        "severity",
+        "message",
+        "scope",
+        "source_refs",
+    ]
     for index, row in enumerate(rows):
         mapping = _require_mapping(row, f"gap_findings[{index}]")
         _require_exact_keys(mapping, f"gap_findings[{index}]", expected_keys)
@@ -632,7 +635,12 @@ def _validate_gap_findings(payload: Any) -> dict[str, Any]:
         counts[item["severity"]] += 1
     items = sorted(
         normalized,
-        key=lambda item: (item["severity"], item["gap_type"], item["scope"], item["gap_id"]),
+        key=lambda item: (
+            item["severity"],
+            item["gap_type"],
+            item["scope"],
+            item["gap_id"],
+        ),
     )
     return {
         "summary": {
@@ -656,9 +664,13 @@ def _validate_summary(payload: Any) -> dict[str, Any]:
         "has_zero_paper_chains",
     ]
     _require_exact_keys(mapping, "summary", keys)
-    overall_status = _require_string(mapping["overall_status"], "summary.overall_status")
+    overall_status = _require_string(
+        mapping["overall_status"], "summary.overall_status"
+    )
     if overall_status not in {"ok", "warning", "blocked"}:
-        raise SnapshotValidationError("summary.overall_status must be one of ok|warning|blocked")
+        raise SnapshotValidationError(
+            "summary.overall_status must be one of ok|warning|blocked"
+        )
     return {
         "overall_status": overall_status,
         "blocking_count": _require_non_negative_int(
@@ -667,7 +679,9 @@ def _validate_summary(payload: Any) -> dict[str, Any]:
         "warning_count": _require_non_negative_int(
             mapping["warning_count"], "summary.warning_count"
         ),
-        "info_count": _require_non_negative_int(mapping["info_count"], "summary.info_count"),
+        "info_count": _require_non_negative_int(
+            mapping["info_count"], "summary.info_count"
+        ),
         "has_zero_paper_chains": _require_bool(
             mapping["has_zero_paper_chains"], "summary.has_zero_paper_chains"
         ),
@@ -693,19 +707,25 @@ def _normalize_report(payload: Mapping[str, Any]) -> dict[str, Any]:
     ]
     _require_exact_keys(payload, "collector_report", expected_keys)
 
-    schema_version = _require_string(payload["schema_version"], "collector_report.schema_version")
+    schema_version = _require_string(
+        payload["schema_version"], "collector_report.schema_version"
+    )
     if schema_version != COLLECTOR_REPORT_SCHEMA_VERSION:
         raise SnapshotValidationError(
             "collector_report.schema_version must be evidence_harvester.collector_report.v1"
         )
-    source_mode = _require_string(payload["source_mode"], "collector_report.source_mode")
+    source_mode = _require_string(
+        payload["source_mode"], "collector_report.source_mode"
+    )
     if source_mode not in ALLOWED_SOURCE_MODES:
         raise SnapshotValidationError(
             "collector_report.source_mode must be one of fixture|future_readonly"
         )
     return {
         "schema_version": schema_version,
-        "report_id": _require_string(payload["report_id"], "collector_report.report_id"),
+        "report_id": _require_string(
+            payload["report_id"], "collector_report.report_id"
+        ),
         "evidence_class": _require_string(
             payload["evidence_class"], "collector_report.evidence_class"
         ),
@@ -858,12 +878,15 @@ def build_snapshot(
             "partial_chain_count_total": paper_partial_total,
             "zero_complete_stream_count": paper_zero_complete_count,
             "zero_signal_stream_count": paper_zero_signal_count,
-            "average_signal_density_per_hour": round(
-                sum(item["signal_density_per_hour"] for item in paper_rows) / len(paper_rows),
-                6,
-            )
-            if paper_rows
-            else 0.0,
+            "average_signal_density_per_hour": (
+                round(
+                    sum(item["signal_density_per_hour"] for item in paper_rows)
+                    / len(paper_rows),
+                    6,
+                )
+                if paper_rows
+                else 0.0
+            ),
             "status_counts": paper_status_counts,
             "items": tuple(paper_rows),
         },
@@ -932,9 +955,8 @@ def snapshot_to_markdown(snapshot: EvidenceSnapshot) -> str:
         "## Provenance",
         f"- Status: {payload['provenance']['status']}",
         (
-            "- Allowed sources: "
-            + ", ".join(payload['provenance']['allowed_sources'])
-            if payload['provenance']['allowed_sources']
+            "- Allowed sources: " + ", ".join(payload["provenance"]["allowed_sources"])
+            if payload["provenance"]["allowed_sources"]
             else "- Allowed sources: none"
         ),
         (
@@ -985,7 +1007,9 @@ def snapshot_to_markdown(snapshot: EvidenceSnapshot) -> str:
 def load_collector_report_fixture(path: str | Path) -> dict[str, Any]:
     payload = json.loads(Path(path).read_text(encoding="utf-8"))
     if not isinstance(payload, dict):
-        raise SnapshotValidationError("Collector report fixture JSON root must be an object")
+        raise SnapshotValidationError(
+            "Collector report fixture JSON root must be an object"
+        )
     return dict(payload)
 
 
