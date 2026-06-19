@@ -14,6 +14,7 @@ write-audit #3361).
 | Runner (collector -> snapshot -> alert) | #3358 | Implemented |
 | Watchdog (heartbeat/state consumption) | #3359 | Implemented |
 | Write-audit (artifact completeness/consistency) | #3361 | Implemented |
+| Boot readiness (reboot- and Docker-ready checks) | #3360 | Implemented |
 
 ## LR Status
 
@@ -242,8 +243,90 @@ python -m tools.evidence_harvester.write_audit ^
 1. Verify which iteration stopped via the final heartbeat.
 2. Restart with `--iterations` adjusted for remaining cycles if needed.
 
+## Boot Readiness (#3360)
+
+The `boot.py` module checks whether the evidence harvester is reboot- and
+Docker-ready without performing any mutations. It is the default entry point
+after a system restart.
+
+### Modes
+
+| Mode | Description |
+|------|-------------|
+| `status` (default) | Full readiness: repo root, module imports, artifact dirs, scheduler script, Docker detection, safety boundaries, command plan |
+| `preflight` | Quick module-import and path check only |
+| `install-plan` | Print safe command plan for Task/Docker setup — no execution |
+| `render-operator-handoff` | Complete handoff document for enabling always-on mode |
+
+### Usage
+
+```powershell
+# Full status
+python -m tools.evidence_harvester.boot status --pretty
+
+# Quick preflight
+python -m tools.evidence_harvester.boot preflight --pretty
+
+# Install plan (does NOT execute)
+python -m tools.evidence_harvester.boot install-plan --pretty
+
+# Operator handoff
+python -m tools.evidence_harvester.boot render-operator-handoff
+
+# PowerShell wrapper
+pwsh -NoProfile -File .\scripts\evidence_harvester_boot.ps1 -Action status -Pretty
+```
+
+### Verdict contract
+
+| Verdict | Conditions |
+|---------|-----------|
+| PASS    | All B001–B007 checks pass: repo valid, modules importable, artifact dirs ok, scheduler present (or warn), Docker detected or warn, safety ok, command plan available |
+| WARN    | Docker not on PATH, scheduler script missing, artifact dir created during check, safety banner not verified |
+| FAIL    | Repo root invalid, module import fails, artifact dir not creatable, safety boundary violated |
+
+### Checks (B001–B007)
+
+| ID   | Check                            | Failure Condition                        |
+|------|----------------------------------|------------------------------------------|
+| B001 | Repo root valid                  | Repo root missing or no `.git` directory |
+| B002 | Harvester modules importable     | Any of 8 core modules fails to import    |
+| B003 | Artifact dirs available          | Required artifact directory not creatable |
+| B004 | Scheduler script present         | `scripts/evidence_harvester_task.ps1` missing |
+| B005 | Docker available (detect only)   | Docker not on PATH (warn only)          |
+| B006 | Safety boundaries ok             | Missing safety banner in runner module   |
+| B007 | Command plan available           | Safe command list can be produced        |
+
+### Boot readiness vs OPS validation (#3362)
+
+Boot readiness (#3360) is the precondition for #3362:
+
+1. Run `boot status` to verify the system is ready.
+2. If PASS, proceed to #3362 OPS validation for Windows Task installation
+   and Docker enablement.
+3. If WARN, review findings before proceeding.
+4. If FAIL, fix root causes before any OPS validation.
+
+### Docker boundary
+
+- Boot readiness **detects** Docker availability (`Docker available: yes/no`).
+- Boot readiness does **not** start Docker, run `docker compose up`, or perform
+  any Docker mutation.
+- Docker enablement requires a separate INFRA-GO from Gordon as part of #3362.
+- The `install-plan` mode prints the intended Docker command but does not
+  execute it.
+
+### Safety boundaries
+
+- Default mode is `status` — read-only assessment.
+- No Docker start/stop, runtime start, DB mutation, secrets access.
+- No Windows Task installation — that requires `scheduler install --explicit`
+  under #3362.
+- No LR-Go, no Live-Go, no Echtgeld-Go.
+
 ## Related Documents
 
 - `tools/evidence_harvester/README.md` — module-level documentation
 - `tools/evidence_harvester/runner.py` — source
+- `tools/evidence_harvester/boot.py` — boot readiness source
 - `docs/runbooks/CDB_EVIDENCE_HARVESTER_24H_DRY_VALIDATION.md` — 24h dry validation runbook
