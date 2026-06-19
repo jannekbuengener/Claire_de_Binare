@@ -9,6 +9,16 @@ from .validation import (
     validate_24h_window,
     validate_24h_window_from_dir,
 )
+from .watchdog import (
+    WatchdogError,
+    WatchdogFinding,
+    WatchdogReport,
+    WatchdogVerdict,
+    run_status,
+    run_check_artifacts,
+    render_escalation_draft,
+    report_to_markdown as watchdog_report_to_markdown,
+)
 
 __all__ = [
     "AlertReport",
@@ -19,9 +29,17 @@ __all__ = [
     "EvidenceHarvesterCollector",
     "ValidationError",
     "ValidationReport",
+    "WatchdogError",
+    "WatchdogFinding",
+    "WatchdogReport",
+    "WatchdogVerdict",
     "build_alert_report",
     "load_collector_input",
     "main",
+    "run_check_artifacts",
+    "run_status",
+    "render_escalation_draft",
     "validate_24h_window",
     "validate_24h_window_from_dir",
+    "watchdog_report_to_markdown",
 ]
