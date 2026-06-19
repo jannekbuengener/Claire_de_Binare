@@ -2,6 +2,7 @@ from __future__ import annotations
 
 import json
 import subprocess
+import sys
 from pathlib import Path
 
 import pytest
@@ -77,6 +78,27 @@ def test_scheduler_defaults_to_safe_plan(capsys: pytest.CaptureFixture[str]) -> 
     assert payload["mode"] == "plan"
     assert payload["default_mode"] == "dry-run"
     assert payload["scheduled_action"] == "run-once-fixture"
+
+
+@pytest.mark.unit
+def test_scheduler_main_uses_sys_argv_when_none(
+    tmp_path: Path,
+    capsys: pytest.CaptureFixture[str],
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    fixture_path = _write_fixture(tmp_path)
+    monkeypatch.setattr(
+        sys,
+        "argv",
+        ["scheduler", "plan", "--fixture", str(fixture_path)],
+    )
+
+    exit_code = main()
+
+    assert exit_code == 0
+    payload = json.loads(capsys.readouterr().out)
+    assert payload["mode"] == "plan"
+    assert payload["fixture"] == str(fixture_path)
 
 
 @pytest.mark.unit
