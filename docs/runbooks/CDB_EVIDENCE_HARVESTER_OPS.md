@@ -13,7 +13,7 @@ write-audit #3361).
 |-----------|-------|--------|
 | Runner (collector -> snapshot -> alert) | #3358 | Implemented |
 | Watchdog (heartbeat/state consumption) | #3359 | Implemented |
-| Write-audit (heartbeat/state consumption) | #3361 | Planned |
+| Write-audit (artifact completeness/consistency) | #3361 | Implemented |
 
 ## LR Status
 
@@ -170,15 +170,50 @@ python -m tools.evidence_harvester.watchdog status ^
 2. Review the draft before creating any GitHub issue manually.
 3. No automatic GitHub writes are performed by the watchdog.
 
-## Write-Audit (Planned, #3361)
+## Write-Audit (#3361)
 
-The write-audit consumer will use the heartbeat's `last_alert_json` path to
-read alert findings and, after human confirmation, produce GitHub issue drafts
-or comments. Design note:
+The write-audit (`write_audit.py`) verifies that the evidence harvester actually
+produces complete, readable, temporally consistent, and usable artifact sets. It
+is a downstream consumer of the runner output directory.
 
-- Default-off; no automatic GitHub writes
-- Human gate required before any GitHub action
-- Separate module with its own safety boundaries
+### Supported checks (10 check groups, A001–A010)
+
+| ID   | Check                            | Failure Condition                        |
+|------|----------------------------------|------------------------------------------|
+| A001 | Required artifacts present       | Missing collector/snapshot/alert/heartbeat/state/watchdog |
+| A002 | JSON artifacts parse             | Malformed or non-dict JSON               |
+| A003 | Schema versions match            | Unexpected schema_version in any artifact |
+| A004 | Hash linkage                     | Snapshot collector_report_hash mismatches no collector report |
+| A005 | Safety flags                     | lr_status/live_status/echtgeld_status not NO-GO |
+| A006 | Timestamp coherence              | Stale heartbeat/snapshot or invalid timestamps |
+| A007 | Source modes valid               | source_mode not in fixture/future_readonly |
+| A008 | Artifact sizes sane              | Zero-byte or oversized artifacts         |
+| A009 | Markdown companions              | Snapshot/alert/watchdog JSON without MD companion |
+| A010 | Metadata fields present          | Missing or empty schema_version/generated_at_utc/source_mode |
+
+### Usage
+
+```powershell
+# Default audit
+python -m tools.evidence_harvester.write_audit
+
+# Save outputs
+python -m tools.evidence_harvester.write_audit ^
+    --artifact-dir artifacts\evidence_harvester\runner ^
+    --json-output artifacts\evidence_harvester\write_audit_report.json ^
+    --markdown-output artifacts\evidence_harvester\write_audit_report.md
+```
+
+### Safety boundaries
+
+- Read-only; never modifies artifacts
+- No automatic restart, GitHub write, Docker, runtime, DB, Redis, or secrets action
+- Feeds #3362 (OPS validation) with structured artifact completeness evidence
+
+### Outputs
+
+- `write_audit_report.json` — machine-readable report with per-check findings + verdict
+- `write_audit_report.md` — human-readable Markdown summary
 
 ## Safety Boundaries
 

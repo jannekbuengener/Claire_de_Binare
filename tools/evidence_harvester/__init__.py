@@ -19,6 +19,14 @@ from .watchdog import (
     render_escalation_draft,
     report_to_markdown as watchdog_report_to_markdown,
 )
+from .write_audit import (
+    WriteAuditError,
+    WriteAuditFinding,
+    WriteAuditReport,
+    WriteAuditVerdict,
+    run_write_audit,
+    report_to_markdown as write_audit_report_to_markdown,
+)
 
 __all__ = [
     "AlertReport",
@@ -33,13 +41,19 @@ __all__ = [
     "WatchdogFinding",
     "WatchdogReport",
     "WatchdogVerdict",
+    "WriteAuditError",
+    "WriteAuditFinding",
+    "WriteAuditReport",
+    "WriteAuditVerdict",
     "build_alert_report",
     "load_collector_input",
     "main",
     "run_check_artifacts",
     "run_status",
     "render_escalation_draft",
+    "run_write_audit",
     "validate_24h_window",
     "validate_24h_window_from_dir",
     "watchdog_report_to_markdown",
+    "write_audit_report_to_markdown",
 ]
