@@ -357,6 +357,8 @@ def uninstall_command(args: argparse.Namespace) -> int:
 
 
 def parse_args(argv: list[str] | None = None) -> argparse.Namespace:
+    if argv is None:
+        argv = sys.argv[1:]
     argv = list(argv or [])
     if not argv:
         argv = ["plan"]

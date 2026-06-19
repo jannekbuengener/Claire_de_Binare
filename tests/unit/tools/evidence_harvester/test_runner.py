@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import json
+import sys
 import time
 from pathlib import Path
 
@@ -95,6 +96,36 @@ def test_plan_command_accepts_optional_fixture(
     assert exit_code == 0
     payload = json.loads(capsys.readouterr().out)
     assert payload["fixture"] == str(fixture_path)
+
+
+@pytest.mark.unit
+def test_main_uses_sys_argv_when_none(
+    tmp_path: Path,
+    capsys: pytest.CaptureFixture[str],
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    fixture_path = _write_fixture(tmp_path)
+    output_dir = tmp_path / "artifacts"
+    monkeypatch.setattr(
+        sys,
+        "argv",
+        [
+            "runner",
+            "run-once-fixture",
+            "--fixture",
+            str(fixture_path),
+            "--output-dir",
+            str(output_dir),
+            "--generated-at-utc",
+            "2026-06-19T16:00:00Z",
+        ],
+    )
+
+    exit_code = main()
+
+    assert exit_code == 0
+    payload = json.loads(capsys.readouterr().out)
+    assert payload["mode"] == "run-once-fixture"
 
 
 @pytest.mark.unit

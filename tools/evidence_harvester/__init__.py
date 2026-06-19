@@ -9,6 +9,13 @@ from .validation import (
     validate_24h_window,
     validate_24h_window_from_dir,
 )
+from .ops_validation import (
+    OpsValidationError,
+    OpsValidationReport,
+    report_to_markdown as ops_validation_report_to_markdown,
+    validate_72h_window,
+    validate_72h_window_from_dir,
+)
 from .watchdog import (
     WatchdogError,
     WatchdogFinding,
@@ -35,6 +42,8 @@ __all__ = [
     "CollectorReport",
     "CollectorValidationError",
     "EvidenceHarvesterCollector",
+    "OpsValidationError",
+    "OpsValidationReport",
     "ValidationError",
     "ValidationReport",
     "WatchdogError",
@@ -48,12 +57,15 @@ __all__ = [
     "build_alert_report",
     "load_collector_input",
     "main",
+    "ops_validation_report_to_markdown",
     "run_check_artifacts",
     "run_status",
     "render_escalation_draft",
     "run_write_audit",
     "validate_24h_window",
     "validate_24h_window_from_dir",
+    "validate_72h_window",
+    "validate_72h_window_from_dir",
     "watchdog_report_to_markdown",
     "write_audit_report_to_markdown",
 ]

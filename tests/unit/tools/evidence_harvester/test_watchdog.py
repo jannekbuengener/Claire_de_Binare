@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import json
+import sys
 from datetime import UTC, datetime, timedelta
 from pathlib import Path
 
@@ -309,6 +310,26 @@ def test_status_pass_with_fresh_artifacts(tmp_path: Path) -> None:
     assert report.runner_state_ok is True
     assert report.required_artifacts_present is True
     assert report.verdict.fail_count == 0
+
+
+@pytest.mark.unit
+def test_watchdog_main_uses_sys_argv_when_none(
+    tmp_path: Path,
+    capsys: pytest.CaptureFixture[str],
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    artifact_dir = _write_artifact_dir(tmp_path)
+    monkeypatch.setattr(
+        sys,
+        "argv",
+        ["watchdog", "check-artifacts", "--artifact-dir", str(artifact_dir)],
+    )
+
+    exit_code = main()
+
+    assert exit_code == 0
+    payload = json.loads(capsys.readouterr().out)
+    assert payload["mode"] == "check-artifacts"
 
 
 @pytest.mark.unit

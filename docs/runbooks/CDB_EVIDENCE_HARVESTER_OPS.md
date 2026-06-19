@@ -15,6 +15,7 @@ write-audit #3361).
 | Watchdog (heartbeat/state consumption) | #3359 | Implemented |
 | Write-audit (artifact completeness/consistency) | #3361 | Implemented |
 | Boot readiness (reboot- and Docker-ready checks) | #3360 | Implemented |
+| 72h ops validation (final composition validator) | #3362 | Implemented |
 
 ## LR Status
 
@@ -324,9 +325,61 @@ Boot readiness (#3360) is the precondition for #3362:
   under #3362.
 - No LR-Go, no Live-Go, no Echtgeld-Go.
 
+## 72h Ops Validation (#3362)
+
+The `ops_validation.py` module is the final read-only validation surface for the
+real `>=72h` always-on dry run. It validates one finished artifact directory and
+composes runner continuity, snapshot/alert coverage, watchdog history,
+write-audit history, boot readiness, and safety boundaries into a final
+PASS/WARN/FAIL verdict.
+
+### Phase-2 artifact contract
+
+- `artifacts/evidence_harvester/72h_ops_validation/<run_id>/`
+- `collector_report_<stamp>.json`
+- `snapshot_<stamp>.json`
+- `snapshot_<stamp>.md`
+- `alert_<stamp>.json`
+- `alert_<stamp>.md`
+- `runner_heartbeat.json`
+- `runner_state.json`
+- `watchdog_report_<stamp>.json`
+- `watchdog_report_<stamp>.md`
+- `write_audit_report_<stamp>.json`
+- `write_audit_report_<stamp>.md`
+- `boot_readiness_report.json`
+- `boot_readiness_report.md`
+- `ops_validation_report.json`
+- `ops_validation_report.md`
+
+### Phase-2 runtime contract
+
+- Seed fixture: `artifacts/evidence_harvester/24h_dry_run/collector_input.json`
+- Cadence: every `900` seconds / `15` minutes
+- Watchdog: after each runner cycle
+- Write-audit: after each runner cycle
+- Final validation: after `>=72h` over the whole artifact directory
+
+### Usage
+
+```powershell
+python -m tools.evidence_harvester.ops_validation validate-dir ^
+    --artifact-dir artifacts\evidence_harvester\72h_ops_validation\<run_id> ^
+    --json-output artifacts\evidence_harvester\72h_ops_validation\<run_id>\ops_validation_report.json ^
+    --markdown-output artifacts\evidence_harvester\72h_ops_validation\<run_id>\ops_validation_report.md ^
+    --pretty
+```
+
+### Safety boundaries
+
+- Read-only validation only; does not start the 72h run
+- No Windows Task install, Docker/runtime/DB/secrets mutation, or GitHub writes
+- No LR-Go, no Live-Go, no Echtgeld-Go
+
 ## Related Documents
 
 - `tools/evidence_harvester/README.md` — module-level documentation
 - `tools/evidence_harvester/runner.py` — source
 - `tools/evidence_harvester/boot.py` — boot readiness source
 - `docs/runbooks/CDB_EVIDENCE_HARVESTER_24H_DRY_VALIDATION.md` — 24h dry validation runbook
+- `docs/runbooks/CDB_EVIDENCE_HARVESTER_72H_OPS_VALIDATION.md` — final >=72h validation runbook
