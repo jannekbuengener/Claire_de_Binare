@@ -9,6 +9,8 @@ from datetime import UTC, datetime
 from pathlib import Path
 from typing import Any, Mapping, Sequence
 
+from core.utils.clock import utcnow as cdb_utcnow
+
 SNAPSHOT_SCHEMA_VERSION = "cdb.evidence_harvester.snapshot.v1"
 COLLECTOR_REPORT_SCHEMA_VERSION = "evidence_harvester.collector_report.v1"
 ALLOWED_SOURCE_MODES = {"fixture", "future_readonly"}
@@ -23,7 +25,7 @@ class SnapshotValidationError(ValueError):
 
 
 def utc_now() -> datetime:
-    return datetime.now(tz=UTC)
+    return cdb_utcnow().astimezone(UTC)
 
 
 def _hash_payload(payload: Mapping[str, Any]) -> str:
