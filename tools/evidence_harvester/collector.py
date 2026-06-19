@@ -34,7 +34,9 @@ def _severity_rank(value: str) -> int:
     return {"blocking": 0, "warning": 1, "info": 2}.get(value, 99)
 
 
-def _status_for_missing(observed_count: int, expected_count: int, stale_minutes: int | None = None) -> str:
+def _status_for_missing(
+    observed_count: int, expected_count: int, stale_minutes: int | None = None
+) -> str:
     if stale_minutes is not None and stale_minutes >= 0:
         return "blocking" if stale_minutes > 0 else "warning"
     if observed_count == 0:
@@ -49,7 +51,9 @@ def _format_gap_type(symbol: str, venue: str, timeframe: str) -> str:
 
 
 def _hash_payload(payload: Mapping[str, Any]) -> str:
-    canonical = json.dumps(payload, sort_keys=True, separators=(",", ":"), ensure_ascii=True)
+    canonical = json.dumps(
+        payload, sort_keys=True, separators=(",", ":"), ensure_ascii=True
+    )
     return hashlib.sha256(canonical.encode("utf-8")).hexdigest()
 
 
@@ -78,19 +82,38 @@ class EvidenceHarvesterCollector:
 
         candle_coverages = tuple(
             sorted(
-                (self._build_candle_coverage(item, collector_input.produced_at_utc) for item in collector_input.candle_coverages),
-                key=lambda item: (item.symbol, item.venue, item.timeframe, item.first_ts_utc),
+                (
+                    self._build_candle_coverage(item, collector_input.produced_at_utc)
+                    for item in collector_input.candle_coverages
+                ),
+                key=lambda item: (
+                    item.symbol,
+                    item.venue,
+                    item.timeframe,
+                    item.first_ts_utc,
+                ),
             )
         )
         regime_coverages = tuple(
             sorted(
-                (self._build_regime_coverage(item, collector_input.produced_at_utc) for item in collector_input.regime_coverages),
-                key=lambda item: (item.symbol, item.venue, item.timeframe, item.first_ts_utc),
+                (
+                    self._build_regime_coverage(item, collector_input.produced_at_utc)
+                    for item in collector_input.regime_coverages
+                ),
+                key=lambda item: (
+                    item.symbol,
+                    item.venue,
+                    item.timeframe,
+                    item.first_ts_utc,
+                ),
             )
         )
         paper_chain_coverages = tuple(
             sorted(
-                (self._build_paper_chain_finding(item) for item in collector_input.paper_chain_coverages),
+                (
+                    self._build_paper_chain_finding(item)
+                    for item in collector_input.paper_chain_coverages
+                ),
                 key=lambda item: (item.symbol, item.venue, item.timeframe),
             )
         )
@@ -132,12 +155,16 @@ class EvidenceHarvesterCollector:
             summary=summary,
         )
 
-    def _build_candle_coverage(self, item: CandleCoverageInput, captured_at_utc: datetime) -> CoverageFinding:
+    def _build_candle_coverage(
+        self, item: CandleCoverageInput, captured_at_utc: datetime
+    ) -> CoverageFinding:
         missing = item.expected_count - item.observed_count
         coverage = round(item.observed_count / item.expected_count, 6)
         stale_minutes = int((captured_at_utc - item.last_ts_utc).total_seconds() // 60)
         if stale_minutes < 0:
-            raise CollectorValidationError("last_ts_utc cannot be in the future relative to produced_at_utc")
+            raise CollectorValidationError(
+                "last_ts_utc cannot be in the future relative to produced_at_utc"
+            )
         status = "info"
         if stale_minutes > self.stale_after_minutes:
             status = "blocking"
@@ -164,7 +191,9 @@ class EvidenceHarvesterCollector:
         coverage = round(item.observed_count / item.expected_count, 6)
         stale_minutes = int((captured_at_utc - item.last_ts_utc).total_seconds() // 60)
         if stale_minutes < 0:
-            raise CollectorValidationError("last_ts_utc cannot be in the future relative to produced_at_utc")
+            raise CollectorValidationError(
+                "last_ts_utc cannot be in the future relative to produced_at_utc"
+            )
         status = "info"
         if item.observed_count == 0:
             status = "blocking"
@@ -265,7 +294,10 @@ class EvidenceHarvesterCollector:
         gap_index = 1
 
         for item in candle_coverages:
-            if item.stale_minutes is not None and item.stale_minutes > self.stale_after_minutes:
+            if (
+                item.stale_minutes is not None
+                and item.stale_minutes > self.stale_after_minutes
+            ):
                 findings.append(
                     GapFinding(
                         gap_id=f"gap-{gap_index:03d}",
@@ -296,7 +328,10 @@ class EvidenceHarvesterCollector:
                 gap_index += 1
 
         for item in regime_coverages:
-            if item.stale_minutes is not None and item.stale_minutes > self.stale_after_minutes:
+            if (
+                item.stale_minutes is not None
+                and item.stale_minutes > self.stale_after_minutes
+            ):
                 findings.append(
                     GapFinding(
                         gap_id=f"gap-{gap_index:03d}",
@@ -391,7 +426,11 @@ class EvidenceHarvesterCollector:
                     severity="blocking",
                     message=f"{provenance.unknown_source_count} observations came from unknown sources",
                     scope="provenance",
-                    source_refs=tuple(source.source for source in provenance.source_findings if source.status == "unknown"),
+                    source_refs=tuple(
+                        source.source
+                        for source in provenance.source_findings
+                        if source.status == "unknown"
+                    ),
                 )
             )
             gap_index += 1
@@ -404,12 +443,25 @@ class EvidenceHarvesterCollector:
                     severity="blocking",
                     message=f"{provenance.contaminated_source_count} observations were marked contaminated",
                     scope="provenance",
-                    source_refs=tuple(source.source for source in provenance.source_findings if source.status == "contaminated"),
+                    source_refs=tuple(
+                        source.source
+                        for source in provenance.source_findings
+                        if source.status == "contaminated"
+                    ),
                 )
             )
             gap_index += 1
 
-        return tuple(sorted(findings, key=lambda item: (_severity_rank(item.severity), item.gap_type, item.scope)))
+        return tuple(
+            sorted(
+                findings,
+                key=lambda item: (
+                    _severity_rank(item.severity),
+                    item.gap_type,
+                    item.scope,
+                ),
+            )
+        )
 
     def _build_summary(self, gap_findings: tuple[GapFinding, ...]) -> CollectorSummary:
         blocking = sum(1 for gap in gap_findings if gap.severity == "blocking")
@@ -421,7 +473,9 @@ class EvidenceHarvesterCollector:
             status = "warning"
         else:
             status = "ok"
-        has_zero_paper_chains = any(gap.gap_type == "zero_paper_chains" for gap in gap_findings)
+        has_zero_paper_chains = any(
+            gap.gap_type == "zero_paper_chains" for gap in gap_findings
+        )
         return CollectorSummary(
             overall_status=status,
             blocking_count=blocking,
@@ -481,7 +535,9 @@ def main(argv: list[str] | None = None) -> int:
     )
 
     if args.output:
-        args.output.write_text(json_text + ("\n" if not json_text.endswith("\n") else ""), encoding="utf-8")
+        args.output.write_text(
+            json_text + ("\n" if not json_text.endswith("\n") else ""), encoding="utf-8"
+        )
     else:
         print(json_text)
     return 0

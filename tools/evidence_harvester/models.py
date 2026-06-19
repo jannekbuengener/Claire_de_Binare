@@ -56,9 +56,13 @@ def _parse_ts(value: Any, field_name: str) -> datetime:
         try:
             parsed = datetime.fromisoformat(text)
         except ValueError as exc:
-            raise CollectorValidationError(f"{field_name} must be an ISO-8601 UTC timestamp") from exc
+            raise CollectorValidationError(
+                f"{field_name} must be an ISO-8601 UTC timestamp"
+            ) from exc
     else:
-        raise CollectorValidationError(f"{field_name} must be an ISO-8601 UTC timestamp")
+        raise CollectorValidationError(
+            f"{field_name} must be an ISO-8601 UTC timestamp"
+        )
 
     if parsed.tzinfo is None:
         raise CollectorValidationError(f"{field_name} must be timezone-aware UTC")
@@ -95,17 +99,29 @@ class CandleCoverageInput:
         if not timeframe:
             raise CollectorValidationError("candle timeframe must not be blank")
 
-        first_ts_utc = _parse_ts(_coalesce(mapping, "first_ts_utc", "first_ts", "start_ts_utc", "start_ts"), "first_ts_utc")
-        last_ts_utc = _parse_ts(_coalesce(mapping, "last_ts_utc", "last_ts", "end_ts_utc", "end_ts"), "last_ts_utc")
+        first_ts_utc = _parse_ts(
+            _coalesce(mapping, "first_ts_utc", "first_ts", "start_ts_utc", "start_ts"),
+            "first_ts_utc",
+        )
+        last_ts_utc = _parse_ts(
+            _coalesce(mapping, "last_ts_utc", "last_ts", "end_ts_utc", "end_ts"),
+            "last_ts_utc",
+        )
         if last_ts_utc < first_ts_utc:
             raise CollectorValidationError("candle last_ts_utc must be >= first_ts_utc")
 
-        observed_count = _parse_int(_coalesce(mapping, "observed_count", "count"), "observed_count")
-        expected_count = _parse_int(_coalesce(mapping, "expected_count", "expected"), "expected_count")
+        observed_count = _parse_int(
+            _coalesce(mapping, "observed_count", "count"), "observed_count"
+        )
+        expected_count = _parse_int(
+            _coalesce(mapping, "expected_count", "expected"), "expected_count"
+        )
         if expected_count == 0:
             raise CollectorValidationError("expected_count must be > 0")
         if observed_count > expected_count:
-            raise CollectorValidationError("observed_count cannot exceed expected_count")
+            raise CollectorValidationError(
+                "observed_count cannot exceed expected_count"
+            )
 
         return cls(
             symbol=symbol,
@@ -141,19 +157,33 @@ class RegimeCoverageInput:
         if not timeframe:
             raise CollectorValidationError("regime timeframe must not be blank")
 
-        first_ts_utc = _parse_ts(_coalesce(mapping, "first_ts_utc", "first_ts", "start_ts_utc", "start_ts"), "first_ts_utc")
-        last_ts_utc = _parse_ts(_coalesce(mapping, "last_ts_utc", "last_ts", "end_ts_utc", "end_ts"), "last_ts_utc")
+        first_ts_utc = _parse_ts(
+            _coalesce(mapping, "first_ts_utc", "first_ts", "start_ts_utc", "start_ts"),
+            "first_ts_utc",
+        )
+        last_ts_utc = _parse_ts(
+            _coalesce(mapping, "last_ts_utc", "last_ts", "end_ts_utc", "end_ts"),
+            "last_ts_utc",
+        )
         if last_ts_utc < first_ts_utc:
             raise CollectorValidationError("regime last_ts_utc must be >= first_ts_utc")
 
-        observed_count = _parse_int(_coalesce(mapping, "observed_count", "count"), "observed_count")
-        expected_count = _parse_int(_coalesce(mapping, "expected_count", "expected"), "expected_count")
+        observed_count = _parse_int(
+            _coalesce(mapping, "observed_count", "count"), "observed_count"
+        )
+        expected_count = _parse_int(
+            _coalesce(mapping, "expected_count", "expected"), "expected_count"
+        )
         if expected_count == 0:
             raise CollectorValidationError("expected_count must be > 0")
         if observed_count > expected_count:
-            raise CollectorValidationError("observed_count cannot exceed expected_count")
+            raise CollectorValidationError(
+                "observed_count cannot exceed expected_count"
+            )
 
-        dist_raw = _coalesce(mapping, "regime_distribution", "distribution", "regimes") or {}
+        dist_raw = (
+            _coalesce(mapping, "regime_distribution", "distribution", "regimes") or {}
+        )
         if not isinstance(dist_raw, Mapping):
             raise CollectorValidationError("regime_distribution must be a mapping")
         distribution: list[tuple[str, int]] = []
@@ -213,9 +243,15 @@ class PaperChainCoverageInput:
         if observation_window_hours <= 0:
             raise CollectorValidationError("observation_window_hours must be > 0")
 
-        signal_count = _parse_int(_coalesce(mapping, "signal_count", "signals"), "signal_count")
-        decision_count = _parse_int(_coalesce(mapping, "decision_count", "decisions"), "decision_count")
-        order_count = _parse_int(_coalesce(mapping, "order_count", "orders"), "order_count")
+        signal_count = _parse_int(
+            _coalesce(mapping, "signal_count", "signals"), "signal_count"
+        )
+        decision_count = _parse_int(
+            _coalesce(mapping, "decision_count", "decisions"), "decision_count"
+        )
+        order_count = _parse_int(
+            _coalesce(mapping, "order_count", "orders"), "order_count"
+        )
         fill_count = _parse_int(_coalesce(mapping, "fill_count", "fills"), "fill_count")
         complete_chain_count = _parse_int(
             _coalesce(mapping, "complete_chain_count", "complete_chains"),
@@ -251,9 +287,15 @@ class ProvenanceObservationInput:
         source = str(_coalesce(mapping, "source", "source_ref", "venue")).strip()
         if not source:
             raise CollectorValidationError("provenance source must not be blank")
-        observed_count = _parse_int(_coalesce(mapping, "observed_count", "count"), "observed_count")
-        contaminated = bool(_coalesce(mapping, "contaminated", "is_contaminated") or False)
-        return cls(source=source, observed_count=observed_count, contaminated=contaminated)
+        observed_count = _parse_int(
+            _coalesce(mapping, "observed_count", "count"), "observed_count"
+        )
+        contaminated = bool(
+            _coalesce(mapping, "contaminated", "is_contaminated") or False
+        )
+        return cls(
+            source=source, observed_count=observed_count, contaminated=contaminated
+        )
 
 
 @dataclass(frozen=True, slots=True)
@@ -267,8 +309,12 @@ class CollectorInput:
     stale_after_minutes: int = 120
     candle_coverages: tuple[CandleCoverageInput, ...] = field(default_factory=tuple)
     regime_coverages: tuple[RegimeCoverageInput, ...] = field(default_factory=tuple)
-    paper_chain_coverages: tuple[PaperChainCoverageInput, ...] = field(default_factory=tuple)
-    provenance_observations: tuple[ProvenanceObservationInput, ...] = field(default_factory=tuple)
+    paper_chain_coverages: tuple[PaperChainCoverageInput, ...] = field(
+        default_factory=tuple
+    )
+    provenance_observations: tuple[ProvenanceObservationInput, ...] = field(
+        default_factory=tuple
+    )
 
     @classmethod
     def from_mapping(cls, mapping: Mapping[str, Any]) -> "CollectorInput":
@@ -279,18 +325,30 @@ class CollectorInput:
         if not is_valid_evidence_class(evidence_class):
             raise CollectorValidationError(f"unknown evidence_class={evidence_class!r}")
 
-        produced_by = str(_coalesce(mapping, "produced_by", "runner", "collector_id")).strip()
+        produced_by = str(
+            _coalesce(mapping, "produced_by", "runner", "collector_id")
+        ).strip()
         if not produced_by:
             raise CollectorValidationError("produced_by must not be blank")
         produced_at_utc = _parse_ts(
             _coalesce(mapping, "produced_at_utc", "captured_at_utc", "generated_at"),
             "produced_at_utc",
         )
-        source_mode = str(_coalesce(mapping, "source_mode", "mode") or "fixture").strip()
-        allowed_sources_raw = _coalesce(mapping, "allowed_provenance_sources", "allowed_sources") or []
-        if not isinstance(allowed_sources_raw, Sequence) or isinstance(allowed_sources_raw, (str, bytes)):
-            raise CollectorValidationError("allowed_provenance_sources must be a sequence")
-        allowed_provenance_sources = _sorted_source_tuple([str(item) for item in allowed_sources_raw])
+        source_mode = str(
+            _coalesce(mapping, "source_mode", "mode") or "fixture"
+        ).strip()
+        allowed_sources_raw = (
+            _coalesce(mapping, "allowed_provenance_sources", "allowed_sources") or []
+        )
+        if not isinstance(allowed_sources_raw, Sequence) or isinstance(
+            allowed_sources_raw, (str, bytes)
+        ):
+            raise CollectorValidationError(
+                "allowed_provenance_sources must be a sequence"
+            )
+        allowed_provenance_sources = _sorted_source_tuple(
+            [str(item) for item in allowed_sources_raw]
+        )
 
         stale_after_minutes = _parse_int(
             _coalesce(mapping, "stale_after_minutes", "max_age_minutes") or 120,
@@ -309,14 +367,20 @@ class CollectorInput:
             produced_by=produced_by,
             produced_at_utc=produced_at_utc,
             evidence_class=evidence_class,
-            evidence_class_version=str(_coalesce(mapping, "evidence_class_version") or "1.0"),
+            evidence_class_version=str(
+                _coalesce(mapping, "evidence_class_version") or "1.0"
+            ),
             source_mode=source_mode,
             allowed_provenance_sources=allowed_provenance_sources,
             stale_after_minutes=stale_after_minutes,
             candle_coverages=_load_rows("candle_coverages", CandleCoverageInput),
             regime_coverages=_load_rows("regime_coverages", RegimeCoverageInput),
-            paper_chain_coverages=_load_rows("paper_chain_coverages", PaperChainCoverageInput),
-            provenance_observations=_load_rows("provenance_observations", ProvenanceObservationInput),
+            paper_chain_coverages=_load_rows(
+                "paper_chain_coverages", PaperChainCoverageInput
+            ),
+            provenance_observations=_load_rows(
+                "provenance_observations", ProvenanceObservationInput
+            ),
         )
 
     def canonical_payload(self) -> dict[str, Any]:

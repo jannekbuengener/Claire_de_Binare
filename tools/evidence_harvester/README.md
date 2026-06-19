@@ -55,6 +55,18 @@ Artifact-only local status:
 python -m tools.evidence_harvester.scheduler status --output-dir artifacts\evidence_harvester\scheduled --pretty
 ```
 
+Deterministic alert report from a snapshot fixture:
+
+```powershell
+python -m tools.evidence_harvester.alerts --fixture path\to\snapshot.json --json-output out\alerts.json --markdown-output out\alerts.md --evaluated-at-utc 2026-06-19T18:00:00Z --pretty
+```
+
+Optional issue-draft text only:
+
+```powershell
+python -m tools.evidence_harvester.alerts --fixture path\to\snapshot.json --issue-draft-output out\issue_draft.md --issue-number 3350 --parent-issue 3345
+```
+
 Explicit Windows Task install/uninstall wrappers:
 
 ```powershell
@@ -112,6 +124,24 @@ Snapshot Markdown sections:
 - `Safety Boundaries`
 - `Next Action Hints`
 
+Alert report JSON sections:
+
+- `schema_version`
+- `evaluated_at_utc`
+- `snapshot_generated_at_utc`
+- `collector_report_id`
+- `collector_report_hash`
+- `snapshot_age_minutes`
+- `summary`
+- `findings`
+
+Alert issue-draft contract:
+
+- plain text/Markdown only
+- local file output only
+- no automatic GitHub issue creation, comments, or API writes
+- manual escalation remains a human review step
+
 ## Scheduler contract
 
 Allowed commands:
@@ -146,6 +176,18 @@ Safety boundaries:
 - no replay or backfill execution
 - no LR-Go, no Live-Go, no Echtgeld-Go
 - no autostart by default
+
+## Alerting contract
+
+Alerting reads normalized snapshot fixtures only and fails closed on malformed
+input. It classifies evidence gaps into deterministic `info`, `warn`, and
+`critical` findings, deduplicates repeated findings by stable `finding_id`, and
+can optionally render a manual issue draft.
+
+Use the alert report when you want a local, deterministic status artifact.
+Use the issue draft when a human has decided the findings should be escalated to
+GitHub manually. The module never creates issues, never posts comments, and does
+not perform any runtime, Docker, DB, secrets, or network write behavior.
 
 ## Future-gated live reads
 
