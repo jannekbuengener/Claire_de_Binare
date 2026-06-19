@@ -410,6 +410,85 @@ python -m tools.evidence_harvester.validation validate-dir `
 The module is read-only, does not start any background process, and enforces
 the same safety boundaries as the rest of the harvester.
 
+## Boot Readiness ( #3360 )
+
+The `boot.py` module checks whether the evidence harvester is reboot- and
+Docker-ready without performing any mutations. It is the entry point for
+verifying system state after a restart, before enabling always-on mode.
+
+### Allowed modes
+
+| Mode | Description |
+|------|-------------|
+| `status` (default) | Full readiness assessment: repo root, module imports, artifact dirs, scheduler script, Docker detection, safety boundaries, command plan |
+| `preflight` | Quick module-import and path check |
+| `install-plan` | Print safe command plan for Docker/Task setup without executing anything |
+| `render-operator-handoff` | Render a complete operator handoff document explaining how to enable reboot-resilient always-on mode |
+
+### Boot readiness checks (B001–B007)
+
+| ID   | Check                            | Failure Condition                        |
+|------|----------------------------------|------------------------------------------|
+| B001 | Repo root valid                  | Repo root missing or no `.git` directory |
+| B002 | Harvester modules importable     | Any of 8 core modules fails to import    |
+| B003 | Artifact dirs available          | Required artifact directory cannot be created |
+| B004 | Scheduler script present         | `scripts/evidence_harvester_task.ps1` missing |
+| B005 | Docker available                 | Docker not on PATH (warn, not required for fixture mode) |
+| B006 | Safety boundaries ok             | Missing safety banner in runner module   |
+| B007 | Command plan available           | Safe command list can be produced        |
+
+### Verdict contract
+
+| Verdict | Conditions |
+|---------|-----------|
+| PASS    | All B001–B007 pass: repo valid, all modules importable, artifact dirs ok, scheduler present (or warn only), Docker detected or warn, safety ok, command plan available |
+| WARN    | Docker not found, scheduler script missing, artifact dir created during check, safety banner not verified |
+| FAIL    | Repo root invalid, module import failure, artifact dir not creatable, safety boundary violation |
+
+### Usage
+
+```powershell
+# Default: full status
+python -m tools.evidence_harvester.boot
+
+# Full status with pretty output
+python -m tools.evidence_harvester.boot status --pretty
+
+# Quick preflight
+python -m tools.evidence_harvester.boot preflight --pretty
+
+# Safe install-plan (prints steps, does NOT execute)
+python -m tools.evidence_harvester.boot install-plan --pretty
+
+# Operator handoff document
+python -m tools.evidence_harvester.boot render-operator-handoff
+
+# Save outputs
+python -m tools.evidence_harvester.boot status ^
+    --json-output artifacts\evidence_harvester\boot_readiness_report.json ^
+    --markdown-output artifacts\evidence_harvester\boot_readiness_report.md
+
+# PowerShell wrapper (default: status)
+pwsh -NoProfile -File .\scripts\evidence_harvester_boot.ps1
+
+# PowerShell wrapper with explicit action
+pwsh -NoProfile -File .\scripts\evidence_harvester_boot.ps1 -Action status -Pretty
+```
+
+### Safety boundaries
+
+- Default mode is `status` (read-only assessment)
+- No Docker start/stop, runtime start, DB mutation, secrets access, or network write
+- `install-plan` prints steps but does not execute them
+- Docker mutation requires separate INFRA-GO from Gordon
+- Windows Task install requires separate GO (see #3362 OPS validation)
+- No LR-Go, no Live-Go, no Echtgeld-Go
+
+### Related issues
+
+- #3360 — boot readiness (this module)
+- #3362 — OPS validation (Windows Task installation and Docker enablement)
+
 ## Future-gated live reads
 
 Later issues may add read-only adapters for:
