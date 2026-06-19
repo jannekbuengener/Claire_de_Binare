@@ -690,6 +690,8 @@ def _add_shared_args(parser_obj: argparse.ArgumentParser) -> None:
 
 
 def main(argv: list[str] | None = None) -> int:
+    if argv is None:
+        argv = sys.argv[1:]
     argv = list(argv or [])
     if not argv:
         argv = ["status"]

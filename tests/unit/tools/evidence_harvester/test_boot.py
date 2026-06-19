@@ -331,3 +331,25 @@ def test_safety_emitted_for_all_modes(capsys: pytest.CaptureFixture[str]) -> Non
         assert exit_code == 0
         output = capsys.readouterr().out
         assert "safety" in output.lower() or "No LR-Go" in output
+
+
+@pytest.mark.unit
+def test_main_reads_sys_argv_when_called_with_none(
+    capsys: pytest.CaptureFixture[str],
+) -> None:
+    import sys
+
+    saved_argv = sys.argv
+    try:
+        sys.argv = [
+            "boot.py",
+            "status",
+            "--evaluated-at-utc",
+            "2026-06-19T16:00:00Z",
+        ]
+        exit_code = main()
+        assert exit_code == 0
+        payload = json.loads(capsys.readouterr().out)
+        assert payload["mode"] == "status"
+    finally:
+        sys.argv = saved_argv
