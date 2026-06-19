@@ -346,7 +346,10 @@ def uninstall_command(args: argparse.Namespace) -> int:
             "mode": "uninstall",
             "task_name": args.task_name,
             "uninstalled": True,
-            "safety": ["explicit flag required", "no runtime or evidence run triggered"],
+            "safety": [
+                "explicit flag required",
+                "no runtime or evidence run triggered",
+            ],
         },
         args.pretty,
     )
