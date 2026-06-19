@@ -189,6 +189,38 @@ Use the issue draft when a human has decided the findings should be escalated to
 GitHub manually. The module never creates issues, never posts comments, and does
 not perform any runtime, Docker, DB, secrets, or network write behavior.
 
+## Validation
+
+The `validation.py` module validates a 24h dry collection window of evidence
+harvester artifacts. See the runbook at
+`docs/runbooks/CDB_EVIDENCE_HARVESTER_24H_DRY_VALIDATION.md` for full details.
+
+### Validation-Ready vs Actually Validated
+
+**Validation-ready** means the checker and runbook exist on `main` and are
+unit-tested. The checker can validate a directory of fixture artifacts and
+produce a PASS/WARN/FAIL verdict with fail-closed reasons.
+
+**Actually validated** means a real 24h background run was executed, artifacts
+were collected, and the checker was run against the real output with a PASS
+verdict. This requires a separate explicit Runtime-GO from Jannek and is **not**
+authorized by this PR alone.
+
+Current status: `VALIDATION_READY` — no real 24h run has been executed yet.
+
+### Quick Start
+
+```powershell
+python -m tools.evidence_harvester.validation validate-dir `
+    --artifact-dir artifacts\evidence_harvester\fixture_validation `
+    --window-start-utc "2026-06-18T16:00:00Z" `
+    --window-end-utc "2026-06-19T16:00:00Z" `
+    --pretty
+```
+
+The module is read-only, does not start any background process, and enforces
+the same safety boundaries as the rest of the harvester.
+
 ## Future-gated live reads
 
 Later issues may add read-only adapters for:
