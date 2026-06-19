@@ -189,6 +189,79 @@ Use the issue draft when a human has decided the findings should be escalated to
 GitHub manually. The module never creates issues, never posts comments, and does
 not perform any runtime, Docker, DB, secrets, or network write behavior.
 
+## Runner (managed continuous harvester)
+
+The `runner.py` module provides a managed run loop for the evidence harvester.
+It runs the full collector → snapshot → alert pipeline in `plan`, `status`,
+`run-once-fixture`, and `loop-fixture` modes.
+
+### Allowed commands:
+
+- `plan` (default — safe dry-run no-op)
+- `status` — read local artifact state (heartbeat + state)
+- `run-once-fixture` — one complete collector → snapshot → alert cycle
+- `loop-fixture` — bounded iterations with configurable interval
+
+### Usage
+
+Safe default (plan):
+
+```powershell
+python -m tools.evidence_harvester.runner
+```
+
+One complete cycle:
+
+```powershell
+python -m tools.evidence_harvester.runner run-once-fixture `
+    --fixture path\to\collector_input.json `
+    --output-dir artifacts\evidence_harvester\runner `
+    --generated-at-utc 2026-06-19T16:00:00Z `
+    --pretty
+```
+
+Bounded loop (e.g. 5 iterations, 60s apart — no unlimited loop):
+
+```powershell
+python -m tools.evidence_harvester.runner loop-fixture `
+    --fixture path\to\collector_input.json `
+    --output-dir artifacts\evidence_harvester\runner `
+    --iterations 5 `
+    --interval-seconds 60 `
+    --pretty
+```
+
+Local status:
+
+```powershell
+python -m tools.evidence_harvester.runner status --output-dir artifacts\evidence_harvester\runner --pretty
+```
+
+### Output artifacts
+
+Each cycle produces:
+
+- `collector_report_<stamp>.json` — raw collector report
+- `snapshot_<stamp>.json` — normalized snapshot
+- `snapshot_<stamp>.md` — Markdown snapshot summary
+- `alert_<stamp>.json` — alert findings
+- `alert_<stamp>.md` — Markdown alert summary
+- `runner_heartbeat.json` — latest cycle metadata (overwritten each cycle)
+- `runner_state.json` — cumulative run statistics (overwritten each cycle)
+
+### Safety boundaries
+
+- default-off; bare command resolves to safe `plan`
+- `loop-fixture` is bounded only (must pass `--iterations N`)
+- no Docker, runtime, DB, Redis, or secrets access
+- no LR-Go, no Live-Go, no Echtgeld-Go
+
+### Related issues
+
+- #3358 — runner implementation (this module)
+- #3359 — watchdog consumption of runner heartbeat/state
+- #3361 — write-audit consumption of runner heartbeat/state
+
 ## Validation
 
 The `validation.py` module validates a 24h dry collection window of evidence
