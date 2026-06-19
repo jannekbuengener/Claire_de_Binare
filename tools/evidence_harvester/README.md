@@ -410,6 +410,59 @@ python -m tools.evidence_harvester.validation validate-dir `
 The module is read-only, does not start any background process, and enforces
 the same safety boundaries as the rest of the harvester.
 
+## 72h Ops Validation (#3362)
+
+The `ops_validation.py` module is the final validation surface for the real
+always-on `>=72h` dry run. It does not start the run. It validates one finished
+artifact directory and composes runner continuity, watchdog history,
+write-audit history, boot-readiness evidence, and safety boundaries into one
+deterministic PASS/WARN/FAIL verdict.
+
+### Usage
+
+```powershell
+python -m tools.evidence_harvester.ops_validation validate-dir `
+    --artifact-dir artifacts\evidence_harvester\72h_ops_validation\<run_id> `
+    --json-output artifacts\evidence_harvester\72h_ops_validation\<run_id>\ops_validation_report.json `
+    --markdown-output artifacts\evidence_harvester\72h_ops_validation\<run_id>\ops_validation_report.md `
+    --pretty
+```
+
+### Phase-2 runtime contract
+
+- seed fixture: `artifacts/evidence_harvester/24h_dry_run/collector_input.json`
+- artifact dir: `artifacts/evidence_harvester/72h_ops_validation/<run_id>/`
+- cadence: every `900` seconds
+- watchdog: after each runner cycle
+- write-audit: after each runner cycle
+- final validation: after `>=72h` over the whole artifact directory
+
+### Required phase-2 artifacts
+
+- `collector_report_<stamp>.json`
+- `snapshot_<stamp>.json`
+- `snapshot_<stamp>.md`
+- `alert_<stamp>.json`
+- `alert_<stamp>.md`
+- `runner_heartbeat.json`
+- `runner_state.json`
+- `watchdog_report_<stamp>.json`
+- `watchdog_report_<stamp>.md`
+- `write_audit_report_<stamp>.json`
+- `write_audit_report_<stamp>.md`
+- `boot_readiness_report.json`
+- `boot_readiness_report.md`
+- `ops_validation_report.json`
+- `ops_validation_report.md`
+
+### Safety boundaries
+
+- no actual 72h run in this PR
+- no Windows Task install in this PR
+- no Docker/runtime/DB/secrets mutation
+- no GitHub writes from module code
+- no LR-Go, no Live-Go, no Echtgeld-Go
+
 ## Boot Readiness ( #3360 )
 
 The `boot.py` module checks whether the evidence harvester is reboot- and
