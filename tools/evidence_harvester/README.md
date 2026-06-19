@@ -261,6 +261,58 @@ Each cycle produces:
 - #3358 — runner implementation (this module)
 - #3359 — watchdog consumption of runner heartbeat/state
 - #3361 — write-audit consumption of runner heartbeat/state
+- #3362 — OPS validation
+
+## Watchdog
+
+The `watchdog.py` module detects stalled collection and stale evidence by
+inspecting runner heartbeat, state, and artifact files. It produces
+deterministic PASS/WARN/FAIL verdicts.
+
+### Allowed commands
+
+- `status` (default) — full heartbeat, state, artifact integrity, and cadence checks
+- `check-artifacts` — artifact presence and integrity only (skip heartbeat/state)
+- `render-escalation-draft` — render a manual escalation draft from a saved report JSON
+
+### Usage
+
+```powershell
+# Full status check
+python -m tools.evidence_harvester.watchdog status `
+    --artifact-dir artifacts\evidence_harvester\runner `
+    --pretty
+
+# Artifact-only check
+python -m tools.evidence_harvester.watchdog check-artifacts `
+    --artifact-dir artifacts\evidence_harvester\runner `
+    --pretty
+
+# Render escalation draft from saved report
+python -m tools.evidence_harvester.watchdog render-escalation-draft `
+    --report-jango artifacts\evidence_harvester\watchdog_report.json
+```
+
+### Output artifacts
+
+- `watchdog_report.json` — machine-readable report with verdict + findings
+- `watchdog_report.md` — human-readable Markdown summary
+- `manual_escalation_draft.md` — manual escalation text (no automatic GitHub writes)
+
+### Verdict contract
+
+| Verdict | Conditions |
+|---------|-----------|
+| PASS    | Heartbeat fresh, state reports PASS, required artifacts exist, all JSON parses, safety flags correct |
+| WARN    | Artifact age near threshold, last run had failures, optional artifact missing |
+| FAIL    | Heartbeat stale, state missing, required artifact missing, malformed JSON, runner FAIL verdict, wrong safety flags |
+
+### Safety boundaries
+
+- Read-only; never modifies artifacts
+- No automatic restart, GitHub write, Docker, runtime, DB, Redis, or secrets action
+- Escalation draft is local text output only; human review required before any GitHub action
+- Feeds #3361 (write-audit) and #3362 (OPS validation) with structured evidence
 
 ## Validation
 

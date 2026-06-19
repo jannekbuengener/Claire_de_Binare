@@ -12,7 +12,7 @@ write-audit #3361).
 | Component | Issue | Status |
 |-----------|-------|--------|
 | Runner (collector -> snapshot -> alert) | #3358 | Implemented |
-| Watchdog (heartbeat/state consumption) | #3359 | Planned |
+| Watchdog (heartbeat/state consumption) | #3359 | Implemented |
 | Write-audit (heartbeat/state consumption) | #3361 | Planned |
 
 ## LR Status
@@ -94,14 +94,81 @@ Version: `cdb.evidence_harvester.runner_state.v1`
 | `last_cycle_verdict` | string | `PASS` or `FAIL` |
 | `last_cycle_ended_at_utc` | string | ISO-8601 UTC of last cycle end |
 
-## Watchdog (Planned, #3359)
+## Watchdog (#3359)
 
-The watchdog will consume `runner_heartbeat.json` and `runner_state.json` to
-detect stalls, repeated failures, or missed heartbeats. Design note:
+The watchdog (`watchdog.py`) consumes `runner_heartbeat.json` and
+`runner_state.json` plus all stamped artifacts to detect stalls, repeated
+failures, missed heartbeats, or stale evidence.
 
-- Read-only polling of the output directory
-- No modification of runner artifacts
-- Separate module with its own safety boundaries
+### Modes
+
+- `status` — full read-only inspection: heartbeat freshness, runner state,
+  required artifact presence, JSON integrity, safety flags, and snapshot cadence
+- `check-artifacts` — artifact presence and integrity only (skip heartbeat/state)
+- `render-escalation-draft` — render a manual escalation draft from a saved report JSON
+
+### Verdicts
+
+| Verdict | Meaning |
+|---------|---------|
+| PASS    | All checks clean: heartbeat fresh, state PASS, required artifacts present, no malformed JSON, safety flags correct |
+| WARN    | Some non-critical thresholds exceeded: artifact age near limit, runner has historical failures, snapshot cadence slightly exceeded |
+| FAIL    | Critical issue: stale heartbeat, missing heartbeat/state, missing required artifact, malformed JSON, runner FAIL verdict, or wrong safety flag |
+
+### Usage
+
+```powershell
+# Full status check (default)
+python -m tools.evidence_harvester.watchdog status ^
+    --artifact-dir artifacts\evidence_harvester\runner ^
+    --pretty
+
+# Save outputs
+python -m tools.evidence_harvester.watchdog status ^
+    --artifact-dir artifacts\evidence_harvester\runner ^
+    --json-output artifacts\evidence_harvester\watchdog_report.json ^
+    --markdown-output artifacts\evidence_harvester\watchdog_report.md ^
+    --escalation-draft-output artifacts\evidence_harvester\manual_escalation_draft.md
+
+# Deterministic evaluation
+python -m tools.evidence_harvester.watchdog status ^
+    --artifact-dir artifacts\evidence_harvester\runner ^
+    --evaluated-at-utc "2026-06-19T16:00:00Z"
+```
+
+### Safety boundaries
+
+- Read-only; never modifies heartbeat, state, or artifact files
+- No automatic restart, GitHub write, Docker, runtime, DB, Redis, or secrets action
+- Escalation draft is local text output only; human review required
+- Feeds #3361 (write-audit) and #3362 (OPS validation)
+
+### Incident Response for Watchdog
+
+#### Watchdog reports FAIL
+
+1. Run `python -m tools.evidence_harvester.watchdog status --pretty` to see which check failed.
+2. Check `runner_heartbeat.json` exists and has recent `current_run_at_utc`.
+3. Check `runner_state.json` exists and `last_cycle_verdict` is `PASS`.
+4. Verify required artifact files exist in the artifact directory.
+5. If heartbeat is stale, check whether the runner is still running.
+6. If artifacts are missing, check the runner output directory permissions and paths.
+7. If JSON is malformed, inspect the file manually.
+8. Fix the root cause and re-run the watchdog to verify PASS.
+
+#### Watchdog reports WARN
+
+1. Review the warn-level findings.
+2. If heartbeat age is near threshold, the runner may be running slower than expected.
+3. If failed_runs > 0, inspect the runner error log or heartbeat `last_error`.
+4. If snapshot cadence is exceeded, check whether the snapshot interval needs adjustment.
+5. Take corrective action within the next operational window.
+
+#### Watchdog escalation draft
+
+1. Use `render-escalation-draft` after a FAIL to produce human-readable escalation text.
+2. Review the draft before creating any GitHub issue manually.
+3. No automatic GitHub writes are performed by the watchdog.
 
 ## Write-Audit (Planned, #3361)
 
