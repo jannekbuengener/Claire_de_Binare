@@ -314,6 +314,70 @@ python -m tools.evidence_harvester.watchdog render-escalation-draft `
 - Escalation draft is local text output only; human review required before any GitHub action
 - Feeds #3361 (write-audit) and #3362 (OPS validation) with structured evidence
 
+## Write-Audit
+
+The `write_audit.py` module verifies that the evidence harvester produces complete,
+readable, temporally consistent, and usable artifact sets. It is a downstream
+consumer of the runner output directory and performs cross-artifact integrity
+checks.
+
+### Checks
+
+| ID   | Check                            | Failure Condition                        |
+|------|----------------------------------|------------------------------------------|
+| A001 | Required artifacts present       | Missing collector/snapshot/alert/heartbeat/state/watchdog |
+| A002 | JSON artifacts parse             | Malformed or non-dict JSON               |
+| A003 | Schema versions match            | Unexpected schema_version in any artifact |
+| A004 | Hash linkage                     | Snapshot collector_report_hash mismatches no collector report |
+| A005 | Safety flags                     | lr_status/live_status/echtgeld_status not NO-GO |
+| A006 | Timestamp coherence              | Stale heartbeat/snapshot or invalid timestamps |
+| A007 | Source modes valid               | source_mode not in fixture/future_readonly |
+| A008 | Artifact sizes sane              | Zero-byte or oversized artifacts         |
+| A009 | Markdown companions              | Snapshot/alert/watchdog JSON without MD companion |
+| A010 | Metadata fields present          | Missing or empty schema_version/generated_at_utc/source_mode |
+
+### Verdict contract
+
+| Verdict | Conditions |
+|---------|-----------|
+| PASS    | All 10 check groups pass; all required artifacts present, all JSON parse, schema versions match, hash linkage valid, safety flags correct, timestamps coherent, source modes valid, sizes sane, MD companions present, metadata fields present |
+| WARN    | Optional companion missing (e.g. watchdog_report.md), artifact age near threshold, non-critical metadata gap |
+| FAIL    | Required artifact missing, malformed JSON, hash mismatch, missing safety flags, zero-byte artifact, timestamp contradiction, invalid source mode, missing metadata fields |
+
+### Usage
+
+```powershell
+# Default audit of the runner output directory
+python -m tools.evidence_harvester.write_audit
+
+# Explicit artifact directory
+python -m tools.evidence_harvester.write_audit ^
+    --artifact-dir artifacts\evidence_harvester\runner ^
+    --pretty
+
+# Save outputs
+python -m tools.evidence_harvester.write_audit ^
+    --artifact-dir artifacts\evidence_harvester\runner ^
+    --json-output artifacts\evidence_harvester\write_audit_report.json ^
+    --markdown-output artifacts\evidence_harvester\write_audit_report.md
+
+# Deterministic evaluation with fixed timestamps
+python -m tools.evidence_harvester.write_audit ^
+    --artifact-dir artifacts\evidence_harvester\runner ^
+    --evaluated-at-utc "2026-06-19T16:00:00Z"
+```
+
+### Output artifacts
+
+- `write_audit_report.json` — machine-readable report with 10 check groups + verdict
+- `write_audit_report.md` — human-readable Markdown summary
+
+### Safety boundaries
+
+- Read-only; never modifies artifacts
+- No automatic restart, GitHub write, Docker, runtime, DB, Redis, or secrets action
+- Feeds #3362 (OPS validation) with structured artifact completeness evidence
+
 ## Validation
 
 The `validation.py` module validates a 24h dry collection window of evidence
