@@ -463,6 +463,18 @@ python -m tools.evidence_harvester.ops_validation validate-dir `
 - no GitHub writes from module code
 - no LR-Go, no Live-Go, no Echtgeld-Go
 
+### Always-On Acceptance Criteria
+
+- Evidence is produced continuously.
+- Recoverable failures do not permanently stop the run.
+- Watchdog continuously monitors the harvester.
+- Write-audit continuously validates artifacts.
+- Boot readiness remains valid.
+- Ops validation proves `>=72h` operation.
+- LR remains NO-GO.
+- Live remains NO-GO.
+- Echtgeld remains NO-GO.
+
 ## Boot Readiness ( #3360 )
 
 The `boot.py` module checks whether the evidence harvester is reboot- and
