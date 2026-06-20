@@ -300,13 +300,28 @@ python -m tools.evidence_harvester.watchdog render-escalation-draft `
 - `watchdog_report.md` — human-readable Markdown summary
 - `manual_escalation_draft.md` — manual escalation text (no automatic GitHub writes)
 
+### Coordinator Liveness Classification
+
+| Classification | Severity | Condition |
+|----------------|----------|-----------|
+| RUNNING_HEALTHY | PASS | Coordinator status is running/cycle_completed/final_validation and heartbeat is fresh |
+| SLEEPING_UNTIL_NEXT_CYCLE | PASS/WARN | Sleeping with next_cycle_due_at_utc in the future (PASS) or within cadence tolerance (WARN) |
+| STALE_HEARTBEAT | FAIL | Coordinator status implies active running but heartbeat exceeds max age |
+| STALE_NEXT_CYCLE | FAIL | Sleeping but next_cycle_due_at_utc missing, invalid, or exceeded beyond cadence tolerance |
+| COORDINATOR_STOPPED | WARN/FAIL | Coordinator has completed or failed its run window |
+| COORDINATOR_UNKNOWN | WARN | No coordinator status or lifecycle telemetry available |
+| RECOVERY_IN_PROGRESS | WARN | Coordinator status indicates recovery from a failure |
+| FATAL_STOP | FAIL | Fatal stop lifecycle event or coordinator_status=fatal_stop |
+
+The classification is derived from `runner_state.json` (`coordinator_status`, `next_cycle_due_at_utc`), `coordinator_events.jsonl` (lifecycle events), and `runner_heartbeat.json` (freshness). Missing lifecycle telemetry never produces silent PASS.
+
 ### Verdict contract
 
 | Verdict | Conditions |
 |---------|-----------|
-| PASS    | Heartbeat fresh, state reports PASS, required artifacts exist, all JSON parses, safety flags correct |
-| WARN    | Artifact age near threshold, last run had failures, optional artifact missing, next cycle due slightly exceeded |
-| FAIL    | Heartbeat stale, state missing, required artifact missing, malformed JSON, runner FAIL verdict, wrong safety flags, or sleeping schedule exceeded beyond tolerance |
+| PASS    | Heartbeat fresh, state reports PASS, required artifacts exist, all JSON parses, safety flags correct, coordinator liveness PASS |
+| WARN    | Artifact age near threshold, last run had failures, optional artifact missing, next cycle due slightly exceeded, coordinator liveness WARN |
+| FAIL    | Heartbeat stale, state missing, required artifact missing, malformed JSON, runner FAIL verdict, wrong safety flags, sleeping schedule exceeded beyond tolerance, or coordinator liveness FAIL |
 
 ### Safety boundaries
 
