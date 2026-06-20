@@ -245,6 +245,7 @@ def _check_runner_state(
     *,
     max_age_seconds: int,
     warn_age_seconds: int,
+    cadence_seconds: int,
     now: datetime,
 ) -> list[WatchdogFinding]:
     findings: list[WatchdogFinding] = []
@@ -407,6 +408,79 @@ def _check_runner_state(
                 field_name="last_cycle_ended_at_utc",
             )
         )
+
+    coordinator_status = str(state_payload.get("coordinator_status", "")).strip()
+    next_cycle_due_at_utc = str(state_payload.get("next_cycle_due_at_utc", "")).strip()
+    if coordinator_status == "sleeping":
+        if not next_cycle_due_at_utc:
+            findings.append(
+                WatchdogFinding(
+                    check_id="W017",
+                    check_name="Coordinator sleep schedule",
+                    severity="fail",
+                    message="coordinator_status is sleeping but next_cycle_due_at_utc is missing",
+                    artifact=artifact_dir_label,
+                    field_name="next_cycle_due_at_utc",
+                )
+            )
+        else:
+            try:
+                due_at = _parse_ts(next_cycle_due_at_utc, "next_cycle_due_at_utc")
+                delta_seconds = (now - due_at).total_seconds()
+                if delta_seconds <= 0:
+                    findings.append(
+                        WatchdogFinding(
+                            check_id="W017",
+                            check_name="Coordinator sleep schedule",
+                            severity="pass",
+                            message=(
+                                "Coordinator is sleeping until next_cycle_due_at_utc"
+                            ),
+                            artifact=artifact_dir_label,
+                            field_name="next_cycle_due_at_utc",
+                        )
+                    )
+                elif delta_seconds <= cadence_seconds:
+                    findings.append(
+                        WatchdogFinding(
+                            check_id="W017",
+                            check_name="Coordinator sleep schedule",
+                            severity="warn",
+                            message=(
+                                f"next_cycle_due_at_utc exceeded by {delta_seconds:.0f}s "
+                                f"within cadence tolerance {cadence_seconds}s"
+                            ),
+                            artifact=artifact_dir_label,
+                            field_name="next_cycle_due_at_utc",
+                        )
+                    )
+                else:
+                    findings.append(
+                        WatchdogFinding(
+                            check_id="W017",
+                            check_name="Coordinator sleep schedule",
+                            severity="fail",
+                            message=(
+                                f"next_cycle_due_at_utc exceeded by {delta_seconds:.0f}s "
+                                f"beyond cadence tolerance {cadence_seconds}s"
+                            ),
+                            artifact=artifact_dir_label,
+                            field_name="next_cycle_due_at_utc",
+                        )
+                    )
+            except WatchdogError:
+                findings.append(
+                    WatchdogFinding(
+                        check_id="W017",
+                        check_name="Coordinator sleep schedule",
+                        severity="fail",
+                        message=(
+                            f"next_cycle_due_at_utc={next_cycle_due_at_utc!r} is not valid ISO-8601"
+                        ),
+                        artifact=artifact_dir_label,
+                        field_name="next_cycle_due_at_utc",
+                    )
+                )
 
     return findings
 
@@ -785,6 +859,7 @@ def run_status(
         artifact_dir_label,
         max_age_seconds=max_age_seconds,
         warn_age_seconds=warn_age_seconds,
+        cadence_seconds=cadence_seconds,
         now=eval_now,
     )
     all_findings.extend(state_findings)
@@ -826,7 +901,7 @@ def run_status(
         f.check_id == "W003" and f.severity == "fail" for f in all_findings
     )
     runner_state_ok = not any(
-        f.check_id in {"W004", "W005", "W006", "W016"} and f.severity == "fail"
+        f.check_id in {"W004", "W005", "W006", "W016", "W017"} and f.severity == "fail"
         for f in all_findings
     )
     required_artifacts_present = not any(

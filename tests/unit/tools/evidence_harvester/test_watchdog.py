@@ -65,6 +65,8 @@ def _write_state(
     failed_runs: int = 0,
     last_verdict: str = "PASS",
     age_minutes: int = 1,
+    coordinator_status: str = "",
+    next_cycle_due_at_utc: str = "",
 ) -> Path:
     payload = {
         "schema_version": "cdb.evidence_harvester.runner_state.v1",
@@ -73,6 +75,15 @@ def _write_state(
         "failed_runs": failed_runs,
         "last_cycle_verdict": last_verdict,
         "last_cycle_ended_at_utc": _ts(age_minutes),
+        "run_id": "test-run",
+        "total_cycles_started": total_runs,
+        "total_cycles_completed": successful_runs,
+        "total_successful_cycles": successful_runs,
+        "total_failed_cycles": failed_runs,
+        "last_cycle_started_at_utc": _ts(age_minutes + 1),
+        "next_cycle_due_at_utc": next_cycle_due_at_utc,
+        "last_successful_artifact_stamp": "20260619T000000Z",
+        "coordinator_status": coordinator_status,
     }
     path = artifact_dir / "runner_state.json"
     path.write_text(json.dumps(payload), encoding="utf-8")
@@ -370,6 +381,26 @@ def test_status_warn_on_failed_runs(tmp_path: Path) -> None:
 
     assert report.verdict.verdict == "WARN"
     assert report.runner_state_ok is True
+
+
+@pytest.mark.unit
+def test_status_pass_when_coordinator_sleep_schedule_is_healthy(tmp_path: Path) -> None:
+    d = _write_artifact_dir(tmp_path)
+    due_at = (
+        (datetime.now(UTC) + timedelta(minutes=10)).isoformat().replace("+00:00", "Z")
+    )
+    _write_state(
+        d,
+        age_minutes=1,
+        coordinator_status="sleeping",
+        next_cycle_due_at_utc=due_at,
+    )
+    now = datetime.now(UTC)
+
+    report = run_status(d, now=now)
+
+    assert report.verdict.verdict == "PASS"
+    assert any(f.check_id == "W017" and f.severity == "pass" for f in report.findings)
 
 
 # ============================================================

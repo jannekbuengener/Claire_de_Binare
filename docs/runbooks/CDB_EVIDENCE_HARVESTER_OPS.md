@@ -60,6 +60,7 @@ Each runner cycle writes to the configured `--output-dir`:
 | `snapshot_<stamp>.md` | Markdown snapshot summary | No (stamped) |
 | `alert_<stamp>.json` | Alert findings | No (stamped) |
 | `alert_<stamp>.md` | Markdown alert summary | No (stamped) |
+| `coordinator_events.jsonl` | Coordinator lifecycle telemetry stream | Yes (append-only for the run) |
 | `runner_heartbeat.json` | Latest cycle metadata | Yes (per cycle) |
 | `runner_state.json` | Cumulative run statistics | Yes (per cycle) |
 
@@ -95,6 +96,31 @@ Version: `cdb.evidence_harvester.runner_state.v1`
 | `failed_runs` | int | Cycles that raised an exception |
 | `last_cycle_verdict` | string | `PASS` or `FAIL` |
 | `last_cycle_ended_at_utc` | string | ISO-8601 UTC of last cycle end |
+| `run_id` | string | Coordinator run identifier |
+| `total_cycles_started` | int | Total coordinator cycle attempts |
+| `total_cycles_completed` | int | Total coordinator cycles completed |
+| `total_successful_cycles` | int | Total completed successful coordinator cycles |
+| `total_failed_cycles` | int | Total failed coordinator cycles |
+| `last_cycle_started_at_utc` | string | ISO-8601 UTC of last cycle start |
+| `next_cycle_due_at_utc` | string | ISO-8601 UTC of the next scheduled cycle while sleeping |
+| `last_successful_artifact_stamp` | string | Stamp of the last successful artifact cycle |
+| `coordinator_status` | string | Coordinator lifecycle status such as `running`, `sleeping`, `recovering`, `final_validation`, `completed`, or `failed` |
+
+## Coordinator Lifecycle Telemetry
+
+Version: `cdb.evidence_harvester.coordinator_event.v1`
+
+`coordinator_events.jsonl` is the canonical coordinator lifecycle stream for
+coordinator-managed runs. Each line is one JSON object with at minimum:
+
+- `schema_version`
+- `event_at_utc`
+- `run_id`
+- `event_type`
+
+When applicable the event also carries `cycle_index`, `artifact_stamp`,
+`verdict`, `next_cycle_due_at_utc`, `recovery_attempt`, `error_classification`,
+and `coordinator_status`.
 
 ## Timestamp Contract
 
@@ -109,6 +135,9 @@ Version: `cdb.evidence_harvester.runner_state.v1`
 The watchdog (`watchdog.py`) consumes `runner_heartbeat.json` and
 `runner_state.json` plus all stamped artifacts to detect stalls, repeated
 failures, missed heartbeats, or stale evidence.
+
+For coordinator-managed runs, Watchdog also treats `coordinator_status=sleeping`
+with a valid future `next_cycle_due_at_utc` as an explicit healthy sleep window.
 
 ### Modes
 

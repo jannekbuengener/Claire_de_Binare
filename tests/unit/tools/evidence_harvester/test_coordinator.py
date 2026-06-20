@@ -6,6 +6,7 @@ from pathlib import Path
 import pytest
 
 from tools.evidence_harvester.coordinator import (
+    COORDINATOR_EVENT_SCHEMA,
     RECOVERY_EVENT_SCHEMA,
     run_fixture_window,
 )
@@ -72,6 +73,7 @@ def test_recoverable_watchdog_failure_restarts_and_progresses_beyond_cycle9(
 
     cycle_attempts: list[str] = []
     sleep_calls: list[float] = []
+    next_due_samples: list[str] = []
     recovery_injected = {"done": False}
 
     def cycle_runner(
@@ -132,6 +134,15 @@ def test_recoverable_watchdog_failure_restarts_and_progresses_beyond_cycle9(
         )
         return 0, payload
 
+    def sleep_fn(seconds: float) -> None:
+        sleep_calls.append(seconds)
+        state_path = artifact_dir / "runner_state.json"
+        if state_path.exists():
+            payload = json.loads(state_path.read_text(encoding="utf-8"))
+            next_due = str(payload.get("next_cycle_due_at_utc", ""))
+            if next_due:
+                next_due_samples.append(next_due)
+
     summary = run_fixture_window(
         repo_root=tmp_path,
         fixture_path=fixture,
@@ -140,7 +151,7 @@ def test_recoverable_watchdog_failure_restarts_and_progresses_beyond_cycle9(
         cadence_seconds=1,
         max_restart_count=3,
         restart_backoff_seconds=7,
-        sleep_fn=sleep_calls.append,
+        sleep_fn=sleep_fn,
         boot_runner=_pass_boot_runner,
         cycle_runner=cycle_runner,
         watchdog_runner=watchdog_runner,
@@ -154,9 +165,22 @@ def test_recoverable_watchdog_failure_restarts_and_progresses_beyond_cycle9(
     assert summary.restart_count == 1
     assert 7 in sleep_calls
     assert len(cycle_attempts) == 11
+    assert next_due_samples
     assert any(
         "000010Z" in p.name for p in artifact_dir.glob("collector_report_*.json")
     )
+
+    state_payload = json.loads(
+        (artifact_dir / "runner_state.json").read_text(encoding="utf-8")
+    )
+    assert state_payload["run_id"] == artifact_dir.name
+    assert state_payload["total_cycles_started"] == 11
+    assert state_payload["total_cycles_completed"] == 10
+    assert state_payload["total_successful_cycles"] == 10
+    assert state_payload["total_failed_cycles"] == 1
+    assert state_payload["successful_runs"] == 10
+    assert state_payload["failed_runs"] == 1
+    assert state_payload["coordinator_status"] == "completed"
 
     recovery_events = sorted(artifact_dir.glob("recovery_event_*.json"))
     assert len(recovery_events) == 1
@@ -165,6 +189,35 @@ def test_recoverable_watchdog_failure_restarts_and_progresses_beyond_cycle9(
     assert payload["classification"] == "recoverable"
     assert payload["action"] == "restart_cycle"
     assert payload["restart_count"] == 1
+
+    event_lines = (
+        (artifact_dir / "coordinator_events.jsonl")
+        .read_text(encoding="utf-8")
+        .splitlines()
+    )
+    events = [json.loads(line) for line in event_lines]
+    assert events
+    assert all(event["schema_version"] == COORDINATOR_EVENT_SCHEMA for event in events)
+    assert [event["event_at_utc"] for event in events] == sorted(
+        event["event_at_utc"] for event in events
+    )
+    event_types = {event["event_type"] for event in events}
+    assert {
+        "run_started",
+        "boot_readiness_completed",
+        "cycle_started",
+        "runner_cycle_completed",
+        "watchdog_completed",
+        "write_audit_completed",
+        "cycle_completed",
+        "sleep_started",
+        "sleep_completed",
+        "next_cycle_due_at_utc",
+        "recovery_started",
+        "recovery_completed",
+        "final_validation_started",
+        "final_validation_completed",
+    }.issubset(event_types)
 
 
 @pytest.mark.unit
@@ -240,3 +293,11 @@ def test_fatal_safety_failure_stops_without_restart(tmp_path: Path) -> None:
     payload = json.loads(recovery_events[0].read_text(encoding="utf-8"))
     assert payload["classification"] == "fatal"
     assert payload["action"] == "stop"
+
+    events = [
+        json.loads(line)
+        for line in (artifact_dir / "coordinator_events.jsonl")
+        .read_text(encoding="utf-8")
+        .splitlines()
+    ]
+    assert any(event["event_type"] == "fatal_stop" for event in events)

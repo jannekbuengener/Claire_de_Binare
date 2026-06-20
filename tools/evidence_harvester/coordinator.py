@@ -13,6 +13,9 @@ from typing import Any, Callable, Mapping
 
 from core.utils.clock import utcnow as cdb_utcnow
 
+from .runner import RunnerState
+
+COORDINATOR_EVENT_SCHEMA = "cdb.evidence_harvester.coordinator_event.v1"
 RECOVERY_EVENT_SCHEMA = "cdb.evidence_harvester.recovery_event.v1"
 
 DEFAULT_MAX_RESTART_COUNT = 3
@@ -104,6 +107,125 @@ def _latest_cycle_stamp(artifact_dir: Path) -> str:
         raise CoordinatorError("No collector_report_*.json found to derive cycle stamp")
     latest = reports[-1].stem
     return latest.removeprefix("collector_report_")
+
+
+def _coordinator_events_path(artifact_dir: Path) -> Path:
+    return artifact_dir / "coordinator_events.jsonl"
+
+
+def _derive_run_id(artifact_dir: Path) -> str:
+    name = artifact_dir.name.strip()
+    return name or _event_stamp()
+
+
+def _read_runner_state(artifact_dir: Path) -> RunnerState | None:
+    path = artifact_dir / "runner_state.json"
+    if not path.exists():
+        return None
+    payload = _load_json(path)
+    string_fields = {
+        "schema_version",
+        "last_cycle_verdict",
+        "last_cycle_ended_at_utc",
+        "run_id",
+        "last_cycle_started_at_utc",
+        "next_cycle_due_at_utc",
+        "last_successful_artifact_stamp",
+        "coordinator_status",
+    }
+    return RunnerState(
+        **{
+            field: payload.get(field, "" if field in string_fields else 0)
+            for field in RunnerState.__dataclass_fields__
+        }
+    )
+
+
+def _seed_runner_state(artifact_dir: Path, run_id: str) -> RunnerState:
+    existing = _read_runner_state(artifact_dir)
+    if existing is None:
+        return RunnerState(run_id=run_id)
+    if existing.run_id and existing.run_id != run_id:
+        return RunnerState(run_id=run_id)
+    return RunnerState(
+        schema_version=existing.schema_version,
+        total_runs=existing.total_runs,
+        successful_runs=existing.successful_runs,
+        failed_runs=existing.failed_runs,
+        last_cycle_verdict=existing.last_cycle_verdict,
+        last_cycle_ended_at_utc=existing.last_cycle_ended_at_utc,
+        run_id=existing.run_id or run_id,
+        total_cycles_started=existing.total_cycles_started,
+        total_cycles_completed=existing.total_cycles_completed,
+        total_successful_cycles=existing.total_successful_cycles,
+        total_failed_cycles=existing.total_failed_cycles,
+        last_cycle_started_at_utc=existing.last_cycle_started_at_utc,
+        next_cycle_due_at_utc=existing.next_cycle_due_at_utc,
+        last_successful_artifact_stamp=existing.last_successful_artifact_stamp,
+        coordinator_status=existing.coordinator_status,
+    )
+
+
+def _write_runner_state(artifact_dir: Path, state: RunnerState) -> None:
+    (artifact_dir / "runner_state.json").write_text(
+        json.dumps(state.to_dict(), indent=2, sort_keys=True, ensure_ascii=True) + "\n",
+        encoding="utf-8",
+    )
+
+
+def _update_runner_state(
+    state: RunnerState,
+    **changes: Any,
+) -> RunnerState:
+    payload = state.to_dict()
+    payload.update(changes)
+    payload["total_runs"] = payload.get("total_cycles_started", payload["total_runs"])
+    payload["successful_runs"] = payload.get(
+        "total_successful_cycles", payload["successful_runs"]
+    )
+    payload["failed_runs"] = payload.get("total_failed_cycles", payload["failed_runs"])
+    return RunnerState(**payload)
+
+
+def _write_coordinator_event(
+    artifact_dir: Path,
+    *,
+    run_id: str,
+    event_type: str,
+    cycle_index: int | None = None,
+    artifact_stamp: str = "",
+    verdict: str = "",
+    next_cycle_due_at_utc: str = "",
+    recovery_attempt: int | None = None,
+    error_classification: str = "",
+    coordinator_status: str = "",
+    stop_reason: str = "",
+) -> dict[str, Any]:
+    event: dict[str, Any] = {
+        "schema_version": COORDINATOR_EVENT_SCHEMA,
+        "event_at_utc": _format_ts(_now_utc()),
+        "run_id": run_id,
+        "event_type": event_type,
+    }
+    if cycle_index is not None:
+        event["cycle_index"] = cycle_index
+    if artifact_stamp:
+        event["artifact_stamp"] = artifact_stamp
+    if verdict:
+        event["verdict"] = verdict
+    if next_cycle_due_at_utc:
+        event["next_cycle_due_at_utc"] = next_cycle_due_at_utc
+    if recovery_attempt is not None:
+        event["recovery_attempt"] = recovery_attempt
+    if error_classification:
+        event["error_classification"] = error_classification
+    if coordinator_status:
+        event["coordinator_status"] = coordinator_status
+    if stop_reason:
+        event["stop_reason"] = stop_reason
+    with _coordinator_events_path(artifact_dir).open("a", encoding="utf-8") as handle:
+        handle.write(json.dumps(event, sort_keys=True, ensure_ascii=True) + "\n")
+    return event
 
 
 def _extract_verdict(payload: Mapping[str, Any] | None) -> str:
@@ -450,15 +572,51 @@ def run_fixture_window(
     if not fixture_path.exists():
         raise CoordinatorError(f"fixture path does not exist: {fixture_path}")
 
+    run_id = _derive_run_id(artifact_dir)
     recovery_events_written = 0
     restart_count = 0
     completed_cycles = 0
     final_validation_started = False
     stop_reason = ""
+    state = _seed_runner_state(artifact_dir, run_id)
+
+    _write_coordinator_event(
+        artifact_dir,
+        run_id=run_id,
+        event_type="run_started",
+        coordinator_status="starting",
+    )
+    state = _update_runner_state(state, run_id=run_id, coordinator_status="starting")
+    _write_runner_state(artifact_dir, state)
 
     boot_exit, boot_payload = boot_runner(repo_root, artifact_dir)
+    boot_verdict = _extract_verdict(boot_payload) or (
+        "PASS" if boot_exit == 0 else "FAIL"
+    )
+    _write_coordinator_event(
+        artifact_dir,
+        run_id=run_id,
+        event_type="boot_readiness_completed",
+        verdict=boot_verdict,
+        coordinator_status="boot_checked",
+    )
     if boot_exit != 0 or _extract_verdict(boot_payload) == "FAIL":
         stop_reason = "boot_readiness_failed"
+        state = _update_runner_state(
+            state,
+            coordinator_status="fatal_stop",
+            last_cycle_verdict="FAIL",
+        )
+        _write_runner_state(artifact_dir, state)
+        _write_coordinator_event(
+            artifact_dir,
+            run_id=run_id,
+            event_type="fatal_stop",
+            verdict="FAIL",
+            error_classification="boot_readiness_failed",
+            coordinator_status="fatal_stop",
+            stop_reason=stop_reason,
+        )
         return CoordinatorSummary(
             status="FAIL",
             artifact_dir=str(artifact_dir),
@@ -471,12 +629,51 @@ def run_fixture_window(
         )
 
     while completed_cycles < iterations:
+        cycle_index = state.total_cycles_started + 1
+        cycle_started_at = _format_ts(_now_utc())
+        state = _update_runner_state(
+            state,
+            total_cycles_started=cycle_index,
+            total_runs=cycle_index,
+            last_cycle_started_at_utc=cycle_started_at,
+            next_cycle_due_at_utc="",
+            coordinator_status="running",
+        )
+        _write_runner_state(artifact_dir, state)
+        _write_coordinator_event(
+            artifact_dir,
+            run_id=run_id,
+            event_type="cycle_started",
+            cycle_index=cycle_index,
+            coordinator_status="running",
+        )
         runner_exit, cycle_stamp = cycle_runner(repo_root, fixture_path, artifact_dir)
         if runner_exit != 0:
             classification, reason_codes, covered = _classify_failure(
                 "runner", None, exit_code=runner_exit
             )
             limit_exceeded = restart_count >= max_restart_count
+            cycle_ended_at = _format_ts(_now_utc())
+            state = _update_runner_state(
+                state,
+                total_failed_cycles=state.total_failed_cycles + 1,
+                failed_runs=state.total_failed_cycles + 1,
+                last_cycle_verdict="FAIL",
+                last_cycle_ended_at_utc=cycle_ended_at,
+                coordinator_status="recovering" if not limit_exceeded else "fatal_stop",
+            )
+            _write_runner_state(artifact_dir, state)
+            _write_coordinator_event(
+                artifact_dir,
+                run_id=run_id,
+                event_type="recovery_started",
+                cycle_index=cycle_index,
+                artifact_stamp=cycle_stamp if cycle_stamp else "",
+                verdict="FAIL",
+                recovery_attempt=restart_count + 1,
+                error_classification=classification,
+                coordinator_status=state.coordinator_status,
+            )
             _write_recovery_event(
                 artifact_dir,
                 cycle_stamp=cycle_stamp if cycle_stamp else _event_stamp(),
@@ -494,23 +691,89 @@ def run_fixture_window(
                 limit_exceeded=limit_exceeded,
             )
             recovery_events_written += 1
+            _write_coordinator_event(
+                artifact_dir,
+                run_id=run_id,
+                event_type="recovery_completed",
+                cycle_index=cycle_index,
+                artifact_stamp=cycle_stamp if cycle_stamp else "",
+                verdict="FAIL",
+                recovery_attempt=restart_count + 1,
+                error_classification="fatal" if limit_exceeded else classification,
+                coordinator_status="fatal_stop" if limit_exceeded else "recovering",
+            )
             if limit_exceeded:
                 stop_reason = "restart_limit_exceeded"
+                _write_coordinator_event(
+                    artifact_dir,
+                    run_id=run_id,
+                    event_type="fatal_stop",
+                    cycle_index=cycle_index,
+                    artifact_stamp=cycle_stamp if cycle_stamp else "",
+                    verdict="FAIL",
+                    error_classification="restart_limit_exceeded",
+                    coordinator_status="fatal_stop",
+                    stop_reason=stop_reason,
+                )
                 break
             restart_count += 1
             if restart_backoff_seconds:
                 sleep_fn(restart_backoff_seconds)
             continue
 
+        _write_coordinator_event(
+            artifact_dir,
+            run_id=run_id,
+            event_type="runner_cycle_completed",
+            cycle_index=cycle_index,
+            artifact_stamp=cycle_stamp,
+            verdict="PASS",
+            coordinator_status="running",
+        )
+
         watchdog_exit, watchdog_payload = watchdog_runner(
             repo_root, artifact_dir, cycle_stamp, cadence_seconds
         )
         watchdog_verdict = _extract_verdict(watchdog_payload)
+        _write_coordinator_event(
+            artifact_dir,
+            run_id=run_id,
+            event_type="watchdog_completed",
+            cycle_index=cycle_index,
+            artifact_stamp=cycle_stamp,
+            verdict=watchdog_verdict or ("PASS" if watchdog_exit == 0 else "FAIL"),
+            coordinator_status="running",
+        )
         if watchdog_exit != 0 or watchdog_verdict == "FAIL":
             classification, reason_codes, covered = _classify_failure(
                 "watchdog", watchdog_payload, exit_code=watchdog_exit
             )
             limit_exceeded = restart_count >= max_restart_count
+            cycle_ended_at = _format_ts(_now_utc())
+            state = _update_runner_state(
+                state,
+                total_failed_cycles=state.total_failed_cycles + 1,
+                failed_runs=state.total_failed_cycles + 1,
+                last_cycle_verdict="FAIL",
+                last_cycle_ended_at_utc=cycle_ended_at,
+                coordinator_status=(
+                    "recovering"
+                    if classification == "recoverable" and not limit_exceeded
+                    else "fatal_stop"
+                ),
+            )
+            _write_runner_state(artifact_dir, state)
+            _write_coordinator_event(
+                artifact_dir,
+                run_id=run_id,
+                event_type="recovery_started",
+                cycle_index=cycle_index,
+                artifact_stamp=cycle_stamp,
+                verdict=watchdog_verdict or "FAIL",
+                recovery_attempt=restart_count + 1,
+                error_classification=classification,
+                coordinator_status=state.coordinator_status,
+            )
             _write_recovery_event(
                 artifact_dir,
                 cycle_stamp=cycle_stamp,
@@ -536,11 +799,37 @@ def run_fixture_window(
                 limit_exceeded=limit_exceeded,
             )
             recovery_events_written += 1
+            _write_coordinator_event(
+                artifact_dir,
+                run_id=run_id,
+                event_type="recovery_completed",
+                cycle_index=cycle_index,
+                artifact_stamp=cycle_stamp,
+                verdict=watchdog_verdict or "FAIL",
+                recovery_attempt=restart_count + 1,
+                error_classification="fatal" if limit_exceeded else classification,
+                coordinator_status=state.coordinator_status,
+            )
             if classification == "fatal" or limit_exceeded:
                 stop_reason = (
                     "restart_limit_exceeded"
                     if limit_exceeded
                     else "fatal_watchdog_failure"
+                )
+                _write_coordinator_event(
+                    artifact_dir,
+                    run_id=run_id,
+                    event_type="fatal_stop",
+                    cycle_index=cycle_index,
+                    artifact_stamp=cycle_stamp,
+                    verdict=watchdog_verdict or "FAIL",
+                    error_classification=(
+                        "restart_limit_exceeded"
+                        if limit_exceeded
+                        else "fatal_watchdog_failure"
+                    ),
+                    coordinator_status="fatal_stop",
+                    stop_reason=stop_reason,
                 )
                 break
             restart_count += 1
@@ -552,11 +841,47 @@ def run_fixture_window(
             repo_root, artifact_dir, cycle_stamp
         )
         write_audit_verdict = _extract_verdict(write_audit_payload)
+        _write_coordinator_event(
+            artifact_dir,
+            run_id=run_id,
+            event_type="write_audit_completed",
+            cycle_index=cycle_index,
+            artifact_stamp=cycle_stamp,
+            verdict=(
+                write_audit_verdict or ("PASS" if write_audit_exit == 0 else "FAIL")
+            ),
+            coordinator_status="running",
+        )
         if write_audit_exit != 0 or write_audit_verdict == "FAIL":
             classification, reason_codes, covered = _classify_failure(
                 "write_audit", write_audit_payload, exit_code=write_audit_exit
             )
             limit_exceeded = restart_count >= max_restart_count
+            cycle_ended_at = _format_ts(_now_utc())
+            state = _update_runner_state(
+                state,
+                total_failed_cycles=state.total_failed_cycles + 1,
+                failed_runs=state.total_failed_cycles + 1,
+                last_cycle_verdict="FAIL",
+                last_cycle_ended_at_utc=cycle_ended_at,
+                coordinator_status=(
+                    "recovering"
+                    if classification == "recoverable" and not limit_exceeded
+                    else "fatal_stop"
+                ),
+            )
+            _write_runner_state(artifact_dir, state)
+            _write_coordinator_event(
+                artifact_dir,
+                run_id=run_id,
+                event_type="recovery_started",
+                cycle_index=cycle_index,
+                artifact_stamp=cycle_stamp,
+                verdict=write_audit_verdict or "FAIL",
+                recovery_attempt=restart_count + 1,
+                error_classification=classification,
+                coordinator_status=state.coordinator_status,
+            )
             _write_recovery_event(
                 artifact_dir,
                 cycle_stamp=cycle_stamp,
@@ -584,11 +909,37 @@ def run_fixture_window(
                 limit_exceeded=limit_exceeded,
             )
             recovery_events_written += 1
+            _write_coordinator_event(
+                artifact_dir,
+                run_id=run_id,
+                event_type="recovery_completed",
+                cycle_index=cycle_index,
+                artifact_stamp=cycle_stamp,
+                verdict=write_audit_verdict or "FAIL",
+                recovery_attempt=restart_count + 1,
+                error_classification="fatal" if limit_exceeded else classification,
+                coordinator_status=state.coordinator_status,
+            )
             if classification == "fatal" or limit_exceeded:
                 stop_reason = (
                     "restart_limit_exceeded"
                     if limit_exceeded
                     else "fatal_write_audit_failure"
+                )
+                _write_coordinator_event(
+                    artifact_dir,
+                    run_id=run_id,
+                    event_type="fatal_stop",
+                    cycle_index=cycle_index,
+                    artifact_stamp=cycle_stamp,
+                    verdict=write_audit_verdict or "FAIL",
+                    error_classification=(
+                        "restart_limit_exceeded"
+                        if limit_exceeded
+                        else "fatal_write_audit_failure"
+                    ),
+                    coordinator_status="fatal_stop",
+                    stop_reason=stop_reason,
                 )
                 break
             restart_count += 1
@@ -597,15 +948,102 @@ def run_fixture_window(
             continue
 
         completed_cycles += 1
+        cycle_ended_at = _format_ts(_now_utc())
+        state = _update_runner_state(
+            state,
+            total_cycles_completed=completed_cycles,
+            total_successful_cycles=state.total_successful_cycles + 1,
+            successful_runs=state.total_successful_cycles + 1,
+            last_cycle_verdict="PASS",
+            last_cycle_ended_at_utc=cycle_ended_at,
+            last_successful_artifact_stamp=cycle_stamp,
+            coordinator_status="cycle_completed",
+        )
+        _write_runner_state(artifact_dir, state)
+        _write_coordinator_event(
+            artifact_dir,
+            run_id=run_id,
+            event_type="cycle_completed",
+            cycle_index=cycle_index,
+            artifact_stamp=cycle_stamp,
+            verdict="PASS",
+            coordinator_status="cycle_completed",
+        )
         if completed_cycles < iterations:
+            next_due_at = _format_ts(
+                datetime.fromtimestamp(_now_utc().timestamp() + cadence_seconds, tz=UTC)
+            )
+            state = _update_runner_state(
+                state,
+                next_cycle_due_at_utc=next_due_at,
+                coordinator_status="sleeping",
+            )
+            _write_runner_state(artifact_dir, state)
+            _write_coordinator_event(
+                artifact_dir,
+                run_id=run_id,
+                event_type="next_cycle_due_at_utc",
+                cycle_index=cycle_index,
+                artifact_stamp=cycle_stamp,
+                next_cycle_due_at_utc=next_due_at,
+                coordinator_status="sleeping",
+            )
+            _write_coordinator_event(
+                artifact_dir,
+                run_id=run_id,
+                event_type="sleep_started",
+                cycle_index=cycle_index,
+                artifact_stamp=cycle_stamp,
+                next_cycle_due_at_utc=next_due_at,
+                coordinator_status="sleeping",
+            )
             sleep_fn(cadence_seconds)
+            _write_coordinator_event(
+                artifact_dir,
+                run_id=run_id,
+                event_type="sleep_completed",
+                cycle_index=cycle_index,
+                artifact_stamp=cycle_stamp,
+                next_cycle_due_at_utc=next_due_at,
+                coordinator_status="sleeping",
+            )
 
     final_validation_started = True
-    final_validator(repo_root, artifact_dir)
+    state = _update_runner_state(
+        state,
+        next_cycle_due_at_utc="",
+        coordinator_status="final_validation",
+    )
+    _write_runner_state(artifact_dir, state)
+    _write_coordinator_event(
+        artifact_dir,
+        run_id=run_id,
+        event_type="final_validation_started",
+        coordinator_status="final_validation",
+    )
+    final_validation_exit, final_validation_payload = final_validator(
+        repo_root, artifact_dir
+    )
+    final_validation_verdict = _extract_verdict(final_validation_payload) or (
+        "PASS" if final_validation_exit == 0 else "FAIL"
+    )
+    _write_coordinator_event(
+        artifact_dir,
+        run_id=run_id,
+        event_type="final_validation_completed",
+        verdict=final_validation_verdict,
+        coordinator_status="final_validation",
+    )
 
     status = "PASS" if completed_cycles == iterations and not stop_reason else "FAIL"
     if not stop_reason and completed_cycles != iterations:
         stop_reason = "incomplete_cycle_window"
+    state = _update_runner_state(
+        state,
+        next_cycle_due_at_utc="",
+        coordinator_status="completed" if status == "PASS" else "failed",
+    )
+    _write_runner_state(artifact_dir, state)
     return CoordinatorSummary(
         status=status,
         artifact_dir=str(artifact_dir),

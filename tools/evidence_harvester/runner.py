@@ -97,6 +97,15 @@ class RunnerState:
     failed_runs: int = 0
     last_cycle_verdict: str = ""
     last_cycle_ended_at_utc: str = ""
+    run_id: str = ""
+    total_cycles_started: int = 0
+    total_cycles_completed: int = 0
+    total_successful_cycles: int = 0
+    total_failed_cycles: int = 0
+    last_cycle_started_at_utc: str = ""
+    next_cycle_due_at_utc: str = ""
+    last_successful_artifact_stamp: str = ""
+    coordinator_status: str = ""
 
     def to_dict(self) -> dict[str, Any]:
         return asdict(self)
@@ -142,6 +151,7 @@ def _run_complete_cycle(
     existing_heartbeat: RunnerHeartbeat | None,
     mode: str = "run-once-fixture",
 ) -> tuple[RunnerHeartbeat, RunnerState]:
+    prior_state = _read_state(output_dir)
     raw_input = _load_json(fixture_path)
     raw_input.setdefault("stale_after_minutes", 120)
     collector_input = CollectorInput.from_mapping(raw_input)
@@ -197,11 +207,30 @@ def _run_complete_cycle(
         last_alert_markdown=str(alert_markdown_path),
     )
     state = RunnerState(
-        total_runs=1,
-        successful_runs=1,
-        failed_runs=0,
+        total_runs=(prior_state.total_runs if prior_state else 0) + 1,
+        successful_runs=(prior_state.successful_runs if prior_state else 0) + 1,
+        failed_runs=prior_state.failed_runs if prior_state else 0,
         last_cycle_verdict="PASS",
         last_cycle_ended_at_utc=_format_ts(now),
+        run_id=prior_state.run_id if prior_state else "",
+        total_cycles_started=(prior_state.total_cycles_started if prior_state else 0),
+        total_cycles_completed=(
+            prior_state.total_cycles_completed if prior_state else 0
+        ),
+        total_successful_cycles=(
+            prior_state.total_successful_cycles if prior_state else 0
+        ),
+        total_failed_cycles=prior_state.total_failed_cycles if prior_state else 0,
+        last_cycle_started_at_utc=(
+            prior_state.last_cycle_started_at_utc if prior_state else ""
+        ),
+        next_cycle_due_at_utc=(
+            prior_state.next_cycle_due_at_utc if prior_state else ""
+        ),
+        last_successful_artifact_stamp=(
+            prior_state.last_successful_artifact_stamp if prior_state else ""
+        ),
+        coordinator_status=prior_state.coordinator_status if prior_state else "",
     )
 
     _write_heartbeat(output_dir, heartbeat, pretty)
