@@ -178,7 +178,11 @@ def _collector_payload(ts: str) -> dict:
     }
 
 
-def _watchdog_payload(ts: str, verdict: str = "PASS") -> dict:
+def _watchdog_payload(
+    ts: str,
+    verdict: str = "PASS",
+    coordinator_liveness: dict | None = None,
+) -> dict:
     return {
         "schema_version": WATCHDOG_REPORT_SCHEMA,
         "evaluated_at_utc": ts,
@@ -187,6 +191,17 @@ def _watchdog_payload(ts: str, verdict: str = "PASS") -> dict:
         "heartbeat_fresh": verdict != "FAIL",
         "runner_state_ok": verdict != "FAIL",
         "required_artifacts_present": True,
+        "coordinator_liveness": coordinator_liveness
+        or {
+            "classification": "RUNNING_HEALTHY",
+            "severity": "pass",
+            "reason": "Coordinator status is 'running' and heartbeat is fresh",
+            "coordinator_status_from_state": "running",
+            "has_lifecycle_telemetry": True,
+            "last_heartbeat_age_seconds": 30.0,
+            "has_fatal_stop_event": False,
+            "has_recovery_events": False,
+        },
         "verdict": {
             "verdict": verdict,
             "total_checks": 10,
@@ -532,6 +547,169 @@ class TestValidate72hWindowFromDir:
         )
         assert report.summary.verdict == "FAIL"
         assert any("coordinator_events.jsonl" in f.message for f in report.findings)
+
+    @pytest.mark.unit
+    def test_warn_on_missing_lifecycle_non_final(self, tmp_path: Path) -> None:
+        start = datetime(2026, 6, 19, 0, 0, tzinfo=UTC)
+        _write_valid_run(tmp_path, start=start, hours=2, cadence_seconds=3600)
+        (tmp_path / "coordinator_events.jsonl").write_text("", encoding="utf-8")
+        report = validate_72h_window_from_dir(
+            tmp_path,
+            required_window_hours=2,
+            runner_cadence_seconds=3600,
+            is_final=False,
+        )
+        assert report.summary.verdict == "WARN"
+        assert any(
+            "Missing parseable coordinator lifecycle telemetry" in f.message
+            and f.severity == "warn"
+            for f in report.findings
+        )
+
+    @pytest.mark.unit
+    def test_fail_on_lifecycle_runner_state_mismatch(self, tmp_path: Path) -> None:
+        start = datetime(2026, 6, 19, 0, 0, tzinfo=UTC)
+        _write_valid_run(tmp_path, start=start, hours=2, cadence_seconds=3600)
+        state_path = tmp_path / "runner_state.json"
+        state = json.loads(state_path.read_text(encoding="utf-8"))
+        state["total_cycles_completed"] = 999
+        state["total_runs"] = 999
+        state["successful_runs"] = 999
+        state_path.write_text(json.dumps(state, sort_keys=True), encoding="utf-8")
+        report = validate_72h_window_from_dir(
+            tmp_path,
+            required_window_hours=2,
+            runner_cadence_seconds=3600,
+        )
+        assert report.summary.verdict == "FAIL"
+        assert any(
+            "diverges from runner_state.total_cycles_completed" in f.message
+            for f in report.findings
+        )
+
+    @pytest.mark.unit
+    def test_warn_on_lifecycle_artifact_count_mismatch(self, tmp_path: Path) -> None:
+        start = datetime(2026, 6, 19, 0, 0, tzinfo=UTC)
+        _write_valid_run(tmp_path, start=start, hours=2, cadence_seconds=3600)
+        extra_ts = _ts(start + timedelta(hours=2, minutes=5))
+        extra_stamp = _stamp(start + timedelta(hours=2, minutes=5))
+        _write_json(
+            tmp_path / f"snapshot_{extra_stamp}.json",
+            _snapshot_payload(extra_ts),
+        )
+        _write_text(tmp_path / f"snapshot_{extra_stamp}.md")
+        report = validate_72h_window_from_dir(
+            tmp_path,
+            required_window_hours=2,
+            runner_cadence_seconds=3600,
+        )
+        assert any(
+            "Lifecycle-artifact count consistency" in f.check_name
+            and f.severity == "warn"
+            for f in report.findings
+        )
+
+    @pytest.mark.unit
+    def test_fail_on_watchdog_fatal_stop_liveness(self, tmp_path: Path) -> None:
+        start = datetime(2026, 6, 19, 0, 0, tzinfo=UTC)
+        _write_valid_run(
+            tmp_path,
+            start=start,
+            hours=2,
+            cadence_seconds=3600,
+        )
+        first_stamp = _stamp(start)
+        fatal_stop_wd = _watchdog_payload(
+            _ts(start),
+            verdict="FAIL",
+            coordinator_liveness={
+                "classification": "FATAL_STOP",
+                "severity": "fail",
+                "reason": "Coordinator has a fatal stop lifecycle event",
+                "coordinator_status_from_state": "fatal_stop",
+                "has_lifecycle_telemetry": True,
+                "last_heartbeat_age_seconds": 30.0,
+                "has_fatal_stop_event": True,
+                "has_recovery_events": False,
+            },
+        )
+        _write_json(tmp_path / f"watchdog_report_{first_stamp}.json", fatal_stop_wd)
+        report = validate_72h_window_from_dir(
+            tmp_path,
+            required_window_hours=2,
+            runner_cadence_seconds=3600,
+        )
+        assert any(
+            "FATAL_STOP" in f.message and f.severity == "fail" for f in report.findings
+        )
+
+    @pytest.mark.unit
+    def test_fail_on_watchdog_stale_next_cycle_liveness(self, tmp_path: Path) -> None:
+        start = datetime(2026, 6, 19, 0, 0, tzinfo=UTC)
+        _write_valid_run(
+            tmp_path,
+            start=start,
+            hours=2,
+            cadence_seconds=3600,
+        )
+        first_stamp = _stamp(start)
+        stale_wd = _watchdog_payload(
+            _ts(start),
+            verdict="FAIL",
+            coordinator_liveness={
+                "classification": "STALE_NEXT_CYCLE",
+                "severity": "fail",
+                "reason": "next_cycle_due_at_utc exceeded by 99999s beyond cadence tolerance",
+                "coordinator_status_from_state": "sleeping",
+                "has_lifecycle_telemetry": True,
+                "last_heartbeat_age_seconds": 30.0,
+                "next_cycle_due_at_utc": "2026-06-19T01:00:00Z",
+                "has_fatal_stop_event": False,
+                "has_recovery_events": False,
+            },
+        )
+        _write_json(tmp_path / f"watchdog_report_{first_stamp}.json", stale_wd)
+        report = validate_72h_window_from_dir(
+            tmp_path,
+            required_window_hours=2,
+            runner_cadence_seconds=3600,
+        )
+        assert any(
+            "STALE_NEXT_CYCLE" in f.message and f.severity == "fail"
+            for f in report.findings
+        )
+
+    @pytest.mark.unit
+    def test_pass_with_healthy_watchdog_liveness(self, tmp_path: Path) -> None:
+        start = datetime(2026, 6, 19, 0, 0, tzinfo=UTC)
+        _write_valid_run(
+            tmp_path,
+            start=start,
+            hours=2,
+            cadence_seconds=3600,
+        )
+        first_stamp = _stamp(start)
+        healthy_wd = _watchdog_payload(
+            _ts(start),
+            verdict="PASS",
+            coordinator_liveness={
+                "classification": "RUNNING_HEALTHY",
+                "severity": "pass",
+                "reason": "Coordinator status is 'running' and heartbeat is fresh",
+                "coordinator_status_from_state": "running",
+                "has_lifecycle_telemetry": True,
+                "last_heartbeat_age_seconds": 30.0,
+                "has_fatal_stop_event": False,
+                "has_recovery_events": False,
+            },
+        )
+        _write_json(tmp_path / f"watchdog_report_{first_stamp}.json", healthy_wd)
+        report = validate_72h_window_from_dir(
+            tmp_path,
+            required_window_hours=2,
+            runner_cadence_seconds=3600,
+        )
+        assert report.summary.verdict == "PASS"
 
     @pytest.mark.unit
     def test_fail_on_short_window(self, tmp_path: Path) -> None:

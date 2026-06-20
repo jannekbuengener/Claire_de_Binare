@@ -444,6 +444,25 @@ python -m tools.evidence_harvester.ops_validation validate-dir `
     --pretty
 ```
 
+For non-final bounded validation (e.g. short fixture tests) missing lifecycle
+telemetry produces WARN instead of FAIL:
+
+```powershell
+python -m tools.evidence_harvester.ops_validation validate-dir `
+    --artifact-dir ... --no-final --pretty
+```
+
+### PASS requirements (final >=72h validation)
+
+- Coordinator lifecycle telemetry (`coordinator_events.jsonl`) must be present
+  and contain all required event types
+- Lifecycle cycle counts must be consistent with `runner_state.json` and
+  artifact counts
+- Watchdog `coordinator_liveness` must not report FATAL_STOP or
+  STALE_NEXT_CYCLE
+- Heartbeat/state counters, window coverage, cadence, and safety boundaries
+  must all pass
+
 ### Phase-2 runtime contract
 
 - seed fixture: `artifacts/evidence_harvester/24h_dry_run/collector_input.json`
