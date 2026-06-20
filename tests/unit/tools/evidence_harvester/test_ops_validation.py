@@ -16,6 +16,7 @@ from tools.evidence_harvester.ops_validation import (
     validate_72h_window_from_dir,
 )
 from tools.evidence_harvester.snapshot import SAFETY_BANNER, SNAPSHOT_SCHEMA_VERSION
+from tools.evidence_harvester.coordinator import RECOVERY_EVENT_SCHEMA
 from tools.evidence_harvester.validation import EXPECTED_ALERT_SCHEMA
 from tools.evidence_harvester.write_audit import (
     COLLECTOR_REPORT_SCHEMA,
@@ -244,6 +245,37 @@ def _boot_payload(ts: str, verdict: str = "PASS") -> dict:
     }
 
 
+def _recovery_event_payload(
+    ts: str,
+    *,
+    covered_report_name: str,
+    restart_count: int = 1,
+    max_restart_count: int = 3,
+    classification: str = "recoverable",
+    limit_exceeded: bool = False,
+    action: str = "restart_cycle",
+) -> dict:
+    return {
+        "schema_version": RECOVERY_EVENT_SCHEMA,
+        "event_at_utc": ts,
+        "artifact_dir": "test",
+        "cycle_stamp": ts.replace(":", "").replace("-", ""),
+        "failure_source": "watchdog",
+        "trigger_report_name": covered_report_name,
+        "trigger_verdict": "FAIL",
+        "classification": classification,
+        "reason_codes": ["stale_or_missing_latest_artifact"],
+        "covered_report_names": [covered_report_name],
+        "restart_attempted": classification == "recoverable" and not limit_exceeded,
+        "restart_count": restart_count,
+        "max_restart_count": max_restart_count,
+        "backoff_seconds": 30,
+        "action": action,
+        "limit_exceeded": limit_exceeded,
+        "audited": True,
+    }
+
+
 def _heartbeat_payload(started_at: str, current_ts: str, iteration: int) -> dict:
     return {
         "schema_version": HEARTBEAT_SCHEMA,
@@ -431,6 +463,78 @@ class TestValidate72hWindowFromDir:
         assert report.summary.verdict == "WARN"
         assert any(
             "Boot readiness report is WARN" in f.message for f in report.findings
+        )
+
+    @pytest.mark.unit
+    def test_warn_on_bounded_recovery_event_covering_watchdog_fail(
+        self, tmp_path: Path
+    ) -> None:
+        start = datetime(2026, 6, 19, 0, 0, tzinfo=UTC)
+        _write_valid_run(
+            tmp_path,
+            start=start,
+            hours=2,
+            cadence_seconds=3600,
+        )
+        first_stamp = _stamp(start)
+        fail_watchdog = _watchdog_payload(_ts(start), verdict="FAIL")
+        _write_json(tmp_path / f"watchdog_report_{first_stamp}.json", fail_watchdog)
+        _write_json(
+            tmp_path / "recovery_event_20260619T003000Z.json",
+            _recovery_event_payload(
+                "2026-06-19T00:30:00Z",
+                covered_report_name=f"watchdog_report_{first_stamp}.json",
+            ),
+        )
+        _write_text(tmp_path / "recovery_event_20260619T003000Z.md")
+
+        report = validate_72h_window_from_dir(
+            tmp_path,
+            required_window_hours=2,
+            runner_cadence_seconds=3600,
+        )
+
+        assert report.summary.verdict == "WARN"
+        assert any(
+            "covered by an audited recovery event" in f.message for f in report.findings
+        )
+        assert any("Recovery event history" == f.check_name for f in report.findings)
+
+    @pytest.mark.unit
+    def test_fail_when_recovery_restart_limit_exceeded(self, tmp_path: Path) -> None:
+        start = datetime(2026, 6, 19, 0, 0, tzinfo=UTC)
+        _write_valid_run(
+            tmp_path,
+            start=start,
+            hours=2,
+            cadence_seconds=3600,
+        )
+        first_stamp = _stamp(start)
+        fail_watchdog = _watchdog_payload(_ts(start), verdict="FAIL")
+        _write_json(tmp_path / f"watchdog_report_{first_stamp}.json", fail_watchdog)
+        _write_json(
+            tmp_path / "recovery_event_20260619T003000Z.json",
+            _recovery_event_payload(
+                "2026-06-19T00:30:00Z",
+                covered_report_name=f"watchdog_report_{first_stamp}.json",
+                restart_count=4,
+                max_restart_count=3,
+                limit_exceeded=True,
+                action="stop",
+            ),
+        )
+        _write_text(tmp_path / "recovery_event_20260619T003000Z.md")
+
+        report = validate_72h_window_from_dir(
+            tmp_path,
+            required_window_hours=2,
+            runner_cadence_seconds=3600,
+        )
+
+        assert report.summary.verdict == "FAIL"
+        assert any(
+            "restart_count=4 exceeds max_restart_count=3" in f.message
+            for f in report.findings
         )
 
     @pytest.mark.unit

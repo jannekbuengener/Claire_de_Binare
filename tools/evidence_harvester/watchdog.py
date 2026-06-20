@@ -242,6 +242,10 @@ def _check_heartbeat(
 def _check_runner_state(
     state_payload: dict[str, Any] | None,
     artifact_dir_label: str,
+    *,
+    max_age_seconds: int,
+    warn_age_seconds: int,
+    now: datetime,
 ) -> list[WatchdogFinding]:
     findings: list[WatchdogFinding] = []
     if state_payload is None:
@@ -333,6 +337,77 @@ def _check_runner_state(
             )
         )
 
+    last_cycle_raw = state_payload.get("last_cycle_ended_at_utc", "")
+    if last_cycle_raw:
+        try:
+            last_cycle_ts = _parse_ts(last_cycle_raw, "last_cycle_ended_at_utc")
+            age_seconds = (now - last_cycle_ts).total_seconds()
+            if age_seconds > max_age_seconds:
+                findings.append(
+                    WatchdogFinding(
+                        check_id="W016",
+                        check_name="Runner state freshness",
+                        severity="fail",
+                        message=(
+                            f"Runner state is {age_seconds:.0f}s old "
+                            f"(max_age={max_age_seconds}s)"
+                        ),
+                        artifact=artifact_dir_label,
+                        field_name="last_cycle_ended_at_utc",
+                    )
+                )
+            elif age_seconds > warn_age_seconds:
+                findings.append(
+                    WatchdogFinding(
+                        check_id="W016",
+                        check_name="Runner state freshness",
+                        severity="warn",
+                        message=(
+                            f"Runner state is {age_seconds:.0f}s old "
+                            f"(warn_age={warn_age_seconds}s)"
+                        ),
+                        artifact=artifact_dir_label,
+                        field_name="last_cycle_ended_at_utc",
+                    )
+                )
+            else:
+                findings.append(
+                    WatchdogFinding(
+                        check_id="W016",
+                        check_name="Runner state freshness",
+                        severity="pass",
+                        message=(
+                            f"Runner state is {age_seconds:.0f}s old (within limit)"
+                        ),
+                        artifact=artifact_dir_label,
+                        field_name="last_cycle_ended_at_utc",
+                    )
+                )
+        except WatchdogError:
+            findings.append(
+                WatchdogFinding(
+                    check_id="W016",
+                    check_name="Runner state freshness",
+                    severity="fail",
+                    message=(
+                        f"last_cycle_ended_at_utc={last_cycle_raw!r} is not valid ISO-8601"
+                    ),
+                    artifact=artifact_dir_label,
+                    field_name="last_cycle_ended_at_utc",
+                )
+            )
+    else:
+        findings.append(
+            WatchdogFinding(
+                check_id="W016",
+                check_name="Runner state freshness",
+                severity="fail",
+                message="last_cycle_ended_at_utc is missing or empty",
+                artifact=artifact_dir_label,
+                field_name="last_cycle_ended_at_utc",
+            )
+        )
+
     return findings
 
 
@@ -401,6 +476,37 @@ def _check_artifact_integrity(
     findings: list[WatchdogFinding] = []
     json_keys = {"collector_reports", "snapshots_json", "alerts_json"}
 
+    snapshot_payloads: dict[Path, dict[str, Any]] = {}
+    latest_snapshot_name: str | None = None
+    latest_snapshot_ts: datetime | None = None
+
+    for path in artifact_paths.get("snapshots_json", []):
+        artifact_label = f"{artifact_dir_label}/{path.name}"
+        try:
+            payload = _load_json(path)
+        except WatchdogError as exc:
+            findings.append(
+                WatchdogFinding(
+                    check_id="W009",
+                    check_name=f"Artifact parses as JSON: {path.name}",
+                    severity="fail",
+                    message=str(exc),
+                    artifact=artifact_label,
+                )
+            )
+            continue
+        snapshot_payloads[path] = payload
+        generated_at = payload.get("metadata", {}).get("generated_at_utc", "")
+        if not generated_at:
+            continue
+        try:
+            ts = _parse_ts(generated_at, "generated_at_utc")
+        except WatchdogError:
+            continue
+        if latest_snapshot_ts is None or ts > latest_snapshot_ts:
+            latest_snapshot_ts = ts
+            latest_snapshot_name = path.name
+
     for label, paths in artifact_paths.items():
         is_json_artifact = label in json_keys
         for path in paths:
@@ -408,19 +514,24 @@ def _check_artifact_integrity(
             if not is_json_artifact:
                 continue
 
-            try:
-                payload = _load_json(path)
-            except WatchdogError as exc:
-                findings.append(
-                    WatchdogFinding(
-                        check_id="W009",
-                        check_name=f"Artifact parses as JSON: {path.name}",
-                        severity="fail",
-                        message=str(exc),
-                        artifact=artifact_label,
+            if label == "snapshots_json":
+                payload = snapshot_payloads.get(path)
+                if payload is None:
+                    continue
+            else:
+                try:
+                    payload = _load_json(path)
+                except WatchdogError as exc:
+                    findings.append(
+                        WatchdogFinding(
+                            check_id="W009",
+                            check_name=f"Artifact parses as JSON: {path.name}",
+                            severity="fail",
+                            message=str(exc),
+                            artifact=artifact_label,
+                        )
                     )
-                )
-                continue
+                    continue
 
             if label == "snapshots_json":
                 schema_ver = payload.get("metadata", {}).get("schema_version", "")
@@ -442,49 +553,50 @@ def _check_artifact_integrity(
                 if generated_at:
                     try:
                         ts = _parse_ts(generated_at, "generated_at_utc")
-                        age_seconds = (now - ts).total_seconds()
-                        if age_seconds > max_age_seconds:
-                            findings.append(
-                                WatchdogFinding(
-                                    check_id="W011",
-                                    check_name=f"Snapshot freshness: {path.name}",
-                                    severity="fail",
-                                    message=(
-                                        f"Snapshot is {age_seconds:.0f}s old "
-                                        f"(max_age={max_age_seconds}s)"
-                                    ),
-                                    artifact=artifact_label,
-                                    field_name="metadata.generated_at_utc",
+                        if path.name == latest_snapshot_name:
+                            age_seconds = (now - ts).total_seconds()
+                            if age_seconds > max_age_seconds:
+                                findings.append(
+                                    WatchdogFinding(
+                                        check_id="W011",
+                                        check_name=f"Snapshot freshness: {path.name}",
+                                        severity="fail",
+                                        message=(
+                                            f"Latest snapshot is {age_seconds:.0f}s old "
+                                            f"(max_age={max_age_seconds}s)"
+                                        ),
+                                        artifact=artifact_label,
+                                        field_name="metadata.generated_at_utc",
+                                    )
                                 )
-                            )
-                        elif age_seconds > warn_age_seconds:
-                            findings.append(
-                                WatchdogFinding(
-                                    check_id="W011",
-                                    check_name=f"Snapshot freshness: {path.name}",
-                                    severity="warn",
-                                    message=(
-                                        f"Snapshot is {age_seconds:.0f}s old "
-                                        f"(warn_age={warn_age_seconds}s)"
-                                    ),
-                                    artifact=artifact_label,
-                                    field_name="metadata.generated_at_utc",
+                            elif age_seconds > warn_age_seconds:
+                                findings.append(
+                                    WatchdogFinding(
+                                        check_id="W011",
+                                        check_name=f"Snapshot freshness: {path.name}",
+                                        severity="warn",
+                                        message=(
+                                            f"Latest snapshot is {age_seconds:.0f}s old "
+                                            f"(warn_age={warn_age_seconds}s)"
+                                        ),
+                                        artifact=artifact_label,
+                                        field_name="metadata.generated_at_utc",
+                                    )
                                 )
-                            )
-                        else:
-                            findings.append(
-                                WatchdogFinding(
-                                    check_id="W011",
-                                    check_name=f"Snapshot freshness: {path.name}",
-                                    severity="pass",
-                                    message=(
-                                        f"Snapshot is {age_seconds:.0f}s old "
-                                        "(within limit)"
-                                    ),
-                                    artifact=artifact_label,
-                                    field_name="metadata.generated_at_utc",
+                            else:
+                                findings.append(
+                                    WatchdogFinding(
+                                        check_id="W011",
+                                        check_name=f"Snapshot freshness: {path.name}",
+                                        severity="pass",
+                                        message=(
+                                            f"Latest snapshot is {age_seconds:.0f}s old "
+                                            "(within limit)"
+                                        ),
+                                        artifact=artifact_label,
+                                        field_name="metadata.generated_at_utc",
+                                    )
                                 )
-                            )
                     except WatchdogError:
                         findings.append(
                             WatchdogFinding(
@@ -668,7 +780,13 @@ def run_status(
     )
     all_findings.extend(hb_findings)
 
-    state_findings = _check_runner_state(state_payload, artifact_dir_label)
+    state_findings = _check_runner_state(
+        state_payload,
+        artifact_dir_label,
+        max_age_seconds=max_age_seconds,
+        warn_age_seconds=warn_age_seconds,
+        now=eval_now,
+    )
     all_findings.extend(state_findings)
 
     artifact_findings = _check_required_artifacts(
@@ -708,7 +826,8 @@ def run_status(
         f.check_id == "W003" and f.severity == "fail" for f in all_findings
     )
     runner_state_ok = not any(
-        f.check_id == "W006" and f.severity == "fail" for f in all_findings
+        f.check_id in {"W004", "W005", "W006", "W016"} and f.severity == "fail"
+        for f in all_findings
     )
     required_artifacts_present = not any(
         f.check_id == "W008" and f.severity == "fail" for f in all_findings
