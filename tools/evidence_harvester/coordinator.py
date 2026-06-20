@@ -67,7 +67,10 @@ class CoordinatorSummary:
 
 
 def _now_utc() -> datetime:
-    return cdb_utcnow().astimezone(UTC)
+    now = cdb_utcnow()
+    if now.tzinfo is None:
+        return now.replace(tzinfo=UTC)
+    return now.astimezone(UTC)
 
 
 def _format_ts(value: datetime) -> str:
@@ -400,6 +403,23 @@ def _write_recovery_event(
             md_lines.append(f"- `{name}`")
     md_path.write_text("\n".join(md_lines) + "\n", encoding="utf-8")
     return event
+
+
+def _sleep_with_interval_check(
+    sleep_fn: Callable[[float], None],
+    total_seconds: int,
+    chunk_seconds: int = 60,
+) -> float:
+    """Sleep in chunks, returning overshoot (actual - expected) seconds."""
+    started = time.monotonic()
+    remaining = total_seconds
+    while remaining > 0:
+        chunk = min(remaining, chunk_seconds)
+        sleep_fn(chunk)
+        remaining -= chunk
+    elapsed = time.monotonic() - started
+    overshoot = elapsed - total_seconds
+    return max(overshoot, 0.0)
 
 
 def _default_boot_runner(
@@ -997,7 +1017,19 @@ def run_fixture_window(
                 next_cycle_due_at_utc=next_due_at,
                 coordinator_status="sleeping",
             )
-            sleep_fn(cadence_seconds)
+            overshoot = _sleep_with_interval_check(
+                sleep_fn, cadence_seconds, chunk_seconds=60
+            )
+            if overshoot > 60:
+                _write_coordinator_event(
+                    artifact_dir,
+                    run_id=run_id,
+                    event_type="sleep_overshoot",
+                    cycle_index=cycle_index,
+                    artifact_stamp=cycle_stamp,
+                    next_cycle_due_at_utc=next_due_at,
+                    coordinator_status="sleeping",
+                )
             _write_coordinator_event(
                 artifact_dir,
                 run_id=run_id,

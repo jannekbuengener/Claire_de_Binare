@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import json
+from datetime import UTC, datetime
 from pathlib import Path
 
 import pytest
@@ -8,6 +9,8 @@ import pytest
 from tools.evidence_harvester.coordinator import (
     COORDINATOR_EVENT_SCHEMA,
     RECOVERY_EVENT_SCHEMA,
+    _now_utc,
+    _sleep_with_interval_check,
     run_fixture_window,
 )
 
@@ -301,3 +304,88 @@ def test_fatal_safety_failure_stops_without_restart(tmp_path: Path) -> None:
         .splitlines()
     ]
     assert any(event["event_type"] == "fatal_stop" for event in events)
+
+
+@pytest.mark.unit
+def test_sleep_with_interval_check_accumulates_exact_duration() -> None:
+    calls: list[float] = []
+
+    def fake_sleep(seconds: float) -> None:
+        calls.append(seconds)
+
+    overshoot = _sleep_with_interval_check(
+        fake_sleep, total_seconds=300, chunk_seconds=60
+    )
+
+    assert overshoot == pytest.approx(0.0, abs=0.001)
+    assert calls == [60, 60, 60, 60, 60]
+    assert sum(calls) == 300
+
+
+@pytest.mark.unit
+def test_sleep_with_interval_check_partial_chunk() -> None:
+    calls: list[float] = []
+
+    def fake_sleep(seconds: float) -> None:
+        calls.append(seconds)
+
+    overshoot = _sleep_with_interval_check(
+        fake_sleep, total_seconds=125, chunk_seconds=60
+    )
+
+    assert overshoot == pytest.approx(0.0, abs=0.001)
+    assert calls == [60, 60, 5]
+    assert sum(calls) == 125
+
+
+@pytest.mark.unit
+def test_sleep_with_interval_check_zero_duration() -> None:
+    calls: list[float] = []
+
+    def fake_sleep(seconds: float) -> None:
+        calls.append(seconds)
+
+    overshoot = _sleep_with_interval_check(
+        fake_sleep, total_seconds=0, chunk_seconds=60
+    )
+
+    assert overshoot == pytest.approx(0.0, abs=0.001)
+    assert calls == []
+
+
+@pytest.mark.unit
+def test_now_utc_returns_aware_datetime_when_cdb_utcnow_is_naive(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    naive_utc = datetime(2026, 6, 20, 18, 44, 13)
+    assert naive_utc.tzinfo is None
+
+    monkeypatch.setattr(
+        "tools.evidence_harvester.coordinator.cdb_utcnow",
+        lambda: naive_utc,
+    )
+
+    result = _now_utc()
+
+    assert result.tzinfo is not None
+    assert result.tzinfo == UTC
+    assert result.hour == 18
+    assert result.minute == 44
+    assert result.second == 13
+
+
+@pytest.mark.unit
+def test_now_utc_preserves_aware_datetime(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    aware_utc = datetime(2026, 6, 20, 18, 44, 13, tzinfo=UTC)
+
+    monkeypatch.setattr(
+        "tools.evidence_harvester.coordinator.cdb_utcnow",
+        lambda: aware_utc,
+    )
+
+    result = _now_utc()
+
+    assert result.tzinfo is not None
+    assert result == aware_utc
