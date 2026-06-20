@@ -57,7 +57,10 @@ def _format_ts(value: datetime) -> str:
 
 
 def _now_utc() -> datetime:
-    return cdb_utcnow().astimezone(UTC)
+    now = cdb_utcnow()
+    if now.tzinfo is None:
+        return now.replace(tzinfo=UTC)
+    return now.astimezone(UTC)
 
 
 def _require_mapping(value: Any, field_name: str) -> Mapping[str, Any]:
@@ -127,6 +130,7 @@ class CoordinatorLiveness:
     next_cycle_due_at_utc: str = ""
     has_fatal_stop_event: bool = False
     has_recovery_events: bool = False
+    overdue_seconds: float = 0.0
 
     def to_dict(self) -> dict[str, Any]:
         return asdict(self)
@@ -218,109 +222,91 @@ def _classify_coordinator_liveness(
             except WatchdogError:
                 pass
 
-    if has_fatal_stop_event or coordinator_status == "fatal_stop":
+    has_fatal_stop = has_fatal_stop_event or coordinator_status == "fatal_stop"
+    is_recovering = coordinator_status == "recovering"
+    is_stopped = coordinator_status in ("completed", "failed")
+
+    def _make(
+        classification: str,
+        severity: str,
+        reason: str,
+        **extra: Any,
+    ) -> CoordinatorLiveness:
         return CoordinatorLiveness(
-            classification="FATAL_STOP",
-            severity="fail",
-            reason=(
+            classification=classification,
+            severity=severity,
+            reason=reason,
+            coordinator_status_from_state=coordinator_status,
+            has_lifecycle_telemetry=has_lifecycle,
+            last_heartbeat_age_seconds=max(heartbeat_age, 0.0),
+            next_cycle_due_at_utc=next_cycle_due_raw,
+            has_fatal_stop_event=has_fatal_stop_event,
+            has_recovery_events=has_recovery_events,
+            overdue_seconds=extra.get("overdue_seconds", 0.0),
+        )
+
+    if has_fatal_stop:
+        return _make(
+            "FATAL_STOP",
+            "fail",
+            (
                 "Coordinator has a fatal stop lifecycle event"
                 if has_fatal_stop_event
                 else "coordinator_status is fatal_stop"
             ),
-            coordinator_status_from_state=coordinator_status,
-            has_lifecycle_telemetry=has_lifecycle,
-            last_heartbeat_age_seconds=max(heartbeat_age, 0.0),
-            has_fatal_stop_event=has_fatal_stop_event,
-            has_recovery_events=has_recovery_events,
         )
 
-    if coordinator_status == "recovering":
-        return CoordinatorLiveness(
-            classification="RECOVERY_IN_PROGRESS",
-            severity="warn",
-            reason="Coordinator status indicates recovery in progress",
-            coordinator_status_from_state=coordinator_status,
-            has_lifecycle_telemetry=has_lifecycle,
-            last_heartbeat_age_seconds=max(heartbeat_age, 0.0),
-            has_recovery_events=has_recovery_events,
+    if is_recovering:
+        return _make(
+            "RECOVERY_IN_PROGRESS",
+            "warn",
+            "Coordinator status indicates recovery in progress",
         )
 
-    if coordinator_status in ("completed", "failed"):
-        return CoordinatorLiveness(
-            classification="COORDINATOR_STOPPED",
-            severity="warn" if coordinator_status == "completed" else "fail",
-            reason=(f"Coordinator has stopped with status {coordinator_status!r}"),
-            coordinator_status_from_state=coordinator_status,
-            has_lifecycle_telemetry=has_lifecycle,
-            last_heartbeat_age_seconds=max(heartbeat_age, 0.0),
-            has_recovery_events=has_recovery_events,
+    if is_stopped:
+        return _make(
+            "COORDINATOR_STOPPED",
+            "warn" if coordinator_status == "completed" else "fail",
+            f"Coordinator has stopped with status {coordinator_status!r}",
         )
 
     if coordinator_status == "sleeping":
         if not next_cycle_due_raw:
-            return CoordinatorLiveness(
-                classification="STALE_NEXT_CYCLE",
-                severity="fail",
-                reason="Coordinator is sleeping but next_cycle_due_at_utc is missing",
-                coordinator_status_from_state=coordinator_status,
-                has_lifecycle_telemetry=has_lifecycle,
-                last_heartbeat_age_seconds=max(heartbeat_age, 0.0),
-                has_recovery_events=has_recovery_events,
+            return _make(
+                "STALE_NEXT_CYCLE",
+                "fail",
+                "Coordinator is sleeping but next_cycle_due_at_utc is missing",
             )
         try:
             due_at = _parse_ts(next_cycle_due_raw, "next_cycle_due_at_utc")
             delta = (now - due_at).total_seconds()
             if delta <= 0:
-                return CoordinatorLiveness(
-                    classification="SLEEPING_UNTIL_NEXT_CYCLE",
-                    severity="pass",
-                    reason="Coordinator is sleeping and next cycle is not yet due",
-                    coordinator_status_from_state=coordinator_status,
-                    has_lifecycle_telemetry=has_lifecycle,
-                    last_heartbeat_age_seconds=max(heartbeat_age, 0.0),
-                    next_cycle_due_at_utc=next_cycle_due_raw,
-                    has_recovery_events=has_recovery_events,
+                return _make(
+                    "SLEEPING_UNTIL_NEXT_CYCLE",
+                    "pass",
+                    "Coordinator is sleeping and next cycle is not yet due",
                 )
             if delta <= cadence_seconds:
-                return CoordinatorLiveness(
-                    classification="SLEEPING_UNTIL_NEXT_CYCLE",
-                    severity="warn",
-                    reason=(
-                        f"Sleeping but next_cycle_due_at_utc exceeded by "
-                        f"{delta:.0f}s within cadence tolerance"
-                    ),
-                    coordinator_status_from_state=coordinator_status,
-                    has_lifecycle_telemetry=has_lifecycle,
-                    last_heartbeat_age_seconds=max(heartbeat_age, 0.0),
-                    next_cycle_due_at_utc=next_cycle_due_raw,
-                    has_recovery_events=has_recovery_events,
+                return _make(
+                    "SLEEPING_UNTIL_NEXT_CYCLE",
+                    "warn",
+                    f"Sleeping but next_cycle_due_at_utc exceeded by "
+                    f"{delta:.0f}s within cadence tolerance",
+                    overdue_seconds=delta,
                 )
-            return CoordinatorLiveness(
-                classification="STALE_NEXT_CYCLE",
-                severity="fail",
-                reason=(
-                    f"next_cycle_due_at_utc exceeded by {delta:.0f}s "
-                    f"beyond cadence tolerance {cadence_seconds}s"
-                ),
-                coordinator_status_from_state=coordinator_status,
-                has_lifecycle_telemetry=has_lifecycle,
-                last_heartbeat_age_seconds=max(heartbeat_age, 0.0),
-                next_cycle_due_at_utc=next_cycle_due_raw,
-                has_recovery_events=has_recovery_events,
+            return _make(
+                "STALE_NEXT_CYCLE",
+                "fail",
+                f"next_cycle_due_at_utc exceeded by {delta:.0f}s "
+                f"beyond cadence tolerance {cadence_seconds}s",
+                overdue_seconds=delta,
             )
         except WatchdogError:
-            return CoordinatorLiveness(
-                classification="STALE_NEXT_CYCLE",
-                severity="fail",
-                reason=(
-                    f"next_cycle_due_at_utc={next_cycle_due_raw!r} "
-                    "is not valid ISO-8601"
-                ),
-                coordinator_status_from_state=coordinator_status,
-                has_lifecycle_telemetry=has_lifecycle,
-                last_heartbeat_age_seconds=max(heartbeat_age, 0.0),
-                next_cycle_due_at_utc=next_cycle_due_raw,
-                has_recovery_events=has_recovery_events,
+            return _make(
+                "STALE_NEXT_CYCLE",
+                "fail",
+                f"next_cycle_due_at_utc={next_cycle_due_raw!r} "
+                "is not valid ISO-8601",
             )
 
     running_statuses = (
@@ -335,61 +321,30 @@ def _classify_coordinator_liveness(
         "starting"
     ):
         if heartbeat_age >= 0 and heartbeat_age > max_age_seconds:
-            return CoordinatorLiveness(
-                classification="STALE_HEARTBEAT",
-                severity="fail",
-                reason=(
-                    f"Heartbeat is {heartbeat_age:.0f}s old "
-                    f"(max_age={max_age_seconds}s) while coordinator "
-                    f"status is {coordinator_status!r}"
-                ),
-                coordinator_status_from_state=coordinator_status,
-                has_lifecycle_telemetry=has_lifecycle,
-                last_heartbeat_age_seconds=heartbeat_age,
-                has_recovery_events=has_recovery_events,
+            return _make(
+                "STALE_HEARTBEAT",
+                "fail",
+                f"Heartbeat is {heartbeat_age:.0f}s old "
+                f"(max_age={max_age_seconds}s) while coordinator "
+                f"status is {coordinator_status!r}",
+                overdue_seconds=heartbeat_age,
             )
         if not coordinator_status and not has_lifecycle:
-            return CoordinatorLiveness(
-                classification="COORDINATOR_UNKNOWN",
-                severity="warn",
-                reason=("No coordinator status or lifecycle telemetry available"),
-                coordinator_status_from_state=coordinator_status,
-                has_lifecycle_telemetry=has_lifecycle,
-                last_heartbeat_age_seconds=max(heartbeat_age, 0.0),
-                has_recovery_events=has_recovery_events,
+            return _make(
+                "COORDINATOR_UNKNOWN",
+                "warn",
+                "No coordinator status or lifecycle telemetry available",
             )
-        return CoordinatorLiveness(
-            classification="RUNNING_HEALTHY",
-            severity="pass",
-            reason=(
-                f"Coordinator status is {coordinator_status!r} "
-                "and heartbeat is fresh"
-            ),
-            coordinator_status_from_state=coordinator_status,
-            has_lifecycle_telemetry=has_lifecycle,
-            last_heartbeat_age_seconds=max(heartbeat_age, 0.0),
-            has_recovery_events=has_recovery_events,
+        return _make(
+            "RUNNING_HEALTHY",
+            "pass",
+            f"Coordinator status is {coordinator_status!r} " "and heartbeat is fresh",
         )
 
-    if coordinator_status == "recovering":
-        return CoordinatorLiveness(
-            classification="RECOVERY_IN_PROGRESS",
-            severity="warn",
-            reason="Coordinator status indicates recovery in progress",
-            coordinator_status_from_state=coordinator_status,
-            has_lifecycle_telemetry=has_lifecycle,
-            last_heartbeat_age_seconds=max(heartbeat_age, 0.0),
-            has_recovery_events=has_recovery_events,
-        )
-
-    return CoordinatorLiveness(
-        classification="COORDINATOR_UNKNOWN",
-        severity="warn",
-        reason=(f"Unknown coordinator_status={coordinator_status!r}"),
-        coordinator_status_from_state=coordinator_status,
-        has_lifecycle_telemetry=has_lifecycle,
-        last_heartbeat_age_seconds=max(heartbeat_age, 0.0),
-        has_recovery_events=has_recovery_events,
+    return _make(
+        "COORDINATOR_UNKNOWN",
+        "warn",
+        f"Unknown coordinator_status={coordinator_status!r}",
     )
 
 

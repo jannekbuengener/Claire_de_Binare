@@ -364,6 +364,7 @@ def test_liveness_sleeping_until_next_cycle(tmp_path: Path) -> None:
     cl = report.coordinator_liveness
     assert cl.classification == "SLEEPING_UNTIL_NEXT_CYCLE"
     assert cl.severity == "pass"
+    assert cl.overdue_seconds == 0.0
 
 
 @pytest.mark.unit
@@ -382,6 +383,7 @@ def test_liveness_sleeping_warn_within_tolerance(tmp_path: Path) -> None:
     cl = report.coordinator_liveness
     assert cl.classification == "SLEEPING_UNTIL_NEXT_CYCLE"
     assert cl.severity == "warn"
+    assert cl.overdue_seconds == pytest.approx(300, abs=5)
 
 
 @pytest.mark.unit
@@ -409,6 +411,7 @@ def test_liveness_stale_next_cycle(tmp_path: Path) -> None:
     cl = report.coordinator_liveness
     assert cl.classification == "STALE_NEXT_CYCLE"
     assert cl.severity == "fail"
+    assert cl.overdue_seconds == pytest.approx(7200, abs=60)
 
 
 @pytest.mark.unit

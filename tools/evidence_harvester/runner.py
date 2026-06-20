@@ -39,7 +39,10 @@ def _format_ts(value: datetime) -> str:
 
 
 def _now_utc() -> datetime:
-    return cdb_utcnow().astimezone(UTC)
+    now = cdb_utcnow()
+    if now.tzinfo is None:
+        return now.replace(tzinfo=UTC)
+    return now.astimezone(UTC)
 
 
 def _load_json(path: Path) -> dict[str, Any]:
