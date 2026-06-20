@@ -302,7 +302,141 @@ def _state_payload(current_ts: str, runs: int, verdict: str = "PASS") -> dict:
         "failed_runs": 0 if verdict == "PASS" else 1,
         "last_cycle_verdict": verdict,
         "last_cycle_ended_at_utc": current_ts,
+        "run_id": "test-run",
+        "total_cycles_started": runs,
+        "total_cycles_completed": runs if verdict == "PASS" else max(0, runs - 1),
+        "total_successful_cycles": runs if verdict == "PASS" else max(0, runs - 1),
+        "total_failed_cycles": 0 if verdict == "PASS" else 1,
+        "last_cycle_started_at_utc": current_ts,
+        "next_cycle_due_at_utc": "",
+        "last_successful_artifact_stamp": "20260619T000000Z",
+        "coordinator_status": "completed" if verdict == "PASS" else "failed",
     }
+
+
+def _write_coordinator_events(artifact_dir: Path, times: list[datetime]) -> None:
+    run_id = artifact_dir.name or "test-run"
+    events: list[dict] = []
+    events.append(
+        {
+            "schema_version": "cdb.evidence_harvester.coordinator_event.v1",
+            "event_at_utc": _ts(times[0] - timedelta(seconds=30)),
+            "run_id": run_id,
+            "event_type": "run_started",
+        }
+    )
+    events.append(
+        {
+            "schema_version": "cdb.evidence_harvester.coordinator_event.v1",
+            "event_at_utc": _ts(times[0] - timedelta(seconds=20)),
+            "run_id": run_id,
+            "event_type": "boot_readiness_completed",
+            "verdict": "PASS",
+        }
+    )
+    for index, ts in enumerate(times, start=1):
+        stamp = _stamp(ts)
+        events.extend(
+            [
+                {
+                    "schema_version": "cdb.evidence_harvester.coordinator_event.v1",
+                    "event_at_utc": _ts(ts - timedelta(seconds=10)),
+                    "run_id": run_id,
+                    "event_type": "cycle_started",
+                    "cycle_index": index,
+                },
+                {
+                    "schema_version": "cdb.evidence_harvester.coordinator_event.v1",
+                    "event_at_utc": _ts(ts - timedelta(seconds=8)),
+                    "run_id": run_id,
+                    "event_type": "runner_cycle_completed",
+                    "cycle_index": index,
+                    "artifact_stamp": stamp,
+                    "verdict": "PASS",
+                },
+                {
+                    "schema_version": "cdb.evidence_harvester.coordinator_event.v1",
+                    "event_at_utc": _ts(ts - timedelta(seconds=6)),
+                    "run_id": run_id,
+                    "event_type": "watchdog_completed",
+                    "cycle_index": index,
+                    "artifact_stamp": stamp,
+                    "verdict": "PASS",
+                },
+                {
+                    "schema_version": "cdb.evidence_harvester.coordinator_event.v1",
+                    "event_at_utc": _ts(ts - timedelta(seconds=4)),
+                    "run_id": run_id,
+                    "event_type": "write_audit_completed",
+                    "cycle_index": index,
+                    "artifact_stamp": stamp,
+                    "verdict": "PASS",
+                },
+                {
+                    "schema_version": "cdb.evidence_harvester.coordinator_event.v1",
+                    "event_at_utc": _ts(ts - timedelta(seconds=2)),
+                    "run_id": run_id,
+                    "event_type": "cycle_completed",
+                    "cycle_index": index,
+                    "artifact_stamp": stamp,
+                    "verdict": "PASS",
+                },
+            ]
+        )
+        if index < len(times):
+            due_at = ts + timedelta(seconds=3600)
+            events.extend(
+                [
+                    {
+                        "schema_version": "cdb.evidence_harvester.coordinator_event.v1",
+                        "event_at_utc": _ts(ts - timedelta(seconds=1)),
+                        "run_id": run_id,
+                        "event_type": "next_cycle_due_at_utc",
+                        "cycle_index": index,
+                        "artifact_stamp": stamp,
+                        "next_cycle_due_at_utc": _ts(due_at),
+                    },
+                    {
+                        "schema_version": "cdb.evidence_harvester.coordinator_event.v1",
+                        "event_at_utc": _ts(ts),
+                        "run_id": run_id,
+                        "event_type": "sleep_started",
+                        "cycle_index": index,
+                        "artifact_stamp": stamp,
+                        "next_cycle_due_at_utc": _ts(due_at),
+                    },
+                    {
+                        "schema_version": "cdb.evidence_harvester.coordinator_event.v1",
+                        "event_at_utc": _ts(ts + timedelta(seconds=1)),
+                        "run_id": run_id,
+                        "event_type": "sleep_completed",
+                        "cycle_index": index,
+                        "artifact_stamp": stamp,
+                        "next_cycle_due_at_utc": _ts(due_at),
+                    },
+                ]
+            )
+    events.extend(
+        [
+            {
+                "schema_version": "cdb.evidence_harvester.coordinator_event.v1",
+                "event_at_utc": _ts(times[-1] + timedelta(seconds=10)),
+                "run_id": run_id,
+                "event_type": "final_validation_started",
+            },
+            {
+                "schema_version": "cdb.evidence_harvester.coordinator_event.v1",
+                "event_at_utc": _ts(times[-1] + timedelta(seconds=11)),
+                "run_id": run_id,
+                "event_type": "final_validation_completed",
+                "verdict": "PASS",
+            },
+        ]
+    )
+    (artifact_dir / "coordinator_events.jsonl").write_text(
+        "\n".join(json.dumps(event, sort_keys=True) for event in events) + "\n",
+        encoding="utf-8",
+    )
 
 
 def _stamp(ts: datetime) -> str:
@@ -363,6 +497,7 @@ def _write_valid_run(
         artifact_dir / "runner_state.json",
         _state_payload(final_ts, len(times), "PASS"),
     )
+    _write_coordinator_events(artifact_dir, times)
     _write_json(
         artifact_dir / "boot_readiness_report.json",
         _boot_payload(final_ts, boot_verdict),
@@ -382,7 +517,21 @@ class TestValidate72hWindowFromDir:
         )
         assert report.summary.verdict == "PASS"
         assert report.required_window_hours == 2
+        assert report.observed_counts["coordinator_events"] == 1
         assert report.observed_counts["watchdog_json"] == 3
+
+    @pytest.mark.unit
+    def test_fail_on_missing_coordinator_lifecycle(self, tmp_path: Path) -> None:
+        start = datetime(2026, 6, 19, 0, 0, tzinfo=UTC)
+        _write_valid_run(tmp_path, start=start, hours=2, cadence_seconds=3600)
+        (tmp_path / "coordinator_events.jsonl").unlink()
+        report = validate_72h_window_from_dir(
+            tmp_path,
+            required_window_hours=2,
+            runner_cadence_seconds=3600,
+        )
+        assert report.summary.verdict == "FAIL"
+        assert any("coordinator_events.jsonl" in f.message for f in report.findings)
 
     @pytest.mark.unit
     def test_fail_on_short_window(self, tmp_path: Path) -> None:
@@ -587,6 +736,7 @@ class TestValidate72hWindowFromDir:
         _write_json(
             tmp_path / "runner_state.json", _state_payload(final_ts, len(times))
         )
+        _write_coordinator_events(tmp_path, times)
         _write_json(tmp_path / "boot_readiness_report.json", _boot_payload(final_ts))
         _write_text(tmp_path / "boot_readiness_report.md")
         report = validate_72h_window_from_dir(
@@ -627,6 +777,7 @@ class TestValidate72hWindowFromDir:
         _write_json(
             tmp_path / "runner_state.json", _state_payload(final_ts, len(times))
         )
+        _write_coordinator_events(tmp_path, times)
         _write_json(tmp_path / "boot_readiness_report.json", _boot_payload(final_ts))
         _write_text(tmp_path / "boot_readiness_report.md")
         report = validate_72h_window_from_dir(

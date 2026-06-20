@@ -45,6 +45,7 @@ used only after the real dry run finishes.
 - `snapshot_<stamp>.md`
 - `alert_<stamp>.json`
 - `alert_<stamp>.md`
+- `coordinator_events.jsonl`
 - `runner_heartbeat.json`
 - `runner_state.json`
 - `watchdog_report_<stamp>.json`
@@ -61,7 +62,7 @@ used only after the real dry run finishes.
 ### PASS
 
 - `>=72h` window covered
-- runner continuity evidenced by heartbeat/state counters and stamped cadence history
+- runner continuity evidenced by heartbeat/state counters, coordinator lifecycle telemetry, and stamped cadence history
 - watchdog history PASS or justified WARN
 - write-audit history PASS with no FAIL findings
 - boot-readiness PASS or justified WARN

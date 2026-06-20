@@ -37,6 +37,7 @@ REQUIRED_ARTIFACT_RULES: dict[str, str] = {
     "snapshots_md": "snapshot_*.md",
     "alerts_json": "alert_*.json",
     "alerts_md": "alert_*.md",
+    "coordinator_events": "coordinator_events.jsonl",
     "heartbeat": "runner_heartbeat.json",
     "state": "runner_state.json",
     "watchdog_json": "watchdog_report_*.json",
@@ -53,6 +54,7 @@ REQUIRED_RUNTIME_ARTIFACTS: tuple[str, ...] = (
     "snapshot_<stamp>.md",
     "alert_<stamp>.json",
     "alert_<stamp>.md",
+    "coordinator_events.jsonl",
     "runner_heartbeat.json",
     "runner_state.json",
     "watchdog_report_<stamp>.json",
@@ -184,6 +186,11 @@ def _collect_artifact_paths(artifact_dir: Path) -> dict[str, list[Path]]:
         "snapshots_md": sorted(artifact_dir.glob("snapshot_*.md")),
         "alerts_json": sorted(artifact_dir.glob("alert_*.json")),
         "alerts_md": sorted(artifact_dir.glob("alert_*.md")),
+        "coordinator_events": (
+            [artifact_dir / "coordinator_events.jsonl"]
+            if (artifact_dir / "coordinator_events.jsonl").exists()
+            else []
+        ),
         "heartbeat": (
             [artifact_dir / "runner_heartbeat.json"]
             if (artifact_dir / "runner_heartbeat.json").exists()
@@ -1033,6 +1040,151 @@ def _check_no_side_effects(
             )
 
 
+def _load_coordinator_events(
+    paths: Sequence[Path],
+    add_finding: Any,
+) -> list[dict[str, Any]]:
+    events: list[dict[str, Any]] = []
+    for path in paths:
+        try:
+            lines = path.read_text(encoding="utf-8").splitlines()
+        except OSError as exc:
+            add_finding(
+                f"{path.name} readable",
+                "fail",
+                f"Failed to read {path.name}: {exc}",
+                artifact=path.name,
+            )
+            continue
+        if not lines:
+            add_finding(
+                f"{path.name} lifecycle events present",
+                "fail",
+                "Lifecycle event stream is empty",
+                artifact=path.name,
+            )
+            continue
+        for index, line in enumerate(lines, start=1):
+            try:
+                payload = json.loads(line)
+            except json.JSONDecodeError as exc:
+                add_finding(
+                    f"{path.name} line {index} parses as JSON",
+                    "fail",
+                    f"Malformed JSON line: {exc}",
+                    artifact=path.name,
+                )
+                continue
+            if not isinstance(payload, dict):
+                add_finding(
+                    f"{path.name} line {index} event shape",
+                    "fail",
+                    "Lifecycle event line must be a JSON object",
+                    artifact=path.name,
+                )
+                continue
+            events.append(payload)
+            add_finding(
+                f"{path.name} line {index} parses as JSON",
+                "pass",
+                "Lifecycle event line is valid JSON",
+                artifact=path.name,
+            )
+    return events
+
+
+def _check_coordinator_events(
+    events: Sequence[Mapping[str, Any]], add_finding: Any
+) -> None:
+    if not events:
+        add_finding(
+            "Coordinator lifecycle telemetry",
+            "fail",
+            "Missing parseable coordinator lifecycle telemetry",
+            artifact="coordinator_events.jsonl",
+        )
+        return
+
+    required_event_types = {
+        "run_started",
+        "boot_readiness_completed",
+        "cycle_started",
+        "runner_cycle_completed",
+        "watchdog_completed",
+        "write_audit_completed",
+        "cycle_completed",
+        "final_validation_started",
+        "final_validation_completed",
+    }
+    seen_types: set[str] = set()
+    previous_ts: datetime | None = None
+    chronological = True
+
+    for index, event in enumerate(events, start=1):
+        for field_name in ("schema_version", "event_at_utc", "run_id", "event_type"):
+            value = event.get(field_name)
+            if not isinstance(value, str) or not value.strip():
+                add_finding(
+                    f"Coordinator event {index} required field {field_name}",
+                    "fail",
+                    f"Lifecycle event missing required field {field_name}",
+                    artifact="coordinator_events.jsonl",
+                    field_name=field_name,
+                )
+        if event.get("schema_version") != "cdb.evidence_harvester.coordinator_event.v1":
+            add_finding(
+                f"Coordinator event {index} schema version",
+                "fail",
+                f"Unexpected schema_version {event.get('schema_version')!r}",
+                artifact="coordinator_events.jsonl",
+                field_name="schema_version",
+            )
+        event_type = str(event.get("event_type", "")).strip()
+        if event_type:
+            seen_types.add(event_type)
+        try:
+            event_ts = _parse_ts(event.get("event_at_utc", ""), "event_at_utc")
+            if previous_ts is not None and event_ts < previous_ts:
+                chronological = False
+            previous_ts = event_ts
+        except OpsValidationError as exc:
+            chronological = False
+            add_finding(
+                f"Coordinator event {index} timestamp",
+                "fail",
+                str(exc),
+                artifact="coordinator_events.jsonl",
+                field_name="event_at_utc",
+            )
+
+    missing_types = sorted(required_event_types - seen_types)
+    if missing_types:
+        add_finding(
+            "Coordinator lifecycle required event coverage",
+            "fail",
+            f"Missing required lifecycle event types: {missing_types}",
+            artifact="coordinator_events.jsonl",
+        )
+    else:
+        add_finding(
+            "Coordinator lifecycle required event coverage",
+            "pass",
+            "Required lifecycle event types are present",
+            artifact="coordinator_events.jsonl",
+        )
+
+    add_finding(
+        "Coordinator lifecycle chronology",
+        "pass" if chronological else "fail",
+        (
+            "Lifecycle events are chronological"
+            if chronological
+            else "Lifecycle events are not chronological"
+        ),
+        artifact="coordinator_events.jsonl",
+    )
+
+
 def validate_72h_window(
     artifact_paths: Mapping[str, Sequence[Path]],
     *,
@@ -1135,6 +1287,10 @@ def validate_72h_window(
         add_finding,
         expected_schema=HEARTBEAT_SCHEMA,
     )
+    coordinator_events = _load_coordinator_events(
+        artifact_paths.get("coordinator_events", []),
+        add_finding,
+    )
     state_payloads = _load_payloads(
         artifact_paths.get("state", []),
         add_finding,
@@ -1200,6 +1356,8 @@ def validate_72h_window(
 
     for path, payload in state_payloads:
         _check_no_side_effects(path, payload, add_finding)
+
+    _check_coordinator_events(coordinator_events, add_finding)
 
     recovered_fail_reports, recovery_limit_exceeded = _check_recovery_events(
         recovery_event_payloads,

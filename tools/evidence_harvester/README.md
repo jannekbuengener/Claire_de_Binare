@@ -246,8 +246,9 @@ Each cycle produces:
 - `snapshot_<stamp>.md` — Markdown snapshot summary
 - `alert_<stamp>.json` — alert findings
 - `alert_<stamp>.md` — Markdown alert summary
+- `coordinator_events.jsonl` — canonical coordinator lifecycle event stream
 - `runner_heartbeat.json` — latest cycle metadata (overwritten each cycle)
-- `runner_state.json` — cumulative run statistics (overwritten each cycle)
+- `runner_state.json` — cumulative run statistics plus coordinator-managed lifecycle state (overwritten each cycle)
 
 ### Safety boundaries
 
@@ -304,8 +305,8 @@ python -m tools.evidence_harvester.watchdog render-escalation-draft `
 | Verdict | Conditions |
 |---------|-----------|
 | PASS    | Heartbeat fresh, state reports PASS, required artifacts exist, all JSON parses, safety flags correct |
-| WARN    | Artifact age near threshold, last run had failures, optional artifact missing |
-| FAIL    | Heartbeat stale, state missing, required artifact missing, malformed JSON, runner FAIL verdict, wrong safety flags |
+| WARN    | Artifact age near threshold, last run had failures, optional artifact missing, next cycle due slightly exceeded |
+| FAIL    | Heartbeat stale, state missing, required artifact missing, malformed JSON, runner FAIL verdict, wrong safety flags, or sleeping schedule exceeded beyond tolerance |
 
 ### Safety boundaries
 
