@@ -582,12 +582,12 @@ def _render_operator_handoff_md(report: BootReadinessReport) -> str:
         "   python -m tools.evidence_harvester.scheduler install --fixture <path> --explicit",
         "   ```",
         "",
-        "3. **Enable Docker-based background runner** (requires separate Docker GO from Gordon):",
+        "3. **Enable Docker-based background runner** (requires separate Docker/infra GO via Infra-Mutation-Gate):",
         "",
         "   - Verify `docker_available` is True in boot readiness.",
         "   - Use `boot install-plan` to see the full command surface before any Docker action.",
         "   - Do not start Docker stack from the boot module — Docker mutation requires explicit",
-        "     INFRA-GO from Gordon (see #3362 OPS validation runbook).",
+        "     Infra-Mutation-Gate approval (see #3362 OPS validation runbook).",
         "",
         "4. **Verify scheduled task runs**:",
         "",
@@ -608,7 +608,7 @@ def _render_operator_handoff_md(report: BootReadinessReport) -> str:
         "- Windows Task Scheduler starts the harvester daily at the configured time.",
         "- The boot module can be run at any time to verify readiness post-reboot.",
         "- If Docker is used instead, a Docker restart policy or Windows scheduled task",
-        "  restart is needed — both require explicit GO from Gordon.",
+        "  restart is needed — both require explicit Infra-Mutation-Gate approval.",
         "",
         "## Safety",
         "- No LR-Go, no Live-Go, no Echtgeld-Go.",
@@ -664,7 +664,7 @@ def _render_report_md(report: BootReadinessReport) -> str:
             "- No Docker, runtime, DB, secrets, or network write action.",
             "- Boot readiness is read-only; does not modify files or start services.",
             "- Default mode is status-only.",
-            "- For Docker/infra mutation, separate GO from Gordon required.",
+            "- For Docker/infra mutation, separate Infra-Mutation-Gate approval required.",
         ]
     )
     return "\n".join(lines) + "\n"
@@ -818,13 +818,13 @@ def _build_install_plan_payload(
             {
                 "step": "start-docker-stack",
                 "command": "docker compose -f infrastructure/compose/compose.blue.yml up -d",
-                "requires_go": "Gordon INFRA-GO",
+                "requires_go": "separate Infra-Mutation-Gate approval",
             },
         ],
         "safety": [
             "Plan-only. No action taken.",
             "No Docker/runtime/DB/secrets mutation.",
-            "Each step requires its own GO gate (3362, Gordon).",
+            "Each step requires its own GO gate (3362 OPS_VALIDATION, Infra-Mutation-Gate).",
             "No LR-Go / No Live-Go / No Echtgeld-Go.",
         ],
     }

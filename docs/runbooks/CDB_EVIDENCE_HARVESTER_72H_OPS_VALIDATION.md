@@ -149,7 +149,7 @@ python -m tools.evidence_harvester.scheduler uninstall --explicit
 
 ## Side-Effect Checklist
 
-- [ ] No Docker mutation unless Gordon gives a separate documented GO
+- [ ] No Docker mutation without documented Infra-Mutation-Gate approval
 - [ ] No runtime start beyond the dry runner loop itself
 - [ ] No DB mutation
 - [ ] No secrets output
@@ -157,10 +157,10 @@ python -m tools.evidence_harvester.scheduler uninstall --explicit
 - [ ] No LR-Go / Live-Go / Echtgeld-Go
 - [ ] No trading / order / risk / execution mutation
 
-## Gordon Consultation Checkpoint
+## Operator Approval Checkpoint
 
 Before any Docker or infrastructure mutation, stop and obtain a separate,
-documented Gordon operator GO.
+documented Jannek-Ops-GO / Infra-Mutation-Gate approval.
 
 ## Status Boundary
 

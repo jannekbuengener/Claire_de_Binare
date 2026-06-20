@@ -397,7 +397,7 @@ Boot readiness (#3360) is the precondition for #3362:
 - Boot readiness **detects** Docker availability (`Docker available: yes/no`).
 - Boot readiness does **not** start Docker, run `docker compose up`, or perform
   any Docker mutation.
-- Docker enablement requires a separate INFRA-GO from Gordon as part of #3362.
+- Docker enablement requires a separate Infra-Mutation-Gate approval as part of #3362.
 - The `install-plan` mode prints the intended Docker command but does not
   execute it.
 

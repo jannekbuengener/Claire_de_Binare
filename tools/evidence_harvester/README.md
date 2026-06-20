@@ -580,7 +580,7 @@ pwsh -NoProfile -File .\scripts\evidence_harvester_boot.ps1 -Action status -Pret
 - Default mode is `status` (read-only assessment)
 - No Docker start/stop, runtime start, DB mutation, secrets access, or network write
 - `install-plan` prints steps but does not execute them
-- Docker mutation requires separate INFRA-GO from Gordon
+- Docker mutation requires separate Infra-Mutation-Gate approval
 - Windows Task install requires separate GO (see #3362 OPS validation)
 - No LR-Go, no Live-Go, no Echtgeld-Go
 

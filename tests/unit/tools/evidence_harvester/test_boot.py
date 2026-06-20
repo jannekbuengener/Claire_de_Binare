@@ -170,7 +170,7 @@ def test_render_operator_handoff_includes_install_instructions(
     output = capsys.readouterr().out
     assert "Windows Task Scheduler" in output
     assert "Docker-based background runner" in output
-    assert "Gordon" in output
+    assert "Infra-Mutation-Gate" in output
     assert "3362" in output
     assert "No LR-Go" in output
 
