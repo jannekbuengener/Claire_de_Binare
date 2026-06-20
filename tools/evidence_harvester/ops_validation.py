@@ -117,7 +117,7 @@ class RuntimeHandoff:
     start_commands: tuple[str, ...]
     stop_commands: tuple[str, ...]
     side_effect_checklist: tuple[str, ...]
-    gordon_consultation_checkpoint: str
+    operator_approval_checkpoint: str
     safety_statement: str
     notes: tuple[str, ...]
 
@@ -281,14 +281,14 @@ def _build_runtime_handoff(
             ),
         ),
         side_effect_checklist=(
-            "No Docker start/stop or compose mutation unless Gordon explicitly approves it.",
+            "No Docker start/stop or compose mutation without explicit operator approval.",
             "No runtime, DB, Redis, secrets, or GitHub write action from module code.",
             "No LR-Go, no Live-Go, no Echtgeld-Go.",
             "No trading, order, risk, or execution mutation.",
         ),
-        gordon_consultation_checkpoint=(
-            "Before any Docker or infrastructure mutation, stop and obtain a separate "
-            "documented Gordon operator GO."
+        operator_approval_checkpoint=(
+            "Before any Docker or infrastructure mutation, stop and obtain documented "
+            "explicit operator approval via Jannek-Ops-GO / Infra-Mutation-Gate."
         ),
         safety_statement=(
             "Dry/paper/research only. LR remains NO-GO. No Live-Go. No Echtgeld-Go."
@@ -1705,8 +1705,8 @@ def report_to_markdown(report: OpsValidationReport) -> str:
     lines.extend(
         [
             "",
-            "### Gordon Checkpoint",
-            f"- {handoff['gordon_consultation_checkpoint']}",
+            "### Operator Approval Checkpoint",
+            f"- {handoff['operator_approval_checkpoint']}",
             "",
             "### Safety Statement",
             f"- {handoff['safety_statement']}",

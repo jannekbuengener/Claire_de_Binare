@@ -70,6 +70,11 @@ ACTIVE_CANON_GORDON_PATHS = [
     "docs/onboarding/ONBOARDING_SCENARIO_001_FRESH_AGENT_SAFE_WORK_DRILL.md",
     "DEVELOPER_ONBOARDING.md",
     "README.md",
+    "tools/evidence_harvester/README.md",
+    "tools/evidence_harvester/boot.py",
+    "tools/evidence_harvester/ops_validation.py",
+    "docs/runbooks/CDB_EVIDENCE_HARVESTER_OPS.md",
+    "docs/runbooks/CDB_EVIDENCE_HARVESTER_72H_OPS_VALIDATION.md",
 ]
 
 GORDON_ALLOWED_CONTEXTS = [
@@ -91,17 +96,13 @@ def read_text(relative_path: str) -> str:
 def assert_terms_in_text(text: str, terms: list[str], source_label: str):
     missing = [t for t in terms if t not in text]
     if missing:
-        pytest.fail(
-            f"{source_label}: missing required term(s): {missing}"
-        )
+        pytest.fail(f"{source_label}: missing required term(s): {missing}")
 
 
 def assert_terms_absent(text: str, terms: list[str], source_label: str):
     found = [t for t in terms if t in text]
     if found:
-        pytest.fail(
-            f"{source_label}: forbidden term(s) present: {found}"
-        )
+        pytest.fail(f"{source_label}: forbidden term(s) present: {found}")
 
 
 class TestOnboardingScenarioPaths:
@@ -112,9 +113,7 @@ class TestOnboardingScenarioPaths:
 
     def test_no_archive_paths_in_required(self):
         for p in REQUIRED_PATHS:
-            assert "docs/archive" not in p, (
-                f"Archive path found in required paths: {p}"
-            )
+            assert "docs/archive" not in p, f"Archive path found in required paths: {p}"
 
 
 class TestOnboardingScenarioTerms:
@@ -140,9 +139,9 @@ class TestOnboardingScenarioTerms:
         text = read_text(self.SCENARIO_DOC)
         assert "trade-capable" in text
         for meaning in SAFETY_MEANINGS:
-            assert meaning in text, (
-                f"{self.SCENARIO_DOC}: missing safety separation term '{meaning}'"
-            )
+            assert (
+                meaning in text
+            ), f"{self.SCENARIO_DOC}: missing safety separation term '{meaning}'"
 
     def test_scenario_no_secrets_output(self):
         text = read_text(self.SCENARIO_DOC)
@@ -172,9 +171,7 @@ class TestSafetyContract:
         ]
         found = [t for t in no_go_variants if t in text]
         if not found:
-            pytest.fail(
-                f"{self.LR_DOC}: no NO-GO pattern found"
-            )
+            pytest.fail(f"{self.LR_DOC}: no NO-GO pattern found")
         assert "NO-GO" in text or "no-go" in text
 
     def test_develop_doc_safety_boundaries(self):
@@ -189,9 +186,7 @@ class TestSafetyContract:
         forbidden = ["live go", "live-go", "echtgeld-go"]
         found = [t for t in forbidden if t in text]
         if found:
-            pytest.fail(
-                f"README.md: contains forbidden term(s): {found}"
-            )
+            pytest.fail(f"README.md: contains forbidden term(s): {found}")
 
     def test_trading_mode_default_is_safe(self):
         from core.config.trading_mode import TradingMode
@@ -205,7 +200,8 @@ class TestSafetyContract:
         assert "trade-capable" in text
         go_phrases = ["LR remains NO-GO", "LR-050" in text and "NO-GO" in text]
         assert any(
-            phrase for phrase in ["LR remains NO-GO", "kein Live-Kapital", "LR-050"]
+            phrase
+            for phrase in ["LR remains NO-GO", "kein Live-Kapital", "LR-050"]
             if phrase in text
         )
 
@@ -290,9 +286,7 @@ class TestLiveReadinessFile:
         no_go_variants = ["NO-GO", "No-Go", "no-go"]
         found = [t for t in no_go_variants if t in text]
         if not found:
-            pytest.fail(
-                f"{self.LR_DOC}: no NO-GO variant found"
-            )
+            pytest.fail(f"{self.LR_DOC}: no NO-GO variant found")
 
     def test_lr_file_structure(self):
         text = read_text(self.LR_DOC)
@@ -302,9 +296,9 @@ class TestLiveReadinessFile:
             "NO-GO",
         ]
         for section in expected_sections:
-            assert section in text, (
-                f"{self.LR_DOC}: missing expected section '{section}'"
-            )
+            assert (
+                section in text
+            ), f"{self.LR_DOC}: missing expected section '{section}'"
 
 
 class TestControlRegister:
