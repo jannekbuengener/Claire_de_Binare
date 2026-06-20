@@ -555,7 +555,7 @@ def validate_24h_window(
     else:
         verdict = "PASS"
 
-    now = cdb_utcnow().astimezone(UTC)
+    now = _now_utc()
     return ValidationReport(
         schema_version="cdb.evidence_harvester.24h_validation.v1",
         validated_at_utc=_format_ts(now),
@@ -600,7 +600,7 @@ def validate_24h_window_from_dir(
     if not alert_paths:
         alert_paths = sorted(artifact_dir.glob("alerts_*.json"))
 
-    window_end = window_end_utc or cdb_utcnow().astimezone(UTC)
+    window_end = window_end_utc or _now_utc()
     if window_start_utc is None:
         window_start = window_end - timedelta(hours=DEFAULT_EXPECTED_WINDOW_HOURS)
     else:
@@ -660,7 +660,10 @@ def report_to_markdown(report: ValidationReport) -> str:
 
 
 def _now_utc() -> datetime:
-    return cdb_utcnow().astimezone(UTC)
+    now = cdb_utcnow()
+    if now.tzinfo is None:
+        return now.replace(tzinfo=UTC)
+    return now.astimezone(UTC)
 
 
 def parse_args(argv: list[str] | None = None) -> Any:

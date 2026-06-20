@@ -25,7 +25,10 @@ class SnapshotValidationError(ValueError):
 
 
 def utc_now() -> datetime:
-    return cdb_utcnow().astimezone(UTC)
+    now = cdb_utcnow()
+    if now.tzinfo is None:
+        return now.replace(tzinfo=UTC)
+    return now.astimezone(UTC)
 
 
 def _hash_payload(payload: Mapping[str, Any]) -> str:
