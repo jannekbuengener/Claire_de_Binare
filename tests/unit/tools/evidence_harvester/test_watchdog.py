@@ -64,6 +64,7 @@ def _write_state(
     successful_runs: int = 5,
     failed_runs: int = 0,
     last_verdict: str = "PASS",
+    age_minutes: int = 1,
 ) -> Path:
     payload = {
         "schema_version": "cdb.evidence_harvester.runner_state.v1",
@@ -71,7 +72,7 @@ def _write_state(
         "successful_runs": successful_runs,
         "failed_runs": failed_runs,
         "last_cycle_verdict": last_verdict,
-        "last_cycle_ended_at_utc": _ts(1),
+        "last_cycle_ended_at_utc": _ts(age_minutes),
     }
     path = artifact_dir / "runner_state.json"
     path.write_text(json.dumps(payload), encoding="utf-8")
@@ -260,6 +261,7 @@ def _write_artifact_dir(
     snapshot_age_minutes: int = 10,
     state_failed_runs: int = 0,
     state_verdict: str = "PASS",
+    state_age_minutes: int = 1,
     include_heartbeat: bool = True,
     include_state: bool = True,
     include_snapshot: bool = True,
@@ -277,6 +279,7 @@ def _write_artifact_dir(
             d,
             failed_runs=state_failed_runs,
             last_verdict=state_verdict,
+            age_minutes=state_age_minutes,
         )
     if include_snapshot:
         _write_snapshot(d, age_minutes=snapshot_age_minutes)
@@ -435,6 +438,34 @@ def test_status_fail_on_stale_snapshot(tmp_path: Path) -> None:
     report = run_status(d, max_age_seconds=60, now=now)
 
     assert report.verdict.verdict == "FAIL"
+
+
+@pytest.mark.unit
+def test_status_ignores_historical_snapshot_freshness(tmp_path: Path) -> None:
+    d = _write_artifact_dir(tmp_path, snapshot_age_minutes=1)
+    _write_snapshot(d, stamp="20260618T000000Z", age_minutes=200)
+    (d / "snapshot_20260618T000000Z.md").write_text("# Historical", encoding="utf-8")
+    now = datetime.now(UTC)
+
+    report = run_status(d, max_age_seconds=120, now=now)
+
+    assert report.verdict.verdict == "PASS"
+    freshness = [f for f in report.findings if f.check_id == "W011"]
+    assert len(freshness) == 1
+    assert freshness[0].severity == "pass"
+    assert "Latest snapshot" in freshness[0].message
+
+
+@pytest.mark.unit
+def test_status_fail_on_stale_runner_state(tmp_path: Path) -> None:
+    d = _write_artifact_dir(tmp_path, state_age_minutes=200)
+    now = datetime.now(UTC)
+
+    report = run_status(d, max_age_seconds=60, now=now)
+
+    assert report.verdict.verdict == "FAIL"
+    assert report.runner_state_ok is False
+    assert any(f.check_id == "W016" and f.severity == "fail" for f in report.findings)
 
 
 @pytest.mark.unit

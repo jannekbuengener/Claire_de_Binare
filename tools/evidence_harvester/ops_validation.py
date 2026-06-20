@@ -12,6 +12,7 @@ from core.utils.clock import utcnow as cdb_utcnow
 
 from .alerts import ALERT_REPORT_SCHEMA_VERSION
 from .boot import BOOT_READINESS_SCHEMA
+from .coordinator import RECOVERY_EVENT_SCHEMA
 from .runner import HEARTBEAT_SCHEMA, STATE_SCHEMA
 from .snapshot import SAFETY_BANNER, SNAPSHOT_SCHEMA_VERSION
 from .write_audit import COLLECTOR_REPORT_SCHEMA, WRITE_AUDIT_REPORT_SCHEMA
@@ -60,6 +61,8 @@ REQUIRED_RUNTIME_ARTIFACTS: tuple[str, ...] = (
     "write_audit_report_<stamp>.md",
     "boot_readiness_report.json",
     "boot_readiness_report.md",
+    "recovery_event_<stamp>.json (optional)",
+    "recovery_event_<stamp>.md (optional)",
     "ops_validation_report.json",
     "ops_validation_report.md",
 )
@@ -197,6 +200,8 @@ def _collect_artifact_paths(artifact_dir: Path) -> dict[str, list[Path]]:
         "write_audit_md": sorted(artifact_dir.glob("write_audit_report_*.md")),
         "boot_json": sorted(artifact_dir.glob("boot_readiness_report*.json")),
         "boot_md": sorted(artifact_dir.glob("boot_readiness_report*.md")),
+        "recovery_events_json": sorted(artifact_dir.glob("recovery_event_*.json")),
+        "recovery_events_md": sorted(artifact_dir.glob("recovery_event_*.md")),
     }
 
 
@@ -237,11 +242,12 @@ def _build_runtime_handoff(
         ),
         start_commands=(
             (
-                "python -m tools.evidence_harvester.runner loop-fixture "
+                "python -m tools.evidence_harvester.coordinator --pretty run-fixture-window "
                 f"--fixture {RUNTIME_SEED_FIXTURE} "
-                f"--output-dir {run_dir} "
+                f"--artifact-dir {run_dir} "
                 f"--iterations {bounded_iterations} "
-                f"--interval-seconds {cadence_seconds} --pretty"
+                f"--cadence-seconds {cadence_seconds} "
+                "--max-restart-count 3 --restart-backoff-seconds 30"
             ),
             (
                 "After each runner cycle, write the latest watchdog report for "
@@ -280,6 +286,7 @@ def _build_runtime_handoff(
         notes=(
             "The 72h validation depends on per-cycle stamped watchdog and write-audit archives.",
             "Keep latest watchdog_report.json/.md current as a compatibility surface for write_audit.py.",
+            "Optional recovery_event_<stamp>.json/.md artifacts are accepted when they are audited and bounded.",
         ),
     )
 
@@ -561,13 +568,143 @@ def _check_boot_payload(
     return ts
 
 
+def _check_recovery_events(
+    payloads: Sequence[tuple[Path, Mapping[str, Any]]],
+    add_finding: Any,
+) -> tuple[set[str], bool]:
+    covered_fail_reports: set[str] = set()
+    restart_limit_exceeded = False
+    if not payloads:
+        return covered_fail_reports, restart_limit_exceeded
+
+    observed_restart_count = 0
+    observed_max_restart_count = 0
+    worst = "pass"
+    for path, payload in payloads:
+        classification = str(payload.get("classification", "")).strip().lower()
+        action = str(payload.get("action", "")).strip().lower()
+        limit_exceeded = bool(payload.get("limit_exceeded", False))
+        restart_count = payload.get("restart_count")
+        max_restart_count = payload.get("max_restart_count")
+        covered = payload.get("covered_report_names", [])
+        reason_codes = payload.get("reason_codes", [])
+
+        if not isinstance(restart_count, int) or restart_count < 0:
+            add_finding(
+                f"{path.name} restart_count",
+                "fail",
+                f"restart_count must be a non-negative integer, got {restart_count!r}",
+                artifact=path.name,
+                field_name="restart_count",
+            )
+            restart_limit_exceeded = True
+            continue
+        if not isinstance(max_restart_count, int) or max_restart_count < 0:
+            add_finding(
+                f"{path.name} max_restart_count",
+                "fail",
+                f"max_restart_count must be a non-negative integer, got {max_restart_count!r}",
+                artifact=path.name,
+                field_name="max_restart_count",
+            )
+            restart_limit_exceeded = True
+            continue
+
+        observed_restart_count = max(observed_restart_count, restart_count)
+        observed_max_restart_count = max(observed_max_restart_count, max_restart_count)
+
+        if classification not in {"recoverable", "fatal"}:
+            add_finding(
+                f"{path.name} recovery classification",
+                "fail",
+                f"Unexpected recovery classification {classification!r}",
+                artifact=path.name,
+                field_name="classification",
+            )
+            restart_limit_exceeded = True
+            continue
+
+        if limit_exceeded or restart_count > max_restart_count:
+            add_finding(
+                f"{path.name} restart limit",
+                "fail",
+                (
+                    f"Recovery restart_count={restart_count} exceeds max_restart_count="
+                    f"{max_restart_count}"
+                ),
+                artifact=path.name,
+                field_name="restart_count",
+            )
+            restart_limit_exceeded = True
+            continue
+
+        if classification == "fatal":
+            add_finding(
+                f"{path.name} fatal recovery event",
+                "fail",
+                f"Fatal recovery event recorded with action={action!r}",
+                artifact=path.name,
+                field_name="classification",
+            )
+            restart_limit_exceeded = True
+            continue
+
+        if not payload.get("audited", False):
+            add_finding(
+                f"{path.name} audited recovery event",
+                "fail",
+                "Recovery event must set audited=true",
+                artifact=path.name,
+                field_name="audited",
+            )
+            restart_limit_exceeded = True
+            continue
+
+        if isinstance(covered, list):
+            covered_fail_reports.update(
+                str(name) for name in covered if str(name).strip()
+            )
+
+        if worst != "fail":
+            worst = "warn"
+        add_finding(
+            f"{path.name} bounded recovery event",
+            "warn",
+            (
+                f"Recoverable event accepted with action={action!r}, restart_count="
+                f"{restart_count}/{max_restart_count}, reasons={list(reason_codes)!r}"
+            ),
+            artifact=path.name,
+        )
+
+    if restart_limit_exceeded:
+        add_finding(
+            "Recovery event history",
+            "fail",
+            "Recovery events exceed configured restart limits or include fatal events",
+        )
+    elif observed_restart_count > 0 or payloads:
+        add_finding(
+            "Recovery event history",
+            "warn",
+            (
+                f"Observed audited recovery events within configured limit "
+                f"{observed_restart_count}/{observed_max_restart_count}"
+            ),
+        )
+    return covered_fail_reports, restart_limit_exceeded
+
+
 def _check_verdict_series(
     label: str,
     payloads: Sequence[tuple[Path, Mapping[str, Any]]],
     add_finding: Any,
+    *,
+    covered_fail_reports: set[str] | None = None,
 ) -> list[datetime]:
     timestamps: list[datetime] = []
     worst: str = "PASS"
+    covered_fail_reports = covered_fail_reports or set()
     for path, payload in payloads:
         try:
             ts = _parse_ts(payload.get("evaluated_at_utc", ""), "evaluated_at_utc")
@@ -583,14 +720,25 @@ def _check_verdict_series(
         verdict = payload.get("verdict", {})
         verdict_value = verdict.get("verdict") if isinstance(verdict, dict) else None
         if verdict_value == "FAIL":
-            worst = "FAIL"
-            add_finding(
-                f"{path.name} {label} verdict",
-                "fail",
-                f"{label} report is FAIL",
-                artifact=path.name,
-                field_name="verdict.verdict",
-            )
+            if path.name in covered_fail_reports:
+                if worst != "FAIL":
+                    worst = "WARN"
+                add_finding(
+                    f"{path.name} {label} verdict",
+                    "warn",
+                    f"{label} report is FAIL but covered by an audited recovery event",
+                    artifact=path.name,
+                    field_name="verdict.verdict",
+                )
+            else:
+                worst = "FAIL"
+                add_finding(
+                    f"{path.name} {label} verdict",
+                    "fail",
+                    f"{label} report is FAIL",
+                    artifact=path.name,
+                    field_name="verdict.verdict",
+                )
         elif verdict_value == "WARN":
             if worst != "FAIL":
                 worst = "WARN"
@@ -956,6 +1104,15 @@ def validate_72h_window(
         artifact_paths.get("boot_md", []),
         add_finding,
     )
+    if artifact_paths.get("recovery_events_json") or artifact_paths.get(
+        "recovery_events_md"
+    ):
+        _check_matching_counts(
+            "Recovery event",
+            artifact_paths.get("recovery_events_json", []),
+            artifact_paths.get("recovery_events_md", []),
+            add_finding,
+        )
 
     collector_payloads = _load_payloads(
         artifact_paths.get("collector_reports", []),
@@ -998,6 +1155,11 @@ def validate_72h_window(
         add_finding,
         expected_schema=BOOT_READINESS_SCHEMA,
     )
+    recovery_event_payloads = _load_payloads(
+        artifact_paths.get("recovery_events_json", []),
+        add_finding,
+        expected_schema=RECOVERY_EVENT_SCHEMA,
+    )
 
     for path, payload in collector_payloads:
         _check_no_side_effects(path, payload, add_finding)
@@ -1039,14 +1201,25 @@ def validate_72h_window(
     for path, payload in state_payloads:
         _check_no_side_effects(path, payload, add_finding)
 
+    recovered_fail_reports, recovery_limit_exceeded = _check_recovery_events(
+        recovery_event_payloads,
+        add_finding,
+    )
+
     watchdog_timestamps = _check_verdict_series(
-        "Watchdog", watchdog_payloads, add_finding
+        "Watchdog",
+        watchdog_payloads,
+        add_finding,
+        covered_fail_reports=recovered_fail_reports,
     )
     for path, payload in watchdog_payloads:
         _check_no_side_effects(path, payload, add_finding)
 
     write_audit_timestamps = _check_verdict_series(
-        "Write-audit", write_audit_payloads, add_finding
+        "Write-audit",
+        write_audit_payloads,
+        add_finding,
+        covered_fail_reports=recovered_fail_reports,
     )
     for path, payload in write_audit_payloads:
         _check_no_side_effects(path, payload, add_finding)
@@ -1070,6 +1243,12 @@ def validate_72h_window(
     _check_count_floor(
         "Write-audit", len(write_audit_payloads), expected_cycles, add_finding
     )
+    if recovery_limit_exceeded:
+        add_finding(
+            "Recovery restart ceiling",
+            "fail",
+            "Recovery restart ceiling was exceeded during the run",
+        )
 
     observed_start, observed_end, observed_hours = _check_window_coverage(
         snapshot_timestamps, required_window_hours, add_finding

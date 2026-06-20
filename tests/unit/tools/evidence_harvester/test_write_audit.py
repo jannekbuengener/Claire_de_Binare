@@ -193,14 +193,14 @@ def _heartbeat_payload(age_minutes: int = 1) -> dict:
     }
 
 
-def _state_payload(verdict: str = "PASS") -> dict:
+def _state_payload(verdict: str = "PASS", age_minutes: int = 1) -> dict:
     return {
         "schema_version": "cdb.evidence_harvester.runner_state.v1",
         "total_runs": 5,
         "successful_runs": 5,
         "failed_runs": 0,
         "last_cycle_verdict": verdict,
-        "last_cycle_ended_at_utc": _ts(1),
+        "last_cycle_ended_at_utc": _ts(age_minutes),
     }
 
 
@@ -505,6 +505,30 @@ def test_rwa_a006_fail_stale_snapshot(tmp_path: Path) -> None:
     assert report.verdict.verdict == "FAIL"
     a006 = [f for f in report.findings if f.check_id == "A006"]
     assert any(f.severity == "fail" for f in a006)
+
+
+def test_rwa_a006_ignore_historical_snapshot_staleness(tmp_path: Path) -> None:
+    d = _setup_complete_artifacts(tmp_path)
+    old_snap = _snapshot_payload(
+        stamp="20260618T000000Z",
+        age_minutes=9999,
+        collector_hash=_collector_hash(_collector_payload("20260618T000000Z")),
+        collector_id="report_20260618T000000Z",
+    )
+    _write_json(
+        d / "collector_report_20260618T000000Z.json",
+        _collector_payload("20260618T000000Z"),
+    )
+    _write_json(d / "snapshot_20260618T000000Z.json", old_snap)
+    (d / "snapshot_20260618T000000Z.md").write_text("# Historical", encoding="utf-8")
+
+    report = run_write_audit(d, stale_threshold=7200, now=_FIXED_TS)
+
+    assert report.verdict.verdict == "PASS"
+    a006 = [f for f in report.findings if f.check_id == "A006"]
+    assert all(
+        "latest snapshot" in f.message.lower() or f.severity == "pass" for f in a006
+    )
 
 
 # --- A007: Source modes ---

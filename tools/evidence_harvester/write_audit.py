@@ -597,6 +597,62 @@ def _check_timestamp_coherence(
                     )
                 )
 
+    state_paths = artifact_paths.get("state", [])
+    for state_path in state_paths:
+        try:
+            state_payload = _load_json(state_path)
+        except WriteAuditError:
+            continue
+        last_cycle = state_payload.get("last_cycle_ended_at_utc", "")
+        if last_cycle:
+            try:
+                ts = _parse_ts(last_cycle, "last_cycle_ended_at_utc")
+                age = (now - ts).total_seconds()
+                if age > stale_threshold:
+                    all_coherent = False
+                    findings.append(
+                        WriteAuditFinding(
+                            check_id="A006",
+                            check_name="Timestamp coherence",
+                            severity="fail",
+                            message=(
+                                f"runner_state last_cycle_ended_at_utc is {age:.0f}s old "
+                                f"(threshold {stale_threshold}s)"
+                            ),
+                            artifact=f"{artifact_dir_label}/{state_path.name}",
+                            field_name="last_cycle_ended_at_utc",
+                        )
+                    )
+                elif age > warn_stale:
+                    findings.append(
+                        WriteAuditFinding(
+                            check_id="A006",
+                            check_name="Timestamp coherence",
+                            severity="warn",
+                            message=(
+                                f"runner_state last_cycle_ended_at_utc is {age:.0f}s old "
+                                f"(warn threshold {warn_stale}s)"
+                            ),
+                            artifact=f"{artifact_dir_label}/{state_path.name}",
+                            field_name="last_cycle_ended_at_utc",
+                        )
+                    )
+            except WriteAuditError:
+                all_coherent = False
+                findings.append(
+                    WriteAuditFinding(
+                        check_id="A006",
+                        check_name="Timestamp coherence",
+                        severity="fail",
+                        message=(
+                            "runner_state has invalid "
+                            f"last_cycle_ended_at_utc={last_cycle!r}"
+                        ),
+                        artifact=f"{artifact_dir_label}/{state_path.name}",
+                        field_name="last_cycle_ended_at_utc",
+                    )
+                )
+
     collector_reports = artifact_paths.get("collector_reports", [])
     for cr_path in collector_reports:
         try:
@@ -624,6 +680,8 @@ def _check_timestamp_coherence(
                 )
 
     snapshots = artifact_paths.get("snapshots_json", [])
+    latest_snapshot_path: Path | None = None
+    latest_snapshot_ts: datetime | None = None
     for snap_path in snapshots:
         try:
             snap = _load_json(snap_path)
@@ -633,36 +691,9 @@ def _check_timestamp_coherence(
         if gen_at:
             try:
                 ts = _parse_ts(gen_at, "generated_at_utc")
-                age = (now - ts).total_seconds()
-                if age > stale_threshold:
-                    all_coherent = False
-                    findings.append(
-                        WriteAuditFinding(
-                            check_id="A006",
-                            check_name="Timestamp coherence",
-                            severity="fail",
-                            message=(
-                                f"{snap_path.name} generated_at_utc is {age:.0f}s "
-                                f"old (threshold {stale_threshold}s)"
-                            ),
-                            artifact=f"{artifact_dir_label}/{snap_path.name}",
-                            field_name="metadata.generated_at_utc",
-                        )
-                    )
-                elif age > warn_stale:
-                    findings.append(
-                        WriteAuditFinding(
-                            check_id="A006",
-                            check_name="Timestamp coherence",
-                            severity="warn",
-                            message=(
-                                f"{snap_path.name} generated_at_utc is {age:.0f}s "
-                                f"old (warn threshold {warn_stale}s)"
-                            ),
-                            artifact=f"{artifact_dir_label}/{snap_path.name}",
-                            field_name="metadata.generated_at_utc",
-                        )
-                    )
+                if latest_snapshot_ts is None or ts > latest_snapshot_ts:
+                    latest_snapshot_ts = ts
+                    latest_snapshot_path = snap_path
             except WriteAuditError:
                 all_coherent = False
                 findings.append(
@@ -678,6 +709,38 @@ def _check_timestamp_coherence(
                         field_name="metadata.generated_at_utc",
                     )
                 )
+
+    if latest_snapshot_path is not None and latest_snapshot_ts is not None:
+        age = (now - latest_snapshot_ts).total_seconds()
+        if age > stale_threshold:
+            all_coherent = False
+            findings.append(
+                WriteAuditFinding(
+                    check_id="A006",
+                    check_name="Timestamp coherence",
+                    severity="fail",
+                    message=(
+                        f"latest snapshot {latest_snapshot_path.name} generated_at_utc is "
+                        f"{age:.0f}s old (threshold {stale_threshold}s)"
+                    ),
+                    artifact=f"{artifact_dir_label}/{latest_snapshot_path.name}",
+                    field_name="metadata.generated_at_utc",
+                )
+            )
+        elif age > warn_stale:
+            findings.append(
+                WriteAuditFinding(
+                    check_id="A006",
+                    check_name="Timestamp coherence",
+                    severity="warn",
+                    message=(
+                        f"latest snapshot {latest_snapshot_path.name} generated_at_utc is "
+                        f"{age:.0f}s old (warn threshold {warn_stale}s)"
+                    ),
+                    artifact=f"{artifact_dir_label}/{latest_snapshot_path.name}",
+                    field_name="metadata.generated_at_utc",
+                )
+            )
     if all_coherent:
         findings.append(
             WriteAuditFinding(
