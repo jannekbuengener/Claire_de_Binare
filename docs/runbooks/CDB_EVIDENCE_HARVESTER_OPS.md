@@ -235,8 +235,6 @@ immediately and fail validation.
 ### Recoverable failures
 
 - stale latest snapshot
-- stale latest heartbeat
-- stale latest runner state
 - transient watchdog failure
 - transient write-audit failure
 
@@ -249,9 +247,13 @@ immediately and fail validation.
 - continue run
 
 Historical snapshots, watchdog reports, and write-audit reports remain
-auditable history. Recovery semantics evaluate freshness on the latest snapshot,
-latest heartbeat, and latest runner state instead of failing a long-lived run
-solely because older stamped artifacts are old.
+auditable history. Snapshot freshness is evaluated on the latest snapshot, and
+a long-lived run does not fail solely because older stamped artifacts are old.
+
+The current coordinator classifier is stricter for core-state freshness:
+findings on `runner_heartbeat.json.current_run_at_utc` and
+`runner_state.json.last_cycle_ended_at_utc` are currently treated as fatal
+`malformed_core_state`, not as recoverable restart events.
 
 ### Fatal failures
 
@@ -260,6 +262,8 @@ solely because older stamped artifacts are old.
 - real-money path
 - DB mutation risk
 - secrets exposure
+- stale or invalid latest heartbeat core-state timestamp
+- stale or invalid latest runner-state core-state timestamp
 - unrecoverable core-state corruption
 
 ### Fatal action
