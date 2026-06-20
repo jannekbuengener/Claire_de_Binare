@@ -8,6 +8,7 @@ from pathlib import Path
 import pytest
 
 from tools.evidence_harvester.watchdog import (
+    COORDINATOR_LIVENESS_CLASSIFICATIONS,
     WATCHDOG_REPORT_SCHEMA,
     WatchdogError,
     WatchdogReport,
@@ -235,6 +236,32 @@ def _write_snapshot(
     return path
 
 
+def _write_coordinator_events(
+    artifact_dir: Path,
+    *,
+    event_types: list[str] | None = None,
+) -> Path:
+    run_id = "test-watchdog"
+    events = []
+    for etype in event_types or []:
+        event = {
+            "schema_version": "cdb.evidence_harvester.coordinator_event.v1",
+            "event_at_utc": _ts(1),
+            "run_id": run_id,
+            "event_type": etype,
+        }
+        if etype == "fatal_stop":
+            event["coordinator_status"] = "fatal_stop"
+            event["stop_reason"] = "fatal_watchdog_failure"
+        events.append(event)
+    path = artifact_dir / "coordinator_events.jsonl"
+    path.write_text(
+        "\n".join(json.dumps(e, sort_keys=True) for e in events) + "\n",
+        encoding="utf-8",
+    )
+    return path
+
+
 def _write_alert(
     artifact_dir: Path,
     stamp: str = "20260619",
@@ -303,6 +330,184 @@ def _write_artifact_dir(
         (d / "alert_20260619.md").write_text("# Alert", encoding="utf-8")
 
     return d
+
+
+# ============================================================
+# coordinator_liveness — all 8 classifications
+# ============================================================
+
+
+@pytest.mark.unit
+def test_liveness_running_healthy(tmp_path: Path) -> None:
+    d = _write_artifact_dir(tmp_path, heartbeat_age_minutes=1)
+    _write_state(d, coordinator_status="running")
+    now = datetime.now(UTC)
+    report = run_status(d, now=now)
+    cl = report.coordinator_liveness
+    assert cl.classification == "RUNNING_HEALTHY"
+    assert cl.severity == "pass"
+
+
+@pytest.mark.unit
+def test_liveness_sleeping_until_next_cycle(tmp_path: Path) -> None:
+    d = _write_artifact_dir(tmp_path)
+    due_at = (
+        (datetime.now(UTC) + timedelta(minutes=10)).isoformat().replace("+00:00", "Z")
+    )
+    _write_state(
+        d,
+        coordinator_status="sleeping",
+        next_cycle_due_at_utc=due_at,
+    )
+    now = datetime.now(UTC)
+    report = run_status(d, now=now)
+    cl = report.coordinator_liveness
+    assert cl.classification == "SLEEPING_UNTIL_NEXT_CYCLE"
+    assert cl.severity == "pass"
+
+
+@pytest.mark.unit
+def test_liveness_sleeping_warn_within_tolerance(tmp_path: Path) -> None:
+    d = _write_artifact_dir(tmp_path)
+    due_at = (
+        (datetime.now(UTC) - timedelta(minutes=5)).isoformat().replace("+00:00", "Z")
+    )
+    _write_state(
+        d,
+        coordinator_status="sleeping",
+        next_cycle_due_at_utc=due_at,
+    )
+    now = datetime.now(UTC)
+    report = run_status(d, cadence_seconds=900, now=now)
+    cl = report.coordinator_liveness
+    assert cl.classification == "SLEEPING_UNTIL_NEXT_CYCLE"
+    assert cl.severity == "warn"
+
+
+@pytest.mark.unit
+def test_liveness_stale_heartbeat(tmp_path: Path) -> None:
+    d = _write_artifact_dir(tmp_path, heartbeat_age_minutes=200)
+    _write_state(d, coordinator_status="running")
+    now = datetime.now(UTC)
+    report = run_status(d, max_age_seconds=60, now=now)
+    cl = report.coordinator_liveness
+    assert cl.classification == "STALE_HEARTBEAT"
+    assert cl.severity == "fail"
+
+
+@pytest.mark.unit
+def test_liveness_stale_next_cycle(tmp_path: Path) -> None:
+    d = _write_artifact_dir(tmp_path)
+    due_at = (datetime.now(UTC) - timedelta(hours=2)).isoformat().replace("+00:00", "Z")
+    _write_state(
+        d,
+        coordinator_status="sleeping",
+        next_cycle_due_at_utc=due_at,
+    )
+    now = datetime.now(UTC)
+    report = run_status(d, cadence_seconds=900, now=now)
+    cl = report.coordinator_liveness
+    assert cl.classification == "STALE_NEXT_CYCLE"
+    assert cl.severity == "fail"
+
+
+@pytest.mark.unit
+def test_liveness_stale_next_cycle_missing_due(tmp_path: Path) -> None:
+    d = _write_artifact_dir(tmp_path)
+    _write_state(d, coordinator_status="sleeping", next_cycle_due_at_utc="")
+    now = datetime.now(UTC)
+    report = run_status(d, now=now)
+    cl = report.coordinator_liveness
+    assert cl.classification == "STALE_NEXT_CYCLE"
+    assert cl.severity == "fail"
+
+
+@pytest.mark.unit
+def test_liveness_coordinator_stopped_completed(tmp_path: Path) -> None:
+    d = _write_artifact_dir(tmp_path)
+    _write_state(d, coordinator_status="completed")
+    now = datetime.now(UTC)
+    report = run_status(d, now=now)
+    cl = report.coordinator_liveness
+    assert cl.classification == "COORDINATOR_STOPPED"
+    assert cl.severity == "warn"
+
+
+@pytest.mark.unit
+def test_liveness_coordinator_stopped_failed(tmp_path: Path) -> None:
+    d = _write_artifact_dir(tmp_path)
+    _write_state(d, coordinator_status="failed")
+    now = datetime.now(UTC)
+    report = run_status(d, now=now)
+    cl = report.coordinator_liveness
+    assert cl.classification == "COORDINATOR_STOPPED"
+    assert cl.severity == "fail"
+
+
+@pytest.mark.unit
+def test_liveness_coordinator_unknown(tmp_path: Path) -> None:
+    d = tmp_path / "empty"
+    d.mkdir()
+    now = datetime.now(UTC)
+    report = run_status(d, now=now)
+    cl = report.coordinator_liveness
+    assert cl.classification == "COORDINATOR_UNKNOWN"
+    assert cl.severity == "warn"
+
+
+@pytest.mark.unit
+def test_liveness_recovery_in_progress(tmp_path: Path) -> None:
+    d = _write_artifact_dir(tmp_path)
+    _write_state(d, coordinator_status="recovering")
+    now = datetime.now(UTC)
+    report = run_status(d, now=now)
+    cl = report.coordinator_liveness
+    assert cl.classification == "RECOVERY_IN_PROGRESS"
+    assert cl.severity == "warn"
+
+
+@pytest.mark.unit
+def test_liveness_fatal_stop_from_state(tmp_path: Path) -> None:
+    d = _write_artifact_dir(tmp_path)
+    _write_state(d, coordinator_status="fatal_stop")
+    now = datetime.now(UTC)
+    report = run_status(d, now=now)
+    cl = report.coordinator_liveness
+    assert cl.classification == "FATAL_STOP"
+    assert cl.severity == "fail"
+
+
+@pytest.mark.unit
+def test_liveness_fatal_stop_from_lifecycle_event(tmp_path: Path) -> None:
+    d = _write_artifact_dir(tmp_path)
+    _write_state(d, coordinator_status="running")
+    _write_coordinator_events(d, event_types=["fatal_stop"])
+    now = datetime.now(UTC)
+    report = run_status(d, now=now)
+    cl = report.coordinator_liveness
+    assert cl.classification == "FATAL_STOP"
+    assert cl.severity == "fail"
+
+
+@pytest.mark.unit
+def test_liveness_missing_telemetry_does_not_silently_pass(tmp_path: Path) -> None:
+    d = _write_artifact_dir(tmp_path)
+    _write_state(d, coordinator_status="")
+    now = datetime.now(UTC)
+    report = run_status(d, now=now)
+    cl = report.coordinator_liveness
+    assert cl.severity != "pass"
+    assert cl.classification in COORDINATOR_LIVENESS_CLASSIFICATIONS
+
+
+@pytest.mark.unit
+def test_liveness_existing_watchdog_freshness_remains_compatible(
+    tmp_path: Path,
+) -> None:
+    d = _write_artifact_dir(tmp_path, heartbeat_age_minutes=1)
+    now = datetime.now(UTC)
+    report = run_status(d, now=now)
+    assert report.verdict.verdict == "PASS"
 
 
 # ============================================================

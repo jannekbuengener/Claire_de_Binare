@@ -11,6 +11,7 @@ from typing import Any, Mapping, Sequence
 from core.utils.clock import utcnow as cdb_utcnow
 
 from .alerts import ALERT_REPORT_SCHEMA_VERSION
+from .coordinator import COORDINATOR_EVENT_SCHEMA
 from .runner import HEARTBEAT_SCHEMA, STATE_SCHEMA
 from .snapshot import SNAPSHOT_SCHEMA_VERSION
 
@@ -116,6 +117,34 @@ class WatchdogVerdict:
 
 
 @dataclass(frozen=True, slots=True)
+class CoordinatorLiveness:
+    classification: str
+    severity: str
+    reason: str
+    coordinator_status_from_state: str
+    has_lifecycle_telemetry: bool
+    last_heartbeat_age_seconds: float = 0.0
+    next_cycle_due_at_utc: str = ""
+    has_fatal_stop_event: bool = False
+    has_recovery_events: bool = False
+
+    def to_dict(self) -> dict[str, Any]:
+        return asdict(self)
+
+
+COORDINATOR_LIVENESS_CLASSIFICATIONS: tuple[str, ...] = (
+    "RUNNING_HEALTHY",
+    "SLEEPING_UNTIL_NEXT_CYCLE",
+    "STALE_HEARTBEAT",
+    "STALE_NEXT_CYCLE",
+    "COORDINATOR_STOPPED",
+    "COORDINATOR_UNKNOWN",
+    "RECOVERY_IN_PROGRESS",
+    "FATAL_STOP",
+)
+
+
+@dataclass(frozen=True, slots=True)
 class WatchdogReport:
     schema_version: str
     evaluated_at_utc: str
@@ -124,11 +153,244 @@ class WatchdogReport:
     heartbeat_fresh: bool
     runner_state_ok: bool
     required_artifacts_present: bool
+    coordinator_liveness: CoordinatorLiveness
     verdict: WatchdogVerdict
     findings: tuple[WatchdogFinding, ...]
 
     def to_dict(self) -> dict[str, Any]:
         return asdict(self)
+
+
+def _load_coordinator_events(artifact_dir: Path) -> list[dict[str, Any]]:
+    path = artifact_dir / "coordinator_events.jsonl"
+    if not path.exists():
+        return []
+    events: list[dict[str, Any]] = []
+    try:
+        lines = path.read_text(encoding="utf-8").splitlines()
+    except OSError:
+        return []
+    for line in lines:
+        line = line.strip()
+        if not line:
+            continue
+        try:
+            payload = json.loads(line)
+        except json.JSONDecodeError:
+            continue
+        if isinstance(payload, dict):
+            events.append(payload)
+    return events
+
+
+def _classify_coordinator_liveness(
+    state_payload: dict[str, Any] | None,
+    coordinator_events: list[dict[str, Any]],
+    heartbeat_payload: dict[str, Any] | None,
+    *,
+    now: datetime,
+    max_age_seconds: int,
+    cadence_seconds: int,
+) -> CoordinatorLiveness:
+    coordinator_status = ""
+    next_cycle_due_raw = ""
+    if state_payload is not None:
+        coordinator_status = str(state_payload.get("coordinator_status", "")).strip()
+        next_cycle_due_raw = str(state_payload.get("next_cycle_due_at_utc", "")).strip()
+
+    has_lifecycle = bool(coordinator_events)
+
+    has_fatal_stop_event = any(
+        event.get("event_type") == "fatal_stop" for event in coordinator_events
+    )
+    has_recovery_events = any(
+        event.get("event_type") in ("recovery_started", "recovery_completed")
+        for event in coordinator_events
+    )
+
+    heartbeat_age: float = -1.0
+    if heartbeat_payload:
+        current_run_raw = heartbeat_payload.get("current_run_at_utc", "")
+        if current_run_raw:
+            try:
+                hb_ts = _parse_ts(current_run_raw, "current_run_at_utc")
+                heartbeat_age = (now - hb_ts).total_seconds()
+            except WatchdogError:
+                pass
+
+    if has_fatal_stop_event or coordinator_status == "fatal_stop":
+        return CoordinatorLiveness(
+            classification="FATAL_STOP",
+            severity="fail",
+            reason=(
+                "Coordinator has a fatal stop lifecycle event"
+                if has_fatal_stop_event
+                else "coordinator_status is fatal_stop"
+            ),
+            coordinator_status_from_state=coordinator_status,
+            has_lifecycle_telemetry=has_lifecycle,
+            last_heartbeat_age_seconds=max(heartbeat_age, 0.0),
+            has_fatal_stop_event=has_fatal_stop_event,
+            has_recovery_events=has_recovery_events,
+        )
+
+    if coordinator_status == "recovering":
+        return CoordinatorLiveness(
+            classification="RECOVERY_IN_PROGRESS",
+            severity="warn",
+            reason="Coordinator status indicates recovery in progress",
+            coordinator_status_from_state=coordinator_status,
+            has_lifecycle_telemetry=has_lifecycle,
+            last_heartbeat_age_seconds=max(heartbeat_age, 0.0),
+            has_recovery_events=has_recovery_events,
+        )
+
+    if coordinator_status in ("completed", "failed"):
+        return CoordinatorLiveness(
+            classification="COORDINATOR_STOPPED",
+            severity="warn" if coordinator_status == "completed" else "fail",
+            reason=(f"Coordinator has stopped with status {coordinator_status!r}"),
+            coordinator_status_from_state=coordinator_status,
+            has_lifecycle_telemetry=has_lifecycle,
+            last_heartbeat_age_seconds=max(heartbeat_age, 0.0),
+            has_recovery_events=has_recovery_events,
+        )
+
+    if coordinator_status == "sleeping":
+        if not next_cycle_due_raw:
+            return CoordinatorLiveness(
+                classification="STALE_NEXT_CYCLE",
+                severity="fail",
+                reason="Coordinator is sleeping but next_cycle_due_at_utc is missing",
+                coordinator_status_from_state=coordinator_status,
+                has_lifecycle_telemetry=has_lifecycle,
+                last_heartbeat_age_seconds=max(heartbeat_age, 0.0),
+                has_recovery_events=has_recovery_events,
+            )
+        try:
+            due_at = _parse_ts(next_cycle_due_raw, "next_cycle_due_at_utc")
+            delta = (now - due_at).total_seconds()
+            if delta <= 0:
+                return CoordinatorLiveness(
+                    classification="SLEEPING_UNTIL_NEXT_CYCLE",
+                    severity="pass",
+                    reason="Coordinator is sleeping and next cycle is not yet due",
+                    coordinator_status_from_state=coordinator_status,
+                    has_lifecycle_telemetry=has_lifecycle,
+                    last_heartbeat_age_seconds=max(heartbeat_age, 0.0),
+                    next_cycle_due_at_utc=next_cycle_due_raw,
+                    has_recovery_events=has_recovery_events,
+                )
+            if delta <= cadence_seconds:
+                return CoordinatorLiveness(
+                    classification="SLEEPING_UNTIL_NEXT_CYCLE",
+                    severity="warn",
+                    reason=(
+                        f"Sleeping but next_cycle_due_at_utc exceeded by "
+                        f"{delta:.0f}s within cadence tolerance"
+                    ),
+                    coordinator_status_from_state=coordinator_status,
+                    has_lifecycle_telemetry=has_lifecycle,
+                    last_heartbeat_age_seconds=max(heartbeat_age, 0.0),
+                    next_cycle_due_at_utc=next_cycle_due_raw,
+                    has_recovery_events=has_recovery_events,
+                )
+            return CoordinatorLiveness(
+                classification="STALE_NEXT_CYCLE",
+                severity="fail",
+                reason=(
+                    f"next_cycle_due_at_utc exceeded by {delta:.0f}s "
+                    f"beyond cadence tolerance {cadence_seconds}s"
+                ),
+                coordinator_status_from_state=coordinator_status,
+                has_lifecycle_telemetry=has_lifecycle,
+                last_heartbeat_age_seconds=max(heartbeat_age, 0.0),
+                next_cycle_due_at_utc=next_cycle_due_raw,
+                has_recovery_events=has_recovery_events,
+            )
+        except WatchdogError:
+            return CoordinatorLiveness(
+                classification="STALE_NEXT_CYCLE",
+                severity="fail",
+                reason=(
+                    f"next_cycle_due_at_utc={next_cycle_due_raw!r} "
+                    "is not valid ISO-8601"
+                ),
+                coordinator_status_from_state=coordinator_status,
+                has_lifecycle_telemetry=has_lifecycle,
+                last_heartbeat_age_seconds=max(heartbeat_age, 0.0),
+                next_cycle_due_at_utc=next_cycle_due_raw,
+                has_recovery_events=has_recovery_events,
+            )
+
+    running_statuses = (
+        "starting",
+        "boot_checked",
+        "running",
+        "cycle_completed",
+        "final_validation",
+        "",
+    )
+    if coordinator_status in running_statuses or coordinator_status.startswith(
+        "starting"
+    ):
+        if heartbeat_age >= 0 and heartbeat_age > max_age_seconds:
+            return CoordinatorLiveness(
+                classification="STALE_HEARTBEAT",
+                severity="fail",
+                reason=(
+                    f"Heartbeat is {heartbeat_age:.0f}s old "
+                    f"(max_age={max_age_seconds}s) while coordinator "
+                    f"status is {coordinator_status!r}"
+                ),
+                coordinator_status_from_state=coordinator_status,
+                has_lifecycle_telemetry=has_lifecycle,
+                last_heartbeat_age_seconds=heartbeat_age,
+                has_recovery_events=has_recovery_events,
+            )
+        if not coordinator_status and not has_lifecycle:
+            return CoordinatorLiveness(
+                classification="COORDINATOR_UNKNOWN",
+                severity="warn",
+                reason=("No coordinator status or lifecycle telemetry available"),
+                coordinator_status_from_state=coordinator_status,
+                has_lifecycle_telemetry=has_lifecycle,
+                last_heartbeat_age_seconds=max(heartbeat_age, 0.0),
+                has_recovery_events=has_recovery_events,
+            )
+        return CoordinatorLiveness(
+            classification="RUNNING_HEALTHY",
+            severity="pass",
+            reason=(
+                f"Coordinator status is {coordinator_status!r} "
+                "and heartbeat is fresh"
+            ),
+            coordinator_status_from_state=coordinator_status,
+            has_lifecycle_telemetry=has_lifecycle,
+            last_heartbeat_age_seconds=max(heartbeat_age, 0.0),
+            has_recovery_events=has_recovery_events,
+        )
+
+    if coordinator_status == "recovering":
+        return CoordinatorLiveness(
+            classification="RECOVERY_IN_PROGRESS",
+            severity="warn",
+            reason="Coordinator status indicates recovery in progress",
+            coordinator_status_from_state=coordinator_status,
+            has_lifecycle_telemetry=has_lifecycle,
+            last_heartbeat_age_seconds=max(heartbeat_age, 0.0),
+            has_recovery_events=has_recovery_events,
+        )
+
+    return CoordinatorLiveness(
+        classification="COORDINATOR_UNKNOWN",
+        severity="warn",
+        reason=(f"Unknown coordinator_status={coordinator_status!r}"),
+        coordinator_status_from_state=coordinator_status,
+        has_lifecycle_telemetry=has_lifecycle,
+        last_heartbeat_age_seconds=max(heartbeat_age, 0.0),
+        has_recovery_events=has_recovery_events,
+    )
 
 
 def _check_heartbeat(
@@ -845,6 +1107,17 @@ def run_status(
         except WatchdogError:
             pass
 
+    coordinator_events = _load_coordinator_events(artifact_dir)
+
+    coordinator_liveness = _classify_coordinator_liveness(
+        state_payload,
+        coordinator_events,
+        heartbeat_payload,
+        now=eval_now,
+        max_age_seconds=max_age_seconds,
+        cadence_seconds=cadence_seconds,
+    )
+
     hb_findings = _check_heartbeat(
         heartbeat_payload,
         artifact_dir_label,
@@ -926,6 +1199,7 @@ def run_status(
         heartbeat_fresh=heartbeat_fresh,
         runner_state_ok=runner_state_ok,
         required_artifacts_present=required_artifacts_present,
+        coordinator_liveness=coordinator_liveness,
         verdict=WatchdogVerdict(
             verdict=verdict,
             total_checks=len(sorted_findings),
@@ -989,6 +1263,14 @@ def run_check_artifacts(
         )
     )
 
+    coordinator_liveness = CoordinatorLiveness(
+        classification="COORDINATOR_UNKNOWN",
+        severity="warn",
+        reason="Not evaluated in check-artifacts mode",
+        coordinator_status_from_state="",
+        has_lifecycle_telemetry=False,
+    )
+
     return WatchdogReport(
         schema_version=WATCHDOG_REPORT_SCHEMA,
         evaluated_at_utc=_format_ts(eval_now),
@@ -997,6 +1279,7 @@ def run_check_artifacts(
         heartbeat_fresh=False,
         runner_state_ok=False,
         required_artifacts_present=required_artifacts_present,
+        coordinator_liveness=coordinator_liveness,
         verdict=WatchdogVerdict(
             verdict=verdict,
             total_checks=len(sorted_findings),
@@ -1029,9 +1312,33 @@ def render_escalation_draft(
         f"pass={payload['verdict']['pass_count']}, "
         f"warn={payload['verdict']['warn_count']}, "
         f"fail={payload['verdict']['fail_count']}",
-        "",
-        "## Findings",
     ]
+    cl = payload.get("coordinator_liveness", {})
+    if cl:
+        severity_icon = {
+            "pass": "PASS",
+            "warn": "WARN",
+            "fail": "FAIL",
+        }.get(cl.get("severity", ""), "????")
+        lines.extend(
+            [
+                "",
+                "## Coordinator Liveness",
+                f"- Classification: `{cl.get('classification', 'UNKNOWN')}`",
+                f"- Severity: `{severity_icon}`",
+                f"- Reason: {cl.get('reason', '')}",
+                f"- Coordinator status: `{cl.get('coordinator_status_from_state', '')}`",
+                f"- Lifecycle telemetry: `{cl.get('has_lifecycle_telemetry', False)}`",
+                f"- Fatal stop event: `{cl.get('has_fatal_stop_event', False)}`",
+                f"- Recovery events: `{cl.get('has_recovery_events', False)}`",
+            ]
+        )
+    lines.extend(
+        [
+            "",
+            "## Findings",
+        ]
+    )
 
     findings = payload.get("findings", [])
     if findings:
@@ -1064,6 +1371,35 @@ def render_escalation_draft(
     return "\n".join(lines) + "\n"
 
 
+def _coordinator_liveness_to_markdown(payload: dict[str, Any]) -> list[str]:
+    cl = payload.get("coordinator_liveness", {})
+    if not cl:
+        return []
+    severity_icon = {
+        "pass": "PASS",
+        "warn": "WARN",
+        "fail": "FAIL",
+    }.get(cl.get("severity", ""), "????")
+    lines = [
+        "",
+        "## Coordinator Liveness",
+        f"- Classification: **{cl.get('classification', 'UNKNOWN')}**",
+        f"- Severity: `{severity_icon}`",
+        f"- Reason: {cl.get('reason', '')}",
+        f"- Coordinator status (state): `{cl.get('coordinator_status_from_state', '')}`",
+        f"- Lifecycle telemetry: `{cl.get('has_lifecycle_telemetry', False)}`",
+    ]
+    heartbeat_age = cl.get("last_heartbeat_age_seconds", 0)
+    if heartbeat_age:
+        lines.append(f"- Last heartbeat age: `{heartbeat_age:.0f}s`")
+    next_due = cl.get("next_cycle_due_at_utc", "")
+    if next_due:
+        lines.append(f"- Next cycle due at (UTC): `{next_due}`")
+    lines.append(f"- Fatal stop event: `{cl.get('has_fatal_stop_event', False)}`")
+    lines.append(f"- Recovery events: `{cl.get('has_recovery_events', False)}`")
+    return lines
+
+
 def report_to_markdown(report: WatchdogReport) -> str:
     payload = report.to_dict()
     lines = [
@@ -1086,9 +1422,14 @@ def report_to_markdown(report: WatchdogReport) -> str:
         f"- Pass: {payload['verdict']['pass_count']}",
         f"- Warn: {payload['verdict']['warn_count']}",
         f"- Fail: {payload['verdict']['fail_count']}",
-        "",
-        "## Findings",
     ]
+    lines.extend(_coordinator_liveness_to_markdown(payload))
+    lines.extend(
+        [
+            "",
+            "## Findings",
+        ]
+    )
     for item in payload["findings"]:
         icon = {"fail": "FAIL", "warn": "WARN", "pass": "PASS"}.get(
             item["severity"], "????"
@@ -1199,6 +1540,18 @@ def _handle_render_escalation_draft(args: argparse.Namespace) -> int:
         print(f"Report JSON not found: {report_json_path}", file=sys.stderr)
         return 1
     payload = _load_json(report_json_path)
+    cl_raw = payload.get("coordinator_liveness", {})
+    coordinator_liveness = CoordinatorLiveness(
+        classification=cl_raw.get("classification", "COORDINATOR_UNKNOWN"),
+        severity=cl_raw.get("severity", "warn"),
+        reason=cl_raw.get("reason", ""),
+        coordinator_status_from_state=cl_raw.get("coordinator_status_from_state", ""),
+        has_lifecycle_telemetry=bool(cl_raw.get("has_lifecycle_telemetry", False)),
+        last_heartbeat_age_seconds=float(cl_raw.get("last_heartbeat_age_seconds", 0.0)),
+        next_cycle_due_at_utc=cl_raw.get("next_cycle_due_at_utc", ""),
+        has_fatal_stop_event=bool(cl_raw.get("has_fatal_stop_event", False)),
+        has_recovery_events=bool(cl_raw.get("has_recovery_events", False)),
+    )
     report = WatchdogReport(
         schema_version=payload.get("schema_version", WATCHDOG_REPORT_SCHEMA),
         evaluated_at_utc=payload.get("evaluated_at_utc", ""),
@@ -1209,6 +1562,7 @@ def _handle_render_escalation_draft(args: argparse.Namespace) -> int:
         required_artifacts_present=bool(
             payload.get("required_artifacts_present", False)
         ),
+        coordinator_liveness=coordinator_liveness,
         verdict=WatchdogVerdict(
             verdict=payload.get("verdict", {}).get("verdict", "FAIL"),
             total_checks=payload.get("verdict", {}).get("total_checks", 0),
