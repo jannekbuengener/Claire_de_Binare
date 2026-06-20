@@ -96,6 +96,14 @@ Version: `cdb.evidence_harvester.runner_state.v1`
 | `last_cycle_verdict` | string | `PASS` or `FAIL` |
 | `last_cycle_ended_at_utc` | string | ISO-8601 UTC of last cycle end |
 
+## Timestamp Contract
+
+- UTC is canonical.
+- Validation uses artifact UTC timestamps.
+- Local timezone differences must not affect validation.
+- Freshness calculations use UTC only.
+- Historical artifacts remain valid evidence even when old.
+
 ## Watchdog (#3359)
 
 The watchdog (`watchdog.py`) consumes `runner_heartbeat.json` and
@@ -216,6 +224,53 @@ python -m tools.evidence_harvester.write_audit ^
 
 - `write_audit_report.json` — machine-readable report with per-check findings + verdict
 - `write_audit_report.md` — human-readable Markdown summary
+
+## Recovery Semantics (#3368)
+
+The current recovery contract distinguishes recoverable failures from fatal
+failures. Recoverable failures produce audited recovery artifacts and allow the
+run to continue within bounded restart and backoff limits. Fatal failures stop
+immediately and fail validation.
+
+### Recoverable failures
+
+- stale latest snapshot
+- transient watchdog failure
+- transient write-audit failure
+
+### Recoverable action
+
+- create `recovery_event_<stamp>.json`
+- create `recovery_event_<stamp>.md`
+- apply bounded restart
+- apply backoff
+- continue run
+
+Historical snapshots, watchdog reports, and write-audit reports remain
+auditable history. Snapshot freshness is evaluated on the latest snapshot, and
+a long-lived run does not fail solely because older stamped artifacts are old.
+
+The current coordinator classifier is stricter for core-state freshness:
+findings on `runner_heartbeat.json.current_run_at_utc` and
+`runner_state.json.last_cycle_ended_at_utc` are currently treated as fatal
+`malformed_core_state`, not as recoverable restart events.
+
+### Fatal failures
+
+- safety boundary violation
+- live-trading path
+- real-money path
+- DB mutation risk
+- secrets exposure
+- stale or invalid latest heartbeat core-state timestamp
+- stale or invalid latest runner-state core-state timestamp
+- unrecoverable core-state corruption
+
+### Fatal action
+
+- immediate stop
+- no recovery
+- fail validation
 
 ## Safety Boundaries
 
@@ -375,6 +430,24 @@ python -m tools.evidence_harvester.ops_validation validate-dir ^
 - Read-only validation only; does not start the 72h run
 - No Windows Task install, Docker/runtime/DB/secrets mutation, or GitHub writes
 - No LR-Go, no Live-Go, no Echtgeld-Go
+
+## Always-On Acceptance Criteria
+
+- Evidence is produced continuously.
+- Recoverable failures do not permanently stop the run.
+- Watchdog continuously monitors the harvester.
+- Write-audit continuously validates artifacts.
+- Boot readiness remains valid.
+- Ops validation proves `>=72h` operation.
+- LR remains NO-GO.
+- Live remains NO-GO.
+- Echtgeld remains NO-GO.
+
+## Lessons Learned
+
+Reserved for post-72h validation findings.
+
+Do not populate until the replacement run has completed.
 
 ## Related Documents
 
