@@ -1057,12 +1057,6 @@ def _load_coordinator_events(
             )
             continue
         if not lines:
-            add_finding(
-                f"{path.name} lifecycle events present",
-                "fail",
-                "Lifecycle event stream is empty",
-                artifact=path.name,
-            )
             continue
         for index, line in enumerate(lines, start=1):
             try:
@@ -1094,12 +1088,16 @@ def _load_coordinator_events(
 
 
 def _check_coordinator_events(
-    events: Sequence[Mapping[str, Any]], add_finding: Any
+    events: Sequence[Mapping[str, Any]],
+    add_finding: Any,
+    *,
+    is_final: bool = True,
 ) -> None:
     if not events:
+        severity = "fail" if is_final else "warn"
         add_finding(
             "Coordinator lifecycle telemetry",
-            "fail",
+            severity,
             "Missing parseable coordinator lifecycle telemetry",
             artifact="coordinator_events.jsonl",
         )
@@ -1159,9 +1157,10 @@ def _check_coordinator_events(
 
     missing_types = sorted(required_event_types - seen_types)
     if missing_types:
+        ev_severity = "fail" if is_final else "warn"
         add_finding(
             "Coordinator lifecycle required event coverage",
-            "fail",
+            ev_severity,
             f"Missing required lifecycle event types: {missing_types}",
             artifact="coordinator_events.jsonl",
         )
@@ -1185,6 +1184,101 @@ def _check_coordinator_events(
     )
 
 
+def _check_lifecycle_runner_state_consistency(
+    coordinator_events: Sequence[Mapping[str, Any]],
+    state_payload: Mapping[str, Any] | None,
+    snapshot_count: int,
+    add_finding: Any,
+) -> None:
+    if not coordinator_events or state_payload is None:
+        return
+    lifecycle_cycle_count = sum(
+        1 for e in coordinator_events if e.get("event_type") == "cycle_completed"
+    )
+    state_cycle_count = state_payload.get("total_cycles_completed", 0)
+    if not isinstance(state_cycle_count, int):
+        add_finding(
+            "Lifecycle-runner state cycle consistency",
+            "fail",
+            f"runner_state.total_cycles_completed is not an integer: {state_cycle_count!r}",
+            artifact="runner_state.json",
+            field_name="total_cycles_completed",
+        )
+        return
+    diff = lifecycle_cycle_count - state_cycle_count
+    if abs(diff) > 1:
+        add_finding(
+            "Lifecycle-runner state cycle consistency",
+            "fail",
+            f"Lifecycle cycle_completed count ({lifecycle_cycle_count}) diverges from runner_state.total_cycles_completed ({state_cycle_count}) by {abs(diff)}",
+            artifact="coordinator_events.jsonl",
+        )
+    elif abs(diff) == 1:
+        add_finding(
+            "Lifecycle-runner state cycle consistency",
+            "warn",
+            f"Lifecycle cycle_completed count ({lifecycle_cycle_count}) differs from runner_state.total_cycles_completed ({state_cycle_count}) by 1",
+            artifact="coordinator_events.jsonl",
+        )
+    else:
+        add_finding(
+            "Lifecycle-runner state cycle consistency",
+            "pass",
+            f"Lifecycle cycle_completed count ({lifecycle_cycle_count}) matches runner_state.total_cycles_completed ({state_cycle_count})",
+            artifact="coordinator_events.jsonl",
+        )
+    if lifecycle_cycle_count != snapshot_count:
+        add_finding(
+            "Lifecycle-artifact count consistency",
+            "warn",
+            f"Lifecycle cycle_completed count ({lifecycle_cycle_count}) != snapshot artifact count ({snapshot_count})",
+            artifact="coordinator_events.jsonl",
+        )
+    else:
+        add_finding(
+            "Lifecycle-artifact count consistency",
+            "pass",
+            f"Lifecycle cycle_completed count ({lifecycle_cycle_count}) matches snapshot artifact count ({snapshot_count})",
+            artifact="coordinator_events.jsonl",
+        )
+
+
+def _check_watchdog_coordinator_liveness(
+    watchdog_payloads: Sequence[tuple[Path, Mapping[str, Any]]],
+    add_finding: Any,
+) -> None:
+    if not watchdog_payloads:
+        return
+    for path, payload in watchdog_payloads:
+        cl = payload.get("coordinator_liveness")
+        if not isinstance(cl, Mapping):
+            continue
+        classification = str(cl.get("classification", "")).strip()
+        severity = str(cl.get("severity", "")).strip()
+        reason = str(cl.get("reason", "")).strip()
+        msg = f"Watchdog coordinator liveness: {classification} — {reason}"
+        if classification == "FATAL_STOP":
+            add_finding(
+                "Watchdog coordinator liveness", "fail", msg, artifact=path.name
+            )
+        elif classification == "STALE_NEXT_CYCLE":
+            add_finding(
+                "Watchdog coordinator liveness", "fail", msg, artifact=path.name
+            )
+        elif classification == "STALE_HEARTBEAT" and severity == "fail":
+            add_finding(
+                "Watchdog coordinator liveness", "fail", msg, artifact=path.name
+            )
+        elif classification in ("RECOVERY_IN_PROGRESS", "COORDINATOR_STOPPED"):
+            add_finding(
+                "Watchdog coordinator liveness", "warn", msg, artifact=path.name
+            )
+        else:
+            add_finding(
+                "Watchdog coordinator liveness", "pass", msg, artifact=path.name
+            )
+
+
 def validate_72h_window(
     artifact_paths: Mapping[str, Sequence[Path]],
     *,
@@ -1193,6 +1287,7 @@ def validate_72h_window(
     window_end_utc: datetime | None = None,
     required_window_hours: int = DEFAULT_REQUIRED_WINDOW_HOURS,
     runner_cadence_seconds: int = DEFAULT_RUNNER_CADENCE_SECONDS,
+    is_final: bool = True,
 ) -> OpsValidationReport:
     if required_window_hours < 1:
         raise OpsValidationError("required_window_hours must be >= 1")
@@ -1296,6 +1391,8 @@ def validate_72h_window(
         add_finding,
         expected_schema=STATE_SCHEMA,
     )
+    state_payload = state_payloads[0][1] if state_payloads else None
+    heartbeat_payload = heartbeat_payloads[0][1] if heartbeat_payloads else None
     watchdog_payloads = _load_payloads(
         artifact_paths.get("watchdog_json", []),
         add_finding,
@@ -1357,7 +1454,14 @@ def validate_72h_window(
     for path, payload in state_payloads:
         _check_no_side_effects(path, payload, add_finding)
 
-    _check_coordinator_events(coordinator_events, add_finding)
+    _check_coordinator_events(coordinator_events, add_finding, is_final=is_final)
+
+    _check_lifecycle_runner_state_consistency(
+        coordinator_events,
+        state_payload,
+        len(snapshot_payloads),
+        add_finding,
+    )
 
     recovered_fail_reports, recovery_limit_exceeded = _check_recovery_events(
         recovery_event_payloads,
@@ -1370,6 +1474,7 @@ def validate_72h_window(
         add_finding,
         covered_fail_reports=recovered_fail_reports,
     )
+    _check_watchdog_coordinator_liveness(watchdog_payloads, add_finding)
     for path, payload in watchdog_payloads:
         _check_no_side_effects(path, payload, add_finding)
 
@@ -1431,8 +1536,6 @@ def validate_72h_window(
             add_finding,
         )
 
-    heartbeat_payload = heartbeat_payloads[0][1] if heartbeat_payloads else None
-    state_payload = state_payloads[0][1] if state_payloads else None
     latest_snapshot_ts = max(snapshot_timestamps) if snapshot_timestamps else None
     _check_runner_state(
         heartbeat_payload,
@@ -1497,6 +1600,7 @@ def validate_72h_window_from_dir(
     window_end_utc: datetime | None = None,
     required_window_hours: int = DEFAULT_REQUIRED_WINDOW_HOURS,
     runner_cadence_seconds: int = DEFAULT_RUNNER_CADENCE_SECONDS,
+    is_final: bool = True,
 ) -> OpsValidationReport:
     if not artifact_dir.exists():
         raise OpsValidationError(f"Artifact directory does not exist: {artifact_dir}")
@@ -1509,6 +1613,7 @@ def validate_72h_window_from_dir(
         window_end_utc=window_end_utc,
         required_window_hours=required_window_hours,
         runner_cadence_seconds=runner_cadence_seconds,
+        is_final=is_final,
     )
 
 
@@ -1561,8 +1666,8 @@ def report_to_markdown(report: OpsValidationReport) -> str:
         [
             "",
             "## 72h Validation Contract",
-            "- PASS requires >=72h coverage, continuous runner evidence cadence, no FAIL in watchdog/write-audit/boot, and no side effects.",
-            "- WARN allows minor cadence drift or a justified boot/watchdog warning with no FAIL findings.",
+            "- PASS requires >=72h coverage, continuous runner evidence cadence, lifecycle telemetry, no FAIL in watchdog/write-audit/boot, consistent cycle counts, and no side effects.",
+            "- WARN allows minor cadence drift, a justified boot/watchdog warning with no FAIL findings, or missing lifecycle telemetry in non-final validation.",
             "- FAIL means the always-on dry operation is not proven fail-closed.",
             "",
             "## Runtime Handoff",
@@ -1660,6 +1765,19 @@ def parse_args(argv: list[str] | None = None) -> Any:
         help="Expected runner cadence in seconds (default: 900).",
     )
     dir_parser.add_argument(
+        "--is-final",
+        action="store_true",
+        default=True,
+        dest="is_final",
+        help="Treat this as final >=72h validation (default: True).",
+    )
+    dir_parser.add_argument(
+        "--no-final",
+        action="store_false",
+        dest="is_final",
+        help="Treat this as non-final bounded validation.",
+    )
+    dir_parser.add_argument(
         "--json-output",
         type=Path,
         help="Optional JSON output path for the ops validation report.",
@@ -1695,6 +1813,7 @@ def _handle_validate_dir(args: Any) -> int:
         window_end_utc=window_end,
         required_window_hours=args.required_window_hours,
         runner_cadence_seconds=args.runner_cadence_seconds,
+        is_final=args.is_final,
     )
     payload = report.to_dict()
     json_text = json.dumps(

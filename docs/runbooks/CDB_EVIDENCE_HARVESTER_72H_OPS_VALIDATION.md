@@ -63,7 +63,8 @@ used only after the real dry run finishes.
 
 - `>=72h` window covered
 - runner continuity evidenced by heartbeat/state counters, coordinator lifecycle telemetry, and stamped cadence history
-- watchdog history PASS or justified WARN
+- lifecycle cycle count consistent with `runner_state.total_cycles_completed` and artifact snapshot count
+- watchdog history PASS or justified WARN; `coordinator_liveness` must not be FATAL_STOP or STALE_NEXT_CYCLE
 - write-audit history PASS with no FAIL findings
 - boot-readiness PASS or justified WARN
 - no side effects
@@ -73,6 +74,7 @@ used only after the real dry run finishes.
 - minor cadence drift
 - documented non-critical boot warning
 - documented non-critical watchdog warning
+- missing lifecycle telemetry (non-final validation only, `--no-final`)
 
 ### FAIL
 
@@ -92,6 +94,11 @@ python -m tools.evidence_harvester.ops_validation validate-dir ^
     --json-output artifacts\evidence_harvester\72h_ops_validation\<run_id>\ops_validation_report.json ^
     --markdown-output artifacts\evidence_harvester\72h_ops_validation\<run_id>\ops_validation_report.md ^
     --pretty
+
+# Non-final validation (lifecycle telemetry WARN instead of FAIL):
+python -m tools.evidence_harvester.ops_validation validate-dir ^
+    --artifact-dir artifacts\evidence_harvester\72h_ops_validation\<run_id> ^
+    --no-final --pretty
 ```
 
 ## Runtime Handoff
