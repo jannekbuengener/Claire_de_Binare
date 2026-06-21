@@ -1,11 +1,14 @@
 # Claire de Binare
 
-Claire de Binare (CDB) ist ein deterministisches, governance-first Trading-System im Working Repo Canon.
+Claire de Binare (CDB) is a deterministic, governance-first trading and validation system.
+This is the public GitHub landing page. CDB operates in shadow/paper mode — live capital is not authorised.
+
+[Deutsch] Claire de Binare (CDB) ist ein deterministisches, governance-first Trading-/Validation-System.
 Diese Root-README ist die GitHub-Haupt-Landingpage. Der aktive Pfad bleibt Shadow/Paper-first; Live-Kapital ist nicht freigegeben.
 
 ## Start Here
 
-- Strategic Idea Lab: [`docs/strategy/CDB_STRATEGIC_IDEA_LAB.md`](docs/strategy/CDB_STRATEGIC_IDEA_LAB.md) — public CDB strategy and architecture drafts, discussion material, and future-state explorations
+- [CDB Strategic Idea Lab](docs/strategy/CDB_STRATEGIC_IDEA_LAB.md) — public strategy and architecture drafts, discussion space, and creative exploration around CDB's future-state concepts. Ideas, critique, and suggestions are welcome.
 - Neue Entwickler: [`DEVELOPER_ONBOARDING.md`](DEVELOPER_ONBOARDING.md)
 - Kurzer Docs-Index: [`docs/index.md`](docs/index.md)
 - Agenten-Bootloader: [`AGENTS.md`](AGENTS.md) -> [`agents/AGENTS.md`](agents/AGENTS.md)
