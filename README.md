@@ -5,6 +5,7 @@ Diese Root-README ist die GitHub-Haupt-Landingpage. Der aktive Pfad bleibt Shado
 
 ## Start Here
 
+- Strategic Idea Lab: [`docs/strategy/CDB_STRATEGIC_IDEA_LAB.md`](docs/strategy/CDB_STRATEGIC_IDEA_LAB.md) — public CDB strategy and architecture drafts, discussion material, and future-state explorations
 - Neue Entwickler: [`DEVELOPER_ONBOARDING.md`](DEVELOPER_ONBOARDING.md)
 - Kurzer Docs-Index: [`docs/index.md`](docs/index.md)
 - Agenten-Bootloader: [`AGENTS.md`](AGENTS.md) -> [`agents/AGENTS.md`](agents/AGENTS.md)
