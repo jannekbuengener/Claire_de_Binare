@@ -67,7 +67,7 @@ The documents are intentionally drafted as outward-facing artefacts — written 
 
 If you have a thought, a better approach, a missing perspective, or a concrete suggestion:
 
-- **Open a GitHub Issue** in the repo for structured feedback
+- **Open a [Strategic Idea Lab contribution issue](https://github.com/jannekbuengener/Claire_de_Binare/issues/new?template=strategic_idea_lab.yml)** for structured ideas, critique, AI-agent comments, or improvement suggestions
 - **Comment on the Gist** for lightweight, document-level discussion
 - **Start a conversation** if you want to explore a topic before formalising it
 
