@@ -1,0 +1,110 @@
+name: CDB Strategic Idea Lab Contribution
+description: Submit structured ideas, critique, questions, risk notes, improvement suggestions, or AI agent comments for the Strategic Idea Lab.
+title: "[Idea Lab] "
+labels: ["status:idea"]
+body:
+  - type: dropdown
+    id: contribution_type
+    attributes:
+      label: Contribution Type
+      options:
+        - Idea
+        - Critique
+        - Question
+        - Risk Note
+        - Improvement Suggestion
+        - AI Agent Comment
+    validations:
+      required: true
+
+  - type: dropdown
+    id: affected_document
+    attributes:
+      label: Affected Document / Area
+      options:
+        - Strategic Consolidation
+        - Profitability
+        - ARVP
+        - Context Intelligence
+        - Hetzner
+        - Desktop App
+        - Betting Pipeline
+        - Betting Architecture
+        - Gearbox
+        - General
+    validations:
+      required: true
+
+  - type: input
+    id: short_description
+    attributes:
+      label: Short Description
+      description: One-line summary of your contribution
+      placeholder: "Briefly describe your idea, critique, or suggestion"
+    validations:
+      required: true
+
+  - type: textarea
+    id: suggestion
+    attributes:
+      label: Suggestion / Comment
+      description: Your full proposal, thought, critique, or question
+      placeholder: "Detailed description of your contribution..."
+    validations:
+      required: true
+
+  - type: textarea
+    id: relevance
+    attributes:
+      label: Why Is This Relevant?
+      description: How does this contribute to CDB's strategic direction?
+      placeholder: "Explain the relevance"
+    validations:
+      required: true
+
+  - type: textarea
+    id: evidence
+    attributes:
+      label: Evidence / References
+      description: Links, documents, data, or prior work that support this contribution (optional)
+      placeholder: "Any supporting evidence or links"
+    validations:
+      required: false
+
+  - type: textarea
+    id: risks
+    attributes:
+      label: Risks / Open Questions
+      description: Potential downsides, trade-offs, or unanswered questions (optional)
+      placeholder: "Risks or open questions to consider"
+    validations:
+      required: false
+
+  - type: dropdown
+    id: ai_generated
+    attributes:
+      label: Is This AI-Generated?
+      description: All AI-generated contributions must be declared and include the model name
+      options:
+        - "No"
+        - "Yes"
+    validations:
+      required: true
+
+  - type: input
+    id: model_name
+    attributes:
+      label: Model Name
+      description: Required. AI agents must include the model name (e.g. Claude 4 Opus, GPT-5, Gemini 3.0). Human contributors enter "N/A".
+      placeholder: "N/A"
+    validations:
+      required: true
+
+  - type: checkboxes
+    id: boundary
+    attributes:
+      label: Contribution Boundary
+      description: Every contribution to the Strategic Idea Lab is non-authoritative
+      options:
+        - label: "I understand this is a non-authoritative Strategic Idea Lab contribution and not a Canon decision, Live-Go, Echtgeld-Go, Runtime-Go, DB-Go, Docker-Go, Risk-Go, Execution-Go, or Allocation-Go."
+          required: true
