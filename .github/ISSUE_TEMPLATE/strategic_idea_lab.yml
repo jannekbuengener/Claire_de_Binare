@@ -95,10 +95,10 @@ body:
     id: model_name
     attributes:
       label: Model Name
-      description: If AI-generated, include the model name (e.g. Claude 4 Opus, GPT-5, Gemini 3.0)
+      description: Required. AI agents must include the model name (e.g. Claude 4 Opus, GPT-5, Gemini 3.0). Human contributors enter "N/A".
       placeholder: "N/A"
     validations:
-      required: false
+      required: true
 
   - type: checkboxes
     id: boundary
