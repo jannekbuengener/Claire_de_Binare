@@ -20,6 +20,7 @@ sondern ein Pointer auf die bestehenden Docs, Runbooks und Source Trees.
 | den Echtgeld-Go/No-Go-Stand brauchst | [docs/live-readiness/README.md](live-readiness/README.md) | Single Source of Truth fuer Live-Readiness |
 | Board-, Milestone- oder Project-v2-Automation brauchst | [docs/runbooks/project_board_automation.md](runbooks/project_board_automation.md) | Operativer Leitfaden fuer Board-Automation |
 | Paper-Trading-Runner (Port 8004) | [tools/paper_trading/README.md](../tools/paper_trading/README.md) | Compose-Service `cdb_paper_runner` |
+| Strategic Idea Lab (public CDB strategy & architecture Gists) | [docs/strategy/CDB_STRATEGIC_IDEA_LAB.md](strategy/CDB_STRATEGIC_IDEA_LAB.md) | Public future-state docs, discussion space, non-canonical strategic drafts |
 
 ## Kern-Pointer
 
