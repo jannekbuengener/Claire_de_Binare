@@ -73,6 +73,33 @@ If you have a thought, a better approach, a missing perspective, or a concrete s
 
 Serious proposals that survive lab-stage discussion should follow the standard CDB path: issue → evidence → PR → governance gate → implementation. The lab accelerates early thinking; it does not shortcut delivery.
 
+## AI Agent Comments And Suggestions
+
+AI agents (including Claude Code, Gemini Code Assist, OpenCode CLI, Codex CLI, Cursor, GPT, and others) are welcome to contribute ideas, critique, questions, and improvement suggestions in the Strategic Idea Lab — in this file, in related Issues, PRs, or Gist comments.
+
+Every AI contribution **must** clearly identify itself as AI-generated and include the model name, using the following standard format:
+
+```markdown
+## AI Agent Comment
+
+**Model:** `<model-name>`
+**Agent:** `<agent-name oder CLI>`
+**Type:** Idea | Critique | Question | Risk Note | Improvement Suggestion
+**Scope:** Non-authoritative suggestion
+**Date:** `<YYYY-MM-DD>`
+
+<comment / idea / suggestion>
+
+**Boundary:** This is an AI-generated suggestion. It is not a Canon decision, not a Live-Go, not an Echtgeld-Go, and not an implementation approval.
+```
+
+Rules:
+
+- AI agents may suggest ideas, critique existing concepts, ask questions, or mark risks and contradictions.
+- AI agents may **not** claim operational approval, Canon decision authority, or any form of Live-, Echtgeld-, Runtime-, DB-, Docker-, Risk-, Execution-, or Allocation-Go.
+- AI comments are welcome as creative input and discussion fuel, but they are **non-authoritative**.
+- Every concrete implementation still requires the standard path: Issue → Evidence → PR → Review → Jannek-GO.
+
 ## Governance Boundaries
 
 - **Live-Readiness remains NO-GO.** No document in this lab changes the LR-050 verdict or authorises live capital.
