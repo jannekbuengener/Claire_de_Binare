@@ -35,17 +35,17 @@ The index lists every published document, its role, its source, and the governin
 
 The lab currently contains nine documents across the following areas:
 
-| Area | Document |
-|------|----------|
-| Umbrella orientation | Strategic Consolidation Report |
-| Profitability engine architecture | Profitability Scaling Architecture |
-| Validation platform | ARVP Validation Platform Blueprint |
-| Context intelligence | Context Intelligence System Endbild |
-| Cloud platform operating model | Hetzner Fullstack Cloud Platform Plan |
-| Client/product vision | Desktop App Client Platform Vision |
-| Future-domain concept | Betting Pipeline Concept |
-| Future-domain specification | Betting Architecture Integration Spec |
-| Multi-strategy target architecture | Multi-Strategy Gearbox Architecture |
+| Area | Document | Gist |
+|------|----------|------|
+| Umbrella orientation | Strategic Consolidation Report | [Gist](https://gist.github.com/jannekbuengener/a17b2f9bf63354c0d335f4e38707fbf5) |
+| Profitability engine architecture | Profitability Scaling Architecture | [Gist](https://gist.github.com/jannekbuengener/da45b67f9b0deae58f938539c5b0a70d) |
+| Validation platform | ARVP Validation Platform Blueprint | [Gist](https://gist.github.com/jannekbuengener/95ebd234fbc75386da14e799fbc90e74) |
+| Context intelligence | Context Intelligence System Endbild | [Gist](https://gist.github.com/jannekbuengener/8e2c886e6b52f6cfbe7009d15d8b4940) |
+| Cloud platform operating model | Hetzner Fullstack Cloud Platform Plan | [Gist](https://gist.github.com/jannekbuengener/0310bd0d01319759df0d04e90e5dbb3c) |
+| Client/product vision | Desktop App Client Platform Vision | [Gist](https://gist.github.com/jannekbuengener/d14ac124447b5ee5f5b4735f1794034d) |
+| Future-domain concept | Betting Pipeline Concept | [Gist](https://gist.github.com/jannekbuengener/cb1eacf09d5a91d9e7ac6792fc542c8f) |
+| Future-domain specification | Betting Architecture Integration Spec | [Gist](https://gist.github.com/jannekbuengener/f81faefb020f71ee41f21f8e85e90e6e) |
+| Multi-strategy target architecture | Multi-Strategy Gearbox Architecture | [Gist](https://gist.github.com/jannekbuengener/82db215ed91096d7d864cc51d73f0557) |
 
 Each document is structurally unified (following the same 12-section template), cross-linked to its siblings, and clearly marked as non-canonical future-state material.
 
