@@ -1,8 +1,12 @@
 # CDB Strategic Idea Lab
 
+**Strategischer Ideen-, Diskussions- und Ausarbeitungsraum — Strategic Idea Lab for Claire de Binare.**
+
+Claire de Binare (CDB) is a deterministic, governance-first trading and validation system that currently operates in shadow/paper mode (no live capital, no real-money trading). This lab is the public front porch for strategic thinking around CDB's future.
+
 ## Purpose
 
-The CDB Strategic Idea Lab is a public collection of strategy, architecture, and product-line documents that explore where Claire de Binare could go next. It is an open space for ideas, discussion, and collaborative thinking — not a roadmap, not a commitment, and not an implementation plan.
+The CDB Strategic Idea Lab is a public collection of strategy, architecture, product-line, and future-state documents — an open space for ideas, discussion, collaborative thinking, and creative exploration. It is not a roadmap, not a commitment, and not an implementation plan.
 
 ## What This Is
 
@@ -48,15 +52,18 @@ Each document is structurally unified (following the same 12-section template), 
 ## How To Use This Space
 
 - **Read and explore.** Start at the [Gist Index](https://gist.github.com/jannekbuengener/2096b165498da8bce6f5489229fbf4f6) and follow the recommended reading order.
+- **Send ideas and feedback.** Have a thought, a better approach, or a missing perspective? Open a GitHub Issue, comment on a Gist, or start a conversation. Every perspective helps.
 - **Discuss and criticise.** Open a GitHub Discussion, comment on a Gist, or raise an Issue in the repo if a document sparks an idea or a concern.
 - **Reference and remix.** Use these documents as raw material for your own strategic thinking, system design, or architecture brainstorming.
 - **Bring it back to the repo.** If an idea matures past the lab stage, the path forward is: Issue → Evidence → PR → Governance → Implementation. The lab is the front porch, not the building.
 
 ## Discussion And Contributions
 
+**Ideas, critique, and suggestions are welcome.** This is a creative strategy and architecture space — an open invitation to think together about what CDB could become.
+
 Ideen, Kritik, Anregungen und Weiterentwicklung sind ausdrücklich willkommen.
 
-This is a creative strategy and architecture space. The documents are intentionally drafted as outward-facing artefacts — written to be read, questioned, and improved by anyone interested in CDB's direction.
+The documents are intentionally drafted as outward-facing artefacts — written to be read, questioned, and improved by anyone interested in CDB's direction.
 
 If you have a thought, a better approach, a missing perspective, or a concrete suggestion:
 
