@@ -1,0 +1,106 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://claire-de-binare/docs/contracts/profitability_replay_report.v1.schema.json",
+  "title": "Profitability Replay Report v1",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "schema_version",
+    "candidate_id",
+    "replay_run_id",
+    "strategy_id",
+    "symbol",
+    "timeframe",
+    "generated_at",
+    "gross_return",
+    "profit_factor",
+    "expectancy",
+    "win_rate",
+    "avg_win",
+    "avg_loss",
+    "max_drawdown",
+    "loss_streak",
+    "trade_count",
+    "data_integrity_ok",
+    "deterministic_replay_ok",
+    "notes"
+  ],
+  "properties": {
+    "schema_version": {
+      "const": "profitability_replay_report.v1"
+    },
+    "candidate_id": {
+      "type": "string",
+      "pattern": "^cand-[a-z0-9_-]{4,80}$"
+    },
+    "replay_run_id": {
+      "type": "string",
+      "pattern": "^replay-[a-f0-9]{12}-[0-9]{4}$"
+    },
+    "strategy_id": {
+      "type": "string",
+      "minLength": 1
+    },
+    "symbol": {
+      "type": "string",
+      "pattern": "^[A-Z0-9_:-]{3,40}$"
+    },
+    "timeframe": {
+      "type": "string",
+      "minLength": 1,
+      "maxLength": 20
+    },
+    "generated_at": {
+      "type": "string",
+      "format": "date-time"
+    },
+    "gross_return": {
+      "type": "number"
+    },
+    "profit_factor": {
+      "type": "number",
+      "minimum": 0.0
+    },
+    "expectancy": {
+      "type": "number"
+    },
+    "win_rate": {
+      "type": "number",
+      "minimum": 0.0,
+      "maximum": 1.0
+    },
+    "avg_win": {
+      "type": "number",
+      "minimum": 0.0
+    },
+    "avg_loss": {
+      "type": "number",
+      "minimum": 0.0
+    },
+    "max_drawdown": {
+      "type": "number",
+      "minimum": 0.0
+    },
+    "loss_streak": {
+      "type": "integer",
+      "minimum": 0
+    },
+    "trade_count": {
+      "type": "integer",
+      "minimum": 0
+    },
+    "data_integrity_ok": {
+      "type": "boolean"
+    },
+    "deterministic_replay_ok": {
+      "type": "boolean"
+    },
+    "notes": {
+      "type": "array",
+      "items": {
+        "type": "string",
+        "minLength": 1
+      }
+    }
+  }
+}

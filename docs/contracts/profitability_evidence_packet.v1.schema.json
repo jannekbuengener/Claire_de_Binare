@@ -268,6 +268,125 @@
         "minLength": 1,
         "maxLength": 500
       }
+    },
+    "source_artifacts": {
+      "type": "array",
+      "minItems": 1,
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "artifact_role",
+          "path",
+          "schema_ref",
+          "sha256"
+        ],
+        "properties": {
+          "artifact_role": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 120
+          },
+          "path": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 500
+          },
+          "schema_ref": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 300
+          },
+          "sha256": {
+            "type": "string",
+            "pattern": "^sha256:[a-f0-9]{64}$"
+          }
+        }
+      }
+    },
+    "missing_evidence": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "artifact_role",
+          "classification",
+          "summary"
+        ],
+        "properties": {
+          "artifact_role": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 120
+          },
+          "classification": {
+            "type": "string",
+            "enum": [
+              "OPTIONAL_NOT_PROVIDED",
+              "MISSING_REFERENCE",
+              "UNAVAILABLE_FROM_INPUT",
+              "UNUSABLE_INPUT",
+              "AMBIGUOUS_ALIGNMENT"
+            ]
+          },
+          "summary": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 1000
+          }
+        }
+      }
+    },
+    "coverage_readiness": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "coverage_report_ready",
+        "ranking_inputs_complete",
+        "data_quality_ready",
+        "economics_ready",
+        "scenario_ready",
+        "replay_ready",
+        "replay_vs_paper_ready",
+        "regime_scorecard_ready",
+        "harvester_refs_ready",
+        "summary"
+      ],
+      "properties": {
+        "coverage_report_ready": {
+          "type": "boolean"
+        },
+        "ranking_inputs_complete": {
+          "type": "boolean"
+        },
+        "data_quality_ready": {
+          "type": "boolean"
+        },
+        "economics_ready": {
+          "type": "boolean"
+        },
+        "scenario_ready": {
+          "type": "boolean"
+        },
+        "replay_ready": {
+          "type": "boolean"
+        },
+        "replay_vs_paper_ready": {
+          "type": "boolean"
+        },
+        "regime_scorecard_ready": {
+          "type": "boolean"
+        },
+        "harvester_refs_ready": {
+          "type": "boolean"
+        },
+        "summary": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 1000
+        }
+      }
     }
   }
 }

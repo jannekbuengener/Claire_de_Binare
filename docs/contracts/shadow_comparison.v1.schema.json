@@ -1,0 +1,107 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://claire-de-binare/docs/contracts/shadow_comparison.v1.schema.json",
+  "title": "Shadow Comparison Artifact v1",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "comparison_fingerprint",
+    "status",
+    "paper_provenance_id",
+    "replay_run_id",
+    "symbol",
+    "strategy_id",
+    "signal_count_delta",
+    "order_count_delta",
+    "fill_count_delta",
+    "inferred_unfilled_count_delta",
+    "signal_context_delta",
+    "signal_count_false_neutral_detected",
+    "window_start_utc_replay",
+    "window_end_utc_replay",
+    "window_start_utc_paper",
+    "window_end_utc_paper"
+  ],
+  "properties": {
+    "comparison_fingerprint": {
+      "type": "string",
+      "pattern": "^[a-f0-9]{64}$"
+    },
+    "status": {
+      "type": "string",
+      "enum": [
+        "aligned",
+        "unusable"
+      ]
+    },
+    "alignment_issue": {
+      "type": "string",
+      "minLength": 1
+    },
+    "paper_provenance_id": {
+      "type": "string",
+      "minLength": 1
+    },
+    "replay_run_id": {
+      "type": "string",
+      "pattern": "^replay-[a-f0-9]{12}-[0-9]{4}$"
+    },
+    "symbol": {
+      "type": "string",
+      "pattern": "^[A-Z0-9_:-]{3,40}$"
+    },
+    "strategy_id": {
+      "type": "string",
+      "minLength": 1
+    },
+    "signal_count_delta": {
+      "type": "integer"
+    },
+    "order_count_delta": {
+      "type": "integer"
+    },
+    "fill_count_delta": {
+      "type": "integer"
+    },
+    "inferred_unfilled_count_delta": {
+      "type": "integer"
+    },
+    "actual_reject_count_delta": {
+      "type": "integer"
+    },
+    "fill_rate_replay": {
+      "type": "string",
+      "pattern": "^-?[0-9]+(\\.[0-9]+)?$"
+    },
+    "fill_rate_paper": {
+      "type": "string",
+      "pattern": "^-?[0-9]+(\\.[0-9]+)?$"
+    },
+    "fill_rate_delta": {
+      "type": "string",
+      "pattern": "^-?[0-9]+(\\.[0-9]+)?$"
+    },
+    "signal_context_delta": {
+      "type": "integer"
+    },
+    "signal_count_false_neutral_detected": {
+      "type": "boolean"
+    },
+    "window_start_utc_replay": {
+      "type": "string",
+      "format": "date-time"
+    },
+    "window_end_utc_replay": {
+      "type": "string",
+      "format": "date-time"
+    },
+    "window_start_utc_paper": {
+      "type": "string",
+      "format": "date-time"
+    },
+    "window_end_utc_paper": {
+      "type": "string",
+      "format": "date-time"
+    }
+  }
+}
