@@ -339,6 +339,33 @@ def test_sleep_with_interval_check_partial_chunk() -> None:
 
 
 @pytest.mark.unit
+def test_sleep_with_interval_check_stops_when_chunk_returns_after_deadline(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    now = {"value": 0.0}
+    calls: list[float] = []
+
+    def fake_monotonic() -> float:
+        return now["value"]
+
+    def fake_sleep(seconds: float) -> None:
+        calls.append(seconds)
+        now["value"] += 130.0
+
+    monkeypatch.setattr(
+        "tools.evidence_harvester.coordinator.time.monotonic",
+        fake_monotonic,
+    )
+
+    overshoot = _sleep_with_interval_check(
+        fake_sleep, total_seconds=125, chunk_seconds=60
+    )
+
+    assert calls == [60]
+    assert overshoot == pytest.approx(5.0, abs=0.001)
+
+
+@pytest.mark.unit
 def test_sleep_with_interval_check_zero_duration() -> None:
     calls: list[float] = []
 

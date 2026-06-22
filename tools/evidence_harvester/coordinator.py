@@ -411,13 +411,25 @@ def _sleep_with_interval_check(
     chunk_seconds: int = 60,
 ) -> float:
     """Sleep in chunks, returning overshoot (actual - expected) seconds."""
+    if total_seconds <= 0:
+        return 0.0
+    if chunk_seconds < 1:
+        raise CoordinatorError("chunk_seconds must be >= 1")
+
     started = time.monotonic()
-    remaining = total_seconds
-    while remaining > 0:
-        chunk = min(remaining, chunk_seconds)
+    deadline = started + total_seconds
+    requested_sleep = 0.0
+    while requested_sleep < total_seconds:
+        elapsed_remaining = deadline - time.monotonic()
+        requested_remaining = total_seconds - requested_sleep
+        if elapsed_remaining <= 0 or requested_remaining <= 0:
+            break
+        chunk = min(requested_remaining, elapsed_remaining, chunk_seconds)
         sleep_fn(chunk)
-        remaining -= chunk
-    elapsed = time.monotonic() - started
+        requested_sleep += chunk
+        if time.monotonic() >= deadline:
+            break
+    elapsed = max(time.monotonic() - started, requested_sleep)
     overshoot = elapsed - total_seconds
     return max(overshoot, 0.0)
 
