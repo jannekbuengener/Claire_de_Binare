@@ -111,6 +111,15 @@ Restunsicherheiten
 
 Shadow/mock only
 - yes/no + why
+
+Test-First Empfehlung
+- Wenn der Validierungspfad "nur Unit Tests" ist:
+  - Lade `cdb-test-first` Skill
+  - Beantworte die 5 Test-First-Fragen (Regel, Testart, Entscheidung, Metadaten, Weiterverarbeitung)
+  - Dokumentiere die Testart und die 15 Metadaten-Felder aus `knowledge/testing/TEST_FIRST_PROCESSING_CONTRACT.md` §3
+  - Prüfe, ob der Test später SurrealDB-Wissen erzeugt (`surrealdb_export: true`)
+- Wenn der Pfad "Replay" oder "MockExchange/Emulator" ist:
+  - Zusätzlich zu den Test-First-Fragen: Prüfe MockExchange-Muster aus `knowledge/testing/MOCKEXCHANGE_CDB_TEST_MAP.md`
 ```
 
 ## Anti-Patterns
