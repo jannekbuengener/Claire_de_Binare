@@ -3,10 +3,16 @@
 **Status Class**: Working Repo / Engineering Status
 **Authority**: Current repo/main/test/dependency snapshot; not the canonical live-readiness or Echtgeld Go/No-Go source.
 **Operational Canon**: `docs/live-readiness/LR-AUDIT-STATUS-2026-03-05.md`
-**Last Updated**: 2026-06-04
+**Last Updated**: 2026-06-23
 **GitHub Boundary**: The live commit and PR state is tracked in GitHub (UI/API or `gh`); this file is a curated repo/engineering ledger, not a live mirror.
 
 ---
+
+## Repo / Engineering Status (2026-06-23)
+
+- **#3410 Harmonize ci_artifact contract**: **COMPLETED** — PR [#3410](https://github.com/jannekbuengener/Claire_de_Binare/pull/3410) squash-merged (`0dcc47dc`); `ci_artifact` field type harmonised from `bool` to `string` across `TEST_FIRST_PROCESSING_CONTRACT.md` (field table + examples), `tools/test_metadata_scanner.py` (removed from `BOOLEAN_FIELDS`), and scanner tests (assertion `is False` → `== "test-report"`). PILOT-001 already used `ci_artifact: test-report` — no change needed. Scanner output now shows `"ci_artifact": "test-report"` (string) instead of `false` (bool). All 31 scanner tests PASS. CI required checks green (ci, policy-gate). capture-intent and submit-pypi remain failing (pre-existing, scoped to separate issue). LR NO-GO; no runtime/Docker/DB/MCP mutation.
+
+- **#2535 LR-050 Final Reconcile**: **COMPLETED** — PR [#2945](https://github.com/jannekbuengener/Claire_de_Binare/pull/2945) squash-merged (`5c0a6975`); SSOT [`docs/live-readiness/LR-050-FINAL-RECONCILE.md`](docs/live-readiness/LR-050-FINAL-RECONCILE.md); child SSOTs #2526–#2534 delivered; verdict **NO-GO** / fail-closed / not ready for live capital / not ready for human live approval; `ready-for-human-live-approval` not set. Session log: `knowledge/logs/sessions/2026-06-04-lr050-final-reconcile-2535.md`. GitHub-live: #2535 **CLOSED**. LR NO-GO; no runtime/exchange/secrets/orders.
 
 ## Repo / Engineering Status (2026-06-04)
 
