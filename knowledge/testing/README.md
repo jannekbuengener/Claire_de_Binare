@@ -90,6 +90,49 @@ python -m tools.test_metadata_scanner tests/ | python -m tools.test_metadata_imp
 **Path-Sicherheit:** Absolute Pfade (Windows-Laufwerkbuchstabe oder führender
 Schrägstrich) werden fail-closed abgelehnt.
 
+## Import Plan Builder
+
+`tools/test_metadata_surrealdb_import_plan.py` — read-only, dry-run SurrealDB Import Plan Builder.
+
+**Zweck:** Übersetzt ein Import-Bundle v1 in einen deterministischen Dry-Run-Import-Plan.
+Der Plan beschreibt `test_case:*`-Ziel-Datensätze, schreibt aber **nie nach SurrealDB**.
+Kein DB-Connector, kein SurrealQL, keine MCP-Abhängigkeit.
+
+**Plan-Format:**
+- `plan_type: upsert_dry_run`
+- `dry_run: true`, `surrealdb_write: false`
+- Jede Operation enthält `target_table`, `target_id`, `record` (Payload),
+  `content_hash`, `source_bundle_record_id`, `limitations`
+- `bundle_fingerprint` per SHA-256 zur Plan-Identifikation
+- Warnungen bei fehlendem `pilot_id` oder Vertragsverletzungen
+
+**Nutzung:**
+```bash
+# Pipe aus Bundle-Builder
+python -m tools.test_metadata_import_bundle artifacts/scanner-report.json | python -m tools.test_metadata_surrealdb_import_plan -
+
+# Datei
+python -m tools.test_metadata_surrealdb_import_plan artifacts/import-bundle.json --output artifacts/import-plan.json
+
+# Bundle direkt
+python -m tools.test_metadata_surrealdb_import_plan artifacts/import-bundle.json
+```
+
+**Exit-Codes:**
+- 0: valider Dry-Run-Plan erzeugt
+- 1: keine importierbaren Records oder Contract-Validation-Fehler
+- 2: Parse-/Usage-Fehler
+
+**Safety Gates:**
+- Absolutpfade werden fail-closed blockiert
+- `ci_artifact` muss String sein (kein Bool)
+- Fehlende Pflichtfelder werden mit Warning ausgeschlossen
+- `pilot_id` ausserhalb des `cdb-test-pilot-NNN`-Patterns erzeugt Warning
+  und Eintrag in `limitations`
+
+**Contract:** Siehe `TEST_METADATA_SURREALDB_IMPORT_CONTRACT.md` für das vollständige
+Contract-Dokument.
+
 ## Guardrail
 
 Testing knowledge does not authorize runtime, Docker, exchange, database, or
