@@ -18,6 +18,7 @@ Wichtige kanonische Dateien:
 - [`knowledge/governance/CDB_GOVERNANCE.md`](knowledge/governance/CDB_GOVERNANCE.md)
 - [`knowledge/governance/CDB_AGENT_POLICY.md`](knowledge/governance/CDB_AGENT_POLICY.md)
 - [`knowledge/CDB_KNOWLEDGE_HUB.md`](knowledge/CDB_KNOWLEDGE_HUB.md)
+- [`knowledge/testing/README.md`](knowledge/testing/README.md) — Test-First Processing Contract, Testarten, MockExchange-Muster
 - [`CURRENT_STATUS.md`](CURRENT_STATUS.md)
 - [`docs/live-readiness/LR-AUDIT-STATUS-2026-03-05.md`](docs/live-readiness/LR-AUDIT-STATUS-2026-03-05.md)
 - [`docs/runbooks/CONTROL_REGISTER.md`](docs/runbooks/CONTROL_REGISTER.md)

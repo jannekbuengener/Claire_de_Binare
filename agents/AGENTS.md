@@ -72,6 +72,9 @@ versionierte Root-Flächen für `.claude/`, `.codex/`, `.cursor/`, `.gemini/`, `
   - Kanonische Governance-, Policy- und Invariant-Dokumente.
 - `knowledge/`
   - Kanonische Knowledge-Hub- und Decision-Hub-Dokumente.
+- `knowledge/testing/`
+  - Test-First Processing Contract, Testarten-Atlas, MockExchange-Muster,
+    Skill-Valley-Upgrade-Plan. Einstieg: `knowledge/testing/README.md`.
 - `.github/`
   - GitHub-Community-, Template- und Maintainer-Artefakte.
 - `docs/`
