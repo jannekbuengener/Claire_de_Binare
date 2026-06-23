@@ -32,6 +32,56 @@ from services.validation.profitability_evidence_packet_assembler import (
 PROJECT_ROOT = Path(__file__).resolve().parents[3]
 CONTRACTS_DIR = PROJECT_ROOT / "docs" / "contracts"
 
+# ===========================================================================
+# Test-First Metadata (Pilot: CDB-PILOT-001)
+# ===========================================================================
+#
+# 1. Welche Regel wird geschützt?
+#    Profitability Evidence Packet Assembly muss deterministisch,
+#    schema-konform und fail-closed sein. Kein undichter Fehlerpfad
+#    darf zum Absturz oder stillem Datenverlust führen.
+#
+# 2. Welche Testart passt?
+#    Hauptsaechlich Bauteil-Tests (isolierte Funktionen/Klassen).
+#    Einige Schutz-Tests (fail-closed bei fehlenden/kaputten Inputs).
+#    Einige Ketten-Tests (Pipeline vom Input ueber Validierung zum Packet).
+#    Klassifikation pro Gruppe unten.
+#
+# 3. Welche Entscheidung wird sicherer?
+#    "Der ProfitabilityEvidencePacketAssembler produziert zuverlaessig
+#     schema-konforme Packete, failt geschlossen bei fehlenden/kaputten
+#     Inputs und ist deterministisch."
+#
+# 4. Welche Metadaten braucht der Test? (siehe Block unten)
+#
+# 5. Wie wird das Ergebnis weiterverarbeitet?
+#    CI: pytest-sammlung + JUnit-Report. Spaeter SurrealDB-Export
+#    (surrealdb_export: false im Pilot).
+#
+# Metadata fields (TEST_FIRST_PROCESSING_CONTRACT.md §6):
+#   test_id:              cdb-test-pilot-001
+#   test_title:           Profitability Evidence Packet Assembler
+#   test_type:            mixed (Bauteil / Schutz / Ketten; siehe Gruppe)
+#   cdb_area:             validation
+#   rule_ref:             PROFITABILITY_EVIDENCE_PACKET_SCHEMA_CONFORMANCE
+#   decision_ref:         d-2026-04-08-evidence-packet-structure
+#   issue_ref:            #1492
+#   pr_ref:               (wird beim Pilot-PR gesetzt)
+#   evidence_ref:         docs/contracts/profitability_evidence_packet.v1.schema.json
+#   code_area:            ProfitabilityEvidencePacketAssembler
+#   security_relevant:    false
+#   live_relevant:        false
+#   profitability_relevant: true
+#   surrealdb_export:     false
+#   ci_artifact:          test-report
+#
+# Gruppen-Klassifikation:
+#   Happy-Path + CLI main  → Ketten-Test  (Pipeline-Durchstich)
+#   Determinism + Serializer → Bauteil-Test (Determinismus-Garantie)
+#   Missing/Invalid/Schema/Legacy → Schutz-Test (fail-closed)
+#   Alle anderen           → Bauteil-Test  (isolierte Logik)
+# ===========================================================================
+
 
 # ---------------------------------------------------------------------------
 # Helpers

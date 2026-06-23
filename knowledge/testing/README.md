@@ -15,6 +15,7 @@ not executable test code.
 | `MOCKEXCHANGE_CDB_TEST_MAP.md` | Active map for turning MockExchange reference patterns into CDB-native tests. |
 | `TEST_FIRST_PROCESSING_CONTRACT.md` | Active contract: test metadata standard, 15 test types, SurrealDB knowledge model, processing pipeline. |
 | `SKILL_VALLEY_TEST_UPGRADE_PLAN.md` | Active plan: 8 skill rules agents must learn before scaling tests. |
+| `TEST_FIRST_METADATA_PILOT.md` | Pilot: Test-First-Metadatenblock in `tests/unit/validation/test_profitability_evidence_packet_assembler.py` — Proof-of-Concept fuer SurrealDB-Export-faehige Metadaten. |
 
 ## Guardrail
 
