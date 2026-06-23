@@ -103,8 +103,8 @@ def _to_relpath(path: Path, anchor: Path | None = None) -> str:
     """Convert path to relative, or keep as simple name."""
     try:
         if anchor:
-            return str(path.relative_to(anchor))
-        return str(path.relative_to(Path.cwd()))
+            return path.relative_to(anchor).as_posix()
+        return path.relative_to(Path.cwd()).as_posix()
     except ValueError:
         return path.name
 

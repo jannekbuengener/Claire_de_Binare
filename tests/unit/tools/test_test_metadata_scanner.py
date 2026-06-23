@@ -18,6 +18,15 @@ from tools.test_metadata_scanner import (
     run,
 )
 
+PROJECT_ROOT = Path(__file__).resolve().parents[3]
+PILOT_METADATA_FILE = (
+    PROJECT_ROOT
+    / "tests"
+    / "unit"
+    / "validation"
+    / "test_profitability_evidence_packet_assembler.py"
+)
+
 # ---------------------------------------------------------------------------
 # Helpers
 # ---------------------------------------------------------------------------
@@ -61,7 +70,7 @@ VALID_BLOCK_SURRDB = """\
 #   live_relevant:        false
 #   profitability_relevant: false
 #   surrealdb_export:     true
-#   ci_artifact:          false
+#   ci_artifact:          test-report
 """
 
 PARTIAL_BLOCK = """\
@@ -170,13 +179,13 @@ class TestProcessFields:
             "test_id": "tc-001",
             "test_title": "Test",
         }
-        processed, missing = _process_fields(raw)
+        _, missing = _process_fields(raw)
         assert len(missing) > 0
         assert "test_type" in missing
         assert "cdb_area" in missing
 
     def test_all_fields_missing(self):
-        processed, missing = _process_fields({})
+        _, missing = _process_fields({})
         assert len(missing) == len(REQUIRED_FIELDS)
 
 
@@ -217,6 +226,24 @@ class TestScanFile:
         path = _write_tmp_file(VALID_BLOCK_SURRDB)
         result = scan_file(path)
         assert result["blocks"][0]["surrealdb_export"] is True
+
+    def test_actual_pilot001_is_export_ready(self):
+        result = scan_file(PILOT_METADATA_FILE, repo_root=PROJECT_ROOT)
+        assert result["file"] == (
+            "tests/unit/validation/"
+            "test_profitability_evidence_packet_assembler.py"
+        )
+        assert len(result["blocks"]) == 1
+        assert result["validation_errors"] == []
+
+        block = result["blocks"][0]
+        fields = block["fields"]
+        assert block["is_valid"] is True
+        assert block["surrealdb_export"] is True
+        assert fields["test_id"] == "cdb-test-pilot-001"
+        assert fields["surrealdb_export"] is True
+        assert fields["ci_artifact"] == "test-report"
+        assert set(fields) == set(REQUIRED_FIELDS)
 
     def test_partial_block_flags_errors(self):
         path = _write_tmp_file(PARTIAL_BLOCK)
@@ -289,11 +316,29 @@ class TestBuildReport:
     def test_no_absolute_paths_in_output(self):
         path = _write_tmp_file(VALID_BLOCK)
         result = scan_file(path)
-        json_str = json.dumps(result, indent=2)
         # No drive letter or root slash in the 'file' field
         file_path = result["file"]
         assert ":" not in file_path  # no Windows drive letter
         assert "\\" not in file_path or "\\\\" not in file_path
+
+    def test_actual_pilot001_report_is_stable_and_machine_readable(self):
+        report1 = build_report([scan_file(PILOT_METADATA_FILE, repo_root=PROJECT_ROOT)])
+        report2 = build_report([scan_file(PILOT_METADATA_FILE, repo_root=PROJECT_ROOT)])
+
+        assert report1 == report2
+        assert set(report1) == {
+            "scanner_version",
+            "scanned_files",
+            "total_blocks",
+            "total_errors",
+            "surrealdb_export_ready",
+            "results",
+        }
+        assert report1["scanned_files"] == 1
+        assert report1["total_blocks"] == 1
+        assert report1["total_errors"] == 0
+        assert report1["surrealdb_export_ready"] == 1
+        assert ":" not in report1["results"][0]["file"]
 
 
 # ---------------------------------------------------------------------------
