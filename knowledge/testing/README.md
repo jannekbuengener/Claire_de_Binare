@@ -53,6 +53,43 @@ JSON erscheint das als Block-Feld und im Report als
 `"surrealdb_export_ready"`-Zaehler. Das ist kein SurrealDB-Write und keine
 Import-Freigabe; ein spaeterer Importer bleibt ein eigener Slice.
 
+## Import-Bundle-Builder
+
+`tools/test_metadata_import_bundle.py` — read-only SurrealDB-ready Import-Bundle-Builder.
+
+**Zweck:** Transformiert das JSON des Scanners in ein deterministisches,
+SurrealDB-kompatibles Import-Bundle. Nur Blöcke mit `is_valid: true` und
+`surrealdb_export: true` werden übernommen. Kein DB-Zugriff, kein Netzwerk,
+keine Mutation.
+
+**Record-Format:**
+- `record_type: test_case` (aligniert mit `TEST_FIRST_PROCESSING_CONTRACT.md`)
+- `record_id` aus `source_file` + `test_id` (deterministisch, stabil)
+- `content_hash` per `canonical_hash()` aus `core/replay/canonical_json.py`
+- `pilot_id` wird aus `test_id` abgeleitet (Pattern: `cdb-test-pilot-NNN`)
+- `metadata` enthält alle Scanner-Felder unverändert
+
+**Nutzung:**
+```bash
+# Pipe aus Scanner
+python -m tools.test_metadata_scanner tests/ --output artifacts/scanner-report.json
+python -m tools.test_metadata_import_bundle artifacts/scanner-report.json
+
+# Datei
+python -m tools.test_metadata_import_bundle artifacts/scanner-report.json --output artifacts/import-bundle.json
+
+# Stdin
+python -m tools.test_metadata_scanner tests/ | python -m tools.test_metadata_import_bundle -
+```
+
+**Exit-Codes:**
+- 0: valides Bundle erzeugt
+- 1: keine exportierbaren Blöcke oder Validierungsfehler
+- 2: Parse-/Usage-Fehler
+
+**Path-Sicherheit:** Absolute Pfade (Windows-Laufwerkbuchstabe oder führender
+Schrägstrich) werden fail-closed abgelehnt.
+
 ## Guardrail
 
 Testing knowledge does not authorize runtime, Docker, exchange, database, or

@@ -8,6 +8,7 @@
 # Allow official test suite in tests/ directory (must come AFTER wildcard)
 !tests/**/*.py
 !tools/test_metadata_scanner.py
+!tools/test_metadata_import_bundle.py
 !tests/**/*.js
 !services/validation/strategy_backtest_runner.py
 !services/validation/rmr_backtest_runner.py
