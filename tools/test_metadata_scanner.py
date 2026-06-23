@@ -48,7 +48,6 @@ BOOLEAN_FIELDS: frozenset[str] = frozenset(
         "live_relevant",
         "profitability_relevant",
         "surrealdb_export",
-        "ci_artifact",
     }
 )
 

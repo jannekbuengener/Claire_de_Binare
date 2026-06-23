@@ -156,14 +156,14 @@ class TestProcessFields:
             "live_relevant": "false",
             "profitability_relevant": "false",
             "surrealdb_export": "true",
-            "ci_artifact": "false",
+            "ci_artifact": "test-report",
         }
         processed, missing = _process_fields(raw)
         assert len(missing) == 0
         assert processed["test_id"] == "tc-001"
         assert processed["security_relevant"] is True
         assert processed["surrealdb_export"] is True
-        assert processed["ci_artifact"] is False
+        assert processed["ci_artifact"] == "test-report"
 
     def test_missing_fields(self):
         raw = {

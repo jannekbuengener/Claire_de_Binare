@@ -78,7 +78,7 @@ Jeder wichtige CDB-Test trägt ab heute ein Pflichtfeld-Set. Wichtige Tests sind
 | `live_relevant` | bool | Relevanz für Live-Trading? | `false` |
 | `profitability_relevant` | bool | Relevanz für Profit-Berechnung? | `false` |
 | `surrealdb_export` | bool | Wird nach SurrealDB exportiert? | `true` |
-| `ci_artifact` | bool | Bleibt reines CI-Artefakt? | `false` |
+| `ci_artifact` | string | Bezeichnung des CI-Artefakts (z. B. `test-report`, `coverage-html`). Kein Ja/Nein-Flag — die Art des Artefakts. | `test-report` |
 
 ### Wie die Felder im Test landen
 
@@ -100,9 +100,8 @@ security_relevant: true
 live_relevant: true
 profitability_relevant: false
 surrealdb_export: true
-ci_artifact: false
+ci_artifact: test-report
 """
-```
 
 Oder später als strukturierter JSON/YAML-Block, den ein CI-Scanner automatisch ausliest und nach SurrealDB schreibt.
 
@@ -373,7 +372,7 @@ security_relevant: true
 live_relevant: true
 profitability_relevant: false
 surrealdb_export: true
-ci_artifact: false
+ci_artifact: test-report
 """
 
 def test_kill_switch_blocks_orders(risk_service, mock_executor):
