@@ -55,8 +55,9 @@ CONTRACTS_DIR = PROJECT_ROOT / "docs" / "contracts"
 # 4. Welche Metadaten braucht der Test? (siehe Block unten)
 #
 # 5. Wie wird das Ergebnis weiterverarbeitet?
-#    CI: pytest-sammlung + JUnit-Report. Spaeter SurrealDB-Export
-#    (surrealdb_export: false im Pilot).
+#    CI: pytest-sammlung + JUnit-Report. JSON-Export ist fuer
+#    spaetere SurrealDB-Nutzung freigegeben
+#    (surrealdb_export: true im Pilot). Kein DB-Write in diesem Slice.
 #
 # Metadata fields (TEST_FIRST_PROCESSING_CONTRACT.md §6):
 #   test_id:              cdb-test-pilot-001
@@ -72,7 +73,7 @@ CONTRACTS_DIR = PROJECT_ROOT / "docs" / "contracts"
 #   security_relevant:    false
 #   live_relevant:        false
 #   profitability_relevant: true
-#   surrealdb_export:     false
+#   surrealdb_export:     true
 #   ci_artifact:          test-report
 #
 # Gruppen-Klassifikation:
