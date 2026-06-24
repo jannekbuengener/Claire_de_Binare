@@ -35,7 +35,7 @@
 
 -- ---------------------------
 -- VectorGraph: Analyzer for code/doc full-text search
--- Dimension 1536 (OpenAI embedding standard); replaceable in #3424
+-- Dimension 1536 (OpenAI embedding standard); used by #3424 Hybrid Retrieval
 -- Issue #3422
 -- ---------------------------
 DEFINE ANALYZER cdb_code_analyzer TOKENIZERS class, camel FILTERS lowercase, ascii;
