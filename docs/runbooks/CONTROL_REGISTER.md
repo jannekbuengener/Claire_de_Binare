@@ -1,6 +1,6 @@
 # Control Register
 
-**Letzte Aktualisierung:** 2026-04-21
+**Letzte Aktualisierung:** 2026-06-24
 **SSOT Live-Readiness:** `docs/live-readiness/LR-AUDIT-STATUS-2026-03-05.md`
 **Verdict:** NO-GO
 **Control-Board Stage:** `trade-capable` (ratifiziert 2026-04-08 via Issue `#1492`)
@@ -41,6 +41,20 @@
 | `ACTIVE_ROADMAP.md` | Pointer auf beide SSoTs |
 
 Regel: Phasen-Status nie in CURRENT_STATUS eintragen. LR-Verdikt nie aus einer Board-Stage ableiten. Board-Stage nie als implizites LR-GO lesen.
+
+---
+
+## Architecture Decisions
+
+| ADR | Topic | Decision | Status |
+|-----|-------|----------|--------|
+| `ADR-002` | Context Intelligence Canon (`knowledge/decisions/ADR-002-context-intelligence-canon.md`, Issue #3419) | `ADOPT_AFTER_FOUNDATION_REPAIR` — adoptieren nach abgeschlossener Foundation-Reparatur (#3420–#3427) | **accepted** |
+| `#2775` | Context Brain Default Posture (`knowledge/decisions/CDB_CONTEXT_BRAIN_DEFAULT_POSTURE.md`) | `ALLOW_READONLY_CONDITIONAL` | **accepted / active** |
+
+Hinweise:
+- ADR-002 autorisiert weder Runtime- noch Live- noch DB-Write-Operationen.
+- `PERSIST_ALLOWED=false` und `MUTATION_ALLOWED=false` bleiben unverändert.
+- Board-Stage `trade-capable` ist orthogonal zu ADR-002.
 
 ---
 
