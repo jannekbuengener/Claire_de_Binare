@@ -98,7 +98,7 @@ def test_passhash_uses_placeholder_format() -> None:
         + " ".join(define_user_block)
     )
     passhash_line = next(
-        (l for l in define_user_block if "PASSHASH" in l.upper()), ""
+        (ln for ln in define_user_block if "PASSHASH" in ln.upper()), ""
     )
     assert "${" in passhash_line and "}" in passhash_line, (
         f"PASSHASH must use ${{...}} placeholder, got: {passhash_line.strip()}"
