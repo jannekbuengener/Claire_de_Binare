@@ -17,25 +17,43 @@ from tests.surrealdb.conftest import SURQL_ORIGINAL, SURQL_DEPLOY, BASELINE_PATH
 # Canonical table list — source of truth for schema expectations
 # ---------------------------------------------------------------------------
 EXPECTED_TABLES: tuple[str, ...] = (
-    "repo_artifact",
+    "agent_memory",
+    "artifact_cites_decision",
+    "audit_observation",
+    "chunk_mentions_symbol",
+    "claim",
     "code_symbol",
+    "concept",
+    "context_query",
+    "contradiction",
+    "decision_event",
+    "dependency_edge",
+    "doc_chunk",
     "doc_page",
     "doc_section",
-    "doc_chunk",
-    "concept",
-    "dependency_edge",
     "evidence_ref",
-    "claim",
-    "decision_event",
-    "agent_memory",
-    "context_query",
-    "audit_observation",
-    "contradiction",
-    "stale_context",
-    "scope_drift_event",
     "knowledge_quality_score",
+    "memory_supports_decision",
+    "repo_artifact",
+    "scope_drift_event",
+    "stale_context",
     "visual_control_view",
 )
+
+EXPECTED_RELATION_TABLES: tuple[str, ...] = (
+    "artifact_cites_decision",
+    "memory_supports_decision",
+    "chunk_mentions_symbol",
+)
+
+RELATION_METADATA_FIELDS: tuple[str, ...] = (
+    "source",
+    "confidence",
+    "timestamp",
+    "hash",
+)
+
+TRAVERSAL_FIXTURE_PATH = "infrastructure/surrealdb/traversal_query_fixtures.surql"
 
 PK_FIELD_BY_TABLE: dict[str, str] = {
     "repo_artifact": "artifact_id",
@@ -80,7 +98,7 @@ PERMISSION_BLOCKS = {
 # ---------------------------------------------------------------------------
 
 _RE_DEFINE_TABLE = re.compile(
-    r"^\s*DEFINE\s+TABLE\s+(?:IF\s+NOT\s+EXISTS\s+)?(\S+)\s+SCHEMAFULL",
+    r"^\s*DEFINE\s+TABLE\s+(?:IF\s+NOT\s+EXISTS\s+)?(\S+)\s+(?:SCHEMAFULL|TYPE\s+RELATION)",
     re.IGNORECASE | re.MULTILINE,
 )
 _RE_DEFINE_FIELD = re.compile(
@@ -95,12 +113,20 @@ _RE_TABLE_SCHEMAFULL = re.compile(
     r"^\s*DEFINE\s+TABLE\s+(?:IF\s+NOT\s+EXISTS\s+)?(\S+)\s+SCHEMAFULL",
     re.IGNORECASE | re.MULTILINE,
 )
+_RE_TABLE_TYPE = re.compile(
+    r"^\s*DEFINE\s+TABLE\s+(?:IF\s+NOT\s+EXISTS\s+)?(\S+)\s+(?:SCHEMAFULL|TYPE\s+RELATION)",
+    re.IGNORECASE | re.MULTILINE,
+)
+_RE_TABLE_RELATION = re.compile(
+    r"^\s*DEFINE\s+TABLE\s+(?:IF\s+NOT\s+EXISTS\s+)?(\S+)\s+TYPE\s+RELATION",
+    re.IGNORECASE | re.MULTILINE,
+)
 _RE_DEFINE_TABLE_ANY = re.compile(
     r"^\s*DEFINE\s+TABLE\s+(?:IF\s+NOT\s+EXISTS\s+)?(\S+)",
     re.IGNORECASE | re.MULTILINE,
 )
 _RE_PERMISSIONS = re.compile(
-    r"DEFINE\s+TABLE\s+(?:IF\s+NOT\s+EXISTS\s+)?(\S+)\s+SCHEMAFULL\s+PERMISSIONS\s+FOR\s+select\s+NONE,\s+FOR\s+create\s+NONE,\s+FOR\s+update\s+NONE,\s+FOR\s+delete\s+NONE",
+    r"DEFINE\s+TABLE\s+(?:IF\s+NOT\s+EXISTS\s+)?(\S+)\s+(?:SCHEMAFULL|TYPE\s+RELATION)\s+PERMISSIONS\s+FOR\s+select\s+NONE,\s+FOR\s+create\s+NONE,\s+FOR\s+update\s+NONE,\s+FOR\s+delete\s+NONE",
     re.IGNORECASE,
 )
 
@@ -130,11 +156,13 @@ def test_surql_defines_all_expected_tables(surql_original_text: str) -> None:
 
 
 @pytest.mark.unit
-def test_each_table_is_schemafull(surql_original_text: str) -> None:
-    for m in _RE_TABLE_SCHEMAFULL.finditer(surql_original_text):
-        pass
-    tables_found = _RE_TABLE_SCHEMAFULL.findall(surql_original_text)
+def test_each_table_is_schemafull_or_type_relation(surql_original_text: str) -> None:
+    """All tables must be either SCHEMAFULL or TYPE RELATION."""
+    tables_found = _RE_TABLE_TYPE.findall(surql_original_text)
     assert len(tables_found) == len(EXPECTED_TABLES)
+    schemafull = _RE_TABLE_SCHEMAFULL.findall(surql_original_text)
+    relation = _RE_TABLE_RELATION.findall(surql_original_text)
+    assert len(schemafull) + len(relation) == len(EXPECTED_TABLES)
 
 
 @pytest.mark.unit
@@ -194,13 +222,27 @@ def test_deploy_file_permissions_are_strictly_none(surql_deploy_text: str) -> No
     import re as _re
 
     normalized = _re.sub(r"\s+", " ", surql_deploy_text)
+    relation_set = set(EXPECTED_RELATION_TABLES)
     for table in EXPECTED_TABLES:
-        expected = (
-            f"DEFINE TABLE IF NOT EXISTS {table} SCHEMAFULL "
-            f"PERMISSIONS FOR select NONE, FOR create NONE, "
-            f"FOR update NONE, FOR delete NONE"
-        )
-        assert expected in normalized, f"Table {table} missing fail-closed permissions"
+        if table in relation_set:
+            # TYPE RELATION tables: table header + PERMISSIONS block are separated by FROM/TO
+            table_header = f"DEFINE TABLE IF NOT EXISTS {table} TYPE RELATION"
+            permissions_block = "PERMISSIONS FOR select NONE, FOR create NONE, FOR update NONE, FOR delete NONE"
+            assert (
+                table_header in normalized
+            ), f"Table {table} missing TYPE RELATION header"
+            assert (
+                permissions_block in normalized
+            ), f"Table {table} missing fail-closed permissions"
+        else:
+            expected = (
+                f"DEFINE TABLE IF NOT EXISTS {table} SCHEMAFULL "
+                f"PERMISSIONS FOR select NONE, FOR create NONE, "
+                f"FOR update NONE, FOR delete NONE"
+            )
+            assert (
+                expected in normalized
+            ), f"Table {table} missing fail-closed permissions"
 
 
 @pytest.mark.unit
@@ -291,6 +333,109 @@ def test_no_embedding_runtime_data_in_schema(surql_original_text: str) -> None:
         assert (
             pattern not in surql_original_text
         ), f"Embedding runtime data leaking: {pattern}"
+
+
+# ---------------------------------------------------------------------------
+# Graph Relations tests (Issue #3423)
+# ---------------------------------------------------------------------------
+
+
+@pytest.mark.unit
+def test_all_graph_relation_tables_exist(surql_original_text: str) -> None:
+    for table in EXPECTED_RELATION_TABLES:
+        assert table in surql_original_text, f"Missing relation table: {table}"
+
+
+@pytest.mark.unit
+def test_graph_relation_tables_are_type_relation(surql_original_text: str) -> None:
+    for table in EXPECTED_RELATION_TABLES:
+        assert (
+            f"DEFINE TABLE {table} TYPE RELATION" in surql_original_text
+        ), f"{table} is not TYPE RELATION"
+
+
+@pytest.mark.unit
+def test_graph_relation_tables_have_metadata_fields(surql_original_text: str) -> None:
+    for table in EXPECTED_RELATION_TABLES:
+        for field in RELATION_METADATA_FIELDS:
+            assert (
+                f"DEFINE FIELD {field} ON TABLE {table}" in surql_original_text
+            ), f"Missing {field} on {table}"
+
+
+@pytest.mark.unit
+def test_graph_relation_tables_have_created_at(surql_original_text: str) -> None:
+    for table in EXPECTED_RELATION_TABLES:
+        assert (
+            f"DEFINE FIELD created_at ON TABLE {table}" in surql_original_text
+        ), f"Missing created_at on {table}"
+
+
+@pytest.mark.unit
+def test_chunk_mentions_symbol_has_mention_context(surql_original_text: str) -> None:
+    assert (
+        "DEFINE FIELD mention_context ON TABLE chunk_mentions_symbol"
+        in surql_original_text
+    )
+
+
+@pytest.mark.unit
+def test_no_trading_state_in_relation_tables(surql_original_text: str) -> None:
+    for table in EXPECTED_RELATION_TABLES:
+        block = f"DEFINE TABLE {table}"
+        for forbidden in FORBIDDEN_TABLES:
+            assert (
+                forbidden.lower() not in table.lower()
+            ), f"Relation table name uses forbidden trading term: {table}"
+
+
+@pytest.mark.unit
+def test_deploy_relation_tables_have_if_not_exists(surql_deploy_text: str) -> None:
+    for table in EXPECTED_RELATION_TABLES:
+        expected = f"DEFINE TABLE IF NOT EXISTS {table}"
+        assert expected in surql_deploy_text, f"Missing IF NOT EXISTS for {table}"
+
+
+@pytest.mark.unit
+def test_deploy_relation_tables_have_fail_closed_permissions(
+    surql_deploy_text: str,
+) -> None:
+    normalized = re.sub(r"\s+", " ", surql_deploy_text)
+    for table in EXPECTED_RELATION_TABLES:
+        table_header = f"DEFINE TABLE IF NOT EXISTS {table} TYPE RELATION"
+        permissions_block = (
+            "PERMISSIONS FOR select NONE, FOR create NONE, "
+            "FOR update NONE, FOR delete NONE"
+        )
+        assert table_header in normalized, f"Table {table} missing TYPE RELATION header"
+        assert (
+            permissions_block in normalized
+        ), f"Table {table} missing fail-closed permissions"
+    assert "FOR select FULL" not in surql_deploy_text
+    assert "FOR create FULL" not in surql_deploy_text
+
+
+@pytest.mark.unit
+def test_traversal_query_fixture_exists() -> None:
+    path = Path(TRAVERSAL_FIXTURE_PATH)
+    assert path.exists(), f"Traversal fixture missing: {TRAVERSAL_FIXTURE_PATH}"
+    text = path.read_text(encoding="utf-8")
+    assert "RELATE" not in text, "Fixture must not contain RELATE (no runtime)"
+    assert "->" in text, "Fixture must contain arrow traversal syntax"
+
+
+@pytest.mark.unit
+def test_traversal_fixture_has_recursive_query() -> None:
+    path = Path(TRAVERSAL_FIXTURE_PATH)
+    text = path.read_text(encoding="utf-8")
+    assert "@." in text, "Fixture must contain recursive traversal syntax"
+
+
+@pytest.mark.unit
+def test_traversal_fixture_has_backward_traversal() -> None:
+    path = Path(TRAVERSAL_FIXTURE_PATH)
+    text = path.read_text(encoding="utf-8")
+    assert "<-" in text, "Fixture must contain backward traversal syntax"
 
 
 # ---------------------------------------------------------------------------

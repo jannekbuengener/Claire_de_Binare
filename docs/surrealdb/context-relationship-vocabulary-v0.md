@@ -347,7 +347,42 @@ Trace-level causal linkage. The source (effect) was caused by the target
 | Confidence | 1.0 (explicit attribution) / 0.7 (heuristic linkage) |
 | Example | `claim` "Scope drift detected" caused_by `scope_drift_event` "module boundary change" |
 
-### 5.18 `used_by`
+### 5.18 `cites`
+
+The source references or cites the target as an authoritative or contextual source.
+Used for artifact-to-decision traceability in the EvidenceGraph.
+
+| Property | Value |
+|---|---|
+| Direction | source → target |
+| Source types | `repo_artifact`, `doc_page`, `doc_chunk` |
+| Target types | `decision_event` |
+| Cardinality | N:M |
+| Inferred | No (explicit citation) |
+| Confidence | 0.9 (explicit citation, may be stale) |
+| Example | `repo_artifact` "ADR-002.md" cites `decision_event` "Decision to adopt ADOPT_AFTER_FOUNDATION_REPAIR" |
+
+Corresponding SurrealDB edge table: `artifact_cites_decision` (TYPE RELATION).
+
+### 5.19 `supports_evidence`
+
+The source provides contextual or evidential support for the target decision.
+Weaker than `validates` — memory entries may support a decision without constituting
+formal evidence.
+
+| Property | Value |
+|---|---|
+| Direction | source → target |
+| Source types | `agent_memory` |
+| Target types | `decision_event` |
+| Cardinality | N:M |
+| Inferred | No (explicit support attribution) |
+| Confidence | 0.8 (explicit support, memory is ephemeral) |
+| Example | `agent_memory` "Session log: LR-040 INCONCLUSIVE" supports_evidence `decision_event` "LR-050 NO-GO confirmed" |
+
+Corresponding SurrealDB edge table: `memory_supports_decision` (TYPE RELATION).
+
+### 5.20 `used_by`
 
 Inverse of `depends_on`. The source is used (depended upon) by the target.
 This is the canonical reverse-edge type for downstream trace traversal.
@@ -429,6 +464,8 @@ Store as an `audit_observation` flagged for human review instead.
 | `mentions` | any | any | Yes | 0.5 |
 | `related_to` | any | any | Yes | 0.5 |
 | `caused_by` | claim, decision_event, audit_observation, evidence_ref | decision_event, claim, code_symbol, scope_drift_event | No | 0.7 |
+| `cites` | repo_artifact, doc_page, doc_chunk | decision_event | No | 0.9 |
+| `supports_evidence` | agent_memory | decision_event | No | 0.8 |
 | `used_by` | any | any | Yes | 0.6 |
 
 ---
@@ -447,7 +484,57 @@ Store as an `audit_observation` flagged for human review instead.
 
 ---
 
-## 9. Relationship to Dependency Edge Model (#2000)
+## 9. SurrealDB Graph Schema (#3423)
+
+### 9.1 Record Links vs Graph Relations
+
+Issue #3423 introduces the first SurrealDB-native graph edge tables using
+`TYPE RELATION`. The decision per edge type:
+
+| Mechanism | Used For | Rationale |
+|---|---|---|
+| **Record Link** (`TYPE record`) | `page_ref`, `section_ref` on `doc_section`/`doc_chunk` | Simple 1:N parent reference; no metadata on the link itself |
+| **Graph Relation** (`TYPE RELATION`) | `artifact_cites_decision`, `memory_supports_decision`, `chunk_mentions_symbol` | Edge carries metadata (confidence, source, timestamp, hash); requires arrow traversal (`->edge->`) |
+
+### 9.2 Edge Table → Vocabulary Type Mapping
+
+| Edge Table | Vocabulary Type | Direction | Source Types | Target Types | Purpose |
+|---|---|---|---|---|---|
+| `artifact_cites_decision` | `cites` | source→target | repo_artifact, doc_page, doc_chunk | decision_event | Artifact-to-decision citation for EvidenceGraph |
+| `memory_supports_decision` | `supports_evidence` | source→target | agent_memory | decision_event | Memory-backed decision support |
+| `chunk_mentions_symbol` | `mentions` | source→target | doc_chunk | code_symbol | Content-to-code reference |
+
+### 9.3 Edge Metadata Conventions
+
+All TYPE RELATION tables carry the following metadata fields:
+
+| Field | Type | Description |
+|---|---|---|
+| `source` | string | Provenance: tool, agent, or parser that created the edge |
+| `confidence` | float | Confidence score matching vocabulary confidence rules |
+| `timestamp` | datetime | When the relation was observed or asserted |
+| `hash` | string | Deterministic content hash for deduplication |
+| `comment` | string | Free-text annotation |
+| `created_at` | datetime | Record creation timestamp |
+
+### 9.4 Non-Goals (#3423)
+
+- No embedding or vector operations
+- No hybrid retrieval
+- No MCP evidence contract
+- No productive DB writes or schema sync
+- No data migration
+- No trading state references
+
+### 9.5 Next Slices
+
+- #3424 — Full-text + Vector + Hybrid Retrieval Contract
+- #3426 — Permission Matrix + Readonly Agent User
+- #3421 — Readonly MCP Brain Evidence Contract
+
+---
+
+## 10. Relationship to Dependency Edge Model (#2000)
 
 This vocabulary defines the **semantic types** of relations. The Dependency Edge
 Model (#2000) will:
@@ -467,9 +554,14 @@ fields. The importer validation does not yet enforce them. These gaps are tracke
 as implementation slices under #2000 / #2001 and are **not** in scope of this
 vocabulary specification (#1982).
 
+**Graph Relations (#3423)** are orthogonal to the Dependency Edge Model (#2000).
+The #3423 edges are SurrealDB-native `TYPE RELATION` tables with explicit metadata,
+whereas #2000 `dependency_edge` is a SCHEMAFULL table used by the indexer/importer
+pipeline. Both can coexist; #3423 does not replace or modify #2000.
+
 ---
 
-## 10. Downstream Consumers
+## 11. Downstream Consumers
 
 | Consumer | Issue | Usage |
 |---|---|---|
@@ -482,10 +574,14 @@ vocabulary specification (#1982).
 
 ---
 
-## 11. Validation Checklist
+## 12. Validation Checklist
 
-- [ ] All 18 relation types are defined with semantics, direction, and cardinality
+- [ ] All 20 relation types defined (including cites + supports_evidence from #3423)
+- [ ] SurrealDB TYPE RELATION edge tables exist for cites, supports_evidence, mentions
+- [ ] Edge metadata (source, confidence, timestamp, hash) matches vocabulary conventions
 - [ ] Source/target types reference only existing schema tables and endpoint reference types
+- [ ] Record Links vs Graph Relations decision is documented (Section 9.1)
+- [ ] Edge Table → Vocabulary Type mapping is documented (Section 9.2)
 - [ ] Confidence rules are defined per type (minimum confidence ≥ 0.5 for graph edge persistence)
 - [ ] Source reference requirement is specified as target-state contract (Section 6.2)
 - [ ] Inference rules are specified (Section 6.3)
@@ -494,11 +590,13 @@ vocabulary specification (#1982).
 - [ ] No secrets references
 - [ ] No live/echtgeld go inference
 - [ ] No runtime/compose/service changes implied
-- [ ] Downstream consumer mapping is present (Section 10)
+- [ ] Downstream consumer mapping is present (Section 11)
+- [ ] Non-goals for #3423 documented (Section 9.4)
+- [ ] Next slices documented (Section 9.5)
 
 ---
 
-## Provenance / Sources
+## 13. Provenance / Sources
 
 - **Issue**: #1982
 - **Parent**: #1976

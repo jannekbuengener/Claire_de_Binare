@@ -405,3 +405,42 @@ DEFINE INDEX idx_visual_control_view_type ON TABLE visual_control_view FIELDS vi
 DEFINE INDEX idx_visual_control_view_scope ON TABLE visual_control_view FIELDS target_scope;
 DEFINE INDEX idx_visual_control_view_generated_at ON TABLE visual_control_view FIELDS generated_at;
 DEFINE INDEX idx_visual_control_view_created_at ON TABLE visual_control_view FIELDS created_at;
+
+-- ===== Graph Relations v0 (Issue #3423) =====
+
+-- ===== artifact_cites_decision =====
+DEFINE TABLE IF NOT EXISTS artifact_cites_decision TYPE RELATION
+  FROM repo_artifact | doc_page | doc_chunk
+  TO decision_event
+  PERMISSIONS FOR select NONE, FOR create NONE, FOR update NONE, FOR delete NONE;
+DEFINE FIELD source ON TABLE artifact_cites_decision TYPE string;
+DEFINE FIELD confidence ON TABLE artifact_cites_decision TYPE float;
+DEFINE FIELD timestamp ON TABLE artifact_cites_decision TYPE datetime;
+DEFINE FIELD hash ON TABLE artifact_cites_decision TYPE string;
+DEFINE FIELD comment ON TABLE artifact_cites_decision TYPE string;
+DEFINE FIELD created_at ON TABLE artifact_cites_decision TYPE datetime VALUE $value OR time::now();
+
+-- ===== memory_supports_decision =====
+DEFINE TABLE IF NOT EXISTS memory_supports_decision TYPE RELATION
+  FROM agent_memory
+  TO decision_event
+  PERMISSIONS FOR select NONE, FOR create NONE, FOR update NONE, FOR delete NONE;
+DEFINE FIELD source ON TABLE memory_supports_decision TYPE string;
+DEFINE FIELD confidence ON TABLE memory_supports_decision TYPE float;
+DEFINE FIELD timestamp ON TABLE memory_supports_decision TYPE datetime;
+DEFINE FIELD hash ON TABLE memory_supports_decision TYPE string;
+DEFINE FIELD comment ON TABLE memory_supports_decision TYPE string;
+DEFINE FIELD created_at ON TABLE memory_supports_decision TYPE datetime VALUE $value OR time::now();
+
+-- ===== chunk_mentions_symbol =====
+DEFINE TABLE IF NOT EXISTS chunk_mentions_symbol TYPE RELATION
+  FROM doc_chunk
+  TO code_symbol
+  PERMISSIONS FOR select NONE, FOR create NONE, FOR update NONE, FOR delete NONE;
+DEFINE FIELD source ON TABLE chunk_mentions_symbol TYPE string;
+DEFINE FIELD confidence ON TABLE chunk_mentions_symbol TYPE float;
+DEFINE FIELD timestamp ON TABLE chunk_mentions_symbol TYPE datetime;
+DEFINE FIELD hash ON TABLE chunk_mentions_symbol TYPE string;
+DEFINE FIELD mention_context ON TABLE chunk_mentions_symbol TYPE string;
+DEFINE FIELD comment ON TABLE chunk_mentions_symbol TYPE string;
+DEFINE FIELD created_at ON TABLE chunk_mentions_symbol TYPE datetime VALUE $value OR time::now();

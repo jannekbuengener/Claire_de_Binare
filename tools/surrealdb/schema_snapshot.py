@@ -38,8 +38,12 @@ from datetime import datetime, timezone
 from pathlib import Path
 from typing import Any
 
-RE_TABLE = re.compile(
+RE_TABLE_SCHEMAFULL = re.compile(
     r"^\s*DEFINE\s+TABLE\s+(?:IF\s+NOT\s+EXISTS\s+)?(\S+)\s+SCHEMAFULL", re.IGNORECASE
+)
+RE_TABLE_RELATION = re.compile(
+    r"^\s*DEFINE\s+TABLE\s+(?:IF\s+NOT\s+EXISTS\s+)?(\S+)\s+TYPE\s+RELATION",
+    re.IGNORECASE,
 )
 RE_FIELD = re.compile(r"^\s*DEFINE\s+FIELD\s+(\S+)\s+ON\s+TABLE\s+(\S+)", re.IGNORECASE)
 RE_INDEX = re.compile(
@@ -63,6 +67,7 @@ def parse_surql(path: Path) -> dict[str, Any]:
         raw_define_lines: sorted list of all DEFINE TABLE/FIELD/INDEX lines
     """
     tables: list[str] = []
+    relation_tables: list[str] = []
     fields: list[dict[str, str]] = []
     indexes: list[dict[str, str]] = []
     analyzers: list[str] = []
@@ -75,7 +80,14 @@ def parse_surql(path: Path) -> dict[str, Any]:
             continue
         stripped = line.strip()
 
-        m = RE_TABLE.match(stripped)
+        m = RE_TABLE_RELATION.match(stripped)
+        if m:
+            tables.append(m.group(1))
+            relation_tables.append(m.group(1))
+            define_lines.append(stripped)
+            continue
+
+        m = RE_TABLE_SCHEMAFULL.match(stripped)
         if m:
             tables.append(m.group(1))
             define_lines.append(stripped)
@@ -98,8 +110,15 @@ def parse_surql(path: Path) -> dict[str, Any]:
             analyzers.append(m.group(1))
             continue
 
+    relation_set = set(relation_tables)
+    table_types: dict[str, str] = {}
+    for t in tables:
+        table_types[t] = "TYPE_RELATION" if t in relation_set else "SCHEMAFULL"
+
     return {
         "tables": sorted(tables),
+        "relation_tables": sorted(relation_tables),
+        "table_types": table_types,
         "fields": sorted(fields, key=lambda x: (x["table"], x["field"])),
         "indexes": sorted(indexes, key=lambda x: (x["table"], x["index"])),
         "analyzers": sorted(analyzers),
@@ -115,6 +134,7 @@ def compute_schema_hash(canonical: dict[str, Any]) -> str:
     canonical_str = json.dumps(
         {
             "tables": canonical["tables"],
+            "relation_tables": canonical["relation_tables"],
             "fields": canonical["fields"],
             "indexes": canonical["indexes"],
         },
@@ -142,10 +162,12 @@ def build_snapshot(
         "generated_at": generated_at,
         "schema_hash": schema_hash,
         "table_count": len(canonical["tables"]),
+        "relation_table_count": len(canonical["relation_tables"]),
         "field_count": len(canonical["fields"]),
         "index_count": len(canonical["indexes"]),
         "analyzer_count": len(canonical["analyzers"]),
         "tables": canonical["tables"],
+        "relation_tables": canonical["relation_tables"],
         "fields": canonical["fields"],
         "indexes": canonical["indexes"],
         "analyzers": canonical["analyzers"],

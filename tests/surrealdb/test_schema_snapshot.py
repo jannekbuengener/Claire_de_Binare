@@ -146,3 +146,52 @@ def test_deploy_has_same_core_schema_hash_as_original() -> None:
     assert (
         hash_orig == hash_depl
     ), "Deploy and original must have identical core schema hash"
+
+
+# ---------------------------------------------------------------------------
+# TYPE RELATION parsing tests (Issue #3423)
+# ---------------------------------------------------------------------------
+
+
+@pytest.mark.unit
+def test_snapshot_parses_type_relation_tables() -> None:
+    canonical = parse_surql(SURQL_ORIGINAL)
+    for table in (
+        "artifact_cites_decision",
+        "memory_supports_decision",
+        "chunk_mentions_symbol",
+    ):
+        assert table in canonical["tables"], f"Missing TYPE RELATION table: {table}"
+    assert "artifact_cites_decision" in canonical["relation_tables"]
+    assert "memory_supports_decision" in canonical["relation_tables"]
+    assert "chunk_mentions_symbol" in canonical["relation_tables"]
+
+
+@pytest.mark.unit
+def test_snapshot_reports_relation_count() -> None:
+    canonical = parse_surql(SURQL_ORIGINAL)
+    assert len(canonical["relation_tables"]) == 3
+
+
+@pytest.mark.unit
+def test_snapshot_table_types_are_correct() -> None:
+    canonical = parse_surql(SURQL_ORIGINAL)
+    for table in canonical["table_types"]:
+        if table in canonical["relation_tables"]:
+            assert canonical["table_types"][table] == "TYPE_RELATION"
+        else:
+            assert canonical["table_types"][table] == "SCHEMAFULL"
+
+
+@pytest.mark.unit
+def test_baseline_contains_relation_tables(baseline_json: dict) -> None:
+    assert "relation_tables" in baseline_json
+    assert baseline_json["relation_table_count"] == 3
+    assert "artifact_cites_decision" in baseline_json["relation_tables"]
+
+
+@pytest.mark.unit
+def test_deploy_has_same_relation_tables_as_original() -> None:
+    orig = parse_surql(SURQL_ORIGINAL)
+    depl = parse_surql(SURQL_DEPLOY)
+    assert orig["relation_tables"] == depl["relation_tables"]
