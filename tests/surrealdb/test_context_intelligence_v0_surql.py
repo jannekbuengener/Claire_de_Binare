@@ -477,8 +477,12 @@ def test_hybrid_fixture_has_vector_knn_query() -> None:
     path = Path(HYBRID_FIXTURE_PATH)
     text = path.read_text(encoding="utf-8")
     assert "<|" in text, "Fixture must contain KNN operator <|K, EF|>"
-    assert "vector::distance::knn()" in text, "Fixture must contain vector::distance::knn()"
-    assert "HNSW" not in text.splitlines()[-20:], "Fixture query section must not reference HNSW"
+    assert (
+        "vector::distance::knn()" in text
+    ), "Fixture must contain vector::distance::knn()"
+    assert (
+        "HNSW" not in text.splitlines()[-20:]
+    ), "Fixture query section must not reference HNSW"
     assert "<|" in text, "Fixture must contain KNN operator <|K, EF|>"
 
 
@@ -502,10 +506,28 @@ def test_hybrid_fixture_no_relate_or_create() -> None:
 def test_hybrid_fixture_no_trading_tables() -> None:
     path = Path(HYBRID_FIXTURE_PATH)
     text = path.read_text(encoding="utf-8")
-    for forbidden in ("fill", "fills", "position", "positions", "risk_state", "position_state", "trade"):
-        define_matches = [l for l in text.splitlines() if "DEFINE" in l.upper() and forbidden.lower() in l.lower()]
-        assert not define_matches, f"Forbidden trading table defined in fixture: {forbidden}"
-    order_defines = [l for l in text.splitlines() if "DEFINE" in l.upper() and re.search(r'\border\b', l, re.IGNORECASE)]
+    for forbidden in (
+        "fill",
+        "fills",
+        "position",
+        "positions",
+        "risk_state",
+        "position_state",
+        "trade",
+    ):
+        define_matches = [
+            line
+            for line in text.splitlines()
+            if "DEFINE" in line.upper() and forbidden.lower() in line.lower()
+        ]
+        assert (
+            not define_matches
+        ), f"Forbidden trading table defined in fixture: {forbidden}"
+    order_defines = [
+        line
+        for line in text.splitlines()
+        if "DEFINE" in line.upper() and re.search(r"\border\b", line, re.IGNORECASE)
+    ]
     assert not order_defines, f"Forbidden trading table defined in fixture: order"
 
 
@@ -530,9 +552,9 @@ def test_hybrid_fixture_has_result_contract_documented() -> None:
 def test_rrf_formula_documented() -> None:
     path = Path(HYBRID_FIXTURE_PATH)
     text = path.read_text(encoding="utf-8")
-    assert "1 / (k + rank" in text or "1/(k + rank" in text, (
-        "RRF formula must be documented: score = sum(1 / (k + rank))"
-    )
+    assert (
+        "1 / (k + rank" in text or "1/(k + rank" in text
+    ), "RRF formula must be documented: score = sum(1 / (k + rank))"
     assert "k = 60" in text, "RRF k=60 must be documented"
     assert "rrf_score DESC" in text, "RRF tie-breaker must be documented"
 
@@ -544,6 +566,7 @@ def test_python_hybrid_ranking_not_modified() -> None:
     text = ranking_path.read_text(encoding="utf-8")
     assert "SCHEMA_VERSION" in text, "Ranking must still contain SCHEMA_VERSION"
     assert "RANKING_FACTORS" in text, "Ranking must still contain RANKING_FACTORS"
+
 
 # ---------------------------------------------------------------------------
 
@@ -578,6 +601,3 @@ def test_generated_at_not_in_schema_hash_computation(
     assert (
         snapshot_live["schema_hash"] == baseline_json["schema_hash"]
     ), "schema_hash differs from baseline — generated_at may be leaking into hash"
-
-
-
