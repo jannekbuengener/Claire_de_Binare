@@ -53,8 +53,56 @@ werden im nächsten Slice (#3421 — Readonly MCP Brain Evidence Contract) adres
 - **Kein** Runtime-/Docker-/MCP-Scope
 - **Keine** Trading-State-Objekte (Orders/Fills/Positions/Risk-State)
 
-## Nächster Slice
+## VectorGraph Minimal Schema (Issue #3422)
 
+Seit Issue #3422 enthält das Schema die ersten VectorGraph-Elemente:
+
+### Analyzer
+
+```surql
+DEFINE ANALYZER cdb_code_analyzer TOKENIZERS class, camel FILTERS lowercase, ascii;
+```
+
+- **TOKENIZERS**: `class` (Zeichenklassen-Wechsel: Buchstabe→Ziffer→Punctuation→Blank), `camel` (camelCase/PascalCase-Benennungen)
+- **FILTERS**: `lowercase` (Normalisierung), `ascii` (ASCII-Faltung)
+- Verwendet vom FULLTEXT-Index auf `doc_chunk.content`
+
+### embedding-Feld
+
+```surql
+DEFINE FIELD embedding ON TABLE doc_chunk TYPE array;
+```
+
+- Typ: `array` (numerisches Array für Embedding-Vektoren)
+- Keine Embedding-Generierung im Schema — reine Feld-/Index-Definition
+- Embedding-Runtime wird in Issue #3424 (Hybrid Retrieval) adressiert
+
+### HNSW Vector Index
+
+```surql
+DEFINE INDEX idx_doc_chunk_embedding_hnsw ON TABLE doc_chunk FIELDS embedding HNSW DIMENSION 1536 DIST COSINE;
+```
+
+- **Dimension**: 1536 (OpenAI `text-embedding-ada-002` / `text-embedding-3-small` Standard)
+- **Distance**: COSINE (Standard für Text-Embeddings)
+- **Default-Parameter**: EFC und M werden von SurrealDB automatisch bestimmt
+- **Hinweis**: Dimension-Wechsel erfordert `DROP INDEX` + Recreate
+
+### Full-text Search Index
+
+```surql
+DEFINE INDEX idx_doc_chunk_content_ft ON TABLE doc_chunk FIELDS content FULLTEXT ANALYZER cdb_code_analyzer BM25 HIGHLIGHTS;
+```
+
+- **ANALYZER**: `cdb_code_analyzer` (Code-fähig: camelCase, class-basiert, lowercase)
+- **Ranking**: BM25 (Standard-Parameter k1=1.2, b=0.75)
+- **Highlights**: Aktiviert `search::highlight()`-Unterstützung
+- **Single-Field**: FULLTEXT-Indexes arbeiten nur auf genau einer Spalte (SurrealDB-Limit)
+
+### Nächste Slices
+
+- **#3423** — Graph Relations + Traversal Queries: RELATE-Traversals und Graph-Navigation
+- **#3424** — Hybrid Retrieval Contract: Embedding-Runtime, Vector + Full-text + Graph Hybrid Query
 - **#3421** — Readonly MCP Brain Evidence Contract: harter MCP-Vertrag für
   DB-backed Brain Evidence in read-only Tools
 

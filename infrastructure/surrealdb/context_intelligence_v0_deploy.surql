@@ -30,6 +30,9 @@ USE NS cdb;
 DEFINE DATABASE IF NOT EXISTS context_intel;
 USE DB context_intel;
 
+-- ===== VectorGraph: code/doc full-text analyzer (Issue #3422) =====
+DEFINE ANALYZER IF NOT EXISTS cdb_code_analyzer TOKENIZERS class, camel FILTERS lowercase, ascii;
+
 -- ===== repo_artifact =====
 DEFINE TABLE IF NOT EXISTS repo_artifact SCHEMAFULL
   PERMISSIONS FOR select NONE, FOR create NONE, FOR update NONE, FOR delete NONE;
@@ -124,7 +127,10 @@ DEFINE FIELD tokens_estimate ON TABLE doc_chunk TYPE int;
 DEFINE FIELD source_hash ON TABLE doc_chunk TYPE string;
 DEFINE FIELD confidence ON TABLE doc_chunk TYPE float;
 DEFINE FIELD comment ON TABLE doc_chunk TYPE string;
+DEFINE FIELD embedding ON TABLE doc_chunk TYPE array;
 DEFINE FIELD created_at ON TABLE doc_chunk TYPE datetime VALUE $value OR time::now();
+DEFINE INDEX IF NOT EXISTS idx_doc_chunk_embedding_hnsw ON TABLE doc_chunk FIELDS embedding HNSW DIMENSION 1536 DIST COSINE;
+DEFINE INDEX IF NOT EXISTS idx_doc_chunk_content_ft ON TABLE doc_chunk FIELDS content FULLTEXT ANALYZER cdb_code_analyzer BM25 HIGHLIGHTS;
 DEFINE INDEX idx_doc_chunk_chunk_id_unique ON TABLE doc_chunk FIELDS chunk_id UNIQUE;
 DEFINE INDEX idx_doc_chunk_page_ref ON TABLE doc_chunk FIELDS page_ref;
 DEFINE INDEX idx_doc_chunk_section_ref ON TABLE doc_chunk FIELDS section_ref;

@@ -38,10 +38,17 @@ from datetime import datetime, timezone
 from pathlib import Path
 from typing import Any
 
-
-RE_TABLE = re.compile(r"^\s*DEFINE\s+TABLE\s+(?:IF\s+NOT\s+EXISTS\s+)?(\S+)\s+SCHEMAFULL", re.IGNORECASE)
+RE_TABLE = re.compile(
+    r"^\s*DEFINE\s+TABLE\s+(?:IF\s+NOT\s+EXISTS\s+)?(\S+)\s+SCHEMAFULL", re.IGNORECASE
+)
 RE_FIELD = re.compile(r"^\s*DEFINE\s+FIELD\s+(\S+)\s+ON\s+TABLE\s+(\S+)", re.IGNORECASE)
-RE_INDEX = re.compile(r"^\s*DEFINE\s+INDEX\s+(\S+)\s+ON\s+TABLE\s+(\S+)", re.IGNORECASE)
+RE_INDEX = re.compile(
+    r"^\s*DEFINE\s+INDEX\s+(?:IF\s+NOT\s+EXISTS\s+)?(\S+)\s+ON\s+TABLE\s+(\S+)",
+    re.IGNORECASE,
+)
+RE_ANALYZER = re.compile(
+    r"^\s*DEFINE\s+ANALYZER\s+(?:IF\s+NOT\s+EXISTS\s+)?(\S+)", re.IGNORECASE
+)
 RE_COMMENT_OR_BLANK = re.compile(r"^\s*(--|$)")
 
 
@@ -52,11 +59,13 @@ def parse_surql(path: Path) -> dict[str, Any]:
         tables: sorted list of table names
         fields: list of {"field": str, "table": str} sorted by (table, field)
         indexes: list of {"index": str, "table": str} sorted by (table, index)
+        analyzers: sorted list of analyzer names
         raw_define_lines: sorted list of all DEFINE TABLE/FIELD/INDEX lines
     """
     tables: list[str] = []
     fields: list[dict[str, str]] = []
     indexes: list[dict[str, str]] = []
+    analyzers: list[str] = []
     define_lines: list[str] = []
 
     text = path.read_text(encoding="utf-8")
@@ -84,10 +93,16 @@ def parse_surql(path: Path) -> dict[str, Any]:
             define_lines.append(stripped)
             continue
 
+        m = RE_ANALYZER.match(stripped)
+        if m:
+            analyzers.append(m.group(1))
+            continue
+
     return {
         "tables": sorted(tables),
         "fields": sorted(fields, key=lambda x: (x["table"], x["field"])),
         "indexes": sorted(indexes, key=lambda x: (x["table"], x["index"])),
+        "analyzers": sorted(analyzers),
         "raw_define_lines": sorted(define_lines),
     }
 
@@ -129,9 +144,11 @@ def build_snapshot(
         "table_count": len(canonical["tables"]),
         "field_count": len(canonical["fields"]),
         "index_count": len(canonical["indexes"]),
+        "analyzer_count": len(canonical["analyzers"]),
         "tables": canonical["tables"],
         "fields": canonical["fields"],
         "indexes": canonical["indexes"],
+        "analyzers": canonical["analyzers"],
     }
 
 

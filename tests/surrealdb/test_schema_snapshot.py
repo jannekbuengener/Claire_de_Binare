@@ -17,7 +17,6 @@ from tools.surrealdb.schema_snapshot import (
 from tests.surrealdb.conftest import SURQL_ORIGINAL, SURQL_DEPLOY, BASELINE_PATH
 from tests.surrealdb.test_context_intelligence_v0_surql import EXPECTED_TABLES
 
-
 FIXED_TS = "2026-01-01T00:00:00Z"
 
 
@@ -41,6 +40,28 @@ def test_snapshot_parses_fields_and_indexes() -> None:
     assert len(canonical["indexes"]) > 0, "No indexes parsed"
 
 
+@pytest.mark.unit
+def test_snapshot_parses_analyzers() -> None:
+    canonical = parse_surql(SURQL_ORIGINAL)
+    assert "cdb_code_analyzer" in canonical["analyzers"], "Missing analyzer"
+
+
+@pytest.mark.unit
+def test_snapshot_parses_new_embedding_field() -> None:
+    canonical = parse_surql(SURQL_ORIGINAL)
+    assert {"field": "embedding", "table": "doc_chunk"} in canonical[
+        "fields"
+    ], "Missing embedding field on doc_chunk"
+
+
+@pytest.mark.unit
+def test_snapshot_parses_new_vector_and_fulltext_indexes() -> None:
+    canonical = parse_surql(SURQL_ORIGINAL)
+    indexes = canonical["indexes"]
+    assert {"index": "idx_doc_chunk_embedding_hnsw", "table": "doc_chunk"} in indexes
+    assert {"index": "idx_doc_chunk_content_ft", "table": "doc_chunk"} in indexes
+
+
 # ---------------------------------------------------------------------------
 # Determinism
 # ---------------------------------------------------------------------------
@@ -55,11 +76,15 @@ def test_snapshot_hash_is_deterministic() -> None:
 
 @pytest.mark.unit
 def test_snapshot_hash_differs_for_different_input() -> None:
-    hash_original = build_snapshot(SURQL_ORIGINAL, fixed_generated_at=FIXED_TS)["schema_hash"]
-    hash_deploy = build_snapshot(SURQL_DEPLOY, fixed_generated_at=FIXED_TS)["schema_hash"]
-    assert hash_original == hash_deploy, (
-        "Core definitions should match between original and deploy"
-    )
+    hash_original = build_snapshot(SURQL_ORIGINAL, fixed_generated_at=FIXED_TS)[
+        "schema_hash"
+    ]
+    hash_deploy = build_snapshot(SURQL_DEPLOY, fixed_generated_at=FIXED_TS)[
+        "schema_hash"
+    ]
+    assert (
+        hash_original == hash_deploy
+    ), "Core definitions should match between original and deploy"
 
 
 @pytest.mark.unit
@@ -88,7 +113,14 @@ def test_snapshot_baseline_matches_current_schema(baseline_json: dict) -> None:
 
 @pytest.mark.unit
 def test_baseline_contains_essential_keys(baseline_json: dict) -> None:
-    for key in ("schema_hash", "table_count", "field_count", "index_count", "tables"):
+    for key in (
+        "schema_hash",
+        "table_count",
+        "field_count",
+        "index_count",
+        "analyzer_count",
+        "tables",
+    ):
         assert key in baseline_json, f"Baseline missing key: {key}"
     assert baseline_json["table_count"] == len(EXPECTED_TABLES)
 
@@ -107,8 +139,10 @@ def test_deploy_has_same_tables_as_original() -> None:
 
 @pytest.mark.unit
 def test_deploy_has_same_core_schema_hash_as_original() -> None:
-    hash_orig = build_snapshot(SURQL_ORIGINAL, fixed_generated_at=FIXED_TS)["schema_hash"]
+    hash_orig = build_snapshot(SURQL_ORIGINAL, fixed_generated_at=FIXED_TS)[
+        "schema_hash"
+    ]
     hash_depl = build_snapshot(SURQL_DEPLOY, fixed_generated_at=FIXED_TS)["schema_hash"]
-    assert hash_orig == hash_depl, (
-        "Deploy and original must have identical core schema hash"
-    )
+    assert (
+        hash_orig == hash_depl
+    ), "Deploy and original must have identical core schema hash"
