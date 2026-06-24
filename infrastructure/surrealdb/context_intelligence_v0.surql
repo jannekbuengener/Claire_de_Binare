@@ -431,3 +431,58 @@ DEFINE INDEX idx_visual_control_view_scope ON TABLE visual_control_view FIELDS t
 DEFINE INDEX idx_visual_control_view_generated_at ON TABLE visual_control_view FIELDS generated_at;
 DEFINE INDEX idx_visual_control_view_created_at ON TABLE visual_control_view FIELDS created_at;
 
+-- ---------------------------
+-- Graph Relations v0 (Issue #3423)
+-- EvidenceGraph Foundation — TYPE RELATION Edge Tables
+-- Vocabulary: cites, supports_evidence, mentions
+-- ---------------------------
+
+-- ---------------------------
+-- artifact_cites_decision
+-- EvidenceGraph: artifact → decision citation link
+-- Vocabulary type: cites (v0)
+-- FROM repo_artifact|doc_page|doc_chunk TO decision_event
+-- ---------------------------
+DEFINE TABLE artifact_cites_decision TYPE RELATION
+  FROM repo_artifact | doc_page | doc_chunk
+  TO decision_event;
+DEFINE FIELD source ON TABLE artifact_cites_decision TYPE string;
+DEFINE FIELD confidence ON TABLE artifact_cites_decision TYPE float;
+DEFINE FIELD timestamp ON TABLE artifact_cites_decision TYPE datetime;
+DEFINE FIELD hash ON TABLE artifact_cites_decision TYPE string;
+DEFINE FIELD comment ON TABLE artifact_cites_decision TYPE string;
+DEFINE FIELD created_at ON TABLE artifact_cites_decision TYPE datetime VALUE $value OR time::now();
+
+-- ---------------------------
+-- memory_supports_decision
+-- EvidenceGraph: agent_memory → decision support link
+-- Vocabulary type: supports_evidence (v0)
+-- FROM agent_memory TO decision_event
+-- ---------------------------
+DEFINE TABLE memory_supports_decision TYPE RELATION
+  FROM agent_memory
+  TO decision_event;
+DEFINE FIELD source ON TABLE memory_supports_decision TYPE string;
+DEFINE FIELD confidence ON TABLE memory_supports_decision TYPE float;
+DEFINE FIELD timestamp ON TABLE memory_supports_decision TYPE datetime;
+DEFINE FIELD hash ON TABLE memory_supports_decision TYPE string;
+DEFINE FIELD comment ON TABLE memory_supports_decision TYPE string;
+DEFINE FIELD created_at ON TABLE memory_supports_decision TYPE datetime VALUE $value OR time::now();
+
+-- ---------------------------
+-- chunk_mentions_symbol
+-- EvidenceGraph: doc_chunk → code_symbol mention link
+-- Vocabulary type: mentions (existing v0)
+-- FROM doc_chunk TO code_symbol
+-- ---------------------------
+DEFINE TABLE chunk_mentions_symbol TYPE RELATION
+  FROM doc_chunk
+  TO code_symbol;
+DEFINE FIELD source ON TABLE chunk_mentions_symbol TYPE string;
+DEFINE FIELD confidence ON TABLE chunk_mentions_symbol TYPE float;
+DEFINE FIELD timestamp ON TABLE chunk_mentions_symbol TYPE datetime;
+DEFINE FIELD hash ON TABLE chunk_mentions_symbol TYPE string;
+DEFINE FIELD mention_context ON TABLE chunk_mentions_symbol TYPE string;
+DEFINE FIELD comment ON TABLE chunk_mentions_symbol TYPE string;
+DEFINE FIELD created_at ON TABLE chunk_mentions_symbol TYPE datetime VALUE $value OR time::now();
+

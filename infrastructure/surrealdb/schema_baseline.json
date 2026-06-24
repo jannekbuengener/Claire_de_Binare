@@ -1,14 +1,17 @@
 {
   "source_file": "D:\\Dev\\Workspaces\\Repos\\Claire_de_Binare\\infrastructure\\surrealdb\\context_intelligence_v0.surql",
-  "generated_at": "2026-06-24T16:29:54.973969+00:00",
-  "schema_hash": "a575bbd09ec02f9dad28b4b5d4303d8626ca6151bace72462f67f6860699cadd",
-  "table_count": 18,
-  "field_count": 226,
+  "generated_at": "2026-06-24T17:11:29.501136+00:00",
+  "schema_hash": "15d82aa2e0baae1d4bc455666f88ce1245d690eb69735d676651dcf646d64a5b",
+  "table_count": 21,
+  "relation_table_count": 3,
+  "field_count": 245,
   "index_count": 75,
   "analyzer_count": 1,
   "tables": [
     "agent_memory",
+    "artifact_cites_decision",
     "audit_observation",
+    "chunk_mentions_symbol",
     "claim",
     "code_symbol",
     "concept",
@@ -21,10 +24,16 @@
     "doc_section",
     "evidence_ref",
     "knowledge_quality_score",
+    "memory_supports_decision",
     "repo_artifact",
     "scope_drift_event",
     "stale_context",
     "visual_control_view"
+  ],
+  "relation_tables": [
+    "artifact_cites_decision",
+    "chunk_mentions_symbol",
+    "memory_supports_decision"
   ],
   "fields": [
     {
@@ -89,6 +98,30 @@
     },
     {
       "field": "comment",
+      "table": "artifact_cites_decision"
+    },
+    {
+      "field": "confidence",
+      "table": "artifact_cites_decision"
+    },
+    {
+      "field": "created_at",
+      "table": "artifact_cites_decision"
+    },
+    {
+      "field": "hash",
+      "table": "artifact_cites_decision"
+    },
+    {
+      "field": "source",
+      "table": "artifact_cites_decision"
+    },
+    {
+      "field": "timestamp",
+      "table": "artifact_cites_decision"
+    },
+    {
+      "field": "comment",
       "table": "audit_observation"
     },
     {
@@ -146,6 +179,34 @@
     {
       "field": "subject_ref",
       "table": "audit_observation"
+    },
+    {
+      "field": "comment",
+      "table": "chunk_mentions_symbol"
+    },
+    {
+      "field": "confidence",
+      "table": "chunk_mentions_symbol"
+    },
+    {
+      "field": "created_at",
+      "table": "chunk_mentions_symbol"
+    },
+    {
+      "field": "hash",
+      "table": "chunk_mentions_symbol"
+    },
+    {
+      "field": "mention_context",
+      "table": "chunk_mentions_symbol"
+    },
+    {
+      "field": "source",
+      "table": "chunk_mentions_symbol"
+    },
+    {
+      "field": "timestamp",
+      "table": "chunk_mentions_symbol"
     },
     {
       "field": "claim_id",
@@ -718,6 +779,30 @@
     {
       "field": "subject_ref",
       "table": "knowledge_quality_score"
+    },
+    {
+      "field": "comment",
+      "table": "memory_supports_decision"
+    },
+    {
+      "field": "confidence",
+      "table": "memory_supports_decision"
+    },
+    {
+      "field": "created_at",
+      "table": "memory_supports_decision"
+    },
+    {
+      "field": "hash",
+      "table": "memory_supports_decision"
+    },
+    {
+      "field": "source",
+      "table": "memory_supports_decision"
+    },
+    {
+      "field": "timestamp",
+      "table": "memory_supports_decision"
     },
     {
       "field": "artifact_id",
