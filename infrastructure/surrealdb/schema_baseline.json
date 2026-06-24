@@ -1,10 +1,11 @@
 {
   "source_file": "D:\\Dev\\Workspaces\\Repos\\Claire_de_Binare\\infrastructure\\surrealdb\\context_intelligence_v0.surql",
-  "generated_at": "2026-01-01T00:00:00Z",
-  "schema_hash": "6e08050f4f1689adb00d459e6ce0e2c43bacf7032a9c36e49080a12849cc82aa",
+  "generated_at": "2026-06-24T16:29:54.973969+00:00",
+  "schema_hash": "a575bbd09ec02f9dad28b4b5d4303d8626ca6151bace72462f67f6860699cadd",
   "table_count": 18,
-  "field_count": 225,
-  "index_count": 73,
+  "field_count": 226,
+  "index_count": 75,
+  "analyzer_count": 1,
   "tables": [
     "agent_memory",
     "audit_observation",
@@ -500,6 +501,10 @@
     },
     {
       "field": "created_at",
+      "table": "doc_chunk"
+    },
+    {
+      "field": "embedding",
       "table": "doc_chunk"
     },
     {
@@ -1073,11 +1078,19 @@
       "table": "doc_chunk"
     },
     {
+      "index": "idx_doc_chunk_content_ft",
+      "table": "doc_chunk"
+    },
+    {
       "index": "idx_doc_chunk_content_hash",
       "table": "doc_chunk"
     },
     {
       "index": "idx_doc_chunk_created_at",
+      "table": "doc_chunk"
+    },
+    {
+      "index": "idx_doc_chunk_embedding_hnsw",
       "table": "doc_chunk"
     },
     {
@@ -1220,5 +1233,8 @@
       "index": "idx_visual_control_view_type",
       "table": "visual_control_view"
     }
+  ],
+  "analyzers": [
+    "cdb_code_analyzer"
   ]
 }

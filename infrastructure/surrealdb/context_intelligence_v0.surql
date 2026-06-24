@@ -34,6 +34,13 @@
 -- =====================================================================
 
 -- ---------------------------
+-- VectorGraph: Analyzer for code/doc full-text search
+-- Dimension 1536 (OpenAI embedding standard); replaceable in #3424
+-- Issue #3422
+-- ---------------------------
+DEFINE ANALYZER cdb_code_analyzer TOKENIZERS class, camel FILTERS lowercase, ascii;
+
+-- ---------------------------
 -- repo_artifact (Issue #1981)
 -- ---------------------------
 DEFINE TABLE repo_artifact SCHEMAFULL;
@@ -132,8 +139,11 @@ DEFINE FIELD tokens_estimate ON TABLE doc_chunk TYPE int;
 DEFINE FIELD source_hash ON TABLE doc_chunk TYPE string;
 DEFINE FIELD confidence ON TABLE doc_chunk TYPE float;
 DEFINE FIELD comment ON TABLE doc_chunk TYPE string;
+DEFINE FIELD embedding ON TABLE doc_chunk TYPE array;
 DEFINE FIELD created_at ON TABLE doc_chunk TYPE datetime VALUE $value OR time::now(); -- REQUIRED(v0-draft)
 DEFINE INDEX idx_doc_chunk_chunk_id_unique ON TABLE doc_chunk FIELDS chunk_id UNIQUE;
+DEFINE INDEX idx_doc_chunk_embedding_hnsw ON TABLE doc_chunk FIELDS embedding HNSW DIMENSION 1536 DIST COSINE;
+DEFINE INDEX idx_doc_chunk_content_ft ON TABLE doc_chunk FIELDS content FULLTEXT ANALYZER cdb_code_analyzer BM25 HIGHLIGHTS;
 DEFINE INDEX idx_doc_chunk_page_ref ON TABLE doc_chunk FIELDS page_ref;
 DEFINE INDEX idx_doc_chunk_section_ref ON TABLE doc_chunk FIELDS section_ref;
 DEFINE INDEX idx_doc_chunk_content_hash ON TABLE doc_chunk FIELDS content_hash;

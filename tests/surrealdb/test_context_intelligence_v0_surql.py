@@ -68,7 +68,12 @@ FORBIDDEN_TABLES: tuple[str, ...] = (
 )
 
 # Blocks that must NOT appear in deploy file permissions
-PERMISSION_BLOCKS = {"FOR select FULL", "FOR create FULL", "FOR update FULL", "FOR delete FULL"}
+PERMISSION_BLOCKS = {
+    "FOR select FULL",
+    "FOR create FULL",
+    "FOR update FULL",
+    "FOR delete FULL",
+}
 
 # ---------------------------------------------------------------------------
 # Helpers
@@ -83,7 +88,7 @@ _RE_DEFINE_FIELD = re.compile(
     re.IGNORECASE | re.MULTILINE,
 )
 _RE_DEFINE_INDEX = re.compile(
-    r"^\s*DEFINE\s+INDEX\s+(\S+)\s+ON\s+TABLE\s+(\S+)",
+    r"^\s*DEFINE\s+INDEX\s+(?:IF\s+NOT\s+EXISTS\s+)?(\S+)\s+ON\s+TABLE\s+(\S+)",
     re.IGNORECASE | re.MULTILINE,
 )
 _RE_TABLE_SCHEMAFULL = re.compile(
@@ -135,9 +140,9 @@ def test_each_table_is_schemafull(surql_original_text: str) -> None:
 @pytest.mark.unit
 def test_each_table_has_pk_field_and_unique_index(surql_original_text: str) -> None:
     for table, pk_field in PK_FIELD_BY_TABLE.items():
-        assert f"DEFINE FIELD {pk_field} ON TABLE {table}" in surql_original_text, (
-            f"Missing PK field {pk_field} on {table}"
-        )
+        assert (
+            f"DEFINE FIELD {pk_field} ON TABLE {table}" in surql_original_text
+        ), f"Missing PK field {pk_field} on {table}"
         idx_name = f"idx_{table}_{pk_field}_unique"
         assert f"ON TABLE {table} FIELDS {pk_field} UNIQUE" in surql_original_text
 
@@ -146,9 +151,9 @@ def test_each_table_has_pk_field_and_unique_index(surql_original_text: str) -> N
 def test_each_table_has_created_at_field(surql_original_text: str) -> None:
     tables_found = _RE_DEFINE_TABLE.findall(surql_original_text)
     for table in tables_found:
-        assert f"DEFINE FIELD created_at ON TABLE {table}" in surql_original_text, (
-            f"Missing created_at on {table}"
-        )
+        assert (
+            f"DEFINE FIELD created_at ON TABLE {table}" in surql_original_text
+        ), f"Missing created_at on {table}"
 
 
 @pytest.mark.unit
@@ -176,9 +181,7 @@ def test_deploy_file_has_ns_and_db_context(surql_deploy_text: str) -> None:
 def test_deploy_file_uses_if_not_exists(surql_deploy_text: str) -> None:
     for table in EXPECTED_TABLES:
         expected = f"DEFINE TABLE IF NOT EXISTS {table}"
-        assert expected in surql_deploy_text, (
-            f"Missing IF NOT EXISTS for table {table}"
-        )
+        assert expected in surql_deploy_text, f"Missing IF NOT EXISTS for table {table}"
 
 
 @pytest.mark.unit
@@ -189,6 +192,7 @@ def test_deploy_file_permissions_are_strictly_none(surql_deploy_text: str) -> No
     declarations match correctly.
     """
     import re as _re
+
     normalized = _re.sub(r"\s+", " ", surql_deploy_text)
     for table in EXPECTED_TABLES:
         expected = (
@@ -196,17 +200,15 @@ def test_deploy_file_permissions_are_strictly_none(surql_deploy_text: str) -> No
             f"PERMISSIONS FOR select NONE, FOR create NONE, "
             f"FOR update NONE, FOR delete NONE"
         )
-        assert expected in normalized, (
-            f"Table {table} missing fail-closed permissions"
-        )
+        assert expected in normalized, f"Table {table} missing fail-closed permissions"
 
 
 @pytest.mark.unit
 def test_deploy_file_has_no_full_permissions(surql_deploy_text: str) -> None:
     for block in PERMISSION_BLOCKS:
-        assert block not in surql_deploy_text, (
-            f"Found non-NONE permission block: {block}"
-        )
+        assert (
+            block not in surql_deploy_text
+        ), f"Found non-NONE permission block: {block}"
 
 
 @pytest.mark.unit
@@ -232,6 +234,66 @@ def test_deploy_matches_original_draft_core_definitions(
 
 
 # ---------------------------------------------------------------------------
+# VectorGraph tests (Issue #3422)
+# ---------------------------------------------------------------------------
+
+
+@pytest.mark.unit
+def test_draft_has_cdb_code_analyzer(surql_original_text: str) -> None:
+    assert "DEFINE ANALYZER cdb_code_analyzer" in surql_original_text
+
+
+@pytest.mark.unit
+def test_deploy_has_cdb_code_analyzer(surql_deploy_text: str) -> None:
+    assert "DEFINE ANALYZER IF NOT EXISTS cdb_code_analyzer" in surql_deploy_text
+
+
+@pytest.mark.unit
+def test_doc_chunk_has_embedding_field(surql_original_text: str) -> None:
+    assert "DEFINE FIELD embedding ON TABLE doc_chunk TYPE array" in surql_original_text
+
+
+@pytest.mark.unit
+def test_deploy_has_embedding_field(surql_deploy_text: str) -> None:
+    assert "DEFINE FIELD embedding ON TABLE doc_chunk TYPE array" in surql_deploy_text
+
+
+@pytest.mark.unit
+def test_doc_chunk_has_hnsw_index(surql_original_text: str) -> None:
+    assert (
+        "DEFINE INDEX idx_doc_chunk_embedding_hnsw ON TABLE doc_chunk FIELDS embedding HNSW DIMENSION 1536 DIST COSINE"
+        in surql_original_text
+    )
+
+
+@pytest.mark.unit
+def test_deploy_has_hnsw_index(surql_deploy_text: str) -> None:
+    assert "HNSW DIMENSION 1536 DIST COSINE" in surql_deploy_text
+
+
+@pytest.mark.unit
+def test_doc_chunk_has_fulltext_index(surql_original_text: str) -> None:
+    assert (
+        "DEFINE INDEX idx_doc_chunk_content_ft ON TABLE doc_chunk FIELDS content FULLTEXT ANALYZER cdb_code_analyzer"
+        in surql_original_text
+    )
+
+
+@pytest.mark.unit
+def test_deploy_has_fulltext_index(surql_deploy_text: str) -> None:
+    assert "FULLTEXT ANALYZER cdb_code_analyzer BM25 HIGHLIGHTS" in surql_deploy_text
+
+
+@pytest.mark.unit
+def test_no_embedding_runtime_data_in_schema(surql_original_text: str) -> None:
+    """Schema must NOT contain embedding values/generation — only field + index definitions."""
+    for pattern in ("embedding_generated", "embedding_model", "embedding_provider"):
+        assert (
+            pattern not in surql_original_text
+        ), f"Embedding runtime data leaking: {pattern}"
+
+
+# ---------------------------------------------------------------------------
 # generated_at metadata validation (no fragile time-window)
 # ---------------------------------------------------------------------------
 
@@ -239,9 +301,9 @@ def test_deploy_matches_original_draft_core_definitions(
 @pytest.mark.unit
 def test_schema_baseline_has_valid_generated_at_format(baseline_json: dict) -> None:
     ga = baseline_json.get("generated_at", "")
-    assert isinstance(ga, str) and len(ga) > 10, (
-        f"generated_at missing or too short: {ga!r}"
-    )
+    assert (
+        isinstance(ga, str) and len(ga) > 10
+    ), f"generated_at missing or too short: {ga!r}"
     # ISO-8601 compatible: YYYY-MM-DDTHH:MM:SS...
     assert "T" in ga, f"generated_at not ISO-8601: {ga!r}"
 
@@ -263,6 +325,6 @@ def test_generated_at_not_in_schema_hash_computation(
     snapshot_live = build_snapshot(
         surql_path=SURQL_ORIGINAL,
     )
-    assert snapshot_live["schema_hash"] == baseline_json["schema_hash"], (
-        "schema_hash differs from baseline — generated_at may be leaking into hash"
-    )
+    assert (
+        snapshot_live["schema_hash"] == baseline_json["schema_hash"]
+    ), "schema_hash differs from baseline — generated_at may be leaking into hash"
