@@ -3,10 +3,30 @@
 **Status Class**: Working Repo / Engineering Status
 **Authority**: Current repo/main/test/dependency snapshot; not the canonical live-readiness or Echtgeld Go/No-Go source.
 **Operational Canon**: `docs/live-readiness/LR-AUDIT-STATUS-2026-03-05.md`
-**Last Updated**: 2026-06-23
+**Last Updated**: 2026-06-25
 **GitHub Boundary**: The live commit and PR state is tracked in GitHub (UI/API or `gh`); this file is a curated repo/engineering ledger, not a live mirror.
 
 ---
+
+## Repo / Engineering Status (2026-06-25)
+
+- **SurrealDB Context Intelligence Foundation (#3418 meta)**: Five foundation slices delivered and merged to `main` @ `cac91ec5c0f99ca9af348b09c20694f23bc5d10d`. All issues CLOSED. ADR-002 (`ADOPT_AFTER_FOUNDATION_REPAIR`) foundation-repair prerequisite met. LR NO-GO; no runtime/DB/MCP mutation.
+
+  - **#3422 VectorGraph Minimal Schema / PR #3431 / `492d4e70`**: Schema extension — `DEFINE ANALYZER cdb_code_analyzer` (class+camel tokenizers, lowercase+ascii filters), `DEFINE FIELD embedding` on `doc_chunk` (`TYPE array`), HNSW index (`DIMENSION 1536`, `DIST COSINE`), FULLTEXT index (`BM25 HIGHLIGHTS`). Schema snapshot tool extended (analyzer regex, `FieldsSchema.Analyzers`). Baseline: 226 fields, 75 indexes, 1 analyzer. 12 new + 1 fix tests (33 total). `IF NOT EXISTS` guards in deploy file. Issue CLOSED. LR NO-GO.
+
+  - **#3423 Graph Relations + Traversal Queries / `f086d194`**: Graph relations and traversal foundation for Context Intelligence. Directed edge table definitions, traversal query patterns, contract documentation. No runtime data; schema-only. Issue CLOSED. LR NO-GO.
+
+  - **#3424 Full-text + Vector + Hybrid Retrieval Contract / `cc8837c3`**: Hybrid retrieval contract combining full-text (`@@`) and vector (`<|K|>`) search semantics. Contract document + schema alignment. Issue CLOSED. LR NO-GO.
+
+  - **#3426 Permission Matrix v0 + Readonly Agent User / PR #3434 / `b8ada830`**: SurrealDB `DEFINE USER cdb_context_agent ON DATABASE … ROLES VIEWER` contract (`infrastructure/surrealdb/context_intelligence_readonly_agent_permissions.surql`). Permission matrix doc (`context-intelligence-permission-matrix-v0.md`). 17 contract tests (passhash format, role constraints, forbidden statements, table scope, doc-contract alignment). Baseline hash unchanged. Issue CLOSED. LR NO-GO.
+
+  - **#3421 Readonly MCP Brain Evidence Contract / PR #3435 / `cac91ec5`**: Three-layer defense-in-depth read-only contract (MCP permission guard → SurrealQL statement classifier → SurrealDB VIEWER role). `DB_RECORD_EVIDENCE_RESPONSE_SCHEMA.md` trust/confidence/freshness envelope. Validator module `db_record_evidence_response.py` (`derive_trust_level()`, `derive_freshness_signal()`, `build_ok_response()`, `build_error_response()`, `validate_db_record_evidence_response()`, `enforce_response_contract()`). 59 new tests (136 surrealdb total). Secret leak detection. Issue CLOSED. LR NO-GO.
+
+- **main**: `cac91ec5` (post #3421/#3426/#3422–#3424 SurrealDB foundation merge chain)
+- **Active GitHub focus (manual, non-exhaustive)**:
+  - #3418 (SurrealDB ContextBrain / VectorGraph Foundation) — **OPEN**
+  - #2440 (LR-030 Shadow/Soak Run) — **OPEN**
+  - #2289 (Security Alert Readout Epic) — **OPEN**
 
 ## Repo / Engineering Status (2026-06-23)
 
