@@ -36,16 +36,16 @@ FORBIDDEN_TABLES: tuple[str, ...] = (
 
 @pytest.mark.unit
 def test_permission_contract_file_exists() -> None:
-    assert PERMISSION_CONTRACT.exists(), (
-        f"Permission contract missing: {PERMISSION_CONTRACT}"
-    )
+    assert (
+        PERMISSION_CONTRACT.exists()
+    ), f"Permission contract missing: {PERMISSION_CONTRACT}"
 
 
 @pytest.mark.unit
 def test_permission_matrix_doc_exists() -> None:
-    assert PERMISSION_MATRIX_DOC.exists(), (
-        f"Permission matrix doc missing: {PERMISSION_MATRIX_DOC}"
-    )
+    assert (
+        PERMISSION_MATRIX_DOC.exists()
+    ), f"Permission matrix doc missing: {PERMISSION_MATRIX_DOC}"
 
 
 # ---------------------------------------------------------------------------
@@ -89,20 +89,17 @@ def test_passhash_uses_placeholder_format() -> None:
             define_user_block.append(line)
             if line.strip().endswith(";"):
                 break
-    assert define_user_block, (
-        "No DEFINE USER statement found in permission contract"
-    )
+    assert define_user_block, "No DEFINE USER statement found in permission contract"
     block_text = " ".join(define_user_block)
-    assert "PASSHASH" in block_text.upper(), (
-        "DEFINE USER must use PASSHASH, got block: "
-        + " ".join(define_user_block)
-    )
+    assert (
+        "PASSHASH" in block_text.upper()
+    ), "DEFINE USER must use PASSHASH, got block: " + " ".join(define_user_block)
     passhash_line = next(
         (ln for ln in define_user_block if "PASSHASH" in ln.upper()), ""
     )
-    assert "${" in passhash_line and "}" in passhash_line, (
-        f"PASSHASH must use ${{...}} placeholder, got: {passhash_line.strip()}"
-    )
+    assert (
+        "${" in passhash_line and "}" in passhash_line
+    ), f"PASSHASH must use ${{...}} placeholder, got: {passhash_line.strip()}"
 
 
 @pytest.mark.unit
@@ -132,9 +129,7 @@ def test_no_definable_secrets_in_doc_or_surql() -> None:
             r"eyJ[a-zA-Z0-9_-]+\.eyJ[a-zA-Z0-9_-]+\.[a-zA-Z0-9_-]+",
             text,
         )
-        assert not jwt_values, (
-            f"Found potential JWT value in {path.name}: {jwt_values}"
-        )
+        assert not jwt_values, f"Found potential JWT value in {path.name}: {jwt_values}"
 
 
 # ---------------------------------------------------------------------------
@@ -146,17 +141,11 @@ def test_no_definable_secrets_in_doc_or_surql() -> None:
 def test_readonly_agent_uses_viewer_role() -> None:
     """cdb_context_agent must use ROLES VIEWER, not OWNER or EDITOR."""
     text = PERMISSION_CONTRACT.read_text(encoding="utf-8")
-    assert "ROLES VIEWER" in text.upper(), (
-        "Readonly agent must use ROLES VIEWER"
-    )
+    assert "ROLES VIEWER" in text.upper(), "Readonly agent must use ROLES VIEWER"
     owner_match = re.search(r"ROLES\s+OWNER", text, re.IGNORECASE)
-    assert not owner_match, (
-        "ROLES OWNER not permitted for read-only agent"
-    )
+    assert not owner_match, "ROLES OWNER not permitted for read-only agent"
     editor_match = re.search(r"ROLES\s+EDITOR", text, re.IGNORECASE)
-    assert not editor_match, (
-        "ROLES EDITOR not permitted for read-only agent"
-    )
+    assert not editor_match, "ROLES EDITOR not permitted for read-only agent"
 
 
 # ---------------------------------------------------------------------------
@@ -173,8 +162,7 @@ def test_no_define_token() -> None:
     text = PERMISSION_CONTRACT.read_text(encoding="utf-8")
     # Only consider non-comment lines for statement checking
     code_lines = [
-        line for line in text.splitlines()
-        if not line.strip().startswith("--")
+        line for line in text.splitlines() if not line.strip().startswith("--")
     ]
     for line in code_lines:
         assert "DEFINE TOKEN" not in line.upper(), (
@@ -193,8 +181,7 @@ def test_no_define_capabilities() -> None:
     text = PERMISSION_CONTRACT.read_text(encoding="utf-8")
     # Only consider non-comment lines for statement checking
     code_lines = [
-        line for line in text.splitlines()
-        if not line.strip().startswith("--")
+        line for line in text.splitlines() if not line.strip().startswith("--")
     ]
     code_text = "\n".join(code_lines)
     define_cap = re.findall(
@@ -220,8 +207,7 @@ def test_no_unnecessary_define_access() -> None:
     text = PERMISSION_CONTRACT.read_text(encoding="utf-8")
     # Only consider non-comment lines for statement checking
     code_lines = [
-        line for line in text.splitlines()
-        if not line.strip().startswith("--")
+        line for line in text.splitlines() if not line.strip().startswith("--")
     ]
     code_text = "\n".join(code_lines)
     define_access = re.findall(
@@ -245,9 +231,7 @@ def test_all_context_tables_in_permission_matrix_doc() -> None:
     """All known context intelligence tables must be listed in the matrix doc."""
     text = PERMISSION_MATRIX_DOC.read_text(encoding="utf-8")
     for table in EXPECTED_TABLES:
-        assert table in text, (
-            f"Table {table} missing from permission matrix doc"
-        )
+        assert table in text, f"Table {table} missing from permission matrix doc"
 
 
 @pytest.mark.unit
@@ -260,9 +244,9 @@ def test_no_trading_state_tables_in_scope() -> None:
             text,
             re.IGNORECASE,
         )
-        assert not define_matches, (
-            f"Forbidden trading table found in permission scope: {forbidden}"
-        )
+        assert (
+            not define_matches
+        ), f"Forbidden trading table found in permission scope: {forbidden}"
 
 
 # ---------------------------------------------------------------------------
@@ -273,13 +257,11 @@ def test_no_trading_state_tables_in_scope() -> None:
 @pytest.mark.unit
 def test_permission_guard_py_not_modified() -> None:
     """tools/mcp/permission_guard.py must NOT be modified by this issue."""
-    assert PERMISSION_GUARD.exists(), (
-        f"Permission guard missing: {PERMISSION_GUARD}"
-    )
+    assert PERMISSION_GUARD.exists(), f"Permission guard missing: {PERMISSION_GUARD}"
     text = PERMISSION_GUARD.read_text(encoding="utf-8")
-    assert "Issue #3426" not in text, (
-        "permission_guard.py must not reference #3426 — it is not modified"
-    )
+    assert (
+        "Issue #3426" not in text
+    ), "permission_guard.py must not reference #3426 — it is not modified"
 
 
 # ---------------------------------------------------------------------------
@@ -291,9 +273,9 @@ def test_permission_guard_py_not_modified() -> None:
 def test_select_allowed_in_doc() -> None:
     """Doc must document SELECT as allowed."""
     text = PERMISSION_MATRIX_DOC.read_text(encoding="utf-8")
-    assert "SELECT" in text, (
-        "Permission matrix doc must document that SELECT is allowed"
-    )
+    assert (
+        "SELECT" in text
+    ), "Permission matrix doc must document that SELECT is allowed"
 
 
 @pytest.mark.unit
@@ -301,9 +283,7 @@ def test_create_update_delete_define_forbidden_in_doc() -> None:
     """Doc must document CREATE/UPDATE/DELETE/DEFINE as forbidden."""
     text = PERMISSION_MATRIX_DOC.read_text(encoding="utf-8")
     for op in ("CREATE", "UPDATE", "DELETE", "DEFINE"):
-        assert op in text, (
-            f"Permission matrix doc must document that {op} is forbidden"
-        )
+        assert op in text, f"Permission matrix doc must document that {op} is forbidden"
 
 
 # ---------------------------------------------------------------------------
@@ -337,9 +317,9 @@ def test_permission_contract_defines_user_on_database() -> None:
     )
     assert matches, "No DEFINE USER ON ... found"
     for level in matches:
-        assert level.upper() == "DATABASE", (
-            f"DEFINE USER must be ON DATABASE, got ON {level}"
-        )
+        assert (
+            level.upper() == "DATABASE"
+        ), f"DEFINE USER must be ON DATABASE, got ON {level}"
 
 
 @pytest.mark.unit
@@ -351,6 +331,6 @@ def test_no_root_token_creation_in_doc() -> None:
         text,
         re.IGNORECASE,
     )
-    assert not root_token_pattern, (
-        f"Root token definition found in doc: {root_token_pattern}"
-    )
+    assert (
+        not root_token_pattern
+    ), f"Root token definition found in doc: {root_token_pattern}"
