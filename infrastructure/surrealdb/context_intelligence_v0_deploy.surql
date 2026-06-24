@@ -13,8 +13,11 @@
 -- - No runtime, compose, service, or trading-system changes implied
 -- - No secrets, no trading-state objects (no orders / positions / fills)
 -- - `agent_memory` remains schema-only; no memory writes enabled
--- - Permissions are fail-closed NONE.  Productive permissions will be
---   defined by Issue #3426 (Permission Matrix + Readonly Agent User).
+-- - Permissions are fail-closed NONE.  Productive permissions are
+--   defined by Issue #3426 (Permission Matrix + Readonly Agent User)
+--   via `context_intelligence_readonly_agent_permissions.surql`.
+--   The VIEWER role in that contract overrides NONE at runtime for the
+--   authenticated cdb_context_agent user.
 --
 -- Conventions:
 -- - Each DEFINE TABLE uses IF NOT EXISTS for idempotent loading
