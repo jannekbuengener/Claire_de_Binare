@@ -225,6 +225,19 @@ Arbeitsflaeche
 - Gate: go | no-go -- <Grund wenn no-go>
 ```
 
+## External Documentation Lookup
+
+If this task touches external tools or services, check `docs/external-docs/index.md`:
+
+- Exchange APIs, WebSocket, Protobuf → `cdb-external-docs` → MEXC, protobuf docs
+- Docker, Compose, Runtime → `cdb-external-docs` → Docker docs
+- GitHub Actions, gh CLI → `cdb-external-docs` → GitHub docs
+- Python testing, linting, security → `cdb-external-docs` → pytest, Ruff, Gitleaks docs
+- Agent surfaces (OpenCode, Cursor, Codex, Claude, Gemini) → `cdb-external-docs`
+
+Load `cdb-external-docs` before implementation if external docs are required.
+If no internet/browsing is available, report `EXTERNAL_DOCS_UNVERIFIED` instead of inventing behavior.
+
 ## Anti-Patterns
 
 - Do not read control docs or the target issue before verifying Git state.

@@ -131,6 +131,14 @@ Canon: `knowledge/testing/MOCKEXCHANGE_CDB_TEST_MAP.md` § Practical Meaning
 - When reviewing whether test evidence is complete for a PR or closure
 - When designing tests that will later feed SurrealDB evidence
 
+## External Documentation Lookup
+
+Test-first planning references external testing and linting tools:
+- Load `cdb-external-docs` before planning tests that depend on pytest, Ruff, mypy, or Black.
+- Look up `docs/external-docs/index.md` → Python / CI / Dev-Qualität section.
+- Read official test framework docs when designing test patterns.
+- If no internet is available, use local code patterns as fallback and flag the gap.
+
 ## Canon sources
 
 - `knowledge/testing/TEST_FIRST_PROCESSING_CONTRACT.md` — full contract (15 test types, metadata, SurrealDB model)

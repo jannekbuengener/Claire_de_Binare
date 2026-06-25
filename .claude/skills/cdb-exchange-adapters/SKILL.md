@@ -26,6 +26,15 @@ disable-model-invocation: true
 - Add tests for happy path plus failure taxonomy.
 - Include one simulated failure case that proves retry or backoff behavior.
 
+## External Documentation Lookup
+
+This skill touches exchange APIs, WebSocket protocols, and Protobuf schemas:
+- Load `cdb-external-docs` before implementation.
+- Look up `docs/external-docs/index.md` → Exchange / Market Data section.
+- Relevant: MEXC Spot V3 API, MEXC Contract API, Protocol Buffers, websockets Python.
+- Read official docs before writing adapter code.
+- If no internet is available, report `EXTERNAL_DOCS_UNVERIFIED` instead of guessing API behavior.
+
 ## Deliverables
 - adapter module or boundary patch
 - tests for success and failure paths

@@ -27,6 +27,14 @@ Default output is the CDB Onboarding status card.
 
 Do not create `.env`, initialize secrets, initialize context, write reports, create issues, or run Docker unless the user explicitly selects a next option after the status card.
 
+## External Documentation Lookup
+
+When onboarding orientation mentions external tools or agent surfaces:
+- Load `cdb-external-docs` for a complete list of external documentation references.
+- Look up `docs/external-docs/index.md` for links to OpenCode, Cursor, Codex, Claude, Gemini docs.
+- Relevant for new agents: Agent Surfaces section, GitHub Docs, MCP / Context docs.
+- If internet is unavailable, reference local `docs/external-docs/index.md` and `AGENTS.md`.
+
 ## Run
 
 ```bash

@@ -42,6 +42,14 @@ disable-model-invocation: true
 - Playbook for multi-step incidents or human-gated crisis handling
 - Use semantic colors only for gates, verdicts, triggers, and expected results.
 
+## External Documentation Lookup
+
+When creating docs that reference external tools or services:
+- Load the `cdb-external-docs` skill.
+- Look up `docs/external-docs/index.md` for official documentation links.
+- Verify external links before referencing them in CDB docs.
+- If a referenced external doc is unreachable, mark it as `UNVERIFIED` in the doc.
+
 ## Safety
 - No real trades.
 - No irreversible action without explicit human approval.
