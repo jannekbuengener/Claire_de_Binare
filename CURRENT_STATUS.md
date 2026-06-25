@@ -10,7 +10,11 @@
 
 ## Repo / Engineering Status (2026-06-25)
 
-- **SurrealDB Context Intelligence Foundation (#3418 meta)**: Five foundation slices delivered and merged to `main` @ `cac91ec5c0f99ca9af348b09c20694f23bc5d10d`. All issues CLOSED. ADR-002 (`ADOPT_AFTER_FOUNDATION_REPAIR`) foundation-repair prerequisite met. LR NO-GO; no runtime/DB/MCP mutation.
+- **SurrealDB Context Intelligence Foundation (#3418 meta)**: Nine foundation slices delivered and merged. All 9 children CLOSED; meta CLOSED. ADR-002 (`ADOPT_AFTER_FOUNDATION_REPAIR`) foundation-repair prerequisite fully met. #3430 (SurrealKit CLI tooling) remains open as separate follow-up. LR NO-GO; no runtime/DB/MCP mutation.
+
+  - **#3419 Context Intelligence Canon / Architecture Decision / PR #3428 / `774ae71c`**: ADR-002 (`ADOPT_AFTER_FOUNDATION_REPAIR`) architecture decision record. CONTROL_REGISTER updated. Issue CLOSED. LR NO-GO.
+
+  - **#3420 SurrealKit Schema Foundation / PR #3429 / `57e39277`**: Deployable SurrealKit-compatible schema wrapper. Schema snapshot mechanism (`tools/surrealdb/schema_snapshot.py` + baseline). 21 schema contract and snapshot tests. SurrealKit compatibility documentation. 4 verbindliche Anpassungen umgesetzt. Issue CLOSED. LR NO-GO.
 
   - **#3422 VectorGraph Minimal Schema / PR #3431 / `492d4e70`**: Schema extension — `DEFINE ANALYZER cdb_code_analyzer` (class+camel tokenizers, lowercase+ascii filters), `DEFINE FIELD embedding` on `doc_chunk` (`TYPE array`), HNSW index (`DIMENSION 1536`, `DIST COSINE`), FULLTEXT index (`BM25 HIGHLIGHTS`). Schema snapshot tool extended (analyzer regex, `FieldsSchema.Analyzers`). Baseline: 226 fields, 75 indexes, 1 analyzer. 12 new + 1 fix tests (33 total). `IF NOT EXISTS` guards in deploy file. Issue CLOSED. LR NO-GO.
 
@@ -18,17 +22,21 @@
 
   - **#3424 Full-text + Vector + Hybrid Retrieval Contract / `cc8837c3`**: Hybrid retrieval contract combining full-text (`@@`) and vector (`<|K|>`) search semantics. Contract document + schema alignment. Issue CLOSED. LR NO-GO.
 
+  - **#3425 Agent Skills / Rules Integration / PR #3439 / `8e11c2e0`**: Agent Skills/Rules mapping (`agent-skills-rules-integration-v0.md`). SurrealDB Documentation Gate für Agenten. Offizielle SurrealDB Skills + Rules als Read-only-Referenzfläche. Update-Workflow + Source-Manifest. Alle 5 CDB-Surfaces aktualisiert. Issue CLOSED. LR NO-GO.
+
   - **#3426 Permission Matrix v0 + Readonly Agent User / PR #3434 / `b8ada830`**: SurrealDB `DEFINE USER cdb_context_agent ON DATABASE … ROLES VIEWER` contract (`infrastructure/surrealdb/context_intelligence_readonly_agent_permissions.surql`). Permission matrix doc (`context-intelligence-permission-matrix-v0.md`). 17 contract tests (passhash format, role constraints, forbidden statements, table scope, doc-contract alignment). Baseline hash unchanged. Issue CLOSED. LR NO-GO.
 
   - **#3421 Readonly MCP Brain Evidence Contract / PR #3435 / `cac91ec5`**: Three-layer defense-in-depth read-only contract (MCP permission guard → SurrealQL statement classifier → SurrealDB VIEWER role). `DB_RECORD_EVIDENCE_RESPONSE_SCHEMA.md` trust/confidence/freshness envelope. Validator module `db_record_evidence_response.py` (`derive_trust_level()`, `derive_freshness_signal()`, `build_ok_response()`, `build_error_response()`, `validate_db_record_evidence_response()`, `enforce_response_contract()`). 59 new tests (136 surrealdb total). Secret leak detection. Issue CLOSED. LR NO-GO.
 
-  - **#3437 External-Docs Index + cdb-external-docs Skill / PR #3437 / `e7789a1e`**: Central external-docs index (`docs/external-docs/index.md`) mit 90+ kuratierten Verweisen (canonical, internal-tool, external). cdb-external-docs Skill in allen 5 Agent-Surfaces: `.opencode/skills/cdb-external-docs/`, `.cursor/skills/cdb-external-docs/`, `.codex/cdb_skills/cdb-external-docs/`, `.claude/skills/cdb-external-docs/`, `.gemini/skills/cdb-external-docs/`. Meta-Einträge in `AGENTS.md` und `agents/AGENTS.md`. 28 bestehende Skills mit external-docs-Hooks ergänzt. Issue CLOSED. LR NO-GO. Restunsicherheiten: `.claude/skills/*.skill` Binärdateien nicht modifiziert (kein Lesetool); `skillforge/`-Hooks nur lokal (ungetrackt).
+  - **#3427 ContextBrain Report / Gist Ledger Integration / PR TBD**: Report template, Gist-Ledger-Zielreferenz, Decision-Event-Ledger-Format, Foundation-Status-Matrix. `docs/surrealdb/context-brain-report-gist-ledger-v0.md`. Gist-URL dokumentiert (kein Live-Posting). LR NO-GO. Issue CLOSED.
 
-- **main**: `e7789a1e` (post SurrealDB foundation #3421/#3426/#3422–#3424 + external-docs skill #3437 merge chain)
+  - **#3437 External-Docs Index + cdb-external-docs Skill / PR #3437 / `e7789a1e`**: Central external-docs index (`docs/external-docs/index.md`) mit 90+ kuratierten Verweisen (canonical, internal-tool, external). cdb-external-docs Skill in allen 5 Agent-Surfaces. Meta-Einträge in `AGENTS.md` und `agents/AGENTS.md`. 28 bestehende Skills mit external-docs-Hooks ergänzt. Issue CLOSED. LR NO-GO. Restunsicherheiten: `.claude/skills/*.skill` Binärdateien nicht modifiziert (kein Lesetool); `skillforge/`-Hooks nur lokal (ungetrackt).
+
+- **main**: `4dab69a8` (post PR #3440 Slice A sleep lifecycle validator merge; SurrealDB ContextBrain Foundation #3418 meta + all 9 children CLOSED; #3430 SurrealKit tooling follow-up open)
 - **Active GitHub focus (manual, non-exhaustive)**:
-  - #3418 (SurrealDB ContextBrain / VectorGraph Foundation) — **OPEN**
+  - #3430 (SurrealKit CLI / CI validation follow-up) — **OPEN**
+  - #3374/#3362/#3384/#3345 (Sleep lifecycle issue cluster — Slice B ETA)
   - #2440 (LR-030 Shadow/Soak Run) — **OPEN**
-  - #2289 (Security Alert Readout Epic) — **OPEN**
 
 ## Repo / Engineering Status (2026-06-23)
 
