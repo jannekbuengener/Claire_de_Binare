@@ -1187,6 +1187,34 @@ def _check_coordinator_events(
     )
 
 
+def _check_sleep_lifecycle_completeness(
+    events: Sequence[Mapping[str, Any]],
+    state_payload: Mapping[str, Any] | None,
+    add_finding: Any,
+    *,
+    is_final: bool = True,
+) -> None:
+    if not is_final:
+        return
+    if not events:
+        return
+    last_event = events[-1]
+    if last_event.get("event_type") != "sleep_started":
+        return
+    coordinator_status = ""
+    if state_payload is not None:
+        coordinator_status = str(state_payload.get("coordinator_status", "") or "")
+    add_finding(
+        "Coordinator sleep lifecycle completeness",
+        "warn",
+        f"The coordinator event stream ends with sleep_started "
+        f"and no matching sleep_completed or sleep_overshoot. "
+        f"Coordinator status: {coordinator_status!r}. "
+        f"The run may have been interrupted during sleep.",
+        artifact="coordinator_events.jsonl",
+    )
+
+
 def _check_lifecycle_runner_state_consistency(
     coordinator_events: Sequence[Mapping[str, Any]],
     state_payload: Mapping[str, Any] | None,
@@ -1458,6 +1486,10 @@ def validate_72h_window(
         _check_no_side_effects(path, payload, add_finding)
 
     _check_coordinator_events(coordinator_events, add_finding, is_final=is_final)
+
+    _check_sleep_lifecycle_completeness(
+        coordinator_events, state_payload, add_finding, is_final=is_final
+    )
 
     _check_lifecycle_runner_state_consistency(
         coordinator_events,
