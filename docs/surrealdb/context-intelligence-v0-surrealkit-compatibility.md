@@ -106,10 +106,46 @@ DEFINE INDEX idx_doc_chunk_content_ft ON TABLE doc_chunk FIELDS content FULLTEXT
 - **#3421** — Readonly MCP Brain Evidence Contract: harter MCP-Vertrag für
   DB-backed Brain Evidence in read-only Tools
 
+## SurrealQL Syntax Validation (Issue #3430)
+
+Seit Issue #3430 ist eine SurrealQL-Syntax-Validation im Repo integriert:
+
+### Korrektur: `surrealkit validate` existiert nicht
+
+Die ursprüngliche Annahme aus #3420/#3430, dass `surrealkit validate` ein gültiger
+Befehl sei, war **faktisch falsch**. Das offizielle SurrealKit CLI (`surrealkit`)
+kennt keinen `validate`-Befehl. Die verfügbaren SurrealKit-Kommandos sind:
+`init`, `sync`, `rollout` (plan/start/complete/rollback/repair/lint/status/baseline),
+`seed`, `test`.
+
+### Tatsächlicher Befehl: `surreal validate`
+
+Der korrekte Befehl für reine Syntax-Validierung ohne Datenbank ist `surreal validate`
+aus dem offiziellen SurrealDB CLI. Er prüft `.surql`-Dateien auf Parser-Ebene und
+benötigt **keine laufende SurrealDB-Instanz**.
+
+```bash
+surreal validate infrastructure/surrealdb/context_intelligence_v0_deploy.surql
+surreal validate infrastructure/surrealdb/context_intelligence_v0.surql
+```
+
+### CI-Integration
+
+Ein separater CI-Job `surrealdb-validate` führt diese Prüfung bei Pull-Requests
+aus, die `.surql`-Dateien ändern. Verwendet wird das offizielle SurrealDB Docker-
+Image (`ghcr.io/surrealdb/surrealdb:v3.1.5`) mit fester Version.
+
+### DB-gebundene SurrealKit-Tests (Zukunft)
+
+SurrealKit's DB-gebundene Test-Suite (`surrealkit test`, deklarative Permission-
+und Schema-Tests gegen eine laufende SurrealDB) bleibt **zukünftiger Scope**
+und ist nicht Teil dieser Integration.
+
 ## Referenzen
 
 - ADR-002: `knowledge/decisions/ADR-002-context-intelligence-canon.md`
 - Issue #3420: GitHub issue (SLICE-02 — SurrealKit Schema Foundation)
+- Issue #3430: GitHub issue (SurrealQL Syntax Validation)
 - Issue #3418: Meta-Issue (Build SurrealDB-native ContextBrain / VectorGraph)
 - Snapshot-Tool: `tools/surrealdb/schema_snapshot.py`
 - Schema-Tests: `tests/surrealdb/`
