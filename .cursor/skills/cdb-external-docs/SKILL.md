@@ -32,6 +32,7 @@ Load this skill when the task involves any of these external doc dependencies:
 | Python / Testing | pytest, Ruff, mypy, Black, pre-commit |
 | Agent Surfaces | OpenCode, Cursor, Codex, Claude Code, Gemini |
 | MCP / Context | Model Context Protocol, SurrealDB |
+| SurrealDB Agent Skills / Rules | Offizielle SurrealDB Skills, Rules, Memory SDKs |
 | Infrastructure | Redis, PostgreSQL, Prometheus, Grafana |
 
 ## How to use

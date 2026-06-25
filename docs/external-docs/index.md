@@ -46,7 +46,10 @@
 | Name | Offizielle Docs | CDB-Nutzung | Priorität | Lookup-Trigger |
 |------|----------------|-------------|-----------|----------------|
 | Model Context Protocol | https://modelcontextprotocol.io/docs | MCP-Server, Tools, Context-Briefings, Agenten-Integration | required | `.mcp.json`, Context-Tools |
-| SurrealDB | https://surrealdb.com/docs | Context Intelligence / DB-backed Brain | required | `docs/surrealdb/` |
+| SurrealDB (Hauptdoku) | https://surrealdb.com/docs | Context Intelligence / DB-backed Brain | required | `docs/surrealdb/` |
+| SurrealDB Agent Skills | https://github.com/surrealdb/agent-skills | 8 offizielle Skills (surrealql, vector, python, js, cli, surrealkit, performance, functions) | required | `docs/surrealdb/agent-skills-rules-integration-v0.md` |
+| SurrealDB Agent Memory | https://github.com/surrealdb/agent-memory | SDK Agent-Memory-Beispiele (Agno, LangChain, LangGraph, Pydantic AI) | secondary | `docs/surrealdb/agent-skills-rules-integration-v0.md` |
+| SurrealDB Agent Rules | https://surrealdb.com/docs/integrations/agent-rules | 4 .mdc-Rules (surrealql, vector, python, python-embedded) | required | `docs/surrealdb/agent-skills-rules-integration-v0.md` |
 
 ---
 
