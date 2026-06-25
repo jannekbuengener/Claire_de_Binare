@@ -10,6 +10,8 @@
 
 ## Repo / Engineering Status (2026-06-25)
 
+- **#3430 SurrealQL Syntax Validation / PR #3442**: Added SurrealQL syntax validation via `surreal validate` (SurrealDB CLI). **Correction from original issue:** `surrealkit validate` does not exist as a command; the correct syntax-only validator is `surreal validate` (official SurrealDB CLI, no DB needed). Delivered: Makefile target `surreal-validate`, CI job `surrealdb-validate` (pinned `ghcr.io/surrealdb/surrealdb:v3.1.5`, Docker only). Docs updated with correction note. No SurrealKit CLI installed, no DB writes, no schema sync, no migration. LR NO-GO. Issue CLOSED.
+
 - **SurrealDB Context Intelligence Foundation (#3418 meta)**: Nine foundation slices delivered and merged. All 9 children CLOSED; meta CLOSED. ADR-002 (`ADOPT_AFTER_FOUNDATION_REPAIR`) foundation-repair prerequisite fully met. #3430 (SurrealKit CLI tooling) remains open as separate follow-up. LR NO-GO; no runtime/DB/MCP mutation.
 
   - **#3419 Context Intelligence Canon / Architecture Decision / PR #3428 / `774ae71c`**: ADR-002 (`ADOPT_AFTER_FOUNDATION_REPAIR`) architecture decision record. CONTROL_REGISTER updated. Issue CLOSED. LR NO-GO.
@@ -32,9 +34,9 @@
 
   - **#3437 External-Docs Index + cdb-external-docs Skill / PR #3437 / `e7789a1e`**: Central external-docs index (`docs/external-docs/index.md`) mit 90+ kuratierten Verweisen (canonical, internal-tool, external). cdb-external-docs Skill in allen 5 Agent-Surfaces. Meta-Einträge in `AGENTS.md` und `agents/AGENTS.md`. 28 bestehende Skills mit external-docs-Hooks ergänzt. Issue CLOSED. LR NO-GO. Restunsicherheiten: `.claude/skills/*.skill` Binärdateien nicht modifiziert (kein Lesetool); `skillforge/`-Hooks nur lokal (ungetrackt).
 
-- **main**: `4dab69a8` (post PR #3440 Slice A sleep lifecycle validator merge; SurrealDB ContextBrain Foundation #3418 meta + all 9 children CLOSED; #3430 SurrealKit tooling follow-up open)
+- **main**: `76ac249a` (post all 9 #3418 foundation slices CLOSED; SurrealDB ContextBrain Foundation meta CLOSED; #3430 PR in review)
 - **Active GitHub focus (manual, non-exhaustive)**:
-  - #3430 (SurrealKit CLI / CI validation follow-up) — **OPEN**
+  - #3430 (SurrealQL syntax validation via \`surreal validate\`) — **PR #3442 in review**
   - #3374/#3362/#3384/#3345 (Sleep lifecycle issue cluster — Slice B ETA)
   - #2440 (LR-030 Shadow/Soak Run) — **OPEN**
 

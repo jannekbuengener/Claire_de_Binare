@@ -41,7 +41,7 @@ else
   SECRETS_PATH ?= $(HOME)/Documents/.secrets/.cdb
 endif
 
-.PHONY: help test test-unit test-integration test-e2e test-local test-local-stress test-local-performance test-local-lifecycle test-local-cli test-local-chaos test-local-backup test-full-system test-coverage docker-up docker-down docker-health systemcheck daily-check backup backup-postgres-only restore backup-health paper-trading-start paper-trading-logs paper-trading-stop replay-shadow-run rollback cleanup mcp-config-validate security-scan pre-close onboarding-doctor context-env-check context-query-config-init context-up context-down context-status context-logs context-restart context-schema-apply context-schema-check context-reset-local context-scan context-import-dry-run context-import-local context-query-smoke context-smoke context-smoke-db context-memory-db-proof context-claim-evidence-proof context-memory-rediscovery-proof context-doctor context-certify context-live-invoke context-live-invoke-full audit-trail-t3-bootstrap audit-trail-t3-proof audit-trail-t3-status audit-trail-t3-down
+.PHONY: help test test-unit test-integration test-e2e test-local test-local-stress test-local-performance test-local-lifecycle test-local-cli test-local-chaos test-local-backup test-full-system test-coverage docker-up docker-down docker-health systemcheck daily-check backup backup-postgres-only restore backup-health paper-trading-start paper-trading-logs paper-trading-stop replay-shadow-run rollback cleanup mcp-config-validate security-scan pre-close onboarding-doctor context-env-check context-query-config-init context-up context-down context-status context-logs context-restart context-schema-apply context-schema-check context-reset-local context-scan context-import-dry-run context-import-local context-query-smoke context-smoke context-smoke-db context-memory-db-proof context-claim-evidence-proof context-memory-rediscovery-proof context-doctor context-certify context-live-invoke context-live-invoke-full audit-trail-t3-bootstrap audit-trail-t3-proof audit-trail-t3-status audit-trail-t3-down surreal-validate
 
 help:
 	@echo "Claire de Binare - Test Commands"
@@ -116,6 +116,9 @@ help:
 	@echo "  make context-negative-controls - Write-intent/mutation negative-control regression (#2854)"
 	@echo "  make onboarding-docs-guard   - Validate active onboarding docs links/entrypoints (#3233)"
 	@echo "  make context-root-inventory  - Cross-repo root + GitHub target inventory (#2853)"
+	@echo ""
+	@echo "SurrealQL Syntax Validation:"
+	@echo "  make surreal-validate       - Validate .surql syntax via SurrealDB CLI (#3430)"
 # ============================================================================
 # CI-Tests (schnell, mit Mocks)
 # ============================================================================
@@ -430,6 +433,31 @@ context-negative-controls:
 context-root-inventory:
 	@echo "=== Cross-repo root and GitHub target inventory (#2853) ==="
 	@$(PYTHON) -m tools.mcp.cross_repo_root_inventory --format markdown
+
+# ============================================================================
+# SurrealQL Syntax Validation (#3430)
+# ============================================================================
+
+SURREALDB_VERSION ?= v3.1.5
+
+surreal-validate:
+	@echo "=== SurrealQL Syntax Validation ==="
+	@echo "NOTE: Uses SurrealDB CLI $(SURREALDB_VERSION) in ephemeral Docker container."
+	@echo "      No DB connection, no schema sync, no migration."
+	@if command -v surreal > /dev/null 2>&1; then \
+		echo "--- native surreal CLI found ---"; \
+		surreal validate infrastructure/surrealdb/context_intelligence_v0_deploy.surql; \
+		surreal validate infrastructure/surrealdb/context_intelligence_v0.surql; \
+	elif command -v docker > /dev/null 2>&1; then \
+		echo "--- native surreal not found, using Docker fallback ---"; \
+		docker pull ghcr.io/surrealdb/surrealdb:$(SURREALDB_VERSION) > /dev/null 2>&1; \
+		docker run --rm -v "$(CURDIR):/workspace" ghcr.io/surrealdb/surrealdb:$(SURREALDB_VERSION) validate /workspace/infrastructure/surrealdb/context_intelligence_v0_deploy.surql; \
+		docker run --rm -v "$(CURDIR):/workspace" ghcr.io/surrealdb/surrealdb:$(SURREALDB_VERSION) validate /workspace/infrastructure/surrealdb/context_intelligence_v0.surql; \
+	else \
+		echo "ERROR: neither surreal CLI nor Docker available"; \
+		exit 1; \
+	fi
+	@echo "[OK] SurrealQL syntax validation passed"
 
 context-reset-local:
 	@echo "=== SurrealDB Local Reset (DESTRUKTIV - nur Context-Intelligence-Daten) ==="
