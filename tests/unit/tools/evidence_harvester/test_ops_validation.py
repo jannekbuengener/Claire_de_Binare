@@ -985,17 +985,14 @@ class TestValidate72hWindowFromDir:
         last_ts = events[-1]["event_at_utc"] if events else _ts(start)
         events.append(
             {
-                "schema_version": (
-                    "cdb.evidence_harvester.coordinator_event.v1"
-                ),
+                "schema_version": ("cdb.evidence_harvester.coordinator_event.v1"),
                 "event_at_utc": last_ts,
                 "run_id": "test-run",
                 "event_type": "sleep_started",
             }
         )
         events_path.write_text(
-            "\n".join(json.dumps(e, sort_keys=True) for e in events)
-            + "\n",
+            "\n".join(json.dumps(e, sort_keys=True) for e in events) + "\n",
             encoding="utf-8",
         )
         state_path = tmp_path / "runner_state.json"
@@ -1045,8 +1042,7 @@ class TestValidate72hWindowFromDir:
             not in ("sleep_started", "sleep_completed", "sleep_overshoot")
         ]
         events_path.write_text(
-            "\n".join(json.dumps(e, sort_keys=True) for e in events)
-            + "\n",
+            "\n".join(json.dumps(e, sort_keys=True) for e in events) + "\n",
             encoding="utf-8",
         )
         report = validate_72h_window_from_dir(
@@ -1078,17 +1074,14 @@ class TestValidate72hWindowFromDir:
         last_ts = events[-1]["event_at_utc"] if events else _ts(start)
         events.append(
             {
-                "schema_version": (
-                    "cdb.evidence_harvester.coordinator_event.v1"
-                ),
+                "schema_version": ("cdb.evidence_harvester.coordinator_event.v1"),
                 "event_at_utc": last_ts,
                 "run_id": "test-run",
                 "event_type": "sleep_started",
             }
         )
         events_path.write_text(
-            "\n".join(json.dumps(e, sort_keys=True) for e in events)
-            + "\n",
+            "\n".join(json.dumps(e, sort_keys=True) for e in events) + "\n",
             encoding="utf-8",
         )
 

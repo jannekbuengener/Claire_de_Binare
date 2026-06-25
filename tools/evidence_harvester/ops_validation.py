@@ -1203,9 +1203,7 @@ def _check_sleep_lifecycle_completeness(
         return
     coordinator_status = ""
     if state_payload is not None:
-        coordinator_status = str(
-            state_payload.get("coordinator_status", "") or ""
-        )
+        coordinator_status = str(state_payload.get("coordinator_status", "") or "")
     add_finding(
         "Coordinator sleep lifecycle completeness",
         "warn",
