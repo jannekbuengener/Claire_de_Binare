@@ -22,7 +22,9 @@
 
   - **#3421 Readonly MCP Brain Evidence Contract / PR #3435 / `cac91ec5`**: Three-layer defense-in-depth read-only contract (MCP permission guard → SurrealQL statement classifier → SurrealDB VIEWER role). `DB_RECORD_EVIDENCE_RESPONSE_SCHEMA.md` trust/confidence/freshness envelope. Validator module `db_record_evidence_response.py` (`derive_trust_level()`, `derive_freshness_signal()`, `build_ok_response()`, `build_error_response()`, `validate_db_record_evidence_response()`, `enforce_response_contract()`). 59 new tests (136 surrealdb total). Secret leak detection. Issue CLOSED. LR NO-GO.
 
-- **main**: `cac91ec5` (post #3421/#3426/#3422–#3424 SurrealDB foundation merge chain)
+  - **#3437 External-Docs Index + cdb-external-docs Skill / PR #3437 / `e7789a1e`**: Central external-docs index (`docs/external-docs/index.md`) mit 90+ kuratierten Verweisen (canonical, internal-tool, external). cdb-external-docs Skill in allen 5 Agent-Surfaces: `.opencode/skills/cdb-external-docs/`, `.cursor/skills/cdb-external-docs/`, `.codex/cdb_skills/cdb-external-docs/`, `.claude/skills/cdb-external-docs/`, `.gemini/skills/cdb-external-docs/`. Meta-Einträge in `AGENTS.md` und `agents/AGENTS.md`. 28 bestehende Skills mit external-docs-Hooks ergänzt. Issue CLOSED. LR NO-GO. Restunsicherheiten: `.claude/skills/*.skill` Binärdateien nicht modifiziert (kein Lesetool); `skillforge/`-Hooks nur lokal (ungetrackt).
+
+- **main**: `e7789a1e` (post SurrealDB foundation #3421/#3426/#3422–#3424 + external-docs skill #3437 merge chain)
 - **Active GitHub focus (manual, non-exhaustive)**:
   - #3418 (SurrealDB ContextBrain / VectorGraph Foundation) — **OPEN**
   - #2440 (LR-030 Shadow/Soak Run) — **OPEN**
