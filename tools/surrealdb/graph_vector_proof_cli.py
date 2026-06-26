@@ -15,7 +15,8 @@ import os
 import urllib.error
 import urllib.parse
 import urllib.request
-from datetime import datetime, timezone
+from datetime import datetime
+from core.utils.clock import utcnow as cdb_utcnow
 from pathlib import Path
 from typing import Any
 
@@ -196,7 +197,7 @@ class ProofSqlClient:
 # Deterministic test data
 # ---------------------------------------------------------------------------
 
-NOW = datetime.now(timezone.utc)
+NOW = cdb_utcnow()
 
 
 def _make_toy_vector(cluster_id: int, variant: int) -> list[float]:
