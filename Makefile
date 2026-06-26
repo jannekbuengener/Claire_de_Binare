@@ -41,7 +41,7 @@ else
   SECRETS_PATH ?= $(HOME)/Documents/.secrets/.cdb
 endif
 
-.PHONY: help test test-unit test-integration test-e2e test-local test-local-stress test-local-performance test-local-lifecycle test-local-cli test-local-chaos test-local-backup test-full-system test-coverage docker-up docker-down docker-health systemcheck daily-check backup backup-postgres-only restore backup-health paper-trading-start paper-trading-logs paper-trading-stop replay-shadow-run rollback cleanup mcp-config-validate security-scan pre-close onboarding-doctor context-env-check context-query-config-init context-up context-down context-status context-logs context-restart context-schema-apply context-schema-check context-reset-local context-scan context-import-dry-run context-import-local context-query-smoke context-smoke context-smoke-db context-memory-db-proof context-claim-evidence-proof context-memory-rediscovery-proof context-doctor context-certify context-live-invoke context-live-invoke-full audit-trail-t3-bootstrap audit-trail-t3-proof audit-trail-t3-status audit-trail-t3-down surreal-validate
+.PHONY: help test test-unit test-integration test-e2e test-local test-local-stress test-local-performance test-local-lifecycle test-local-cli test-local-chaos test-local-backup test-full-system test-coverage docker-up docker-down docker-health systemcheck daily-check backup backup-postgres-only restore backup-health paper-trading-start paper-trading-logs paper-trading-stop replay-shadow-run rollback cleanup mcp-config-validate security-scan pre-close onboarding-doctor context-env-check context-query-config-init context-up context-down context-status context-logs context-restart context-schema-apply context-schema-check context-reset-local context-scan context-import-dry-run context-import-local context-query-smoke context-smoke context-smoke-db context-graph-vector-proof context-memory-db-proof context-claim-evidence-proof context-memory-rediscovery-proof context-doctor context-certify context-live-invoke context-live-invoke-full audit-trail-t3-bootstrap audit-trail-t3-proof audit-trail-t3-status audit-trail-t3-down surreal-validate
 
 help:
 	@echo "Claire de Binare - Test Commands"
@@ -105,6 +105,7 @@ help:
 	@echo "  make context-query-smoke     - Lese-Query-Smoke (graceful fail)"
 	@echo "  make context-smoke           - Komplette lokale Pipeline (smoke test)"
 	@echo "  make context-smoke-db        - Hard fail-closed DB-backed smoke (#2460)"
+	@echo "  make context-graph-vector-proof - Isolated Graph + Vector capability proof (no Docker)"
 	@echo "  make context-memory-db-proof - Narrow memory read+stale proof (#2603/#2606)"
 	@echo "  make context-claim-evidence-proof - Claim evidence at rest proof (#2719/#2606)"
 	@echo "  make context-memory-rediscovery-proof - Cross-session memory rediscovery (#2720)"
@@ -562,6 +563,15 @@ endif
 		--secrets-path "$(SECRETS_PATH)" \
 		show-snapshot
 	@echo "[OK] context-smoke-db: fail-closed DB-backed smoke complete (LR: NO-GO)"
+
+context-graph-vector-proof:
+	@echo "=== SurrealDB Graph + Vector Proof (isolated) ==="
+	@echo "NOTE: This proof requires a local SurrealDB memory instance."
+	@echo "      Start one with: surreal start --user root --pass root memory --bind 127.0.0.1:8010"
+	@echo "      No Docker. No productive DB. No Live-Go. No Echtgeld-Go. LR remains NO-GO."
+	@echo "--- Starting proof ---"
+	@$(PYTHON) -m tools.surrealdb.graph_vector_proof_cli
+	@echo "[OK] context-graph-vector-proof complete (see artifacts/evidence/graph_vector_proof/)"
 
 context-memory-db-proof: context-env-check
 	@echo "=== Memory DB Proof (read + stale scan, fail-closed) #2603 ==="
