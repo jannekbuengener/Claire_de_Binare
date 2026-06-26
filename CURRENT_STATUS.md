@@ -3,16 +3,20 @@
 **Status Class**: Working Repo / Engineering Status
 **Authority**: Current repo/main/test/dependency snapshot; not the canonical live-readiness or Echtgeld Go/No-Go source.
 **Operational Canon**: `docs/live-readiness/LR-AUDIT-STATUS-2026-03-05.md`
-**Last Updated**: 2026-06-25
+**Last Updated**: 2026-06-26
 **GitHub Boundary**: The live commit and PR state is tracked in GitHub (UI/API or `gh`); this file is a curated repo/engineering ledger, not a live mirror.
 
 ---
 
-## Repo / Engineering Status (2026-06-25)
+## Repo / Engineering Status (2026-06-26)
 
-- **#3430 SurrealQL Syntax Validation / PR #3442**: Added SurrealQL syntax validation via `surreal validate` (SurrealDB CLI). **Correction from original issue:** `surrealkit validate` does not exist as a command; the correct syntax-only validator is `surreal validate` (official SurrealDB CLI, no DB needed). Delivered: Makefile target `surreal-validate`, CI job `surrealdb-validate` (pinned `ghcr.io/surrealdb/surrealdb:v3.1.5`, Docker only). Docs updated with correction note. No SurrealKit CLI installed, no DB writes, no schema sync, no migration. LR NO-GO. Issue CLOSED.
+- **#3441 ContextBrain Report / Gist Ledger Integration / PR #3441 / `76ac249a`**: MERGED. Report template, Gist-Ledger-Zielreferenz, Decision-Event-Ledger-Format, Foundation-Status-Matrix. `docs/surrealdb/context-brain-report-gist-ledger-v0.md`. Gist-URL dokumentiert (kein Live-Posting). Closes #3427. Closes meta #3418 (all 9 children previously CLOSED). LR NO-GO.
 
-- **SurrealDB Context Intelligence Foundation (#3418 meta)**: Nine foundation slices delivered and merged. All 9 children CLOSED; meta CLOSED. ADR-002 (`ADOPT_AFTER_FOUNDATION_REPAIR`) foundation-repair prerequisite fully met. #3430 (SurrealKit CLI tooling) remains open as separate follow-up. LR NO-GO; no runtime/DB/MCP mutation.
+- **#3442 SurrealQL Syntax Validation / PR #3442 / `4326e46e`**: MERGED. Added SurrealQL syntax validation via `surreal validate` (SurrealDB CLI). **Correction from original issue:** `surrealkit validate` does not exist as a command; the correct syntax-only validator is `surreal validate` (official SurrealDB CLI, no DB needed). Delivered: Makefile target `surreal-validate`, CI job `surrealdb-validate` (pinned `ghcr.io/surrealdb/surrealdb:v3.1.5`, Docker only). Docs updated with correction note. Closes #3430. LR NO-GO.
+
+- **#3443 Coordinator runpy warning removal / PR #3443 / `fbd7fa83`**: MERGED. Removed runpy re-execution warnings from long-run coordinator invocation path in evidence harvester. Closes #3371. LR NO-GO.
+
+- **SurrealDB Context Intelligence Foundation (#3418 meta)**: Nine foundation slices delivered and merged. All 9 children CLOSED; meta CLOSED via #3441. ADR-002 (`ADOPT_AFTER_FOUNDATION_REPAIR`) foundation-repair prerequisite fully met. #3430 (SurrealQL syntax validation) CLOSED via #3442. LR NO-GO; no runtime/DB/MCP mutation.
 
   - **#3419 Context Intelligence Canon / Architecture Decision / PR #3428 / `774ae71c`**: ADR-002 (`ADOPT_AFTER_FOUNDATION_REPAIR`) architecture decision record. CONTROL_REGISTER updated. Issue CLOSED. LR NO-GO.
 
@@ -30,14 +34,22 @@
 
   - **#3421 Readonly MCP Brain Evidence Contract / PR #3435 / `cac91ec5`**: Three-layer defense-in-depth read-only contract (MCP permission guard → SurrealQL statement classifier → SurrealDB VIEWER role). `DB_RECORD_EVIDENCE_RESPONSE_SCHEMA.md` trust/confidence/freshness envelope. Validator module `db_record_evidence_response.py` (`derive_trust_level()`, `derive_freshness_signal()`, `build_ok_response()`, `build_error_response()`, `validate_db_record_evidence_response()`, `enforce_response_contract()`). 59 new tests (136 surrealdb total). Secret leak detection. Issue CLOSED. LR NO-GO.
 
-  - **#3427 ContextBrain Report / Gist Ledger Integration / PR TBD**: Report template, Gist-Ledger-Zielreferenz, Decision-Event-Ledger-Format, Foundation-Status-Matrix. `docs/surrealdb/context-brain-report-gist-ledger-v0.md`. Gist-URL dokumentiert (kein Live-Posting). LR NO-GO. Issue CLOSED.
+  - **#3427 ContextBrain Report / Gist Ledger Integration / PR #3441 / `76ac249a`**: Report template, Gist-Ledger-Zielreferenz, Decision-Event-Ledger-Format, Foundation-Status-Matrix. `docs/surrealdb/context-brain-report-gist-ledger-v0.md`. Gist-URL dokumentiert (kein Live-Posting). Issue CLOSED. LR NO-GO.
 
   - **#3437 External-Docs Index + cdb-external-docs Skill / PR #3437 / `e7789a1e`**: Central external-docs index (`docs/external-docs/index.md`) mit 90+ kuratierten Verweisen (canonical, internal-tool, external). cdb-external-docs Skill in allen 5 Agent-Surfaces. Meta-Einträge in `AGENTS.md` und `agents/AGENTS.md`. 28 bestehende Skills mit external-docs-Hooks ergänzt. Issue CLOSED. LR NO-GO. Restunsicherheiten: `.claude/skills/*.skill` Binärdateien nicht modifiziert (kein Lesetool); `skillforge/`-Hooks nur lokal (ungetrackt).
 
-- **main**: `76ac249a` (post all 9 #3418 foundation slices CLOSED; SurrealDB ContextBrain Foundation meta CLOSED; #3430 PR in review)
+- **Evidence-Harvester Cluster Status**:
+  - #3362 remains **OPEN** — continuous always-on dry operation proof not yet delivered
+  - #3384 remains **OPEN** — reconcile #3345/#3362/#3374 after 72h run and evidence-bridge mapping
+  - #3345 remains **OPEN** — always-on evidence collection daemon for ARVP/profitability research
+  - Slice-B `slice-b-20260625T194946Z` continues running; no stop, restart, or modification
+  - Earliest final validation window: approx. **2026-06-28T20:07Z**
+  - **No final 72h validation performed.**
+  - LR remains **NO-GO**
+
+- **main**: `fbd7fa83` (post #3441/#3442/#3443 merged; SurrealDB ContextBrain Foundation meta CLOSED; evidence-harvester Slice-B continues)
 - **Active GitHub focus (manual, non-exhaustive)**:
-  - #3430 (SurrealQL syntax validation via \`surreal validate\`) — **PR #3442 in review**
-  - #3374/#3362/#3384/#3345 (Sleep lifecycle issue cluster — Slice B ETA)
+  - #3362/#3384/#3345 (Evidence-Harvester Cluster — Slice-B ETA continues)
   - #2440 (LR-030 Shadow/Soak Run) — **OPEN**
 
 ## Repo / Engineering Status (2026-06-23)
