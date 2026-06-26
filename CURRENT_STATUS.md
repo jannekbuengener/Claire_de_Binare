@@ -16,6 +16,8 @@
 
 - **#3443 Coordinator runpy warning removal / PR #3443 / `fbd7fa83`**: MERGED. Removed runpy re-execution warnings from long-run coordinator invocation path in evidence harvester. Closes #3371. LR NO-GO.
 
+- **#3445 Isolated SurrealDB Graph + Vector Proof / PR #3445 / `6b375970`**: MERGED. Real, isolated SurrealDB memory proof for graph traversal (4/4 forward/backward/multi-hop/bi-directional) and vector KNN search (2/2 cluster-membership queries, `dist`-based `ORDER BY`). Schema made idempotent (`IF NOT EXISTS` on all `DEFINE FIELD`/`DEFINE INDEX`). Record IDs use `⟨id⟩` (`_surql_record_id`), datetime literals use `d'...Z'` syntax, `count()` uses `GROUP ALL` for SurrealDB v3 compatibility. Proof CLI supports `--port` for port conflict avoidance and `--cleanup` for DB teardown. 28/28 unit tests PASS. Evidence files at `artifacts/evidence/graph_vector_proof/`. LR NO-GO.
+
 - **SurrealDB Context Intelligence Foundation (#3418 meta)**: Nine foundation slices delivered and merged. All 9 children CLOSED; meta CLOSED via #3441. ADR-002 (`ADOPT_AFTER_FOUNDATION_REPAIR`) foundation-repair prerequisite fully met. #3430 (SurrealQL syntax validation) CLOSED via #3442. LR NO-GO; no runtime/DB/MCP mutation.
 
   - **#3419 Context Intelligence Canon / Architecture Decision / PR #3428 / `774ae71c`**: ADR-002 (`ADOPT_AFTER_FOUNDATION_REPAIR`) architecture decision record. CONTROL_REGISTER updated. Issue CLOSED. LR NO-GO.
@@ -47,7 +49,7 @@
   - **No final 72h validation performed.**
   - LR remains **NO-GO**
 
-- **main**: `fbd7fa83` (post #3441/#3442/#3443 merged; SurrealDB ContextBrain Foundation meta CLOSED; evidence-harvester Slice-B continues)
+- **main**: `6b375970` (post #3441/#3442/#3443/#3445 merged; SurrealDB ContextBrain Foundation meta CLOSED; graph+vector proof delivered; evidence-harvester Slice-B continues)
 - **Active GitHub focus (manual, non-exhaustive)**:
   - #3362/#3384/#3345 (Evidence-Harvester Cluster — Slice-B ETA continues)
   - #2440 (LR-030 Shadow/Soak Run) — **OPEN**
