@@ -27,6 +27,9 @@ EXIT_RUNTIME_UNAVAILABLE = 3
 
 LOCAL_ALLOWED_HOSTS = frozenset({"localhost", "127.0.0.1"})
 
+PROOF_NAMESPACE = "cdb_proof"
+PROOF_DATABASE = "graph_vector_proof"
+
 SETUP_SURQL = Path("infrastructure/surrealdb/proof_graph_vector_setup.surql")
 
 
@@ -35,7 +38,12 @@ def _surql_escape(val: str) -> str:
 
 
 def _surql_datetime(dt: datetime) -> str:
-    return dt.strftime("'%Y-%m-%dT%H:%M:%SZ'")
+    return dt.strftime("d'%Y-%m-%dT%H:%M:%SZ'")
+
+
+def _surql_record_id(raw_id: str) -> str:
+    escaped = raw_id.replace("\u27e9", "\\u27e9")
+    return f"\u27e8{escaped}\u27e9"
 
 
 class ProofSqlClient:
@@ -84,6 +92,7 @@ class ProofSqlClient:
             with urllib.request.urlopen(req, timeout=self._timeout) as resp:
                 body = resp.read()
         except urllib.error.HTTPError as exc:
+            error_body = exc.read().decode("utf-8", errors="replace")[:500]
             if exc.code == 401:
                 raise RuntimeError(
                     f"SurrealDB /sql authentication failed (HTTP 401). "
@@ -91,16 +100,12 @@ class ProofSqlClient:
                     f"Default for 'surreal start memory' is root:root."
                 ) from exc
             raise RuntimeError(
-                f"SurrealDB /sql HTTP {exc.code}: {exc.reason}"
+                f"SurrealDB /sql HTTP {exc.code}: {exc.reason}\n{error_body}"
             ) from exc
         except urllib.error.URLError as exc:
-            raise RuntimeError(
-                f"SurrealDB /sql request failed: {exc.reason}"
-            ) from exc
+            raise RuntimeError(f"SurrealDB /sql request failed: {exc.reason}") from exc
         except ConnectionRefusedError as exc:
-            raise RuntimeError(
-                f"SurrealDB connection refused: {exc}"
-            ) from exc
+            raise RuntimeError(f"SurrealDB connection refused: {exc}") from exc
 
         raw = body.decode("utf-8", errors="replace")
         if not raw.strip():
@@ -111,9 +116,7 @@ class ProofSqlClient:
         for item in parsed:
             if isinstance(item, dict) and item.get("status") not in (None, "OK"):
                 detail = item.get("detail") or item.get("result") or item
-                raise RuntimeError(
-                    f"SurrealDB /sql error: {detail!s}"[:400]
-                )
+                raise RuntimeError(f"SurrealDB /sql error: {detail!s}"[:400])
         return [item for item in parsed if isinstance(item, dict)]
 
     def health_check(self) -> dict[str, Any]:
@@ -150,11 +153,11 @@ class ProofSqlClient:
         return {}
 
     def count_records(self, table: str) -> int:
-        results = self.execute(f"SELECT count() AS cnt FROM {table};")
+        results = self.execute(f"SELECT count() FROM {table} GROUP ALL;")
         for item in results:
             r = item.get("result")
             if isinstance(r, list) and r:
-                return r[0].get("cnt", 0)
+                return r[0].get("count", 0) or r[0].get("cnt", 0)
         return 0
 
     def select_all(self, table: str) -> list[dict[str, Any]]:
@@ -167,16 +170,27 @@ class ProofSqlClient:
 
     def record_exists(self, table: str, pk_field: str, pk_value: str) -> bool:
         escaped = _surql_escape(pk_value)
-        results = self.execute(
-            f"SELECT * FROM {table} WHERE {pk_field} = {escaped};"
-        )
+        results = self.execute(f"SELECT * FROM {table} WHERE {pk_field} = {escaped};")
         for item in results:
             r = item.get("result")
             if isinstance(r, list) and r:
                 return True
         return False
 
+    def _guard_destructive(self) -> None:
+        if self._namespace != PROOF_NAMESPACE:
+            raise ValueError(
+                f"Destructive operations require namespace={PROOF_NAMESPACE!r}, "
+                f"got {self._namespace!r}"
+            )
+        if self._database != PROOF_DATABASE:
+            raise ValueError(
+                f"Destructive operations require database={PROOF_DATABASE!r}, "
+                f"got {self._database!r}"
+            )
+
     def delete_all_proof_data(self) -> None:
+        self._guard_destructive()
         for table in (
             "artifact_cites_decision",
             "chunk_mentions_symbol",
@@ -190,7 +204,12 @@ class ProofSqlClient:
             self.execute(f"DELETE FROM {table};")
 
     def delete_proof_database(self) -> None:
+        self._guard_destructive()
         self.execute(f"REMOVE DATABASE {self._database};")
+
+    def remove_proof_namespace(self) -> None:
+        self._guard_destructive()
+        self.execute(f"REMOVE NAMESPACE {self._namespace};")
 
 
 # ---------------------------------------------------------------------------
@@ -229,13 +248,13 @@ def _make_toy_vector(cluster_id: int, variant: int) -> list[float]:
 
 
 def _query_vector_near_cluster(cluster_id: int) -> list[float]:
-    """Return a query vector close to the centroid of cluster_id."""
+    """Return a query vector equal to the variant-0 basis of cluster_id."""
     if cluster_id == 0:
-        centroid = [0.85, 0.82, 0.78, 0.75, 0.45, 0.42, 0.38, 0.35, 0.10, 0.07]
+        prototype = [0.95, 0.85, 0.75, 0.65, 0.55, 0.45, 0.35, 0.25, 0.15, 0.05]
     else:
-        centroid = [0.13, 0.10, 0.33, 0.30, 0.53, 0.50, 0.73, 0.70, 0.90, 0.88]
+        prototype = [0.05, 0.15, 0.25, 0.35, 0.45, 0.55, 0.65, 0.75, 0.85, 0.95]
     vec = [0.0] * 1536
-    for i, val in enumerate(centroid):
+    for i, val in enumerate(prototype):
         vec[i] = val
     return vec
 
@@ -300,6 +319,82 @@ def _deploy_schema(client: ProofSqlClient) -> dict[str, Any]:
     }
 
 
+def _extract_traversal_values(
+    results: list,
+    outer_edge: str,
+    inner_target: str,
+    value_field: str,
+) -> list:
+    """Extract values from nested SurrealDB v3 graph traversal results.
+
+    SurrealDB v3 returns nested results:
+      row = {"->edge": {"->target": [{"field": "val", ...}]}}
+    ``->target`` may be a dict (single target) or list (multiple targets).
+    Backward example:
+      row = {"<-edge": {"<-source": [{"field": "val", ...}]}}
+    """
+    extracted = []
+    for item in results:
+        r = item.get("result")
+        if not isinstance(r, list):
+            continue
+        for row in r:
+            if not isinstance(row, dict):
+                continue
+            outer = row.get(outer_edge)
+            if not isinstance(outer, dict):
+                continue
+            for rec in _ensure_list(outer.get(inner_target)):
+                if isinstance(rec, dict) and value_field in rec:
+                    extracted.append(rec[value_field])
+    return extracted
+
+
+def _ensure_list(val: Any) -> list:
+    """Wrap a single dict in a list; pass through lists as-is."""
+    if isinstance(val, list):
+        return val
+    if isinstance(val, dict):
+        return [val]
+    return []
+
+
+def _extract_bi_traversal_chunk_ids(
+    results: list,
+    outer_edge: str,
+    inner_target: str,
+    backward_edge: str,
+    backward_source: str,
+) -> list:
+    """Extract chunk_ids from bi-directional graph traversal.
+
+    SurrealDB v3 returns:
+      row = {"->E": {"->T": {"<-E2": {"<-S2": [{"chunk_id": ...}]}}}}
+    ``->T`` may be a dict (single target) or list (multiple targets).
+    """
+    extracted = []
+    for item in results:
+        r = item.get("result")
+        if not isinstance(r, list):
+            continue
+        for row in r:
+            if not isinstance(row, dict):
+                continue
+            outer = row.get(outer_edge)
+            if not isinstance(outer, dict):
+                continue
+            for rec in _ensure_list(outer.get(inner_target)):
+                if not isinstance(rec, dict):
+                    continue
+                back = rec.get(backward_edge)
+                if not isinstance(back, dict):
+                    continue
+                for s in _ensure_list(back.get(backward_source)):
+                    if isinstance(s, dict) and "chunk_id" in s:
+                        extracted.append(s["chunk_id"])
+    return extracted
+
+
 def _run_graph_proof(client: ProofSqlClient) -> dict[str, Any]:
     now = NOW
     steps = []
@@ -312,9 +407,10 @@ def _run_graph_proof(client: ProofSqlClient) -> dict[str, Any]:
     symbol_id = _symbol_id("calculatePositionSize")
     claim_id = _claim_id("position-sizing-protects")
     now_str = _surql_datetime(now)
+    _zero_vector_literal = _vector_sql_literal([0.0] * 1536)
 
     sql = f"""
-        CREATE doc_page:{_surql_escape(page_id)} SET
+        CREATE doc_page:{_surql_record_id(page_id)} SET
             page_id = {_surql_escape(page_id)},
             title = 'Graph Proof Guide',
             source_path = 'docs/proof/graph_proof_guide.md',
@@ -323,27 +419,29 @@ def _run_graph_proof(client: ProofSqlClient) -> dict[str, Any]:
             comment = 'Proof: graph node with deterministic ID',
             created_at = {now_str};
 
-        CREATE doc_chunk:{_surql_escape(chunk_a_id)} SET
+        CREATE doc_chunk:{_surql_record_id(chunk_a_id)} SET
             chunk_id = {_surql_escape(chunk_a_id)},
-            page_ref = doc_page:{_surql_escape(page_id)},
+            page_ref = doc_page:{_surql_record_id(page_id)},
             chunk_index = 0,
             content = 'Position sizing rules limit each trade to 2%% risk.',
             content_hash = 'sha256:aaaa',
             confidence = 1.0,
             comment = 'Proof: doc_chunk A with page_ref link',
+            embedding = {_zero_vector_literal},
             created_at = {now_str};
 
-        CREATE doc_chunk:{_surql_escape(chunk_b_id)} SET
+        CREATE doc_chunk:{_surql_record_id(chunk_b_id)} SET
             chunk_id = {_surql_escape(chunk_b_id)},
-            page_ref = doc_page:{_surql_escape(page_id)},
+            page_ref = doc_page:{_surql_record_id(page_id)},
             chunk_index = 1,
             content = 'Stop loss policy: hard 5%% max loss per position.',
             content_hash = 'sha256:bbbb',
             confidence = 1.0,
             comment = 'Proof: doc_chunk B with page_ref link',
+            embedding = {_zero_vector_literal},
             created_at = {now_str};
 
-        CREATE decision_event:{_surql_escape(decision_id)} SET
+        CREATE decision_event:{_surql_record_id(decision_id)} SET
             decision_id = {_surql_escape(decision_id)},
             title = 'Adopt max 2%% risk per trade',
             question = 'What is the maximum risk per trade?',
@@ -356,7 +454,7 @@ def _run_graph_proof(client: ProofSqlClient) -> dict[str, Any]:
             human_go = true,
             created_at = {now_str};
 
-        CREATE code_symbol:{_surql_escape(symbol_id)} SET
+        CREATE code_symbol:{_surql_record_id(symbol_id)} SET
             symbol_id = {_surql_escape(symbol_id)},
             language = 'python',
             symbol_kind = 'function',
@@ -367,7 +465,7 @@ def _run_graph_proof(client: ProofSqlClient) -> dict[str, Any]:
             comment = 'Proof: code symbol',
             created_at = {now_str};
 
-        CREATE claim:{_surql_escape(claim_id)} SET
+        CREATE claim:{_surql_record_id(claim_id)} SET
             claim_id = {_surql_escape(claim_id)},
             title = 'Position sizing protects capital',
             statement = 'The 2%% position sizing rule limits drawdown to acceptable levels.',
@@ -380,9 +478,9 @@ def _run_graph_proof(client: ProofSqlClient) -> dict[str, Any]:
 
     # --- Create graph RELATIONS ---
     rel_sql = f"""
-        RELATE doc_chunk:{_surql_escape(chunk_a_id)}
+        RELATE doc_chunk:{_surql_record_id(chunk_a_id)}
             ->artifact_cites_decision->
-            decision_event:{_surql_escape(decision_id)}
+            decision_event:{_surql_record_id(decision_id)}
             SET
                 source = 'graph_vector_proof_cli.py',
                 confidence = 1.0,
@@ -390,9 +488,9 @@ def _run_graph_proof(client: ProofSqlClient) -> dict[str, Any]:
                 hash = 'sha256:rel-aaaa',
                 comment = 'Proof: chunk A cites decision (cites vocabulary)';
 
-        RELATE doc_chunk:{_surql_escape(chunk_b_id)}
+        RELATE doc_chunk:{_surql_record_id(chunk_b_id)}
             ->artifact_cites_decision->
-            decision_event:{_surql_escape(decision_id)}
+            decision_event:{_surql_record_id(decision_id)}
             SET
                 source = 'graph_vector_proof_cli.py',
                 confidence = 1.0,
@@ -400,9 +498,9 @@ def _run_graph_proof(client: ProofSqlClient) -> dict[str, Any]:
                 hash = 'sha256:rel-bbbb',
                 comment = 'Proof: chunk B cites decision (cites vocabulary)';
 
-        RELATE doc_chunk:{_surql_escape(chunk_a_id)}
+        RELATE doc_chunk:{_surql_record_id(chunk_a_id)}
             ->chunk_mentions_symbol->
-            code_symbol:{_surql_escape(symbol_id)}
+            code_symbol:{_surql_record_id(symbol_id)}
             SET
                 source = 'graph_vector_proof_cli.py',
                 confidence = 0.9,
@@ -413,15 +511,17 @@ def _run_graph_proof(client: ProofSqlClient) -> dict[str, Any]:
     """
     client.execute(rel_sql)
 
-    steps.append({
-        "step": "graph_data_created",
-        "page_id": page_id,
-        "chunk_a_id": chunk_a_id,
-        "chunk_b_id": chunk_b_id,
-        "decision_id": decision_id,
-        "symbol_id": symbol_id,
-        "claim_id": claim_id,
-    })
+    steps.append(
+        {
+            "step": "graph_data_created",
+            "page_id": page_id,
+            "chunk_a_id": chunk_a_id,
+            "chunk_b_id": chunk_b_id,
+            "decision_id": decision_id,
+            "symbol_id": symbol_id,
+            "claim_id": claim_id,
+        }
+    )
 
     # --- Run Traversal Queries ---
     traversals = []
@@ -429,91 +529,96 @@ def _run_graph_proof(client: ProofSqlClient) -> dict[str, Any]:
     # T1: Forward traversal — chunk A → cites → decision
     t1_sql = (
         f"SELECT ->artifact_cites_decision->decision_event.* "
-        f"FROM doc_chunk:{_surql_escape(chunk_a_id)};"
+        f"FROM doc_chunk:{_surql_record_id(chunk_a_id)};"
     )
     t1_result = client.execute(t1_sql)
-    t1_decision_ids = []
-    for item in t1_result:
-        r = item.get("result")
-        if isinstance(r, list):
-            for row in r:
-                if isinstance(row, dict) and "decision_id" in row:
-                    t1_decision_ids.append(row["decision_id"])
+    t1_decision_ids = _extract_traversal_values(
+        t1_result,
+        outer_edge="->artifact_cites_decision",
+        inner_target="->decision_event",
+        value_field="decision_id",
+    )
     t1_pass = decision_id in t1_decision_ids
-    traversals.append({
-        "query": "Forward: chunk ->artifact_cites_decision->decision_event",
-        "sql": t1_sql.strip(),
-        "expected_decision_id": decision_id,
-        "found_decision_ids": t1_decision_ids,
-        "pass": t1_pass,
-    })
+    traversals.append(
+        {
+            "query": "Forward: chunk ->artifact_cites_decision->decision_event",
+            "sql": t1_sql.strip(),
+            "expected_decision_id": decision_id,
+            "found_decision_ids": t1_decision_ids,
+            "pass": t1_pass,
+        }
+    )
 
     # T2: Backward traversal — decision ← cites ← chunks
     t2_sql = (
         f"SELECT <-artifact_cites_decision<-doc_chunk.* "
-        f"FROM decision_event:{_surql_escape(decision_id)};"
+        f"FROM decision_event:{_surql_record_id(decision_id)};"
     )
     t2_result = client.execute(t2_sql)
-    t2_chunk_ids = []
-    for item in t2_result:
-        r = item.get("result")
-        if isinstance(r, list):
-            for row in r:
-                if isinstance(row, dict) and "chunk_id" in row:
-                    t2_chunk_ids.append(row["chunk_id"])
+    t2_chunk_ids = _extract_traversal_values(
+        t2_result,
+        outer_edge="<-artifact_cites_decision",
+        inner_target="<-doc_chunk",
+        value_field="chunk_id",
+    )
     t2_pass = chunk_a_id in t2_chunk_ids and chunk_b_id in t2_chunk_ids
-    traversals.append({
-        "query": "Backward: decision <-artifact_cites_decision<-doc_chunk",
-        "sql": t2_sql.strip(),
-        "expected_chunk_ids": [chunk_a_id, chunk_b_id],
-        "found_chunk_ids": t2_chunk_ids,
-        "pass": t2_pass,
-    })
+    traversals.append(
+        {
+            "query": "Backward: decision <-artifact_cites_decision<-doc_chunk",
+            "sql": t2_sql.strip(),
+            "expected_chunk_ids": [chunk_a_id, chunk_b_id],
+            "found_chunk_ids": t2_chunk_ids,
+            "pass": t2_pass,
+        }
+    )
 
     # T3: Multi-hop — chunk → mentions → symbol
     t3_sql = (
         f"SELECT ->chunk_mentions_symbol->code_symbol.* "
-        f"FROM doc_chunk:{_surql_escape(chunk_a_id)};"
+        f"FROM doc_chunk:{_surql_record_id(chunk_a_id)};"
     )
     t3_result = client.execute(t3_sql)
-    t3_symbol_ids = []
-    for item in t3_result:
-        r = item.get("result")
-        if isinstance(r, list):
-            for row in r:
-                if isinstance(row, dict) and "symbol_id" in row:
-                    t3_symbol_ids.append(row["symbol_id"])
+    t3_symbol_ids = _extract_traversal_values(
+        t3_result,
+        outer_edge="->chunk_mentions_symbol",
+        inner_target="->code_symbol",
+        value_field="symbol_id",
+    )
     t3_pass = symbol_id in t3_symbol_ids
-    traversals.append({
-        "query": "Multi-hop: chunk ->chunk_mentions_symbol->code_symbol",
-        "sql": t3_sql.strip(),
-        "expected_symbol_id": symbol_id,
-        "found_symbol_ids": t3_symbol_ids,
-        "pass": t3_pass,
-    })
+    traversals.append(
+        {
+            "query": "Multi-hop: chunk ->chunk_mentions_symbol->code_symbol",
+            "sql": t3_sql.strip(),
+            "expected_symbol_id": symbol_id,
+            "found_symbol_ids": t3_symbol_ids,
+            "pass": t3_pass,
+        }
+    )
 
     # T4: Bi-directional — chunk → symbol ← chunks (backward)
     t4_sql = (
         f"SELECT ->chunk_mentions_symbol->code_symbol"
         f"<-chunk_mentions_symbol<-doc_chunk.* "
-        f"FROM doc_chunk:{_surql_escape(chunk_a_id)};"
+        f"FROM doc_chunk:{_surql_record_id(chunk_a_id)};"
     )
     t4_result = client.execute(t4_sql)
-    t4_chunk_ids = []
-    for item in t4_result:
-        r = item.get("result")
-        if isinstance(r, list):
-            for row in r:
-                if isinstance(row, dict) and "chunk_id" in row:
-                    t4_chunk_ids.append(row["chunk_id"])
+    t4_chunk_ids = _extract_bi_traversal_chunk_ids(
+        t4_result,
+        outer_edge="->chunk_mentions_symbol",
+        inner_target="->code_symbol",
+        backward_edge="<-chunk_mentions_symbol",
+        backward_source="<-doc_chunk",
+    )
     t4_pass = chunk_a_id in t4_chunk_ids
-    traversals.append({
-        "query": "Bi-directional: chunk → symbol ← chunk",
-        "sql": t4_sql.strip(),
-        "expected_chunk_ids": [chunk_a_id],
-        "found_chunk_ids": t4_chunk_ids,
-        "pass": t4_pass,
-    })
+    traversals.append(
+        {
+            "query": "Bi-directional: chunk -> symbol <- chunk",
+            "sql": t4_sql.strip(),
+            "expected_chunk_ids": [chunk_a_id],
+            "found_chunk_ids": t4_chunk_ids,
+            "pass": t4_pass,
+        }
+    )
 
     graph_pass = all(t["pass"] for t in traversals)
     return {
@@ -533,7 +638,7 @@ def _run_vector_proof(client: ProofSqlClient) -> dict[str, Any]:
 
     # Create a parent page
     client.execute(f"""
-        CREATE doc_page:{_surql_escape(page_id)} SET
+        CREATE doc_page:{_surql_record_id(page_id)} SET
             page_id = {_surql_escape(page_id)},
             title = 'Vector Proof Content',
             source_path = 'docs/proof/vector_proof_content.md',
@@ -546,7 +651,12 @@ def _run_vector_proof(client: ProofSqlClient) -> dict[str, Any]:
     # Create 5 chunks with toy vectors
     vchunks = [
         ("pos-sizing-a", 0, 0, "Position sizing: 2% risk per trade."),
-        ("pos-sizing-b", 0, 1, "Position sizing: calculate units based on stop distance."),
+        (
+            "pos-sizing-b",
+            0,
+            1,
+            "Position sizing: calculate units based on stop distance.",
+        ),
         ("risk-limit-a", 1, 0, "Risk limits: max daily loss is 5%."),
         ("risk-limit-b", 1, 1, "Risk limits: circuit breaker at 10% drawdown."),
         ("risk-limit-c", 1, 2, "Risk limits: reduce position size after 3 losses."),
@@ -557,9 +667,9 @@ def _run_vector_proof(client: ProofSqlClient) -> dict[str, Any]:
         vec = _make_toy_vector(cluster, variant)
         vec_literal = _vector_sql_literal(vec)
         client.execute(f"""
-            CREATE doc_chunk:{_surql_escape(cid)} SET
+            CREATE doc_chunk:{_surql_record_id(cid)} SET
                 chunk_id = {_surql_escape(cid)},
-                page_ref = doc_page:{_surql_escape(page_id)},
+                page_ref = doc_page:{_surql_record_id(page_id)},
                 chunk_index = {vchunks.index((slug, cluster, variant, content))},
                 content = {_surql_escape(content)},
                 content_hash = 'sha256:vec-{slug}',
@@ -569,17 +679,21 @@ def _run_vector_proof(client: ProofSqlClient) -> dict[str, Any]:
                 created_at = {now_str};
         """)
 
-    steps.append({
-        "step": "vector_data_created",
-        "page_id": page_id,
-        "chunks": [{"slug": s, "cluster": c} for s, c, _, _ in vchunks],
-    })
+    steps.append(
+        {
+            "step": "vector_data_created",
+            "page_id": page_id,
+            "chunks": [{"slug": s, "cluster": c} for s, c, _, _ in vchunks],
+        }
+    )
 
     # Run vector queries
     queries = []
 
-    for label, cluster_id in [("cluster_A_position_sizing", 0),
-                               ("cluster_B_risk_limits", 1)]:
+    for label, cluster_id in [
+        ("cluster_A_position_sizing", 0),
+        ("cluster_B_risk_limits", 1),
+    ]:
         qvec = _query_vector_near_cluster(cluster_id)
         qvec_literal = _vector_sql_literal(qvec)
         k = 5
@@ -597,26 +711,30 @@ def _run_vector_proof(client: ProofSqlClient) -> dict[str, Any]:
             r = item.get("result")
             if isinstance(r, list):
                 for row in r:
-                    rows.append({
-                        "chunk_id": row.get("chunk_id"),
-                        "vector_distance": row.get("vector_distance"),
-                    })
+                    rows.append(
+                        {
+                            "chunk_id": row.get("chunk_id"),
+                            "vector_distance": row.get("vector_distance"),
+                        }
+                    )
 
         expected_first_slug = "pos-sizing-a" if cluster_id == 0 else "risk-limit-a"
         expected_order_pass = bool(
             rows and _chunk_id(expected_first_slug) == rows[0].get("chunk_id")
         )
 
-        queries.append({
-            "label": label,
-            "k": k,
-            "ef": ef,
-            "sql": sql.strip(),
-            "result_count": len(rows),
-            "results": rows,
-            "expected_first_chunk": _chunk_id(expected_first_slug),
-            "order_pass": expected_order_pass,
-        })
+        queries.append(
+            {
+                "label": label,
+                "k": k,
+                "ef": ef,
+                "sql": sql.strip(),
+                "result_count": len(rows),
+                "results": rows,
+                "expected_first_chunk": _chunk_id(expected_first_slug),
+                "order_pass": expected_order_pass,
+            }
+        )
 
     # Count records
     chunk_count = client.count_records("doc_chunk")
@@ -646,73 +764,96 @@ def _build_evidence(
     verdicts = []
 
     if not db_available.get("available"):
-        verdicts.append({
-            "check": "db_available",
-            "pass": False,
-            "detail": "SurrealDB instance not reachable",
-        })
+        verdicts.append(
+            {
+                "check": "db_available",
+                "pass": False,
+                "detail": "SurrealDB instance not reachable",
+            }
+        )
     else:
-        verdicts.append({
-            "check": "db_available",
-            "pass": True,
-            "detail": "SurrealDB reachable",
-            "version": db_available.get("version", {}).get("version", "unknown"),
-        })
+        verdicts.append(
+            {
+                "check": "db_available",
+                "pass": True,
+                "detail": "SurrealDB reachable",
+                "version": db_available.get("version", {}).get("version", "unknown"),
+            }
+        )
 
     if schema_result:
         tables = schema_result.get("tables_found", [])
-        expected = {"artifact_cites_decision", "chunk_mentions_symbol",
-                    "claim", "code_symbol", "decision_event",
-                    "dependency_edge", "doc_chunk", "doc_page"}
+        expected = {
+            "artifact_cites_decision",
+            "chunk_mentions_symbol",
+            "claim",
+            "code_symbol",
+            "decision_event",
+            "dependency_edge",
+            "doc_chunk",
+            "doc_page",
+        }
         found = set(tables)
         missing_tables = expected - found
         schema_pass = len(missing_tables) == 0
-        verdicts.append({
-            "check": "schema_deployed",
-            "pass": schema_pass,
-            "table_count": len(tables),
-            "expected_tables": sorted(expected),
-            "found_tables": sorted(found),
-            "missing_tables": sorted(missing_tables),
-        })
+        verdicts.append(
+            {
+                "check": "schema_deployed",
+                "pass": schema_pass,
+                "table_count": len(tables),
+                "expected_tables": sorted(expected),
+                "found_tables": sorted(found),
+                "missing_tables": sorted(missing_tables),
+            }
+        )
 
     if graph_result:
         g_pass = graph_result.get("graph_pass", False)
-        verdicts.append({
-            "check": "graph_proof",
-            "pass": g_pass,
-            "relations_created": graph_result.get("relations_created", 0),
-            "traversals_executed": graph_result.get("traversals_executed", 0),
-            "details": [
-                {
-                    "query": t["query"],
-                    "pass": t["pass"],
-                    "expected": t.get("expected_decision_id") or t.get("expected_chunk_ids") or t.get("expected_symbol_id"),
-                    "found": t.get("found_decision_ids") or t.get("found_chunk_ids") or t.get("found_symbol_ids"),
-                }
-                for t in graph_result.get("traversals", [])
-            ],
-        })
+        verdicts.append(
+            {
+                "check": "graph_proof",
+                "pass": g_pass,
+                "relations_created": graph_result.get("relations_created", 0),
+                "traversals_executed": graph_result.get("traversals_executed", 0),
+                "details": [
+                    {
+                        "query": t["query"],
+                        "pass": t["pass"],
+                        "expected": t.get("expected_decision_id")
+                        or t.get("expected_chunk_ids")
+                        or t.get("expected_symbol_id"),
+                        "found": t.get("found_decision_ids")
+                        or t.get("found_chunk_ids")
+                        or t.get("found_symbol_ids"),
+                    }
+                    for t in graph_result.get("traversals", [])
+                ],
+            }
+        )
 
     if vector_result:
         v_pass = vector_result.get("vector_pass", False)
         queries = vector_result.get("queries", [])
-        verdicts.append({
-            "check": "vector_proof",
-            "pass": v_pass,
-            "chunk_count": vector_result.get("chunk_count", 0),
-            "queries_executed": len(queries),
-            "details": [
-                {
-                    "label": q["label"],
-                    "pass": q["order_pass"],
-                    "result_count": q["result_count"],
-                    "expected_first": q.get("expected_first_chunk"),
-                    "first_found": q["results"][0]["chunk_id"] if q.get("results") else None,
-                }
-                for q in queries
-            ],
-        })
+        verdicts.append(
+            {
+                "check": "vector_proof",
+                "pass": v_pass,
+                "chunk_count": vector_result.get("chunk_count", 0),
+                "queries_executed": len(queries),
+                "details": [
+                    {
+                        "label": q["label"],
+                        "pass": q["order_pass"],
+                        "result_count": q["result_count"],
+                        "expected_first": q.get("expected_first_chunk"),
+                        "first_found": (
+                            q["results"][0]["chunk_id"] if q.get("results") else None
+                        ),
+                    }
+                    for q in queries
+                ],
+            }
+        )
 
     non_blocking = []
     db_pass = True
@@ -778,7 +919,9 @@ def _write_evidence_markdown(evidence: dict[str, Any], output_dir: Path) -> Path
     lines.append(f"**Generated**: {evidence['report_metadata']['generated_at']}")
     lines.append(f"**Duration**: {evidence['report_metadata']['duration_ms']}ms")
     lines.append(f"**LR Status**: {evidence['report_metadata']['lr_status']}")
-    lines.append(f"**Isolation**: NS {evidence['report_metadata']['isolation']['namespace']} / DB {evidence['report_metadata']['isolation']['database']}")
+    lines.append(
+        f"**Isolation**: NS {evidence['report_metadata']['isolation']['namespace']} / DB {evidence['report_metadata']['isolation']['database']}"
+    )
     lines.append("")
     lines.append(f"## Overall: {evidence['summary']}")
     lines.append("")
@@ -817,7 +960,9 @@ def _write_evidence_markdown(evidence: dict[str, Any], output_dir: Path) -> Path
             lines.append(f"- **Order PASS**: {q['order_pass']}")
             lines.append(f"- Results: {q['result_count']} chunks returned")
             if q.get("results"):
-                lines.append(f"- Best match: {q['results'][0].get('chunk_id')} (dist={q['results'][0].get('vector_distance', 'N/A')})")
+                lines.append(
+                    f"- Best match: {q['results'][0].get('chunk_id')} (dist={q['results'][0].get('vector_distance', 'N/A')})"
+                )
             lines.append("")
     lines.append("")
     lines.append("## Limitations")
@@ -850,35 +995,46 @@ def _build_parser() -> argparse.ArgumentParser:
         ),
     )
     parser.add_argument(
-        "--host", default="localhost",
+        "--host",
+        default="localhost",
         help="SurrealDB host (default: localhost)",
     )
     parser.add_argument(
-        "--port", default=8010, type=int,
+        "--port",
+        default=8010,
+        type=int,
         help="SurrealDB port (default: 8010)",
     )
     parser.add_argument(
-        "--user", default="root",
+        "--user",
+        default="root",
         help="SurrealDB user (default: root)",
     )
     parser.add_argument(
-        "--pass", dest="password", default="root",
+        "--pass",
+        dest="password",
+        default="root",
         help="SurrealDB password (default: root)",
     )
     parser.add_argument(
-        "--ns", default="cdb_proof",
+        "--ns",
+        default="cdb_proof",
         help="SurrealDB namespace (default: cdb_proof)",
     )
     parser.add_argument(
-        "--db", default="graph_vector_proof",
+        "--db",
+        default="graph_vector_proof",
         help="SurrealDB database (default: graph_vector_proof)",
     )
     parser.add_argument(
-        "--output", default="artifacts/evidence/graph_vector_proof",
+        "--output",
+        default="artifacts/evidence/graph_vector_proof",
         help="Evidence output directory (default: artifacts/evidence/graph_vector_proof)",
     )
     parser.add_argument(
-        "--cleanup", default=True, action=argparse.BooleanOptionalAction,
+        "--cleanup",
+        default=True,
+        action=argparse.BooleanOptionalAction,
         help="Delete proof data after completion (default: true)",
     )
     return parser
@@ -889,6 +1045,7 @@ def main(argv: list[str] | None = None) -> int:
     args = parser.parse_args(argv)
 
     import time
+
     t0 = time.time()
 
     url = f"http://{args.host}:{args.port}"
@@ -910,7 +1067,7 @@ def main(argv: list[str] | None = None) -> int:
     print()
 
     # Step 1: check DB
-    print("[1/5] Checking DB availability...")
+    print("[1/7] Checking DB availability...")
     db_available = _check_db_available(client)
     if not db_available.get("available"):
         print(f"  FAIL: SurrealDB not reachable at {url}")
@@ -926,25 +1083,42 @@ def main(argv: list[str] | None = None) -> int:
     version = db_available.get("version", {}).get("version", "unknown")
     print(f"  OK: SurrealDB {version} reachable")
 
-    # Step 2: deploy schema
-    print("[2/5] Deploying isolated proof schema...")
+    # Step 2: reset proof database (clean slate for isolated proof)
+    print("[2/7] Resetting proof database...")
+    try:
+        client.delete_proof_database()
+        print("  OK: old database removed")
+    except RuntimeError:
+        print("  (no previous database to remove)")
+    try:
+        client.remove_proof_namespace()
+        print("  OK: old namespace removed")
+    except RuntimeError:
+        print("  (no previous namespace to remove)")
+
+    # Step 3: deploy schema
+    print("[3/7] Deploying isolated proof schema...")
     try:
         schema_result = _deploy_schema(client)
         print(f"  OK: {schema_result['table_count']} tables deployed")
         print(f"  Tables: {', '.join(sorted(schema_result['tables_found']))}")
     except Exception as exc:
         print(f"  FAIL: Schema deploy error: {exc}")
-        evidence = _build_evidence(db_available, None, None, None, (time.time() - t0) * 1000)
+        evidence = _build_evidence(
+            db_available, None, None, None, (time.time() - t0) * 1000
+        )
         _write_evidence(evidence, args.output)
         return EXIT_FAIL
 
-    # Step 3: graph proof
-    print("[3/5] Running Graph Proof...")
+    # Step 4: graph proof
+    print("[4/7] Running Graph Proof...")
     try:
         graph_result = _run_graph_proof(client)
         g_pass = graph_result.get("graph_pass", False)
         if g_pass:
-            print(f"  PASS: {graph_result['traversals_executed']} traversal queries passed")
+            print(
+                f"  PASS: {graph_result['traversals_executed']} traversal queries passed"
+            )
         else:
             print(f"  FAIL: Some traversals did not return expected results")
             for t in graph_result.get("traversals", []):
@@ -952,15 +1126,42 @@ def main(argv: list[str] | None = None) -> int:
                 print(f"    {status}: {t['query']}")
     except Exception as exc:
         print(f"  ERROR: {exc}")
-        graph_result = None
+        graph_result = {
+            "graph_pass": False,
+            "relations_created": 0,
+            "traversals_executed": 0,
+            "traversals": [],
+        }
 
-    # Step 4: vector proof
-    print("[4/5] Running Vector Proof...")
+    # Step 5: clean graph proof data (same doc_chunk table, would pollute vector KNN)
+    print("[5/7] Cleaning graph proof data for vector isolation...")
+    try:
+        client._guard_destructive()
+        client.execute("""
+            DELETE FROM doc_chunk WHERE chunk_id CONTAINS 'gv-proof-chunk-position-sizing'
+            OR chunk_id CONTAINS 'gv-proof-chunk-stop-loss';
+        """)
+        client.execute("DELETE FROM artifact_cites_decision;")
+        client.execute("DELETE FROM chunk_mentions_symbol;")
+        client.execute("DELETE FROM code_symbol;")
+        client.execute("DELETE FROM claim;")
+        client.execute("DELETE FROM decision_event;")
+        client.execute(
+            "DELETE FROM doc_page WHERE page_id = 'gv-proof-page-graph-proof';"
+        )
+        print("  OK: graph proof data removed")
+    except Exception as exc:
+        print(f"  WARN: graph data cleanup failed: {exc}")
+
+    # Step 6: vector proof
+    print("[6/7] Running Vector Proof...")
     try:
         vector_result = _run_vector_proof(client)
         v_pass = vector_result.get("vector_pass", False)
         if v_pass:
-            print(f"  PASS: {vector_result['chunk_count']} chunks, {len(vector_result['queries'])} KNN queries")
+            print(
+                f"  PASS: {vector_result['chunk_count']} chunks, {len(vector_result['queries'])} KNN queries"
+            )
         else:
             print(f"  FAIL: Vector search did not return expected ordering")
             for q in vector_result.get("queries", []):
@@ -968,14 +1169,18 @@ def main(argv: list[str] | None = None) -> int:
                 print(f"    {status}: {q['label']}")
     except Exception as exc:
         print(f"  ERROR: {exc}")
-        vector_result = None
+        vector_result = {"vector_pass": False, "chunk_count": 0, "queries": []}
 
-    # Step 5: evidence + cleanup
+    # Step 7: evidence + cleanup
     duration_ms = (time.time() - t0) * 1000
-    print(f"[5/5] Generating evidence...")
+    print(f"[7/7] Generating evidence...")
 
     evidence = _build_evidence(
-        db_available, schema_result, graph_result, vector_result, duration_ms,
+        db_available,
+        schema_result,
+        graph_result,
+        vector_result,
+        duration_ms,
     )
     json_path = _write_evidence_json(evidence, Path(args.output))
     md_path = _write_evidence_markdown(evidence, Path(args.output))

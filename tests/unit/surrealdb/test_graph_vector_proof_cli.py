@@ -31,9 +31,7 @@ from tools.surrealdb.graph_vector_proof_cli import (
     _vector_sql_literal,
 )
 
-_CLI = (
-    Path(__file__).parents[3] / "tools" / "surrealdb" / "graph_vector_proof_cli.py"
-)
+_CLI = Path(__file__).parents[3] / "tools" / "surrealdb" / "graph_vector_proof_cli.py"
 _SETUP = (
     Path(__file__).parents[3]
     / "infrastructure"
@@ -64,16 +62,25 @@ def test_parser_defaults() -> None:
 @pytest.mark.unit
 def test_parser_custom_args() -> None:
     parser = _build_parser()
-    args = parser.parse_args([
-        "--host", "127.0.0.1",
-        "--port", "9000",
-        "--user", "admin",
-        "--pass", "secret",
-        "--ns", "test_ns",
-        "--db", "test_db",
-        "--output", "/tmp/out",
-        "--no-cleanup",
-    ])
+    args = parser.parse_args(
+        [
+            "--host",
+            "127.0.0.1",
+            "--port",
+            "9000",
+            "--user",
+            "admin",
+            "--pass",
+            "secret",
+            "--ns",
+            "test_ns",
+            "--db",
+            "test_db",
+            "--output",
+            "/tmp/out",
+            "--no-cleanup",
+        ]
+    )
     assert args.host == "127.0.0.1"
     assert args.port == 9000
     assert args.user == "admin"
@@ -101,9 +108,10 @@ def test_surql_escape_with_backslash() -> None:
 @pytest.mark.unit
 def test_surql_datetime_format() -> None:
     from datetime import datetime, timezone
+
     dt = datetime(2026, 6, 26, 12, 0, 0, tzinfo=timezone.utc)
     result = _surql_datetime(dt)
-    assert result == "'2026-06-26T12:00:00Z'"
+    assert result == "d'2026-06-26T12:00:00Z'"
 
 
 @pytest.mark.unit
@@ -259,9 +267,14 @@ def test_build_evidence_with_all_pass() -> None:
     }
     schema = {
         "tables_found": [
-            "artifact_cites_decision", "chunk_mentions_symbol",
-            "claim", "code_symbol", "decision_event",
-            "dependency_edge", "doc_chunk", "doc_page",
+            "artifact_cites_decision",
+            "chunk_mentions_symbol",
+            "claim",
+            "code_symbol",
+            "decision_event",
+            "dependency_edge",
+            "doc_chunk",
+            "doc_page",
         ],
         "table_count": 8,
     }
@@ -294,14 +307,18 @@ def test_build_evidence_with_all_pass() -> None:
                 "order_pass": True,
                 "result_count": 3,
                 "expected_first_chunk": "gv-proof-chunk-pos-sizing-a",
-                "results": [{"chunk_id": "gv-proof-chunk-pos-sizing-a", "vector_distance": 0.1}],
+                "results": [
+                    {"chunk_id": "gv-proof-chunk-pos-sizing-a", "vector_distance": 0.1}
+                ],
             },
             {
                 "label": "cluster_B",
                 "order_pass": True,
                 "result_count": 3,
                 "expected_first_chunk": "gv-proof-chunk-risk-limit-a",
-                "results": [{"chunk_id": "gv-proof-chunk-risk-limit-a", "vector_distance": 0.1}],
+                "results": [
+                    {"chunk_id": "gv-proof-chunk-risk-limit-a", "vector_distance": 0.1}
+                ],
             },
         ],
     }
@@ -363,13 +380,28 @@ def test_evidence_json_serializable() -> None:
         "graph_pass": True,
         "relations_created": 3,
         "traversals_executed": 2,
-        "traversals": [{"query": "T1", "pass": True, "expected_decision_id": "x", "found_decision_ids": ["x"]}],
+        "traversals": [
+            {
+                "query": "T1",
+                "pass": True,
+                "expected_decision_id": "x",
+                "found_decision_ids": ["x"],
+            }
+        ],
     }
     vector = {
         "vector_pass": True,
         "chunk_count": 5,
         "queries_executed": 1,
-        "queries": [{"label": "Q1", "order_pass": True, "result_count": 2, "expected_first_chunk": "c1", "results": [{"chunk_id": "c1", "vector_distance": 0.1}]}],
+        "queries": [
+            {
+                "label": "Q1",
+                "order_pass": True,
+                "result_count": 2,
+                "expected_first_chunk": "c1",
+                "results": [{"chunk_id": "c1", "vector_distance": 0.1}],
+            }
+        ],
     }
     evidence = _build_evidence(db_info, schema, graph, vector, 100.0)
     serialized = json.dumps(evidence, default=str)
