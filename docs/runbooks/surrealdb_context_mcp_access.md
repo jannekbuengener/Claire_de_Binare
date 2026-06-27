@@ -348,6 +348,7 @@ output does not authorize automatic code, issue, or productive DB writes.
 5. Non-DB fallback must not report DB-backed `brain_status="used"`.
 6. Missing MCP access must be reported as `brain_source=unavailable` or explicit `repo-only` / `brain_status=not-used` fallback.
 7. Repo-wide fallback for any surface that cannot verify MCP access: `brain_source=repo-only`, `brain_status=not-used`, repo evidence under `records_or_results`.
+8. **Context trust floor:** `usable_context_trust_minimum = MEDIUM`. Nur `HIGH`/`MEDIUM` sind nutzbar → `context_available=true`. `LOW`/`BLOCKED` bleiben Trust-Service-SSOT, keine Agentenoption. Unter MEDIUM → `context_available=false`, GitHub/Repo-Fallback oder HOLD.
 
 ---
 
