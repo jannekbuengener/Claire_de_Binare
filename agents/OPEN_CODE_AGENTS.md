@@ -41,6 +41,15 @@ Gilt für **alle** OpenCode Agents (egal welcher Provider).
 - **`operator_trust_level`** aus `cdb_context_trust_summary` / `context.briefing` ([#2856](https://github.com/jannekbuengener/Claire_de_Binare/issues/2856)): `LOW` und `BLOCKED` sind **keine** operative Wahrheit — keine Writes, Live-Aktionen, Merge- oder LR-Entscheidungen allein aus Trust; auch `HIGH` ersetzt kein Human-GO, Live-GO, Echtgeld-GO, `PERSIST_ALLOWED` oder `MUTATION_ALLOWED`. SSOT: [`docs/contracts/context_tooling/CDB_CONTEXT_TRUST_THRESHOLD_CONTRACT.md`](../docs/contracts/context_tooling/CDB_CONTEXT_TRUST_THRESHOLD_CONTRACT.md).
 - Brain-Evidence-Mapping aus `briefing.session_context`: `brain_source <- session_context.brain_source`, `brain_status <- session_context.brain_status`, `records_or_results <- session_context.repo_state + session_context.github_state`, `impact_on_plan <- session_context.working_assumptions + session_context.limitations`, `limitations <- session_context.limitations`. `tools_or_queries` kommen aus Caller-Tooling oder konservativ aus Session-Limitations; `repo_crosscheck` kommt aus `session_context.repo_state` plus `briefing.required_reads` und gegebenenfalls Request-Scope/Target-Pfaden.
 - CDB Context MCP Capability Baseline gilt für alle Agenten-Surfaces (Codex, OpenCode, Claude/Cloud Code, Gemini, Onboarding). Die kanonische Agent-MCP-Matrix steht in `docs/runbooks/surrealdb_context_mcp_access.md` § 1.5.1 mit fünf Bewertungsebenen (Config existiert → Host kennt Config → Server startet → Tool-Inventar → Aufruf funktioniert) und den konkreten Status pro Surface.
+- **Context trust floor:** `usable_context_trust_minimum = MEDIUM`.
+  Nur `HIGH`/`MEDIUM` sind nutzbar → `context_available=true`.
+  `none` = kein nutzbarer Context → `context_available=false`, Agent muss GitHub/Repo-Fallback oder HOLD.
+  LOW/BLOCKED bleiben im Trust-Service-SSOT, sind aber keine operative Agentenoption.
+- Post-#3449: `cdb_context_briefing` enrichment check vor Brain-Claim.
+  Ohne evidence_records/claim_records/decision_events/memory_records → `brain_source=repo-only`,
+  `brain_status=not-used`, `context_available=false`. Inline-Records → `brain_source=in_memory`,
+  max `context_trust_level=MEDIUM`. `context_trust_level=HIGH` nur mit `record_source=surrealdb-local`
+  + Record-IDs + kein stale/disputed/blocking.
 - Danach nur task-spezifische Skills laden
 - Keine pauschale Skill-Massenladung
 - Third-Party-/Cybersecurity-Skills nur bei explizitem Bedarf und nur defensiv/prüfend
