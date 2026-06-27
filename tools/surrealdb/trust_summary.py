@@ -140,6 +140,7 @@ def _claim_status_score(status_counts: Mapping[str, int]) -> float:
     """Score claim status distribution in [0, 1]."""
     weights = {
         "supported": 1.0,
+        "substantiated": 1.0,
         "weakly_supported": 0.5,
         "proposed": 0.3,
         "disputed": 0.1,

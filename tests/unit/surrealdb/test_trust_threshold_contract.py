@@ -70,6 +70,42 @@ def test_high_operator_trust_with_signals() -> None:
 
 
 @pytest.mark.unit
+def test_substantiated_claim_scored_as_supported() -> None:
+    result = build_trust_summary_v1(
+        TrustSummaryRequest(scope="wave14-substantiated"),
+        context_signals=TrustContextSignals(
+            repo_crosscheck_present=True,
+            record_source="surrealdb-local",
+            freshness_ok=True,
+        ),
+        evidence_result={
+            "evidence_summary": {"overall_strength": "strong"},
+            "blocking_missing_ids": [],
+            "stale_evidence_ids": [],
+        },
+        claim_result={
+            "status_counts": {"substantiated": 1},
+            "disputed_claim_ids": [],
+            "stale_claim_ids": [],
+            "missing_evidence_claim_ids": [],
+        },
+        decision_result={
+            "matched_decisions": ["d1"],
+            "current_decisions": ["d1"],
+            "superseded_decisions": [],
+            "invalidated_decisions": [],
+        },
+        memory_result={
+            "trust_counts": {"source_backed": 1},
+            "stale_memory_ids": [],
+        },
+    )
+    assert result["composite_score"] >= 0.80
+    assert result["trust_level"] == "strong"
+    assert result["operator_trust_level"] == "HIGH"
+
+
+@pytest.mark.unit
 def test_medium_capped_for_repo_only_source() -> None:
     result = build_trust_summary_v1(
         TrustSummaryRequest(scope="wave14-trust-medium"),
