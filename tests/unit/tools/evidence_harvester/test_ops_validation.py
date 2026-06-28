@@ -967,6 +967,133 @@ class TestValidate72hWindowFromDir:
         assert any("fail threshold" in f.message for f in report.findings)
 
     @pytest.mark.unit
+    def test_fail_inconclusive_when_sleeping_overdue_no_final(
+        self, tmp_path: Path
+    ) -> None:
+        start = datetime(2026, 6, 19, 0, 0, tzinfo=UTC)
+        _write_valid_run(tmp_path, start=start, hours=2, cadence_seconds=3600)
+        events_path = tmp_path / "coordinator_events.jsonl"
+        events = [
+            json.loads(line)
+            for line in events_path.read_text(encoding="utf-8").splitlines()
+            if line.strip()
+        ]
+        events = [
+            e
+            for e in events
+            if e.get("event_type")
+            not in ("final_validation_started", "final_validation_completed")
+        ]
+        last_ts = events[-1]["event_at_utc"] if events else _ts(start)
+        events.append(
+            {
+                "schema_version": "cdb.evidence_harvester.coordinator_event.v1",
+                "event_at_utc": last_ts,
+                "run_id": "test-run",
+                "event_type": "sleep_started",
+            }
+        )
+        events_path.write_text(
+            "\n".join(json.dumps(e, sort_keys=True) for e in events) + "\n",
+            encoding="utf-8",
+        )
+        state_path = tmp_path / "runner_state.json"
+        state = json.loads(state_path.read_text(encoding="utf-8"))
+        state["coordinator_status"] = "sleeping"
+        state["next_cycle_due_at_utc"] = _ts(start - timedelta(seconds=60))
+        state["total_failed_cycles"] = 0
+        state_path.write_text(json.dumps(state, sort_keys=True), encoding="utf-8")
+
+        report = validate_72h_window_from_dir(
+            tmp_path,
+            required_window_hours=72,
+            runner_cadence_seconds=3600,
+        )
+        assert any(
+            "Run outcome: INCONCLUSIVE" in f.check_name and f.severity == "fail"
+            for f in report.findings
+        )
+
+    @pytest.mark.unit
+    def test_inconclusive_not_raised_when_valid_run(self, tmp_path: Path) -> None:
+        start = datetime(2026, 6, 19, 0, 0, tzinfo=UTC)
+        _write_valid_run(tmp_path, start=start, hours=2, cadence_seconds=3600)
+        report = validate_72h_window_from_dir(
+            tmp_path,
+            required_window_hours=2,
+            runner_cadence_seconds=3600,
+        )
+        assert not any(
+            "Run outcome: INCONCLUSIVE" in f.check_name for f in report.findings
+        )
+
+    @pytest.mark.unit
+    def test_inconclusive_not_raised_when_non_final(self, tmp_path: Path) -> None:
+        start = datetime(2026, 6, 19, 0, 0, tzinfo=UTC)
+        _write_valid_run(tmp_path, start=start, hours=2, cadence_seconds=3600)
+        events_path = tmp_path / "coordinator_events.jsonl"
+        events = [
+            json.loads(line)
+            for line in events_path.read_text(encoding="utf-8").splitlines()
+            if line.strip()
+        ]
+        events = [
+            e
+            for e in events
+            if e.get("event_type")
+            not in ("final_validation_started", "final_validation_completed")
+        ]
+        last_ts = events[-1]["event_at_utc"] if events else _ts(start)
+        events.append(
+            {
+                "schema_version": "cdb.evidence_harvester.coordinator_event.v1",
+                "event_at_utc": last_ts,
+                "run_id": "test-run",
+                "event_type": "sleep_started",
+            }
+        )
+        events_path.write_text(
+            "\n".join(json.dumps(e, sort_keys=True) for e in events) + "\n",
+            encoding="utf-8",
+        )
+        state_path = tmp_path / "runner_state.json"
+        state = json.loads(state_path.read_text(encoding="utf-8"))
+        state["coordinator_status"] = "sleeping"
+        state["next_cycle_due_at_utc"] = _ts(start - timedelta(seconds=60))
+        state_path.write_text(json.dumps(state, sort_keys=True), encoding="utf-8")
+
+        report = validate_72h_window_from_dir(
+            tmp_path,
+            required_window_hours=72,
+            runner_cadence_seconds=3600,
+            is_final=False,
+        )
+        assert not any(
+            "Run outcome: INCONCLUSIVE" in f.check_name for f in report.findings
+        )
+
+    @pytest.mark.unit
+    def test_inconclusive_not_raised_with_final_validation(
+        self, tmp_path: Path
+    ) -> None:
+        start = datetime(2026, 6, 19, 0, 0, tzinfo=UTC)
+        _write_valid_run(tmp_path, start=start, hours=2, cadence_seconds=3600)
+        state_path = tmp_path / "runner_state.json"
+        state = json.loads(state_path.read_text(encoding="utf-8"))
+        state["coordinator_status"] = "sleeping"
+        state["next_cycle_due_at_utc"] = _ts(start - timedelta(seconds=60))
+        state_path.write_text(json.dumps(state, sort_keys=True), encoding="utf-8")
+
+        report = validate_72h_window_from_dir(
+            tmp_path,
+            required_window_hours=72,
+            runner_cadence_seconds=3600,
+        )
+        assert not any(
+            "Run outcome: INCONCLUSIVE" in f.check_name for f in report.findings
+        )
+
+    @pytest.mark.unit
     def test_warn_on_missing_sleep_completed(self, tmp_path: Path) -> None:
         start = datetime(2026, 6, 19, 0, 0, tzinfo=UTC)
         _write_valid_run(tmp_path, start=start, hours=2, cadence_seconds=3600)
