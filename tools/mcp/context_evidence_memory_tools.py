@@ -704,12 +704,29 @@ def handle_cdb_context_trust_summary(request: Mapping[str, Any]) -> dict[str, An
         memory_result_raw: dict[str, Any] | None = None
         decision_result_raw: dict[str, Any] | None = None
         try:
-            evidence_result_raw = lookup_evidence_v1(
-                [_normalize_evidence_ref_row(r) for r in _ev_raw],
-                EvidenceLookupRequest(
+            # When artifact is specified, filter evidence to that artifact (by_artifact).
+            # When no artifact is specified (scope-wide trust assessment), pre-filter
+            # records to the requested scope and use by_freshness — consistent with
+            # the inline-records path in context_briefing_handler (freshness_days=36500).
+            # Pre-filtering prevents cross-scope contamination when the DB contains
+            # evidence from multiple scopes.  by_artifact with an empty artifact
+            # string matches nothing, so this branch only applies when a real
+            # artifact identifier is present.
+            if _artifact:
+                _ev_input = [_normalize_evidence_ref_row(r) for r in _ev_raw]
+                _ev_req = EvidenceLookupRequest(
                     mode="by_artifact", artifact=_artifact, limit=_limit
-                ),
-            )
+                )
+            else:
+                _ev_input = [
+                    _normalize_evidence_ref_row(r)
+                    for r in _ev_raw
+                    if isinstance(r, dict) and r.get("scope") == scope
+                ]
+                _ev_req = EvidenceLookupRequest(
+                    mode="by_freshness", freshness_days=36500, limit=_limit
+                )
+            evidence_result_raw = lookup_evidence_v1(_ev_input, _ev_req)
         except EvidenceLookupError as _exc:
             logging.getLogger(__name__).debug(
                 "trust_summary: evidence lookup skipped (%s)", _exc

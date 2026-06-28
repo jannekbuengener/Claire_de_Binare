@@ -531,6 +531,113 @@ def test_trust_summary_db_mode_scope_fallback_for_schema_claims(monkeypatch) -> 
     assert result["result"]["memory_trust_summary"]["total"] == 1
 
 
+@pytest.mark.unit
+def test_trust_summary_db_mode_no_artifact_scope_filters_evidence(
+    monkeypatch,
+) -> None:
+    """DB trust_summary without artifact must scope-filter evidence and use by_freshness.
+
+    When adapter_config_path is provided but no artifact is specified,
+    handle_cdb_context_trust_summary must pre-filter evidence records to the
+    requested scope before calling lookup_evidence_v1 (by_freshness mode).
+    This prevents cross-scope contamination and allows scope-wide HIGH trust
+    when scoped evidence is strong.
+
+    Root cause of gap: previously used by_artifact with artifact=None, which
+    matched nothing ('' in any artifact_refs set is always False), so evidence
+    always scored 0.0, capping composite at 0.70 and making HIGH unreachable.
+    (Revealed by E2E proof against ephemeral SurrealDB, 2026-06-28.)
+    """
+    # Two evidence records: one in the target scope (wave14), one in another scope.
+    # The scope pre-filter must exclude the out-of-scope record.
+    ev_in_scope: dict[str, Any] = {
+        "evidence_id": "ev-scope-001",
+        "evidence_type": "test_run",
+        "confidence": 0.92,
+        "stale": False,
+        "blocking_missing": False,
+        "scope": "wave14",
+        "created_at": "2026-06-01T00:00:00Z",
+    }
+    ev_out_of_scope: dict[str, Any] = {
+        "evidence_id": "ev-other-scope",
+        "evidence_type": "test_run",
+        "confidence": 0.9,
+        "stale": False,
+        "blocking_missing": True,  # would cause BLOCKED if included
+        "scope": "other-scope",
+        "created_at": "2026-06-01T00:00:00Z",
+    }
+    mem_source_backed: dict[str, Any] = {
+        "memory_id": "mem-scope-001",
+        "memory_type": "decision",
+        "scope": "wave14",
+        "source_refs": ["docs/AGENTS.md"],
+        "created_at": "2026-06-01T00:00:00Z",
+    }
+    claim_supported: dict[str, Any] = {
+        "claim_id": "cl-scope-001",
+        "title": "Supported claim",
+        "status": "substantiated",
+        "scope": "wave14",
+        "created_at": "2026-06-01T00:00:00Z",
+    }
+    decision_current: dict[str, Any] = {
+        "decision_id": "dec-scope-001",
+        "title": "Current decision",
+        "status": "current",
+        "scope": "wave14",
+        "created_at": "2026-06-01T00:00:00Z",
+    }
+
+    mock_adapter = MagicMock(spec=QueryAdapter)
+    mock_adapter.status = "surrealdb-local"
+    mock_adapter.execute.side_effect = [
+        [ev_in_scope, ev_out_of_scope],  # evidence_ref — both scopes
+        [claim_supported],  # claim
+        [mem_source_backed],  # agent_memory
+        [decision_current],  # decision_event
+    ]
+    _patch_adapter_factory(
+        monkeypatch,
+        "tools.mcp.context_evidence_memory_tools.build_adapter_from_params",
+        mock_adapter,
+    )
+
+    result = handle_cdb_context_trust_summary(
+        {
+            "tool": TOOL_CDB_CONTEXT_TRUST_SUMMARY,
+            "parameters": {
+                "adapter_config_path": _FAKE_CONFIG_PATH,
+                "scope": "wave14",
+                # No 'artifact' — scope-wide assessment
+            },
+        }
+    )
+
+    assert result["status"] == "ok", result
+    assert result["metadata"]["source"] == "surrealdb-local"
+    res = result["result"]
+    # Evidence from wave14 scope is included: strength="strong" (conf 0.92 ≥ 0.85)
+    assert res["evidence_strength"] == "strong", (
+        f"Expected strong evidence, got {res['evidence_strength']!r}; "
+        f"composite={res['composite_score']}"
+    )
+    # Out-of-scope blocking_missing record must NOT have contaminated the result
+    assert "blocking_missing_evidence" not in res.get(
+        "blocking_trust_findings", []
+    ), "Out-of-scope blocking_missing evidence must not appear in blocking_trust_findings"
+    # Composite should be ≥ 0.80 with strong evidence + substantiated claim
+    assert res["composite_score"] >= 0.80, (
+        f"Expected composite ≥ 0.80 with strong evidence + claim; "
+        f"got {res['composite_score']}"
+    )
+    assert res["operator_trust_level"] in (
+        "HIGH",
+        "MEDIUM",
+    ), f"Expected HIGH or MEDIUM, got {res['operator_trust_level']!r}"
+
+
 # ---------------------------------------------------------------------------
 # Decision History — DB mode
 # ---------------------------------------------------------------------------
