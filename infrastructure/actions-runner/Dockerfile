@@ -25,7 +25,7 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
 
 RUN useradd -m -u 1001 -s /bin/bash runner \
   && usermod -aG docker runner \
-  && echo "runner ALL=(ALL) NOPASSWD:ALL" >> /etc/sudoers.d/runner \
+  && echo "runner ALL=(ALL) NOPASSWD: /usr/bin/mkdir, /bin/mkdir, /bin/chown, /usr/bin/chown, /usr/sbin/groupmod, /usr/sbin/usermod" >> /etc/sudoers.d/runner \
   && chmod 0440 /etc/sudoers.d/runner
 
 WORKDIR /actions-runner

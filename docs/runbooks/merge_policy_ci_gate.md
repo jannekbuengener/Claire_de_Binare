@@ -12,7 +12,7 @@ for the policy rationale.
 Merge-method guidance for proof/slice PRs is documented in
 [merge_strategy_squash_vs_merge.md](./merge_strategy_squash_vs_merge.md).
 
-## Current State (as of 2026-04-12)
+## Current State (as of 2026-06-28)
 
 - Repo Actions workflow permissions: `Read and write`
 - Canonical PR gate workflow: `.github/workflows/ci.yml` (`name: ci`)
@@ -20,6 +20,7 @@ Merge-method guidance for proof/slice PRs is documented in
 - Main/dispatch CI pipeline: `.github/workflows/ci.yaml` (`name: CI/CD Pipeline`)
 - Sentinel source of truth: `.github/workflows/required-checks-audit.yml` is an on-demand `workflow_dispatch` audit that checks `policy-gate` + `ci (Unit/Integration + Lint gesammelt)` for the ref/SHA you run it on (use the relevant PR head ref for merge-contract audits)
 - Governance decision: the PR gate wins, not the larger workflow. `ci.yaml` is not merge-relevant until explicitly consolidated into the PR contract.
+- **Security fix (#3405):** `ci.yml` and `policy-gate.yml` run on `ubuntu-latest` (GitHub-hosted), not on self-hosted runners. This prevents untrusted fork-PR code from executing on the privileged self-hosted runner. The self-hosted runner with `merge-gate` label is no longer required for merge checks.
 - Live branch protection review settings: `required_approving_review_count=0`, `require_code_owner_reviews=false`, `dismiss_stale_reviews=true`
 - Live branch protection safety settings also include `required_linear_history=true`, `required_conversation_resolution=true`, `enforce_admins=true`
 - Repo-level auto-merge setting: `allow_auto_merge=false` (Option A, issue #1661)
