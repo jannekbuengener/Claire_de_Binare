@@ -1234,3 +1234,199 @@ def test_wave14_invalid_adapter_config_with_forged_db_claim_fields_fails_closed(
     assert result["error"]["code"] == "adapter_config_error"
     assert result["metadata"]["source"] == "in_memory"
     _assert_no_secret_leak(result)
+
+
+# ---------------------------------------------------------------------------
+# context_signals hardening (#3456): adapter path derives signals from results
+# ---------------------------------------------------------------------------
+
+
+@pytest.mark.unit
+def test_trust_summary_db_mode_adapter_signals_always_supplied(monkeypatch) -> None:
+    """Adapter path always provides context_signals (context_signals_supplied=True).
+
+    After #3456, handle_cdb_context_trust_summary derives context_signals from
+    the actual query results when adapter_config_path is used. This ensures
+    operator_trust_mapping.context_signals_supplied is True and
+    record_source is 'surrealdb-local' — never sourced from caller input.
+    """
+    mock_adapter = MagicMock(spec=QueryAdapter)
+    mock_adapter.status = "surrealdb-local"
+    mock_adapter.execute.side_effect = [
+        [_EVIDENCE_RECORD],
+        [_CLAIM_RECORD],
+        [_MEMORY_RECORD],
+        [_DECISION_RECORD],
+    ]
+    _patch_adapter_factory(
+        monkeypatch,
+        "tools.mcp.context_evidence_memory_tools.build_adapter_from_params",
+        mock_adapter,
+    )
+
+    result = handle_cdb_context_trust_summary(
+        {
+            "tool": TOOL_CDB_CONTEXT_TRUST_SUMMARY,
+            "parameters": {
+                "adapter_config_path": _FAKE_CONFIG_PATH,
+                "scope": "wave14",
+            },
+        }
+    )
+
+    assert result["status"] == "ok", result
+    mapping = result["result"].get("operator_trust_mapping", {})
+    assert (
+        mapping.get("context_signals_supplied") is True
+    ), f"Expected context_signals_supplied=True for adapter path, got: {mapping}"
+    signals = mapping.get("context_signals", {})
+    assert signals.get("record_source") == "surrealdb-local", (
+        f"Expected record_source=surrealdb-local (derived, not caller-supplied), "
+        f"got: {signals}"
+    )
+    assert signals.get("repo_crosscheck_present") is True
+    assert signals.get("caller_supplied_source_only") is False
+
+
+@pytest.mark.unit
+def test_trust_summary_db_mode_stale_evidence_caps_via_freshness_signal(
+    monkeypatch,
+) -> None:
+    """Stale evidence in adapter results sets freshness_ok=False, capping at LOW.
+
+    When evidence_result has stale_evidence_ids, the derived context_signals
+    must have freshness_ok=False. The freshness_not_ok gate in
+    _derive_operator_trust_level caps operator_trust_level at LOW regardless
+    of composite score — even if claims/decisions/memory are all strong.
+    """
+    stale_ev: dict[str, Any] = {
+        "evidence_id": "ev-stale-high-conf",
+        "evidence_type": "test_run",
+        "confidence": 0.92,  # high confidence but stale
+        "stale": True,
+        "blocking_missing": False,
+        "scope": "wave14",
+        "created_at": "2025-01-01T00:00:00Z",
+    }
+    strong_claim: dict[str, Any] = {
+        "claim_id": "cl-strong-001",
+        "status": "substantiated",
+        "scope": "wave14",
+        "created_at": "2026-01-01T00:00:00Z",
+    }
+    current_decision: dict[str, Any] = {
+        "decision_id": "dec-current-001",
+        "status": "current",
+        "scope": "wave14",
+        "created_at": "2026-01-01T00:00:00Z",
+    }
+    source_backed_mem: dict[str, Any] = {
+        "memory_id": "mem-source-001",
+        "memory_type": "decision",
+        "scope": "wave14",
+        "source_refs": ["docs/AGENTS.md"],
+        "created_at": "2026-01-01T00:00:00Z",
+    }
+    mock_adapter = MagicMock(spec=QueryAdapter)
+    mock_adapter.status = "surrealdb-local"
+    mock_adapter.execute.side_effect = [
+        [stale_ev],
+        [strong_claim],
+        [source_backed_mem],
+        [current_decision],
+    ]
+    _patch_adapter_factory(
+        monkeypatch,
+        "tools.mcp.context_evidence_memory_tools.build_adapter_from_params",
+        mock_adapter,
+    )
+
+    result = handle_cdb_context_trust_summary(
+        {
+            "tool": TOOL_CDB_CONTEXT_TRUST_SUMMARY,
+            "parameters": {
+                "adapter_config_path": _FAKE_CONFIG_PATH,
+                "scope": "wave14",
+            },
+        }
+    )
+
+    assert result["status"] == "ok", result
+    res = result["result"]
+    # Stale evidence must prevent HIGH (freshness_not_ok gate caps at LOW)
+    assert (
+        res["operator_trust_level"] != "HIGH"
+    ), f"Stale evidence must not reach HIGH, got: {res['operator_trust_level']}"
+    mapping = res.get("operator_trust_mapping", {})
+    signals = mapping.get("context_signals", {})
+    # Derived freshness_ok must be False because of stale evidence
+    assert (
+        signals.get("freshness_ok") is False
+    ), f"Expected freshness_ok=False for stale evidence, got signals: {signals}"
+    assert "freshness_not_ok" in mapping.get(
+        "gates_applied", []
+    ), f"Expected freshness_not_ok in gates_applied, got: {mapping.get('gates_applied')}"
+
+
+@pytest.mark.unit
+def test_trust_summary_db_mode_caller_cannot_override_freshness_signal(
+    monkeypatch,
+) -> None:
+    """Caller-supplied context_signals cannot override derived adapter signals.
+
+    A caller that passes context_signals with freshness_ok=True alongside
+    adapter_config_path and stale records must NOT be able to bypass the
+    freshness gate. The adapter path derives freshness_ok from actual query
+    results and ignores caller-supplied context_signals entirely.
+    """
+    stale_ev: dict[str, Any] = {
+        "evidence_id": "ev-stale-override-attempt",
+        "confidence": 0.92,
+        "stale": True,
+        "blocking_missing": False,
+        "scope": "wave14",
+        "created_at": "2025-01-01T00:00:00Z",
+    }
+    mock_adapter = MagicMock(spec=QueryAdapter)
+    mock_adapter.status = "surrealdb-local"
+    mock_adapter.execute.side_effect = [
+        [stale_ev],  # stale evidence
+        [],  # no claims
+        [],  # no memory
+        [],  # no decisions
+    ]
+    _patch_adapter_factory(
+        monkeypatch,
+        "tools.mcp.context_evidence_memory_tools.build_adapter_from_params",
+        mock_adapter,
+    )
+
+    # Caller attempts to fake freshness_ok=True to bypass the stale cap
+    result = handle_cdb_context_trust_summary(
+        {
+            "tool": TOOL_CDB_CONTEXT_TRUST_SUMMARY,
+            "parameters": {
+                "adapter_config_path": _FAKE_CONFIG_PATH,
+                "scope": "wave14",
+                "context_signals": {
+                    "freshness_ok": True,  # forged — must be ignored
+                    "record_source": "surrealdb-local",
+                    "repo_crosscheck_present": True,
+                    "caller_supplied_source_only": False,
+                },
+            },
+        }
+    )
+
+    assert result["status"] == "ok", result
+    res = result["result"]
+    signals = res.get("operator_trust_mapping", {}).get("context_signals", {})
+    # Adapter-derived signals must override caller: freshness_ok must be False
+    # because stale evidence was returned by the adapter
+    assert signals.get("freshness_ok") is False, (
+        f"Caller freshness_ok=True must not override derived freshness_ok=False "
+        f"(stale evidence present); got signals: {signals}"
+    )
+    assert (
+        res["operator_trust_level"] != "HIGH"
+    ), "Stale evidence must not reach HIGH even when caller supplies freshness_ok=True"

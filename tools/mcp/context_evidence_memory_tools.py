@@ -674,6 +674,9 @@ def handle_cdb_context_trust_summary(request: Mapping[str, Any]) -> dict[str, An
         )
 
     # Adapter opt-in (Issue #2461): fetch all sub-data from local SurrealDB.
+    # _derived_adapter_signals is set inside the adapter block from real query
+    # results and overrides any caller-supplied context_signals (#3456).
+    _derived_adapter_signals: TrustContextSignals | None = None
     if params.get("adapter_config_path") is not None:
         _adapter_result = build_adapter_from_params(
             params, TOOL_CDB_CONTEXT_TRUST_SUMMARY
@@ -758,6 +761,22 @@ def handle_cdb_context_trust_summary(request: Mapping[str, Any]) -> dict[str, An
             logging.getLogger(__name__).debug(
                 "trust_summary: decision lookup skipped (%s)", _exc
             )  # soft: available sub-results used
+        # Derive context_signals from actual adapter query results (#3456).
+        # Signals are always derived here — never taken from caller-supplied
+        # context_signals — to prevent fake DB-backed trust claims.
+        # freshness_ok is False when any stale records are present in any dimension;
+        # this enforces the governance rule that HIGH requires fresh data.
+        _has_stale = bool(
+            (evidence_result_raw and evidence_result_raw.get("stale_evidence_ids"))
+            or (memory_result_raw and memory_result_raw.get("stale_memory_ids"))
+            or (claim_result_raw and claim_result_raw.get("stale_claim_ids"))
+        )
+        _derived_adapter_signals = TrustContextSignals(
+            record_source="surrealdb-local",
+            freshness_ok=not _has_stale,
+            repo_crosscheck_present=True,
+            caller_supplied_source_only=False,
+        )
     else:
         _source = derive_guarded_source_label(params)
         evidence_result_raw = _as_mapping(params.get("evidence_result"))
@@ -778,17 +797,22 @@ def handle_cdb_context_trust_summary(request: Mapping[str, Any]) -> dict[str, An
             message=str(exc),
         )
 
-    context_signals: TrustContextSignals | None = None
-    try:
-        context_signals = TrustContextSignals.from_mapping(
-            _as_mapping(params.get("context_signals"))
-        )
-    except TrustSummaryError as exc:
-        return _error_response(
-            TOOL_CDB_CONTEXT_TRUST_SUMMARY,
-            code="invalid_parameters",
-            message=str(exc),
-        )
+    # context_signals: adapter path always uses derived signals (never caller-supplied);
+    # non-adapter path reads from request params (existing behaviour).
+    if _derived_adapter_signals is not None:
+        context_signals: TrustContextSignals | None = _derived_adapter_signals
+    else:
+        context_signals = None
+        try:
+            context_signals = TrustContextSignals.from_mapping(
+                _as_mapping(params.get("context_signals"))
+            )
+        except TrustSummaryError as exc:
+            return _error_response(
+                TOOL_CDB_CONTEXT_TRUST_SUMMARY,
+                code="invalid_parameters",
+                message=str(exc),
+            )
 
     try:
         result = build_trust_summary_v1(
