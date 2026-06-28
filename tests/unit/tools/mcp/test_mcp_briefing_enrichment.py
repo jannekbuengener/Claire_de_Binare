@@ -114,6 +114,18 @@ class TestBriefingEnrichmentFailClosed:
         sem = result["briefing"]["approval_semantics"]
         assert sem["no_echtgeld_go"] is True
 
+    def test_no_records_operator_trust_low(self) -> None:
+        """No records -> operator_trust_level == 'LOW'."""
+        result = context_briefing_handler(
+            **_minimal_kwargs(task_id="test-no-records-low")
+        )
+        assert result["status"] == "ok"
+        assert result["briefing"]["operator_trust_level"] == "LOW"
+        assert any(
+            "LOW" in lim or "low" in lim.lower()
+            for lim in result["briefing"]["trust_limitations"]
+        )
+
 
 class TestBriefingEnrichmentWithRecords:
     """Tests for real enrichment when Wave-14 records are provided."""
@@ -603,6 +615,59 @@ class TestBriefingEnrichmentWithRecords:
         assert "ev-out-of-scope" not in ev_ids, (
             f"Out-of-scope evidence must not appear in enriched_evidence: {ev_ids}"
         )
+
+    def test_inline_records_trust_medium_not_higher(self) -> None:
+        """Inline records with repo evidence -> max MEDIUM (capped by in_memory)."""
+        records = [
+            {
+                "evidence_id": "ev-medium-001",
+                "title": "Clean evidence for MEDIUM ceiling test",
+                "confidence": 0.85,
+                "stale": False,
+                "blocking_missing": False,
+                "evidence_type": "test_run",
+                "scope": "wave14",
+                "source_refs": ["tests/unit/surrealdb/test_example.py"],
+                "created_at": "2025-01-01T00:00:00Z",
+            }
+        ]
+        result = context_briefing_handler(
+            **_minimal_kwargs(
+                task_id="test-inline-medium-ceiling",
+                evidence_records=records,
+                enrichment_scope="wave14",
+            )
+        )
+        assert result["status"] == "ok"
+        level = result["briefing"]["operator_trust_level"]
+        assert level == "MEDIUM", f"Expected MEDIUM, got {level}"
+
+    def test_inline_records_repo_crosscheck_propagated(self) -> None:
+        """Inline records with repo provenance process crosscheck signal correctly."""
+        records = [
+            {
+                "evidence_id": "ev-cross-001",
+                "title": "Evidence with repo provenance fields",
+                "confidence": 0.90,
+                "stale": False,
+                "blocking_missing": False,
+                "evidence_type": "test_run",
+                "scope": "test-scope",
+                "source_refs": ["tests/unit/surrealdb/test_example.py"],
+                "source_hashes": {"tests/unit/surrealdb/test_example.py": "abc123"},
+                "created_at": "2025-01-01T00:00:00Z",
+            }
+        ]
+        result = context_briefing_handler(
+            **_minimal_kwargs(
+                task_id="test-crosscheck-propagation",
+                evidence_records=records,
+                enrichment_scope="test-scope",
+            )
+        )
+        assert result["status"] == "ok"
+        assert result["briefing"]["operator_trust_level"] == "MEDIUM"
+        assert result["briefing"]["blocking_trust_findings"] == []
 
 
 class TestBriefingEnrichmentGuardrails:
