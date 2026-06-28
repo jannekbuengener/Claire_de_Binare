@@ -1606,6 +1606,14 @@ def context_readiness_handler(**kwargs) -> dict[str, Any]:
     }
 
 
+# Sentinel keys from build_trust_summary_v1 output contract (#3453).
+# At least one must be present for adapter_trust_result to be treated as a
+# real trust summary rather than a generic metadata dict.
+_ADAPTER_TRUST_SENTINEL_KEYS: frozenset[str] = frozenset(
+    {"operator_trust_level", "trust_level", "composite_score", "blocking_trust_findings"}
+)
+
+
 def _briefing_error_from_inner_result(
     result: dict[str, Any],
     *,
@@ -1648,7 +1656,7 @@ def _derive_briefing_brain_context(
     memory_records: Any,
     caller_brain_source: Any,
     caller_brain_status: Any,
-) -> tuple[str, str, list[str]] | dict[str, Any]:
+) -> tuple[str, str, list[str], dict[str, Any] | None] | dict[str, Any]:
     """Derive briefing brain context from real reads or conservative fallbacks."""
     limitations: list[str] = []
 
@@ -1703,7 +1711,7 @@ def _derive_briefing_brain_context(
         limitations.append(
             "brain context derived from Wave-14 trust summary adapter metadata"
         )
-        return "surrealdb-local", "used", limitations
+        return "surrealdb-local", "used", limitations, trust_summary_result.get("result") or {}
 
     if any(
         (
@@ -1716,12 +1724,12 @@ def _derive_briefing_brain_context(
         limitations.append(
             "brain context derived from inline enrichment records (in-memory)"
         )
-        return "in_memory", "used", limitations
+        return "in_memory", "used", limitations, None
 
     limitations.append(
         "brain_source derived as repo-only; no DB-backed memory or evidence claims"
     )
-    return "repo-only", "not-used", limitations
+    return "repo-only", "not-used", limitations, None
 
 
 def context_briefing_handler(**kwargs) -> dict[str, Any]:
@@ -1870,7 +1878,7 @@ def context_briefing_handler(**kwargs) -> dict[str, Any]:
     )
     if isinstance(brain_context, dict):
         return brain_context
-    brain_source, brain_status, derived_brain_limitations = brain_context
+    brain_source, brain_status, derived_brain_limitations, adapter_trust_result = brain_context
     session_context_limitations.extend(derived_brain_limitations)
 
     repo_state = {
@@ -2278,14 +2286,61 @@ def context_briefing_handler(**kwargs) -> dict[str, Any]:
 
     if not _has_records:
         if brain_source == "surrealdb-local":
-            trust_summary = (
-                "DB-backed session context established via Wave-14 trust summary. "
-                "Artifact enrichment skipped because no inline enrichment records "
-                "were provided to context.briefing."
-            )
-            recommended_next_reads_enrichment.append(
-                "Provide inline enrichment records if artifact-level enrichment is required in the briefing payload"
-            )
+            # Validate that adapter_trust_result is a real build_trust_summary_v1
+            # output, not a generic metadata dict (e.g. {"scope": "..."}).
+            # Fail-closed: only propagate if at least one sentinel field is present.
+            _atr = adapter_trust_result if isinstance(adapter_trust_result, dict) else {}
+            _has_real_trust = bool(_ADAPTER_TRUST_SENTINEL_KEYS.intersection(_atr))
+            if _has_real_trust:
+                # Propagate DB-backed trust fields from the adapter result.
+                # Per contract: operator_trust_level HIGH requires
+                # record_source=surrealdb-local + freshness_ok + repo_crosscheck.
+                # These gates are already enforced by build_trust_summary_v1 /
+                # _derive_operator_trust_level — we trust the result as-is.
+                operator_trust_level = str(_atr.get("operator_trust_level") or "MEDIUM")
+                trust_limitations = list(_atr.get("limitations") or [])
+                _adapter_composite: float = float(_atr.get("composite_score") or 0.0)
+                _adapter_trust_lvl = str(_atr.get("trust_level") or "unknown")
+                _adapter_blocking = [
+                    str(f) for f in (_atr.get("blocking_trust_findings") or [])
+                ]
+                if _adapter_blocking:
+                    blocking_trust_findings.extend(_adapter_blocking)
+                _adapter_stale = [str(f) for f in (_atr.get("stale_flags") or [])]
+                if _adapter_stale:
+                    stale_evidence_notice.extend(_adapter_stale)
+                _adapter_disputed = [
+                    str(f) for f in (_atr.get("disputed_flags") or [])
+                ]
+                if _adapter_disputed:
+                    contradictory_evidence_notice.extend(_adapter_disputed)
+                trust_summary = (
+                    f"Operator trust: {operator_trust_level}. "
+                    f"Trust level (legacy): {_adapter_trust_lvl}. "
+                    f"Composite score: {_adapter_composite:.2f}. "
+                    "Source: surrealdb-local (adapter-only). no_echtgeld_go: true."
+                )
+                if blocking_trust_findings:
+                    trust_summary += (
+                        f" Blocking findings: {len(blocking_trust_findings)}. "
+                        "Review before proceeding."
+                    )
+                    if not any("S6" in sc for sc in stop_conditions):
+                        stop_conditions.append(
+                            "S6: blocking trust findings present — "
+                            "review evidence before proceeding"
+                        )
+            else:
+                # Adapter returned surrealdb-local but no recognisable trust
+                # summary fields — fall back to safe DB-backed-generic message.
+                trust_summary = (
+                    "DB-backed session context established via Wave-14 trust summary. "
+                    "Artifact enrichment skipped because no inline enrichment records "
+                    "were provided to context.briefing."
+                )
+                recommended_next_reads_enrichment.append(
+                    "Provide inline enrichment records if artifact-level enrichment is required in the briefing payload"
+                )
         else:
             # Fail-closed: no records provided — controlled-empty enrichment
             missing_evidence_notice = [
