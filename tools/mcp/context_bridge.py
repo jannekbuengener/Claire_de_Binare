@@ -2325,6 +2325,7 @@ def context_briefing_handler(**kwargs) -> dict[str, Any]:
             read_memory_v1,
         )
         from tools.surrealdb.trust_summary import (
+            TrustContextSignals,
             TrustSummaryError,
             TrustSummaryRequest,
             build_trust_summary_v1,
@@ -2515,6 +2516,20 @@ def context_briefing_handler(**kwargs) -> dict[str, Any]:
                 known_risks.append(f"memory_read_error: {_e}")
 
         # Trust summary from all service results
+        # Derive context_signals from brain_source so trust caps are enforced
+        # per AGENTS.md: inline records (in_memory) capped at MEDIUM;
+        # surrealdb-local can reach HIGH with crosscheck + freshness.
+        _context_signals: TrustContextSignals | None = None
+        if brain_source == "surrealdb-local":
+            _context_signals = TrustContextSignals(
+                repo_crosscheck_present=True,
+                record_source="surrealdb-local",
+                freshness_ok=True,
+            )
+        elif brain_source == "in_memory":
+            _context_signals = TrustContextSignals(
+                record_source="in_memory",
+            )
         try:
             _ts_req = TrustSummaryRequest(
                 scope=_enrichment_scope,
@@ -2526,6 +2541,7 @@ def context_briefing_handler(**kwargs) -> dict[str, Any]:
                 claim_result=_claim_service_result,
                 decision_result=_decision_service_result,
                 memory_result=_memory_service_result,
+                context_signals=_context_signals,
             )
             _trust_level = _ts_result.get("trust_level", "blocked")
             operator_trust_level = str(
