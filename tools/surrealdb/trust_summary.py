@@ -103,6 +103,50 @@ _REPO_EVIDENCE_FIELDS = frozenset(
     {"source_path", "source_hash", "source_ref", "source_refs"}
 )
 
+_DIRECT_REPO_PROVENANCE_FIELDS = frozenset({"source_path", "source_hash"})
+_REPO_REF_ALLOWED_EXTENSIONS = frozenset(
+    {
+        "bat",
+        "csv",
+        "html",
+        "ini",
+        "json",
+        "jsonl",
+        "md",
+        "ps1",
+        "py",
+        "sh",
+        "sql",
+        "surql",
+        "toml",
+        "txt",
+        "yaml",
+        "yml",
+    }
+)
+_REPO_REF_ALLOWED_ROOT_NAMES = frozenset(
+    {
+        "AGENTS.md",
+        "CURRENT_STATUS.md",
+        "Dockerfile",
+        "Makefile",
+        "PROJECT_STATUS.md",
+        "README.md",
+    }
+)
+_NON_REPO_REF_PREFIXES = (
+    "tool:",
+    "http://",
+    "https://",
+    "issue:",
+    "pr:",
+    "claim:",
+    "memory:",
+    "decision:",
+    "evidence:",
+    "issuecomment-",
+)
+
 
 def _has_non_empty_provenance_value(value: Any) -> bool:
     if value is None:
@@ -114,9 +158,51 @@ def _has_non_empty_provenance_value(value: Any) -> bool:
     return bool(value)
 
 
+def _looks_like_repo_provenance_ref(value: Any) -> bool:
+    if not isinstance(value, str):
+        return False
+    text = value.strip()
+    if not text:
+        return False
+    lowered = text.lower()
+    if lowered.startswith(_NON_REPO_REF_PREFIXES) or text.startswith("#"):
+        return False
+    if lowered.startswith("path:"):
+        text = text[5:].strip()
+        if not text:
+            return False
+    candidate = text.rsplit("@", 1)[0].strip()
+    if not candidate or " " in candidate:
+        return False
+    normalized = candidate.replace("\\", "/")
+    if (
+        normalized.startswith(("/", "./", "../", "//"))
+        or "/../" in normalized
+        or normalized.endswith("/..")
+    ):
+        return False
+    if len(normalized) >= 2 and normalized[1] == ":" and normalized[0].isalpha():
+        return False
+    name = normalized.rsplit("/", 1)[-1]
+    if name in _REPO_REF_ALLOWED_ROOT_NAMES:
+        return True
+    if "." not in name:
+        return False
+    extension = name.rsplit(".", 1)[-1].lower()
+    return extension in _REPO_REF_ALLOWED_EXTENSIONS
+
+
 def _has_non_empty_repo_value(record: dict, field: str) -> bool:
     """Check if a repo evidence field in a record has a non-empty value."""
-    return _has_non_empty_provenance_value(record.get(field))
+    value = record.get(field)
+    if field in _DIRECT_REPO_PROVENANCE_FIELDS:
+        return _has_non_empty_provenance_value(value)
+    if field == "source_ref":
+        return _looks_like_repo_provenance_ref(value)
+    if field == "source_refs":
+        values = value if isinstance(value, (list, tuple)) else [value]
+        return any(_looks_like_repo_provenance_ref(item) for item in values)
+    return _has_non_empty_provenance_value(value)
 
 
 def has_repo_evidence_from_records(*record_lists: Any) -> bool:

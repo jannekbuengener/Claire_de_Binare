@@ -389,3 +389,35 @@ def test_has_repo_evidence_mixed_source_refs_entries() -> None:
     assert has_repo_evidence_from_records(
         [{"decision_id": "d1", "source_refs": ["", " docs/AGENTS.md "]}]
     )
+
+
+@pytest.mark.unit
+def test_has_repo_evidence_source_ref_tool_id_does_not_count() -> None:
+    """Tool identifiers are not repo provenance for trust crosscheck."""
+    assert not has_repo_evidence_from_records(
+        [{"memory_id": "m1", "source_ref": "tool:context.readiness"}]
+    )
+
+
+@pytest.mark.unit
+def test_has_repo_evidence_source_refs_issue_url_does_not_count() -> None:
+    """Issue/PR URLs are not repo file provenance for trust crosscheck."""
+    assert not has_repo_evidence_from_records(
+        [{"claim_id": "c1", "source_refs": ["https://github.com/foo/bar/issues/1"]}]
+    )
+
+
+@pytest.mark.unit
+def test_has_repo_evidence_source_refs_path_prefix_counts() -> None:
+    """path: repo-relative refs still count as repo provenance."""
+    assert has_repo_evidence_from_records(
+        [{"claim_id": "c1", "source_refs": ["path:docs/runbooks/CONTROL_REGISTER.md"]}]
+    )
+
+
+@pytest.mark.unit
+def test_has_repo_evidence_source_refs_hashed_path_counts() -> None:
+    """Hashed repo-relative refs still count as repo provenance."""
+    assert has_repo_evidence_from_records(
+        [{"memory_id": "m1", "source_refs": ["docs/AGENTS.md@abc123"]}]
+    )
