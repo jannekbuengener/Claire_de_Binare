@@ -104,19 +104,33 @@ _REPO_EVIDENCE_FIELDS = frozenset(
 )
 
 
+def _has_non_empty_repo_value(record: dict, field: str) -> bool:
+    """Check if a repo evidence field in a record has a non-empty value."""
+    value = record.get(field)
+    if value is None:
+        return False
+    if isinstance(value, str):
+        return bool(value.strip())
+    if isinstance(value, (list, tuple)):
+        return len(value) > 0
+    return bool(value)
+
+
 def has_repo_evidence_from_records(*record_lists: Any) -> bool:
     """Check if any record across all provided lists has repo/import provenance fields.
 
     Returns True only if at least one record dict contains a field that proves
     the data was imported from the CDB repo (source_path, source_hash,
-    source_ref, or source_refs).  Pure function, side-effect-free.
+    source_ref, or source_refs) AND the field value is non-empty.
+    Pure function, side-effect-free.
     """
     for records in record_lists:
         if not isinstance(records, (list, tuple)):
             continue
         for record in records:
             if isinstance(record, dict) and any(
-                field in record for field in _REPO_EVIDENCE_FIELDS
+                _has_non_empty_repo_value(record, field)
+                for field in _REPO_EVIDENCE_FIELDS
             ):
                 return True
     return False

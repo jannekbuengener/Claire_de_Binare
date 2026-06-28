@@ -2592,11 +2592,28 @@ def context_briefing_handler(**kwargs) -> dict[str, Any]:
         # (source_path, source_hash, source_ref, source_refs).
         _context_signals: TrustContextSignals | None = None
         if brain_source == "surrealdb-local":
+            _ev_for_repo = [
+                r
+                for r in (_evidence_records_raw or [])
+                if isinstance(r, dict) and r.get("scope") == _enrichment_scope
+            ]
+            _cl_for_repo = [
+                r
+                for r in (_claim_records_raw or [])
+                if isinstance(r, dict) and r.get("scope") == _enrichment_scope
+            ]
+            _dec_for_repo = [
+                r
+                for r in (_decision_events_raw or [])
+                if isinstance(r, dict) and r.get("scope") == _enrichment_scope
+            ]
+            _mem_for_repo = [
+                r
+                for r in (_memory_records_raw or [])
+                if isinstance(r, dict) and r.get("scope") == _enrichment_scope
+            ]
             _has_repo = has_repo_evidence_from_records(
-                _evidence_records_raw,
-                _claim_records_raw,
-                _decision_events_raw,
-                _memory_records_raw,
+                _ev_for_repo, _cl_for_repo, _dec_for_repo, _mem_for_repo
             )
             _context_signals = TrustContextSignals(
                 repo_crosscheck_present=_has_repo,

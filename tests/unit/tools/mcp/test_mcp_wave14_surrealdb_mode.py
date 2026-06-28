@@ -1367,6 +1367,57 @@ def test_trust_summary_db_mode_repo_crosscheck_missing(monkeypatch) -> None:
 
 
 @pytest.mark.unit
+def test_trust_summary_db_mode_repo_crosscheck_scope_isolated(monkeypatch) -> None:
+    """Out-of-scope records with source_path must not set repo_crosscheck_present.
+
+    Only records matching the trust summary scope should contribute to the
+    repo crosscheck signal. An unrelated scope with repo provenance must
+    not falsely enable HIGH for a different scope.
+    """
+    out_of_scope: dict[str, Any] = {
+        "evidence_id": "ev-other-scope",
+        "source_path": "docs/other.md",
+        "scope": "wave17",
+    }
+    mock_adapter = MagicMock(spec=QueryAdapter)
+    mock_adapter.status = "surrealdb-local"
+    mock_adapter.execute.side_effect = [
+        [out_of_scope],
+        [],
+        [],
+        [],
+    ]
+    _patch_adapter_factory(
+        monkeypatch,
+        "tools.mcp.context_evidence_memory_tools.build_adapter_from_params",
+        mock_adapter,
+    )
+
+    result = handle_cdb_context_trust_summary(
+        {
+            "tool": TOOL_CDB_CONTEXT_TRUST_SUMMARY,
+            "parameters": {
+                "adapter_config_path": _FAKE_CONFIG_PATH,
+                "scope": "wave14",
+            },
+        }
+    )
+
+    assert result["status"] == "ok", result
+    signals = (
+        result["result"].get("operator_trust_mapping", {}).get("context_signals", {})
+    )
+    assert signals.get("repo_crosscheck_present") is False, (
+        f"Expected repo_crosscheck_present=False when only out-of-scope records "
+        f"have source_path, got: {signals}"
+    )
+    # Without repo crosscheck the level must be capped at MEDIUM
+    assert (
+        result["result"].get("operator_trust_level") != "HIGH"
+    ), "Must not reach HIGH without in-scope repo evidence"
+
+
+@pytest.mark.unit
 def test_trust_summary_db_mode_stale_evidence_caps_via_freshness_signal(
     monkeypatch,
 ) -> None:

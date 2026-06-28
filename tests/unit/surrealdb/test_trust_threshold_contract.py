@@ -339,3 +339,37 @@ def test_has_repo_evidence_from_records_mixed() -> None:
         [{"claim_id": "c1", "source_hash": "abc123"}],
         [],
     )
+
+
+@pytest.mark.unit
+def test_has_repo_evidence_empty_source_path() -> None:
+    """Empty string source_path does NOT count as repo evidence."""
+    assert not has_repo_evidence_from_records(
+        [{"evidence_id": "e1", "source_path": ""}]
+    )
+    assert not has_repo_evidence_from_records(
+        [{"evidence_id": "e2", "source_path": "   "}]
+    )
+    assert not has_repo_evidence_from_records(
+        [{"evidence_id": "e3", "source_path": None}]
+    )
+
+
+@pytest.mark.unit
+def test_has_repo_evidence_empty_source_hash() -> None:
+    """Empty string source_hash does NOT count as repo evidence."""
+    assert not has_repo_evidence_from_records([{"claim_id": "c1", "source_hash": ""}])
+
+
+@pytest.mark.unit
+def test_has_repo_evidence_empty_source_ref() -> None:
+    """Empty string source_ref does NOT count as repo evidence."""
+    assert not has_repo_evidence_from_records([{"memory_id": "m1", "source_ref": ""}])
+
+
+@pytest.mark.unit
+def test_has_repo_evidence_empty_source_refs() -> None:
+    """Empty list source_refs does NOT count as repo evidence."""
+    assert not has_repo_evidence_from_records(
+        [{"decision_id": "d1", "source_refs": []}]
+    )
