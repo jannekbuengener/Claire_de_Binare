@@ -114,6 +114,18 @@ class TestBriefingEnrichmentFailClosed:
         sem = result["briefing"]["approval_semantics"]
         assert sem["no_echtgeld_go"] is True
 
+    def test_no_records_operator_trust_low(self) -> None:
+        """No records -> operator_trust_level == 'LOW'."""
+        result = context_briefing_handler(
+            **_minimal_kwargs(task_id="test-no-records-low")
+        )
+        assert result["status"] == "ok"
+        assert result["briefing"]["operator_trust_level"] == "LOW"
+        assert any(
+            "LOW" in lim or "low" in lim.lower()
+            for lim in result["briefing"]["trust_limitations"]
+        )
+
 
 class TestBriefingEnrichmentWithRecords:
     """Tests for real enrichment when Wave-14 records are provided."""
@@ -604,6 +616,59 @@ class TestBriefingEnrichmentWithRecords:
             f"Out-of-scope evidence must not appear in enriched_evidence: {ev_ids}"
         )
 
+    def test_inline_records_trust_medium_not_higher(self) -> None:
+        """Inline records with repo evidence -> max MEDIUM (capped by in_memory)."""
+        records = [
+            {
+                "evidence_id": "ev-medium-001",
+                "title": "Clean evidence for MEDIUM ceiling test",
+                "confidence": 0.85,
+                "stale": False,
+                "blocking_missing": False,
+                "evidence_type": "test_run",
+                "scope": "wave14",
+                "source_refs": ["tests/unit/surrealdb/test_example.py"],
+                "created_at": "2025-01-01T00:00:00Z",
+            }
+        ]
+        result = context_briefing_handler(
+            **_minimal_kwargs(
+                task_id="test-inline-medium-ceiling",
+                evidence_records=records,
+                enrichment_scope="wave14",
+            )
+        )
+        assert result["status"] == "ok"
+        level = result["briefing"]["operator_trust_level"]
+        assert level == "MEDIUM", f"Expected MEDIUM, got {level}"
+
+    def test_inline_records_repo_crosscheck_propagated(self) -> None:
+        """Inline records with repo provenance process crosscheck signal correctly."""
+        records = [
+            {
+                "evidence_id": "ev-cross-001",
+                "title": "Evidence with repo provenance fields",
+                "confidence": 0.90,
+                "stale": False,
+                "blocking_missing": False,
+                "evidence_type": "test_run",
+                "scope": "test-scope",
+                "source_refs": ["tests/unit/surrealdb/test_example.py"],
+                "source_hashes": {"tests/unit/surrealdb/test_example.py": "abc123"},
+                "created_at": "2025-01-01T00:00:00Z",
+            }
+        ]
+        result = context_briefing_handler(
+            **_minimal_kwargs(
+                task_id="test-crosscheck-propagation",
+                evidence_records=records,
+                enrichment_scope="test-scope",
+            )
+        )
+        assert result["status"] == "ok"
+        assert result["briefing"]["operator_trust_level"] == "MEDIUM"
+        assert result["briefing"]["blocking_trust_findings"] == []
+
 
 class TestBriefingEnrichmentGuardrails:
     """Tests for guardrail enforcement in briefing enrichment."""
@@ -727,3 +792,273 @@ class TestRegistryWave14Completeness:
         )
         assert result["status"] == "ok", f"Expected ok, got: {result}"
         assert result["result"]["approval_semantics"]["no_echtgeld_go"] is True
+
+
+# Monkeypatch target for adapter trust path tests.
+# _derive_briefing_brain_context uses a lazy local import, so patching the
+# module attribute is the correct approach (confirmed by test_context_bridge.py).
+_TRUST_SUMMARY_MP_TARGET = (
+    "tools.mcp.context_evidence_memory_tools.handle_cdb_context_trust_summary"
+)
+
+# Limitations stub matching build_trust_summary_v1 output for HIGH operator trust.
+_HIGH_TRUST_LIMITATIONS = [
+    "Trust summary is assessment-only; it does not grant Human-GO, Live-GO, "
+    "Echtgeld-GO, persist, mutation, or operational truth.",
+]
+
+
+def _make_trust_summary_response(
+    *,
+    operator_trust_level: str = "HIGH",
+    trust_level: str = "strong",
+    composite_score: float = 0.83,
+    blocking_trust_findings: list | None = None,
+    stale_flags: list | None = None,
+    disputed_flags: list | None = None,
+    limitations: list | None = None,
+    source: str = "surrealdb-local",
+) -> dict:
+    """Return a minimal but valid handle_cdb_context_trust_summary response."""
+    return {
+        "tool": "cdb_context_trust_summary",
+        "status": "ok",
+        "result": {
+            "operator_trust_level": operator_trust_level,
+            "trust_level": trust_level,
+            "composite_score": composite_score,
+            "blocking_trust_findings": blocking_trust_findings or [],
+            "stale_flags": stale_flags or [],
+            "disputed_flags": disputed_flags or [],
+            "limitations": limitations if limitations is not None else _HIGH_TRUST_LIMITATIONS,
+        },
+        "metadata": {
+            "query_time_ms": 0,
+            "source": source,
+            "read_only": True,
+        },
+    }
+
+
+def _make_generic_trust_response(*, source: str = "surrealdb-local") -> dict:
+    """Return a surrealdb-local response WITHOUT any trust sentinel keys.
+
+    Simulates an adapter that returned ok+surrealdb-local but no
+    build_trust_summary_v1 fields — should trigger the safe fallback path.
+    """
+    return {
+        "tool": "cdb_context_trust_summary",
+        "status": "ok",
+        "result": {"scope": "wave14"},  # no sentinel key present
+        "metadata": {
+            "query_time_ms": 0,
+            "source": source,
+            "read_only": True,
+        },
+    }
+
+
+class TestBriefingAdapterOnlyPath:
+    """Tests for the adapter-only path (#3453).
+
+    All tests in this class use adapter_config_path without inline records and
+    monkeypatch handle_cdb_context_trust_summary to return controlled responses.
+
+    Trust contract:
+    - Adapter trust propagates only when result contains sentinel fields.
+    - HIGH requires surrealdb-local source + real trust data (gates enforced by
+      build_trust_summary_v1 upstream; here we verify the plumbing).
+    - Truthy-but-invalid adapter results (no sentinel keys) → safe fallback.
+    - Inline records (in_memory path) remain capped at MEDIUM.
+    - LR NO-GO / no Echtgeld-GO / no runtime write.
+    """
+
+    def test_adapter_only_high_trust_propagates_operator_level(
+        self, monkeypatch
+    ) -> None:
+        """Adapter-only path with HIGH trust result: operator_trust_level must be HIGH."""
+        monkeypatch.setattr(
+            _TRUST_SUMMARY_MP_TARGET,
+            lambda _req: _make_trust_summary_response(operator_trust_level="HIGH"),
+        )
+        result = context_briefing_handler(
+            **_minimal_kwargs(
+                task_id="test-adapter-high-level",
+                adapter_config_path="/fake/path/config.yaml",
+            )
+        )
+        assert result["status"] == "ok"
+        briefing = result["briefing"]
+        assert briefing["operator_trust_level"] == "HIGH", (
+            f"Expected HIGH, got: {briefing['operator_trust_level']}"
+        )
+        assert briefing["approval_semantics"]["no_echtgeld_go"] is True
+
+    def test_adapter_only_no_s5_stop_condition(self, monkeypatch) -> None:
+        """Adapter-only path must not fire S5 (S5 is for missing inline records)."""
+        monkeypatch.setattr(
+            _TRUST_SUMMARY_MP_TARGET,
+            lambda _req: _make_trust_summary_response(),
+        )
+        result = context_briefing_handler(
+            **_minimal_kwargs(
+                task_id="test-adapter-no-s5",
+                adapter_config_path="/fake/path/config.yaml",
+            )
+        )
+        assert result["status"] == "ok"
+        stop = result["briefing"]["stop_conditions"]
+        assert not any("S5" in sc for sc in stop), (
+            f"S5 must not fire on adapter-only path, got: {stop}"
+        )
+
+    def test_adapter_only_trust_summary_text_includes_level_and_score(
+        self, monkeypatch
+    ) -> None:
+        """Trust summary text must reflect actual adapter operator trust and score."""
+        monkeypatch.setattr(
+            _TRUST_SUMMARY_MP_TARGET,
+            lambda _req: _make_trust_summary_response(
+                operator_trust_level="HIGH", composite_score=0.83
+            ),
+        )
+        result = context_briefing_handler(
+            **_minimal_kwargs(
+                task_id="test-adapter-text",
+                adapter_config_path="/fake/path/config.yaml",
+            )
+        )
+        assert result["status"] == "ok"
+        ts = result["briefing"]["trust_summary"]
+        assert "HIGH" in ts, f"Expected 'HIGH' in trust_summary, got: {ts}"
+        assert "0.83" in ts, f"Expected '0.83' in trust_summary, got: {ts}"
+        assert "surrealdb-local" in ts, (
+            f"Expected 'surrealdb-local' in trust_summary, got: {ts}"
+        )
+        assert "no_echtgeld_go: true" in ts, (
+            f"Expected 'no_echtgeld_go: true' in trust_summary, got: {ts}"
+        )
+
+    def test_adapter_only_blocking_findings_fires_s6(self, monkeypatch) -> None:
+        """Adapter result with blocking_trust_findings must fire S6 stop condition."""
+        monkeypatch.setattr(
+            _TRUST_SUMMARY_MP_TARGET,
+            lambda _req: _make_trust_summary_response(
+                operator_trust_level="BLOCKED",
+                trust_level="blocked",
+                composite_score=0.0,
+                blocking_trust_findings=["blocking_missing_evidence"],
+            ),
+        )
+        result = context_briefing_handler(
+            **_minimal_kwargs(
+                task_id="test-adapter-blocking-s6",
+                adapter_config_path="/fake/path/config.yaml",
+            )
+        )
+        assert result["status"] == "ok"
+        briefing = result["briefing"]
+        stop = briefing["stop_conditions"]
+        assert any("S6" in sc for sc in stop), (
+            f"S6 must fire when adapter has blocking findings, got: {stop}"
+        )
+        assert briefing["blocking_trust_findings"], (
+            "blocking_trust_findings must be populated from adapter result"
+        )
+        assert "Blocking findings:" in briefing["trust_summary"], (
+            f"trust_summary must mention blocking count: {briefing['trust_summary']}"
+        )
+
+    def test_adapter_only_stale_flags_propagated(self, monkeypatch) -> None:
+        """Stale flags from adapter result surface in stale_evidence_notice."""
+        monkeypatch.setattr(
+            _TRUST_SUMMARY_MP_TARGET,
+            lambda _req: _make_trust_summary_response(
+                stale_flags=["stale_evidence: 2 records"]
+            ),
+        )
+        result = context_briefing_handler(
+            **_minimal_kwargs(
+                task_id="test-adapter-stale",
+                adapter_config_path="/fake/path/config.yaml",
+            )
+        )
+        assert result["status"] == "ok"
+        stale = result["briefing"]["stale_evidence_notice"]
+        assert any("stale_evidence" in s for s in stale), (
+            f"Expected stale_flags propagated to stale_evidence_notice, got: {stale}"
+        )
+
+    def test_adapter_only_disputed_flags_propagated(self, monkeypatch) -> None:
+        """Disputed flags from adapter result surface in contradictory_evidence_notice."""
+        monkeypatch.setattr(
+            _TRUST_SUMMARY_MP_TARGET,
+            lambda _req: _make_trust_summary_response(
+                operator_trust_level="MEDIUM",
+                disputed_flags=["disputed_claims: 1 records"],
+            ),
+        )
+        result = context_briefing_handler(
+            **_minimal_kwargs(
+                task_id="test-adapter-disputed",
+                adapter_config_path="/fake/path/config.yaml",
+            )
+        )
+        assert result["status"] == "ok"
+        contradictory = result["briefing"]["contradictory_evidence_notice"]
+        assert any("disputed_claims" in c for c in contradictory), (
+            f"Expected disputed_flags in contradictory_evidence_notice, got: {contradictory}"
+        )
+
+    def test_adapter_only_truthy_but_invalid_result_no_fake_high(
+        self, monkeypatch
+    ) -> None:
+        """Adapter response with no trust sentinel keys must NOT produce operator_trust_level=HIGH.
+
+        A truthy dict like {"scope": "wave14"} (no operator_trust_level, trust_level,
+        composite_score, or blocking_trust_findings) must fall back to the safe
+        DB-backed-generic path — never fake a HIGH trust result.
+        """
+        monkeypatch.setattr(
+            _TRUST_SUMMARY_MP_TARGET,
+            lambda _req: _make_generic_trust_response(),
+        )
+        result = context_briefing_handler(
+            **_minimal_kwargs(
+                task_id="test-adapter-invalid-no-high",
+                adapter_config_path="/fake/path/config.yaml",
+            )
+        )
+        assert result["status"] == "ok"
+        briefing = result["briefing"]
+        # Must NOT be HIGH — no trust fields were present to justify it
+        assert briefing["operator_trust_level"] != "HIGH", (
+            f"operator_trust_level must not be HIGH when adapter result has no sentinel keys, "
+            f"got: {briefing['operator_trust_level']}"
+        )
+        # Must fall back to safe DB-backed message
+        ts = briefing["trust_summary"]
+        assert "DB-backed session context" in ts, (
+            f"Expected fallback DB-backed message in trust_summary, got: {ts}"
+        )
+
+    def test_inline_records_remain_medium_not_high(self) -> None:
+        """Inline records (in_memory brain path) must not produce operator_trust_level=HIGH.
+
+        Regression guard for PR #3452: context_signals caps in_memory records at MEDIUM.
+        No monkeypatch needed — in_memory path never calls the adapter.
+        """
+        fx = _load_fixture()
+        result = context_briefing_handler(
+            **_minimal_kwargs(
+                task_id="test-inline-max-medium",
+                evidence_records=fx["evidence_records"],
+                claim_records=fx["claim_records"],
+                enrichment_scope="wave14",
+            )
+        )
+        assert result["status"] == "ok"
+        level = result["briefing"]["operator_trust_level"]
+        assert level != "HIGH", (
+            f"Inline records (in_memory) must not reach HIGH operator trust, got: {level}"
+        )

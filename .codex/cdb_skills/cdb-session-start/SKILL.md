@@ -89,7 +89,28 @@ Establish a verified, fail-closed starting state before any repo work begins.
    The Git truth checks in steps 1-3 do not replace the control-context read; they
    precede it.
 
-5. Brain Evidence Gate (scope-abhängig):
+5. Test-First Check (conditional):
+
+   If the session involves testing, test planning, validation, evidence
+   generation, or any significant implementation that needs test coverage:
+
+   - Load the `cdb-test-first` skill.
+   - Answer the five test-first questions from
+     `knowledge/testing/TEST_FIRST_PROCESSING_CONTRACT.md` §2:
+     * Welche Regel wird geschützt?
+     * Welche Testart passt?
+     * Welche Entscheidung wird sicherer?
+     * Welche Metadaten braucht der Test?
+     * Wie wird das Ergebnis weiterverarbeitet?
+   - If this is a change that could affect execution, orders, risk, or
+     profitability, load `knowledge/testing/MOCKEXCHANGE_CDB_TEST_MAP.md` as
+     pattern reference.
+   - Proceed with test planning alongside implementation planning.
+
+   Reference: `.codex/cdb_skills/cdb-test-first/SKILL.md` (all surfaces);
+   `knowledge/testing/TEST_FIRST_PROCESSING_CONTRACT.md`.
+
+6. Brain Evidence Gate (scope-abhängig):
 
    If the session scope includes **Strategy, Runtime, Module, Service, Contract,
    Context, SurrealDB, MCP tools, DB-backed Memory, or Evidence**, output the
@@ -114,7 +135,7 @@ Establish a verified, fail-closed starting state before any repo work begins.
    `brain_status=not-used`. `PERSIST_ALLOWED=False` / `MUTATION_ALLOWED=False`
    on `main`; Context Brain output does not authorize writes or issue creation.
 
-6. MCP Capability Resolution Gate (conditional):
+7. MCP Capability Resolution Gate (conditional):
 
    When the session scope includes Context, SurrealDB, MCP tools, ContextBridge,
    or DB-backed agent memory, verify capability before any implementation or
@@ -143,9 +164,9 @@ Establish a verified, fail-closed starting state before any repo work begins.
 
    Reference: `docs/runbooks/surrealdb_context_mcp_access.md` § 1.5.
 
-7. Create a clean execution surface:
+8. Create a clean execution surface:
 
-   Once steps 1-6 are complete and no gate has fired, create the working surface:
+   Once steps 1-7 are complete and no gate has fired, create the working surface:
    - Branch from current `origin/main` (never from stale local main).
    - Clean worktree confirmed.
    - Explicit target issue identified and open.
@@ -203,6 +224,19 @@ Arbeitsflaeche
 - Closure-Semantik:
 - Gate: go | no-go -- <Grund wenn no-go>
 ```
+
+## External Documentation Lookup
+
+If this task touches external tools or services, check `docs/external-docs/index.md`:
+
+- Exchange APIs, WebSocket, Protobuf → `cdb-external-docs` → MEXC, protobuf docs
+- Docker, Compose, Runtime → `cdb-external-docs` → Docker docs
+- GitHub Actions, gh CLI → `cdb-external-docs` → GitHub docs
+- Python testing, linting, security → `cdb-external-docs` → pytest, Ruff, Gitleaks docs
+- Agent surfaces (OpenCode, Cursor, Codex, Claude, Gemini) → `cdb-external-docs`
+
+Load `cdb-external-docs` before implementation if external docs are required.
+If no internet/browsing is available, report `EXTERNAL_DOCS_UNVERIFIED` instead of inventing behavior.
 
 ## Anti-Patterns
 

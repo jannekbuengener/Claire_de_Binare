@@ -1,0 +1,100 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://claire-de-binare/docs/contracts/arvp_regime_scorecard.v1.schema.json",
+  "title": "ARVP Regime Scorecard v1",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "schema_version",
+    "status",
+    "run_id",
+    "source",
+    "scorecard_fingerprint",
+    "segments",
+    "notes"
+  ],
+  "properties": {
+    "schema_version": {
+      "const": "arvp_regime_scorecard.v1"
+    },
+    "status": {
+      "type": "string",
+      "enum": [
+        "ok",
+        "unavailable",
+        "insufficient-data"
+      ]
+    },
+    "run_id": {
+      "type": "string",
+      "minLength": 1
+    },
+    "source": {
+      "type": "string",
+      "enum": [
+        "replay_trace",
+        "comparison"
+      ]
+    },
+    "scorecard_fingerprint": {
+      "type": "string",
+      "pattern": "^[a-f0-9]{64}$"
+    },
+    "segments": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "regime_id",
+          "observation_count",
+          "signal_count",
+          "trade_close_count"
+        ],
+        "properties": {
+          "regime_id": {
+            "type": "string",
+            "minLength": 1
+          },
+          "observation_count": {
+            "type": "integer",
+            "minimum": 0
+          },
+          "signal_count": {
+            "oneOf": [
+              {
+                "type": "integer",
+                "minimum": 0
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "trade_close_count": {
+            "oneOf": [
+              {
+                "type": "integer",
+                "minimum": 0
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "pnl_sum_r": {
+            "type": "string",
+            "pattern": "^-?[0-9]+(\\.[0-9]+)?$"
+          }
+        }
+      }
+    },
+    "notes": {
+      "type": "array",
+      "items": {
+        "type": "string",
+        "minLength": 1
+      }
+    }
+  }
+}

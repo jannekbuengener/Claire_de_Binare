@@ -39,6 +39,14 @@ disable-model-invocation: true
 5. Produce deterministic evidence per workflow: protected behavior, unprotected behavior, secret handling, merge-blocking effect.
 6. If fixes are needed, propose the smallest reversible patchset first.
 
+## External Documentation Lookup
+
+This skill audits CI/CD tooling with external documentation dependencies:
+- Load `cdb-external-docs` to find official docs for GitHub Actions, Gitleaks, Trivy, etc.
+- Look up `docs/external-docs/index.md` → Repo-Control / Security sections.
+- Verify expected behavior against official docs before labelling a gate as fake-green.
+- If no internet/browsing is available, report the docs gap and proceed conservatively.
+
 ## Output
 - PASS or FAIL
 - concrete enforcement gaps, grouped by workflow or ruleset

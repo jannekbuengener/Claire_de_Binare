@@ -46,6 +46,10 @@ Wellen-Dokumente: `context-wave7-completion-gates.md` … `context-wave21-comple
 - Schema bootstrap: `infrastructure/surrealdb/setup.surql`
 - Mirror overview: `infrastructure/surrealdb/README.md`
 
+## Agent Skills / Rules Integration
+
+- [`agent-skills-rules-integration-v0.md`](agent-skills-rules-integration-v0.md) — Mapping offizieller SurrealDB Agent Skills + Rules auf CDB-Surfaces, Documentation Gate für Agenten, Update-Workflow, Source-Manifest
+
 ## SSOT boundary
 
 - Produktive Writes / managed runtime: **NOT ACTIVATED** ohne expliziten Human-GO.

@@ -106,11 +106,34 @@ docker compose -f infrastructure/actions-runner/docker-compose.runner.yml down
 `.env.runner`, then stop the container; or use the GitHub UI
 Settings > Actions > Runners > select runner > Remove.
 
+## Security Notice
+
+**This repository is PUBLIC.** Anyone can fork and submit pull requests.
+
+As of PR #3405, the merge-blocking required checks (`ci`, `policy-gate`) run on
+**GitHub-hosted `ubuntu-latest` runners**, not on self-hosted runners. This
+prevents untrusted fork-PR code from executing on the privileged self-hosted
+runner with Docker socket access.
+
+**Rules:**
+- No `pull_request`-triggered workflow may target the self-hosted runner.
+- Self-hosted runners (`cdb-docker-runner-1`, `cdb-docker-runner-2`) are
+  reserved exclusively for `workflow_dispatch` and `schedule` triggers.
+- Before adding a new `pull_request` workflow on a self-hosted runner, verify
+  that it cannot be reached by untrusted fork PRs.
+- Docker socket (`/var/run/docker.sock`) remains mounted in the compose files
+  for workflows that need Docker commands. `NOPASSWD:ALL` (unrestricted root) is
+  replaced with a restricted sudo rule limited to `chown`, `mkdir`, `groupmod`,
+  and `usermod` — exactly what the entrypoint needs. If Docker-in-Docker is not
+  needed for a job, remove the socket mount.
+
 ## Runner 2 — Dedicated Merge-Gate Runner
 
-Runner 2 is a second self-hosted runner dedicated to merge-blocking required
-checks (`ci`, `policy-gate`). It uses its own env file, container name, runner
-name, volume, and labels — completely independent from Runner 1.
+Runner 2 is a second self-hosted runner. It was originally dedicated to
+merge-blocking required checks (`ci`, `policy-gate`) — those checks now run on
+GitHub-hosted runners. Runner 2 remains available for `workflow_dispatch` jobs
+that need self-hosted capabilities. It uses its own env file, container name,
+runner name, volume, and labels — completely independent from Runner 1.
 
 ### Quick Start
 
@@ -145,11 +168,14 @@ name, volume, and labels — completely independent from Runner 1.
 
 Runner 2 custom labels: `cdb`, `docker`, `merge-gate`. The default label
 `self-hosted` is added automatically by GitHub.
-Workflows target: `runs-on: [self-hosted, cdb, docker, merge-gate]`.
+Workflows target: `runs-on: [self-hosted, cdb, docker, merge-gate]` for
+`workflow_dispatch` jobs only.
 
 **Important**: `runs-on` with multiple labels is hard label matching. GitHub
 routes the job only to a runner that has **all** specified labels. There is no
-fallback to GitHub-hosted runners.
+fallback to GitHub-hosted runners. This is why the required checks were moved
+to `ubuntu-latest` — they no longer depend on the self-hosted runner being
+available.
 
 ### Stopping & Removing Runner 2
 

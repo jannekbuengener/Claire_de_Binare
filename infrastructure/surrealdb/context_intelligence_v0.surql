@@ -34,6 +34,13 @@
 -- =====================================================================
 
 -- ---------------------------
+-- VectorGraph: Analyzer for code/doc full-text search
+-- Dimension 1536 (OpenAI embedding standard); used by #3424 Hybrid Retrieval
+-- Issue #3422
+-- ---------------------------
+DEFINE ANALYZER cdb_code_analyzer TOKENIZERS class, camel FILTERS lowercase, ascii;
+
+-- ---------------------------
 -- repo_artifact (Issue #1981)
 -- ---------------------------
 DEFINE TABLE repo_artifact SCHEMAFULL;
@@ -132,8 +139,11 @@ DEFINE FIELD tokens_estimate ON TABLE doc_chunk TYPE int;
 DEFINE FIELD source_hash ON TABLE doc_chunk TYPE string;
 DEFINE FIELD confidence ON TABLE doc_chunk TYPE float;
 DEFINE FIELD comment ON TABLE doc_chunk TYPE string;
+DEFINE FIELD embedding ON TABLE doc_chunk TYPE array;
 DEFINE FIELD created_at ON TABLE doc_chunk TYPE datetime VALUE $value OR time::now(); -- REQUIRED(v0-draft)
 DEFINE INDEX idx_doc_chunk_chunk_id_unique ON TABLE doc_chunk FIELDS chunk_id UNIQUE;
+DEFINE INDEX idx_doc_chunk_embedding_hnsw ON TABLE doc_chunk FIELDS embedding HNSW DIMENSION 1536 DIST COSINE;
+DEFINE INDEX idx_doc_chunk_content_ft ON TABLE doc_chunk FIELDS content FULLTEXT ANALYZER cdb_code_analyzer BM25 HIGHLIGHTS;
 DEFINE INDEX idx_doc_chunk_page_ref ON TABLE doc_chunk FIELDS page_ref;
 DEFINE INDEX idx_doc_chunk_section_ref ON TABLE doc_chunk FIELDS section_ref;
 DEFINE INDEX idx_doc_chunk_content_hash ON TABLE doc_chunk FIELDS content_hash;
@@ -420,4 +430,59 @@ DEFINE INDEX idx_visual_control_view_type ON TABLE visual_control_view FIELDS vi
 DEFINE INDEX idx_visual_control_view_scope ON TABLE visual_control_view FIELDS target_scope;
 DEFINE INDEX idx_visual_control_view_generated_at ON TABLE visual_control_view FIELDS generated_at;
 DEFINE INDEX idx_visual_control_view_created_at ON TABLE visual_control_view FIELDS created_at;
+
+-- ---------------------------
+-- Graph Relations v0 (Issue #3423)
+-- EvidenceGraph Foundation — TYPE RELATION Edge Tables
+-- Vocabulary: cites, supports_evidence, mentions
+-- ---------------------------
+
+-- ---------------------------
+-- artifact_cites_decision
+-- EvidenceGraph: artifact → decision citation link
+-- Vocabulary type: cites (v0)
+-- FROM repo_artifact|doc_page|doc_chunk TO decision_event
+-- ---------------------------
+DEFINE TABLE artifact_cites_decision TYPE RELATION
+  FROM repo_artifact | doc_page | doc_chunk
+  TO decision_event;
+DEFINE FIELD source ON TABLE artifact_cites_decision TYPE string;
+DEFINE FIELD confidence ON TABLE artifact_cites_decision TYPE float;
+DEFINE FIELD timestamp ON TABLE artifact_cites_decision TYPE datetime;
+DEFINE FIELD hash ON TABLE artifact_cites_decision TYPE string;
+DEFINE FIELD comment ON TABLE artifact_cites_decision TYPE string;
+DEFINE FIELD created_at ON TABLE artifact_cites_decision TYPE datetime VALUE $value OR time::now();
+
+-- ---------------------------
+-- memory_supports_decision
+-- EvidenceGraph: agent_memory → decision support link
+-- Vocabulary type: supports_evidence (v0)
+-- FROM agent_memory TO decision_event
+-- ---------------------------
+DEFINE TABLE memory_supports_decision TYPE RELATION
+  FROM agent_memory
+  TO decision_event;
+DEFINE FIELD source ON TABLE memory_supports_decision TYPE string;
+DEFINE FIELD confidence ON TABLE memory_supports_decision TYPE float;
+DEFINE FIELD timestamp ON TABLE memory_supports_decision TYPE datetime;
+DEFINE FIELD hash ON TABLE memory_supports_decision TYPE string;
+DEFINE FIELD comment ON TABLE memory_supports_decision TYPE string;
+DEFINE FIELD created_at ON TABLE memory_supports_decision TYPE datetime VALUE $value OR time::now();
+
+-- ---------------------------
+-- chunk_mentions_symbol
+-- EvidenceGraph: doc_chunk → code_symbol mention link
+-- Vocabulary type: mentions (existing v0)
+-- FROM doc_chunk TO code_symbol
+-- ---------------------------
+DEFINE TABLE chunk_mentions_symbol TYPE RELATION
+  FROM doc_chunk
+  TO code_symbol;
+DEFINE FIELD source ON TABLE chunk_mentions_symbol TYPE string;
+DEFINE FIELD confidence ON TABLE chunk_mentions_symbol TYPE float;
+DEFINE FIELD timestamp ON TABLE chunk_mentions_symbol TYPE datetime;
+DEFINE FIELD hash ON TABLE chunk_mentions_symbol TYPE string;
+DEFINE FIELD mention_context ON TABLE chunk_mentions_symbol TYPE string;
+DEFINE FIELD comment ON TABLE chunk_mentions_symbol TYPE string;
+DEFINE FIELD created_at ON TABLE chunk_mentions_symbol TYPE datetime VALUE $value OR time::now();
 

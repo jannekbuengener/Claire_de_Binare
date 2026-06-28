@@ -1187,6 +1187,108 @@ def _check_coordinator_events(
     )
 
 
+def _check_inconclusive_run(
+    state_payload: Mapping[str, Any] | None,
+    coordinator_events: Sequence[Mapping[str, Any]],
+    observed_window_hours: float,
+    required_window_hours: int,
+    add_finding: Any,
+) -> None:
+    if state_payload is None:
+        return
+    coordinator_status = str(state_payload.get("coordinator_status", "") or "")
+    next_due = str(state_payload.get("next_cycle_due_at_utc", "") or "")
+    has_final_validation = any(
+        e.get("event_type") == "final_validation_started" for e in coordinator_events
+    )
+    observed_cycles = state_payload.get("total_cycles_completed", 0) or 0
+    failed_cycles = state_payload.get("total_failed_cycles", 0) or 0
+    reached_72h = observed_window_hours >= required_window_hours
+    all_pass = isinstance(failed_cycles, int) and failed_cycles == 0
+
+    overdue = False
+    if coordinator_status == "sleeping" and next_due:
+        try:
+            due_at = _parse_ts(next_due, "next_cycle_due_at_utc")
+            if _now_utc() > due_at:
+                overdue = True
+        except OpsValidationError:
+            overdue = True
+
+    if (
+        not reached_72h
+        and not has_final_validation
+        and all_pass
+        and observed_cycles >= 1
+    ):
+        add_finding(
+            "Run outcome: INCONCLUSIVE",
+            "fail",
+            (
+                f"Run ended inconclusively after {observed_window_hours:.2f}h "
+                f"({observed_cycles}/{required_window_hours}h minimum) with "
+                f"{observed_cycles} all-PASS cycles and 0 failed cycles, "
+                f"but no final validation marker exists. "
+                f"Coordinator status was {coordinator_status!r}. "
+                f"Partial evidence is preserved but does not satisfy the "
+                f"{required_window_hours}h requirement."
+            ),
+            artifact="runner_state.json",
+            field_name="coordinator_status",
+        )
+        return
+
+    if (
+        coordinator_status == "sleeping"
+        and overdue
+        and not has_final_validation
+        and not reached_72h
+    ):
+        add_finding(
+            "Run outcome: INCONCLUSIVE (interrupted during sleep)",
+            "fail",
+            (
+                f"Run ended inconclusively: coordinator was sleeping "
+                f"(cycle {observed_cycles}) with overdue next_cycle_due_at_utc "
+                f"({next_due}) but no final validation was ever started. "
+                f"This matches the pattern of a host/process crash during sleep. "
+                f"Partial evidence ({observed_window_hours:.2f}h, {observed_cycles} "
+                f"all-PASS cycles, 0 failures) is preserved but does not satisfy "
+                f"the {required_window_hours}h requirement."
+            ),
+            artifact="runner_state.json",
+            field_name="coordinator_status",
+        )
+
+
+def _check_sleep_lifecycle_completeness(
+    events: Sequence[Mapping[str, Any]],
+    state_payload: Mapping[str, Any] | None,
+    add_finding: Any,
+    *,
+    is_final: bool = True,
+) -> None:
+    if not is_final:
+        return
+    if not events:
+        return
+    last_event = events[-1]
+    if last_event.get("event_type") != "sleep_started":
+        return
+    coordinator_status = ""
+    if state_payload is not None:
+        coordinator_status = str(state_payload.get("coordinator_status", "") or "")
+    add_finding(
+        "Coordinator sleep lifecycle completeness",
+        "warn",
+        f"The coordinator event stream ends with sleep_started "
+        f"and no matching sleep_completed or sleep_overshoot. "
+        f"Coordinator status: {coordinator_status!r}. "
+        f"The run may have been interrupted during sleep.",
+        artifact="coordinator_events.jsonl",
+    )
+
+
 def _check_lifecycle_runner_state_consistency(
     coordinator_events: Sequence[Mapping[str, Any]],
     state_payload: Mapping[str, Any] | None,
@@ -1459,6 +1561,10 @@ def validate_72h_window(
 
     _check_coordinator_events(coordinator_events, add_finding, is_final=is_final)
 
+    _check_sleep_lifecycle_completeness(
+        coordinator_events, state_payload, add_finding, is_final=is_final
+    )
+
     _check_lifecycle_runner_state_consistency(
         coordinator_events,
         state_payload,
@@ -1519,6 +1625,14 @@ def validate_72h_window(
     observed_start, observed_end, observed_hours = _check_window_coverage(
         snapshot_timestamps, required_window_hours, add_finding
     )
+    if is_final:
+        _check_inconclusive_run(
+            state_payload,
+            coordinator_events,
+            observed_hours,
+            required_window_hours,
+            add_finding,
+        )
     if snapshot_timestamps:
         _check_cadence_series(
             "Snapshot", snapshot_timestamps, runner_cadence_seconds, add_finding

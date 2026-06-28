@@ -1,0 +1,1325 @@
+{
+  "source_file": "D:\\Dev\\Workspaces\\Repos\\Claire_de_Binare\\infrastructure\\surrealdb\\context_intelligence_v0.surql",
+  "generated_at": "2026-06-24T18:31:37.063831+00:00",
+  "schema_hash": "15d82aa2e0baae1d4bc455666f88ce1245d690eb69735d676651dcf646d64a5b",
+  "table_count": 21,
+  "relation_table_count": 3,
+  "field_count": 245,
+  "index_count": 75,
+  "analyzer_count": 1,
+  "tables": [
+    "agent_memory",
+    "artifact_cites_decision",
+    "audit_observation",
+    "chunk_mentions_symbol",
+    "claim",
+    "code_symbol",
+    "concept",
+    "context_query",
+    "contradiction",
+    "decision_event",
+    "dependency_edge",
+    "doc_chunk",
+    "doc_page",
+    "doc_section",
+    "evidence_ref",
+    "knowledge_quality_score",
+    "memory_supports_decision",
+    "repo_artifact",
+    "scope_drift_event",
+    "stale_context",
+    "visual_control_view"
+  ],
+  "relation_tables": [
+    "artifact_cites_decision",
+    "chunk_mentions_symbol",
+    "memory_supports_decision"
+  ],
+  "fields": [
+    {
+      "field": "comment",
+      "table": "agent_memory"
+    },
+    {
+      "field": "confidence",
+      "table": "agent_memory"
+    },
+    {
+      "field": "content",
+      "table": "agent_memory"
+    },
+    {
+      "field": "created_at",
+      "table": "agent_memory"
+    },
+    {
+      "field": "created_by",
+      "table": "agent_memory"
+    },
+    {
+      "field": "evidence_refs",
+      "table": "agent_memory"
+    },
+    {
+      "field": "expires_at",
+      "table": "agent_memory"
+    },
+    {
+      "field": "memory_id",
+      "table": "agent_memory"
+    },
+    {
+      "field": "memory_type",
+      "table": "agent_memory"
+    },
+    {
+      "field": "namespace",
+      "table": "agent_memory"
+    },
+    {
+      "field": "scope",
+      "table": "agent_memory"
+    },
+    {
+      "field": "source_refs",
+      "table": "agent_memory"
+    },
+    {
+      "field": "stale_after",
+      "table": "agent_memory"
+    },
+    {
+      "field": "superseded_by",
+      "table": "agent_memory"
+    },
+    {
+      "field": "ttl",
+      "table": "agent_memory"
+    },
+    {
+      "field": "comment",
+      "table": "artifact_cites_decision"
+    },
+    {
+      "field": "confidence",
+      "table": "artifact_cites_decision"
+    },
+    {
+      "field": "created_at",
+      "table": "artifact_cites_decision"
+    },
+    {
+      "field": "hash",
+      "table": "artifact_cites_decision"
+    },
+    {
+      "field": "source",
+      "table": "artifact_cites_decision"
+    },
+    {
+      "field": "timestamp",
+      "table": "artifact_cites_decision"
+    },
+    {
+      "field": "comment",
+      "table": "audit_observation"
+    },
+    {
+      "field": "confidence",
+      "table": "audit_observation"
+    },
+    {
+      "field": "created_at",
+      "table": "audit_observation"
+    },
+    {
+      "field": "evidence_refs",
+      "table": "audit_observation"
+    },
+    {
+      "field": "message",
+      "table": "audit_observation"
+    },
+    {
+      "field": "observation_id",
+      "table": "audit_observation"
+    },
+    {
+      "field": "observation_type",
+      "table": "audit_observation"
+    },
+    {
+      "field": "observed_at",
+      "table": "audit_observation"
+    },
+    {
+      "field": "observed_by",
+      "table": "audit_observation"
+    },
+    {
+      "field": "related_claims",
+      "table": "audit_observation"
+    },
+    {
+      "field": "related_decisions",
+      "table": "audit_observation"
+    },
+    {
+      "field": "related_memory",
+      "table": "audit_observation"
+    },
+    {
+      "field": "severity",
+      "table": "audit_observation"
+    },
+    {
+      "field": "status",
+      "table": "audit_observation"
+    },
+    {
+      "field": "subject_ref",
+      "table": "audit_observation"
+    },
+    {
+      "field": "comment",
+      "table": "chunk_mentions_symbol"
+    },
+    {
+      "field": "confidence",
+      "table": "chunk_mentions_symbol"
+    },
+    {
+      "field": "created_at",
+      "table": "chunk_mentions_symbol"
+    },
+    {
+      "field": "hash",
+      "table": "chunk_mentions_symbol"
+    },
+    {
+      "field": "mention_context",
+      "table": "chunk_mentions_symbol"
+    },
+    {
+      "field": "source",
+      "table": "chunk_mentions_symbol"
+    },
+    {
+      "field": "timestamp",
+      "table": "chunk_mentions_symbol"
+    },
+    {
+      "field": "claim_id",
+      "table": "claim"
+    },
+    {
+      "field": "comment",
+      "table": "claim"
+    },
+    {
+      "field": "confidence",
+      "table": "claim"
+    },
+    {
+      "field": "created_at",
+      "table": "claim"
+    },
+    {
+      "field": "evidence_refs",
+      "table": "claim"
+    },
+    {
+      "field": "scope",
+      "table": "claim"
+    },
+    {
+      "field": "source_refs",
+      "table": "claim"
+    },
+    {
+      "field": "statement",
+      "table": "claim"
+    },
+    {
+      "field": "status",
+      "table": "claim"
+    },
+    {
+      "field": "title",
+      "table": "claim"
+    },
+    {
+      "field": "comment",
+      "table": "code_symbol"
+    },
+    {
+      "field": "confidence",
+      "table": "code_symbol"
+    },
+    {
+      "field": "created_at",
+      "table": "code_symbol"
+    },
+    {
+      "field": "file_path",
+      "table": "code_symbol"
+    },
+    {
+      "field": "language",
+      "table": "code_symbol"
+    },
+    {
+      "field": "name",
+      "table": "code_symbol"
+    },
+    {
+      "field": "qualified_name",
+      "table": "code_symbol"
+    },
+    {
+      "field": "source_commit",
+      "table": "code_symbol"
+    },
+    {
+      "field": "source_hash",
+      "table": "code_symbol"
+    },
+    {
+      "field": "span_end_line",
+      "table": "code_symbol"
+    },
+    {
+      "field": "span_start_line",
+      "table": "code_symbol"
+    },
+    {
+      "field": "symbol_id",
+      "table": "code_symbol"
+    },
+    {
+      "field": "symbol_kind",
+      "table": "code_symbol"
+    },
+    {
+      "field": "comment",
+      "table": "concept"
+    },
+    {
+      "field": "concept_id",
+      "table": "concept"
+    },
+    {
+      "field": "confidence",
+      "table": "concept"
+    },
+    {
+      "field": "created_at",
+      "table": "concept"
+    },
+    {
+      "field": "description",
+      "table": "concept"
+    },
+    {
+      "field": "evidence_refs",
+      "table": "concept"
+    },
+    {
+      "field": "freshness",
+      "table": "concept"
+    },
+    {
+      "field": "name",
+      "table": "concept"
+    },
+    {
+      "field": "source_refs",
+      "table": "concept"
+    },
+    {
+      "field": "tags",
+      "table": "concept"
+    },
+    {
+      "field": "comment",
+      "table": "context_query"
+    },
+    {
+      "field": "confidence",
+      "table": "context_query"
+    },
+    {
+      "field": "context_refs",
+      "table": "context_query"
+    },
+    {
+      "field": "created_at",
+      "table": "context_query"
+    },
+    {
+      "field": "query_id",
+      "table": "context_query"
+    },
+    {
+      "field": "query_text",
+      "table": "context_query"
+    },
+    {
+      "field": "query_type",
+      "table": "context_query"
+    },
+    {
+      "field": "claim_refs",
+      "table": "contradiction"
+    },
+    {
+      "field": "comment",
+      "table": "contradiction"
+    },
+    {
+      "field": "confidence",
+      "table": "contradiction"
+    },
+    {
+      "field": "contradiction_id",
+      "table": "contradiction"
+    },
+    {
+      "field": "contradiction_type",
+      "table": "contradiction"
+    },
+    {
+      "field": "created_at",
+      "table": "contradiction"
+    },
+    {
+      "field": "detected_at",
+      "table": "contradiction"
+    },
+    {
+      "field": "detected_by",
+      "table": "contradiction"
+    },
+    {
+      "field": "evidence_refs",
+      "table": "contradiction"
+    },
+    {
+      "field": "recommended_action",
+      "table": "contradiction"
+    },
+    {
+      "field": "severity",
+      "table": "contradiction"
+    },
+    {
+      "field": "source_a_ref",
+      "table": "contradiction"
+    },
+    {
+      "field": "source_b_ref",
+      "table": "contradiction"
+    },
+    {
+      "field": "status",
+      "table": "contradiction"
+    },
+    {
+      "field": "affected_artifacts",
+      "table": "decision_event"
+    },
+    {
+      "field": "agent",
+      "table": "decision_event"
+    },
+    {
+      "field": "answer",
+      "table": "decision_event"
+    },
+    {
+      "field": "claim_refs",
+      "table": "decision_event"
+    },
+    {
+      "field": "comment",
+      "table": "decision_event"
+    },
+    {
+      "field": "confidence",
+      "table": "decision_event"
+    },
+    {
+      "field": "created_at",
+      "table": "decision_event"
+    },
+    {
+      "field": "decision_id",
+      "table": "decision_event"
+    },
+    {
+      "field": "decision_type",
+      "table": "decision_event"
+    },
+    {
+      "field": "evidence_refs",
+      "table": "decision_event"
+    },
+    {
+      "field": "human_go",
+      "table": "decision_event"
+    },
+    {
+      "field": "invalidated_by",
+      "table": "decision_event"
+    },
+    {
+      "field": "question",
+      "table": "decision_event"
+    },
+    {
+      "field": "scope",
+      "table": "decision_event"
+    },
+    {
+      "field": "status",
+      "table": "decision_event"
+    },
+    {
+      "field": "superseded_by",
+      "table": "decision_event"
+    },
+    {
+      "field": "title",
+      "table": "decision_event"
+    },
+    {
+      "field": "uncertainty",
+      "table": "decision_event"
+    },
+    {
+      "field": "comment",
+      "table": "dependency_edge"
+    },
+    {
+      "field": "confidence",
+      "table": "dependency_edge"
+    },
+    {
+      "field": "created_at",
+      "table": "dependency_edge"
+    },
+    {
+      "field": "edge_id",
+      "table": "dependency_edge"
+    },
+    {
+      "field": "edge_type",
+      "table": "dependency_edge"
+    },
+    {
+      "field": "evidence_level",
+      "table": "dependency_edge"
+    },
+    {
+      "field": "from_ref",
+      "table": "dependency_edge"
+    },
+    {
+      "field": "inferred",
+      "table": "dependency_edge"
+    },
+    {
+      "field": "source_ref",
+      "table": "dependency_edge"
+    },
+    {
+      "field": "to_ref",
+      "table": "dependency_edge"
+    },
+    {
+      "field": "chunk_id",
+      "table": "doc_chunk"
+    },
+    {
+      "field": "chunk_index",
+      "table": "doc_chunk"
+    },
+    {
+      "field": "comment",
+      "table": "doc_chunk"
+    },
+    {
+      "field": "confidence",
+      "table": "doc_chunk"
+    },
+    {
+      "field": "content",
+      "table": "doc_chunk"
+    },
+    {
+      "field": "content_hash",
+      "table": "doc_chunk"
+    },
+    {
+      "field": "created_at",
+      "table": "doc_chunk"
+    },
+    {
+      "field": "embedding",
+      "table": "doc_chunk"
+    },
+    {
+      "field": "page_ref",
+      "table": "doc_chunk"
+    },
+    {
+      "field": "section_ref",
+      "table": "doc_chunk"
+    },
+    {
+      "field": "source_hash",
+      "table": "doc_chunk"
+    },
+    {
+      "field": "tokens_estimate",
+      "table": "doc_chunk"
+    },
+    {
+      "field": "comment",
+      "table": "doc_page"
+    },
+    {
+      "field": "confidence",
+      "table": "doc_page"
+    },
+    {
+      "field": "created_at",
+      "table": "doc_page"
+    },
+    {
+      "field": "doc_format",
+      "table": "doc_page"
+    },
+    {
+      "field": "freshness",
+      "table": "doc_page"
+    },
+    {
+      "field": "observed_at",
+      "table": "doc_page"
+    },
+    {
+      "field": "page_id",
+      "table": "doc_page"
+    },
+    {
+      "field": "source_commit",
+      "table": "doc_page"
+    },
+    {
+      "field": "source_hash",
+      "table": "doc_page"
+    },
+    {
+      "field": "source_path",
+      "table": "doc_page"
+    },
+    {
+      "field": "source_url",
+      "table": "doc_page"
+    },
+    {
+      "field": "title",
+      "table": "doc_page"
+    },
+    {
+      "field": "comment",
+      "table": "doc_section"
+    },
+    {
+      "field": "confidence",
+      "table": "doc_section"
+    },
+    {
+      "field": "created_at",
+      "table": "doc_section"
+    },
+    {
+      "field": "heading",
+      "table": "doc_section"
+    },
+    {
+      "field": "heading_path",
+      "table": "doc_section"
+    },
+    {
+      "field": "page_ref",
+      "table": "doc_section"
+    },
+    {
+      "field": "section_id",
+      "table": "doc_section"
+    },
+    {
+      "field": "section_index",
+      "table": "doc_section"
+    },
+    {
+      "field": "source_hash",
+      "table": "doc_section"
+    },
+    {
+      "field": "span_end_line",
+      "table": "doc_section"
+    },
+    {
+      "field": "span_start_line",
+      "table": "doc_section"
+    },
+    {
+      "field": "collected_at",
+      "table": "evidence_ref"
+    },
+    {
+      "field": "comment",
+      "table": "evidence_ref"
+    },
+    {
+      "field": "confidence",
+      "table": "evidence_ref"
+    },
+    {
+      "field": "created_at",
+      "table": "evidence_ref"
+    },
+    {
+      "field": "evidence_id",
+      "table": "evidence_ref"
+    },
+    {
+      "field": "evidence_type",
+      "table": "evidence_ref"
+    },
+    {
+      "field": "freshness",
+      "table": "evidence_ref"
+    },
+    {
+      "field": "invalidates",
+      "table": "evidence_ref"
+    },
+    {
+      "field": "observed_by",
+      "table": "evidence_ref"
+    },
+    {
+      "field": "related_artifacts",
+      "table": "evidence_ref"
+    },
+    {
+      "field": "related_decisions",
+      "table": "evidence_ref"
+    },
+    {
+      "field": "source_commit",
+      "table": "evidence_ref"
+    },
+    {
+      "field": "source_hash",
+      "table": "evidence_ref"
+    },
+    {
+      "field": "source_path",
+      "table": "evidence_ref"
+    },
+    {
+      "field": "source_url",
+      "table": "evidence_ref"
+    },
+    {
+      "field": "validates",
+      "table": "evidence_ref"
+    },
+    {
+      "field": "comment",
+      "table": "knowledge_quality_score"
+    },
+    {
+      "field": "computed_at",
+      "table": "knowledge_quality_score"
+    },
+    {
+      "field": "computed_by",
+      "table": "knowledge_quality_score"
+    },
+    {
+      "field": "confidence",
+      "table": "knowledge_quality_score"
+    },
+    {
+      "field": "created_at",
+      "table": "knowledge_quality_score"
+    },
+    {
+      "field": "dimensions",
+      "table": "knowledge_quality_score"
+    },
+    {
+      "field": "score",
+      "table": "knowledge_quality_score"
+    },
+    {
+      "field": "score_id",
+      "table": "knowledge_quality_score"
+    },
+    {
+      "field": "scoring_model",
+      "table": "knowledge_quality_score"
+    },
+    {
+      "field": "subject_ref",
+      "table": "knowledge_quality_score"
+    },
+    {
+      "field": "comment",
+      "table": "memory_supports_decision"
+    },
+    {
+      "field": "confidence",
+      "table": "memory_supports_decision"
+    },
+    {
+      "field": "created_at",
+      "table": "memory_supports_decision"
+    },
+    {
+      "field": "hash",
+      "table": "memory_supports_decision"
+    },
+    {
+      "field": "source",
+      "table": "memory_supports_decision"
+    },
+    {
+      "field": "timestamp",
+      "table": "memory_supports_decision"
+    },
+    {
+      "field": "artifact_id",
+      "table": "repo_artifact"
+    },
+    {
+      "field": "artifact_type",
+      "table": "repo_artifact"
+    },
+    {
+      "field": "comment",
+      "table": "repo_artifact"
+    },
+    {
+      "field": "confidence",
+      "table": "repo_artifact"
+    },
+    {
+      "field": "created_at",
+      "table": "repo_artifact"
+    },
+    {
+      "field": "freshness",
+      "table": "repo_artifact"
+    },
+    {
+      "field": "integrity_algo",
+      "table": "repo_artifact"
+    },
+    {
+      "field": "mime_type",
+      "table": "repo_artifact"
+    },
+    {
+      "field": "observed_at",
+      "table": "repo_artifact"
+    },
+    {
+      "field": "size_bytes",
+      "table": "repo_artifact"
+    },
+    {
+      "field": "source_commit",
+      "table": "repo_artifact"
+    },
+    {
+      "field": "source_hash",
+      "table": "repo_artifact"
+    },
+    {
+      "field": "source_path",
+      "table": "repo_artifact"
+    },
+    {
+      "field": "source_url",
+      "table": "repo_artifact"
+    },
+    {
+      "field": "comment",
+      "table": "scope_drift_event"
+    },
+    {
+      "field": "confidence",
+      "table": "scope_drift_event"
+    },
+    {
+      "field": "created_at",
+      "table": "scope_drift_event"
+    },
+    {
+      "field": "detected_at",
+      "table": "scope_drift_event"
+    },
+    {
+      "field": "detected_by",
+      "table": "scope_drift_event"
+    },
+    {
+      "field": "drift_id",
+      "table": "scope_drift_event"
+    },
+    {
+      "field": "event_type",
+      "table": "scope_drift_event"
+    },
+    {
+      "field": "evidence_refs",
+      "table": "scope_drift_event"
+    },
+    {
+      "field": "message",
+      "table": "scope_drift_event"
+    },
+    {
+      "field": "scope",
+      "table": "scope_drift_event"
+    },
+    {
+      "field": "status",
+      "table": "scope_drift_event"
+    },
+    {
+      "field": "subject_ref",
+      "table": "scope_drift_event"
+    },
+    {
+      "field": "comment",
+      "table": "stale_context"
+    },
+    {
+      "field": "confidence",
+      "table": "stale_context"
+    },
+    {
+      "field": "created_at",
+      "table": "stale_context"
+    },
+    {
+      "field": "detected_at",
+      "table": "stale_context"
+    },
+    {
+      "field": "detected_by",
+      "table": "stale_context"
+    },
+    {
+      "field": "evidence_refs",
+      "table": "stale_context"
+    },
+    {
+      "field": "reason",
+      "table": "stale_context"
+    },
+    {
+      "field": "severity",
+      "table": "stale_context"
+    },
+    {
+      "field": "source_refs",
+      "table": "stale_context"
+    },
+    {
+      "field": "stale_id",
+      "table": "stale_context"
+    },
+    {
+      "field": "status",
+      "table": "stale_context"
+    },
+    {
+      "field": "subject_ref",
+      "table": "stale_context"
+    },
+    {
+      "field": "created_at",
+      "table": "visual_control_view"
+    },
+    {
+      "field": "data_sources",
+      "table": "visual_control_view"
+    },
+    {
+      "field": "display_edges",
+      "table": "visual_control_view"
+    },
+    {
+      "field": "display_entities",
+      "table": "visual_control_view"
+    },
+    {
+      "field": "export_formats",
+      "table": "visual_control_view"
+    },
+    {
+      "field": "filters",
+      "table": "visual_control_view"
+    },
+    {
+      "field": "generated_at",
+      "table": "visual_control_view"
+    },
+    {
+      "field": "generated_by",
+      "table": "visual_control_view"
+    },
+    {
+      "field": "guardrails",
+      "table": "visual_control_view"
+    },
+    {
+      "field": "required_queries",
+      "table": "visual_control_view"
+    },
+    {
+      "field": "target_scope",
+      "table": "visual_control_view"
+    },
+    {
+      "field": "view_id",
+      "table": "visual_control_view"
+    },
+    {
+      "field": "view_label",
+      "table": "visual_control_view"
+    },
+    {
+      "field": "view_type",
+      "table": "visual_control_view"
+    },
+    {
+      "field": "warnings",
+      "table": "visual_control_view"
+    }
+  ],
+  "indexes": [
+    {
+      "index": "idx_agent_memory_created_at",
+      "table": "agent_memory"
+    },
+    {
+      "index": "idx_agent_memory_memory_id_unique",
+      "table": "agent_memory"
+    },
+    {
+      "index": "idx_agent_memory_namespace",
+      "table": "agent_memory"
+    },
+    {
+      "index": "idx_agent_memory_scope",
+      "table": "agent_memory"
+    },
+    {
+      "index": "idx_audit_observation_created_at",
+      "table": "audit_observation"
+    },
+    {
+      "index": "idx_audit_observation_observation_id_unique",
+      "table": "audit_observation"
+    },
+    {
+      "index": "idx_audit_observation_observed_at",
+      "table": "audit_observation"
+    },
+    {
+      "index": "idx_audit_observation_severity",
+      "table": "audit_observation"
+    },
+    {
+      "index": "idx_audit_observation_status",
+      "table": "audit_observation"
+    },
+    {
+      "index": "idx_audit_observation_type",
+      "table": "audit_observation"
+    },
+    {
+      "index": "idx_claim_claim_id_unique",
+      "table": "claim"
+    },
+    {
+      "index": "idx_claim_created_at",
+      "table": "claim"
+    },
+    {
+      "index": "idx_claim_status",
+      "table": "claim"
+    },
+    {
+      "index": "idx_code_symbol_created_at",
+      "table": "code_symbol"
+    },
+    {
+      "index": "idx_code_symbol_file_path",
+      "table": "code_symbol"
+    },
+    {
+      "index": "idx_code_symbol_qualified_name",
+      "table": "code_symbol"
+    },
+    {
+      "index": "idx_code_symbol_symbol_id_unique",
+      "table": "code_symbol"
+    },
+    {
+      "index": "idx_concept_concept_id_unique",
+      "table": "concept"
+    },
+    {
+      "index": "idx_concept_created_at",
+      "table": "concept"
+    },
+    {
+      "index": "idx_concept_name",
+      "table": "concept"
+    },
+    {
+      "index": "idx_context_query_created_at",
+      "table": "context_query"
+    },
+    {
+      "index": "idx_context_query_query_id_unique",
+      "table": "context_query"
+    },
+    {
+      "index": "idx_context_query_query_type",
+      "table": "context_query"
+    },
+    {
+      "index": "idx_contradiction_created_at",
+      "table": "contradiction"
+    },
+    {
+      "index": "idx_contradiction_detected_at",
+      "table": "contradiction"
+    },
+    {
+      "index": "idx_contradiction_id_unique",
+      "table": "contradiction"
+    },
+    {
+      "index": "idx_contradiction_status",
+      "table": "contradiction"
+    },
+    {
+      "index": "idx_decision_event_created_at",
+      "table": "decision_event"
+    },
+    {
+      "index": "idx_decision_event_decision_id_unique",
+      "table": "decision_event"
+    },
+    {
+      "index": "idx_decision_event_status",
+      "table": "decision_event"
+    },
+    {
+      "index": "idx_dependency_edge_created_at",
+      "table": "dependency_edge"
+    },
+    {
+      "index": "idx_dependency_edge_from_ref",
+      "table": "dependency_edge"
+    },
+    {
+      "index": "idx_dependency_edge_id_unique",
+      "table": "dependency_edge"
+    },
+    {
+      "index": "idx_dependency_edge_to_ref",
+      "table": "dependency_edge"
+    },
+    {
+      "index": "idx_dependency_edge_type",
+      "table": "dependency_edge"
+    },
+    {
+      "index": "idx_doc_chunk_chunk_id_unique",
+      "table": "doc_chunk"
+    },
+    {
+      "index": "idx_doc_chunk_content_ft",
+      "table": "doc_chunk"
+    },
+    {
+      "index": "idx_doc_chunk_content_hash",
+      "table": "doc_chunk"
+    },
+    {
+      "index": "idx_doc_chunk_created_at",
+      "table": "doc_chunk"
+    },
+    {
+      "index": "idx_doc_chunk_embedding_hnsw",
+      "table": "doc_chunk"
+    },
+    {
+      "index": "idx_doc_chunk_page_ref",
+      "table": "doc_chunk"
+    },
+    {
+      "index": "idx_doc_chunk_section_ref",
+      "table": "doc_chunk"
+    },
+    {
+      "index": "idx_doc_page_created_at",
+      "table": "doc_page"
+    },
+    {
+      "index": "idx_doc_page_page_id_unique",
+      "table": "doc_page"
+    },
+    {
+      "index": "idx_doc_page_source_hash",
+      "table": "doc_page"
+    },
+    {
+      "index": "idx_doc_page_source_path",
+      "table": "doc_page"
+    },
+    {
+      "index": "idx_doc_section_created_at",
+      "table": "doc_section"
+    },
+    {
+      "index": "idx_doc_section_page_ref",
+      "table": "doc_section"
+    },
+    {
+      "index": "idx_doc_section_section_id_unique",
+      "table": "doc_section"
+    },
+    {
+      "index": "idx_evidence_ref_collected_at",
+      "table": "evidence_ref"
+    },
+    {
+      "index": "idx_evidence_ref_created_at",
+      "table": "evidence_ref"
+    },
+    {
+      "index": "idx_evidence_ref_evidence_id_unique",
+      "table": "evidence_ref"
+    },
+    {
+      "index": "idx_evidence_ref_source_hash",
+      "table": "evidence_ref"
+    },
+    {
+      "index": "idx_evidence_ref_source_path",
+      "table": "evidence_ref"
+    },
+    {
+      "index": "idx_knowledge_quality_computed_at",
+      "table": "knowledge_quality_score"
+    },
+    {
+      "index": "idx_knowledge_quality_created_at",
+      "table": "knowledge_quality_score"
+    },
+    {
+      "index": "idx_knowledge_quality_score_id_unique",
+      "table": "knowledge_quality_score"
+    },
+    {
+      "index": "idx_knowledge_quality_subject_ref",
+      "table": "knowledge_quality_score"
+    },
+    {
+      "index": "idx_repo_artifact_artifact_id_unique",
+      "table": "repo_artifact"
+    },
+    {
+      "index": "idx_repo_artifact_created_at",
+      "table": "repo_artifact"
+    },
+    {
+      "index": "idx_repo_artifact_source_hash",
+      "table": "repo_artifact"
+    },
+    {
+      "index": "idx_repo_artifact_source_path",
+      "table": "repo_artifact"
+    },
+    {
+      "index": "idx_scope_drift_created_at",
+      "table": "scope_drift_event"
+    },
+    {
+      "index": "idx_scope_drift_event_type",
+      "table": "scope_drift_event"
+    },
+    {
+      "index": "idx_scope_drift_id_unique",
+      "table": "scope_drift_event"
+    },
+    {
+      "index": "idx_scope_drift_status",
+      "table": "scope_drift_event"
+    },
+    {
+      "index": "idx_stale_context_created_at",
+      "table": "stale_context"
+    },
+    {
+      "index": "idx_stale_context_detected_at",
+      "table": "stale_context"
+    },
+    {
+      "index": "idx_stale_context_stale_id_unique",
+      "table": "stale_context"
+    },
+    {
+      "index": "idx_stale_context_status",
+      "table": "stale_context"
+    },
+    {
+      "index": "idx_visual_control_view_created_at",
+      "table": "visual_control_view"
+    },
+    {
+      "index": "idx_visual_control_view_generated_at",
+      "table": "visual_control_view"
+    },
+    {
+      "index": "idx_visual_control_view_id_unique",
+      "table": "visual_control_view"
+    },
+    {
+      "index": "idx_visual_control_view_scope",
+      "table": "visual_control_view"
+    },
+    {
+      "index": "idx_visual_control_view_type",
+      "table": "visual_control_view"
+    }
+  ],
+  "analyzers": [
+    "cdb_code_analyzer"
+  ]
+}

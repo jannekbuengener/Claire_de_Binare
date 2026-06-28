@@ -21,6 +21,7 @@ Repo-versionierte Session-Skills für Cursor Agents. Jeder Skill lebt in `<name>
 
 | Skill | Zweck |
 |---|---|
+| [`cdb-test-first`](cdb-test-first/SKILL.md) | Test-first planning, testarten, metadaten |
 | [`cdb-trading-core`](cdb-trading-core/SKILL.md) | Trading core |
 | [`cdb-risk-governance`](cdb-risk-governance/SKILL.md) | Risk governance |
 | [`cdb-exchange-adapters`](cdb-exchange-adapters/SKILL.md) | Exchange adapters |
