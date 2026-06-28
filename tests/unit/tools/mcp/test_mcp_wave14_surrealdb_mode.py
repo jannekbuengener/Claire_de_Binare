@@ -1284,8 +1284,336 @@ def test_trust_summary_db_mode_adapter_signals_always_supplied(monkeypatch) -> N
         f"Expected record_source=surrealdb-local (derived, not caller-supplied), "
         f"got: {signals}"
     )
-    assert signals.get("repo_crosscheck_present") is True
     assert signals.get("caller_supplied_source_only") is False
+
+
+@pytest.mark.unit
+def test_trust_summary_db_mode_repo_crosscheck_from_records(monkeypatch) -> None:
+    """repo_crosscheck_present is True when adapter records have source_path."""
+    ev_with_source: dict[str, Any] = {
+        "evidence_id": "ev-source-001",
+        "source_path": "tools/surrealdb/evidence_lookup.py",
+        "scope": "wave14",
+        "created_at": "2026-01-01T00:00:00Z",
+    }
+    mock_adapter = MagicMock(spec=QueryAdapter)
+    mock_adapter.status = "surrealdb-local"
+    mock_adapter.execute.side_effect = [
+        [ev_with_source],
+        [],
+        [],
+        [],
+    ]
+    _patch_adapter_factory(
+        monkeypatch,
+        "tools.mcp.context_evidence_memory_tools.build_adapter_from_params",
+        mock_adapter,
+    )
+
+    result = handle_cdb_context_trust_summary(
+        {
+            "tool": TOOL_CDB_CONTEXT_TRUST_SUMMARY,
+            "parameters": {
+                "adapter_config_path": _FAKE_CONFIG_PATH,
+                "scope": "wave14",
+            },
+        }
+    )
+
+    assert result["status"] == "ok", result
+    signals = (
+        result["result"].get("operator_trust_mapping", {}).get("context_signals", {})
+    )
+    assert signals.get("repo_crosscheck_present") is True, (
+        f"Expected repo_crosscheck_present=True when records have source_path, "
+        f"got: {signals}"
+    )
+
+
+@pytest.mark.unit
+def test_trust_summary_db_mode_repo_crosscheck_from_source_hash(
+    monkeypatch,
+) -> None:
+    """source_hash-only provenance must count for matched evidence rows."""
+    ev_with_source_hash: dict[str, Any] = {
+        "evidence_id": "ev-source-hash-001",
+        "source_hash": "sha256:abc123",
+        "scope": "wave14",
+        "created_at": "2026-01-01T00:00:00Z",
+    }
+    mock_adapter = MagicMock(spec=QueryAdapter)
+    mock_adapter.status = "surrealdb-local"
+    mock_adapter.execute.side_effect = [
+        [ev_with_source_hash],
+        [],
+        [],
+        [],
+    ]
+    _patch_adapter_factory(
+        monkeypatch,
+        "tools.mcp.context_evidence_memory_tools.build_adapter_from_params",
+        mock_adapter,
+    )
+
+    result = handle_cdb_context_trust_summary(
+        {
+            "tool": TOOL_CDB_CONTEXT_TRUST_SUMMARY,
+            "parameters": {
+                "adapter_config_path": _FAKE_CONFIG_PATH,
+                "scope": "wave14",
+            },
+        }
+    )
+
+    assert result["status"] == "ok", result
+    signals = (
+        result["result"].get("operator_trust_mapping", {}).get("context_signals", {})
+    )
+    assert signals.get("repo_crosscheck_present") is True, (
+        f"Expected repo_crosscheck_present=True when records have source_hash, "
+        f"got: {signals}"
+    )
+
+
+@pytest.mark.unit
+def test_trust_summary_db_mode_repo_crosscheck_missing(monkeypatch) -> None:
+    """repo_crosscheck_present is False when adapter records have no repo fields."""
+    mock_adapter = MagicMock(spec=QueryAdapter)
+    mock_adapter.status = "surrealdb-local"
+    mock_adapter.execute.side_effect = [
+        [_EVIDENCE_RECORD],
+        [_CLAIM_RECORD],
+        [_MEMORY_RECORD],
+        [_DECISION_RECORD],
+    ]
+    _patch_adapter_factory(
+        monkeypatch,
+        "tools.mcp.context_evidence_memory_tools.build_adapter_from_params",
+        mock_adapter,
+    )
+
+    result = handle_cdb_context_trust_summary(
+        {
+            "tool": TOOL_CDB_CONTEXT_TRUST_SUMMARY,
+            "parameters": {
+                "adapter_config_path": _FAKE_CONFIG_PATH,
+                "scope": "wave14",
+            },
+        }
+    )
+
+    assert result["status"] == "ok", result
+    signals = (
+        result["result"].get("operator_trust_mapping", {}).get("context_signals", {})
+    )
+    assert signals.get("repo_crosscheck_present") is False, (
+        f"Expected repo_crosscheck_present=False when records lack repo fields, "
+        f"got: {signals}"
+    )
+
+
+@pytest.mark.unit
+def test_trust_summary_db_mode_repo_crosscheck_scope_isolated(monkeypatch) -> None:
+    """Out-of-scope records with source_path must not set repo_crosscheck_present.
+
+    Only records matching the trust summary scope should contribute to the
+    repo crosscheck signal. An unrelated scope with repo provenance must
+    not falsely enable HIGH for a different scope.
+    """
+    out_of_scope: dict[str, Any] = {
+        "evidence_id": "ev-other-scope",
+        "source_path": "docs/other.md",
+        "scope": "wave17",
+    }
+    mock_adapter = MagicMock(spec=QueryAdapter)
+    mock_adapter.status = "surrealdb-local"
+    mock_adapter.execute.side_effect = [
+        [out_of_scope],
+        [],
+        [],
+        [],
+    ]
+    _patch_adapter_factory(
+        monkeypatch,
+        "tools.mcp.context_evidence_memory_tools.build_adapter_from_params",
+        mock_adapter,
+    )
+
+    result = handle_cdb_context_trust_summary(
+        {
+            "tool": TOOL_CDB_CONTEXT_TRUST_SUMMARY,
+            "parameters": {
+                "adapter_config_path": _FAKE_CONFIG_PATH,
+                "scope": "wave14",
+            },
+        }
+    )
+
+    assert result["status"] == "ok", result
+    signals = (
+        result["result"].get("operator_trust_mapping", {}).get("context_signals", {})
+    )
+    assert signals.get("repo_crosscheck_present") is False, (
+        f"Expected repo_crosscheck_present=False when only out-of-scope records "
+        f"have source_path, got: {signals}"
+    )
+    # Without repo crosscheck the level must be capped at MEDIUM
+    assert (
+        result["result"].get("operator_trust_level") != "HIGH"
+    ), "Must not reach HIGH without in-scope repo evidence"
+
+
+@pytest.mark.unit
+def test_trust_summary_db_mode_repo_crosscheck_scope_isolated_with_artifact(
+    monkeypatch,
+) -> None:
+    """Out-of-scope evidence with source_path must not set repo_crosscheck_present
+    even when artifact is specified (artifact path builds _ev_input from all rows)."""
+    out_of_scope_ev: dict[str, Any] = {
+        "evidence_id": "ev-artifact-other-scope",
+        "source_path": "tools/surrealdb/evidence_lookup.py",
+        "scope": "wave17",
+        "artifact_refs": ["tools/surrealdb/evidence_lookup.py"],
+    }
+    mock_adapter = MagicMock(spec=QueryAdapter)
+    mock_adapter.status = "surrealdb-local"
+    mock_adapter.execute.side_effect = [
+        [out_of_scope_ev],
+        [],
+        [],
+        [],
+    ]
+    _patch_adapter_factory(
+        monkeypatch,
+        "tools.mcp.context_evidence_memory_tools.build_adapter_from_params",
+        mock_adapter,
+    )
+
+    result = handle_cdb_context_trust_summary(
+        {
+            "tool": TOOL_CDB_CONTEXT_TRUST_SUMMARY,
+            "parameters": {
+                "adapter_config_path": _FAKE_CONFIG_PATH,
+                "scope": "wave14",
+                "artifact": "tools/surrealdb/evidence_lookup.py",
+            },
+        }
+    )
+
+    assert result["status"] == "ok", result
+    signals = (
+        result["result"].get("operator_trust_mapping", {}).get("context_signals", {})
+    )
+    assert signals.get("repo_crosscheck_present") is False, (
+        f"Expected repo_crosscheck_present=False when only out-of-scope records "
+        f"have source_path (artifact path), got: {signals}"
+    )
+    assert (
+        result["result"].get("operator_trust_level") != "HIGH"
+    ), "Must not reach HIGH without in-scope repo evidence"
+
+
+@pytest.mark.unit
+def test_trust_summary_db_mode_repo_crosscheck_artifact_isolated(monkeypatch) -> None:
+    """Only matched artifact evidence may contribute to repo_crosscheck_present."""
+    matching_artifact_no_source: dict[str, Any] = {
+        "evidence_id": "ev-artifact-match-no-source",
+        "scope": "wave14",
+        "artifact_refs": ["tools/surrealdb/evidence_lookup.py"],
+    }
+    other_artifact_with_source: dict[str, Any] = {
+        "evidence_id": "ev-artifact-other-source",
+        "scope": "wave14",
+        "artifact_refs": ["docs/other.md"],
+        "source_path": "docs/other.md",
+    }
+    mock_adapter = MagicMock(spec=QueryAdapter)
+    mock_adapter.status = "surrealdb-local"
+    mock_adapter.execute.side_effect = [
+        [matching_artifact_no_source, other_artifact_with_source],
+        [],
+        [],
+        [],
+    ]
+    _patch_adapter_factory(
+        monkeypatch,
+        "tools.mcp.context_evidence_memory_tools.build_adapter_from_params",
+        mock_adapter,
+    )
+
+    result = handle_cdb_context_trust_summary(
+        {
+            "tool": TOOL_CDB_CONTEXT_TRUST_SUMMARY,
+            "parameters": {
+                "adapter_config_path": _FAKE_CONFIG_PATH,
+                "scope": "wave14",
+                "artifact": "tools/surrealdb/evidence_lookup.py",
+            },
+        }
+    )
+
+    assert result["status"] == "ok", result
+    signals = (
+        result["result"].get("operator_trust_mapping", {}).get("context_signals", {})
+    )
+    assert signals.get("repo_crosscheck_present") is False, (
+        "Expected repo_crosscheck_present=False when only a different artifact "
+        f"has repo provenance, got: {signals}"
+    )
+    assert (
+        result["result"].get("operator_trust_level") != "HIGH"
+    ), "Must not reach HIGH without matched artifact repo evidence"
+
+
+@pytest.mark.unit
+def test_trust_summary_db_mode_repo_crosscheck_artifact_ignores_memory_provenance(
+    monkeypatch,
+) -> None:
+    """Artifact trust summaries must ignore unrelated same-scope memory provenance."""
+    matching_artifact_no_source: dict[str, Any] = {
+        "evidence_id": "ev-artifact-match-no-source-2",
+        "scope": "wave14",
+        "artifact_refs": ["tools/surrealdb/evidence_lookup.py"],
+    }
+    same_scope_memory_with_repo_ref: dict[str, Any] = {
+        "memory_id": "mem-other-provenance",
+        "scope": "wave14",
+        "artifact_refs": ["docs/other.md"],
+        "source_refs": ["docs/other.md@abc123"],
+    }
+    mock_adapter = MagicMock(spec=QueryAdapter)
+    mock_adapter.status = "surrealdb-local"
+    mock_adapter.execute.side_effect = [
+        [matching_artifact_no_source],
+        [],
+        [same_scope_memory_with_repo_ref],
+        [],
+    ]
+    _patch_adapter_factory(
+        monkeypatch,
+        "tools.mcp.context_evidence_memory_tools.build_adapter_from_params",
+        mock_adapter,
+    )
+
+    result = handle_cdb_context_trust_summary(
+        {
+            "tool": TOOL_CDB_CONTEXT_TRUST_SUMMARY,
+            "parameters": {
+                "adapter_config_path": _FAKE_CONFIG_PATH,
+                "scope": "wave14",
+                "artifact": "tools/surrealdb/evidence_lookup.py",
+            },
+        }
+    )
+
+    assert result["status"] == "ok", result
+    signals = (
+        result["result"].get("operator_trust_mapping", {}).get("context_signals", {})
+    )
+    assert signals.get("repo_crosscheck_present") is False, (
+        "Expected repo_crosscheck_present=False when only unrelated same-scope "
+        f"memory has repo provenance, got: {signals}"
+    )
 
 
 @pytest.mark.unit

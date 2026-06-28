@@ -75,7 +75,7 @@ class TrustContextSignals:
 
     github_live_mismatch: bool = False
     ledger_stale_vs_live: bool = False
-    repo_crosscheck_present: bool = True
+    repo_crosscheck_present: bool = False
     record_source: str | None = None
     caller_supplied_source_only: bool = False
     freshness_ok: bool = True
@@ -91,12 +91,138 @@ class TrustContextSignals:
         return cls(
             github_live_mismatch=bool(raw.get("github_live_mismatch")),
             ledger_stale_vs_live=bool(raw.get("ledger_stale_vs_live")),
-            repo_crosscheck_present=bool(raw.get("repo_crosscheck_present", True)),
+            repo_crosscheck_present=bool(raw.get("repo_crosscheck_present", False)),
             record_source=record_source,
             caller_supplied_source_only=bool(raw.get("caller_supplied_source_only")),
             freshness_ok=bool(raw.get("freshness_ok", True)),
             required_db_records_missing=bool(raw.get("required_db_records_missing")),
         )
+
+
+_REPO_EVIDENCE_FIELDS = frozenset(
+    {"source_path", "source_hash", "source_ref", "source_refs"}
+)
+
+_DIRECT_REPO_PROVENANCE_FIELDS = frozenset({"source_path", "source_hash"})
+_REPO_REF_ALLOWED_EXTENSIONS = frozenset(
+    {
+        "bat",
+        "csv",
+        "html",
+        "ini",
+        "json",
+        "jsonl",
+        "md",
+        "ps1",
+        "py",
+        "sh",
+        "sql",
+        "surql",
+        "toml",
+        "txt",
+        "yaml",
+        "yml",
+    }
+)
+_REPO_REF_ALLOWED_ROOT_NAMES = frozenset(
+    {
+        "AGENTS.md",
+        "CURRENT_STATUS.md",
+        "Dockerfile",
+        "Makefile",
+        "PROJECT_STATUS.md",
+        "README.md",
+    }
+)
+_NON_REPO_REF_PREFIXES = (
+    "tool:",
+    "http://",
+    "https://",
+    "issue:",
+    "pr:",
+    "claim:",
+    "memory:",
+    "decision:",
+    "evidence:",
+    "issuecomment-",
+)
+
+
+def _has_non_empty_provenance_value(value: Any) -> bool:
+    if value is None:
+        return False
+    if isinstance(value, str):
+        return bool(value.strip())
+    if isinstance(value, (list, tuple)):
+        return any(_has_non_empty_provenance_value(item) for item in value)
+    return bool(value)
+
+
+def _looks_like_repo_provenance_ref(value: Any) -> bool:
+    if not isinstance(value, str):
+        return False
+    text = value.strip()
+    if not text:
+        return False
+    lowered = text.lower()
+    if lowered.startswith(_NON_REPO_REF_PREFIXES) or text.startswith("#"):
+        return False
+    if lowered.startswith("path:"):
+        text = text[5:].strip()
+        if not text:
+            return False
+    candidate = text.rsplit("@", 1)[0].strip()
+    if not candidate or " " in candidate:
+        return False
+    normalized = candidate.replace("\\", "/")
+    if (
+        normalized.startswith(("/", "./", "../", "//"))
+        or "/../" in normalized
+        or normalized.endswith("/..")
+    ):
+        return False
+    if len(normalized) >= 2 and normalized[1] == ":" and normalized[0].isalpha():
+        return False
+    name = normalized.rsplit("/", 1)[-1]
+    if name in _REPO_REF_ALLOWED_ROOT_NAMES:
+        return True
+    if "." not in name:
+        return False
+    extension = name.rsplit(".", 1)[-1].lower()
+    return extension in _REPO_REF_ALLOWED_EXTENSIONS
+
+
+def _has_non_empty_repo_value(record: dict, field: str) -> bool:
+    """Check if a repo evidence field in a record has a non-empty value."""
+    value = record.get(field)
+    if field in _DIRECT_REPO_PROVENANCE_FIELDS:
+        return _has_non_empty_provenance_value(value)
+    if field == "source_ref":
+        return _looks_like_repo_provenance_ref(value)
+    if field == "source_refs":
+        values = value if isinstance(value, (list, tuple)) else [value]
+        return any(_looks_like_repo_provenance_ref(item) for item in values)
+    return _has_non_empty_provenance_value(value)
+
+
+def has_repo_evidence_from_records(*record_lists: Any) -> bool:
+    """Check if any record across all provided lists has repo/import provenance fields.
+
+    Returns True only if at least one record dict contains a field that proves
+    the data was imported from the CDB repo (source_path, source_hash,
+    source_ref, or source_refs) AND the field value is non-empty.
+    Pure function, side-effect-free.
+    """
+    for records in record_lists:
+        if not isinstance(records, (list, tuple)):
+            continue
+        for record in records:
+            if isinstance(record, dict) and any(
+                _has_non_empty_repo_value(record, field)
+                for field in _REPO_EVIDENCE_FIELDS
+            ):
+                return True
+    return False
 
 
 def _as_str(value: Any) -> str | None:
@@ -183,7 +309,9 @@ def _memory_trust_score(result: Mapping[str, Any]) -> float:
     total = sum(trust_counts.values())
     if total == 0:
         return 0.5  # neutral when no memory
-    score = sum(weights.get(level, 0.0) * count for level, count in trust_counts.items())
+    score = sum(
+        weights.get(level, 0.0) * count for level, count in trust_counts.items()
+    )
     return min(score / total, 1.0)
 
 
@@ -222,7 +350,9 @@ def _collect_blocking_findings(
     if decision_result:
         unresolved = _as_list(decision_result.get("unresolved_evidence_refs"))
         if unresolved:
-            findings.append(f"unresolved_evidence_refs_in_decisions ({len(unresolved)})")
+            findings.append(
+                f"unresolved_evidence_refs_in_decisions ({len(unresolved)})"
+            )
     return findings
 
 
@@ -391,7 +521,9 @@ def build_trust_summary_v1(
 
     warnings: list[str] = []
 
-    ev_summary = dict(evidence_result.get("evidence_summary") or {}) if evidence_result else {}
+    ev_summary = (
+        dict(evidence_result.get("evidence_summary") or {}) if evidence_result else {}
+    )
     ev_strength = _as_str(ev_summary.get("overall_strength")) or "none"
     evidence_strength_score = _evidence_strength_score(ev_strength)
 
@@ -445,13 +577,15 @@ def build_trust_summary_v1(
 
     trust_level = _derive_trust_level(composite_score, blocking_findings)
 
-    operator_trust_level, operator_trust_mapping, gate_notes = _derive_operator_trust_level(
-        trust_level,
-        composite_score=composite_score,
-        blocking_findings=blocking_findings,
-        stale_flags=stale_flags,
-        disputed_flags=disputed_flags,
-        context_signals=context_signals,
+    operator_trust_level, operator_trust_mapping, gate_notes = (
+        _derive_operator_trust_level(
+            trust_level,
+            composite_score=composite_score,
+            blocking_findings=blocking_findings,
+            stale_flags=stale_flags,
+            disputed_flags=disputed_flags,
+            context_signals=context_signals,
+        )
     )
     if gate_notes:
         warnings.extend(gate_notes)

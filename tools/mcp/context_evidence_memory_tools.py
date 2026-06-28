@@ -38,6 +38,7 @@ from tools.surrealdb.trust_summary import (
     TrustSummaryError,
     TrustSummaryRequest,
     build_trust_summary_v1,
+    has_repo_evidence_from_records,
 )
 from tools.surrealdb.decision_history_query import (
     DecisionHistoryQueryError,
@@ -766,15 +767,46 @@ def handle_cdb_context_trust_summary(request: Mapping[str, Any]) -> dict[str, An
         # context_signals — to prevent fake DB-backed trust claims.
         # freshness_ok is False when any stale records are present in any dimension;
         # this enforces the governance rule that HIGH requires fresh data.
+        # repo_crosscheck_present is derived from scoped adapter records (#3458):
+        # only set True when at least one in-scope record has repo/import
+        # provenance with non-empty values. Records from other scopes are
+        # excluded to prevent cross-scope contamination.
         _has_stale = bool(
             (evidence_result_raw and evidence_result_raw.get("stale_evidence_ids"))
             or (memory_result_raw and memory_result_raw.get("stale_memory_ids"))
             or (claim_result_raw and claim_result_raw.get("stale_claim_ids"))
         )
+        _matched_ev_ids = {
+            r.get("evidence_id")
+            for r in (evidence_result_raw or {}).get("matched_evidence", [])
+            if isinstance(r, dict) and r.get("evidence_id")
+        }
+        _ev_for_repo = [
+            r
+            for r in _ev_input
+            if isinstance(r, dict)
+            and r.get("scope") == scope
+            and r.get("evidence_id") in _matched_ev_ids
+        ]
+        _cl_for_repo = [
+            r for r in _cl_raw if isinstance(r, dict) and r.get("scope") == scope
+        ]
+        _mem_for_repo = [
+            r for r in _mem_raw if isinstance(r, dict) and r.get("scope") == scope
+        ]
+        _dec_for_repo = [
+            r for r in _dec_raw if isinstance(r, dict) and r.get("scope") == scope
+        ]
+        if _artifact:
+            _has_repo = has_repo_evidence_from_records(_ev_for_repo)
+        else:
+            _has_repo = has_repo_evidence_from_records(
+                _ev_for_repo, _cl_for_repo, _mem_for_repo, _dec_for_repo
+            )
         _derived_adapter_signals = TrustContextSignals(
             record_source="surrealdb-local",
             freshness_ok=not _has_stale,
-            repo_crosscheck_present=True,
+            repo_crosscheck_present=_has_repo,
             caller_supplied_source_only=False,
         )
     else:
