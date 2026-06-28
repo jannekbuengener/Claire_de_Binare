@@ -447,6 +447,156 @@ This contract was validated against:
 
 ---
 
+
+---
+
+## DB-backed Hybrid Retrieval Contract (#3424)
+
+**Issue**: #3424 (SLICE-06)
+**Status**: Contract Defined
+**Date**: 2026-06-24
+**Dependencies**: #3422 (VectorGraph Schema), #3423 (Graph Relations)
+
+### Purpose
+
+Define the SurrealQL-level query contract for BM25 full-text search, vector similarity search, and hybrid retrieval via Reciprocal Rank Fusion (RRF). This contract DOES NOT replace the existing Python hybrid ranking (`tools/surrealdb/hybrid_retrieval_ranking.py`) — both paths exist in parallel.
+
+### Non-Goals (DB-backed Contract)
+
+- No embedding generation or runtime
+- No MCP Evidence Contract (#3421)
+- No Permission Matrix (#3426)
+- No productive DB writes or data migration
+- Not a replacement for the Python ranking path
+
+### BM25 Full-text Query Contract
+
+SurrealQL query for keyword search against `doc_chunk.content`:
+
+```surql
+LET $bm25_keyword = 'policy_hash';
+LET $bm25_limit = 10;
+
+SELECT
+    id,
+    chunk_id,
+    content,
+    content_hash,
+    search::score(1) AS bm25_score
+FROM doc_chunk
+WHERE content @1@ $bm25_keyword
+ORDER BY bm25_score DESC
+LIMIT $bm25_limit;
+```
+
+- Uses `@N@` matches operator with predicate reference number `1`
+- `search::score(1)` returns the BM25 relevance score
+- `FULLTEXT ANALYZER cdb_code_analyzer BM25` index from #3422
+- Single-field limitation: one FULLTEXT index per field
+
+### Vector Similarity Query Contract
+
+SurrealQL query for semantic search against `doc_chunk.embedding`:
+
+```surql
+LET $query_vector = [0.1, ..., 0.20]; -- 1536-dim at runtime
+LET $k = 10;
+LET $ef = 40;
+
+SELECT
+    id,
+    chunk_id,
+    content,
+    content_hash,
+    1.0 - vector::distance::knn() AS vector_score
+FROM doc_chunk
+WHERE embedding <|$k, $ef|> $query_vector
+ORDER BY vector_score DESC;
+```
+
+- Uses `<|K, EF|>` KNN operator for HNSW approximate search
+- `vector::distance::knn()` returns the distance computed by the index
+- Score conversion: `1.0 - distance` for higher-better scoring
+- HNSW DIMENSION 1536 DIST COSINE index from #3422
+
+### Hybrid RRF Retrieval Contract
+
+SurrealQL query fusing BM25 + Vector results:
+
+```surql
+-- Vector sub-query: top K by vector similarity
+LET $vs = SELECT id, chunk_id, content_hash
+FROM doc_chunk
+WHERE embedding <|$hybrid_limit, $ef|> $query_vector;
+
+-- Full-text sub-query: top K by BM25 score
+LET $ft = SELECT id, chunk_id, content_hash, search::score(1) AS bm25_score
+FROM doc_chunk
+WHERE content @1@ $bm25_keyword
+ORDER BY bm25_score DESC
+LIMIT $hybrid_limit;
+
+-- Fused result via Reciprocal Rank Fusion
+SELECT * FROM search::rrf([$vs, $ft], $hybrid_limit, 60);
+```
+
+Alternative linear fusion:
+
+```surql
+SELECT * FROM search::linear([$vs, $ft], [1, 1], $hybrid_limit, 'minmax');
+```
+
+### RRF Formula
+
+```
+rrf_score = Σ 1 / (k + rank_in_list)
+```
+
+- **k = 60** (standard default per Cormack et al. 2009)
+- Rank is 1-based position within each list
+- Tie-breaker: `rrf_score DESC`, then `id ASC`
+- Results include a `fuse_score` field in the output
+
+### Result Contract
+
+| Field | Source | Description |
+|-------|--------|-------------|
+| `id` | SurrealDB | Record ID (used for dedup fusion) |
+| `rrf_score` / `fuse_score` | RRF | Fused relevance score |
+| `chunk_id` | doc_chunk | Deterministic chunk identifier |
+| `content_hash` | doc_chunk | SHA256 of chunk content |
+| `content` | doc_chunk | Chunk text content |
+| `bm25_score` | full-text list | BM25 relevance score (if from FT) |
+| `vector_distance` | vector list | Distance from query vector (if from VS) |
+| `vector_score` | vector list | 1.0 - distance (if from VS) |
+
+### Abgrenzung zum bestehenden Python-Hybrid-Ranking
+
+| Aspect | Python Ranking (existing) | DB-backed Contract (this issue) |
+|--------|--------------------------|-------------------------------|
+| Module | `hybrid_retrieval_ranking.py` | `.surql` query fixtures |
+| Entry points | `rank_retrieval_results()`, `compute_ranking_explanation()` | `search::rrf()`, `search::linear()` |
+| Factors | 7 weighted factors (source, graph, evidence, etc.) | BM25 score + vector distance only |
+| Scope | In-memory candidate enrichment | DB-level fusion |
+| Status | Parallel reference | Parallel reference |
+| Replacement | NOT replaced | NOT replacing |
+
+### Query Fixture Source
+
+`infrastructure/surrealdb/hybrid_retrieval_fixtures.surql` — static contract tests under `tests/surrealdb/`.
+
+### Sources
+
+- SurrealDB Search functions: https://surrealdb.com/docs/reference/query-language/functions/database-functions/search
+- SurrealDB Vector indexes: https://surrealdb.com/docs/learn/data-models/vector-search/vector-indexes
+- SurrealDB Hybrid search: https://surrealdb.com/docs/learn/data-models/vector-search/hybrid-search
+
+### Nächste Slices
+
+- #3421 — Readonly MCP Brain Evidence Contract
+- #3426 — Permission Matrix + Readonly Agent User
+- #3427 — ContextBrain Report / Gist Ledger Integration
+
 ## References
 
 - Epic: #1976 (CDB Context Intelligence System)

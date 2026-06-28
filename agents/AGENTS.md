@@ -72,6 +72,9 @@ versionierte Root-Flächen für `.claude/`, `.codex/`, `.cursor/`, `.gemini/`, `
   - Kanonische Governance-, Policy- und Invariant-Dokumente.
 - `knowledge/`
   - Kanonische Knowledge-Hub- und Decision-Hub-Dokumente.
+- `knowledge/testing/`
+  - Test-First Processing Contract, Testarten-Atlas, MockExchange-Muster,
+    Skill-Valley-Upgrade-Plan. Einstieg: `knowledge/testing/README.md`.
 - `.github/`
   - GitHub-Community-, Template- und Maintainer-Artefakte.
 - `docs/`
@@ -113,10 +116,11 @@ Repo-Fallback ist nur nach belegtem Fehlversuch erlaubt.
 ```text
 context_brain_attempted: true
 context_brain_used: true | false
+context_available: true | false
 repo_fallback_used: true | false
 repo_fallback_reason: none | unavailable | stale | contradictory | insufficient_evidence | missing_record | tool_blocked
 context_tool_status: available | partial | blocked | absent
-context_trust_level: high | medium | low | none
+context_trust_level: high | medium | none
 records_found: <count> | none
 ```
 
@@ -125,19 +129,19 @@ records_found: <count> | none
 Welcher `repo_fallback_reason` bei welchem tatsächlichen Tool-Zustand korrekt ist:
 
 | Tool-Status | Trust-Level | Records Found | Korrekter `repo_fallback_reason` |
-|---|---|---|---|
+|---|---|---|---|---|
 | `available` | `high` | >=1 | `none` (kein Fallback nötig) |
-| `available` | `low` | 0 | `insufficient_evidence` |
+| `available` | `none` | 0 | `insufficient_evidence` |
 | `available` | `medium` | 0 | `missing_record` |
-| `available` | `low` | >=1 (stale) | `stale` |
+| `available` | `none` | >=1 (stale) | `stale` |
 | `available` | `any` | widersprüchlich | `contradictory` |
-| `partial` | `low` | 0 | `insufficient_evidence` |
+| `partial` | `none` | 0 | `insufficient_evidence` |
 | `blocked` | `none` | 0 | `tool_blocked` |
 | `absent` | `none` | 0 | `unavailable` |
 
 **Härteregel:** `repo_fallback_reason=unavailable` ist NUR erlaubt, wenn der
 Context-Brain-Tool-Zugang wirklich fehlt (Tool nicht importierbar, nicht aufrufbar,
-nicht im aktiven MCP-Surface). Ein verfügbares Tool, das LOW Trust oder keine
+nicht im aktiven MCP-Surface). Ein verfügbares Tool, das kein Trust oder keine
 Records liefert, ist **nicht** `unavailable`.
 
 ### Regeln
@@ -159,7 +163,7 @@ Records liefert, ist **nicht** `unavailable`.
    Context Briefing, session memory oder caller-supplied metadata allein
    sind keine DB-backed Evidence.
 7. Falsche Fallback-Klassifikation (z. B. `unavailable` bei verfügbarem Tool mit
-   LOW/no Records) löst `HOLD_BOOTLOADER_EVIDENCE_MISCLASSIFIED` aus und blockiert
+   keinem Trust oder keinen Records) löst `HOLD_BOOTLOADER_EVIDENCE_MISCLASSIFIED` aus und blockiert
    den weiteren Workflow bis zur Korrektur.
 8. Lokale Context-Refresh-/Brain-Apply-Artefakte aus #3287-#3291 sind als
    repo-backed Brain-Evidence-Kandidaten zu prüfen, wenn Context Tools keine
@@ -187,10 +191,11 @@ limitations:
   - <Was nicht bewiesen ist>
 context_brain_attempted: true
 context_brain_used: true | false
+context_available: true | false
 repo_fallback_used: true | false
 repo_fallback_reason: none | unavailable | stale | contradictory | insufficient_evidence | missing_record | tool_blocked
 context_tool_status: available | partial | blocked | absent
-context_trust_level: high | medium | low | none
+context_trust_level: high | medium | none
 records_found: <count> | none
 ```
 
@@ -207,13 +212,15 @@ records_found: <count> | none
   Context Briefing, session memory oder caller-supplied metadata allein sind
   keine DB-backed Evidence.
 - `repo_fallback_used`: `true` wenn nach Preflight auf Repo-Reads zurueckgefallen wurde.
+- `context_available`: `true` nur bei `context_trust_level >= MEDIUM`. Bei `false`:
+  kein nutzbarer Context; Agent muss auf GitHub/Repo-Fallback ausweichen oder HOLD.
 - `repo_fallback_reason`: Exakter Grund fuer Repo-Fallback (Enum). Siehe
   Fallback-Klassifikationsmatrix oben: `unavailable` ist NUR bei echt fehlendem
-  Tool-Zugang erlaubt, nicht bei LOW/no Records.
+  Tool-Zugang erlaubt, nicht bei keinem Trust oder keinen Records.
 - `context_tool_status`: Tatsaechlicher Status des Context-Brain-Tools nach
   Preflight-Versuch.
-- `context_trust_level`: Vertrauensniveau der gelieferten Evidence (kann auf
-  Tool-Metadaten oder Bundle-Signalen basieren).
+- `context_trust_level`: Agenten-sichtbares Trust-Niveau. Nur `high` und `medium`
+  sind nutzbar (usable context trust floor = MEDIUM). `none` bedeutet kein nutzbarer Context.
 - `records_found`: Anzahl der gefundenen Records (0 bei `none`).
 
 ### Default posture (SSOT)
@@ -247,6 +254,16 @@ Higher wins; fail-closed when lower layers conflict:
 - `context.briefing` / `briefing.session_context` is read-only working/session
   memory (`session_only=true`); not persistent DB memory; see
   `agents/OPEN_CODE_AGENTS.md` for handoff mapping.
+- **Context trust floor:** `usable_context_trust_minimum = MEDIUM`.
+  Nur `context_trust_level=HIGH` oder `MEDIUM` sind nutzbar.
+  `none` = `context_available=false` — kein DB-backed Claim, kein "Repo-Brain used",
+  Agent muss GitHub/Repo-Fallback oder HOLD. Interne Diagnose (LOW/BLOCKED) bleibt
+  im Trust-Service-SSOT, ist aber keine operative Agentenoption.
+- Post-#3449: `cdb_context_briefing` enrichment check ist Pflicht vor Brain-Claim.
+  Ohne evidence_records/claim_records/decision_events/memory_records keine Brain-Nutzung.
+  - `brain_source=repo-only` + `brain_status=not-used` bei leerem Briefing → `context_available=false`.
+  - `brain_source=in_memory` bei Inline-Records; max `context_trust_level=MEDIUM`.
+  - `context_trust_level=HIGH` nur mit `record_source=surrealdb-local` + Record-IDs + kein stale/disputed/blocking.
 - Context Brain / MCP read results do **not** authorize automatic code changes,
   issue creation, or writes — parent agent and Jannek GO still required.
 - `PERSIST_ALLOWED=False` and `MUTATION_ALLOWED=False` remain defaults on `main`;
@@ -256,7 +273,7 @@ Higher wins; fail-closed when lower layers conflict:
 - Board-Stage `trade-capable` is not Live-Go.
 - LR remains NO-GO.
 - Falsche Fallback-Klassifikation (z. B. `unavailable` bei verfügbarem Tool mit
-  LOW/no Records) löst `HOLD_BOOTLOADER_EVIDENCE_MISCLASSIFIED` aus. Der Workflow
+  keinem Trust oder keinen Records) löst `HOLD_BOOTLOADER_EVIDENCE_MISCLASSIFIED` aus. Der Workflow
   muss bis zur Korrektur blockiert bleiben.
 
 ## Legacy Note

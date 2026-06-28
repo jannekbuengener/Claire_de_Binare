@@ -1,6 +1,6 @@
 # Control Register
 
-**Letzte Aktualisierung:** 2026-04-21
+**Letzte Aktualisierung:** 2026-06-28
 **SSOT Live-Readiness:** `docs/live-readiness/LR-AUDIT-STATUS-2026-03-05.md`
 **Verdict:** NO-GO
 **Control-Board Stage:** `trade-capable` (ratifiziert 2026-04-08 via Issue `#1492`)
@@ -41,6 +41,20 @@
 | `ACTIVE_ROADMAP.md` | Pointer auf beide SSoTs |
 
 Regel: Phasen-Status nie in CURRENT_STATUS eintragen. LR-Verdikt nie aus einer Board-Stage ableiten. Board-Stage nie als implizites LR-GO lesen.
+
+---
+
+## Architecture Decisions
+
+| ADR | Topic | Decision | Status |
+|-----|-------|----------|--------|
+| `ADR-002` | Context Intelligence Canon (`knowledge/decisions/ADR-002-context-intelligence-canon.md`, Issue #3419) | `ADOPTED` — Foundation-Reparatur (#3420–#3427) und Trust-Wave (#3449–#3459) abgeschlossen; Context Intelligence Canon ist produktiv | **accepted / adopted** |
+| `#2775` | Context Brain Default Posture (`knowledge/decisions/CDB_CONTEXT_BRAIN_DEFAULT_POSTURE.md`) | `ALLOW_READONLY_CONDITIONAL` | **accepted / active** |
+
+Hinweise:
+- ADR-002 autorisiert weder Runtime- noch Live- noch DB-Write-Operationen.
+- `PERSIST_ALLOWED=false` und `MUTATION_ALLOWED=false` bleiben unverändert.
+- Board-Stage `trade-capable` ist orthogonal zu ADR-002.
 
 ---
 
@@ -150,6 +164,7 @@ Kontext-Issue-Nummern sind historische Anker (alle CLOSED) — nicht als offene 
 - Action-Dependency-Bump (PR #3063, gemergt 2026-06-08T11:24:43Z, Commit `5706ff55`): `actions/checkout` SHA-Refresh 6.0.2→6.0.3 in 40 Workflow-Dateien. Keine Aenderung an Triggern, Permissions, Control-Surface-Semantik oder operativem Workflow-Verhalten. Kein LR-/Live-/Echtgeld-Signal.
 - Action-Dependency-Bump (PR #3064, gemergt 2026-06-08T10:51:45Z, Commit `e9fa938a`): `github/codeql-action` SHA-Refresh 4.36.0→4.36.2 in `codeql-python.yml` (`init`, `analyze`), `gitleaks.yml`, `security-scan.yml`, `trivy.yml` (`upload-sarif`). SARIF-Kategorien, Trigger und Security-Triage-Postur bleiben unveraendert; keine operative Control-Aenderung. Kein LR-/Live-/Echtgeld-Signal.
 - `security-scan.yml` (PR #3075, gemergt 2026-06-08T10:19:15Z, Commit `1041c6c2`): CVE-2026-42504 Batch-Triage — Prometheus, Promtool, Grafana, Grafana-cli, Grafana-server und embedded `gosu` in Redis/Postgres alle **UPSTREAM_BLOCKED** (kein scan-verified upstream rebuild verfuegbar). Keine Dismissals, keine false-resolved-Claims, keine Image-Pin-Aenderung im Security-Scan ausserhalb der bestehenden Matrix. Evidence-Dokument: `docs/evidence/security/CDB_SECURITY_BATCH_MATRIX_3065-3070-CVE-42504_2026-06-08.md`. Residual-Security-Cluster `cve-2026-42504` wird ueber `TRIAGE_RUNBOOK.md` getracked. Kein LR-/Live-/Echtgeld-Signal.
+- `ci.yml` + `policy-gate.yml` (PR #3405, gemergt 2026-06-28): **Self-Hosted Runner Security Fix** — `runs-on` von `[self-hosted, cdb, docker, merge-gate]` auf `ubuntu-latest` umgestellt. Grund: Repo ist PUBLIC → untrusted Fork-PRs koennten bösartigen Code auf dem privilegierten self-hosted Runner ausführen (Docker-Socket, NOPASSWD). `NOPASSWD:ALL` durch restriktive sudo-Regel ersetzt (nur `chown`, `mkdir`, `groupmod`, `usermod`). Runner-Doku mit Security-Notice erweitert. Merge-Gate-Checks laufen jetzt auf GitHub-hosted. Selbstgehostete Runner bleiben fuer `workflow_dispatch`/`schedule`-Jobs erhalten. Kein LR-/Live-/Echtgeld-Signal. Closes #3405.
 
 ---
 

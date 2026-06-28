@@ -38,6 +38,7 @@ from tools.surrealdb.trust_summary import (
     TrustSummaryError,
     TrustSummaryRequest,
     build_trust_summary_v1,
+    has_repo_evidence_from_records,
 )
 from tools.surrealdb.decision_history_query import (
     DecisionHistoryQueryError,
@@ -674,6 +675,9 @@ def handle_cdb_context_trust_summary(request: Mapping[str, Any]) -> dict[str, An
         )
 
     # Adapter opt-in (Issue #2461): fetch all sub-data from local SurrealDB.
+    # _derived_adapter_signals is set inside the adapter block from real query
+    # results and overrides any caller-supplied context_signals (#3456).
+    _derived_adapter_signals: TrustContextSignals | None = None
     if params.get("adapter_config_path") is not None:
         _adapter_result = build_adapter_from_params(
             params, TOOL_CDB_CONTEXT_TRUST_SUMMARY
@@ -704,12 +708,29 @@ def handle_cdb_context_trust_summary(request: Mapping[str, Any]) -> dict[str, An
         memory_result_raw: dict[str, Any] | None = None
         decision_result_raw: dict[str, Any] | None = None
         try:
-            evidence_result_raw = lookup_evidence_v1(
-                [_normalize_evidence_ref_row(r) for r in _ev_raw],
-                EvidenceLookupRequest(
+            # When artifact is specified, filter evidence to that artifact (by_artifact).
+            # When no artifact is specified (scope-wide trust assessment), pre-filter
+            # records to the requested scope and use by_freshness — consistent with
+            # the inline-records path in context_briefing_handler (freshness_days=36500).
+            # Pre-filtering prevents cross-scope contamination when the DB contains
+            # evidence from multiple scopes.  by_artifact with an empty artifact
+            # string matches nothing, so this branch only applies when a real
+            # artifact identifier is present.
+            if _artifact:
+                _ev_input = [_normalize_evidence_ref_row(r) for r in _ev_raw]
+                _ev_req = EvidenceLookupRequest(
                     mode="by_artifact", artifact=_artifact, limit=_limit
-                ),
-            )
+                )
+            else:
+                _ev_input = [
+                    _normalize_evidence_ref_row(r)
+                    for r in _ev_raw
+                    if isinstance(r, dict) and r.get("scope") == scope
+                ]
+                _ev_req = EvidenceLookupRequest(
+                    mode="by_freshness", freshness_days=36500, limit=_limit
+                )
+            evidence_result_raw = lookup_evidence_v1(_ev_input, _ev_req)
         except EvidenceLookupError as _exc:
             logging.getLogger(__name__).debug(
                 "trust_summary: evidence lookup skipped (%s)", _exc
@@ -741,6 +762,53 @@ def handle_cdb_context_trust_summary(request: Mapping[str, Any]) -> dict[str, An
             logging.getLogger(__name__).debug(
                 "trust_summary: decision lookup skipped (%s)", _exc
             )  # soft: available sub-results used
+        # Derive context_signals from actual adapter query results (#3456).
+        # Signals are always derived here — never taken from caller-supplied
+        # context_signals — to prevent fake DB-backed trust claims.
+        # freshness_ok is False when any stale records are present in any dimension;
+        # this enforces the governance rule that HIGH requires fresh data.
+        # repo_crosscheck_present is derived from scoped adapter records (#3458):
+        # only set True when at least one in-scope record has repo/import
+        # provenance with non-empty values. Records from other scopes are
+        # excluded to prevent cross-scope contamination.
+        _has_stale = bool(
+            (evidence_result_raw and evidence_result_raw.get("stale_evidence_ids"))
+            or (memory_result_raw and memory_result_raw.get("stale_memory_ids"))
+            or (claim_result_raw and claim_result_raw.get("stale_claim_ids"))
+        )
+        _matched_ev_ids = {
+            r.get("evidence_id")
+            for r in (evidence_result_raw or {}).get("matched_evidence", [])
+            if isinstance(r, dict) and r.get("evidence_id")
+        }
+        _ev_for_repo = [
+            r
+            for r in _ev_input
+            if isinstance(r, dict)
+            and r.get("scope") == scope
+            and r.get("evidence_id") in _matched_ev_ids
+        ]
+        _cl_for_repo = [
+            r for r in _cl_raw if isinstance(r, dict) and r.get("scope") == scope
+        ]
+        _mem_for_repo = [
+            r for r in _mem_raw if isinstance(r, dict) and r.get("scope") == scope
+        ]
+        _dec_for_repo = [
+            r for r in _dec_raw if isinstance(r, dict) and r.get("scope") == scope
+        ]
+        if _artifact:
+            _has_repo = has_repo_evidence_from_records(_ev_for_repo)
+        else:
+            _has_repo = has_repo_evidence_from_records(
+                _ev_for_repo, _cl_for_repo, _mem_for_repo, _dec_for_repo
+            )
+        _derived_adapter_signals = TrustContextSignals(
+            record_source="surrealdb-local",
+            freshness_ok=not _has_stale,
+            repo_crosscheck_present=_has_repo,
+            caller_supplied_source_only=False,
+        )
     else:
         _source = derive_guarded_source_label(params)
         evidence_result_raw = _as_mapping(params.get("evidence_result"))
@@ -761,17 +829,22 @@ def handle_cdb_context_trust_summary(request: Mapping[str, Any]) -> dict[str, An
             message=str(exc),
         )
 
-    context_signals: TrustContextSignals | None = None
-    try:
-        context_signals = TrustContextSignals.from_mapping(
-            _as_mapping(params.get("context_signals"))
-        )
-    except TrustSummaryError as exc:
-        return _error_response(
-            TOOL_CDB_CONTEXT_TRUST_SUMMARY,
-            code="invalid_parameters",
-            message=str(exc),
-        )
+    # context_signals: adapter path always uses derived signals (never caller-supplied);
+    # non-adapter path reads from request params (existing behaviour).
+    if _derived_adapter_signals is not None:
+        context_signals: TrustContextSignals | None = _derived_adapter_signals
+    else:
+        context_signals = None
+        try:
+            context_signals = TrustContextSignals.from_mapping(
+                _as_mapping(params.get("context_signals"))
+            )
+        except TrustSummaryError as exc:
+            return _error_response(
+                TOOL_CDB_CONTEXT_TRUST_SUMMARY,
+                code="invalid_parameters",
+                message=str(exc),
+            )
 
     try:
         result = build_trust_summary_v1(

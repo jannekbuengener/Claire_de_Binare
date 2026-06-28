@@ -87,6 +87,7 @@ Linux/macOS: `.venv/bin/python` statt `.venv/Scripts/python.exe`.
 - Vor jeder Planung prüfen, ob `context.briefing` im aktiven MCP-Inventar ist.
 - Falls nicht: `brain_source=unavailable` oder `repo-only` + `brain_status=not-used`.
 - Keine DB-backed Brain-Claims ohne `surrealdb-local` und nutzbaren `brain_status`.
+- **Context trust floor:** MEDIUM. Nur HIGH/MEDIUM nutzbar. Unter MEDIUM → `context_available=false`, GitHub/Repo-Fallback oder HOLD.
 - Referenz: `docs/runbooks/surrealdb_context_mcp_access.md` § 1.5.1.
 
 ### Per-Agent Templates und Setup-Script

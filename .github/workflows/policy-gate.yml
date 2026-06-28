@@ -17,7 +17,7 @@ permissions:
 jobs:
   policy-gate:
     name: policy-gate
-    runs-on: [self-hosted, cdb, docker, merge-gate]
+    runs-on: ubuntu-latest
     timeout-minutes: 10
 
     steps:

@@ -16,6 +16,7 @@ Diese Root-README ist die GitHub-Haupt-Landingpage. Der aktive Pfad bleibt Shado
 - GitHub-Control-Plane-Unterdokument: [`.github/CONTROL_PLANE.md`](.github/CONTROL_PLANE.md)
 - CDB Glossary: [`docs/onboarding/cdb_glossary.md`](docs/onboarding/cdb_glossary.md)
 - Repo-/Engineering-Ledger: [`CURRENT_STATUS.md`](CURRENT_STATUS.md)
+- Support: GitHub Sponsors is configured via [`.github/FUNDING.yml`](.github/FUNDING.yml) for people who want to support ongoing development.
 
 ## Safety / LR Status
 

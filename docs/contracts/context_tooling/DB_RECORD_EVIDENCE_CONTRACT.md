@@ -9,6 +9,8 @@
 | Validator | [`tools/surrealdb/db_record_evidence_contract.py`](../../../tools/surrealdb/db_record_evidence_contract.py) |
 | JSON Schema | [`docs/contracts/db_record_evidence_claim.v1.schema.json`](../db_record_evidence_claim.v1.schema.json) |
 | Invocation bundle (#2850) | [`TOOL_INVOCATION_JSON_EVIDENCE.md`](TOOL_INVOCATION_JSON_EVIDENCE.md) |
+| Read-only query contract (#3421) | [`READONLY_QUERY_CONTRACT.md`](READONLY_QUERY_CONTRACT.md) |
+| Response schema (#3421) | [`DB_RECORD_EVIDENCE_RESPONSE_SCHEMA.md`](DB_RECORD_EVIDENCE_RESPONSE_SCHEMA.md) |
 
 ## Purpose
 
@@ -21,6 +23,8 @@ This contract complements (does not replace):
 - [`tools/mcp/memory_output_contract.py`](../../../tools/mcp/memory_output_contract.py) (MCP response envelope)
 - [`tools/surrealdb/claim_evidence_at_rest.py`](../../../tools/surrealdb/claim_evidence_at_rest.py) (DB row integrity)
 - Live invocation harness: [`tools/surrealdb/context_live_invocation_harness.py`](../../../tools/surrealdb/context_live_invocation_harness.py)
+- [`READONLY_QUERY_CONTRACT.md`](READONLY_QUERY_CONTRACT.md) — Read-only query boundary (MCP → SurrealDB)
+- [`DB_RECORD_EVIDENCE_RESPONSE_SCHEMA.md`](DB_RECORD_EVIDENCE_RESPONSE_SCHEMA.md) — Standardized response envelope for DB-backed evidence
 
 ## Safety boundaries
 
@@ -151,6 +155,30 @@ For `cdb_context_trust_summary` / briefing trust synthesis, operator-facing
 [`CDB_CONTEXT_TRUST_THRESHOLD_CONTRACT.md`](CDB_CONTEXT_TRUST_THRESHOLD_CONTRACT.md)
 (Issue [#2856](https://github.com/jannekbuengener/Claire_de_Binare/issues/2856)).
 Trust levels do not override DB-record evidence rules above.
+
+## #3421 Contracts
+
+Issue [#3421](https://github.com/jannekbuengener/Claire_de_Binare/issues/3421) (SLICE-03)
+added two complementary contracts to the evidence surface:
+
+- **READONLY_QUERY_CONTRACT.md** — Documents the three-layer defense-in-depth
+  (MCP permission guard → SurrealQL statement classifier → SurrealDB VIEWER role)
+  that ensures all MCP evidence tools are fail-closed read-only. Formalizes the
+  existing `classify_statement()` rules, DENIED_KEYWORDS, ALLOWED_PREFIXES,
+  table whitelist/blacklist, and the adapter flow for evidence queries.
+
+- **DB_RECORD_EVIDENCE_RESPONSE_SCHEMA.md** — Defines the standardized response
+  envelope for all DB-backed evidence responses. Adds trust, confidence,
+  freshness, and record-level metadata fields. Implemented by
+  `tools/surrealdb/db_record_evidence_response.py`.
+
+- **tests/surrealdb/test_mcp_evidence_contract.py** — 59 tests for the response
+  schema validator, trust derivation, freshness computation, secret leak
+  detection, and response factory functions.
+
+These contracts formalize existing behavior at the envelope and query-boundary
+level. No existing `classify_statement()`, `permission_guard.py`, or MCP handler
+code was modified; only new documentation, validation, and tests were added.
 
 ## Related Wave-14 tables
 

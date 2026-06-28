@@ -529,6 +529,34 @@ TOOLS_V0 = [
                     "items": {"type": "string"},
                     "description": "Optional session limitations supplied by the caller.",
                 },
+                "evidence_records": {
+                    "type": "array",
+                    "description": "Optional in-memory evidence records for Wave-14 enrichment (evidence_lookup, trust_summary).",
+                },
+                "claim_records": {
+                    "type": "array",
+                    "description": "Optional in-memory claim records for Wave-14 enrichment (claim_resolver).",
+                },
+                "decision_events": {
+                    "type": "array",
+                    "description": "Optional in-memory decision events for Wave-14 enrichment (decision_history).",
+                },
+                "memory_records": {
+                    "type": "array",
+                    "description": "Optional in-memory memory records for Wave-14 enrichment (memory_read).",
+                },
+                "enrichment_scope": {
+                    "type": "string",
+                    "description": "Scope for enrichment filtering (default wave14). Controls which records are processed.",
+                },
+                "adapter_config_path": {
+                    "type": "string",
+                    "description": "Optional SurrealDB adapter config path for DB-backed briefing (requires local SurrealDB).",
+                },
+                "secrets_path": {
+                    "type": "string",
+                    "description": "Optional secrets directory path for DB-backed SurrealDB adapter access.",
+                },
             },
             "required": [
                 "task_id",

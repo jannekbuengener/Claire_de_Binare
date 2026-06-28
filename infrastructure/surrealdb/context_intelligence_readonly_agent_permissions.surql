@@ -1,0 +1,76 @@
+-- =====================================================================
+-- Context Intelligence v0 — Readonly Agent Permission Contract
+-- Issue: #3426  (Meta: #3418, Slice-08 Permission Matrix)
+--
+-- THIS IS A TEMPLATE CONTRACT.  No productive apply, no live user
+-- creation, no secret injection.  Apply only as part of a controlled
+-- deploy workflow with human approval.
+--
+-- Design:
+--   cdb_context_agent is a SurrealDB SYSTEM USER at DATABASE level
+--   with the built-in VIEWER role.  VIEWER grants SELECT/INFO/USE on
+--   all child resources (tables, fields, indexes) within the database
+--   and prevents CREATE/UPDATE/DELETE/DEFINE/REMOVE operations.
+--
+--   No DEFINE TOKEN, no DEFINE ACCESS, no DEFINE CAPABILITIES are
+--   needed for this user: system-user RBAC + server-level capability
+--   CLI flags provide defense-in-depth.
+--
+--   Existing table-level PERMISSIONS FOR select NONE in the deploy
+--   file are overridden by the VIEWER role at runtime.  This is the
+--   intended contract: the read-only agent reads through RBAC, not
+--   through permissive table PERMISSIONS.
+--
+-- Guardrails (hard):
+-- - PASSHASH is a PLACEHOLDER only.  The real Argon2id hash must be
+--   generated outside this file and injected at deploy time via the
+--   environment variable CDB_CONTEXT_AGENT_READONLY_PASS_HASH.
+-- - No raw PASSWORD string is ever stored in this file.
+-- - ROLES VIEWER only.  OWNER and EDITOR would grant write access.
+-- - No DEFINE TOKEN (deprecated and removed as of SurrealDB 3.0).
+-- - No DEFINE ACCESS (not needed when using system-user RBAC).
+-- - No DEFINE CAPABILITIES (capabilities are server-level CLI flags,
+--   not SurrealQL statements; see server startup comment below).
+-- - No trading-state tables, secrets, or runtime data.
+-- =====================================================================
+
+-- =====================================================================
+-- 1. System User: cdb_context_agent
+--    Level: DATABASE (scoped to context_intel)
+--    Role: VIEWER (read-only)
+--    Auth: PASSHASH placeholder (do NOT use PASSWORD with raw strings)
+-- =====================================================================
+DEFINE USER cdb_context_agent ON DATABASE
+  PASSHASH '${CDB_CONTEXT_AGENT_READONLY_PASS_HASH}'
+  ROLES VIEWER;
+
+-- =====================================================================
+-- 2. Server-Level Capability Recommendations
+--
+-- These are NOT SurrealQL statements.  Configure on the surreal server
+-- process that serves the context_intel database:
+--
+--   surreal start \
+--     --deny-all \
+--     --allow-guests \
+--     --deny-arbitrary-query \
+--     --deny-scripting \
+--     --deny-funcs "http" \
+--     --deny-net
+--
+-- See https://surrealdb.com/docs/learn/security/authorization/capabilities
+-- =====================================================================
+
+-- =====================================================================
+-- 3. Table-Level Permission Baseline (reference)
+--
+-- All context_intelligence tables are defined in
+-- context_intelligence_v0_deploy.surql with:
+--   PERMISSIONS FOR select NONE, FOR create NONE,
+--   FOR update NONE, FOR delete NONE
+--
+-- The VIEWER role overrides the NONE baseline at runtime for the
+-- cdb_context_agent user.  This is intentional: the fail-closed
+-- baseline remains NONE for any non-VIEWER access (e.g., guest or
+-- unauthenticated sessions).
+-- =====================================================================

@@ -69,6 +69,15 @@ used only after the real dry run finishes.
 - boot-readiness PASS or justified WARN
 - no side effects
 
+### INCONCLUSIVE (FAIL with classification)
+
+A run that ended before the required window but with all-PASS cycles and
+no final validation marker receives a dedicated `INCONCLUSIVE` finding.
+Example: Slice-B (68.5h, 259/259 PASS cycles, 0 failures, crashed during
+sleep). Partial evidence is preserved but does not satisfy the `>=72h`
+requirement. The run is marked FAIL with an `INCONCLUSIVE` explanation so
+it is never confused with a clean PASS or a cycle-failure FAIL.
+
 ### WARN
 
 - minor cadence drift
@@ -78,7 +87,7 @@ used only after the real dry run finishes.
 
 ### FAIL
 
-- window shorter than required
+- window shorter than required (includes INCONCLUSIVE classification)
 - missing or malformed required artifacts
 - write-audit FAIL
 - watchdog FAIL

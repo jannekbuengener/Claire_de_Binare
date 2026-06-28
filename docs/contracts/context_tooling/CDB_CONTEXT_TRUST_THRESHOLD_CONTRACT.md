@@ -112,9 +112,18 @@ When `context_signals` is **omitted**, `operator_trust_level` follows legacy bas
 
 In Brain Evidence and Context scope:
 
-- Treat `operator_trust_level` of `LOW` or `BLOCKED` as **fail-closed for operational truth**.
+- **Context trust floor:** `usable_context_trust_minimum = MEDIUM`.
+  Nur `HIGH`/`MEDIUM` sind operative Agentenoptionen (`context_available=true`).
+  `LOW`/`BLOCKED` bleiben SSOT des Trust-Service, sind aber keine nutzbare Agentenoption.
+  Unter MEDIUM → `context_available=false`, Agent muss GitHub/Repo-Fallback oder HOLD.
+  `HIGH` und `MEDIUM` ersetzen kein Human-GO, Live-GO, Echtgeld-GO.
 - Do not merge, persist, mutate runtime, or infer LR/live-go from trust output alone.
 - Prefer live GitHub + repo reads over trust summary text.
+- Post-#3449: `cdb_context_briefing` enrichment check vor Brain-Claim.
+  Ohne evidence_records/claim_records/decision_events/memory_records keine Brain-Nutzung.
+  - `brain_source=repo-only` + `brain_status=not-used` bei leerem Briefing → `context_available=false`.
+  - `brain_source=in_memory` bei Inline-Records; max `operator_trust_level=MEDIUM`.
+  - `operator_trust_level=HIGH` nur mit `record_source=surrealdb-local` + Record-IDs + kein stale/disputed/blocking.
 
 Canonical agent surfaces: [`agents/OPEN_CODE_AGENTS.md`](../../../agents/OPEN_CODE_AGENTS.md), [`docs/runbooks/CDB_AGENT_SENSES_OPERATOR.md`](../../runbooks/CDB_AGENT_SENSES_OPERATOR.md) §8.
 

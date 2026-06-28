@@ -2,9 +2,6 @@ from __future__ import annotations
 
 import argparse
 import json
-import shutil
-import subprocess
-import sys
 import time
 from dataclasses import asdict, dataclass
 from datetime import UTC, datetime
@@ -93,15 +90,6 @@ def _load_json(path: Path) -> dict[str, Any]:
     if not isinstance(payload, dict):
         raise CoordinatorError(f"{path.name} JSON root must be an object")
     return payload
-
-
-def _run_python_module(args: list[str], *, repo_root: Path) -> int:
-    completed = subprocess.run(
-        [sys.executable, *args],
-        cwd=str(repo_root),
-        check=False,
-    )
-    return int(completed.returncode)
 
 
 def _latest_cycle_stamp(artifact_dir: Path) -> str:
@@ -411,13 +399,25 @@ def _sleep_with_interval_check(
     chunk_seconds: int = 60,
 ) -> float:
     """Sleep in chunks, returning overshoot (actual - expected) seconds."""
+    if total_seconds <= 0:
+        return 0.0
+    if chunk_seconds < 1:
+        raise CoordinatorError("chunk_seconds must be >= 1")
+
     started = time.monotonic()
-    remaining = total_seconds
-    while remaining > 0:
-        chunk = min(remaining, chunk_seconds)
+    deadline = started + total_seconds
+    requested_sleep = 0.0
+    while requested_sleep < total_seconds:
+        elapsed_remaining = deadline - time.monotonic()
+        requested_remaining = total_seconds - requested_sleep
+        if elapsed_remaining <= 0 or requested_remaining <= 0:
+            break
+        chunk = min(requested_remaining, elapsed_remaining, chunk_seconds)
         sleep_fn(chunk)
-        remaining -= chunk
-    elapsed = time.monotonic() - started
+        requested_sleep += chunk
+        if time.monotonic() >= deadline:
+            break
+    elapsed = max(time.monotonic() - started, requested_sleep)
     overshoot = elapsed - total_seconds
     return max(overshoot, 0.0)
 
@@ -425,22 +425,16 @@ def _sleep_with_interval_check(
 def _default_boot_runner(
     repo_root: Path, artifact_dir: Path
 ) -> tuple[int, dict[str, Any] | None]:
+    from .boot import _format_json, _render_report_md, _status
+
     json_path = artifact_dir / "boot_readiness_report.json"
     md_path = artifact_dir / "boot_readiness_report.md"
-    exit_code = _run_python_module(
-        [
-            "-m",
-            "tools.evidence_harvester.boot",
-            "status",
-            "--json-output",
-            str(json_path),
-            "--markdown-output",
-            str(md_path),
-            "--pretty",
-        ],
-        repo_root=repo_root,
-    )
-    payload = _load_json(json_path) if json_path.exists() else None
+    report = _status(repo_root, _now_utc())
+    payload = report.to_dict()
+    json_text = _format_json(payload, pretty=True)
+    json_path.write_text(json_text + "\n", encoding="utf-8")
+    md_path.write_text(_render_report_md(report), encoding="utf-8")
+    exit_code = 0 if report.verdict.verdict != "FAIL" else 1
     return exit_code, payload
 
 
@@ -449,19 +443,23 @@ def _default_cycle_runner(
     fixture_path: Path,
     artifact_dir: Path,
 ) -> tuple[int, str]:
-    exit_code = _run_python_module(
-        [
-            "-m",
-            "tools.evidence_harvester.runner",
-            "--pretty",
-            "run-once-fixture",
-            "--fixture",
-            str(fixture_path),
-            "--output-dir",
-            str(artifact_dir),
-        ],
-        repo_root=repo_root,
-    )
+    from .runner import _now_utc as runner_now
+    from .runner import _run_complete_cycle
+
+    try:
+        _run_complete_cycle(
+            fixture_path=fixture_path,
+            output_dir=artifact_dir,
+            generated_at_utc=None,
+            pretty=False,
+            iteration=0,
+            started_at=runner_now(),
+            existing_heartbeat=None,
+            mode="run-once-fixture",
+        )
+        exit_code = 0
+    except Exception:
+        exit_code = 1
     return exit_code, _latest_cycle_stamp(artifact_dir)
 
 
@@ -471,35 +469,35 @@ def _default_watchdog_runner(
     cycle_stamp: str,
     cadence_seconds: int,
 ) -> tuple[int, dict[str, Any] | None]:
+    from .watchdog import report_to_markdown, run_status
+
     latest_json = artifact_dir / "watchdog_report.json"
     latest_md = artifact_dir / "watchdog_report.md"
-    exit_code = _run_python_module(
-        [
-            "-m",
-            "tools.evidence_harvester.watchdog",
-            "status",
-            "--artifact-dir",
-            str(artifact_dir),
-            "--cadence-seconds",
-            str(cadence_seconds),
-            "--json-output",
-            str(latest_json),
-            "--markdown-output",
-            str(latest_md),
-            "--pretty",
-        ],
-        repo_root=repo_root,
-    )
-    if latest_json.exists():
-        shutil.copyfile(
-            latest_json, artifact_dir / f"watchdog_report_{cycle_stamp}.json"
+    try:
+        report = run_status(
+            artifact_dir,
+            cadence_seconds=cadence_seconds,
+            now=_now_utc(),
         )
-    if latest_md.exists():
-        shutil.copyfile(latest_md, artifact_dir / f"watchdog_report_{cycle_stamp}.md")
-    payload = _load_json(latest_json) if latest_json.exists() else None
-    if payload is not None:
-        payload = dict(payload)
+        payload_orig = report.to_dict()
+        json_text = json.dumps(
+            payload_orig, indent=2, sort_keys=True, ensure_ascii=True
+        )
+        latest_json.write_text(json_text + "\n", encoding="utf-8")
+        (artifact_dir / f"watchdog_report_{cycle_stamp}.json").write_text(
+            json_text + "\n", encoding="utf-8"
+        )
+        md_text = report_to_markdown(report)
+        latest_md.write_text(md_text, encoding="utf-8")
+        (artifact_dir / f"watchdog_report_{cycle_stamp}.md").write_text(
+            md_text, encoding="utf-8"
+        )
+        payload = dict(payload_orig)
         payload["report_name"] = f"watchdog_report_{cycle_stamp}.json"
+        exit_code = 0 if report.verdict.verdict != "FAIL" else 1
+    except Exception:
+        exit_code = 1
+        payload = None
     return exit_code, payload
 
 
@@ -508,50 +506,44 @@ def _default_write_audit_runner(
     artifact_dir: Path,
     cycle_stamp: str,
 ) -> tuple[int, dict[str, Any] | None]:
+    from .write_audit import report_to_markdown, run_write_audit
+
     json_path = artifact_dir / f"write_audit_report_{cycle_stamp}.json"
     md_path = artifact_dir / f"write_audit_report_{cycle_stamp}.md"
-    exit_code = _run_python_module(
-        [
-            "-m",
-            "tools.evidence_harvester.write_audit",
-            "--artifact-dir",
-            str(artifact_dir),
-            "--json-output",
-            str(json_path),
-            "--markdown-output",
-            str(md_path),
-            "--pretty",
-        ],
-        repo_root=repo_root,
-    )
-    payload = _load_json(json_path) if json_path.exists() else None
-    if payload is not None:
-        payload = dict(payload)
+    try:
+        report = run_write_audit(artifact_dir, now=_now_utc())
+        payload_orig = report.to_dict()
+        json_text = json.dumps(
+            payload_orig, indent=2, sort_keys=True, ensure_ascii=True
+        )
+        json_path.write_text(json_text + "\n", encoding="utf-8")
+        md_path.write_text(report_to_markdown(report), encoding="utf-8")
+        payload = dict(payload_orig)
         payload["report_name"] = json_path.name
+        exit_code = 0 if report.verdict.verdict != "FAIL" else 1
+    except Exception:
+        exit_code = 1
+        payload = None
     return exit_code, payload
 
 
 def _default_final_validator(
     repo_root: Path, artifact_dir: Path
 ) -> tuple[int, dict[str, Any] | None]:
+    from .ops_validation import report_to_markdown, validate_72h_window_from_dir
+
     json_path = artifact_dir / "ops_validation_report.json"
     md_path = artifact_dir / "ops_validation_report.md"
-    exit_code = _run_python_module(
-        [
-            "-m",
-            "tools.evidence_harvester.ops_validation",
-            "--pretty",
-            "validate-dir",
-            "--artifact-dir",
-            str(artifact_dir),
-            "--json-output",
-            str(json_path),
-            "--markdown-output",
-            str(md_path),
-        ],
-        repo_root=repo_root,
-    )
-    payload = _load_json(json_path) if json_path.exists() else None
+    try:
+        report = validate_72h_window_from_dir(artifact_dir, is_final=True)
+        payload = report.to_dict()
+        json_text = json.dumps(payload, indent=2, sort_keys=True, ensure_ascii=True)
+        json_path.write_text(json_text + "\n", encoding="utf-8")
+        md_path.write_text(report_to_markdown(report), encoding="utf-8")
+        exit_code = 0 if report.summary.verdict != "FAIL" else 1
+    except Exception:
+        exit_code = 1
+        payload = None
     return exit_code, payload
 
 

@@ -40,6 +40,14 @@ This replaces older gate names. The required approver is the explicit user in th
 - Treat `SECRETS_PATH` as canonical for local secrets.
 - Never use `docker compose down -v` unless the user explicitly approves a destructive action.
 
+## External Documentation Lookup
+
+This skill references Docker, Compose, and container runtime documentation:
+- Load `cdb-external-docs` before composing Docker commands or debugging stack issues.
+- Look up `docs/external-docs/index.md` → Runtime / Infrastruktur section.
+- Relevant: Docker Docs, Docker Compose, Dev Containers.
+- Verify compose syntax and behavior against official docs before mutating stack state.
+
 ## Default output format
 1. Context snapshot
 2. Proposed commands, clearly marked as not executed until approved
