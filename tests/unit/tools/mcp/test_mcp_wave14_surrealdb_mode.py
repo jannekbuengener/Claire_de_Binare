@@ -1331,6 +1331,51 @@ def test_trust_summary_db_mode_repo_crosscheck_from_records(monkeypatch) -> None
 
 
 @pytest.mark.unit
+def test_trust_summary_db_mode_repo_crosscheck_from_source_hash(
+    monkeypatch,
+) -> None:
+    """source_hash-only provenance must count for matched evidence rows."""
+    ev_with_source_hash: dict[str, Any] = {
+        "evidence_id": "ev-source-hash-001",
+        "source_hash": "sha256:abc123",
+        "scope": "wave14",
+        "created_at": "2026-01-01T00:00:00Z",
+    }
+    mock_adapter = MagicMock(spec=QueryAdapter)
+    mock_adapter.status = "surrealdb-local"
+    mock_adapter.execute.side_effect = [
+        [ev_with_source_hash],
+        [],
+        [],
+        [],
+    ]
+    _patch_adapter_factory(
+        monkeypatch,
+        "tools.mcp.context_evidence_memory_tools.build_adapter_from_params",
+        mock_adapter,
+    )
+
+    result = handle_cdb_context_trust_summary(
+        {
+            "tool": TOOL_CDB_CONTEXT_TRUST_SUMMARY,
+            "parameters": {
+                "adapter_config_path": _FAKE_CONFIG_PATH,
+                "scope": "wave14",
+            },
+        }
+    )
+
+    assert result["status"] == "ok", result
+    signals = (
+        result["result"].get("operator_trust_mapping", {}).get("context_signals", {})
+    )
+    assert signals.get("repo_crosscheck_present") is True, (
+        f"Expected repo_crosscheck_present=True when records have source_hash, "
+        f"got: {signals}"
+    )
+
+
+@pytest.mark.unit
 def test_trust_summary_db_mode_repo_crosscheck_missing(monkeypatch) -> None:
     """repo_crosscheck_present is False when adapter records have no repo fields."""
     mock_adapter = MagicMock(spec=QueryAdapter)
