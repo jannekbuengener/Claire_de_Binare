@@ -104,16 +104,19 @@ _REPO_EVIDENCE_FIELDS = frozenset(
 )
 
 
-def _has_non_empty_repo_value(record: dict, field: str) -> bool:
-    """Check if a repo evidence field in a record has a non-empty value."""
-    value = record.get(field)
+def _has_non_empty_provenance_value(value: Any) -> bool:
     if value is None:
         return False
     if isinstance(value, str):
         return bool(value.strip())
     if isinstance(value, (list, tuple)):
-        return len(value) > 0
+        return any(_has_non_empty_provenance_value(item) for item in value)
     return bool(value)
+
+
+def _has_non_empty_repo_value(record: dict, field: str) -> bool:
+    """Check if a repo evidence field in a record has a non-empty value."""
+    return _has_non_empty_provenance_value(record.get(field))
 
 
 def has_repo_evidence_from_records(*record_lists: Any) -> bool:

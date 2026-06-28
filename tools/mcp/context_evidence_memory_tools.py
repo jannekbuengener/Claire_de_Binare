@@ -777,7 +777,9 @@ def handle_cdb_context_trust_summary(request: Mapping[str, Any]) -> dict[str, An
             or (claim_result_raw and claim_result_raw.get("stale_claim_ids"))
         )
         _ev_for_repo = [
-            r for r in _ev_input if isinstance(r, dict) and r.get("scope") == scope
+            r
+            for r in (evidence_result_raw or {}).get("matched_evidence", [])
+            if isinstance(r, dict) and r.get("scope") == scope
         ]
         _cl_for_repo = [
             r for r in _cl_raw if isinstance(r, dict) and r.get("scope") == scope

@@ -373,3 +373,19 @@ def test_has_repo_evidence_empty_source_refs() -> None:
     assert not has_repo_evidence_from_records(
         [{"decision_id": "d1", "source_refs": []}]
     )
+
+
+@pytest.mark.unit
+def test_has_repo_evidence_blank_source_refs_entries() -> None:
+    """Blank or None source_refs entries do NOT count as repo evidence."""
+    assert not has_repo_evidence_from_records(
+        [{"decision_id": "d1", "source_refs": ["", "   ", None]}]
+    )
+
+
+@pytest.mark.unit
+def test_has_repo_evidence_mixed_source_refs_entries() -> None:
+    """A source_refs list counts only when at least one entry is non-empty."""
+    assert has_repo_evidence_from_records(
+        [{"decision_id": "d1", "source_refs": ["", " docs/AGENTS.md "]}]
+    )

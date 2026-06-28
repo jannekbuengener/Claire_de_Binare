@@ -1294,6 +1294,7 @@ def test_trust_summary_db_mode_repo_crosscheck_from_records(monkeypatch) -> None
         "evidence_id": "ev-source-001",
         "source_path": "tools/surrealdb/evidence_lookup.py",
         "scope": "wave14",
+        "created_at": "2026-01-01T00:00:00Z",
     }
     mock_adapter = MagicMock(spec=QueryAdapter)
     mock_adapter.status = "surrealdb-local"
@@ -1465,6 +1466,58 @@ def test_trust_summary_db_mode_repo_crosscheck_scope_isolated_with_artifact(
     assert (
         result["result"].get("operator_trust_level") != "HIGH"
     ), "Must not reach HIGH without in-scope repo evidence"
+
+
+@pytest.mark.unit
+def test_trust_summary_db_mode_repo_crosscheck_artifact_isolated(monkeypatch) -> None:
+    """Only matched artifact evidence may contribute to repo_crosscheck_present."""
+    matching_artifact_no_source: dict[str, Any] = {
+        "evidence_id": "ev-artifact-match-no-source",
+        "scope": "wave14",
+        "artifact_refs": ["tools/surrealdb/evidence_lookup.py"],
+    }
+    other_artifact_with_source: dict[str, Any] = {
+        "evidence_id": "ev-artifact-other-source",
+        "scope": "wave14",
+        "artifact_refs": ["docs/other.md"],
+        "source_path": "docs/other.md",
+    }
+    mock_adapter = MagicMock(spec=QueryAdapter)
+    mock_adapter.status = "surrealdb-local"
+    mock_adapter.execute.side_effect = [
+        [matching_artifact_no_source, other_artifact_with_source],
+        [],
+        [],
+        [],
+    ]
+    _patch_adapter_factory(
+        monkeypatch,
+        "tools.mcp.context_evidence_memory_tools.build_adapter_from_params",
+        mock_adapter,
+    )
+
+    result = handle_cdb_context_trust_summary(
+        {
+            "tool": TOOL_CDB_CONTEXT_TRUST_SUMMARY,
+            "parameters": {
+                "adapter_config_path": _FAKE_CONFIG_PATH,
+                "scope": "wave14",
+                "artifact": "tools/surrealdb/evidence_lookup.py",
+            },
+        }
+    )
+
+    assert result["status"] == "ok", result
+    signals = (
+        result["result"].get("operator_trust_mapping", {}).get("context_signals", {})
+    )
+    assert signals.get("repo_crosscheck_present") is False, (
+        "Expected repo_crosscheck_present=False when only a different artifact "
+        f"has repo provenance, got: {signals}"
+    )
+    assert (
+        result["result"].get("operator_trust_level") != "HIGH"
+    ), "Must not reach HIGH without matched artifact repo evidence"
 
 
 @pytest.mark.unit
