@@ -797,9 +797,12 @@ def handle_cdb_context_trust_summary(request: Mapping[str, Any]) -> dict[str, An
         _dec_for_repo = [
             r for r in _dec_raw if isinstance(r, dict) and r.get("scope") == scope
         ]
-        _has_repo = has_repo_evidence_from_records(
-            _ev_for_repo, _cl_for_repo, _mem_for_repo, _dec_for_repo
-        )
+        if _artifact:
+            _has_repo = has_repo_evidence_from_records(_ev_for_repo)
+        else:
+            _has_repo = has_repo_evidence_from_records(
+                _ev_for_repo, _cl_for_repo, _mem_for_repo, _dec_for_repo
+            )
         _derived_adapter_signals = TrustContextSignals(
             record_source="surrealdb-local",
             freshness_ok=not _has_stale,

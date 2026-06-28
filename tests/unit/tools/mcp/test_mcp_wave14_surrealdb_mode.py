@@ -1566,6 +1566,57 @@ def test_trust_summary_db_mode_repo_crosscheck_artifact_isolated(monkeypatch) ->
 
 
 @pytest.mark.unit
+def test_trust_summary_db_mode_repo_crosscheck_artifact_ignores_memory_provenance(
+    monkeypatch,
+) -> None:
+    """Artifact trust summaries must ignore unrelated same-scope memory provenance."""
+    matching_artifact_no_source: dict[str, Any] = {
+        "evidence_id": "ev-artifact-match-no-source-2",
+        "scope": "wave14",
+        "artifact_refs": ["tools/surrealdb/evidence_lookup.py"],
+    }
+    same_scope_memory_with_repo_ref: dict[str, Any] = {
+        "memory_id": "mem-other-provenance",
+        "scope": "wave14",
+        "artifact_refs": ["docs/other.md"],
+        "source_refs": ["docs/other.md@abc123"],
+    }
+    mock_adapter = MagicMock(spec=QueryAdapter)
+    mock_adapter.status = "surrealdb-local"
+    mock_adapter.execute.side_effect = [
+        [matching_artifact_no_source],
+        [],
+        [same_scope_memory_with_repo_ref],
+        [],
+    ]
+    _patch_adapter_factory(
+        monkeypatch,
+        "tools.mcp.context_evidence_memory_tools.build_adapter_from_params",
+        mock_adapter,
+    )
+
+    result = handle_cdb_context_trust_summary(
+        {
+            "tool": TOOL_CDB_CONTEXT_TRUST_SUMMARY,
+            "parameters": {
+                "adapter_config_path": _FAKE_CONFIG_PATH,
+                "scope": "wave14",
+                "artifact": "tools/surrealdb/evidence_lookup.py",
+            },
+        }
+    )
+
+    assert result["status"] == "ok", result
+    signals = (
+        result["result"].get("operator_trust_mapping", {}).get("context_signals", {})
+    )
+    assert signals.get("repo_crosscheck_present") is False, (
+        "Expected repo_crosscheck_present=False when only unrelated same-scope "
+        f"memory has repo provenance, got: {signals}"
+    )
+
+
+@pytest.mark.unit
 def test_trust_summary_db_mode_stale_evidence_caps_via_freshness_signal(
     monkeypatch,
 ) -> None:
