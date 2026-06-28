@@ -1610,7 +1610,12 @@ def context_readiness_handler(**kwargs) -> dict[str, Any]:
 # At least one must be present for adapter_trust_result to be treated as a
 # real trust summary rather than a generic metadata dict.
 _ADAPTER_TRUST_SENTINEL_KEYS: frozenset[str] = frozenset(
-    {"operator_trust_level", "trust_level", "composite_score", "blocking_trust_findings"}
+    {
+        "operator_trust_level",
+        "trust_level",
+        "composite_score",
+        "blocking_trust_findings",
+    }
 )
 
 
@@ -1711,7 +1716,12 @@ def _derive_briefing_brain_context(
         limitations.append(
             "brain context derived from Wave-14 trust summary adapter metadata"
         )
-        return "surrealdb-local", "used", limitations, trust_summary_result.get("result") or {}
+        return (
+            "surrealdb-local",
+            "used",
+            limitations,
+            trust_summary_result.get("result") or {},
+        )
 
     if any(
         (
@@ -1878,7 +1888,9 @@ def context_briefing_handler(**kwargs) -> dict[str, Any]:
     )
     if isinstance(brain_context, dict):
         return brain_context
-    brain_source, brain_status, derived_brain_limitations, adapter_trust_result = brain_context
+    brain_source, brain_status, derived_brain_limitations, adapter_trust_result = (
+        brain_context
+    )
     session_context_limitations.extend(derived_brain_limitations)
 
     repo_state = {
@@ -2289,7 +2301,9 @@ def context_briefing_handler(**kwargs) -> dict[str, Any]:
             # Validate that adapter_trust_result is a real build_trust_summary_v1
             # output, not a generic metadata dict (e.g. {"scope": "..."}).
             # Fail-closed: only propagate if at least one sentinel field is present.
-            _atr = adapter_trust_result if isinstance(adapter_trust_result, dict) else {}
+            _atr = (
+                adapter_trust_result if isinstance(adapter_trust_result, dict) else {}
+            )
             _has_real_trust = bool(_ADAPTER_TRUST_SENTINEL_KEYS.intersection(_atr))
             if _has_real_trust:
                 # Propagate DB-backed trust fields from the adapter result.
@@ -2309,9 +2323,7 @@ def context_briefing_handler(**kwargs) -> dict[str, Any]:
                 _adapter_stale = [str(f) for f in (_atr.get("stale_flags") or [])]
                 if _adapter_stale:
                     stale_evidence_notice.extend(_adapter_stale)
-                _adapter_disputed = [
-                    str(f) for f in (_atr.get("disputed_flags") or [])
-                ]
+                _adapter_disputed = [str(f) for f in (_atr.get("disputed_flags") or [])]
                 if _adapter_disputed:
                     contradictory_evidence_notice.extend(_adapter_disputed)
                 trust_summary = (
@@ -2384,6 +2396,7 @@ def context_briefing_handler(**kwargs) -> dict[str, Any]:
             TrustSummaryError,
             TrustSummaryRequest,
             build_trust_summary_v1,
+            has_repo_evidence_from_records,
         )
         from tools.surrealdb.decision_history_query import (
             DecisionHistoryQueryError,
@@ -2574,10 +2587,19 @@ def context_briefing_handler(**kwargs) -> dict[str, Any]:
         # Derive context_signals from brain_source so trust caps are enforced
         # per AGENTS.md: inline records (in_memory) capped at MEDIUM;
         # surrealdb-local can reach HIGH with crosscheck + freshness.
+        # repo_crosscheck_present is derived from enrichment records (#3458):
+        # only set True when at least one record has repo/import provenance fields
+        # (source_path, source_hash, source_ref, source_refs).
         _context_signals: TrustContextSignals | None = None
         if brain_source == "surrealdb-local":
+            _has_repo = has_repo_evidence_from_records(
+                _evidence_records_raw,
+                _claim_records_raw,
+                _decision_events_raw,
+                _memory_records_raw,
+            )
             _context_signals = TrustContextSignals(
-                repo_crosscheck_present=True,
+                repo_crosscheck_present=_has_repo,
                 record_source="surrealdb-local",
                 freshness_ok=True,
             )

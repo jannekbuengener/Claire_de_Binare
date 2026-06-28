@@ -1284,8 +1284,86 @@ def test_trust_summary_db_mode_adapter_signals_always_supplied(monkeypatch) -> N
         f"Expected record_source=surrealdb-local (derived, not caller-supplied), "
         f"got: {signals}"
     )
-    assert signals.get("repo_crosscheck_present") is True
     assert signals.get("caller_supplied_source_only") is False
+
+
+@pytest.mark.unit
+def test_trust_summary_db_mode_repo_crosscheck_from_records(monkeypatch) -> None:
+    """repo_crosscheck_present is True when adapter records have source_path."""
+    ev_with_source: dict[str, Any] = {
+        "evidence_id": "ev-source-001",
+        "source_path": "tools/surrealdb/evidence_lookup.py",
+        "scope": "wave14",
+    }
+    mock_adapter = MagicMock(spec=QueryAdapter)
+    mock_adapter.status = "surrealdb-local"
+    mock_adapter.execute.side_effect = [
+        [ev_with_source],
+        [],
+        [],
+        [],
+    ]
+    _patch_adapter_factory(
+        monkeypatch,
+        "tools.mcp.context_evidence_memory_tools.build_adapter_from_params",
+        mock_adapter,
+    )
+
+    result = handle_cdb_context_trust_summary(
+        {
+            "tool": TOOL_CDB_CONTEXT_TRUST_SUMMARY,
+            "parameters": {
+                "adapter_config_path": _FAKE_CONFIG_PATH,
+                "scope": "wave14",
+            },
+        }
+    )
+
+    assert result["status"] == "ok", result
+    signals = (
+        result["result"].get("operator_trust_mapping", {}).get("context_signals", {})
+    )
+    assert signals.get("repo_crosscheck_present") is True, (
+        f"Expected repo_crosscheck_present=True when records have source_path, "
+        f"got: {signals}"
+    )
+
+
+@pytest.mark.unit
+def test_trust_summary_db_mode_repo_crosscheck_missing(monkeypatch) -> None:
+    """repo_crosscheck_present is False when adapter records have no repo fields."""
+    mock_adapter = MagicMock(spec=QueryAdapter)
+    mock_adapter.status = "surrealdb-local"
+    mock_adapter.execute.side_effect = [
+        [_EVIDENCE_RECORD],
+        [_CLAIM_RECORD],
+        [_MEMORY_RECORD],
+        [_DECISION_RECORD],
+    ]
+    _patch_adapter_factory(
+        monkeypatch,
+        "tools.mcp.context_evidence_memory_tools.build_adapter_from_params",
+        mock_adapter,
+    )
+
+    result = handle_cdb_context_trust_summary(
+        {
+            "tool": TOOL_CDB_CONTEXT_TRUST_SUMMARY,
+            "parameters": {
+                "adapter_config_path": _FAKE_CONFIG_PATH,
+                "scope": "wave14",
+            },
+        }
+    )
+
+    assert result["status"] == "ok", result
+    signals = (
+        result["result"].get("operator_trust_mapping", {}).get("context_signals", {})
+    )
+    assert signals.get("repo_crosscheck_present") is False, (
+        f"Expected repo_crosscheck_present=False when records lack repo fields, "
+        f"got: {signals}"
+    )
 
 
 @pytest.mark.unit

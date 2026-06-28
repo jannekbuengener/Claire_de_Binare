@@ -38,6 +38,7 @@ from tools.surrealdb.trust_summary import (
     TrustSummaryError,
     TrustSummaryRequest,
     build_trust_summary_v1,
+    has_repo_evidence_from_records,
 )
 from tools.surrealdb.decision_history_query import (
     DecisionHistoryQueryError,
@@ -766,15 +767,19 @@ def handle_cdb_context_trust_summary(request: Mapping[str, Any]) -> dict[str, An
         # context_signals — to prevent fake DB-backed trust claims.
         # freshness_ok is False when any stale records are present in any dimension;
         # this enforces the governance rule that HIGH requires fresh data.
+        # repo_crosscheck_present is derived from adapter raw records (#3458):
+        # only set True when at least one record has repo/import provenance fields
+        # (source_path, source_hash, source_ref, source_refs).
         _has_stale = bool(
             (evidence_result_raw and evidence_result_raw.get("stale_evidence_ids"))
             or (memory_result_raw and memory_result_raw.get("stale_memory_ids"))
             or (claim_result_raw and claim_result_raw.get("stale_claim_ids"))
         )
+        _has_repo = has_repo_evidence_from_records(_ev_raw, _cl_raw, _mem_raw, _dec_raw)
         _derived_adapter_signals = TrustContextSignals(
             record_source="surrealdb-local",
             freshness_ok=not _has_stale,
-            repo_crosscheck_present=True,
+            repo_crosscheck_present=_has_repo,
             caller_supplied_source_only=False,
         )
     else:

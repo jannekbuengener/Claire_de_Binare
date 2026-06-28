@@ -16,6 +16,7 @@ from tools.surrealdb.trust_summary import (
     TrustContextSignals,
     TrustSummaryRequest,
     build_trust_summary_v1,
+    has_repo_evidence_from_records,
 )
 
 _FIXTURE_DIR = Path(__file__).resolve().parents[2] / "fixtures" / "trust_threshold"
@@ -239,4 +240,102 @@ def test_fixture_scenarios_match_contract() -> None:
             memory_result=payload.get("memory_result"),
             context_signals=signals,
         )
-        assert result["operator_trust_level"] == payload["expected_operator_trust_level"]
+        assert (
+            result["operator_trust_level"] == payload["expected_operator_trust_level"]
+        )
+
+
+@pytest.mark.unit
+def test_no_repo_crosscheck_prevents_high() -> None:
+    """Missing repo crosscheck caps at MEDIUM even with strong evidence."""
+    result = build_trust_summary_v1(
+        TrustSummaryRequest(scope="wave14-no-crosscheck"),
+        context_signals=TrustContextSignals(
+            repo_crosscheck_present=False,
+            record_source="surrealdb-local",
+            freshness_ok=True,
+        ),
+        **_strong_inputs(),
+    )
+    assert result["operator_trust_level"] == "MEDIUM", (
+        f"Expected MEDIUM when repo_crosscheck_present=False, "
+        f"got {result['operator_trust_level']}"
+    )
+
+
+@pytest.mark.unit
+def test_default_crosscheck_is_false() -> None:
+    """Default TrustContextSignals must have repo_crosscheck_present=False."""
+    signals = TrustContextSignals()
+    assert signals.repo_crosscheck_present is False
+
+
+@pytest.mark.unit
+def test_default_crosscheck_from_mapping_is_false() -> None:
+    """from_mapping must default repo_crosscheck_present to False."""
+    signals = TrustContextSignals.from_mapping({})
+    assert signals is not None
+    assert signals.repo_crosscheck_present is False
+
+
+@pytest.mark.unit
+def test_from_mapping_explicit_true() -> None:
+    """from_mapping honors explicit repo_crosscheck_present=True."""
+    signals = TrustContextSignals.from_mapping({"repo_crosscheck_present": True})
+    assert signals is not None
+    assert signals.repo_crosscheck_present is True
+
+
+@pytest.mark.unit
+def test_has_repo_evidence_from_records_source_path() -> None:
+    """source_path in a record counts as repo evidence."""
+    assert has_repo_evidence_from_records(
+        [{"evidence_id": "e1", "source_path": "docs/test.md"}]
+    )
+
+
+@pytest.mark.unit
+def test_has_repo_evidence_from_records_source_hash() -> None:
+    """source_hash in a record counts as repo evidence."""
+    assert has_repo_evidence_from_records([{"claim_id": "c1", "source_hash": "abc123"}])
+
+
+@pytest.mark.unit
+def test_has_repo_evidence_from_records_source_ref() -> None:
+    """source_ref in a record counts as repo evidence."""
+    assert has_repo_evidence_from_records(
+        [{"memory_id": "m1", "source_ref": "docs/AGENTS.md"}]
+    )
+
+
+@pytest.mark.unit
+def test_has_repo_evidence_from_records_source_refs() -> None:
+    """source_refs in a record counts as repo evidence."""
+    assert has_repo_evidence_from_records(
+        [{"decision_id": "d1", "source_refs": ["docs/AGENTS.md"]}]
+    )
+
+
+@pytest.mark.unit
+def test_has_repo_evidence_from_records_missing() -> None:
+    """Records without repo evidence fields return False."""
+    assert not has_repo_evidence_from_records(
+        [{"evidence_id": "e1", "scope": "wave14", "confidence": 0.9}]
+    )
+
+
+@pytest.mark.unit
+def test_has_repo_evidence_from_records_empty() -> None:
+    """Empty or None record lists return False."""
+    assert not has_repo_evidence_from_records([])
+    assert not has_repo_evidence_from_records(None)
+
+
+@pytest.mark.unit
+def test_has_repo_evidence_from_records_mixed() -> None:
+    """At least one record with repo evidence among multiple lists returns True."""
+    assert has_repo_evidence_from_records(
+        [{"evidence_id": "e1", "scope": "wave14"}],
+        [{"claim_id": "c1", "source_hash": "abc123"}],
+        [],
+    )
