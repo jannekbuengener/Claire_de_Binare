@@ -1,6 +1,6 @@
 # Control Register
 
-**Letzte Aktualisierung:** 2026-06-24
+**Letzte Aktualisierung:** 2026-06-28
 **SSOT Live-Readiness:** `docs/live-readiness/LR-AUDIT-STATUS-2026-03-05.md`
 **Verdict:** NO-GO
 **Control-Board Stage:** `trade-capable` (ratifiziert 2026-04-08 via Issue `#1492`)
@@ -48,7 +48,7 @@ Regel: Phasen-Status nie in CURRENT_STATUS eintragen. LR-Verdikt nie aus einer B
 
 | ADR | Topic | Decision | Status |
 |-----|-------|----------|--------|
-| `ADR-002` | Context Intelligence Canon (`knowledge/decisions/ADR-002-context-intelligence-canon.md`, Issue #3419) | `ADOPT_AFTER_FOUNDATION_REPAIR` — adoptieren nach abgeschlossener Foundation-Reparatur (#3420–#3427) | **accepted** |
+| `ADR-002` | Context Intelligence Canon (`knowledge/decisions/ADR-002-context-intelligence-canon.md`, Issue #3419) | `ADOPTED` — Foundation-Reparatur (#3420–#3427) und Trust-Wave (#3449–#3459) abgeschlossen; Context Intelligence Canon ist produktiv | **accepted / adopted** |
 | `#2775` | Context Brain Default Posture (`knowledge/decisions/CDB_CONTEXT_BRAIN_DEFAULT_POSTURE.md`) | `ALLOW_READONLY_CONDITIONAL` | **accepted / active** |
 
 Hinweise:
