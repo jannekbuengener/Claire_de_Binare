@@ -3,7 +3,7 @@
 # Claire de Binare Trading Bot
 
 # Testing Framework (Issue #21 scaffolding)
-pytest==9.1.0
+pytest==9.1.1
 pytest-cov==7.1.0
 pytest-asyncio==1.4.0
 pytest-mock==3.12.0
@@ -17,7 +17,7 @@ mypy==2.1.0
 
 # Code Quality
 black==26.5.1
-ruff==0.15.17
+ruff==0.15.18
 
 # Security Scanning
 bandit==1.9.4
