@@ -216,6 +216,14 @@ causing phantom errors.
 This applies to: **Cursor, OpenCode, Claude Code / Codex, CLI/Terminal/Shell,
 PowerShell, IDEs, and editor processes.**
 
+## External Documentation Lookup
+
+When onboarding orientation mentions external tools or agent surfaces:
+- Load `cdb-external-docs` for a complete list of external documentation references.
+- Look up `docs/external-docs/index.md` for links to OpenCode, Cursor, Codex, Claude, Gemini docs.
+- Relevant for new agents: Agent Surfaces section, GitHub Docs, MCP / Context docs.
+- If internet is unavailable, reference local `docs/external-docs/index.md` and `AGENTS.md`.
+
 ## Non-Goals
 
 - No Live-Go.

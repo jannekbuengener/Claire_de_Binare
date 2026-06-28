@@ -181,6 +181,7 @@ Wenn der Task-Scope **Context, SurrealDB, MCP tools, ContextBridge, DB-backed Me
 3. Falls nicht verfügbar: **STOP** und explizit auf `repo-only` degradieren.
 4. DB-backed Brain/Evidence/Memory nur beanspruchen, wenn `surrealdb-local` tatsächlich verfügbar und nutzbar ist (`brain_source=surrealdb-local` mit `brain_status=used` oder `partial`).
 5. Nicht-DB-Fallback darf **nie** `brain_status=used` melden.
+6. **Context trust floor:** MEDIUM. Nur HIGH/MEDIUM nutzbar. Unter MEDIUM → `context_available=false`, GitHub/Repo-Fallback oder HOLD.
 
 ### 9.2 Fallback-Regel
 

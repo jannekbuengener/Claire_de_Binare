@@ -211,6 +211,14 @@ Trenne sauber zwischen geprüften und nicht geprüften Bereichen:
 All paths require explicit GO before execution. Default mode produces
 no report and no setup mutation.
 
+## External Documentation Lookup
+
+When onboarding orientation mentions external tools or agent surfaces:
+- Load `cdb-external-docs` for a complete list of external documentation references.
+- Look up `docs/external-docs/index.md` for links to OpenCode, Cursor, Codex, Claude, Gemini docs.
+- Relevant for new agents: Agent Surfaces section, GitHub Docs, MCP / Context docs.
+- If internet is unavailable, reference local `docs/external-docs/index.md` and `AGENTS.md`.
+
 ## Non-Goals
 
 - No Live-Go.

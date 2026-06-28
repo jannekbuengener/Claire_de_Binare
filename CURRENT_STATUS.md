@@ -3,10 +3,85 @@
 **Status Class**: Working Repo / Engineering Status
 **Authority**: Current repo/main/test/dependency snapshot; not the canonical live-readiness or Echtgeld Go/No-Go source.
 **Operational Canon**: `docs/live-readiness/LR-AUDIT-STATUS-2026-03-05.md`
-**Last Updated**: 2026-06-04
+**Last Updated**: 2026-06-28
 **GitHub Boundary**: The live commit and PR state is tracked in GitHub (UI/API or `gh`); this file is a curated repo/engineering ledger, not a live mirror.
 
 ---
+
+## Repo / Engineering Status (2026-06-26)
+
+- **#3441 ContextBrain Report / Gist Ledger Integration / PR #3441 / `76ac249a`**: MERGED. Report template, Gist-Ledger-Zielreferenz, Decision-Event-Ledger-Format, Foundation-Status-Matrix. `docs/surrealdb/context-brain-report-gist-ledger-v0.md`. Gist-URL dokumentiert (kein Live-Posting). Closes #3427. Closes meta #3418 (all 9 children previously CLOSED). LR NO-GO.
+
+- **#3442 SurrealQL Syntax Validation / PR #3442 / `4326e46e`**: MERGED. Added SurrealQL syntax validation via `surreal validate` (SurrealDB CLI). **Correction from original issue:** `surrealkit validate` does not exist as a command; the correct syntax-only validator is `surreal validate` (official SurrealDB CLI, no DB needed). Delivered: Makefile target `surreal-validate`, CI job `surrealdb-validate` (pinned `ghcr.io/surrealdb/surrealdb:v3.1.5`, Docker only). Docs updated with correction note. Closes #3430. LR NO-GO.
+
+- **#3443 Coordinator runpy warning removal / PR #3443 / `fbd7fa83`**: MERGED. Removed runpy re-execution warnings from long-run coordinator invocation path in evidence harvester. Closes #3371. LR NO-GO.
+
+- **#3445 Isolated SurrealDB Graph + Vector Proof / PR #3445 / `6b375970`**: MERGED. Real, isolated SurrealDB memory proof for graph traversal (4/4 forward/backward/multi-hop/bi-directional) and vector KNN search (2/2 cluster-membership queries, `dist`-based `ORDER BY`). Schema made idempotent (`IF NOT EXISTS` on all `DEFINE FIELD`/`DEFINE INDEX`). Record IDs use `⟨id⟩` (`_surql_record_id`), datetime literals use `d'...Z'` syntax, `count()` uses `GROUP ALL` for SurrealDB v3 compatibility. Proof CLI supports `--port` for port conflict avoidance and `--cleanup` for DB teardown. 28/28 unit tests PASS. Evidence files at `artifacts/evidence/graph_vector_proof/`. LR NO-GO.
+
+- **SurrealDB Context Intelligence Foundation (#3418 meta)**: Nine foundation slices delivered and merged. All 9 children CLOSED; meta CLOSED via #3441. ADR-002 (`ADOPT_AFTER_FOUNDATION_REPAIR`) foundation-repair prerequisite fully met. #3430 (SurrealQL syntax validation) CLOSED via #3442. LR NO-GO; no runtime/DB/MCP mutation.
+
+  - **#3419 Context Intelligence Canon / Architecture Decision / PR #3428 / `774ae71c`**: ADR-002 (`ADOPT_AFTER_FOUNDATION_REPAIR`) architecture decision record. CONTROL_REGISTER updated. Issue CLOSED. LR NO-GO.
+
+  - **#3420 SurrealKit Schema Foundation / PR #3429 / `57e39277`**: Deployable SurrealKit-compatible schema wrapper. Schema snapshot mechanism (`tools/surrealdb/schema_snapshot.py` + baseline). 21 schema contract and snapshot tests. SurrealKit compatibility documentation. 4 verbindliche Anpassungen umgesetzt. Issue CLOSED. LR NO-GO.
+
+  - **#3422 VectorGraph Minimal Schema / PR #3431 / `492d4e70`**: Schema extension — `DEFINE ANALYZER cdb_code_analyzer` (class+camel tokenizers, lowercase+ascii filters), `DEFINE FIELD embedding` on `doc_chunk` (`TYPE array`), HNSW index (`DIMENSION 1536`, `DIST COSINE`), FULLTEXT index (`BM25 HIGHLIGHTS`). Schema snapshot tool extended (analyzer regex, `FieldsSchema.Analyzers`). Baseline: 226 fields, 75 indexes, 1 analyzer. 12 new + 1 fix tests (33 total). `IF NOT EXISTS` guards in deploy file. Issue CLOSED. LR NO-GO.
+
+  - **#3423 Graph Relations + Traversal Queries / `f086d194`**: Graph relations and traversal foundation for Context Intelligence. Directed edge table definitions, traversal query patterns, contract documentation. No runtime data; schema-only. Issue CLOSED. LR NO-GO.
+
+  - **#3424 Full-text + Vector + Hybrid Retrieval Contract / `cc8837c3`**: Hybrid retrieval contract combining full-text (`@@`) and vector (`<|K|>`) search semantics. Contract document + schema alignment. Issue CLOSED. LR NO-GO.
+
+  - **#3425 Agent Skills / Rules Integration / PR #3439 / `8e11c2e0`**: Agent Skills/Rules mapping (`agent-skills-rules-integration-v0.md`). SurrealDB Documentation Gate für Agenten. Offizielle SurrealDB Skills + Rules als Read-only-Referenzfläche. Update-Workflow + Source-Manifest. Alle 5 CDB-Surfaces aktualisiert. Issue CLOSED. LR NO-GO.
+
+  - **#3426 Permission Matrix v0 + Readonly Agent User / PR #3434 / `b8ada830`**: SurrealDB `DEFINE USER cdb_context_agent ON DATABASE … ROLES VIEWER` contract (`infrastructure/surrealdb/context_intelligence_readonly_agent_permissions.surql`). Permission matrix doc (`context-intelligence-permission-matrix-v0.md`). 17 contract tests (passhash format, role constraints, forbidden statements, table scope, doc-contract alignment). Baseline hash unchanged. Issue CLOSED. LR NO-GO.
+
+  - **#3421 Readonly MCP Brain Evidence Contract / PR #3435 / `cac91ec5`**: Three-layer defense-in-depth read-only contract (MCP permission guard → SurrealQL statement classifier → SurrealDB VIEWER role). `DB_RECORD_EVIDENCE_RESPONSE_SCHEMA.md` trust/confidence/freshness envelope. Validator module `db_record_evidence_response.py` (`derive_trust_level()`, `derive_freshness_signal()`, `build_ok_response()`, `build_error_response()`, `validate_db_record_evidence_response()`, `enforce_response_contract()`). 59 new tests (136 surrealdb total). Secret leak detection. Issue CLOSED. LR NO-GO.
+
+  - **#3427 ContextBrain Report / Gist Ledger Integration / PR #3441 / `76ac249a`**: Report template, Gist-Ledger-Zielreferenz, Decision-Event-Ledger-Format, Foundation-Status-Matrix. `docs/surrealdb/context-brain-report-gist-ledger-v0.md`. Gist-URL dokumentiert (kein Live-Posting). Issue CLOSED. LR NO-GO.
+
+  - **#3437 External-Docs Index + cdb-external-docs Skill / PR #3437 / `e7789a1e`**: Central external-docs index (`docs/external-docs/index.md`) mit 90+ kuratierten Verweisen (canonical, internal-tool, external). cdb-external-docs Skill in allen 5 Agent-Surfaces. Meta-Einträge in `AGENTS.md` und `agents/AGENTS.md`. 28 bestehende Skills mit external-docs-Hooks ergänzt. Issue CLOSED. LR NO-GO. Restunsicherheiten: `.claude/skills/*.skill` Binärdateien nicht modifiziert (kein Lesetool); `skillforge/`-Hooks nur lokal (ungetrackt).
+
+- **Evidence-Harvester Cluster Status**:
+  - #3362 remains **OPEN** — continuous always-on dry operation proof not yet delivered
+  - #3384 remains **OPEN** — reconcile #3345/#3362/#3374 after 72h run and evidence-bridge mapping
+  - #3345 remains **OPEN** — always-on evidence collection daemon for ARVP/profitability research
+  - Slice-B `slice-b-20260625T194946Z` continues running; no stop, restart, or modification
+  - Earliest final validation window: approx. **2026-06-28T20:07Z**
+  - **No final 72h validation performed.**
+  - LR remains **NO-GO**
+
+- **main**: `6b375970` (post #3441/#3442/#3443/#3445 merged; SurrealDB ContextBrain Foundation meta CLOSED; graph+vector proof delivered; evidence-harvester Slice-B continues)
+- **Active GitHub focus (manual, non-exhaustive)**:
+  - #3362/#3384/#3345 (Evidence-Harvester Cluster — Slice-B ETA continues)
+  - #2440 (LR-030 Shadow/Soak Run) — **OPEN**
+
+## Repo / Engineering Status (2026-06-28)
+
+- **Context / SurrealDB Trust Wave #3449–#3459**: **COMPLETED** — 8 PRs gemergt auf `main @ 41b6e4f1`.
+
+  - **#3449 Schema-Enrichment (Teil der Foundation-Welle)**: MERGED. Schema-Enrichment für Context Intelligence MCP-Tools.
+  - **#3450 Trust-Floor für Agent Surfaces / PR `385db093`**: MERGED. `usable_context_trust_minimum = MEDIUM` für alle Agent-Surfaces in `agents/AGENTS.md` und `CDB_CONTEXT_TRUST_THRESHOLD_CONTRACT.md` verankert. `context_trust_level=none` → `context_available=false`; kein DB-backed Brain-Claim ohne enrichment check.
+  - **#3451 Claim-Status `substantiated` / PR `8f22757e`**: MERGED. `substantiated` zu den Claim-Status-Gewichten in `trust_summary.py` hinzugefügt; Test-Nachzug.
+  - **#3452 Inline-MEDIUM-Cap / PR `e10659d5`**: MERGED. Inline-Records in `context_signals` auf MEDIUM gecappt; Adapter-Records können HIGH erreichen.
+  - **#3454 Adapter-Trust-Propagation / PR `fcd77b5e`**: MERGED. Adapter-Trust-Result durch den adapter-only Briefing-Pfad propagiert; `context.briefing` spiegelt jetzt `operator_trust_level` aus dem Adapter.
+  - **#3455 Evidence-Scope-Filter / PR `92201a94`**: MERGED. `cdb_context_trust_summary` filtert Evidence scope-bewusst wenn kein `artifact` spezifiziert.
+  - **#3457 Adapter-Context-Signals / PR `b2cf8344`**: MERGED. `context_signals` werden aus echten Adapter-Query-Results abgeleitet, nicht aus caller-supplied metadata. `caller_supplied_source_only` als Gate für trust level cap.
+  - **#3459 Repo-Provenance / Scope-Isolation / Artifact-Cap / PR #3459 / `41b6e4f1`**: MERGED. `repo_crosscheck_present` wird aus Adapter-Evidence abgeleitet (source_path/source_hash). Scope-Isolation: nur matched-artifact evidence contributet zu `repo_crosscheck_present`. Artifact-Cap: out-of-scope records werden ignoriert. Issue #3458 CLOSED. Alle CI-Checks: SUCCESS (ci, policy-gate, surrealdb-validate, capture-intent, scan).
+
+- **Trust-Welle Reconcile-Bewertung**: `DRIFT_FOUND_DOCS_ONLY` — Code-/Contract-Stand sauber; nur Dokumentationsdrift in CURRENT_STATUS.md und CONTROL_REGISTER.md.
+
+- **main**: `41b6e4f1` (post #3449–#3459 Trust-Welle abgeschlossen; Runner `cdb-docker-runner-2` online; PR #3459 MERGED; Issue #3458 CLOSED)
+- **LR bleibt NO-GO**. Board `trade-capable` bleibt kein Live-Go. HIGH/MEDIUM sind keine Human-/Live-/Echtgeld-Freigabe.
+- **Active GitHub focus (manual, non-exhaustive)**:
+  - #3362/#3384/#3345 (Evidence-Harvester Cluster — Slice-B ETA continues)
+  - Evidence-Harvester / 72h-Betrieb (nächster operativer Fokus)
+
+## Repo / Engineering Status (2026-06-23)
+
+- **#3410 Harmonize ci_artifact contract**: **COMPLETED** — PR [#3410](https://github.com/jannekbuengener/Claire_de_Binare/pull/3410) squash-merged (`0dcc47dc`); `ci_artifact` field type harmonised from `bool` to `string` across `TEST_FIRST_PROCESSING_CONTRACT.md` (field table + examples), `tools/test_metadata_scanner.py` (removed from `BOOLEAN_FIELDS`), and scanner tests (assertion `is False` → `== "test-report"`). PILOT-001 already used `ci_artifact: test-report` — no change needed. Scanner output now shows `"ci_artifact": "test-report"` (string) instead of `false` (bool). All 31 scanner tests PASS. CI required checks green (ci, policy-gate). capture-intent and submit-pypi remain failing (pre-existing, scoped to separate issue). LR NO-GO; no runtime/Docker/DB/MCP mutation.
+
+- **#3415 add test-metadata-import-bundle-builder**: **COMPLETED** — PR [#3415](https://github.com/jannekbuengener/Claire_de_Binare/pull/3415) squash-merged (`475c4783`); read-only SurrealDB-ready import-bundle-builder (`tools/test_metadata_import_bundle.py`) transforms scanner JSON into deterministic test_case records. `record_id` from source_file+test_id via `canonical_hash()`, `content_hash` from `core/replay/canonical_json.py`, `pilot_id` derived from `cdb-test-pilot-NNN` pattern. 50 unit tests PASS. Scanner-to-builder pipeline verified on PILOT-001. `.gitignore` allowlist extended for `*test*` wildcard. `knowledge/testing/README.md` updated with builder section. PR checks: ci (pass), policy-gate (pass); scan, capture-intent, submit-pypi (pre-existing billing-issue failures, not code-related). LR NO-GO; no DB/MCP/runtime/Docker scope.
+
+- **#2535 LR-050 Final Reconcile**: **COMPLETED** — PR [#2945](https://github.com/jannekbuengener/Claire_de_Binare/pull/2945) squash-merged (`5c0a6975`); SSOT [`docs/live-readiness/LR-050-FINAL-RECONCILE.md`](docs/live-readiness/LR-050-FINAL-RECONCILE.md); child SSOTs #2526–#2534 delivered; verdict **NO-GO** / fail-closed / not ready for live capital / not ready for human live approval; `ready-for-human-live-approval` not set. Session log: `knowledge/logs/sessions/2026-06-04-lr050-final-reconcile-2535.md`. GitHub-live: #2535 **CLOSED**. LR NO-GO; no runtime/exchange/secrets/orders.
 
 ## Repo / Engineering Status (2026-06-04)
 

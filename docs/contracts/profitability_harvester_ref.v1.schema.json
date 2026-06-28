@@ -1,0 +1,58 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://claire-de-binare/docs/contracts/profitability_harvester_ref.v1.schema.json",
+  "title": "Profitability Harvester Ref v1",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "schema_version",
+    "source_run_refs",
+    "risk_blocks",
+    "kill_switch_events",
+    "limitations",
+    "safety_boundaries"
+  ],
+  "properties": {
+    "schema_version": {
+      "const": "profitability_harvester_ref.v1"
+    },
+    "candidate_id": {
+      "type": "string",
+      "pattern": "^cand-[a-z0-9_-]{4,80}$"
+    },
+    "source_run_refs": {
+      "type": "array",
+      "minItems": 1,
+      "items": {
+        "type": "string",
+        "minLength": 1,
+        "maxLength": 300
+      }
+    },
+    "risk_blocks": {
+      "type": "integer",
+      "minimum": 0
+    },
+    "kill_switch_events": {
+      "type": "integer",
+      "minimum": 0
+    },
+    "limitations": {
+      "type": "array",
+      "items": {
+        "type": "string",
+        "minLength": 1,
+        "maxLength": 500
+      }
+    },
+    "safety_boundaries": {
+      "type": "array",
+      "minItems": 1,
+      "items": {
+        "type": "string",
+        "minLength": 1,
+        "maxLength": 500
+      }
+    }
+  }
+}

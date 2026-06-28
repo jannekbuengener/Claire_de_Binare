@@ -48,6 +48,7 @@ def test_guardrails_no_forbidden_calls():
         "core/utils/uuid_gen.py",
         "tools/arvp_probe_layer.py",
         "tools/arvp_campaign_supervisor.py",
+        "tools/surrealdb/schema_snapshot.py",  # #3420 — wall-clock metadata only; NOT in schema_hash
     }
     patterns = {
         "datetime.now": re.compile(r"datetime\.now\("),
