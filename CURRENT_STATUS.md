@@ -3,7 +3,7 @@
 **Status Class**: Working Repo / Engineering Status
 **Authority**: Current repo/main/test/dependency snapshot; not the canonical live-readiness or Echtgeld Go/No-Go source.
 **Operational Canon**: `docs/live-readiness/LR-AUDIT-STATUS-2026-03-05.md`
-**Last Updated**: 2026-06-26
+**Last Updated**: 2026-06-28
 **GitHub Boundary**: The live commit and PR state is tracked in GitHub (UI/API or `gh`); this file is a curated repo/engineering ledger, not a live mirror.
 
 ---
@@ -53,6 +53,27 @@
 - **Active GitHub focus (manual, non-exhaustive)**:
   - #3362/#3384/#3345 (Evidence-Harvester Cluster — Slice-B ETA continues)
   - #2440 (LR-030 Shadow/Soak Run) — **OPEN**
+
+## Repo / Engineering Status (2026-06-28)
+
+- **Context / SurrealDB Trust Wave #3449–#3459**: **COMPLETED** — 8 PRs gemergt auf `main @ 41b6e4f1`.
+
+  - **#3449 Schema-Enrichment (Teil der Foundation-Welle)**: MERGED. Schema-Enrichment für Context Intelligence MCP-Tools.
+  - **#3450 Trust-Floor für Agent Surfaces / PR `385db093`**: MERGED. `usable_context_trust_minimum = MEDIUM` für alle Agent-Surfaces in `agents/AGENTS.md` und `CDB_CONTEXT_TRUST_THRESHOLD_CONTRACT.md` verankert. `context_trust_level=none` → `context_available=false`; kein DB-backed Brain-Claim ohne enrichment check.
+  - **#3451 Claim-Status `substantiated` / PR `8f22757e`**: MERGED. `substantiated` zu den Claim-Status-Gewichten in `trust_summary.py` hinzugefügt; Test-Nachzug.
+  - **#3452 Inline-MEDIUM-Cap / PR `e10659d5`**: MERGED. Inline-Records in `context_signals` auf MEDIUM gecappt; Adapter-Records können HIGH erreichen.
+  - **#3454 Adapter-Trust-Propagation / PR `fcd77b5e`**: MERGED. Adapter-Trust-Result durch den adapter-only Briefing-Pfad propagiert; `context.briefing` spiegelt jetzt `operator_trust_level` aus dem Adapter.
+  - **#3455 Evidence-Scope-Filter / PR `92201a94`**: MERGED. `cdb_context_trust_summary` filtert Evidence scope-bewusst wenn kein `artifact` spezifiziert.
+  - **#3457 Adapter-Context-Signals / PR `b2cf8344`**: MERGED. `context_signals` werden aus echten Adapter-Query-Results abgeleitet, nicht aus caller-supplied metadata. `caller_supplied_source_only` als Gate für trust level cap.
+  - **#3459 Repo-Provenance / Scope-Isolation / Artifact-Cap / PR #3459 / `41b6e4f1`**: MERGED. `repo_crosscheck_present` wird aus Adapter-Evidence abgeleitet (source_path/source_hash). Scope-Isolation: nur matched-artifact evidence contributet zu `repo_crosscheck_present`. Artifact-Cap: out-of-scope records werden ignoriert. Issue #3458 CLOSED. Alle CI-Checks: SUCCESS (ci, policy-gate, surrealdb-validate, capture-intent, scan).
+
+- **Trust-Welle Reconcile-Bewertung**: `DRIFT_FOUND_DOCS_ONLY` — Code-/Contract-Stand sauber; nur Dokumentationsdrift in CURRENT_STATUS.md und CONTROL_REGISTER.md.
+
+- **main**: `41b6e4f1` (post #3449–#3459 Trust-Welle abgeschlossen; Runner `cdb-docker-runner-2` online; PR #3459 MERGED; Issue #3458 CLOSED)
+- **LR bleibt NO-GO**. Board `trade-capable` bleibt kein Live-Go. HIGH/MEDIUM sind keine Human-/Live-/Echtgeld-Freigabe.
+- **Active GitHub focus (manual, non-exhaustive)**:
+  - #3362/#3384/#3345 (Evidence-Harvester Cluster — Slice-B ETA continues)
+  - Evidence-Harvester / 72h-Betrieb (nächster operativer Fokus)
 
 ## Repo / Engineering Status (2026-06-23)
 
