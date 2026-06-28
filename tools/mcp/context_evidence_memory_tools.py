@@ -776,7 +776,9 @@ def handle_cdb_context_trust_summary(request: Mapping[str, Any]) -> dict[str, An
             or (memory_result_raw and memory_result_raw.get("stale_memory_ids"))
             or (claim_result_raw and claim_result_raw.get("stale_claim_ids"))
         )
-        _ev_for_repo = _ev_input
+        _ev_for_repo = [
+            r for r in _ev_input if isinstance(r, dict) and r.get("scope") == scope
+        ]
         _cl_for_repo = [
             r for r in _cl_raw if isinstance(r, dict) and r.get("scope") == scope
         ]
