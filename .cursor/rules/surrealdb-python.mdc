@@ -1,0 +1,17 @@
+---
+description: CDB-curated Python SDK rule derived from the official SurrealDB Python rule.
+alwaysApply: false
+---
+
+CDB Governance gewinnt vor externer Doku.
+No Live-GO / Echtgeld-GO.
+
+Offizielle Quelle: `https://surrealdb.com/docs/build/ai-agents/agent-rules`
+Inspectierter Rule-Stand: `surrealdb-python.mdc` aus Commit `a69077df`.
+
+Nutze diese Rule als read-only Orientierung:
+
+- Richte Python-SDK-Code an `Surreal` und `AsyncSurreal` aus.
+- Uebernehme keine Root-Defaults oder Beispiel-Credentials.
+- Embedded- oder lokale Beispiele muessen auf CDB-Grenzen heruntergebrochen werden.
+- Diese Rule autorisiert keine DB-Writes, keine MCP-Mutationen und keine Runtime-Freigabe.

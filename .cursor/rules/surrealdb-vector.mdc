@@ -1,0 +1,17 @@
+---
+description: CDB-curated vector rule derived from the official SurrealDB vector rule.
+alwaysApply: false
+---
+
+CDB Governance gewinnt vor externer Doku.
+No Live-GO / Echtgeld-GO.
+
+Offizielle Quelle: `https://surrealdb.com/docs/build/ai-agents/agent-rules`
+Inspectierter Rule-Stand: `surrealdb-vector.mdc` aus Commit `a69077df`.
+
+Nutze diese Rule als read-only Orientierung:
+
+- HNSW-Indexe brauchen passende `DIMENSION`, `DIST` und `TYPE`.
+- Trenne Query-Logik, Score-Berechnung und Thresholds klar voneinander.
+- Behandle Vector-Muster als Schema-/Query-Hilfe, nicht als Freigabe fuer Laufzeit- oder DB-Aktionen.
+- Wenn CDB-Evidence oder Vertrage enger sind als Upstream-Beispiele, gilt CDB.
