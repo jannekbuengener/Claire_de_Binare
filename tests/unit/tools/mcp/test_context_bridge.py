@@ -2064,6 +2064,7 @@ class TestContextBriefingHandler:
             "relevant_decisions",
             "relevant_evidence",
             "dependency_paths",
+            "graph_paths",
             "known_risks",
             "guardrails",
             "stop_conditions",
