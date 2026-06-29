@@ -13,6 +13,14 @@ Recorded decisions (ADR-style) for governance, context/MCP posture, and infrastr
 | [`K8S_BUDGET_DECISION.md`](K8S_BUDGET_DECISION.md) | Kubernetes GO/NO-GO |
 | [`ADR-001-documentation-only-repository.md`](ADR-001-documentation-only-repository.md) | Docs-only repo pattern |
 
+## Context Brain graph follow-up surfaces
+
+The #3480 sensory-layer canon in [`CDB_CONTEXT_BRAIN_SENSORY_LAYER.md`](CDB_CONTEXT_BRAIN_SENSORY_LAYER.md)
+is the discoverability anchor for the current #3484 graph follow-up surfaces:
+
+- [`docs/surrealdb/context-relationship-vocabulary-v0.md`](../../docs/surrealdb/context-relationship-vocabulary-v0.md)
+- [`infrastructure/surrealdb/traversal_query_fixtures.surql`](../../infrastructure/surrealdb/traversal_query_fixtures.surql)
+
 ## Where to write
 
 - New **decisions** with durable rationale → this directory (dated filename or ADR-NNN).

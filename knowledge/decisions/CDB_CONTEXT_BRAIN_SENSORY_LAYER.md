@@ -99,10 +99,28 @@ LR remains NO-GO. Board stage stays orthogonal to Live-Go.
 
 - #3479 remains the parent epic for the sensory roadmap.
 - #3480 defines the canonical sensory-layer baseline in documentation.
-- #3484, #3486, and #3487 remain explicit follow-on work and are not delivered by this file.
+- #3484 remains the graph follow-up slice for operational graph discoverability and
+  repo-only briefing visibility.
+- #3486 and #3487 remain explicit later follow-ons and are not delivered by this file.
+
+## Graph follow-up discoverability (#3484)
+
+The #3480 sensory canon may point to graph follow-up surfaces so agents can discover
+them without upgrading repo text into DB truth, PR body truth, or local staged files.
+
+- Relationship vocabulary canon: `docs/surrealdb/context-relationship-vocabulary-v0.md`
+- Traversal query catalog / fixtures: `infrastructure/surrealdb/traversal_query_fixtures.surql`
+- Foundation issue: #3423
+- Repo-backed proof reference: #3445
+
+These anchors are discoverability-only. They do not authorize traversal execution,
+productive SurrealDB queries, MCP mutation, or any DB-backed claim. `CURRENT_STATUS.md`,
+PR body, and local staged files remain separate lower-authority surfaces.
 
 ## References
 
 - [CDB_CONTEXT_BRAIN_DEFAULT_POSTURE.md](CDB_CONTEXT_BRAIN_DEFAULT_POSTURE.md)
 - [ADR-002-context-intelligence-canon.md](ADR-002-context-intelligence-canon.md)
 - [docs/onboarding/repo_brain_context_intelligence.md](../../docs/onboarding/repo_brain_context_intelligence.md)
+- [docs/surrealdb/context-relationship-vocabulary-v0.md](../../docs/surrealdb/context-relationship-vocabulary-v0.md)
+- [infrastructure/surrealdb/traversal_query_fixtures.surql](../../infrastructure/surrealdb/traversal_query_fixtures.surql)
