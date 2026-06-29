@@ -130,6 +130,21 @@ These anchors stay repo-only and non-authorizing. They do not prove DB-backed ve
 state, do not authorize productive embeddings, and do not collapse #3484, #3486, and
 #3487 into one slice.
 
+## Hybrid retrieval follow-up discoverability (#3487)
+
+The #3487 hybrid retrieval follow-up starts from the graph anchor in #3484 and the
+vector / embedding anchor in #3486, then adds repo-only sensory-fusion semantics for
+BM25 + Vector + Graph.
+
+- Hybrid retrieval canon: `docs/surrealdb/context-hybrid-retrieval-strategy-v1.md`
+- Hybrid query fixtures: `infrastructure/surrealdb/hybrid_retrieval_fixtures.surql`
+- Python ranking semantics: `tools/surrealdb/hybrid_retrieval_ranking.py`
+- MCP status surface: `context.search`
+
+These anchors are contract / fixture / ranking semantics only. They do not authorize
+productive DB execution, do not create DB-backed evidence without Tool/Query/Record
+proof, and do not upgrade repo text into runtime truth.
+
 ## References
 
 - [CDB_CONTEXT_BRAIN_DEFAULT_POSTURE.md](CDB_CONTEXT_BRAIN_DEFAULT_POSTURE.md)
@@ -137,6 +152,8 @@ state, do not authorize productive embeddings, and do not collapse #3484, #3486,
 - [docs/onboarding/repo_brain_context_intelligence.md](../../docs/onboarding/repo_brain_context_intelligence.md)
 - [docs/surrealdb/context-relationship-vocabulary-v0.md](../../docs/surrealdb/context-relationship-vocabulary-v0.md)
 - [docs/surrealdb/context-embedding-pipeline-v0.md](../../docs/surrealdb/context-embedding-pipeline-v0.md)
+- [docs/surrealdb/context-hybrid-retrieval-strategy-v1.md](../../docs/surrealdb/context-hybrid-retrieval-strategy-v1.md)
 - [infrastructure/surrealdb/traversal_query_fixtures.surql](../../infrastructure/surrealdb/traversal_query_fixtures.surql)
 - [infrastructure/surrealdb/hybrid_retrieval_fixtures.surql](../../infrastructure/surrealdb/hybrid_retrieval_fixtures.surql)
+- [tools/surrealdb/hybrid_retrieval_ranking.py](../../tools/surrealdb/hybrid_retrieval_ranking.py)
 - [tools/surrealdb/graph_vector_proof_cli.py](../../tools/surrealdb/graph_vector_proof_cli.py)
