@@ -163,6 +163,33 @@ When you start working with Repo Brain / Context Intelligence for the first time
    - `agents/templates/README.md` — Agent MCP config template index
    - `agents/templates/onboarding_mcp_setup.ps1` — MCP capability validation script
 
+## Graph follow-up discoverability
+
+The current Context Brain sensory canon is
+[`CDB_CONTEXT_BRAIN_SENSORY_LAYER.md`](../../knowledge/decisions/CDB_CONTEXT_BRAIN_SENSORY_LAYER.md).
+For the #3484 graph follow-up, use that canon as the entry surface for these repo-only
+discoverability anchors:
+
+- `docs/surrealdb/context-relationship-vocabulary-v0.md`
+- `infrastructure/surrealdb/traversal_query_fixtures.surql`
+
+These files help agents discover graph vocabulary and traversal examples, but they do
+not create DB-backed evidence, runtime authority, or any Live-/Echtgeld-Go.
+
+## Vector pipeline discoverability
+
+For the #3486 vector / embedding follow-up, start from
+[`CDB_CONTEXT_BRAIN_SENSORY_LAYER.md`](../../knowledge/decisions/CDB_CONTEXT_BRAIN_SENSORY_LAYER.md)
+and then use these repo-only discoverability anchors:
+
+- `docs/surrealdb/context-embedding-pipeline-v0.md`
+- `infrastructure/surrealdb/hybrid_retrieval_fixtures.surql`
+- `tools/surrealdb/graph_vector_proof_cli.py`
+
+These anchors document the vector pipeline contract, fixtures, and proof boundaries.
+They stay repo-only, non-authorizing, and do not create DB-backed truth, runtime
+rebuild authority, or any Live-/Echtgeld-Go. #3487 remains a later follow-up.
+
 ## Local Readiness Check
 
 Start with the **developer onboarding doctor** for a general setup check:
@@ -244,6 +271,8 @@ pwsh -File agents/templates/onboarding_mcp_setup.ps1
 
 | Doc | Purpose |
 |-----|---------|
+| `knowledge/decisions/CDB_CONTEXT_BRAIN_SENSORY_LAYER.md` | Canonical sensory-layer principle and boundary contract |
+| `docs/surrealdb/context-embedding-pipeline-v0.md` | Canonical #3486 vector / embedding pipeline contract |
 | `docs/surrealdb/README.md` | Context-/MCP-Docs-Index |
 | `docs/runbooks/surrealdb_context_mcp_access.md` | MCP capability resolution |
 | `docs/runbooks/SURREALDB_LOCAL_CONTEXT_RUNTIME.md` | Local context runtime |
