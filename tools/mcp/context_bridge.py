@@ -2483,6 +2483,67 @@ def _derive_briefing_graph_paths(
             ]
         )
 
+    if target_issue == "#3486":
+        graph_paths.extend(
+            [
+                {
+                    "path_id": "issue-3486-vector-pipeline-contract",
+                    "nodes": [
+                        "knowledge/decisions/CDB_CONTEXT_BRAIN_SENSORY_LAYER.md",
+                        "docs/surrealdb/context-embedding-pipeline-v0.md",
+                    ],
+                    "relationships": ["canonically_discovers"],
+                    "source": "repo_only",
+                    "authorizes": False,
+                    "non_authorizing": True,
+                    "no_db_write": True,
+                    "no_runtime_rebuild": True,
+                    "no_lr_go": True,
+                },
+                {
+                    "path_id": "issue-3486-hnsw-fixtures",
+                    "nodes": [
+                        "docs/surrealdb/context-embedding-pipeline-v0.md",
+                        "infrastructure/surrealdb/hybrid_retrieval_fixtures.surql",
+                    ],
+                    "relationships": ["verifies_query_contract"],
+                    "source": "repo_only",
+                    "authorizes": False,
+                    "non_authorizing": True,
+                    "no_db_write": True,
+                    "no_runtime_rebuild": True,
+                    "no_lr_go": True,
+                },
+                {
+                    "path_id": "issue-3486-proof-boundary",
+                    "nodes": [
+                        "docs/surrealdb/context-embedding-pipeline-v0.md",
+                        "tools/surrealdb/graph_vector_proof_cli.py",
+                        "#3445",
+                    ],
+                    "relationships": ["requires_machine_readable_proof", "builds_on"],
+                    "source": "repo_only",
+                    "authorizes": False,
+                    "non_authorizing": True,
+                    "no_db_write": True,
+                    "no_runtime_rebuild": True,
+                    "no_lr_go": True,
+                },
+                {
+                    "path_id": "issue-3486-follow-on-boundary",
+                    "nodes": ["#3484", "#3486", "#3487"],
+                    "relationships": ["builds_on", "later_follow_on"],
+                    "source": "repo_only",
+                    "authorizes": False,
+                    "non_authorizing": True,
+                    "no_db_write": True,
+                    "no_runtime_rebuild": True,
+                    "no_lr_go": True,
+                    "out_of_scope": ["#3487"],
+                },
+            ]
+        )
+
     return graph_paths
 
 

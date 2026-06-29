@@ -117,10 +117,26 @@ These anchors are discoverability-only. They do not authorize traversal executio
 productive SurrealDB queries, MCP mutation, or any DB-backed claim. `CURRENT_STATUS.md`,
 PR body, and local staged files remain separate lower-authority surfaces.
 
+## Vector / embedding follow-up discoverability (#3486)
+
+The #3484 graph anchor is the base discoverability surface for the later #3486
+vector / embedding pipeline contract and the later #3487 hybrid retrieval follow-up.
+
+- Vector pipeline canon: `docs/surrealdb/context-embedding-pipeline-v0.md`
+- HNSW / hybrid query fixtures: `infrastructure/surrealdb/hybrid_retrieval_fixtures.surql`
+- Machine-readable proof boundary: `tools/surrealdb/graph_vector_proof_cli.py`
+
+These anchors stay repo-only and non-authorizing. They do not prove DB-backed vector
+state, do not authorize productive embeddings, and do not collapse #3484, #3486, and
+#3487 into one slice.
+
 ## References
 
 - [CDB_CONTEXT_BRAIN_DEFAULT_POSTURE.md](CDB_CONTEXT_BRAIN_DEFAULT_POSTURE.md)
 - [ADR-002-context-intelligence-canon.md](ADR-002-context-intelligence-canon.md)
 - [docs/onboarding/repo_brain_context_intelligence.md](../../docs/onboarding/repo_brain_context_intelligence.md)
 - [docs/surrealdb/context-relationship-vocabulary-v0.md](../../docs/surrealdb/context-relationship-vocabulary-v0.md)
+- [docs/surrealdb/context-embedding-pipeline-v0.md](../../docs/surrealdb/context-embedding-pipeline-v0.md)
 - [infrastructure/surrealdb/traversal_query_fixtures.surql](../../infrastructure/surrealdb/traversal_query_fixtures.surql)
+- [infrastructure/surrealdb/hybrid_retrieval_fixtures.surql](../../infrastructure/surrealdb/hybrid_retrieval_fixtures.surql)
+- [tools/surrealdb/graph_vector_proof_cli.py](../../tools/surrealdb/graph_vector_proof_cli.py)
