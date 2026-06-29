@@ -190,6 +190,26 @@ These anchors document the vector pipeline contract, fixtures, and proof boundar
 They stay repo-only, non-authorizing, and do not create DB-backed truth, runtime
 rebuild authority, or any Live-/Echtgeld-Go. #3487 remains a later follow-up.
 
+## Hybrid retrieval discoverability
+
+For the #3487 hybrid retrieval follow-up, start from the same sensory canon and keep
+the foundations separate:
+
+- #3484 provides the graph anchor
+- #3486 provides the vector / embedding anchor
+- #3487 connects BM25 + Vector + Graph only as contract / fixture / ranking semantics
+
+Use these repo-only discoverability anchors:
+
+- `docs/surrealdb/context-hybrid-retrieval-strategy-v1.md`
+- `infrastructure/surrealdb/hybrid_retrieval_fixtures.surql`
+- `tools/surrealdb/hybrid_retrieval_ranking.py`
+- `context.search`
+
+The hybrid follow-up remains non-authorizing. It does not create productive DB
+execution, does not create DB-backed evidence without Tool/Query/Record proof, and
+does not imply any Live-/Echtgeld-Go.
+
 ## Local Readiness Check
 
 Start with the **developer onboarding doctor** for a general setup check:
