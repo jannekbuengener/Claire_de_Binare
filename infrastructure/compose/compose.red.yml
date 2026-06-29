@@ -193,7 +193,7 @@ services:
       - cdb_network
 
   cdb_cadvisor:
-    image: gcr.io/cadvisor/cadvisor:v0.49.2
+    image: gcr.io/cadvisor/cadvisor:v0.55.1
     container_name: cdb_cadvisor
     restart: unless-stopped
     volumes:
