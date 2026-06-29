@@ -29,6 +29,17 @@ def test_standard_mutating_surrealdb_tools_are_forbidden() -> None:
         assert entry["mutation_risk"] != "none"
 
 
+def test_raw_upstream_tools_stay_blocked() -> None:
+    result = build_mcp_access_boundary()
+    entries = _entries_by_name(result["matrix"])
+
+    for tool_name in {"query", "select", "list", "use", "info"}:
+        entry = entries[tool_name]
+        assert entry["decision"] == "BLOCKED"
+        assert entry["callable_status"] == "NOT_EXPOSED"
+        assert entry["operational_status"] == "BLOCKED_RAW_MCP"
+
+
 def test_readonly_tools_have_evidence() -> None:
     result = build_mcp_access_boundary()
 
