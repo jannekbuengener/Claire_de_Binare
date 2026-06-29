@@ -211,6 +211,41 @@ python -m tools.surrealdb.context_onboarding_doctor --format json
 - Issue #2642 prüft optional `127.0.0.1:8811` (HTTP MCP host).
 - Separater remote `cdb`-Server in OpenCode nutzt laut Runbook-Hinweis `127.0.0.1:8812/mcp` — nicht mit #2642 verwechseln.
 
+### 1.5.2. Local DB-backed briefing proof (reuse-first)
+
+For a real local `context.briefing` / `cdb_context_briefing` proof, reuse the existing local SurrealDB surfaces instead of inventing a new seed or config layer:
+
+1. Create the gitignored local query config once:
+
+```bash
+make context-query-config-init
+```
+
+This creates `infrastructure/config/surrealdb/context_query.local.yaml` from the tracked example. The MCP/briefing path stays **explicit opt-in**: pass `adapter_config_path` to that local file. There is **no** implicit MCP default and **no** auto-discovery in the briefing handler.
+
+2. Ensure the local secrets path contains `SURREALDB_ENV` for the local-only context DB.
+
+3. Run the existing reuse-first local proof:
+
+```bash
+pytest -v tests/local/tools/mcp/test_wave14_real_surrealdb_smoke.py -m local_only
+```
+
+What this proves:
+- run-scoped rows are seeded into local `cdb_context_local` / `cdb_context_intel`
+- Wave-14 MCP tools read them back with `metadata.source = surrealdb-local`
+- `context.briefing` derives `brain_source = surrealdb-local` and `brain_status = used`
+- trust remains adapter-derived and fail-closed; the proof does not promise HIGH and may still resolve to LOW or MEDIUM depending on the current trust signals
+
+What this does **not** prove:
+- no Live-Go, no Echtgeld-Go, no LR change
+- no productive or remote DB writes
+- no registry-only result may be confused with DB-backed evidence
+
+Evidence distinction:
+- **Registry-only / bridge-only**: tool is registered, handler resolves, no DB rows required.
+- **DB-backed evidence**: explicit `adapter_config_path` + local config + local secrets + actual local rows returned from SurrealDB.
+
 **Cross-repo root inventory** (#2853) — deterministische Tabelle für Working-Repo und
 konfigurierte Sibling-/Extern-Roots (lokal vs. GitHub getrennt; kein Clone):
 
