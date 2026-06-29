@@ -1,0 +1,1290 @@
+{
+  "matrix": [
+    {
+      "tool_name": "cdb_agent_os_readiness",
+      "tool_family": "cdb_context_registry",
+      "repo_present": true,
+      "exposed": true,
+      "callable_status": "CALLABLE",
+      "operational_status": "DB_BACKED_READONLY_UNPROVEN",
+      "decision": "ALLOWED_READONLY",
+      "mutation_risk": "none",
+      "allowed_mode": "read_only",
+      "handler_path": "tools/mcp/context_bridge.py",
+      "permission_evidence": [
+        "docs/surrealdb/context-intelligence-permission-matrix-v0.md",
+        "docs/surrealdb/context-mcp-bridge-contract.md",
+        "tools/mcp/context_bridge.py",
+        "tools/mcp/permission_guard.py",
+        "tools/mcp/registry.py"
+      ],
+      "source_evidence": [
+        ".cursor/mcp.json",
+        "artifacts/context_tool_inventory/tool_inventory.json",
+        "docs/surrealdb/context-evidence-claim-memory-runbook.md",
+        "tools/context_tool_inventory.py",
+        "tools/mcp/permission_guard.py",
+        "tools/mcp/registry.py",
+        "tools/mcp/server.py"
+      ],
+      "gap_reason": ""
+    },
+    {
+      "tool_name": "cdb_context_architect_signals",
+      "tool_family": "cdb_context_registry",
+      "repo_present": true,
+      "exposed": true,
+      "callable_status": "CALLABLE",
+      "operational_status": "DB_BACKED_READONLY_UNPROVEN",
+      "decision": "ALLOWED_READONLY",
+      "mutation_risk": "none",
+      "allowed_mode": "read_only",
+      "handler_path": "tools/mcp/context_bridge.py",
+      "permission_evidence": [
+        "docs/surrealdb/context-intelligence-permission-matrix-v0.md",
+        "docs/surrealdb/context-mcp-bridge-contract.md",
+        "tools/mcp/context_bridge.py",
+        "tools/mcp/permission_guard.py",
+        "tools/mcp/registry.py"
+      ],
+      "source_evidence": [
+        ".cursor/mcp.json",
+        "artifacts/context_tool_inventory/tool_inventory.json",
+        "docs/surrealdb/context-evidence-claim-memory-runbook.md",
+        "tools/context_tool_inventory.py",
+        "tools/mcp/permission_guard.py",
+        "tools/mcp/registry.py",
+        "tools/mcp/server.py"
+      ],
+      "gap_reason": ""
+    },
+    {
+      "tool_name": "cdb_context_briefing",
+      "tool_family": "cdb_context_registry",
+      "repo_present": true,
+      "exposed": true,
+      "callable_status": "CALLABLE",
+      "operational_status": "DB_BACKED_READONLY_UNPROVEN",
+      "decision": "ALLOWED_READONLY",
+      "mutation_risk": "none",
+      "allowed_mode": "read_only",
+      "handler_path": "tools/mcp/context_bridge.py",
+      "permission_evidence": [
+        "docs/surrealdb/context-intelligence-permission-matrix-v0.md",
+        "docs/surrealdb/context-mcp-bridge-contract.md",
+        "tools/mcp/context_bridge.py",
+        "tools/mcp/permission_guard.py",
+        "tools/mcp/registry.py"
+      ],
+      "source_evidence": [
+        ".cursor/mcp.json",
+        "artifacts/context_tool_inventory/tool_inventory.json",
+        "docs/surrealdb/context-evidence-claim-memory-runbook.md",
+        "tools/context_tool_inventory.py",
+        "tools/mcp/permission_guard.py",
+        "tools/mcp/registry.py",
+        "tools/mcp/server.py"
+      ],
+      "gap_reason": ""
+    },
+    {
+      "tool_name": "cdb_context_claim_resolve",
+      "tool_family": "cdb_context_registry",
+      "repo_present": true,
+      "exposed": true,
+      "callable_status": "CALLABLE",
+      "operational_status": "DB_BACKED_READONLY_UNPROVEN",
+      "decision": "ALLOWED_READONLY",
+      "mutation_risk": "none",
+      "allowed_mode": "read_only",
+      "handler_path": "tools/mcp/context_bridge.py",
+      "permission_evidence": [
+        "docs/surrealdb/context-intelligence-permission-matrix-v0.md",
+        "docs/surrealdb/context-mcp-bridge-contract.md",
+        "tools/mcp/context_bridge.py",
+        "tools/mcp/permission_guard.py",
+        "tools/mcp/registry.py"
+      ],
+      "source_evidence": [
+        ".cursor/mcp.json",
+        "artifacts/context_tool_inventory/tool_inventory.json",
+        "docs/surrealdb/context-evidence-claim-memory-runbook.md",
+        "tools/context_tool_inventory.py",
+        "tools/mcp/permission_guard.py",
+        "tools/mcp/registry.py",
+        "tools/mcp/server.py"
+      ],
+      "gap_reason": ""
+    },
+    {
+      "tool_name": "cdb_context_contradictions",
+      "tool_family": "cdb_context_registry",
+      "repo_present": true,
+      "exposed": true,
+      "callable_status": "CALLABLE",
+      "operational_status": "DB_BACKED_READONLY_UNPROVEN",
+      "decision": "ALLOWED_READONLY",
+      "mutation_risk": "none",
+      "allowed_mode": "read_only",
+      "handler_path": "tools/mcp/context_bridge.py",
+      "permission_evidence": [
+        "docs/surrealdb/context-intelligence-permission-matrix-v0.md",
+        "docs/surrealdb/context-mcp-bridge-contract.md",
+        "tools/mcp/context_bridge.py",
+        "tools/mcp/permission_guard.py",
+        "tools/mcp/registry.py"
+      ],
+      "source_evidence": [
+        ".cursor/mcp.json",
+        "artifacts/context_tool_inventory/tool_inventory.json",
+        "docs/surrealdb/context-evidence-claim-memory-runbook.md",
+        "tools/context_tool_inventory.py",
+        "tools/mcp/permission_guard.py",
+        "tools/mcp/registry.py",
+        "tools/mcp/server.py"
+      ],
+      "gap_reason": ""
+    },
+    {
+      "tool_name": "cdb_context_decision_history",
+      "tool_family": "cdb_context_registry",
+      "repo_present": true,
+      "exposed": true,
+      "callable_status": "CALLABLE",
+      "operational_status": "DB_BACKED_READONLY_UNPROVEN",
+      "decision": "ALLOWED_READONLY",
+      "mutation_risk": "none",
+      "allowed_mode": "read_only",
+      "handler_path": "tools/mcp/context_bridge.py",
+      "permission_evidence": [
+        "docs/surrealdb/context-intelligence-permission-matrix-v0.md",
+        "docs/surrealdb/context-mcp-bridge-contract.md",
+        "tools/mcp/context_bridge.py",
+        "tools/mcp/permission_guard.py",
+        "tools/mcp/registry.py"
+      ],
+      "source_evidence": [
+        ".cursor/mcp.json",
+        "artifacts/context_tool_inventory/tool_inventory.json",
+        "docs/surrealdb/context-evidence-claim-memory-runbook.md",
+        "tools/context_tool_inventory.py",
+        "tools/mcp/permission_guard.py",
+        "tools/mcp/registry.py",
+        "tools/mcp/server.py"
+      ],
+      "gap_reason": ""
+    },
+    {
+      "tool_name": "cdb_context_decision_replay",
+      "tool_family": "cdb_context_registry",
+      "repo_present": true,
+      "exposed": true,
+      "callable_status": "CALLABLE",
+      "operational_status": "DB_BACKED_READONLY_UNPROVEN",
+      "decision": "ALLOWED_READONLY",
+      "mutation_risk": "none",
+      "allowed_mode": "read_only",
+      "handler_path": "tools/mcp/context_bridge.py",
+      "permission_evidence": [
+        "docs/surrealdb/context-intelligence-permission-matrix-v0.md",
+        "docs/surrealdb/context-mcp-bridge-contract.md",
+        "tools/mcp/context_bridge.py",
+        "tools/mcp/permission_guard.py",
+        "tools/mcp/registry.py"
+      ],
+      "source_evidence": [
+        ".cursor/mcp.json",
+        "artifacts/context_tool_inventory/tool_inventory.json",
+        "docs/surrealdb/context-evidence-claim-memory-runbook.md",
+        "tools/context_tool_inventory.py",
+        "tools/mcp/permission_guard.py",
+        "tools/mcp/registry.py",
+        "tools/mcp/server.py"
+      ],
+      "gap_reason": ""
+    },
+    {
+      "tool_name": "cdb_context_evidence_resolve",
+      "tool_family": "cdb_context_registry",
+      "repo_present": true,
+      "exposed": true,
+      "callable_status": "CALLABLE",
+      "operational_status": "DB_BACKED_READONLY_UNPROVEN",
+      "decision": "ALLOWED_READONLY",
+      "mutation_risk": "none",
+      "allowed_mode": "read_only",
+      "handler_path": "tools/mcp/context_bridge.py",
+      "permission_evidence": [
+        "docs/surrealdb/context-intelligence-permission-matrix-v0.md",
+        "docs/surrealdb/context-mcp-bridge-contract.md",
+        "tools/mcp/context_bridge.py",
+        "tools/mcp/permission_guard.py",
+        "tools/mcp/registry.py"
+      ],
+      "source_evidence": [
+        ".cursor/mcp.json",
+        "artifacts/context_tool_inventory/tool_inventory.json",
+        "docs/surrealdb/context-evidence-claim-memory-runbook.md",
+        "tools/context_tool_inventory.py",
+        "tools/mcp/permission_guard.py",
+        "tools/mcp/registry.py",
+        "tools/mcp/server.py"
+      ],
+      "gap_reason": ""
+    },
+    {
+      "tool_name": "cdb_context_impact",
+      "tool_family": "cdb_context_registry",
+      "repo_present": true,
+      "exposed": true,
+      "callable_status": "CALLABLE",
+      "operational_status": "CONTRACT_READONLY",
+      "decision": "ALLOWED_READONLY",
+      "mutation_risk": "none",
+      "allowed_mode": "read_only",
+      "handler_path": "tools/mcp/context_bridge.py",
+      "permission_evidence": [
+        "docs/surrealdb/context-intelligence-permission-matrix-v0.md",
+        "docs/surrealdb/context-mcp-bridge-contract.md",
+        "tools/mcp/context_bridge.py",
+        "tools/mcp/permission_guard.py",
+        "tools/mcp/registry.py"
+      ],
+      "source_evidence": [
+        ".cursor/mcp.json",
+        "artifacts/context_tool_inventory/tool_inventory.json",
+        "docs/surrealdb/context-evidence-claim-memory-runbook.md",
+        "tools/context_tool_inventory.py",
+        "tools/mcp/permission_guard.py",
+        "tools/mcp/registry.py",
+        "tools/mcp/server.py"
+      ],
+      "gap_reason": ""
+    },
+    {
+      "tool_name": "cdb_context_memory_get",
+      "tool_family": "cdb_context_registry",
+      "repo_present": true,
+      "exposed": true,
+      "callable_status": "CALLABLE",
+      "operational_status": "DB_BACKED_READONLY_UNPROVEN",
+      "decision": "ALLOWED_READONLY",
+      "mutation_risk": "none",
+      "allowed_mode": "read_only",
+      "handler_path": "tools/mcp/context_bridge.py",
+      "permission_evidence": [
+        "docs/surrealdb/context-intelligence-permission-matrix-v0.md",
+        "docs/surrealdb/context-mcp-bridge-contract.md",
+        "tools/mcp/context_bridge.py",
+        "tools/mcp/permission_guard.py",
+        "tools/mcp/registry.py"
+      ],
+      "source_evidence": [
+        ".cursor/mcp.json",
+        "artifacts/context_tool_inventory/tool_inventory.json",
+        "docs/surrealdb/context-evidence-claim-memory-runbook.md",
+        "tools/context_tool_inventory.py",
+        "tools/mcp/permission_guard.py",
+        "tools/mcp/registry.py",
+        "tools/mcp/server.py"
+      ],
+      "gap_reason": ""
+    },
+    {
+      "tool_name": "cdb_context_memory_write_intent",
+      "tool_family": "cdb_context_registry",
+      "repo_present": true,
+      "exposed": true,
+      "callable_status": "CALLABLE",
+      "operational_status": "DB_BACKED_READONLY_UNPROVEN",
+      "decision": "ALLOWED_READONLY",
+      "mutation_risk": "dry_run_gate",
+      "allowed_mode": "dry_run_only",
+      "handler_path": "tools/mcp/context_bridge.py",
+      "permission_evidence": [
+        "docs/surrealdb/context-intelligence-permission-matrix-v0.md",
+        "docs/surrealdb/context-mcp-bridge-contract.md",
+        "tools/mcp/context_bridge.py",
+        "tools/mcp/permission_guard.py",
+        "tools/mcp/registry.py"
+      ],
+      "source_evidence": [
+        ".cursor/mcp.json",
+        "artifacts/context_tool_inventory/tool_inventory.json",
+        "docs/surrealdb/context-evidence-claim-memory-runbook.md",
+        "tools/context_tool_inventory.py",
+        "tools/mcp/permission_guard.py",
+        "tools/mcp/registry.py",
+        "tools/mcp/server.py"
+      ],
+      "gap_reason": ""
+    },
+    {
+      "tool_name": "cdb_context_quality_score",
+      "tool_family": "cdb_context_registry",
+      "repo_present": true,
+      "exposed": true,
+      "callable_status": "CALLABLE",
+      "operational_status": "DB_BACKED_READONLY_UNPROVEN",
+      "decision": "ALLOWED_READONLY",
+      "mutation_risk": "none",
+      "allowed_mode": "read_only",
+      "handler_path": "tools/mcp/context_bridge.py",
+      "permission_evidence": [
+        "docs/surrealdb/context-intelligence-permission-matrix-v0.md",
+        "docs/surrealdb/context-mcp-bridge-contract.md",
+        "tools/mcp/context_bridge.py",
+        "tools/mcp/permission_guard.py",
+        "tools/mcp/registry.py"
+      ],
+      "source_evidence": [
+        ".cursor/mcp.json",
+        "artifacts/context_tool_inventory/tool_inventory.json",
+        "docs/surrealdb/context-evidence-claim-memory-runbook.md",
+        "tools/context_tool_inventory.py",
+        "tools/mcp/permission_guard.py",
+        "tools/mcp/registry.py",
+        "tools/mcp/server.py"
+      ],
+      "gap_reason": ""
+    },
+    {
+      "tool_name": "cdb_context_scope_drift",
+      "tool_family": "cdb_context_registry",
+      "repo_present": true,
+      "exposed": true,
+      "callable_status": "CALLABLE",
+      "operational_status": "DB_BACKED_READONLY_UNPROVEN",
+      "decision": "ALLOWED_READONLY",
+      "mutation_risk": "none",
+      "allowed_mode": "read_only",
+      "handler_path": "tools/mcp/context_bridge.py",
+      "permission_evidence": [
+        "docs/surrealdb/context-intelligence-permission-matrix-v0.md",
+        "docs/surrealdb/context-mcp-bridge-contract.md",
+        "tools/mcp/context_bridge.py",
+        "tools/mcp/permission_guard.py",
+        "tools/mcp/registry.py"
+      ],
+      "source_evidence": [
+        ".cursor/mcp.json",
+        "artifacts/context_tool_inventory/tool_inventory.json",
+        "docs/surrealdb/context-evidence-claim-memory-runbook.md",
+        "tools/context_tool_inventory.py",
+        "tools/mcp/permission_guard.py",
+        "tools/mcp/registry.py",
+        "tools/mcp/server.py"
+      ],
+      "gap_reason": ""
+    },
+    {
+      "tool_name": "cdb_context_stale",
+      "tool_family": "cdb_context_registry",
+      "repo_present": true,
+      "exposed": true,
+      "callable_status": "CALLABLE",
+      "operational_status": "DB_BACKED_READONLY_UNPROVEN",
+      "decision": "ALLOWED_READONLY",
+      "mutation_risk": "none",
+      "allowed_mode": "read_only",
+      "handler_path": "tools/mcp/context_bridge.py",
+      "permission_evidence": [
+        "docs/surrealdb/context-intelligence-permission-matrix-v0.md",
+        "docs/surrealdb/context-mcp-bridge-contract.md",
+        "tools/mcp/context_bridge.py",
+        "tools/mcp/permission_guard.py",
+        "tools/mcp/registry.py"
+      ],
+      "source_evidence": [
+        ".cursor/mcp.json",
+        "artifacts/context_tool_inventory/tool_inventory.json",
+        "docs/surrealdb/context-evidence-claim-memory-runbook.md",
+        "tools/context_tool_inventory.py",
+        "tools/mcp/permission_guard.py",
+        "tools/mcp/registry.py",
+        "tools/mcp/server.py"
+      ],
+      "gap_reason": ""
+    },
+    {
+      "tool_name": "cdb_context_trust_summary",
+      "tool_family": "cdb_context_registry",
+      "repo_present": true,
+      "exposed": true,
+      "callable_status": "CALLABLE",
+      "operational_status": "DB_BACKED_READONLY_UNPROVEN",
+      "decision": "ALLOWED_READONLY",
+      "mutation_risk": "none",
+      "allowed_mode": "read_only",
+      "handler_path": "tools/mcp/context_bridge.py",
+      "permission_evidence": [
+        "docs/surrealdb/context-intelligence-permission-matrix-v0.md",
+        "docs/surrealdb/context-mcp-bridge-contract.md",
+        "tools/mcp/context_bridge.py",
+        "tools/mcp/permission_guard.py",
+        "tools/mcp/registry.py"
+      ],
+      "source_evidence": [
+        ".cursor/mcp.json",
+        "artifacts/context_tool_inventory/tool_inventory.json",
+        "docs/surrealdb/context-evidence-claim-memory-runbook.md",
+        "tools/context_tool_inventory.py",
+        "tools/mcp/permission_guard.py",
+        "tools/mcp/registry.py",
+        "tools/mcp/server.py"
+      ],
+      "gap_reason": ""
+    },
+    {
+      "tool_name": "cdb_control_room_view",
+      "tool_family": "cdb_context_registry",
+      "repo_present": true,
+      "exposed": true,
+      "callable_status": "CALLABLE",
+      "operational_status": "DB_BACKED_READONLY_UNPROVEN",
+      "decision": "ALLOWED_READONLY",
+      "mutation_risk": "none",
+      "allowed_mode": "read_only",
+      "handler_path": "tools/mcp/context_bridge.py",
+      "permission_evidence": [
+        "docs/surrealdb/context-intelligence-permission-matrix-v0.md",
+        "docs/surrealdb/context-mcp-bridge-contract.md",
+        "tools/mcp/context_bridge.py",
+        "tools/mcp/permission_guard.py",
+        "tools/mcp/registry.py"
+      ],
+      "source_evidence": [
+        ".cursor/mcp.json",
+        "artifacts/context_tool_inventory/tool_inventory.json",
+        "docs/surrealdb/context-evidence-claim-memory-runbook.md",
+        "tools/context_tool_inventory.py",
+        "tools/mcp/permission_guard.py",
+        "tools/mcp/registry.py",
+        "tools/mcp/server.py"
+      ],
+      "gap_reason": ""
+    },
+    {
+      "tool_name": "context.briefing",
+      "tool_family": "cdb_context_registry",
+      "repo_present": true,
+      "exposed": true,
+      "callable_status": "CALLABLE",
+      "operational_status": "DB_BACKED_READONLY_UNPROVEN",
+      "decision": "ALLOWED_READONLY",
+      "mutation_risk": "none",
+      "allowed_mode": "read_only",
+      "handler_path": "tools/mcp/context_bridge.py",
+      "permission_evidence": [
+        "docs/surrealdb/context-intelligence-permission-matrix-v0.md",
+        "docs/surrealdb/context-mcp-bridge-contract.md",
+        "tools/mcp/context_bridge.py",
+        "tools/mcp/permission_guard.py",
+        "tools/mcp/registry.py"
+      ],
+      "source_evidence": [
+        ".cursor/mcp.json",
+        "artifacts/context_tool_inventory/tool_inventory.json",
+        "docs/surrealdb/context-evidence-claim-memory-runbook.md",
+        "tools/context_tool_inventory.py",
+        "tools/mcp/permission_guard.py",
+        "tools/mcp/registry.py",
+        "tools/mcp/server.py"
+      ],
+      "gap_reason": ""
+    },
+    {
+      "tool_name": "context.explain_source",
+      "tool_family": "cdb_context_registry",
+      "repo_present": true,
+      "exposed": true,
+      "callable_status": "CALLABLE",
+      "operational_status": "IN_MEMORY_READONLY",
+      "decision": "ALLOWED_READONLY",
+      "mutation_risk": "none",
+      "allowed_mode": "read_only",
+      "handler_path": "tools/mcp/context_bridge.py",
+      "permission_evidence": [
+        "docs/surrealdb/context-intelligence-permission-matrix-v0.md",
+        "docs/surrealdb/context-mcp-bridge-contract.md",
+        "tools/mcp/context_bridge.py",
+        "tools/mcp/permission_guard.py",
+        "tools/mcp/registry.py"
+      ],
+      "source_evidence": [
+        ".cursor/mcp.json",
+        "artifacts/context_tool_inventory/tool_inventory.json",
+        "docs/surrealdb/context-evidence-claim-memory-runbook.md",
+        "tools/context_tool_inventory.py",
+        "tools/mcp/permission_guard.py",
+        "tools/mcp/registry.py",
+        "tools/mcp/server.py"
+      ],
+      "gap_reason": ""
+    },
+    {
+      "tool_name": "context.package",
+      "tool_family": "cdb_context_registry",
+      "repo_present": true,
+      "exposed": true,
+      "callable_status": "CALLABLE",
+      "operational_status": "IN_MEMORY_READONLY",
+      "decision": "ALLOWED_READONLY",
+      "mutation_risk": "none",
+      "allowed_mode": "read_only",
+      "handler_path": "tools/mcp/context_bridge.py",
+      "permission_evidence": [
+        "docs/surrealdb/context-intelligence-permission-matrix-v0.md",
+        "docs/surrealdb/context-mcp-bridge-contract.md",
+        "tools/mcp/context_bridge.py",
+        "tools/mcp/permission_guard.py",
+        "tools/mcp/registry.py"
+      ],
+      "source_evidence": [
+        ".cursor/mcp.json",
+        "artifacts/context_tool_inventory/tool_inventory.json",
+        "docs/surrealdb/context-evidence-claim-memory-runbook.md",
+        "tools/context_tool_inventory.py",
+        "tools/mcp/permission_guard.py",
+        "tools/mcp/registry.py",
+        "tools/mcp/server.py"
+      ],
+      "gap_reason": ""
+    },
+    {
+      "tool_name": "context.readiness",
+      "tool_family": "cdb_context_registry",
+      "repo_present": true,
+      "exposed": true,
+      "callable_status": "CALLABLE",
+      "operational_status": "IN_MEMORY_READONLY",
+      "decision": "ALLOWED_READONLY",
+      "mutation_risk": "none",
+      "allowed_mode": "read_only",
+      "handler_path": "tools/mcp/context_bridge.py",
+      "permission_evidence": [
+        "docs/surrealdb/context-intelligence-permission-matrix-v0.md",
+        "docs/surrealdb/context-mcp-bridge-contract.md",
+        "tools/mcp/context_bridge.py",
+        "tools/mcp/permission_guard.py",
+        "tools/mcp/registry.py"
+      ],
+      "source_evidence": [
+        ".cursor/mcp.json",
+        "artifacts/context_tool_inventory/tool_inventory.json",
+        "docs/surrealdb/context-evidence-claim-memory-runbook.md",
+        "tools/context_tool_inventory.py",
+        "tools/mcp/permission_guard.py",
+        "tools/mcp/registry.py",
+        "tools/mcp/server.py"
+      ],
+      "gap_reason": ""
+    },
+    {
+      "tool_name": "context.required_reads",
+      "tool_family": "cdb_context_registry",
+      "repo_present": true,
+      "exposed": true,
+      "callable_status": "CALLABLE",
+      "operational_status": "CONTRACT_READONLY",
+      "decision": "ALLOWED_READONLY",
+      "mutation_risk": "none",
+      "allowed_mode": "read_only",
+      "handler_path": "tools/mcp/context_bridge.py",
+      "permission_evidence": [
+        "docs/surrealdb/context-intelligence-permission-matrix-v0.md",
+        "docs/surrealdb/context-mcp-bridge-contract.md",
+        "tools/mcp/context_bridge.py",
+        "tools/mcp/permission_guard.py",
+        "tools/mcp/registry.py"
+      ],
+      "source_evidence": [
+        ".cursor/mcp.json",
+        "artifacts/context_tool_inventory/tool_inventory.json",
+        "docs/surrealdb/context-evidence-claim-memory-runbook.md",
+        "tools/context_tool_inventory.py",
+        "tools/mcp/permission_guard.py",
+        "tools/mcp/registry.py",
+        "tools/mcp/server.py"
+      ],
+      "gap_reason": ""
+    },
+    {
+      "tool_name": "context.search",
+      "tool_family": "cdb_context_registry",
+      "repo_present": true,
+      "exposed": true,
+      "callable_status": "CALLABLE",
+      "operational_status": "CONTRACT_READONLY",
+      "decision": "ALLOWED_READONLY",
+      "mutation_risk": "none",
+      "allowed_mode": "read_only",
+      "handler_path": "tools/mcp/context_bridge.py",
+      "permission_evidence": [
+        "docs/surrealdb/context-intelligence-permission-matrix-v0.md",
+        "docs/surrealdb/context-mcp-bridge-contract.md",
+        "tools/mcp/context_bridge.py",
+        "tools/mcp/permission_guard.py",
+        "tools/mcp/registry.py"
+      ],
+      "source_evidence": [
+        ".cursor/mcp.json",
+        "artifacts/context_tool_inventory/tool_inventory.json",
+        "docs/surrealdb/context-evidence-claim-memory-runbook.md",
+        "tools/context_tool_inventory.py",
+        "tools/mcp/permission_guard.py",
+        "tools/mcp/registry.py",
+        "tools/mcp/server.py"
+      ],
+      "gap_reason": ""
+    },
+    {
+      "tool_name": "context.self_explain",
+      "tool_family": "cdb_context_registry",
+      "repo_present": true,
+      "exposed": true,
+      "callable_status": "CALLABLE",
+      "operational_status": "CONTRACT_READONLY",
+      "decision": "ALLOWED_READONLY",
+      "mutation_risk": "none",
+      "allowed_mode": "read_only",
+      "handler_path": "tools/mcp/context_bridge.py",
+      "permission_evidence": [
+        "docs/surrealdb/context-intelligence-permission-matrix-v0.md",
+        "docs/surrealdb/context-mcp-bridge-contract.md",
+        "tools/mcp/context_bridge.py",
+        "tools/mcp/permission_guard.py",
+        "tools/mcp/registry.py"
+      ],
+      "source_evidence": [
+        ".cursor/mcp.json",
+        "artifacts/context_tool_inventory/tool_inventory.json",
+        "docs/surrealdb/context-evidence-claim-memory-runbook.md",
+        "tools/context_tool_inventory.py",
+        "tools/mcp/permission_guard.py",
+        "tools/mcp/registry.py",
+        "tools/mcp/server.py"
+      ],
+      "gap_reason": ""
+    },
+    {
+      "tool_name": "context.show_audit",
+      "tool_family": "cdb_context_registry",
+      "repo_present": true,
+      "exposed": true,
+      "callable_status": "CALLABLE",
+      "operational_status": "CONTRACT_READONLY",
+      "decision": "ALLOWED_READONLY",
+      "mutation_risk": "none",
+      "allowed_mode": "read_only",
+      "handler_path": "tools/mcp/context_bridge.py",
+      "permission_evidence": [
+        "docs/surrealdb/context-intelligence-permission-matrix-v0.md",
+        "docs/surrealdb/context-mcp-bridge-contract.md",
+        "tools/mcp/context_bridge.py",
+        "tools/mcp/permission_guard.py",
+        "tools/mcp/registry.py"
+      ],
+      "source_evidence": [
+        ".cursor/mcp.json",
+        "artifacts/context_tool_inventory/tool_inventory.json",
+        "docs/surrealdb/context-evidence-claim-memory-runbook.md",
+        "tools/context_tool_inventory.py",
+        "tools/mcp/permission_guard.py",
+        "tools/mcp/registry.py",
+        "tools/mcp/server.py"
+      ],
+      "gap_reason": ""
+    },
+    {
+      "tool_name": "context.show_snapshot",
+      "tool_family": "cdb_context_registry",
+      "repo_present": true,
+      "exposed": true,
+      "callable_status": "CALLABLE",
+      "operational_status": "CONTRACT_READONLY",
+      "decision": "ALLOWED_READONLY",
+      "mutation_risk": "none",
+      "allowed_mode": "read_only",
+      "handler_path": "tools/mcp/context_bridge.py",
+      "permission_evidence": [
+        "docs/surrealdb/context-intelligence-permission-matrix-v0.md",
+        "docs/surrealdb/context-mcp-bridge-contract.md",
+        "tools/mcp/context_bridge.py",
+        "tools/mcp/permission_guard.py",
+        "tools/mcp/registry.py"
+      ],
+      "source_evidence": [
+        ".cursor/mcp.json",
+        "artifacts/context_tool_inventory/tool_inventory.json",
+        "docs/surrealdb/context-evidence-claim-memory-runbook.md",
+        "tools/context_tool_inventory.py",
+        "tools/mcp/permission_guard.py",
+        "tools/mcp/registry.py",
+        "tools/mcp/server.py"
+      ],
+      "gap_reason": ""
+    },
+    {
+      "tool_name": "context.stop_resolver",
+      "tool_family": "cdb_context_registry",
+      "repo_present": true,
+      "exposed": true,
+      "callable_status": "CALLABLE",
+      "operational_status": "CONTRACT_READONLY",
+      "decision": "ALLOWED_READONLY",
+      "mutation_risk": "none",
+      "allowed_mode": "read_only",
+      "handler_path": "tools/mcp/context_bridge.py",
+      "permission_evidence": [
+        "docs/surrealdb/context-intelligence-permission-matrix-v0.md",
+        "docs/surrealdb/context-mcp-bridge-contract.md",
+        "tools/mcp/context_bridge.py",
+        "tools/mcp/permission_guard.py",
+        "tools/mcp/registry.py"
+      ],
+      "source_evidence": [
+        ".cursor/mcp.json",
+        "artifacts/context_tool_inventory/tool_inventory.json",
+        "docs/surrealdb/context-evidence-claim-memory-runbook.md",
+        "tools/context_tool_inventory.py",
+        "tools/mcp/permission_guard.py",
+        "tools/mcp/registry.py",
+        "tools/mcp/server.py"
+      ],
+      "gap_reason": ""
+    },
+    {
+      "tool_name": "context.trace",
+      "tool_family": "cdb_context_registry",
+      "repo_present": true,
+      "exposed": true,
+      "callable_status": "CALLABLE",
+      "operational_status": "IN_MEMORY_READONLY",
+      "decision": "ALLOWED_READONLY",
+      "mutation_risk": "none",
+      "allowed_mode": "read_only",
+      "handler_path": "tools/mcp/context_bridge.py",
+      "permission_evidence": [
+        "docs/surrealdb/context-intelligence-permission-matrix-v0.md",
+        "docs/surrealdb/context-mcp-bridge-contract.md",
+        "tools/mcp/context_bridge.py",
+        "tools/mcp/permission_guard.py",
+        "tools/mcp/registry.py"
+      ],
+      "source_evidence": [
+        ".cursor/mcp.json",
+        "artifacts/context_tool_inventory/tool_inventory.json",
+        "docs/surrealdb/context-evidence-claim-memory-runbook.md",
+        "tools/context_tool_inventory.py",
+        "tools/mcp/permission_guard.py",
+        "tools/mcp/registry.py",
+        "tools/mcp/server.py"
+      ],
+      "gap_reason": ""
+    },
+    {
+      "tool_name": "cdb_context_package",
+      "tool_family": "cdb_repo_contract_alias",
+      "repo_present": true,
+      "exposed": false,
+      "callable_status": "NOT_EXPOSED",
+      "operational_status": "NOT_EXPOSED",
+      "decision": "FUTURE",
+      "mutation_risk": "none",
+      "allowed_mode": "read_only",
+      "handler_path": "",
+      "permission_evidence": [
+        "docs/surrealdb/context-intelligence-permission-matrix-v0.md",
+        "docs/surrealdb/context-mcp-bridge-contract.md",
+        "tools/mcp/context_bridge.py",
+        "tools/mcp/permission_guard.py",
+        "tools/mcp/registry.py"
+      ],
+      "source_evidence": [
+        "docs/surrealdb/context-mcp-bridge-contract.md"
+      ],
+      "gap_reason": ""
+    },
+    {
+      "tool_name": "cdb_context_search",
+      "tool_family": "cdb_repo_contract_alias",
+      "repo_present": true,
+      "exposed": false,
+      "callable_status": "NOT_EXPOSED",
+      "operational_status": "NOT_EXPOSED",
+      "decision": "FUTURE",
+      "mutation_risk": "none",
+      "allowed_mode": "read_only",
+      "handler_path": "",
+      "permission_evidence": [
+        "docs/surrealdb/context-intelligence-permission-matrix-v0.md",
+        "docs/surrealdb/context-mcp-bridge-contract.md",
+        "tools/mcp/context_bridge.py",
+        "tools/mcp/permission_guard.py",
+        "tools/mcp/registry.py"
+      ],
+      "source_evidence": [
+        "docs/surrealdb/context-mcp-bridge-contract.md"
+      ],
+      "gap_reason": ""
+    },
+    {
+      "tool_name": "cdb_context_trace",
+      "tool_family": "cdb_repo_contract_alias",
+      "repo_present": true,
+      "exposed": false,
+      "callable_status": "NOT_EXPOSED",
+      "operational_status": "NOT_EXPOSED",
+      "decision": "FUTURE",
+      "mutation_risk": "none",
+      "allowed_mode": "read_only",
+      "handler_path": "",
+      "permission_evidence": [
+        "docs/surrealdb/context-intelligence-permission-matrix-v0.md",
+        "docs/surrealdb/context-mcp-bridge-contract.md",
+        "tools/mcp/context_bridge.py",
+        "tools/mcp/permission_guard.py",
+        "tools/mcp/registry.py"
+      ],
+      "source_evidence": [
+        "docs/surrealdb/context-mcp-bridge-contract.md"
+      ],
+      "gap_reason": ""
+    },
+    {
+      "tool_name": "create",
+      "tool_family": "surrealdb_builtin_mcp",
+      "repo_present": false,
+      "exposed": false,
+      "callable_status": "FORBIDDEN",
+      "operational_status": "FORBIDDEN_MUTATION",
+      "decision": "FORBIDDEN_MUTATION",
+      "mutation_risk": "direct_mutation",
+      "allowed_mode": "none",
+      "handler_path": "",
+      "permission_evidence": [
+        "docs/surrealdb/context-intelligence-permission-matrix-v0.md",
+        "docs/surrealdb/context-mcp-bridge-contract.md",
+        "tools/mcp/context_bridge.py",
+        "tools/mcp/permission_guard.py",
+        "tools/mcp/registry.py"
+      ],
+      "source_evidence": [
+        "docs/external-docs/index.md",
+        "https://surrealdb.com/docs/build/ai-agents/mcp",
+        "https://surrealdb.com/docs/build/ai-agents/agent-skills",
+        "https://surrealdb.com/docs/build/ai-agents/agent-rules"
+      ],
+      "gap_reason": ""
+    },
+    {
+      "tool_name": "delete",
+      "tool_family": "surrealdb_builtin_mcp",
+      "repo_present": false,
+      "exposed": false,
+      "callable_status": "FORBIDDEN",
+      "operational_status": "FORBIDDEN_MUTATION",
+      "decision": "FORBIDDEN_MUTATION",
+      "mutation_risk": "direct_mutation",
+      "allowed_mode": "none",
+      "handler_path": "",
+      "permission_evidence": [
+        "docs/surrealdb/context-intelligence-permission-matrix-v0.md",
+        "docs/surrealdb/context-mcp-bridge-contract.md",
+        "tools/mcp/context_bridge.py",
+        "tools/mcp/permission_guard.py",
+        "tools/mcp/registry.py"
+      ],
+      "source_evidence": [
+        "docs/external-docs/index.md",
+        "https://surrealdb.com/docs/build/ai-agents/mcp",
+        "https://surrealdb.com/docs/build/ai-agents/agent-skills",
+        "https://surrealdb.com/docs/build/ai-agents/agent-rules"
+      ],
+      "gap_reason": ""
+    },
+    {
+      "tool_name": "info",
+      "tool_family": "surrealdb_builtin_mcp",
+      "repo_present": false,
+      "exposed": false,
+      "callable_status": "NOT_EXPOSED",
+      "operational_status": "BLOCKED_RAW_MCP",
+      "decision": "BLOCKED",
+      "mutation_risk": "raw_read_surface",
+      "allowed_mode": "none",
+      "handler_path": "",
+      "permission_evidence": [
+        "docs/surrealdb/context-intelligence-permission-matrix-v0.md",
+        "docs/surrealdb/context-mcp-bridge-contract.md",
+        "tools/mcp/context_bridge.py",
+        "tools/mcp/permission_guard.py",
+        "tools/mcp/registry.py"
+      ],
+      "source_evidence": [
+        "docs/external-docs/index.md",
+        "https://surrealdb.com/docs/build/ai-agents/mcp",
+        "https://surrealdb.com/docs/build/ai-agents/agent-skills",
+        "https://surrealdb.com/docs/build/ai-agents/agent-rules"
+      ],
+      "gap_reason": ""
+    },
+    {
+      "tool_name": "insert",
+      "tool_family": "surrealdb_builtin_mcp",
+      "repo_present": false,
+      "exposed": false,
+      "callable_status": "FORBIDDEN",
+      "operational_status": "FORBIDDEN_MUTATION",
+      "decision": "FORBIDDEN_MUTATION",
+      "mutation_risk": "direct_mutation",
+      "allowed_mode": "none",
+      "handler_path": "",
+      "permission_evidence": [
+        "docs/surrealdb/context-intelligence-permission-matrix-v0.md",
+        "docs/surrealdb/context-mcp-bridge-contract.md",
+        "tools/mcp/context_bridge.py",
+        "tools/mcp/permission_guard.py",
+        "tools/mcp/registry.py"
+      ],
+      "source_evidence": [
+        "docs/external-docs/index.md",
+        "https://surrealdb.com/docs/build/ai-agents/mcp",
+        "https://surrealdb.com/docs/build/ai-agents/agent-skills",
+        "https://surrealdb.com/docs/build/ai-agents/agent-rules"
+      ],
+      "gap_reason": ""
+    },
+    {
+      "tool_name": "list",
+      "tool_family": "surrealdb_builtin_mcp",
+      "repo_present": false,
+      "exposed": false,
+      "callable_status": "NOT_EXPOSED",
+      "operational_status": "BLOCKED_RAW_MCP",
+      "decision": "BLOCKED",
+      "mutation_risk": "raw_read_surface",
+      "allowed_mode": "none",
+      "handler_path": "",
+      "permission_evidence": [
+        "docs/surrealdb/context-intelligence-permission-matrix-v0.md",
+        "docs/surrealdb/context-mcp-bridge-contract.md",
+        "tools/mcp/context_bridge.py",
+        "tools/mcp/permission_guard.py",
+        "tools/mcp/registry.py"
+      ],
+      "source_evidence": [
+        "docs/external-docs/index.md",
+        "https://surrealdb.com/docs/build/ai-agents/mcp",
+        "https://surrealdb.com/docs/build/ai-agents/agent-skills",
+        "https://surrealdb.com/docs/build/ai-agents/agent-rules"
+      ],
+      "gap_reason": ""
+    },
+    {
+      "tool_name": "query",
+      "tool_family": "surrealdb_builtin_mcp",
+      "repo_present": false,
+      "exposed": false,
+      "callable_status": "NOT_EXPOSED",
+      "operational_status": "BLOCKED_RAW_MCP",
+      "decision": "BLOCKED",
+      "mutation_risk": "raw_query_write_capable",
+      "allowed_mode": "none",
+      "handler_path": "",
+      "permission_evidence": [
+        "docs/surrealdb/context-intelligence-permission-matrix-v0.md",
+        "docs/surrealdb/context-mcp-bridge-contract.md",
+        "tools/mcp/context_bridge.py",
+        "tools/mcp/permission_guard.py",
+        "tools/mcp/registry.py"
+      ],
+      "source_evidence": [
+        "docs/external-docs/index.md",
+        "https://surrealdb.com/docs/build/ai-agents/mcp",
+        "https://surrealdb.com/docs/build/ai-agents/agent-skills",
+        "https://surrealdb.com/docs/build/ai-agents/agent-rules"
+      ],
+      "gap_reason": ""
+    },
+    {
+      "tool_name": "relate",
+      "tool_family": "surrealdb_builtin_mcp",
+      "repo_present": false,
+      "exposed": false,
+      "callable_status": "FORBIDDEN",
+      "operational_status": "FORBIDDEN_MUTATION",
+      "decision": "FORBIDDEN_MUTATION",
+      "mutation_risk": "direct_mutation",
+      "allowed_mode": "none",
+      "handler_path": "",
+      "permission_evidence": [
+        "docs/surrealdb/context-intelligence-permission-matrix-v0.md",
+        "docs/surrealdb/context-mcp-bridge-contract.md",
+        "tools/mcp/context_bridge.py",
+        "tools/mcp/permission_guard.py",
+        "tools/mcp/registry.py"
+      ],
+      "source_evidence": [
+        "docs/external-docs/index.md",
+        "https://surrealdb.com/docs/build/ai-agents/mcp",
+        "https://surrealdb.com/docs/build/ai-agents/agent-skills",
+        "https://surrealdb.com/docs/build/ai-agents/agent-rules"
+      ],
+      "gap_reason": ""
+    },
+    {
+      "tool_name": "run",
+      "tool_family": "surrealdb_builtin_mcp",
+      "repo_present": false,
+      "exposed": false,
+      "callable_status": "FORBIDDEN",
+      "operational_status": "FORBIDDEN_MUTATION",
+      "decision": "FORBIDDEN_MUTATION",
+      "mutation_risk": "function_execution",
+      "allowed_mode": "none",
+      "handler_path": "",
+      "permission_evidence": [
+        "docs/surrealdb/context-intelligence-permission-matrix-v0.md",
+        "docs/surrealdb/context-mcp-bridge-contract.md",
+        "tools/mcp/context_bridge.py",
+        "tools/mcp/permission_guard.py",
+        "tools/mcp/registry.py"
+      ],
+      "source_evidence": [
+        "docs/external-docs/index.md",
+        "https://surrealdb.com/docs/build/ai-agents/mcp",
+        "https://surrealdb.com/docs/build/ai-agents/agent-skills",
+        "https://surrealdb.com/docs/build/ai-agents/agent-rules"
+      ],
+      "gap_reason": ""
+    },
+    {
+      "tool_name": "select",
+      "tool_family": "surrealdb_builtin_mcp",
+      "repo_present": false,
+      "exposed": false,
+      "callable_status": "NOT_EXPOSED",
+      "operational_status": "BLOCKED_RAW_MCP",
+      "decision": "BLOCKED",
+      "mutation_risk": "raw_read_surface",
+      "allowed_mode": "none",
+      "handler_path": "",
+      "permission_evidence": [
+        "docs/surrealdb/context-intelligence-permission-matrix-v0.md",
+        "docs/surrealdb/context-mcp-bridge-contract.md",
+        "tools/mcp/context_bridge.py",
+        "tools/mcp/permission_guard.py",
+        "tools/mcp/registry.py"
+      ],
+      "source_evidence": [
+        "docs/external-docs/index.md",
+        "https://surrealdb.com/docs/build/ai-agents/mcp",
+        "https://surrealdb.com/docs/build/ai-agents/agent-skills",
+        "https://surrealdb.com/docs/build/ai-agents/agent-rules"
+      ],
+      "gap_reason": ""
+    },
+    {
+      "tool_name": "update",
+      "tool_family": "surrealdb_builtin_mcp",
+      "repo_present": false,
+      "exposed": false,
+      "callable_status": "FORBIDDEN",
+      "operational_status": "FORBIDDEN_MUTATION",
+      "decision": "FORBIDDEN_MUTATION",
+      "mutation_risk": "direct_mutation",
+      "allowed_mode": "none",
+      "handler_path": "",
+      "permission_evidence": [
+        "docs/surrealdb/context-intelligence-permission-matrix-v0.md",
+        "docs/surrealdb/context-mcp-bridge-contract.md",
+        "tools/mcp/context_bridge.py",
+        "tools/mcp/permission_guard.py",
+        "tools/mcp/registry.py"
+      ],
+      "source_evidence": [
+        "docs/external-docs/index.md",
+        "https://surrealdb.com/docs/build/ai-agents/mcp",
+        "https://surrealdb.com/docs/build/ai-agents/agent-skills",
+        "https://surrealdb.com/docs/build/ai-agents/agent-rules"
+      ],
+      "gap_reason": ""
+    },
+    {
+      "tool_name": "upsert",
+      "tool_family": "surrealdb_builtin_mcp",
+      "repo_present": false,
+      "exposed": false,
+      "callable_status": "FORBIDDEN",
+      "operational_status": "FORBIDDEN_MUTATION",
+      "decision": "FORBIDDEN_MUTATION",
+      "mutation_risk": "direct_mutation",
+      "allowed_mode": "none",
+      "handler_path": "",
+      "permission_evidence": [
+        "docs/surrealdb/context-intelligence-permission-matrix-v0.md",
+        "docs/surrealdb/context-mcp-bridge-contract.md",
+        "tools/mcp/context_bridge.py",
+        "tools/mcp/permission_guard.py",
+        "tools/mcp/registry.py"
+      ],
+      "source_evidence": [
+        "docs/external-docs/index.md",
+        "https://surrealdb.com/docs/build/ai-agents/mcp",
+        "https://surrealdb.com/docs/build/ai-agents/agent-skills",
+        "https://surrealdb.com/docs/build/ai-agents/agent-rules"
+      ],
+      "gap_reason": ""
+    },
+    {
+      "tool_name": "use",
+      "tool_family": "surrealdb_builtin_mcp",
+      "repo_present": false,
+      "exposed": false,
+      "callable_status": "NOT_EXPOSED",
+      "operational_status": "BLOCKED_RAW_MCP",
+      "decision": "BLOCKED",
+      "mutation_risk": "session_context_switch",
+      "allowed_mode": "none",
+      "handler_path": "",
+      "permission_evidence": [
+        "docs/surrealdb/context-intelligence-permission-matrix-v0.md",
+        "docs/surrealdb/context-mcp-bridge-contract.md",
+        "tools/mcp/context_bridge.py",
+        "tools/mcp/permission_guard.py",
+        "tools/mcp/registry.py"
+      ],
+      "source_evidence": [
+        "docs/external-docs/index.md",
+        "https://surrealdb.com/docs/build/ai-agents/mcp",
+        "https://surrealdb.com/docs/build/ai-agents/agent-skills",
+        "https://surrealdb.com/docs/build/ai-agents/agent-rules"
+      ],
+      "gap_reason": ""
+    }
+  ],
+  "groups": {
+    "exposed_tools": [
+      "cdb_agent_os_readiness",
+      "cdb_context_architect_signals",
+      "cdb_context_briefing",
+      "cdb_context_claim_resolve",
+      "cdb_context_contradictions",
+      "cdb_context_decision_history",
+      "cdb_context_decision_replay",
+      "cdb_context_evidence_resolve",
+      "cdb_context_impact",
+      "cdb_context_memory_get",
+      "cdb_context_memory_write_intent",
+      "cdb_context_quality_score",
+      "cdb_context_scope_drift",
+      "cdb_context_stale",
+      "cdb_context_trust_summary",
+      "cdb_control_room_view",
+      "context.briefing",
+      "context.explain_source",
+      "context.package",
+      "context.readiness",
+      "context.required_reads",
+      "context.search",
+      "context.self_explain",
+      "context.show_audit",
+      "context.show_snapshot",
+      "context.stop_resolver",
+      "context.trace"
+    ],
+    "repo_present_not_exposed": [
+      "cdb_context_package",
+      "cdb_context_search",
+      "cdb_context_trace"
+    ],
+    "allowed_readonly_tools": [
+      "cdb_agent_os_readiness",
+      "cdb_context_architect_signals",
+      "cdb_context_briefing",
+      "cdb_context_claim_resolve",
+      "cdb_context_contradictions",
+      "cdb_context_decision_history",
+      "cdb_context_decision_replay",
+      "cdb_context_evidence_resolve",
+      "cdb_context_impact",
+      "cdb_context_memory_get",
+      "cdb_context_memory_write_intent",
+      "cdb_context_quality_score",
+      "cdb_context_scope_drift",
+      "cdb_context_stale",
+      "cdb_context_trust_summary",
+      "cdb_control_room_view",
+      "context.briefing",
+      "context.explain_source",
+      "context.package",
+      "context.readiness",
+      "context.required_reads",
+      "context.search",
+      "context.self_explain",
+      "context.show_audit",
+      "context.show_snapshot",
+      "context.stop_resolver",
+      "context.trace"
+    ],
+    "forbidden_mutation_tools": [
+      "create",
+      "delete",
+      "insert",
+      "relate",
+      "run",
+      "update",
+      "upsert"
+    ],
+    "future_tools": [
+      "cdb_context_package",
+      "cdb_context_search",
+      "cdb_context_trace"
+    ],
+    "blocked_tools": [
+      "info",
+      "list",
+      "query",
+      "select",
+      "use"
+    ],
+    "unknown_tools": []
+  },
+  "summary": {
+    "total_tools": 42,
+    "exposed_count": 27,
+    "repo_present_not_exposed_count": 3,
+    "allowed_readonly_count": 27,
+    "forbidden_mutation_count": 7,
+    "future_count": 3,
+    "blocked_count": 5,
+    "unknown_count": 0,
+    "live_db_operational_count": 0
+  },
+  "decision_values": [
+    "ALLOWED_READONLY",
+    "BLOCKED",
+    "FORBIDDEN_MUTATION",
+    "FUTURE",
+    "UNKNOWN"
+  ],
+  "source_catalog": {
+    "repo_inputs": [
+      "artifacts/context_tool_inventory/tool_inventory.json",
+      "tools/context_tool_inventory.py",
+      "tools/mcp/registry.py",
+      "tools/mcp/context_bridge.py",
+      "tools/mcp/permission_guard.py",
+      "docs/surrealdb/context-intelligence-permission-matrix-v0.md",
+      "docs/surrealdb/context-mcp-bridge-contract.md",
+      "docs/surrealdb/context-evidence-claim-memory-runbook.md"
+    ],
+    "official_inputs": [
+      "https://surrealdb.com/docs/build/ai-agents/mcp",
+      "https://surrealdb.com/docs/build/ai-agents/agent-skills",
+      "https://surrealdb.com/docs/build/ai-agents/agent-rules"
+    ]
+  }
+}
