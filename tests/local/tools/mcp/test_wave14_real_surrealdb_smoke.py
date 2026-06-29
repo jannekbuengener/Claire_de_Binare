@@ -33,6 +33,7 @@ from tests.local.tools.mcp.wave14_smoke_helpers import (
     resolve_smoke_run_id,
     smoke_tmp_root,
 )
+from tools.mcp.context_bridge import create_bridge
 from tools.mcp.context_decision_tools import (
     TOOL_CDB_CONTEXT_DECISION_HISTORY,
     TOOL_CDB_CONTEXT_DECISION_REPLAY,
@@ -302,6 +303,43 @@ def _run_handler_smoke_checks(seeded_bundle: dict[str, Any]) -> None:
     _assert_no_secret_leak(trust, secrets_path=secrets_path)
     assert trust["result"]["evidence_strength"] != "none", trust
 
+    briefing_trust = handle_cdb_context_trust_summary(
+        {
+            "tool": TOOL_CDB_CONTEXT_TRUST_SUMMARY,
+            "parameters": {
+                **common,
+                "scope": "wave14",
+            },
+        }
+    )
+    _assert_ok_source(briefing_trust, TOOL_CDB_CONTEXT_TRUST_SUMMARY)
+    _assert_no_secret_leak(briefing_trust, secrets_path=secrets_path)
+    expected_operator_trust_level = briefing_trust["result"]["operator_trust_level"]
+
+    bridge = create_bridge()
+    briefing = bridge.execute_tool(
+        "context.briefing",
+        {
+            "task_id": "wave14-real-surrealdb-briefing-proof",
+            "task_scope": "Verify local DB-backed context briefing proof path.",
+            "target_issue": "#3468",
+            "requested_depth": "quick",
+            "operation_mode": "read_only",
+            "adapter_config_path": str(_QUERY_CONFIG_PATH),
+            "secrets_path": str(secrets_path),
+        },
+    )
+    assert briefing["status"] == "ok", briefing
+    _assert_no_secret_leak(briefing, secrets_path=secrets_path)
+    session_context = briefing["briefing"]["session_context"]
+    assert session_context["brain_source"] == "surrealdb-local", briefing
+    assert session_context["brain_status"] == "used", briefing
+    assert session_context["agent_operating_mode"]["db_claims_allowed"] is True
+    assert (
+        briefing["briefing"]["operator_trust_level"] == expected_operator_trust_level
+    ), briefing
+    assert "surrealdb-local" in briefing["briefing"]["trust_summary"], briefing
+
 
 @pytest.fixture(scope="module")
 def seeded_bundle() -> dict[str, Any]:
@@ -431,6 +469,48 @@ def test_wave14_real_surrealdb_local_trust_summary_ok(
     assert result["result"]["claim_status_summary"].get("supported", 0) >= 1, result
     assert result["result"]["memory_trust_summary"]["total"] >= 1, result
     assert result["result"]["decision_currentness"]["total"] >= 1, result
+
+
+def test_wave14_real_surrealdb_local_context_briefing_ok(
+    seeded_bundle: dict[str, Any],
+) -> None:
+    expected_trust = handle_cdb_context_trust_summary(
+        {
+            "tool": TOOL_CDB_CONTEXT_TRUST_SUMMARY,
+            "parameters": {
+                **_common_parameters(Path(seeded_bundle["secrets_path"])),
+                "scope": "wave14",
+            },
+        }
+    )
+    _assert_ok_source(expected_trust, TOOL_CDB_CONTEXT_TRUST_SUMMARY)
+
+    bridge = create_bridge()
+    result = bridge.execute_tool(
+        "context.briefing",
+        {
+            "task_id": "wave14-real-surrealdb-briefing-proof",
+            "task_scope": "Verify local DB-backed context briefing proof path.",
+            "target_issue": "#3468",
+            "requested_depth": "quick",
+            "operation_mode": "read_only",
+            "adapter_config_path": str(_QUERY_CONFIG_PATH),
+            "secrets_path": seeded_bundle["secrets_path"],
+        },
+    )
+
+    assert result["status"] == "ok", result
+    _assert_no_secret_leak(result, secrets_path=Path(seeded_bundle["secrets_path"]))
+    briefing = result["briefing"]
+    session_context = briefing["session_context"]
+    assert session_context["brain_source"] == "surrealdb-local", result
+    assert session_context["brain_status"] == "used", result
+    assert session_context["agent_operating_mode"]["db_claims_allowed"] is True
+    assert (
+        briefing["operator_trust_level"]
+        == expected_trust["result"]["operator_trust_level"]
+    ), result
+    assert "surrealdb-local" in briefing["trust_summary"], result
 
 
 def test_wave14_real_smoke_cleanup_proof(seeded_bundle: dict[str, Any]) -> None:

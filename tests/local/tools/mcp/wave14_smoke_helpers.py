@@ -7,7 +7,9 @@ assertions, and targeted cleanup via the local SurrealDB /sql endpoint.
 from __future__ import annotations
 
 import base64
+import hashlib
 import json
+from datetime import datetime, timedelta, timezone
 import os
 from dataclasses import dataclass
 from pathlib import Path
@@ -18,6 +20,7 @@ import urllib.parse
 import urllib.request
 from typing import Any
 
+from core.utils.clock import utcnow as cdb_utcnow
 from tools.surrealdb.context_importer import TABLE_BY_ARTIFACT
 from tools.surrealdb.gen_run_id import _timestamp_run_id
 
@@ -43,6 +46,15 @@ _BASE_EVIDENCE_ID = "ev-wave14-real-001"
 _BASE_CLAIM_ID = "claim-wave14-real-001"
 _BASE_MEMORY_ID = "mem-wave14-real-001"
 _BASE_DECISION_IDS = ("dec-wave14-real-001", "dec-wave14-real-002")
+
+_FRESH_MEMORY_TTL_SECONDS = int(timedelta(days=30).total_seconds())
+_FRESH_MEMORY_STALE_AFTER_SECONDS = int(timedelta(days=7).total_seconds())
+_CREATED_AT_BASE_OFFSETS_SECONDS = {
+    "evidence_refs.jsonl": 240,
+    "claims.jsonl": 180,
+    "decision_events.jsonl": 120,
+    "agent_memories.jsonl": 30,
+}
 
 _ID_REFERENCE_FIELDS = frozenset(
     {
@@ -143,21 +155,98 @@ def _replace_record_fields(
     return updated
 
 
+def _normalize_materialized_at(materialized_at: datetime | None) -> datetime:
+    now = materialized_at if materialized_at is not None else cdb_utcnow()
+    if now.tzinfo is None:
+        now = now.replace(tzinfo=timezone.utc)
+    else:
+        now = now.astimezone(timezone.utc)
+    return now.replace(microsecond=0)
+
+
+def _isoformat_z(value: datetime) -> str:
+    return value.astimezone(timezone.utc).replace(microsecond=0).isoformat().replace(
+        "+00:00", "Z"
+    )
+
+
+def _repo_file_sha256(relative_path: str) -> str:
+    normalized = relative_path.strip().replace("\\", "/")
+    if not normalized or normalized.startswith("/") or ".." in normalized.split("/"):
+        raise ValueError(f"invalid repo-relative source_path for Wave-14 smoke: {relative_path!r}")
+
+    target = (_REPO_ROOT / normalized).resolve()
+    repo_root = _REPO_ROOT.resolve()
+    try:
+        target.relative_to(repo_root)
+    except ValueError as exc:
+        raise ValueError(
+            f"source_path escapes repo root for Wave-14 smoke: {relative_path!r}"
+        ) from exc
+
+    if not target.is_file():
+        raise FileNotFoundError(
+            f"source_path does not resolve to a repo file for Wave-14 smoke: {relative_path!r}"
+        )
+
+    return hashlib.sha256(target.read_bytes()).hexdigest()
+
+
+def _apply_dynamic_seed_fields(
+    filename: str,
+    record: dict[str, Any],
+    *,
+    item_index: int,
+    materialized_at: datetime,
+) -> dict[str, Any]:
+    updated = dict(record)
+
+    created_at = materialized_at - timedelta(
+        seconds=max(_CREATED_AT_BASE_OFFSETS_SECONDS.get(filename, 0) - item_index * 30, 0)
+    )
+    updated["created_at"] = _isoformat_z(created_at)
+
+    source_path = updated.get("source_path")
+    if isinstance(source_path, str) and source_path.strip() and "source_hash" in updated:
+        updated["source_hash"] = _repo_file_sha256(source_path)
+
+    if filename == "evidence_refs.jsonl":
+        updated["collected_at"] = _isoformat_z(created_at)
+        updated["freshness"] = "fresh"
+    elif filename == "agent_memories.jsonl":
+        updated["ttl"] = _FRESH_MEMORY_TTL_SECONDS
+        if "stale_after" in updated:
+            updated["stale_after"] = _FRESH_MEMORY_STALE_AFTER_SECONDS
+        updated["expires_at"] = _isoformat_z(
+            materialized_at + timedelta(seconds=_FRESH_MEMORY_TTL_SECONDS)
+        )
+
+    return updated
+
+
 def materialize_fixture_records(
     filename: str,
     *,
     run_id: str,
     plan: Wave14SmokeRecordPlan,
+    materialized_at: datetime | None = None,
 ) -> str:
     path = _FIXTURE_DIR / filename
     id_map = _id_remap(plan)
+    effective_now = _normalize_materialized_at(materialized_at)
     records: list[str] = []
-    for raw_line in path.read_text(encoding="utf-8").splitlines():
+    for item_index, raw_line in enumerate(path.read_text(encoding="utf-8").splitlines()):
         if not raw_line.strip():
             continue
         record = json.loads(raw_line)
         record["run_id"] = run_id
         record = _replace_record_fields(record, id_map)
+        record = _apply_dynamic_seed_fields(
+            filename,
+            record,
+            item_index=item_index,
+            materialized_at=effective_now,
+        )
         records.append(json.dumps(record, ensure_ascii=True, sort_keys=True))
     return "\n".join(records) + ("\n" if records else "")
 

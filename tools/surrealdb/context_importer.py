@@ -22,8 +22,9 @@ Design rules enforced here:
   ``--apply``, or ``--apply`` on a non-apply subcommand) is hard-blocked
   with exit code 5 (``WRITE_DENIED``).
 * The default apply adapter is the in-memory, no-network
-  ``InMemoryContextApplyAdapter``. A real SurrealDB adapter is
-  explicitly OUT-OF-SCOPE in this slice and is not wired into the CLI.
+  ``InMemoryContextApplyAdapter``.
+* A real local SurrealDB adapter is available only behind the explicit
+  opt-in gate ``--adapter surrealdb-local`` and remains local-dev only.
 * The local-dev apply gate additionally requires the loaded config's
   ``surreal_url`` host to be in ``LOCAL_DEV_ALLOWED_HOSTS``.
 * Tombstone handling is field-only (``tombstoned``, ``tombstoned_at``,

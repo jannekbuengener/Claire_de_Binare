@@ -16,7 +16,7 @@ This runbook describes how to drive the Wave-10 Context Importer (`tools/surreal
 - Validate them as read-only input.
 - Build a deterministic import plan.
 - Reconcile the plan against an explicit local "existing records" snapshot in dry-run mode.
-- Optionally execute a **gated, in-memory local-dev apply** with tombstone-only deletions.
+- Optionally execute a **gated local-dev apply** with tombstone-only deletions.
 - Inspect the audit report.
 
 Out of scope for this runbook:
@@ -24,7 +24,7 @@ Out of scope for this runbook:
 - Production SurrealDB activation.
 - Default writes to any SurrealDB instance.
 - Live-trading, risk, execution, governance, or runtime state.
-- A real SurrealDB adapter (`real_surrealdb_adapter_available = false` in this slice).
+- Automatic or implicit DB activation.
 - MCP bridge, Agent-Briefing engine, vector search, or query CLI (Wave 11+).
 
 ---
@@ -39,7 +39,7 @@ This runbook explicitly does **not** establish or imply any of the following:
 - No trading-state, risk, execution, or governance tables are touched (forbidden-tables list is fail-closed).
 - No Live-Readiness change. LR verdict remains **NO-GO** for live trading independent of this runbook.
 - No Echtgeld-Go. Wave-10 completion does not authorize real capital.
-- No real SurrealDB adapter is installed, registered, or selectable through CLI.
+- No implicit real SurrealDB adapter is used by default.
 - No secrets, real tokens, or production URLs are used in any example.
 
 If any of the steps below appear to require production credentials, a real SurrealDB endpoint, or a real network call, **stop**. The Wave-10 importer is intentionally local/dev only.
@@ -57,8 +57,9 @@ Required:
 
 Not required:
 
-- Docker is **not** required for the dry-run / local-dev apply paths. The default adapter is in-memory and offline.
-- A running SurrealDB instance is **not** required. The importer never opens a real network connection in this slice.
+- Docker is **not** required for validation, planning, or dry-run reconcile.
+- A running SurrealDB instance is **not** required when you stay on the default in-memory adapter.
+- A running local SurrealDB instance **is** required only for the explicit local proof/apply path that passes `--adapter surrealdb-local`.
 - No production secrets, no live API keys.
 
 If you choose to run a local SurrealDB container later for Wave-11+ query work, that is **out of scope** here.
@@ -67,7 +68,12 @@ If you choose to run a local SurrealDB container later for Wave-11+ query work, 
 
 ## 4. SurrealDB Local/Dev Posture
 
-Even though no real SurrealDB is contacted, the importer parses URL/namespace/database arguments and validates them against config. Use only local/dev placeholders:
+The importer supports two local/dev postures:
+
+- **Default CLI posture**: in-memory adapter, no DB network access.
+- **Explicit local proof posture**: `--adapter surrealdb-local` with a localhost-only URL, local secrets, and the local-dev apply gate.
+
+In both cases, use only local/dev values:
 
 - `--surreal-url` and `surreal_url` in YAML must be a local/dev placeholder, e.g. `ws://127.0.0.1:8000/rpc`. Do not paste a production URL.
 - Namespace must be the Context Intelligence namespace (the example config uses `cdb_ctx`).
@@ -175,12 +181,12 @@ The reconcile output classifies each candidate as `create`, `update`, `skip` (un
 
 ## 9. Step 5 - Gated Local-Dev Apply (Optional)
 
-Apply is **off by default** and requires four explicit flags simultaneously: `--apply`, `--apply-mode local-dev`, `--config`, plus `--input-dir` and `--run-id`. The default adapter is the **in-memory mock adapter**; no real SurrealDB instance is contacted, no real network is opened. Any missing gate yields Exit `5` (`WRITE_DENIED`).
+Apply is **off by default** and requires four explicit flags simultaneously: `--apply`, `--apply-mode local-dev`, `--config`, plus `--input-dir` and `--run-id`. If `--adapter` is omitted, the default adapter stays **in-memory** and no DB connection is opened. The repo's local proof path opts in explicitly with `--adapter surrealdb-local`. Any missing gate yields Exit `5` (`WRITE_DENIED`).
 
 Example:
 
 ```bash
-# example, not production - in-memory adapter, no network
+# example, not production - explicit local-only SurrealDB apply path
 python tools/surrealdb/context_importer.py apply \
   --apply \
   --apply-mode local-dev \
@@ -188,6 +194,8 @@ python tools/surrealdb/context_importer.py apply \
   --input-dir temp/context-index/run \
   --existing-records temp/context-index/existing.json \
   --run-id wave10-local-dev-1 \
+  --adapter surrealdb-local \
+  --secrets-path "$SECRETS_PATH" \
   --report-output artifacts/apply/report.json \
   --audit-output artifacts/audit/apply.json
 ```
@@ -195,9 +203,16 @@ python tools/surrealdb/context_importer.py apply \
 Important:
 
 - `--apply-mode` accepts only `local-dev`. argparse rejects any other value.
-- The importer reports `real_surrealdb_adapter_available: false` and `surrealdb_writes: in-memory-only` in the apply report.
+- The importer defaults to the in-memory adapter unless `--adapter surrealdb-local` is passed.
+- The `surrealdb-local` adapter remains fail-closed and localhost-only; remote URLs are rejected.
 - If the loaded config has `allow_apply_default: true`, the loader fails closed.
 - Forbidden-table writes are blocked at config load time, not at apply time.
+
+For the repo-backed local proof path, reuse the existing operator surfaces instead of building a second seed engine:
+
+- `make context-query-config-init` creates the gitignored local query config at `infrastructure/config/surrealdb/context_query.local.yaml`.
+- `tests/local/tools/mcp/test_wave14_real_surrealdb_smoke.py` seeds a small run-scoped Wave-14 bundle via `context_importer.py` and proves the DB-backed read path.
+- `adapter_config_path` remains an explicit operator opt-in for MCP/briefing calls; there is no implicit MCP default or auto-discovery.
 
 ---
 
