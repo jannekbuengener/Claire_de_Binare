@@ -1,7 +1,7 @@
 # GitHub Actions Self-Hosted Runner
 # Usage: docker compose -f infrastructure/actions-runner/docker-compose.runner.yml up -d --build
 
-FROM ubuntu:22.04
+FROM ubuntu:26.04
 
 ARG RUNNER_VERSION=2.332.0
 ARG RUNNER_ARCH=x64
