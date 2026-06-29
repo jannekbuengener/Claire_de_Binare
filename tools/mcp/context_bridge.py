@@ -2544,6 +2544,76 @@ def _derive_briefing_graph_paths(
             ]
         )
 
+    if target_issue == "#3487":
+        graph_paths.extend(
+            [
+                {
+                    "path_id": "issue-3487-hybrid-strategy",
+                    "nodes": [
+                        "knowledge/decisions/CDB_CONTEXT_BRAIN_SENSORY_LAYER.md",
+                        "docs/surrealdb/context-hybrid-retrieval-strategy-v1.md",
+                    ],
+                    "relationships": ["canonically_discovers"],
+                    "source": "repo_only",
+                    "authorizes": False,
+                    "non_authorizing": True,
+                    "no_db_write": True,
+                    "no_runtime_rebuild": True,
+                    "no_lr_go": True,
+                },
+                {
+                    "path_id": "issue-3487-foundation-chain",
+                    "nodes": [
+                        "docs/surrealdb/context-relationship-vocabulary-v0.md",
+                        "docs/surrealdb/context-embedding-pipeline-v0.md",
+                        "infrastructure/surrealdb/hybrid_retrieval_fixtures.surql",
+                    ],
+                    "relationships": [
+                        "builds_on_graph_anchor",
+                        "builds_on_vector_anchor",
+                    ],
+                    "source": "repo_only",
+                    "authorizes": False,
+                    "non_authorizing": True,
+                    "no_db_write": True,
+                    "no_runtime_rebuild": True,
+                    "no_lr_go": True,
+                },
+                {
+                    "path_id": "issue-3487-ranking-split",
+                    "nodes": [
+                        "docs/surrealdb/context-hybrid-retrieval-strategy-v1.md",
+                        "tools/surrealdb/hybrid_retrieval_ranking.py",
+                        "infrastructure/surrealdb/hybrid_retrieval_fixtures.surql",
+                    ],
+                    "relationships": [
+                        "python_ranking_parallel_to_surrealql_rrf",
+                        "verifies_query_contract",
+                    ],
+                    "source": "repo_only",
+                    "authorizes": False,
+                    "non_authorizing": True,
+                    "no_db_write": True,
+                    "no_runtime_rebuild": True,
+                    "no_lr_go": True,
+                },
+                {
+                    "path_id": "issue-3487-context-search-status",
+                    "nodes": ["context.search", "tools/mcp/context_bridge.py", "#3487"],
+                    "relationships": [
+                        "status_must_be_classified",
+                        "fail_closed_if_vector_missing",
+                    ],
+                    "source": "repo_only",
+                    "authorizes": False,
+                    "non_authorizing": True,
+                    "no_db_write": True,
+                    "no_runtime_rebuild": True,
+                    "no_lr_go": True,
+                },
+            ]
+        )
+
     return graph_paths
 
 
