@@ -3,7 +3,7 @@
 **Status Class**: Working Repo / Engineering Status
 **Authority**: Current repo/main/test/dependency snapshot; not the canonical live-readiness or Echtgeld Go/No-Go source.
 **Operational Canon**: `docs/live-readiness/LR-AUDIT-STATUS-2026-03-05.md`
-**Last Updated**: 2026-06-28
+**Last Updated**: 2026-06-29
 **GitHub Boundary**: The live commit and PR state is tracked in GitHub (UI/API or `gh`); this file is a curated repo/engineering ledger, not a live mirror.
 
 ---
@@ -71,6 +71,38 @@
 
 - **main**: `41b6e4f1` (post #3449–#3459 Trust-Welle abgeschlossen; Runner `cdb-docker-runner-2` online; PR #3459 MERGED; Issue #3458 CLOSED)
 - **LR bleibt NO-GO**. Board `trade-capable` bleibt kein Live-Go. HIGH/MEDIUM sind keine Human-/Live-/Echtgeld-Freigabe.
+- **Active GitHub focus (manual, non-exhaustive)**:
+  - #3362/#3384/#3345 (Evidence-Harvester Cluster — Slice-B ETA continues)
+  - Evidence-Harvester / 72h-Betrieb (nächster operativer Fokus)
+
+## Repo / Engineering Status (2026-06-29)
+
+- **Context-Trust-Closure-Wave #3466–#3472**: **COMPLETED** — 4 Issues CLOSED, PR #3472 MERGED auf `main @ 25599bc6`.
+
+  - **#3466 DB-backed Briefing-Pfad / CLOSED**: DB-backed SurrealDB record evidence path for CDB Context Briefing proven. Proof via local smoke test mit Wave-14 Fixtures. LR NO-GO.
+  - **#3468 Seed- + Adapter-Config / CLOSED**: Seed/Adapter-Config Setup for DB-backed Context Briefing evidence (surrealdb-local) delivered. LR NO-GO.
+  - **#3470 Adapter-Wiring in Resolver + Trust Summary / CLOSED**: DB adapter wired into Wave-14 resolve tools and trust summary. Resolver + Trust Summary sind jetzt DB-backed verdrahtet (via adapter_config_path). LR NO-GO.
+  - **#3471 MEDIUM/HIGH-Gates erklärt / CLOSED**: Score-Trace vollständig validiert. Ergebnis:
+    * evidence=0.90, claim=1.0, decision=0.25, memory=1.0
+    * **composite_score=0.7825 → trust_level=acceptable → operator_trust_level=MEDIUM**
+    * Wave-14 Fixture-Trust ist **MEDIUM, nicht LOW**.
+    * HIGH wird nicht erreicht (Gap 0.0175), weil Decision dec-001 superseded+invalidated ist.
+    * Kein Fake-HIGH, kein Score-Tuning.
+  - **PR #3472 / MERGED @ `25599bc6`**: Trust Summary Score-Trace-Docstring + 15 Unit-Tests (`tests/unit/tools/surrealdb/test_trust_summary.py`). Composite-Score-Formel, konkreter Fixture-Trace und Gap-Analyse dokumentiert.
+
+- **Kanomischer Context-Trust-Stand (nach Closure)**:
+  - DB-backed Briefing-Pfad ist bewiesen (DB-Records → Resolver → Trust Summary → Briefing).
+  - Seed-/Config-Pfad ist vorhanden (`adapter_config_path` in MCP-Tools).
+  - Resolver + Trust Summary sind DB-backed verdrahtet (Adapter-Query-Results fließen in `context_signals` und Score-Komponenten).
+  - Wave-14 Fixture-Trust ist MEDIUM mit composite_score=0.7825.
+  - Score-Trace: evidence=0.90 | claim=1.0 | decision=0.25 | memory=1.0 → 0.7825.
+  - HIGH-Gap: 0.0175 (Decision-Penalty durch superseded+invalidated dec-001).
+  - Gate-Regel bestätigt: repo_crosscheck_present + freshness_ok + surrealdb-local sind Gate-Signale, keine Score-Komponenten. Sie cappen nie unter MEDIUM bei acceptable + grünen Signalen.
+  - Kein Fake-HIGH, kein Score-Tuning, kein neues Trust-Level.
+  - LR bleibt **NO-GO**. Board `trade-capable` bleibt kein Live-Go.
+
+- **main**: `25599bc6` (post #3466/#3468/#3470/#3471/#3472 Closure-Wave abgeschlossen; PR #3472 MERGED)
+- **LR bleibt NO-GO**.
 - **Active GitHub focus (manual, non-exhaustive)**:
   - #3362/#3384/#3345 (Evidence-Harvester Cluster — Slice-B ETA continues)
   - Evidence-Harvester / 72h-Betrieb (nächster operativer Fokus)

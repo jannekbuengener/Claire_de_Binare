@@ -127,6 +127,22 @@ In Brain Evidence and Context scope:
 
 Canonical agent surfaces: [`agents/OPEN_CODE_AGENTS.md`](../../../agents/OPEN_CODE_AGENTS.md), [`docs/runbooks/CDB_AGENT_SENSES_OPERATOR.md`](../../runbooks/CDB_AGENT_SENSES_OPERATOR.md) §8.
 
+## Proven score trace (Wave-14 real-smoke fixture data, 2026-06-29)
+
+Validated via 15 Unit-Tests in PR #3472 (SHA `25599bc6`):
+
+| Component | Score | Weight | Contribution | Source |
+|---|---|---|---|---|
+| Evidence strength | 0.90 | 0.30 | 0.270 | confidence=0.91 → strong |
+| Claim status | 1.00 | 0.25 | 0.250 | status=supported |
+| Decision currentness | 0.25 | 0.25 | 0.0625 | 2 matched, 1 current, 1 invalidated → penalty 0.25 |
+| Memory trust | 1.00 | 0.20 | 0.200 | source_refs present → source_backed |
+| **Composite** | | | **0.7825** | |
+| **trust_level** | | | **acceptable** | 0.55 ≤ 0.7825 < 0.80 |
+| **operator_trust_level** | | | **MEDIUM** | base, no capping signals |
+
+Key finding: **Wave-14 Fixture-Trust ist MEDIUM, nicht LOW.** Der Gap zu HIGH (0.0175) wird primär durch die invalidated Decision (dec-001) verursacht. Kein Score-Tuning, kein Fake-HIGH.
+
 ## Related contracts
 
 - [`DB_RECORD_EVIDENCE_CONTRACT.md`](DB_RECORD_EVIDENCE_CONTRACT.md) — DB-backed claim rules
