@@ -22,6 +22,28 @@ The hybrid retrieval strategy enables agents to query the Context Intelligence k
 - No trading/risk/execution/strategy change
 - Vector search is optional (not required for baseline)
 
+## #3487 hybrid follow-up status
+
+Issue #3487 builds on #3484 and #3486 as a repo-only follow-up:
+
+- #3484 provides the graph anchor and traversal semantics
+- #3486 provides the vector / embedding anchor and proof boundary
+- #3487 connects BM25, Vector, and Graph as contract / fixture / ranking semantics
+
+The current repo-only status of `context.search` must stay explicit:
+
+- `operational` — the MCP tool surface exists and dispatches read-only search behavior
+- `contract-only` — hybrid retrieval semantics are documented but not promoted to DB-backed runtime truth
+- `gap` — any missing fusion, explanation, or path-hint surface must stay visible
+
+For #3487, any required hybrid vector input that is unavailable must be treated
+`fail-closed`, not silently downgraded into a success-shaped hybrid result.
+
+Relevant repo-only implementation surfaces:
+
+- `tools/mcp/context_bridge.py`
+- `tools/surrealdb/hybrid_retrieval_ranking.py`
+
 ---
 
 ## Retrieval Modes
