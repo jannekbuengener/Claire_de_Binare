@@ -171,6 +171,239 @@ def _extract_decision_events(
     return events
 
 
+def _count_records(records: list[Mapping[str, Any]] | None) -> int:
+    return len(records or [])
+
+
+def _build_replay_brain_evidence_fields(
+    *,
+    source: str,
+    decision_events: list[Mapping[str, Any]],
+    evidence_records: list[Mapping[str, Any]] | None,
+    claim_records: list[Mapping[str, Any]] | None,
+    memory_records: list[Mapping[str, Any]] | None,
+) -> dict[str, Any]:
+    record_count = (
+        len(decision_events)
+        + _count_records(evidence_records)
+        + _count_records(claim_records)
+        + _count_records(memory_records)
+    )
+    if source == "surrealdb-local":
+        return {
+            "brain_source": "surrealdb-local",
+            "brain_status": "used",
+            "context_brain_attempted": True,
+            "context_brain_used": True,
+            "context_available": True,
+            "repo_fallback_used": False,
+            "repo_fallback_reason": "none",
+            "context_tool_status": "available",
+            "context_trust_level": "medium",
+            "records_found": record_count,
+        }
+
+    if record_count > 0:
+        return {
+            "brain_source": "in_memory",
+            "brain_status": "used",
+            "context_brain_attempted": True,
+            "context_brain_used": True,
+            "context_available": True,
+            "repo_fallback_used": False,
+            "repo_fallback_reason": "none",
+            "context_tool_status": "available",
+            "context_trust_level": "medium",
+            "records_found": record_count,
+        }
+
+    return {
+        "brain_source": "repo-only",
+        "brain_status": "not-used",
+        "context_brain_attempted": True,
+        "context_brain_used": False,
+        "context_available": False,
+        "repo_fallback_used": True,
+        "repo_fallback_reason": "insufficient_evidence",
+        "context_tool_status": "available",
+        "context_trust_level": "none",
+        "records_found": "none",
+    }
+
+
+def _build_replay_brain_evidence_block(
+    fields: Mapping[str, Any],
+    *,
+    source: str,
+) -> dict[str, Any]:
+    limitations = [
+        "Replay is read-only and non-authorizing.",
+        "Repo text, PR narrative, and staged files do not become DB-backed evidence.",
+    ]
+    if source != "surrealdb-local":
+        limitations.append(
+            "Decision replay uses repo or in-memory surfaces only; no DB-backed claim "
+            "may be inferred from this output."
+        )
+    return {
+        "brain_source": fields["brain_source"],
+        "brain_status": fields["brain_status"],
+        "context_brain_attempted": fields["context_brain_attempted"],
+        "context_brain_used": fields["context_brain_used"],
+        "repo_fallback_used": fields["repo_fallback_used"],
+        "repo_fallback_reason": fields["repo_fallback_reason"],
+        "context_tool_status": fields["context_tool_status"],
+        "context_trust_level": fields["context_trust_level"],
+        "records_found": fields["records_found"],
+        "tools_or_queries": [
+            "cdb_context_decision_replay",
+            "build_decision_replay_v2",
+        ],
+        "records_or_results": [
+            f"replay_source={source}",
+            f"records_found={fields['records_found']}",
+        ],
+        "repo_crosscheck": [
+            "decision_chain",
+            "evidence_chain",
+            "claim_chain",
+        ],
+        "impact_on_plan": [
+            "Keep replay status proof read-only, evidence-bound, and fail-closed.",
+        ],
+        "limitations": limitations,
+    }
+
+
+def _normalize_status_claims(raw_claims: Any) -> list[dict[str, Any]]:
+    if not isinstance(raw_claims, list):
+        return []
+    return [dict(item) for item in raw_claims if isinstance(item, Mapping)]
+
+
+def _build_status_proof_block(
+    *,
+    status_claims: list[dict[str, Any]],
+    brain_fields: Mapping[str, Any],
+) -> tuple[dict[str, Any], list[str]]:
+    status_proof_block: dict[str, Any] = {
+        "github_live": {
+            "issue_state": {
+                "proof_status": "missing_live_truth",
+                "blocking_findings": [],
+                "sources_considered": [],
+                "state": "unknown",
+            },
+            "merge_state": {
+                "proof_status": "missing_live_truth",
+                "blocking_findings": [],
+                "issue_closure_inferred": False,
+                "state": "unknown",
+            },
+        },
+        "repo_live": {
+            "delivery_state": {
+                "proof_status": "repo_only_observation",
+                "blocking_findings": [],
+                "state": "unknown",
+            }
+        },
+        "ledger": {
+            "roadmap_state": {
+                "proof_status": "non_db_backed",
+                "blocking_findings": [],
+                "db_backed_claim": False,
+                "state": "unknown",
+            }
+        },
+        "brain": {
+            "brain_source": brain_fields["brain_source"],
+            "brain_status": brain_fields["brain_status"],
+            "context_trust_level": brain_fields["context_trust_level"],
+            "records_found": brain_fields["records_found"],
+        },
+    }
+    closure_drift_markers: set[str] = set()
+
+    issue_state = status_proof_block["github_live"]["issue_state"]
+    merge_state = status_proof_block["github_live"]["merge_state"]
+    delivery_state = status_proof_block["repo_live"]["delivery_state"]
+    roadmap_state = status_proof_block["ledger"]["roadmap_state"]
+
+    for claim in status_claims:
+        surface = str(claim.get("surface") or "").strip()
+        sources = [
+            str(source).strip()
+            for source in claim.get("sources", [])
+            if isinstance(source, str) and source.strip()
+        ]
+
+        if surface == "issue_state":
+            issue_state["state"] = str(claim.get("state") or "unknown")
+            issue_state["sources_considered"] = sources
+            if "ledger" in sources:
+                issue_state["blocking_findings"].append("ledger_only_issue_state")
+            if "pr_body" in sources:
+                issue_state["blocking_findings"].append("pr_body_issue_state")
+        elif surface == "merge_state":
+            merge_state["state"] = str(claim.get("state") or "unknown")
+            if merge_state["state"] == "merged" and not bool(
+                claim.get("closing_reference_present")
+            ):
+                merge_state["blocking_findings"].append("missing_closing_reference")
+                merge_state["issue_closure_inferred"] = False
+        elif surface == "delivery_reconcile":
+            delivery_state["state"] = str(claim.get("repo_delivery_state") or "unknown")
+            if (
+                str(claim.get("github_issue_state") or "").strip().lower() == "open"
+                and delivery_state["state"] == "delivered"
+            ):
+                closure_drift_markers.update({"closure_drift", "partial_delivery"})
+        elif surface == "roadmap_state":
+            roadmap_state["state"] = str(claim.get("state") or "unknown")
+            if "local_staged_files" in sources:
+                roadmap_state["blocking_findings"].append(
+                    "staged_files_non_db_backed"
+                )
+            if "pr_narrative" in sources:
+                roadmap_state["blocking_findings"].append(
+                    "pr_narrative_non_db_backed"
+                )
+
+    issue_state["blocking_findings"] = sorted(set(issue_state["blocking_findings"]))
+    merge_state["blocking_findings"] = sorted(set(merge_state["blocking_findings"]))
+    roadmap_state["blocking_findings"] = sorted(set(roadmap_state["blocking_findings"]))
+    return status_proof_block, sorted(closure_drift_markers)
+
+
+def _build_decision_replay_gate(
+    *,
+    source: str,
+    evidence_records: list[Mapping[str, Any]] | None,
+    claim_records: list[Mapping[str, Any]] | None,
+    memory_records: list[Mapping[str, Any]] | None,
+) -> dict[str, Any]:
+    missing_inputs: list[str] = []
+    if not evidence_records:
+        missing_inputs.append("evidence_records")
+    if not claim_records:
+        missing_inputs.append("claim_records")
+    if source != "surrealdb-local":
+        missing_inputs.append("decision_events")
+    if not memory_records:
+        missing_inputs.append("memory_records")
+    return {
+        "status": "ready" if not missing_inputs else "degraded",
+        "missing_inputs": missing_inputs,
+        "non_authorizing": True,
+        "db_backed_only_when_recorded": source == "surrealdb-local",
+        "notes": [
+            "Replay cannot promote repo text, PR body, ledger text, or staged files to DB-backed proof.",
+            "Missing record surfaces degrade trust before any status claim can be treated as proven.",
+        ],
+    }
+
+
 def handle_cdb_context_decision_history(request: Mapping[str, Any]) -> dict[str, Any]:
     parsed = _parse_tool_request(
         request, expected_tool=TOOL_CDB_CONTEXT_DECISION_HISTORY
@@ -392,6 +625,8 @@ def handle_cdb_context_decision_replay(request: Mapping[str, Any]) -> dict[str, 
     claim_summaries = _as_mapping(params.get("claim_summaries"))
     evidence_records = _as_list_of_mappings(params.get("evidence_records"))
     claim_records = _as_list_of_mappings(params.get("claim_records"))
+    memory_records = _as_list_of_mappings(params.get("memory_records"))
+    status_claims = _normalize_status_claims(params.get("status_claims"))
 
     stop_conditions_raw = params.get("stop_conditions")
     stop_conditions: list[dict[str, Any]] | None = None
@@ -420,4 +655,27 @@ def handle_cdb_context_decision_replay(request: Mapping[str, Any]) -> dict[str, 
             details={"mode": replay_request.mode},
         )
 
+    brain_evidence_fields = _build_replay_brain_evidence_fields(
+        source=_source,
+        decision_events=list(decision_events),
+        evidence_records=evidence_records,
+        claim_records=claim_records,
+        memory_records=memory_records,
+    )
+    status_proof_block, closure_drift_markers = _build_status_proof_block(
+        status_claims=status_claims,
+        brain_fields=brain_evidence_fields,
+    )
+    result["brain_evidence_block"] = _build_replay_brain_evidence_block(
+        brain_evidence_fields,
+        source=_source,
+    )
+    result["status_proof_block"] = status_proof_block
+    result["decision_replay_gate"] = _build_decision_replay_gate(
+        source=_source,
+        evidence_records=evidence_records,
+        claim_records=claim_records,
+        memory_records=memory_records,
+    )
+    result["closure_drift_markers"] = closure_drift_markers
     return _ok_response(TOOL_CDB_CONTEXT_DECISION_REPLAY, result=result, source=_source)

@@ -35,6 +35,9 @@ Spiegelt die Cursor-Skill-Oberfläche unter [`.cursor/skills/README.md`](../../.
 | [`cdb-docs-ops`](cdb-docs-ops/SKILL.md) | Docs maintenance |
 | [`ctb-docker-stack`](ctb-docker-stack/SKILL.md) | Docker BLUE+RED |
 | [`cdb-ci-cd-guard`](cdb-ci-cd-guard/SKILL.md) | CI/CD guardrails |
+| [`surrealql`](surrealql/SKILL.md) | CDB-curated official SurrealQL skill |
+| [`surrealdb-vector`](surrealdb-vector/SKILL.md) | CDB-curated official vector skill |
+| [`surrealdb-python`](surrealdb-python/SKILL.md) | CDB-curated official Python SDK skill |
 
 ## GitHub helpers
 

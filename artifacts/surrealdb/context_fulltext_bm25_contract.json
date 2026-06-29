@@ -1,0 +1,175 @@
+{
+  "$schema": "cdb://schemas/context-fulltext-bm25-contract/v1",
+  "version": 1,
+  "meta": {
+    "title": "CDB Context Fulltext BM25 Contract",
+    "description": "Defines which context categories are indexable via SurrealDB FULLTEXT BM25, the canonical analyzer, score configuration, freshness policies, and explicit blocklist for forbidden categories. CONTRACT_ONLY — no live DB operationality claimed.",
+    "canonical_source": [
+      "infrastructure/surrealdb/context_intelligence_v0.surql",
+      "infrastructure/surrealdb/context_intelligence_v0_deploy.surql",
+      "infrastructure/surrealdb/proof_graph_vector_setup.surql",
+      "infrastructure/surrealdb/hybrid_retrieval_fixtures.surql",
+      "artifacts/surrealdb/context_data_model_ownership_matrix.json",
+      "docs/surrealdb/CDB_CONTEXT_DATA_MODEL_OWNERSHIP.md",
+      "docs/surrealdb/context-core-schema-v1.md",
+      "docs/surrealdb/context-hybrid-retrieval-strategy-v1.md",
+      "tools/context_tool_inventory.py",
+      "tools/mcp_access_boundary.py"
+    ],
+    "issues": ["#3485", "#3483", "#3479"],
+    "created_by": "test-only/3485-fulltext-bm25-contract",
+    "status": "CONTRACT_ONLY",
+    "live_db_operational": false
+  },
+  "indexable_categories": {
+    "repo_file": {
+      "analyzer": "cdb_code_analyzer",
+      "indexed_fields": ["content", "file_path"],
+      "score_function": "BM25",
+      "highlight_allowed": true,
+      "evidence_required": "source_hash",
+      "source_of_truth": "repo",
+      "freshness_policy": "no_expiry_hash_verified",
+      "operational": false,
+      "backing_status": "CONTRACT_ONLY",
+      "live_index_exists": false,
+      "notes": "Versioned repo files. BM25 indexed on doc_chunk.content via idx_doc_chunk_content_ft. Source-hash per artifact required. Stale when hash differs from working repo HEAD."
+    },
+    "github_issue": {
+      "analyzer": "cdb_code_analyzer",
+      "indexed_fields": ["title", "body"],
+      "score_function": "BM25",
+      "highlight_allowed": true,
+      "evidence_required": "issue_url_or_number",
+      "source_of_truth": "github_live",
+      "freshness_policy": "stale_after_24h_or_state_change",
+      "operational": false,
+      "backing_status": "CONTRACT_ONLY",
+      "live_index_exists": false,
+      "notes": "GitHub issues mirrored as cache. SurrealDB mirror is not primary. TTL-driven refresh. BM25 on mirrored content."
+    },
+    "github_pr": {
+      "analyzer": "cdb_code_analyzer",
+      "indexed_fields": ["title", "body", "diff"],
+      "score_function": "BM25",
+      "highlight_allowed": true,
+      "evidence_required": "pr_url_or_number",
+      "source_of_truth": "github_live",
+      "freshness_policy": "stale_after_24h_or_state_change",
+      "operational": false,
+      "backing_status": "CONTRACT_ONLY",
+      "live_index_exists": false,
+      "notes": "GitHub PRs mirrored as cache. Stale when PR state changes on GitHub. BM25 on mirrored content."
+    },
+    "evidence": {
+      "analyzer": "cdb_code_analyzer",
+      "indexed_fields": ["content", "description"],
+      "score_function": "BM25",
+      "highlight_allowed": true,
+      "evidence_required": "source_hash_and_provenance",
+      "source_of_truth": "repo_and_surrealdb",
+      "freshness_policy": "no_expiry_hash_verified",
+      "operational": false,
+      "backing_status": "CONTRACT_ONLY",
+      "live_index_exists": false,
+      "notes": "Evidence refs are primary in SurrealDB but must reference Git source hashes. BM25 on evidence content. Append-only."
+    },
+    "claim": {
+      "analyzer": "cdb_code_analyzer",
+      "indexed_fields": ["statement", "rationale"],
+      "score_function": "BM25",
+      "highlight_allowed": true,
+      "evidence_required": "evidence_ref_and_source_hash",
+      "source_of_truth": "repo_and_surrealdb",
+      "freshness_policy": "no_expiry_hash_verified",
+      "operational": false,
+      "backing_status": "CONTRACT_ONLY",
+      "live_index_exists": false,
+      "notes": "Claims are assertions backed by evidence refs. BM25 on claim content. Append-only."
+    },
+    "decision": {
+      "analyzer": "cdb_code_analyzer",
+      "indexed_fields": ["description", "rationale"],
+      "score_function": "BM25",
+      "highlight_allowed": true,
+      "evidence_required": "ledger_source_and_event_id",
+      "source_of_truth": "git_ledger",
+      "freshness_policy": "no_expiry",
+      "operational": false,
+      "backing_status": "CONTRACT_ONLY",
+      "live_index_exists": false,
+      "notes": "Decision events recorded in Git ledger. BM25 on decision content. Ingest only, no edits."
+    },
+    "external_doc": {
+      "analyzer": "cdb_code_analyzer",
+      "indexed_fields": ["content", "title"],
+      "score_function": "BM25",
+      "highlight_allowed": true,
+      "evidence_required": "source_url_or_ref",
+      "source_of_truth": "external_upstream",
+      "freshness_policy": "stale_after_7d_or_upstream_change",
+      "operational": false,
+      "backing_status": "CONTRACT_ONLY",
+      "live_index_exists": false,
+      "notes": "External documentation (SurrealDB official docs, exchange APIs, etc.). Mirrored as cache. BM25 on mirrored content. No live DB operationality."
+    }
+  },
+  "forbidden_categories": {
+    "secrets": {
+      "reason": "CDB_AGENT_POLICY section 4 — secrets never stored in any CDB system.",
+      "source_of_truth": "never_stored",
+      "notes": "API keys, passwords, private keys, credentials, tokens. Enforced by gitleaks and CDB_AGENT_POLICY.md."
+    },
+    "broker_credentials": {
+      "reason": "Broker credentials must never be indexed or stored in context systems.",
+      "source_of_truth": "never_stored",
+      "notes": "Broker API credentials, exchange keys, wallet secrets. LR remains NO-GO."
+    },
+    "live_positions": {
+      "reason": "Position data is Postgres-only runtime data, never mirrored into context.",
+      "source_of_truth": "postgres_trading",
+      "notes": "Open, closed, or pending positions. Never stored in SurrealDB or Context Brain."
+    },
+    "live_orders": {
+      "reason": "Order data is Postgres-only runtime data, never stored in Context Brain.",
+      "source_of_truth": "postgres_trading",
+      "notes": "Orders in any state. Never stored in SurrealDB or Context Brain."
+    },
+    "live_fills": {
+      "reason": "Fill data is Postgres-only runtime data, never mirrored into SurrealDB.",
+      "source_of_truth": "postgres_trading",
+      "notes": "Partial or complete fills. Never mirrored into SurrealDB."
+    },
+    "live_risk_state": {
+      "reason": "Live risk state (exposure, drawdown, limits) is Postgres-only, never in Context Brain.",
+      "source_of_truth": "postgres_trading",
+      "notes": "Live exposure, drawdown, limits, margin. Never stored or queried via Context Brain."
+    },
+    "trading_runtime_control": {
+      "reason": "Trading runtime control (kill-switch, execution flags) is Postgres-only.",
+      "source_of_truth": "postgres_trading",
+      "notes": "Kill-switch state, execution control flags, trading mode. Never stored in SurrealDB."
+    },
+    "agent_memory_raw": {
+      "reason": "Raw agent memory must be excluded from fulltext indexing per data ownership model — agent_memory is a sub-category blocked from fulltext.",
+      "source_of_truth": "surrealdb_scoped",
+      "notes": "Per-agent raw memory never indexed via BM25. Agent memory has explicit scope and TTL but is excluded from fulltext search as raw agent state is not context-indexable."
+    }
+  },
+  "governance_rules": {
+    "no_live_db_operationality_without_adapter_evidence": true,
+    "cdb_code_analyzer_is_canonical_for_fulltext": true,
+    "repo_rg_is_fallback_mode_only": true,
+    "context_tool_and_mcp_boundary_remain_repo_only": true,
+    "agent_memory_raw_explicitly_blocked": true
+  },
+  "references": [
+    "artifacts/surrealdb/context_data_model_ownership_matrix.json",
+    "docs/surrealdb/CDB_CONTEXT_DATA_MODEL_OWNERSHIP.md",
+    "infrastructure/surrealdb/context_intelligence_v0.surql",
+    "infrastructure/surrealdb/context_intelligence_v0_deploy.surql",
+    "infrastructure/surrealdb/proof_graph_vector_setup.surql",
+    "docs/surrealdb/context-core-schema-v1.md",
+    "docs/surrealdb/context-hybrid-retrieval-strategy-v1.md"
+  ]
+}

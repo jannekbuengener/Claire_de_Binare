@@ -1,0 +1,706 @@
+[
+  {
+    "tool_name": "context.search",
+    "purpose": "Search the Context Intelligence knowledge base using keyword and structured queries.",
+    "handler_path": "tools/mcp/registry.py",
+    "registry_status": "registered",
+    "handler_status": "not_implemented",
+    "exposure_status": "repo_surface_configured",
+    "callability_status": "not_proven",
+    "operational_status": "not_proven",
+    "evidence_level": "repo_surface_config",
+    "backing_status": "CONTRACT_ONLY",
+    "surfaces": {
+      "ChatGPT": false,
+      "OpenCode": true,
+      "Cursor": true,
+      "Claude": true,
+      "Codex": false
+    },
+    "evidence": [
+      ".cursor/mcp.json",
+      "tools/mcp/permission_guard.py",
+      "tools/mcp/registry.py",
+      "tools/mcp/server.py"
+    ],
+    "gap_reason": ""
+  },
+  {
+    "tool_name": "context.trace",
+    "purpose": "Trace decision or event lineage through the Context Intelligence system.",
+    "handler_path": "tools/mcp/registry.py",
+    "registry_status": "registered",
+    "handler_status": "not_implemented",
+    "exposure_status": "repo_surface_configured",
+    "callability_status": "not_proven",
+    "operational_status": "not_proven",
+    "evidence_level": "repo_surface_config",
+    "backing_status": "IN_MEMORY",
+    "surfaces": {
+      "ChatGPT": false,
+      "OpenCode": true,
+      "Cursor": true,
+      "Claude": true,
+      "Codex": false
+    },
+    "evidence": [
+      ".cursor/mcp.json",
+      "tools/mcp/permission_guard.py",
+      "tools/mcp/registry.py",
+      "tools/mcp/server.py"
+    ],
+    "gap_reason": ""
+  },
+  {
+    "tool_name": "context.explain_source",
+    "purpose": "Explain the provenance and reasoning behind a specific source or evidence item.",
+    "handler_path": "tools/mcp/registry.py",
+    "registry_status": "registered",
+    "handler_status": "not_implemented",
+    "exposure_status": "repo_surface_configured",
+    "callability_status": "not_proven",
+    "operational_status": "not_proven",
+    "evidence_level": "repo_surface_config",
+    "backing_status": "IN_MEMORY",
+    "surfaces": {
+      "ChatGPT": false,
+      "OpenCode": true,
+      "Cursor": true,
+      "Claude": true,
+      "Codex": false
+    },
+    "evidence": [
+      ".cursor/mcp.json",
+      "tools/mcp/permission_guard.py",
+      "tools/mcp/registry.py",
+      "tools/mcp/server.py"
+    ],
+    "gap_reason": ""
+  },
+  {
+    "tool_name": "context.show_snapshot",
+    "purpose": "Show a point-in-time snapshot of the context state.",
+    "handler_path": "tools/mcp/registry.py",
+    "registry_status": "registered",
+    "handler_status": "not_implemented",
+    "exposure_status": "repo_surface_configured",
+    "callability_status": "not_proven",
+    "operational_status": "not_proven",
+    "evidence_level": "repo_surface_config",
+    "backing_status": "CONTRACT_ONLY",
+    "surfaces": {
+      "ChatGPT": false,
+      "OpenCode": true,
+      "Cursor": true,
+      "Claude": true,
+      "Codex": false
+    },
+    "evidence": [
+      ".cursor/mcp.json",
+      "tools/mcp/permission_guard.py",
+      "tools/mcp/registry.py",
+      "tools/mcp/server.py"
+    ],
+    "gap_reason": ""
+  },
+  {
+    "tool_name": "context.show_audit",
+    "purpose": "Show deterministic registry audit snapshot for a target tool (no DB/network).",
+    "handler_path": "tools/mcp/registry.py",
+    "registry_status": "registered",
+    "handler_status": "not_implemented",
+    "exposure_status": "repo_surface_configured",
+    "callability_status": "not_proven",
+    "operational_status": "not_proven",
+    "evidence_level": "repo_surface_config",
+    "backing_status": "CONTRACT_ONLY",
+    "surfaces": {
+      "ChatGPT": false,
+      "OpenCode": true,
+      "Cursor": true,
+      "Claude": true,
+      "Codex": false
+    },
+    "evidence": [
+      ".cursor/mcp.json",
+      "tools/mcp/permission_guard.py",
+      "tools/mcp/registry.py",
+      "tools/mcp/server.py"
+    ],
+    "gap_reason": ""
+  },
+  {
+    "tool_name": "context.package",
+    "purpose": "Package context artifacts for handoff between agents or sessions.",
+    "handler_path": "tools/mcp/registry.py",
+    "registry_status": "registered",
+    "handler_status": "not_implemented",
+    "exposure_status": "repo_surface_configured",
+    "callability_status": "not_proven",
+    "operational_status": "not_proven",
+    "evidence_level": "repo_surface_config",
+    "backing_status": "IN_MEMORY",
+    "surfaces": {
+      "ChatGPT": false,
+      "OpenCode": true,
+      "Cursor": true,
+      "Claude": true,
+      "Codex": false
+    },
+    "evidence": [
+      ".cursor/mcp.json",
+      "tools/mcp/permission_guard.py",
+      "tools/mcp/registry.py",
+      "tools/mcp/server.py"
+    ],
+    "gap_reason": ""
+  },
+  {
+    "tool_name": "context.readiness",
+    "purpose": "Assess agent action readiness for a given task scope. Read-only, fails closed. Requires task_scope and operation_mode.",
+    "handler_path": "tools/mcp/registry.py",
+    "registry_status": "registered",
+    "handler_status": "not_implemented",
+    "exposure_status": "repo_surface_configured",
+    "callability_status": "session_callable",
+    "operational_status": "not_proven",
+    "evidence_level": "session_live_call",
+    "backing_status": "IN_MEMORY",
+    "surfaces": {
+      "ChatGPT": false,
+      "OpenCode": true,
+      "Cursor": true,
+      "Claude": true,
+      "Codex": false
+    },
+    "evidence": [
+      ".cursor/mcp.json",
+      "session:2026-06-29 copilot-cli cdb_context context.readiness call succeeded",
+      "tools/mcp/permission_guard.py",
+      "tools/mcp/registry.py",
+      "tools/mcp/server.py"
+    ],
+    "gap_reason": ""
+  },
+  {
+    "tool_name": "context.self_explain",
+    "purpose": "Generate a structured self-explanation for governance-relevant conditions. Read-only, no action authorization, no Live-Go, no Echtgeld-Go.",
+    "handler_path": "tools/mcp/registry.py",
+    "registry_status": "registered",
+    "handler_status": "not_implemented",
+    "exposure_status": "repo_surface_configured",
+    "callability_status": "not_proven",
+    "operational_status": "not_proven",
+    "evidence_level": "repo_surface_config",
+    "backing_status": "CONTRACT_ONLY",
+    "surfaces": {
+      "ChatGPT": false,
+      "OpenCode": true,
+      "Cursor": true,
+      "Claude": true,
+      "Codex": false
+    },
+    "evidence": [
+      ".cursor/mcp.json",
+      "tools/mcp/permission_guard.py",
+      "tools/mcp/registry.py",
+      "tools/mcp/server.py"
+    ],
+    "gap_reason": ""
+  },
+  {
+    "tool_name": "context.briefing",
+    "purpose": "Generate a task-specific Agent Briefing v1 from Briefing Request schema (docs/surrealdb/context-agent-briefing-schema-v1.md). Delegates to context.readiness and context.package for context assembly. Read-only, no authorization, no Live/Echtgeld Go.",
+    "handler_path": "tools/mcp/registry.py",
+    "registry_status": "registered",
+    "handler_status": "not_implemented",
+    "exposure_status": "repo_surface_configured",
+    "callability_status": "not_proven",
+    "operational_status": "not_proven",
+    "evidence_level": "repo_surface_config",
+    "backing_status": "CONTRACT_ONLY",
+    "surfaces": {
+      "ChatGPT": false,
+      "OpenCode": true,
+      "Cursor": true,
+      "Claude": true,
+      "Codex": false
+    },
+    "evidence": [
+      ".cursor/mcp.json",
+      "tools/mcp/permission_guard.py",
+      "tools/mcp/registry.py",
+      "tools/mcp/server.py"
+    ],
+    "gap_reason": ""
+  },
+  {
+    "tool_name": "context.stop_resolver",
+    "purpose": "Resolve flat stop-condition strings to typed stop condition objects. Read-only, deterministic, fail-closed. No DB/network/GitHub access.",
+    "handler_path": "tools/mcp/registry.py",
+    "registry_status": "registered",
+    "handler_status": "not_implemented",
+    "exposure_status": "repo_surface_configured",
+    "callability_status": "not_proven",
+    "operational_status": "not_proven",
+    "evidence_level": "repo_surface_config",
+    "backing_status": "CONTRACT_ONLY",
+    "surfaces": {
+      "ChatGPT": false,
+      "OpenCode": true,
+      "Cursor": true,
+      "Claude": true,
+      "Codex": false
+    },
+    "evidence": [
+      ".cursor/mcp.json",
+      "tools/mcp/permission_guard.py",
+      "tools/mcp/registry.py",
+      "tools/mcp/server.py"
+    ],
+    "gap_reason": ""
+  },
+  {
+    "tool_name": "context.required_reads",
+    "purpose": "Resolve prioritized required reads from task scope, target issue, target paths, target symbols, and operation mode. Read-only, deterministic, fail-closed. No DB/network/GitHub access.",
+    "handler_path": "tools/mcp/registry.py",
+    "registry_status": "registered",
+    "handler_status": "not_implemented",
+    "exposure_status": "repo_surface_configured",
+    "callability_status": "session_callable",
+    "operational_status": "not_proven",
+    "evidence_level": "session_live_call",
+    "backing_status": "CONTRACT_ONLY",
+    "surfaces": {
+      "ChatGPT": false,
+      "OpenCode": true,
+      "Cursor": true,
+      "Claude": true,
+      "Codex": false
+    },
+    "evidence": [
+      ".cursor/mcp.json",
+      "session:2026-06-29 copilot-cli cdb_context context.required_reads call succeeded",
+      "tools/mcp/permission_guard.py",
+      "tools/mcp/registry.py",
+      "tools/mcp/server.py"
+    ],
+    "gap_reason": ""
+  },
+  {
+    "tool_name": "cdb_context_impact",
+    "purpose": "Impact Radar v1 MCP tool. Analyses downstream effects of a planned change across the CDB system. Returns affected items, graph paths, gate risks, required validation, and stop conditions. Read-only, deterministic, fail-closed. No DB/network/GitHub access. Does not authorize any action, Live-Go, or Echtgeld-Go.",
+    "handler_path": "tools/mcp/registry.py",
+    "registry_status": "registered",
+    "handler_status": "not_implemented",
+    "exposure_status": "repo_surface_configured",
+    "callability_status": "not_proven",
+    "operational_status": "not_proven",
+    "evidence_level": "repo_surface_config",
+    "backing_status": "CONTRACT_ONLY",
+    "surfaces": {
+      "ChatGPT": false,
+      "OpenCode": true,
+      "Cursor": true,
+      "Claude": true,
+      "Codex": false
+    },
+    "evidence": [
+      ".cursor/mcp.json",
+      "tools/mcp/permission_guard.py",
+      "tools/mcp/registry.py",
+      "tools/mcp/server.py"
+    ],
+    "gap_reason": ""
+  },
+  {
+    "tool_name": "cdb_context_evidence_resolve",
+    "purpose": "Wave-14 evidence resolve MCP tool. Resolves evidence for artifacts, claims, and decisions over in-memory records. Read-only, fail-closed, no DB/network/write. No Live-Go, no Echtgeld-Go.",
+    "handler_path": "tools/mcp/registry.py",
+    "registry_status": "registered",
+    "handler_status": "not_implemented",
+    "exposure_status": "repo_surface_configured",
+    "callability_status": "not_proven",
+    "operational_status": "not_proven",
+    "evidence_level": "repo_surface_config",
+    "backing_status": "CONTRACT_ONLY",
+    "surfaces": {
+      "ChatGPT": false,
+      "OpenCode": true,
+      "Cursor": true,
+      "Claude": true,
+      "Codex": false
+    },
+    "evidence": [
+      ".cursor/mcp.json",
+      "tools/mcp/permission_guard.py",
+      "tools/mcp/registry.py",
+      "tools/mcp/server.py"
+    ],
+    "gap_reason": ""
+  },
+  {
+    "tool_name": "cdb_context_claim_resolve",
+    "purpose": "Wave-14 claim resolve MCP tool. Resolves claims over in-memory records. Surfaces disputed/stale/weakly-supported claims. Read-only, fail-closed, no DB/network/write. No Live-Go, no Echtgeld-Go.",
+    "handler_path": "tools/mcp/registry.py",
+    "registry_status": "registered",
+    "handler_status": "not_implemented",
+    "exposure_status": "repo_surface_configured",
+    "callability_status": "not_proven",
+    "operational_status": "not_proven",
+    "evidence_level": "repo_surface_config",
+    "backing_status": "CONTRACT_ONLY",
+    "surfaces": {
+      "ChatGPT": false,
+      "OpenCode": true,
+      "Cursor": true,
+      "Claude": true,
+      "Codex": false
+    },
+    "evidence": [
+      ".cursor/mcp.json",
+      "tools/mcp/permission_guard.py",
+      "tools/mcp/registry.py",
+      "tools/mcp/server.py"
+    ],
+    "gap_reason": ""
+  },
+  {
+    "tool_name": "cdb_context_memory_get",
+    "purpose": "Wave-14 scoped memory read MCP tool. Reads agent memory records by scope, topic, or agent. Read-only, fail-closed, no DB/network/write. No Live-Go, no Echtgeld-Go.",
+    "handler_path": "tools/mcp/registry.py",
+    "registry_status": "registered",
+    "handler_status": "not_implemented",
+    "exposure_status": "repo_surface_configured",
+    "callability_status": "not_proven",
+    "operational_status": "not_proven",
+    "evidence_level": "repo_surface_config",
+    "backing_status": "CONTRACT_ONLY",
+    "surfaces": {
+      "ChatGPT": false,
+      "OpenCode": true,
+      "Cursor": true,
+      "Claude": true,
+      "Codex": false
+    },
+    "evidence": [
+      ".cursor/mcp.json",
+      "tools/mcp/permission_guard.py",
+      "tools/mcp/registry.py",
+      "tools/mcp/server.py"
+    ],
+    "gap_reason": ""
+  },
+  {
+    "tool_name": "cdb_context_memory_write_intent",
+    "purpose": "Memory write intent gate MCP tool (dry-run default). Evaluates Human-GO memory write authorization against the memory contract. Read-only, fail-closed, no DB/network/write execution. Mutation flags blocked. No Live-Go, no Echtgeld-Go.",
+    "handler_path": "tools/mcp/registry.py",
+    "registry_status": "registered",
+    "handler_status": "not_implemented",
+    "exposure_status": "repo_surface_configured",
+    "callability_status": "not_proven",
+    "operational_status": "not_proven",
+    "evidence_level": "repo_surface_config",
+    "backing_status": "CONTRACT_ONLY",
+    "surfaces": {
+      "ChatGPT": false,
+      "OpenCode": true,
+      "Cursor": true,
+      "Claude": true,
+      "Codex": false
+    },
+    "evidence": [
+      ".cursor/mcp.json",
+      "tools/mcp/permission_guard.py",
+      "tools/mcp/registry.py",
+      "tools/mcp/server.py"
+    ],
+    "gap_reason": ""
+  },
+  {
+    "tool_name": "cdb_context_trust_summary",
+    "purpose": "Wave-14 trust summary MCP tool. Builds a trust assessment from evidence, claim, decision, and memory results. Read-only, fail-closed, no DB/network/write. No Live-Go, no Echtgeld-Go.",
+    "handler_path": "tools/mcp/registry.py",
+    "registry_status": "registered",
+    "handler_status": "not_implemented",
+    "exposure_status": "repo_surface_configured",
+    "callability_status": "not_proven",
+    "operational_status": "not_proven",
+    "evidence_level": "repo_surface_config",
+    "backing_status": "CONTRACT_ONLY",
+    "surfaces": {
+      "ChatGPT": false,
+      "OpenCode": true,
+      "Cursor": true,
+      "Claude": true,
+      "Codex": false
+    },
+    "evidence": [
+      ".cursor/mcp.json",
+      "tools/mcp/permission_guard.py",
+      "tools/mcp/registry.py",
+      "tools/mcp/server.py"
+    ],
+    "gap_reason": ""
+  },
+  {
+    "tool_name": "cdb_context_decision_history",
+    "purpose": "Wave-14 decision history MCP tool. Queries decision history over in-memory decision event records. Read-only, fail-closed, no DB/network/write. No Live-Go, no Echtgeld-Go.",
+    "handler_path": "tools/mcp/registry.py",
+    "registry_status": "registered",
+    "handler_status": "not_implemented",
+    "exposure_status": "repo_surface_configured",
+    "callability_status": "not_proven",
+    "operational_status": "not_proven",
+    "evidence_level": "repo_surface_config",
+    "backing_status": "CONTRACT_ONLY",
+    "surfaces": {
+      "ChatGPT": false,
+      "OpenCode": true,
+      "Cursor": true,
+      "Claude": true,
+      "Codex": false
+    },
+    "evidence": [
+      ".cursor/mcp.json",
+      "tools/mcp/permission_guard.py",
+      "tools/mcp/registry.py",
+      "tools/mcp/server.py"
+    ],
+    "gap_reason": ""
+  },
+  {
+    "tool_name": "cdb_context_decision_replay",
+    "purpose": "Wave-14 decision replay MCP tool. Builds a decision replay from decision event records. Read-only, fail-closed, no DB/network/write. No Live-Go, no Echtgeld-Go.",
+    "handler_path": "tools/mcp/registry.py",
+    "registry_status": "registered",
+    "handler_status": "not_implemented",
+    "exposure_status": "repo_surface_configured",
+    "callability_status": "not_proven",
+    "operational_status": "not_proven",
+    "evidence_level": "repo_surface_config",
+    "backing_status": "CONTRACT_ONLY",
+    "surfaces": {
+      "ChatGPT": false,
+      "OpenCode": true,
+      "Cursor": true,
+      "Claude": true,
+      "Codex": false
+    },
+    "evidence": [
+      ".cursor/mcp.json",
+      "tools/mcp/permission_guard.py",
+      "tools/mcp/registry.py",
+      "tools/mcp/server.py"
+    ],
+    "gap_reason": ""
+  },
+  {
+    "tool_name": "cdb_context_contradictions",
+    "purpose": "Wave-15 contradiction scan MCP tool. Detects contradictions between doc/code/decisions/evidence/claims/memory over in-memory records. Surfaces SourceRefs, EvidenceRefs, severity, confidence, and recommended_next_reads. Read-only, fail-closed, no DB/network/write. No Live-Go, no Echtgeld-Go. Detection is signal, not action permission.",
+    "handler_path": "tools/mcp/registry.py",
+    "registry_status": "registered",
+    "handler_status": "not_implemented",
+    "exposure_status": "repo_surface_configured",
+    "callability_status": "not_proven",
+    "operational_status": "not_proven",
+    "evidence_level": "repo_surface_config",
+    "backing_status": "CONTRACT_ONLY",
+    "surfaces": {
+      "ChatGPT": false,
+      "OpenCode": true,
+      "Cursor": true,
+      "Claude": true,
+      "Codex": false
+    },
+    "evidence": [
+      ".cursor/mcp.json",
+      "tools/mcp/permission_guard.py",
+      "tools/mcp/registry.py",
+      "tools/mcp/server.py"
+    ],
+    "gap_reason": ""
+  },
+  {
+    "tool_name": "cdb_context_stale",
+    "purpose": "Wave-16-C stale context MCP tool. Detects stale knowledge findings from an in-memory input bundle. Surfaces stale_type, severity, confidence, recommended_refresh, and source_refs for each finding. Supports scope/stale_type/severity/target_ref filters and limit. Bundle-driven: no DB/network/filesystem read. Read-only, fail-closed. Detection is signal, not authorization. No Live-Go, no Echtgeld-Go, no auto-fix, no auto-delete, no write.",
+    "handler_path": "tools/mcp/registry.py",
+    "registry_status": "registered",
+    "handler_status": "not_implemented",
+    "exposure_status": "repo_surface_configured",
+    "callability_status": "not_proven",
+    "operational_status": "not_proven",
+    "evidence_level": "repo_surface_config",
+    "backing_status": "CONTRACT_ONLY",
+    "surfaces": {
+      "ChatGPT": false,
+      "OpenCode": true,
+      "Cursor": true,
+      "Claude": true,
+      "Codex": false
+    },
+    "evidence": [
+      ".cursor/mcp.json",
+      "tools/mcp/permission_guard.py",
+      "tools/mcp/registry.py",
+      "tools/mcp/server.py"
+    ],
+    "gap_reason": ""
+  },
+  {
+    "tool_name": "cdb_context_scope_drift",
+    "purpose": "Wave-17-C scope drift MCP tool. Detects scope drift findings from an in-memory input bundle using the Wave-17-A firewall service. Supports filters for severity, scope_type (drift type), target_ref, and blocking state. Supports deterministic limit/truncation. Bundle-driven: no DB/network/filesystem read. Read-only, fail-closed. Detection is signal, not authorization. No Live-Go, no Echtgeld-Go, no auto-fix, no write.",
+    "handler_path": "tools/mcp/registry.py",
+    "registry_status": "registered",
+    "handler_status": "not_implemented",
+    "exposure_status": "repo_surface_configured",
+    "callability_status": "not_proven",
+    "operational_status": "not_proven",
+    "evidence_level": "repo_surface_config",
+    "backing_status": "CONTRACT_ONLY",
+    "surfaces": {
+      "ChatGPT": false,
+      "OpenCode": true,
+      "Cursor": true,
+      "Claude": true,
+      "Codex": false
+    },
+    "evidence": [
+      ".cursor/mcp.json",
+      "tools/mcp/permission_guard.py",
+      "tools/mcp/registry.py",
+      "tools/mcp/server.py"
+    ],
+    "gap_reason": ""
+  },
+  {
+    "tool_name": "cdb_context_quality_score",
+    "purpose": "Score the quality of a knowledge context bundle across 8 dimensions (coverage, freshness, evidence, contradiction, dependency confidence, memory trust, decision validity, scope risk). Returns overall grade (blocking/watch/weak/good) and per-dimension scores. Read-only, bundle-driven, fail-closed. No DB/network/writes.",
+    "handler_path": "tools/mcp/registry.py",
+    "registry_status": "registered",
+    "handler_status": "not_implemented",
+    "exposure_status": "repo_surface_configured",
+    "callability_status": "not_proven",
+    "operational_status": "not_proven",
+    "evidence_level": "repo_surface_config",
+    "backing_status": "CONTRACT_ONLY",
+    "surfaces": {
+      "ChatGPT": false,
+      "OpenCode": true,
+      "Cursor": true,
+      "Claude": true,
+      "Codex": false
+    },
+    "evidence": [
+      ".cursor/mcp.json",
+      "tools/mcp/permission_guard.py",
+      "tools/mcp/registry.py",
+      "tools/mcp/server.py"
+    ],
+    "gap_reason": ""
+  },
+  {
+    "tool_name": "cdb_context_architect_signals",
+    "purpose": "Detect proactive architect signals from a context bundle. Generates 11 signal types: stale_area, weakly_evidenced_decision, underdocumented_surface, undertested_surface, high_dependency_risk, contradiction_hotspot, scope_drift_hotspot, repeated_agent_confusion, redundant_docs, missing_owner, fragile_context_path. Read-only, bundle-driven, fail-closed. No DB/network/writes. No automatic issue creation. Human-GO required for blocking signals.",
+    "handler_path": "tools/mcp/registry.py",
+    "registry_status": "registered",
+    "handler_status": "not_implemented",
+    "exposure_status": "repo_surface_configured",
+    "callability_status": "not_proven",
+    "operational_status": "not_proven",
+    "evidence_level": "repo_surface_config",
+    "backing_status": "CONTRACT_ONLY",
+    "surfaces": {
+      "ChatGPT": false,
+      "OpenCode": true,
+      "Cursor": true,
+      "Claude": true,
+      "Codex": false
+    },
+    "evidence": [
+      ".cursor/mcp.json",
+      "tools/mcp/permission_guard.py",
+      "tools/mcp/registry.py",
+      "tools/mcp/server.py"
+    ],
+    "gap_reason": ""
+  },
+  {
+    "tool_name": "cdb_control_room_view",
+    "purpose": "Wave-19 Visual Control Room View Builder v1. Builds one or all 9 read-only visual views (knowledge graph, architecture map, decision chain, evidence map, risk surface, stale knowledge, scope drift, agent memory, quality score dashboard) from an in-memory bundle. Read-only, deterministic, fail-closed. No DB/network/write. No Live-Go. No Echtgeld-Go. No runtime control. Signal surface only.",
+    "handler_path": "tools/mcp/registry.py",
+    "registry_status": "registered",
+    "handler_status": "not_implemented",
+    "exposure_status": "repo_surface_configured",
+    "callability_status": "not_proven",
+    "operational_status": "not_proven",
+    "evidence_level": "repo_surface_config",
+    "backing_status": "CONTRACT_ONLY",
+    "surfaces": {
+      "ChatGPT": false,
+      "OpenCode": true,
+      "Cursor": true,
+      "Claude": true,
+      "Codex": false
+    },
+    "evidence": [
+      ".cursor/mcp.json",
+      "tools/mcp/permission_guard.py",
+      "tools/mcp/registry.py",
+      "tools/mcp/server.py"
+    ],
+    "gap_reason": ""
+  },
+  {
+    "tool_name": "cdb_agent_os_readiness",
+    "purpose": "Wave-20 Agent OS Readiness Evaluator v1. Evaluates the health and readiness of the Agent OS context intelligence system itself by aggregating signals from quality scoring, architect signals, scope drift, contradiction scan, and stale knowledge modules. Returns a readiness level (blocked/weak/acceptable/strong), blocking findings, weak findings, missing inputs, confidence, and an optional Markdown report. Read-only, deterministic, fail-closed. No DB/network/write. No Live-Go. No Echtgeld-Go. No runtime control. Signal surface only.",
+    "handler_path": "tools/mcp/registry.py",
+    "registry_status": "registered",
+    "handler_status": "not_implemented",
+    "exposure_status": "repo_surface_configured",
+    "callability_status": "not_proven",
+    "operational_status": "not_proven",
+    "evidence_level": "repo_surface_config",
+    "backing_status": "CONTRACT_ONLY",
+    "surfaces": {
+      "ChatGPT": false,
+      "OpenCode": true,
+      "Cursor": true,
+      "Claude": true,
+      "Codex": false
+    },
+    "evidence": [
+      ".cursor/mcp.json",
+      "tools/mcp/permission_guard.py",
+      "tools/mcp/registry.py",
+      "tools/mcp/server.py"
+    ],
+    "gap_reason": ""
+  },
+  {
+    "tool_name": "cdb_context_briefing",
+    "purpose": "Alias for context.briefing. Generate a task-specific Agent Briefing v1 from Briefing Request schema (docs/surrealdb/context-agent-briefing-schema-v1.md). Read-only, no authorization, no Live/Echtgeld Go.",
+    "handler_path": "tools/mcp/registry.py",
+    "registry_status": "registered",
+    "handler_status": "not_implemented",
+    "exposure_status": "repo_surface_configured",
+    "callability_status": "not_proven",
+    "operational_status": "not_proven",
+    "evidence_level": "repo_surface_config",
+    "backing_status": "CONTRACT_ONLY",
+    "surfaces": {
+      "ChatGPT": false,
+      "OpenCode": true,
+      "Cursor": true,
+      "Claude": true,
+      "Codex": false
+    },
+    "evidence": [
+      ".cursor/mcp.json",
+      "tools/mcp/permission_guard.py",
+      "tools/mcp/registry.py",
+      "tools/mcp/server.py"
+    ],
+    "gap_reason": ""
+  }
+]

@@ -1,0 +1,192 @@
+{
+  "$schema": "cdb://schemas/context-data-model-ownership-matrix/v1",
+  "version": 1,
+  "meta": {
+    "canonical_source": [
+      "infrastructure/config/surrealdb/ownership.yaml",
+      "docs/surrealdb/data-ownership-matrix.md",
+      "docs/surrealdb/context-core-schema-v1.md",
+      "docs/surrealdb/context-ontology-v0.yaml",
+      "tools/context_tool_inventory.py",
+      "tools/mcp_access_boundary.py"
+    ],
+    "issues": ["#3483", "#3479"],
+    "created_by": "test-only/3483-data-model-ownership-matrix"
+  },
+  "categories": {
+    "repo_file": {
+      "owner": "context_indexer",
+      "source_of_truth": "repo",
+      "mirror_allowed": true,
+      "persist_allowed": true,
+      "mutation_allowed": false,
+      "ttl_policy": "no_expiry_hash_verified",
+      "evidence_required": "source_hash",
+      "allowed_storage": ["git", "surrealdb_mirror"],
+      "forbidden_storage": ["postgres_trading", "in_memory_only"],
+      "notes": "Versioned repo files mirrored to SurrealDB doc_chunk/repo_artifact. Source-hash per artifact required. Stale when hash differs from working repo HEAD."
+    },
+    "github_issue": {
+      "owner": "jannek",
+      "source_of_truth": "github_live",
+      "mirror_allowed": true,
+      "persist_allowed": true,
+      "mutation_allowed": false,
+      "ttl_policy": "stale_after_24h_or_state_change",
+      "evidence_required": "issue_url_or_number",
+      "allowed_storage": ["surrealdb_cache", "in_memory"],
+      "forbidden_storage": ["git", "postgres_trading"],
+      "notes": "GitHub issues are live truth. SurrealDB mirror is cache, not primary. TTL-driven refresh."
+    },
+    "github_pr": {
+      "owner": "jannek",
+      "source_of_truth": "github_live",
+      "mirror_allowed": true,
+      "persist_allowed": true,
+      "mutation_allowed": false,
+      "ttl_policy": "stale_after_24h_or_state_change",
+      "evidence_required": "pr_url_or_number",
+      "allowed_storage": ["surrealdb_cache", "in_memory"],
+      "forbidden_storage": ["git", "postgres_trading"],
+      "notes": "GitHub PRs are live truth. SurrealDB mirror is cache. Stale when PR state changes on GitHub."
+    },
+    "context_tool": {
+      "owner": "context_indexer",
+      "source_of_truth": "repo",
+      "mirror_allowed": false,
+      "persist_allowed": false,
+      "mutation_allowed": false,
+      "ttl_policy": "repo_refresh_on_main_merge",
+      "evidence_required": "tool_inventory_entry",
+      "allowed_storage": ["repo_only"],
+      "forbidden_storage": ["surrealdb", "postgres_trading", "in_memory_only"],
+      "notes": "Tool inventory is repo-backed only. No DB_BACKED until proven via adapter evidence. See tools/context_tool_inventory.py and artifacts/context_tool_inventory/tool_inventory.json."
+    },
+    "mcp_boundary": {
+      "owner": "context_indexer",
+      "source_of_truth": "repo",
+      "mirror_allowed": false,
+      "persist_allowed": false,
+      "mutation_allowed": false,
+      "ttl_policy": "repo_refresh_on_main_merge",
+      "evidence_required": "boundary_matrix_entry",
+      "allowed_storage": ["repo_only"],
+      "forbidden_storage": ["surrealdb", "postgres_trading", "in_memory_only"],
+      "notes": "MCP access boundary is repo-backed. See tools/mcp_access_boundary.py and artifacts/mcp/mcp_access_boundary_matrix.json. No DB_BACKED_READONLY_PROVEN without adapter evidence."
+    },
+    "evidence": {
+      "owner": "context_indexer",
+      "source_of_truth": "repo_and_surrealdb",
+      "mirror_allowed": true,
+      "persist_allowed": true,
+      "mutation_allowed": false,
+      "ttl_policy": "no_expiry_hash_verified",
+      "evidence_required": "source_hash_and_provenance",
+      "allowed_storage": ["surrealdb_primary", "repo_linked"],
+      "forbidden_storage": ["postgres_trading", "in_memory_only"],
+      "notes": "Evidence refs are primary in SurrealDB but must reference Git source hashes. No DB_BACKED_READONLY_PROVEN operationality claimed. Append-only."
+    },
+    "claim": {
+      "owner": "context_indexer",
+      "source_of_truth": "repo_and_surrealdb",
+      "mirror_allowed": true,
+      "persist_allowed": true,
+      "mutation_allowed": false,
+      "ttl_policy": "no_expiry_hash_verified",
+      "evidence_required": "evidence_ref_and_source_hash",
+      "allowed_storage": ["surrealdb_primary", "repo_linked"],
+      "forbidden_storage": ["postgres_trading", "in_memory_only"],
+      "notes": "Claims are assertions backed by evidence refs. Source-hash and provenance required. Append-only."
+    },
+    "decision": {
+      "owner": "agents_via_ledger",
+      "source_of_truth": "git_ledger",
+      "mirror_allowed": true,
+      "persist_allowed": true,
+      "mutation_allowed": false,
+      "ttl_policy": "no_expiry",
+      "evidence_required": "ledger_source_and_event_id",
+      "allowed_storage": ["surrealdb_append_only_mirror", "git_ledger"],
+      "forbidden_storage": ["postgres_trading", "in_memory_only"],
+      "notes": "Decision events recorded in Git ledger, mirrored to SurrealDB append-only. Must reference ledger source + event_id. Ingest only, no edits."
+    },
+    "agent_memory": {
+      "owner": "agents",
+      "source_of_truth": "surrealdb",
+      "mirror_allowed": false,
+      "persist_allowed": true,
+      "mutation_allowed": false,
+      "ttl_policy": "ttl_bound_agent_id_and_namespace",
+      "evidence_required": "source_hash_or_evidence_ref",
+      "allowed_storage": ["surrealdb_scoped"],
+      "forbidden_storage": ["git", "postgres_trading", "repo_only"],
+      "notes": "Per-agent memory scoped by agent_id + namespace + TTL. Source-hash-backed evidence refs and audit-trailed writes required. Distinct from shared_memory. No trading state. No secrets. No live-/echtgeld-go authorisation. PERSIST_ALLOWED=true only with explicit scope and TTL."
+    },
+    "external_doc": {
+      "owner": "context_indexer",
+      "source_of_truth": "external_upstream",
+      "mirror_allowed": true,
+      "persist_allowed": true,
+      "mutation_allowed": false,
+      "ttl_policy": "stale_after_7d_or_upstream_change",
+      "evidence_required": "source_url_or_ref",
+      "allowed_storage": ["surrealdb_cache", "in_memory"],
+      "forbidden_storage": ["git", "postgres_trading"],
+      "notes": "External documentation (SurrealDB official docs, exchange APIs, etc.). Mirrored as cache, verified periodically against upstream. No live DB operationality claimed."
+    }
+  },
+  "forbidden_categories": {
+    "secrets": {
+      "persist_allowed": false,
+      "mutation_allowed": false,
+      "source_of_truth": "never_stored",
+      "notes": "API keys, passwords, private keys, credentials, tokens. Never ingested or stored in any CDB system. Enforced by gitleaks and CDB_AGENT_POLICY.md."
+    },
+    "broker_credentials": {
+      "persist_allowed": false,
+      "mutation_allowed": false,
+      "source_of_truth": "never_stored",
+      "notes": "Broker API credentials, exchange keys, wallet secrets. Never stored in repo, SurrealDB, or context systems. LR remains NO-GO."
+    },
+    "live_positions": {
+      "persist_allowed": false,
+      "mutation_allowed": false,
+      "source_of_truth": "postgres_trading",
+      "notes": "Open, closed, or pending positions. Postgres-only runtime data. Never mirrored into SurrealDB or Context Brain."
+    },
+    "live_orders": {
+      "persist_allowed": false,
+      "mutation_allowed": false,
+      "source_of_truth": "postgres_trading",
+      "notes": "Orders in any state (new, partial, filled, cancelled, rejected). Postgres-only runtime data. Never stored in Context Brain."
+    },
+    "live_fills": {
+      "persist_allowed": false,
+      "mutation_allowed": false,
+      "source_of_truth": "postgres_trading",
+      "notes": "Partial or complete fills. Postgres-only runtime data. Never mirrored into SurrealDB."
+    },
+    "live_risk_state": {
+      "persist_allowed": false,
+      "mutation_allowed": false,
+      "source_of_truth": "postgres_trading",
+      "notes": "Live exposure, drawdown, limits, margin. Postgres-only runtime data. Never stored or queried via Context Brain."
+    },
+    "trading_runtime_control": {
+      "persist_allowed": false,
+      "mutation_allowed": false,
+      "source_of_truth": "postgres_trading",
+      "notes": "Kill-switch state, execution control flags, trading mode (live/shadow/paper). Never stored in SurrealDB or accessible via MCP context tools."
+    }
+  },
+  "governance_rules": {
+    "persist_allowed_default": false,
+    "mutation_allowed_default": false,
+    "db_backed_claim_requires_adapter_evidence": true,
+    "live_risk_state_forbidden_all_domains": true,
+    "secrets_forbidden_all_domains": true,
+    "trading_runtime_control_forbidden_all_domains": true,
+    "source_hash_required_for_mirror": true,
+    "ttl_required_for_agent_memory": true
+  }
+}
