@@ -1,0 +1,187 @@
+{
+  "$schema": "cdb://schemas/agent-memory-contract/v1",
+  "version": 1,
+  "meta": {
+    "title": "CDB Agent Memory Contract",
+    "description": "Defines the agent-facing memory classes, forbidden inputs, and gating rules for CDB Agent Memory. CONTRACT_ONLY — no productive DB write claims.",
+    "canonical_source": [
+      "docs/surrealdb/scoped-agent-memory-model-v1.md",
+      "docs/surrealdb/CDB_CONTEXT_DATA_MODEL_OWNERSHIP.md",
+      "artifacts/surrealdb/context_data_model_ownership_matrix.json",
+      "docs/surrealdb/CDB_CONTEXT_FULLTEXT_BM25_CONTRACT.md",
+      "artifacts/surrealdb/context_fulltext_bm25_contract.json",
+      "artifacts/mcp/mcp_access_boundary_matrix.json",
+      "artifacts/context_tool_inventory/tool_inventory.json",
+      "tools/mcp_access_boundary.py",
+      "tools/mcp/memory_write_intent_tools.py"
+    ],
+    "issues": ["#3490", "#3483", "#3485", "#3479"],
+    "created_by": "test-only/3490-agent-memory-contract",
+    "status": "CONTRACT_ONLY",
+    "live_db_operational": false,
+    "runtime_mapping_status": "NO_RUNTIME_MAPPING_IMPLEMENTED"
+  },
+  "allowed_memory_types": {
+    "operator_note": {
+      "scope": "issue_or_task_or_agent_scope_required",
+      "ttl_policy": "stale_after_7d_or_issue_state_change",
+      "source_of_truth": "repo_or_github_evidence",
+      "evidence_required": "source_hash_or_issue_ref_plus_evidence_ref",
+      "write_gate": "cdb_context_memory_write_intent_dry_run_only_human_go_required",
+      "read_gate": "cdb_context_memory_get_read_only_scoped_non_authoritative",
+      "redaction_required": true,
+      "operational": false,
+      "persist_allowed": false,
+      "mutation_allowed": false,
+      "backing_status": "CONTRACT_ONLY",
+      "future_storage_family_hint": "preference_memory",
+      "notes": "Operator observations must be summarized, scoped, and redacted. Never raw transcript capture."
+    },
+    "issue_memory": {
+      "scope": "issue_scope_required",
+      "ttl_policy": "stale_after_24h_or_issue_state_change",
+      "source_of_truth": "github_live_plus_repo_crosscheck",
+      "evidence_required": "issue_url_or_number_plus_evidence_ref",
+      "write_gate": "cdb_context_memory_write_intent_dry_run_only_human_go_required",
+      "read_gate": "cdb_context_memory_get_read_only_scoped_non_authoritative",
+      "redaction_required": true,
+      "operational": false,
+      "persist_allowed": false,
+      "mutation_allowed": false,
+      "backing_status": "CONTRACT_ONLY",
+      "future_storage_family_hint": "episodic_memory",
+      "notes": "Issue-local summaries follow live GitHub truth and must refresh when issue state changes."
+    },
+    "decision_memory": {
+      "scope": "decision_or_issue_scope_required",
+      "ttl_policy": "no_expiry_ledger_verified",
+      "source_of_truth": "git_ledger",
+      "evidence_required": "ledger_source_and_event_id",
+      "write_gate": "cdb_context_memory_write_intent_dry_run_only_human_go_required",
+      "read_gate": "cdb_context_memory_get_read_only_scoped_non_authoritative",
+      "redaction_required": true,
+      "operational": false,
+      "persist_allowed": false,
+      "mutation_allowed": false,
+      "backing_status": "CONTRACT_ONLY",
+      "future_storage_family_hint": "episodic_memory",
+      "notes": "Decision memory points to prior decisions but never replaces the ledger as source of truth."
+    },
+    "evidence_summary": {
+      "scope": "artifact_or_issue_scope_required",
+      "ttl_policy": "no_expiry_hash_verified",
+      "source_of_truth": "repo_and_evidence_refs",
+      "evidence_required": "source_hash_and_provenance",
+      "write_gate": "cdb_context_memory_write_intent_dry_run_only_human_go_required",
+      "read_gate": "cdb_context_memory_get_read_only_scoped_non_authoritative",
+      "redaction_required": true,
+      "operational": false,
+      "persist_allowed": false,
+      "mutation_allowed": false,
+      "backing_status": "CONTRACT_ONLY",
+      "future_storage_family_hint": "semantic_memory",
+      "notes": "Evidence summaries are compact pointers to already-audited evidence, not freeform assertions."
+    },
+    "session_lesson": {
+      "scope": "session_or_agent_scope_required",
+      "ttl_policy": "stale_after_24h_or_session_close",
+      "source_of_truth": "repo_and_session_evidence",
+      "evidence_required": "source_hash_or_evidence_ref",
+      "write_gate": "cdb_context_memory_write_intent_dry_run_only_human_go_required",
+      "read_gate": "cdb_context_memory_get_read_only_scoped_non_authoritative",
+      "redaction_required": true,
+      "operational": false,
+      "persist_allowed": false,
+      "mutation_allowed": false,
+      "backing_status": "CONTRACT_ONLY",
+      "future_storage_family_hint": "procedural_memory",
+      "notes": "Session lessons must be summarized, short-lived, and never treated as persistent truth by default."
+    },
+    "repo_fact_cache": {
+      "scope": "repo_path_or_component_scope_required",
+      "ttl_policy": "repo_refresh_on_main_merge_or_hash_change",
+      "source_of_truth": "repo",
+      "evidence_required": "source_hash",
+      "write_gate": "cdb_context_memory_write_intent_dry_run_only_human_go_required",
+      "read_gate": "cdb_context_memory_get_read_only_scoped_non_authoritative",
+      "redaction_required": true,
+      "operational": false,
+      "persist_allowed": false,
+      "mutation_allowed": false,
+      "backing_status": "CONTRACT_ONLY",
+      "future_storage_family_hint": "semantic_memory",
+      "notes": "Repo fact cache entries must be revalidated whenever the underlying repo hash changes."
+    }
+  },
+  "forbidden_memory_inputs": {
+    "secrets": {
+      "reason": "Secrets are never stored in any CDB system.",
+      "source_of_truth": "never_stored",
+      "notes": "API keys, passwords, tokens, and private keys are excluded before any memory classification."
+    },
+    "broker_credentials": {
+      "reason": "Broker and exchange credentials are never stored in memory.",
+      "source_of_truth": "never_stored",
+      "notes": "This includes API credentials, wallet secrets, and similar operator secrets."
+    },
+    "live_positions": {
+      "reason": "Live trading state remains Postgres-only runtime data.",
+      "source_of_truth": "postgres_trading",
+      "notes": "Positions are runtime data, not memory context."
+    },
+    "live_orders": {
+      "reason": "Live trading state remains Postgres-only runtime data.",
+      "source_of_truth": "postgres_trading",
+      "notes": "Orders in any state remain outside the agent memory contract."
+    },
+    "live_fills": {
+      "reason": "Live trading state remains Postgres-only runtime data.",
+      "source_of_truth": "postgres_trading",
+      "notes": "Fills are runtime execution data, not memory context."
+    },
+    "live_risk_state": {
+      "reason": "Live risk state remains Postgres-only runtime data.",
+      "source_of_truth": "postgres_trading",
+      "notes": "Exposure, drawdown, margin, and limits are forbidden memory inputs."
+    },
+    "trading_runtime_control": {
+      "reason": "Trading runtime control must never enter agent memory.",
+      "source_of_truth": "postgres_trading",
+      "notes": "Kill-switch state, execution flags, and live/shadow/paper mode are runtime-only."
+    },
+    "raw_chat_dump": {
+      "reason": "Raw transcripts are unredacted, weakly evidenced, and not stable memory input.",
+      "source_of_truth": "session_only",
+      "notes": "Only summarized and redacted lessons or notes may ever become future memory candidates."
+    },
+    "unscoped_agent_memory": {
+      "reason": "Unscoped memory violates the scoped memory model and cross-agent boundary.",
+      "source_of_truth": "never_stored",
+      "notes": "Global or cross-agent memory without explicit scope is forbidden."
+    }
+  },
+  "governance_rules": {
+    "persist_allowed_default": false,
+    "mutation_allowed_default": false,
+    "operational_requires_adapter_evidence": true,
+    "db_backed_readonly_proven_claim_forbidden": true,
+    "memory_write_intent_allowed_mode": "dry_run_only",
+    "memory_get_allowed_mode": "read_only",
+    "agent_memory_raw_excluded_from_fulltext": true,
+    "raw_chat_dump_forbidden": true,
+    "unscoped_agent_memory_forbidden": true,
+    "scope_ttl_evidence_redaction_required": true,
+    "governance_wins_over_surrealdb_capabilities": true
+  },
+  "references": [
+    "artifacts/surrealdb/context_data_model_ownership_matrix.json",
+    "docs/surrealdb/CDB_CONTEXT_DATA_MODEL_OWNERSHIP.md",
+    "artifacts/surrealdb/context_fulltext_bm25_contract.json",
+    "docs/surrealdb/CDB_CONTEXT_FULLTEXT_BM25_CONTRACT.md",
+    "docs/surrealdb/scoped-agent-memory-model-v1.md",
+    "artifacts/mcp/mcp_access_boundary_matrix.json",
+    "artifacts/context_tool_inventory/tool_inventory.json",
+    "tools/mcp_access_boundary.py",
+    "tools/mcp/memory_write_intent_tools.py"
+  ]
+}

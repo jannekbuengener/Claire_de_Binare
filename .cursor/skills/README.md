@@ -31,6 +31,9 @@ Repo-versionierte Session-Skills für Cursor Agents. Jeder Skill lebt in `<name>
 | [`cdb-drift-reconcile`](cdb-drift-reconcile/SKILL.md) | Drift reconcile |
 | [`cdb-docs-ops`](cdb-docs-ops/SKILL.md) | Docs maintenance |
 | [`ctb-docker-stack`](ctb-docker-stack/SKILL.md) | Docker BLUE+RED |
+| [`surrealql`](surrealql/SKILL.md) | CDB-curated official SurrealQL skill |
+| [`surrealdb-vector`](surrealdb-vector/SKILL.md) | CDB-curated official vector skill |
+| [`surrealdb-python`](surrealdb-python/SKILL.md) | CDB-curated official Python SDK skill |
 
 ## GitHub helpers
 
