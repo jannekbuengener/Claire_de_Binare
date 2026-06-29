@@ -225,7 +225,23 @@ v2 **behält alle v1-Felder** und ergänzt read-only Evidence-Enrichment:
 - **Nie implizit verifizieren**: `known_evidence_ids` allein reicht **nicht** für `resolved_evidence`; fehlende Records/Summaries bleiben in `unresolved_evidence_refs`.
 - **`decision_chain_hash`**: Hash über `decision_chain`, `supersession_chain`, sortierte evidence/claim refs, **v2-angereicherte** `unresolved_evidence_refs`, `resolved_evidence_ids`, `evidence_resolution_status` — **ohne** `current_status.as_of`.
 - **Redaction**: token/secret/password/api_key-artige Felder in resolved payloads → `[REDACTED]`.
-- **LR / Live**: `approval_semantics` und `replay_explainability.history_only` bleiben non-authorizing; kein Live-Go, kein Echtgeld-Go.
+- **LR / Live**: `approval_semantics` und `replay_explainability.history_only` bleiben non-authorizing; kein LR-Go, kein Live-Go, kein Echtgeld-Go.
+
+### v2 MCP status-proof enrichment (#3489, additive)
+
+`cdb_context_decision_replay` darf Replay-Ergebnisse für Agenten nur mit expliziten, maschinenlesbaren Status-Proof-Gates ausgeben:
+
+- `brain_evidence_block` übernimmt die #3488 Brain-Evidence-Felder auch im Replay.
+- `decision_replay_gate` deklariert fehlende Record-Surfaces (`evidence_records`, `claim_records`, `decision_events`, `memory_records`) als degraded statt sie still zu implizieren.
+- `status_proof_block` trennt GitHub live, Repo live, Ledger und Brain strikt.
+- `closure_drift_markers` markieren Widersprüche wie `closure_drift` oder `partial_delivery`.
+- `approval_semantics.no_lr_go` ist verpflichtend zusätzlich zu `no_live_go` und `no_echtgeld_go`.
+
+Nicht erlaubte Herleitungen:
+
+- Issue-State nur aus Ledger oder PR-Body
+- Issue-Closure automatisch aus Merge-State ohne Closing-Reference
+- DB-backed Roadmap-Claims aus `local_staged_files` oder `pr_narrative`
 
 ### v2 Validation (CI)
 
