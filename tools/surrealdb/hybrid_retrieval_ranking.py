@@ -234,6 +234,7 @@ def _resolve_factor_scores(
     candidate: Mapping[str, Any],
     *,
     reference: datetime | None = None,
+    query_context: Mapping[str, Any] | None = None,
 ) -> tuple[dict[str, float], list[str], list[str]]:
     """Extract normalized factor scores, warnings, and caveats for one candidate."""
     warnings: list[str] = list(candidate.get("warnings") or [])
@@ -350,6 +351,18 @@ def _resolve_factor_scores(
             "vector_score present but optional_vector_search is deferred in ranking v1"
         )
 
+    vector_required = _as_bool((query_context or {}).get("vector_required"))
+    vector_available = _as_bool((query_context or {}).get("vector_available"))
+    if vector_required and not vector_available:
+        warnings.append("hybrid_gap:vector_required_but_missing")
+        caveats.append(
+            "Hybrid retrieval remains fail-closed when required vector input is unavailable."
+        )
+
+    context_search_status = _as_str((query_context or {}).get("context_search_status"))
+    if context_search_status is not None:
+        caveats.append(f"context.search_status:{context_search_status}")
+
     return scores, sorted(set(warnings)), caveats
 
 
@@ -399,7 +412,7 @@ def compute_ranking_explanation(
     resolved_weights = _coalesce_weights(weights)
     reference = _resolve_reference_time(candidate, query_context)
     factor_scores, warnings, caveats = _resolve_factor_scores(
-        candidate, reference=reference
+        candidate, reference=reference, query_context=query_context
     )
 
     contributions: dict[str, float] = {
