@@ -17,7 +17,7 @@ import os
 from copy import deepcopy
 from pathlib import Path, PurePosixPath
 import re
-from typing import Any, Optional
+from typing import Any, Mapping, Optional
 
 from tools.mcp.permission_guard import PermissionGuard
 from tools.mcp.registry import ContextToolRegistry, ToolDefinition
@@ -1742,6 +1742,154 @@ def _derive_briefing_brain_context(
     return "repo-only", "not-used", limitations, None
 
 
+def _normalize_brain_evidence_fields(
+    *,
+    brain_source: str,
+    brain_status: str,
+    operator_trust_level: str,
+    records_found: int,
+) -> dict[str, Any]:
+    context_brain_attempted = True
+    context_brain_used = brain_status in {"used", "partial"}
+    context_tool_status = "available"
+    repo_fallback_used = False
+    repo_fallback_reason = "none"
+    context_trust_level = "none"
+    context_available = False
+
+    if brain_status == "blocked":
+        context_tool_status = "blocked"
+        repo_fallback_used = True
+        repo_fallback_reason = "tool_blocked"
+    elif brain_source == "repo-only":
+        repo_fallback_used = True
+        repo_fallback_reason = "insufficient_evidence"
+    elif brain_source == "unavailable":
+        context_tool_status = "absent"
+        repo_fallback_used = True
+        repo_fallback_reason = "unavailable"
+
+    if brain_source == "in_memory":
+        context_trust_level = "medium"
+        context_available = True
+    elif brain_source == "surrealdb-local":
+        if operator_trust_level == "HIGH":
+            context_trust_level = "high"
+            context_available = True
+        elif operator_trust_level == "MEDIUM":
+            context_trust_level = "medium"
+            context_available = True
+
+    return {
+        "context_brain_attempted": context_brain_attempted,
+        "context_brain_used": context_brain_used,
+        "context_available": context_available,
+        "repo_fallback_used": repo_fallback_used,
+        "repo_fallback_reason": repo_fallback_reason,
+        "context_tool_status": context_tool_status,
+        "context_trust_level": context_trust_level,
+        "records_found": records_found if records_found > 0 else "none",
+    }
+
+
+def _build_brain_evidence_block(
+    *,
+    brain_source: str,
+    brain_status: str,
+    brain_evidence_fields: Mapping[str, Any],
+    required_reads: list[str],
+    working_assumptions: list[str],
+    limitations: list[str],
+    operator_trust_level: str,
+    missing_evidence_notice: list[str],
+    blocking_trust_findings: list[str],
+    records_found: int,
+) -> dict[str, Any]:
+    tools_or_queries = ["context.readiness", "context.package", "context.briefing"]
+    if brain_source == "surrealdb-local":
+        tools_or_queries.append("cdb_context_trust_summary")
+
+    records_or_results = [
+        f"brain_source={brain_source}",
+        f"brain_status={brain_status}",
+        f"operator_trust_level={operator_trust_level}",
+        f"records_found={records_found if records_found > 0 else 'none'}",
+    ]
+    records_or_results.extend(missing_evidence_notice)
+    records_or_results.extend(blocking_trust_findings)
+
+    impact_on_plan: list[str] = []
+    if brain_source == "repo-only":
+        impact_on_plan.append("Repo/GitHub fallback required; no DB-backed claims.")
+    elif brain_source == "in_memory":
+        impact_on_plan.append(
+            "Inline records may inform local briefing only; DB-backed claims remain disabled."
+        )
+    elif brain_source == "surrealdb-local":
+        impact_on_plan.append(
+            "DB-backed claims are permitted only with real record evidence and no blocking trust findings."
+        )
+    impact_on_plan.extend(working_assumptions)
+
+    return {
+        "brain_source": brain_source,
+        "brain_status": brain_status,
+        "tools_or_queries": tools_or_queries,
+        "records_or_results": records_or_results,
+        "repo_crosscheck": list(required_reads),
+        "impact_on_plan": impact_on_plan,
+        "limitations": list(limitations),
+        **dict(brain_evidence_fields),
+    }
+
+
+def _append_partial_input_notices(
+    *,
+    has_records: bool,
+    evidence_records: Any,
+    claim_records: Any,
+    decision_events: Any,
+    memory_records: Any,
+    missing_evidence_notice: list[str],
+) -> None:
+    if not has_records:
+        return
+
+    if not _has_non_empty_record_list(evidence_records):
+        missing_evidence_notice.append("no_evidence_records_provided")
+    if not _has_non_empty_record_list(claim_records):
+        missing_evidence_notice.append("no_claim_records_provided")
+    if not _has_non_empty_record_list(decision_events):
+        missing_evidence_notice.append("no_decision_events_provided")
+    if not _has_non_empty_record_list(memory_records):
+        missing_evidence_notice.append("no_memory_records_provided")
+
+
+def _detect_non_db_backed_claim_findings(
+    *,
+    db_claims_allowed: bool,
+    repo_state: Mapping[str, Any],
+    working_assumptions: list[str],
+) -> list[str]:
+    if db_claims_allowed:
+        return []
+
+    findings: list[str] = []
+    assumptions_text = " ".join(
+        item.strip().lower() for item in working_assumptions if isinstance(item, str)
+    )
+    working_tree = str(repo_state.get("working_tree") or "").strip().lower()
+
+    if "ledger" in assumptions_text:
+        findings.append("non_db_backed_ledger_claim")
+    if "pr body" in assumptions_text or "pr-body" in assumptions_text:
+        findings.append("non_db_backed_pr_body_claim")
+    if "staged" in assumptions_text or "staged" in working_tree:
+        findings.append("non_db_backed_staged_file_claim")
+
+    return findings
+
+
 def context_briefing_handler(**kwargs) -> dict[str, Any]:
     """
     Read-only handler for context.briefing tool.
@@ -2253,6 +2401,21 @@ def context_briefing_handler(**kwargs) -> dict[str, Any]:
     db_claims_allowed = brain_source == "surrealdb-local" and brain_status in frozenset(
         {"used", "partial"}
     )
+    records_found_count = sum(
+        len(record_list)
+        for record_list in (
+            _evidence_records_raw if isinstance(_evidence_records_raw, list) else [],
+            _claim_records_raw if isinstance(_claim_records_raw, list) else [],
+            _decision_events_raw if isinstance(_decision_events_raw, list) else [],
+            _memory_records_raw if isinstance(_memory_records_raw, list) else [],
+        )
+    )
+    brain_evidence_fields = _normalize_brain_evidence_fields(
+        brain_source=brain_source,
+        brain_status=brain_status,
+        operator_trust_level="LOW" if brain_source == "repo-only" else "MEDIUM",
+        records_found=records_found_count,
+    )
 
     session_context = {
         "memory_type": "working_memory",
@@ -2269,6 +2432,7 @@ def context_briefing_handler(**kwargs) -> dict[str, Any]:
         },
         "working_assumptions": working_assumptions,
         "limitations": session_context_limitations_norm,
+        **brain_evidence_fields,
     }
 
     # --- Enrichment (#2122) ---
@@ -2294,6 +2458,14 @@ def context_briefing_handler(**kwargs) -> dict[str, Any]:
             isinstance(_decision_events_raw, list) and bool(_decision_events_raw),
             isinstance(_memory_records_raw, list) and bool(_memory_records_raw),
         ]
+    )
+    _append_partial_input_notices(
+        has_records=_has_records,
+        evidence_records=_evidence_records_raw,
+        claim_records=_claim_records_raw,
+        decision_events=_decision_events_raw,
+        memory_records=_memory_records_raw,
+        missing_evidence_notice=missing_evidence_notice,
     )
 
     if not _has_records:
@@ -2357,7 +2529,9 @@ def context_briefing_handler(**kwargs) -> dict[str, Any]:
             # Fail-closed: no records provided — controlled-empty enrichment
             missing_evidence_notice = [
                 "no_evidence_records_provided",
+                "no_claim_records_provided",
                 "no_decision_events_provided",
+                "no_memory_records_provided",
             ]
             operator_trust_level = "LOW"
             trust_limitations = [
@@ -2684,6 +2858,36 @@ def context_briefing_handler(**kwargs) -> dict[str, Any]:
             )
             known_risks.append(f"trust_summary_error: {_e}")
 
+    blocking_trust_findings.extend(
+        _detect_non_db_backed_claim_findings(
+            db_claims_allowed=db_claims_allowed,
+            repo_state=repo_state,
+            working_assumptions=working_assumptions,
+        )
+    )
+    blocking_trust_findings = list(dict.fromkeys(blocking_trust_findings))
+    missing_evidence_notice = list(dict.fromkeys(missing_evidence_notice))
+
+    brain_evidence_fields = _normalize_brain_evidence_fields(
+        brain_source=brain_source,
+        brain_status=brain_status,
+        operator_trust_level=operator_trust_level,
+        records_found=records_found_count,
+    )
+    session_context.update(brain_evidence_fields)
+    brain_evidence_block = _build_brain_evidence_block(
+        brain_source=brain_source,
+        brain_status=brain_status,
+        brain_evidence_fields=brain_evidence_fields,
+        required_reads=required_reads,
+        working_assumptions=working_assumptions,
+        limitations=session_context_limitations_norm + trust_limitations,
+        operator_trust_level=operator_trust_level,
+        missing_evidence_notice=missing_evidence_notice,
+        blocking_trust_findings=blocking_trust_findings,
+        records_found=records_found_count,
+    )
+
     # --- Assemble briefing result ---
     briefing: dict[str, Any] = {
         "briefing_id": briefing_id,
@@ -2710,6 +2914,7 @@ def context_briefing_handler(**kwargs) -> dict[str, Any]:
         "blocking_trust_findings": blocking_trust_findings,
         "recommended_next_reads": recommended_next_reads_enrichment,
         "approval_semantics": {"no_echtgeld_go": True},
+        "brain_evidence_block": brain_evidence_block,
         "session_context": session_context,
         "dependency_paths": dependency_paths,
         "known_risks": known_risks,
