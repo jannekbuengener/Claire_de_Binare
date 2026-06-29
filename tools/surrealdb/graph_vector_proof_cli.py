@@ -897,7 +897,7 @@ def _build_evidence(
             },
             "vector_pipeline_contract": vector_pipeline_contract,
             "limitation": (
-                "Capability proof plus repo-level vector pipeline contract only. "
+                "Capability proof only for runtime semantics; repo-level vector pipeline contract only. "
                 "Toy vectors (first 10 dims nonzero, rest 0) demonstrate "
                 "HNSW KNN mechanics, not semantic embedding quality or DB-backed "
                 "embedding population."
