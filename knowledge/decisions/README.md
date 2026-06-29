@@ -7,10 +7,19 @@ Recorded decisions (ADR-style) for governance, context/MCP posture, and infrastr
 | File | Topic |
 |---|---|
 | [`CDB_CONTEXT_BRAIN_DEFAULT_POSTURE.md`](CDB_CONTEXT_BRAIN_DEFAULT_POSTURE.md) | Brain evidence default (#2775) |
+| [`CDB_CONTEXT_BRAIN_SENSORY_LAYER.md`](CDB_CONTEXT_BRAIN_SENSORY_LAYER.md) | Context Brain as sensory layer canon (#3480) |
 | [`CDB_CONTEXT_MANAGED_NONLOCAL_RUNTIME_DECISION.md`](CDB_CONTEXT_MANAGED_NONLOCAL_RUNTIME_DECISION.md) | Managed runtime (not activated) |
 | [`CDB_CONTROLLED_WRITE_STRATEGY_V2_DESIGN.md`](CDB_CONTROLLED_WRITE_STRATEGY_V2_DESIGN.md) | Write strategy design only |
 | [`K8S_BUDGET_DECISION.md`](K8S_BUDGET_DECISION.md) | Kubernetes GO/NO-GO |
 | [`ADR-001-documentation-only-repository.md`](ADR-001-documentation-only-repository.md) | Docs-only repo pattern |
+
+## Context Brain graph follow-up surfaces
+
+The #3480 sensory-layer canon in [`CDB_CONTEXT_BRAIN_SENSORY_LAYER.md`](CDB_CONTEXT_BRAIN_SENSORY_LAYER.md)
+is the discoverability anchor for the current #3484 graph follow-up surfaces:
+
+- [`docs/surrealdb/context-relationship-vocabulary-v0.md`](../../docs/surrealdb/context-relationship-vocabulary-v0.md)
+- [`infrastructure/surrealdb/traversal_query_fixtures.surql`](../../infrastructure/surrealdb/traversal_query_fixtures.surql)
 
 ## Where to write
 
