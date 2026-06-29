@@ -47,10 +47,10 @@ updates:
       prefix: "deps(actions)"
 
   # ----------------------------
-  # Docker (Root + Infra)
+  # Docker (exact Dockerfile directories only)
   # ----------------------------
   - package-ecosystem: "docker"
-    directory: "/"
+    directory: "/infrastructure/actions-runner"
     schedule:
       interval: "weekly"
       day: "monday"
@@ -63,7 +63,7 @@ updates:
       prefix: "deps(docker)"
 
   - package-ecosystem: "docker"
-    directory: "/infrastructure"
+    directory: "/infrastructure/compose"
     schedule:
       interval: "weekly"
       day: "monday"
@@ -74,3 +74,173 @@ updates:
       - "docker"
     commit-message:
       prefix: "deps(docker)"
+
+  - package-ecosystem: "docker"
+    directory: "/services/allocation"
+    schedule:
+      interval: "weekly"
+      day: "monday"
+      time: "04:30"
+      timezone: "Europe/Berlin"
+    labels:
+      - "dependencies"
+      - "docker"
+    commit-message:
+      prefix: "deps(docker)"
+
+  - package-ecosystem: "docker"
+    directory: "/services/candles"
+    schedule:
+      interval: "weekly"
+      day: "monday"
+      time: "04:30"
+      timezone: "Europe/Berlin"
+    labels:
+      - "dependencies"
+      - "docker"
+    commit-message:
+      prefix: "deps(docker)"
+
+  - package-ecosystem: "docker"
+    directory: "/services/db_writer"
+    schedule:
+      interval: "weekly"
+      day: "monday"
+      time: "04:30"
+      timezone: "Europe/Berlin"
+    labels:
+      - "dependencies"
+      - "docker"
+    commit-message:
+      prefix: "deps(docker)"
+
+  - package-ecosystem: "docker"
+    directory: "/services/execution"
+    schedule:
+      interval: "weekly"
+      day: "monday"
+      time: "04:30"
+      timezone: "Europe/Berlin"
+    labels:
+      - "dependencies"
+      - "docker"
+    commit-message:
+      prefix: "deps(docker)"
+
+  - package-ecosystem: "docker"
+    directory: "/services/market"
+    schedule:
+      interval: "weekly"
+      day: "monday"
+      time: "04:30"
+      timezone: "Europe/Berlin"
+    labels:
+      - "dependencies"
+      - "docker"
+    commit-message:
+      prefix: "deps(docker)"
+
+  - package-ecosystem: "docker"
+    directory: "/services/regime"
+    schedule:
+      interval: "weekly"
+      day: "monday"
+      time: "04:30"
+      timezone: "Europe/Berlin"
+    labels:
+      - "dependencies"
+      - "docker"
+    commit-message:
+      prefix: "deps(docker)"
+
+  - package-ecosystem: "docker"
+    directory: "/services/reports"
+    schedule:
+      interval: "weekly"
+      day: "monday"
+      time: "04:30"
+      timezone: "Europe/Berlin"
+    labels:
+      - "dependencies"
+      - "docker"
+    commit-message:
+      prefix: "deps(docker)"
+
+  - package-ecosystem: "docker"
+    directory: "/services/risk"
+    schedule:
+      interval: "weekly"
+      day: "monday"
+      time: "04:30"
+      timezone: "Europe/Berlin"
+    labels:
+      - "dependencies"
+      - "docker"
+    commit-message:
+      prefix: "deps(docker)"
+
+  - package-ecosystem: "docker"
+    directory: "/services/signal"
+    schedule:
+      interval: "weekly"
+      day: "monday"
+      time: "04:30"
+      timezone: "Europe/Berlin"
+    labels:
+      - "dependencies"
+      - "docker"
+    commit-message:
+      prefix: "deps(docker)"
+
+  - package-ecosystem: "docker"
+    directory: "/services/ws"
+    schedule:
+      interval: "weekly"
+      day: "monday"
+      time: "04:30"
+      timezone: "Europe/Berlin"
+    labels:
+      - "dependencies"
+      - "docker"
+    commit-message:
+      prefix: "deps(docker)"
+
+  - package-ecosystem: "docker"
+    directory: "/tools/paper_trading"
+    schedule:
+      interval: "weekly"
+      day: "monday"
+      time: "04:30"
+      timezone: "Europe/Berlin"
+    labels:
+      - "dependencies"
+      - "docker"
+    commit-message:
+      prefix: "deps(docker)"
+
+  # Official docs use the separate docker-compose ecosystem for compose files.
+  - package-ecosystem: "docker-compose"
+    directory: "/infrastructure/actions-runner"
+    schedule:
+      interval: "weekly"
+      day: "monday"
+      time: "04:35"
+      timezone: "Europe/Berlin"
+    labels:
+      - "dependencies"
+      - "docker"
+    commit-message:
+      prefix: "deps(docker-compose)"
+
+  - package-ecosystem: "docker-compose"
+    directory: "/infrastructure/compose"
+    schedule:
+      interval: "weekly"
+      day: "monday"
+      time: "04:35"
+      timezone: "Europe/Berlin"
+    labels:
+      - "dependencies"
+      - "docker"
+    commit-message:
+      prefix: "deps(docker-compose)"

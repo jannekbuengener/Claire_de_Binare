@@ -1497,6 +1497,8 @@ class TestContextBriefingHandler:
             "branch": "unknown",
             "commit": "unknown",
             "working_tree": "unknown",
+            "main_sync": "unknown",
+            "delivery_state": "unknown",
         }
         assert session_context["github_state"]["target_issue"] is None
         assert session_context["github_state"]["related_prs"] == []
@@ -1712,6 +1714,8 @@ class TestContextBriefingHandler:
             "branch": "feature/session-context",
             "commit": "abc123def456",
             "working_tree": "dirty",
+            "main_sync": "unknown",
+            "delivery_state": "unknown",
         }
 
     def test_github_state_values_are_preserved_when_provided(self) -> None:
