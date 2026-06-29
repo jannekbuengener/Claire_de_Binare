@@ -181,16 +181,19 @@ def _resolve_handler_path(tool_name: str, handler) -> str:
 
 def _classify_backing(tool_name: str) -> str:
     """Classify the backing status of a tool."""
-    db_backed = {
-        "context.search", "context.show_snapshot", "context.show_audit",
-        "context.package", "context.briefing", "context.required_reads",
-        "context.stop_resolver", "context.self_explain",
-    }
+    # No tools currently have SurrealDB adapter evidence — all CONTRACT_ONLY.
+    db_backed: set[str] = set()
     in_memory = {
         "context.readiness", "context.explain_source", "context.trace",
         "context.package",
     }
     contract_only = {
+        # Former db_backed tools — handler not implemented, no DB evidence
+        "context.search", "context.show_snapshot", "context.show_audit",
+        "context.briefing", "context.required_reads",
+        "context.stop_resolver", "context.self_explain",
+        # Contract-defined cdb_context_* tools
+        "cdb_context_impact",
         "cdb_context_evidence_resolve", "cdb_context_claim_resolve",
         "cdb_context_memory_get", "cdb_context_memory_write_intent",
         "cdb_context_trust_summary", "cdb_context_decision_history",

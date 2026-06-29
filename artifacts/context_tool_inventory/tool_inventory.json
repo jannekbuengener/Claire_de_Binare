@@ -5,7 +5,7 @@
     "handler_path": "tools/mcp/registry.py",
     "registry_status": "registered",
     "exposure_status": "defined_not_implemented",
-    "backing_status": "DB_BACKED",
+    "backing_status": "CONTRACT_ONLY",
     "surfaces": {
       "ChatGPT": false,
       "OpenCode": true,
@@ -74,7 +74,7 @@
     "handler_path": "tools/mcp/registry.py",
     "registry_status": "registered",
     "exposure_status": "defined_not_implemented",
-    "backing_status": "DB_BACKED",
+    "backing_status": "CONTRACT_ONLY",
     "surfaces": {
       "ChatGPT": false,
       "OpenCode": true,
@@ -97,7 +97,7 @@
     "handler_path": "tools/mcp/registry.py",
     "registry_status": "registered",
     "exposure_status": "defined_not_implemented",
-    "backing_status": "DB_BACKED",
+    "backing_status": "CONTRACT_ONLY",
     "surfaces": {
       "ChatGPT": false,
       "OpenCode": true,
@@ -120,7 +120,7 @@
     "handler_path": "tools/mcp/registry.py",
     "registry_status": "registered",
     "exposure_status": "defined_not_implemented",
-    "backing_status": "DB_BACKED",
+    "backing_status": "IN_MEMORY",
     "surfaces": {
       "ChatGPT": false,
       "OpenCode": true,
@@ -166,7 +166,7 @@
     "handler_path": "tools/mcp/registry.py",
     "registry_status": "registered",
     "exposure_status": "defined_not_implemented",
-    "backing_status": "DB_BACKED",
+    "backing_status": "CONTRACT_ONLY",
     "surfaces": {
       "ChatGPT": false,
       "OpenCode": true,
@@ -189,7 +189,7 @@
     "handler_path": "tools/mcp/registry.py",
     "registry_status": "registered",
     "exposure_status": "defined_not_implemented",
-    "backing_status": "DB_BACKED",
+    "backing_status": "CONTRACT_ONLY",
     "surfaces": {
       "ChatGPT": false,
       "OpenCode": true,
@@ -212,7 +212,7 @@
     "handler_path": "tools/mcp/registry.py",
     "registry_status": "registered",
     "exposure_status": "defined_not_implemented",
-    "backing_status": "DB_BACKED",
+    "backing_status": "CONTRACT_ONLY",
     "surfaces": {
       "ChatGPT": false,
       "OpenCode": true,
@@ -235,7 +235,7 @@
     "handler_path": "tools/mcp/registry.py",
     "registry_status": "registered",
     "exposure_status": "defined_not_implemented",
-    "backing_status": "DB_BACKED",
+    "backing_status": "CONTRACT_ONLY",
     "surfaces": {
       "ChatGPT": false,
       "OpenCode": true,
@@ -258,7 +258,7 @@
     "handler_path": "tools/mcp/registry.py",
     "registry_status": "registered",
     "exposure_status": "defined_not_implemented",
-    "backing_status": "REPO_ONLY",
+    "backing_status": "CONTRACT_ONLY",
     "surfaces": {
       "ChatGPT": false,
       "OpenCode": true,
