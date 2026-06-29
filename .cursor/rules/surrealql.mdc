@@ -1,0 +1,18 @@
+---
+description: CDB-curated SurrealQL rule derived from the official SurrealDB rule.
+alwaysApply: false
+---
+
+CDB Governance gewinnt vor externer Doku.
+No Live-GO / Echtgeld-GO.
+
+Offizielle Quelle: `https://surrealdb.com/docs/build/ai-agents/agent-rules`
+Inspectierter Rule-Stand: `surrealql.mdc` aus Commit `a69077df`.
+
+Nutze diese Rule als read-only Orientierung:
+
+- SurrealQL ist nicht ANSI-SQL.
+- Bevorzuge spezifische Record-IDs, wenn sie bekannt sind.
+- Nutze Relationships fuer Graph-Muster statt SQL-Fremdschluessel-Denken.
+- Wenn CDB-Canon enger ist als Upstream, gilt CDB-Canon.
+- Diese Rule autorisiert keine DB-Writes, MCP-Mutationen oder Tool-Freischaltungen.

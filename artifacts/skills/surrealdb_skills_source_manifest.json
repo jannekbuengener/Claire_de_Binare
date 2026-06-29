@@ -1,0 +1,211 @@
+[
+  {
+    "skill": "surrealql",
+    "surface": "OpenCode",
+    "local_path": ".opencode/skills/surrealql/SKILL.md",
+    "official_source": "https://github.com/surrealdb/agent-skills (skill: surrealql)",
+    "source_commit_or_version": "95628976",
+    "safety_status": "curated",
+    "files_included": ["SKILL.md"],
+    "files_excluded": ["references/querying.md", "references/schema.md", "references/values.md"],
+    "gap_reason": ""
+  },
+  {
+    "skill": "surrealdb-vector",
+    "surface": "OpenCode",
+    "local_path": ".opencode/skills/surrealdb-vector/SKILL.md",
+    "official_source": "https://github.com/surrealdb/agent-skills (skill: surrealdb-vector)",
+    "source_commit_or_version": "95628976",
+    "safety_status": "curated",
+    "files_included": ["SKILL.md"],
+    "files_excluded": [],
+    "gap_reason": ""
+  },
+  {
+    "skill": "surrealdb-python",
+    "surface": "OpenCode",
+    "local_path": ".opencode/skills/surrealdb-python/SKILL.md",
+    "official_source": "https://github.com/surrealdb/agent-skills (skill: surrealdb-python)",
+    "source_commit_or_version": "95628976",
+    "safety_status": "curated",
+    "files_included": ["SKILL.md"],
+    "files_excluded": ["references/embedded.md"],
+    "gap_reason": ""
+  },
+  {
+    "skill": "surrealql",
+    "surface": "Cursor",
+    "local_path": ".cursor/skills/surrealql/SKILL.md",
+    "official_source": "https://github.com/surrealdb/agent-skills (skill: surrealql)",
+    "source_commit_or_version": "95628976",
+    "safety_status": "curated",
+    "files_included": ["SKILL.md"],
+    "files_excluded": ["references/querying.md", "references/schema.md", "references/values.md"],
+    "gap_reason": ""
+  },
+  {
+    "skill": "surrealdb-vector",
+    "surface": "Cursor",
+    "local_path": ".cursor/skills/surrealdb-vector/SKILL.md",
+    "official_source": "https://github.com/surrealdb/agent-skills (skill: surrealdb-vector)",
+    "source_commit_or_version": "95628976",
+    "safety_status": "curated",
+    "files_included": ["SKILL.md"],
+    "files_excluded": [],
+    "gap_reason": ""
+  },
+  {
+    "skill": "surrealdb-python",
+    "surface": "Cursor",
+    "local_path": ".cursor/skills/surrealdb-python/SKILL.md",
+    "official_source": "https://github.com/surrealdb/agent-skills (skill: surrealdb-python)",
+    "source_commit_or_version": "95628976",
+    "safety_status": "curated",
+    "files_included": ["SKILL.md"],
+    "files_excluded": ["references/embedded.md"],
+    "gap_reason": ""
+  },
+  {
+    "skill": "surrealql",
+    "surface": "Codex",
+    "local_path": ".codex/cdb_skills/surrealql/SKILL.md",
+    "official_source": "https://github.com/surrealdb/agent-skills (skill: surrealql)",
+    "source_commit_or_version": "95628976",
+    "safety_status": "curated",
+    "files_included": ["SKILL.md"],
+    "files_excluded": ["references/querying.md", "references/schema.md", "references/values.md"],
+    "gap_reason": ""
+  },
+  {
+    "skill": "surrealdb-vector",
+    "surface": "Codex",
+    "local_path": ".codex/cdb_skills/surrealdb-vector/SKILL.md",
+    "official_source": "https://github.com/surrealdb/agent-skills (skill: surrealdb-vector)",
+    "source_commit_or_version": "95628976",
+    "safety_status": "curated",
+    "files_included": ["SKILL.md"],
+    "files_excluded": [],
+    "gap_reason": ""
+  },
+  {
+    "skill": "surrealdb-python",
+    "surface": "Codex",
+    "local_path": ".codex/cdb_skills/surrealdb-python/SKILL.md",
+    "official_source": "https://github.com/surrealdb/agent-skills (skill: surrealdb-python)",
+    "source_commit_or_version": "95628976",
+    "safety_status": "curated",
+    "files_included": ["SKILL.md"],
+    "files_excluded": ["references/embedded.md"],
+    "gap_reason": ""
+  },
+  {
+    "skill": "surrealql",
+    "surface": "Claude",
+    "local_path": ".claude/skills/surrealql/SKILL.md",
+    "official_source": "https://github.com/surrealdb/agent-skills (skill: surrealql)",
+    "source_commit_or_version": "95628976",
+    "safety_status": "curated",
+    "files_included": ["SKILL.md"],
+    "files_excluded": [],
+    "gap_reason": ""
+  },
+  {
+    "skill": "surrealdb-vector",
+    "surface": "Claude",
+    "local_path": ".claude/skills/surrealdb-vector/SKILL.md",
+    "official_source": "https://github.com/surrealdb/agent-skills (skill: surrealdb-vector)",
+    "source_commit_or_version": "95628976",
+    "safety_status": "curated",
+    "files_included": ["SKILL.md"],
+    "files_excluded": [],
+    "gap_reason": ""
+  },
+  {
+    "skill": "surrealdb-python",
+    "surface": "Claude",
+    "local_path": ".claude/skills/surrealdb-python/SKILL.md",
+    "official_source": "https://github.com/surrealdb/agent-skills (skill: surrealdb-python)",
+    "source_commit_or_version": "95628976",
+    "safety_status": "curated",
+    "files_included": ["SKILL.md"],
+    "files_excluded": [],
+    "gap_reason": ""
+  },
+  {
+    "skill": "rule:surrealql.mdc",
+    "surface": "Cursor",
+    "local_path": ".cursor/rules/surrealql.mdc",
+    "official_source": "https://github.com/surrealdb/docs.surrealdb.com/tree/main/public/integrations/agent-rules",
+    "source_commit_or_version": "a69077df",
+    "safety_status": "verified",
+    "files_included": ["surrealql.mdc"],
+    "files_excluded": [],
+    "gap_reason": ""
+  },
+  {
+    "skill": "rule:surrealdb-vector.mdc",
+    "surface": "Cursor",
+    "local_path": ".cursor/rules/surrealdb-vector.mdc",
+    "official_source": "https://github.com/surrealdb/docs.surrealdb.com/tree/main/public/integrations/agent-rules",
+    "source_commit_or_version": "a69077df",
+    "safety_status": "verified",
+    "files_included": ["surrealdb-vector.mdc"],
+    "files_excluded": [],
+    "gap_reason": ""
+  },
+  {
+    "skill": "rule:surrealdb-python.mdc",
+    "surface": "Cursor",
+    "local_path": ".cursor/rules/surrealdb-python.mdc",
+    "official_source": "https://github.com/surrealdb/docs.surrealdb.com/tree/main/public/integrations/agent-rules",
+    "source_commit_or_version": "a69077df",
+    "safety_status": "verified",
+    "files_included": ["surrealdb-python.mdc"],
+    "files_excluded": [],
+    "gap_reason": ""
+  },
+  {
+    "skill": "rule:surrealdb-python-embedded.mdc",
+    "surface": "Cursor",
+    "local_path": ".cursor/rules/surrealdb-python-embedded.mdc",
+    "official_source": "https://github.com/surrealdb/docs.surrealdb.com/tree/main/public/integrations/agent-rules",
+    "source_commit_or_version": "a69077df",
+    "safety_status": "verified",
+    "files_included": ["surrealdb-python-embedded.mdc"],
+    "files_excluded": [],
+    "gap_reason": ""
+  },
+  {
+    "skill": "surrealql",
+    "surface": "Gemini",
+    "local_path": ".gemini/skills/surrealql/SKILL.md",
+    "official_source": "https://github.com/surrealdb/agent-skills (skill: surrealql)",
+    "source_commit_or_version": "95628976",
+    "safety_status": "not_applicable",
+    "files_included": [],
+    "files_excluded": ["SKILL.md", "references/querying.md", "references/schema.md", "references/values.md"],
+    "gap_reason": "Gemini is not a tracked activation surface for this slice; local candidates remain untouched."
+  },
+  {
+    "skill": "surrealdb-vector",
+    "surface": "Gemini",
+    "local_path": ".gemini/skills/surrealdb-vector/SKILL.md",
+    "official_source": "https://github.com/surrealdb/agent-skills (skill: surrealdb-vector)",
+    "source_commit_or_version": "95628976",
+    "safety_status": "not_applicable",
+    "files_included": [],
+    "files_excluded": ["SKILL.md"],
+    "gap_reason": "Gemini is not a tracked activation surface for this slice; local candidates remain untouched."
+  },
+  {
+    "skill": "surrealdb-python",
+    "surface": "Gemini",
+    "local_path": ".gemini/skills/surrealdb-python/SKILL.md",
+    "official_source": "https://github.com/surrealdb/agent-skills (skill: surrealdb-python)",
+    "source_commit_or_version": "95628976",
+    "safety_status": "not_applicable",
+    "files_included": [],
+    "files_excluded": ["SKILL.md", "references/embedded.md"],
+    "gap_reason": "Gemini is not a tracked activation surface for this slice; local candidates remain untouched."
+  }
+]

@@ -1,0 +1,47 @@
+[
+  {
+    "surface": "OpenCode",
+    "path": ".opencode/skills",
+    "surrealql_status": "ACTIVE",
+    "surrealdb_vector_status": "ACTIVE",
+    "surrealdb_python_status": "ACTIVE",
+    "rules_status": "GAP",
+    "notes": "CDB-curated official skill wrappers tracked; no canonical rule surface exists."
+  },
+  {
+    "surface": "Cursor",
+    "path": ".cursor/skills + .cursor/rules",
+    "surrealql_status": "ACTIVE",
+    "surrealdb_vector_status": "ACTIVE",
+    "surrealdb_python_status": "ACTIVE",
+    "rules_status": "ACTIVE",
+    "notes": "Skills and four curated SurrealDB .mdc rules tracked on canonical Cursor surfaces."
+  },
+  {
+    "surface": "Codex",
+    "path": ".codex/cdb_skills",
+    "surrealql_status": "ACTIVE",
+    "surrealdb_vector_status": "ACTIVE",
+    "surrealdb_python_status": "ACTIVE",
+    "rules_status": "GAP",
+    "notes": "CDB-curated official skill wrappers tracked; no canonical rule surface exists."
+  },
+  {
+    "surface": "Claude",
+    "path": ".claude/skills",
+    "surrealql_status": "ACTIVE",
+    "surrealdb_vector_status": "ACTIVE",
+    "surrealdb_python_status": "ACTIVE",
+    "rules_status": "GAP",
+    "notes": "CDB-curated official skill wrappers tracked; no canonical rule surface exists."
+  },
+  {
+    "surface": "Gemini",
+    "path": ".gemini/skills",
+    "surrealql_status": "NOT_APPLICABLE",
+    "surrealdb_vector_status": "NOT_APPLICABLE",
+    "surrealdb_python_status": "NOT_APPLICABLE",
+    "rules_status": "NOT_APPLICABLE",
+    "notes": "Gemini SurrealDB candidates remain untracked and intentionally inactive in this slice."
+  }
+]
