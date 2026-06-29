@@ -2427,6 +2427,65 @@ def _build_end_to_end_sensory_proof(
     }
 
 
+def _derive_briefing_graph_paths(
+    target_issue: Optional[str],
+    target_paths: list[str],
+) -> list[dict[str, Any]]:
+    """Build repo-only graph path hints for context.briefing."""
+
+    normalized_paths = [
+        path.replace("\\", "/") for path in target_paths if isinstance(path, str) and path
+    ]
+    graph_paths: list[dict[str, Any]] = []
+
+    if len(normalized_paths) > 1:
+        graph_paths.append(
+            {
+                "path_id": "briefing-target-path-chain",
+                "nodes": normalized_paths[:2],
+                "relationships": ["references"],
+                "source": "repo_only",
+                "authorizes": False,
+            }
+        )
+
+    if target_issue == "#3484":
+        graph_paths.extend(
+            [
+                {
+                    "path_id": "issue-3484-graph-vocabulary",
+                    "nodes": [
+                        "knowledge/decisions/CDB_CONTEXT_BRAIN_SENSORY_LAYER.md",
+                        "docs/surrealdb/context-relationship-vocabulary-v0.md",
+                    ],
+                    "relationships": ["canonically_discovers"],
+                    "source": "repo_only",
+                    "authorizes": False,
+                },
+                {
+                    "path_id": "issue-3484-traversal-fixtures",
+                    "nodes": [
+                        "knowledge/decisions/CDB_CONTEXT_BRAIN_SENSORY_LAYER.md",
+                        "infrastructure/surrealdb/traversal_query_fixtures.surql",
+                    ],
+                    "relationships": ["canonically_discovers"],
+                    "source": "repo_only",
+                    "authorizes": False,
+                },
+                {
+                    "path_id": "issue-3484-follow-on-boundary",
+                    "nodes": ["#3484", "#3486", "#3487"],
+                    "relationships": ["later_follow_on", "later_follow_on"],
+                    "source": "repo_only",
+                    "authorizes": False,
+                    "scope_boundary": "#3486 and #3487 remain later follow-ons",
+                },
+            ]
+        )
+
+    return graph_paths
+
+
 def context_briefing_handler(**kwargs) -> dict[str, Any]:
     """
     Read-only handler for context.briefing tool.
@@ -2804,6 +2863,7 @@ def context_briefing_handler(**kwargs) -> dict[str, Any]:
     package_symbols: list[dict[str, Any]] = []
     package_docs: list[dict[str, Any]] = []
     dependency_paths: list[dict[str, Any]] = []
+    graph_paths: list[dict[str, Any]] = []
     known_risks: list[str] = []
     unresolved_questions: list[str] = []
     context_package_ref: Optional[str] = None
@@ -2862,6 +2922,8 @@ def context_briefing_handler(**kwargs) -> dict[str, Any]:
                     "relationship": "references",
                 }
             )
+
+    graph_paths = _derive_briefing_graph_paths(target_issue, target_paths)
 
     # --- Agent attribution for scope summary ---
     agent_label = (
@@ -3511,6 +3573,7 @@ def context_briefing_handler(**kwargs) -> dict[str, Any]:
         "end_to_end_sensory_proof": end_to_end_sensory_proof,
         "session_context": session_context,
         "dependency_paths": dependency_paths,
+        "graph_paths": graph_paths,
         "known_risks": known_risks,
         "guardrails": guardrails,
         "stop_conditions": stop_conditions,
