@@ -10,7 +10,7 @@ Reference: Issue #3493, Issue #2773
 from __future__ import annotations
 
 import json
-from dataclasses import dataclass, field, asdict
+from dataclasses import asdict, dataclass
 from pathlib import Path
 from typing import Any
 
@@ -23,6 +23,33 @@ BACKING_STATUS_VALUES = frozenset({
     "CONTRACT_ONLY",
     "PROOF_ONLY",
     "UNKNOWN",
+})
+
+HANDLER_STATUS_VALUES = frozenset({
+    "implemented",
+    "not_implemented",
+})
+
+EXPOSURE_STATUS_VALUES = frozenset({
+    "repo_surface_configured",
+    "not_exposed",
+})
+
+CALLABILITY_STATUS_VALUES = frozenset({
+    "session_callable",
+    "not_proven",
+})
+
+OPERATIONAL_STATUS_VALUES = frozenset({
+    "not_proven",
+    "operationally_proven",
+})
+
+EVIDENCE_LEVEL_VALUES = frozenset({
+    "session_live_call",
+    "repo_surface_config",
+    "repo_handler_only",
+    "registry_contract",
 })
 
 # ── Surface Definitions ──
@@ -44,6 +71,17 @@ SURFACE_LIFECYCLE_TERMS = {
 
 REPO_ROOT = Path(__file__).resolve().parents[1]
 
+SESSION_CALLABLE_TOOL_EVIDENCE: dict[str, str] = {
+    "context.required_reads": (
+        "session:2026-06-29 copilot-cli cdb_context context.required_reads "
+        "call succeeded"
+    ),
+    "context.readiness": (
+        "session:2026-06-29 copilot-cli cdb_context context.readiness call "
+        "succeeded"
+    ),
+}
+
 
 @dataclass
 class InventoryEntry:
@@ -53,7 +91,11 @@ class InventoryEntry:
     purpose: str
     handler_path: str
     registry_status: str
+    handler_status: str
     exposure_status: str
+    callability_status: str
+    operational_status: str
+    evidence_level: str
     backing_status: str
     surfaces: dict[str, bool | None]
     evidence: list[str]
@@ -64,6 +106,31 @@ class InventoryEntry:
             raise ValueError("purpose must not be empty")
         if not self.handler_path:
             raise ValueError("handler_path must not be empty")
+        if self.handler_status not in HANDLER_STATUS_VALUES:
+            raise ValueError(
+                f"Invalid handler_status: {self.handler_status}. "
+                f"Must be one of {sorted(HANDLER_STATUS_VALUES)}"
+            )
+        if self.exposure_status not in EXPOSURE_STATUS_VALUES:
+            raise ValueError(
+                f"Invalid exposure_status: {self.exposure_status}. "
+                f"Must be one of {sorted(EXPOSURE_STATUS_VALUES)}"
+            )
+        if self.callability_status not in CALLABILITY_STATUS_VALUES:
+            raise ValueError(
+                f"Invalid callability_status: {self.callability_status}. "
+                f"Must be one of {sorted(CALLABILITY_STATUS_VALUES)}"
+            )
+        if self.operational_status not in OPERATIONAL_STATUS_VALUES:
+            raise ValueError(
+                f"Invalid operational_status: {self.operational_status}. "
+                f"Must be one of {sorted(OPERATIONAL_STATUS_VALUES)}"
+            )
+        if self.evidence_level not in EVIDENCE_LEVEL_VALUES:
+            raise ValueError(
+                f"Invalid evidence_level: {self.evidence_level}. "
+                f"Must be one of {sorted(EVIDENCE_LEVEL_VALUES)}"
+            )
         if self.backing_status not in BACKING_STATUS_VALUES:
             raise ValueError(
                 f"Invalid backing_status: {self.backing_status}. "
@@ -104,15 +171,28 @@ def _build_from_v0() -> list[InventoryEntry]:
     for td in v0_tools:
         is_implemented = td.handler and td.handler.__name__ != "not_implemented_handler"
         handler_path = _resolve_handler_path(td.name, td.handler)
+        surfaces = _get_surface_availability(td.name)
+        handler_status = _infer_handler_status(is_implemented)
+        exposure_status = _infer_exposure_status(surfaces)
+        callability_status = _infer_callability_status(td.name)
+        operational_status = _infer_operational_status(td.name)
 
         entries.append(InventoryEntry(
             tool_name=td.name,
             purpose=td.description,
             handler_path=handler_path,
             registry_status="registered",
-            exposure_status="exposed" if is_implemented else "defined_not_implemented",
+            handler_status=handler_status,
+            exposure_status=exposure_status,
+            callability_status=callability_status,
+            operational_status=operational_status,
+            evidence_level=_infer_evidence_level(
+                handler_status=handler_status,
+                exposure_status=exposure_status,
+                callability_status=callability_status,
+            ),
             backing_status=_classify_backing(td.name),
-            surfaces=_get_surface_availability(td.name),
+            surfaces=surfaces,
             evidence=_get_evidence(td.name, handler_path),
         ))
     return entries
@@ -124,15 +204,28 @@ def _build_from_registry(registry_tools) -> list[InventoryEntry]:
     for td in registry_tools:
         is_implemented = td.handler and td.handler.__name__ != "not_implemented_handler"
         handler_path = _resolve_handler_path(td.name, td.handler)
+        surfaces = _get_surface_availability(td.name)
+        handler_status = _infer_handler_status(is_implemented)
+        exposure_status = _infer_exposure_status(surfaces)
+        callability_status = _infer_callability_status(td.name)
+        operational_status = _infer_operational_status(td.name)
 
         entries.append(InventoryEntry(
             tool_name=td.name,
             purpose=td.description,
             handler_path=handler_path,
             registry_status="registered",
-            exposure_status="exposed" if is_implemented else "defined_not_implemented",
+            handler_status=handler_status,
+            exposure_status=exposure_status,
+            callability_status=callability_status,
+            operational_status=operational_status,
+            evidence_level=_infer_evidence_level(
+                handler_status=handler_status,
+                exposure_status=exposure_status,
+                callability_status=callability_status,
+            ),
             backing_status=_classify_backing(td.name),
-            surfaces=_get_surface_availability(td.name),
+            surfaces=surfaces,
             evidence=_get_evidence(td.name, handler_path),
         ))
     return entries
@@ -212,6 +305,42 @@ def _classify_backing(tool_name: str) -> str:
     return "REPO_ONLY"
 
 
+def _infer_handler_status(is_implemented: bool) -> str:
+    return "implemented" if is_implemented else "not_implemented"
+
+
+def _infer_exposure_status(surfaces: dict[str, bool | None]) -> str:
+    if any(value is True for value in surfaces.values()):
+        return "repo_surface_configured"
+    return "not_exposed"
+
+
+def _infer_callability_status(tool_name: str) -> str:
+    if tool_name in SESSION_CALLABLE_TOOL_EVIDENCE:
+        return "session_callable"
+    return "not_proven"
+
+
+def _infer_operational_status(tool_name: str) -> str:
+    _ = tool_name
+    return "not_proven"
+
+
+def _infer_evidence_level(
+    *,
+    handler_status: str,
+    exposure_status: str,
+    callability_status: str,
+) -> str:
+    if callability_status == "session_callable":
+        return "session_live_call"
+    if exposure_status == "repo_surface_configured":
+        return "repo_surface_config"
+    if handler_status == "implemented":
+        return "repo_handler_only"
+    return "registry_contract"
+
+
 def _get_surface_availability(tool_name: str) -> dict[str, bool | None]:
     """Determine surface availability for a tool.
 
@@ -273,6 +402,10 @@ def _get_evidence(tool_name: str, handler_path: str) -> list[str]:
         if (REPO_ROOT / cfg_path).exists():
             evidence.append(cfg_path)
 
+    session_evidence = SESSION_CALLABLE_TOOL_EVIDENCE.get(tool_name)
+    if session_evidence:
+        evidence.append(session_evidence)
+
     return sorted(set(evidence))
 
 
@@ -291,9 +424,11 @@ def classify_tools() -> dict[str, list[str]]:
 
     for t in tools:
         result["present"].append(t.tool_name)
-        if t.exposure_status == "exposed":
+        if t.exposure_status == "repo_surface_configured":
             result["exposed"].append(t.tool_name)
+        if t.callability_status == "session_callable":
             result["callable"].append(t.tool_name)
+        if t.operational_status == "operationally_proven":
             result["operational"].append(t.tool_name)
 
     return result
@@ -312,6 +447,9 @@ def build_inventory() -> dict[str, Any]:
     in_memory = sum(1 for t in tools if t.backing_status == "IN_MEMORY")
     contract_only = sum(1 for t in tools if t.backing_status == "CONTRACT_ONLY")
     proof_only = sum(1 for t in tools if t.backing_status == "PROOF_ONLY")
+    exposed = sum(1 for t in tools if t.exposure_status == "repo_surface_configured")
+    callable_count = sum(1 for t in tools if t.callability_status == "session_callable")
+    operational = sum(1 for t in tools if t.operational_status == "operationally_proven")
 
     return {
         "matrix": [asdict(t) for t in tools],
@@ -324,6 +462,9 @@ def build_inventory() -> dict[str, Any]:
             "contract_only_count": contract_only,
             "proof_only_count": proof_only,
             "unknown_count": unknown,
+            "exposed_count": exposed,
+            "session_callable_count": callable_count,
+            "operational_count": operational,
         },
     }
 
@@ -340,15 +481,46 @@ def export_inventory_json(tools: list[InventoryEntry], output_path: Path) -> Non
 
 def export_inventory_markdown(tools: list[InventoryEntry], output_path: Path) -> None:
     """Export inventory to Markdown."""
+    inventory = build_inventory()
+    summary = inventory["summary"]
+    classification = inventory["classification"]
     lines = [
         "# CDB Context Tool Inventory",
         "",
         f"Generated: {len(tools)} tools discovered from repo sources.",
         "",
+        "## Summary",
+        "",
+        "| Signal | Count |",
+        "|--------|-------|",
+        f"| Total tools | {summary['total_tools']} |",
+        f"| DB_BACKED | {summary['db_backed_count']} |",
+        f"| IN_MEMORY | {summary['in_memory_count']} |",
+        f"| CONTRACT_ONLY | {summary['contract_only_count']} |",
+        f"| REPO_ONLY | {summary['repo_only_count']} |",
+        f"| PROOF_ONLY | {summary['proof_only_count']} |",
+        f"| UNKNOWN | {summary['unknown_count']} |",
+        f"| repo_surface_configured | {summary['exposed_count']} |",
+        f"| session_callable | {summary['session_callable_count']} |",
+        f"| operationally_proven | {summary['operational_count']} |",
+        "",
+        (
+            "Session-callable means the tool was proven callable in this session. "
+            "It is not a DB-backed or operational claim."
+        ),
+        "",
         "## Matrix",
         "",
-        "| Tool | Purpose | Handler | Registry | Exposure | Backing | ChatGPT | OpenCode | Cursor | Claude | Codex |",
-        "|------|---------|---------|----------|----------|---------|---------|----------|--------|-------|-------|",
+        (
+            "| Tool | Purpose | Handler | Registry | Handler status | "
+            "Exposure | Callable | Operational | Evidence level | Backing | "
+            "ChatGPT | OpenCode | Cursor | Claude | Codex |"
+        ),
+        (
+            "|------|---------|---------|----------|----------------|----------|"
+            "----------|-------------|----------------|---------|---------|----------|"
+            "--------|-------|-------|"
+        ),
     ]
 
     for t in sorted(tools, key=lambda x: x.tool_name):
@@ -358,7 +530,11 @@ def export_inventory_markdown(tools: list[InventoryEntry], output_path: Path) ->
             f"| {t.purpose[:50]} "
             f"| {t.handler_path} "
             f"| {t.registry_status} "
+            f"| {t.handler_status} "
             f"| {t.exposure_status} "
+            f"| {t.callability_status} "
+            f"| {t.operational_status} "
+            f"| {t.evidence_level} "
             f"| {t.backing_status} "
             f"| {_bool_icon(surf.get('ChatGPT'))} "
             f"| {_bool_icon(surf.get('OpenCode'))} "
@@ -369,16 +545,27 @@ def export_inventory_markdown(tools: list[InventoryEntry], output_path: Path) ->
 
     lines.append("")
     lines.append("## Classification")
-    classification = classify_tools()
     for state, tool_list in classification.items():
         lines.append(f"- **{state}**: {', '.join(sorted(tool_list))}")
     lines.append("")
     lines.append("## Gaps")
     lines.append(f"- {sum(1 for t in tools if t.backing_status == 'UNKNOWN')} tools have UNKNOWN backing status.")
+    lines.append(
+        "- `session_callable` is intentionally narrower than `repo_surface_configured` "
+        "and narrower than any operational or DB-backed claim."
+    )
     lines.append("")
 
     output_path.parent.mkdir(parents=True, exist_ok=True)
     output_path.write_text("\n".join(lines), encoding="utf-8")
+
+
+def write_canonical_inventory_artifacts() -> dict[str, Any]:
+    """Write the canonical JSON and Markdown artifacts for the inventory."""
+    tools = discover_tools_from_repo()
+    export_inventory_json(tools, REPO_ROOT / "artifacts/context_tool_inventory/tool_inventory.json")
+    export_inventory_markdown(tools, REPO_ROOT / "artifacts/context_tool_inventory/tool_inventory.md")
+    return build_inventory()
 
 
 def _bool_icon(val: bool | None) -> str:
