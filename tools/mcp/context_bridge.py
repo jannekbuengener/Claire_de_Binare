@@ -1890,6 +1890,318 @@ def _detect_non_db_backed_claim_findings(
     return findings
 
 
+def _build_default_sensory_status_claims(
+    *,
+    repo_state: Mapping[str, Any],
+    github_state: Mapping[str, Any],
+    working_assumptions: list[str],
+    non_db_backed_claim_findings: list[str],
+) -> list[dict[str, Any]]:
+    status_claims: list[dict[str, Any]] = []
+
+    delivery_state = str(repo_state.get("delivery_state") or "").strip()
+    if delivery_state and delivery_state != "unknown":
+        status_claims.append(
+            {
+                "surface": "delivery_reconcile",
+                "github_issue_state": "open" if github_state.get("target_issue") else "unknown",
+                "repo_delivery_state": delivery_state,
+            }
+        )
+
+    roadmap_sources: list[str] = []
+    if "non_db_backed_staged_file_claim" in non_db_backed_claim_findings:
+        roadmap_sources.append("local_staged_files")
+    if "non_db_backed_pr_body_claim" in non_db_backed_claim_findings:
+        roadmap_sources.append("pr_narrative")
+    if roadmap_sources:
+        status_claims.append(
+            {
+                "surface": "roadmap_state",
+                "sources": roadmap_sources,
+                "state": "unproven",
+            }
+        )
+
+    assumptions_text = " ".join(
+        item.strip().lower() for item in working_assumptions if isinstance(item, str)
+    )
+    issue_sources: list[str] = []
+    if "closure" in assumptions_text:
+        issue_sources.append("pr_body")
+    if "status proof" in assumptions_text or "status truth" in assumptions_text:
+        issue_sources.append("ledger")
+    if issue_sources:
+        status_claims.append(
+            {
+                "surface": "issue_state",
+                "sources": issue_sources,
+                "state": "closed",
+            }
+        )
+
+    return status_claims
+
+
+def _build_default_sensory_risky_conditions(
+    *,
+    repo_state: Mapping[str, Any],
+    brain_source: str,
+    brain_status: str,
+    brain_evidence_fields: Mapping[str, Any],
+    operator_trust_level: str,
+) -> tuple[list[dict[str, Any]], list[str]]:
+    risky_conditions: list[dict[str, Any]] = []
+    degraded_reasons: list[str] = []
+
+    def _append(condition_id: str, severity: str, summary: str, reason: str) -> None:
+        risky_conditions.append(
+            {
+                "id": condition_id,
+                "severity": severity,
+                "summary": summary,
+                "reason": reason,
+            }
+        )
+        degraded_reasons.append(reason)
+
+    if repo_state.get("working_tree") == "dirty":
+        _append(
+            "dirty_worktree",
+            "blocking",
+            "Dirty worktree must remain visible before any write recommendation.",
+            "dirty_worktree",
+        )
+
+    if repo_state.get("main_sync") == "stale":
+        _append(
+            "stale_main",
+            "blocking",
+            "Stale base branch must block automatic write progression.",
+            "stale_main",
+        )
+
+    if brain_source == "repo-only":
+        _append(
+            "repo_only_fallback",
+            "warning",
+            "Repo-only fallback cannot justify DB-backed claims.",
+            "repo_only",
+        )
+
+    fallback_reason = str(brain_evidence_fields.get("repo_fallback_reason") or "")
+    if fallback_reason == "insufficient_evidence":
+        _append(
+            "insufficient_evidence",
+            "warning",
+            "Context tools yielded no usable record-backed evidence.",
+            "insufficient_evidence",
+        )
+
+    if operator_trust_level == "LOW":
+        _append(
+            "low_trust",
+            "warning",
+            "LOW operator trust must degrade the sensory loop.",
+            "LOW",
+        )
+
+    if operator_trust_level == "BLOCKED" or brain_status == "blocked":
+        _append(
+            "blocked_context",
+            "blocking",
+            "Blocked context must fail closed.",
+            "blocked_context",
+        )
+
+    deduped_conditions: list[dict[str, Any]] = []
+    seen_ids: set[str] = set()
+    for item in risky_conditions:
+        condition_id = str(item.get("id") or "")
+        if condition_id and condition_id not in seen_ids:
+            deduped_conditions.append(item)
+            seen_ids.add(condition_id)
+
+    deduped_reasons = list(dict.fromkeys(degraded_reasons))
+    return deduped_conditions, deduped_reasons
+
+
+def _derive_default_sensory_next_move(
+    *,
+    task_scope: str,
+    operation_mode: str,
+    risky_conditions: list[dict[str, Any]],
+) -> dict[str, str]:
+    blocking_ids = {
+        str(item.get("id") or "")
+        for item in risky_conditions
+        if str(item.get("severity") or "").strip().lower() == "blocking"
+    }
+    if blocking_ids:
+        return {
+            "kind": "Blocked",
+            "reason": "Blocking risky conditions present: " + ", ".join(sorted(blocking_ids)),
+        }
+
+    scope_lower = task_scope.lower()
+    if "red_only" in scope_lower or "red-only" in scope_lower:
+        return {
+            "kind": "RED_ONLY",
+            "reason": "Task scope explicitly targets a RED_ONLY test-first slice.",
+        }
+    if operation_mode == "read_only":
+        return {
+            "kind": "Plan",
+            "reason": "Read-only scope should stop at planning and evidence shaping.",
+        }
+    if "reconcile" in scope_lower:
+        return {
+            "kind": "Reconcile",
+            "reason": "Task scope explicitly requests reconciliation work.",
+        }
+    if "close" in scope_lower or "closeout" in scope_lower:
+        return {
+            "kind": "Closeout",
+            "reason": "Task scope explicitly requests closeout work.",
+        }
+    return {
+        "kind": "Implementation",
+        "reason": "No blocking condition remains and scope allows implementation.",
+    }
+
+
+def _build_default_sensory_loop(
+    *,
+    task_scope: str,
+    operation_mode: str,
+    briefing_id: str,
+    required_reads: list[str],
+    readiness_status: str,
+    human_go_required: bool,
+    brain_evidence_block: Mapping[str, Any],
+    brain_source: str,
+    brain_status: str,
+    brain_evidence_fields: Mapping[str, Any],
+    operator_trust_level: str,
+    repo_state: Mapping[str, Any],
+    github_state: Mapping[str, Any],
+    working_assumptions: list[str],
+    evidence_records: Any,
+    claim_records: Any,
+    decision_events: Any,
+    memory_records: Any,
+) -> dict[str, Any]:
+    from tools.mcp.context_decision_tools import (
+        _build_decision_replay_gate,
+        _build_status_proof_block,
+    )
+
+    non_db_backed_claim_findings = _detect_non_db_backed_claim_findings(
+        db_claims_allowed=bool(
+            brain_source == "surrealdb-local"
+            and brain_status in {"used", "partial"}
+            and brain_evidence_fields.get("context_available") is True
+        ),
+        repo_state=repo_state,
+        working_assumptions=working_assumptions,
+    )
+
+    status_claims = _build_default_sensory_status_claims(
+        repo_state=repo_state,
+        github_state=github_state,
+        working_assumptions=working_assumptions,
+        non_db_backed_claim_findings=non_db_backed_claim_findings,
+    )
+    status_proof_block, closure_drift_markers = _build_status_proof_block(
+        status_claims=status_claims,
+        brain_fields=dict(brain_evidence_block),
+    )
+    decision_replay_gate = _build_decision_replay_gate(
+        source=brain_source,
+        evidence_records=evidence_records if isinstance(evidence_records, list) else None,
+        claim_records=claim_records if isinstance(claim_records, list) else None,
+        memory_records=memory_records if isinstance(memory_records, list) else None,
+    )
+
+    risky_conditions, degraded_reasons = _build_default_sensory_risky_conditions(
+        repo_state=repo_state,
+        brain_source=brain_source,
+        brain_status=brain_status,
+        brain_evidence_fields=brain_evidence_fields,
+        operator_trust_level=operator_trust_level,
+    )
+
+    loop_status = "ready"
+    if any(
+        str(item.get("severity") or "").strip().lower() == "blocking"
+        for item in risky_conditions
+    ):
+        loop_status = "fail_closed"
+    elif risky_conditions or decision_replay_gate.get("status") == "degraded":
+        loop_status = "degraded"
+
+    next_move = _derive_default_sensory_next_move(
+        task_scope=task_scope,
+        operation_mode=operation_mode,
+        risky_conditions=risky_conditions,
+    )
+    if next_move["kind"] == "Blocked" and "blocked_context" not in degraded_reasons and loop_status == "ready":
+        loop_status = "fail_closed"
+
+    return {
+        "preflight_steps": [
+            {
+                "tool": "context.required_reads",
+                "status": "ready",
+                "required_reads": list(required_reads),
+            },
+            {
+                "tool": "context.readiness",
+                "status": readiness_status,
+                "human_go_required": human_go_required,
+            },
+            {
+                "tool": "context.briefing",
+                "status": "ready",
+                "briefing_id": briefing_id,
+            },
+        ],
+        "status": loop_status,
+        "degraded_reasons": degraded_reasons,
+        "brain_evidence_block": dict(brain_evidence_block),
+        "status_proof_block": status_proof_block,
+        "decision_replay_gate": decision_replay_gate,
+        "closure_drift_markers": closure_drift_markers,
+        "risky_conditions": risky_conditions,
+        "claim_boundaries": {
+            "allow_db_backed_roadmap_claims": False,
+            "allow_db_backed_closure_claims": False,
+            "allow_db_backed_status_claims": False,
+            "blocking_findings": non_db_backed_claim_findings,
+        },
+        "status_surfaces": {
+            "board_stage": {
+                "value": "trade-capable",
+                "implies_live_go": False,
+            },
+            "lr_verdict": {
+                "value": "NO-GO",
+                "implies_live_go": False,
+            },
+            "live_authorization": {
+                "value": False,
+                "implies_echtgeld_go": False,
+            },
+        },
+        "next_move": next_move,
+        "proof_boundary": {
+            "e2e_proof_issue": "#3494",
+            "e2e_proof_scope": "excluded",
+            "reason": "End-to-end sensory proof belongs to the later #3494 slice.",
+        },
+    }
+
+
 def context_briefing_handler(**kwargs) -> dict[str, Any]:
     """
     Read-only handler for context.briefing tool.
@@ -2022,6 +2334,7 @@ def context_briefing_handler(**kwargs) -> dict[str, Any]:
         risk_level = "medium"
 
     valid_working_tree_states = frozenset({"clean", "dirty", "unknown"})
+    valid_main_sync_states = frozenset({"current", "stale", "unknown"})
     session_context_limitations: list[str] = []
     brain_context = _derive_briefing_brain_context(
         adapter_config_path=_adapter_config_path,
@@ -2045,11 +2358,19 @@ def context_briefing_handler(**kwargs) -> dict[str, Any]:
         "branch": "unknown",
         "commit": "unknown",
         "working_tree": "unknown",
+        "main_sync": "unknown",
+        "delivery_state": "unknown",
     }
     if isinstance(_repo_state_raw, dict):
         repo_branch = _repo_state_raw.get("branch")
         repo_commit = _repo_state_raw.get("commit")
         repo_working_tree = _repo_state_raw.get("working_tree")
+        if repo_working_tree is None:
+            repo_working_tree = _repo_state_raw.get("worktree")
+        repo_main_sync = _repo_state_raw.get("main_sync")
+        if repo_main_sync is None:
+            repo_main_sync = _repo_state_raw.get("main_state")
+        repo_delivery_state = _repo_state_raw.get("delivery_state")
 
         if isinstance(repo_branch, str) and repo_branch.strip():
             repo_state["branch"] = repo_branch.strip()
@@ -2071,6 +2392,16 @@ def context_briefing_handler(**kwargs) -> dict[str, Any]:
             session_context_limitations.append(
                 "repo_state.working_tree missing or malformed; using unknown"
             )
+
+        if repo_main_sync in valid_main_sync_states:
+            repo_state["main_sync"] = repo_main_sync
+        elif repo_main_sync is not None:
+            session_context_limitations.append(
+                "repo_state.main_sync missing or malformed; using unknown"
+            )
+
+        if isinstance(repo_delivery_state, str) and repo_delivery_state.strip():
+            repo_state["delivery_state"] = repo_delivery_state.strip()
     else:
         session_context_limitations.append(
             "repo_state not provided; using unknown repo state"
@@ -2889,6 +3220,27 @@ def context_briefing_handler(**kwargs) -> dict[str, Any]:
     )
 
     # --- Assemble briefing result ---
+    default_sensory_loop = _build_default_sensory_loop(
+        task_scope=task_scope,
+        operation_mode=operation_mode,
+        briefing_id=briefing_id,
+        required_reads=required_reads,
+        readiness_status=readiness_status,
+        human_go_required=human_go_required,
+        brain_evidence_block=brain_evidence_block,
+        brain_source=brain_source,
+        brain_status=brain_status,
+        brain_evidence_fields=brain_evidence_fields,
+        operator_trust_level=operator_trust_level,
+        repo_state=repo_state,
+        github_state=github_state,
+        working_assumptions=working_assumptions,
+        evidence_records=_evidence_records_raw,
+        claim_records=_claim_records_raw,
+        decision_events=_decision_events_raw,
+        memory_records=_memory_records_raw,
+    )
+
     briefing: dict[str, Any] = {
         "briefing_id": briefing_id,
         "enrichment_id": f"cdb-enrich-{enrichment_id}",
@@ -2913,8 +3265,13 @@ def context_briefing_handler(**kwargs) -> dict[str, Any]:
         "missing_evidence_notice": missing_evidence_notice,
         "blocking_trust_findings": blocking_trust_findings,
         "recommended_next_reads": recommended_next_reads_enrichment,
-        "approval_semantics": {"no_echtgeld_go": True},
+        "approval_semantics": {
+            "no_lr_go": True,
+            "no_live_go": True,
+            "no_echtgeld_go": True,
+        },
         "brain_evidence_block": brain_evidence_block,
+        "default_sensory_loop": default_sensory_loop,
         "session_context": session_context,
         "dependency_paths": dependency_paths,
         "known_risks": known_risks,
