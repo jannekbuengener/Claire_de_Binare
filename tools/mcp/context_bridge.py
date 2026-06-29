@@ -2202,6 +2202,231 @@ def _build_default_sensory_loop(
     }
 
 
+def _build_end_to_end_sensory_proof(
+    *,
+    default_sensory_loop: Mapping[str, Any],
+    brain_evidence_block: Mapping[str, Any],
+    repo_state: Mapping[str, Any],
+    github_state: Mapping[str, Any],
+    brain_source: str,
+    brain_status: str,
+    operator_trust_level: str,
+    working_assumptions: list[str],
+    blocking_trust_findings: list[str],
+) -> dict[str, Any]:
+    foundation_slices = [
+        {
+            "issue": "#3481",
+            "surface": "mcp_access_boundary",
+            "title": "MCP Access Boundary",
+            "proof_ref": "tools/mcp_access_boundary.py",
+        },
+        {
+            "issue": "#3482",
+            "surface": "surrealdb_skills_rules",
+            "title": "SurrealDB Skills/Rules",
+            "proof_ref": "docs/surrealdb/context-agent-briefing-schema-v1.md",
+        },
+        {
+            "issue": "#3493",
+            "surface": "tool_inventory_exposure_truth",
+            "title": "Tool Inventory / Exposure Truth",
+            "proof_ref": "tools/context_tool_inventory.py",
+        },
+        {
+            "issue": "#3488",
+            "surface": "evidence_claim_trust_gate",
+            "title": "Evidence/Claim/Trust Gates",
+            "proof_ref": "brain_evidence_block",
+        },
+        {
+            "issue": "#3489",
+            "surface": "decision_replay_status_proof",
+            "title": "Decision Replay / Status Proof",
+            "proof_ref": "status_proof_block",
+        },
+        {
+            "issue": "#3492",
+            "surface": "default_sensory_loop",
+            "title": "Default Sensory Loop",
+            "proof_ref": "default_sensory_loop",
+        },
+    ]
+
+    blocked_inputs: list[str] = []
+    if brain_source == "repo-only":
+        blocked_inputs.append("repo_only")
+    if operator_trust_level == "LOW":
+        blocked_inputs.append("LOW")
+    if (
+        str(brain_evidence_block.get("repo_fallback_reason") or "")
+        == "insufficient_evidence"
+    ):
+        blocked_inputs.append("insufficient_evidence")
+    if brain_status == "blocked" or operator_trust_level == "BLOCKED":
+        blocked_inputs.append("blocked")
+
+    non_db_findings = list(
+        dict.fromkeys(
+            [
+                *[str(item) for item in blocking_trust_findings if isinstance(item, str)],
+                *[
+                    str(item)
+                    for item in default_sensory_loop.get("claim_boundaries", {}).get(
+                        "blocking_findings", []
+                    )
+                    if isinstance(item, str)
+                ],
+            ]
+        )
+    )
+
+    closure_drift_markers = list(
+        dict.fromkeys(
+            [
+                *[
+                    str(item)
+                    for item in default_sensory_loop.get("closure_drift_markers", [])
+                    if isinstance(item, str)
+                ],
+                "closure_drift",
+                "partial_delivery",
+            ]
+        )
+    )
+
+    truth_surfaces = {
+        "github_live": {
+            "proof_status": "requires_live_issue_pr_truth",
+            "sources": ["gh issue", "gh pr"],
+            "db_backed_claim": False,
+            "target_issue": github_state.get("target_issue"),
+            "open_epics": list(github_state.get("open_epics", [])),
+        },
+        "repo_live": {
+            "proof_status": "repo_state_only",
+            "sources": ["repo_state", "git status", "git rev-parse"],
+            "db_backed_claim": False,
+            "branch": repo_state.get("branch", "unknown"),
+            "working_tree": repo_state.get("working_tree", "unknown"),
+            "main_sync": repo_state.get("main_sync", "unknown"),
+        },
+        "ledger": {
+            "proof_status": "ledger_only",
+            "sources": ["CURRENT_STATUS.md", "issue comments"],
+            "db_backed_claim": False,
+        },
+        "pr_body": {
+            "proof_status": "narrative_only",
+            "sources": ["PR body", "issue prose"],
+            "db_backed_claim": False,
+        },
+        "brain": {
+            "proof_status": "repo_only_fallback"
+            if brain_source == "repo-only"
+            else "context_attached",
+            "sources": ["brain_evidence_block"],
+            "db_backed_claim": brain_source == "surrealdb-local"
+            and brain_status in {"used", "partial"},
+        },
+        "local_staged_files": {
+            "proof_status": "non_db_backed_local_state",
+            "sources": ["git index", "working tree"],
+            "db_backed_claim": False,
+        },
+    }
+
+    required_closed_issues = [
+        "#3481",
+        "#3482",
+        "#3488",
+        "#3489",
+        "#3492",
+        "#3493",
+        "#3494",
+    ]
+    open_roadmap_blockers = [
+        "github_live_child_closure_unverified",
+        "rest_gaps_require_follow_up",
+    ]
+    if working_assumptions:
+        open_roadmap_blockers.append("assumption_backed_truth_requires_verification")
+
+    allow_close = False
+    closure_reason = (
+        "Roadmap closure remains blocked until GitHub-live child closure is verified, "
+        "#3494 itself is delivered, and no rest gaps remain."
+    )
+
+    next_move_kind = "Continue with follow-up"
+    next_move_reason = (
+        "Foundation slices are referenced, but roadmap closure still needs "
+        "follow-up because GitHub-live closure proof and rest-gap clearance are missing."
+    )
+    risky_ids = {
+        str(item.get("id") or "")
+        for item in default_sensory_loop.get("risky_conditions", [])
+        if isinstance(item, Mapping)
+    }
+    if {"dirty_worktree", "stale_main"} & risky_ids:
+        next_move_kind = "Reconcile"
+        next_move_reason = (
+            "Repo-risk conditions require reconciliation before any closure or further proof claims."
+        )
+    elif "blocked_context" in blocked_inputs:
+        next_move_kind = "Blocked"
+        next_move_reason = "Context is blocked; end-to-end proof must stay fail-closed."
+    elif allow_close:
+        next_move_kind = "Close #3479"
+        next_move_reason = "All roadmap proof gates are satisfied and no rest gaps remain."
+
+    return {
+        "foundation_slices": foundation_slices,
+        "default_sensory_loop": dict(default_sensory_loop),
+        "brain_evidence_block": dict(brain_evidence_block),
+        "status_proof_block": dict(default_sensory_loop.get("status_proof_block", {})),
+        "decision_replay_gate": dict(
+            default_sensory_loop.get("decision_replay_gate", {})
+        ),
+        "closure_drift_markers": closure_drift_markers,
+        "claim_escalation_guard": {
+            "allow_db_backed_claims": False,
+            "blocked_inputs": list(dict.fromkeys(blocked_inputs)),
+            "non_db_backed_findings": non_db_findings,
+            "assumption_count": len(working_assumptions),
+        },
+        "truth_surfaces": truth_surfaces,
+        "approval_semantics": {
+            "no_lr_go": True,
+            "no_live_go": True,
+            "no_echtgeld_go": True,
+        },
+        "roadmap_closure_gate": {
+            "roadmap_issue": "#3479",
+            "allow_close": allow_close,
+            "required_closed_issues": required_closed_issues,
+            "open_roadmap_blockers": open_roadmap_blockers,
+            "rest_gaps": [
+                "end_to_end_proof_not_yet_verified_on_live_github_truth",
+                "cleanup_autopilot_slice_explicitly_excluded",
+            ],
+            "target_issue": github_state.get("target_issue"),
+            "reason": closure_reason,
+        },
+        "autopilot_boundary": {
+            "later_slice_only": True,
+            "excluded_scope": "pr_issue_cleanup",
+            "reason": (
+                "PR and issue cleanup stays outside the proof contract and belongs to a later autopilot slice."
+            ),
+        },
+        "next_move": {
+            "kind": next_move_kind,
+            "reason": next_move_reason,
+        },
+    }
+
+
 def context_briefing_handler(**kwargs) -> dict[str, Any]:
     """
     Read-only handler for context.briefing tool.
@@ -3240,6 +3465,17 @@ def context_briefing_handler(**kwargs) -> dict[str, Any]:
         decision_events=_decision_events_raw,
         memory_records=_memory_records_raw,
     )
+    end_to_end_sensory_proof = _build_end_to_end_sensory_proof(
+        default_sensory_loop=default_sensory_loop,
+        brain_evidence_block=brain_evidence_block,
+        repo_state=repo_state,
+        github_state=github_state,
+        brain_source=brain_source,
+        brain_status=brain_status,
+        operator_trust_level=operator_trust_level,
+        working_assumptions=working_assumptions,
+        blocking_trust_findings=blocking_trust_findings,
+    )
 
     briefing: dict[str, Any] = {
         "briefing_id": briefing_id,
@@ -3272,6 +3508,7 @@ def context_briefing_handler(**kwargs) -> dict[str, Any]:
         },
         "brain_evidence_block": brain_evidence_block,
         "default_sensory_loop": default_sensory_loop,
+        "end_to_end_sensory_proof": end_to_end_sensory_proof,
         "session_context": session_context,
         "dependency_paths": dependency_paths,
         "known_risks": known_risks,
