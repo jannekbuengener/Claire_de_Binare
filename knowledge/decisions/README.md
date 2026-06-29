@@ -7,6 +7,7 @@ Recorded decisions (ADR-style) for governance, context/MCP posture, and infrastr
 | File | Topic |
 |---|---|
 | [`CDB_CONTEXT_BRAIN_DEFAULT_POSTURE.md`](CDB_CONTEXT_BRAIN_DEFAULT_POSTURE.md) | Brain evidence default (#2775) |
+| [`CDB_CONTEXT_BRAIN_SENSORY_LAYER.md`](CDB_CONTEXT_BRAIN_SENSORY_LAYER.md) | Context Brain as sensory layer canon (#3480) |
 | [`CDB_CONTEXT_MANAGED_NONLOCAL_RUNTIME_DECISION.md`](CDB_CONTEXT_MANAGED_NONLOCAL_RUNTIME_DECISION.md) | Managed runtime (not activated) |
 | [`CDB_CONTROLLED_WRITE_STRATEGY_V2_DESIGN.md`](CDB_CONTROLLED_WRITE_STRATEGY_V2_DESIGN.md) | Write strategy design only |
 | [`K8S_BUDGET_DECISION.md`](K8S_BUDGET_DECISION.md) | Kubernetes GO/NO-GO |

@@ -244,6 +244,7 @@ pwsh -File agents/templates/onboarding_mcp_setup.ps1
 
 | Doc | Purpose |
 |-----|---------|
+| `knowledge/decisions/CDB_CONTEXT_BRAIN_SENSORY_LAYER.md` | Canonical sensory-layer principle and boundary contract |
 | `docs/surrealdb/README.md` | Context-/MCP-Docs-Index |
 | `docs/runbooks/surrealdb_context_mcp_access.md` | MCP capability resolution |
 | `docs/runbooks/SURREALDB_LOCAL_CONTEXT_RUNTIME.md` | Local context runtime |
