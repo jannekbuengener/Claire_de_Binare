@@ -21,6 +21,9 @@ from tools.mcp_access_boundary import (
 
 pytestmark = pytest.mark.unit
 
+REPO_ROOT = Path(__file__).resolve().parents[3]
+BOUNDARY_DOC = REPO_ROOT / "docs" / "surrealdb" / "CDB_MCP_ACCESS_BOUNDARY.md"
+
 
 REQUIRED_MATRIX_FIELDS = {
     "tool_name",
@@ -99,3 +102,27 @@ def test_repo_present_not_exposed_tools_are_separated() -> None:
         entry = matrix_entries[tool_name]
         assert entry["repo_present"] is True
         assert entry["exposed"] is False
+
+
+def test_unknown_count_stays_zero() -> None:
+    result = build_mcp_access_boundary()
+
+    unknown_entries = [
+        entry for entry in result["matrix"] if entry["decision"] == "UNKNOWN"
+    ]
+    assert unknown_entries == []
+
+
+def test_boundary_doc_reconciles_surface_parity_without_claim_inflation() -> None:
+    doc = BOUNDARY_DOC.read_text(encoding="utf-8")
+
+    assert "## #3481 Acceptance / Evidence Reconcile" in doc
+    assert "PR #3497" in doc
+    assert "PR #3534" in doc
+    assert "#3493" in doc
+    assert "`repo_surface_configured=27`" in doc
+    assert "`session_callable=2`" in doc
+    assert "`operationally_proven=0`" in doc
+    assert "`DB_BACKED=0`" in doc
+    assert "not a DB-backed claim" in doc
+    assert "`DB_BACKED_READONLY_PROVEN` remains out of scope for #3481" in doc
