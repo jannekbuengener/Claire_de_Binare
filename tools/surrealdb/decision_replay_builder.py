@@ -497,6 +497,7 @@ def build_decision_replay_v1(
     approval_semantics = {
         "history_only": True,
         "no_approval": True,
+        "no_lr_go": True,
         "no_live_go": True,
         "no_echtgeld_go": True,
         "note": (
