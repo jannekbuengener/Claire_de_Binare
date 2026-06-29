@@ -3,6 +3,7 @@
 Issues:
     #2121 — [SURREALDB][CONTEXT][TRUST] Implement context trust summary builder v1
     #2856 — [CONTEXT][TRUST] Operator trust thresholds (HIGH/MEDIUM/LOW/BLOCKED)
+    #3471 — [CONTEXT][TRUST] Explain and tighten MEDIUM/HIGH gates for DB-backed Wave-14 records
     Parent: #2115 (Wave-14)
     Epic: #1976
 
@@ -18,6 +19,28 @@ Guardrails:
     - Assessment only: never implies approval, live-go, or authority.
     - operator_trust_level LOW/BLOCKED is not operational truth.
     - Legacy trust_level 'blocked' is insufficient context quality, not Human-GO.
+
+Scoring composition (weights hardcoded in build_trust_summary_v1):
+    composite_score = 0.30 * evidence_strength_score
+                     + 0.25 * claim_score
+                     + 0.25 * decision_score
+                     + 0.20 * memory_score
+
+    Concrete trace with the Wave-14 real-smoke fixture data:
+        evidence: confidence=0.91 → strong → score=0.90  (weight 0.30 → 0.270)
+        claim:    status=supported                  → score=1.00  (weight 0.25 → 0.250)
+        decision: 2 matched, 1 current, 0 superseded, 1 invalidated
+                  current_ratio=0.50, penalty=0.25  → score=0.25  (weight 0.25 → 0.0625)
+        memory:   source_refs present → source_backed → score=1.00 (weight 0.20 → 0.200)
+        ──────────────────────────────────────────────────────────────────────────
+        composite = 0.270 + 0.250 + 0.0625 + 0.200 = 0.7825
+
+    0.7825 → trust_level="acceptable" (0.55 ≤ score < 0.80)
+          → operator_trust_level="MEDIUM" (capped from "acceptable"; no capping signals)
+
+    Reaching HIGH requires composite ≥ 0.80 (→ "strong") AND all signal gates green.
+    The gap from 0.7825 to 0.80 (0.0175) is primarily driven by the invalidated
+    decision penalty (decision_score=0.25 vs a perfect 1.0).
 """
 
 from __future__ import annotations
