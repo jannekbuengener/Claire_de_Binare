@@ -76,6 +76,42 @@ Machine-readable access boundary for CDB Context/MCP/SurrealDB tooling.
 - `select`
 - `use`
 
+## #3481 Acceptance / Evidence Reconcile
+
+This document is the canonical #3481 boundary surface. It now also carries the
+explicit reconcile mapping between the safety boundary delivered in PR #3497 and
+the later surface-parity evidence delivered for #3493 in PR #3534.
+
+| #3481 acceptance surface | Repo-backed truth | Delivery source | Reconcile status |
+|---|---|---|---|
+| MCP access boundary | Boundary matrix exists as a canonical doc and machine artifact. | PR #3497; `tools/mcp_access_boundary.py`; `artifacts/mcp/mcp_access_boundary_matrix.{json,md}` | delivered |
+| Raw upstream MCP blocking | `query`, `select`, `list`, `use`, `info` stay blocked raw MCP tools. | PR #3497 boundary matrix | delivered |
+| Forbidden mutation list | `create`, `insert`, `upsert`, `update`, `delete`, `relate`, `run` stay forbidden. | PR #3497 boundary matrix | delivered |
+| Curated read-only surface | 27 exposed CDB context tools are classified `ALLOWED_READONLY`. | PR #3497 boundary matrix | delivered |
+| Unknown-gap control | `UNKNOWN=0` in the boundary matrix. | PR #3497 boundary matrix + tests | delivered |
+| Surface parity / every-surface check | Repo-backed inventory truth shows `repo_surface_configured=27` across the configured agent surfaces. | PR #3534; `artifacts/context_tool_inventory/tool_inventory.{json,md}` | reconciled |
+| Session callability | Only `context.required_reads` and `context.readiness` are proven `session_callable=2`. | PR #3534 inventory truth | reconciled with explicit limits |
+| Operational proof boundary | `operationally_proven=0`; no tool is promoted to operational proof by this reconcile. | PR #3534 inventory truth | unchanged by design |
+| DB-backed proof boundary | `DB_BACKED=0`; no `DB_BACKED_READONLY_PROVEN` claim is added here. | PR #3534 inventory truth + boundary guardrails | unchanged by design |
+
+### Boundary Truth vs. Surface Truth
+
+- **PR #3497** delivered the #3481 safety core: allowed read-only tools,
+  forbidden mutation tools, blocked raw MCP tools, FUTURE aliases, and
+  `UNKNOWN=0`.
+- **PR #3534** delivered the later repo-backed surface-truth needed to reconcile
+  #3481's parity question without inflating runtime truth:
+  `repo_surface_configured=27`, `session_callable=2`,
+  `operationally_proven=0`, `DB_BACKED=0`.
+- Surface parity here means the configured repo surface is now mapped back to
+  #3481. It does **not** mean that every exposed tool is live-proven callable,
+  operationally proven, or DB-backed.
+- `session_callable` is intentionally narrower than repo surface exposure and is
+  not a DB-backed claim.
+- `operationally_proven=0` remains the canonical status for this surface.
+- `DB_BACKED_READONLY_PROVEN` remains out of scope for #3481 and requires
+  separate adapter/record evidence.
+
 ## Matrix
 
 | Tool | Family | Repo | Exposed | Callable | Operational | Decision | Allowed Mode | Mutation Risk | Handler |
