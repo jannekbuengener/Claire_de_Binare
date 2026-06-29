@@ -83,8 +83,8 @@ ORDER BY vector_score DESC;
 
 -- -----------------------------------------------------------------------
 -- Hybrid Retrieval Contract: RRF (Reciprocal Rank Fusion)
--- Fuses BM25 full-text results with vector similarity results.
--- SurrealQL syntax: search::rrf([$list1, $list2], $limit, $k)
+-- Fuses BM25 full-text, vector similarity, and graph proximity results.
+-- SurrealQL syntax: search::rrf([$list1, $list2, $list3], $limit, $k)
 --
 -- RRF formula: rrf_score = Sum 1 / (k + rank_in_list)
 -- k = 60 (standard default per Cormack et al. 2009)
@@ -98,6 +98,7 @@ ORDER BY vector_score DESC;
 
 LET $hybrid_limit = 10;
 LET $rrf_k = 60;
+LET $graph_seed_chunk = doc_chunk:⟨seed-hybrid-chunk⟩;
 
 LET $vs = SELECT
     id,
@@ -116,7 +117,15 @@ WHERE content @1@ $bm25_keyword
 ORDER BY bm25_score DESC
 LIMIT $hybrid_limit;
 
-SELECT * FROM search::rrf([$vs, $ft], $hybrid_limit, $rrf_k);
+-- Graph proximity sub-query: start from a seed chunk, walk
+-- ->chunk_mentions_symbol->code_symbol and back to related chunks.
+LET $graph = SELECT
+    ->chunk_mentions_symbol->code_symbol<-chunk_mentions_symbol<-doc_chunk.id AS id,
+    ->chunk_mentions_symbol->code_symbol<-chunk_mentions_symbol<-doc_chunk.chunk_id AS chunk_id,
+    ->chunk_mentions_symbol->code_symbol<-chunk_mentions_symbol<-doc_chunk.content_hash AS content_hash
+FROM ONLY $graph_seed_chunk;
+
+SELECT * FROM search::rrf([$vs, $ft, $graph], $hybrid_limit, $rrf_k);
 
 -- -----------------------------------------------------------------------
 -- Hybrid Retrieval Contract: Linear Fusion (alternative)
@@ -135,10 +144,14 @@ SELECT * FROM search::linear([$vs, $ft], [1, 1], $hybrid_limit, 'minmax');
 --   content_hash:  SHA256 of chunk content
 --   bm25_score:    BM25 relevance score (if from full-text list)
 --   vector_distance / vector_score: vector similarity (if from vector list)
+--   graph path seed: graph-nearby chunk set from the traversal list
 --   source fields: first non-null from list order
 --
 -- Note: Embedding vectors are query parameters only.
 -- No embedding generation, storage, or runtime is defined here.
 -- The existing Python hybrid ranking (hybrid_retrieval_ranking.py) is
 -- a parallel reference and is NOT replaced by this contract.
+-- If vector input is required but unavailable, the hybrid contract remains
+-- fail-closed and must not pretend that BM25 + Graph alone satisfied the
+-- required hybrid vector path.
 -- =======================================================================
