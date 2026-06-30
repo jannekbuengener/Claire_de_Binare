@@ -114,7 +114,7 @@ services:
       - cdb_network
 
   cdb_grafana:
-    image: grafana/grafana:12.4.3-security-02-ubuntu@sha256:089f9dbbfa3c21e6989aab20f14f1a78cef54c04819af5e9deb2bd9c37966bc5
+    image: grafana/grafana:13.0.3-ubuntu@sha256:7c1acd41225a05af53fa2af32a044a2a96cdef2540f2c415ee5b1e98fae99084
     container_name: cdb_grafana
     restart: unless-stopped
     environment:
