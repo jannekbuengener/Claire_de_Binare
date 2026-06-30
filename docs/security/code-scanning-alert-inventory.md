@@ -24,7 +24,7 @@
   `services/ws/mexc_proto_gen/**` hat 0 offene CodeQL-Alerts.
   CodeQL gesamt von 92 → 58 (−34): Proto-Gen-Rauschen eliminiert.
 - **2 CodeQL warnings** in produktivem Code erfordern Analyse, bevor Note-Level-Rauschen priorisiert wird.
-- **Trivy-Masse** (837 Alerts, 95 CVEs) ist strukturell bekannt: alle 8 CDB-Service-Images teilen dieselbe Basis (`python:3.11-slim-trixie`), 7 Images × ~14 error-CVEs. Fixability unvollständig aus API ableitbar — als TBD markiert.
+- **Trivy-Masse** (837 Alerts, 95 CVEs) ist strukturell bekannt, aber die frühere Kurzform "alle 8 CDB-Service-Images teilen dieselbe Basis (`python:3.11-slim-trixie`)" ist nach PR #3527 nicht mehr exakt: sieben Service-Images liegen weiterhin auf `python:3.11-slim-trixie`, während `cdb_risk` auf `python:3.14-slim-trixie` umgestellt wurde. Fixability bleibt unvollständig aus API ableitbar — als TBD markiert.
 - **Third-party Trivy** (141 Alerts): Grafana und Prometheus tragen eigene CVE-Cluster. Keine CDB-Code-Änderung möglich, nur Image-Bump.
 
 ---
@@ -142,7 +142,7 @@ gh pr view 2486 --json number,state,mergedAt,mergeCommit,url
 
 ### 5.1 CDB-Service-Images (696 Alerts)
 
-Alle 8 CDB-Services basieren auf `python:3.11-slim-trixie` (SHA-pinned). CVEs replizieren sich über alle Images.
+Die CDB-Service-Alert-Masse wird weiterhin überwiegend von den sieben `python:3.11-slim-trixie`-basierten Service-Images getragen. Seit PR #3527 ist `cdb_risk` davon abweichend auf `python:3.14-slim-trixie` umgestellt; die Architektur-Topologie bleibt dabei unverändert. Die untenstehenden Alert-Zahlen bleiben als aktueller Inventar-Snapshot stehen und sind nicht als vollständige post-#3527-Re-Triage zu lesen.
 
 | Image | Total | error | warning | note |
 |-------|-------|-------|---------|------|
@@ -165,7 +165,7 @@ Alle 8 CDB-Services basieren auf `python:3.11-slim-trixie` (SHA-pinned). CVEs re
 | CVE-2026-42010/42011 | ×7 each | error |
 | CVE-2026-3833/33845/33846/27135/7598 | ×7 each | error |
 
-**Root Cause:** OS-Pakete in `python:3.11-slim-trixie` (`libssh2`, `libkrb5`, `gnutls`, `libcap` u.a.) tragen CVEs. Fixability: **TBD** — muss per CVE einzeln geprüft werden. `trivy.yml` nutzt `ignore-unfixed: true` im SARIF-Upload; historische Alerts ohne Fix-Version können trotzdem offen bleiben.
+**Root Cause:** Der Großteil der CDB-Service-Alerts hängt weiterhin an OS-Paketen in `python:3.11-slim-trixie` (`libssh2`, `libkrb5`, `gnutls`, `libcap` u.a.). Seit PR #3527 ist `cdb_risk` hiervon als eigene `python:3.14-slim-trixie`-Fläche zu betrachten; diese Inventardatei behauptet deshalb nicht mehr, dass alle acht Service-Images denselben Base-Tag teilen. Fixability: **TBD** — muss per CVE einzeln geprüft werden. `trivy.yml` nutzt `ignore-unfixed: true` im SARIF-Upload; historische Alerts ohne Fix-Version können trotzdem offen bleiben.
 
 ### 5.2 Third-Party Images (141 Alerts)
 
@@ -202,7 +202,7 @@ Fix-Strategie: Image-Bump in Compose-Dateien. Kein CDB-Quellcode-Fix möglich.
 | **Slice 2** | 🔲 Bereit | `py/redundant-comparison` → `services/risk/service.py` | 1 (⚠️ warning) | Mittel — Risk-Service-Prod-Code | Schließt potenziellen Logik-Bug im Order-Pfad |
 | **Slice 3** | 🔲 Bereit | `py/implicit-string-concatenation-in-list` → `tools/mcp/context_bridge.py` | 1 (⚠️ warning) | Niedrig — Tools-Code | Bereinigt zweiten warning, sauberer CodeQL-Stand |
 | **Slice 4** | 🔲 Nach Slice 2+3 | CodeQL note-level cleanup (tests/sdk/infrastructure/tools) | ~50 (note) | Sehr niedrig | Signifikante Rauschreduktion; evtl. weitere `paths-ignore` oder Einzel-Fixes |
-| **Slice 5** | 🔲 Komplex | Trivy CDB-Service base image — neue `python:3.11-slim-trixie` SHA | ~696 (anteilig) | Mittel — Dockerfile-Änderung, alle 8 Services | Reduziert error-CVEs soweit upstream fix verfügbar |
+| **Slice 5** | 🔲 Komplex | Trivy CDB-Service base images — neue `python:3.11-slim-trixie` SHA für die verbleibenden sieben Trixie-Services plus separate Beobachtung der bereits aktualisierten `cdb_risk`-Fläche (`python:3.14-slim-trixie`, PR #3527) | ~696 (anteilig) | Mittel — Dockerfile-Änderung über mehrere Service-Images, aber nicht mehr ein einheitlicher 8er-Block | Reduziert error-CVEs soweit upstream fix verfügbar |
 | **Slice 6** | 🔲 Komplex | Trivy third-party images (Grafana/Prometheus) in Compose-Dateien | ~141 | Mittel — Stack-Bump | Schließt dritte CVE-Gruppe |
 | **Slice 7** | 🔲 Nur nach extra GO | `.trivyignore` / Dismiss-Prozess für no-fix-upstream CVEs | TBD | Niedrig — rein dokumentarisch | Rauschen entfernen, kein echter Fix |
 
@@ -241,4 +241,4 @@ Zusätzliche Regeln für diesen Epic (#2289):
 - **`ignore-unfixed: true` in `trivy.yml`:** Neuere Scans sollten keine no-fix-Alerts mehr hochladen — trotzdem sind historische Alerts aus älteren Scans noch offen. Konsequenz: echte Anzahl adressierbarer Trivy-CVEs ist kleiner als 837.
 - **`py/redundant-comparison` (#4286):** Ob echter Logik-Bug oder False Positive ist erst nach Code-Lektüre entscheidbar. Slice 2 beginnt mit Read-only-Analyse.
 - **CodeQL `fixed`-State:** Asynchron — Proto-Gen-Alerts noch nicht als `state=fixed` sichtbar, aber aus offener Liste verschwunden. Kein Handlungsbedarf.
-- **CDB-Service-Image-SHA:** Aktuell SHA-gepinnt in Dockerfiles (`python:3.11-slim-trixie@sha256:...`). Ob eine neuere SHA verfügbar ist und welche CVEs sie löst: TBD für Slice 5.
+- **CDB-Service-Image-SHA:** Die verbleibenden sieben Trixie-Service-Images sind weiterhin über `python:3.11-slim-trixie@sha256:...` gepinnt; `cdb_risk` ist seit PR #3527 separat auf `python:3.14-slim-trixie@sha256:...` geführt. Ob neuere SHAs verfügbar sind und welche CVEs sie je Fläche lösen: TBD für Slice 5.

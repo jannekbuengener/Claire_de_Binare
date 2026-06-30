@@ -2,6 +2,8 @@ name: Optional SurrealDB Memory Proof
 
 # Non-required, opt-in proof workflow for #2603/#2606 memory paths.
 # Does NOT gate merges. LR remains NO-GO. No productive memory write.
+# Self-hosted runner dependency removed in #3575; this remains manual-only and
+# optional on GitHub-hosted infrastructure.
 
 on:
   workflow_dispatch:
@@ -34,7 +36,7 @@ permissions:
 jobs:
   surrealdb-memory-proof:
     name: Optional SurrealDB Memory Proof
-    runs-on: [self-hosted, cdb, docker]
+    runs-on: ubuntu-latest
     timeout-minutes: 45
     continue-on-error: true
     env:
