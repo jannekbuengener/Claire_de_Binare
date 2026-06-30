@@ -64,7 +64,7 @@ Auf `origin/main` sind die juengsten Kern-Cluster gelandet, u. a.:
 - **LR-050 Final Reconcile (#2535):** Child-SSOTs #2526–#2534 plus finales Reconcile-Dokument; Verdikt bleibt **NO-GO** / not ready for live capital.
 - **SurrealDB / Context Phase-2 closeout (#1976):** Grandparent arc geschlossen; Real-Task-Proofs, Wave-Matrix-Recert und Phase-2-Review auf `main`.
 - **Context / MCP tooling hardening (#2847):** Benchmark #2 ratifiziert; Harness PASS / PASS_WITH_LIMITS ohne produktive Writes.
-- **CI / Agent surface (#2994):** Canonical PR-Gate wieder `.github/workflows/ci.yml` auf self-hosted Runner; repo-lokale Skills unter `.codex/cdb_skills/` und `.cursor/skills/`.
+- **CI / Agent surface (#2994/#3405/#3575):** Canonical PR-Gate `.github/workflows/ci.yml` und `policy-gate.yml` laufen GitHub-hosted; self-hosted runner are decommissioned from active workflow dependencies.
 
 Operatives Cockpit: GitHub Issue `#1445`. Aktiver Engineering-Fokus (nicht exhaustiv): `#2440` (LR-030 Shadow/Soak), `#2513` (Trivy upstream tracking, orthogonal).
 
