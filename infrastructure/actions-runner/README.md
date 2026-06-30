@@ -8,7 +8,7 @@ Containerized GitHub Actions runner for CDB required checks.
 2. **Configure**:
    ```bash
    cp .env.runner.example .env.runner
-   # paste RUNNER_TOKEN into .env.runner
+   # paste a bootstrap-only RUNNER_TOKEN into .env.runner
    ```
 3. **Start**:
    ```bash
@@ -43,6 +43,10 @@ authenticates with its own credentials stored in `.runner`/`.credentials`.
 A new token is required only when the container is rebuilt from scratch
 or after a manual "Remove runner" in the GitHub UI.
 
+Treat `RUNNER_TOKEN` as a **bootstrap-only / registration-only** credential.
+Do not keep it in plaintext local env files longer than needed for initial
+registration or a deliberate re-registration window.
+
 ## State Persistence
 
 Runner credentials (`.runner`, `.credentials`, `.credentials_rsaparams`,
@@ -60,6 +64,10 @@ rebuilds without re-registration.
 **First-time setup** still requires `RUNNER_TOKEN`. After that, rebuilds
 (`docker compose down && docker compose up -d --build`) do not need a
 new token.
+
+After successful registration, remove or blank the token in `.env.runner`
+unless you are intentionally keeping a short-lived local file for a planned
+re-registration or deregistration step.
 
 ### Complete vs Partial State
 
@@ -127,6 +135,21 @@ runner with Docker socket access.
   and `usermod` — exactly what the entrypoint needs. If Docker-in-Docker is not
   needed for a job, remove the socket mount.
 
+**Secret hygiene:**
+- Never print real `RUNNER_TOKEN` values into logs, issues, commits, PRs, or screenshots.
+- `.env.runner` and `.env.runner2` are local-only ops files, not repo artifacts.
+- Runner secret files are excluded from the local Docker build context via
+  `infrastructure/actions-runner/.dockerignore`.
+
+**Compose-project hygiene:**
+- Both runner compose files now declare an explicit `name:` (`cdb_gh_runner` / `cdb_gh_runner_2`)
+  so the runner stack always gets its own Compose project regardless of working directory
+  or any inherited `COMPOSE_PROJECT_NAME`.
+- A global or inherited `COMPOSE_PROJECT_NAME` can still override this — do not set
+  `COMPOSE_PROJECT_NAME` globally when running runner compose files.
+- Docker-project isolation cleanup (live migration of existing containers) remains tracked
+  separately in `#3571`.
+
 ## Runner 2 — Dedicated Merge-Gate Runner
 
 Runner 2 is a second self-hosted runner. It was originally dedicated to
@@ -141,7 +164,7 @@ runner name, volume, and labels — completely independent from Runner 1.
 2. **Configure**:
    ```bash
    cp .env.runner2.example .env.runner2
-   # paste RUNNER_TOKEN into .env.runner2
+   # paste a bootstrap-only RUNNER_TOKEN into .env.runner2
    ```
 3. **Start**:
    ```bash
@@ -203,6 +226,9 @@ docker compose -f infrastructure/actions-runner/docker-compose.runner2.yml up -d
 
 If the state volume is deleted or corrupted, a new `RUNNER_TOKEN` is required
 for re-registration.
+
+As with Runner 1, remove or blank the token in `.env.runner2` after successful
+registration unless you are in an intentional re-registration or deregistration window.
 
 ## Rollback
 

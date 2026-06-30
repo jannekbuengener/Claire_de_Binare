@@ -1,0 +1,11 @@
+.env.runner
+.env.runner2
+.env.runner*
+*.log
+tmp/
+temp/
+__pycache__/
+.pytest_cache/
+.ruff_cache/
+README.md
+*.md
