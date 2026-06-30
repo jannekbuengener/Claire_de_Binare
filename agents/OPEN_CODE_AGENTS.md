@@ -54,3 +54,18 @@ Gilt für **alle** OpenCode Agents (egal welcher Provider).
 - Keine pauschale Skill-Massenladung
 - Third-Party-/Cybersecurity-Skills nur bei explizitem Bedarf und nur defensiv/prüfend
 - Keine Writes ohne Human-GO
+
+## Redis Skill Routing (CDB)
+
+SSOT: [`docs/skills/CDB_REDIS_SKILL_ROUTING.md`](../docs/skills/CDB_REDIS_SKILL_ROUTING.md) (Issue #3596).
+
+- Redis ist **Runtime-/Messaging-/Cache-Komponente**, kein Agent-Brain. SurrealDB
+  Context Intelligence bleibt primäre Brain-Strategie.
+- **Core-Set** (Cursor Redis Plugin, nach Session-Bootstrap): `redis-development`,
+  `redis-core`, `redis-connections`, `redis-security`, `redis-observability`.
+- **Event-/Runtime-Zusatz:** `messaging-redis-streams` (extern), `ctb-docker-stack`,
+  `cdb-shadow-validation` — nur bei passendem Task-Scope.
+- **Parking-Lot** (nicht Default): `redis-search`, `redis-semantic-cache`, RedisVL,
+  LangCache, RQE-as-default, Vector Search als CDB-Brain-Ersatz.
+- Runtime-Guardrails: `create_redis_client`, Key-/TTL-Regeln, keine Redis-Secrets
+  in Code/Docs/Issues/Logs; Observability-Review über `cdb_redis_exporter`.
