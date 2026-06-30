@@ -267,6 +267,8 @@ Cursor subagent surface: `.cursor/agents/` (helper roles; shared contract
 
 OpenCode skill surface zusaetzlich: `.opencode/skills/` (gezielt laden, nicht pauschal).
 
+**Kanonische Skill-Flaeche:** `docs/skills/` ist Source of Truth. Siehe `docs/skills/SKILL_SURFACE_REGISTRY.md`.
+
 | Skill | Purpose | Cursor path |
 |-------|---------|-------------|
 | `cdb-session-start` | Fail-closed session start (verifies Git truth first) | `.cursor/skills/cdb-session-start/SKILL.md` |

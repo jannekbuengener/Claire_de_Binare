@@ -1,3 +1,10 @@
+<!--
+Canonical Skill Source: docs/skills/cdb-github-api-ops/SKILL.md
+Surface: docs (canonical)
+Sync Status: mirrored
+Last Verified: 2026-06-30
+Drift Policy: Surface darf nur abweichen, wenn Begruendung in docs/skills/cdb-github-api-ops/SKILL.md dokumentiert ist.
+-->
 ---
 name: cdb-github-api-ops
 description: >
@@ -98,10 +105,7 @@ gh api graphql -f query='
   repository(owner: "jannekbuengener", name: "Claire_de_Binare") {
     pullRequests(states: [OPEN], first: 10, orderBy: {field: UPDATED_AT, direction: DESC}) {
       nodes {
-        number
-        title
-        reviewDecision
-        mergeStateStatus
+        number title reviewDecision mergeStateStatus
         statusCheckRollup { nodes { state description } }
       }
     }
@@ -212,6 +216,8 @@ When a write seems necessary but no approved scope exists:
   access.
 - If a read returns 403/404, record it as a visibility gap, not as
   "nothing there."
+- If auth scope is unclear, test with a minimal read before assuming access.
+- If a read returns 403/404, record it as a visibility gap, not as "nothing there."
 - Do NOT retry with elevated privileges or different tokens automatically.
 
 ## API surface reference

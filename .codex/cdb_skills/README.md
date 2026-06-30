@@ -47,6 +47,12 @@ Spiegelt die Cursor-Skill-Oberfläche unter [`.cursor/skills/README.md`](../../.
 | [`gh-address-comments`](gh-address-comments/SKILL.md) | PR review comments |
 | [`cdb-github-api-ops`](cdb-github-api-ops/SKILL.md) | GitHub API-aware agent routing |
 
+## Canonical skill source
+
+- `docs/skills/` ist die kanonische Skill-Flaeche.
+- Jede Surface-Kopie muss den Pflicht-Header aus Registry Abschnitt 7 tragen.
+- Registry: [`docs/skills/SKILL_SURFACE_REGISTRY.md`](../../docs/skills/SKILL_SURFACE_REGISTRY.md).
+
 ## Related surfaces
 
 - Cursor: [`.cursor/skills/README.md`](../../.cursor/skills/README.md)
