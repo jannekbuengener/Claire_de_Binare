@@ -267,7 +267,7 @@ Cursor subagent surface: `.cursor/agents/` (helper roles; shared contract
 
 OpenCode skill surface zusaetzlich: `.opencode/skills/` (gezielt laden, nicht pauschal).
 
-**Kanonische Skill-Flaeche:** `docs/skills/` ist Source of Truth. Siehe `docs/skills/SKILL_SURFACE_REGISTRY.md`.
+**Kanonische Skill-Flaeche:** `docs/skills/` ist Source of Truth. Siehe `docs/skills/SKILL_SURFACE_REGISTRY.md` und [`docs/skills/CDB.VERFUEGBARE.SKILLS_LISTE_2026-06-30.md`](docs/skills/CDB.VERFUEGBARE.SKILLS_LISTE_2026-06-30.md).
 
 | Skill | Purpose | Cursor path |
 |-------|---------|-------------|
@@ -364,6 +364,12 @@ Health probes after `make docker-up`: allocation `:8006`, candles `:8007`, regim
   dotted channel names for pub/sub) and TTLs on ephemeral cache data.
 - Cursor’s **Redis plugin** applies pooling, timeout, and structure rules automatically
   when editing Redis-related code.
+- **Agent skill routing (canonical):** [`docs/skills/CDB_REDIS_SKILL_ROUTING.md`](docs/skills/CDB_REDIS_SKILL_ROUTING.md)
+  — core set (`redis-development`, `redis-core`, `redis-connections`,
+  `redis-security`, `redis-observability`), event add-ons (`messaging-redis-streams`,
+  `ctb-docker-stack`, `cdb-shadow-validation`), parking-lot for Search/Vector/LangCache.
+  Redis is runtime/messaging/cache only; SurrealDB Context Intelligence remains the
+  primary brain strategy.
 
 ### Secrets
 

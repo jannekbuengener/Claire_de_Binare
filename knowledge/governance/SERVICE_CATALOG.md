@@ -113,7 +113,7 @@ Hinweis: Der Config-Default fuer `SIGNAL_PORT` liegt in `services/signal/config.
 
 | Service | Container | Image | Port | Status | Funktion |
 |---------|-----------|-------|------|--------|----------|
-| **PostgreSQL** | cdb_postgres | postgres:15.17-alpine | 5432 | **AKTIV** | Persistenz |
+| **PostgreSQL** | cdb_postgres | postgres:18.4-alpine | 5432 | **AKTIV** | Persistenz |
 | **Redis** | cdb_redis | redis:7.4.8-alpine | 6379 | **AKTIV** | Cache, Pub/Sub, Streams |
 
 ### RED Stack (compose.red.yml) — Monitoring

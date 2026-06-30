@@ -31,7 +31,7 @@ services:
       - cdb_network
 
   cdb_postgres:
-    image: postgres:15.18-alpine@sha256:df7bca0066e6f60cc3dd32faa70caddec20e2c22b58932f79498e5704b23854a
+    image: postgres:18.4-alpine@sha256:1b1689b20d16a014a3d195653381cf2caa75a41a92d93b255a9d6ea29fd353aa
     container_name: cdb_postgres
     restart: unless-stopped
     environment:
@@ -42,7 +42,7 @@ services:
     secrets:
       - postgres_password
     volumes:
-      - postgres_data:/var/lib/postgresql/data
+      - postgres_data:/var/lib/postgresql
       - ../../infrastructure/database/schema.sql:/docker-entrypoint-initdb.d/01-schema.sql:ro
       - ../../infrastructure/database/migrations/002_orders_price_nullable.sql:/docker-entrypoint-initdb.d/02-migration-002.sql:ro
       - ../../infrastructure/database/migrations/004_governance_v0.sql:/docker-entrypoint-initdb.d/04-migration-004.sql:ro
