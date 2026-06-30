@@ -17,10 +17,19 @@ with explicit intent.
 
 ## Local-Only Runtime And Secrets
 
-- Keep `.env`, `*.env.runtime`, `.secrets/`, `.mcp.json`, and
-  `infrastructure/actions-runner/.env.runner` local-only.
+- Keep `.env`, `*.env.runtime`, `.secrets/`, `.mcp.json`,
+  `infrastructure/actions-runner/.env.runner`, and
+  `infrastructure/actions-runner/.env.runner2` local-only.
 - Do not relax secret-related ignore rules unless the tracking impact is fully
   understood.
+- Runner bootstrap tokens belong only in local operator files for the shortest
+  possible registration window and must never be promoted into repo artifacts,
+  screenshots, or issue comments.
+- Runner secret files must stay out of Docker build context; see
+  `infrastructure/actions-runner/.dockerignore`.
+- Docker-project isolation for sibling/self-hosted runners remains a separate
+  live ops concern under `#3571`; this policy only covers repo-local artifact
+  and secret hygiene.
 
 ## Local Cache And Tooling State
 
