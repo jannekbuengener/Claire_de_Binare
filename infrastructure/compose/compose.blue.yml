@@ -27,7 +27,7 @@ services:
     secrets:
       - postgres_password
     volumes:
-      - postgres_data:/var/lib/postgresql/data
+      - postgres_data:/var/lib/postgresql
       - ../../infrastructure/database/schema.sql:/docker-entrypoint-initdb.d/01-schema.sql:ro
       - ../../infrastructure/database/migrations/002_orders_price_nullable.sql:/docker-entrypoint-initdb.d/02-migration-002.sql:ro
       - ../../infrastructure/database/migrations/011_trade_realized_pnl.sql:/docker-entrypoint-initdb.d/11-migration-011.sql:ro
