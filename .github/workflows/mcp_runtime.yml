@@ -2,8 +2,10 @@ name: mcp-runtime
 
 on:
   workflow_dispatch:
-  schedule:
-    - cron: "30 3,11,19 * * *"
+
+# Self-hosted runner surface decommissioned in #3575.
+# Keep this workflow as manual-only optional smoke until a future issue decides
+# whether it should stay on GitHub-hosted infrastructure or be removed.
 
 concurrency:
   group: ${{ github.workflow }}-${{ github.ref }}
@@ -14,8 +16,8 @@ permissions:
 
 jobs:
   mcp-runtime:
-    name: MCP Runtime Smoke
-    runs-on: [self-hosted, cdb]
+    name: MCP Runtime Smoke (optional, manual-only)
+    runs-on: ubuntu-latest
 
     steps:
       - name: Checkout
