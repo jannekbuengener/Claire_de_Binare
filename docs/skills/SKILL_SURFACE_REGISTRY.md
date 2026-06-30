@@ -186,7 +186,30 @@ parallel angelegt. Diese Registry schliesst die Lucke:
 
 Folge-Issues koennen PR #3569 als Praezedenzfall referenzieren.
 
-## 14. Folge-Issues / naechste Slices
+## 14. Externe / Plugin-Skills (Routing-SSOT, nicht mirrored)
+
+Manche Skills leben **ausserhalb** des Repo-Mirror-Modells (z. B. Cursor Redis
+Plugin, Gemini domain-expert). Fuer diese gilt:
+
+| Dokument | Scope | Mirror |
+|---|---|---|
+| [`CDB_REDIS_SKILL_ROUTING.md`](CDB_REDIS_SKILL_ROUTING.md) | Redis Core / Addon / Parking | **nein** — Routing-SSOT only |
+| [`CDB.VERFUEGBARE.SKILLS_LISTE_2026-06-30.md`](CDB.VERFUEGBARE.SKILLS_LISTE_2026-06-30.md) | Verfuegbare Skills Index | **nein** — Index only |
+
+Regeln:
+
+- Externe Skills werden in `docs/skills/<routing-doc>.md` geroutet, nicht als
+  `docs/skills/<name>/SKILL.md` gespiegelt, solange kein expliziter Mirror-Slice
+  beschlossen ist.
+- Redis Core Set: `redis-development`, `redis-core`, `redis-connections`,
+  `redis-security`, `redis-observability` (Cursor Plugin).
+- Redis Event/Runtime-Zusatz: `messaging-redis-streams`, `ctb-docker-stack`,
+  `cdb-shadow-validation`.
+- Parking-Lot (nicht Default): `redis-search`, `redis-semantic-cache`, RedisVL,
+  LangCache, RQE-as-default, Vector Search als CDB-Brain-Ersatz.
+- SurrealDB Context Intelligence bleibt Brain; Redis bleibt Runtime/Cache/Messaging.
+
+## 15. Folge-Issues / naechste Slices
 
 Vorgeschlagen, **nicht in diesem Slice zu erstellen**:
 
