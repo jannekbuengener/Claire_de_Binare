@@ -1,6 +1,6 @@
 # Control Register
 
-**Letzte Aktualisierung:** 2026-06-28
+**Letzte Aktualisierung:** 2026-06-30
 **SSOT Live-Readiness:** `docs/live-readiness/LR-AUDIT-STATUS-2026-03-05.md`
 **Verdict:** NO-GO
 **Control-Board Stage:** `trade-capable` (ratifiziert 2026-04-08 via Issue `#1492`)
@@ -165,6 +165,8 @@ Kontext-Issue-Nummern sind historische Anker (alle CLOSED) — nicht als offene 
 - Action-Dependency-Bump (PR #3064, gemergt 2026-06-08T10:51:45Z, Commit `e9fa938a`): `github/codeql-action` SHA-Refresh 4.36.0→4.36.2 in `codeql-python.yml` (`init`, `analyze`), `gitleaks.yml`, `security-scan.yml`, `trivy.yml` (`upload-sarif`). SARIF-Kategorien, Trigger und Security-Triage-Postur bleiben unveraendert; keine operative Control-Aenderung. Kein LR-/Live-/Echtgeld-Signal.
 - `security-scan.yml` (PR #3075, gemergt 2026-06-08T10:19:15Z, Commit `1041c6c2`): CVE-2026-42504 Batch-Triage — Prometheus, Promtool, Grafana, Grafana-cli, Grafana-server und embedded `gosu` in Redis/Postgres alle **UPSTREAM_BLOCKED** (kein scan-verified upstream rebuild verfuegbar). Keine Dismissals, keine false-resolved-Claims, keine Image-Pin-Aenderung im Security-Scan ausserhalb der bestehenden Matrix. Evidence-Dokument: `docs/evidence/security/CDB_SECURITY_BATCH_MATRIX_3065-3070-CVE-42504_2026-06-08.md`. Residual-Security-Cluster `cve-2026-42504` wird ueber `TRIAGE_RUNBOOK.md` getracked. Kein LR-/Live-/Echtgeld-Signal.
 - `ci.yml` + `policy-gate.yml` (PR #3405, gemergt 2026-06-28): **Self-Hosted Runner Security Fix** — `runs-on` von `[self-hosted, cdb, docker, merge-gate]` auf `ubuntu-latest` umgestellt. Grund: Repo ist PUBLIC → untrusted Fork-PRs koennten bösartigen Code auf dem privilegierten self-hosted Runner ausführen (Docker-Socket, NOPASSWD). `NOPASSWD:ALL` durch restriktive sudo-Regel ersetzt (nur `chown`, `mkdir`, `groupmod`, `usermod`). Runner-Doku mit Security-Notice erweitert. Merge-Gate-Checks laufen jetzt auf GitHub-hosted. Selbstgehostete Runner bleiben fuer `workflow_dispatch`/`schedule`-Jobs erhalten. Kein LR-/Live-/Echtgeld-Signal. Closes #3405.
+- `security-scan.yml` (PR #3528, gemergt 2026-06-30T18:48:46Z, Commit `9a4ea814`): Redis-Base-Image semver-major `7.4.9-alpine` → `8.8.0-alpine@sha256:9d317178...` in `trivy-scan-base`, `scan-base-images` sowie Compose (`base.yml`, `compose.blue.yml`) synchron nachgezogen. Kein digest-only Bump; Trivy-SARIF-Kategorie `trivy-base-redis` bleibt stabil; keine Aenderung an Triggern, Permissions, Upload-Verhalten oder Control-Surface-Semantik. Runtime-Recreate bleibt separates Ops-Ticket #3594. Kein LR-/Live-/Echtgeld-Signal.
+- `security-scan.yml` (PR #3530, gemergt 2026-06-30T19:21:22Z, Commit `7973a66f`): Postgres-Base-Image semver-major `15.18-alpine` → `18.4-alpine@sha256:1b1689b2...` in `trivy-scan-base`, `scan-base-images` sowie Compose (`base.yml`, `compose.blue.yml`, `test.yml`, `tls.yml`); PG18-Volume-Mount unter `/var/lib/postgresql` im selben Slice. Trivy-SARIF-Kategorie `trivy-base-postgres` bleibt stabil; keine Aenderung an Triggern, Permissions, Upload-Verhalten oder Control-Surface-Semantik. Runtime-Migration/Recreate bleibt separates Ops-Ticket #3600. Kein LR-/Live-/Echtgeld-Signal.
 
 ---
 

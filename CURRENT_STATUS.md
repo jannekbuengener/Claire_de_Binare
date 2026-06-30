@@ -3,12 +3,14 @@
 **Status Class**: Working Repo / Engineering Status
 **Authority**: Current repo/main/test/dependency snapshot; not the canonical live-readiness or Echtgeld Go/No-Go source.
 **Operational Canon**: `docs/live-readiness/LR-AUDIT-STATUS-2026-03-05.md`
-**Last Updated**: 2026-06-29
+**Last Updated**: 2026-06-30
 **GitHub Boundary**: The live commit and PR state is tracked in GitHub (UI/API or `gh`); this file is a curated repo/engineering ledger, not a live mirror.
 
 ---
 
-## Repo / Engineering Status (2026-06-26)
+## Repo / Engineering Status (2026-06-30)
+
+- **Control docs reconcile after Dependabot #3528/#3530 / Issues #3595 + #3601**: OPEN (docs slice in flight). Post-merge follow-ups for Redis `8.8.0-alpine` (#3528) and Postgres `18.4-alpine` (#3530) `security-scan.yml` matrix bumps; `CONTROL_REGISTER.md` workflow-control notes. Closes #3595, #3601. Runtime rebuilds (#3592, #3594, #3600) and architecture sync (#3593) out of scope. LR NO-GO.
 
 - **#3441 ContextBrain Report / Gist Ledger Integration / PR #3441 / `76ac249a`**: MERGED. Report template, Gist-Ledger-Zielreferenz, Decision-Event-Ledger-Format, Foundation-Status-Matrix. `docs/surrealdb/context-brain-report-gist-ledger-v0.md`. Gist-URL dokumentiert (kein Live-Posting). Closes #3427. Closes meta #3418 (all 9 children previously CLOSED). LR NO-GO.
 
