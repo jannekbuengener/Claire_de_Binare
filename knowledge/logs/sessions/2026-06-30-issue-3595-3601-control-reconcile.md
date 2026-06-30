@@ -33,3 +33,9 @@ Branch: `docs/3595-3601-reconcile-control-after-3528-3530` von `origin/main` (`4
 
 - LR NO-GO; keine Runtime/Docker/DB/Secret-Mutationen
 - Runtime-Recreate bleibt #3594 (Redis) und #3600 (Postgres)
+
+## PR #3602
+
+- Squash-merged `40910d7e` (2026-06-30T20:40:16Z)
+- Required checks gruen: policy-gate, ci (Unit/Integration + Lint gesammelt)
+- Issues #3595 und #3601 geschlossen
