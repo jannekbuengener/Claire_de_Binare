@@ -12,7 +12,7 @@ Containerized GitHub Actions runner for CDB required checks.
    ```
 3. **Start**:
    ```bash
-   COMPOSE_PROJECT_NAME=cdb_gh_runner docker compose -f infrastructure/actions-runner/docker-compose.runner.yml up -d --build
+   docker compose -f infrastructure/actions-runner/docker-compose.runner.yml up -d --build
    ```
 4. **Verify**:
    ```bash
@@ -142,10 +142,13 @@ runner with Docker socket access.
   `infrastructure/actions-runner/.dockerignore`.
 
 **Compose-project hygiene:**
-- Do not inherit a foreign/global `COMPOSE_PROJECT_NAME` when starting runner compose files.
-- Set the runner project name deliberately for each launch command so the runner does not
-  collapse into the CDB runtime project in Docker Desktop.
-- Docker-project isolation cleanup remains tracked separately in `#3571`.
+- Both runner compose files now declare an explicit `name:` (`cdb_gh_runner` / `cdb_gh_runner_2`)
+  so the runner stack always gets its own Compose project regardless of working directory
+  or any inherited `COMPOSE_PROJECT_NAME`.
+- A global or inherited `COMPOSE_PROJECT_NAME` can still override this — do not set
+  `COMPOSE_PROJECT_NAME` globally when running runner compose files.
+- Docker-project isolation cleanup (live migration of existing containers) remains tracked
+  separately in `#3571`.
 
 ## Runner 2 — Dedicated Merge-Gate Runner
 
@@ -165,7 +168,7 @@ runner name, volume, and labels — completely independent from Runner 1.
    ```
 3. **Start**:
    ```bash
-   COMPOSE_PROJECT_NAME=cdb_gh_runner_2 docker compose -f infrastructure/actions-runner/docker-compose.runner2.yml up -d --build
+   docker compose -f infrastructure/actions-runner/docker-compose.runner2.yml up -d --build
    ```
 4. **Verify**:
    ```bash
