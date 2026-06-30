@@ -390,18 +390,19 @@ make context-memory-rediscovery-proof
 
 ### Optional GitHub Actions proof (#2721)
 
-Non-required, opt-in workflow for self-hosted runners with the `docker` label.
+Non-required, opt-in workflow on GitHub-hosted infrastructure.
 Does **not** gate merges; failures are informational. LR remains **NO-GO**.
 
 | Item | Value |
 |------|-------|
 | Workflow | `.github/workflows/surrealdb-memory-proof.yml` |
 | Trigger | `workflow_dispatch` only |
-| Runner | `[self-hosted, cdb, docker]` |
+| Runner | `ubuntu-latest` |
 | Permissions | `contents: read` |
 | Inputs | `proof_suite` (`all` / `db-read-only` / `preflight-only`); `attempt_runtime_proof` |
 
-**Runner prerequisites:** Docker, `SECRETS_PATH` with `SURREALDB_ENV`, local query config
+**Runner prerequisites:** GitHub-hosted Docker availability plus any required secrets,
+`SECRETS_PATH` with `SURREALDB_ENV`, local query config
 (`make context-query-config-init`). The workflow runs preflight first; when preflight passes
 and `attempt_runtime_proof=true`, it may invoke the same `make` targets as the operator path
 above and uploads redacted artifacts (`proof_plan.json`, `summary.md`, logs).
