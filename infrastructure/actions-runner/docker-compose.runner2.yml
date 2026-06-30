@@ -1,6 +1,8 @@
 # GitHub Actions Self-Hosted Runner 2 – dedicated merge-gate runner
 # Usage: docker compose -f infrastructure/actions-runner/docker-compose.runner2.yml up -d --build
 
+name: cdb_gh_runner_2
+
 services:
   gh_runner_2:
     build:
