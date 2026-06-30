@@ -45,6 +45,7 @@ Spiegelt die Cursor-Skill-Oberfläche unter [`.cursor/skills/README.md`](../../.
 |---|---|
 | [`gh-fix-ci`](gh-fix-ci/SKILL.md) | CI failures |
 | [`gh-address-comments`](gh-address-comments/SKILL.md) | PR review comments |
+| [`cdb-github-api-ops`](cdb-github-api-ops/SKILL.md) | GitHub API-aware agent routing |
 
 ## Related surfaces
 
