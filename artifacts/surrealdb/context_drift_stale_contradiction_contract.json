@@ -1,0 +1,210 @@
+{
+  "$schema": "cdb://schemas/context-drift-stale-contradiction-contract/v1",
+  "version": 1,
+  "meta": {
+    "title": "CDB Context Drift / Stale / Contradiction Contract",
+    "description": "Top-level warning-layer contract for drift, stale knowledge, and contradiction findings across repo, GitHub, claim, decision, and memory surfaces. CONTRACT_ONLY — no operational detection or mutation claims.",
+    "canonical_source": [
+      "docs/surrealdb/CDB_CONTEXT_DRIFT_STALE_CONTRADICTION_CONTRACT.md",
+      "docs/surrealdb/context-contradiction-detection-runbook.md",
+      "docs/surrealdb/stale-knowledge-runbook.md",
+      "docs/surrealdb/scope-drift-runbook.md",
+      "artifacts/surrealdb/context_data_model_ownership_matrix.json",
+      "artifacts/surrealdb/context_fulltext_bm25_contract.json",
+      "artifacts/surrealdb/agent_memory_contract.json",
+      "artifacts/mcp/mcp_access_boundary_matrix.json",
+      "artifacts/context_tool_inventory/tool_inventory.json"
+    ],
+    "issues": [
+      "#3491",
+      "#3483",
+      "#3485",
+      "#3490",
+      "#3479"
+    ],
+    "created_by": "test-only/3491-drift-stale-contradiction-contract",
+    "status": "CONTRACT_ONLY",
+    "live_db_operational": false
+  },
+  "detectable_signal_types": {
+    "stale_doc": {
+      "source_category": "repo_file",
+      "evidence_required": "source_hash",
+      "freshness_policy": "no_expiry_hash_verified_or_repo_refresh_on_main_merge",
+      "detection_basis": "repo doc hash or contract snapshot differs from current repo-backed source",
+      "severity": "warning",
+      "resolution_state": "open",
+      "owner": "context_indexer",
+      "allowed_action": "recommend_refresh_only",
+      "operational": false,
+      "backing_status": "CONTRACT_ONLY",
+      "live_detection_enabled": false,
+      "mutation_allowed": false
+    },
+    "stale_issue_status": {
+      "source_category": "github_issue",
+      "evidence_required": "issue_url_or_number",
+      "freshness_policy": "stale_after_24h_or_state_change",
+      "detection_basis": "repo or cached issue statement diverges from GitHub live issue state",
+      "severity": "warning",
+      "resolution_state": "open",
+      "owner": "jannek",
+      "allowed_action": "recommend_live_recheck_only",
+      "operational": false,
+      "backing_status": "CONTRACT_ONLY",
+      "live_detection_enabled": false,
+      "mutation_allowed": false
+    },
+    "stale_pr_status": {
+      "source_category": "github_pr",
+      "evidence_required": "pr_url_or_number",
+      "freshness_policy": "stale_after_24h_or_state_change",
+      "detection_basis": "repo or cached PR statement diverges from GitHub live PR state",
+      "severity": "warning",
+      "resolution_state": "open",
+      "owner": "jannek",
+      "allowed_action": "recommend_live_recheck_only",
+      "operational": false,
+      "backing_status": "CONTRACT_ONLY",
+      "live_detection_enabled": false,
+      "mutation_allowed": false
+    },
+    "stale_claim": {
+      "source_category": "claim",
+      "evidence_required": "evidence_ref_and_source_hash",
+      "freshness_policy": "no_expiry_hash_verified_but_invalid_when_evidence_or_source_is_stale",
+      "detection_basis": "claim status, evidence freshness, or source hash no longer supports the claim",
+      "severity": "warning",
+      "resolution_state": "open",
+      "owner": "context_indexer",
+      "allowed_action": "recommend_evidence_recheck_only",
+      "operational": false,
+      "backing_status": "CONTRACT_ONLY",
+      "live_detection_enabled": false,
+      "mutation_allowed": false
+    },
+    "stale_memory": {
+      "source_category": "agent_memory",
+      "evidence_required": "source_hash_or_evidence_ref",
+      "freshness_policy": "ttl_bound_agent_id_and_namespace_or_issue_state_change",
+      "detection_basis": "memory TTL elapsed or scoped source context changed",
+      "severity": "warning",
+      "resolution_state": "open",
+      "owner": "agents",
+      "allowed_action": "recommend_memory_refresh_only",
+      "operational": false,
+      "backing_status": "CONTRACT_ONLY",
+      "live_detection_enabled": false,
+      "mutation_allowed": false
+    },
+    "contradicted_claim": {
+      "source_category": "claim",
+      "evidence_required": "evidence_ref_and_source_hash",
+      "freshness_policy": "no_truth_without_current_evidence",
+      "detection_basis": "claim is disputed by evidence, repo truth, or source-of-truth record",
+      "severity": "blocking",
+      "resolution_state": "open",
+      "owner": "context_indexer",
+      "allowed_action": "request_human_review_only",
+      "operational": false,
+      "backing_status": "CONTRACT_ONLY",
+      "live_detection_enabled": false,
+      "mutation_allowed": false
+    },
+    "contradicted_decision": {
+      "source_category": "decision",
+      "evidence_required": "ledger_source_and_event_id",
+      "freshness_policy": "no_expiry_ledger_verified_but_recheck_when_new_evidence_conflicts",
+      "detection_basis": "decision conflicts with newer evidence, newer canon, or explicit superseding decision",
+      "severity": "blocking",
+      "resolution_state": "open",
+      "owner": "agents_via_ledger",
+      "allowed_action": "request_human_review_only",
+      "operational": false,
+      "backing_status": "CONTRACT_ONLY",
+      "live_detection_enabled": false,
+      "mutation_allowed": false
+    },
+    "repo_doc_drift": {
+      "source_category": "repo_file",
+      "evidence_required": "source_hash_and_repo_crosscheck",
+      "freshness_policy": "repo_refresh_on_main_merge",
+      "detection_basis": "repo docs, contracts, or artifacts diverge inside the working repo canon",
+      "severity": "warning",
+      "resolution_state": "open",
+      "owner": "context_indexer",
+      "allowed_action": "recommend_repo_reconcile_only",
+      "operational": false,
+      "backing_status": "CONTRACT_ONLY",
+      "live_detection_enabled": false,
+      "mutation_allowed": false
+    },
+    "github_repo_drift": {
+      "source_category": "github_issue_or_pr",
+      "evidence_required": "live_issue_or_pr_ref_plus_repo_crosscheck",
+      "freshness_policy": "stale_after_24h_or_state_change",
+      "detection_basis": "GitHub live state and repo ledger/doc claim diverge and need conservative reconciliation",
+      "severity": "warning",
+      "resolution_state": "open",
+      "owner": "jannek",
+      "allowed_action": "recommend_live_reconcile_only",
+      "operational": false,
+      "backing_status": "CONTRACT_ONLY",
+      "live_detection_enabled": false,
+      "mutation_allowed": false
+    }
+  },
+  "resolution_states": [
+    "open",
+    "confirmed",
+    "dismissed",
+    "superseded",
+    "fixed",
+    "parked"
+  ],
+  "forbidden_auto_resolution": {
+    "auto_close_issue": {
+      "reason": "Issue state changes require live evidence review and explicit human-directed action."
+    },
+    "auto_change_live_gate": {
+      "reason": "Board stage and LR gate changes are separate governance systems and cannot be auto-mutated."
+    },
+    "auto_override_lr_status": {
+      "reason": "LR remains SSOT-governed and cannot be upgraded or downgraded by warning-layer findings."
+    },
+    "auto_delete_memory": {
+      "reason": "Memory findings are advisory only; deletion requires a separate scoped and approved path."
+    },
+    "auto_mutate_db": {
+      "reason": "This slice authorises no DB mutation and no MCP mutation."
+    },
+    "auto_mark_claim_true_without_evidence": {
+      "reason": "Claims never become true by warning-layer inference alone; evidence is mandatory."
+    }
+  },
+  "hard_rules": {
+    "operational": false,
+    "db_backed_readonly_proven_claim_allowed": false,
+    "live_detection_enabled": false,
+    "mutation_allowed": false,
+    "auto_close_issue_allowed": false,
+    "auto_change_live_gate_allowed": false,
+    "auto_override_lr_status_allowed": false,
+    "auto_delete_memory_allowed": false,
+    "auto_mutate_db_allowed": false,
+    "auto_mark_claim_true_without_evidence_allowed": false,
+    "warning_layer_mark_and_recommend_only": true,
+    "governance_wins_over_surrealdb_capabilities": true
+  },
+  "references": [
+    "docs/surrealdb/CDB_CONTEXT_DRIFT_STALE_CONTRADICTION_CONTRACT.md",
+    "docs/surrealdb/context-contradiction-detection-runbook.md",
+    "docs/surrealdb/stale-knowledge-runbook.md",
+    "docs/surrealdb/scope-drift-runbook.md",
+    "artifacts/surrealdb/context_data_model_ownership_matrix.json",
+    "artifacts/surrealdb/context_fulltext_bm25_contract.json",
+    "artifacts/surrealdb/agent_memory_contract.json",
+    "artifacts/mcp/mcp_access_boundary_matrix.json",
+    "artifacts/context_tool_inventory/tool_inventory.json"
+  ]
+}

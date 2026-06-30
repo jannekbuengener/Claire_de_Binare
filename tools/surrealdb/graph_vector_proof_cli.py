@@ -871,21 +871,36 @@ def _build_evidence(
         if not non_blocking:
             overall_pass = True
 
+    vector_pipeline_contract = {
+        "chunk_source": "real_cdb_chunks",
+        "embedding_source_status": "defined",
+        "embedding_model_id_status": "defined",
+        "embedding_dimension": 1536,
+        "rebuild_rule_status": "defined",
+        "proof_boundaries": [
+            "no_secrets",
+            "no_live_go",
+            "no_echtgeld_go",
+        ],
+    }
+
     return {
         "report_metadata": {
             "tool": "graph_vector_proof_cli.py",
             "generated_at": NOW.isoformat(),
             "duration_ms": round(duration_ms, 1),
-            "proof_type": "graph_and_vector_capability",
+            "proof_type": "vector_pipeline_contract",
             "lr_status": "NO-GO",
             "isolation": {
                 "namespace": "cdb_proof",
                 "database": "graph_vector_proof",
             },
+            "vector_pipeline_contract": vector_pipeline_contract,
             "limitation": (
-                "Capability proof only. "
+                "Capability proof only for runtime semantics; repo-level vector pipeline contract only. "
                 "Toy vectors (first 10 dims nonzero, rest 0) demonstrate "
-                "HNSW KNN mechanics, not semantic embedding quality."
+                "HNSW KNN mechanics, not semantic embedding quality or DB-backed "
+                "embedding population."
             ),
         },
         "db_available": db_available,
