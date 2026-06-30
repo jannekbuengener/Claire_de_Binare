@@ -364,6 +364,12 @@ Health probes after `make docker-up`: allocation `:8006`, candles `:8007`, regim
   dotted channel names for pub/sub) and TTLs on ephemeral cache data.
 - Cursor’s **Redis plugin** applies pooling, timeout, and structure rules automatically
   when editing Redis-related code.
+- **Agent skill routing (canonical):** [`docs/skills/CDB_REDIS_SKILL_ROUTING.md`](docs/skills/CDB_REDIS_SKILL_ROUTING.md)
+  — core set (`redis-development`, `redis-core`, `redis-connections`,
+  `redis-security`, `redis-observability`), event add-ons (`messaging-redis-streams`,
+  `ctb-docker-stack`, `cdb-shadow-validation`), parking-lot for Search/Vector/LangCache.
+  Redis is runtime/messaging/cache only; SurrealDB Context Intelligence remains the
+  primary brain strategy.
 
 ### Secrets
 
