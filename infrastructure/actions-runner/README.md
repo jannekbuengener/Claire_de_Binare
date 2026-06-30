@@ -1,6 +1,11 @@
 # Self-Hosted GitHub Actions Runner
 
-Containerized GitHub Actions runner for CDB required checks.
+Containerized GitHub Actions runner for optional CDB operator workflows.
+
+> Status: self-hosted runner surface decommissioned from active CDB workflow
+> dependencies via #3575. GitHub-hosted required checks remain standard.
+> Re-activation requires a new issue, fresh registration tokens, and explicit
+> Ops-GO.
 
 ## Quick Start
 
@@ -33,7 +38,8 @@ stat -c '%g' /var/run/docker.sock   # find GID on host
 
 Custom labels: `cdb, docker`. The default label `self-hosted` is added
 automatically by GitHub.
-Workflows target: `runs-on: [self-hosted, cdb]`.
+Historical target surface: `runs-on: [self-hosted, cdb]`.
+There is no active default CDB workflow dependency on this label set after #3575.
 
 ## Token Refresh
 
@@ -125,8 +131,10 @@ runner with Docker socket access.
 
 **Rules:**
 - No `pull_request`-triggered workflow may target the self-hosted runner.
-- Self-hosted runners (`cdb-docker-runner-1`, `cdb-docker-runner-2`) are
-  reserved exclusively for `workflow_dispatch` and `schedule` triggers.
+- Self-hosted runners (`cdb-docker-runner-1`, `cdb-docker-runner-2`) are no
+  longer part of the active default workflow surface.
+- Any future re-activation must be explicit, issue-scoped, and use fresh
+  registration tokens plus bounded Ops-GO.
 - Before adding a new `pull_request` workflow on a self-hosted runner, verify
   that it cannot be reached by untrusted fork PRs.
 - Docker socket (`/var/run/docker.sock`) remains mounted in the compose files
@@ -154,8 +162,8 @@ runner with Docker socket access.
 
 Runner 2 is a second self-hosted runner. It was originally dedicated to
 merge-blocking required checks (`ci`, `policy-gate`) — those checks now run on
-GitHub-hosted runners. Runner 2 remains available for `workflow_dispatch` jobs
-that need self-hosted capabilities. It uses its own env file, container name,
+GitHub-hosted runners. Runner 2 is currently decommissioned from the active CDB
+workflow surface. It uses its own env file, container name,
 runner name, volume, and labels — completely independent from Runner 1.
 
 ### Quick Start
@@ -191,8 +199,8 @@ runner name, volume, and labels — completely independent from Runner 1.
 
 Runner 2 custom labels: `cdb`, `docker`, `merge-gate`. The default label
 `self-hosted` is added automatically by GitHub.
-Workflows target: `runs-on: [self-hosted, cdb, docker, merge-gate]` for
-`workflow_dispatch` jobs only.
+Historical target surface: `runs-on: [self-hosted, cdb, docker, merge-gate]`.
+There is no active default CDB workflow dependency on this label set after #3575.
 
 **Important**: `runs-on` with multiple labels is hard label matching. GitHub
 routes the job only to a runner that has **all** specified labels. There is no
