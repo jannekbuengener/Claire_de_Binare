@@ -267,6 +267,8 @@ Cursor subagent surface: `.cursor/agents/` (helper roles; shared contract
 
 OpenCode skill surface zusaetzlich: `.opencode/skills/` (gezielt laden, nicht pauschal).
 
+**Kanonische Skill-Flaeche:** `docs/skills/` ist Source of Truth. Siehe `docs/skills/SKILL_SURFACE_REGISTRY.md`.
+
 | Skill | Purpose | Cursor path |
 |-------|---------|-------------|
 | `cdb-session-start` | Fail-closed session start (verifies Git truth first) | `.cursor/skills/cdb-session-start/SKILL.md` |
@@ -287,6 +289,7 @@ OpenCode skill surface zusaetzlich: `.opencode/skills/` (gezielt laden, nicht pa
 | `ctb-docker-stack` | Docker stack operations | `.cursor/skills/ctb-docker-stack/SKILL.md` |
 | `gh-address-comments` | GitHub comment handling | `.cursor/skills/gh-address-comments/SKILL.md` |
 | `gh-fix-ci` | CI fix operations | `.cursor/skills/gh-fix-ci/SKILL.md` |
+| `cdb-github-api-ops` | GitHub API-aware agent routing | `.cursor/skills/cdb-github-api-ops/SKILL.md` |
 
 ---
 
