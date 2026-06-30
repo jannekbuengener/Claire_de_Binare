@@ -29,7 +29,7 @@ RUN pip install --no-cache-dir -r requirements.txt && \
 RUN pip install --no-cache-dir \
     pytest==9.0.2 \
     pytest-cov==7.0.0 \
-    psycopg2-binary==2.9.9
+    psycopg2-binary==2.9.12
 
 # Set Python path
 ENV PYTHONPATH=/app
