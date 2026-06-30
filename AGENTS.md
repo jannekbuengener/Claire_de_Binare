@@ -267,7 +267,7 @@ Cursor subagent surface: `.cursor/agents/` (helper roles; shared contract
 
 OpenCode skill surface zusaetzlich: `.opencode/skills/` (gezielt laden, nicht pauschal).
 
-**Kanonische Skill-Flaeche:** `docs/skills/` ist Source of Truth. Siehe `docs/skills/SKILL_SURFACE_REGISTRY.md`.
+**Kanonische Skill-Flaeche:** `docs/skills/` ist Source of Truth. Siehe `docs/skills/SKILL_SURFACE_REGISTRY.md` und [`docs/skills/CDB.VERFUEGBARE.SKILLS_LISTE_2026-06-30.md`](docs/skills/CDB.VERFUEGBARE.SKILLS_LISTE_2026-06-30.md).
 
 | Skill | Purpose | Cursor path |
 |-------|---------|-------------|
