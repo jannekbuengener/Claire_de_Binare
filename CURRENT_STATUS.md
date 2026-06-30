@@ -41,17 +41,17 @@
   - **#3437 External-Docs Index + cdb-external-docs Skill / PR #3437 / `e7789a1e`**: Central external-docs index (`docs/external-docs/index.md`) mit 90+ kuratierten Verweisen (canonical, internal-tool, external). cdb-external-docs Skill in allen 5 Agent-Surfaces. Meta-Einträge in `AGENTS.md` und `agents/AGENTS.md`. 28 bestehende Skills mit external-docs-Hooks ergänzt. Issue CLOSED. LR NO-GO. Restunsicherheiten: `.claude/skills/*.skill` Binärdateien nicht modifiziert (kein Lesetool); `skillforge/`-Hooks nur lokal (ungetrackt).
 
 - **Evidence-Harvester Cluster Status**:
-  - #3362 remains **OPEN** — continuous always-on dry operation proof not yet delivered
-  - #3384 remains **OPEN** — reconcile #3345/#3362/#3374 after 72h run and evidence-bridge mapping
-  - #3345 remains **OPEN** — always-on evidence collection daemon for ARVP/profitability research
-  - Slice-B `slice-b-20260625T194946Z` continues running; no stop, restart, or modification
-  - Earliest final validation window: approx. **2026-06-28T20:07Z**
-  - **No final 72h validation performed.**
+  - #3362 remains **OPEN** — continuous always-on dry operation proof not yet delivered (`HOLD_72H_RUN_INCOMPLETE`)
+  - #3384 remains **OPEN** — reconcile #3345/#3362/#3374 after 72h run and evidence-bridge mapping (`HOLD_INCONCLUSIVE_NEEDS_RECONCILE`)
+  - #3345 remains **OPEN** — always-on evidence collection daemon for ARVP/profitability research (parent thread)
+  - Slice-B `slice-b-20260625T194946Z`: **INCONCLUSIVE** — 259/259 PASS, ~64.6h, stalled in sleep; formal `ops_validation_report` on branch `docs/evidence-harvester-slice-c-inconclusive`
+  - Slice-C `slice-c-20260628T202640Z`: **INCONCLUSIVE / STALLED** — ~17h, stalled sleep since `2026-06-29T13:28:07Z`; formal `ops_validation_report` on same branch
+  - **No final >=72h PASS** — Slice-D Ops-GO prepared, not started
   - LR remains **NO-GO**
 
-- **main**: `6b375970` (post #3441/#3442/#3443/#3445 merged; SurrealDB ContextBrain Foundation meta CLOSED; graph+vector proof delivered; evidence-harvester Slice-B continues)
+- **main**: `20f1e11b` (Evidence-Harvester Slice-B/C formal INCONCLUSIVE reports pending merge on `docs/evidence-harvester-slice-c-inconclusive`)
 - **Active GitHub focus (manual, non-exhaustive)**:
-  - #3362/#3384/#3345 (Evidence-Harvester Cluster — Slice-B ETA continues)
+  - #3362/#3384/#3345 (Evidence-Harvester Cluster — Slice-D Ops-GO next)
   - #2440 (LR-030 Shadow/Soak Run) — **OPEN**
 
 ## Repo / Engineering Status (2026-06-28)

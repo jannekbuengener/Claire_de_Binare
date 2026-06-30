@@ -1,0 +1,4169 @@
+# 72h Ops Validation Report
+
+## Metadata
+- Schema version: cdb.evidence_harvester.ops_validation.v1
+- Validated at (UTC): 2026-06-30T16:26:09.835506Z
+- Artifact directory: `artifacts\evidence_harvester\72h_ops_validation\slice-c-20260628T202640Z`
+- Window start (UTC): 2026-06-28T20:26:47.095428Z
+- Window end (UTC): 2026-06-29T13:28:06.599768Z
+- Observed window hours: 17.022
+- Required window hours: 72
+- Cadence seconds: 900
+- Expected minimum cycles: 288
+
+## Summary
+- Verdict: **FAIL**
+- Total checks: 4055
+- Pass: 4042
+- Warn: 1
+- Fail: 12
+
+## Observed Counts
+- alerts_json: 138
+- alerts_md: 138
+- boot_json: 1
+- boot_md: 1
+- collector_reports: 138
+- coordinator_events: 1
+- heartbeat: 1
+- recovery_events_json: 0
+- recovery_events_md: 0
+- snapshots_json: 138
+- snapshots_md: 138
+- state: 1
+- watchdog_json: 138
+- watchdog_md: 138
+- write_audit_json: 138
+- write_audit_md: 138
+
+## Findings
+- [FAIL] Coordinator lifecycle required event coverage [coordinator_events.jsonl]: Missing required lifecycle event types: ['final_validation_completed', 'final_validation_started']
+- [FAIL] Lifecycle-runner state cycle consistency [coordinator_events.jsonl]: Lifecycle cycle_completed count (138) diverges from runner_state.total_cycles_completed (69) by 69
+- [FAIL] Collector report count floor: Expected at least 288 collector report artifacts, got 138
+- [FAIL] Snapshot count floor: Expected at least 288 snapshot artifacts, got 138
+- [FAIL] Alert count floor: Expected at least 288 alert artifacts, got 138
+- [FAIL] Watchdog count floor: Expected at least 288 watchdog artifacts, got 138
+- [FAIL] Write-audit count floor: Expected at least 288 write-audit artifacts, got 138
+- [FAIL] Snapshot window coverage: Observed snapshot window 17.02h is shorter than required 72h
+- [FAIL] Run outcome: INCONCLUSIVE [runner_state.json] (coordinator_status): Run ended inconclusively after 17.02h (69/72h minimum) with 69 all-PASS cycles and 0 failed cycles, but no final validation marker exists. Coordinator status was 'sleeping'. Partial evidence is preserved but does not satisfy the 72h requirement.
+- [FAIL] Runner heartbeat iteration count [runner_heartbeat.json] (iteration): Expected iteration >= 288, got 0
+- [FAIL] Runner total runs [runner_state.json] (total_runs): Expected total_runs >= 288, got 70
+- [FAIL] Runner successful runs [runner_state.json] (successful_runs): Expected successful_runs >= 288, got 70
+- [WARN] Coordinator sleep lifecycle completeness [coordinator_events.jsonl]: The coordinator event stream ends with sleep_started and no matching sleep_completed or sleep_overshoot. Coordinator status: 'sleeping'. The run may have been interrupted during sleep.
+- [PASS] Required artifact present [collector_report_*.json]: Found 138 artifact(s) matching collector_report_*.json
+- [PASS] Required artifact present [snapshot_*.json]: Found 138 artifact(s) matching snapshot_*.json
+- [PASS] Required artifact present [snapshot_*.md]: Found 138 artifact(s) matching snapshot_*.md
+- [PASS] Required artifact present [alert_*.json]: Found 138 artifact(s) matching alert_*.json
+- [PASS] Required artifact present [alert_*.md]: Found 138 artifact(s) matching alert_*.md
+- [PASS] Required artifact present [coordinator_events.jsonl]: Found 1 artifact(s) matching coordinator_events.jsonl
+- [PASS] Required artifact present [runner_heartbeat.json]: Found 1 artifact(s) matching runner_heartbeat.json
+- [PASS] Required artifact present [runner_state.json]: Found 1 artifact(s) matching runner_state.json
+- [PASS] Required artifact present [watchdog_report_*.json]: Found 138 artifact(s) matching watchdog_report_*.json
+- [PASS] Required artifact present [watchdog_report_*.md]: Found 138 artifact(s) matching watchdog_report_*.md
+- [PASS] Required artifact present [write_audit_report_*.json]: Found 138 artifact(s) matching write_audit_report_*.json
+- [PASS] Required artifact present [write_audit_report_*.md]: Found 138 artifact(s) matching write_audit_report_*.md
+- [PASS] Required artifact present [boot_readiness_report*.json]: Found 1 artifact(s) matching boot_readiness_report*.json
+- [PASS] Required artifact present [boot_readiness_report*.md]: Found 1 artifact(s) matching boot_readiness_report*.md
+- [PASS] Snapshot companion counts: Matching counts: 138 and 138
+- [PASS] Alert companion counts: Matching counts: 138 and 138
+- [PASS] Watchdog companion counts: Matching counts: 138 and 138
+- [PASS] Write-audit companion counts: Matching counts: 138 and 138
+- [PASS] Boot readiness companion counts: Matching counts: 1 and 1
+- [PASS] collector_report_20260628T202647.095428Z.json parses as JSON [collector_report_20260628T202647.095428Z.json]: Valid JSON (3398 bytes)
+- [PASS] collector_report_20260628T202647.095428Z.json schema version [collector_report_20260628T202647.095428Z.json] (schema_version): schema_version matches evidence_harvester.collector_report.v1
+- [PASS] collector_report_20260628T202725.754548Z.json parses as JSON [collector_report_20260628T202725.754548Z.json]: Valid JSON (3398 bytes)
+- [PASS] collector_report_20260628T202725.754548Z.json schema version [collector_report_20260628T202725.754548Z.json] (schema_version): schema_version matches evidence_harvester.collector_report.v1
+- [PASS] collector_report_20260628T204147.136310Z.json parses as JSON [collector_report_20260628T204147.136310Z.json]: Valid JSON (3398 bytes)
+- [PASS] collector_report_20260628T204147.136310Z.json schema version [collector_report_20260628T204147.136310Z.json] (schema_version): schema_version matches evidence_harvester.collector_report.v1
+- [PASS] collector_report_20260628T204225.822673Z.json parses as JSON [collector_report_20260628T204225.822673Z.json]: Valid JSON (3398 bytes)
+- [PASS] collector_report_20260628T204225.822673Z.json schema version [collector_report_20260628T204225.822673Z.json] (schema_version): schema_version matches evidence_harvester.collector_report.v1
+- [PASS] collector_report_20260628T205647.228228Z.json parses as JSON [collector_report_20260628T205647.228228Z.json]: Valid JSON (3398 bytes)
+- [PASS] collector_report_20260628T205647.228228Z.json schema version [collector_report_20260628T205647.228228Z.json] (schema_version): schema_version matches evidence_harvester.collector_report.v1
+- [PASS] collector_report_20260628T205725.879579Z.json parses as JSON [collector_report_20260628T205725.879579Z.json]: Valid JSON (3398 bytes)
+- [PASS] collector_report_20260628T205725.879579Z.json schema version [collector_report_20260628T205725.879579Z.json] (schema_version): schema_version matches evidence_harvester.collector_report.v1
+- [PASS] collector_report_20260628T211147.340626Z.json parses as JSON [collector_report_20260628T211147.340626Z.json]: Valid JSON (3398 bytes)
+- [PASS] collector_report_20260628T211147.340626Z.json schema version [collector_report_20260628T211147.340626Z.json] (schema_version): schema_version matches evidence_harvester.collector_report.v1
+- [PASS] collector_report_20260628T211225.977739Z.json parses as JSON [collector_report_20260628T211225.977739Z.json]: Valid JSON (3398 bytes)
+- [PASS] collector_report_20260628T211225.977739Z.json schema version [collector_report_20260628T211225.977739Z.json] (schema_version): schema_version matches evidence_harvester.collector_report.v1
+- [PASS] collector_report_20260628T212647.438144Z.json parses as JSON [collector_report_20260628T212647.438144Z.json]: Valid JSON (3398 bytes)
+- [PASS] collector_report_20260628T212647.438144Z.json schema version [collector_report_20260628T212647.438144Z.json] (schema_version): schema_version matches evidence_harvester.collector_report.v1
+- [PASS] collector_report_20260628T212726.085888Z.json parses as JSON [collector_report_20260628T212726.085888Z.json]: Valid JSON (3398 bytes)
+- [PASS] collector_report_20260628T212726.085888Z.json schema version [collector_report_20260628T212726.085888Z.json] (schema_version): schema_version matches evidence_harvester.collector_report.v1
+- [PASS] collector_report_20260628T214147.524830Z.json parses as JSON [collector_report_20260628T214147.524830Z.json]: Valid JSON (3398 bytes)
+- [PASS] collector_report_20260628T214147.524830Z.json schema version [collector_report_20260628T214147.524830Z.json] (schema_version): schema_version matches evidence_harvester.collector_report.v1
+- [PASS] collector_report_20260628T214226.178738Z.json parses as JSON [collector_report_20260628T214226.178738Z.json]: Valid JSON (3398 bytes)
+- [PASS] collector_report_20260628T214226.178738Z.json schema version [collector_report_20260628T214226.178738Z.json] (schema_version): schema_version matches evidence_harvester.collector_report.v1
+- [PASS] collector_report_20260628T215647.638424Z.json parses as JSON [collector_report_20260628T215647.638424Z.json]: Valid JSON (3398 bytes)
+- [PASS] collector_report_20260628T215647.638424Z.json schema version [collector_report_20260628T215647.638424Z.json] (schema_version): schema_version matches evidence_harvester.collector_report.v1
+- [PASS] collector_report_20260628T215726.259263Z.json parses as JSON [collector_report_20260628T215726.259263Z.json]: Valid JSON (3398 bytes)
+- [PASS] collector_report_20260628T215726.259263Z.json schema version [collector_report_20260628T215726.259263Z.json] (schema_version): schema_version matches evidence_harvester.collector_report.v1
+- [PASS] collector_report_20260628T221147.773162Z.json parses as JSON [collector_report_20260628T221147.773162Z.json]: Valid JSON (3398 bytes)
+- [PASS] collector_report_20260628T221147.773162Z.json schema version [collector_report_20260628T221147.773162Z.json] (schema_version): schema_version matches evidence_harvester.collector_report.v1
+- [PASS] collector_report_20260628T221226.358702Z.json parses as JSON [collector_report_20260628T221226.358702Z.json]: Valid JSON (3398 bytes)
+- [PASS] collector_report_20260628T221226.358702Z.json schema version [collector_report_20260628T221226.358702Z.json] (schema_version): schema_version matches evidence_harvester.collector_report.v1
+- [PASS] collector_report_20260628T222647.925582Z.json parses as JSON [collector_report_20260628T222647.925582Z.json]: Valid JSON (3398 bytes)
+- [PASS] collector_report_20260628T222647.925582Z.json schema version [collector_report_20260628T222647.925582Z.json] (schema_version): schema_version matches evidence_harvester.collector_report.v1
+- [PASS] collector_report_20260628T222726.481222Z.json parses as JSON [collector_report_20260628T222726.481222Z.json]: Valid JSON (3398 bytes)
+- [PASS] collector_report_20260628T222726.481222Z.json schema version [collector_report_20260628T222726.481222Z.json] (schema_version): schema_version matches evidence_harvester.collector_report.v1
+- [PASS] collector_report_20260628T224148.050365Z.json parses as JSON [collector_report_20260628T224148.050365Z.json]: Valid JSON (3398 bytes)
+- [PASS] collector_report_20260628T224148.050365Z.json schema version [collector_report_20260628T224148.050365Z.json] (schema_version): schema_version matches evidence_harvester.collector_report.v1
+- [PASS] collector_report_20260628T224226.622382Z.json parses as JSON [collector_report_20260628T224226.622382Z.json]: Valid JSON (3398 bytes)
+- [PASS] collector_report_20260628T224226.622382Z.json schema version [collector_report_20260628T224226.622382Z.json] (schema_version): schema_version matches evidence_harvester.collector_report.v1
+- [PASS] collector_report_20260628T225653.430691Z.json parses as JSON [collector_report_20260628T225653.430691Z.json]: Valid JSON (3398 bytes)
+- [PASS] collector_report_20260628T225653.430691Z.json schema version [collector_report_20260628T225653.430691Z.json] (schema_version): schema_version matches evidence_harvester.collector_report.v1
+- [PASS] collector_report_20260628T225732.008211Z.json parses as JSON [collector_report_20260628T225732.008211Z.json]: Valid JSON (3398 bytes)
+- [PASS] collector_report_20260628T225732.008211Z.json schema version [collector_report_20260628T225732.008211Z.json] (schema_version): schema_version matches evidence_harvester.collector_report.v1
+- [PASS] collector_report_20260628T231153.609636Z.json parses as JSON [collector_report_20260628T231153.609636Z.json]: Valid JSON (3398 bytes)
+- [PASS] collector_report_20260628T231153.609636Z.json schema version [collector_report_20260628T231153.609636Z.json] (schema_version): schema_version matches evidence_harvester.collector_report.v1
+- [PASS] collector_report_20260628T231232.158446Z.json parses as JSON [collector_report_20260628T231232.158446Z.json]: Valid JSON (3398 bytes)
+- [PASS] collector_report_20260628T231232.158446Z.json schema version [collector_report_20260628T231232.158446Z.json] (schema_version): schema_version matches evidence_harvester.collector_report.v1
+- [PASS] collector_report_20260628T232653.786742Z.json parses as JSON [collector_report_20260628T232653.786742Z.json]: Valid JSON (3398 bytes)
+- [PASS] collector_report_20260628T232653.786742Z.json schema version [collector_report_20260628T232653.786742Z.json] (schema_version): schema_version matches evidence_harvester.collector_report.v1
+- [PASS] collector_report_20260628T232732.326637Z.json parses as JSON [collector_report_20260628T232732.326637Z.json]: Valid JSON (3398 bytes)
+- [PASS] collector_report_20260628T232732.326637Z.json schema version [collector_report_20260628T232732.326637Z.json] (schema_version): schema_version matches evidence_harvester.collector_report.v1
+- [PASS] collector_report_20260628T234153.975890Z.json parses as JSON [collector_report_20260628T234153.975890Z.json]: Valid JSON (3398 bytes)
+- [PASS] collector_report_20260628T234153.975890Z.json schema version [collector_report_20260628T234153.975890Z.json] (schema_version): schema_version matches evidence_harvester.collector_report.v1
+- [PASS] collector_report_20260628T234232.480715Z.json parses as JSON [collector_report_20260628T234232.480715Z.json]: Valid JSON (3398 bytes)
+- [PASS] collector_report_20260628T234232.480715Z.json schema version [collector_report_20260628T234232.480715Z.json] (schema_version): schema_version matches evidence_harvester.collector_report.v1
+- [PASS] collector_report_20260628T235654.200874Z.json parses as JSON [collector_report_20260628T235654.200874Z.json]: Valid JSON (3398 bytes)
+- [PASS] collector_report_20260628T235654.200874Z.json schema version [collector_report_20260628T235654.200874Z.json] (schema_version): schema_version matches evidence_harvester.collector_report.v1
+- [PASS] collector_report_20260628T235732.645061Z.json parses as JSON [collector_report_20260628T235732.645061Z.json]: Valid JSON (3398 bytes)
+- [PASS] collector_report_20260628T235732.645061Z.json schema version [collector_report_20260628T235732.645061Z.json] (schema_version): schema_version matches evidence_harvester.collector_report.v1
+- [PASS] collector_report_20260629T001154.501508Z.json parses as JSON [collector_report_20260629T001154.501508Z.json]: Valid JSON (3398 bytes)
+- [PASS] collector_report_20260629T001154.501508Z.json schema version [collector_report_20260629T001154.501508Z.json] (schema_version): schema_version matches evidence_harvester.collector_report.v1
+- [PASS] collector_report_20260629T001232.824905Z.json parses as JSON [collector_report_20260629T001232.824905Z.json]: Valid JSON (3398 bytes)
+- [PASS] collector_report_20260629T001232.824905Z.json schema version [collector_report_20260629T001232.824905Z.json] (schema_version): schema_version matches evidence_harvester.collector_report.v1
+- [PASS] collector_report_20260629T002654.774738Z.json parses as JSON [collector_report_20260629T002654.774738Z.json]: Valid JSON (3398 bytes)
+- [PASS] collector_report_20260629T002654.774738Z.json schema version [collector_report_20260629T002654.774738Z.json] (schema_version): schema_version matches evidence_harvester.collector_report.v1
+- [PASS] collector_report_20260629T002733.036521Z.json parses as JSON [collector_report_20260629T002733.036521Z.json]: Valid JSON (3398 bytes)
+- [PASS] collector_report_20260629T002733.036521Z.json schema version [collector_report_20260629T002733.036521Z.json] (schema_version): schema_version matches evidence_harvester.collector_report.v1
+- [PASS] collector_report_20260629T004155.046745Z.json parses as JSON [collector_report_20260629T004155.046745Z.json]: Valid JSON (3398 bytes)
+- [PASS] collector_report_20260629T004155.046745Z.json schema version [collector_report_20260629T004155.046745Z.json] (schema_version): schema_version matches evidence_harvester.collector_report.v1
+- [PASS] collector_report_20260629T004233.286267Z.json parses as JSON [collector_report_20260629T004233.286267Z.json]: Valid JSON (3398 bytes)
+- [PASS] collector_report_20260629T004233.286267Z.json schema version [collector_report_20260629T004233.286267Z.json] (schema_version): schema_version matches evidence_harvester.collector_report.v1
+- [PASS] collector_report_20260629T005655.286180Z.json parses as JSON [collector_report_20260629T005655.286180Z.json]: Valid JSON (3398 bytes)
+- [PASS] collector_report_20260629T005655.286180Z.json schema version [collector_report_20260629T005655.286180Z.json] (schema_version): schema_version matches evidence_harvester.collector_report.v1
+- [PASS] collector_report_20260629T005733.500216Z.json parses as JSON [collector_report_20260629T005733.500216Z.json]: Valid JSON (3398 bytes)
+- [PASS] collector_report_20260629T005733.500216Z.json schema version [collector_report_20260629T005733.500216Z.json] (schema_version): schema_version matches evidence_harvester.collector_report.v1
+- [PASS] collector_report_20260629T011155.540856Z.json parses as JSON [collector_report_20260629T011155.540856Z.json]: Valid JSON (3398 bytes)
+- [PASS] collector_report_20260629T011155.540856Z.json schema version [collector_report_20260629T011155.540856Z.json] (schema_version): schema_version matches evidence_harvester.collector_report.v1
+- [PASS] collector_report_20260629T011233.729956Z.json parses as JSON [collector_report_20260629T011233.729956Z.json]: Valid JSON (3398 bytes)
+- [PASS] collector_report_20260629T011233.729956Z.json schema version [collector_report_20260629T011233.729956Z.json] (schema_version): schema_version matches evidence_harvester.collector_report.v1
+- [PASS] collector_report_20260629T012655.870979Z.json parses as JSON [collector_report_20260629T012655.870979Z.json]: Valid JSON (3398 bytes)
+- [PASS] coordinator_events.jsonl line 151 parses as JSON [coordinator_events.jsonl]: Lifecycle event line is valid JSON
+- [PASS] coordinator_events.jsonl line 152 parses as JSON [coordinator_events.jsonl]: Lifecycle event line is valid JSON
+- [PASS] coordinator_events.jsonl line 153 parses as JSON [coordinator_events.jsonl]: Lifecycle event line is valid JSON
+- [PASS] coordinator_events.jsonl line 154 parses as JSON [coordinator_events.jsonl]: Lifecycle event line is valid JSON
+- [PASS] coordinator_events.jsonl line 155 parses as JSON [coordinator_events.jsonl]: Lifecycle event line is valid JSON
+- [PASS] coordinator_events.jsonl line 156 parses as JSON [coordinator_events.jsonl]: Lifecycle event line is valid JSON
+- [PASS] coordinator_events.jsonl line 157 parses as JSON [coordinator_events.jsonl]: Lifecycle event line is valid JSON
+- [PASS] coordinator_events.jsonl line 158 parses as JSON [coordinator_events.jsonl]: Lifecycle event line is valid JSON
+- [PASS] coordinator_events.jsonl line 159 parses as JSON [coordinator_events.jsonl]: Lifecycle event line is valid JSON
+- [PASS] coordinator_events.jsonl line 160 parses as JSON [coordinator_events.jsonl]: Lifecycle event line is valid JSON
+- [PASS] collector_report_20260629T012655.870979Z.json schema version [collector_report_20260629T012655.870979Z.json] (schema_version): schema_version matches evidence_harvester.collector_report.v1
+- [PASS] coordinator_events.jsonl line 161 parses as JSON [coordinator_events.jsonl]: Lifecycle event line is valid JSON
+- [PASS] coordinator_events.jsonl line 162 parses as JSON [coordinator_events.jsonl]: Lifecycle event line is valid JSON
+- [PASS] coordinator_events.jsonl line 163 parses as JSON [coordinator_events.jsonl]: Lifecycle event line is valid JSON
+- [PASS] coordinator_events.jsonl line 164 parses as JSON [coordinator_events.jsonl]: Lifecycle event line is valid JSON
+- [PASS] coordinator_events.jsonl line 165 parses as JSON [coordinator_events.jsonl]: Lifecycle event line is valid JSON
+- [PASS] coordinator_events.jsonl line 166 parses as JSON [coordinator_events.jsonl]: Lifecycle event line is valid JSON
+- [PASS] coordinator_events.jsonl line 167 parses as JSON [coordinator_events.jsonl]: Lifecycle event line is valid JSON
+- [PASS] coordinator_events.jsonl line 168 parses as JSON [coordinator_events.jsonl]: Lifecycle event line is valid JSON
+- [PASS] coordinator_events.jsonl line 169 parses as JSON [coordinator_events.jsonl]: Lifecycle event line is valid JSON
+- [PASS] coordinator_events.jsonl line 170 parses as JSON [coordinator_events.jsonl]: Lifecycle event line is valid JSON
+- [PASS] collector_report_20260629T012734.022974Z.json parses as JSON [collector_report_20260629T012734.022974Z.json]: Valid JSON (3398 bytes)
+- [PASS] coordinator_events.jsonl line 171 parses as JSON [coordinator_events.jsonl]: Lifecycle event line is valid JSON
+- [PASS] coordinator_events.jsonl line 172 parses as JSON [coordinator_events.jsonl]: Lifecycle event line is valid JSON
+- [PASS] coordinator_events.jsonl line 173 parses as JSON [coordinator_events.jsonl]: Lifecycle event line is valid JSON
+- [PASS] coordinator_events.jsonl line 174 parses as JSON [coordinator_events.jsonl]: Lifecycle event line is valid JSON
+- [PASS] coordinator_events.jsonl line 175 parses as JSON [coordinator_events.jsonl]: Lifecycle event line is valid JSON
+- [PASS] coordinator_events.jsonl line 176 parses as JSON [coordinator_events.jsonl]: Lifecycle event line is valid JSON
+- [PASS] coordinator_events.jsonl line 177 parses as JSON [coordinator_events.jsonl]: Lifecycle event line is valid JSON
+- [PASS] coordinator_events.jsonl line 178 parses as JSON [coordinator_events.jsonl]: Lifecycle event line is valid JSON
+- [PASS] coordinator_events.jsonl line 179 parses as JSON [coordinator_events.jsonl]: Lifecycle event line is valid JSON
+- [PASS] coordinator_events.jsonl line 180 parses as JSON [coordinator_events.jsonl]: Lifecycle event line is valid JSON
+- [PASS] collector_report_20260629T012734.022974Z.json schema version [collector_report_20260629T012734.022974Z.json] (schema_version): schema_version matches evidence_harvester.collector_report.v1
+- [PASS] coordinator_events.jsonl line 181 parses as JSON [coordinator_events.jsonl]: Lifecycle event line is valid JSON
+- [PASS] coordinator_events.jsonl line 182 parses as JSON [coordinator_events.jsonl]: Lifecycle event line is valid JSON
+- [PASS] coordinator_events.jsonl line 183 parses as JSON [coordinator_events.jsonl]: Lifecycle event line is valid JSON
+- [PASS] coordinator_events.jsonl line 184 parses as JSON [coordinator_events.jsonl]: Lifecycle event line is valid JSON
+- [PASS] coordinator_events.jsonl line 185 parses as JSON [coordinator_events.jsonl]: Lifecycle event line is valid JSON
+- [PASS] coordinator_events.jsonl line 186 parses as JSON [coordinator_events.jsonl]: Lifecycle event line is valid JSON
+- [PASS] coordinator_events.jsonl line 187 parses as JSON [coordinator_events.jsonl]: Lifecycle event line is valid JSON
+- [PASS] coordinator_events.jsonl line 188 parses as JSON [coordinator_events.jsonl]: Lifecycle event line is valid JSON
+- [PASS] coordinator_events.jsonl line 189 parses as JSON [coordinator_events.jsonl]: Lifecycle event line is valid JSON
+- [PASS] coordinator_events.jsonl line 190 parses as JSON [coordinator_events.jsonl]: Lifecycle event line is valid JSON
+- [PASS] collector_report_20260629T014156.252608Z.json parses as JSON [collector_report_20260629T014156.252608Z.json]: Valid JSON (3398 bytes)
+- [PASS] coordinator_events.jsonl line 191 parses as JSON [coordinator_events.jsonl]: Lifecycle event line is valid JSON
+- [PASS] coordinator_events.jsonl line 192 parses as JSON [coordinator_events.jsonl]: Lifecycle event line is valid JSON
+- [PASS] coordinator_events.jsonl line 193 parses as JSON [coordinator_events.jsonl]: Lifecycle event line is valid JSON
+- [PASS] coordinator_events.jsonl line 194 parses as JSON [coordinator_events.jsonl]: Lifecycle event line is valid JSON
+- [PASS] coordinator_events.jsonl line 195 parses as JSON [coordinator_events.jsonl]: Lifecycle event line is valid JSON
+- [PASS] coordinator_events.jsonl line 196 parses as JSON [coordinator_events.jsonl]: Lifecycle event line is valid JSON
+- [PASS] coordinator_events.jsonl line 197 parses as JSON [coordinator_events.jsonl]: Lifecycle event line is valid JSON
+- [PASS] coordinator_events.jsonl line 198 parses as JSON [coordinator_events.jsonl]: Lifecycle event line is valid JSON
+- [PASS] coordinator_events.jsonl line 199 parses as JSON [coordinator_events.jsonl]: Lifecycle event line is valid JSON
+- [PASS] coordinator_events.jsonl line 200 parses as JSON [coordinator_events.jsonl]: Lifecycle event line is valid JSON
+- [PASS] collector_report_20260629T014156.252608Z.json schema version [collector_report_20260629T014156.252608Z.json] (schema_version): schema_version matches evidence_harvester.collector_report.v1
+- [PASS] coordinator_events.jsonl line 201 parses as JSON [coordinator_events.jsonl]: Lifecycle event line is valid JSON
+- [PASS] coordinator_events.jsonl line 202 parses as JSON [coordinator_events.jsonl]: Lifecycle event line is valid JSON
+- [PASS] coordinator_events.jsonl line 203 parses as JSON [coordinator_events.jsonl]: Lifecycle event line is valid JSON
+- [PASS] coordinator_events.jsonl line 204 parses as JSON [coordinator_events.jsonl]: Lifecycle event line is valid JSON
+- [PASS] coordinator_events.jsonl line 205 parses as JSON [coordinator_events.jsonl]: Lifecycle event line is valid JSON
+- [PASS] coordinator_events.jsonl line 206 parses as JSON [coordinator_events.jsonl]: Lifecycle event line is valid JSON
+- [PASS] coordinator_events.jsonl line 207 parses as JSON [coordinator_events.jsonl]: Lifecycle event line is valid JSON
+- [PASS] coordinator_events.jsonl line 208 parses as JSON [coordinator_events.jsonl]: Lifecycle event line is valid JSON
+- [PASS] coordinator_events.jsonl line 209 parses as JSON [coordinator_events.jsonl]: Lifecycle event line is valid JSON
+- [PASS] coordinator_events.jsonl line 210 parses as JSON [coordinator_events.jsonl]: Lifecycle event line is valid JSON
+- [PASS] collector_report_20260629T014234.291063Z.json parses as JSON [collector_report_20260629T014234.291063Z.json]: Valid JSON (3398 bytes)
+- [PASS] coordinator_events.jsonl line 211 parses as JSON [coordinator_events.jsonl]: Lifecycle event line is valid JSON
+- [PASS] coordinator_events.jsonl line 212 parses as JSON [coordinator_events.jsonl]: Lifecycle event line is valid JSON
+- [PASS] coordinator_events.jsonl line 213 parses as JSON [coordinator_events.jsonl]: Lifecycle event line is valid JSON
+- [PASS] coordinator_events.jsonl line 214 parses as JSON [coordinator_events.jsonl]: Lifecycle event line is valid JSON
+- [PASS] coordinator_events.jsonl line 215 parses as JSON [coordinator_events.jsonl]: Lifecycle event line is valid JSON
+- [PASS] coordinator_events.jsonl line 216 parses as JSON [coordinator_events.jsonl]: Lifecycle event line is valid JSON
+- [PASS] coordinator_events.jsonl line 217 parses as JSON [coordinator_events.jsonl]: Lifecycle event line is valid JSON
+- [PASS] coordinator_events.jsonl line 218 parses as JSON [coordinator_events.jsonl]: Lifecycle event line is valid JSON
+- [PASS] coordinator_events.jsonl line 219 parses as JSON [coordinator_events.jsonl]: Lifecycle event line is valid JSON
+- [PASS] coordinator_events.jsonl line 220 parses as JSON [coordinator_events.jsonl]: Lifecycle event line is valid JSON
+- [PASS] collector_report_20260629T014234.291063Z.json schema version [collector_report_20260629T014234.291063Z.json] (schema_version): schema_version matches evidence_harvester.collector_report.v1
+- [PASS] coordinator_events.jsonl line 221 parses as JSON [coordinator_events.jsonl]: Lifecycle event line is valid JSON
+- [PASS] coordinator_events.jsonl line 222 parses as JSON [coordinator_events.jsonl]: Lifecycle event line is valid JSON
+- [PASS] coordinator_events.jsonl line 223 parses as JSON [coordinator_events.jsonl]: Lifecycle event line is valid JSON
+- [PASS] coordinator_events.jsonl line 224 parses as JSON [coordinator_events.jsonl]: Lifecycle event line is valid JSON
+- [PASS] coordinator_events.jsonl line 225 parses as JSON [coordinator_events.jsonl]: Lifecycle event line is valid JSON
+- [PASS] coordinator_events.jsonl line 226 parses as JSON [coordinator_events.jsonl]: Lifecycle event line is valid JSON
+- [PASS] coordinator_events.jsonl line 227 parses as JSON [coordinator_events.jsonl]: Lifecycle event line is valid JSON
+- [PASS] coordinator_events.jsonl line 228 parses as JSON [coordinator_events.jsonl]: Lifecycle event line is valid JSON
+- [PASS] coordinator_events.jsonl line 229 parses as JSON [coordinator_events.jsonl]: Lifecycle event line is valid JSON
+- [PASS] coordinator_events.jsonl line 230 parses as JSON [coordinator_events.jsonl]: Lifecycle event line is valid JSON
+- [PASS] collector_report_20260629T015656.659674Z.json parses as JSON [collector_report_20260629T015656.659674Z.json]: Valid JSON (3398 bytes)
+- [PASS] coordinator_events.jsonl line 231 parses as JSON [coordinator_events.jsonl]: Lifecycle event line is valid JSON
+- [PASS] coordinator_events.jsonl line 232 parses as JSON [coordinator_events.jsonl]: Lifecycle event line is valid JSON
+- [PASS] coordinator_events.jsonl line 233 parses as JSON [coordinator_events.jsonl]: Lifecycle event line is valid JSON
+- [PASS] coordinator_events.jsonl line 234 parses as JSON [coordinator_events.jsonl]: Lifecycle event line is valid JSON
+- [PASS] coordinator_events.jsonl line 235 parses as JSON [coordinator_events.jsonl]: Lifecycle event line is valid JSON
+- [PASS] coordinator_events.jsonl line 236 parses as JSON [coordinator_events.jsonl]: Lifecycle event line is valid JSON
+- [PASS] coordinator_events.jsonl line 237 parses as JSON [coordinator_events.jsonl]: Lifecycle event line is valid JSON
+- [PASS] coordinator_events.jsonl line 238 parses as JSON [coordinator_events.jsonl]: Lifecycle event line is valid JSON
+- [PASS] coordinator_events.jsonl line 239 parses as JSON [coordinator_events.jsonl]: Lifecycle event line is valid JSON
+- [PASS] coordinator_events.jsonl line 240 parses as JSON [coordinator_events.jsonl]: Lifecycle event line is valid JSON
+- [PASS] collector_report_20260629T015656.659674Z.json schema version [collector_report_20260629T015656.659674Z.json] (schema_version): schema_version matches evidence_harvester.collector_report.v1
+- [PASS] coordinator_events.jsonl line 241 parses as JSON [coordinator_events.jsonl]: Lifecycle event line is valid JSON
+- [PASS] coordinator_events.jsonl line 242 parses as JSON [coordinator_events.jsonl]: Lifecycle event line is valid JSON
+- [PASS] coordinator_events.jsonl line 243 parses as JSON [coordinator_events.jsonl]: Lifecycle event line is valid JSON
+- [PASS] coordinator_events.jsonl line 244 parses as JSON [coordinator_events.jsonl]: Lifecycle event line is valid JSON
+- [PASS] coordinator_events.jsonl line 245 parses as JSON [coordinator_events.jsonl]: Lifecycle event line is valid JSON
+- [PASS] coordinator_events.jsonl line 246 parses as JSON [coordinator_events.jsonl]: Lifecycle event line is valid JSON
+- [PASS] coordinator_events.jsonl line 247 parses as JSON [coordinator_events.jsonl]: Lifecycle event line is valid JSON
+- [PASS] coordinator_events.jsonl line 248 parses as JSON [coordinator_events.jsonl]: Lifecycle event line is valid JSON
+- [PASS] coordinator_events.jsonl line 249 parses as JSON [coordinator_events.jsonl]: Lifecycle event line is valid JSON
+- [PASS] coordinator_events.jsonl line 250 parses as JSON [coordinator_events.jsonl]: Lifecycle event line is valid JSON
+- [PASS] collector_report_20260629T015734.550802Z.json parses as JSON [collector_report_20260629T015734.550802Z.json]: Valid JSON (3398 bytes)
+- [PASS] coordinator_events.jsonl line 251 parses as JSON [coordinator_events.jsonl]: Lifecycle event line is valid JSON
+- [PASS] coordinator_events.jsonl line 252 parses as JSON [coordinator_events.jsonl]: Lifecycle event line is valid JSON
+- [PASS] coordinator_events.jsonl line 253 parses as JSON [coordinator_events.jsonl]: Lifecycle event line is valid JSON
+- [PASS] coordinator_events.jsonl line 254 parses as JSON [coordinator_events.jsonl]: Lifecycle event line is valid JSON
+- [PASS] coordinator_events.jsonl line 255 parses as JSON [coordinator_events.jsonl]: Lifecycle event line is valid JSON
+- [PASS] coordinator_events.jsonl line 256 parses as JSON [coordinator_events.jsonl]: Lifecycle event line is valid JSON
+- [PASS] coordinator_events.jsonl line 257 parses as JSON [coordinator_events.jsonl]: Lifecycle event line is valid JSON
+- [PASS] coordinator_events.jsonl line 258 parses as JSON [coordinator_events.jsonl]: Lifecycle event line is valid JSON
+- [PASS] coordinator_events.jsonl line 259 parses as JSON [coordinator_events.jsonl]: Lifecycle event line is valid JSON
+- [PASS] coordinator_events.jsonl line 260 parses as JSON [coordinator_events.jsonl]: Lifecycle event line is valid JSON
+- [PASS] collector_report_20260629T015734.550802Z.json schema version [collector_report_20260629T015734.550802Z.json] (schema_version): schema_version matches evidence_harvester.collector_report.v1
+- [PASS] coordinator_events.jsonl line 261 parses as JSON [coordinator_events.jsonl]: Lifecycle event line is valid JSON
+- [PASS] coordinator_events.jsonl line 262 parses as JSON [coordinator_events.jsonl]: Lifecycle event line is valid JSON
+- [PASS] coordinator_events.jsonl line 263 parses as JSON [coordinator_events.jsonl]: Lifecycle event line is valid JSON
+- [PASS] coordinator_events.jsonl line 264 parses as JSON [coordinator_events.jsonl]: Lifecycle event line is valid JSON
+- [PASS] coordinator_events.jsonl line 265 parses as JSON [coordinator_events.jsonl]: Lifecycle event line is valid JSON
+- [PASS] coordinator_events.jsonl line 266 parses as JSON [coordinator_events.jsonl]: Lifecycle event line is valid JSON
+- [PASS] coordinator_events.jsonl line 267 parses as JSON [coordinator_events.jsonl]: Lifecycle event line is valid JSON
+- [PASS] coordinator_events.jsonl line 268 parses as JSON [coordinator_events.jsonl]: Lifecycle event line is valid JSON
+- [PASS] coordinator_events.jsonl line 269 parses as JSON [coordinator_events.jsonl]: Lifecycle event line is valid JSON
+- [PASS] coordinator_events.jsonl line 270 parses as JSON [coordinator_events.jsonl]: Lifecycle event line is valid JSON
+- [PASS] collector_report_20260629T021156.961887Z.json parses as JSON [collector_report_20260629T021156.961887Z.json]: Valid JSON (3398 bytes)
+- [PASS] coordinator_events.jsonl line 271 parses as JSON [coordinator_events.jsonl]: Lifecycle event line is valid JSON
+- [PASS] coordinator_events.jsonl line 272 parses as JSON [coordinator_events.jsonl]: Lifecycle event line is valid JSON
+- [PASS] coordinator_events.jsonl line 273 parses as JSON [coordinator_events.jsonl]: Lifecycle event line is valid JSON
+- [PASS] coordinator_events.jsonl line 274 parses as JSON [coordinator_events.jsonl]: Lifecycle event line is valid JSON
+- [PASS] coordinator_events.jsonl line 275 parses as JSON [coordinator_events.jsonl]: Lifecycle event line is valid JSON
+- [PASS] coordinator_events.jsonl line 276 parses as JSON [coordinator_events.jsonl]: Lifecycle event line is valid JSON
+- [PASS] coordinator_events.jsonl line 277 parses as JSON [coordinator_events.jsonl]: Lifecycle event line is valid JSON
+- [PASS] coordinator_events.jsonl line 278 parses as JSON [coordinator_events.jsonl]: Lifecycle event line is valid JSON
+- [PASS] coordinator_events.jsonl line 279 parses as JSON [coordinator_events.jsonl]: Lifecycle event line is valid JSON
+- [PASS] coordinator_events.jsonl line 280 parses as JSON [coordinator_events.jsonl]: Lifecycle event line is valid JSON
+- [PASS] collector_report_20260629T021156.961887Z.json schema version [collector_report_20260629T021156.961887Z.json] (schema_version): schema_version matches evidence_harvester.collector_report.v1
+- [PASS] coordinator_events.jsonl line 281 parses as JSON [coordinator_events.jsonl]: Lifecycle event line is valid JSON
+- [PASS] coordinator_events.jsonl line 282 parses as JSON [coordinator_events.jsonl]: Lifecycle event line is valid JSON
+- [PASS] coordinator_events.jsonl line 283 parses as JSON [coordinator_events.jsonl]: Lifecycle event line is valid JSON
+- [PASS] coordinator_events.jsonl line 284 parses as JSON [coordinator_events.jsonl]: Lifecycle event line is valid JSON
+- [PASS] coordinator_events.jsonl line 285 parses as JSON [coordinator_events.jsonl]: Lifecycle event line is valid JSON
+- [PASS] coordinator_events.jsonl line 286 parses as JSON [coordinator_events.jsonl]: Lifecycle event line is valid JSON
+- [PASS] coordinator_events.jsonl line 287 parses as JSON [coordinator_events.jsonl]: Lifecycle event line is valid JSON
+- [PASS] coordinator_events.jsonl line 288 parses as JSON [coordinator_events.jsonl]: Lifecycle event line is valid JSON
+- [PASS] coordinator_events.jsonl line 289 parses as JSON [coordinator_events.jsonl]: Lifecycle event line is valid JSON
+- [PASS] coordinator_events.jsonl line 290 parses as JSON [coordinator_events.jsonl]: Lifecycle event line is valid JSON
+- [PASS] collector_report_20260629T021234.839515Z.json parses as JSON [collector_report_20260629T021234.839515Z.json]: Valid JSON (3398 bytes)
+- [PASS] coordinator_events.jsonl line 291 parses as JSON [coordinator_events.jsonl]: Lifecycle event line is valid JSON
+- [PASS] coordinator_events.jsonl line 292 parses as JSON [coordinator_events.jsonl]: Lifecycle event line is valid JSON
+- [PASS] coordinator_events.jsonl line 293 parses as JSON [coordinator_events.jsonl]: Lifecycle event line is valid JSON
+- [PASS] coordinator_events.jsonl line 294 parses as JSON [coordinator_events.jsonl]: Lifecycle event line is valid JSON
+- [PASS] coordinator_events.jsonl line 295 parses as JSON [coordinator_events.jsonl]: Lifecycle event line is valid JSON
+- [PASS] coordinator_events.jsonl line 296 parses as JSON [coordinator_events.jsonl]: Lifecycle event line is valid JSON
+- [PASS] coordinator_events.jsonl line 297 parses as JSON [coordinator_events.jsonl]: Lifecycle event line is valid JSON
+- [PASS] coordinator_events.jsonl line 298 parses as JSON [coordinator_events.jsonl]: Lifecycle event line is valid JSON
+- [PASS] coordinator_events.jsonl line 299 parses as JSON [coordinator_events.jsonl]: Lifecycle event line is valid JSON
+- [PASS] coordinator_events.jsonl line 300 parses as JSON [coordinator_events.jsonl]: Lifecycle event line is valid JSON
+- [PASS] collector_report_20260629T021234.839515Z.json schema version [collector_report_20260629T021234.839515Z.json] (schema_version): schema_version matches evidence_harvester.collector_report.v1
+- [PASS] coordinator_events.jsonl line 301 parses as JSON [coordinator_events.jsonl]: Lifecycle event line is valid JSON
+- [PASS] coordinator_events.jsonl line 302 parses as JSON [coordinator_events.jsonl]: Lifecycle event line is valid JSON
+- [PASS] coordinator_events.jsonl line 303 parses as JSON [coordinator_events.jsonl]: Lifecycle event line is valid JSON
+- [PASS] coordinator_events.jsonl line 304 parses as JSON [coordinator_events.jsonl]: Lifecycle event line is valid JSON
+- [PASS] coordinator_events.jsonl line 305 parses as JSON [coordinator_events.jsonl]: Lifecycle event line is valid JSON
+- [PASS] coordinator_events.jsonl line 306 parses as JSON [coordinator_events.jsonl]: Lifecycle event line is valid JSON
+- [PASS] coordinator_events.jsonl line 307 parses as JSON [coordinator_events.jsonl]: Lifecycle event line is valid JSON
+- [PASS] coordinator_events.jsonl line 308 parses as JSON [coordinator_events.jsonl]: Lifecycle event line is valid JSON
+- [PASS] coordinator_events.jsonl line 309 parses as JSON [coordinator_events.jsonl]: Lifecycle event line is valid JSON
+- [PASS] coordinator_events.jsonl line 310 parses as JSON [coordinator_events.jsonl]: Lifecycle event line is valid JSON
+- [PASS] collector_report_20260629T022657.261292Z.json parses as JSON [collector_report_20260629T022657.261292Z.json]: Valid JSON (3398 bytes)
+- [PASS] coordinator_events.jsonl line 311 parses as JSON [coordinator_events.jsonl]: Lifecycle event line is valid JSON
+- [PASS] coordinator_events.jsonl line 312 parses as JSON [coordinator_events.jsonl]: Lifecycle event line is valid JSON
+- [PASS] coordinator_events.jsonl line 313 parses as JSON [coordinator_events.jsonl]: Lifecycle event line is valid JSON
+- [PASS] coordinator_events.jsonl line 314 parses as JSON [coordinator_events.jsonl]: Lifecycle event line is valid JSON
+- [PASS] coordinator_events.jsonl line 315 parses as JSON [coordinator_events.jsonl]: Lifecycle event line is valid JSON
+- [PASS] coordinator_events.jsonl line 316 parses as JSON [coordinator_events.jsonl]: Lifecycle event line is valid JSON
+- [PASS] coordinator_events.jsonl line 317 parses as JSON [coordinator_events.jsonl]: Lifecycle event line is valid JSON
+- [PASS] coordinator_events.jsonl line 318 parses as JSON [coordinator_events.jsonl]: Lifecycle event line is valid JSON
+- [PASS] coordinator_events.jsonl line 319 parses as JSON [coordinator_events.jsonl]: Lifecycle event line is valid JSON
+- [PASS] coordinator_events.jsonl line 320 parses as JSON [coordinator_events.jsonl]: Lifecycle event line is valid JSON
+- [PASS] collector_report_20260629T022657.261292Z.json schema version [collector_report_20260629T022657.261292Z.json] (schema_version): schema_version matches evidence_harvester.collector_report.v1
+- [PASS] coordinator_events.jsonl line 321 parses as JSON [coordinator_events.jsonl]: Lifecycle event line is valid JSON
+- [PASS] coordinator_events.jsonl line 322 parses as JSON [coordinator_events.jsonl]: Lifecycle event line is valid JSON
+- [PASS] coordinator_events.jsonl line 323 parses as JSON [coordinator_events.jsonl]: Lifecycle event line is valid JSON
+- [PASS] coordinator_events.jsonl line 324 parses as JSON [coordinator_events.jsonl]: Lifecycle event line is valid JSON
+- [PASS] coordinator_events.jsonl line 325 parses as JSON [coordinator_events.jsonl]: Lifecycle event line is valid JSON
+- [PASS] coordinator_events.jsonl line 326 parses as JSON [coordinator_events.jsonl]: Lifecycle event line is valid JSON
+- [PASS] coordinator_events.jsonl line 327 parses as JSON [coordinator_events.jsonl]: Lifecycle event line is valid JSON
+- [PASS] coordinator_events.jsonl line 328 parses as JSON [coordinator_events.jsonl]: Lifecycle event line is valid JSON
+- [PASS] coordinator_events.jsonl line 329 parses as JSON [coordinator_events.jsonl]: Lifecycle event line is valid JSON
+- [PASS] coordinator_events.jsonl line 330 parses as JSON [coordinator_events.jsonl]: Lifecycle event line is valid JSON
+- [PASS] collector_report_20260629T022735.088379Z.json parses as JSON [collector_report_20260629T022735.088379Z.json]: Valid JSON (3398 bytes)
+- [PASS] coordinator_events.jsonl line 331 parses as JSON [coordinator_events.jsonl]: Lifecycle event line is valid JSON
+- [PASS] coordinator_events.jsonl line 332 parses as JSON [coordinator_events.jsonl]: Lifecycle event line is valid JSON
+- [PASS] coordinator_events.jsonl line 333 parses as JSON [coordinator_events.jsonl]: Lifecycle event line is valid JSON
+- [PASS] coordinator_events.jsonl line 334 parses as JSON [coordinator_events.jsonl]: Lifecycle event line is valid JSON
+- [PASS] coordinator_events.jsonl line 335 parses as JSON [coordinator_events.jsonl]: Lifecycle event line is valid JSON
+- [PASS] coordinator_events.jsonl line 336 parses as JSON [coordinator_events.jsonl]: Lifecycle event line is valid JSON
+- [PASS] coordinator_events.jsonl line 337 parses as JSON [coordinator_events.jsonl]: Lifecycle event line is valid JSON
+- [PASS] coordinator_events.jsonl line 338 parses as JSON [coordinator_events.jsonl]: Lifecycle event line is valid JSON
+- [PASS] coordinator_events.jsonl line 339 parses as JSON [coordinator_events.jsonl]: Lifecycle event line is valid JSON
+- [PASS] coordinator_events.jsonl line 340 parses as JSON [coordinator_events.jsonl]: Lifecycle event line is valid JSON
+- [PASS] collector_report_20260629T022735.088379Z.json schema version [collector_report_20260629T022735.088379Z.json] (schema_version): schema_version matches evidence_harvester.collector_report.v1
+- [PASS] coordinator_events.jsonl line 341 parses as JSON [coordinator_events.jsonl]: Lifecycle event line is valid JSON
+- [PASS] coordinator_events.jsonl line 342 parses as JSON [coordinator_events.jsonl]: Lifecycle event line is valid JSON
+- [PASS] coordinator_events.jsonl line 343 parses as JSON [coordinator_events.jsonl]: Lifecycle event line is valid JSON
+- [PASS] coordinator_events.jsonl line 344 parses as JSON [coordinator_events.jsonl]: Lifecycle event line is valid JSON
+- [PASS] coordinator_events.jsonl line 345 parses as JSON [coordinator_events.jsonl]: Lifecycle event line is valid JSON
+- [PASS] coordinator_events.jsonl line 346 parses as JSON [coordinator_events.jsonl]: Lifecycle event line is valid JSON
+- [PASS] coordinator_events.jsonl line 347 parses as JSON [coordinator_events.jsonl]: Lifecycle event line is valid JSON
+- [PASS] coordinator_events.jsonl line 348 parses as JSON [coordinator_events.jsonl]: Lifecycle event line is valid JSON
+- [PASS] coordinator_events.jsonl line 349 parses as JSON [coordinator_events.jsonl]: Lifecycle event line is valid JSON
+- [PASS] coordinator_events.jsonl line 350 parses as JSON [coordinator_events.jsonl]: Lifecycle event line is valid JSON
+- [PASS] collector_report_20260629T024157.543626Z.json parses as JSON [collector_report_20260629T024157.543626Z.json]: Valid JSON (3398 bytes)
+- [PASS] coordinator_events.jsonl line 351 parses as JSON [coordinator_events.jsonl]: Lifecycle event line is valid JSON
+- [PASS] coordinator_events.jsonl line 352 parses as JSON [coordinator_events.jsonl]: Lifecycle event line is valid JSON
+- [PASS] coordinator_events.jsonl line 353 parses as JSON [coordinator_events.jsonl]: Lifecycle event line is valid JSON
+- [PASS] coordinator_events.jsonl line 354 parses as JSON [coordinator_events.jsonl]: Lifecycle event line is valid JSON
+- [PASS] coordinator_events.jsonl line 355 parses as JSON [coordinator_events.jsonl]: Lifecycle event line is valid JSON
+- [PASS] coordinator_events.jsonl line 356 parses as JSON [coordinator_events.jsonl]: Lifecycle event line is valid JSON
+- [PASS] coordinator_events.jsonl line 357 parses as JSON [coordinator_events.jsonl]: Lifecycle event line is valid JSON
+- [PASS] coordinator_events.jsonl line 358 parses as JSON [coordinator_events.jsonl]: Lifecycle event line is valid JSON
+- [PASS] coordinator_events.jsonl line 359 parses as JSON [coordinator_events.jsonl]: Lifecycle event line is valid JSON
+- [PASS] coordinator_events.jsonl line 360 parses as JSON [coordinator_events.jsonl]: Lifecycle event line is valid JSON
+- [PASS] collector_report_20260629T024157.543626Z.json schema version [collector_report_20260629T024157.543626Z.json] (schema_version): schema_version matches evidence_harvester.collector_report.v1
+- [PASS] coordinator_events.jsonl line 361 parses as JSON [coordinator_events.jsonl]: Lifecycle event line is valid JSON
+- [PASS] coordinator_events.jsonl line 362 parses as JSON [coordinator_events.jsonl]: Lifecycle event line is valid JSON
+- [PASS] coordinator_events.jsonl line 363 parses as JSON [coordinator_events.jsonl]: Lifecycle event line is valid JSON
+- [PASS] coordinator_events.jsonl line 364 parses as JSON [coordinator_events.jsonl]: Lifecycle event line is valid JSON
+- [PASS] coordinator_events.jsonl line 365 parses as JSON [coordinator_events.jsonl]: Lifecycle event line is valid JSON
+- [PASS] coordinator_events.jsonl line 366 parses as JSON [coordinator_events.jsonl]: Lifecycle event line is valid JSON
+- [PASS] coordinator_events.jsonl line 367 parses as JSON [coordinator_events.jsonl]: Lifecycle event line is valid JSON
+- [PASS] coordinator_events.jsonl line 368 parses as JSON [coordinator_events.jsonl]: Lifecycle event line is valid JSON
+- [PASS] coordinator_events.jsonl line 369 parses as JSON [coordinator_events.jsonl]: Lifecycle event line is valid JSON
+- [PASS] coordinator_events.jsonl line 370 parses as JSON [coordinator_events.jsonl]: Lifecycle event line is valid JSON
+- [PASS] collector_report_20260629T024235.366805Z.json parses as JSON [collector_report_20260629T024235.366805Z.json]: Valid JSON (3398 bytes)
+- [PASS] coordinator_events.jsonl line 371 parses as JSON [coordinator_events.jsonl]: Lifecycle event line is valid JSON
+- [PASS] coordinator_events.jsonl line 372 parses as JSON [coordinator_events.jsonl]: Lifecycle event line is valid JSON
+- [PASS] coordinator_events.jsonl line 373 parses as JSON [coordinator_events.jsonl]: Lifecycle event line is valid JSON
+- [PASS] coordinator_events.jsonl line 374 parses as JSON [coordinator_events.jsonl]: Lifecycle event line is valid JSON
+- [PASS] coordinator_events.jsonl line 375 parses as JSON [coordinator_events.jsonl]: Lifecycle event line is valid JSON
+- [PASS] coordinator_events.jsonl line 376 parses as JSON [coordinator_events.jsonl]: Lifecycle event line is valid JSON
+- [PASS] coordinator_events.jsonl line 377 parses as JSON [coordinator_events.jsonl]: Lifecycle event line is valid JSON
+- [PASS] coordinator_events.jsonl line 378 parses as JSON [coordinator_events.jsonl]: Lifecycle event line is valid JSON
+- [PASS] coordinator_events.jsonl line 379 parses as JSON [coordinator_events.jsonl]: Lifecycle event line is valid JSON
+- [PASS] coordinator_events.jsonl line 380 parses as JSON [coordinator_events.jsonl]: Lifecycle event line is valid JSON
+- [PASS] collector_report_20260629T024235.366805Z.json schema version [collector_report_20260629T024235.366805Z.json] (schema_version): schema_version matches evidence_harvester.collector_report.v1
+- [PASS] coordinator_events.jsonl line 381 parses as JSON [coordinator_events.jsonl]: Lifecycle event line is valid JSON
+- [PASS] coordinator_events.jsonl line 382 parses as JSON [coordinator_events.jsonl]: Lifecycle event line is valid JSON
+- [PASS] coordinator_events.jsonl line 383 parses as JSON [coordinator_events.jsonl]: Lifecycle event line is valid JSON
+- [PASS] coordinator_events.jsonl line 384 parses as JSON [coordinator_events.jsonl]: Lifecycle event line is valid JSON
+- [PASS] coordinator_events.jsonl line 385 parses as JSON [coordinator_events.jsonl]: Lifecycle event line is valid JSON
+- [PASS] coordinator_events.jsonl line 386 parses as JSON [coordinator_events.jsonl]: Lifecycle event line is valid JSON
+- [PASS] coordinator_events.jsonl line 387 parses as JSON [coordinator_events.jsonl]: Lifecycle event line is valid JSON
+- [PASS] coordinator_events.jsonl line 388 parses as JSON [coordinator_events.jsonl]: Lifecycle event line is valid JSON
+- [PASS] coordinator_events.jsonl line 389 parses as JSON [coordinator_events.jsonl]: Lifecycle event line is valid JSON
+- [PASS] coordinator_events.jsonl line 390 parses as JSON [coordinator_events.jsonl]: Lifecycle event line is valid JSON
+- [PASS] collector_report_20260629T025657.877035Z.json parses as JSON [collector_report_20260629T025657.877035Z.json]: Valid JSON (3398 bytes)
+- [PASS] coordinator_events.jsonl line 391 parses as JSON [coordinator_events.jsonl]: Lifecycle event line is valid JSON
+- [PASS] coordinator_events.jsonl line 392 parses as JSON [coordinator_events.jsonl]: Lifecycle event line is valid JSON
+- [PASS] coordinator_events.jsonl line 393 parses as JSON [coordinator_events.jsonl]: Lifecycle event line is valid JSON
+- [PASS] coordinator_events.jsonl line 394 parses as JSON [coordinator_events.jsonl]: Lifecycle event line is valid JSON
+- [PASS] coordinator_events.jsonl line 395 parses as JSON [coordinator_events.jsonl]: Lifecycle event line is valid JSON
+- [PASS] coordinator_events.jsonl line 396 parses as JSON [coordinator_events.jsonl]: Lifecycle event line is valid JSON
+- [PASS] coordinator_events.jsonl line 397 parses as JSON [coordinator_events.jsonl]: Lifecycle event line is valid JSON
+- [PASS] coordinator_events.jsonl line 398 parses as JSON [coordinator_events.jsonl]: Lifecycle event line is valid JSON
+- [PASS] coordinator_events.jsonl line 399 parses as JSON [coordinator_events.jsonl]: Lifecycle event line is valid JSON
+- [PASS] coordinator_events.jsonl line 400 parses as JSON [coordinator_events.jsonl]: Lifecycle event line is valid JSON
+- [PASS] collector_report_20260629T025657.877035Z.json schema version [collector_report_20260629T025657.877035Z.json] (schema_version): schema_version matches evidence_harvester.collector_report.v1
+- [PASS] coordinator_events.jsonl line 401 parses as JSON [coordinator_events.jsonl]: Lifecycle event line is valid JSON
+- [PASS] coordinator_events.jsonl line 402 parses as JSON [coordinator_events.jsonl]: Lifecycle event line is valid JSON
+- [PASS] coordinator_events.jsonl line 403 parses as JSON [coordinator_events.jsonl]: Lifecycle event line is valid JSON
+- [PASS] coordinator_events.jsonl line 404 parses as JSON [coordinator_events.jsonl]: Lifecycle event line is valid JSON
+- [PASS] coordinator_events.jsonl line 405 parses as JSON [coordinator_events.jsonl]: Lifecycle event line is valid JSON
+- [PASS] coordinator_events.jsonl line 406 parses as JSON [coordinator_events.jsonl]: Lifecycle event line is valid JSON
+- [PASS] coordinator_events.jsonl line 407 parses as JSON [coordinator_events.jsonl]: Lifecycle event line is valid JSON
+- [PASS] coordinator_events.jsonl line 408 parses as JSON [coordinator_events.jsonl]: Lifecycle event line is valid JSON
+- [PASS] coordinator_events.jsonl line 409 parses as JSON [coordinator_events.jsonl]: Lifecycle event line is valid JSON
+- [PASS] coordinator_events.jsonl line 410 parses as JSON [coordinator_events.jsonl]: Lifecycle event line is valid JSON
+- [PASS] collector_report_20260629T025735.674598Z.json parses as JSON [collector_report_20260629T025735.674598Z.json]: Valid JSON (3398 bytes)
+- [PASS] coordinator_events.jsonl line 411 parses as JSON [coordinator_events.jsonl]: Lifecycle event line is valid JSON
+- [PASS] coordinator_events.jsonl line 412 parses as JSON [coordinator_events.jsonl]: Lifecycle event line is valid JSON
+- [PASS] coordinator_events.jsonl line 413 parses as JSON [coordinator_events.jsonl]: Lifecycle event line is valid JSON
+- [PASS] coordinator_events.jsonl line 414 parses as JSON [coordinator_events.jsonl]: Lifecycle event line is valid JSON
+- [PASS] coordinator_events.jsonl line 415 parses as JSON [coordinator_events.jsonl]: Lifecycle event line is valid JSON
+- [PASS] coordinator_events.jsonl line 416 parses as JSON [coordinator_events.jsonl]: Lifecycle event line is valid JSON
+- [PASS] coordinator_events.jsonl line 417 parses as JSON [coordinator_events.jsonl]: Lifecycle event line is valid JSON
+- [PASS] coordinator_events.jsonl line 418 parses as JSON [coordinator_events.jsonl]: Lifecycle event line is valid JSON
+- [PASS] coordinator_events.jsonl line 419 parses as JSON [coordinator_events.jsonl]: Lifecycle event line is valid JSON
+- [PASS] coordinator_events.jsonl line 420 parses as JSON [coordinator_events.jsonl]: Lifecycle event line is valid JSON
+- [PASS] collector_report_20260629T025735.674598Z.json schema version [collector_report_20260629T025735.674598Z.json] (schema_version): schema_version matches evidence_harvester.collector_report.v1
+- [PASS] coordinator_events.jsonl line 421 parses as JSON [coordinator_events.jsonl]: Lifecycle event line is valid JSON
+- [PASS] coordinator_events.jsonl line 422 parses as JSON [coordinator_events.jsonl]: Lifecycle event line is valid JSON
+- [PASS] coordinator_events.jsonl line 423 parses as JSON [coordinator_events.jsonl]: Lifecycle event line is valid JSON
+- [PASS] coordinator_events.jsonl line 424 parses as JSON [coordinator_events.jsonl]: Lifecycle event line is valid JSON
+- [PASS] coordinator_events.jsonl line 425 parses as JSON [coordinator_events.jsonl]: Lifecycle event line is valid JSON
+- [PASS] coordinator_events.jsonl line 426 parses as JSON [coordinator_events.jsonl]: Lifecycle event line is valid JSON
+- [PASS] coordinator_events.jsonl line 427 parses as JSON [coordinator_events.jsonl]: Lifecycle event line is valid JSON
+- [PASS] coordinator_events.jsonl line 428 parses as JSON [coordinator_events.jsonl]: Lifecycle event line is valid JSON
+- [PASS] coordinator_events.jsonl line 429 parses as JSON [coordinator_events.jsonl]: Lifecycle event line is valid JSON
+- [PASS] coordinator_events.jsonl line 430 parses as JSON [coordinator_events.jsonl]: Lifecycle event line is valid JSON
+- [PASS] collector_report_20260629T031158.281708Z.json parses as JSON [collector_report_20260629T031158.281708Z.json]: Valid JSON (3398 bytes)
+- [PASS] coordinator_events.jsonl line 431 parses as JSON [coordinator_events.jsonl]: Lifecycle event line is valid JSON
+- [PASS] coordinator_events.jsonl line 432 parses as JSON [coordinator_events.jsonl]: Lifecycle event line is valid JSON
+- [PASS] coordinator_events.jsonl line 433 parses as JSON [coordinator_events.jsonl]: Lifecycle event line is valid JSON
+- [PASS] coordinator_events.jsonl line 434 parses as JSON [coordinator_events.jsonl]: Lifecycle event line is valid JSON
+- [PASS] coordinator_events.jsonl line 435 parses as JSON [coordinator_events.jsonl]: Lifecycle event line is valid JSON
+- [PASS] coordinator_events.jsonl line 436 parses as JSON [coordinator_events.jsonl]: Lifecycle event line is valid JSON
+- [PASS] coordinator_events.jsonl line 437 parses as JSON [coordinator_events.jsonl]: Lifecycle event line is valid JSON
+- [PASS] coordinator_events.jsonl line 438 parses as JSON [coordinator_events.jsonl]: Lifecycle event line is valid JSON
+- [PASS] coordinator_events.jsonl line 439 parses as JSON [coordinator_events.jsonl]: Lifecycle event line is valid JSON
+- [PASS] coordinator_events.jsonl line 440 parses as JSON [coordinator_events.jsonl]: Lifecycle event line is valid JSON
+- [PASS] collector_report_20260629T031158.281708Z.json schema version [collector_report_20260629T031158.281708Z.json] (schema_version): schema_version matches evidence_harvester.collector_report.v1
+- [PASS] coordinator_events.jsonl line 441 parses as JSON [coordinator_events.jsonl]: Lifecycle event line is valid JSON
+- [PASS] coordinator_events.jsonl line 442 parses as JSON [coordinator_events.jsonl]: Lifecycle event line is valid JSON
+- [PASS] coordinator_events.jsonl line 443 parses as JSON [coordinator_events.jsonl]: Lifecycle event line is valid JSON
+- [PASS] coordinator_events.jsonl line 444 parses as JSON [coordinator_events.jsonl]: Lifecycle event line is valid JSON
+- [PASS] coordinator_events.jsonl line 445 parses as JSON [coordinator_events.jsonl]: Lifecycle event line is valid JSON
+- [PASS] coordinator_events.jsonl line 446 parses as JSON [coordinator_events.jsonl]: Lifecycle event line is valid JSON
+- [PASS] coordinator_events.jsonl line 447 parses as JSON [coordinator_events.jsonl]: Lifecycle event line is valid JSON
+- [PASS] coordinator_events.jsonl line 448 parses as JSON [coordinator_events.jsonl]: Lifecycle event line is valid JSON
+- [PASS] coordinator_events.jsonl line 449 parses as JSON [coordinator_events.jsonl]: Lifecycle event line is valid JSON
+- [PASS] coordinator_events.jsonl line 450 parses as JSON [coordinator_events.jsonl]: Lifecycle event line is valid JSON
+- [PASS] collector_report_20260629T031235.977270Z.json parses as JSON [collector_report_20260629T031235.977270Z.json]: Valid JSON (3398 bytes)
+- [PASS] coordinator_events.jsonl line 451 parses as JSON [coordinator_events.jsonl]: Lifecycle event line is valid JSON
+- [PASS] coordinator_events.jsonl line 452 parses as JSON [coordinator_events.jsonl]: Lifecycle event line is valid JSON
+- [PASS] coordinator_events.jsonl line 453 parses as JSON [coordinator_events.jsonl]: Lifecycle event line is valid JSON
+- [PASS] coordinator_events.jsonl line 454 parses as JSON [coordinator_events.jsonl]: Lifecycle event line is valid JSON
+- [PASS] coordinator_events.jsonl line 455 parses as JSON [coordinator_events.jsonl]: Lifecycle event line is valid JSON
+- [PASS] coordinator_events.jsonl line 456 parses as JSON [coordinator_events.jsonl]: Lifecycle event line is valid JSON
+- [PASS] coordinator_events.jsonl line 457 parses as JSON [coordinator_events.jsonl]: Lifecycle event line is valid JSON
+- [PASS] coordinator_events.jsonl line 458 parses as JSON [coordinator_events.jsonl]: Lifecycle event line is valid JSON
+- [PASS] coordinator_events.jsonl line 459 parses as JSON [coordinator_events.jsonl]: Lifecycle event line is valid JSON
+- [PASS] coordinator_events.jsonl line 460 parses as JSON [coordinator_events.jsonl]: Lifecycle event line is valid JSON
+- [PASS] collector_report_20260629T031235.977270Z.json schema version [collector_report_20260629T031235.977270Z.json] (schema_version): schema_version matches evidence_harvester.collector_report.v1
+- [PASS] coordinator_events.jsonl line 461 parses as JSON [coordinator_events.jsonl]: Lifecycle event line is valid JSON
+- [PASS] coordinator_events.jsonl line 462 parses as JSON [coordinator_events.jsonl]: Lifecycle event line is valid JSON
+- [PASS] coordinator_events.jsonl line 463 parses as JSON [coordinator_events.jsonl]: Lifecycle event line is valid JSON
+- [PASS] coordinator_events.jsonl line 464 parses as JSON [coordinator_events.jsonl]: Lifecycle event line is valid JSON
+- [PASS] coordinator_events.jsonl line 465 parses as JSON [coordinator_events.jsonl]: Lifecycle event line is valid JSON
+- [PASS] coordinator_events.jsonl line 466 parses as JSON [coordinator_events.jsonl]: Lifecycle event line is valid JSON
+- [PASS] coordinator_events.jsonl line 467 parses as JSON [coordinator_events.jsonl]: Lifecycle event line is valid JSON
+- [PASS] coordinator_events.jsonl line 468 parses as JSON [coordinator_events.jsonl]: Lifecycle event line is valid JSON
+- [PASS] coordinator_events.jsonl line 469 parses as JSON [coordinator_events.jsonl]: Lifecycle event line is valid JSON
+- [PASS] coordinator_events.jsonl line 470 parses as JSON [coordinator_events.jsonl]: Lifecycle event line is valid JSON
+- [PASS] collector_report_20260629T032658.655687Z.json parses as JSON [collector_report_20260629T032658.655687Z.json]: Valid JSON (3398 bytes)
+- [PASS] coordinator_events.jsonl line 471 parses as JSON [coordinator_events.jsonl]: Lifecycle event line is valid JSON
+- [PASS] coordinator_events.jsonl line 472 parses as JSON [coordinator_events.jsonl]: Lifecycle event line is valid JSON
+- [PASS] coordinator_events.jsonl line 473 parses as JSON [coordinator_events.jsonl]: Lifecycle event line is valid JSON
+- [PASS] coordinator_events.jsonl line 474 parses as JSON [coordinator_events.jsonl]: Lifecycle event line is valid JSON
+- [PASS] coordinator_events.jsonl line 475 parses as JSON [coordinator_events.jsonl]: Lifecycle event line is valid JSON
+- [PASS] coordinator_events.jsonl line 476 parses as JSON [coordinator_events.jsonl]: Lifecycle event line is valid JSON
+- [PASS] coordinator_events.jsonl line 477 parses as JSON [coordinator_events.jsonl]: Lifecycle event line is valid JSON
+- [PASS] coordinator_events.jsonl line 478 parses as JSON [coordinator_events.jsonl]: Lifecycle event line is valid JSON
+- [PASS] coordinator_events.jsonl line 479 parses as JSON [coordinator_events.jsonl]: Lifecycle event line is valid JSON
+- [PASS] coordinator_events.jsonl line 480 parses as JSON [coordinator_events.jsonl]: Lifecycle event line is valid JSON
+- [PASS] collector_report_20260629T032658.655687Z.json schema version [collector_report_20260629T032658.655687Z.json] (schema_version): schema_version matches evidence_harvester.collector_report.v1
+- [PASS] coordinator_events.jsonl line 481 parses as JSON [coordinator_events.jsonl]: Lifecycle event line is valid JSON
+- [PASS] coordinator_events.jsonl line 482 parses as JSON [coordinator_events.jsonl]: Lifecycle event line is valid JSON
+- [PASS] coordinator_events.jsonl line 483 parses as JSON [coordinator_events.jsonl]: Lifecycle event line is valid JSON
+- [PASS] coordinator_events.jsonl line 484 parses as JSON [coordinator_events.jsonl]: Lifecycle event line is valid JSON
+- [PASS] coordinator_events.jsonl line 485 parses as JSON [coordinator_events.jsonl]: Lifecycle event line is valid JSON
+- [PASS] coordinator_events.jsonl line 486 parses as JSON [coordinator_events.jsonl]: Lifecycle event line is valid JSON
+- [PASS] coordinator_events.jsonl line 487 parses as JSON [coordinator_events.jsonl]: Lifecycle event line is valid JSON
+- [PASS] coordinator_events.jsonl line 488 parses as JSON [coordinator_events.jsonl]: Lifecycle event line is valid JSON
+- [PASS] coordinator_events.jsonl line 489 parses as JSON [coordinator_events.jsonl]: Lifecycle event line is valid JSON
+- [PASS] coordinator_events.jsonl line 490 parses as JSON [coordinator_events.jsonl]: Lifecycle event line is valid JSON
+- [PASS] collector_report_20260629T032736.303267Z.json parses as JSON [collector_report_20260629T032736.303267Z.json]: Valid JSON (3398 bytes)
+- [PASS] coordinator_events.jsonl line 491 parses as JSON [coordinator_events.jsonl]: Lifecycle event line is valid JSON
+- [PASS] coordinator_events.jsonl line 492 parses as JSON [coordinator_events.jsonl]: Lifecycle event line is valid JSON
+- [PASS] coordinator_events.jsonl line 493 parses as JSON [coordinator_events.jsonl]: Lifecycle event line is valid JSON
+- [PASS] coordinator_events.jsonl line 494 parses as JSON [coordinator_events.jsonl]: Lifecycle event line is valid JSON
+- [PASS] coordinator_events.jsonl line 495 parses as JSON [coordinator_events.jsonl]: Lifecycle event line is valid JSON
+- [PASS] coordinator_events.jsonl line 496 parses as JSON [coordinator_events.jsonl]: Lifecycle event line is valid JSON
+- [PASS] coordinator_events.jsonl line 497 parses as JSON [coordinator_events.jsonl]: Lifecycle event line is valid JSON
+- [PASS] coordinator_events.jsonl line 498 parses as JSON [coordinator_events.jsonl]: Lifecycle event line is valid JSON
+- [PASS] coordinator_events.jsonl line 499 parses as JSON [coordinator_events.jsonl]: Lifecycle event line is valid JSON
+- [PASS] coordinator_events.jsonl line 500 parses as JSON [coordinator_events.jsonl]: Lifecycle event line is valid JSON
+- [PASS] collector_report_20260629T032736.303267Z.json schema version [collector_report_20260629T032736.303267Z.json] (schema_version): schema_version matches evidence_harvester.collector_report.v1
+- [PASS] coordinator_events.jsonl line 501 parses as JSON [coordinator_events.jsonl]: Lifecycle event line is valid JSON
+- [PASS] coordinator_events.jsonl line 502 parses as JSON [coordinator_events.jsonl]: Lifecycle event line is valid JSON
+- [PASS] coordinator_events.jsonl line 503 parses as JSON [coordinator_events.jsonl]: Lifecycle event line is valid JSON
+- [PASS] coordinator_events.jsonl line 504 parses as JSON [coordinator_events.jsonl]: Lifecycle event line is valid JSON
+- [PASS] coordinator_events.jsonl line 505 parses as JSON [coordinator_events.jsonl]: Lifecycle event line is valid JSON
+- [PASS] coordinator_events.jsonl line 506 parses as JSON [coordinator_events.jsonl]: Lifecycle event line is valid JSON
+- [PASS] coordinator_events.jsonl line 507 parses as JSON [coordinator_events.jsonl]: Lifecycle event line is valid JSON
+- [PASS] coordinator_events.jsonl line 508 parses as JSON [coordinator_events.jsonl]: Lifecycle event line is valid JSON
+- [PASS] coordinator_events.jsonl line 509 parses as JSON [coordinator_events.jsonl]: Lifecycle event line is valid JSON
+- [PASS] coordinator_events.jsonl line 510 parses as JSON [coordinator_events.jsonl]: Lifecycle event line is valid JSON
+- [PASS] collector_report_20260629T034159.055539Z.json parses as JSON [collector_report_20260629T034159.055539Z.json]: Valid JSON (3398 bytes)
+- [PASS] coordinator_events.jsonl line 511 parses as JSON [coordinator_events.jsonl]: Lifecycle event line is valid JSON
+- [PASS] coordinator_events.jsonl line 512 parses as JSON [coordinator_events.jsonl]: Lifecycle event line is valid JSON
+- [PASS] coordinator_events.jsonl line 513 parses as JSON [coordinator_events.jsonl]: Lifecycle event line is valid JSON
+- [PASS] coordinator_events.jsonl line 514 parses as JSON [coordinator_events.jsonl]: Lifecycle event line is valid JSON
+- [PASS] coordinator_events.jsonl line 515 parses as JSON [coordinator_events.jsonl]: Lifecycle event line is valid JSON
+- [PASS] coordinator_events.jsonl line 516 parses as JSON [coordinator_events.jsonl]: Lifecycle event line is valid JSON
+- [PASS] coordinator_events.jsonl line 517 parses as JSON [coordinator_events.jsonl]: Lifecycle event line is valid JSON
+- [PASS] coordinator_events.jsonl line 518 parses as JSON [coordinator_events.jsonl]: Lifecycle event line is valid JSON
+- [PASS] coordinator_events.jsonl line 519 parses as JSON [coordinator_events.jsonl]: Lifecycle event line is valid JSON
+- [PASS] coordinator_events.jsonl line 520 parses as JSON [coordinator_events.jsonl]: Lifecycle event line is valid JSON
+- [PASS] collector_report_20260629T034159.055539Z.json schema version [collector_report_20260629T034159.055539Z.json] (schema_version): schema_version matches evidence_harvester.collector_report.v1
+- [PASS] coordinator_events.jsonl line 521 parses as JSON [coordinator_events.jsonl]: Lifecycle event line is valid JSON
+- [PASS] coordinator_events.jsonl line 522 parses as JSON [coordinator_events.jsonl]: Lifecycle event line is valid JSON
+- [PASS] coordinator_events.jsonl line 523 parses as JSON [coordinator_events.jsonl]: Lifecycle event line is valid JSON
+- [PASS] coordinator_events.jsonl line 524 parses as JSON [coordinator_events.jsonl]: Lifecycle event line is valid JSON
+- [PASS] coordinator_events.jsonl line 525 parses as JSON [coordinator_events.jsonl]: Lifecycle event line is valid JSON
+- [PASS] coordinator_events.jsonl line 526 parses as JSON [coordinator_events.jsonl]: Lifecycle event line is valid JSON
+- [PASS] coordinator_events.jsonl line 527 parses as JSON [coordinator_events.jsonl]: Lifecycle event line is valid JSON
+- [PASS] coordinator_events.jsonl line 528 parses as JSON [coordinator_events.jsonl]: Lifecycle event line is valid JSON
+- [PASS] coordinator_events.jsonl line 529 parses as JSON [coordinator_events.jsonl]: Lifecycle event line is valid JSON
+- [PASS] coordinator_events.jsonl line 530 parses as JSON [coordinator_events.jsonl]: Lifecycle event line is valid JSON
+- [PASS] collector_report_20260629T034236.662044Z.json parses as JSON [collector_report_20260629T034236.662044Z.json]: Valid JSON (3398 bytes)
+- [PASS] coordinator_events.jsonl line 531 parses as JSON [coordinator_events.jsonl]: Lifecycle event line is valid JSON
+- [PASS] coordinator_events.jsonl line 532 parses as JSON [coordinator_events.jsonl]: Lifecycle event line is valid JSON
+- [PASS] coordinator_events.jsonl line 533 parses as JSON [coordinator_events.jsonl]: Lifecycle event line is valid JSON
+- [PASS] coordinator_events.jsonl line 534 parses as JSON [coordinator_events.jsonl]: Lifecycle event line is valid JSON
+- [PASS] coordinator_events.jsonl line 535 parses as JSON [coordinator_events.jsonl]: Lifecycle event line is valid JSON
+- [PASS] coordinator_events.jsonl line 536 parses as JSON [coordinator_events.jsonl]: Lifecycle event line is valid JSON
+- [PASS] coordinator_events.jsonl line 537 parses as JSON [coordinator_events.jsonl]: Lifecycle event line is valid JSON
+- [PASS] coordinator_events.jsonl line 538 parses as JSON [coordinator_events.jsonl]: Lifecycle event line is valid JSON
+- [PASS] coordinator_events.jsonl line 539 parses as JSON [coordinator_events.jsonl]: Lifecycle event line is valid JSON
+- [PASS] coordinator_events.jsonl line 540 parses as JSON [coordinator_events.jsonl]: Lifecycle event line is valid JSON
+- [PASS] collector_report_20260629T034236.662044Z.json schema version [collector_report_20260629T034236.662044Z.json] (schema_version): schema_version matches evidence_harvester.collector_report.v1
+- [PASS] coordinator_events.jsonl line 541 parses as JSON [coordinator_events.jsonl]: Lifecycle event line is valid JSON
+- [PASS] coordinator_events.jsonl line 542 parses as JSON [coordinator_events.jsonl]: Lifecycle event line is valid JSON
+- [PASS] coordinator_events.jsonl line 543 parses as JSON [coordinator_events.jsonl]: Lifecycle event line is valid JSON
+- [PASS] coordinator_events.jsonl line 544 parses as JSON [coordinator_events.jsonl]: Lifecycle event line is valid JSON
+- [PASS] coordinator_events.jsonl line 545 parses as JSON [coordinator_events.jsonl]: Lifecycle event line is valid JSON
+- [PASS] coordinator_events.jsonl line 546 parses as JSON [coordinator_events.jsonl]: Lifecycle event line is valid JSON
+- [PASS] coordinator_events.jsonl line 547 parses as JSON [coordinator_events.jsonl]: Lifecycle event line is valid JSON
+- [PASS] coordinator_events.jsonl line 548 parses as JSON [coordinator_events.jsonl]: Lifecycle event line is valid JSON
+- [PASS] coordinator_events.jsonl line 549 parses as JSON [coordinator_events.jsonl]: Lifecycle event line is valid JSON
+- [PASS] coordinator_events.jsonl line 550 parses as JSON [coordinator_events.jsonl]: Lifecycle event line is valid JSON
+- [PASS] collector_report_20260629T035659.403750Z.json parses as JSON [collector_report_20260629T035659.403750Z.json]: Valid JSON (3398 bytes)
+- [PASS] coordinator_events.jsonl line 551 parses as JSON [coordinator_events.jsonl]: Lifecycle event line is valid JSON
+- [PASS] coordinator_events.jsonl line 552 parses as JSON [coordinator_events.jsonl]: Lifecycle event line is valid JSON
+- [PASS] coordinator_events.jsonl line 553 parses as JSON [coordinator_events.jsonl]: Lifecycle event line is valid JSON
+- [PASS] coordinator_events.jsonl line 554 parses as JSON [coordinator_events.jsonl]: Lifecycle event line is valid JSON
+- [PASS] coordinator_events.jsonl line 555 parses as JSON [coordinator_events.jsonl]: Lifecycle event line is valid JSON
+- [PASS] coordinator_events.jsonl line 556 parses as JSON [coordinator_events.jsonl]: Lifecycle event line is valid JSON
+- [PASS] coordinator_events.jsonl line 557 parses as JSON [coordinator_events.jsonl]: Lifecycle event line is valid JSON
+- [PASS] coordinator_events.jsonl line 558 parses as JSON [coordinator_events.jsonl]: Lifecycle event line is valid JSON
+- [PASS] coordinator_events.jsonl line 559 parses as JSON [coordinator_events.jsonl]: Lifecycle event line is valid JSON
+- [PASS] coordinator_events.jsonl line 560 parses as JSON [coordinator_events.jsonl]: Lifecycle event line is valid JSON
+- [PASS] collector_report_20260629T035659.403750Z.json schema version [collector_report_20260629T035659.403750Z.json] (schema_version): schema_version matches evidence_harvester.collector_report.v1
+- [PASS] coordinator_events.jsonl line 561 parses as JSON [coordinator_events.jsonl]: Lifecycle event line is valid JSON
+- [PASS] coordinator_events.jsonl line 562 parses as JSON [coordinator_events.jsonl]: Lifecycle event line is valid JSON
+- [PASS] coordinator_events.jsonl line 563 parses as JSON [coordinator_events.jsonl]: Lifecycle event line is valid JSON
+- [PASS] coordinator_events.jsonl line 564 parses as JSON [coordinator_events.jsonl]: Lifecycle event line is valid JSON
+- [PASS] coordinator_events.jsonl line 565 parses as JSON [coordinator_events.jsonl]: Lifecycle event line is valid JSON
+- [PASS] coordinator_events.jsonl line 566 parses as JSON [coordinator_events.jsonl]: Lifecycle event line is valid JSON
+- [PASS] coordinator_events.jsonl line 567 parses as JSON [coordinator_events.jsonl]: Lifecycle event line is valid JSON
+- [PASS] coordinator_events.jsonl line 568 parses as JSON [coordinator_events.jsonl]: Lifecycle event line is valid JSON
+- [PASS] coordinator_events.jsonl line 569 parses as JSON [coordinator_events.jsonl]: Lifecycle event line is valid JSON
+- [PASS] coordinator_events.jsonl line 570 parses as JSON [coordinator_events.jsonl]: Lifecycle event line is valid JSON
+- [PASS] collector_report_20260629T035736.996291Z.json parses as JSON [collector_report_20260629T035736.996291Z.json]: Valid JSON (3398 bytes)
+- [PASS] coordinator_events.jsonl line 571 parses as JSON [coordinator_events.jsonl]: Lifecycle event line is valid JSON
+- [PASS] coordinator_events.jsonl line 572 parses as JSON [coordinator_events.jsonl]: Lifecycle event line is valid JSON
+- [PASS] coordinator_events.jsonl line 573 parses as JSON [coordinator_events.jsonl]: Lifecycle event line is valid JSON
+- [PASS] coordinator_events.jsonl line 574 parses as JSON [coordinator_events.jsonl]: Lifecycle event line is valid JSON
+- [PASS] coordinator_events.jsonl line 575 parses as JSON [coordinator_events.jsonl]: Lifecycle event line is valid JSON
+- [PASS] coordinator_events.jsonl line 576 parses as JSON [coordinator_events.jsonl]: Lifecycle event line is valid JSON
+- [PASS] coordinator_events.jsonl line 577 parses as JSON [coordinator_events.jsonl]: Lifecycle event line is valid JSON
+- [PASS] coordinator_events.jsonl line 578 parses as JSON [coordinator_events.jsonl]: Lifecycle event line is valid JSON
+- [PASS] coordinator_events.jsonl line 579 parses as JSON [coordinator_events.jsonl]: Lifecycle event line is valid JSON
+- [PASS] coordinator_events.jsonl line 580 parses as JSON [coordinator_events.jsonl]: Lifecycle event line is valid JSON
+- [PASS] collector_report_20260629T035736.996291Z.json schema version [collector_report_20260629T035736.996291Z.json] (schema_version): schema_version matches evidence_harvester.collector_report.v1
+- [PASS] coordinator_events.jsonl line 581 parses as JSON [coordinator_events.jsonl]: Lifecycle event line is valid JSON
+- [PASS] coordinator_events.jsonl line 582 parses as JSON [coordinator_events.jsonl]: Lifecycle event line is valid JSON
+- [PASS] coordinator_events.jsonl line 583 parses as JSON [coordinator_events.jsonl]: Lifecycle event line is valid JSON
+- [PASS] coordinator_events.jsonl line 584 parses as JSON [coordinator_events.jsonl]: Lifecycle event line is valid JSON
+- [PASS] coordinator_events.jsonl line 585 parses as JSON [coordinator_events.jsonl]: Lifecycle event line is valid JSON
+- [PASS] coordinator_events.jsonl line 586 parses as JSON [coordinator_events.jsonl]: Lifecycle event line is valid JSON
+- [PASS] coordinator_events.jsonl line 587 parses as JSON [coordinator_events.jsonl]: Lifecycle event line is valid JSON
+- [PASS] coordinator_events.jsonl line 588 parses as JSON [coordinator_events.jsonl]: Lifecycle event line is valid JSON
+- [PASS] coordinator_events.jsonl line 589 parses as JSON [coordinator_events.jsonl]: Lifecycle event line is valid JSON
+- [PASS] coordinator_events.jsonl line 590 parses as JSON [coordinator_events.jsonl]: Lifecycle event line is valid JSON
+- [PASS] collector_report_20260629T041159.834473Z.json parses as JSON [collector_report_20260629T041159.834473Z.json]: Valid JSON (3398 bytes)
+- [PASS] coordinator_events.jsonl line 591 parses as JSON [coordinator_events.jsonl]: Lifecycle event line is valid JSON
+- [PASS] coordinator_events.jsonl line 592 parses as JSON [coordinator_events.jsonl]: Lifecycle event line is valid JSON
+- [PASS] coordinator_events.jsonl line 593 parses as JSON [coordinator_events.jsonl]: Lifecycle event line is valid JSON
+- [PASS] coordinator_events.jsonl line 594 parses as JSON [coordinator_events.jsonl]: Lifecycle event line is valid JSON
+- [PASS] coordinator_events.jsonl line 595 parses as JSON [coordinator_events.jsonl]: Lifecycle event line is valid JSON
+- [PASS] coordinator_events.jsonl line 596 parses as JSON [coordinator_events.jsonl]: Lifecycle event line is valid JSON
+- [PASS] coordinator_events.jsonl line 597 parses as JSON [coordinator_events.jsonl]: Lifecycle event line is valid JSON
+- [PASS] coordinator_events.jsonl line 598 parses as JSON [coordinator_events.jsonl]: Lifecycle event line is valid JSON
+- [PASS] coordinator_events.jsonl line 599 parses as JSON [coordinator_events.jsonl]: Lifecycle event line is valid JSON
+- [PASS] coordinator_events.jsonl line 600 parses as JSON [coordinator_events.jsonl]: Lifecycle event line is valid JSON
+- [PASS] collector_report_20260629T041159.834473Z.json schema version [collector_report_20260629T041159.834473Z.json] (schema_version): schema_version matches evidence_harvester.collector_report.v1
+- [PASS] coordinator_events.jsonl line 601 parses as JSON [coordinator_events.jsonl]: Lifecycle event line is valid JSON
+- [PASS] coordinator_events.jsonl line 602 parses as JSON [coordinator_events.jsonl]: Lifecycle event line is valid JSON
+- [PASS] coordinator_events.jsonl line 603 parses as JSON [coordinator_events.jsonl]: Lifecycle event line is valid JSON
+- [PASS] coordinator_events.jsonl line 604 parses as JSON [coordinator_events.jsonl]: Lifecycle event line is valid JSON
+- [PASS] coordinator_events.jsonl line 605 parses as JSON [coordinator_events.jsonl]: Lifecycle event line is valid JSON
+- [PASS] coordinator_events.jsonl line 606 parses as JSON [coordinator_events.jsonl]: Lifecycle event line is valid JSON
+- [PASS] coordinator_events.jsonl line 607 parses as JSON [coordinator_events.jsonl]: Lifecycle event line is valid JSON
+- [PASS] coordinator_events.jsonl line 608 parses as JSON [coordinator_events.jsonl]: Lifecycle event line is valid JSON
+- [PASS] coordinator_events.jsonl line 609 parses as JSON [coordinator_events.jsonl]: Lifecycle event line is valid JSON
+- [PASS] coordinator_events.jsonl line 610 parses as JSON [coordinator_events.jsonl]: Lifecycle event line is valid JSON
+- [PASS] collector_report_20260629T041237.420710Z.json parses as JSON [collector_report_20260629T041237.420710Z.json]: Valid JSON (3398 bytes)
+- [PASS] coordinator_events.jsonl line 611 parses as JSON [coordinator_events.jsonl]: Lifecycle event line is valid JSON
+- [PASS] coordinator_events.jsonl line 612 parses as JSON [coordinator_events.jsonl]: Lifecycle event line is valid JSON
+- [PASS] coordinator_events.jsonl line 613 parses as JSON [coordinator_events.jsonl]: Lifecycle event line is valid JSON
+- [PASS] coordinator_events.jsonl line 614 parses as JSON [coordinator_events.jsonl]: Lifecycle event line is valid JSON
+- [PASS] coordinator_events.jsonl line 615 parses as JSON [coordinator_events.jsonl]: Lifecycle event line is valid JSON
+- [PASS] coordinator_events.jsonl line 616 parses as JSON [coordinator_events.jsonl]: Lifecycle event line is valid JSON
+- [PASS] coordinator_events.jsonl line 617 parses as JSON [coordinator_events.jsonl]: Lifecycle event line is valid JSON
+- [PASS] coordinator_events.jsonl line 618 parses as JSON [coordinator_events.jsonl]: Lifecycle event line is valid JSON
+- [PASS] coordinator_events.jsonl line 619 parses as JSON [coordinator_events.jsonl]: Lifecycle event line is valid JSON
+- [PASS] coordinator_events.jsonl line 620 parses as JSON [coordinator_events.jsonl]: Lifecycle event line is valid JSON
+- [PASS] collector_report_20260629T041237.420710Z.json schema version [collector_report_20260629T041237.420710Z.json] (schema_version): schema_version matches evidence_harvester.collector_report.v1
+- [PASS] coordinator_events.jsonl line 621 parses as JSON [coordinator_events.jsonl]: Lifecycle event line is valid JSON
+- [PASS] coordinator_events.jsonl line 622 parses as JSON [coordinator_events.jsonl]: Lifecycle event line is valid JSON
+- [PASS] coordinator_events.jsonl line 623 parses as JSON [coordinator_events.jsonl]: Lifecycle event line is valid JSON
+- [PASS] coordinator_events.jsonl line 624 parses as JSON [coordinator_events.jsonl]: Lifecycle event line is valid JSON
+- [PASS] coordinator_events.jsonl line 625 parses as JSON [coordinator_events.jsonl]: Lifecycle event line is valid JSON
+- [PASS] coordinator_events.jsonl line 626 parses as JSON [coordinator_events.jsonl]: Lifecycle event line is valid JSON
+- [PASS] coordinator_events.jsonl line 627 parses as JSON [coordinator_events.jsonl]: Lifecycle event line is valid JSON
+- [PASS] coordinator_events.jsonl line 628 parses as JSON [coordinator_events.jsonl]: Lifecycle event line is valid JSON
+- [PASS] coordinator_events.jsonl line 629 parses as JSON [coordinator_events.jsonl]: Lifecycle event line is valid JSON
+- [PASS] coordinator_events.jsonl line 630 parses as JSON [coordinator_events.jsonl]: Lifecycle event line is valid JSON
+- [PASS] collector_report_20260629T042700.207061Z.json parses as JSON [collector_report_20260629T042700.207061Z.json]: Valid JSON (3398 bytes)
+- [PASS] coordinator_events.jsonl line 631 parses as JSON [coordinator_events.jsonl]: Lifecycle event line is valid JSON
+- [PASS] coordinator_events.jsonl line 632 parses as JSON [coordinator_events.jsonl]: Lifecycle event line is valid JSON
+- [PASS] coordinator_events.jsonl line 633 parses as JSON [coordinator_events.jsonl]: Lifecycle event line is valid JSON
+- [PASS] coordinator_events.jsonl line 634 parses as JSON [coordinator_events.jsonl]: Lifecycle event line is valid JSON
+- [PASS] coordinator_events.jsonl line 635 parses as JSON [coordinator_events.jsonl]: Lifecycle event line is valid JSON
+- [PASS] coordinator_events.jsonl line 636 parses as JSON [coordinator_events.jsonl]: Lifecycle event line is valid JSON
+- [PASS] coordinator_events.jsonl line 637 parses as JSON [coordinator_events.jsonl]: Lifecycle event line is valid JSON
+- [PASS] coordinator_events.jsonl line 638 parses as JSON [coordinator_events.jsonl]: Lifecycle event line is valid JSON
+- [PASS] coordinator_events.jsonl line 639 parses as JSON [coordinator_events.jsonl]: Lifecycle event line is valid JSON
+- [PASS] coordinator_events.jsonl line 640 parses as JSON [coordinator_events.jsonl]: Lifecycle event line is valid JSON
+- [PASS] collector_report_20260629T042700.207061Z.json schema version [collector_report_20260629T042700.207061Z.json] (schema_version): schema_version matches evidence_harvester.collector_report.v1
+- [PASS] coordinator_events.jsonl line 641 parses as JSON [coordinator_events.jsonl]: Lifecycle event line is valid JSON
+- [PASS] coordinator_events.jsonl line 642 parses as JSON [coordinator_events.jsonl]: Lifecycle event line is valid JSON
+- [PASS] coordinator_events.jsonl line 643 parses as JSON [coordinator_events.jsonl]: Lifecycle event line is valid JSON
+- [PASS] coordinator_events.jsonl line 644 parses as JSON [coordinator_events.jsonl]: Lifecycle event line is valid JSON
+- [PASS] coordinator_events.jsonl line 645 parses as JSON [coordinator_events.jsonl]: Lifecycle event line is valid JSON
+- [PASS] coordinator_events.jsonl line 646 parses as JSON [coordinator_events.jsonl]: Lifecycle event line is valid JSON
+- [PASS] coordinator_events.jsonl line 647 parses as JSON [coordinator_events.jsonl]: Lifecycle event line is valid JSON
+- [PASS] coordinator_events.jsonl line 648 parses as JSON [coordinator_events.jsonl]: Lifecycle event line is valid JSON
+- [PASS] coordinator_events.jsonl line 649 parses as JSON [coordinator_events.jsonl]: Lifecycle event line is valid JSON
+- [PASS] coordinator_events.jsonl line 650 parses as JSON [coordinator_events.jsonl]: Lifecycle event line is valid JSON
+- [PASS] collector_report_20260629T042737.755496Z.json parses as JSON [collector_report_20260629T042737.755496Z.json]: Valid JSON (3398 bytes)
+- [PASS] coordinator_events.jsonl line 651 parses as JSON [coordinator_events.jsonl]: Lifecycle event line is valid JSON
+- [PASS] coordinator_events.jsonl line 652 parses as JSON [coordinator_events.jsonl]: Lifecycle event line is valid JSON
+- [PASS] coordinator_events.jsonl line 653 parses as JSON [coordinator_events.jsonl]: Lifecycle event line is valid JSON
+- [PASS] coordinator_events.jsonl line 654 parses as JSON [coordinator_events.jsonl]: Lifecycle event line is valid JSON
+- [PASS] coordinator_events.jsonl line 655 parses as JSON [coordinator_events.jsonl]: Lifecycle event line is valid JSON
+- [PASS] coordinator_events.jsonl line 656 parses as JSON [coordinator_events.jsonl]: Lifecycle event line is valid JSON
+- [PASS] coordinator_events.jsonl line 657 parses as JSON [coordinator_events.jsonl]: Lifecycle event line is valid JSON
+- [PASS] coordinator_events.jsonl line 658 parses as JSON [coordinator_events.jsonl]: Lifecycle event line is valid JSON
+- [PASS] coordinator_events.jsonl line 659 parses as JSON [coordinator_events.jsonl]: Lifecycle event line is valid JSON
+- [PASS] coordinator_events.jsonl line 660 parses as JSON [coordinator_events.jsonl]: Lifecycle event line is valid JSON
+- [PASS] collector_report_20260629T042737.755496Z.json schema version [collector_report_20260629T042737.755496Z.json] (schema_version): schema_version matches evidence_harvester.collector_report.v1
+- [PASS] coordinator_events.jsonl line 661 parses as JSON [coordinator_events.jsonl]: Lifecycle event line is valid JSON
+- [PASS] coordinator_events.jsonl line 662 parses as JSON [coordinator_events.jsonl]: Lifecycle event line is valid JSON
+- [PASS] coordinator_events.jsonl line 663 parses as JSON [coordinator_events.jsonl]: Lifecycle event line is valid JSON
+- [PASS] coordinator_events.jsonl line 664 parses as JSON [coordinator_events.jsonl]: Lifecycle event line is valid JSON
+- [PASS] coordinator_events.jsonl line 665 parses as JSON [coordinator_events.jsonl]: Lifecycle event line is valid JSON
+- [PASS] coordinator_events.jsonl line 666 parses as JSON [coordinator_events.jsonl]: Lifecycle event line is valid JSON
+- [PASS] coordinator_events.jsonl line 667 parses as JSON [coordinator_events.jsonl]: Lifecycle event line is valid JSON
+- [PASS] coordinator_events.jsonl line 668 parses as JSON [coordinator_events.jsonl]: Lifecycle event line is valid JSON
+- [PASS] coordinator_events.jsonl line 669 parses as JSON [coordinator_events.jsonl]: Lifecycle event line is valid JSON
+- [PASS] coordinator_events.jsonl line 670 parses as JSON [coordinator_events.jsonl]: Lifecycle event line is valid JSON
+- [PASS] collector_report_20260629T044200.553296Z.json parses as JSON [collector_report_20260629T044200.553296Z.json]: Valid JSON (3398 bytes)
+- [PASS] coordinator_events.jsonl line 671 parses as JSON [coordinator_events.jsonl]: Lifecycle event line is valid JSON
+- [PASS] coordinator_events.jsonl line 672 parses as JSON [coordinator_events.jsonl]: Lifecycle event line is valid JSON
+- [PASS] coordinator_events.jsonl line 673 parses as JSON [coordinator_events.jsonl]: Lifecycle event line is valid JSON
+- [PASS] coordinator_events.jsonl line 674 parses as JSON [coordinator_events.jsonl]: Lifecycle event line is valid JSON
+- [PASS] coordinator_events.jsonl line 675 parses as JSON [coordinator_events.jsonl]: Lifecycle event line is valid JSON
+- [PASS] coordinator_events.jsonl line 676 parses as JSON [coordinator_events.jsonl]: Lifecycle event line is valid JSON
+- [PASS] coordinator_events.jsonl line 677 parses as JSON [coordinator_events.jsonl]: Lifecycle event line is valid JSON
+- [PASS] coordinator_events.jsonl line 678 parses as JSON [coordinator_events.jsonl]: Lifecycle event line is valid JSON
+- [PASS] coordinator_events.jsonl line 679 parses as JSON [coordinator_events.jsonl]: Lifecycle event line is valid JSON
+- [PASS] coordinator_events.jsonl line 680 parses as JSON [coordinator_events.jsonl]: Lifecycle event line is valid JSON
+- [PASS] collector_report_20260629T044200.553296Z.json schema version [collector_report_20260629T044200.553296Z.json] (schema_version): schema_version matches evidence_harvester.collector_report.v1
+- [PASS] coordinator_events.jsonl line 681 parses as JSON [coordinator_events.jsonl]: Lifecycle event line is valid JSON
+- [PASS] coordinator_events.jsonl line 682 parses as JSON [coordinator_events.jsonl]: Lifecycle event line is valid JSON
+- [PASS] coordinator_events.jsonl line 683 parses as JSON [coordinator_events.jsonl]: Lifecycle event line is valid JSON
+- [PASS] coordinator_events.jsonl line 684 parses as JSON [coordinator_events.jsonl]: Lifecycle event line is valid JSON
+- [PASS] coordinator_events.jsonl line 685 parses as JSON [coordinator_events.jsonl]: Lifecycle event line is valid JSON
+- [PASS] coordinator_events.jsonl line 686 parses as JSON [coordinator_events.jsonl]: Lifecycle event line is valid JSON
+- [PASS] coordinator_events.jsonl line 687 parses as JSON [coordinator_events.jsonl]: Lifecycle event line is valid JSON
+- [PASS] coordinator_events.jsonl line 688 parses as JSON [coordinator_events.jsonl]: Lifecycle event line is valid JSON
+- [PASS] coordinator_events.jsonl line 689 parses as JSON [coordinator_events.jsonl]: Lifecycle event line is valid JSON
+- [PASS] coordinator_events.jsonl line 690 parses as JSON [coordinator_events.jsonl]: Lifecycle event line is valid JSON
+- [PASS] collector_report_20260629T044238.097659Z.json parses as JSON [collector_report_20260629T044238.097659Z.json]: Valid JSON (3398 bytes)
+- [PASS] coordinator_events.jsonl line 691 parses as JSON [coordinator_events.jsonl]: Lifecycle event line is valid JSON
+- [PASS] coordinator_events.jsonl line 692 parses as JSON [coordinator_events.jsonl]: Lifecycle event line is valid JSON
+- [PASS] coordinator_events.jsonl line 693 parses as JSON [coordinator_events.jsonl]: Lifecycle event line is valid JSON
+- [PASS] coordinator_events.jsonl line 694 parses as JSON [coordinator_events.jsonl]: Lifecycle event line is valid JSON
+- [PASS] coordinator_events.jsonl line 695 parses as JSON [coordinator_events.jsonl]: Lifecycle event line is valid JSON
+- [PASS] coordinator_events.jsonl line 696 parses as JSON [coordinator_events.jsonl]: Lifecycle event line is valid JSON
+- [PASS] coordinator_events.jsonl line 697 parses as JSON [coordinator_events.jsonl]: Lifecycle event line is valid JSON
+- [PASS] coordinator_events.jsonl line 698 parses as JSON [coordinator_events.jsonl]: Lifecycle event line is valid JSON
+- [PASS] coordinator_events.jsonl line 699 parses as JSON [coordinator_events.jsonl]: Lifecycle event line is valid JSON
+- [PASS] coordinator_events.jsonl line 700 parses as JSON [coordinator_events.jsonl]: Lifecycle event line is valid JSON
+- [PASS] collector_report_20260629T044238.097659Z.json schema version [collector_report_20260629T044238.097659Z.json] (schema_version): schema_version matches evidence_harvester.collector_report.v1
+- [PASS] coordinator_events.jsonl line 701 parses as JSON [coordinator_events.jsonl]: Lifecycle event line is valid JSON
+- [PASS] coordinator_events.jsonl line 702 parses as JSON [coordinator_events.jsonl]: Lifecycle event line is valid JSON
+- [PASS] coordinator_events.jsonl line 703 parses as JSON [coordinator_events.jsonl]: Lifecycle event line is valid JSON
+- [PASS] coordinator_events.jsonl line 704 parses as JSON [coordinator_events.jsonl]: Lifecycle event line is valid JSON
+- [PASS] coordinator_events.jsonl line 705 parses as JSON [coordinator_events.jsonl]: Lifecycle event line is valid JSON
+- [PASS] coordinator_events.jsonl line 706 parses as JSON [coordinator_events.jsonl]: Lifecycle event line is valid JSON
+- [PASS] coordinator_events.jsonl line 707 parses as JSON [coordinator_events.jsonl]: Lifecycle event line is valid JSON
+- [PASS] coordinator_events.jsonl line 708 parses as JSON [coordinator_events.jsonl]: Lifecycle event line is valid JSON
+- [PASS] coordinator_events.jsonl line 709 parses as JSON [coordinator_events.jsonl]: Lifecycle event line is valid JSON
+- [PASS] coordinator_events.jsonl line 710 parses as JSON [coordinator_events.jsonl]: Lifecycle event line is valid JSON
+- [PASS] collector_report_20260629T045700.953009Z.json parses as JSON [collector_report_20260629T045700.953009Z.json]: Valid JSON (3398 bytes)
+- [PASS] coordinator_events.jsonl line 711 parses as JSON [coordinator_events.jsonl]: Lifecycle event line is valid JSON
+- [PASS] coordinator_events.jsonl line 712 parses as JSON [coordinator_events.jsonl]: Lifecycle event line is valid JSON
+- [PASS] coordinator_events.jsonl line 713 parses as JSON [coordinator_events.jsonl]: Lifecycle event line is valid JSON
+- [PASS] coordinator_events.jsonl line 714 parses as JSON [coordinator_events.jsonl]: Lifecycle event line is valid JSON
+- [PASS] coordinator_events.jsonl line 715 parses as JSON [coordinator_events.jsonl]: Lifecycle event line is valid JSON
+- [PASS] coordinator_events.jsonl line 716 parses as JSON [coordinator_events.jsonl]: Lifecycle event line is valid JSON
+- [PASS] coordinator_events.jsonl line 717 parses as JSON [coordinator_events.jsonl]: Lifecycle event line is valid JSON
+- [PASS] coordinator_events.jsonl line 718 parses as JSON [coordinator_events.jsonl]: Lifecycle event line is valid JSON
+- [PASS] coordinator_events.jsonl line 719 parses as JSON [coordinator_events.jsonl]: Lifecycle event line is valid JSON
+- [PASS] coordinator_events.jsonl line 720 parses as JSON [coordinator_events.jsonl]: Lifecycle event line is valid JSON
+- [PASS] collector_report_20260629T045700.953009Z.json schema version [collector_report_20260629T045700.953009Z.json] (schema_version): schema_version matches evidence_harvester.collector_report.v1
+- [PASS] coordinator_events.jsonl line 721 parses as JSON [coordinator_events.jsonl]: Lifecycle event line is valid JSON
+- [PASS] coordinator_events.jsonl line 722 parses as JSON [coordinator_events.jsonl]: Lifecycle event line is valid JSON
+- [PASS] coordinator_events.jsonl line 723 parses as JSON [coordinator_events.jsonl]: Lifecycle event line is valid JSON
+- [PASS] coordinator_events.jsonl line 724 parses as JSON [coordinator_events.jsonl]: Lifecycle event line is valid JSON
+- [PASS] coordinator_events.jsonl line 725 parses as JSON [coordinator_events.jsonl]: Lifecycle event line is valid JSON
+- [PASS] coordinator_events.jsonl line 726 parses as JSON [coordinator_events.jsonl]: Lifecycle event line is valid JSON
+- [PASS] coordinator_events.jsonl line 727 parses as JSON [coordinator_events.jsonl]: Lifecycle event line is valid JSON
+- [PASS] coordinator_events.jsonl line 728 parses as JSON [coordinator_events.jsonl]: Lifecycle event line is valid JSON
+- [PASS] coordinator_events.jsonl line 729 parses as JSON [coordinator_events.jsonl]: Lifecycle event line is valid JSON
+- [PASS] coordinator_events.jsonl line 730 parses as JSON [coordinator_events.jsonl]: Lifecycle event line is valid JSON
+- [PASS] collector_report_20260629T045738.476486Z.json parses as JSON [collector_report_20260629T045738.476486Z.json]: Valid JSON (3398 bytes)
+- [PASS] coordinator_events.jsonl line 731 parses as JSON [coordinator_events.jsonl]: Lifecycle event line is valid JSON
+- [PASS] coordinator_events.jsonl line 732 parses as JSON [coordinator_events.jsonl]: Lifecycle event line is valid JSON
+- [PASS] coordinator_events.jsonl line 733 parses as JSON [coordinator_events.jsonl]: Lifecycle event line is valid JSON
+- [PASS] coordinator_events.jsonl line 734 parses as JSON [coordinator_events.jsonl]: Lifecycle event line is valid JSON
+- [PASS] coordinator_events.jsonl line 735 parses as JSON [coordinator_events.jsonl]: Lifecycle event line is valid JSON
+- [PASS] coordinator_events.jsonl line 736 parses as JSON [coordinator_events.jsonl]: Lifecycle event line is valid JSON
+- [PASS] coordinator_events.jsonl line 737 parses as JSON [coordinator_events.jsonl]: Lifecycle event line is valid JSON
+- [PASS] coordinator_events.jsonl line 738 parses as JSON [coordinator_events.jsonl]: Lifecycle event line is valid JSON
+- [PASS] coordinator_events.jsonl line 739 parses as JSON [coordinator_events.jsonl]: Lifecycle event line is valid JSON
+- [PASS] coordinator_events.jsonl line 740 parses as JSON [coordinator_events.jsonl]: Lifecycle event line is valid JSON
+- [PASS] collector_report_20260629T045738.476486Z.json schema version [collector_report_20260629T045738.476486Z.json] (schema_version): schema_version matches evidence_harvester.collector_report.v1
+- [PASS] coordinator_events.jsonl line 741 parses as JSON [coordinator_events.jsonl]: Lifecycle event line is valid JSON
+- [PASS] coordinator_events.jsonl line 742 parses as JSON [coordinator_events.jsonl]: Lifecycle event line is valid JSON
+- [PASS] coordinator_events.jsonl line 743 parses as JSON [coordinator_events.jsonl]: Lifecycle event line is valid JSON
+- [PASS] coordinator_events.jsonl line 744 parses as JSON [coordinator_events.jsonl]: Lifecycle event line is valid JSON
+- [PASS] coordinator_events.jsonl line 745 parses as JSON [coordinator_events.jsonl]: Lifecycle event line is valid JSON
+- [PASS] coordinator_events.jsonl line 746 parses as JSON [coordinator_events.jsonl]: Lifecycle event line is valid JSON
+- [PASS] coordinator_events.jsonl line 747 parses as JSON [coordinator_events.jsonl]: Lifecycle event line is valid JSON
+- [PASS] coordinator_events.jsonl line 748 parses as JSON [coordinator_events.jsonl]: Lifecycle event line is valid JSON
+- [PASS] coordinator_events.jsonl line 749 parses as JSON [coordinator_events.jsonl]: Lifecycle event line is valid JSON
+- [PASS] coordinator_events.jsonl line 750 parses as JSON [coordinator_events.jsonl]: Lifecycle event line is valid JSON
+- [PASS] collector_report_20260629T051201.371370Z.json parses as JSON [collector_report_20260629T051201.371370Z.json]: Valid JSON (3398 bytes)
+- [PASS] coordinator_events.jsonl line 751 parses as JSON [coordinator_events.jsonl]: Lifecycle event line is valid JSON
+- [PASS] coordinator_events.jsonl line 752 parses as JSON [coordinator_events.jsonl]: Lifecycle event line is valid JSON
+- [PASS] coordinator_events.jsonl line 753 parses as JSON [coordinator_events.jsonl]: Lifecycle event line is valid JSON
+- [PASS] coordinator_events.jsonl line 754 parses as JSON [coordinator_events.jsonl]: Lifecycle event line is valid JSON
+- [PASS] coordinator_events.jsonl line 755 parses as JSON [coordinator_events.jsonl]: Lifecycle event line is valid JSON
+- [PASS] coordinator_events.jsonl line 756 parses as JSON [coordinator_events.jsonl]: Lifecycle event line is valid JSON
+- [PASS] coordinator_events.jsonl line 757 parses as JSON [coordinator_events.jsonl]: Lifecycle event line is valid JSON
+- [PASS] coordinator_events.jsonl line 758 parses as JSON [coordinator_events.jsonl]: Lifecycle event line is valid JSON
+- [PASS] coordinator_events.jsonl line 759 parses as JSON [coordinator_events.jsonl]: Lifecycle event line is valid JSON
+- [PASS] coordinator_events.jsonl line 760 parses as JSON [coordinator_events.jsonl]: Lifecycle event line is valid JSON
+- [PASS] collector_report_20260629T051201.371370Z.json schema version [collector_report_20260629T051201.371370Z.json] (schema_version): schema_version matches evidence_harvester.collector_report.v1
+- [PASS] coordinator_events.jsonl line 761 parses as JSON [coordinator_events.jsonl]: Lifecycle event line is valid JSON
+- [PASS] coordinator_events.jsonl line 762 parses as JSON [coordinator_events.jsonl]: Lifecycle event line is valid JSON
+- [PASS] coordinator_events.jsonl line 763 parses as JSON [coordinator_events.jsonl]: Lifecycle event line is valid JSON
+- [PASS] coordinator_events.jsonl line 764 parses as JSON [coordinator_events.jsonl]: Lifecycle event line is valid JSON
+- [PASS] coordinator_events.jsonl line 765 parses as JSON [coordinator_events.jsonl]: Lifecycle event line is valid JSON
+- [PASS] coordinator_events.jsonl line 766 parses as JSON [coordinator_events.jsonl]: Lifecycle event line is valid JSON
+- [PASS] coordinator_events.jsonl line 767 parses as JSON [coordinator_events.jsonl]: Lifecycle event line is valid JSON
+- [PASS] coordinator_events.jsonl line 768 parses as JSON [coordinator_events.jsonl]: Lifecycle event line is valid JSON
+- [PASS] coordinator_events.jsonl line 769 parses as JSON [coordinator_events.jsonl]: Lifecycle event line is valid JSON
+- [PASS] coordinator_events.jsonl line 770 parses as JSON [coordinator_events.jsonl]: Lifecycle event line is valid JSON
+- [PASS] collector_report_20260629T051238.868752Z.json parses as JSON [collector_report_20260629T051238.868752Z.json]: Valid JSON (3398 bytes)
+- [PASS] coordinator_events.jsonl line 771 parses as JSON [coordinator_events.jsonl]: Lifecycle event line is valid JSON
+- [PASS] coordinator_events.jsonl line 772 parses as JSON [coordinator_events.jsonl]: Lifecycle event line is valid JSON
+- [PASS] coordinator_events.jsonl line 773 parses as JSON [coordinator_events.jsonl]: Lifecycle event line is valid JSON
+- [PASS] coordinator_events.jsonl line 774 parses as JSON [coordinator_events.jsonl]: Lifecycle event line is valid JSON
+- [PASS] coordinator_events.jsonl line 775 parses as JSON [coordinator_events.jsonl]: Lifecycle event line is valid JSON
+- [PASS] coordinator_events.jsonl line 776 parses as JSON [coordinator_events.jsonl]: Lifecycle event line is valid JSON
+- [PASS] coordinator_events.jsonl line 777 parses as JSON [coordinator_events.jsonl]: Lifecycle event line is valid JSON
+- [PASS] coordinator_events.jsonl line 778 parses as JSON [coordinator_events.jsonl]: Lifecycle event line is valid JSON
+- [PASS] coordinator_events.jsonl line 779 parses as JSON [coordinator_events.jsonl]: Lifecycle event line is valid JSON
+- [PASS] coordinator_events.jsonl line 780 parses as JSON [coordinator_events.jsonl]: Lifecycle event line is valid JSON
+- [PASS] collector_report_20260629T051238.868752Z.json schema version [collector_report_20260629T051238.868752Z.json] (schema_version): schema_version matches evidence_harvester.collector_report.v1
+- [PASS] coordinator_events.jsonl line 781 parses as JSON [coordinator_events.jsonl]: Lifecycle event line is valid JSON
+- [PASS] coordinator_events.jsonl line 782 parses as JSON [coordinator_events.jsonl]: Lifecycle event line is valid JSON
+- [PASS] coordinator_events.jsonl line 783 parses as JSON [coordinator_events.jsonl]: Lifecycle event line is valid JSON
+- [PASS] coordinator_events.jsonl line 784 parses as JSON [coordinator_events.jsonl]: Lifecycle event line is valid JSON
+- [PASS] coordinator_events.jsonl line 785 parses as JSON [coordinator_events.jsonl]: Lifecycle event line is valid JSON
+- [PASS] coordinator_events.jsonl line 786 parses as JSON [coordinator_events.jsonl]: Lifecycle event line is valid JSON
+- [PASS] coordinator_events.jsonl line 787 parses as JSON [coordinator_events.jsonl]: Lifecycle event line is valid JSON
+- [PASS] coordinator_events.jsonl line 788 parses as JSON [coordinator_events.jsonl]: Lifecycle event line is valid JSON
+- [PASS] coordinator_events.jsonl line 789 parses as JSON [coordinator_events.jsonl]: Lifecycle event line is valid JSON
+- [PASS] coordinator_events.jsonl line 790 parses as JSON [coordinator_events.jsonl]: Lifecycle event line is valid JSON
+- [PASS] collector_report_20260629T052701.813024Z.json parses as JSON [collector_report_20260629T052701.813024Z.json]: Valid JSON (3398 bytes)
+- [PASS] coordinator_events.jsonl line 791 parses as JSON [coordinator_events.jsonl]: Lifecycle event line is valid JSON
+- [PASS] coordinator_events.jsonl line 792 parses as JSON [coordinator_events.jsonl]: Lifecycle event line is valid JSON
+- [PASS] coordinator_events.jsonl line 793 parses as JSON [coordinator_events.jsonl]: Lifecycle event line is valid JSON
+- [PASS] coordinator_events.jsonl line 794 parses as JSON [coordinator_events.jsonl]: Lifecycle event line is valid JSON
+- [PASS] coordinator_events.jsonl line 795 parses as JSON [coordinator_events.jsonl]: Lifecycle event line is valid JSON
+- [PASS] coordinator_events.jsonl line 796 parses as JSON [coordinator_events.jsonl]: Lifecycle event line is valid JSON
+- [PASS] coordinator_events.jsonl line 797 parses as JSON [coordinator_events.jsonl]: Lifecycle event line is valid JSON
+- [PASS] coordinator_events.jsonl line 798 parses as JSON [coordinator_events.jsonl]: Lifecycle event line is valid JSON
+- [PASS] coordinator_events.jsonl line 799 parses as JSON [coordinator_events.jsonl]: Lifecycle event line is valid JSON
+- [PASS] coordinator_events.jsonl line 800 parses as JSON [coordinator_events.jsonl]: Lifecycle event line is valid JSON
+- [PASS] collector_report_20260629T052701.813024Z.json schema version [collector_report_20260629T052701.813024Z.json] (schema_version): schema_version matches evidence_harvester.collector_report.v1
+- [PASS] coordinator_events.jsonl line 801 parses as JSON [coordinator_events.jsonl]: Lifecycle event line is valid JSON
+- [PASS] coordinator_events.jsonl line 802 parses as JSON [coordinator_events.jsonl]: Lifecycle event line is valid JSON
+- [PASS] coordinator_events.jsonl line 803 parses as JSON [coordinator_events.jsonl]: Lifecycle event line is valid JSON
+- [PASS] coordinator_events.jsonl line 804 parses as JSON [coordinator_events.jsonl]: Lifecycle event line is valid JSON
+- [PASS] coordinator_events.jsonl line 805 parses as JSON [coordinator_events.jsonl]: Lifecycle event line is valid JSON
+- [PASS] coordinator_events.jsonl line 806 parses as JSON [coordinator_events.jsonl]: Lifecycle event line is valid JSON
+- [PASS] coordinator_events.jsonl line 807 parses as JSON [coordinator_events.jsonl]: Lifecycle event line is valid JSON
+- [PASS] coordinator_events.jsonl line 808 parses as JSON [coordinator_events.jsonl]: Lifecycle event line is valid JSON
+- [PASS] coordinator_events.jsonl line 809 parses as JSON [coordinator_events.jsonl]: Lifecycle event line is valid JSON
+- [PASS] coordinator_events.jsonl line 810 parses as JSON [coordinator_events.jsonl]: Lifecycle event line is valid JSON
+- [PASS] collector_report_20260629T052739.269183Z.json parses as JSON [collector_report_20260629T052739.269183Z.json]: Valid JSON (3398 bytes)
+- [PASS] coordinator_events.jsonl line 811 parses as JSON [coordinator_events.jsonl]: Lifecycle event line is valid JSON
+- [PASS] coordinator_events.jsonl line 812 parses as JSON [coordinator_events.jsonl]: Lifecycle event line is valid JSON
+- [PASS] coordinator_events.jsonl line 813 parses as JSON [coordinator_events.jsonl]: Lifecycle event line is valid JSON
+- [PASS] coordinator_events.jsonl line 814 parses as JSON [coordinator_events.jsonl]: Lifecycle event line is valid JSON
+- [PASS] coordinator_events.jsonl line 815 parses as JSON [coordinator_events.jsonl]: Lifecycle event line is valid JSON
+- [PASS] coordinator_events.jsonl line 816 parses as JSON [coordinator_events.jsonl]: Lifecycle event line is valid JSON
+- [PASS] coordinator_events.jsonl line 817 parses as JSON [coordinator_events.jsonl]: Lifecycle event line is valid JSON
+- [PASS] coordinator_events.jsonl line 818 parses as JSON [coordinator_events.jsonl]: Lifecycle event line is valid JSON
+- [PASS] coordinator_events.jsonl line 819 parses as JSON [coordinator_events.jsonl]: Lifecycle event line is valid JSON
+- [PASS] coordinator_events.jsonl line 820 parses as JSON [coordinator_events.jsonl]: Lifecycle event line is valid JSON
+- [PASS] collector_report_20260629T052739.269183Z.json schema version [collector_report_20260629T052739.269183Z.json] (schema_version): schema_version matches evidence_harvester.collector_report.v1
+- [PASS] coordinator_events.jsonl line 821 parses as JSON [coordinator_events.jsonl]: Lifecycle event line is valid JSON
+- [PASS] coordinator_events.jsonl line 822 parses as JSON [coordinator_events.jsonl]: Lifecycle event line is valid JSON
+- [PASS] coordinator_events.jsonl line 823 parses as JSON [coordinator_events.jsonl]: Lifecycle event line is valid JSON
+- [PASS] coordinator_events.jsonl line 824 parses as JSON [coordinator_events.jsonl]: Lifecycle event line is valid JSON
+- [PASS] coordinator_events.jsonl line 825 parses as JSON [coordinator_events.jsonl]: Lifecycle event line is valid JSON
+- [PASS] coordinator_events.jsonl line 826 parses as JSON [coordinator_events.jsonl]: Lifecycle event line is valid JSON
+- [PASS] coordinator_events.jsonl line 827 parses as JSON [coordinator_events.jsonl]: Lifecycle event line is valid JSON
+- [PASS] coordinator_events.jsonl line 828 parses as JSON [coordinator_events.jsonl]: Lifecycle event line is valid JSON
+- [PASS] coordinator_events.jsonl line 829 parses as JSON [coordinator_events.jsonl]: Lifecycle event line is valid JSON
+- [PASS] coordinator_events.jsonl line 830 parses as JSON [coordinator_events.jsonl]: Lifecycle event line is valid JSON
+- [PASS] collector_report_20260629T054202.209467Z.json parses as JSON [collector_report_20260629T054202.209467Z.json]: Valid JSON (3398 bytes)
+- [PASS] coordinator_events.jsonl line 831 parses as JSON [coordinator_events.jsonl]: Lifecycle event line is valid JSON
+- [PASS] coordinator_events.jsonl line 832 parses as JSON [coordinator_events.jsonl]: Lifecycle event line is valid JSON
+- [PASS] coordinator_events.jsonl line 833 parses as JSON [coordinator_events.jsonl]: Lifecycle event line is valid JSON
+- [PASS] coordinator_events.jsonl line 834 parses as JSON [coordinator_events.jsonl]: Lifecycle event line is valid JSON
+- [PASS] coordinator_events.jsonl line 835 parses as JSON [coordinator_events.jsonl]: Lifecycle event line is valid JSON
+- [PASS] coordinator_events.jsonl line 836 parses as JSON [coordinator_events.jsonl]: Lifecycle event line is valid JSON
+- [PASS] coordinator_events.jsonl line 837 parses as JSON [coordinator_events.jsonl]: Lifecycle event line is valid JSON
+- [PASS] coordinator_events.jsonl line 838 parses as JSON [coordinator_events.jsonl]: Lifecycle event line is valid JSON
+- [PASS] coordinator_events.jsonl line 839 parses as JSON [coordinator_events.jsonl]: Lifecycle event line is valid JSON
+- [PASS] coordinator_events.jsonl line 840 parses as JSON [coordinator_events.jsonl]: Lifecycle event line is valid JSON
+- [PASS] collector_report_20260629T054202.209467Z.json schema version [collector_report_20260629T054202.209467Z.json] (schema_version): schema_version matches evidence_harvester.collector_report.v1
+- [PASS] coordinator_events.jsonl line 841 parses as JSON [coordinator_events.jsonl]: Lifecycle event line is valid JSON
+- [PASS] coordinator_events.jsonl line 842 parses as JSON [coordinator_events.jsonl]: Lifecycle event line is valid JSON
+- [PASS] coordinator_events.jsonl line 843 parses as JSON [coordinator_events.jsonl]: Lifecycle event line is valid JSON
+- [PASS] coordinator_events.jsonl line 844 parses as JSON [coordinator_events.jsonl]: Lifecycle event line is valid JSON
+- [PASS] coordinator_events.jsonl line 845 parses as JSON [coordinator_events.jsonl]: Lifecycle event line is valid JSON
+- [PASS] coordinator_events.jsonl line 846 parses as JSON [coordinator_events.jsonl]: Lifecycle event line is valid JSON
+- [PASS] coordinator_events.jsonl line 847 parses as JSON [coordinator_events.jsonl]: Lifecycle event line is valid JSON
+- [PASS] coordinator_events.jsonl line 848 parses as JSON [coordinator_events.jsonl]: Lifecycle event line is valid JSON
+- [PASS] coordinator_events.jsonl line 849 parses as JSON [coordinator_events.jsonl]: Lifecycle event line is valid JSON
+- [PASS] coordinator_events.jsonl line 850 parses as JSON [coordinator_events.jsonl]: Lifecycle event line is valid JSON
+- [PASS] collector_report_20260629T054239.631909Z.json parses as JSON [collector_report_20260629T054239.631909Z.json]: Valid JSON (3398 bytes)
+- [PASS] coordinator_events.jsonl line 851 parses as JSON [coordinator_events.jsonl]: Lifecycle event line is valid JSON
+- [PASS] coordinator_events.jsonl line 852 parses as JSON [coordinator_events.jsonl]: Lifecycle event line is valid JSON
+- [PASS] coordinator_events.jsonl line 853 parses as JSON [coordinator_events.jsonl]: Lifecycle event line is valid JSON
+- [PASS] coordinator_events.jsonl line 854 parses as JSON [coordinator_events.jsonl]: Lifecycle event line is valid JSON
+- [PASS] coordinator_events.jsonl line 855 parses as JSON [coordinator_events.jsonl]: Lifecycle event line is valid JSON
+- [PASS] coordinator_events.jsonl line 856 parses as JSON [coordinator_events.jsonl]: Lifecycle event line is valid JSON
+- [PASS] coordinator_events.jsonl line 857 parses as JSON [coordinator_events.jsonl]: Lifecycle event line is valid JSON
+- [PASS] coordinator_events.jsonl line 858 parses as JSON [coordinator_events.jsonl]: Lifecycle event line is valid JSON
+- [PASS] coordinator_events.jsonl line 859 parses as JSON [coordinator_events.jsonl]: Lifecycle event line is valid JSON
+- [PASS] coordinator_events.jsonl line 860 parses as JSON [coordinator_events.jsonl]: Lifecycle event line is valid JSON
+- [PASS] collector_report_20260629T054239.631909Z.json schema version [collector_report_20260629T054239.631909Z.json] (schema_version): schema_version matches evidence_harvester.collector_report.v1
+- [PASS] coordinator_events.jsonl line 861 parses as JSON [coordinator_events.jsonl]: Lifecycle event line is valid JSON
+- [PASS] coordinator_events.jsonl line 862 parses as JSON [coordinator_events.jsonl]: Lifecycle event line is valid JSON
+- [PASS] coordinator_events.jsonl line 863 parses as JSON [coordinator_events.jsonl]: Lifecycle event line is valid JSON
+- [PASS] coordinator_events.jsonl line 864 parses as JSON [coordinator_events.jsonl]: Lifecycle event line is valid JSON
+- [PASS] coordinator_events.jsonl line 865 parses as JSON [coordinator_events.jsonl]: Lifecycle event line is valid JSON
+- [PASS] coordinator_events.jsonl line 866 parses as JSON [coordinator_events.jsonl]: Lifecycle event line is valid JSON
+- [PASS] coordinator_events.jsonl line 867 parses as JSON [coordinator_events.jsonl]: Lifecycle event line is valid JSON
+- [PASS] coordinator_events.jsonl line 868 parses as JSON [coordinator_events.jsonl]: Lifecycle event line is valid JSON
+- [PASS] coordinator_events.jsonl line 869 parses as JSON [coordinator_events.jsonl]: Lifecycle event line is valid JSON
+- [PASS] coordinator_events.jsonl line 870 parses as JSON [coordinator_events.jsonl]: Lifecycle event line is valid JSON
+- [PASS] collector_report_20260629T055702.593495Z.json parses as JSON [collector_report_20260629T055702.593495Z.json]: Valid JSON (3398 bytes)
+- [PASS] coordinator_events.jsonl line 871 parses as JSON [coordinator_events.jsonl]: Lifecycle event line is valid JSON
+- [PASS] coordinator_events.jsonl line 872 parses as JSON [coordinator_events.jsonl]: Lifecycle event line is valid JSON
+- [PASS] coordinator_events.jsonl line 873 parses as JSON [coordinator_events.jsonl]: Lifecycle event line is valid JSON
+- [PASS] coordinator_events.jsonl line 874 parses as JSON [coordinator_events.jsonl]: Lifecycle event line is valid JSON
+- [PASS] coordinator_events.jsonl line 875 parses as JSON [coordinator_events.jsonl]: Lifecycle event line is valid JSON
+- [PASS] coordinator_events.jsonl line 876 parses as JSON [coordinator_events.jsonl]: Lifecycle event line is valid JSON
+- [PASS] coordinator_events.jsonl line 877 parses as JSON [coordinator_events.jsonl]: Lifecycle event line is valid JSON
+- [PASS] coordinator_events.jsonl line 878 parses as JSON [coordinator_events.jsonl]: Lifecycle event line is valid JSON
+- [PASS] coordinator_events.jsonl line 879 parses as JSON [coordinator_events.jsonl]: Lifecycle event line is valid JSON
+- [PASS] coordinator_events.jsonl line 880 parses as JSON [coordinator_events.jsonl]: Lifecycle event line is valid JSON
+- [PASS] collector_report_20260629T055702.593495Z.json schema version [collector_report_20260629T055702.593495Z.json] (schema_version): schema_version matches evidence_harvester.collector_report.v1
+- [PASS] coordinator_events.jsonl line 881 parses as JSON [coordinator_events.jsonl]: Lifecycle event line is valid JSON
+- [PASS] coordinator_events.jsonl line 882 parses as JSON [coordinator_events.jsonl]: Lifecycle event line is valid JSON
+- [PASS] coordinator_events.jsonl line 883 parses as JSON [coordinator_events.jsonl]: Lifecycle event line is valid JSON
+- [PASS] coordinator_events.jsonl line 884 parses as JSON [coordinator_events.jsonl]: Lifecycle event line is valid JSON
+- [PASS] coordinator_events.jsonl line 885 parses as JSON [coordinator_events.jsonl]: Lifecycle event line is valid JSON
+- [PASS] coordinator_events.jsonl line 886 parses as JSON [coordinator_events.jsonl]: Lifecycle event line is valid JSON
+- [PASS] coordinator_events.jsonl line 887 parses as JSON [coordinator_events.jsonl]: Lifecycle event line is valid JSON
+- [PASS] coordinator_events.jsonl line 888 parses as JSON [coordinator_events.jsonl]: Lifecycle event line is valid JSON
+- [PASS] coordinator_events.jsonl line 889 parses as JSON [coordinator_events.jsonl]: Lifecycle event line is valid JSON
+- [PASS] coordinator_events.jsonl line 890 parses as JSON [coordinator_events.jsonl]: Lifecycle event line is valid JSON
+- [PASS] collector_report_20260629T055740.036252Z.json parses as JSON [collector_report_20260629T055740.036252Z.json]: Valid JSON (3398 bytes)
+- [PASS] coordinator_events.jsonl line 891 parses as JSON [coordinator_events.jsonl]: Lifecycle event line is valid JSON
+- [PASS] coordinator_events.jsonl line 892 parses as JSON [coordinator_events.jsonl]: Lifecycle event line is valid JSON
+- [PASS] coordinator_events.jsonl line 893 parses as JSON [coordinator_events.jsonl]: Lifecycle event line is valid JSON
+- [PASS] coordinator_events.jsonl line 894 parses as JSON [coordinator_events.jsonl]: Lifecycle event line is valid JSON
+- [PASS] coordinator_events.jsonl line 895 parses as JSON [coordinator_events.jsonl]: Lifecycle event line is valid JSON
+- [PASS] coordinator_events.jsonl line 896 parses as JSON [coordinator_events.jsonl]: Lifecycle event line is valid JSON
+- [PASS] coordinator_events.jsonl line 897 parses as JSON [coordinator_events.jsonl]: Lifecycle event line is valid JSON
+- [PASS] coordinator_events.jsonl line 898 parses as JSON [coordinator_events.jsonl]: Lifecycle event line is valid JSON
+- [PASS] coordinator_events.jsonl line 899 parses as JSON [coordinator_events.jsonl]: Lifecycle event line is valid JSON
+- [PASS] coordinator_events.jsonl line 900 parses as JSON [coordinator_events.jsonl]: Lifecycle event line is valid JSON
+- [PASS] collector_report_20260629T055740.036252Z.json schema version [collector_report_20260629T055740.036252Z.json] (schema_version): schema_version matches evidence_harvester.collector_report.v1
+- [PASS] coordinator_events.jsonl line 901 parses as JSON [coordinator_events.jsonl]: Lifecycle event line is valid JSON
+- [PASS] coordinator_events.jsonl line 902 parses as JSON [coordinator_events.jsonl]: Lifecycle event line is valid JSON
+- [PASS] coordinator_events.jsonl line 903 parses as JSON [coordinator_events.jsonl]: Lifecycle event line is valid JSON
+- [PASS] coordinator_events.jsonl line 904 parses as JSON [coordinator_events.jsonl]: Lifecycle event line is valid JSON
+- [PASS] coordinator_events.jsonl line 905 parses as JSON [coordinator_events.jsonl]: Lifecycle event line is valid JSON
+- [PASS] coordinator_events.jsonl line 906 parses as JSON [coordinator_events.jsonl]: Lifecycle event line is valid JSON
+- [PASS] coordinator_events.jsonl line 907 parses as JSON [coordinator_events.jsonl]: Lifecycle event line is valid JSON
+- [PASS] coordinator_events.jsonl line 908 parses as JSON [coordinator_events.jsonl]: Lifecycle event line is valid JSON
+- [PASS] coordinator_events.jsonl line 909 parses as JSON [coordinator_events.jsonl]: Lifecycle event line is valid JSON
+- [PASS] coordinator_events.jsonl line 910 parses as JSON [coordinator_events.jsonl]: Lifecycle event line is valid JSON
+- [PASS] collector_report_20260629T061203.038198Z.json parses as JSON [collector_report_20260629T061203.038198Z.json]: Valid JSON (3398 bytes)
+- [PASS] coordinator_events.jsonl line 911 parses as JSON [coordinator_events.jsonl]: Lifecycle event line is valid JSON
+- [PASS] coordinator_events.jsonl line 912 parses as JSON [coordinator_events.jsonl]: Lifecycle event line is valid JSON
+- [PASS] coordinator_events.jsonl line 913 parses as JSON [coordinator_events.jsonl]: Lifecycle event line is valid JSON
+- [PASS] coordinator_events.jsonl line 914 parses as JSON [coordinator_events.jsonl]: Lifecycle event line is valid JSON
+- [PASS] coordinator_events.jsonl line 915 parses as JSON [coordinator_events.jsonl]: Lifecycle event line is valid JSON
+- [PASS] coordinator_events.jsonl line 916 parses as JSON [coordinator_events.jsonl]: Lifecycle event line is valid JSON
+- [PASS] coordinator_events.jsonl line 917 parses as JSON [coordinator_events.jsonl]: Lifecycle event line is valid JSON
+- [PASS] coordinator_events.jsonl line 918 parses as JSON [coordinator_events.jsonl]: Lifecycle event line is valid JSON
+- [PASS] coordinator_events.jsonl line 919 parses as JSON [coordinator_events.jsonl]: Lifecycle event line is valid JSON
+- [PASS] coordinator_events.jsonl line 920 parses as JSON [coordinator_events.jsonl]: Lifecycle event line is valid JSON
+- [PASS] collector_report_20260629T061203.038198Z.json schema version [collector_report_20260629T061203.038198Z.json] (schema_version): schema_version matches evidence_harvester.collector_report.v1
+- [PASS] coordinator_events.jsonl line 921 parses as JSON [coordinator_events.jsonl]: Lifecycle event line is valid JSON
+- [PASS] coordinator_events.jsonl line 922 parses as JSON [coordinator_events.jsonl]: Lifecycle event line is valid JSON
+- [PASS] coordinator_events.jsonl line 923 parses as JSON [coordinator_events.jsonl]: Lifecycle event line is valid JSON
+- [PASS] coordinator_events.jsonl line 924 parses as JSON [coordinator_events.jsonl]: Lifecycle event line is valid JSON
+- [PASS] coordinator_events.jsonl line 925 parses as JSON [coordinator_events.jsonl]: Lifecycle event line is valid JSON
+- [PASS] coordinator_events.jsonl line 926 parses as JSON [coordinator_events.jsonl]: Lifecycle event line is valid JSON
+- [PASS] coordinator_events.jsonl line 927 parses as JSON [coordinator_events.jsonl]: Lifecycle event line is valid JSON
+- [PASS] coordinator_events.jsonl line 928 parses as JSON [coordinator_events.jsonl]: Lifecycle event line is valid JSON
+- [PASS] coordinator_events.jsonl line 929 parses as JSON [coordinator_events.jsonl]: Lifecycle event line is valid JSON
+- [PASS] coordinator_events.jsonl line 930 parses as JSON [coordinator_events.jsonl]: Lifecycle event line is valid JSON
+- [PASS] collector_report_20260629T061240.476343Z.json parses as JSON [collector_report_20260629T061240.476343Z.json]: Valid JSON (3398 bytes)
+- [PASS] coordinator_events.jsonl line 931 parses as JSON [coordinator_events.jsonl]: Lifecycle event line is valid JSON
+- [PASS] coordinator_events.jsonl line 932 parses as JSON [coordinator_events.jsonl]: Lifecycle event line is valid JSON
+- [PASS] coordinator_events.jsonl line 933 parses as JSON [coordinator_events.jsonl]: Lifecycle event line is valid JSON
+- [PASS] coordinator_events.jsonl line 934 parses as JSON [coordinator_events.jsonl]: Lifecycle event line is valid JSON
+- [PASS] coordinator_events.jsonl line 935 parses as JSON [coordinator_events.jsonl]: Lifecycle event line is valid JSON
+- [PASS] coordinator_events.jsonl line 936 parses as JSON [coordinator_events.jsonl]: Lifecycle event line is valid JSON
+- [PASS] coordinator_events.jsonl line 937 parses as JSON [coordinator_events.jsonl]: Lifecycle event line is valid JSON
+- [PASS] coordinator_events.jsonl line 938 parses as JSON [coordinator_events.jsonl]: Lifecycle event line is valid JSON
+- [PASS] coordinator_events.jsonl line 939 parses as JSON [coordinator_events.jsonl]: Lifecycle event line is valid JSON
+- [PASS] coordinator_events.jsonl line 940 parses as JSON [coordinator_events.jsonl]: Lifecycle event line is valid JSON
+- [PASS] collector_report_20260629T061240.476343Z.json schema version [collector_report_20260629T061240.476343Z.json] (schema_version): schema_version matches evidence_harvester.collector_report.v1
+- [PASS] coordinator_events.jsonl line 941 parses as JSON [coordinator_events.jsonl]: Lifecycle event line is valid JSON
+- [PASS] coordinator_events.jsonl line 942 parses as JSON [coordinator_events.jsonl]: Lifecycle event line is valid JSON
+- [PASS] coordinator_events.jsonl line 943 parses as JSON [coordinator_events.jsonl]: Lifecycle event line is valid JSON
+- [PASS] coordinator_events.jsonl line 944 parses as JSON [coordinator_events.jsonl]: Lifecycle event line is valid JSON
+- [PASS] coordinator_events.jsonl line 945 parses as JSON [coordinator_events.jsonl]: Lifecycle event line is valid JSON
+- [PASS] coordinator_events.jsonl line 946 parses as JSON [coordinator_events.jsonl]: Lifecycle event line is valid JSON
+- [PASS] coordinator_events.jsonl line 947 parses as JSON [coordinator_events.jsonl]: Lifecycle event line is valid JSON
+- [PASS] coordinator_events.jsonl line 948 parses as JSON [coordinator_events.jsonl]: Lifecycle event line is valid JSON
+- [PASS] coordinator_events.jsonl line 949 parses as JSON [coordinator_events.jsonl]: Lifecycle event line is valid JSON
+- [PASS] coordinator_events.jsonl line 950 parses as JSON [coordinator_events.jsonl]: Lifecycle event line is valid JSON
+- [PASS] collector_report_20260629T062703.502916Z.json parses as JSON [collector_report_20260629T062703.502916Z.json]: Valid JSON (3398 bytes)
+- [PASS] coordinator_events.jsonl line 951 parses as JSON [coordinator_events.jsonl]: Lifecycle event line is valid JSON
+- [PASS] coordinator_events.jsonl line 952 parses as JSON [coordinator_events.jsonl]: Lifecycle event line is valid JSON
+- [PASS] coordinator_events.jsonl line 953 parses as JSON [coordinator_events.jsonl]: Lifecycle event line is valid JSON
+- [PASS] coordinator_events.jsonl line 954 parses as JSON [coordinator_events.jsonl]: Lifecycle event line is valid JSON
+- [PASS] coordinator_events.jsonl line 955 parses as JSON [coordinator_events.jsonl]: Lifecycle event line is valid JSON
+- [PASS] coordinator_events.jsonl line 956 parses as JSON [coordinator_events.jsonl]: Lifecycle event line is valid JSON
+- [PASS] coordinator_events.jsonl line 957 parses as JSON [coordinator_events.jsonl]: Lifecycle event line is valid JSON
+- [PASS] coordinator_events.jsonl line 958 parses as JSON [coordinator_events.jsonl]: Lifecycle event line is valid JSON
+- [PASS] coordinator_events.jsonl line 959 parses as JSON [coordinator_events.jsonl]: Lifecycle event line is valid JSON
+- [PASS] coordinator_events.jsonl line 960 parses as JSON [coordinator_events.jsonl]: Lifecycle event line is valid JSON
+- [PASS] collector_report_20260629T062703.502916Z.json schema version [collector_report_20260629T062703.502916Z.json] (schema_version): schema_version matches evidence_harvester.collector_report.v1
+- [PASS] coordinator_events.jsonl line 961 parses as JSON [coordinator_events.jsonl]: Lifecycle event line is valid JSON
+- [PASS] coordinator_events.jsonl line 962 parses as JSON [coordinator_events.jsonl]: Lifecycle event line is valid JSON
+- [PASS] coordinator_events.jsonl line 963 parses as JSON [coordinator_events.jsonl]: Lifecycle event line is valid JSON
+- [PASS] coordinator_events.jsonl line 964 parses as JSON [coordinator_events.jsonl]: Lifecycle event line is valid JSON
+- [PASS] coordinator_events.jsonl line 965 parses as JSON [coordinator_events.jsonl]: Lifecycle event line is valid JSON
+- [PASS] coordinator_events.jsonl line 966 parses as JSON [coordinator_events.jsonl]: Lifecycle event line is valid JSON
+- [PASS] coordinator_events.jsonl line 967 parses as JSON [coordinator_events.jsonl]: Lifecycle event line is valid JSON
+- [PASS] coordinator_events.jsonl line 968 parses as JSON [coordinator_events.jsonl]: Lifecycle event line is valid JSON
+- [PASS] coordinator_events.jsonl line 969 parses as JSON [coordinator_events.jsonl]: Lifecycle event line is valid JSON
+- [PASS] coordinator_events.jsonl line 970 parses as JSON [coordinator_events.jsonl]: Lifecycle event line is valid JSON
+- [PASS] collector_report_20260629T062740.937526Z.json parses as JSON [collector_report_20260629T062740.937526Z.json]: Valid JSON (3398 bytes)
+- [PASS] coordinator_events.jsonl line 971 parses as JSON [coordinator_events.jsonl]: Lifecycle event line is valid JSON
+- [PASS] coordinator_events.jsonl line 972 parses as JSON [coordinator_events.jsonl]: Lifecycle event line is valid JSON
+- [PASS] coordinator_events.jsonl line 973 parses as JSON [coordinator_events.jsonl]: Lifecycle event line is valid JSON
+- [PASS] coordinator_events.jsonl line 974 parses as JSON [coordinator_events.jsonl]: Lifecycle event line is valid JSON
+- [PASS] coordinator_events.jsonl line 975 parses as JSON [coordinator_events.jsonl]: Lifecycle event line is valid JSON
+- [PASS] coordinator_events.jsonl line 976 parses as JSON [coordinator_events.jsonl]: Lifecycle event line is valid JSON
+- [PASS] coordinator_events.jsonl line 977 parses as JSON [coordinator_events.jsonl]: Lifecycle event line is valid JSON
+- [PASS] coordinator_events.jsonl line 978 parses as JSON [coordinator_events.jsonl]: Lifecycle event line is valid JSON
+- [PASS] coordinator_events.jsonl line 979 parses as JSON [coordinator_events.jsonl]: Lifecycle event line is valid JSON
+- [PASS] coordinator_events.jsonl line 980 parses as JSON [coordinator_events.jsonl]: Lifecycle event line is valid JSON
+- [PASS] collector_report_20260629T062740.937526Z.json schema version [collector_report_20260629T062740.937526Z.json] (schema_version): schema_version matches evidence_harvester.collector_report.v1
+- [PASS] coordinator_events.jsonl line 981 parses as JSON [coordinator_events.jsonl]: Lifecycle event line is valid JSON
+- [PASS] coordinator_events.jsonl line 982 parses as JSON [coordinator_events.jsonl]: Lifecycle event line is valid JSON
+- [PASS] coordinator_events.jsonl line 983 parses as JSON [coordinator_events.jsonl]: Lifecycle event line is valid JSON
+- [PASS] coordinator_events.jsonl line 984 parses as JSON [coordinator_events.jsonl]: Lifecycle event line is valid JSON
+- [PASS] coordinator_events.jsonl line 985 parses as JSON [coordinator_events.jsonl]: Lifecycle event line is valid JSON
+- [PASS] coordinator_events.jsonl line 986 parses as JSON [coordinator_events.jsonl]: Lifecycle event line is valid JSON
+- [PASS] coordinator_events.jsonl line 987 parses as JSON [coordinator_events.jsonl]: Lifecycle event line is valid JSON
+- [PASS] coordinator_events.jsonl line 988 parses as JSON [coordinator_events.jsonl]: Lifecycle event line is valid JSON
+- [PASS] coordinator_events.jsonl line 989 parses as JSON [coordinator_events.jsonl]: Lifecycle event line is valid JSON
+- [PASS] coordinator_events.jsonl line 990 parses as JSON [coordinator_events.jsonl]: Lifecycle event line is valid JSON
+- [PASS] collector_report_20260629T064203.999298Z.json parses as JSON [collector_report_20260629T064203.999298Z.json]: Valid JSON (3398 bytes)
+- [PASS] coordinator_events.jsonl line 991 parses as JSON [coordinator_events.jsonl]: Lifecycle event line is valid JSON
+- [PASS] coordinator_events.jsonl line 992 parses as JSON [coordinator_events.jsonl]: Lifecycle event line is valid JSON
+- [PASS] coordinator_events.jsonl line 993 parses as JSON [coordinator_events.jsonl]: Lifecycle event line is valid JSON
+- [PASS] coordinator_events.jsonl line 994 parses as JSON [coordinator_events.jsonl]: Lifecycle event line is valid JSON
+- [PASS] coordinator_events.jsonl line 995 parses as JSON [coordinator_events.jsonl]: Lifecycle event line is valid JSON
+- [PASS] coordinator_events.jsonl line 996 parses as JSON [coordinator_events.jsonl]: Lifecycle event line is valid JSON
+- [PASS] coordinator_events.jsonl line 997 parses as JSON [coordinator_events.jsonl]: Lifecycle event line is valid JSON
+- [PASS] coordinator_events.jsonl line 998 parses as JSON [coordinator_events.jsonl]: Lifecycle event line is valid JSON
+- [PASS] coordinator_events.jsonl line 999 parses as JSON [coordinator_events.jsonl]: Lifecycle event line is valid JSON
+- [PASS] coordinator_events.jsonl line 1000 parses as JSON [coordinator_events.jsonl]: Lifecycle event line is valid JSON
+- [PASS] collector_report_20260629T064203.999298Z.json schema version [collector_report_20260629T064203.999298Z.json] (schema_version): schema_version matches evidence_harvester.collector_report.v1
+- [PASS] coordinator_events.jsonl line 1001 parses as JSON [coordinator_events.jsonl]: Lifecycle event line is valid JSON
+- [PASS] coordinator_events.jsonl line 1002 parses as JSON [coordinator_events.jsonl]: Lifecycle event line is valid JSON
+- [PASS] coordinator_events.jsonl line 1003 parses as JSON [coordinator_events.jsonl]: Lifecycle event line is valid JSON
+- [PASS] coordinator_events.jsonl line 1004 parses as JSON [coordinator_events.jsonl]: Lifecycle event line is valid JSON
+- [PASS] coordinator_events.jsonl line 1005 parses as JSON [coordinator_events.jsonl]: Lifecycle event line is valid JSON
+- [PASS] coordinator_events.jsonl line 1006 parses as JSON [coordinator_events.jsonl]: Lifecycle event line is valid JSON
+- [PASS] coordinator_events.jsonl line 1007 parses as JSON [coordinator_events.jsonl]: Lifecycle event line is valid JSON
+- [PASS] coordinator_events.jsonl line 1008 parses as JSON [coordinator_events.jsonl]: Lifecycle event line is valid JSON
+- [PASS] coordinator_events.jsonl line 1009 parses as JSON [coordinator_events.jsonl]: Lifecycle event line is valid JSON
+- [PASS] coordinator_events.jsonl line 1010 parses as JSON [coordinator_events.jsonl]: Lifecycle event line is valid JSON
+- [PASS] collector_report_20260629T064241.410579Z.json parses as JSON [collector_report_20260629T064241.410579Z.json]: Valid JSON (3398 bytes)
+- [PASS] coordinator_events.jsonl line 1011 parses as JSON [coordinator_events.jsonl]: Lifecycle event line is valid JSON
+- [PASS] coordinator_events.jsonl line 1012 parses as JSON [coordinator_events.jsonl]: Lifecycle event line is valid JSON
+- [PASS] coordinator_events.jsonl line 1013 parses as JSON [coordinator_events.jsonl]: Lifecycle event line is valid JSON
+- [PASS] coordinator_events.jsonl line 1014 parses as JSON [coordinator_events.jsonl]: Lifecycle event line is valid JSON
+- [PASS] coordinator_events.jsonl line 1015 parses as JSON [coordinator_events.jsonl]: Lifecycle event line is valid JSON
+- [PASS] coordinator_events.jsonl line 1016 parses as JSON [coordinator_events.jsonl]: Lifecycle event line is valid JSON
+- [PASS] coordinator_events.jsonl line 1017 parses as JSON [coordinator_events.jsonl]: Lifecycle event line is valid JSON
+- [PASS] coordinator_events.jsonl line 1018 parses as JSON [coordinator_events.jsonl]: Lifecycle event line is valid JSON
+- [PASS] coordinator_events.jsonl line 1019 parses as JSON [coordinator_events.jsonl]: Lifecycle event line is valid JSON
+- [PASS] coordinator_events.jsonl line 1020 parses as JSON [coordinator_events.jsonl]: Lifecycle event line is valid JSON
+- [PASS] collector_report_20260629T064241.410579Z.json schema version [collector_report_20260629T064241.410579Z.json] (schema_version): schema_version matches evidence_harvester.collector_report.v1
+- [PASS] coordinator_events.jsonl line 1021 parses as JSON [coordinator_events.jsonl]: Lifecycle event line is valid JSON
+- [PASS] coordinator_events.jsonl line 1022 parses as JSON [coordinator_events.jsonl]: Lifecycle event line is valid JSON
+- [PASS] coordinator_events.jsonl line 1023 parses as JSON [coordinator_events.jsonl]: Lifecycle event line is valid JSON
+- [PASS] coordinator_events.jsonl line 1024 parses as JSON [coordinator_events.jsonl]: Lifecycle event line is valid JSON
+- [PASS] coordinator_events.jsonl line 1025 parses as JSON [coordinator_events.jsonl]: Lifecycle event line is valid JSON
+- [PASS] coordinator_events.jsonl line 1026 parses as JSON [coordinator_events.jsonl]: Lifecycle event line is valid JSON
+- [PASS] coordinator_events.jsonl line 1027 parses as JSON [coordinator_events.jsonl]: Lifecycle event line is valid JSON
+- [PASS] coordinator_events.jsonl line 1028 parses as JSON [coordinator_events.jsonl]: Lifecycle event line is valid JSON
+- [PASS] coordinator_events.jsonl line 1029 parses as JSON [coordinator_events.jsonl]: Lifecycle event line is valid JSON
+- [PASS] coordinator_events.jsonl line 1030 parses as JSON [coordinator_events.jsonl]: Lifecycle event line is valid JSON
+- [PASS] collector_report_20260629T065704.492040Z.json parses as JSON [collector_report_20260629T065704.492040Z.json]: Valid JSON (3398 bytes)
+- [PASS] coordinator_events.jsonl line 1031 parses as JSON [coordinator_events.jsonl]: Lifecycle event line is valid JSON
+- [PASS] coordinator_events.jsonl line 1032 parses as JSON [coordinator_events.jsonl]: Lifecycle event line is valid JSON
+- [PASS] coordinator_events.jsonl line 1033 parses as JSON [coordinator_events.jsonl]: Lifecycle event line is valid JSON
+- [PASS] coordinator_events.jsonl line 1034 parses as JSON [coordinator_events.jsonl]: Lifecycle event line is valid JSON
+- [PASS] coordinator_events.jsonl line 1035 parses as JSON [coordinator_events.jsonl]: Lifecycle event line is valid JSON
+- [PASS] coordinator_events.jsonl line 1036 parses as JSON [coordinator_events.jsonl]: Lifecycle event line is valid JSON
+- [PASS] coordinator_events.jsonl line 1037 parses as JSON [coordinator_events.jsonl]: Lifecycle event line is valid JSON
+- [PASS] coordinator_events.jsonl line 1038 parses as JSON [coordinator_events.jsonl]: Lifecycle event line is valid JSON
+- [PASS] coordinator_events.jsonl line 1039 parses as JSON [coordinator_events.jsonl]: Lifecycle event line is valid JSON
+- [PASS] coordinator_events.jsonl line 1040 parses as JSON [coordinator_events.jsonl]: Lifecycle event line is valid JSON
+- [PASS] collector_report_20260629T065704.492040Z.json schema version [collector_report_20260629T065704.492040Z.json] (schema_version): schema_version matches evidence_harvester.collector_report.v1
+- [PASS] coordinator_events.jsonl line 1041 parses as JSON [coordinator_events.jsonl]: Lifecycle event line is valid JSON
+- [PASS] coordinator_events.jsonl line 1042 parses as JSON [coordinator_events.jsonl]: Lifecycle event line is valid JSON
+- [PASS] coordinator_events.jsonl line 1043 parses as JSON [coordinator_events.jsonl]: Lifecycle event line is valid JSON
+- [PASS] coordinator_events.jsonl line 1044 parses as JSON [coordinator_events.jsonl]: Lifecycle event line is valid JSON
+- [PASS] coordinator_events.jsonl line 1045 parses as JSON [coordinator_events.jsonl]: Lifecycle event line is valid JSON
+- [PASS] coordinator_events.jsonl line 1046 parses as JSON [coordinator_events.jsonl]: Lifecycle event line is valid JSON
+- [PASS] coordinator_events.jsonl line 1047 parses as JSON [coordinator_events.jsonl]: Lifecycle event line is valid JSON
+- [PASS] coordinator_events.jsonl line 1048 parses as JSON [coordinator_events.jsonl]: Lifecycle event line is valid JSON
+- [PASS] coordinator_events.jsonl line 1049 parses as JSON [coordinator_events.jsonl]: Lifecycle event line is valid JSON
+- [PASS] coordinator_events.jsonl line 1050 parses as JSON [coordinator_events.jsonl]: Lifecycle event line is valid JSON
+- [PASS] collector_report_20260629T065741.876917Z.json parses as JSON [collector_report_20260629T065741.876917Z.json]: Valid JSON (3398 bytes)
+- [PASS] coordinator_events.jsonl line 1051 parses as JSON [coordinator_events.jsonl]: Lifecycle event line is valid JSON
+- [PASS] coordinator_events.jsonl line 1052 parses as JSON [coordinator_events.jsonl]: Lifecycle event line is valid JSON
+- [PASS] coordinator_events.jsonl line 1053 parses as JSON [coordinator_events.jsonl]: Lifecycle event line is valid JSON
+- [PASS] coordinator_events.jsonl line 1054 parses as JSON [coordinator_events.jsonl]: Lifecycle event line is valid JSON
+- [PASS] coordinator_events.jsonl line 1055 parses as JSON [coordinator_events.jsonl]: Lifecycle event line is valid JSON
+- [PASS] coordinator_events.jsonl line 1056 parses as JSON [coordinator_events.jsonl]: Lifecycle event line is valid JSON
+- [PASS] coordinator_events.jsonl line 1057 parses as JSON [coordinator_events.jsonl]: Lifecycle event line is valid JSON
+- [PASS] coordinator_events.jsonl line 1058 parses as JSON [coordinator_events.jsonl]: Lifecycle event line is valid JSON
+- [PASS] coordinator_events.jsonl line 1059 parses as JSON [coordinator_events.jsonl]: Lifecycle event line is valid JSON
+- [PASS] coordinator_events.jsonl line 1060 parses as JSON [coordinator_events.jsonl]: Lifecycle event line is valid JSON
+- [PASS] collector_report_20260629T065741.876917Z.json schema version [collector_report_20260629T065741.876917Z.json] (schema_version): schema_version matches evidence_harvester.collector_report.v1
+- [PASS] coordinator_events.jsonl line 1061 parses as JSON [coordinator_events.jsonl]: Lifecycle event line is valid JSON
+- [PASS] coordinator_events.jsonl line 1062 parses as JSON [coordinator_events.jsonl]: Lifecycle event line is valid JSON
+- [PASS] coordinator_events.jsonl line 1063 parses as JSON [coordinator_events.jsonl]: Lifecycle event line is valid JSON
+- [PASS] coordinator_events.jsonl line 1064 parses as JSON [coordinator_events.jsonl]: Lifecycle event line is valid JSON
+- [PASS] coordinator_events.jsonl line 1065 parses as JSON [coordinator_events.jsonl]: Lifecycle event line is valid JSON
+- [PASS] coordinator_events.jsonl line 1066 parses as JSON [coordinator_events.jsonl]: Lifecycle event line is valid JSON
+- [PASS] coordinator_events.jsonl line 1067 parses as JSON [coordinator_events.jsonl]: Lifecycle event line is valid JSON
+- [PASS] coordinator_events.jsonl line 1068 parses as JSON [coordinator_events.jsonl]: Lifecycle event line is valid JSON
+- [PASS] coordinator_events.jsonl line 1069 parses as JSON [coordinator_events.jsonl]: Lifecycle event line is valid JSON
+- [PASS] coordinator_events.jsonl line 1070 parses as JSON [coordinator_events.jsonl]: Lifecycle event line is valid JSON
+- [PASS] collector_report_20260629T071205.045950Z.json parses as JSON [collector_report_20260629T071205.045950Z.json]: Valid JSON (3398 bytes)
+- [PASS] coordinator_events.jsonl line 1071 parses as JSON [coordinator_events.jsonl]: Lifecycle event line is valid JSON
+- [PASS] coordinator_events.jsonl line 1072 parses as JSON [coordinator_events.jsonl]: Lifecycle event line is valid JSON
+- [PASS] coordinator_events.jsonl line 1073 parses as JSON [coordinator_events.jsonl]: Lifecycle event line is valid JSON
+- [PASS] coordinator_events.jsonl line 1074 parses as JSON [coordinator_events.jsonl]: Lifecycle event line is valid JSON
+- [PASS] coordinator_events.jsonl line 1075 parses as JSON [coordinator_events.jsonl]: Lifecycle event line is valid JSON
+- [PASS] coordinator_events.jsonl line 1076 parses as JSON [coordinator_events.jsonl]: Lifecycle event line is valid JSON
+- [PASS] coordinator_events.jsonl line 1077 parses as JSON [coordinator_events.jsonl]: Lifecycle event line is valid JSON
+- [PASS] coordinator_events.jsonl line 1078 parses as JSON [coordinator_events.jsonl]: Lifecycle event line is valid JSON
+- [PASS] coordinator_events.jsonl line 1079 parses as JSON [coordinator_events.jsonl]: Lifecycle event line is valid JSON
+- [PASS] coordinator_events.jsonl line 1080 parses as JSON [coordinator_events.jsonl]: Lifecycle event line is valid JSON
+- [PASS] collector_report_20260629T071205.045950Z.json schema version [collector_report_20260629T071205.045950Z.json] (schema_version): schema_version matches evidence_harvester.collector_report.v1
+- [PASS] coordinator_events.jsonl line 1081 parses as JSON [coordinator_events.jsonl]: Lifecycle event line is valid JSON
+- [PASS] coordinator_events.jsonl line 1082 parses as JSON [coordinator_events.jsonl]: Lifecycle event line is valid JSON
+- [PASS] coordinator_events.jsonl line 1083 parses as JSON [coordinator_events.jsonl]: Lifecycle event line is valid JSON
+- [PASS] coordinator_events.jsonl line 1084 parses as JSON [coordinator_events.jsonl]: Lifecycle event line is valid JSON
+- [PASS] coordinator_events.jsonl line 1085 parses as JSON [coordinator_events.jsonl]: Lifecycle event line is valid JSON
+- [PASS] coordinator_events.jsonl line 1086 parses as JSON [coordinator_events.jsonl]: Lifecycle event line is valid JSON
+- [PASS] coordinator_events.jsonl line 1087 parses as JSON [coordinator_events.jsonl]: Lifecycle event line is valid JSON
+- [PASS] coordinator_events.jsonl line 1088 parses as JSON [coordinator_events.jsonl]: Lifecycle event line is valid JSON
+- [PASS] coordinator_events.jsonl line 1089 parses as JSON [coordinator_events.jsonl]: Lifecycle event line is valid JSON
+- [PASS] coordinator_events.jsonl line 1090 parses as JSON [coordinator_events.jsonl]: Lifecycle event line is valid JSON
+- [PASS] collector_report_20260629T071242.337870Z.json parses as JSON [collector_report_20260629T071242.337870Z.json]: Valid JSON (3398 bytes)
+- [PASS] coordinator_events.jsonl line 1091 parses as JSON [coordinator_events.jsonl]: Lifecycle event line is valid JSON
+- [PASS] coordinator_events.jsonl line 1092 parses as JSON [coordinator_events.jsonl]: Lifecycle event line is valid JSON
+- [PASS] coordinator_events.jsonl line 1093 parses as JSON [coordinator_events.jsonl]: Lifecycle event line is valid JSON
+- [PASS] coordinator_events.jsonl line 1094 parses as JSON [coordinator_events.jsonl]: Lifecycle event line is valid JSON
+- [PASS] coordinator_events.jsonl line 1095 parses as JSON [coordinator_events.jsonl]: Lifecycle event line is valid JSON
+- [PASS] coordinator_events.jsonl line 1096 parses as JSON [coordinator_events.jsonl]: Lifecycle event line is valid JSON
+- [PASS] coordinator_events.jsonl line 1097 parses as JSON [coordinator_events.jsonl]: Lifecycle event line is valid JSON
+- [PASS] coordinator_events.jsonl line 1098 parses as JSON [coordinator_events.jsonl]: Lifecycle event line is valid JSON
+- [PASS] coordinator_events.jsonl line 1099 parses as JSON [coordinator_events.jsonl]: Lifecycle event line is valid JSON
+- [PASS] coordinator_events.jsonl line 1100 parses as JSON [coordinator_events.jsonl]: Lifecycle event line is valid JSON
+- [PASS] collector_report_20260629T071242.337870Z.json schema version [collector_report_20260629T071242.337870Z.json] (schema_version): schema_version matches evidence_harvester.collector_report.v1
+- [PASS] coordinator_events.jsonl line 1101 parses as JSON [coordinator_events.jsonl]: Lifecycle event line is valid JSON
+- [PASS] coordinator_events.jsonl line 1102 parses as JSON [coordinator_events.jsonl]: Lifecycle event line is valid JSON
+- [PASS] coordinator_events.jsonl line 1103 parses as JSON [coordinator_events.jsonl]: Lifecycle event line is valid JSON
+- [PASS] coordinator_events.jsonl line 1104 parses as JSON [coordinator_events.jsonl]: Lifecycle event line is valid JSON
+- [PASS] coordinator_events.jsonl line 1105 parses as JSON [coordinator_events.jsonl]: Lifecycle event line is valid JSON
+- [PASS] coordinator_events.jsonl line 1106 parses as JSON [coordinator_events.jsonl]: Lifecycle event line is valid JSON
+- [PASS] runner_state.json parses as JSON [runner_state.json]: Valid JSON (571 bytes)
+- [PASS] runner_state.json schema version [runner_state.json] (schema_version): schema_version matches cdb.evidence_harvester.runner_state.v1
+- [PASS] watchdog_report_20260628T202647.095428Z.json parses as JSON [watchdog_report_20260628T202647.095428Z.json]: Valid JSON (3835 bytes)
+- [PASS] watchdog_report_20260628T202647.095428Z.json schema version [watchdog_report_20260628T202647.095428Z.json] (schema_version): schema_version matches cdb.evidence_harvester.watchdog_report.v1
+- [PASS] collector_report_20260629T072705.612761Z.json parses as JSON [collector_report_20260629T072705.612761Z.json]: Valid JSON (3398 bytes)
+- [PASS] watchdog_report_20260628T202725.754548Z.json parses as JSON [watchdog_report_20260628T202725.754548Z.json]: Valid JSON (3835 bytes)
+- [PASS] watchdog_report_20260628T202725.754548Z.json schema version [watchdog_report_20260628T202725.754548Z.json] (schema_version): schema_version matches cdb.evidence_harvester.watchdog_report.v1
+- [PASS] watchdog_report_20260628T204147.136310Z.json parses as JSON [watchdog_report_20260628T204147.136310Z.json]: Valid JSON (3835 bytes)
+- [PASS] watchdog_report_20260628T204147.136310Z.json schema version [watchdog_report_20260628T204147.136310Z.json] (schema_version): schema_version matches cdb.evidence_harvester.watchdog_report.v1
+- [PASS] watchdog_report_20260628T204225.822673Z.json parses as JSON [watchdog_report_20260628T204225.822673Z.json]: Valid JSON (3835 bytes)
+- [PASS] watchdog_report_20260628T204225.822673Z.json schema version [watchdog_report_20260628T204225.822673Z.json] (schema_version): schema_version matches cdb.evidence_harvester.watchdog_report.v1
+- [PASS] watchdog_report_20260628T205647.228228Z.json parses as JSON [watchdog_report_20260628T205647.228228Z.json]: Valid JSON (3833 bytes)
+- [PASS] watchdog_report_20260628T205647.228228Z.json schema version [watchdog_report_20260628T205647.228228Z.json] (schema_version): schema_version matches cdb.evidence_harvester.watchdog_report.v1
+- [PASS] watchdog_report_20260628T205725.879579Z.json parses as JSON [watchdog_report_20260628T205725.879579Z.json]: Valid JSON (3834 bytes)
+- [PASS] watchdog_report_20260628T205725.879579Z.json schema version [watchdog_report_20260628T205725.879579Z.json] (schema_version): schema_version matches cdb.evidence_harvester.watchdog_report.v1
+- [PASS] collector_report_20260629T072705.612761Z.json schema version [collector_report_20260629T072705.612761Z.json] (schema_version): schema_version matches evidence_harvester.collector_report.v1
+- [PASS] watchdog_report_20260628T211147.340626Z.json parses as JSON [watchdog_report_20260628T211147.340626Z.json]: Valid JSON (3835 bytes)
+- [PASS] watchdog_report_20260628T211147.340626Z.json schema version [watchdog_report_20260628T211147.340626Z.json] (schema_version): schema_version matches cdb.evidence_harvester.watchdog_report.v1
+- [PASS] watchdog_report_20260628T211225.977739Z.json parses as JSON [watchdog_report_20260628T211225.977739Z.json]: Valid JSON (3835 bytes)
+- [PASS] watchdog_report_20260628T211225.977739Z.json schema version [watchdog_report_20260628T211225.977739Z.json] (schema_version): schema_version matches cdb.evidence_harvester.watchdog_report.v1
+- [PASS] watchdog_report_20260628T212647.438144Z.json parses as JSON [watchdog_report_20260628T212647.438144Z.json]: Valid JSON (3835 bytes)
+- [PASS] watchdog_report_20260628T212647.438144Z.json schema version [watchdog_report_20260628T212647.438144Z.json] (schema_version): schema_version matches cdb.evidence_harvester.watchdog_report.v1
+- [PASS] watchdog_report_20260628T212726.085888Z.json parses as JSON [watchdog_report_20260628T212726.085888Z.json]: Valid JSON (3838 bytes)
+- [PASS] watchdog_report_20260628T212726.085888Z.json schema version [watchdog_report_20260628T212726.085888Z.json] (schema_version): schema_version matches cdb.evidence_harvester.watchdog_report.v1
+- [PASS] watchdog_report_20260628T214147.524830Z.json parses as JSON [watchdog_report_20260628T214147.524830Z.json]: Valid JSON (3837 bytes)
+- [PASS] watchdog_report_20260628T214147.524830Z.json schema version [watchdog_report_20260628T214147.524830Z.json] (schema_version): schema_version matches cdb.evidence_harvester.watchdog_report.v1
+- [PASS] collector_report_20260629T072742.814909Z.json parses as JSON [collector_report_20260629T072742.814909Z.json]: Valid JSON (3398 bytes)
+- [PASS] watchdog_report_20260628T214226.178738Z.json parses as JSON [watchdog_report_20260628T214226.178738Z.json]: Valid JSON (3837 bytes)
+- [PASS] watchdog_report_20260628T214226.178738Z.json schema version [watchdog_report_20260628T214226.178738Z.json] (schema_version): schema_version matches cdb.evidence_harvester.watchdog_report.v1
+- [PASS] watchdog_report_20260628T215647.638424Z.json parses as JSON [watchdog_report_20260628T215647.638424Z.json]: Valid JSON (3837 bytes)
+- [PASS] watchdog_report_20260628T215647.638424Z.json schema version [watchdog_report_20260628T215647.638424Z.json] (schema_version): schema_version matches cdb.evidence_harvester.watchdog_report.v1
+- [PASS] watchdog_report_20260628T215726.259263Z.json parses as JSON [watchdog_report_20260628T215726.259263Z.json]: Valid JSON (3837 bytes)
+- [PASS] watchdog_report_20260628T215726.259263Z.json schema version [watchdog_report_20260628T215726.259263Z.json] (schema_version): schema_version matches cdb.evidence_harvester.watchdog_report.v1
+- [PASS] watchdog_report_20260628T221147.773162Z.json parses as JSON [watchdog_report_20260628T221147.773162Z.json]: Valid JSON (3838 bytes)
+- [PASS] watchdog_report_20260628T221147.773162Z.json schema version [watchdog_report_20260628T221147.773162Z.json] (schema_version): schema_version matches cdb.evidence_harvester.watchdog_report.v1
+- [PASS] watchdog_report_20260628T221226.358702Z.json parses as JSON [watchdog_report_20260628T221226.358702Z.json]: Valid JSON (3838 bytes)
+- [PASS] watchdog_report_20260628T221226.358702Z.json schema version [watchdog_report_20260628T221226.358702Z.json] (schema_version): schema_version matches cdb.evidence_harvester.watchdog_report.v1
+- [PASS] collector_report_20260629T072742.814909Z.json schema version [collector_report_20260629T072742.814909Z.json] (schema_version): schema_version matches evidence_harvester.collector_report.v1
+- [PASS] watchdog_report_20260628T222647.925582Z.json parses as JSON [watchdog_report_20260628T222647.925582Z.json]: Valid JSON (3838 bytes)
+- [PASS] watchdog_report_20260628T222647.925582Z.json schema version [watchdog_report_20260628T222647.925582Z.json] (schema_version): schema_version matches cdb.evidence_harvester.watchdog_report.v1
+- [PASS] watchdog_report_20260628T222726.481222Z.json parses as JSON [watchdog_report_20260628T222726.481222Z.json]: Valid JSON (3838 bytes)
+- [PASS] watchdog_report_20260628T222726.481222Z.json schema version [watchdog_report_20260628T222726.481222Z.json] (schema_version): schema_version matches cdb.evidence_harvester.watchdog_report.v1
+- [PASS] watchdog_report_20260628T224148.050365Z.json parses as JSON [watchdog_report_20260628T224148.050365Z.json]: Valid JSON (3838 bytes)
+- [PASS] watchdog_report_20260628T224148.050365Z.json schema version [watchdog_report_20260628T224148.050365Z.json] (schema_version): schema_version matches cdb.evidence_harvester.watchdog_report.v1
+- [PASS] watchdog_report_20260628T224226.622382Z.json parses as JSON [watchdog_report_20260628T224226.622382Z.json]: Valid JSON (3838 bytes)
+- [PASS] watchdog_report_20260628T224226.622382Z.json schema version [watchdog_report_20260628T224226.622382Z.json] (schema_version): schema_version matches cdb.evidence_harvester.watchdog_report.v1
+- [PASS] watchdog_report_20260628T225653.430691Z.json parses as JSON [watchdog_report_20260628T225653.430691Z.json]: Valid JSON (3838 bytes)
+- [PASS] watchdog_report_20260628T225653.430691Z.json schema version [watchdog_report_20260628T225653.430691Z.json] (schema_version): schema_version matches cdb.evidence_harvester.watchdog_report.v1
+- [PASS] collector_report_20260629T074206.239038Z.json parses as JSON [collector_report_20260629T074206.239038Z.json]: Valid JSON (3398 bytes)
+- [PASS] watchdog_report_20260628T225732.008211Z.json parses as JSON [watchdog_report_20260628T225732.008211Z.json]: Valid JSON (3838 bytes)
+- [PASS] watchdog_report_20260628T225732.008211Z.json schema version [watchdog_report_20260628T225732.008211Z.json] (schema_version): schema_version matches cdb.evidence_harvester.watchdog_report.v1
+- [PASS] watchdog_report_20260628T231153.609636Z.json parses as JSON [watchdog_report_20260628T231153.609636Z.json]: Valid JSON (3838 bytes)
+- [PASS] watchdog_report_20260628T231153.609636Z.json schema version [watchdog_report_20260628T231153.609636Z.json] (schema_version): schema_version matches cdb.evidence_harvester.watchdog_report.v1
+- [PASS] watchdog_report_20260628T231232.158446Z.json parses as JSON [watchdog_report_20260628T231232.158446Z.json]: Valid JSON (3838 bytes)
+- [PASS] watchdog_report_20260628T231232.158446Z.json schema version [watchdog_report_20260628T231232.158446Z.json] (schema_version): schema_version matches cdb.evidence_harvester.watchdog_report.v1
+- [PASS] watchdog_report_20260628T232653.786742Z.json parses as JSON [watchdog_report_20260628T232653.786742Z.json]: Valid JSON (3838 bytes)
+- [PASS] watchdog_report_20260628T232653.786742Z.json schema version [watchdog_report_20260628T232653.786742Z.json] (schema_version): schema_version matches cdb.evidence_harvester.watchdog_report.v1
+- [PASS] watchdog_report_20260628T232732.326637Z.json parses as JSON [watchdog_report_20260628T232732.326637Z.json]: Valid JSON (3838 bytes)
+- [PASS] watchdog_report_20260628T232732.326637Z.json schema version [watchdog_report_20260628T232732.326637Z.json] (schema_version): schema_version matches cdb.evidence_harvester.watchdog_report.v1
+- [PASS] collector_report_20260629T074206.239038Z.json schema version [collector_report_20260629T074206.239038Z.json] (schema_version): schema_version matches evidence_harvester.collector_report.v1
+- [PASS] watchdog_report_20260628T234153.975890Z.json parses as JSON [watchdog_report_20260628T234153.975890Z.json]: Valid JSON (3836 bytes)
+- [PASS] watchdog_report_20260628T234153.975890Z.json schema version [watchdog_report_20260628T234153.975890Z.json] (schema_version): schema_version matches cdb.evidence_harvester.watchdog_report.v1
+- [PASS] watchdog_report_20260628T234232.480715Z.json parses as JSON [watchdog_report_20260628T234232.480715Z.json]: Valid JSON (3836 bytes)
+- [PASS] watchdog_report_20260628T234232.480715Z.json schema version [watchdog_report_20260628T234232.480715Z.json] (schema_version): schema_version matches cdb.evidence_harvester.watchdog_report.v1
+- [PASS] watchdog_report_20260628T235654.200874Z.json parses as JSON [watchdog_report_20260628T235654.200874Z.json]: Valid JSON (3838 bytes)
+- [PASS] watchdog_report_20260628T235654.200874Z.json schema version [watchdog_report_20260628T235654.200874Z.json] (schema_version): schema_version matches cdb.evidence_harvester.watchdog_report.v1
+- [PASS] watchdog_report_20260628T235732.645061Z.json parses as JSON [watchdog_report_20260628T235732.645061Z.json]: Valid JSON (3838 bytes)
+- [PASS] watchdog_report_20260628T235732.645061Z.json schema version [watchdog_report_20260628T235732.645061Z.json] (schema_version): schema_version matches cdb.evidence_harvester.watchdog_report.v1
+- [PASS] watchdog_report_20260629T001154.501508Z.json parses as JSON [watchdog_report_20260629T001154.501508Z.json]: Valid JSON (3838 bytes)
+- [PASS] watchdog_report_20260629T001154.501508Z.json schema version [watchdog_report_20260629T001154.501508Z.json] (schema_version): schema_version matches cdb.evidence_harvester.watchdog_report.v1
+- [PASS] collector_report_20260629T074243.386975Z.json parses as JSON [collector_report_20260629T074243.386975Z.json]: Valid JSON (3398 bytes)
+- [PASS] watchdog_report_20260629T001232.824905Z.json parses as JSON [watchdog_report_20260629T001232.824905Z.json]: Valid JSON (3838 bytes)
+- [PASS] watchdog_report_20260629T001232.824905Z.json schema version [watchdog_report_20260629T001232.824905Z.json] (schema_version): schema_version matches cdb.evidence_harvester.watchdog_report.v1
+- [PASS] watchdog_report_20260629T002654.774738Z.json parses as JSON [watchdog_report_20260629T002654.774738Z.json]: Valid JSON (3838 bytes)
+- [PASS] watchdog_report_20260629T002654.774738Z.json schema version [watchdog_report_20260629T002654.774738Z.json] (schema_version): schema_version matches cdb.evidence_harvester.watchdog_report.v1
+- [PASS] watchdog_report_20260629T002733.036521Z.json parses as JSON [watchdog_report_20260629T002733.036521Z.json]: Valid JSON (3838 bytes)
+- [PASS] watchdog_report_20260629T002733.036521Z.json schema version [watchdog_report_20260629T002733.036521Z.json] (schema_version): schema_version matches cdb.evidence_harvester.watchdog_report.v1
+- [PASS] watchdog_report_20260629T004155.046745Z.json parses as JSON [watchdog_report_20260629T004155.046745Z.json]: Valid JSON (3838 bytes)
+- [PASS] watchdog_report_20260629T004155.046745Z.json schema version [watchdog_report_20260629T004155.046745Z.json] (schema_version): schema_version matches cdb.evidence_harvester.watchdog_report.v1
+- [PASS] watchdog_report_20260629T004233.286267Z.json parses as JSON [watchdog_report_20260629T004233.286267Z.json]: Valid JSON (3838 bytes)
+- [PASS] watchdog_report_20260629T004233.286267Z.json schema version [watchdog_report_20260629T004233.286267Z.json] (schema_version): schema_version matches cdb.evidence_harvester.watchdog_report.v1
+- [PASS] collector_report_20260629T074243.386975Z.json schema version [collector_report_20260629T074243.386975Z.json] (schema_version): schema_version matches evidence_harvester.collector_report.v1
+- [PASS] watchdog_report_20260629T005655.286180Z.json parses as JSON [watchdog_report_20260629T005655.286180Z.json]: Valid JSON (3838 bytes)
+- [PASS] watchdog_report_20260629T005655.286180Z.json schema version [watchdog_report_20260629T005655.286180Z.json] (schema_version): schema_version matches cdb.evidence_harvester.watchdog_report.v1
+- [PASS] watchdog_report_20260629T005733.500216Z.json parses as JSON [watchdog_report_20260629T005733.500216Z.json]: Valid JSON (3838 bytes)
+- [PASS] watchdog_report_20260629T005733.500216Z.json schema version [watchdog_report_20260629T005733.500216Z.json] (schema_version): schema_version matches cdb.evidence_harvester.watchdog_report.v1
+- [PASS] watchdog_report_20260629T011155.540856Z.json parses as JSON [watchdog_report_20260629T011155.540856Z.json]: Valid JSON (3838 bytes)
+- [PASS] watchdog_report_20260629T011155.540856Z.json schema version [watchdog_report_20260629T011155.540856Z.json] (schema_version): schema_version matches cdb.evidence_harvester.watchdog_report.v1
+- [PASS] watchdog_report_20260629T011233.729956Z.json parses as JSON [watchdog_report_20260629T011233.729956Z.json]: Valid JSON (3838 bytes)
+- [PASS] watchdog_report_20260629T011233.729956Z.json schema version [watchdog_report_20260629T011233.729956Z.json] (schema_version): schema_version matches cdb.evidence_harvester.watchdog_report.v1
+- [PASS] watchdog_report_20260629T012655.870979Z.json parses as JSON [watchdog_report_20260629T012655.870979Z.json]: Valid JSON (3838 bytes)
+- [PASS] watchdog_report_20260629T012655.870979Z.json schema version [watchdog_report_20260629T012655.870979Z.json] (schema_version): schema_version matches cdb.evidence_harvester.watchdog_report.v1
+- [PASS] collector_report_20260629T075706.941690Z.json parses as JSON [collector_report_20260629T075706.941690Z.json]: Valid JSON (3398 bytes)
+- [PASS] watchdog_report_20260629T012734.022974Z.json parses as JSON [watchdog_report_20260629T012734.022974Z.json]: Valid JSON (3838 bytes)
+- [PASS] watchdog_report_20260629T012734.022974Z.json schema version [watchdog_report_20260629T012734.022974Z.json] (schema_version): schema_version matches cdb.evidence_harvester.watchdog_report.v1
+- [PASS] watchdog_report_20260629T014156.252608Z.json parses as JSON [watchdog_report_20260629T014156.252608Z.json]: Valid JSON (3838 bytes)
+- [PASS] watchdog_report_20260629T014156.252608Z.json schema version [watchdog_report_20260629T014156.252608Z.json] (schema_version): schema_version matches cdb.evidence_harvester.watchdog_report.v1
+- [PASS] watchdog_report_20260629T014234.291063Z.json parses as JSON [watchdog_report_20260629T014234.291063Z.json]: Valid JSON (3838 bytes)
+- [PASS] watchdog_report_20260629T014234.291063Z.json schema version [watchdog_report_20260629T014234.291063Z.json] (schema_version): schema_version matches cdb.evidence_harvester.watchdog_report.v1
+- [PASS] watchdog_report_20260629T015656.659674Z.json parses as JSON [watchdog_report_20260629T015656.659674Z.json]: Valid JSON (3838 bytes)
+- [PASS] watchdog_report_20260629T015656.659674Z.json schema version [watchdog_report_20260629T015656.659674Z.json] (schema_version): schema_version matches cdb.evidence_harvester.watchdog_report.v1
+- [PASS] watchdog_report_20260629T015734.550802Z.json parses as JSON [watchdog_report_20260629T015734.550802Z.json]: Valid JSON (3838 bytes)
+- [PASS] watchdog_report_20260629T015734.550802Z.json schema version [watchdog_report_20260629T015734.550802Z.json] (schema_version): schema_version matches cdb.evidence_harvester.watchdog_report.v1
+- [PASS] collector_report_20260629T075706.941690Z.json schema version [collector_report_20260629T075706.941690Z.json] (schema_version): schema_version matches evidence_harvester.collector_report.v1
+- [PASS] watchdog_report_20260629T021156.961887Z.json parses as JSON [watchdog_report_20260629T021156.961887Z.json]: Valid JSON (3837 bytes)
+- [PASS] watchdog_report_20260629T021156.961887Z.json schema version [watchdog_report_20260629T021156.961887Z.json] (schema_version): schema_version matches cdb.evidence_harvester.watchdog_report.v1
+- [PASS] watchdog_report_20260629T021234.839515Z.json parses as JSON [watchdog_report_20260629T021234.839515Z.json]: Valid JSON (3838 bytes)
+- [PASS] watchdog_report_20260629T021234.839515Z.json schema version [watchdog_report_20260629T021234.839515Z.json] (schema_version): schema_version matches cdb.evidence_harvester.watchdog_report.v1
+- [PASS] watchdog_report_20260629T022657.261292Z.json parses as JSON [watchdog_report_20260629T022657.261292Z.json]: Valid JSON (3838 bytes)
+- [PASS] watchdog_report_20260629T022657.261292Z.json schema version [watchdog_report_20260629T022657.261292Z.json] (schema_version): schema_version matches cdb.evidence_harvester.watchdog_report.v1
+- [PASS] watchdog_report_20260629T022735.088379Z.json parses as JSON [watchdog_report_20260629T022735.088379Z.json]: Valid JSON (3838 bytes)
+- [PASS] watchdog_report_20260629T022735.088379Z.json schema version [watchdog_report_20260629T022735.088379Z.json] (schema_version): schema_version matches cdb.evidence_harvester.watchdog_report.v1
+- [PASS] watchdog_report_20260629T024157.543626Z.json parses as JSON [watchdog_report_20260629T024157.543626Z.json]: Valid JSON (3838 bytes)
+- [PASS] watchdog_report_20260629T024157.543626Z.json schema version [watchdog_report_20260629T024157.543626Z.json] (schema_version): schema_version matches cdb.evidence_harvester.watchdog_report.v1
+- [PASS] collector_report_20260629T075744.017413Z.json parses as JSON [collector_report_20260629T075744.017413Z.json]: Valid JSON (3398 bytes)
+- [PASS] watchdog_report_20260629T024235.366805Z.json parses as JSON [watchdog_report_20260629T024235.366805Z.json]: Valid JSON (3838 bytes)
+- [PASS] watchdog_report_20260629T024235.366805Z.json schema version [watchdog_report_20260629T024235.366805Z.json] (schema_version): schema_version matches cdb.evidence_harvester.watchdog_report.v1
+- [PASS] watchdog_report_20260629T025657.877035Z.json parses as JSON [watchdog_report_20260629T025657.877035Z.json]: Valid JSON (3838 bytes)
+- [PASS] watchdog_report_20260629T025657.877035Z.json schema version [watchdog_report_20260629T025657.877035Z.json] (schema_version): schema_version matches cdb.evidence_harvester.watchdog_report.v1
+- [PASS] watchdog_report_20260629T025735.674598Z.json parses as JSON [watchdog_report_20260629T025735.674598Z.json]: Valid JSON (3836 bytes)
+- [PASS] watchdog_report_20260629T025735.674598Z.json schema version [watchdog_report_20260629T025735.674598Z.json] (schema_version): schema_version matches cdb.evidence_harvester.watchdog_report.v1
+- [PASS] watchdog_report_20260629T031158.281708Z.json parses as JSON [watchdog_report_20260629T031158.281708Z.json]: Valid JSON (3838 bytes)
+- [PASS] watchdog_report_20260629T031158.281708Z.json schema version [watchdog_report_20260629T031158.281708Z.json] (schema_version): schema_version matches cdb.evidence_harvester.watchdog_report.v1
+- [PASS] watchdog_report_20260629T031235.977270Z.json parses as JSON [watchdog_report_20260629T031235.977270Z.json]: Valid JSON (3838 bytes)
+- [PASS] watchdog_report_20260629T031235.977270Z.json schema version [watchdog_report_20260629T031235.977270Z.json] (schema_version): schema_version matches cdb.evidence_harvester.watchdog_report.v1
+- [PASS] collector_report_20260629T075744.017413Z.json schema version [collector_report_20260629T075744.017413Z.json] (schema_version): schema_version matches evidence_harvester.collector_report.v1
+- [PASS] watchdog_report_20260629T032658.655687Z.json parses as JSON [watchdog_report_20260629T032658.655687Z.json]: Valid JSON (3838 bytes)
+- [PASS] watchdog_report_20260629T032658.655687Z.json schema version [watchdog_report_20260629T032658.655687Z.json] (schema_version): schema_version matches cdb.evidence_harvester.watchdog_report.v1
+- [PASS] watchdog_report_20260629T032736.303267Z.json parses as JSON [watchdog_report_20260629T032736.303267Z.json]: Valid JSON (3838 bytes)
+- [PASS] watchdog_report_20260629T032736.303267Z.json schema version [watchdog_report_20260629T032736.303267Z.json] (schema_version): schema_version matches cdb.evidence_harvester.watchdog_report.v1
+- [PASS] watchdog_report_20260629T034159.055539Z.json parses as JSON [watchdog_report_20260629T034159.055539Z.json]: Valid JSON (3838 bytes)
+- [PASS] watchdog_report_20260629T034159.055539Z.json schema version [watchdog_report_20260629T034159.055539Z.json] (schema_version): schema_version matches cdb.evidence_harvester.watchdog_report.v1
+- [PASS] watchdog_report_20260629T034236.662044Z.json parses as JSON [watchdog_report_20260629T034236.662044Z.json]: Valid JSON (3838 bytes)
+- [PASS] watchdog_report_20260629T034236.662044Z.json schema version [watchdog_report_20260629T034236.662044Z.json] (schema_version): schema_version matches cdb.evidence_harvester.watchdog_report.v1
+- [PASS] watchdog_report_20260629T035659.403750Z.json parses as JSON [watchdog_report_20260629T035659.403750Z.json]: Valid JSON (3837 bytes)
+- [PASS] watchdog_report_20260629T035659.403750Z.json schema version [watchdog_report_20260629T035659.403750Z.json] (schema_version): schema_version matches cdb.evidence_harvester.watchdog_report.v1
+- [PASS] collector_report_20260629T081207.538860Z.json parses as JSON [collector_report_20260629T081207.538860Z.json]: Valid JSON (3398 bytes)
+- [PASS] watchdog_report_20260629T035736.996291Z.json parses as JSON [watchdog_report_20260629T035736.996291Z.json]: Valid JSON (3838 bytes)
+- [PASS] watchdog_report_20260629T035736.996291Z.json schema version [watchdog_report_20260629T035736.996291Z.json] (schema_version): schema_version matches cdb.evidence_harvester.watchdog_report.v1
+- [PASS] watchdog_report_20260629T041159.834473Z.json parses as JSON [watchdog_report_20260629T041159.834473Z.json]: Valid JSON (3838 bytes)
+- [PASS] watchdog_report_20260629T041159.834473Z.json schema version [watchdog_report_20260629T041159.834473Z.json] (schema_version): schema_version matches cdb.evidence_harvester.watchdog_report.v1
+- [PASS] watchdog_report_20260629T041237.420710Z.json parses as JSON [watchdog_report_20260629T041237.420710Z.json]: Valid JSON (3838 bytes)
+- [PASS] watchdog_report_20260629T041237.420710Z.json schema version [watchdog_report_20260629T041237.420710Z.json] (schema_version): schema_version matches cdb.evidence_harvester.watchdog_report.v1
+- [PASS] watchdog_report_20260629T042700.207061Z.json parses as JSON [watchdog_report_20260629T042700.207061Z.json]: Valid JSON (3838 bytes)
+- [PASS] watchdog_report_20260629T042700.207061Z.json schema version [watchdog_report_20260629T042700.207061Z.json] (schema_version): schema_version matches cdb.evidence_harvester.watchdog_report.v1
+- [PASS] watchdog_report_20260629T042737.755496Z.json parses as JSON [watchdog_report_20260629T042737.755496Z.json]: Valid JSON (3837 bytes)
+- [PASS] watchdog_report_20260629T042737.755496Z.json schema version [watchdog_report_20260629T042737.755496Z.json] (schema_version): schema_version matches cdb.evidence_harvester.watchdog_report.v1
+- [PASS] collector_report_20260629T081207.538860Z.json schema version [collector_report_20260629T081207.538860Z.json] (schema_version): schema_version matches evidence_harvester.collector_report.v1
+- [PASS] watchdog_report_20260629T044200.553296Z.json parses as JSON [watchdog_report_20260629T044200.553296Z.json]: Valid JSON (3838 bytes)
+- [PASS] watchdog_report_20260629T044200.553296Z.json schema version [watchdog_report_20260629T044200.553296Z.json] (schema_version): schema_version matches cdb.evidence_harvester.watchdog_report.v1
+- [PASS] watchdog_report_20260629T044238.097659Z.json parses as JSON [watchdog_report_20260629T044238.097659Z.json]: Valid JSON (3838 bytes)
+- [PASS] watchdog_report_20260629T044238.097659Z.json schema version [watchdog_report_20260629T044238.097659Z.json] (schema_version): schema_version matches cdb.evidence_harvester.watchdog_report.v1
+- [PASS] watchdog_report_20260629T045700.953009Z.json parses as JSON [watchdog_report_20260629T045700.953009Z.json]: Valid JSON (3838 bytes)
+- [PASS] watchdog_report_20260629T045700.953009Z.json schema version [watchdog_report_20260629T045700.953009Z.json] (schema_version): schema_version matches cdb.evidence_harvester.watchdog_report.v1
+- [PASS] watchdog_report_20260629T045738.476486Z.json parses as JSON [watchdog_report_20260629T045738.476486Z.json]: Valid JSON (3838 bytes)
+- [PASS] watchdog_report_20260629T045738.476486Z.json schema version [watchdog_report_20260629T045738.476486Z.json] (schema_version): schema_version matches cdb.evidence_harvester.watchdog_report.v1
+- [PASS] watchdog_report_20260629T051201.371370Z.json parses as JSON [watchdog_report_20260629T051201.371370Z.json]: Valid JSON (3838 bytes)
+- [PASS] watchdog_report_20260629T051201.371370Z.json schema version [watchdog_report_20260629T051201.371370Z.json] (schema_version): schema_version matches cdb.evidence_harvester.watchdog_report.v1
+- [PASS] collector_report_20260629T081244.519282Z.json parses as JSON [collector_report_20260629T081244.519282Z.json]: Valid JSON (3398 bytes)
+- [PASS] watchdog_report_20260629T051238.868752Z.json parses as JSON [watchdog_report_20260629T051238.868752Z.json]: Valid JSON (3838 bytes)
+- [PASS] watchdog_report_20260629T051238.868752Z.json schema version [watchdog_report_20260629T051238.868752Z.json] (schema_version): schema_version matches cdb.evidence_harvester.watchdog_report.v1
+- [PASS] watchdog_report_20260629T052701.813024Z.json parses as JSON [watchdog_report_20260629T052701.813024Z.json]: Valid JSON (3838 bytes)
+- [PASS] watchdog_report_20260629T052701.813024Z.json schema version [watchdog_report_20260629T052701.813024Z.json] (schema_version): schema_version matches cdb.evidence_harvester.watchdog_report.v1
+- [PASS] watchdog_report_20260629T052739.269183Z.json parses as JSON [watchdog_report_20260629T052739.269183Z.json]: Valid JSON (3838 bytes)
+- [PASS] watchdog_report_20260629T052739.269183Z.json schema version [watchdog_report_20260629T052739.269183Z.json] (schema_version): schema_version matches cdb.evidence_harvester.watchdog_report.v1
+- [PASS] watchdog_report_20260629T054202.209467Z.json parses as JSON [watchdog_report_20260629T054202.209467Z.json]: Valid JSON (3838 bytes)
+- [PASS] watchdog_report_20260629T054202.209467Z.json schema version [watchdog_report_20260629T054202.209467Z.json] (schema_version): schema_version matches cdb.evidence_harvester.watchdog_report.v1
+- [PASS] watchdog_report_20260629T054239.631909Z.json parses as JSON [watchdog_report_20260629T054239.631909Z.json]: Valid JSON (3838 bytes)
+- [PASS] watchdog_report_20260629T054239.631909Z.json schema version [watchdog_report_20260629T054239.631909Z.json] (schema_version): schema_version matches cdb.evidence_harvester.watchdog_report.v1
+- [PASS] collector_report_20260629T081244.519282Z.json schema version [collector_report_20260629T081244.519282Z.json] (schema_version): schema_version matches evidence_harvester.collector_report.v1
+- [PASS] watchdog_report_20260629T055702.593495Z.json parses as JSON [watchdog_report_20260629T055702.593495Z.json]: Valid JSON (3837 bytes)
+- [PASS] watchdog_report_20260629T055702.593495Z.json schema version [watchdog_report_20260629T055702.593495Z.json] (schema_version): schema_version matches cdb.evidence_harvester.watchdog_report.v1
+- [PASS] watchdog_report_20260629T055740.036252Z.json parses as JSON [watchdog_report_20260629T055740.036252Z.json]: Valid JSON (3837 bytes)
+- [PASS] watchdog_report_20260629T055740.036252Z.json schema version [watchdog_report_20260629T055740.036252Z.json] (schema_version): schema_version matches cdb.evidence_harvester.watchdog_report.v1
+- [PASS] watchdog_report_20260629T061203.038198Z.json parses as JSON [watchdog_report_20260629T061203.038198Z.json]: Valid JSON (3838 bytes)
+- [PASS] watchdog_report_20260629T061203.038198Z.json schema version [watchdog_report_20260629T061203.038198Z.json] (schema_version): schema_version matches cdb.evidence_harvester.watchdog_report.v1
+- [PASS] watchdog_report_20260629T061240.476343Z.json parses as JSON [watchdog_report_20260629T061240.476343Z.json]: Valid JSON (3838 bytes)
+- [PASS] watchdog_report_20260629T061240.476343Z.json schema version [watchdog_report_20260629T061240.476343Z.json] (schema_version): schema_version matches cdb.evidence_harvester.watchdog_report.v1
+- [PASS] watchdog_report_20260629T062703.502916Z.json parses as JSON [watchdog_report_20260629T062703.502916Z.json]: Valid JSON (3838 bytes)
+- [PASS] watchdog_report_20260629T062703.502916Z.json schema version [watchdog_report_20260629T062703.502916Z.json] (schema_version): schema_version matches cdb.evidence_harvester.watchdog_report.v1
+- [PASS] collector_report_20260629T082708.140490Z.json parses as JSON [collector_report_20260629T082708.140490Z.json]: Valid JSON (3398 bytes)
+- [PASS] watchdog_report_20260629T062740.937526Z.json parses as JSON [watchdog_report_20260629T062740.937526Z.json]: Valid JSON (3838 bytes)
+- [PASS] watchdog_report_20260629T062740.937526Z.json schema version [watchdog_report_20260629T062740.937526Z.json] (schema_version): schema_version matches cdb.evidence_harvester.watchdog_report.v1
+- [PASS] watchdog_report_20260629T064203.999298Z.json parses as JSON [watchdog_report_20260629T064203.999298Z.json]: Valid JSON (3838 bytes)
+- [PASS] watchdog_report_20260629T064203.999298Z.json schema version [watchdog_report_20260629T064203.999298Z.json] (schema_version): schema_version matches cdb.evidence_harvester.watchdog_report.v1
+- [PASS] watchdog_report_20260629T064241.410579Z.json parses as JSON [watchdog_report_20260629T064241.410579Z.json]: Valid JSON (3838 bytes)
+- [PASS] watchdog_report_20260629T064241.410579Z.json schema version [watchdog_report_20260629T064241.410579Z.json] (schema_version): schema_version matches cdb.evidence_harvester.watchdog_report.v1
+- [PASS] watchdog_report_20260629T065704.492040Z.json parses as JSON [watchdog_report_20260629T065704.492040Z.json]: Valid JSON (3838 bytes)
+- [PASS] watchdog_report_20260629T065704.492040Z.json schema version [watchdog_report_20260629T065704.492040Z.json] (schema_version): schema_version matches cdb.evidence_harvester.watchdog_report.v1
+- [PASS] watchdog_report_20260629T065741.876917Z.json parses as JSON [watchdog_report_20260629T065741.876917Z.json]: Valid JSON (3838 bytes)
+- [PASS] watchdog_report_20260629T065741.876917Z.json schema version [watchdog_report_20260629T065741.876917Z.json] (schema_version): schema_version matches cdb.evidence_harvester.watchdog_report.v1
+- [PASS] collector_report_20260629T082708.140490Z.json schema version [collector_report_20260629T082708.140490Z.json] (schema_version): schema_version matches evidence_harvester.collector_report.v1
+- [PASS] watchdog_report_20260629T071205.045950Z.json parses as JSON [watchdog_report_20260629T071205.045950Z.json]: Valid JSON (3838 bytes)
+- [PASS] watchdog_report_20260629T071205.045950Z.json schema version [watchdog_report_20260629T071205.045950Z.json] (schema_version): schema_version matches cdb.evidence_harvester.watchdog_report.v1
+- [PASS] watchdog_report_20260629T071242.337870Z.json parses as JSON [watchdog_report_20260629T071242.337870Z.json]: Valid JSON (3838 bytes)
+- [PASS] watchdog_report_20260629T071242.337870Z.json schema version [watchdog_report_20260629T071242.337870Z.json] (schema_version): schema_version matches cdb.evidence_harvester.watchdog_report.v1
+- [PASS] watchdog_report_20260629T072705.612761Z.json parses as JSON [watchdog_report_20260629T072705.612761Z.json]: Valid JSON (3838 bytes)
+- [PASS] watchdog_report_20260629T072705.612761Z.json schema version [watchdog_report_20260629T072705.612761Z.json] (schema_version): schema_version matches cdb.evidence_harvester.watchdog_report.v1
+- [PASS] watchdog_report_20260629T072742.814909Z.json parses as JSON [watchdog_report_20260629T072742.814909Z.json]: Valid JSON (3838 bytes)
+- [PASS] watchdog_report_20260629T072742.814909Z.json schema version [watchdog_report_20260629T072742.814909Z.json] (schema_version): schema_version matches cdb.evidence_harvester.watchdog_report.v1
+- [PASS] watchdog_report_20260629T074206.239038Z.json parses as JSON [watchdog_report_20260629T074206.239038Z.json]: Valid JSON (3838 bytes)
+- [PASS] watchdog_report_20260629T074206.239038Z.json schema version [watchdog_report_20260629T074206.239038Z.json] (schema_version): schema_version matches cdb.evidence_harvester.watchdog_report.v1
+- [PASS] collector_report_20260629T082745.060332Z.json parses as JSON [collector_report_20260629T082745.060332Z.json]: Valid JSON (3398 bytes)
+- [PASS] watchdog_report_20260629T074243.386975Z.json parses as JSON [watchdog_report_20260629T074243.386975Z.json]: Valid JSON (3838 bytes)
+- [PASS] watchdog_report_20260629T074243.386975Z.json schema version [watchdog_report_20260629T074243.386975Z.json] (schema_version): schema_version matches cdb.evidence_harvester.watchdog_report.v1
+- [PASS] watchdog_report_20260629T075706.941690Z.json parses as JSON [watchdog_report_20260629T075706.941690Z.json]: Valid JSON (3838 bytes)
+- [PASS] watchdog_report_20260629T075706.941690Z.json schema version [watchdog_report_20260629T075706.941690Z.json] (schema_version): schema_version matches cdb.evidence_harvester.watchdog_report.v1
+- [PASS] watchdog_report_20260629T075744.017413Z.json parses as JSON [watchdog_report_20260629T075744.017413Z.json]: Valid JSON (3838 bytes)
+- [PASS] watchdog_report_20260629T075744.017413Z.json schema version [watchdog_report_20260629T075744.017413Z.json] (schema_version): schema_version matches cdb.evidence_harvester.watchdog_report.v1
+- [PASS] watchdog_report_20260629T081207.538860Z.json parses as JSON [watchdog_report_20260629T081207.538860Z.json]: Valid JSON (3838 bytes)
+- [PASS] watchdog_report_20260629T081207.538860Z.json schema version [watchdog_report_20260629T081207.538860Z.json] (schema_version): schema_version matches cdb.evidence_harvester.watchdog_report.v1
+- [PASS] watchdog_report_20260629T081244.519282Z.json parses as JSON [watchdog_report_20260629T081244.519282Z.json]: Valid JSON (3838 bytes)
+- [PASS] watchdog_report_20260629T081244.519282Z.json schema version [watchdog_report_20260629T081244.519282Z.json] (schema_version): schema_version matches cdb.evidence_harvester.watchdog_report.v1
+- [PASS] collector_report_20260629T082745.060332Z.json schema version [collector_report_20260629T082745.060332Z.json] (schema_version): schema_version matches evidence_harvester.collector_report.v1
+- [PASS] watchdog_report_20260629T082708.140490Z.json parses as JSON [watchdog_report_20260629T082708.140490Z.json]: Valid JSON (3838 bytes)
+- [PASS] watchdog_report_20260629T082708.140490Z.json schema version [watchdog_report_20260629T082708.140490Z.json] (schema_version): schema_version matches cdb.evidence_harvester.watchdog_report.v1
+- [PASS] watchdog_report_20260629T082745.060332Z.json parses as JSON [watchdog_report_20260629T082745.060332Z.json]: Valid JSON (3838 bytes)
+- [PASS] watchdog_report_20260629T082745.060332Z.json schema version [watchdog_report_20260629T082745.060332Z.json] (schema_version): schema_version matches cdb.evidence_harvester.watchdog_report.v1
+- [PASS] watchdog_report_20260629T084208.790950Z.json parses as JSON [watchdog_report_20260629T084208.790950Z.json]: Valid JSON (3837 bytes)
+- [PASS] watchdog_report_20260629T084208.790950Z.json schema version [watchdog_report_20260629T084208.790950Z.json] (schema_version): schema_version matches cdb.evidence_harvester.watchdog_report.v1
+- [PASS] watchdog_report_20260629T084245.597847Z.json parses as JSON [watchdog_report_20260629T084245.597847Z.json]: Valid JSON (3841 bytes)
+- [PASS] watchdog_report_20260629T084245.597847Z.json schema version [watchdog_report_20260629T084245.597847Z.json] (schema_version): schema_version matches cdb.evidence_harvester.watchdog_report.v1
+- [PASS] watchdog_report_20260629T085709.431205Z.json parses as JSON [watchdog_report_20260629T085709.431205Z.json]: Valid JSON (3840 bytes)
+- [PASS] watchdog_report_20260629T085709.431205Z.json schema version [watchdog_report_20260629T085709.431205Z.json] (schema_version): schema_version matches cdb.evidence_harvester.watchdog_report.v1
+- [PASS] collector_report_20260629T084208.790950Z.json parses as JSON [collector_report_20260629T084208.790950Z.json]: Valid JSON (3398 bytes)
+- [PASS] watchdog_report_20260629T085746.133858Z.json parses as JSON [watchdog_report_20260629T085746.133858Z.json]: Valid JSON (3841 bytes)
+- [PASS] watchdog_report_20260629T085746.133858Z.json schema version [watchdog_report_20260629T085746.133858Z.json] (schema_version): schema_version matches cdb.evidence_harvester.watchdog_report.v1
+- [PASS] watchdog_report_20260629T091210.137367Z.json parses as JSON [watchdog_report_20260629T091210.137367Z.json]: Valid JSON (3841 bytes)
+- [PASS] watchdog_report_20260629T091210.137367Z.json schema version [watchdog_report_20260629T091210.137367Z.json] (schema_version): schema_version matches cdb.evidence_harvester.watchdog_report.v1
+- [PASS] watchdog_report_20260629T091246.700715Z.json parses as JSON [watchdog_report_20260629T091246.700715Z.json]: Valid JSON (3838 bytes)
+- [PASS] watchdog_report_20260629T091246.700715Z.json schema version [watchdog_report_20260629T091246.700715Z.json] (schema_version): schema_version matches cdb.evidence_harvester.watchdog_report.v1
+- [PASS] watchdog_report_20260629T092710.901206Z.json parses as JSON [watchdog_report_20260629T092710.901206Z.json]: Valid JSON (3841 bytes)
+- [PASS] watchdog_report_20260629T092710.901206Z.json schema version [watchdog_report_20260629T092710.901206Z.json] (schema_version): schema_version matches cdb.evidence_harvester.watchdog_report.v1
+- [PASS] watchdog_report_20260629T092747.293172Z.json parses as JSON [watchdog_report_20260629T092747.293172Z.json]: Valid JSON (3841 bytes)
+- [PASS] watchdog_report_20260629T092747.293172Z.json schema version [watchdog_report_20260629T092747.293172Z.json] (schema_version): schema_version matches cdb.evidence_harvester.watchdog_report.v1
+- [PASS] collector_report_20260629T084208.790950Z.json schema version [collector_report_20260629T084208.790950Z.json] (schema_version): schema_version matches evidence_harvester.collector_report.v1
+- [PASS] watchdog_report_20260629T094211.695111Z.json parses as JSON [watchdog_report_20260629T094211.695111Z.json]: Valid JSON (3841 bytes)
+- [PASS] watchdog_report_20260629T094211.695111Z.json schema version [watchdog_report_20260629T094211.695111Z.json] (schema_version): schema_version matches cdb.evidence_harvester.watchdog_report.v1
+- [PASS] watchdog_report_20260629T094247.903918Z.json parses as JSON [watchdog_report_20260629T094247.903918Z.json]: Valid JSON (3841 bytes)
+- [PASS] watchdog_report_20260629T094247.903918Z.json schema version [watchdog_report_20260629T094247.903918Z.json] (schema_version): schema_version matches cdb.evidence_harvester.watchdog_report.v1
+- [PASS] watchdog_report_20260629T095712.307200Z.json parses as JSON [watchdog_report_20260629T095712.307200Z.json]: Valid JSON (3841 bytes)
+- [PASS] watchdog_report_20260629T095712.307200Z.json schema version [watchdog_report_20260629T095712.307200Z.json] (schema_version): schema_version matches cdb.evidence_harvester.watchdog_report.v1
+- [PASS] watchdog_report_20260629T095748.490461Z.json parses as JSON [watchdog_report_20260629T095748.490461Z.json]: Valid JSON (3841 bytes)
+- [PASS] watchdog_report_20260629T095748.490461Z.json schema version [watchdog_report_20260629T095748.490461Z.json] (schema_version): schema_version matches cdb.evidence_harvester.watchdog_report.v1
+- [PASS] watchdog_report_20260629T101213.089179Z.json parses as JSON [watchdog_report_20260629T101213.089179Z.json]: Valid JSON (3841 bytes)
+- [PASS] watchdog_report_20260629T101213.089179Z.json schema version [watchdog_report_20260629T101213.089179Z.json] (schema_version): schema_version matches cdb.evidence_harvester.watchdog_report.v1
+- [PASS] collector_report_20260629T084245.597847Z.json parses as JSON [collector_report_20260629T084245.597847Z.json]: Valid JSON (3398 bytes)
+- [PASS] watchdog_report_20260629T101249.139878Z.json parses as JSON [watchdog_report_20260629T101249.139878Z.json]: Valid JSON (3841 bytes)
+- [PASS] watchdog_report_20260629T101249.139878Z.json schema version [watchdog_report_20260629T101249.139878Z.json] (schema_version): schema_version matches cdb.evidence_harvester.watchdog_report.v1
+- [PASS] watchdog_report_20260629T102713.736465Z.json parses as JSON [watchdog_report_20260629T102713.736465Z.json]: Valid JSON (3841 bytes)
+- [PASS] watchdog_report_20260629T102713.736465Z.json schema version [watchdog_report_20260629T102713.736465Z.json] (schema_version): schema_version matches cdb.evidence_harvester.watchdog_report.v1
+- [PASS] watchdog_report_20260629T102749.736234Z.json parses as JSON [watchdog_report_20260629T102749.736234Z.json]: Valid JSON (3841 bytes)
+- [PASS] watchdog_report_20260629T102749.736234Z.json schema version [watchdog_report_20260629T102749.736234Z.json] (schema_version): schema_version matches cdb.evidence_harvester.watchdog_report.v1
+- [PASS] watchdog_report_20260629T104214.526487Z.json parses as JSON [watchdog_report_20260629T104214.526487Z.json]: Valid JSON (3839 bytes)
+- [PASS] watchdog_report_20260629T104214.526487Z.json schema version [watchdog_report_20260629T104214.526487Z.json] (schema_version): schema_version matches cdb.evidence_harvester.watchdog_report.v1
+- [PASS] watchdog_report_20260629T104250.386199Z.json parses as JSON [watchdog_report_20260629T104250.386199Z.json]: Valid JSON (3841 bytes)
+- [PASS] watchdog_report_20260629T104250.386199Z.json schema version [watchdog_report_20260629T104250.386199Z.json] (schema_version): schema_version matches cdb.evidence_harvester.watchdog_report.v1
+- [PASS] collector_report_20260629T084245.597847Z.json schema version [collector_report_20260629T084245.597847Z.json] (schema_version): schema_version matches evidence_harvester.collector_report.v1
+- [PASS] watchdog_report_20260629T105715.204661Z.json parses as JSON [watchdog_report_20260629T105715.204661Z.json]: Valid JSON (3841 bytes)
+- [PASS] watchdog_report_20260629T105715.204661Z.json schema version [watchdog_report_20260629T105715.204661Z.json] (schema_version): schema_version matches cdb.evidence_harvester.watchdog_report.v1
+- [PASS] watchdog_report_20260629T105751.025839Z.json parses as JSON [watchdog_report_20260629T105751.025839Z.json]: Valid JSON (3840 bytes)
+- [PASS] watchdog_report_20260629T105751.025839Z.json schema version [watchdog_report_20260629T105751.025839Z.json] (schema_version): schema_version matches cdb.evidence_harvester.watchdog_report.v1
+- [PASS] watchdog_report_20260629T111215.903183Z.json parses as JSON [watchdog_report_20260629T111215.903183Z.json]: Valid JSON (3841 bytes)
+- [PASS] watchdog_report_20260629T111215.903183Z.json schema version [watchdog_report_20260629T111215.903183Z.json] (schema_version): schema_version matches cdb.evidence_harvester.watchdog_report.v1
+- [PASS] watchdog_report_20260629T111251.661921Z.json parses as JSON [watchdog_report_20260629T111251.661921Z.json]: Valid JSON (3841 bytes)
+- [PASS] watchdog_report_20260629T111251.661921Z.json schema version [watchdog_report_20260629T111251.661921Z.json] (schema_version): schema_version matches cdb.evidence_harvester.watchdog_report.v1
+- [PASS] watchdog_report_20260629T112716.629865Z.json parses as JSON [watchdog_report_20260629T112716.629865Z.json]: Valid JSON (3841 bytes)
+- [PASS] watchdog_report_20260629T112716.629865Z.json schema version [watchdog_report_20260629T112716.629865Z.json] (schema_version): schema_version matches cdb.evidence_harvester.watchdog_report.v1
+- [PASS] collector_report_20260629T085709.431205Z.json parses as JSON [collector_report_20260629T085709.431205Z.json]: Valid JSON (3398 bytes)
+- [PASS] watchdog_report_20260629T112752.284749Z.json parses as JSON [watchdog_report_20260629T112752.284749Z.json]: Valid JSON (3839 bytes)
+- [PASS] watchdog_report_20260629T112752.284749Z.json schema version [watchdog_report_20260629T112752.284749Z.json] (schema_version): schema_version matches cdb.evidence_harvester.watchdog_report.v1
+- [PASS] watchdog_report_20260629T114217.488056Z.json parses as JSON [watchdog_report_20260629T114217.488056Z.json]: Valid JSON (3839 bytes)
+- [PASS] watchdog_report_20260629T114217.488056Z.json schema version [watchdog_report_20260629T114217.488056Z.json] (schema_version): schema_version matches cdb.evidence_harvester.watchdog_report.v1
+- [PASS] watchdog_report_20260629T114252.920024Z.json parses as JSON [watchdog_report_20260629T114252.920024Z.json]: Valid JSON (3841 bytes)
+- [PASS] watchdog_report_20260629T114252.920024Z.json schema version [watchdog_report_20260629T114252.920024Z.json] (schema_version): schema_version matches cdb.evidence_harvester.watchdog_report.v1
+- [PASS] watchdog_report_20260629T115718.201420Z.json parses as JSON [watchdog_report_20260629T115718.201420Z.json]: Valid JSON (3841 bytes)
+- [PASS] watchdog_report_20260629T115718.201420Z.json schema version [watchdog_report_20260629T115718.201420Z.json] (schema_version): schema_version matches cdb.evidence_harvester.watchdog_report.v1
+- [PASS] watchdog_report_20260629T115753.619990Z.json parses as JSON [watchdog_report_20260629T115753.619990Z.json]: Valid JSON (3841 bytes)
+- [PASS] watchdog_report_20260629T115753.619990Z.json schema version [watchdog_report_20260629T115753.619990Z.json] (schema_version): schema_version matches cdb.evidence_harvester.watchdog_report.v1
+- [PASS] collector_report_20260629T085709.431205Z.json schema version [collector_report_20260629T085709.431205Z.json] (schema_version): schema_version matches evidence_harvester.collector_report.v1
+- [PASS] watchdog_report_20260629T121218.891836Z.json parses as JSON [watchdog_report_20260629T121218.891836Z.json]: Valid JSON (3841 bytes)
+- [PASS] watchdog_report_20260629T121218.891836Z.json schema version [watchdog_report_20260629T121218.891836Z.json] (schema_version): schema_version matches cdb.evidence_harvester.watchdog_report.v1
+- [PASS] watchdog_report_20260629T121254.279917Z.json parses as JSON [watchdog_report_20260629T121254.279917Z.json]: Valid JSON (3839 bytes)
+- [PASS] watchdog_report_20260629T121254.279917Z.json schema version [watchdog_report_20260629T121254.279917Z.json] (schema_version): schema_version matches cdb.evidence_harvester.watchdog_report.v1
+- [PASS] watchdog_report_20260629T122719.639543Z.json parses as JSON [watchdog_report_20260629T122719.639543Z.json]: Valid JSON (3841 bytes)
+- [PASS] watchdog_report_20260629T122719.639543Z.json schema version [watchdog_report_20260629T122719.639543Z.json] (schema_version): schema_version matches cdb.evidence_harvester.watchdog_report.v1
+- [PASS] watchdog_report_20260629T122754.960906Z.json parses as JSON [watchdog_report_20260629T122754.960906Z.json]: Valid JSON (3841 bytes)
+- [PASS] watchdog_report_20260629T122754.960906Z.json schema version [watchdog_report_20260629T122754.960906Z.json] (schema_version): schema_version matches cdb.evidence_harvester.watchdog_report.v1
+- [PASS] watchdog_report_20260629T124220.684108Z.json parses as JSON [watchdog_report_20260629T124220.684108Z.json]: Valid JSON (3841 bytes)
+- [PASS] watchdog_report_20260629T124220.684108Z.json schema version [watchdog_report_20260629T124220.684108Z.json] (schema_version): schema_version matches cdb.evidence_harvester.watchdog_report.v1
+- [PASS] collector_report_20260629T085746.133858Z.json parses as JSON [collector_report_20260629T085746.133858Z.json]: Valid JSON (3398 bytes)
+- [PASS] watchdog_report_20260629T124256.230963Z.json parses as JSON [watchdog_report_20260629T124256.230963Z.json]: Valid JSON (3841 bytes)
+- [PASS] watchdog_report_20260629T124256.230963Z.json schema version [watchdog_report_20260629T124256.230963Z.json] (schema_version): schema_version matches cdb.evidence_harvester.watchdog_report.v1
+- [PASS] watchdog_report_20260629T125723.136228Z.json parses as JSON [watchdog_report_20260629T125723.136228Z.json]: Valid JSON (3841 bytes)
+- [PASS] watchdog_report_20260629T125723.136228Z.json schema version [watchdog_report_20260629T125723.136228Z.json] (schema_version): schema_version matches cdb.evidence_harvester.watchdog_report.v1
+- [PASS] watchdog_report_20260629T125804.007362Z.json parses as JSON [watchdog_report_20260629T125804.007362Z.json]: Valid JSON (3841 bytes)
+- [PASS] watchdog_report_20260629T125804.007362Z.json schema version [watchdog_report_20260629T125804.007362Z.json] (schema_version): schema_version matches cdb.evidence_harvester.watchdog_report.v1
+- [PASS] watchdog_report_20260629T131224.181983Z.json parses as JSON [watchdog_report_20260629T131224.181983Z.json]: Valid JSON (3841 bytes)
+- [PASS] watchdog_report_20260629T131224.181983Z.json schema version [watchdog_report_20260629T131224.181983Z.json] (schema_version): schema_version matches cdb.evidence_harvester.watchdog_report.v1
+- [PASS] watchdog_report_20260629T131304.889188Z.json parses as JSON [watchdog_report_20260629T131304.889188Z.json]: Valid JSON (3841 bytes)
+- [PASS] watchdog_report_20260629T131304.889188Z.json schema version [watchdog_report_20260629T131304.889188Z.json] (schema_version): schema_version matches cdb.evidence_harvester.watchdog_report.v1
+- [PASS] collector_report_20260629T085746.133858Z.json schema version [collector_report_20260629T085746.133858Z.json] (schema_version): schema_version matches evidence_harvester.collector_report.v1
+- [PASS] watchdog_report_20260629T132725.882130Z.json parses as JSON [watchdog_report_20260629T132725.882130Z.json]: Valid JSON (3841 bytes)
+- [PASS] watchdog_report_20260629T132725.882130Z.json schema version [watchdog_report_20260629T132725.882130Z.json] (schema_version): schema_version matches cdb.evidence_harvester.watchdog_report.v1
+- [PASS] watchdog_report_20260629T132806.599768Z.json parses as JSON [watchdog_report_20260629T132806.599768Z.json]: Valid JSON (3841 bytes)
+- [PASS] watchdog_report_20260629T132806.599768Z.json schema version [watchdog_report_20260629T132806.599768Z.json] (schema_version): schema_version matches cdb.evidence_harvester.watchdog_report.v1
+- [PASS] write_audit_report_20260628T202647.095428Z.json parses as JSON [write_audit_report_20260628T202647.095428Z.json]: Valid JSON (3637 bytes)
+- [PASS] write_audit_report_20260628T202647.095428Z.json schema version [write_audit_report_20260628T202647.095428Z.json] (schema_version): schema_version matches cdb.evidence_harvester.write_audit_report.v1
+- [PASS] write_audit_report_20260628T202725.754548Z.json parses as JSON [write_audit_report_20260628T202725.754548Z.json]: Valid JSON (4033 bytes)
+- [PASS] write_audit_report_20260628T202725.754548Z.json schema version [write_audit_report_20260628T202725.754548Z.json] (schema_version): schema_version matches cdb.evidence_harvester.write_audit_report.v1
+- [PASS] write_audit_report_20260628T204147.136310Z.json parses as JSON [write_audit_report_20260628T204147.136310Z.json]: Valid JSON (4429 bytes)
+- [PASS] write_audit_report_20260628T204147.136310Z.json schema version [write_audit_report_20260628T204147.136310Z.json] (schema_version): schema_version matches cdb.evidence_harvester.write_audit_report.v1
+- [PASS] collector_report_20260629T091210.137367Z.json parses as JSON [collector_report_20260629T091210.137367Z.json]: Valid JSON (3398 bytes)
+- [PASS] write_audit_report_20260628T204225.822673Z.json parses as JSON [write_audit_report_20260628T204225.822673Z.json]: Valid JSON (4825 bytes)
+- [PASS] write_audit_report_20260628T204225.822673Z.json schema version [write_audit_report_20260628T204225.822673Z.json] (schema_version): schema_version matches cdb.evidence_harvester.write_audit_report.v1
+- [PASS] write_audit_report_20260628T205647.228228Z.json parses as JSON [write_audit_report_20260628T205647.228228Z.json]: Valid JSON (5221 bytes)
+- [PASS] write_audit_report_20260628T205647.228228Z.json schema version [write_audit_report_20260628T205647.228228Z.json] (schema_version): schema_version matches cdb.evidence_harvester.write_audit_report.v1
+- [PASS] write_audit_report_20260628T205725.879579Z.json parses as JSON [write_audit_report_20260628T205725.879579Z.json]: Valid JSON (5617 bytes)
+- [PASS] write_audit_report_20260628T205725.879579Z.json schema version [write_audit_report_20260628T205725.879579Z.json] (schema_version): schema_version matches cdb.evidence_harvester.write_audit_report.v1
+- [PASS] write_audit_report_20260628T211147.340626Z.json parses as JSON [write_audit_report_20260628T211147.340626Z.json]: Valid JSON (6013 bytes)
+- [PASS] write_audit_report_20260628T211147.340626Z.json schema version [write_audit_report_20260628T211147.340626Z.json] (schema_version): schema_version matches cdb.evidence_harvester.write_audit_report.v1
+- [PASS] write_audit_report_20260628T211225.977739Z.json parses as JSON [write_audit_report_20260628T211225.977739Z.json]: Valid JSON (6409 bytes)
+- [PASS] write_audit_report_20260628T211225.977739Z.json schema version [write_audit_report_20260628T211225.977739Z.json] (schema_version): schema_version matches cdb.evidence_harvester.write_audit_report.v1
+- [PASS] collector_report_20260629T091210.137367Z.json schema version [collector_report_20260629T091210.137367Z.json] (schema_version): schema_version matches evidence_harvester.collector_report.v1
+- [PASS] write_audit_report_20260628T212647.438144Z.json parses as JSON [write_audit_report_20260628T212647.438144Z.json]: Valid JSON (6805 bytes)
+- [PASS] write_audit_report_20260628T212647.438144Z.json schema version [write_audit_report_20260628T212647.438144Z.json] (schema_version): schema_version matches cdb.evidence_harvester.write_audit_report.v1
+- [PASS] write_audit_report_20260628T212726.085888Z.json parses as JSON [write_audit_report_20260628T212726.085888Z.json]: Valid JSON (7201 bytes)
+- [PASS] write_audit_report_20260628T212726.085888Z.json schema version [write_audit_report_20260628T212726.085888Z.json] (schema_version): schema_version matches cdb.evidence_harvester.write_audit_report.v1
+- [PASS] write_audit_report_20260628T214147.524830Z.json parses as JSON [write_audit_report_20260628T214147.524830Z.json]: Valid JSON (7597 bytes)
+- [PASS] write_audit_report_20260628T214147.524830Z.json schema version [write_audit_report_20260628T214147.524830Z.json] (schema_version): schema_version matches cdb.evidence_harvester.write_audit_report.v1
+- [PASS] write_audit_report_20260628T214226.178738Z.json parses as JSON [write_audit_report_20260628T214226.178738Z.json]: Valid JSON (7993 bytes)
+- [PASS] write_audit_report_20260628T214226.178738Z.json schema version [write_audit_report_20260628T214226.178738Z.json] (schema_version): schema_version matches cdb.evidence_harvester.write_audit_report.v1
+- [PASS] write_audit_report_20260628T215647.638424Z.json parses as JSON [write_audit_report_20260628T215647.638424Z.json]: Valid JSON (8389 bytes)
+- [PASS] write_audit_report_20260628T215647.638424Z.json schema version [write_audit_report_20260628T215647.638424Z.json] (schema_version): schema_version matches cdb.evidence_harvester.write_audit_report.v1
+- [PASS] collector_report_20260629T091246.700715Z.json parses as JSON [collector_report_20260629T091246.700715Z.json]: Valid JSON (3398 bytes)
+- [PASS] write_audit_report_20260628T215726.259263Z.json parses as JSON [write_audit_report_20260628T215726.259263Z.json]: Valid JSON (8785 bytes)
+- [PASS] write_audit_report_20260628T215726.259263Z.json schema version [write_audit_report_20260628T215726.259263Z.json] (schema_version): schema_version matches cdb.evidence_harvester.write_audit_report.v1
+- [PASS] write_audit_report_20260628T221147.773162Z.json parses as JSON [write_audit_report_20260628T221147.773162Z.json]: Valid JSON (9181 bytes)
+- [PASS] write_audit_report_20260628T221147.773162Z.json schema version [write_audit_report_20260628T221147.773162Z.json] (schema_version): schema_version matches cdb.evidence_harvester.write_audit_report.v1
+- [PASS] write_audit_report_20260628T221226.358702Z.json parses as JSON [write_audit_report_20260628T221226.358702Z.json]: Valid JSON (9577 bytes)
+- [PASS] write_audit_report_20260628T221226.358702Z.json schema version [write_audit_report_20260628T221226.358702Z.json] (schema_version): schema_version matches cdb.evidence_harvester.write_audit_report.v1
+- [PASS] write_audit_report_20260628T222647.925582Z.json parses as JSON [write_audit_report_20260628T222647.925582Z.json]: Valid JSON (9973 bytes)
+- [PASS] write_audit_report_20260628T222647.925582Z.json schema version [write_audit_report_20260628T222647.925582Z.json] (schema_version): schema_version matches cdb.evidence_harvester.write_audit_report.v1
+- [PASS] write_audit_report_20260628T222726.481222Z.json parses as JSON [write_audit_report_20260628T222726.481222Z.json]: Valid JSON (10369 bytes)
+- [PASS] write_audit_report_20260628T222726.481222Z.json schema version [write_audit_report_20260628T222726.481222Z.json] (schema_version): schema_version matches cdb.evidence_harvester.write_audit_report.v1
+- [PASS] collector_report_20260629T091246.700715Z.json schema version [collector_report_20260629T091246.700715Z.json] (schema_version): schema_version matches evidence_harvester.collector_report.v1
+- [PASS] write_audit_report_20260628T224148.050365Z.json parses as JSON [write_audit_report_20260628T224148.050365Z.json]: Valid JSON (10765 bytes)
+- [PASS] write_audit_report_20260628T224148.050365Z.json schema version [write_audit_report_20260628T224148.050365Z.json] (schema_version): schema_version matches cdb.evidence_harvester.write_audit_report.v1
+- [PASS] write_audit_report_20260628T224226.622382Z.json parses as JSON [write_audit_report_20260628T224226.622382Z.json]: Valid JSON (11161 bytes)
+- [PASS] write_audit_report_20260628T224226.622382Z.json schema version [write_audit_report_20260628T224226.622382Z.json] (schema_version): schema_version matches cdb.evidence_harvester.write_audit_report.v1
+- [PASS] write_audit_report_20260628T225653.430691Z.json parses as JSON [write_audit_report_20260628T225653.430691Z.json]: Valid JSON (11557 bytes)
+- [PASS] write_audit_report_20260628T225653.430691Z.json schema version [write_audit_report_20260628T225653.430691Z.json] (schema_version): schema_version matches cdb.evidence_harvester.write_audit_report.v1
+- [PASS] write_audit_report_20260628T225732.008211Z.json parses as JSON [write_audit_report_20260628T225732.008211Z.json]: Valid JSON (11953 bytes)
+- [PASS] write_audit_report_20260628T225732.008211Z.json schema version [write_audit_report_20260628T225732.008211Z.json] (schema_version): schema_version matches cdb.evidence_harvester.write_audit_report.v1
+- [PASS] write_audit_report_20260628T231153.609636Z.json parses as JSON [write_audit_report_20260628T231153.609636Z.json]: Valid JSON (12349 bytes)
+- [PASS] write_audit_report_20260628T231153.609636Z.json schema version [write_audit_report_20260628T231153.609636Z.json] (schema_version): schema_version matches cdb.evidence_harvester.write_audit_report.v1
+- [PASS] collector_report_20260629T092710.901206Z.json parses as JSON [collector_report_20260629T092710.901206Z.json]: Valid JSON (3398 bytes)
+- [PASS] write_audit_report_20260628T231232.158446Z.json parses as JSON [write_audit_report_20260628T231232.158446Z.json]: Valid JSON (12745 bytes)
+- [PASS] write_audit_report_20260628T231232.158446Z.json schema version [write_audit_report_20260628T231232.158446Z.json] (schema_version): schema_version matches cdb.evidence_harvester.write_audit_report.v1
+- [PASS] write_audit_report_20260628T232653.786742Z.json parses as JSON [write_audit_report_20260628T232653.786742Z.json]: Valid JSON (13141 bytes)
+- [PASS] write_audit_report_20260628T232653.786742Z.json schema version [write_audit_report_20260628T232653.786742Z.json] (schema_version): schema_version matches cdb.evidence_harvester.write_audit_report.v1
+- [PASS] write_audit_report_20260628T232732.326637Z.json parses as JSON [write_audit_report_20260628T232732.326637Z.json]: Valid JSON (13537 bytes)
+- [PASS] write_audit_report_20260628T232732.326637Z.json schema version [write_audit_report_20260628T232732.326637Z.json] (schema_version): schema_version matches cdb.evidence_harvester.write_audit_report.v1
+- [PASS] write_audit_report_20260628T234153.975890Z.json parses as JSON [write_audit_report_20260628T234153.975890Z.json]: Valid JSON (13933 bytes)
+- [PASS] write_audit_report_20260628T234153.975890Z.json schema version [write_audit_report_20260628T234153.975890Z.json] (schema_version): schema_version matches cdb.evidence_harvester.write_audit_report.v1
+- [PASS] write_audit_report_20260628T234232.480715Z.json parses as JSON [write_audit_report_20260628T234232.480715Z.json]: Valid JSON (14329 bytes)
+- [PASS] write_audit_report_20260628T234232.480715Z.json schema version [write_audit_report_20260628T234232.480715Z.json] (schema_version): schema_version matches cdb.evidence_harvester.write_audit_report.v1
+- [PASS] collector_report_20260629T092710.901206Z.json schema version [collector_report_20260629T092710.901206Z.json] (schema_version): schema_version matches evidence_harvester.collector_report.v1
+- [PASS] write_audit_report_20260628T235654.200874Z.json parses as JSON [write_audit_report_20260628T235654.200874Z.json]: Valid JSON (14725 bytes)
+- [PASS] write_audit_report_20260628T235654.200874Z.json schema version [write_audit_report_20260628T235654.200874Z.json] (schema_version): schema_version matches cdb.evidence_harvester.write_audit_report.v1
+- [PASS] write_audit_report_20260628T235732.645061Z.json parses as JSON [write_audit_report_20260628T235732.645061Z.json]: Valid JSON (15121 bytes)
+- [PASS] write_audit_report_20260628T235732.645061Z.json schema version [write_audit_report_20260628T235732.645061Z.json] (schema_version): schema_version matches cdb.evidence_harvester.write_audit_report.v1
+- [PASS] write_audit_report_20260629T001154.501508Z.json parses as JSON [write_audit_report_20260629T001154.501508Z.json]: Valid JSON (15517 bytes)
+- [PASS] write_audit_report_20260629T001154.501508Z.json schema version [write_audit_report_20260629T001154.501508Z.json] (schema_version): schema_version matches cdb.evidence_harvester.write_audit_report.v1
+- [PASS] write_audit_report_20260629T001232.824905Z.json parses as JSON [write_audit_report_20260629T001232.824905Z.json]: Valid JSON (15913 bytes)
+- [PASS] write_audit_report_20260629T001232.824905Z.json schema version [write_audit_report_20260629T001232.824905Z.json] (schema_version): schema_version matches cdb.evidence_harvester.write_audit_report.v1
+- [PASS] write_audit_report_20260629T002654.774738Z.json parses as JSON [write_audit_report_20260629T002654.774738Z.json]: Valid JSON (16309 bytes)
+- [PASS] write_audit_report_20260629T002654.774738Z.json schema version [write_audit_report_20260629T002654.774738Z.json] (schema_version): schema_version matches cdb.evidence_harvester.write_audit_report.v1
+- [PASS] collector_report_20260629T092747.293172Z.json parses as JSON [collector_report_20260629T092747.293172Z.json]: Valid JSON (3398 bytes)
+- [PASS] write_audit_report_20260629T002733.036521Z.json parses as JSON [write_audit_report_20260629T002733.036521Z.json]: Valid JSON (16705 bytes)
+- [PASS] write_audit_report_20260629T002733.036521Z.json schema version [write_audit_report_20260629T002733.036521Z.json] (schema_version): schema_version matches cdb.evidence_harvester.write_audit_report.v1
+- [PASS] write_audit_report_20260629T004155.046745Z.json parses as JSON [write_audit_report_20260629T004155.046745Z.json]: Valid JSON (17101 bytes)
+- [PASS] write_audit_report_20260629T004155.046745Z.json schema version [write_audit_report_20260629T004155.046745Z.json] (schema_version): schema_version matches cdb.evidence_harvester.write_audit_report.v1
+- [PASS] write_audit_report_20260629T004233.286267Z.json parses as JSON [write_audit_report_20260629T004233.286267Z.json]: Valid JSON (17497 bytes)
+- [PASS] write_audit_report_20260629T004233.286267Z.json schema version [write_audit_report_20260629T004233.286267Z.json] (schema_version): schema_version matches cdb.evidence_harvester.write_audit_report.v1
+- [PASS] write_audit_report_20260629T005655.286180Z.json parses as JSON [write_audit_report_20260629T005655.286180Z.json]: Valid JSON (17893 bytes)
+- [PASS] write_audit_report_20260629T005655.286180Z.json schema version [write_audit_report_20260629T005655.286180Z.json] (schema_version): schema_version matches cdb.evidence_harvester.write_audit_report.v1
+- [PASS] write_audit_report_20260629T005733.500216Z.json parses as JSON [write_audit_report_20260629T005733.500216Z.json]: Valid JSON (18289 bytes)
+- [PASS] write_audit_report_20260629T005733.500216Z.json schema version [write_audit_report_20260629T005733.500216Z.json] (schema_version): schema_version matches cdb.evidence_harvester.write_audit_report.v1
+- [PASS] collector_report_20260629T092747.293172Z.json schema version [collector_report_20260629T092747.293172Z.json] (schema_version): schema_version matches evidence_harvester.collector_report.v1
+- [PASS] write_audit_report_20260629T011155.540856Z.json parses as JSON [write_audit_report_20260629T011155.540856Z.json]: Valid JSON (18685 bytes)
+- [PASS] write_audit_report_20260629T011155.540856Z.json schema version [write_audit_report_20260629T011155.540856Z.json] (schema_version): schema_version matches cdb.evidence_harvester.write_audit_report.v1
+- [PASS] write_audit_report_20260629T011233.729956Z.json parses as JSON [write_audit_report_20260629T011233.729956Z.json]: Valid JSON (19081 bytes)
+- [PASS] write_audit_report_20260629T011233.729956Z.json schema version [write_audit_report_20260629T011233.729956Z.json] (schema_version): schema_version matches cdb.evidence_harvester.write_audit_report.v1
+- [PASS] write_audit_report_20260629T012655.870979Z.json parses as JSON [write_audit_report_20260629T012655.870979Z.json]: Valid JSON (19477 bytes)
+- [PASS] write_audit_report_20260629T012655.870979Z.json schema version [write_audit_report_20260629T012655.870979Z.json] (schema_version): schema_version matches cdb.evidence_harvester.write_audit_report.v1
+- [PASS] write_audit_report_20260629T012734.022974Z.json parses as JSON [write_audit_report_20260629T012734.022974Z.json]: Valid JSON (19873 bytes)
+- [PASS] write_audit_report_20260629T012734.022974Z.json schema version [write_audit_report_20260629T012734.022974Z.json] (schema_version): schema_version matches cdb.evidence_harvester.write_audit_report.v1
+- [PASS] write_audit_report_20260629T014156.252608Z.json parses as JSON [write_audit_report_20260629T014156.252608Z.json]: Valid JSON (20269 bytes)
+- [PASS] write_audit_report_20260629T014156.252608Z.json schema version [write_audit_report_20260629T014156.252608Z.json] (schema_version): schema_version matches cdb.evidence_harvester.write_audit_report.v1
+- [PASS] collector_report_20260629T094211.695111Z.json parses as JSON [collector_report_20260629T094211.695111Z.json]: Valid JSON (3398 bytes)
+- [PASS] write_audit_report_20260629T014234.291063Z.json parses as JSON [write_audit_report_20260629T014234.291063Z.json]: Valid JSON (20665 bytes)
+- [PASS] write_audit_report_20260629T014234.291063Z.json schema version [write_audit_report_20260629T014234.291063Z.json] (schema_version): schema_version matches cdb.evidence_harvester.write_audit_report.v1
+- [PASS] write_audit_report_20260629T015656.659674Z.json parses as JSON [write_audit_report_20260629T015656.659674Z.json]: Valid JSON (21061 bytes)
+- [PASS] write_audit_report_20260629T015656.659674Z.json schema version [write_audit_report_20260629T015656.659674Z.json] (schema_version): schema_version matches cdb.evidence_harvester.write_audit_report.v1
+- [PASS] write_audit_report_20260629T015734.550802Z.json parses as JSON [write_audit_report_20260629T015734.550802Z.json]: Valid JSON (21457 bytes)
+- [PASS] write_audit_report_20260629T015734.550802Z.json schema version [write_audit_report_20260629T015734.550802Z.json] (schema_version): schema_version matches cdb.evidence_harvester.write_audit_report.v1
+- [PASS] write_audit_report_20260629T021156.961887Z.json parses as JSON [write_audit_report_20260629T021156.961887Z.json]: Valid JSON (21853 bytes)
+- [PASS] write_audit_report_20260629T021156.961887Z.json schema version [write_audit_report_20260629T021156.961887Z.json] (schema_version): schema_version matches cdb.evidence_harvester.write_audit_report.v1
+- [PASS] write_audit_report_20260629T021234.839515Z.json parses as JSON [write_audit_report_20260629T021234.839515Z.json]: Valid JSON (22249 bytes)
+- [PASS] write_audit_report_20260629T021234.839515Z.json schema version [write_audit_report_20260629T021234.839515Z.json] (schema_version): schema_version matches cdb.evidence_harvester.write_audit_report.v1
+- [PASS] collector_report_20260629T094211.695111Z.json schema version [collector_report_20260629T094211.695111Z.json] (schema_version): schema_version matches evidence_harvester.collector_report.v1
+- [PASS] write_audit_report_20260629T022657.261292Z.json parses as JSON [write_audit_report_20260629T022657.261292Z.json]: Valid JSON (22645 bytes)
+- [PASS] write_audit_report_20260629T022657.261292Z.json schema version [write_audit_report_20260629T022657.261292Z.json] (schema_version): schema_version matches cdb.evidence_harvester.write_audit_report.v1
+- [PASS] write_audit_report_20260629T022735.088379Z.json parses as JSON [write_audit_report_20260629T022735.088379Z.json]: Valid JSON (23041 bytes)
+- [PASS] write_audit_report_20260629T022735.088379Z.json schema version [write_audit_report_20260629T022735.088379Z.json] (schema_version): schema_version matches cdb.evidence_harvester.write_audit_report.v1
+- [PASS] write_audit_report_20260629T024157.543626Z.json parses as JSON [write_audit_report_20260629T024157.543626Z.json]: Valid JSON (23437 bytes)
+- [PASS] write_audit_report_20260629T024157.543626Z.json schema version [write_audit_report_20260629T024157.543626Z.json] (schema_version): schema_version matches cdb.evidence_harvester.write_audit_report.v1
+- [PASS] write_audit_report_20260629T024235.366805Z.json parses as JSON [write_audit_report_20260629T024235.366805Z.json]: Valid JSON (23833 bytes)
+- [PASS] write_audit_report_20260629T024235.366805Z.json schema version [write_audit_report_20260629T024235.366805Z.json] (schema_version): schema_version matches cdb.evidence_harvester.write_audit_report.v1
+- [PASS] write_audit_report_20260629T025657.877035Z.json parses as JSON [write_audit_report_20260629T025657.877035Z.json]: Valid JSON (24229 bytes)
+- [PASS] write_audit_report_20260629T025657.877035Z.json schema version [write_audit_report_20260629T025657.877035Z.json] (schema_version): schema_version matches cdb.evidence_harvester.write_audit_report.v1
+- [PASS] collector_report_20260629T094247.903918Z.json parses as JSON [collector_report_20260629T094247.903918Z.json]: Valid JSON (3398 bytes)
+- [PASS] write_audit_report_20260629T025735.674598Z.json parses as JSON [write_audit_report_20260629T025735.674598Z.json]: Valid JSON (24625 bytes)
+- [PASS] write_audit_report_20260629T025735.674598Z.json schema version [write_audit_report_20260629T025735.674598Z.json] (schema_version): schema_version matches cdb.evidence_harvester.write_audit_report.v1
+- [PASS] write_audit_report_20260629T031158.281708Z.json parses as JSON [write_audit_report_20260629T031158.281708Z.json]: Valid JSON (25021 bytes)
+- [PASS] write_audit_report_20260629T031158.281708Z.json schema version [write_audit_report_20260629T031158.281708Z.json] (schema_version): schema_version matches cdb.evidence_harvester.write_audit_report.v1
+- [PASS] write_audit_report_20260629T031235.977270Z.json parses as JSON [write_audit_report_20260629T031235.977270Z.json]: Valid JSON (25417 bytes)
+- [PASS] write_audit_report_20260629T031235.977270Z.json schema version [write_audit_report_20260629T031235.977270Z.json] (schema_version): schema_version matches cdb.evidence_harvester.write_audit_report.v1
+- [PASS] write_audit_report_20260629T032658.655687Z.json parses as JSON [write_audit_report_20260629T032658.655687Z.json]: Valid JSON (25813 bytes)
+- [PASS] write_audit_report_20260629T032658.655687Z.json schema version [write_audit_report_20260629T032658.655687Z.json] (schema_version): schema_version matches cdb.evidence_harvester.write_audit_report.v1
+- [PASS] write_audit_report_20260629T032736.303267Z.json parses as JSON [write_audit_report_20260629T032736.303267Z.json]: Valid JSON (26209 bytes)
+- [PASS] write_audit_report_20260629T032736.303267Z.json schema version [write_audit_report_20260629T032736.303267Z.json] (schema_version): schema_version matches cdb.evidence_harvester.write_audit_report.v1
+- [PASS] collector_report_20260629T094247.903918Z.json schema version [collector_report_20260629T094247.903918Z.json] (schema_version): schema_version matches evidence_harvester.collector_report.v1
+- [PASS] write_audit_report_20260629T034159.055539Z.json parses as JSON [write_audit_report_20260629T034159.055539Z.json]: Valid JSON (26605 bytes)
+- [PASS] write_audit_report_20260629T034159.055539Z.json schema version [write_audit_report_20260629T034159.055539Z.json] (schema_version): schema_version matches cdb.evidence_harvester.write_audit_report.v1
+- [PASS] write_audit_report_20260629T034236.662044Z.json parses as JSON [write_audit_report_20260629T034236.662044Z.json]: Valid JSON (27001 bytes)
+- [PASS] write_audit_report_20260629T034236.662044Z.json schema version [write_audit_report_20260629T034236.662044Z.json] (schema_version): schema_version matches cdb.evidence_harvester.write_audit_report.v1
+- [PASS] write_audit_report_20260629T035659.403750Z.json parses as JSON [write_audit_report_20260629T035659.403750Z.json]: Valid JSON (27397 bytes)
+- [PASS] write_audit_report_20260629T035659.403750Z.json schema version [write_audit_report_20260629T035659.403750Z.json] (schema_version): schema_version matches cdb.evidence_harvester.write_audit_report.v1
+- [PASS] write_audit_report_20260629T035736.996291Z.json parses as JSON [write_audit_report_20260629T035736.996291Z.json]: Valid JSON (27793 bytes)
+- [PASS] write_audit_report_20260629T035736.996291Z.json schema version [write_audit_report_20260629T035736.996291Z.json] (schema_version): schema_version matches cdb.evidence_harvester.write_audit_report.v1
+- [PASS] write_audit_report_20260629T041159.834473Z.json parses as JSON [write_audit_report_20260629T041159.834473Z.json]: Valid JSON (28189 bytes)
+- [PASS] write_audit_report_20260629T041159.834473Z.json schema version [write_audit_report_20260629T041159.834473Z.json] (schema_version): schema_version matches cdb.evidence_harvester.write_audit_report.v1
+- [PASS] collector_report_20260629T095712.307200Z.json parses as JSON [collector_report_20260629T095712.307200Z.json]: Valid JSON (3398 bytes)
+- [PASS] write_audit_report_20260629T041237.420710Z.json parses as JSON [write_audit_report_20260629T041237.420710Z.json]: Valid JSON (28585 bytes)
+- [PASS] write_audit_report_20260629T041237.420710Z.json schema version [write_audit_report_20260629T041237.420710Z.json] (schema_version): schema_version matches cdb.evidence_harvester.write_audit_report.v1
+- [PASS] write_audit_report_20260629T042700.207061Z.json parses as JSON [write_audit_report_20260629T042700.207061Z.json]: Valid JSON (28981 bytes)
+- [PASS] write_audit_report_20260629T042700.207061Z.json schema version [write_audit_report_20260629T042700.207061Z.json] (schema_version): schema_version matches cdb.evidence_harvester.write_audit_report.v1
+- [PASS] write_audit_report_20260629T042737.755496Z.json parses as JSON [write_audit_report_20260629T042737.755496Z.json]: Valid JSON (29377 bytes)
+- [PASS] write_audit_report_20260629T042737.755496Z.json schema version [write_audit_report_20260629T042737.755496Z.json] (schema_version): schema_version matches cdb.evidence_harvester.write_audit_report.v1
+- [PASS] write_audit_report_20260629T044200.553296Z.json parses as JSON [write_audit_report_20260629T044200.553296Z.json]: Valid JSON (29773 bytes)
+- [PASS] write_audit_report_20260629T044200.553296Z.json schema version [write_audit_report_20260629T044200.553296Z.json] (schema_version): schema_version matches cdb.evidence_harvester.write_audit_report.v1
+- [PASS] write_audit_report_20260629T044238.097659Z.json parses as JSON [write_audit_report_20260629T044238.097659Z.json]: Valid JSON (30169 bytes)
+- [PASS] write_audit_report_20260629T044238.097659Z.json schema version [write_audit_report_20260629T044238.097659Z.json] (schema_version): schema_version matches cdb.evidence_harvester.write_audit_report.v1
+- [PASS] collector_report_20260629T095712.307200Z.json schema version [collector_report_20260629T095712.307200Z.json] (schema_version): schema_version matches evidence_harvester.collector_report.v1
+- [PASS] write_audit_report_20260629T045700.953009Z.json parses as JSON [write_audit_report_20260629T045700.953009Z.json]: Valid JSON (30565 bytes)
+- [PASS] write_audit_report_20260629T045700.953009Z.json schema version [write_audit_report_20260629T045700.953009Z.json] (schema_version): schema_version matches cdb.evidence_harvester.write_audit_report.v1
+- [PASS] write_audit_report_20260629T045738.476486Z.json parses as JSON [write_audit_report_20260629T045738.476486Z.json]: Valid JSON (30961 bytes)
+- [PASS] write_audit_report_20260629T045738.476486Z.json schema version [write_audit_report_20260629T045738.476486Z.json] (schema_version): schema_version matches cdb.evidence_harvester.write_audit_report.v1
+- [PASS] write_audit_report_20260629T051201.371370Z.json parses as JSON [write_audit_report_20260629T051201.371370Z.json]: Valid JSON (31357 bytes)
+- [PASS] write_audit_report_20260629T051201.371370Z.json schema version [write_audit_report_20260629T051201.371370Z.json] (schema_version): schema_version matches cdb.evidence_harvester.write_audit_report.v1
+- [PASS] write_audit_report_20260629T051238.868752Z.json parses as JSON [write_audit_report_20260629T051238.868752Z.json]: Valid JSON (31753 bytes)
+- [PASS] write_audit_report_20260629T051238.868752Z.json schema version [write_audit_report_20260629T051238.868752Z.json] (schema_version): schema_version matches cdb.evidence_harvester.write_audit_report.v1
+- [PASS] write_audit_report_20260629T052701.813024Z.json parses as JSON [write_audit_report_20260629T052701.813024Z.json]: Valid JSON (32149 bytes)
+- [PASS] write_audit_report_20260629T052701.813024Z.json schema version [write_audit_report_20260629T052701.813024Z.json] (schema_version): schema_version matches cdb.evidence_harvester.write_audit_report.v1
+- [PASS] collector_report_20260629T095748.490461Z.json parses as JSON [collector_report_20260629T095748.490461Z.json]: Valid JSON (3398 bytes)
+- [PASS] write_audit_report_20260629T052739.269183Z.json parses as JSON [write_audit_report_20260629T052739.269183Z.json]: Valid JSON (32545 bytes)
+- [PASS] write_audit_report_20260629T052739.269183Z.json schema version [write_audit_report_20260629T052739.269183Z.json] (schema_version): schema_version matches cdb.evidence_harvester.write_audit_report.v1
+- [PASS] write_audit_report_20260629T054202.209467Z.json parses as JSON [write_audit_report_20260629T054202.209467Z.json]: Valid JSON (32941 bytes)
+- [PASS] write_audit_report_20260629T054202.209467Z.json schema version [write_audit_report_20260629T054202.209467Z.json] (schema_version): schema_version matches cdb.evidence_harvester.write_audit_report.v1
+- [PASS] write_audit_report_20260629T054239.631909Z.json parses as JSON [write_audit_report_20260629T054239.631909Z.json]: Valid JSON (33337 bytes)
+- [PASS] write_audit_report_20260629T054239.631909Z.json schema version [write_audit_report_20260629T054239.631909Z.json] (schema_version): schema_version matches cdb.evidence_harvester.write_audit_report.v1
+- [PASS] write_audit_report_20260629T055702.593495Z.json parses as JSON [write_audit_report_20260629T055702.593495Z.json]: Valid JSON (33733 bytes)
+- [PASS] write_audit_report_20260629T055702.593495Z.json schema version [write_audit_report_20260629T055702.593495Z.json] (schema_version): schema_version matches cdb.evidence_harvester.write_audit_report.v1
+- [PASS] write_audit_report_20260629T055740.036252Z.json parses as JSON [write_audit_report_20260629T055740.036252Z.json]: Valid JSON (34129 bytes)
+- [PASS] write_audit_report_20260629T055740.036252Z.json schema version [write_audit_report_20260629T055740.036252Z.json] (schema_version): schema_version matches cdb.evidence_harvester.write_audit_report.v1
+- [PASS] collector_report_20260629T095748.490461Z.json schema version [collector_report_20260629T095748.490461Z.json] (schema_version): schema_version matches evidence_harvester.collector_report.v1
+- [PASS] write_audit_report_20260629T061203.038198Z.json parses as JSON [write_audit_report_20260629T061203.038198Z.json]: Valid JSON (34525 bytes)
+- [PASS] write_audit_report_20260629T061203.038198Z.json schema version [write_audit_report_20260629T061203.038198Z.json] (schema_version): schema_version matches cdb.evidence_harvester.write_audit_report.v1
+- [PASS] write_audit_report_20260629T061240.476343Z.json parses as JSON [write_audit_report_20260629T061240.476343Z.json]: Valid JSON (34921 bytes)
+- [PASS] write_audit_report_20260629T061240.476343Z.json schema version [write_audit_report_20260629T061240.476343Z.json] (schema_version): schema_version matches cdb.evidence_harvester.write_audit_report.v1
+- [PASS] write_audit_report_20260629T062703.502916Z.json parses as JSON [write_audit_report_20260629T062703.502916Z.json]: Valid JSON (35317 bytes)
+- [PASS] write_audit_report_20260629T062703.502916Z.json schema version [write_audit_report_20260629T062703.502916Z.json] (schema_version): schema_version matches cdb.evidence_harvester.write_audit_report.v1
+- [PASS] write_audit_report_20260629T062740.937526Z.json parses as JSON [write_audit_report_20260629T062740.937526Z.json]: Valid JSON (35713 bytes)
+- [PASS] write_audit_report_20260629T062740.937526Z.json schema version [write_audit_report_20260629T062740.937526Z.json] (schema_version): schema_version matches cdb.evidence_harvester.write_audit_report.v1
+- [PASS] write_audit_report_20260629T064203.999298Z.json parses as JSON [write_audit_report_20260629T064203.999298Z.json]: Valid JSON (36109 bytes)
+- [PASS] write_audit_report_20260629T064203.999298Z.json schema version [write_audit_report_20260629T064203.999298Z.json] (schema_version): schema_version matches cdb.evidence_harvester.write_audit_report.v1
+- [PASS] collector_report_20260629T101213.089179Z.json parses as JSON [collector_report_20260629T101213.089179Z.json]: Valid JSON (3398 bytes)
+- [PASS] write_audit_report_20260629T064241.410579Z.json parses as JSON [write_audit_report_20260629T064241.410579Z.json]: Valid JSON (36505 bytes)
+- [PASS] write_audit_report_20260629T064241.410579Z.json schema version [write_audit_report_20260629T064241.410579Z.json] (schema_version): schema_version matches cdb.evidence_harvester.write_audit_report.v1
+- [PASS] write_audit_report_20260629T065704.492040Z.json parses as JSON [write_audit_report_20260629T065704.492040Z.json]: Valid JSON (36901 bytes)
+- [PASS] write_audit_report_20260629T065704.492040Z.json schema version [write_audit_report_20260629T065704.492040Z.json] (schema_version): schema_version matches cdb.evidence_harvester.write_audit_report.v1
+- [PASS] write_audit_report_20260629T065741.876917Z.json parses as JSON [write_audit_report_20260629T065741.876917Z.json]: Valid JSON (37297 bytes)
+- [PASS] write_audit_report_20260629T065741.876917Z.json schema version [write_audit_report_20260629T065741.876917Z.json] (schema_version): schema_version matches cdb.evidence_harvester.write_audit_report.v1
+- [PASS] write_audit_report_20260629T071205.045950Z.json parses as JSON [write_audit_report_20260629T071205.045950Z.json]: Valid JSON (37693 bytes)
+- [PASS] write_audit_report_20260629T071205.045950Z.json schema version [write_audit_report_20260629T071205.045950Z.json] (schema_version): schema_version matches cdb.evidence_harvester.write_audit_report.v1
+- [PASS] write_audit_report_20260629T071242.337870Z.json parses as JSON [write_audit_report_20260629T071242.337870Z.json]: Valid JSON (38089 bytes)
+- [PASS] write_audit_report_20260629T071242.337870Z.json schema version [write_audit_report_20260629T071242.337870Z.json] (schema_version): schema_version matches cdb.evidence_harvester.write_audit_report.v1
+- [PASS] collector_report_20260629T101213.089179Z.json schema version [collector_report_20260629T101213.089179Z.json] (schema_version): schema_version matches evidence_harvester.collector_report.v1
+- [PASS] write_audit_report_20260629T072705.612761Z.json parses as JSON [write_audit_report_20260629T072705.612761Z.json]: Valid JSON (38485 bytes)
+- [PASS] write_audit_report_20260629T072705.612761Z.json schema version [write_audit_report_20260629T072705.612761Z.json] (schema_version): schema_version matches cdb.evidence_harvester.write_audit_report.v1
+- [PASS] write_audit_report_20260629T072742.814909Z.json parses as JSON [write_audit_report_20260629T072742.814909Z.json]: Valid JSON (38881 bytes)
+- [PASS] write_audit_report_20260629T072742.814909Z.json schema version [write_audit_report_20260629T072742.814909Z.json] (schema_version): schema_version matches cdb.evidence_harvester.write_audit_report.v1
+- [PASS] write_audit_report_20260629T074206.239038Z.json parses as JSON [write_audit_report_20260629T074206.239038Z.json]: Valid JSON (39279 bytes)
+- [PASS] write_audit_report_20260629T074206.239038Z.json schema version [write_audit_report_20260629T074206.239038Z.json] (schema_version): schema_version matches cdb.evidence_harvester.write_audit_report.v1
+- [PASS] write_audit_report_20260629T074243.386975Z.json parses as JSON [write_audit_report_20260629T074243.386975Z.json]: Valid JSON (39675 bytes)
+- [PASS] write_audit_report_20260629T074243.386975Z.json schema version [write_audit_report_20260629T074243.386975Z.json] (schema_version): schema_version matches cdb.evidence_harvester.write_audit_report.v1
+- [PASS] write_audit_report_20260629T075706.941690Z.json parses as JSON [write_audit_report_20260629T075706.941690Z.json]: Valid JSON (40071 bytes)
+- [PASS] write_audit_report_20260629T075706.941690Z.json schema version [write_audit_report_20260629T075706.941690Z.json] (schema_version): schema_version matches cdb.evidence_harvester.write_audit_report.v1
+- [PASS] collector_report_20260629T101249.139878Z.json parses as JSON [collector_report_20260629T101249.139878Z.json]: Valid JSON (3398 bytes)
+- [PASS] write_audit_report_20260629T075744.017413Z.json parses as JSON [write_audit_report_20260629T075744.017413Z.json]: Valid JSON (40467 bytes)
+- [PASS] write_audit_report_20260629T075744.017413Z.json schema version [write_audit_report_20260629T075744.017413Z.json] (schema_version): schema_version matches cdb.evidence_harvester.write_audit_report.v1
+- [PASS] write_audit_report_20260629T081207.538860Z.json parses as JSON [write_audit_report_20260629T081207.538860Z.json]: Valid JSON (40863 bytes)
+- [PASS] write_audit_report_20260629T081207.538860Z.json schema version [write_audit_report_20260629T081207.538860Z.json] (schema_version): schema_version matches cdb.evidence_harvester.write_audit_report.v1
+- [PASS] write_audit_report_20260629T081244.519282Z.json parses as JSON [write_audit_report_20260629T081244.519282Z.json]: Valid JSON (41259 bytes)
+- [PASS] write_audit_report_20260629T081244.519282Z.json schema version [write_audit_report_20260629T081244.519282Z.json] (schema_version): schema_version matches cdb.evidence_harvester.write_audit_report.v1
+- [PASS] write_audit_report_20260629T082708.140490Z.json parses as JSON [write_audit_report_20260629T082708.140490Z.json]: Valid JSON (41655 bytes)
+- [PASS] write_audit_report_20260629T082708.140490Z.json schema version [write_audit_report_20260629T082708.140490Z.json] (schema_version): schema_version matches cdb.evidence_harvester.write_audit_report.v1
+- [PASS] write_audit_report_20260629T082745.060332Z.json parses as JSON [write_audit_report_20260629T082745.060332Z.json]: Valid JSON (42051 bytes)
+- [PASS] write_audit_report_20260629T082745.060332Z.json schema version [write_audit_report_20260629T082745.060332Z.json] (schema_version): schema_version matches cdb.evidence_harvester.write_audit_report.v1
+- [PASS] collector_report_20260629T101249.139878Z.json schema version [collector_report_20260629T101249.139878Z.json] (schema_version): schema_version matches evidence_harvester.collector_report.v1
+- [PASS] write_audit_report_20260629T084208.790950Z.json parses as JSON [write_audit_report_20260629T084208.790950Z.json]: Valid JSON (42447 bytes)
+- [PASS] write_audit_report_20260629T084208.790950Z.json schema version [write_audit_report_20260629T084208.790950Z.json] (schema_version): schema_version matches cdb.evidence_harvester.write_audit_report.v1
+- [PASS] write_audit_report_20260629T084245.597847Z.json parses as JSON [write_audit_report_20260629T084245.597847Z.json]: Valid JSON (42843 bytes)
+- [PASS] write_audit_report_20260629T084245.597847Z.json schema version [write_audit_report_20260629T084245.597847Z.json] (schema_version): schema_version matches cdb.evidence_harvester.write_audit_report.v1
+- [PASS] write_audit_report_20260629T085709.431205Z.json parses as JSON [write_audit_report_20260629T085709.431205Z.json]: Valid JSON (43239 bytes)
+- [PASS] write_audit_report_20260629T085709.431205Z.json schema version [write_audit_report_20260629T085709.431205Z.json] (schema_version): schema_version matches cdb.evidence_harvester.write_audit_report.v1
+- [PASS] write_audit_report_20260629T085746.133858Z.json parses as JSON [write_audit_report_20260629T085746.133858Z.json]: Valid JSON (43635 bytes)
+- [PASS] write_audit_report_20260629T085746.133858Z.json schema version [write_audit_report_20260629T085746.133858Z.json] (schema_version): schema_version matches cdb.evidence_harvester.write_audit_report.v1
+- [PASS] write_audit_report_20260629T091210.137367Z.json parses as JSON [write_audit_report_20260629T091210.137367Z.json]: Valid JSON (44031 bytes)
+- [PASS] write_audit_report_20260629T091210.137367Z.json schema version [write_audit_report_20260629T091210.137367Z.json] (schema_version): schema_version matches cdb.evidence_harvester.write_audit_report.v1
+- [PASS] collector_report_20260629T102713.736465Z.json parses as JSON [collector_report_20260629T102713.736465Z.json]: Valid JSON (3398 bytes)
+- [PASS] write_audit_report_20260629T091246.700715Z.json parses as JSON [write_audit_report_20260629T091246.700715Z.json]: Valid JSON (44427 bytes)
+- [PASS] write_audit_report_20260629T091246.700715Z.json schema version [write_audit_report_20260629T091246.700715Z.json] (schema_version): schema_version matches cdb.evidence_harvester.write_audit_report.v1
+- [PASS] write_audit_report_20260629T092710.901206Z.json parses as JSON [write_audit_report_20260629T092710.901206Z.json]: Valid JSON (44823 bytes)
+- [PASS] write_audit_report_20260629T092710.901206Z.json schema version [write_audit_report_20260629T092710.901206Z.json] (schema_version): schema_version matches cdb.evidence_harvester.write_audit_report.v1
+- [PASS] write_audit_report_20260629T092747.293172Z.json parses as JSON [write_audit_report_20260629T092747.293172Z.json]: Valid JSON (45219 bytes)
+- [PASS] write_audit_report_20260629T092747.293172Z.json schema version [write_audit_report_20260629T092747.293172Z.json] (schema_version): schema_version matches cdb.evidence_harvester.write_audit_report.v1
+- [PASS] write_audit_report_20260629T094211.695111Z.json parses as JSON [write_audit_report_20260629T094211.695111Z.json]: Valid JSON (45615 bytes)
+- [PASS] write_audit_report_20260629T094211.695111Z.json schema version [write_audit_report_20260629T094211.695111Z.json] (schema_version): schema_version matches cdb.evidence_harvester.write_audit_report.v1
+- [PASS] write_audit_report_20260629T094247.903918Z.json parses as JSON [write_audit_report_20260629T094247.903918Z.json]: Valid JSON (46011 bytes)
+- [PASS] write_audit_report_20260629T094247.903918Z.json schema version [write_audit_report_20260629T094247.903918Z.json] (schema_version): schema_version matches cdb.evidence_harvester.write_audit_report.v1
+- [PASS] collector_report_20260629T102713.736465Z.json schema version [collector_report_20260629T102713.736465Z.json] (schema_version): schema_version matches evidence_harvester.collector_report.v1
+- [PASS] write_audit_report_20260629T095712.307200Z.json parses as JSON [write_audit_report_20260629T095712.307200Z.json]: Valid JSON (46407 bytes)
+- [PASS] write_audit_report_20260629T095712.307200Z.json schema version [write_audit_report_20260629T095712.307200Z.json] (schema_version): schema_version matches cdb.evidence_harvester.write_audit_report.v1
+- [PASS] write_audit_report_20260629T095748.490461Z.json parses as JSON [write_audit_report_20260629T095748.490461Z.json]: Valid JSON (46803 bytes)
+- [PASS] write_audit_report_20260629T095748.490461Z.json schema version [write_audit_report_20260629T095748.490461Z.json] (schema_version): schema_version matches cdb.evidence_harvester.write_audit_report.v1
+- [PASS] write_audit_report_20260629T101213.089179Z.json parses as JSON [write_audit_report_20260629T101213.089179Z.json]: Valid JSON (47199 bytes)
+- [PASS] write_audit_report_20260629T101213.089179Z.json schema version [write_audit_report_20260629T101213.089179Z.json] (schema_version): schema_version matches cdb.evidence_harvester.write_audit_report.v1
+- [PASS] write_audit_report_20260629T101249.139878Z.json parses as JSON [write_audit_report_20260629T101249.139878Z.json]: Valid JSON (47595 bytes)
+- [PASS] write_audit_report_20260629T101249.139878Z.json schema version [write_audit_report_20260629T101249.139878Z.json] (schema_version): schema_version matches cdb.evidence_harvester.write_audit_report.v1
+- [PASS] write_audit_report_20260629T102713.736465Z.json parses as JSON [write_audit_report_20260629T102713.736465Z.json]: Valid JSON (47991 bytes)
+- [PASS] write_audit_report_20260629T102713.736465Z.json schema version [write_audit_report_20260629T102713.736465Z.json] (schema_version): schema_version matches cdb.evidence_harvester.write_audit_report.v1
+- [PASS] collector_report_20260629T102749.736234Z.json parses as JSON [collector_report_20260629T102749.736234Z.json]: Valid JSON (3398 bytes)
+- [PASS] write_audit_report_20260629T102749.736234Z.json parses as JSON [write_audit_report_20260629T102749.736234Z.json]: Valid JSON (48387 bytes)
+- [PASS] write_audit_report_20260629T102749.736234Z.json schema version [write_audit_report_20260629T102749.736234Z.json] (schema_version): schema_version matches cdb.evidence_harvester.write_audit_report.v1
+- [PASS] write_audit_report_20260629T104214.526487Z.json parses as JSON [write_audit_report_20260629T104214.526487Z.json]: Valid JSON (48783 bytes)
+- [PASS] write_audit_report_20260629T104214.526487Z.json schema version [write_audit_report_20260629T104214.526487Z.json] (schema_version): schema_version matches cdb.evidence_harvester.write_audit_report.v1
+- [PASS] write_audit_report_20260629T104250.386199Z.json parses as JSON [write_audit_report_20260629T104250.386199Z.json]: Valid JSON (49179 bytes)
+- [PASS] write_audit_report_20260629T104250.386199Z.json schema version [write_audit_report_20260629T104250.386199Z.json] (schema_version): schema_version matches cdb.evidence_harvester.write_audit_report.v1
+- [PASS] write_audit_report_20260629T105715.204661Z.json parses as JSON [write_audit_report_20260629T105715.204661Z.json]: Valid JSON (49575 bytes)
+- [PASS] write_audit_report_20260629T105715.204661Z.json schema version [write_audit_report_20260629T105715.204661Z.json] (schema_version): schema_version matches cdb.evidence_harvester.write_audit_report.v1
+- [PASS] write_audit_report_20260629T105751.025839Z.json parses as JSON [write_audit_report_20260629T105751.025839Z.json]: Valid JSON (49971 bytes)
+- [PASS] write_audit_report_20260629T105751.025839Z.json schema version [write_audit_report_20260629T105751.025839Z.json] (schema_version): schema_version matches cdb.evidence_harvester.write_audit_report.v1
+- [PASS] collector_report_20260629T102749.736234Z.json schema version [collector_report_20260629T102749.736234Z.json] (schema_version): schema_version matches evidence_harvester.collector_report.v1
+- [PASS] write_audit_report_20260629T111215.903183Z.json parses as JSON [write_audit_report_20260629T111215.903183Z.json]: Valid JSON (50367 bytes)
+- [PASS] write_audit_report_20260629T111215.903183Z.json schema version [write_audit_report_20260629T111215.903183Z.json] (schema_version): schema_version matches cdb.evidence_harvester.write_audit_report.v1
+- [PASS] write_audit_report_20260629T111251.661921Z.json parses as JSON [write_audit_report_20260629T111251.661921Z.json]: Valid JSON (50763 bytes)
+- [PASS] write_audit_report_20260629T111251.661921Z.json schema version [write_audit_report_20260629T111251.661921Z.json] (schema_version): schema_version matches cdb.evidence_harvester.write_audit_report.v1
+- [PASS] write_audit_report_20260629T112716.629865Z.json parses as JSON [write_audit_report_20260629T112716.629865Z.json]: Valid JSON (51159 bytes)
+- [PASS] write_audit_report_20260629T112716.629865Z.json schema version [write_audit_report_20260629T112716.629865Z.json] (schema_version): schema_version matches cdb.evidence_harvester.write_audit_report.v1
+- [PASS] write_audit_report_20260629T112752.284749Z.json parses as JSON [write_audit_report_20260629T112752.284749Z.json]: Valid JSON (51555 bytes)
+- [PASS] write_audit_report_20260629T112752.284749Z.json schema version [write_audit_report_20260629T112752.284749Z.json] (schema_version): schema_version matches cdb.evidence_harvester.write_audit_report.v1
+- [PASS] write_audit_report_20260629T114217.488056Z.json parses as JSON [write_audit_report_20260629T114217.488056Z.json]: Valid JSON (51951 bytes)
+- [PASS] write_audit_report_20260629T114217.488056Z.json schema version [write_audit_report_20260629T114217.488056Z.json] (schema_version): schema_version matches cdb.evidence_harvester.write_audit_report.v1
+- [PASS] collector_report_20260629T104214.526487Z.json parses as JSON [collector_report_20260629T104214.526487Z.json]: Valid JSON (3398 bytes)
+- [PASS] write_audit_report_20260629T114252.920024Z.json parses as JSON [write_audit_report_20260629T114252.920024Z.json]: Valid JSON (52347 bytes)
+- [PASS] write_audit_report_20260629T114252.920024Z.json schema version [write_audit_report_20260629T114252.920024Z.json] (schema_version): schema_version matches cdb.evidence_harvester.write_audit_report.v1
+- [PASS] write_audit_report_20260629T115718.201420Z.json parses as JSON [write_audit_report_20260629T115718.201420Z.json]: Valid JSON (52743 bytes)
+- [PASS] write_audit_report_20260629T115718.201420Z.json schema version [write_audit_report_20260629T115718.201420Z.json] (schema_version): schema_version matches cdb.evidence_harvester.write_audit_report.v1
+- [PASS] write_audit_report_20260629T115753.619990Z.json parses as JSON [write_audit_report_20260629T115753.619990Z.json]: Valid JSON (53139 bytes)
+- [PASS] write_audit_report_20260629T115753.619990Z.json schema version [write_audit_report_20260629T115753.619990Z.json] (schema_version): schema_version matches cdb.evidence_harvester.write_audit_report.v1
+- [PASS] write_audit_report_20260629T121218.891836Z.json parses as JSON [write_audit_report_20260629T121218.891836Z.json]: Valid JSON (53535 bytes)
+- [PASS] write_audit_report_20260629T121218.891836Z.json schema version [write_audit_report_20260629T121218.891836Z.json] (schema_version): schema_version matches cdb.evidence_harvester.write_audit_report.v1
+- [PASS] write_audit_report_20260629T121254.279917Z.json parses as JSON [write_audit_report_20260629T121254.279917Z.json]: Valid JSON (53931 bytes)
+- [PASS] write_audit_report_20260629T121254.279917Z.json schema version [write_audit_report_20260629T121254.279917Z.json] (schema_version): schema_version matches cdb.evidence_harvester.write_audit_report.v1
+- [PASS] collector_report_20260629T104214.526487Z.json schema version [collector_report_20260629T104214.526487Z.json] (schema_version): schema_version matches evidence_harvester.collector_report.v1
+- [PASS] write_audit_report_20260629T122719.639543Z.json parses as JSON [write_audit_report_20260629T122719.639543Z.json]: Valid JSON (54327 bytes)
+- [PASS] write_audit_report_20260629T122719.639543Z.json schema version [write_audit_report_20260629T122719.639543Z.json] (schema_version): schema_version matches cdb.evidence_harvester.write_audit_report.v1
+- [PASS] write_audit_report_20260629T122754.960906Z.json parses as JSON [write_audit_report_20260629T122754.960906Z.json]: Valid JSON (54723 bytes)
+- [PASS] write_audit_report_20260629T122754.960906Z.json schema version [write_audit_report_20260629T122754.960906Z.json] (schema_version): schema_version matches cdb.evidence_harvester.write_audit_report.v1
+- [PASS] write_audit_report_20260629T124220.684108Z.json parses as JSON [write_audit_report_20260629T124220.684108Z.json]: Valid JSON (55119 bytes)
+- [PASS] write_audit_report_20260629T124220.684108Z.json schema version [write_audit_report_20260629T124220.684108Z.json] (schema_version): schema_version matches cdb.evidence_harvester.write_audit_report.v1
+- [PASS] write_audit_report_20260629T124256.230963Z.json parses as JSON [write_audit_report_20260629T124256.230963Z.json]: Valid JSON (55515 bytes)
+- [PASS] write_audit_report_20260629T124256.230963Z.json schema version [write_audit_report_20260629T124256.230963Z.json] (schema_version): schema_version matches cdb.evidence_harvester.write_audit_report.v1
+- [PASS] write_audit_report_20260629T125723.136228Z.json parses as JSON [write_audit_report_20260629T125723.136228Z.json]: Valid JSON (55911 bytes)
+- [PASS] write_audit_report_20260629T125723.136228Z.json schema version [write_audit_report_20260629T125723.136228Z.json] (schema_version): schema_version matches cdb.evidence_harvester.write_audit_report.v1
+- [PASS] collector_report_20260629T104250.386199Z.json parses as JSON [collector_report_20260629T104250.386199Z.json]: Valid JSON (3398 bytes)
+- [PASS] write_audit_report_20260629T125804.007362Z.json parses as JSON [write_audit_report_20260629T125804.007362Z.json]: Valid JSON (56307 bytes)
+- [PASS] write_audit_report_20260629T125804.007362Z.json schema version [write_audit_report_20260629T125804.007362Z.json] (schema_version): schema_version matches cdb.evidence_harvester.write_audit_report.v1
+- [PASS] write_audit_report_20260629T131224.181983Z.json parses as JSON [write_audit_report_20260629T131224.181983Z.json]: Valid JSON (56703 bytes)
+- [PASS] write_audit_report_20260629T131224.181983Z.json schema version [write_audit_report_20260629T131224.181983Z.json] (schema_version): schema_version matches cdb.evidence_harvester.write_audit_report.v1
+- [PASS] write_audit_report_20260629T131304.889188Z.json parses as JSON [write_audit_report_20260629T131304.889188Z.json]: Valid JSON (57099 bytes)
+- [PASS] write_audit_report_20260629T131304.889188Z.json schema version [write_audit_report_20260629T131304.889188Z.json] (schema_version): schema_version matches cdb.evidence_harvester.write_audit_report.v1
+- [PASS] write_audit_report_20260629T132725.882130Z.json parses as JSON [write_audit_report_20260629T132725.882130Z.json]: Valid JSON (57495 bytes)
+- [PASS] write_audit_report_20260629T132725.882130Z.json schema version [write_audit_report_20260629T132725.882130Z.json] (schema_version): schema_version matches cdb.evidence_harvester.write_audit_report.v1
+- [PASS] write_audit_report_20260629T132806.599768Z.json parses as JSON [write_audit_report_20260629T132806.599768Z.json]: Valid JSON (57891 bytes)
+- [PASS] write_audit_report_20260629T132806.599768Z.json schema version [write_audit_report_20260629T132806.599768Z.json] (schema_version): schema_version matches cdb.evidence_harvester.write_audit_report.v1
+- [PASS] collector_report_20260629T104250.386199Z.json schema version [collector_report_20260629T104250.386199Z.json] (schema_version): schema_version matches evidence_harvester.collector_report.v1
+- [PASS] boot_readiness_report.json parses as JSON [boot_readiness_report.json]: Valid JSON (5723 bytes)
+- [PASS] boot_readiness_report.json schema version [boot_readiness_report.json] (schema_version): schema_version matches cdb.evidence_harvester.boot_readiness.v1
+- [PASS] snapshot_20260628T202647.095428Z.json safe source_mode [snapshot_20260628T202647.095428Z.json] (metadata.source_mode): metadata.source_mode='fixture' is allowed
+- [PASS] snapshot_20260628T202647.095428Z.json safety flag lr_status [snapshot_20260628T202647.095428Z.json] (safety.lr_status): lr_status is 'NO-GO'
+- [PASS] snapshot_20260628T202647.095428Z.json safety flag live_status [snapshot_20260628T202647.095428Z.json] (safety.live_status): live_status is 'NO-GO'
+- [PASS] snapshot_20260628T202647.095428Z.json safety flag echtgeld_status [snapshot_20260628T202647.095428Z.json] (safety.echtgeld_status): echtgeld_status is 'NO-GO'
+- [PASS] snapshot_20260628T202647.095428Z.json safety flag runtime_actions [snapshot_20260628T202647.095428Z.json] (safety.runtime_actions): runtime_actions is 'not_allowed'
+- [PASS] snapshot_20260628T202647.095428Z.json safety flag db_execution [snapshot_20260628T202647.095428Z.json] (safety.db_execution): db_execution is 'not_allowed'
+- [PASS] snapshot_20260628T202647.095428Z.json safety banner [snapshot_20260628T202647.095428Z.json] (safety.banner): Safety banner matches expected text
+- [PASS] snapshot_20260628T202725.754548Z.json safe source_mode [snapshot_20260628T202725.754548Z.json] (metadata.source_mode): metadata.source_mode='fixture' is allowed
+- [PASS] collector_report_20260629T105715.204661Z.json parses as JSON [collector_report_20260629T105715.204661Z.json]: Valid JSON (3398 bytes)
+- [PASS] snapshot_20260628T202725.754548Z.json safety flag lr_status [snapshot_20260628T202725.754548Z.json] (safety.lr_status): lr_status is 'NO-GO'
+- [PASS] snapshot_20260628T202725.754548Z.json safety flag live_status [snapshot_20260628T202725.754548Z.json] (safety.live_status): live_status is 'NO-GO'
+- [PASS] snapshot_20260628T202725.754548Z.json safety flag echtgeld_status [snapshot_20260628T202725.754548Z.json] (safety.echtgeld_status): echtgeld_status is 'NO-GO'
+- [PASS] snapshot_20260628T202725.754548Z.json safety flag runtime_actions [snapshot_20260628T202725.754548Z.json] (safety.runtime_actions): runtime_actions is 'not_allowed'
+- [PASS] snapshot_20260628T202725.754548Z.json safety flag db_execution [snapshot_20260628T202725.754548Z.json] (safety.db_execution): db_execution is 'not_allowed'
+- [PASS] snapshot_20260628T202725.754548Z.json safety banner [snapshot_20260628T202725.754548Z.json] (safety.banner): Safety banner matches expected text
+- [PASS] snapshot_20260628T204147.136310Z.json safe source_mode [snapshot_20260628T204147.136310Z.json] (metadata.source_mode): metadata.source_mode='fixture' is allowed
+- [PASS] snapshot_20260628T204147.136310Z.json safety flag lr_status [snapshot_20260628T204147.136310Z.json] (safety.lr_status): lr_status is 'NO-GO'
+- [PASS] snapshot_20260628T204147.136310Z.json safety flag live_status [snapshot_20260628T204147.136310Z.json] (safety.live_status): live_status is 'NO-GO'
+- [PASS] snapshot_20260628T204147.136310Z.json safety flag echtgeld_status [snapshot_20260628T204147.136310Z.json] (safety.echtgeld_status): echtgeld_status is 'NO-GO'
+- [PASS] collector_report_20260629T105715.204661Z.json schema version [collector_report_20260629T105715.204661Z.json] (schema_version): schema_version matches evidence_harvester.collector_report.v1
+- [PASS] snapshot_20260628T204147.136310Z.json safety flag runtime_actions [snapshot_20260628T204147.136310Z.json] (safety.runtime_actions): runtime_actions is 'not_allowed'
+- [PASS] snapshot_20260628T204147.136310Z.json safety flag db_execution [snapshot_20260628T204147.136310Z.json] (safety.db_execution): db_execution is 'not_allowed'
+- [PASS] snapshot_20260628T204147.136310Z.json safety banner [snapshot_20260628T204147.136310Z.json] (safety.banner): Safety banner matches expected text
+- [PASS] snapshot_20260628T204225.822673Z.json safe source_mode [snapshot_20260628T204225.822673Z.json] (metadata.source_mode): metadata.source_mode='fixture' is allowed
+- [PASS] snapshot_20260628T204225.822673Z.json safety flag lr_status [snapshot_20260628T204225.822673Z.json] (safety.lr_status): lr_status is 'NO-GO'
+- [PASS] snapshot_20260628T204225.822673Z.json safety flag live_status [snapshot_20260628T204225.822673Z.json] (safety.live_status): live_status is 'NO-GO'
+- [PASS] snapshot_20260628T204225.822673Z.json safety flag echtgeld_status [snapshot_20260628T204225.822673Z.json] (safety.echtgeld_status): echtgeld_status is 'NO-GO'
+- [PASS] snapshot_20260628T204225.822673Z.json safety flag runtime_actions [snapshot_20260628T204225.822673Z.json] (safety.runtime_actions): runtime_actions is 'not_allowed'
+- [PASS] snapshot_20260628T204225.822673Z.json safety flag db_execution [snapshot_20260628T204225.822673Z.json] (safety.db_execution): db_execution is 'not_allowed'
+- [PASS] snapshot_20260628T204225.822673Z.json safety banner [snapshot_20260628T204225.822673Z.json] (safety.banner): Safety banner matches expected text
+- [PASS] collector_report_20260629T105751.025839Z.json parses as JSON [collector_report_20260629T105751.025839Z.json]: Valid JSON (3398 bytes)
+- [PASS] snapshot_20260628T205647.228228Z.json safe source_mode [snapshot_20260628T205647.228228Z.json] (metadata.source_mode): metadata.source_mode='fixture' is allowed
+- [PASS] snapshot_20260628T205647.228228Z.json safety flag lr_status [snapshot_20260628T205647.228228Z.json] (safety.lr_status): lr_status is 'NO-GO'
+- [PASS] snapshot_20260628T205647.228228Z.json safety flag live_status [snapshot_20260628T205647.228228Z.json] (safety.live_status): live_status is 'NO-GO'
+- [PASS] snapshot_20260628T205647.228228Z.json safety flag echtgeld_status [snapshot_20260628T205647.228228Z.json] (safety.echtgeld_status): echtgeld_status is 'NO-GO'
+- [PASS] snapshot_20260628T205647.228228Z.json safety flag runtime_actions [snapshot_20260628T205647.228228Z.json] (safety.runtime_actions): runtime_actions is 'not_allowed'
+- [PASS] snapshot_20260628T205647.228228Z.json safety flag db_execution [snapshot_20260628T205647.228228Z.json] (safety.db_execution): db_execution is 'not_allowed'
+- [PASS] snapshot_20260628T205647.228228Z.json safety banner [snapshot_20260628T205647.228228Z.json] (safety.banner): Safety banner matches expected text
+- [PASS] snapshot_20260628T205725.879579Z.json safe source_mode [snapshot_20260628T205725.879579Z.json] (metadata.source_mode): metadata.source_mode='fixture' is allowed
+- [PASS] snapshot_20260628T205725.879579Z.json safety flag lr_status [snapshot_20260628T205725.879579Z.json] (safety.lr_status): lr_status is 'NO-GO'
+- [PASS] snapshot_20260628T205725.879579Z.json safety flag live_status [snapshot_20260628T205725.879579Z.json] (safety.live_status): live_status is 'NO-GO'
+- [PASS] collector_report_20260629T105751.025839Z.json schema version [collector_report_20260629T105751.025839Z.json] (schema_version): schema_version matches evidence_harvester.collector_report.v1
+- [PASS] snapshot_20260628T205725.879579Z.json safety flag echtgeld_status [snapshot_20260628T205725.879579Z.json] (safety.echtgeld_status): echtgeld_status is 'NO-GO'
+- [PASS] snapshot_20260628T205725.879579Z.json safety flag runtime_actions [snapshot_20260628T205725.879579Z.json] (safety.runtime_actions): runtime_actions is 'not_allowed'
+- [PASS] snapshot_20260628T205725.879579Z.json safety flag db_execution [snapshot_20260628T205725.879579Z.json] (safety.db_execution): db_execution is 'not_allowed'
+- [PASS] snapshot_20260628T205725.879579Z.json safety banner [snapshot_20260628T205725.879579Z.json] (safety.banner): Safety banner matches expected text
+- [PASS] snapshot_20260628T211147.340626Z.json safe source_mode [snapshot_20260628T211147.340626Z.json] (metadata.source_mode): metadata.source_mode='fixture' is allowed
+- [PASS] snapshot_20260628T211147.340626Z.json safety flag lr_status [snapshot_20260628T211147.340626Z.json] (safety.lr_status): lr_status is 'NO-GO'
+- [PASS] snapshot_20260628T211147.340626Z.json safety flag live_status [snapshot_20260628T211147.340626Z.json] (safety.live_status): live_status is 'NO-GO'
+- [PASS] snapshot_20260628T211147.340626Z.json safety flag echtgeld_status [snapshot_20260628T211147.340626Z.json] (safety.echtgeld_status): echtgeld_status is 'NO-GO'
+- [PASS] snapshot_20260628T211147.340626Z.json safety flag runtime_actions [snapshot_20260628T211147.340626Z.json] (safety.runtime_actions): runtime_actions is 'not_allowed'
+- [PASS] snapshot_20260628T211147.340626Z.json safety flag db_execution [snapshot_20260628T211147.340626Z.json] (safety.db_execution): db_execution is 'not_allowed'
+- [PASS] collector_report_20260629T111215.903183Z.json parses as JSON [collector_report_20260629T111215.903183Z.json]: Valid JSON (3398 bytes)
+- [PASS] snapshot_20260628T211147.340626Z.json safety banner [snapshot_20260628T211147.340626Z.json] (safety.banner): Safety banner matches expected text
+- [PASS] snapshot_20260628T211225.977739Z.json safe source_mode [snapshot_20260628T211225.977739Z.json] (metadata.source_mode): metadata.source_mode='fixture' is allowed
+- [PASS] snapshot_20260628T211225.977739Z.json safety flag lr_status [snapshot_20260628T211225.977739Z.json] (safety.lr_status): lr_status is 'NO-GO'
+- [PASS] snapshot_20260628T211225.977739Z.json safety flag live_status [snapshot_20260628T211225.977739Z.json] (safety.live_status): live_status is 'NO-GO'
+- [PASS] snapshot_20260628T211225.977739Z.json safety flag echtgeld_status [snapshot_20260628T211225.977739Z.json] (safety.echtgeld_status): echtgeld_status is 'NO-GO'
+- [PASS] snapshot_20260628T211225.977739Z.json safety flag runtime_actions [snapshot_20260628T211225.977739Z.json] (safety.runtime_actions): runtime_actions is 'not_allowed'
+- [PASS] snapshot_20260628T211225.977739Z.json safety flag db_execution [snapshot_20260628T211225.977739Z.json] (safety.db_execution): db_execution is 'not_allowed'
+- [PASS] snapshot_20260628T211225.977739Z.json safety banner [snapshot_20260628T211225.977739Z.json] (safety.banner): Safety banner matches expected text
+- [PASS] snapshot_20260628T212647.438144Z.json safe source_mode [snapshot_20260628T212647.438144Z.json] (metadata.source_mode): metadata.source_mode='fixture' is allowed
+- [PASS] snapshot_20260628T212647.438144Z.json safety flag lr_status [snapshot_20260628T212647.438144Z.json] (safety.lr_status): lr_status is 'NO-GO'
+- [PASS] collector_report_20260629T111215.903183Z.json schema version [collector_report_20260629T111215.903183Z.json] (schema_version): schema_version matches evidence_harvester.collector_report.v1
+- [PASS] snapshot_20260628T212647.438144Z.json safety flag live_status [snapshot_20260628T212647.438144Z.json] (safety.live_status): live_status is 'NO-GO'
+- [PASS] snapshot_20260628T212647.438144Z.json safety flag echtgeld_status [snapshot_20260628T212647.438144Z.json] (safety.echtgeld_status): echtgeld_status is 'NO-GO'
+- [PASS] snapshot_20260628T212647.438144Z.json safety flag runtime_actions [snapshot_20260628T212647.438144Z.json] (safety.runtime_actions): runtime_actions is 'not_allowed'
+- [PASS] snapshot_20260628T212647.438144Z.json safety flag db_execution [snapshot_20260628T212647.438144Z.json] (safety.db_execution): db_execution is 'not_allowed'
+- [PASS] snapshot_20260628T212647.438144Z.json safety banner [snapshot_20260628T212647.438144Z.json] (safety.banner): Safety banner matches expected text
+- [PASS] snapshot_20260628T212726.085888Z.json safe source_mode [snapshot_20260628T212726.085888Z.json] (metadata.source_mode): metadata.source_mode='fixture' is allowed
+- [PASS] snapshot_20260628T212726.085888Z.json safety flag lr_status [snapshot_20260628T212726.085888Z.json] (safety.lr_status): lr_status is 'NO-GO'
+- [PASS] snapshot_20260628T212726.085888Z.json safety flag live_status [snapshot_20260628T212726.085888Z.json] (safety.live_status): live_status is 'NO-GO'
+- [PASS] snapshot_20260628T212726.085888Z.json safety flag echtgeld_status [snapshot_20260628T212726.085888Z.json] (safety.echtgeld_status): echtgeld_status is 'NO-GO'
+- [PASS] snapshot_20260628T212726.085888Z.json safety flag runtime_actions [snapshot_20260628T212726.085888Z.json] (safety.runtime_actions): runtime_actions is 'not_allowed'
+- [PASS] collector_report_20260629T111251.661921Z.json parses as JSON [collector_report_20260629T111251.661921Z.json]: Valid JSON (3398 bytes)
+- [PASS] snapshot_20260628T212726.085888Z.json safety flag db_execution [snapshot_20260628T212726.085888Z.json] (safety.db_execution): db_execution is 'not_allowed'
+- [PASS] snapshot_20260628T212726.085888Z.json safety banner [snapshot_20260628T212726.085888Z.json] (safety.banner): Safety banner matches expected text
+- [PASS] snapshot_20260628T214147.524830Z.json safe source_mode [snapshot_20260628T214147.524830Z.json] (metadata.source_mode): metadata.source_mode='fixture' is allowed
+- [PASS] snapshot_20260628T214147.524830Z.json safety flag lr_status [snapshot_20260628T214147.524830Z.json] (safety.lr_status): lr_status is 'NO-GO'
+- [PASS] snapshot_20260628T214147.524830Z.json safety flag live_status [snapshot_20260628T214147.524830Z.json] (safety.live_status): live_status is 'NO-GO'
+- [PASS] snapshot_20260628T214147.524830Z.json safety flag echtgeld_status [snapshot_20260628T214147.524830Z.json] (safety.echtgeld_status): echtgeld_status is 'NO-GO'
+- [PASS] snapshot_20260628T214147.524830Z.json safety flag runtime_actions [snapshot_20260628T214147.524830Z.json] (safety.runtime_actions): runtime_actions is 'not_allowed'
+- [PASS] snapshot_20260628T214147.524830Z.json safety flag db_execution [snapshot_20260628T214147.524830Z.json] (safety.db_execution): db_execution is 'not_allowed'
+- [PASS] snapshot_20260628T214147.524830Z.json safety banner [snapshot_20260628T214147.524830Z.json] (safety.banner): Safety banner matches expected text
+- [PASS] snapshot_20260628T214226.178738Z.json safe source_mode [snapshot_20260628T214226.178738Z.json] (metadata.source_mode): metadata.source_mode='fixture' is allowed
+- [PASS] collector_report_20260629T111251.661921Z.json schema version [collector_report_20260629T111251.661921Z.json] (schema_version): schema_version matches evidence_harvester.collector_report.v1
+- [PASS] snapshot_20260628T214226.178738Z.json safety flag lr_status [snapshot_20260628T214226.178738Z.json] (safety.lr_status): lr_status is 'NO-GO'
+- [PASS] snapshot_20260628T214226.178738Z.json safety flag live_status [snapshot_20260628T214226.178738Z.json] (safety.live_status): live_status is 'NO-GO'
+- [PASS] snapshot_20260628T214226.178738Z.json safety flag echtgeld_status [snapshot_20260628T214226.178738Z.json] (safety.echtgeld_status): echtgeld_status is 'NO-GO'
+- [PASS] snapshot_20260628T214226.178738Z.json safety flag runtime_actions [snapshot_20260628T214226.178738Z.json] (safety.runtime_actions): runtime_actions is 'not_allowed'
+- [PASS] snapshot_20260628T214226.178738Z.json safety flag db_execution [snapshot_20260628T214226.178738Z.json] (safety.db_execution): db_execution is 'not_allowed'
+- [PASS] snapshot_20260628T214226.178738Z.json safety banner [snapshot_20260628T214226.178738Z.json] (safety.banner): Safety banner matches expected text
+- [PASS] snapshot_20260628T215647.638424Z.json safe source_mode [snapshot_20260628T215647.638424Z.json] (metadata.source_mode): metadata.source_mode='fixture' is allowed
+- [PASS] snapshot_20260628T215647.638424Z.json safety flag lr_status [snapshot_20260628T215647.638424Z.json] (safety.lr_status): lr_status is 'NO-GO'
+- [PASS] snapshot_20260628T215647.638424Z.json safety flag live_status [snapshot_20260628T215647.638424Z.json] (safety.live_status): live_status is 'NO-GO'
+- [PASS] snapshot_20260628T215647.638424Z.json safety flag echtgeld_status [snapshot_20260628T215647.638424Z.json] (safety.echtgeld_status): echtgeld_status is 'NO-GO'
+- [PASS] collector_report_20260629T112716.629865Z.json parses as JSON [collector_report_20260629T112716.629865Z.json]: Valid JSON (3398 bytes)
+- [PASS] snapshot_20260628T215647.638424Z.json safety flag runtime_actions [snapshot_20260628T215647.638424Z.json] (safety.runtime_actions): runtime_actions is 'not_allowed'
+- [PASS] snapshot_20260628T215647.638424Z.json safety flag db_execution [snapshot_20260628T215647.638424Z.json] (safety.db_execution): db_execution is 'not_allowed'
+- [PASS] snapshot_20260628T215647.638424Z.json safety banner [snapshot_20260628T215647.638424Z.json] (safety.banner): Safety banner matches expected text
+- [PASS] snapshot_20260628T215726.259263Z.json safe source_mode [snapshot_20260628T215726.259263Z.json] (metadata.source_mode): metadata.source_mode='fixture' is allowed
+- [PASS] snapshot_20260628T215726.259263Z.json safety flag lr_status [snapshot_20260628T215726.259263Z.json] (safety.lr_status): lr_status is 'NO-GO'
+- [PASS] snapshot_20260628T215726.259263Z.json safety flag live_status [snapshot_20260628T215726.259263Z.json] (safety.live_status): live_status is 'NO-GO'
+- [PASS] snapshot_20260628T215726.259263Z.json safety flag echtgeld_status [snapshot_20260628T215726.259263Z.json] (safety.echtgeld_status): echtgeld_status is 'NO-GO'
+- [PASS] snapshot_20260628T215726.259263Z.json safety flag runtime_actions [snapshot_20260628T215726.259263Z.json] (safety.runtime_actions): runtime_actions is 'not_allowed'
+- [PASS] snapshot_20260628T215726.259263Z.json safety flag db_execution [snapshot_20260628T215726.259263Z.json] (safety.db_execution): db_execution is 'not_allowed'
+- [PASS] snapshot_20260628T215726.259263Z.json safety banner [snapshot_20260628T215726.259263Z.json] (safety.banner): Safety banner matches expected text
+- [PASS] collector_report_20260629T112716.629865Z.json schema version [collector_report_20260629T112716.629865Z.json] (schema_version): schema_version matches evidence_harvester.collector_report.v1
+- [PASS] snapshot_20260628T221147.773162Z.json safe source_mode [snapshot_20260628T221147.773162Z.json] (metadata.source_mode): metadata.source_mode='fixture' is allowed
+- [PASS] snapshot_20260628T221147.773162Z.json safety flag lr_status [snapshot_20260628T221147.773162Z.json] (safety.lr_status): lr_status is 'NO-GO'
+- [PASS] snapshot_20260628T221147.773162Z.json safety flag live_status [snapshot_20260628T221147.773162Z.json] (safety.live_status): live_status is 'NO-GO'
+- [PASS] snapshot_20260628T221147.773162Z.json safety flag echtgeld_status [snapshot_20260628T221147.773162Z.json] (safety.echtgeld_status): echtgeld_status is 'NO-GO'
+- [PASS] snapshot_20260628T221147.773162Z.json safety flag runtime_actions [snapshot_20260628T221147.773162Z.json] (safety.runtime_actions): runtime_actions is 'not_allowed'
+- [PASS] snapshot_20260628T221147.773162Z.json safety flag db_execution [snapshot_20260628T221147.773162Z.json] (safety.db_execution): db_execution is 'not_allowed'
+- [PASS] snapshot_20260628T221147.773162Z.json safety banner [snapshot_20260628T221147.773162Z.json] (safety.banner): Safety banner matches expected text
+- [PASS] snapshot_20260628T221226.358702Z.json safe source_mode [snapshot_20260628T221226.358702Z.json] (metadata.source_mode): metadata.source_mode='fixture' is allowed
+- [PASS] snapshot_20260628T221226.358702Z.json safety flag lr_status [snapshot_20260628T221226.358702Z.json] (safety.lr_status): lr_status is 'NO-GO'
+- [PASS] snapshot_20260628T221226.358702Z.json safety flag live_status [snapshot_20260628T221226.358702Z.json] (safety.live_status): live_status is 'NO-GO'
+- [PASS] collector_report_20260629T112752.284749Z.json parses as JSON [collector_report_20260629T112752.284749Z.json]: Valid JSON (3398 bytes)
+- [PASS] snapshot_20260628T221226.358702Z.json safety flag echtgeld_status [snapshot_20260628T221226.358702Z.json] (safety.echtgeld_status): echtgeld_status is 'NO-GO'
+- [PASS] snapshot_20260628T221226.358702Z.json safety flag runtime_actions [snapshot_20260628T221226.358702Z.json] (safety.runtime_actions): runtime_actions is 'not_allowed'
+- [PASS] snapshot_20260628T221226.358702Z.json safety flag db_execution [snapshot_20260628T221226.358702Z.json] (safety.db_execution): db_execution is 'not_allowed'
+- [PASS] snapshot_20260628T221226.358702Z.json safety banner [snapshot_20260628T221226.358702Z.json] (safety.banner): Safety banner matches expected text
+- [PASS] snapshot_20260628T222647.925582Z.json safe source_mode [snapshot_20260628T222647.925582Z.json] (metadata.source_mode): metadata.source_mode='fixture' is allowed
+- [PASS] snapshot_20260628T222647.925582Z.json safety flag lr_status [snapshot_20260628T222647.925582Z.json] (safety.lr_status): lr_status is 'NO-GO'
+- [PASS] snapshot_20260628T222647.925582Z.json safety flag live_status [snapshot_20260628T222647.925582Z.json] (safety.live_status): live_status is 'NO-GO'
+- [PASS] snapshot_20260628T222647.925582Z.json safety flag echtgeld_status [snapshot_20260628T222647.925582Z.json] (safety.echtgeld_status): echtgeld_status is 'NO-GO'
+- [PASS] snapshot_20260628T222647.925582Z.json safety flag runtime_actions [snapshot_20260628T222647.925582Z.json] (safety.runtime_actions): runtime_actions is 'not_allowed'
+- [PASS] snapshot_20260628T222647.925582Z.json safety flag db_execution [snapshot_20260628T222647.925582Z.json] (safety.db_execution): db_execution is 'not_allowed'
+- [PASS] collector_report_20260629T112752.284749Z.json schema version [collector_report_20260629T112752.284749Z.json] (schema_version): schema_version matches evidence_harvester.collector_report.v1
+- [PASS] snapshot_20260628T222647.925582Z.json safety banner [snapshot_20260628T222647.925582Z.json] (safety.banner): Safety banner matches expected text
+- [PASS] snapshot_20260628T222726.481222Z.json safe source_mode [snapshot_20260628T222726.481222Z.json] (metadata.source_mode): metadata.source_mode='fixture' is allowed
+- [PASS] snapshot_20260628T222726.481222Z.json safety flag lr_status [snapshot_20260628T222726.481222Z.json] (safety.lr_status): lr_status is 'NO-GO'
+- [PASS] snapshot_20260628T222726.481222Z.json safety flag live_status [snapshot_20260628T222726.481222Z.json] (safety.live_status): live_status is 'NO-GO'
+- [PASS] snapshot_20260628T222726.481222Z.json safety flag echtgeld_status [snapshot_20260628T222726.481222Z.json] (safety.echtgeld_status): echtgeld_status is 'NO-GO'
+- [PASS] snapshot_20260628T222726.481222Z.json safety flag runtime_actions [snapshot_20260628T222726.481222Z.json] (safety.runtime_actions): runtime_actions is 'not_allowed'
+- [PASS] snapshot_20260628T222726.481222Z.json safety flag db_execution [snapshot_20260628T222726.481222Z.json] (safety.db_execution): db_execution is 'not_allowed'
+- [PASS] snapshot_20260628T222726.481222Z.json safety banner [snapshot_20260628T222726.481222Z.json] (safety.banner): Safety banner matches expected text
+- [PASS] snapshot_20260628T224148.050365Z.json safe source_mode [snapshot_20260628T224148.050365Z.json] (metadata.source_mode): metadata.source_mode='fixture' is allowed
+- [PASS] snapshot_20260628T224148.050365Z.json safety flag lr_status [snapshot_20260628T224148.050365Z.json] (safety.lr_status): lr_status is 'NO-GO'
+- [PASS] collector_report_20260629T114217.488056Z.json parses as JSON [collector_report_20260629T114217.488056Z.json]: Valid JSON (3398 bytes)
+- [PASS] snapshot_20260628T224148.050365Z.json safety flag live_status [snapshot_20260628T224148.050365Z.json] (safety.live_status): live_status is 'NO-GO'
+- [PASS] snapshot_20260628T224148.050365Z.json safety flag echtgeld_status [snapshot_20260628T224148.050365Z.json] (safety.echtgeld_status): echtgeld_status is 'NO-GO'
+- [PASS] snapshot_20260628T224148.050365Z.json safety flag runtime_actions [snapshot_20260628T224148.050365Z.json] (safety.runtime_actions): runtime_actions is 'not_allowed'
+- [PASS] snapshot_20260628T224148.050365Z.json safety flag db_execution [snapshot_20260628T224148.050365Z.json] (safety.db_execution): db_execution is 'not_allowed'
+- [PASS] snapshot_20260628T224148.050365Z.json safety banner [snapshot_20260628T224148.050365Z.json] (safety.banner): Safety banner matches expected text
+- [PASS] snapshot_20260628T224226.622382Z.json safe source_mode [snapshot_20260628T224226.622382Z.json] (metadata.source_mode): metadata.source_mode='fixture' is allowed
+- [PASS] snapshot_20260628T224226.622382Z.json safety flag lr_status [snapshot_20260628T224226.622382Z.json] (safety.lr_status): lr_status is 'NO-GO'
+- [PASS] snapshot_20260628T224226.622382Z.json safety flag live_status [snapshot_20260628T224226.622382Z.json] (safety.live_status): live_status is 'NO-GO'
+- [PASS] snapshot_20260628T224226.622382Z.json safety flag echtgeld_status [snapshot_20260628T224226.622382Z.json] (safety.echtgeld_status): echtgeld_status is 'NO-GO'
+- [PASS] snapshot_20260628T224226.622382Z.json safety flag runtime_actions [snapshot_20260628T224226.622382Z.json] (safety.runtime_actions): runtime_actions is 'not_allowed'
+- [PASS] collector_report_20260629T114217.488056Z.json schema version [collector_report_20260629T114217.488056Z.json] (schema_version): schema_version matches evidence_harvester.collector_report.v1
+- [PASS] snapshot_20260628T224226.622382Z.json safety flag db_execution [snapshot_20260628T224226.622382Z.json] (safety.db_execution): db_execution is 'not_allowed'
+- [PASS] snapshot_20260628T224226.622382Z.json safety banner [snapshot_20260628T224226.622382Z.json] (safety.banner): Safety banner matches expected text
+- [PASS] snapshot_20260628T225653.430691Z.json safe source_mode [snapshot_20260628T225653.430691Z.json] (metadata.source_mode): metadata.source_mode='fixture' is allowed
+- [PASS] snapshot_20260628T225653.430691Z.json safety flag lr_status [snapshot_20260628T225653.430691Z.json] (safety.lr_status): lr_status is 'NO-GO'
+- [PASS] snapshot_20260628T225653.430691Z.json safety flag live_status [snapshot_20260628T225653.430691Z.json] (safety.live_status): live_status is 'NO-GO'
+- [PASS] snapshot_20260628T225653.430691Z.json safety flag echtgeld_status [snapshot_20260628T225653.430691Z.json] (safety.echtgeld_status): echtgeld_status is 'NO-GO'
+- [PASS] snapshot_20260628T225653.430691Z.json safety flag runtime_actions [snapshot_20260628T225653.430691Z.json] (safety.runtime_actions): runtime_actions is 'not_allowed'
+- [PASS] snapshot_20260628T225653.430691Z.json safety flag db_execution [snapshot_20260628T225653.430691Z.json] (safety.db_execution): db_execution is 'not_allowed'
+- [PASS] snapshot_20260628T225653.430691Z.json safety banner [snapshot_20260628T225653.430691Z.json] (safety.banner): Safety banner matches expected text
+- [PASS] snapshot_20260628T225732.008211Z.json safe source_mode [snapshot_20260628T225732.008211Z.json] (metadata.source_mode): metadata.source_mode='fixture' is allowed
+- [PASS] collector_report_20260629T114252.920024Z.json parses as JSON [collector_report_20260629T114252.920024Z.json]: Valid JSON (3398 bytes)
+- [PASS] snapshot_20260628T225732.008211Z.json safety flag lr_status [snapshot_20260628T225732.008211Z.json] (safety.lr_status): lr_status is 'NO-GO'
+- [PASS] snapshot_20260628T225732.008211Z.json safety flag live_status [snapshot_20260628T225732.008211Z.json] (safety.live_status): live_status is 'NO-GO'
+- [PASS] snapshot_20260628T225732.008211Z.json safety flag echtgeld_status [snapshot_20260628T225732.008211Z.json] (safety.echtgeld_status): echtgeld_status is 'NO-GO'
+- [PASS] snapshot_20260628T225732.008211Z.json safety flag runtime_actions [snapshot_20260628T225732.008211Z.json] (safety.runtime_actions): runtime_actions is 'not_allowed'
+- [PASS] snapshot_20260628T225732.008211Z.json safety flag db_execution [snapshot_20260628T225732.008211Z.json] (safety.db_execution): db_execution is 'not_allowed'
+- [PASS] snapshot_20260628T225732.008211Z.json safety banner [snapshot_20260628T225732.008211Z.json] (safety.banner): Safety banner matches expected text
+- [PASS] snapshot_20260628T231153.609636Z.json safe source_mode [snapshot_20260628T231153.609636Z.json] (metadata.source_mode): metadata.source_mode='fixture' is allowed
+- [PASS] snapshot_20260628T231153.609636Z.json safety flag lr_status [snapshot_20260628T231153.609636Z.json] (safety.lr_status): lr_status is 'NO-GO'
+- [PASS] snapshot_20260628T231153.609636Z.json safety flag live_status [snapshot_20260628T231153.609636Z.json] (safety.live_status): live_status is 'NO-GO'
+- [PASS] snapshot_20260628T231153.609636Z.json safety flag echtgeld_status [snapshot_20260628T231153.609636Z.json] (safety.echtgeld_status): echtgeld_status is 'NO-GO'
+- [PASS] collector_report_20260629T114252.920024Z.json schema version [collector_report_20260629T114252.920024Z.json] (schema_version): schema_version matches evidence_harvester.collector_report.v1
+- [PASS] snapshot_20260628T231153.609636Z.json safety flag runtime_actions [snapshot_20260628T231153.609636Z.json] (safety.runtime_actions): runtime_actions is 'not_allowed'
+- [PASS] snapshot_20260628T231153.609636Z.json safety flag db_execution [snapshot_20260628T231153.609636Z.json] (safety.db_execution): db_execution is 'not_allowed'
+- [PASS] snapshot_20260628T231153.609636Z.json safety banner [snapshot_20260628T231153.609636Z.json] (safety.banner): Safety banner matches expected text
+- [PASS] snapshot_20260628T231232.158446Z.json safe source_mode [snapshot_20260628T231232.158446Z.json] (metadata.source_mode): metadata.source_mode='fixture' is allowed
+- [PASS] snapshot_20260628T231232.158446Z.json safety flag lr_status [snapshot_20260628T231232.158446Z.json] (safety.lr_status): lr_status is 'NO-GO'
+- [PASS] snapshot_20260628T231232.158446Z.json safety flag live_status [snapshot_20260628T231232.158446Z.json] (safety.live_status): live_status is 'NO-GO'
+- [PASS] snapshot_20260628T231232.158446Z.json safety flag echtgeld_status [snapshot_20260628T231232.158446Z.json] (safety.echtgeld_status): echtgeld_status is 'NO-GO'
+- [PASS] snapshot_20260628T231232.158446Z.json safety flag runtime_actions [snapshot_20260628T231232.158446Z.json] (safety.runtime_actions): runtime_actions is 'not_allowed'
+- [PASS] snapshot_20260628T231232.158446Z.json safety flag db_execution [snapshot_20260628T231232.158446Z.json] (safety.db_execution): db_execution is 'not_allowed'
+- [PASS] snapshot_20260628T231232.158446Z.json safety banner [snapshot_20260628T231232.158446Z.json] (safety.banner): Safety banner matches expected text
+- [PASS] collector_report_20260629T115718.201420Z.json parses as JSON [collector_report_20260629T115718.201420Z.json]: Valid JSON (3398 bytes)
+- [PASS] snapshot_20260628T232653.786742Z.json safe source_mode [snapshot_20260628T232653.786742Z.json] (metadata.source_mode): metadata.source_mode='fixture' is allowed
+- [PASS] snapshot_20260628T232653.786742Z.json safety flag lr_status [snapshot_20260628T232653.786742Z.json] (safety.lr_status): lr_status is 'NO-GO'
+- [PASS] snapshot_20260628T232653.786742Z.json safety flag live_status [snapshot_20260628T232653.786742Z.json] (safety.live_status): live_status is 'NO-GO'
+- [PASS] snapshot_20260628T232653.786742Z.json safety flag echtgeld_status [snapshot_20260628T232653.786742Z.json] (safety.echtgeld_status): echtgeld_status is 'NO-GO'
+- [PASS] snapshot_20260628T232653.786742Z.json safety flag runtime_actions [snapshot_20260628T232653.786742Z.json] (safety.runtime_actions): runtime_actions is 'not_allowed'
+- [PASS] snapshot_20260628T232653.786742Z.json safety flag db_execution [snapshot_20260628T232653.786742Z.json] (safety.db_execution): db_execution is 'not_allowed'
+- [PASS] snapshot_20260628T232653.786742Z.json safety banner [snapshot_20260628T232653.786742Z.json] (safety.banner): Safety banner matches expected text
+- [PASS] snapshot_20260628T232732.326637Z.json safe source_mode [snapshot_20260628T232732.326637Z.json] (metadata.source_mode): metadata.source_mode='fixture' is allowed
+- [PASS] snapshot_20260628T232732.326637Z.json safety flag lr_status [snapshot_20260628T232732.326637Z.json] (safety.lr_status): lr_status is 'NO-GO'
+- [PASS] snapshot_20260628T232732.326637Z.json safety flag live_status [snapshot_20260628T232732.326637Z.json] (safety.live_status): live_status is 'NO-GO'
+- [PASS] collector_report_20260629T115718.201420Z.json schema version [collector_report_20260629T115718.201420Z.json] (schema_version): schema_version matches evidence_harvester.collector_report.v1
+- [PASS] snapshot_20260628T232732.326637Z.json safety flag echtgeld_status [snapshot_20260628T232732.326637Z.json] (safety.echtgeld_status): echtgeld_status is 'NO-GO'
+- [PASS] snapshot_20260628T232732.326637Z.json safety flag runtime_actions [snapshot_20260628T232732.326637Z.json] (safety.runtime_actions): runtime_actions is 'not_allowed'
+- [PASS] snapshot_20260628T232732.326637Z.json safety flag db_execution [snapshot_20260628T232732.326637Z.json] (safety.db_execution): db_execution is 'not_allowed'
+- [PASS] snapshot_20260628T232732.326637Z.json safety banner [snapshot_20260628T232732.326637Z.json] (safety.banner): Safety banner matches expected text
+- [PASS] snapshot_20260628T234153.975890Z.json safe source_mode [snapshot_20260628T234153.975890Z.json] (metadata.source_mode): metadata.source_mode='fixture' is allowed
+- [PASS] snapshot_20260628T234153.975890Z.json safety flag lr_status [snapshot_20260628T234153.975890Z.json] (safety.lr_status): lr_status is 'NO-GO'
+- [PASS] snapshot_20260628T234153.975890Z.json safety flag live_status [snapshot_20260628T234153.975890Z.json] (safety.live_status): live_status is 'NO-GO'
+- [PASS] snapshot_20260628T234153.975890Z.json safety flag echtgeld_status [snapshot_20260628T234153.975890Z.json] (safety.echtgeld_status): echtgeld_status is 'NO-GO'
+- [PASS] snapshot_20260628T234153.975890Z.json safety flag runtime_actions [snapshot_20260628T234153.975890Z.json] (safety.runtime_actions): runtime_actions is 'not_allowed'
+- [PASS] snapshot_20260628T234153.975890Z.json safety flag db_execution [snapshot_20260628T234153.975890Z.json] (safety.db_execution): db_execution is 'not_allowed'
+- [PASS] collector_report_20260629T115753.619990Z.json parses as JSON [collector_report_20260629T115753.619990Z.json]: Valid JSON (3398 bytes)
+- [PASS] snapshot_20260628T234153.975890Z.json safety banner [snapshot_20260628T234153.975890Z.json] (safety.banner): Safety banner matches expected text
+- [PASS] snapshot_20260628T234232.480715Z.json safe source_mode [snapshot_20260628T234232.480715Z.json] (metadata.source_mode): metadata.source_mode='fixture' is allowed
+- [PASS] snapshot_20260628T234232.480715Z.json safety flag lr_status [snapshot_20260628T234232.480715Z.json] (safety.lr_status): lr_status is 'NO-GO'
+- [PASS] snapshot_20260628T234232.480715Z.json safety flag live_status [snapshot_20260628T234232.480715Z.json] (safety.live_status): live_status is 'NO-GO'
+- [PASS] snapshot_20260628T234232.480715Z.json safety flag echtgeld_status [snapshot_20260628T234232.480715Z.json] (safety.echtgeld_status): echtgeld_status is 'NO-GO'
+- [PASS] snapshot_20260628T234232.480715Z.json safety flag runtime_actions [snapshot_20260628T234232.480715Z.json] (safety.runtime_actions): runtime_actions is 'not_allowed'
+- [PASS] snapshot_20260628T234232.480715Z.json safety flag db_execution [snapshot_20260628T234232.480715Z.json] (safety.db_execution): db_execution is 'not_allowed'
+- [PASS] snapshot_20260628T234232.480715Z.json safety banner [snapshot_20260628T234232.480715Z.json] (safety.banner): Safety banner matches expected text
+- [PASS] snapshot_20260628T235654.200874Z.json safe source_mode [snapshot_20260628T235654.200874Z.json] (metadata.source_mode): metadata.source_mode='fixture' is allowed
+- [PASS] snapshot_20260628T235654.200874Z.json safety flag lr_status [snapshot_20260628T235654.200874Z.json] (safety.lr_status): lr_status is 'NO-GO'
+- [PASS] collector_report_20260629T115753.619990Z.json schema version [collector_report_20260629T115753.619990Z.json] (schema_version): schema_version matches evidence_harvester.collector_report.v1
+- [PASS] snapshot_20260628T235654.200874Z.json safety flag live_status [snapshot_20260628T235654.200874Z.json] (safety.live_status): live_status is 'NO-GO'
+- [PASS] snapshot_20260628T235654.200874Z.json safety flag echtgeld_status [snapshot_20260628T235654.200874Z.json] (safety.echtgeld_status): echtgeld_status is 'NO-GO'
+- [PASS] snapshot_20260628T235654.200874Z.json safety flag runtime_actions [snapshot_20260628T235654.200874Z.json] (safety.runtime_actions): runtime_actions is 'not_allowed'
+- [PASS] snapshot_20260628T235654.200874Z.json safety flag db_execution [snapshot_20260628T235654.200874Z.json] (safety.db_execution): db_execution is 'not_allowed'
+- [PASS] snapshot_20260628T235654.200874Z.json safety banner [snapshot_20260628T235654.200874Z.json] (safety.banner): Safety banner matches expected text
+- [PASS] snapshot_20260628T235732.645061Z.json safe source_mode [snapshot_20260628T235732.645061Z.json] (metadata.source_mode): metadata.source_mode='fixture' is allowed
+- [PASS] snapshot_20260628T235732.645061Z.json safety flag lr_status [snapshot_20260628T235732.645061Z.json] (safety.lr_status): lr_status is 'NO-GO'
+- [PASS] snapshot_20260628T235732.645061Z.json safety flag live_status [snapshot_20260628T235732.645061Z.json] (safety.live_status): live_status is 'NO-GO'
+- [PASS] snapshot_20260628T235732.645061Z.json safety flag echtgeld_status [snapshot_20260628T235732.645061Z.json] (safety.echtgeld_status): echtgeld_status is 'NO-GO'
+- [PASS] snapshot_20260628T235732.645061Z.json safety flag runtime_actions [snapshot_20260628T235732.645061Z.json] (safety.runtime_actions): runtime_actions is 'not_allowed'
+- [PASS] collector_report_20260629T121218.891836Z.json parses as JSON [collector_report_20260629T121218.891836Z.json]: Valid JSON (3398 bytes)
+- [PASS] snapshot_20260628T235732.645061Z.json safety flag db_execution [snapshot_20260628T235732.645061Z.json] (safety.db_execution): db_execution is 'not_allowed'
+- [PASS] snapshot_20260628T235732.645061Z.json safety banner [snapshot_20260628T235732.645061Z.json] (safety.banner): Safety banner matches expected text
+- [PASS] snapshot_20260629T001154.501508Z.json safe source_mode [snapshot_20260629T001154.501508Z.json] (metadata.source_mode): metadata.source_mode='fixture' is allowed
+- [PASS] snapshot_20260629T001154.501508Z.json safety flag lr_status [snapshot_20260629T001154.501508Z.json] (safety.lr_status): lr_status is 'NO-GO'
+- [PASS] snapshot_20260629T001154.501508Z.json safety flag live_status [snapshot_20260629T001154.501508Z.json] (safety.live_status): live_status is 'NO-GO'
+- [PASS] snapshot_20260629T001154.501508Z.json safety flag echtgeld_status [snapshot_20260629T001154.501508Z.json] (safety.echtgeld_status): echtgeld_status is 'NO-GO'
+- [PASS] snapshot_20260629T001154.501508Z.json safety flag runtime_actions [snapshot_20260629T001154.501508Z.json] (safety.runtime_actions): runtime_actions is 'not_allowed'
+- [PASS] snapshot_20260629T001154.501508Z.json safety flag db_execution [snapshot_20260629T001154.501508Z.json] (safety.db_execution): db_execution is 'not_allowed'
+- [PASS] snapshot_20260629T001154.501508Z.json safety banner [snapshot_20260629T001154.501508Z.json] (safety.banner): Safety banner matches expected text
+- [PASS] snapshot_20260629T001232.824905Z.json safe source_mode [snapshot_20260629T001232.824905Z.json] (metadata.source_mode): metadata.source_mode='fixture' is allowed
+- [PASS] collector_report_20260629T121218.891836Z.json schema version [collector_report_20260629T121218.891836Z.json] (schema_version): schema_version matches evidence_harvester.collector_report.v1
+- [PASS] snapshot_20260629T001232.824905Z.json safety flag lr_status [snapshot_20260629T001232.824905Z.json] (safety.lr_status): lr_status is 'NO-GO'
+- [PASS] snapshot_20260629T001232.824905Z.json safety flag live_status [snapshot_20260629T001232.824905Z.json] (safety.live_status): live_status is 'NO-GO'
+- [PASS] snapshot_20260629T001232.824905Z.json safety flag echtgeld_status [snapshot_20260629T001232.824905Z.json] (safety.echtgeld_status): echtgeld_status is 'NO-GO'
+- [PASS] snapshot_20260629T001232.824905Z.json safety flag runtime_actions [snapshot_20260629T001232.824905Z.json] (safety.runtime_actions): runtime_actions is 'not_allowed'
+- [PASS] snapshot_20260629T001232.824905Z.json safety flag db_execution [snapshot_20260629T001232.824905Z.json] (safety.db_execution): db_execution is 'not_allowed'
+- [PASS] snapshot_20260629T001232.824905Z.json safety banner [snapshot_20260629T001232.824905Z.json] (safety.banner): Safety banner matches expected text
+- [PASS] snapshot_20260629T002654.774738Z.json safe source_mode [snapshot_20260629T002654.774738Z.json] (metadata.source_mode): metadata.source_mode='fixture' is allowed
+- [PASS] snapshot_20260629T002654.774738Z.json safety flag lr_status [snapshot_20260629T002654.774738Z.json] (safety.lr_status): lr_status is 'NO-GO'
+- [PASS] snapshot_20260629T002654.774738Z.json safety flag live_status [snapshot_20260629T002654.774738Z.json] (safety.live_status): live_status is 'NO-GO'
+- [PASS] snapshot_20260629T002654.774738Z.json safety flag echtgeld_status [snapshot_20260629T002654.774738Z.json] (safety.echtgeld_status): echtgeld_status is 'NO-GO'
+- [PASS] collector_report_20260629T121254.279917Z.json parses as JSON [collector_report_20260629T121254.279917Z.json]: Valid JSON (3398 bytes)
+- [PASS] snapshot_20260629T002654.774738Z.json safety flag runtime_actions [snapshot_20260629T002654.774738Z.json] (safety.runtime_actions): runtime_actions is 'not_allowed'
+- [PASS] snapshot_20260629T002654.774738Z.json safety flag db_execution [snapshot_20260629T002654.774738Z.json] (safety.db_execution): db_execution is 'not_allowed'
+- [PASS] snapshot_20260629T002654.774738Z.json safety banner [snapshot_20260629T002654.774738Z.json] (safety.banner): Safety banner matches expected text
+- [PASS] snapshot_20260629T002733.036521Z.json safe source_mode [snapshot_20260629T002733.036521Z.json] (metadata.source_mode): metadata.source_mode='fixture' is allowed
+- [PASS] snapshot_20260629T002733.036521Z.json safety flag lr_status [snapshot_20260629T002733.036521Z.json] (safety.lr_status): lr_status is 'NO-GO'
+- [PASS] snapshot_20260629T002733.036521Z.json safety flag live_status [snapshot_20260629T002733.036521Z.json] (safety.live_status): live_status is 'NO-GO'
+- [PASS] snapshot_20260629T002733.036521Z.json safety flag echtgeld_status [snapshot_20260629T002733.036521Z.json] (safety.echtgeld_status): echtgeld_status is 'NO-GO'
+- [PASS] snapshot_20260629T002733.036521Z.json safety flag runtime_actions [snapshot_20260629T002733.036521Z.json] (safety.runtime_actions): runtime_actions is 'not_allowed'
+- [PASS] snapshot_20260629T002733.036521Z.json safety flag db_execution [snapshot_20260629T002733.036521Z.json] (safety.db_execution): db_execution is 'not_allowed'
+- [PASS] snapshot_20260629T002733.036521Z.json safety banner [snapshot_20260629T002733.036521Z.json] (safety.banner): Safety banner matches expected text
+- [PASS] collector_report_20260629T121254.279917Z.json schema version [collector_report_20260629T121254.279917Z.json] (schema_version): schema_version matches evidence_harvester.collector_report.v1
+- [PASS] snapshot_20260629T004155.046745Z.json safe source_mode [snapshot_20260629T004155.046745Z.json] (metadata.source_mode): metadata.source_mode='fixture' is allowed
+- [PASS] snapshot_20260629T004155.046745Z.json safety flag lr_status [snapshot_20260629T004155.046745Z.json] (safety.lr_status): lr_status is 'NO-GO'
+- [PASS] snapshot_20260629T004155.046745Z.json safety flag live_status [snapshot_20260629T004155.046745Z.json] (safety.live_status): live_status is 'NO-GO'
+- [PASS] snapshot_20260629T004155.046745Z.json safety flag echtgeld_status [snapshot_20260629T004155.046745Z.json] (safety.echtgeld_status): echtgeld_status is 'NO-GO'
+- [PASS] snapshot_20260629T004155.046745Z.json safety flag runtime_actions [snapshot_20260629T004155.046745Z.json] (safety.runtime_actions): runtime_actions is 'not_allowed'
+- [PASS] snapshot_20260629T004155.046745Z.json safety flag db_execution [snapshot_20260629T004155.046745Z.json] (safety.db_execution): db_execution is 'not_allowed'
+- [PASS] snapshot_20260629T004155.046745Z.json safety banner [snapshot_20260629T004155.046745Z.json] (safety.banner): Safety banner matches expected text
+- [PASS] snapshot_20260629T004233.286267Z.json safe source_mode [snapshot_20260629T004233.286267Z.json] (metadata.source_mode): metadata.source_mode='fixture' is allowed
+- [PASS] snapshot_20260629T004233.286267Z.json safety flag lr_status [snapshot_20260629T004233.286267Z.json] (safety.lr_status): lr_status is 'NO-GO'
+- [PASS] snapshot_20260629T004233.286267Z.json safety flag live_status [snapshot_20260629T004233.286267Z.json] (safety.live_status): live_status is 'NO-GO'
+- [PASS] collector_report_20260629T122719.639543Z.json parses as JSON [collector_report_20260629T122719.639543Z.json]: Valid JSON (3398 bytes)
+- [PASS] snapshot_20260629T004233.286267Z.json safety flag echtgeld_status [snapshot_20260629T004233.286267Z.json] (safety.echtgeld_status): echtgeld_status is 'NO-GO'
+- [PASS] snapshot_20260629T004233.286267Z.json safety flag runtime_actions [snapshot_20260629T004233.286267Z.json] (safety.runtime_actions): runtime_actions is 'not_allowed'
+- [PASS] snapshot_20260629T004233.286267Z.json safety flag db_execution [snapshot_20260629T004233.286267Z.json] (safety.db_execution): db_execution is 'not_allowed'
+- [PASS] snapshot_20260629T004233.286267Z.json safety banner [snapshot_20260629T004233.286267Z.json] (safety.banner): Safety banner matches expected text
+- [PASS] snapshot_20260629T005655.286180Z.json safe source_mode [snapshot_20260629T005655.286180Z.json] (metadata.source_mode): metadata.source_mode='fixture' is allowed
+- [PASS] snapshot_20260629T005655.286180Z.json safety flag lr_status [snapshot_20260629T005655.286180Z.json] (safety.lr_status): lr_status is 'NO-GO'
+- [PASS] snapshot_20260629T005655.286180Z.json safety flag live_status [snapshot_20260629T005655.286180Z.json] (safety.live_status): live_status is 'NO-GO'
+- [PASS] snapshot_20260629T005655.286180Z.json safety flag echtgeld_status [snapshot_20260629T005655.286180Z.json] (safety.echtgeld_status): echtgeld_status is 'NO-GO'
+- [PASS] snapshot_20260629T005655.286180Z.json safety flag runtime_actions [snapshot_20260629T005655.286180Z.json] (safety.runtime_actions): runtime_actions is 'not_allowed'
+- [PASS] snapshot_20260629T005655.286180Z.json safety flag db_execution [snapshot_20260629T005655.286180Z.json] (safety.db_execution): db_execution is 'not_allowed'
+- [PASS] collector_report_20260629T122719.639543Z.json schema version [collector_report_20260629T122719.639543Z.json] (schema_version): schema_version matches evidence_harvester.collector_report.v1
+- [PASS] snapshot_20260629T005655.286180Z.json safety banner [snapshot_20260629T005655.286180Z.json] (safety.banner): Safety banner matches expected text
+- [PASS] snapshot_20260629T005733.500216Z.json safe source_mode [snapshot_20260629T005733.500216Z.json] (metadata.source_mode): metadata.source_mode='fixture' is allowed
+- [PASS] snapshot_20260629T005733.500216Z.json safety flag lr_status [snapshot_20260629T005733.500216Z.json] (safety.lr_status): lr_status is 'NO-GO'
+- [PASS] snapshot_20260629T005733.500216Z.json safety flag live_status [snapshot_20260629T005733.500216Z.json] (safety.live_status): live_status is 'NO-GO'
+- [PASS] snapshot_20260629T005733.500216Z.json safety flag echtgeld_status [snapshot_20260629T005733.500216Z.json] (safety.echtgeld_status): echtgeld_status is 'NO-GO'
+- [PASS] snapshot_20260629T005733.500216Z.json safety flag runtime_actions [snapshot_20260629T005733.500216Z.json] (safety.runtime_actions): runtime_actions is 'not_allowed'
+- [PASS] snapshot_20260629T005733.500216Z.json safety flag db_execution [snapshot_20260629T005733.500216Z.json] (safety.db_execution): db_execution is 'not_allowed'
+- [PASS] snapshot_20260629T005733.500216Z.json safety banner [snapshot_20260629T005733.500216Z.json] (safety.banner): Safety banner matches expected text
+- [PASS] snapshot_20260629T011155.540856Z.json safe source_mode [snapshot_20260629T011155.540856Z.json] (metadata.source_mode): metadata.source_mode='fixture' is allowed
+- [PASS] snapshot_20260629T011155.540856Z.json safety flag lr_status [snapshot_20260629T011155.540856Z.json] (safety.lr_status): lr_status is 'NO-GO'
+- [PASS] collector_report_20260629T122754.960906Z.json parses as JSON [collector_report_20260629T122754.960906Z.json]: Valid JSON (3398 bytes)
+- [PASS] snapshot_20260629T011155.540856Z.json safety flag live_status [snapshot_20260629T011155.540856Z.json] (safety.live_status): live_status is 'NO-GO'
+- [PASS] snapshot_20260629T011155.540856Z.json safety flag echtgeld_status [snapshot_20260629T011155.540856Z.json] (safety.echtgeld_status): echtgeld_status is 'NO-GO'
+- [PASS] snapshot_20260629T011155.540856Z.json safety flag runtime_actions [snapshot_20260629T011155.540856Z.json] (safety.runtime_actions): runtime_actions is 'not_allowed'
+- [PASS] snapshot_20260629T011155.540856Z.json safety flag db_execution [snapshot_20260629T011155.540856Z.json] (safety.db_execution): db_execution is 'not_allowed'
+- [PASS] snapshot_20260629T011155.540856Z.json safety banner [snapshot_20260629T011155.540856Z.json] (safety.banner): Safety banner matches expected text
+- [PASS] snapshot_20260629T011233.729956Z.json safe source_mode [snapshot_20260629T011233.729956Z.json] (metadata.source_mode): metadata.source_mode='fixture' is allowed
+- [PASS] snapshot_20260629T011233.729956Z.json safety flag lr_status [snapshot_20260629T011233.729956Z.json] (safety.lr_status): lr_status is 'NO-GO'
+- [PASS] snapshot_20260629T011233.729956Z.json safety flag live_status [snapshot_20260629T011233.729956Z.json] (safety.live_status): live_status is 'NO-GO'
+- [PASS] snapshot_20260629T011233.729956Z.json safety flag echtgeld_status [snapshot_20260629T011233.729956Z.json] (safety.echtgeld_status): echtgeld_status is 'NO-GO'
+- [PASS] snapshot_20260629T011233.729956Z.json safety flag runtime_actions [snapshot_20260629T011233.729956Z.json] (safety.runtime_actions): runtime_actions is 'not_allowed'
+- [PASS] collector_report_20260629T122754.960906Z.json schema version [collector_report_20260629T122754.960906Z.json] (schema_version): schema_version matches evidence_harvester.collector_report.v1
+- [PASS] snapshot_20260629T011233.729956Z.json safety flag db_execution [snapshot_20260629T011233.729956Z.json] (safety.db_execution): db_execution is 'not_allowed'
+- [PASS] snapshot_20260629T011233.729956Z.json safety banner [snapshot_20260629T011233.729956Z.json] (safety.banner): Safety banner matches expected text
+- [PASS] snapshot_20260629T012655.870979Z.json safe source_mode [snapshot_20260629T012655.870979Z.json] (metadata.source_mode): metadata.source_mode='fixture' is allowed
+- [PASS] snapshot_20260629T012655.870979Z.json safety flag lr_status [snapshot_20260629T012655.870979Z.json] (safety.lr_status): lr_status is 'NO-GO'
+- [PASS] snapshot_20260629T012655.870979Z.json safety flag live_status [snapshot_20260629T012655.870979Z.json] (safety.live_status): live_status is 'NO-GO'
+- [PASS] snapshot_20260629T012655.870979Z.json safety flag echtgeld_status [snapshot_20260629T012655.870979Z.json] (safety.echtgeld_status): echtgeld_status is 'NO-GO'
+- [PASS] snapshot_20260629T012655.870979Z.json safety flag runtime_actions [snapshot_20260629T012655.870979Z.json] (safety.runtime_actions): runtime_actions is 'not_allowed'
+- [PASS] snapshot_20260629T012655.870979Z.json safety flag db_execution [snapshot_20260629T012655.870979Z.json] (safety.db_execution): db_execution is 'not_allowed'
+- [PASS] snapshot_20260629T012655.870979Z.json safety banner [snapshot_20260629T012655.870979Z.json] (safety.banner): Safety banner matches expected text
+- [PASS] snapshot_20260629T012734.022974Z.json safe source_mode [snapshot_20260629T012734.022974Z.json] (metadata.source_mode): metadata.source_mode='fixture' is allowed
+- [PASS] collector_report_20260629T124220.684108Z.json parses as JSON [collector_report_20260629T124220.684108Z.json]: Valid JSON (3398 bytes)
+- [PASS] snapshot_20260629T012734.022974Z.json safety flag lr_status [snapshot_20260629T012734.022974Z.json] (safety.lr_status): lr_status is 'NO-GO'
+- [PASS] snapshot_20260629T012734.022974Z.json safety flag live_status [snapshot_20260629T012734.022974Z.json] (safety.live_status): live_status is 'NO-GO'
+- [PASS] snapshot_20260629T012734.022974Z.json safety flag echtgeld_status [snapshot_20260629T012734.022974Z.json] (safety.echtgeld_status): echtgeld_status is 'NO-GO'
+- [PASS] snapshot_20260629T012734.022974Z.json safety flag runtime_actions [snapshot_20260629T012734.022974Z.json] (safety.runtime_actions): runtime_actions is 'not_allowed'
+- [PASS] snapshot_20260629T012734.022974Z.json safety flag db_execution [snapshot_20260629T012734.022974Z.json] (safety.db_execution): db_execution is 'not_allowed'
+- [PASS] snapshot_20260629T012734.022974Z.json safety banner [snapshot_20260629T012734.022974Z.json] (safety.banner): Safety banner matches expected text
+- [PASS] snapshot_20260629T014156.252608Z.json safe source_mode [snapshot_20260629T014156.252608Z.json] (metadata.source_mode): metadata.source_mode='fixture' is allowed
+- [PASS] snapshot_20260629T014156.252608Z.json safety flag lr_status [snapshot_20260629T014156.252608Z.json] (safety.lr_status): lr_status is 'NO-GO'
+- [PASS] snapshot_20260629T014156.252608Z.json safety flag live_status [snapshot_20260629T014156.252608Z.json] (safety.live_status): live_status is 'NO-GO'
+- [PASS] snapshot_20260629T014156.252608Z.json safety flag echtgeld_status [snapshot_20260629T014156.252608Z.json] (safety.echtgeld_status): echtgeld_status is 'NO-GO'
+- [PASS] collector_report_20260629T124220.684108Z.json schema version [collector_report_20260629T124220.684108Z.json] (schema_version): schema_version matches evidence_harvester.collector_report.v1
+- [PASS] snapshot_20260629T014156.252608Z.json safety flag runtime_actions [snapshot_20260629T014156.252608Z.json] (safety.runtime_actions): runtime_actions is 'not_allowed'
+- [PASS] snapshot_20260629T014156.252608Z.json safety flag db_execution [snapshot_20260629T014156.252608Z.json] (safety.db_execution): db_execution is 'not_allowed'
+- [PASS] snapshot_20260629T014156.252608Z.json safety banner [snapshot_20260629T014156.252608Z.json] (safety.banner): Safety banner matches expected text
+- [PASS] snapshot_20260629T014234.291063Z.json safe source_mode [snapshot_20260629T014234.291063Z.json] (metadata.source_mode): metadata.source_mode='fixture' is allowed
+- [PASS] snapshot_20260629T014234.291063Z.json safety flag lr_status [snapshot_20260629T014234.291063Z.json] (safety.lr_status): lr_status is 'NO-GO'
+- [PASS] snapshot_20260629T014234.291063Z.json safety flag live_status [snapshot_20260629T014234.291063Z.json] (safety.live_status): live_status is 'NO-GO'
+- [PASS] snapshot_20260629T014234.291063Z.json safety flag echtgeld_status [snapshot_20260629T014234.291063Z.json] (safety.echtgeld_status): echtgeld_status is 'NO-GO'
+- [PASS] snapshot_20260629T014234.291063Z.json safety flag runtime_actions [snapshot_20260629T014234.291063Z.json] (safety.runtime_actions): runtime_actions is 'not_allowed'
+- [PASS] snapshot_20260629T014234.291063Z.json safety flag db_execution [snapshot_20260629T014234.291063Z.json] (safety.db_execution): db_execution is 'not_allowed'
+- [PASS] snapshot_20260629T014234.291063Z.json safety banner [snapshot_20260629T014234.291063Z.json] (safety.banner): Safety banner matches expected text
+- [PASS] collector_report_20260629T124256.230963Z.json parses as JSON [collector_report_20260629T124256.230963Z.json]: Valid JSON (3398 bytes)
+- [PASS] snapshot_20260629T015656.659674Z.json safe source_mode [snapshot_20260629T015656.659674Z.json] (metadata.source_mode): metadata.source_mode='fixture' is allowed
+- [PASS] snapshot_20260629T015656.659674Z.json safety flag lr_status [snapshot_20260629T015656.659674Z.json] (safety.lr_status): lr_status is 'NO-GO'
+- [PASS] snapshot_20260629T015656.659674Z.json safety flag live_status [snapshot_20260629T015656.659674Z.json] (safety.live_status): live_status is 'NO-GO'
+- [PASS] snapshot_20260629T015656.659674Z.json safety flag echtgeld_status [snapshot_20260629T015656.659674Z.json] (safety.echtgeld_status): echtgeld_status is 'NO-GO'
+- [PASS] snapshot_20260629T015656.659674Z.json safety flag runtime_actions [snapshot_20260629T015656.659674Z.json] (safety.runtime_actions): runtime_actions is 'not_allowed'
+- [PASS] snapshot_20260629T015656.659674Z.json safety flag db_execution [snapshot_20260629T015656.659674Z.json] (safety.db_execution): db_execution is 'not_allowed'
+- [PASS] snapshot_20260629T015656.659674Z.json safety banner [snapshot_20260629T015656.659674Z.json] (safety.banner): Safety banner matches expected text
+- [PASS] snapshot_20260629T015734.550802Z.json safe source_mode [snapshot_20260629T015734.550802Z.json] (metadata.source_mode): metadata.source_mode='fixture' is allowed
+- [PASS] snapshot_20260629T015734.550802Z.json safety flag lr_status [snapshot_20260629T015734.550802Z.json] (safety.lr_status): lr_status is 'NO-GO'
+- [PASS] snapshot_20260629T015734.550802Z.json safety flag live_status [snapshot_20260629T015734.550802Z.json] (safety.live_status): live_status is 'NO-GO'
+- [PASS] collector_report_20260629T124256.230963Z.json schema version [collector_report_20260629T124256.230963Z.json] (schema_version): schema_version matches evidence_harvester.collector_report.v1
+- [PASS] snapshot_20260629T015734.550802Z.json safety flag echtgeld_status [snapshot_20260629T015734.550802Z.json] (safety.echtgeld_status): echtgeld_status is 'NO-GO'
+- [PASS] snapshot_20260629T015734.550802Z.json safety flag runtime_actions [snapshot_20260629T015734.550802Z.json] (safety.runtime_actions): runtime_actions is 'not_allowed'
+- [PASS] snapshot_20260629T015734.550802Z.json safety flag db_execution [snapshot_20260629T015734.550802Z.json] (safety.db_execution): db_execution is 'not_allowed'
+- [PASS] snapshot_20260629T015734.550802Z.json safety banner [snapshot_20260629T015734.550802Z.json] (safety.banner): Safety banner matches expected text
+- [PASS] snapshot_20260629T021156.961887Z.json safe source_mode [snapshot_20260629T021156.961887Z.json] (metadata.source_mode): metadata.source_mode='fixture' is allowed
+- [PASS] snapshot_20260629T021156.961887Z.json safety flag lr_status [snapshot_20260629T021156.961887Z.json] (safety.lr_status): lr_status is 'NO-GO'
+- [PASS] snapshot_20260629T021156.961887Z.json safety flag live_status [snapshot_20260629T021156.961887Z.json] (safety.live_status): live_status is 'NO-GO'
+- [PASS] snapshot_20260629T021156.961887Z.json safety flag echtgeld_status [snapshot_20260629T021156.961887Z.json] (safety.echtgeld_status): echtgeld_status is 'NO-GO'
+- [PASS] snapshot_20260629T021156.961887Z.json safety flag runtime_actions [snapshot_20260629T021156.961887Z.json] (safety.runtime_actions): runtime_actions is 'not_allowed'
+- [PASS] snapshot_20260629T021156.961887Z.json safety flag db_execution [snapshot_20260629T021156.961887Z.json] (safety.db_execution): db_execution is 'not_allowed'
+- [PASS] collector_report_20260629T125723.136228Z.json parses as JSON [collector_report_20260629T125723.136228Z.json]: Valid JSON (3398 bytes)
+- [PASS] snapshot_20260629T021156.961887Z.json safety banner [snapshot_20260629T021156.961887Z.json] (safety.banner): Safety banner matches expected text
+- [PASS] snapshot_20260629T021234.839515Z.json safe source_mode [snapshot_20260629T021234.839515Z.json] (metadata.source_mode): metadata.source_mode='fixture' is allowed
+- [PASS] snapshot_20260629T021234.839515Z.json safety flag lr_status [snapshot_20260629T021234.839515Z.json] (safety.lr_status): lr_status is 'NO-GO'
+- [PASS] snapshot_20260629T021234.839515Z.json safety flag live_status [snapshot_20260629T021234.839515Z.json] (safety.live_status): live_status is 'NO-GO'
+- [PASS] snapshot_20260629T021234.839515Z.json safety flag echtgeld_status [snapshot_20260629T021234.839515Z.json] (safety.echtgeld_status): echtgeld_status is 'NO-GO'
+- [PASS] snapshot_20260629T021234.839515Z.json safety flag runtime_actions [snapshot_20260629T021234.839515Z.json] (safety.runtime_actions): runtime_actions is 'not_allowed'
+- [PASS] snapshot_20260629T021234.839515Z.json safety flag db_execution [snapshot_20260629T021234.839515Z.json] (safety.db_execution): db_execution is 'not_allowed'
+- [PASS] snapshot_20260629T021234.839515Z.json safety banner [snapshot_20260629T021234.839515Z.json] (safety.banner): Safety banner matches expected text
+- [PASS] snapshot_20260629T022657.261292Z.json safe source_mode [snapshot_20260629T022657.261292Z.json] (metadata.source_mode): metadata.source_mode='fixture' is allowed
+- [PASS] snapshot_20260629T022657.261292Z.json safety flag lr_status [snapshot_20260629T022657.261292Z.json] (safety.lr_status): lr_status is 'NO-GO'
+- [PASS] collector_report_20260629T125723.136228Z.json schema version [collector_report_20260629T125723.136228Z.json] (schema_version): schema_version matches evidence_harvester.collector_report.v1
+- [PASS] snapshot_20260629T022657.261292Z.json safety flag live_status [snapshot_20260629T022657.261292Z.json] (safety.live_status): live_status is 'NO-GO'
+- [PASS] snapshot_20260629T022657.261292Z.json safety flag echtgeld_status [snapshot_20260629T022657.261292Z.json] (safety.echtgeld_status): echtgeld_status is 'NO-GO'
+- [PASS] snapshot_20260629T022657.261292Z.json safety flag runtime_actions [snapshot_20260629T022657.261292Z.json] (safety.runtime_actions): runtime_actions is 'not_allowed'
+- [PASS] snapshot_20260629T022657.261292Z.json safety flag db_execution [snapshot_20260629T022657.261292Z.json] (safety.db_execution): db_execution is 'not_allowed'
+- [PASS] snapshot_20260629T022657.261292Z.json safety banner [snapshot_20260629T022657.261292Z.json] (safety.banner): Safety banner matches expected text
+- [PASS] snapshot_20260629T022735.088379Z.json safe source_mode [snapshot_20260629T022735.088379Z.json] (metadata.source_mode): metadata.source_mode='fixture' is allowed
+- [PASS] snapshot_20260629T022735.088379Z.json safety flag lr_status [snapshot_20260629T022735.088379Z.json] (safety.lr_status): lr_status is 'NO-GO'
+- [PASS] snapshot_20260629T022735.088379Z.json safety flag live_status [snapshot_20260629T022735.088379Z.json] (safety.live_status): live_status is 'NO-GO'
+- [PASS] snapshot_20260629T022735.088379Z.json safety flag echtgeld_status [snapshot_20260629T022735.088379Z.json] (safety.echtgeld_status): echtgeld_status is 'NO-GO'
+- [PASS] snapshot_20260629T022735.088379Z.json safety flag runtime_actions [snapshot_20260629T022735.088379Z.json] (safety.runtime_actions): runtime_actions is 'not_allowed'
+- [PASS] collector_report_20260629T125804.007362Z.json parses as JSON [collector_report_20260629T125804.007362Z.json]: Valid JSON (3398 bytes)
+- [PASS] snapshot_20260629T022735.088379Z.json safety flag db_execution [snapshot_20260629T022735.088379Z.json] (safety.db_execution): db_execution is 'not_allowed'
+- [PASS] snapshot_20260629T022735.088379Z.json safety banner [snapshot_20260629T022735.088379Z.json] (safety.banner): Safety banner matches expected text
+- [PASS] snapshot_20260629T024157.543626Z.json safe source_mode [snapshot_20260629T024157.543626Z.json] (metadata.source_mode): metadata.source_mode='fixture' is allowed
+- [PASS] snapshot_20260629T024157.543626Z.json safety flag lr_status [snapshot_20260629T024157.543626Z.json] (safety.lr_status): lr_status is 'NO-GO'
+- [PASS] snapshot_20260629T024157.543626Z.json safety flag live_status [snapshot_20260629T024157.543626Z.json] (safety.live_status): live_status is 'NO-GO'
+- [PASS] snapshot_20260629T024157.543626Z.json safety flag echtgeld_status [snapshot_20260629T024157.543626Z.json] (safety.echtgeld_status): echtgeld_status is 'NO-GO'
+- [PASS] snapshot_20260629T024157.543626Z.json safety flag runtime_actions [snapshot_20260629T024157.543626Z.json] (safety.runtime_actions): runtime_actions is 'not_allowed'
+- [PASS] snapshot_20260629T024157.543626Z.json safety flag db_execution [snapshot_20260629T024157.543626Z.json] (safety.db_execution): db_execution is 'not_allowed'
+- [PASS] snapshot_20260629T024157.543626Z.json safety banner [snapshot_20260629T024157.543626Z.json] (safety.banner): Safety banner matches expected text
+- [PASS] snapshot_20260629T024235.366805Z.json safe source_mode [snapshot_20260629T024235.366805Z.json] (metadata.source_mode): metadata.source_mode='fixture' is allowed
+- [PASS] collector_report_20260629T125804.007362Z.json schema version [collector_report_20260629T125804.007362Z.json] (schema_version): schema_version matches evidence_harvester.collector_report.v1
+- [PASS] snapshot_20260629T024235.366805Z.json safety flag lr_status [snapshot_20260629T024235.366805Z.json] (safety.lr_status): lr_status is 'NO-GO'
+- [PASS] snapshot_20260629T024235.366805Z.json safety flag live_status [snapshot_20260629T024235.366805Z.json] (safety.live_status): live_status is 'NO-GO'
+- [PASS] snapshot_20260629T024235.366805Z.json safety flag echtgeld_status [snapshot_20260629T024235.366805Z.json] (safety.echtgeld_status): echtgeld_status is 'NO-GO'
+- [PASS] snapshot_20260629T024235.366805Z.json safety flag runtime_actions [snapshot_20260629T024235.366805Z.json] (safety.runtime_actions): runtime_actions is 'not_allowed'
+- [PASS] snapshot_20260629T024235.366805Z.json safety flag db_execution [snapshot_20260629T024235.366805Z.json] (safety.db_execution): db_execution is 'not_allowed'
+- [PASS] snapshot_20260629T024235.366805Z.json safety banner [snapshot_20260629T024235.366805Z.json] (safety.banner): Safety banner matches expected text
+- [PASS] snapshot_20260629T025657.877035Z.json safe source_mode [snapshot_20260629T025657.877035Z.json] (metadata.source_mode): metadata.source_mode='fixture' is allowed
+- [PASS] snapshot_20260629T025657.877035Z.json safety flag lr_status [snapshot_20260629T025657.877035Z.json] (safety.lr_status): lr_status is 'NO-GO'
+- [PASS] snapshot_20260629T025657.877035Z.json safety flag live_status [snapshot_20260629T025657.877035Z.json] (safety.live_status): live_status is 'NO-GO'
+- [PASS] snapshot_20260629T025657.877035Z.json safety flag echtgeld_status [snapshot_20260629T025657.877035Z.json] (safety.echtgeld_status): echtgeld_status is 'NO-GO'
+- [PASS] collector_report_20260629T131224.181983Z.json parses as JSON [collector_report_20260629T131224.181983Z.json]: Valid JSON (3398 bytes)
+- [PASS] snapshot_20260629T025657.877035Z.json safety flag runtime_actions [snapshot_20260629T025657.877035Z.json] (safety.runtime_actions): runtime_actions is 'not_allowed'
+- [PASS] snapshot_20260629T025657.877035Z.json safety flag db_execution [snapshot_20260629T025657.877035Z.json] (safety.db_execution): db_execution is 'not_allowed'
+- [PASS] snapshot_20260629T025657.877035Z.json safety banner [snapshot_20260629T025657.877035Z.json] (safety.banner): Safety banner matches expected text
+- [PASS] snapshot_20260629T025735.674598Z.json safe source_mode [snapshot_20260629T025735.674598Z.json] (metadata.source_mode): metadata.source_mode='fixture' is allowed
+- [PASS] snapshot_20260629T025735.674598Z.json safety flag lr_status [snapshot_20260629T025735.674598Z.json] (safety.lr_status): lr_status is 'NO-GO'
+- [PASS] snapshot_20260629T025735.674598Z.json safety flag live_status [snapshot_20260629T025735.674598Z.json] (safety.live_status): live_status is 'NO-GO'
+- [PASS] snapshot_20260629T025735.674598Z.json safety flag echtgeld_status [snapshot_20260629T025735.674598Z.json] (safety.echtgeld_status): echtgeld_status is 'NO-GO'
+- [PASS] snapshot_20260629T025735.674598Z.json safety flag runtime_actions [snapshot_20260629T025735.674598Z.json] (safety.runtime_actions): runtime_actions is 'not_allowed'
+- [PASS] snapshot_20260629T025735.674598Z.json safety flag db_execution [snapshot_20260629T025735.674598Z.json] (safety.db_execution): db_execution is 'not_allowed'
+- [PASS] snapshot_20260629T025735.674598Z.json safety banner [snapshot_20260629T025735.674598Z.json] (safety.banner): Safety banner matches expected text
+- [PASS] collector_report_20260629T131224.181983Z.json schema version [collector_report_20260629T131224.181983Z.json] (schema_version): schema_version matches evidence_harvester.collector_report.v1
+- [PASS] snapshot_20260629T031158.281708Z.json safe source_mode [snapshot_20260629T031158.281708Z.json] (metadata.source_mode): metadata.source_mode='fixture' is allowed
+- [PASS] snapshot_20260629T031158.281708Z.json safety flag lr_status [snapshot_20260629T031158.281708Z.json] (safety.lr_status): lr_status is 'NO-GO'
+- [PASS] snapshot_20260629T031158.281708Z.json safety flag live_status [snapshot_20260629T031158.281708Z.json] (safety.live_status): live_status is 'NO-GO'
+- [PASS] snapshot_20260629T031158.281708Z.json safety flag echtgeld_status [snapshot_20260629T031158.281708Z.json] (safety.echtgeld_status): echtgeld_status is 'NO-GO'
+- [PASS] snapshot_20260629T031158.281708Z.json safety flag runtime_actions [snapshot_20260629T031158.281708Z.json] (safety.runtime_actions): runtime_actions is 'not_allowed'
+- [PASS] snapshot_20260629T031158.281708Z.json safety flag db_execution [snapshot_20260629T031158.281708Z.json] (safety.db_execution): db_execution is 'not_allowed'
+- [PASS] snapshot_20260629T031158.281708Z.json safety banner [snapshot_20260629T031158.281708Z.json] (safety.banner): Safety banner matches expected text
+- [PASS] snapshot_20260629T031235.977270Z.json safe source_mode [snapshot_20260629T031235.977270Z.json] (metadata.source_mode): metadata.source_mode='fixture' is allowed
+- [PASS] snapshot_20260629T031235.977270Z.json safety flag lr_status [snapshot_20260629T031235.977270Z.json] (safety.lr_status): lr_status is 'NO-GO'
+- [PASS] snapshot_20260629T031235.977270Z.json safety flag live_status [snapshot_20260629T031235.977270Z.json] (safety.live_status): live_status is 'NO-GO'
+- [PASS] collector_report_20260629T131304.889188Z.json parses as JSON [collector_report_20260629T131304.889188Z.json]: Valid JSON (3398 bytes)
+- [PASS] snapshot_20260629T031235.977270Z.json safety flag echtgeld_status [snapshot_20260629T031235.977270Z.json] (safety.echtgeld_status): echtgeld_status is 'NO-GO'
+- [PASS] snapshot_20260629T031235.977270Z.json safety flag runtime_actions [snapshot_20260629T031235.977270Z.json] (safety.runtime_actions): runtime_actions is 'not_allowed'
+- [PASS] snapshot_20260629T031235.977270Z.json safety flag db_execution [snapshot_20260629T031235.977270Z.json] (safety.db_execution): db_execution is 'not_allowed'
+- [PASS] snapshot_20260629T031235.977270Z.json safety banner [snapshot_20260629T031235.977270Z.json] (safety.banner): Safety banner matches expected text
+- [PASS] snapshot_20260629T032658.655687Z.json safe source_mode [snapshot_20260629T032658.655687Z.json] (metadata.source_mode): metadata.source_mode='fixture' is allowed
+- [PASS] snapshot_20260629T032658.655687Z.json safety flag lr_status [snapshot_20260629T032658.655687Z.json] (safety.lr_status): lr_status is 'NO-GO'
+- [PASS] snapshot_20260629T032658.655687Z.json safety flag live_status [snapshot_20260629T032658.655687Z.json] (safety.live_status): live_status is 'NO-GO'
+- [PASS] snapshot_20260629T032658.655687Z.json safety flag echtgeld_status [snapshot_20260629T032658.655687Z.json] (safety.echtgeld_status): echtgeld_status is 'NO-GO'
+- [PASS] snapshot_20260629T032658.655687Z.json safety flag runtime_actions [snapshot_20260629T032658.655687Z.json] (safety.runtime_actions): runtime_actions is 'not_allowed'
+- [PASS] snapshot_20260629T032658.655687Z.json safety flag db_execution [snapshot_20260629T032658.655687Z.json] (safety.db_execution): db_execution is 'not_allowed'
+- [PASS] collector_report_20260629T131304.889188Z.json schema version [collector_report_20260629T131304.889188Z.json] (schema_version): schema_version matches evidence_harvester.collector_report.v1
+- [PASS] snapshot_20260629T032658.655687Z.json safety banner [snapshot_20260629T032658.655687Z.json] (safety.banner): Safety banner matches expected text
+- [PASS] snapshot_20260629T032736.303267Z.json safe source_mode [snapshot_20260629T032736.303267Z.json] (metadata.source_mode): metadata.source_mode='fixture' is allowed
+- [PASS] snapshot_20260629T032736.303267Z.json safety flag lr_status [snapshot_20260629T032736.303267Z.json] (safety.lr_status): lr_status is 'NO-GO'
+- [PASS] snapshot_20260629T032736.303267Z.json safety flag live_status [snapshot_20260629T032736.303267Z.json] (safety.live_status): live_status is 'NO-GO'
+- [PASS] snapshot_20260629T032736.303267Z.json safety flag echtgeld_status [snapshot_20260629T032736.303267Z.json] (safety.echtgeld_status): echtgeld_status is 'NO-GO'
+- [PASS] snapshot_20260629T032736.303267Z.json safety flag runtime_actions [snapshot_20260629T032736.303267Z.json] (safety.runtime_actions): runtime_actions is 'not_allowed'
+- [PASS] snapshot_20260629T032736.303267Z.json safety flag db_execution [snapshot_20260629T032736.303267Z.json] (safety.db_execution): db_execution is 'not_allowed'
+- [PASS] snapshot_20260629T032736.303267Z.json safety banner [snapshot_20260629T032736.303267Z.json] (safety.banner): Safety banner matches expected text
+- [PASS] snapshot_20260629T034159.055539Z.json safe source_mode [snapshot_20260629T034159.055539Z.json] (metadata.source_mode): metadata.source_mode='fixture' is allowed
+- [PASS] snapshot_20260629T034159.055539Z.json safety flag lr_status [snapshot_20260629T034159.055539Z.json] (safety.lr_status): lr_status is 'NO-GO'
+- [PASS] collector_report_20260629T132725.882130Z.json parses as JSON [collector_report_20260629T132725.882130Z.json]: Valid JSON (3398 bytes)
+- [PASS] snapshot_20260629T034159.055539Z.json safety flag live_status [snapshot_20260629T034159.055539Z.json] (safety.live_status): live_status is 'NO-GO'
+- [PASS] snapshot_20260629T034159.055539Z.json safety flag echtgeld_status [snapshot_20260629T034159.055539Z.json] (safety.echtgeld_status): echtgeld_status is 'NO-GO'
+- [PASS] snapshot_20260629T034159.055539Z.json safety flag runtime_actions [snapshot_20260629T034159.055539Z.json] (safety.runtime_actions): runtime_actions is 'not_allowed'
+- [PASS] snapshot_20260629T034159.055539Z.json safety flag db_execution [snapshot_20260629T034159.055539Z.json] (safety.db_execution): db_execution is 'not_allowed'
+- [PASS] snapshot_20260629T034159.055539Z.json safety banner [snapshot_20260629T034159.055539Z.json] (safety.banner): Safety banner matches expected text
+- [PASS] snapshot_20260629T034236.662044Z.json safe source_mode [snapshot_20260629T034236.662044Z.json] (metadata.source_mode): metadata.source_mode='fixture' is allowed
+- [PASS] snapshot_20260629T034236.662044Z.json safety flag lr_status [snapshot_20260629T034236.662044Z.json] (safety.lr_status): lr_status is 'NO-GO'
+- [PASS] snapshot_20260629T034236.662044Z.json safety flag live_status [snapshot_20260629T034236.662044Z.json] (safety.live_status): live_status is 'NO-GO'
+- [PASS] snapshot_20260629T034236.662044Z.json safety flag echtgeld_status [snapshot_20260629T034236.662044Z.json] (safety.echtgeld_status): echtgeld_status is 'NO-GO'
+- [PASS] snapshot_20260629T034236.662044Z.json safety flag runtime_actions [snapshot_20260629T034236.662044Z.json] (safety.runtime_actions): runtime_actions is 'not_allowed'
+- [PASS] collector_report_20260629T132725.882130Z.json schema version [collector_report_20260629T132725.882130Z.json] (schema_version): schema_version matches evidence_harvester.collector_report.v1
+- [PASS] snapshot_20260629T034236.662044Z.json safety flag db_execution [snapshot_20260629T034236.662044Z.json] (safety.db_execution): db_execution is 'not_allowed'
+- [PASS] snapshot_20260629T034236.662044Z.json safety banner [snapshot_20260629T034236.662044Z.json] (safety.banner): Safety banner matches expected text
+- [PASS] snapshot_20260629T035659.403750Z.json safe source_mode [snapshot_20260629T035659.403750Z.json] (metadata.source_mode): metadata.source_mode='fixture' is allowed
+- [PASS] snapshot_20260629T035659.403750Z.json safety flag lr_status [snapshot_20260629T035659.403750Z.json] (safety.lr_status): lr_status is 'NO-GO'
+- [PASS] snapshot_20260629T035659.403750Z.json safety flag live_status [snapshot_20260629T035659.403750Z.json] (safety.live_status): live_status is 'NO-GO'
+- [PASS] snapshot_20260629T035659.403750Z.json safety flag echtgeld_status [snapshot_20260629T035659.403750Z.json] (safety.echtgeld_status): echtgeld_status is 'NO-GO'
+- [PASS] snapshot_20260629T035659.403750Z.json safety flag runtime_actions [snapshot_20260629T035659.403750Z.json] (safety.runtime_actions): runtime_actions is 'not_allowed'
+- [PASS] snapshot_20260629T035659.403750Z.json safety flag db_execution [snapshot_20260629T035659.403750Z.json] (safety.db_execution): db_execution is 'not_allowed'
+- [PASS] snapshot_20260629T035659.403750Z.json safety banner [snapshot_20260629T035659.403750Z.json] (safety.banner): Safety banner matches expected text
+- [PASS] snapshot_20260629T035736.996291Z.json safe source_mode [snapshot_20260629T035736.996291Z.json] (metadata.source_mode): metadata.source_mode='fixture' is allowed
+- [PASS] collector_report_20260629T132806.599768Z.json parses as JSON [collector_report_20260629T132806.599768Z.json]: Valid JSON (3398 bytes)
+- [PASS] snapshot_20260629T035736.996291Z.json safety flag lr_status [snapshot_20260629T035736.996291Z.json] (safety.lr_status): lr_status is 'NO-GO'
+- [PASS] snapshot_20260629T035736.996291Z.json safety flag live_status [snapshot_20260629T035736.996291Z.json] (safety.live_status): live_status is 'NO-GO'
+- [PASS] snapshot_20260629T035736.996291Z.json safety flag echtgeld_status [snapshot_20260629T035736.996291Z.json] (safety.echtgeld_status): echtgeld_status is 'NO-GO'
+- [PASS] snapshot_20260629T035736.996291Z.json safety flag runtime_actions [snapshot_20260629T035736.996291Z.json] (safety.runtime_actions): runtime_actions is 'not_allowed'
+- [PASS] snapshot_20260629T035736.996291Z.json safety flag db_execution [snapshot_20260629T035736.996291Z.json] (safety.db_execution): db_execution is 'not_allowed'
+- [PASS] snapshot_20260629T035736.996291Z.json safety banner [snapshot_20260629T035736.996291Z.json] (safety.banner): Safety banner matches expected text
+- [PASS] snapshot_20260629T041159.834473Z.json safe source_mode [snapshot_20260629T041159.834473Z.json] (metadata.source_mode): metadata.source_mode='fixture' is allowed
+- [PASS] snapshot_20260629T041159.834473Z.json safety flag lr_status [snapshot_20260629T041159.834473Z.json] (safety.lr_status): lr_status is 'NO-GO'
+- [PASS] snapshot_20260629T041159.834473Z.json safety flag live_status [snapshot_20260629T041159.834473Z.json] (safety.live_status): live_status is 'NO-GO'
+- [PASS] snapshot_20260629T041159.834473Z.json safety flag echtgeld_status [snapshot_20260629T041159.834473Z.json] (safety.echtgeld_status): echtgeld_status is 'NO-GO'
+- [PASS] collector_report_20260629T132806.599768Z.json schema version [collector_report_20260629T132806.599768Z.json] (schema_version): schema_version matches evidence_harvester.collector_report.v1
+- [PASS] snapshot_20260629T041159.834473Z.json safety flag runtime_actions [snapshot_20260629T041159.834473Z.json] (safety.runtime_actions): runtime_actions is 'not_allowed'
+- [PASS] snapshot_20260629T041159.834473Z.json safety flag db_execution [snapshot_20260629T041159.834473Z.json] (safety.db_execution): db_execution is 'not_allowed'
+- [PASS] snapshot_20260629T041159.834473Z.json safety banner [snapshot_20260629T041159.834473Z.json] (safety.banner): Safety banner matches expected text
+- [PASS] snapshot_20260629T041237.420710Z.json safe source_mode [snapshot_20260629T041237.420710Z.json] (metadata.source_mode): metadata.source_mode='fixture' is allowed
+- [PASS] snapshot_20260629T041237.420710Z.json safety flag lr_status [snapshot_20260629T041237.420710Z.json] (safety.lr_status): lr_status is 'NO-GO'
+- [PASS] snapshot_20260629T041237.420710Z.json safety flag live_status [snapshot_20260629T041237.420710Z.json] (safety.live_status): live_status is 'NO-GO'
+- [PASS] snapshot_20260629T041237.420710Z.json safety flag echtgeld_status [snapshot_20260629T041237.420710Z.json] (safety.echtgeld_status): echtgeld_status is 'NO-GO'
+- [PASS] snapshot_20260629T041237.420710Z.json safety flag runtime_actions [snapshot_20260629T041237.420710Z.json] (safety.runtime_actions): runtime_actions is 'not_allowed'
+- [PASS] snapshot_20260629T041237.420710Z.json safety flag db_execution [snapshot_20260629T041237.420710Z.json] (safety.db_execution): db_execution is 'not_allowed'
+- [PASS] snapshot_20260629T041237.420710Z.json safety banner [snapshot_20260629T041237.420710Z.json] (safety.banner): Safety banner matches expected text
+- [PASS] snapshot_20260628T202647.095428Z.json parses as JSON [snapshot_20260628T202647.095428Z.json]: Valid JSON (5634 bytes)
+- [PASS] snapshot_20260629T042700.207061Z.json safe source_mode [snapshot_20260629T042700.207061Z.json] (metadata.source_mode): metadata.source_mode='fixture' is allowed
+- [PASS] snapshot_20260629T042700.207061Z.json safety flag lr_status [snapshot_20260629T042700.207061Z.json] (safety.lr_status): lr_status is 'NO-GO'
+- [PASS] snapshot_20260629T042700.207061Z.json safety flag live_status [snapshot_20260629T042700.207061Z.json] (safety.live_status): live_status is 'NO-GO'
+- [PASS] snapshot_20260629T042700.207061Z.json safety flag echtgeld_status [snapshot_20260629T042700.207061Z.json] (safety.echtgeld_status): echtgeld_status is 'NO-GO'
+- [PASS] snapshot_20260629T042700.207061Z.json safety flag runtime_actions [snapshot_20260629T042700.207061Z.json] (safety.runtime_actions): runtime_actions is 'not_allowed'
+- [PASS] snapshot_20260629T042700.207061Z.json safety flag db_execution [snapshot_20260629T042700.207061Z.json] (safety.db_execution): db_execution is 'not_allowed'
+- [PASS] snapshot_20260629T042700.207061Z.json safety banner [snapshot_20260629T042700.207061Z.json] (safety.banner): Safety banner matches expected text
+- [PASS] snapshot_20260629T042737.755496Z.json safe source_mode [snapshot_20260629T042737.755496Z.json] (metadata.source_mode): metadata.source_mode='fixture' is allowed
+- [PASS] snapshot_20260629T042737.755496Z.json safety flag lr_status [snapshot_20260629T042737.755496Z.json] (safety.lr_status): lr_status is 'NO-GO'
+- [PASS] snapshot_20260629T042737.755496Z.json safety flag live_status [snapshot_20260629T042737.755496Z.json] (safety.live_status): live_status is 'NO-GO'
+- [PASS] snapshot_20260628T202647.095428Z.json schema version [snapshot_20260628T202647.095428Z.json] (metadata.schema_version): metadata.schema_version matches cdb.evidence_harvester.snapshot.v1
+- [PASS] snapshot_20260629T042737.755496Z.json safety flag echtgeld_status [snapshot_20260629T042737.755496Z.json] (safety.echtgeld_status): echtgeld_status is 'NO-GO'
+- [PASS] snapshot_20260629T042737.755496Z.json safety flag runtime_actions [snapshot_20260629T042737.755496Z.json] (safety.runtime_actions): runtime_actions is 'not_allowed'
+- [PASS] snapshot_20260629T042737.755496Z.json safety flag db_execution [snapshot_20260629T042737.755496Z.json] (safety.db_execution): db_execution is 'not_allowed'
+- [PASS] snapshot_20260629T042737.755496Z.json safety banner [snapshot_20260629T042737.755496Z.json] (safety.banner): Safety banner matches expected text
+- [PASS] snapshot_20260629T044200.553296Z.json safe source_mode [snapshot_20260629T044200.553296Z.json] (metadata.source_mode): metadata.source_mode='fixture' is allowed
+- [PASS] snapshot_20260629T044200.553296Z.json safety flag lr_status [snapshot_20260629T044200.553296Z.json] (safety.lr_status): lr_status is 'NO-GO'
+- [PASS] snapshot_20260629T044200.553296Z.json safety flag live_status [snapshot_20260629T044200.553296Z.json] (safety.live_status): live_status is 'NO-GO'
+- [PASS] snapshot_20260629T044200.553296Z.json safety flag echtgeld_status [snapshot_20260629T044200.553296Z.json] (safety.echtgeld_status): echtgeld_status is 'NO-GO'
+- [PASS] snapshot_20260629T044200.553296Z.json safety flag runtime_actions [snapshot_20260629T044200.553296Z.json] (safety.runtime_actions): runtime_actions is 'not_allowed'
+- [PASS] snapshot_20260629T044200.553296Z.json safety flag db_execution [snapshot_20260629T044200.553296Z.json] (safety.db_execution): db_execution is 'not_allowed'
+- [PASS] snapshot_20260628T202725.754548Z.json parses as JSON [snapshot_20260628T202725.754548Z.json]: Valid JSON (5634 bytes)
+- [PASS] snapshot_20260629T044200.553296Z.json safety banner [snapshot_20260629T044200.553296Z.json] (safety.banner): Safety banner matches expected text
+- [PASS] snapshot_20260629T044238.097659Z.json safe source_mode [snapshot_20260629T044238.097659Z.json] (metadata.source_mode): metadata.source_mode='fixture' is allowed
+- [PASS] snapshot_20260629T044238.097659Z.json safety flag lr_status [snapshot_20260629T044238.097659Z.json] (safety.lr_status): lr_status is 'NO-GO'
+- [PASS] snapshot_20260629T044238.097659Z.json safety flag live_status [snapshot_20260629T044238.097659Z.json] (safety.live_status): live_status is 'NO-GO'
+- [PASS] snapshot_20260629T044238.097659Z.json safety flag echtgeld_status [snapshot_20260629T044238.097659Z.json] (safety.echtgeld_status): echtgeld_status is 'NO-GO'
+- [PASS] snapshot_20260629T044238.097659Z.json safety flag runtime_actions [snapshot_20260629T044238.097659Z.json] (safety.runtime_actions): runtime_actions is 'not_allowed'
+- [PASS] snapshot_20260629T044238.097659Z.json safety flag db_execution [snapshot_20260629T044238.097659Z.json] (safety.db_execution): db_execution is 'not_allowed'
+- [PASS] snapshot_20260629T044238.097659Z.json safety banner [snapshot_20260629T044238.097659Z.json] (safety.banner): Safety banner matches expected text
+- [PASS] snapshot_20260629T045700.953009Z.json safe source_mode [snapshot_20260629T045700.953009Z.json] (metadata.source_mode): metadata.source_mode='fixture' is allowed
+- [PASS] snapshot_20260629T045700.953009Z.json safety flag lr_status [snapshot_20260629T045700.953009Z.json] (safety.lr_status): lr_status is 'NO-GO'
+- [PASS] snapshot_20260628T202725.754548Z.json schema version [snapshot_20260628T202725.754548Z.json] (metadata.schema_version): metadata.schema_version matches cdb.evidence_harvester.snapshot.v1
+- [PASS] snapshot_20260629T045700.953009Z.json safety flag live_status [snapshot_20260629T045700.953009Z.json] (safety.live_status): live_status is 'NO-GO'
+- [PASS] snapshot_20260629T045700.953009Z.json safety flag echtgeld_status [snapshot_20260629T045700.953009Z.json] (safety.echtgeld_status): echtgeld_status is 'NO-GO'
+- [PASS] snapshot_20260629T045700.953009Z.json safety flag runtime_actions [snapshot_20260629T045700.953009Z.json] (safety.runtime_actions): runtime_actions is 'not_allowed'
+- [PASS] snapshot_20260629T045700.953009Z.json safety flag db_execution [snapshot_20260629T045700.953009Z.json] (safety.db_execution): db_execution is 'not_allowed'
+- [PASS] snapshot_20260629T045700.953009Z.json safety banner [snapshot_20260629T045700.953009Z.json] (safety.banner): Safety banner matches expected text
+- [PASS] snapshot_20260629T045738.476486Z.json safe source_mode [snapshot_20260629T045738.476486Z.json] (metadata.source_mode): metadata.source_mode='fixture' is allowed
+- [PASS] snapshot_20260629T045738.476486Z.json safety flag lr_status [snapshot_20260629T045738.476486Z.json] (safety.lr_status): lr_status is 'NO-GO'
+- [PASS] snapshot_20260629T045738.476486Z.json safety flag live_status [snapshot_20260629T045738.476486Z.json] (safety.live_status): live_status is 'NO-GO'
+- [PASS] snapshot_20260629T045738.476486Z.json safety flag echtgeld_status [snapshot_20260629T045738.476486Z.json] (safety.echtgeld_status): echtgeld_status is 'NO-GO'
+- [PASS] snapshot_20260629T045738.476486Z.json safety flag runtime_actions [snapshot_20260629T045738.476486Z.json] (safety.runtime_actions): runtime_actions is 'not_allowed'
+- [PASS] snapshot_20260628T204147.136310Z.json parses as JSON [snapshot_20260628T204147.136310Z.json]: Valid JSON (5634 bytes)
+- [PASS] snapshot_20260629T045738.476486Z.json safety flag db_execution [snapshot_20260629T045738.476486Z.json] (safety.db_execution): db_execution is 'not_allowed'
+- [PASS] snapshot_20260629T045738.476486Z.json safety banner [snapshot_20260629T045738.476486Z.json] (safety.banner): Safety banner matches expected text
+- [PASS] snapshot_20260629T051201.371370Z.json safe source_mode [snapshot_20260629T051201.371370Z.json] (metadata.source_mode): metadata.source_mode='fixture' is allowed
+- [PASS] snapshot_20260629T051201.371370Z.json safety flag lr_status [snapshot_20260629T051201.371370Z.json] (safety.lr_status): lr_status is 'NO-GO'
+- [PASS] snapshot_20260629T051201.371370Z.json safety flag live_status [snapshot_20260629T051201.371370Z.json] (safety.live_status): live_status is 'NO-GO'
+- [PASS] snapshot_20260629T051201.371370Z.json safety flag echtgeld_status [snapshot_20260629T051201.371370Z.json] (safety.echtgeld_status): echtgeld_status is 'NO-GO'
+- [PASS] snapshot_20260629T051201.371370Z.json safety flag runtime_actions [snapshot_20260629T051201.371370Z.json] (safety.runtime_actions): runtime_actions is 'not_allowed'
+- [PASS] snapshot_20260629T051201.371370Z.json safety flag db_execution [snapshot_20260629T051201.371370Z.json] (safety.db_execution): db_execution is 'not_allowed'
+- [PASS] snapshot_20260629T051201.371370Z.json safety banner [snapshot_20260629T051201.371370Z.json] (safety.banner): Safety banner matches expected text
+- [PASS] snapshot_20260629T051238.868752Z.json safe source_mode [snapshot_20260629T051238.868752Z.json] (metadata.source_mode): metadata.source_mode='fixture' is allowed
+- [PASS] snapshot_20260628T204147.136310Z.json schema version [snapshot_20260628T204147.136310Z.json] (metadata.schema_version): metadata.schema_version matches cdb.evidence_harvester.snapshot.v1
+- [PASS] snapshot_20260629T051238.868752Z.json safety flag lr_status [snapshot_20260629T051238.868752Z.json] (safety.lr_status): lr_status is 'NO-GO'
+- [PASS] snapshot_20260629T051238.868752Z.json safety flag live_status [snapshot_20260629T051238.868752Z.json] (safety.live_status): live_status is 'NO-GO'
+- [PASS] snapshot_20260629T051238.868752Z.json safety flag echtgeld_status [snapshot_20260629T051238.868752Z.json] (safety.echtgeld_status): echtgeld_status is 'NO-GO'
+- [PASS] snapshot_20260629T051238.868752Z.json safety flag runtime_actions [snapshot_20260629T051238.868752Z.json] (safety.runtime_actions): runtime_actions is 'not_allowed'
+- [PASS] snapshot_20260629T051238.868752Z.json safety flag db_execution [snapshot_20260629T051238.868752Z.json] (safety.db_execution): db_execution is 'not_allowed'
+- [PASS] snapshot_20260629T051238.868752Z.json safety banner [snapshot_20260629T051238.868752Z.json] (safety.banner): Safety banner matches expected text
+- [PASS] snapshot_20260629T052701.813024Z.json safe source_mode [snapshot_20260629T052701.813024Z.json] (metadata.source_mode): metadata.source_mode='fixture' is allowed
+- [PASS] snapshot_20260629T052701.813024Z.json safety flag lr_status [snapshot_20260629T052701.813024Z.json] (safety.lr_status): lr_status is 'NO-GO'
+- [PASS] snapshot_20260629T052701.813024Z.json safety flag live_status [snapshot_20260629T052701.813024Z.json] (safety.live_status): live_status is 'NO-GO'
+- [PASS] snapshot_20260629T052701.813024Z.json safety flag echtgeld_status [snapshot_20260629T052701.813024Z.json] (safety.echtgeld_status): echtgeld_status is 'NO-GO'
+- [PASS] snapshot_20260628T204225.822673Z.json parses as JSON [snapshot_20260628T204225.822673Z.json]: Valid JSON (5634 bytes)
+- [PASS] snapshot_20260629T052701.813024Z.json safety flag runtime_actions [snapshot_20260629T052701.813024Z.json] (safety.runtime_actions): runtime_actions is 'not_allowed'
+- [PASS] snapshot_20260629T052701.813024Z.json safety flag db_execution [snapshot_20260629T052701.813024Z.json] (safety.db_execution): db_execution is 'not_allowed'
+- [PASS] snapshot_20260629T052701.813024Z.json safety banner [snapshot_20260629T052701.813024Z.json] (safety.banner): Safety banner matches expected text
+- [PASS] snapshot_20260629T052739.269183Z.json safe source_mode [snapshot_20260629T052739.269183Z.json] (metadata.source_mode): metadata.source_mode='fixture' is allowed
+- [PASS] snapshot_20260629T052739.269183Z.json safety flag lr_status [snapshot_20260629T052739.269183Z.json] (safety.lr_status): lr_status is 'NO-GO'
+- [PASS] snapshot_20260629T052739.269183Z.json safety flag live_status [snapshot_20260629T052739.269183Z.json] (safety.live_status): live_status is 'NO-GO'
+- [PASS] snapshot_20260629T052739.269183Z.json safety flag echtgeld_status [snapshot_20260629T052739.269183Z.json] (safety.echtgeld_status): echtgeld_status is 'NO-GO'
+- [PASS] snapshot_20260629T052739.269183Z.json safety flag runtime_actions [snapshot_20260629T052739.269183Z.json] (safety.runtime_actions): runtime_actions is 'not_allowed'
+- [PASS] snapshot_20260629T052739.269183Z.json safety flag db_execution [snapshot_20260629T052739.269183Z.json] (safety.db_execution): db_execution is 'not_allowed'
+- [PASS] snapshot_20260629T052739.269183Z.json safety banner [snapshot_20260629T052739.269183Z.json] (safety.banner): Safety banner matches expected text
+- [PASS] snapshot_20260628T204225.822673Z.json schema version [snapshot_20260628T204225.822673Z.json] (metadata.schema_version): metadata.schema_version matches cdb.evidence_harvester.snapshot.v1
+- [PASS] snapshot_20260629T054202.209467Z.json safe source_mode [snapshot_20260629T054202.209467Z.json] (metadata.source_mode): metadata.source_mode='fixture' is allowed
+- [PASS] snapshot_20260629T054202.209467Z.json safety flag lr_status [snapshot_20260629T054202.209467Z.json] (safety.lr_status): lr_status is 'NO-GO'
+- [PASS] snapshot_20260629T054202.209467Z.json safety flag live_status [snapshot_20260629T054202.209467Z.json] (safety.live_status): live_status is 'NO-GO'
+- [PASS] snapshot_20260629T054202.209467Z.json safety flag echtgeld_status [snapshot_20260629T054202.209467Z.json] (safety.echtgeld_status): echtgeld_status is 'NO-GO'
+- [PASS] snapshot_20260629T054202.209467Z.json safety flag runtime_actions [snapshot_20260629T054202.209467Z.json] (safety.runtime_actions): runtime_actions is 'not_allowed'
+- [PASS] snapshot_20260629T054202.209467Z.json safety flag db_execution [snapshot_20260629T054202.209467Z.json] (safety.db_execution): db_execution is 'not_allowed'
+- [PASS] snapshot_20260629T054202.209467Z.json safety banner [snapshot_20260629T054202.209467Z.json] (safety.banner): Safety banner matches expected text
+- [PASS] snapshot_20260629T054239.631909Z.json safe source_mode [snapshot_20260629T054239.631909Z.json] (metadata.source_mode): metadata.source_mode='fixture' is allowed
+- [PASS] snapshot_20260629T054239.631909Z.json safety flag lr_status [snapshot_20260629T054239.631909Z.json] (safety.lr_status): lr_status is 'NO-GO'
+- [PASS] snapshot_20260629T054239.631909Z.json safety flag live_status [snapshot_20260629T054239.631909Z.json] (safety.live_status): live_status is 'NO-GO'
+- [PASS] snapshot_20260628T205647.228228Z.json parses as JSON [snapshot_20260628T205647.228228Z.json]: Valid JSON (5634 bytes)
+- [PASS] snapshot_20260629T054239.631909Z.json safety flag echtgeld_status [snapshot_20260629T054239.631909Z.json] (safety.echtgeld_status): echtgeld_status is 'NO-GO'
+- [PASS] snapshot_20260629T054239.631909Z.json safety flag runtime_actions [snapshot_20260629T054239.631909Z.json] (safety.runtime_actions): runtime_actions is 'not_allowed'
+- [PASS] snapshot_20260629T054239.631909Z.json safety flag db_execution [snapshot_20260629T054239.631909Z.json] (safety.db_execution): db_execution is 'not_allowed'
+- [PASS] snapshot_20260629T054239.631909Z.json safety banner [snapshot_20260629T054239.631909Z.json] (safety.banner): Safety banner matches expected text
+- [PASS] snapshot_20260629T055702.593495Z.json safe source_mode [snapshot_20260629T055702.593495Z.json] (metadata.source_mode): metadata.source_mode='fixture' is allowed
+- [PASS] snapshot_20260629T055702.593495Z.json safety flag lr_status [snapshot_20260629T055702.593495Z.json] (safety.lr_status): lr_status is 'NO-GO'
+- [PASS] snapshot_20260629T055702.593495Z.json safety flag live_status [snapshot_20260629T055702.593495Z.json] (safety.live_status): live_status is 'NO-GO'
+- [PASS] snapshot_20260629T055702.593495Z.json safety flag echtgeld_status [snapshot_20260629T055702.593495Z.json] (safety.echtgeld_status): echtgeld_status is 'NO-GO'
+- [PASS] snapshot_20260629T055702.593495Z.json safety flag runtime_actions [snapshot_20260629T055702.593495Z.json] (safety.runtime_actions): runtime_actions is 'not_allowed'
+- [PASS] snapshot_20260629T055702.593495Z.json safety flag db_execution [snapshot_20260629T055702.593495Z.json] (safety.db_execution): db_execution is 'not_allowed'
+- [PASS] snapshot_20260628T205647.228228Z.json schema version [snapshot_20260628T205647.228228Z.json] (metadata.schema_version): metadata.schema_version matches cdb.evidence_harvester.snapshot.v1
+- [PASS] snapshot_20260629T055702.593495Z.json safety banner [snapshot_20260629T055702.593495Z.json] (safety.banner): Safety banner matches expected text
+- [PASS] snapshot_20260629T055740.036252Z.json safe source_mode [snapshot_20260629T055740.036252Z.json] (metadata.source_mode): metadata.source_mode='fixture' is allowed
+- [PASS] snapshot_20260629T055740.036252Z.json safety flag lr_status [snapshot_20260629T055740.036252Z.json] (safety.lr_status): lr_status is 'NO-GO'
+- [PASS] snapshot_20260629T055740.036252Z.json safety flag live_status [snapshot_20260629T055740.036252Z.json] (safety.live_status): live_status is 'NO-GO'
+- [PASS] snapshot_20260629T055740.036252Z.json safety flag echtgeld_status [snapshot_20260629T055740.036252Z.json] (safety.echtgeld_status): echtgeld_status is 'NO-GO'
+- [PASS] snapshot_20260629T055740.036252Z.json safety flag runtime_actions [snapshot_20260629T055740.036252Z.json] (safety.runtime_actions): runtime_actions is 'not_allowed'
+- [PASS] snapshot_20260629T055740.036252Z.json safety flag db_execution [snapshot_20260629T055740.036252Z.json] (safety.db_execution): db_execution is 'not_allowed'
+- [PASS] snapshot_20260629T055740.036252Z.json safety banner [snapshot_20260629T055740.036252Z.json] (safety.banner): Safety banner matches expected text
+- [PASS] snapshot_20260629T061203.038198Z.json safe source_mode [snapshot_20260629T061203.038198Z.json] (metadata.source_mode): metadata.source_mode='fixture' is allowed
+- [PASS] snapshot_20260629T061203.038198Z.json safety flag lr_status [snapshot_20260629T061203.038198Z.json] (safety.lr_status): lr_status is 'NO-GO'
+- [PASS] snapshot_20260628T205725.879579Z.json parses as JSON [snapshot_20260628T205725.879579Z.json]: Valid JSON (5634 bytes)
+- [PASS] snapshot_20260629T061203.038198Z.json safety flag live_status [snapshot_20260629T061203.038198Z.json] (safety.live_status): live_status is 'NO-GO'
+- [PASS] snapshot_20260629T061203.038198Z.json safety flag echtgeld_status [snapshot_20260629T061203.038198Z.json] (safety.echtgeld_status): echtgeld_status is 'NO-GO'
+- [PASS] snapshot_20260629T061203.038198Z.json safety flag runtime_actions [snapshot_20260629T061203.038198Z.json] (safety.runtime_actions): runtime_actions is 'not_allowed'
+- [PASS] snapshot_20260629T061203.038198Z.json safety flag db_execution [snapshot_20260629T061203.038198Z.json] (safety.db_execution): db_execution is 'not_allowed'
+- [PASS] snapshot_20260629T061203.038198Z.json safety banner [snapshot_20260629T061203.038198Z.json] (safety.banner): Safety banner matches expected text
+- [PASS] snapshot_20260629T061240.476343Z.json safe source_mode [snapshot_20260629T061240.476343Z.json] (metadata.source_mode): metadata.source_mode='fixture' is allowed
+- [PASS] snapshot_20260629T061240.476343Z.json safety flag lr_status [snapshot_20260629T061240.476343Z.json] (safety.lr_status): lr_status is 'NO-GO'
+- [PASS] snapshot_20260629T061240.476343Z.json safety flag live_status [snapshot_20260629T061240.476343Z.json] (safety.live_status): live_status is 'NO-GO'
+- [PASS] snapshot_20260629T061240.476343Z.json safety flag echtgeld_status [snapshot_20260629T061240.476343Z.json] (safety.echtgeld_status): echtgeld_status is 'NO-GO'
+- [PASS] snapshot_20260629T061240.476343Z.json safety flag runtime_actions [snapshot_20260629T061240.476343Z.json] (safety.runtime_actions): runtime_actions is 'not_allowed'
+- [PASS] snapshot_20260628T205725.879579Z.json schema version [snapshot_20260628T205725.879579Z.json] (metadata.schema_version): metadata.schema_version matches cdb.evidence_harvester.snapshot.v1
+- [PASS] snapshot_20260629T061240.476343Z.json safety flag db_execution [snapshot_20260629T061240.476343Z.json] (safety.db_execution): db_execution is 'not_allowed'
+- [PASS] snapshot_20260629T061240.476343Z.json safety banner [snapshot_20260629T061240.476343Z.json] (safety.banner): Safety banner matches expected text
+- [PASS] snapshot_20260629T062703.502916Z.json safe source_mode [snapshot_20260629T062703.502916Z.json] (metadata.source_mode): metadata.source_mode='fixture' is allowed
+- [PASS] snapshot_20260629T062703.502916Z.json safety flag lr_status [snapshot_20260629T062703.502916Z.json] (safety.lr_status): lr_status is 'NO-GO'
+- [PASS] snapshot_20260629T062703.502916Z.json safety flag live_status [snapshot_20260629T062703.502916Z.json] (safety.live_status): live_status is 'NO-GO'
+- [PASS] snapshot_20260629T062703.502916Z.json safety flag echtgeld_status [snapshot_20260629T062703.502916Z.json] (safety.echtgeld_status): echtgeld_status is 'NO-GO'
+- [PASS] snapshot_20260629T062703.502916Z.json safety flag runtime_actions [snapshot_20260629T062703.502916Z.json] (safety.runtime_actions): runtime_actions is 'not_allowed'
+- [PASS] snapshot_20260629T062703.502916Z.json safety flag db_execution [snapshot_20260629T062703.502916Z.json] (safety.db_execution): db_execution is 'not_allowed'
+- [PASS] snapshot_20260629T062703.502916Z.json safety banner [snapshot_20260629T062703.502916Z.json] (safety.banner): Safety banner matches expected text
+- [PASS] snapshot_20260629T062740.937526Z.json safe source_mode [snapshot_20260629T062740.937526Z.json] (metadata.source_mode): metadata.source_mode='fixture' is allowed
+- [PASS] snapshot_20260628T211147.340626Z.json parses as JSON [snapshot_20260628T211147.340626Z.json]: Valid JSON (5634 bytes)
+- [PASS] snapshot_20260629T062740.937526Z.json safety flag lr_status [snapshot_20260629T062740.937526Z.json] (safety.lr_status): lr_status is 'NO-GO'
+- [PASS] snapshot_20260629T062740.937526Z.json safety flag live_status [snapshot_20260629T062740.937526Z.json] (safety.live_status): live_status is 'NO-GO'
+- [PASS] snapshot_20260629T062740.937526Z.json safety flag echtgeld_status [snapshot_20260629T062740.937526Z.json] (safety.echtgeld_status): echtgeld_status is 'NO-GO'
+- [PASS] snapshot_20260629T062740.937526Z.json safety flag runtime_actions [snapshot_20260629T062740.937526Z.json] (safety.runtime_actions): runtime_actions is 'not_allowed'
+- [PASS] snapshot_20260629T062740.937526Z.json safety flag db_execution [snapshot_20260629T062740.937526Z.json] (safety.db_execution): db_execution is 'not_allowed'
+- [PASS] snapshot_20260629T062740.937526Z.json safety banner [snapshot_20260629T062740.937526Z.json] (safety.banner): Safety banner matches expected text
+- [PASS] snapshot_20260629T064203.999298Z.json safe source_mode [snapshot_20260629T064203.999298Z.json] (metadata.source_mode): metadata.source_mode='fixture' is allowed
+- [PASS] snapshot_20260629T064203.999298Z.json safety flag lr_status [snapshot_20260629T064203.999298Z.json] (safety.lr_status): lr_status is 'NO-GO'
+- [PASS] snapshot_20260629T064203.999298Z.json safety flag live_status [snapshot_20260629T064203.999298Z.json] (safety.live_status): live_status is 'NO-GO'
+- [PASS] snapshot_20260629T064203.999298Z.json safety flag echtgeld_status [snapshot_20260629T064203.999298Z.json] (safety.echtgeld_status): echtgeld_status is 'NO-GO'
+- [PASS] snapshot_20260628T211147.340626Z.json schema version [snapshot_20260628T211147.340626Z.json] (metadata.schema_version): metadata.schema_version matches cdb.evidence_harvester.snapshot.v1
+- [PASS] snapshot_20260629T064203.999298Z.json safety flag runtime_actions [snapshot_20260629T064203.999298Z.json] (safety.runtime_actions): runtime_actions is 'not_allowed'
+- [PASS] snapshot_20260629T064203.999298Z.json safety flag db_execution [snapshot_20260629T064203.999298Z.json] (safety.db_execution): db_execution is 'not_allowed'
+- [PASS] snapshot_20260629T064203.999298Z.json safety banner [snapshot_20260629T064203.999298Z.json] (safety.banner): Safety banner matches expected text
+- [PASS] snapshot_20260629T064241.410579Z.json safe source_mode [snapshot_20260629T064241.410579Z.json] (metadata.source_mode): metadata.source_mode='fixture' is allowed
+- [PASS] snapshot_20260629T064241.410579Z.json safety flag lr_status [snapshot_20260629T064241.410579Z.json] (safety.lr_status): lr_status is 'NO-GO'
+- [PASS] snapshot_20260629T064241.410579Z.json safety flag live_status [snapshot_20260629T064241.410579Z.json] (safety.live_status): live_status is 'NO-GO'
+- [PASS] snapshot_20260629T064241.410579Z.json safety flag echtgeld_status [snapshot_20260629T064241.410579Z.json] (safety.echtgeld_status): echtgeld_status is 'NO-GO'
+- [PASS] snapshot_20260629T064241.410579Z.json safety flag runtime_actions [snapshot_20260629T064241.410579Z.json] (safety.runtime_actions): runtime_actions is 'not_allowed'
+- [PASS] snapshot_20260629T064241.410579Z.json safety flag db_execution [snapshot_20260629T064241.410579Z.json] (safety.db_execution): db_execution is 'not_allowed'
+- [PASS] snapshot_20260629T064241.410579Z.json safety banner [snapshot_20260629T064241.410579Z.json] (safety.banner): Safety banner matches expected text
+- [PASS] snapshot_20260628T211225.977739Z.json parses as JSON [snapshot_20260628T211225.977739Z.json]: Valid JSON (5634 bytes)
+- [PASS] snapshot_20260629T065704.492040Z.json safe source_mode [snapshot_20260629T065704.492040Z.json] (metadata.source_mode): metadata.source_mode='fixture' is allowed
+- [PASS] snapshot_20260629T065704.492040Z.json safety flag lr_status [snapshot_20260629T065704.492040Z.json] (safety.lr_status): lr_status is 'NO-GO'
+- [PASS] snapshot_20260629T065704.492040Z.json safety flag live_status [snapshot_20260629T065704.492040Z.json] (safety.live_status): live_status is 'NO-GO'
+- [PASS] snapshot_20260629T065704.492040Z.json safety flag echtgeld_status [snapshot_20260629T065704.492040Z.json] (safety.echtgeld_status): echtgeld_status is 'NO-GO'
+- [PASS] snapshot_20260629T065704.492040Z.json safety flag runtime_actions [snapshot_20260629T065704.492040Z.json] (safety.runtime_actions): runtime_actions is 'not_allowed'
+- [PASS] snapshot_20260629T065704.492040Z.json safety flag db_execution [snapshot_20260629T065704.492040Z.json] (safety.db_execution): db_execution is 'not_allowed'
+- [PASS] snapshot_20260629T065704.492040Z.json safety banner [snapshot_20260629T065704.492040Z.json] (safety.banner): Safety banner matches expected text
+- [PASS] snapshot_20260629T065741.876917Z.json safe source_mode [snapshot_20260629T065741.876917Z.json] (metadata.source_mode): metadata.source_mode='fixture' is allowed
+- [PASS] snapshot_20260629T065741.876917Z.json safety flag lr_status [snapshot_20260629T065741.876917Z.json] (safety.lr_status): lr_status is 'NO-GO'
+- [PASS] snapshot_20260629T065741.876917Z.json safety flag live_status [snapshot_20260629T065741.876917Z.json] (safety.live_status): live_status is 'NO-GO'
+- [PASS] snapshot_20260628T211225.977739Z.json schema version [snapshot_20260628T211225.977739Z.json] (metadata.schema_version): metadata.schema_version matches cdb.evidence_harvester.snapshot.v1
+- [PASS] snapshot_20260629T065741.876917Z.json safety flag echtgeld_status [snapshot_20260629T065741.876917Z.json] (safety.echtgeld_status): echtgeld_status is 'NO-GO'
+- [PASS] snapshot_20260629T065741.876917Z.json safety flag runtime_actions [snapshot_20260629T065741.876917Z.json] (safety.runtime_actions): runtime_actions is 'not_allowed'
+- [PASS] snapshot_20260629T065741.876917Z.json safety flag db_execution [snapshot_20260629T065741.876917Z.json] (safety.db_execution): db_execution is 'not_allowed'
+- [PASS] snapshot_20260629T065741.876917Z.json safety banner [snapshot_20260629T065741.876917Z.json] (safety.banner): Safety banner matches expected text
+- [PASS] snapshot_20260629T071205.045950Z.json safe source_mode [snapshot_20260629T071205.045950Z.json] (metadata.source_mode): metadata.source_mode='fixture' is allowed
+- [PASS] snapshot_20260629T071205.045950Z.json safety flag lr_status [snapshot_20260629T071205.045950Z.json] (safety.lr_status): lr_status is 'NO-GO'
+- [PASS] snapshot_20260629T071205.045950Z.json safety flag live_status [snapshot_20260629T071205.045950Z.json] (safety.live_status): live_status is 'NO-GO'
+- [PASS] snapshot_20260629T071205.045950Z.json safety flag echtgeld_status [snapshot_20260629T071205.045950Z.json] (safety.echtgeld_status): echtgeld_status is 'NO-GO'
+- [PASS] snapshot_20260629T071205.045950Z.json safety flag runtime_actions [snapshot_20260629T071205.045950Z.json] (safety.runtime_actions): runtime_actions is 'not_allowed'
+- [PASS] snapshot_20260629T071205.045950Z.json safety flag db_execution [snapshot_20260629T071205.045950Z.json] (safety.db_execution): db_execution is 'not_allowed'
+- [PASS] snapshot_20260628T212647.438144Z.json parses as JSON [snapshot_20260628T212647.438144Z.json]: Valid JSON (5634 bytes)
+- [PASS] snapshot_20260629T071205.045950Z.json safety banner [snapshot_20260629T071205.045950Z.json] (safety.banner): Safety banner matches expected text
+- [PASS] snapshot_20260629T071242.337870Z.json safe source_mode [snapshot_20260629T071242.337870Z.json] (metadata.source_mode): metadata.source_mode='fixture' is allowed
+- [PASS] snapshot_20260629T071242.337870Z.json safety flag lr_status [snapshot_20260629T071242.337870Z.json] (safety.lr_status): lr_status is 'NO-GO'
+- [PASS] snapshot_20260629T071242.337870Z.json safety flag live_status [snapshot_20260629T071242.337870Z.json] (safety.live_status): live_status is 'NO-GO'
+- [PASS] snapshot_20260629T071242.337870Z.json safety flag echtgeld_status [snapshot_20260629T071242.337870Z.json] (safety.echtgeld_status): echtgeld_status is 'NO-GO'
+- [PASS] snapshot_20260629T071242.337870Z.json safety flag runtime_actions [snapshot_20260629T071242.337870Z.json] (safety.runtime_actions): runtime_actions is 'not_allowed'
+- [PASS] snapshot_20260629T071242.337870Z.json safety flag db_execution [snapshot_20260629T071242.337870Z.json] (safety.db_execution): db_execution is 'not_allowed'
+- [PASS] snapshot_20260629T071242.337870Z.json safety banner [snapshot_20260629T071242.337870Z.json] (safety.banner): Safety banner matches expected text
+- [PASS] snapshot_20260629T072705.612761Z.json safe source_mode [snapshot_20260629T072705.612761Z.json] (metadata.source_mode): metadata.source_mode='fixture' is allowed
+- [PASS] snapshot_20260629T072705.612761Z.json safety flag lr_status [snapshot_20260629T072705.612761Z.json] (safety.lr_status): lr_status is 'NO-GO'
+- [PASS] snapshot_20260628T212647.438144Z.json schema version [snapshot_20260628T212647.438144Z.json] (metadata.schema_version): metadata.schema_version matches cdb.evidence_harvester.snapshot.v1
+- [PASS] snapshot_20260629T072705.612761Z.json safety flag live_status [snapshot_20260629T072705.612761Z.json] (safety.live_status): live_status is 'NO-GO'
+- [PASS] snapshot_20260629T072705.612761Z.json safety flag echtgeld_status [snapshot_20260629T072705.612761Z.json] (safety.echtgeld_status): echtgeld_status is 'NO-GO'
+- [PASS] snapshot_20260629T072705.612761Z.json safety flag runtime_actions [snapshot_20260629T072705.612761Z.json] (safety.runtime_actions): runtime_actions is 'not_allowed'
+- [PASS] snapshot_20260629T072705.612761Z.json safety flag db_execution [snapshot_20260629T072705.612761Z.json] (safety.db_execution): db_execution is 'not_allowed'
+- [PASS] snapshot_20260629T072705.612761Z.json safety banner [snapshot_20260629T072705.612761Z.json] (safety.banner): Safety banner matches expected text
+- [PASS] snapshot_20260629T072742.814909Z.json safe source_mode [snapshot_20260629T072742.814909Z.json] (metadata.source_mode): metadata.source_mode='fixture' is allowed
+- [PASS] snapshot_20260629T072742.814909Z.json safety flag lr_status [snapshot_20260629T072742.814909Z.json] (safety.lr_status): lr_status is 'NO-GO'
+- [PASS] snapshot_20260629T072742.814909Z.json safety flag live_status [snapshot_20260629T072742.814909Z.json] (safety.live_status): live_status is 'NO-GO'
+- [PASS] snapshot_20260629T072742.814909Z.json safety flag echtgeld_status [snapshot_20260629T072742.814909Z.json] (safety.echtgeld_status): echtgeld_status is 'NO-GO'
+- [PASS] snapshot_20260629T072742.814909Z.json safety flag runtime_actions [snapshot_20260629T072742.814909Z.json] (safety.runtime_actions): runtime_actions is 'not_allowed'
+- [PASS] snapshot_20260628T212726.085888Z.json parses as JSON [snapshot_20260628T212726.085888Z.json]: Valid JSON (5634 bytes)
+- [PASS] snapshot_20260629T072742.814909Z.json safety flag db_execution [snapshot_20260629T072742.814909Z.json] (safety.db_execution): db_execution is 'not_allowed'
+- [PASS] snapshot_20260629T072742.814909Z.json safety banner [snapshot_20260629T072742.814909Z.json] (safety.banner): Safety banner matches expected text
+- [PASS] snapshot_20260629T074206.239038Z.json safe source_mode [snapshot_20260629T074206.239038Z.json] (metadata.source_mode): metadata.source_mode='fixture' is allowed
+- [PASS] snapshot_20260629T074206.239038Z.json safety flag lr_status [snapshot_20260629T074206.239038Z.json] (safety.lr_status): lr_status is 'NO-GO'
+- [PASS] snapshot_20260629T074206.239038Z.json safety flag live_status [snapshot_20260629T074206.239038Z.json] (safety.live_status): live_status is 'NO-GO'
+- [PASS] snapshot_20260629T074206.239038Z.json safety flag echtgeld_status [snapshot_20260629T074206.239038Z.json] (safety.echtgeld_status): echtgeld_status is 'NO-GO'
+- [PASS] snapshot_20260629T074206.239038Z.json safety flag runtime_actions [snapshot_20260629T074206.239038Z.json] (safety.runtime_actions): runtime_actions is 'not_allowed'
+- [PASS] snapshot_20260629T074206.239038Z.json safety flag db_execution [snapshot_20260629T074206.239038Z.json] (safety.db_execution): db_execution is 'not_allowed'
+- [PASS] snapshot_20260629T074206.239038Z.json safety banner [snapshot_20260629T074206.239038Z.json] (safety.banner): Safety banner matches expected text
+- [PASS] snapshot_20260629T074243.386975Z.json safe source_mode [snapshot_20260629T074243.386975Z.json] (metadata.source_mode): metadata.source_mode='fixture' is allowed
+- [PASS] snapshot_20260628T212726.085888Z.json schema version [snapshot_20260628T212726.085888Z.json] (metadata.schema_version): metadata.schema_version matches cdb.evidence_harvester.snapshot.v1
+- [PASS] snapshot_20260629T074243.386975Z.json safety flag lr_status [snapshot_20260629T074243.386975Z.json] (safety.lr_status): lr_status is 'NO-GO'
+- [PASS] snapshot_20260629T074243.386975Z.json safety flag live_status [snapshot_20260629T074243.386975Z.json] (safety.live_status): live_status is 'NO-GO'
+- [PASS] snapshot_20260629T074243.386975Z.json safety flag echtgeld_status [snapshot_20260629T074243.386975Z.json] (safety.echtgeld_status): echtgeld_status is 'NO-GO'
+- [PASS] snapshot_20260629T074243.386975Z.json safety flag runtime_actions [snapshot_20260629T074243.386975Z.json] (safety.runtime_actions): runtime_actions is 'not_allowed'
+- [PASS] snapshot_20260629T074243.386975Z.json safety flag db_execution [snapshot_20260629T074243.386975Z.json] (safety.db_execution): db_execution is 'not_allowed'
+- [PASS] snapshot_20260629T074243.386975Z.json safety banner [snapshot_20260629T074243.386975Z.json] (safety.banner): Safety banner matches expected text
+- [PASS] snapshot_20260629T075706.941690Z.json safe source_mode [snapshot_20260629T075706.941690Z.json] (metadata.source_mode): metadata.source_mode='fixture' is allowed
+- [PASS] snapshot_20260629T075706.941690Z.json safety flag lr_status [snapshot_20260629T075706.941690Z.json] (safety.lr_status): lr_status is 'NO-GO'
+- [PASS] snapshot_20260629T075706.941690Z.json safety flag live_status [snapshot_20260629T075706.941690Z.json] (safety.live_status): live_status is 'NO-GO'
+- [PASS] snapshot_20260629T075706.941690Z.json safety flag echtgeld_status [snapshot_20260629T075706.941690Z.json] (safety.echtgeld_status): echtgeld_status is 'NO-GO'
+- [PASS] snapshot_20260628T214147.524830Z.json parses as JSON [snapshot_20260628T214147.524830Z.json]: Valid JSON (5634 bytes)
+- [PASS] snapshot_20260629T075706.941690Z.json safety flag runtime_actions [snapshot_20260629T075706.941690Z.json] (safety.runtime_actions): runtime_actions is 'not_allowed'
+- [PASS] snapshot_20260629T075706.941690Z.json safety flag db_execution [snapshot_20260629T075706.941690Z.json] (safety.db_execution): db_execution is 'not_allowed'
+- [PASS] snapshot_20260629T075706.941690Z.json safety banner [snapshot_20260629T075706.941690Z.json] (safety.banner): Safety banner matches expected text
+- [PASS] snapshot_20260629T075744.017413Z.json safe source_mode [snapshot_20260629T075744.017413Z.json] (metadata.source_mode): metadata.source_mode='fixture' is allowed
+- [PASS] snapshot_20260629T075744.017413Z.json safety flag lr_status [snapshot_20260629T075744.017413Z.json] (safety.lr_status): lr_status is 'NO-GO'
+- [PASS] snapshot_20260629T075744.017413Z.json safety flag live_status [snapshot_20260629T075744.017413Z.json] (safety.live_status): live_status is 'NO-GO'
+- [PASS] snapshot_20260629T075744.017413Z.json safety flag echtgeld_status [snapshot_20260629T075744.017413Z.json] (safety.echtgeld_status): echtgeld_status is 'NO-GO'
+- [PASS] snapshot_20260629T075744.017413Z.json safety flag runtime_actions [snapshot_20260629T075744.017413Z.json] (safety.runtime_actions): runtime_actions is 'not_allowed'
+- [PASS] snapshot_20260629T075744.017413Z.json safety flag db_execution [snapshot_20260629T075744.017413Z.json] (safety.db_execution): db_execution is 'not_allowed'
+- [PASS] snapshot_20260629T075744.017413Z.json safety banner [snapshot_20260629T075744.017413Z.json] (safety.banner): Safety banner matches expected text
+- [PASS] snapshot_20260628T214147.524830Z.json schema version [snapshot_20260628T214147.524830Z.json] (metadata.schema_version): metadata.schema_version matches cdb.evidence_harvester.snapshot.v1
+- [PASS] snapshot_20260629T081207.538860Z.json safe source_mode [snapshot_20260629T081207.538860Z.json] (metadata.source_mode): metadata.source_mode='fixture' is allowed
+- [PASS] snapshot_20260629T081207.538860Z.json safety flag lr_status [snapshot_20260629T081207.538860Z.json] (safety.lr_status): lr_status is 'NO-GO'
+- [PASS] snapshot_20260629T081207.538860Z.json safety flag live_status [snapshot_20260629T081207.538860Z.json] (safety.live_status): live_status is 'NO-GO'
+- [PASS] snapshot_20260629T081207.538860Z.json safety flag echtgeld_status [snapshot_20260629T081207.538860Z.json] (safety.echtgeld_status): echtgeld_status is 'NO-GO'
+- [PASS] snapshot_20260629T081207.538860Z.json safety flag runtime_actions [snapshot_20260629T081207.538860Z.json] (safety.runtime_actions): runtime_actions is 'not_allowed'
+- [PASS] snapshot_20260629T081207.538860Z.json safety flag db_execution [snapshot_20260629T081207.538860Z.json] (safety.db_execution): db_execution is 'not_allowed'
+- [PASS] snapshot_20260629T081207.538860Z.json safety banner [snapshot_20260629T081207.538860Z.json] (safety.banner): Safety banner matches expected text
+- [PASS] snapshot_20260629T081244.519282Z.json safe source_mode [snapshot_20260629T081244.519282Z.json] (metadata.source_mode): metadata.source_mode='fixture' is allowed
+- [PASS] snapshot_20260629T081244.519282Z.json safety flag lr_status [snapshot_20260629T081244.519282Z.json] (safety.lr_status): lr_status is 'NO-GO'
+- [PASS] snapshot_20260629T081244.519282Z.json safety flag live_status [snapshot_20260629T081244.519282Z.json] (safety.live_status): live_status is 'NO-GO'
+- [PASS] snapshot_20260628T214226.178738Z.json parses as JSON [snapshot_20260628T214226.178738Z.json]: Valid JSON (5634 bytes)
+- [PASS] snapshot_20260629T081244.519282Z.json safety flag echtgeld_status [snapshot_20260629T081244.519282Z.json] (safety.echtgeld_status): echtgeld_status is 'NO-GO'
+- [PASS] snapshot_20260629T081244.519282Z.json safety flag runtime_actions [snapshot_20260629T081244.519282Z.json] (safety.runtime_actions): runtime_actions is 'not_allowed'
+- [PASS] snapshot_20260629T081244.519282Z.json safety flag db_execution [snapshot_20260629T081244.519282Z.json] (safety.db_execution): db_execution is 'not_allowed'
+- [PASS] snapshot_20260629T081244.519282Z.json safety banner [snapshot_20260629T081244.519282Z.json] (safety.banner): Safety banner matches expected text
+- [PASS] snapshot_20260629T082708.140490Z.json safe source_mode [snapshot_20260629T082708.140490Z.json] (metadata.source_mode): metadata.source_mode='fixture' is allowed
+- [PASS] snapshot_20260629T082708.140490Z.json safety flag lr_status [snapshot_20260629T082708.140490Z.json] (safety.lr_status): lr_status is 'NO-GO'
+- [PASS] snapshot_20260629T082708.140490Z.json safety flag live_status [snapshot_20260629T082708.140490Z.json] (safety.live_status): live_status is 'NO-GO'
+- [PASS] snapshot_20260629T082708.140490Z.json safety flag echtgeld_status [snapshot_20260629T082708.140490Z.json] (safety.echtgeld_status): echtgeld_status is 'NO-GO'
+- [PASS] snapshot_20260629T082708.140490Z.json safety flag runtime_actions [snapshot_20260629T082708.140490Z.json] (safety.runtime_actions): runtime_actions is 'not_allowed'
+- [PASS] snapshot_20260629T082708.140490Z.json safety flag db_execution [snapshot_20260629T082708.140490Z.json] (safety.db_execution): db_execution is 'not_allowed'
+- [PASS] snapshot_20260628T214226.178738Z.json schema version [snapshot_20260628T214226.178738Z.json] (metadata.schema_version): metadata.schema_version matches cdb.evidence_harvester.snapshot.v1
+- [PASS] snapshot_20260629T082708.140490Z.json safety banner [snapshot_20260629T082708.140490Z.json] (safety.banner): Safety banner matches expected text
+- [PASS] snapshot_20260629T082745.060332Z.json safe source_mode [snapshot_20260629T082745.060332Z.json] (metadata.source_mode): metadata.source_mode='fixture' is allowed
+- [PASS] snapshot_20260629T082745.060332Z.json safety flag lr_status [snapshot_20260629T082745.060332Z.json] (safety.lr_status): lr_status is 'NO-GO'
+- [PASS] snapshot_20260629T082745.060332Z.json safety flag live_status [snapshot_20260629T082745.060332Z.json] (safety.live_status): live_status is 'NO-GO'
+- [PASS] snapshot_20260629T082745.060332Z.json safety flag echtgeld_status [snapshot_20260629T082745.060332Z.json] (safety.echtgeld_status): echtgeld_status is 'NO-GO'
+- [PASS] snapshot_20260629T082745.060332Z.json safety flag runtime_actions [snapshot_20260629T082745.060332Z.json] (safety.runtime_actions): runtime_actions is 'not_allowed'
+- [PASS] snapshot_20260629T082745.060332Z.json safety flag db_execution [snapshot_20260629T082745.060332Z.json] (safety.db_execution): db_execution is 'not_allowed'
+- [PASS] snapshot_20260629T082745.060332Z.json safety banner [snapshot_20260629T082745.060332Z.json] (safety.banner): Safety banner matches expected text
+- [PASS] snapshot_20260629T084208.790950Z.json safe source_mode [snapshot_20260629T084208.790950Z.json] (metadata.source_mode): metadata.source_mode='fixture' is allowed
+- [PASS] snapshot_20260629T084208.790950Z.json safety flag lr_status [snapshot_20260629T084208.790950Z.json] (safety.lr_status): lr_status is 'NO-GO'
+- [PASS] snapshot_20260628T215647.638424Z.json parses as JSON [snapshot_20260628T215647.638424Z.json]: Valid JSON (5634 bytes)
+- [PASS] snapshot_20260629T084208.790950Z.json safety flag live_status [snapshot_20260629T084208.790950Z.json] (safety.live_status): live_status is 'NO-GO'
+- [PASS] snapshot_20260629T084208.790950Z.json safety flag echtgeld_status [snapshot_20260629T084208.790950Z.json] (safety.echtgeld_status): echtgeld_status is 'NO-GO'
+- [PASS] snapshot_20260629T084208.790950Z.json safety flag runtime_actions [snapshot_20260629T084208.790950Z.json] (safety.runtime_actions): runtime_actions is 'not_allowed'
+- [PASS] snapshot_20260629T084208.790950Z.json safety flag db_execution [snapshot_20260629T084208.790950Z.json] (safety.db_execution): db_execution is 'not_allowed'
+- [PASS] snapshot_20260629T084208.790950Z.json safety banner [snapshot_20260629T084208.790950Z.json] (safety.banner): Safety banner matches expected text
+- [PASS] snapshot_20260629T084245.597847Z.json safe source_mode [snapshot_20260629T084245.597847Z.json] (metadata.source_mode): metadata.source_mode='fixture' is allowed
+- [PASS] snapshot_20260629T084245.597847Z.json safety flag lr_status [snapshot_20260629T084245.597847Z.json] (safety.lr_status): lr_status is 'NO-GO'
+- [PASS] snapshot_20260629T084245.597847Z.json safety flag live_status [snapshot_20260629T084245.597847Z.json] (safety.live_status): live_status is 'NO-GO'
+- [PASS] snapshot_20260629T084245.597847Z.json safety flag echtgeld_status [snapshot_20260629T084245.597847Z.json] (safety.echtgeld_status): echtgeld_status is 'NO-GO'
+- [PASS] snapshot_20260629T084245.597847Z.json safety flag runtime_actions [snapshot_20260629T084245.597847Z.json] (safety.runtime_actions): runtime_actions is 'not_allowed'
+- [PASS] snapshot_20260628T215647.638424Z.json schema version [snapshot_20260628T215647.638424Z.json] (metadata.schema_version): metadata.schema_version matches cdb.evidence_harvester.snapshot.v1
+- [PASS] snapshot_20260629T084245.597847Z.json safety flag db_execution [snapshot_20260629T084245.597847Z.json] (safety.db_execution): db_execution is 'not_allowed'
+- [PASS] snapshot_20260629T084245.597847Z.json safety banner [snapshot_20260629T084245.597847Z.json] (safety.banner): Safety banner matches expected text
+- [PASS] snapshot_20260629T085709.431205Z.json safe source_mode [snapshot_20260629T085709.431205Z.json] (metadata.source_mode): metadata.source_mode='fixture' is allowed
+- [PASS] snapshot_20260629T085709.431205Z.json safety flag lr_status [snapshot_20260629T085709.431205Z.json] (safety.lr_status): lr_status is 'NO-GO'
+- [PASS] snapshot_20260629T085709.431205Z.json safety flag live_status [snapshot_20260629T085709.431205Z.json] (safety.live_status): live_status is 'NO-GO'
+- [PASS] snapshot_20260629T085709.431205Z.json safety flag echtgeld_status [snapshot_20260629T085709.431205Z.json] (safety.echtgeld_status): echtgeld_status is 'NO-GO'
+- [PASS] snapshot_20260629T085709.431205Z.json safety flag runtime_actions [snapshot_20260629T085709.431205Z.json] (safety.runtime_actions): runtime_actions is 'not_allowed'
+- [PASS] snapshot_20260629T085709.431205Z.json safety flag db_execution [snapshot_20260629T085709.431205Z.json] (safety.db_execution): db_execution is 'not_allowed'
+- [PASS] snapshot_20260629T085709.431205Z.json safety banner [snapshot_20260629T085709.431205Z.json] (safety.banner): Safety banner matches expected text
+- [PASS] snapshot_20260629T085746.133858Z.json safe source_mode [snapshot_20260629T085746.133858Z.json] (metadata.source_mode): metadata.source_mode='fixture' is allowed
+- [PASS] snapshot_20260628T215726.259263Z.json parses as JSON [snapshot_20260628T215726.259263Z.json]: Valid JSON (5634 bytes)
+- [PASS] snapshot_20260629T085746.133858Z.json safety flag lr_status [snapshot_20260629T085746.133858Z.json] (safety.lr_status): lr_status is 'NO-GO'
+- [PASS] snapshot_20260629T085746.133858Z.json safety flag live_status [snapshot_20260629T085746.133858Z.json] (safety.live_status): live_status is 'NO-GO'
+- [PASS] snapshot_20260629T085746.133858Z.json safety flag echtgeld_status [snapshot_20260629T085746.133858Z.json] (safety.echtgeld_status): echtgeld_status is 'NO-GO'
+- [PASS] snapshot_20260629T085746.133858Z.json safety flag runtime_actions [snapshot_20260629T085746.133858Z.json] (safety.runtime_actions): runtime_actions is 'not_allowed'
+- [PASS] snapshot_20260629T085746.133858Z.json safety flag db_execution [snapshot_20260629T085746.133858Z.json] (safety.db_execution): db_execution is 'not_allowed'
+- [PASS] snapshot_20260629T085746.133858Z.json safety banner [snapshot_20260629T085746.133858Z.json] (safety.banner): Safety banner matches expected text
+- [PASS] snapshot_20260629T091210.137367Z.json safe source_mode [snapshot_20260629T091210.137367Z.json] (metadata.source_mode): metadata.source_mode='fixture' is allowed
+- [PASS] snapshot_20260629T091210.137367Z.json safety flag lr_status [snapshot_20260629T091210.137367Z.json] (safety.lr_status): lr_status is 'NO-GO'
+- [PASS] snapshot_20260629T091210.137367Z.json safety flag live_status [snapshot_20260629T091210.137367Z.json] (safety.live_status): live_status is 'NO-GO'
+- [PASS] snapshot_20260629T091210.137367Z.json safety flag echtgeld_status [snapshot_20260629T091210.137367Z.json] (safety.echtgeld_status): echtgeld_status is 'NO-GO'
+- [PASS] snapshot_20260628T215726.259263Z.json schema version [snapshot_20260628T215726.259263Z.json] (metadata.schema_version): metadata.schema_version matches cdb.evidence_harvester.snapshot.v1
+- [PASS] snapshot_20260629T091210.137367Z.json safety flag runtime_actions [snapshot_20260629T091210.137367Z.json] (safety.runtime_actions): runtime_actions is 'not_allowed'
+- [PASS] snapshot_20260629T091210.137367Z.json safety flag db_execution [snapshot_20260629T091210.137367Z.json] (safety.db_execution): db_execution is 'not_allowed'
+- [PASS] snapshot_20260629T091210.137367Z.json safety banner [snapshot_20260629T091210.137367Z.json] (safety.banner): Safety banner matches expected text
+- [PASS] snapshot_20260629T091246.700715Z.json safe source_mode [snapshot_20260629T091246.700715Z.json] (metadata.source_mode): metadata.source_mode='fixture' is allowed
+- [PASS] snapshot_20260629T091246.700715Z.json safety flag lr_status [snapshot_20260629T091246.700715Z.json] (safety.lr_status): lr_status is 'NO-GO'
+- [PASS] snapshot_20260629T091246.700715Z.json safety flag live_status [snapshot_20260629T091246.700715Z.json] (safety.live_status): live_status is 'NO-GO'
+- [PASS] snapshot_20260629T091246.700715Z.json safety flag echtgeld_status [snapshot_20260629T091246.700715Z.json] (safety.echtgeld_status): echtgeld_status is 'NO-GO'
+- [PASS] snapshot_20260629T091246.700715Z.json safety flag runtime_actions [snapshot_20260629T091246.700715Z.json] (safety.runtime_actions): runtime_actions is 'not_allowed'
+- [PASS] snapshot_20260629T091246.700715Z.json safety flag db_execution [snapshot_20260629T091246.700715Z.json] (safety.db_execution): db_execution is 'not_allowed'
+- [PASS] snapshot_20260629T091246.700715Z.json safety banner [snapshot_20260629T091246.700715Z.json] (safety.banner): Safety banner matches expected text
+- [PASS] snapshot_20260628T221147.773162Z.json parses as JSON [snapshot_20260628T221147.773162Z.json]: Valid JSON (5634 bytes)
+- [PASS] snapshot_20260629T092710.901206Z.json safe source_mode [snapshot_20260629T092710.901206Z.json] (metadata.source_mode): metadata.source_mode='fixture' is allowed
+- [PASS] snapshot_20260629T092710.901206Z.json safety flag lr_status [snapshot_20260629T092710.901206Z.json] (safety.lr_status): lr_status is 'NO-GO'
+- [PASS] snapshot_20260629T092710.901206Z.json safety flag live_status [snapshot_20260629T092710.901206Z.json] (safety.live_status): live_status is 'NO-GO'
+- [PASS] snapshot_20260629T092710.901206Z.json safety flag echtgeld_status [snapshot_20260629T092710.901206Z.json] (safety.echtgeld_status): echtgeld_status is 'NO-GO'
+- [PASS] snapshot_20260629T092710.901206Z.json safety flag runtime_actions [snapshot_20260629T092710.901206Z.json] (safety.runtime_actions): runtime_actions is 'not_allowed'
+- [PASS] snapshot_20260629T092710.901206Z.json safety flag db_execution [snapshot_20260629T092710.901206Z.json] (safety.db_execution): db_execution is 'not_allowed'
+- [PASS] snapshot_20260629T092710.901206Z.json safety banner [snapshot_20260629T092710.901206Z.json] (safety.banner): Safety banner matches expected text
+- [PASS] snapshot_20260629T092747.293172Z.json safe source_mode [snapshot_20260629T092747.293172Z.json] (metadata.source_mode): metadata.source_mode='fixture' is allowed
+- [PASS] snapshot_20260629T092747.293172Z.json safety flag lr_status [snapshot_20260629T092747.293172Z.json] (safety.lr_status): lr_status is 'NO-GO'
+- [PASS] snapshot_20260629T092747.293172Z.json safety flag live_status [snapshot_20260629T092747.293172Z.json] (safety.live_status): live_status is 'NO-GO'
+- [PASS] snapshot_20260628T221147.773162Z.json schema version [snapshot_20260628T221147.773162Z.json] (metadata.schema_version): metadata.schema_version matches cdb.evidence_harvester.snapshot.v1
+- [PASS] snapshot_20260629T092747.293172Z.json safety flag echtgeld_status [snapshot_20260629T092747.293172Z.json] (safety.echtgeld_status): echtgeld_status is 'NO-GO'
+- [PASS] snapshot_20260629T092747.293172Z.json safety flag runtime_actions [snapshot_20260629T092747.293172Z.json] (safety.runtime_actions): runtime_actions is 'not_allowed'
+- [PASS] snapshot_20260629T092747.293172Z.json safety flag db_execution [snapshot_20260629T092747.293172Z.json] (safety.db_execution): db_execution is 'not_allowed'
+- [PASS] snapshot_20260629T092747.293172Z.json safety banner [snapshot_20260629T092747.293172Z.json] (safety.banner): Safety banner matches expected text
+- [PASS] snapshot_20260629T094211.695111Z.json safe source_mode [snapshot_20260629T094211.695111Z.json] (metadata.source_mode): metadata.source_mode='fixture' is allowed
+- [PASS] snapshot_20260629T094211.695111Z.json safety flag lr_status [snapshot_20260629T094211.695111Z.json] (safety.lr_status): lr_status is 'NO-GO'
+- [PASS] snapshot_20260629T094211.695111Z.json safety flag live_status [snapshot_20260629T094211.695111Z.json] (safety.live_status): live_status is 'NO-GO'
+- [PASS] snapshot_20260629T094211.695111Z.json safety flag echtgeld_status [snapshot_20260629T094211.695111Z.json] (safety.echtgeld_status): echtgeld_status is 'NO-GO'
+- [PASS] snapshot_20260629T094211.695111Z.json safety flag runtime_actions [snapshot_20260629T094211.695111Z.json] (safety.runtime_actions): runtime_actions is 'not_allowed'
+- [PASS] snapshot_20260629T094211.695111Z.json safety flag db_execution [snapshot_20260629T094211.695111Z.json] (safety.db_execution): db_execution is 'not_allowed'
+- [PASS] snapshot_20260628T221226.358702Z.json parses as JSON [snapshot_20260628T221226.358702Z.json]: Valid JSON (5634 bytes)
+- [PASS] snapshot_20260629T094211.695111Z.json safety banner [snapshot_20260629T094211.695111Z.json] (safety.banner): Safety banner matches expected text
+- [PASS] snapshot_20260629T094247.903918Z.json safe source_mode [snapshot_20260629T094247.903918Z.json] (metadata.source_mode): metadata.source_mode='fixture' is allowed
+- [PASS] snapshot_20260629T094247.903918Z.json safety flag lr_status [snapshot_20260629T094247.903918Z.json] (safety.lr_status): lr_status is 'NO-GO'
+- [PASS] snapshot_20260629T094247.903918Z.json safety flag live_status [snapshot_20260629T094247.903918Z.json] (safety.live_status): live_status is 'NO-GO'
+- [PASS] snapshot_20260629T094247.903918Z.json safety flag echtgeld_status [snapshot_20260629T094247.903918Z.json] (safety.echtgeld_status): echtgeld_status is 'NO-GO'
+- [PASS] snapshot_20260629T094247.903918Z.json safety flag runtime_actions [snapshot_20260629T094247.903918Z.json] (safety.runtime_actions): runtime_actions is 'not_allowed'
+- [PASS] snapshot_20260629T094247.903918Z.json safety flag db_execution [snapshot_20260629T094247.903918Z.json] (safety.db_execution): db_execution is 'not_allowed'
+- [PASS] snapshot_20260629T094247.903918Z.json safety banner [snapshot_20260629T094247.903918Z.json] (safety.banner): Safety banner matches expected text
+- [PASS] snapshot_20260629T095712.307200Z.json safe source_mode [snapshot_20260629T095712.307200Z.json] (metadata.source_mode): metadata.source_mode='fixture' is allowed
+- [PASS] snapshot_20260629T095712.307200Z.json safety flag lr_status [snapshot_20260629T095712.307200Z.json] (safety.lr_status): lr_status is 'NO-GO'
+- [PASS] snapshot_20260628T221226.358702Z.json schema version [snapshot_20260628T221226.358702Z.json] (metadata.schema_version): metadata.schema_version matches cdb.evidence_harvester.snapshot.v1
+- [PASS] snapshot_20260629T095712.307200Z.json safety flag live_status [snapshot_20260629T095712.307200Z.json] (safety.live_status): live_status is 'NO-GO'
+- [PASS] snapshot_20260629T095712.307200Z.json safety flag echtgeld_status [snapshot_20260629T095712.307200Z.json] (safety.echtgeld_status): echtgeld_status is 'NO-GO'
+- [PASS] snapshot_20260629T095712.307200Z.json safety flag runtime_actions [snapshot_20260629T095712.307200Z.json] (safety.runtime_actions): runtime_actions is 'not_allowed'
+- [PASS] snapshot_20260629T095712.307200Z.json safety flag db_execution [snapshot_20260629T095712.307200Z.json] (safety.db_execution): db_execution is 'not_allowed'
+- [PASS] snapshot_20260629T095712.307200Z.json safety banner [snapshot_20260629T095712.307200Z.json] (safety.banner): Safety banner matches expected text
+- [PASS] snapshot_20260629T095748.490461Z.json safe source_mode [snapshot_20260629T095748.490461Z.json] (metadata.source_mode): metadata.source_mode='fixture' is allowed
+- [PASS] snapshot_20260629T095748.490461Z.json safety flag lr_status [snapshot_20260629T095748.490461Z.json] (safety.lr_status): lr_status is 'NO-GO'
+- [PASS] snapshot_20260629T095748.490461Z.json safety flag live_status [snapshot_20260629T095748.490461Z.json] (safety.live_status): live_status is 'NO-GO'
+- [PASS] snapshot_20260629T095748.490461Z.json safety flag echtgeld_status [snapshot_20260629T095748.490461Z.json] (safety.echtgeld_status): echtgeld_status is 'NO-GO'
+- [PASS] snapshot_20260629T095748.490461Z.json safety flag runtime_actions [snapshot_20260629T095748.490461Z.json] (safety.runtime_actions): runtime_actions is 'not_allowed'
+- [PASS] snapshot_20260628T222647.925582Z.json parses as JSON [snapshot_20260628T222647.925582Z.json]: Valid JSON (5634 bytes)
+- [PASS] snapshot_20260629T095748.490461Z.json safety flag db_execution [snapshot_20260629T095748.490461Z.json] (safety.db_execution): db_execution is 'not_allowed'
+- [PASS] snapshot_20260629T095748.490461Z.json safety banner [snapshot_20260629T095748.490461Z.json] (safety.banner): Safety banner matches expected text
+- [PASS] snapshot_20260629T101213.089179Z.json safe source_mode [snapshot_20260629T101213.089179Z.json] (metadata.source_mode): metadata.source_mode='fixture' is allowed
+- [PASS] snapshot_20260629T101213.089179Z.json safety flag lr_status [snapshot_20260629T101213.089179Z.json] (safety.lr_status): lr_status is 'NO-GO'
+- [PASS] snapshot_20260629T101213.089179Z.json safety flag live_status [snapshot_20260629T101213.089179Z.json] (safety.live_status): live_status is 'NO-GO'
+- [PASS] snapshot_20260629T101213.089179Z.json safety flag echtgeld_status [snapshot_20260629T101213.089179Z.json] (safety.echtgeld_status): echtgeld_status is 'NO-GO'
+- [PASS] snapshot_20260629T101213.089179Z.json safety flag runtime_actions [snapshot_20260629T101213.089179Z.json] (safety.runtime_actions): runtime_actions is 'not_allowed'
+- [PASS] snapshot_20260629T101213.089179Z.json safety flag db_execution [snapshot_20260629T101213.089179Z.json] (safety.db_execution): db_execution is 'not_allowed'
+- [PASS] snapshot_20260629T101213.089179Z.json safety banner [snapshot_20260629T101213.089179Z.json] (safety.banner): Safety banner matches expected text
+- [PASS] snapshot_20260629T101249.139878Z.json safe source_mode [snapshot_20260629T101249.139878Z.json] (metadata.source_mode): metadata.source_mode='fixture' is allowed
+- [PASS] snapshot_20260628T222647.925582Z.json schema version [snapshot_20260628T222647.925582Z.json] (metadata.schema_version): metadata.schema_version matches cdb.evidence_harvester.snapshot.v1
+- [PASS] snapshot_20260629T101249.139878Z.json safety flag lr_status [snapshot_20260629T101249.139878Z.json] (safety.lr_status): lr_status is 'NO-GO'
+- [PASS] snapshot_20260629T101249.139878Z.json safety flag live_status [snapshot_20260629T101249.139878Z.json] (safety.live_status): live_status is 'NO-GO'
+- [PASS] snapshot_20260629T101249.139878Z.json safety flag echtgeld_status [snapshot_20260629T101249.139878Z.json] (safety.echtgeld_status): echtgeld_status is 'NO-GO'
+- [PASS] snapshot_20260629T101249.139878Z.json safety flag runtime_actions [snapshot_20260629T101249.139878Z.json] (safety.runtime_actions): runtime_actions is 'not_allowed'
+- [PASS] snapshot_20260629T101249.139878Z.json safety flag db_execution [snapshot_20260629T101249.139878Z.json] (safety.db_execution): db_execution is 'not_allowed'
+- [PASS] snapshot_20260629T101249.139878Z.json safety banner [snapshot_20260629T101249.139878Z.json] (safety.banner): Safety banner matches expected text
+- [PASS] snapshot_20260629T102713.736465Z.json safe source_mode [snapshot_20260629T102713.736465Z.json] (metadata.source_mode): metadata.source_mode='fixture' is allowed
+- [PASS] snapshot_20260629T102713.736465Z.json safety flag lr_status [snapshot_20260629T102713.736465Z.json] (safety.lr_status): lr_status is 'NO-GO'
+- [PASS] snapshot_20260629T102713.736465Z.json safety flag live_status [snapshot_20260629T102713.736465Z.json] (safety.live_status): live_status is 'NO-GO'
+- [PASS] snapshot_20260629T102713.736465Z.json safety flag echtgeld_status [snapshot_20260629T102713.736465Z.json] (safety.echtgeld_status): echtgeld_status is 'NO-GO'
+- [PASS] snapshot_20260628T222726.481222Z.json parses as JSON [snapshot_20260628T222726.481222Z.json]: Valid JSON (5634 bytes)
+- [PASS] snapshot_20260629T102713.736465Z.json safety flag runtime_actions [snapshot_20260629T102713.736465Z.json] (safety.runtime_actions): runtime_actions is 'not_allowed'
+- [PASS] snapshot_20260629T102713.736465Z.json safety flag db_execution [snapshot_20260629T102713.736465Z.json] (safety.db_execution): db_execution is 'not_allowed'
+- [PASS] snapshot_20260629T102713.736465Z.json safety banner [snapshot_20260629T102713.736465Z.json] (safety.banner): Safety banner matches expected text
+- [PASS] snapshot_20260629T102749.736234Z.json safe source_mode [snapshot_20260629T102749.736234Z.json] (metadata.source_mode): metadata.source_mode='fixture' is allowed
+- [PASS] snapshot_20260629T102749.736234Z.json safety flag lr_status [snapshot_20260629T102749.736234Z.json] (safety.lr_status): lr_status is 'NO-GO'
+- [PASS] snapshot_20260629T102749.736234Z.json safety flag live_status [snapshot_20260629T102749.736234Z.json] (safety.live_status): live_status is 'NO-GO'
+- [PASS] snapshot_20260629T102749.736234Z.json safety flag echtgeld_status [snapshot_20260629T102749.736234Z.json] (safety.echtgeld_status): echtgeld_status is 'NO-GO'
+- [PASS] snapshot_20260629T102749.736234Z.json safety flag runtime_actions [snapshot_20260629T102749.736234Z.json] (safety.runtime_actions): runtime_actions is 'not_allowed'
+- [PASS] snapshot_20260629T102749.736234Z.json safety flag db_execution [snapshot_20260629T102749.736234Z.json] (safety.db_execution): db_execution is 'not_allowed'
+- [PASS] snapshot_20260629T102749.736234Z.json safety banner [snapshot_20260629T102749.736234Z.json] (safety.banner): Safety banner matches expected text
+- [PASS] snapshot_20260628T222726.481222Z.json schema version [snapshot_20260628T222726.481222Z.json] (metadata.schema_version): metadata.schema_version matches cdb.evidence_harvester.snapshot.v1
+- [PASS] snapshot_20260629T104214.526487Z.json safe source_mode [snapshot_20260629T104214.526487Z.json] (metadata.source_mode): metadata.source_mode='fixture' is allowed
+- [PASS] snapshot_20260629T104214.526487Z.json safety flag lr_status [snapshot_20260629T104214.526487Z.json] (safety.lr_status): lr_status is 'NO-GO'
+- [PASS] snapshot_20260629T104214.526487Z.json safety flag live_status [snapshot_20260629T104214.526487Z.json] (safety.live_status): live_status is 'NO-GO'
+- [PASS] snapshot_20260629T104214.526487Z.json safety flag echtgeld_status [snapshot_20260629T104214.526487Z.json] (safety.echtgeld_status): echtgeld_status is 'NO-GO'
+- [PASS] snapshot_20260629T104214.526487Z.json safety flag runtime_actions [snapshot_20260629T104214.526487Z.json] (safety.runtime_actions): runtime_actions is 'not_allowed'
+- [PASS] snapshot_20260629T104214.526487Z.json safety flag db_execution [snapshot_20260629T104214.526487Z.json] (safety.db_execution): db_execution is 'not_allowed'
+- [PASS] snapshot_20260629T104214.526487Z.json safety banner [snapshot_20260629T104214.526487Z.json] (safety.banner): Safety banner matches expected text
+- [PASS] snapshot_20260629T104250.386199Z.json safe source_mode [snapshot_20260629T104250.386199Z.json] (metadata.source_mode): metadata.source_mode='fixture' is allowed
+- [PASS] snapshot_20260629T104250.386199Z.json safety flag lr_status [snapshot_20260629T104250.386199Z.json] (safety.lr_status): lr_status is 'NO-GO'
+- [PASS] snapshot_20260629T104250.386199Z.json safety flag live_status [snapshot_20260629T104250.386199Z.json] (safety.live_status): live_status is 'NO-GO'
+- [PASS] snapshot_20260628T224148.050365Z.json parses as JSON [snapshot_20260628T224148.050365Z.json]: Valid JSON (5634 bytes)
+- [PASS] snapshot_20260629T104250.386199Z.json safety flag echtgeld_status [snapshot_20260629T104250.386199Z.json] (safety.echtgeld_status): echtgeld_status is 'NO-GO'
+- [PASS] snapshot_20260629T104250.386199Z.json safety flag runtime_actions [snapshot_20260629T104250.386199Z.json] (safety.runtime_actions): runtime_actions is 'not_allowed'
+- [PASS] snapshot_20260629T104250.386199Z.json safety flag db_execution [snapshot_20260629T104250.386199Z.json] (safety.db_execution): db_execution is 'not_allowed'
+- [PASS] snapshot_20260629T104250.386199Z.json safety banner [snapshot_20260629T104250.386199Z.json] (safety.banner): Safety banner matches expected text
+- [PASS] snapshot_20260629T105715.204661Z.json safe source_mode [snapshot_20260629T105715.204661Z.json] (metadata.source_mode): metadata.source_mode='fixture' is allowed
+- [PASS] snapshot_20260629T105715.204661Z.json safety flag lr_status [snapshot_20260629T105715.204661Z.json] (safety.lr_status): lr_status is 'NO-GO'
+- [PASS] snapshot_20260629T105715.204661Z.json safety flag live_status [snapshot_20260629T105715.204661Z.json] (safety.live_status): live_status is 'NO-GO'
+- [PASS] snapshot_20260629T105715.204661Z.json safety flag echtgeld_status [snapshot_20260629T105715.204661Z.json] (safety.echtgeld_status): echtgeld_status is 'NO-GO'
+- [PASS] snapshot_20260629T105715.204661Z.json safety flag runtime_actions [snapshot_20260629T105715.204661Z.json] (safety.runtime_actions): runtime_actions is 'not_allowed'
+- [PASS] snapshot_20260629T105715.204661Z.json safety flag db_execution [snapshot_20260629T105715.204661Z.json] (safety.db_execution): db_execution is 'not_allowed'
+- [PASS] snapshot_20260628T224148.050365Z.json schema version [snapshot_20260628T224148.050365Z.json] (metadata.schema_version): metadata.schema_version matches cdb.evidence_harvester.snapshot.v1
+- [PASS] snapshot_20260629T105715.204661Z.json safety banner [snapshot_20260629T105715.204661Z.json] (safety.banner): Safety banner matches expected text
+- [PASS] snapshot_20260629T105751.025839Z.json safe source_mode [snapshot_20260629T105751.025839Z.json] (metadata.source_mode): metadata.source_mode='fixture' is allowed
+- [PASS] snapshot_20260629T105751.025839Z.json safety flag lr_status [snapshot_20260629T105751.025839Z.json] (safety.lr_status): lr_status is 'NO-GO'
+- [PASS] snapshot_20260629T105751.025839Z.json safety flag live_status [snapshot_20260629T105751.025839Z.json] (safety.live_status): live_status is 'NO-GO'
+- [PASS] snapshot_20260629T105751.025839Z.json safety flag echtgeld_status [snapshot_20260629T105751.025839Z.json] (safety.echtgeld_status): echtgeld_status is 'NO-GO'
+- [PASS] snapshot_20260629T105751.025839Z.json safety flag runtime_actions [snapshot_20260629T105751.025839Z.json] (safety.runtime_actions): runtime_actions is 'not_allowed'
+- [PASS] snapshot_20260629T105751.025839Z.json safety flag db_execution [snapshot_20260629T105751.025839Z.json] (safety.db_execution): db_execution is 'not_allowed'
+- [PASS] snapshot_20260629T105751.025839Z.json safety banner [snapshot_20260629T105751.025839Z.json] (safety.banner): Safety banner matches expected text
+- [PASS] snapshot_20260629T111215.903183Z.json safe source_mode [snapshot_20260629T111215.903183Z.json] (metadata.source_mode): metadata.source_mode='fixture' is allowed
+- [PASS] snapshot_20260629T111215.903183Z.json safety flag lr_status [snapshot_20260629T111215.903183Z.json] (safety.lr_status): lr_status is 'NO-GO'
+- [PASS] snapshot_20260628T224226.622382Z.json parses as JSON [snapshot_20260628T224226.622382Z.json]: Valid JSON (5634 bytes)
+- [PASS] snapshot_20260629T111215.903183Z.json safety flag live_status [snapshot_20260629T111215.903183Z.json] (safety.live_status): live_status is 'NO-GO'
+- [PASS] snapshot_20260629T111215.903183Z.json safety flag echtgeld_status [snapshot_20260629T111215.903183Z.json] (safety.echtgeld_status): echtgeld_status is 'NO-GO'
+- [PASS] snapshot_20260629T111215.903183Z.json safety flag runtime_actions [snapshot_20260629T111215.903183Z.json] (safety.runtime_actions): runtime_actions is 'not_allowed'
+- [PASS] snapshot_20260629T111215.903183Z.json safety flag db_execution [snapshot_20260629T111215.903183Z.json] (safety.db_execution): db_execution is 'not_allowed'
+- [PASS] snapshot_20260629T111215.903183Z.json safety banner [snapshot_20260629T111215.903183Z.json] (safety.banner): Safety banner matches expected text
+- [PASS] snapshot_20260629T111251.661921Z.json safe source_mode [snapshot_20260629T111251.661921Z.json] (metadata.source_mode): metadata.source_mode='fixture' is allowed
+- [PASS] snapshot_20260629T111251.661921Z.json safety flag lr_status [snapshot_20260629T111251.661921Z.json] (safety.lr_status): lr_status is 'NO-GO'
+- [PASS] snapshot_20260629T111251.661921Z.json safety flag live_status [snapshot_20260629T111251.661921Z.json] (safety.live_status): live_status is 'NO-GO'
+- [PASS] snapshot_20260629T111251.661921Z.json safety flag echtgeld_status [snapshot_20260629T111251.661921Z.json] (safety.echtgeld_status): echtgeld_status is 'NO-GO'
+- [PASS] snapshot_20260629T111251.661921Z.json safety flag runtime_actions [snapshot_20260629T111251.661921Z.json] (safety.runtime_actions): runtime_actions is 'not_allowed'
+- [PASS] snapshot_20260628T224226.622382Z.json schema version [snapshot_20260628T224226.622382Z.json] (metadata.schema_version): metadata.schema_version matches cdb.evidence_harvester.snapshot.v1
+- [PASS] snapshot_20260629T111251.661921Z.json safety flag db_execution [snapshot_20260629T111251.661921Z.json] (safety.db_execution): db_execution is 'not_allowed'
+- [PASS] snapshot_20260629T111251.661921Z.json safety banner [snapshot_20260629T111251.661921Z.json] (safety.banner): Safety banner matches expected text
+- [PASS] snapshot_20260629T112716.629865Z.json safe source_mode [snapshot_20260629T112716.629865Z.json] (metadata.source_mode): metadata.source_mode='fixture' is allowed
+- [PASS] snapshot_20260629T112716.629865Z.json safety flag lr_status [snapshot_20260629T112716.629865Z.json] (safety.lr_status): lr_status is 'NO-GO'
+- [PASS] snapshot_20260629T112716.629865Z.json safety flag live_status [snapshot_20260629T112716.629865Z.json] (safety.live_status): live_status is 'NO-GO'
+- [PASS] snapshot_20260629T112716.629865Z.json safety flag echtgeld_status [snapshot_20260629T112716.629865Z.json] (safety.echtgeld_status): echtgeld_status is 'NO-GO'
+- [PASS] snapshot_20260629T112716.629865Z.json safety flag runtime_actions [snapshot_20260629T112716.629865Z.json] (safety.runtime_actions): runtime_actions is 'not_allowed'
+- [PASS] snapshot_20260629T112716.629865Z.json safety flag db_execution [snapshot_20260629T112716.629865Z.json] (safety.db_execution): db_execution is 'not_allowed'
+- [PASS] snapshot_20260629T112716.629865Z.json safety banner [snapshot_20260629T112716.629865Z.json] (safety.banner): Safety banner matches expected text
+- [PASS] snapshot_20260629T112752.284749Z.json safe source_mode [snapshot_20260629T112752.284749Z.json] (metadata.source_mode): metadata.source_mode='fixture' is allowed
+- [PASS] snapshot_20260628T225653.430691Z.json parses as JSON [snapshot_20260628T225653.430691Z.json]: Valid JSON (5634 bytes)
+- [PASS] snapshot_20260629T112752.284749Z.json safety flag lr_status [snapshot_20260629T112752.284749Z.json] (safety.lr_status): lr_status is 'NO-GO'
+- [PASS] snapshot_20260629T112752.284749Z.json safety flag live_status [snapshot_20260629T112752.284749Z.json] (safety.live_status): live_status is 'NO-GO'
+- [PASS] snapshot_20260629T112752.284749Z.json safety flag echtgeld_status [snapshot_20260629T112752.284749Z.json] (safety.echtgeld_status): echtgeld_status is 'NO-GO'
+- [PASS] snapshot_20260629T112752.284749Z.json safety flag runtime_actions [snapshot_20260629T112752.284749Z.json] (safety.runtime_actions): runtime_actions is 'not_allowed'
+- [PASS] snapshot_20260629T112752.284749Z.json safety flag db_execution [snapshot_20260629T112752.284749Z.json] (safety.db_execution): db_execution is 'not_allowed'
+- [PASS] snapshot_20260629T112752.284749Z.json safety banner [snapshot_20260629T112752.284749Z.json] (safety.banner): Safety banner matches expected text
+- [PASS] snapshot_20260629T114217.488056Z.json safe source_mode [snapshot_20260629T114217.488056Z.json] (metadata.source_mode): metadata.source_mode='fixture' is allowed
+- [PASS] snapshot_20260629T114217.488056Z.json safety flag lr_status [snapshot_20260629T114217.488056Z.json] (safety.lr_status): lr_status is 'NO-GO'
+- [PASS] snapshot_20260629T114217.488056Z.json safety flag live_status [snapshot_20260629T114217.488056Z.json] (safety.live_status): live_status is 'NO-GO'
+- [PASS] snapshot_20260629T114217.488056Z.json safety flag echtgeld_status [snapshot_20260629T114217.488056Z.json] (safety.echtgeld_status): echtgeld_status is 'NO-GO'
+- [PASS] snapshot_20260628T225653.430691Z.json schema version [snapshot_20260628T225653.430691Z.json] (metadata.schema_version): metadata.schema_version matches cdb.evidence_harvester.snapshot.v1
+- [PASS] snapshot_20260629T114217.488056Z.json safety flag runtime_actions [snapshot_20260629T114217.488056Z.json] (safety.runtime_actions): runtime_actions is 'not_allowed'
+- [PASS] snapshot_20260629T114217.488056Z.json safety flag db_execution [snapshot_20260629T114217.488056Z.json] (safety.db_execution): db_execution is 'not_allowed'
+- [PASS] snapshot_20260629T114217.488056Z.json safety banner [snapshot_20260629T114217.488056Z.json] (safety.banner): Safety banner matches expected text
+- [PASS] snapshot_20260629T114252.920024Z.json safe source_mode [snapshot_20260629T114252.920024Z.json] (metadata.source_mode): metadata.source_mode='fixture' is allowed
+- [PASS] snapshot_20260629T114252.920024Z.json safety flag lr_status [snapshot_20260629T114252.920024Z.json] (safety.lr_status): lr_status is 'NO-GO'
+- [PASS] snapshot_20260629T114252.920024Z.json safety flag live_status [snapshot_20260629T114252.920024Z.json] (safety.live_status): live_status is 'NO-GO'
+- [PASS] snapshot_20260629T114252.920024Z.json safety flag echtgeld_status [snapshot_20260629T114252.920024Z.json] (safety.echtgeld_status): echtgeld_status is 'NO-GO'
+- [PASS] snapshot_20260629T114252.920024Z.json safety flag runtime_actions [snapshot_20260629T114252.920024Z.json] (safety.runtime_actions): runtime_actions is 'not_allowed'
+- [PASS] snapshot_20260629T114252.920024Z.json safety flag db_execution [snapshot_20260629T114252.920024Z.json] (safety.db_execution): db_execution is 'not_allowed'
+- [PASS] snapshot_20260629T114252.920024Z.json safety banner [snapshot_20260629T114252.920024Z.json] (safety.banner): Safety banner matches expected text
+- [PASS] snapshot_20260628T225732.008211Z.json parses as JSON [snapshot_20260628T225732.008211Z.json]: Valid JSON (5634 bytes)
+- [PASS] snapshot_20260629T115718.201420Z.json safe source_mode [snapshot_20260629T115718.201420Z.json] (metadata.source_mode): metadata.source_mode='fixture' is allowed
+- [PASS] snapshot_20260629T115718.201420Z.json safety flag lr_status [snapshot_20260629T115718.201420Z.json] (safety.lr_status): lr_status is 'NO-GO'
+- [PASS] snapshot_20260629T115718.201420Z.json safety flag live_status [snapshot_20260629T115718.201420Z.json] (safety.live_status): live_status is 'NO-GO'
+- [PASS] snapshot_20260629T115718.201420Z.json safety flag echtgeld_status [snapshot_20260629T115718.201420Z.json] (safety.echtgeld_status): echtgeld_status is 'NO-GO'
+- [PASS] snapshot_20260629T115718.201420Z.json safety flag runtime_actions [snapshot_20260629T115718.201420Z.json] (safety.runtime_actions): runtime_actions is 'not_allowed'
+- [PASS] snapshot_20260629T115718.201420Z.json safety flag db_execution [snapshot_20260629T115718.201420Z.json] (safety.db_execution): db_execution is 'not_allowed'
+- [PASS] snapshot_20260629T115718.201420Z.json safety banner [snapshot_20260629T115718.201420Z.json] (safety.banner): Safety banner matches expected text
+- [PASS] snapshot_20260629T115753.619990Z.json safe source_mode [snapshot_20260629T115753.619990Z.json] (metadata.source_mode): metadata.source_mode='fixture' is allowed
+- [PASS] snapshot_20260629T115753.619990Z.json safety flag lr_status [snapshot_20260629T115753.619990Z.json] (safety.lr_status): lr_status is 'NO-GO'
+- [PASS] snapshot_20260629T115753.619990Z.json safety flag live_status [snapshot_20260629T115753.619990Z.json] (safety.live_status): live_status is 'NO-GO'
+- [PASS] snapshot_20260628T225732.008211Z.json schema version [snapshot_20260628T225732.008211Z.json] (metadata.schema_version): metadata.schema_version matches cdb.evidence_harvester.snapshot.v1
+- [PASS] snapshot_20260629T115753.619990Z.json safety flag echtgeld_status [snapshot_20260629T115753.619990Z.json] (safety.echtgeld_status): echtgeld_status is 'NO-GO'
+- [PASS] snapshot_20260629T115753.619990Z.json safety flag runtime_actions [snapshot_20260629T115753.619990Z.json] (safety.runtime_actions): runtime_actions is 'not_allowed'
+- [PASS] snapshot_20260629T115753.619990Z.json safety flag db_execution [snapshot_20260629T115753.619990Z.json] (safety.db_execution): db_execution is 'not_allowed'
+- [PASS] snapshot_20260629T115753.619990Z.json safety banner [snapshot_20260629T115753.619990Z.json] (safety.banner): Safety banner matches expected text
+- [PASS] snapshot_20260629T121218.891836Z.json safe source_mode [snapshot_20260629T121218.891836Z.json] (metadata.source_mode): metadata.source_mode='fixture' is allowed
+- [PASS] snapshot_20260629T121218.891836Z.json safety flag lr_status [snapshot_20260629T121218.891836Z.json] (safety.lr_status): lr_status is 'NO-GO'
+- [PASS] snapshot_20260629T121218.891836Z.json safety flag live_status [snapshot_20260629T121218.891836Z.json] (safety.live_status): live_status is 'NO-GO'
+- [PASS] snapshot_20260629T121218.891836Z.json safety flag echtgeld_status [snapshot_20260629T121218.891836Z.json] (safety.echtgeld_status): echtgeld_status is 'NO-GO'
+- [PASS] snapshot_20260629T121218.891836Z.json safety flag runtime_actions [snapshot_20260629T121218.891836Z.json] (safety.runtime_actions): runtime_actions is 'not_allowed'
+- [PASS] snapshot_20260629T121218.891836Z.json safety flag db_execution [snapshot_20260629T121218.891836Z.json] (safety.db_execution): db_execution is 'not_allowed'
+- [PASS] snapshot_20260628T231153.609636Z.json parses as JSON [snapshot_20260628T231153.609636Z.json]: Valid JSON (5634 bytes)
+- [PASS] snapshot_20260629T121218.891836Z.json safety banner [snapshot_20260629T121218.891836Z.json] (safety.banner): Safety banner matches expected text
+- [PASS] snapshot_20260629T121254.279917Z.json safe source_mode [snapshot_20260629T121254.279917Z.json] (metadata.source_mode): metadata.source_mode='fixture' is allowed
+- [PASS] snapshot_20260629T121254.279917Z.json safety flag lr_status [snapshot_20260629T121254.279917Z.json] (safety.lr_status): lr_status is 'NO-GO'
+- [PASS] snapshot_20260629T121254.279917Z.json safety flag live_status [snapshot_20260629T121254.279917Z.json] (safety.live_status): live_status is 'NO-GO'
+- [PASS] snapshot_20260629T121254.279917Z.json safety flag echtgeld_status [snapshot_20260629T121254.279917Z.json] (safety.echtgeld_status): echtgeld_status is 'NO-GO'
+- [PASS] snapshot_20260629T121254.279917Z.json safety flag runtime_actions [snapshot_20260629T121254.279917Z.json] (safety.runtime_actions): runtime_actions is 'not_allowed'
+- [PASS] snapshot_20260629T121254.279917Z.json safety flag db_execution [snapshot_20260629T121254.279917Z.json] (safety.db_execution): db_execution is 'not_allowed'
+- [PASS] snapshot_20260629T121254.279917Z.json safety banner [snapshot_20260629T121254.279917Z.json] (safety.banner): Safety banner matches expected text
+- [PASS] snapshot_20260629T122719.639543Z.json safe source_mode [snapshot_20260629T122719.639543Z.json] (metadata.source_mode): metadata.source_mode='fixture' is allowed
+- [PASS] snapshot_20260629T122719.639543Z.json safety flag lr_status [snapshot_20260629T122719.639543Z.json] (safety.lr_status): lr_status is 'NO-GO'
+- [PASS] snapshot_20260628T231153.609636Z.json schema version [snapshot_20260628T231153.609636Z.json] (metadata.schema_version): metadata.schema_version matches cdb.evidence_harvester.snapshot.v1
+- [PASS] snapshot_20260629T122719.639543Z.json safety flag live_status [snapshot_20260629T122719.639543Z.json] (safety.live_status): live_status is 'NO-GO'
+- [PASS] snapshot_20260629T122719.639543Z.json safety flag echtgeld_status [snapshot_20260629T122719.639543Z.json] (safety.echtgeld_status): echtgeld_status is 'NO-GO'
+- [PASS] snapshot_20260629T122719.639543Z.json safety flag runtime_actions [snapshot_20260629T122719.639543Z.json] (safety.runtime_actions): runtime_actions is 'not_allowed'
+- [PASS] snapshot_20260629T122719.639543Z.json safety flag db_execution [snapshot_20260629T122719.639543Z.json] (safety.db_execution): db_execution is 'not_allowed'
+- [PASS] snapshot_20260629T122719.639543Z.json safety banner [snapshot_20260629T122719.639543Z.json] (safety.banner): Safety banner matches expected text
+- [PASS] snapshot_20260629T122754.960906Z.json safe source_mode [snapshot_20260629T122754.960906Z.json] (metadata.source_mode): metadata.source_mode='fixture' is allowed
+- [PASS] snapshot_20260629T122754.960906Z.json safety flag lr_status [snapshot_20260629T122754.960906Z.json] (safety.lr_status): lr_status is 'NO-GO'
+- [PASS] snapshot_20260629T122754.960906Z.json safety flag live_status [snapshot_20260629T122754.960906Z.json] (safety.live_status): live_status is 'NO-GO'
+- [PASS] snapshot_20260629T122754.960906Z.json safety flag echtgeld_status [snapshot_20260629T122754.960906Z.json] (safety.echtgeld_status): echtgeld_status is 'NO-GO'
+- [PASS] snapshot_20260629T122754.960906Z.json safety flag runtime_actions [snapshot_20260629T122754.960906Z.json] (safety.runtime_actions): runtime_actions is 'not_allowed'
+- [PASS] snapshot_20260628T231232.158446Z.json parses as JSON [snapshot_20260628T231232.158446Z.json]: Valid JSON (5634 bytes)
+- [PASS] snapshot_20260629T122754.960906Z.json safety flag db_execution [snapshot_20260629T122754.960906Z.json] (safety.db_execution): db_execution is 'not_allowed'
+- [PASS] snapshot_20260629T122754.960906Z.json safety banner [snapshot_20260629T122754.960906Z.json] (safety.banner): Safety banner matches expected text
+- [PASS] snapshot_20260629T124220.684108Z.json safe source_mode [snapshot_20260629T124220.684108Z.json] (metadata.source_mode): metadata.source_mode='fixture' is allowed
+- [PASS] snapshot_20260629T124220.684108Z.json safety flag lr_status [snapshot_20260629T124220.684108Z.json] (safety.lr_status): lr_status is 'NO-GO'
+- [PASS] snapshot_20260629T124220.684108Z.json safety flag live_status [snapshot_20260629T124220.684108Z.json] (safety.live_status): live_status is 'NO-GO'
+- [PASS] snapshot_20260629T124220.684108Z.json safety flag echtgeld_status [snapshot_20260629T124220.684108Z.json] (safety.echtgeld_status): echtgeld_status is 'NO-GO'
+- [PASS] snapshot_20260629T124220.684108Z.json safety flag runtime_actions [snapshot_20260629T124220.684108Z.json] (safety.runtime_actions): runtime_actions is 'not_allowed'
+- [PASS] snapshot_20260629T124220.684108Z.json safety flag db_execution [snapshot_20260629T124220.684108Z.json] (safety.db_execution): db_execution is 'not_allowed'
+- [PASS] snapshot_20260629T124220.684108Z.json safety banner [snapshot_20260629T124220.684108Z.json] (safety.banner): Safety banner matches expected text
+- [PASS] snapshot_20260629T124256.230963Z.json safe source_mode [snapshot_20260629T124256.230963Z.json] (metadata.source_mode): metadata.source_mode='fixture' is allowed
+- [PASS] snapshot_20260628T231232.158446Z.json schema version [snapshot_20260628T231232.158446Z.json] (metadata.schema_version): metadata.schema_version matches cdb.evidence_harvester.snapshot.v1
+- [PASS] snapshot_20260629T124256.230963Z.json safety flag lr_status [snapshot_20260629T124256.230963Z.json] (safety.lr_status): lr_status is 'NO-GO'
+- [PASS] snapshot_20260629T124256.230963Z.json safety flag live_status [snapshot_20260629T124256.230963Z.json] (safety.live_status): live_status is 'NO-GO'
+- [PASS] snapshot_20260629T124256.230963Z.json safety flag echtgeld_status [snapshot_20260629T124256.230963Z.json] (safety.echtgeld_status): echtgeld_status is 'NO-GO'
+- [PASS] snapshot_20260629T124256.230963Z.json safety flag runtime_actions [snapshot_20260629T124256.230963Z.json] (safety.runtime_actions): runtime_actions is 'not_allowed'
+- [PASS] snapshot_20260629T124256.230963Z.json safety flag db_execution [snapshot_20260629T124256.230963Z.json] (safety.db_execution): db_execution is 'not_allowed'
+- [PASS] snapshot_20260629T124256.230963Z.json safety banner [snapshot_20260629T124256.230963Z.json] (safety.banner): Safety banner matches expected text
+- [PASS] snapshot_20260629T125723.136228Z.json safe source_mode [snapshot_20260629T125723.136228Z.json] (metadata.source_mode): metadata.source_mode='fixture' is allowed
+- [PASS] snapshot_20260629T125723.136228Z.json safety flag lr_status [snapshot_20260629T125723.136228Z.json] (safety.lr_status): lr_status is 'NO-GO'
+- [PASS] snapshot_20260629T125723.136228Z.json safety flag live_status [snapshot_20260629T125723.136228Z.json] (safety.live_status): live_status is 'NO-GO'
+- [PASS] snapshot_20260629T125723.136228Z.json safety flag echtgeld_status [snapshot_20260629T125723.136228Z.json] (safety.echtgeld_status): echtgeld_status is 'NO-GO'
+- [PASS] snapshot_20260628T232653.786742Z.json parses as JSON [snapshot_20260628T232653.786742Z.json]: Valid JSON (5634 bytes)
+- [PASS] snapshot_20260629T125723.136228Z.json safety flag runtime_actions [snapshot_20260629T125723.136228Z.json] (safety.runtime_actions): runtime_actions is 'not_allowed'
+- [PASS] snapshot_20260629T125723.136228Z.json safety flag db_execution [snapshot_20260629T125723.136228Z.json] (safety.db_execution): db_execution is 'not_allowed'
+- [PASS] snapshot_20260629T125723.136228Z.json safety banner [snapshot_20260629T125723.136228Z.json] (safety.banner): Safety banner matches expected text
+- [PASS] snapshot_20260629T125804.007362Z.json safe source_mode [snapshot_20260629T125804.007362Z.json] (metadata.source_mode): metadata.source_mode='fixture' is allowed
+- [PASS] snapshot_20260629T125804.007362Z.json safety flag lr_status [snapshot_20260629T125804.007362Z.json] (safety.lr_status): lr_status is 'NO-GO'
+- [PASS] snapshot_20260629T125804.007362Z.json safety flag live_status [snapshot_20260629T125804.007362Z.json] (safety.live_status): live_status is 'NO-GO'
+- [PASS] snapshot_20260629T125804.007362Z.json safety flag echtgeld_status [snapshot_20260629T125804.007362Z.json] (safety.echtgeld_status): echtgeld_status is 'NO-GO'
+- [PASS] snapshot_20260629T125804.007362Z.json safety flag runtime_actions [snapshot_20260629T125804.007362Z.json] (safety.runtime_actions): runtime_actions is 'not_allowed'
+- [PASS] snapshot_20260629T125804.007362Z.json safety flag db_execution [snapshot_20260629T125804.007362Z.json] (safety.db_execution): db_execution is 'not_allowed'
+- [PASS] snapshot_20260629T125804.007362Z.json safety banner [snapshot_20260629T125804.007362Z.json] (safety.banner): Safety banner matches expected text
+- [PASS] snapshot_20260628T232653.786742Z.json schema version [snapshot_20260628T232653.786742Z.json] (metadata.schema_version): metadata.schema_version matches cdb.evidence_harvester.snapshot.v1
+- [PASS] snapshot_20260629T131224.181983Z.json safe source_mode [snapshot_20260629T131224.181983Z.json] (metadata.source_mode): metadata.source_mode='fixture' is allowed
+- [PASS] snapshot_20260629T131224.181983Z.json safety flag lr_status [snapshot_20260629T131224.181983Z.json] (safety.lr_status): lr_status is 'NO-GO'
+- [PASS] snapshot_20260629T131224.181983Z.json safety flag live_status [snapshot_20260629T131224.181983Z.json] (safety.live_status): live_status is 'NO-GO'
+- [PASS] snapshot_20260629T131224.181983Z.json safety flag echtgeld_status [snapshot_20260629T131224.181983Z.json] (safety.echtgeld_status): echtgeld_status is 'NO-GO'
+- [PASS] snapshot_20260629T131224.181983Z.json safety flag runtime_actions [snapshot_20260629T131224.181983Z.json] (safety.runtime_actions): runtime_actions is 'not_allowed'
+- [PASS] snapshot_20260629T131224.181983Z.json safety flag db_execution [snapshot_20260629T131224.181983Z.json] (safety.db_execution): db_execution is 'not_allowed'
+- [PASS] snapshot_20260629T131224.181983Z.json safety banner [snapshot_20260629T131224.181983Z.json] (safety.banner): Safety banner matches expected text
+- [PASS] snapshot_20260629T131304.889188Z.json safe source_mode [snapshot_20260629T131304.889188Z.json] (metadata.source_mode): metadata.source_mode='fixture' is allowed
+- [PASS] snapshot_20260629T131304.889188Z.json safety flag lr_status [snapshot_20260629T131304.889188Z.json] (safety.lr_status): lr_status is 'NO-GO'
+- [PASS] snapshot_20260629T131304.889188Z.json safety flag live_status [snapshot_20260629T131304.889188Z.json] (safety.live_status): live_status is 'NO-GO'
+- [PASS] snapshot_20260628T232732.326637Z.json parses as JSON [snapshot_20260628T232732.326637Z.json]: Valid JSON (5634 bytes)
+- [PASS] snapshot_20260629T131304.889188Z.json safety flag echtgeld_status [snapshot_20260629T131304.889188Z.json] (safety.echtgeld_status): echtgeld_status is 'NO-GO'
+- [PASS] snapshot_20260629T131304.889188Z.json safety flag runtime_actions [snapshot_20260629T131304.889188Z.json] (safety.runtime_actions): runtime_actions is 'not_allowed'
+- [PASS] snapshot_20260629T131304.889188Z.json safety flag db_execution [snapshot_20260629T131304.889188Z.json] (safety.db_execution): db_execution is 'not_allowed'
+- [PASS] snapshot_20260629T131304.889188Z.json safety banner [snapshot_20260629T131304.889188Z.json] (safety.banner): Safety banner matches expected text
+- [PASS] snapshot_20260629T132725.882130Z.json safe source_mode [snapshot_20260629T132725.882130Z.json] (metadata.source_mode): metadata.source_mode='fixture' is allowed
+- [PASS] snapshot_20260629T132725.882130Z.json safety flag lr_status [snapshot_20260629T132725.882130Z.json] (safety.lr_status): lr_status is 'NO-GO'
+- [PASS] snapshot_20260629T132725.882130Z.json safety flag live_status [snapshot_20260629T132725.882130Z.json] (safety.live_status): live_status is 'NO-GO'
+- [PASS] snapshot_20260629T132725.882130Z.json safety flag echtgeld_status [snapshot_20260629T132725.882130Z.json] (safety.echtgeld_status): echtgeld_status is 'NO-GO'
+- [PASS] snapshot_20260629T132725.882130Z.json safety flag runtime_actions [snapshot_20260629T132725.882130Z.json] (safety.runtime_actions): runtime_actions is 'not_allowed'
+- [PASS] snapshot_20260629T132725.882130Z.json safety flag db_execution [snapshot_20260629T132725.882130Z.json] (safety.db_execution): db_execution is 'not_allowed'
+- [PASS] snapshot_20260628T232732.326637Z.json schema version [snapshot_20260628T232732.326637Z.json] (metadata.schema_version): metadata.schema_version matches cdb.evidence_harvester.snapshot.v1
+- [PASS] snapshot_20260629T132725.882130Z.json safety banner [snapshot_20260629T132725.882130Z.json] (safety.banner): Safety banner matches expected text
+- [PASS] snapshot_20260629T132806.599768Z.json safe source_mode [snapshot_20260629T132806.599768Z.json] (metadata.source_mode): metadata.source_mode='fixture' is allowed
+- [PASS] snapshot_20260629T132806.599768Z.json safety flag lr_status [snapshot_20260629T132806.599768Z.json] (safety.lr_status): lr_status is 'NO-GO'
+- [PASS] snapshot_20260629T132806.599768Z.json safety flag live_status [snapshot_20260629T132806.599768Z.json] (safety.live_status): live_status is 'NO-GO'
+- [PASS] snapshot_20260629T132806.599768Z.json safety flag echtgeld_status [snapshot_20260629T132806.599768Z.json] (safety.echtgeld_status): echtgeld_status is 'NO-GO'
+- [PASS] snapshot_20260629T132806.599768Z.json safety flag runtime_actions [snapshot_20260629T132806.599768Z.json] (safety.runtime_actions): runtime_actions is 'not_allowed'
+- [PASS] snapshot_20260629T132806.599768Z.json safety flag db_execution [snapshot_20260629T132806.599768Z.json] (safety.db_execution): db_execution is 'not_allowed'
+- [PASS] snapshot_20260629T132806.599768Z.json safety banner [snapshot_20260629T132806.599768Z.json] (safety.banner): Safety banner matches expected text
+- [PASS] alert_20260628T202647.095428Z.json manual escalation only [alert_20260628T202647.095428Z.json] (manual_escalation_only): manual_escalation_only is true
+- [PASS] alert_20260628T202725.754548Z.json manual escalation only [alert_20260628T202725.754548Z.json] (manual_escalation_only): manual_escalation_only is true
+- [PASS] snapshot_20260628T234153.975890Z.json parses as JSON [snapshot_20260628T234153.975890Z.json]: Valid JSON (5634 bytes)
+- [PASS] alert_20260628T204147.136310Z.json manual escalation only [alert_20260628T204147.136310Z.json] (manual_escalation_only): manual_escalation_only is true
+- [PASS] alert_20260628T204225.822673Z.json manual escalation only [alert_20260628T204225.822673Z.json] (manual_escalation_only): manual_escalation_only is true
+- [PASS] alert_20260628T205647.228228Z.json manual escalation only [alert_20260628T205647.228228Z.json] (manual_escalation_only): manual_escalation_only is true
+- [PASS] alert_20260628T205725.879579Z.json manual escalation only [alert_20260628T205725.879579Z.json] (manual_escalation_only): manual_escalation_only is true
+- [PASS] alert_20260628T211147.340626Z.json manual escalation only [alert_20260628T211147.340626Z.json] (manual_escalation_only): manual_escalation_only is true
+- [PASS] alert_20260628T211225.977739Z.json manual escalation only [alert_20260628T211225.977739Z.json] (manual_escalation_only): manual_escalation_only is true
+- [PASS] alert_20260628T212647.438144Z.json manual escalation only [alert_20260628T212647.438144Z.json] (manual_escalation_only): manual_escalation_only is true
+- [PASS] alert_20260628T212726.085888Z.json manual escalation only [alert_20260628T212726.085888Z.json] (manual_escalation_only): manual_escalation_only is true
+- [PASS] alert_20260628T214147.524830Z.json manual escalation only [alert_20260628T214147.524830Z.json] (manual_escalation_only): manual_escalation_only is true
+- [PASS] alert_20260628T214226.178738Z.json manual escalation only [alert_20260628T214226.178738Z.json] (manual_escalation_only): manual_escalation_only is true
+- [PASS] snapshot_20260628T234153.975890Z.json schema version [snapshot_20260628T234153.975890Z.json] (metadata.schema_version): metadata.schema_version matches cdb.evidence_harvester.snapshot.v1
+- [PASS] alert_20260628T215647.638424Z.json manual escalation only [alert_20260628T215647.638424Z.json] (manual_escalation_only): manual_escalation_only is true
+- [PASS] alert_20260628T215726.259263Z.json manual escalation only [alert_20260628T215726.259263Z.json] (manual_escalation_only): manual_escalation_only is true
+- [PASS] alert_20260628T221147.773162Z.json manual escalation only [alert_20260628T221147.773162Z.json] (manual_escalation_only): manual_escalation_only is true
+- [PASS] alert_20260628T221226.358702Z.json manual escalation only [alert_20260628T221226.358702Z.json] (manual_escalation_only): manual_escalation_only is true
+- [PASS] alert_20260628T222647.925582Z.json manual escalation only [alert_20260628T222647.925582Z.json] (manual_escalation_only): manual_escalation_only is true
+- [PASS] alert_20260628T222726.481222Z.json manual escalation only [alert_20260628T222726.481222Z.json] (manual_escalation_only): manual_escalation_only is true
+- [PASS] alert_20260628T224148.050365Z.json manual escalation only [alert_20260628T224148.050365Z.json] (manual_escalation_only): manual_escalation_only is true
+- [PASS] alert_20260628T224226.622382Z.json manual escalation only [alert_20260628T224226.622382Z.json] (manual_escalation_only): manual_escalation_only is true
+- [PASS] alert_20260628T225653.430691Z.json manual escalation only [alert_20260628T225653.430691Z.json] (manual_escalation_only): manual_escalation_only is true
+- [PASS] alert_20260628T225732.008211Z.json manual escalation only [alert_20260628T225732.008211Z.json] (manual_escalation_only): manual_escalation_only is true
+- [PASS] snapshot_20260628T234232.480715Z.json parses as JSON [snapshot_20260628T234232.480715Z.json]: Valid JSON (5634 bytes)
+- [PASS] alert_20260628T231153.609636Z.json manual escalation only [alert_20260628T231153.609636Z.json] (manual_escalation_only): manual_escalation_only is true
+- [PASS] alert_20260628T231232.158446Z.json manual escalation only [alert_20260628T231232.158446Z.json] (manual_escalation_only): manual_escalation_only is true
+- [PASS] alert_20260628T232653.786742Z.json manual escalation only [alert_20260628T232653.786742Z.json] (manual_escalation_only): manual_escalation_only is true
+- [PASS] alert_20260628T232732.326637Z.json manual escalation only [alert_20260628T232732.326637Z.json] (manual_escalation_only): manual_escalation_only is true
+- [PASS] alert_20260628T234153.975890Z.json manual escalation only [alert_20260628T234153.975890Z.json] (manual_escalation_only): manual_escalation_only is true
+- [PASS] alert_20260628T234232.480715Z.json manual escalation only [alert_20260628T234232.480715Z.json] (manual_escalation_only): manual_escalation_only is true
+- [PASS] alert_20260628T235654.200874Z.json manual escalation only [alert_20260628T235654.200874Z.json] (manual_escalation_only): manual_escalation_only is true
+- [PASS] alert_20260628T235732.645061Z.json manual escalation only [alert_20260628T235732.645061Z.json] (manual_escalation_only): manual_escalation_only is true
+- [PASS] alert_20260629T001154.501508Z.json manual escalation only [alert_20260629T001154.501508Z.json] (manual_escalation_only): manual_escalation_only is true
+- [PASS] alert_20260629T001232.824905Z.json manual escalation only [alert_20260629T001232.824905Z.json] (manual_escalation_only): manual_escalation_only is true
+- [PASS] snapshot_20260628T234232.480715Z.json schema version [snapshot_20260628T234232.480715Z.json] (metadata.schema_version): metadata.schema_version matches cdb.evidence_harvester.snapshot.v1
+- [PASS] alert_20260629T002654.774738Z.json manual escalation only [alert_20260629T002654.774738Z.json] (manual_escalation_only): manual_escalation_only is true
+- [PASS] alert_20260629T002733.036521Z.json manual escalation only [alert_20260629T002733.036521Z.json] (manual_escalation_only): manual_escalation_only is true
+- [PASS] alert_20260629T004155.046745Z.json manual escalation only [alert_20260629T004155.046745Z.json] (manual_escalation_only): manual_escalation_only is true
+- [PASS] alert_20260629T004233.286267Z.json manual escalation only [alert_20260629T004233.286267Z.json] (manual_escalation_only): manual_escalation_only is true
+- [PASS] alert_20260629T005655.286180Z.json manual escalation only [alert_20260629T005655.286180Z.json] (manual_escalation_only): manual_escalation_only is true
+- [PASS] alert_20260629T005733.500216Z.json manual escalation only [alert_20260629T005733.500216Z.json] (manual_escalation_only): manual_escalation_only is true
+- [PASS] alert_20260629T011155.540856Z.json manual escalation only [alert_20260629T011155.540856Z.json] (manual_escalation_only): manual_escalation_only is true
+- [PASS] alert_20260629T011233.729956Z.json manual escalation only [alert_20260629T011233.729956Z.json] (manual_escalation_only): manual_escalation_only is true
+- [PASS] alert_20260629T012655.870979Z.json manual escalation only [alert_20260629T012655.870979Z.json] (manual_escalation_only): manual_escalation_only is true
+- [PASS] alert_20260629T012734.022974Z.json manual escalation only [alert_20260629T012734.022974Z.json] (manual_escalation_only): manual_escalation_only is true
+- [PASS] snapshot_20260628T235654.200874Z.json parses as JSON [snapshot_20260628T235654.200874Z.json]: Valid JSON (5634 bytes)
+- [PASS] alert_20260629T014156.252608Z.json manual escalation only [alert_20260629T014156.252608Z.json] (manual_escalation_only): manual_escalation_only is true
+- [PASS] alert_20260629T014234.291063Z.json manual escalation only [alert_20260629T014234.291063Z.json] (manual_escalation_only): manual_escalation_only is true
+- [PASS] alert_20260629T015656.659674Z.json manual escalation only [alert_20260629T015656.659674Z.json] (manual_escalation_only): manual_escalation_only is true
+- [PASS] alert_20260629T015734.550802Z.json manual escalation only [alert_20260629T015734.550802Z.json] (manual_escalation_only): manual_escalation_only is true
+- [PASS] alert_20260629T021156.961887Z.json manual escalation only [alert_20260629T021156.961887Z.json] (manual_escalation_only): manual_escalation_only is true
+- [PASS] alert_20260629T021234.839515Z.json manual escalation only [alert_20260629T021234.839515Z.json] (manual_escalation_only): manual_escalation_only is true
+- [PASS] alert_20260629T022657.261292Z.json manual escalation only [alert_20260629T022657.261292Z.json] (manual_escalation_only): manual_escalation_only is true
+- [PASS] alert_20260629T022735.088379Z.json manual escalation only [alert_20260629T022735.088379Z.json] (manual_escalation_only): manual_escalation_only is true
+- [PASS] alert_20260629T024157.543626Z.json manual escalation only [alert_20260629T024157.543626Z.json] (manual_escalation_only): manual_escalation_only is true
+- [PASS] alert_20260629T024235.366805Z.json manual escalation only [alert_20260629T024235.366805Z.json] (manual_escalation_only): manual_escalation_only is true
+- [PASS] snapshot_20260628T235654.200874Z.json schema version [snapshot_20260628T235654.200874Z.json] (metadata.schema_version): metadata.schema_version matches cdb.evidence_harvester.snapshot.v1
+- [PASS] alert_20260629T025657.877035Z.json manual escalation only [alert_20260629T025657.877035Z.json] (manual_escalation_only): manual_escalation_only is true
+- [PASS] alert_20260629T025735.674598Z.json manual escalation only [alert_20260629T025735.674598Z.json] (manual_escalation_only): manual_escalation_only is true
+- [PASS] alert_20260629T031158.281708Z.json manual escalation only [alert_20260629T031158.281708Z.json] (manual_escalation_only): manual_escalation_only is true
+- [PASS] alert_20260629T031235.977270Z.json manual escalation only [alert_20260629T031235.977270Z.json] (manual_escalation_only): manual_escalation_only is true
+- [PASS] alert_20260629T032658.655687Z.json manual escalation only [alert_20260629T032658.655687Z.json] (manual_escalation_only): manual_escalation_only is true
+- [PASS] alert_20260629T032736.303267Z.json manual escalation only [alert_20260629T032736.303267Z.json] (manual_escalation_only): manual_escalation_only is true
+- [PASS] alert_20260629T034159.055539Z.json manual escalation only [alert_20260629T034159.055539Z.json] (manual_escalation_only): manual_escalation_only is true
+- [PASS] alert_20260629T034236.662044Z.json manual escalation only [alert_20260629T034236.662044Z.json] (manual_escalation_only): manual_escalation_only is true
+- [PASS] alert_20260629T035659.403750Z.json manual escalation only [alert_20260629T035659.403750Z.json] (manual_escalation_only): manual_escalation_only is true
+- [PASS] alert_20260629T035736.996291Z.json manual escalation only [alert_20260629T035736.996291Z.json] (manual_escalation_only): manual_escalation_only is true
+- [PASS] snapshot_20260628T235732.645061Z.json parses as JSON [snapshot_20260628T235732.645061Z.json]: Valid JSON (5634 bytes)
+- [PASS] alert_20260629T041159.834473Z.json manual escalation only [alert_20260629T041159.834473Z.json] (manual_escalation_only): manual_escalation_only is true
+- [PASS] alert_20260629T041237.420710Z.json manual escalation only [alert_20260629T041237.420710Z.json] (manual_escalation_only): manual_escalation_only is true
+- [PASS] alert_20260629T042700.207061Z.json manual escalation only [alert_20260629T042700.207061Z.json] (manual_escalation_only): manual_escalation_only is true
+- [PASS] alert_20260629T042737.755496Z.json manual escalation only [alert_20260629T042737.755496Z.json] (manual_escalation_only): manual_escalation_only is true
+- [PASS] alert_20260629T044200.553296Z.json manual escalation only [alert_20260629T044200.553296Z.json] (manual_escalation_only): manual_escalation_only is true
+- [PASS] alert_20260629T044238.097659Z.json manual escalation only [alert_20260629T044238.097659Z.json] (manual_escalation_only): manual_escalation_only is true
+- [PASS] alert_20260629T045700.953009Z.json manual escalation only [alert_20260629T045700.953009Z.json] (manual_escalation_only): manual_escalation_only is true
+- [PASS] alert_20260629T045738.476486Z.json manual escalation only [alert_20260629T045738.476486Z.json] (manual_escalation_only): manual_escalation_only is true
+- [PASS] alert_20260629T051201.371370Z.json manual escalation only [alert_20260629T051201.371370Z.json] (manual_escalation_only): manual_escalation_only is true
+- [PASS] alert_20260629T051238.868752Z.json manual escalation only [alert_20260629T051238.868752Z.json] (manual_escalation_only): manual_escalation_only is true
+- [PASS] snapshot_20260628T235732.645061Z.json schema version [snapshot_20260628T235732.645061Z.json] (metadata.schema_version): metadata.schema_version matches cdb.evidence_harvester.snapshot.v1
+- [PASS] alert_20260629T052701.813024Z.json manual escalation only [alert_20260629T052701.813024Z.json] (manual_escalation_only): manual_escalation_only is true
+- [PASS] alert_20260629T052739.269183Z.json manual escalation only [alert_20260629T052739.269183Z.json] (manual_escalation_only): manual_escalation_only is true
+- [PASS] alert_20260629T054202.209467Z.json manual escalation only [alert_20260629T054202.209467Z.json] (manual_escalation_only): manual_escalation_only is true
+- [PASS] alert_20260629T054239.631909Z.json manual escalation only [alert_20260629T054239.631909Z.json] (manual_escalation_only): manual_escalation_only is true
+- [PASS] alert_20260629T055702.593495Z.json manual escalation only [alert_20260629T055702.593495Z.json] (manual_escalation_only): manual_escalation_only is true
+- [PASS] alert_20260629T055740.036252Z.json manual escalation only [alert_20260629T055740.036252Z.json] (manual_escalation_only): manual_escalation_only is true
+- [PASS] alert_20260629T061203.038198Z.json manual escalation only [alert_20260629T061203.038198Z.json] (manual_escalation_only): manual_escalation_only is true
+- [PASS] alert_20260629T061240.476343Z.json manual escalation only [alert_20260629T061240.476343Z.json] (manual_escalation_only): manual_escalation_only is true
+- [PASS] alert_20260629T062703.502916Z.json manual escalation only [alert_20260629T062703.502916Z.json] (manual_escalation_only): manual_escalation_only is true
+- [PASS] alert_20260629T062740.937526Z.json manual escalation only [alert_20260629T062740.937526Z.json] (manual_escalation_only): manual_escalation_only is true
+- [PASS] snapshot_20260629T001154.501508Z.json parses as JSON [snapshot_20260629T001154.501508Z.json]: Valid JSON (5634 bytes)
+- [PASS] alert_20260629T064203.999298Z.json manual escalation only [alert_20260629T064203.999298Z.json] (manual_escalation_only): manual_escalation_only is true
+- [PASS] alert_20260629T064241.410579Z.json manual escalation only [alert_20260629T064241.410579Z.json] (manual_escalation_only): manual_escalation_only is true
+- [PASS] alert_20260629T065704.492040Z.json manual escalation only [alert_20260629T065704.492040Z.json] (manual_escalation_only): manual_escalation_only is true
+- [PASS] alert_20260629T065741.876917Z.json manual escalation only [alert_20260629T065741.876917Z.json] (manual_escalation_only): manual_escalation_only is true
+- [PASS] alert_20260629T071205.045950Z.json manual escalation only [alert_20260629T071205.045950Z.json] (manual_escalation_only): manual_escalation_only is true
+- [PASS] alert_20260629T071242.337870Z.json manual escalation only [alert_20260629T071242.337870Z.json] (manual_escalation_only): manual_escalation_only is true
+- [PASS] alert_20260629T072705.612761Z.json manual escalation only [alert_20260629T072705.612761Z.json] (manual_escalation_only): manual_escalation_only is true
+- [PASS] alert_20260629T072742.814909Z.json manual escalation only [alert_20260629T072742.814909Z.json] (manual_escalation_only): manual_escalation_only is true
+- [PASS] alert_20260629T074206.239038Z.json manual escalation only [alert_20260629T074206.239038Z.json] (manual_escalation_only): manual_escalation_only is true
+- [PASS] alert_20260629T074243.386975Z.json manual escalation only [alert_20260629T074243.386975Z.json] (manual_escalation_only): manual_escalation_only is true
+- [PASS] snapshot_20260629T001154.501508Z.json schema version [snapshot_20260629T001154.501508Z.json] (metadata.schema_version): metadata.schema_version matches cdb.evidence_harvester.snapshot.v1
+- [PASS] alert_20260629T075706.941690Z.json manual escalation only [alert_20260629T075706.941690Z.json] (manual_escalation_only): manual_escalation_only is true
+- [PASS] alert_20260629T075744.017413Z.json manual escalation only [alert_20260629T075744.017413Z.json] (manual_escalation_only): manual_escalation_only is true
+- [PASS] alert_20260629T081207.538860Z.json manual escalation only [alert_20260629T081207.538860Z.json] (manual_escalation_only): manual_escalation_only is true
+- [PASS] alert_20260629T081244.519282Z.json manual escalation only [alert_20260629T081244.519282Z.json] (manual_escalation_only): manual_escalation_only is true
+- [PASS] alert_20260629T082708.140490Z.json manual escalation only [alert_20260629T082708.140490Z.json] (manual_escalation_only): manual_escalation_only is true
+- [PASS] alert_20260629T082745.060332Z.json manual escalation only [alert_20260629T082745.060332Z.json] (manual_escalation_only): manual_escalation_only is true
+- [PASS] alert_20260629T084208.790950Z.json manual escalation only [alert_20260629T084208.790950Z.json] (manual_escalation_only): manual_escalation_only is true
+- [PASS] alert_20260629T084245.597847Z.json manual escalation only [alert_20260629T084245.597847Z.json] (manual_escalation_only): manual_escalation_only is true
+- [PASS] alert_20260629T085709.431205Z.json manual escalation only [alert_20260629T085709.431205Z.json] (manual_escalation_only): manual_escalation_only is true
+- [PASS] alert_20260629T085746.133858Z.json manual escalation only [alert_20260629T085746.133858Z.json] (manual_escalation_only): manual_escalation_only is true
+- [PASS] snapshot_20260629T001232.824905Z.json parses as JSON [snapshot_20260629T001232.824905Z.json]: Valid JSON (5634 bytes)
+- [PASS] alert_20260629T091210.137367Z.json manual escalation only [alert_20260629T091210.137367Z.json] (manual_escalation_only): manual_escalation_only is true
+- [PASS] alert_20260629T091246.700715Z.json manual escalation only [alert_20260629T091246.700715Z.json] (manual_escalation_only): manual_escalation_only is true
+- [PASS] alert_20260629T092710.901206Z.json manual escalation only [alert_20260629T092710.901206Z.json] (manual_escalation_only): manual_escalation_only is true
+- [PASS] alert_20260629T092747.293172Z.json manual escalation only [alert_20260629T092747.293172Z.json] (manual_escalation_only): manual_escalation_only is true
+- [PASS] alert_20260629T094211.695111Z.json manual escalation only [alert_20260629T094211.695111Z.json] (manual_escalation_only): manual_escalation_only is true
+- [PASS] alert_20260629T094247.903918Z.json manual escalation only [alert_20260629T094247.903918Z.json] (manual_escalation_only): manual_escalation_only is true
+- [PASS] alert_20260629T095712.307200Z.json manual escalation only [alert_20260629T095712.307200Z.json] (manual_escalation_only): manual_escalation_only is true
+- [PASS] alert_20260629T095748.490461Z.json manual escalation only [alert_20260629T095748.490461Z.json] (manual_escalation_only): manual_escalation_only is true
+- [PASS] alert_20260629T101213.089179Z.json manual escalation only [alert_20260629T101213.089179Z.json] (manual_escalation_only): manual_escalation_only is true
+- [PASS] alert_20260629T101249.139878Z.json manual escalation only [alert_20260629T101249.139878Z.json] (manual_escalation_only): manual_escalation_only is true
+- [PASS] snapshot_20260629T001232.824905Z.json schema version [snapshot_20260629T001232.824905Z.json] (metadata.schema_version): metadata.schema_version matches cdb.evidence_harvester.snapshot.v1
+- [PASS] alert_20260629T102713.736465Z.json manual escalation only [alert_20260629T102713.736465Z.json] (manual_escalation_only): manual_escalation_only is true
+- [PASS] alert_20260629T102749.736234Z.json manual escalation only [alert_20260629T102749.736234Z.json] (manual_escalation_only): manual_escalation_only is true
+- [PASS] alert_20260629T104214.526487Z.json manual escalation only [alert_20260629T104214.526487Z.json] (manual_escalation_only): manual_escalation_only is true
+- [PASS] alert_20260629T104250.386199Z.json manual escalation only [alert_20260629T104250.386199Z.json] (manual_escalation_only): manual_escalation_only is true
+- [PASS] alert_20260629T105715.204661Z.json manual escalation only [alert_20260629T105715.204661Z.json] (manual_escalation_only): manual_escalation_only is true
+- [PASS] alert_20260629T105751.025839Z.json manual escalation only [alert_20260629T105751.025839Z.json] (manual_escalation_only): manual_escalation_only is true
+- [PASS] alert_20260629T111215.903183Z.json manual escalation only [alert_20260629T111215.903183Z.json] (manual_escalation_only): manual_escalation_only is true
+- [PASS] alert_20260629T111251.661921Z.json manual escalation only [alert_20260629T111251.661921Z.json] (manual_escalation_only): manual_escalation_only is true
+- [PASS] alert_20260629T112716.629865Z.json manual escalation only [alert_20260629T112716.629865Z.json] (manual_escalation_only): manual_escalation_only is true
+- [PASS] alert_20260629T112752.284749Z.json manual escalation only [alert_20260629T112752.284749Z.json] (manual_escalation_only): manual_escalation_only is true
+- [PASS] snapshot_20260629T002654.774738Z.json parses as JSON [snapshot_20260629T002654.774738Z.json]: Valid JSON (5634 bytes)
+- [PASS] alert_20260629T114217.488056Z.json manual escalation only [alert_20260629T114217.488056Z.json] (manual_escalation_only): manual_escalation_only is true
+- [PASS] alert_20260629T114252.920024Z.json manual escalation only [alert_20260629T114252.920024Z.json] (manual_escalation_only): manual_escalation_only is true
+- [PASS] alert_20260629T115718.201420Z.json manual escalation only [alert_20260629T115718.201420Z.json] (manual_escalation_only): manual_escalation_only is true
+- [PASS] alert_20260629T115753.619990Z.json manual escalation only [alert_20260629T115753.619990Z.json] (manual_escalation_only): manual_escalation_only is true
+- [PASS] alert_20260629T121218.891836Z.json manual escalation only [alert_20260629T121218.891836Z.json] (manual_escalation_only): manual_escalation_only is true
+- [PASS] alert_20260629T121254.279917Z.json manual escalation only [alert_20260629T121254.279917Z.json] (manual_escalation_only): manual_escalation_only is true
+- [PASS] alert_20260629T122719.639543Z.json manual escalation only [alert_20260629T122719.639543Z.json] (manual_escalation_only): manual_escalation_only is true
+- [PASS] alert_20260629T122754.960906Z.json manual escalation only [alert_20260629T122754.960906Z.json] (manual_escalation_only): manual_escalation_only is true
+- [PASS] alert_20260629T124220.684108Z.json manual escalation only [alert_20260629T124220.684108Z.json] (manual_escalation_only): manual_escalation_only is true
+- [PASS] alert_20260629T124256.230963Z.json manual escalation only [alert_20260629T124256.230963Z.json] (manual_escalation_only): manual_escalation_only is true
+- [PASS] snapshot_20260629T002654.774738Z.json schema version [snapshot_20260629T002654.774738Z.json] (metadata.schema_version): metadata.schema_version matches cdb.evidence_harvester.snapshot.v1
+- [PASS] alert_20260629T125723.136228Z.json manual escalation only [alert_20260629T125723.136228Z.json] (manual_escalation_only): manual_escalation_only is true
+- [PASS] alert_20260629T125804.007362Z.json manual escalation only [alert_20260629T125804.007362Z.json] (manual_escalation_only): manual_escalation_only is true
+- [PASS] alert_20260629T131224.181983Z.json manual escalation only [alert_20260629T131224.181983Z.json] (manual_escalation_only): manual_escalation_only is true
+- [PASS] alert_20260629T131304.889188Z.json manual escalation only [alert_20260629T131304.889188Z.json] (manual_escalation_only): manual_escalation_only is true
+- [PASS] alert_20260629T132725.882130Z.json manual escalation only [alert_20260629T132725.882130Z.json] (manual_escalation_only): manual_escalation_only is true
+- [PASS] alert_20260629T132806.599768Z.json manual escalation only [alert_20260629T132806.599768Z.json] (manual_escalation_only): manual_escalation_only is true
+- [PASS] runner_heartbeat.json current_run_at_utc [runner_heartbeat.json] (current_run_at_utc): current_run_at_utc is valid
+- [PASS] Coordinator lifecycle chronology [coordinator_events.jsonl]: Lifecycle events are chronological
+- [PASS] snapshot_20260629T002733.036521Z.json parses as JSON [snapshot_20260629T002733.036521Z.json]: Valid JSON (5634 bytes)
+- [PASS] Lifecycle-artifact count consistency [coordinator_events.jsonl]: Lifecycle cycle_completed count (138) matches snapshot artifact count (138)
+- [PASS] watchdog_report_20260628T202647.095428Z.json Watchdog verdict [watchdog_report_20260628T202647.095428Z.json] (verdict.verdict): Watchdog report is PASS
+- [PASS] watchdog_report_20260628T202725.754548Z.json Watchdog verdict [watchdog_report_20260628T202725.754548Z.json] (verdict.verdict): Watchdog report is PASS
+- [PASS] watchdog_report_20260628T204147.136310Z.json Watchdog verdict [watchdog_report_20260628T204147.136310Z.json] (verdict.verdict): Watchdog report is PASS
+- [PASS] watchdog_report_20260628T204225.822673Z.json Watchdog verdict [watchdog_report_20260628T204225.822673Z.json] (verdict.verdict): Watchdog report is PASS
+- [PASS] watchdog_report_20260628T205647.228228Z.json Watchdog verdict [watchdog_report_20260628T205647.228228Z.json] (verdict.verdict): Watchdog report is PASS
+- [PASS] watchdog_report_20260628T205725.879579Z.json Watchdog verdict [watchdog_report_20260628T205725.879579Z.json] (verdict.verdict): Watchdog report is PASS
+- [PASS] watchdog_report_20260628T211147.340626Z.json Watchdog verdict [watchdog_report_20260628T211147.340626Z.json] (verdict.verdict): Watchdog report is PASS
+- [PASS] watchdog_report_20260628T211225.977739Z.json Watchdog verdict [watchdog_report_20260628T211225.977739Z.json] (verdict.verdict): Watchdog report is PASS
+- [PASS] snapshot_20260629T002733.036521Z.json schema version [snapshot_20260629T002733.036521Z.json] (metadata.schema_version): metadata.schema_version matches cdb.evidence_harvester.snapshot.v1
+- [PASS] watchdog_report_20260628T212647.438144Z.json Watchdog verdict [watchdog_report_20260628T212647.438144Z.json] (verdict.verdict): Watchdog report is PASS
+- [PASS] watchdog_report_20260628T212726.085888Z.json Watchdog verdict [watchdog_report_20260628T212726.085888Z.json] (verdict.verdict): Watchdog report is PASS
+- [PASS] watchdog_report_20260628T214147.524830Z.json Watchdog verdict [watchdog_report_20260628T214147.524830Z.json] (verdict.verdict): Watchdog report is PASS
+- [PASS] watchdog_report_20260628T214226.178738Z.json Watchdog verdict [watchdog_report_20260628T214226.178738Z.json] (verdict.verdict): Watchdog report is PASS
+- [PASS] watchdog_report_20260628T215647.638424Z.json Watchdog verdict [watchdog_report_20260628T215647.638424Z.json] (verdict.verdict): Watchdog report is PASS
+- [PASS] watchdog_report_20260628T215726.259263Z.json Watchdog verdict [watchdog_report_20260628T215726.259263Z.json] (verdict.verdict): Watchdog report is PASS
+- [PASS] watchdog_report_20260628T221147.773162Z.json Watchdog verdict [watchdog_report_20260628T221147.773162Z.json] (verdict.verdict): Watchdog report is PASS
+- [PASS] watchdog_report_20260628T221226.358702Z.json Watchdog verdict [watchdog_report_20260628T221226.358702Z.json] (verdict.verdict): Watchdog report is PASS
+- [PASS] watchdog_report_20260628T222647.925582Z.json Watchdog verdict [watchdog_report_20260628T222647.925582Z.json] (verdict.verdict): Watchdog report is PASS
+- [PASS] watchdog_report_20260628T222726.481222Z.json Watchdog verdict [watchdog_report_20260628T222726.481222Z.json] (verdict.verdict): Watchdog report is PASS
+- [PASS] snapshot_20260629T004155.046745Z.json parses as JSON [snapshot_20260629T004155.046745Z.json]: Valid JSON (5634 bytes)
+- [PASS] watchdog_report_20260628T224148.050365Z.json Watchdog verdict [watchdog_report_20260628T224148.050365Z.json] (verdict.verdict): Watchdog report is PASS
+- [PASS] watchdog_report_20260628T224226.622382Z.json Watchdog verdict [watchdog_report_20260628T224226.622382Z.json] (verdict.verdict): Watchdog report is PASS
+- [PASS] watchdog_report_20260628T225653.430691Z.json Watchdog verdict [watchdog_report_20260628T225653.430691Z.json] (verdict.verdict): Watchdog report is PASS
+- [PASS] watchdog_report_20260628T225732.008211Z.json Watchdog verdict [watchdog_report_20260628T225732.008211Z.json] (verdict.verdict): Watchdog report is PASS
+- [PASS] watchdog_report_20260628T231153.609636Z.json Watchdog verdict [watchdog_report_20260628T231153.609636Z.json] (verdict.verdict): Watchdog report is PASS
+- [PASS] watchdog_report_20260628T231232.158446Z.json Watchdog verdict [watchdog_report_20260628T231232.158446Z.json] (verdict.verdict): Watchdog report is PASS
+- [PASS] watchdog_report_20260628T232653.786742Z.json Watchdog verdict [watchdog_report_20260628T232653.786742Z.json] (verdict.verdict): Watchdog report is PASS
+- [PASS] watchdog_report_20260628T232732.326637Z.json Watchdog verdict [watchdog_report_20260628T232732.326637Z.json] (verdict.verdict): Watchdog report is PASS
+- [PASS] watchdog_report_20260628T234153.975890Z.json Watchdog verdict [watchdog_report_20260628T234153.975890Z.json] (verdict.verdict): Watchdog report is PASS
+- [PASS] watchdog_report_20260628T234232.480715Z.json Watchdog verdict [watchdog_report_20260628T234232.480715Z.json] (verdict.verdict): Watchdog report is PASS
+- [PASS] snapshot_20260629T004155.046745Z.json schema version [snapshot_20260629T004155.046745Z.json] (metadata.schema_version): metadata.schema_version matches cdb.evidence_harvester.snapshot.v1
+- [PASS] watchdog_report_20260628T235654.200874Z.json Watchdog verdict [watchdog_report_20260628T235654.200874Z.json] (verdict.verdict): Watchdog report is PASS
+- [PASS] watchdog_report_20260628T235732.645061Z.json Watchdog verdict [watchdog_report_20260628T235732.645061Z.json] (verdict.verdict): Watchdog report is PASS
+- [PASS] watchdog_report_20260629T001154.501508Z.json Watchdog verdict [watchdog_report_20260629T001154.501508Z.json] (verdict.verdict): Watchdog report is PASS
+- [PASS] watchdog_report_20260629T001232.824905Z.json Watchdog verdict [watchdog_report_20260629T001232.824905Z.json] (verdict.verdict): Watchdog report is PASS
+- [PASS] watchdog_report_20260629T002654.774738Z.json Watchdog verdict [watchdog_report_20260629T002654.774738Z.json] (verdict.verdict): Watchdog report is PASS
+- [PASS] watchdog_report_20260629T002733.036521Z.json Watchdog verdict [watchdog_report_20260629T002733.036521Z.json] (verdict.verdict): Watchdog report is PASS
+- [PASS] watchdog_report_20260629T004155.046745Z.json Watchdog verdict [watchdog_report_20260629T004155.046745Z.json] (verdict.verdict): Watchdog report is PASS
+- [PASS] watchdog_report_20260629T004233.286267Z.json Watchdog verdict [watchdog_report_20260629T004233.286267Z.json] (verdict.verdict): Watchdog report is PASS
+- [PASS] watchdog_report_20260629T005655.286180Z.json Watchdog verdict [watchdog_report_20260629T005655.286180Z.json] (verdict.verdict): Watchdog report is PASS
+- [PASS] watchdog_report_20260629T005733.500216Z.json Watchdog verdict [watchdog_report_20260629T005733.500216Z.json] (verdict.verdict): Watchdog report is PASS
+- [PASS] snapshot_20260629T004233.286267Z.json parses as JSON [snapshot_20260629T004233.286267Z.json]: Valid JSON (5634 bytes)
+- [PASS] watchdog_report_20260629T011155.540856Z.json Watchdog verdict [watchdog_report_20260629T011155.540856Z.json] (verdict.verdict): Watchdog report is PASS
+- [PASS] watchdog_report_20260629T011233.729956Z.json Watchdog verdict [watchdog_report_20260629T011233.729956Z.json] (verdict.verdict): Watchdog report is PASS
+- [PASS] watchdog_report_20260629T012655.870979Z.json Watchdog verdict [watchdog_report_20260629T012655.870979Z.json] (verdict.verdict): Watchdog report is PASS
+- [PASS] watchdog_report_20260629T012734.022974Z.json Watchdog verdict [watchdog_report_20260629T012734.022974Z.json] (verdict.verdict): Watchdog report is PASS
+- [PASS] watchdog_report_20260629T014156.252608Z.json Watchdog verdict [watchdog_report_20260629T014156.252608Z.json] (verdict.verdict): Watchdog report is PASS
+- [PASS] watchdog_report_20260629T014234.291063Z.json Watchdog verdict [watchdog_report_20260629T014234.291063Z.json] (verdict.verdict): Watchdog report is PASS
+- [PASS] watchdog_report_20260629T015656.659674Z.json Watchdog verdict [watchdog_report_20260629T015656.659674Z.json] (verdict.verdict): Watchdog report is PASS
+- [PASS] watchdog_report_20260629T015734.550802Z.json Watchdog verdict [watchdog_report_20260629T015734.550802Z.json] (verdict.verdict): Watchdog report is PASS
+- [PASS] watchdog_report_20260629T021156.961887Z.json Watchdog verdict [watchdog_report_20260629T021156.961887Z.json] (verdict.verdict): Watchdog report is PASS
+- [PASS] watchdog_report_20260629T021234.839515Z.json Watchdog verdict [watchdog_report_20260629T021234.839515Z.json] (verdict.verdict): Watchdog report is PASS
+- [PASS] snapshot_20260629T004233.286267Z.json schema version [snapshot_20260629T004233.286267Z.json] (metadata.schema_version): metadata.schema_version matches cdb.evidence_harvester.snapshot.v1
+- [PASS] watchdog_report_20260629T022657.261292Z.json Watchdog verdict [watchdog_report_20260629T022657.261292Z.json] (verdict.verdict): Watchdog report is PASS
+- [PASS] watchdog_report_20260629T022735.088379Z.json Watchdog verdict [watchdog_report_20260629T022735.088379Z.json] (verdict.verdict): Watchdog report is PASS
+- [PASS] watchdog_report_20260629T024157.543626Z.json Watchdog verdict [watchdog_report_20260629T024157.543626Z.json] (verdict.verdict): Watchdog report is PASS
+- [PASS] watchdog_report_20260629T024235.366805Z.json Watchdog verdict [watchdog_report_20260629T024235.366805Z.json] (verdict.verdict): Watchdog report is PASS
+- [PASS] watchdog_report_20260629T025657.877035Z.json Watchdog verdict [watchdog_report_20260629T025657.877035Z.json] (verdict.verdict): Watchdog report is PASS
+- [PASS] watchdog_report_20260629T025735.674598Z.json Watchdog verdict [watchdog_report_20260629T025735.674598Z.json] (verdict.verdict): Watchdog report is PASS
+- [PASS] watchdog_report_20260629T031158.281708Z.json Watchdog verdict [watchdog_report_20260629T031158.281708Z.json] (verdict.verdict): Watchdog report is PASS
+- [PASS] watchdog_report_20260629T031235.977270Z.json Watchdog verdict [watchdog_report_20260629T031235.977270Z.json] (verdict.verdict): Watchdog report is PASS
+- [PASS] watchdog_report_20260629T032658.655687Z.json Watchdog verdict [watchdog_report_20260629T032658.655687Z.json] (verdict.verdict): Watchdog report is PASS
+- [PASS] watchdog_report_20260629T032736.303267Z.json Watchdog verdict [watchdog_report_20260629T032736.303267Z.json] (verdict.verdict): Watchdog report is PASS
+- [PASS] snapshot_20260629T005655.286180Z.json parses as JSON [snapshot_20260629T005655.286180Z.json]: Valid JSON (5634 bytes)
+- [PASS] watchdog_report_20260629T034159.055539Z.json Watchdog verdict [watchdog_report_20260629T034159.055539Z.json] (verdict.verdict): Watchdog report is PASS
+- [PASS] watchdog_report_20260629T034236.662044Z.json Watchdog verdict [watchdog_report_20260629T034236.662044Z.json] (verdict.verdict): Watchdog report is PASS
+- [PASS] watchdog_report_20260629T035659.403750Z.json Watchdog verdict [watchdog_report_20260629T035659.403750Z.json] (verdict.verdict): Watchdog report is PASS
+- [PASS] watchdog_report_20260629T035736.996291Z.json Watchdog verdict [watchdog_report_20260629T035736.996291Z.json] (verdict.verdict): Watchdog report is PASS
+- [PASS] watchdog_report_20260629T041159.834473Z.json Watchdog verdict [watchdog_report_20260629T041159.834473Z.json] (verdict.verdict): Watchdog report is PASS
+- [PASS] watchdog_report_20260629T041237.420710Z.json Watchdog verdict [watchdog_report_20260629T041237.420710Z.json] (verdict.verdict): Watchdog report is PASS
+- [PASS] watchdog_report_20260629T042700.207061Z.json Watchdog verdict [watchdog_report_20260629T042700.207061Z.json] (verdict.verdict): Watchdog report is PASS
+- [PASS] watchdog_report_20260629T042737.755496Z.json Watchdog verdict [watchdog_report_20260629T042737.755496Z.json] (verdict.verdict): Watchdog report is PASS
+- [PASS] watchdog_report_20260629T044200.553296Z.json Watchdog verdict [watchdog_report_20260629T044200.553296Z.json] (verdict.verdict): Watchdog report is PASS
+- [PASS] watchdog_report_20260629T044238.097659Z.json Watchdog verdict [watchdog_report_20260629T044238.097659Z.json] (verdict.verdict): Watchdog report is PASS
+- [PASS] snapshot_20260629T005655.286180Z.json schema version [snapshot_20260629T005655.286180Z.json] (metadata.schema_version): metadata.schema_version matches cdb.evidence_harvester.snapshot.v1
+- [PASS] watchdog_report_20260629T045700.953009Z.json Watchdog verdict [watchdog_report_20260629T045700.953009Z.json] (verdict.verdict): Watchdog report is PASS
+- [PASS] watchdog_report_20260629T045738.476486Z.json Watchdog verdict [watchdog_report_20260629T045738.476486Z.json] (verdict.verdict): Watchdog report is PASS
+- [PASS] watchdog_report_20260629T051201.371370Z.json Watchdog verdict [watchdog_report_20260629T051201.371370Z.json] (verdict.verdict): Watchdog report is PASS
+- [PASS] watchdog_report_20260629T051238.868752Z.json Watchdog verdict [watchdog_report_20260629T051238.868752Z.json] (verdict.verdict): Watchdog report is PASS
+- [PASS] watchdog_report_20260629T052701.813024Z.json Watchdog verdict [watchdog_report_20260629T052701.813024Z.json] (verdict.verdict): Watchdog report is PASS
+- [PASS] watchdog_report_20260629T052739.269183Z.json Watchdog verdict [watchdog_report_20260629T052739.269183Z.json] (verdict.verdict): Watchdog report is PASS
+- [PASS] watchdog_report_20260629T054202.209467Z.json Watchdog verdict [watchdog_report_20260629T054202.209467Z.json] (verdict.verdict): Watchdog report is PASS
+- [PASS] watchdog_report_20260629T054239.631909Z.json Watchdog verdict [watchdog_report_20260629T054239.631909Z.json] (verdict.verdict): Watchdog report is PASS
+- [PASS] watchdog_report_20260629T055702.593495Z.json Watchdog verdict [watchdog_report_20260629T055702.593495Z.json] (verdict.verdict): Watchdog report is PASS
+- [PASS] watchdog_report_20260629T055740.036252Z.json Watchdog verdict [watchdog_report_20260629T055740.036252Z.json] (verdict.verdict): Watchdog report is PASS
+- [PASS] snapshot_20260629T005733.500216Z.json parses as JSON [snapshot_20260629T005733.500216Z.json]: Valid JSON (5634 bytes)
+- [PASS] watchdog_report_20260629T061203.038198Z.json Watchdog verdict [watchdog_report_20260629T061203.038198Z.json] (verdict.verdict): Watchdog report is PASS
+- [PASS] watchdog_report_20260629T061240.476343Z.json Watchdog verdict [watchdog_report_20260629T061240.476343Z.json] (verdict.verdict): Watchdog report is PASS
+- [PASS] watchdog_report_20260629T062703.502916Z.json Watchdog verdict [watchdog_report_20260629T062703.502916Z.json] (verdict.verdict): Watchdog report is PASS
+- [PASS] watchdog_report_20260629T062740.937526Z.json Watchdog verdict [watchdog_report_20260629T062740.937526Z.json] (verdict.verdict): Watchdog report is PASS
+- [PASS] watchdog_report_20260629T064203.999298Z.json Watchdog verdict [watchdog_report_20260629T064203.999298Z.json] (verdict.verdict): Watchdog report is PASS
+- [PASS] watchdog_report_20260629T064241.410579Z.json Watchdog verdict [watchdog_report_20260629T064241.410579Z.json] (verdict.verdict): Watchdog report is PASS
+- [PASS] watchdog_report_20260629T065704.492040Z.json Watchdog verdict [watchdog_report_20260629T065704.492040Z.json] (verdict.verdict): Watchdog report is PASS
+- [PASS] watchdog_report_20260629T065741.876917Z.json Watchdog verdict [watchdog_report_20260629T065741.876917Z.json] (verdict.verdict): Watchdog report is PASS
+- [PASS] watchdog_report_20260629T071205.045950Z.json Watchdog verdict [watchdog_report_20260629T071205.045950Z.json] (verdict.verdict): Watchdog report is PASS
+- [PASS] watchdog_report_20260629T071242.337870Z.json Watchdog verdict [watchdog_report_20260629T071242.337870Z.json] (verdict.verdict): Watchdog report is PASS
+- [PASS] snapshot_20260629T005733.500216Z.json schema version [snapshot_20260629T005733.500216Z.json] (metadata.schema_version): metadata.schema_version matches cdb.evidence_harvester.snapshot.v1
+- [PASS] watchdog_report_20260629T072705.612761Z.json Watchdog verdict [watchdog_report_20260629T072705.612761Z.json] (verdict.verdict): Watchdog report is PASS
+- [PASS] watchdog_report_20260629T072742.814909Z.json Watchdog verdict [watchdog_report_20260629T072742.814909Z.json] (verdict.verdict): Watchdog report is PASS
+- [PASS] watchdog_report_20260629T074206.239038Z.json Watchdog verdict [watchdog_report_20260629T074206.239038Z.json] (verdict.verdict): Watchdog report is PASS
+- [PASS] watchdog_report_20260629T074243.386975Z.json Watchdog verdict [watchdog_report_20260629T074243.386975Z.json] (verdict.verdict): Watchdog report is PASS
+- [PASS] watchdog_report_20260629T075706.941690Z.json Watchdog verdict [watchdog_report_20260629T075706.941690Z.json] (verdict.verdict): Watchdog report is PASS
+- [PASS] watchdog_report_20260629T075744.017413Z.json Watchdog verdict [watchdog_report_20260629T075744.017413Z.json] (verdict.verdict): Watchdog report is PASS
+- [PASS] watchdog_report_20260629T081207.538860Z.json Watchdog verdict [watchdog_report_20260629T081207.538860Z.json] (verdict.verdict): Watchdog report is PASS
+- [PASS] watchdog_report_20260629T081244.519282Z.json Watchdog verdict [watchdog_report_20260629T081244.519282Z.json] (verdict.verdict): Watchdog report is PASS
+- [PASS] watchdog_report_20260629T082708.140490Z.json Watchdog verdict [watchdog_report_20260629T082708.140490Z.json] (verdict.verdict): Watchdog report is PASS
+- [PASS] watchdog_report_20260629T082745.060332Z.json Watchdog verdict [watchdog_report_20260629T082745.060332Z.json] (verdict.verdict): Watchdog report is PASS
+- [PASS] snapshot_20260629T011155.540856Z.json parses as JSON [snapshot_20260629T011155.540856Z.json]: Valid JSON (5634 bytes)
+- [PASS] watchdog_report_20260629T084208.790950Z.json Watchdog verdict [watchdog_report_20260629T084208.790950Z.json] (verdict.verdict): Watchdog report is PASS
+- [PASS] watchdog_report_20260629T084245.597847Z.json Watchdog verdict [watchdog_report_20260629T084245.597847Z.json] (verdict.verdict): Watchdog report is PASS
+- [PASS] watchdog_report_20260629T085709.431205Z.json Watchdog verdict [watchdog_report_20260629T085709.431205Z.json] (verdict.verdict): Watchdog report is PASS
+- [PASS] watchdog_report_20260629T085746.133858Z.json Watchdog verdict [watchdog_report_20260629T085746.133858Z.json] (verdict.verdict): Watchdog report is PASS
+- [PASS] watchdog_report_20260629T091210.137367Z.json Watchdog verdict [watchdog_report_20260629T091210.137367Z.json] (verdict.verdict): Watchdog report is PASS
+- [PASS] watchdog_report_20260629T091246.700715Z.json Watchdog verdict [watchdog_report_20260629T091246.700715Z.json] (verdict.verdict): Watchdog report is PASS
+- [PASS] watchdog_report_20260629T092710.901206Z.json Watchdog verdict [watchdog_report_20260629T092710.901206Z.json] (verdict.verdict): Watchdog report is PASS
+- [PASS] watchdog_report_20260629T092747.293172Z.json Watchdog verdict [watchdog_report_20260629T092747.293172Z.json] (verdict.verdict): Watchdog report is PASS
+- [PASS] watchdog_report_20260629T094211.695111Z.json Watchdog verdict [watchdog_report_20260629T094211.695111Z.json] (verdict.verdict): Watchdog report is PASS
+- [PASS] watchdog_report_20260629T094247.903918Z.json Watchdog verdict [watchdog_report_20260629T094247.903918Z.json] (verdict.verdict): Watchdog report is PASS
+- [PASS] snapshot_20260629T011155.540856Z.json schema version [snapshot_20260629T011155.540856Z.json] (metadata.schema_version): metadata.schema_version matches cdb.evidence_harvester.snapshot.v1
+- [PASS] watchdog_report_20260629T095712.307200Z.json Watchdog verdict [watchdog_report_20260629T095712.307200Z.json] (verdict.verdict): Watchdog report is PASS
+- [PASS] watchdog_report_20260629T095748.490461Z.json Watchdog verdict [watchdog_report_20260629T095748.490461Z.json] (verdict.verdict): Watchdog report is PASS
+- [PASS] watchdog_report_20260629T101213.089179Z.json Watchdog verdict [watchdog_report_20260629T101213.089179Z.json] (verdict.verdict): Watchdog report is PASS
+- [PASS] watchdog_report_20260629T101249.139878Z.json Watchdog verdict [watchdog_report_20260629T101249.139878Z.json] (verdict.verdict): Watchdog report is PASS
+- [PASS] watchdog_report_20260629T102713.736465Z.json Watchdog verdict [watchdog_report_20260629T102713.736465Z.json] (verdict.verdict): Watchdog report is PASS
+- [PASS] watchdog_report_20260629T102749.736234Z.json Watchdog verdict [watchdog_report_20260629T102749.736234Z.json] (verdict.verdict): Watchdog report is PASS
+- [PASS] watchdog_report_20260629T104214.526487Z.json Watchdog verdict [watchdog_report_20260629T104214.526487Z.json] (verdict.verdict): Watchdog report is PASS
+- [PASS] watchdog_report_20260629T104250.386199Z.json Watchdog verdict [watchdog_report_20260629T104250.386199Z.json] (verdict.verdict): Watchdog report is PASS
+- [PASS] watchdog_report_20260629T105715.204661Z.json Watchdog verdict [watchdog_report_20260629T105715.204661Z.json] (verdict.verdict): Watchdog report is PASS
+- [PASS] watchdog_report_20260629T105751.025839Z.json Watchdog verdict [watchdog_report_20260629T105751.025839Z.json] (verdict.verdict): Watchdog report is PASS
+- [PASS] snapshot_20260629T011233.729956Z.json parses as JSON [snapshot_20260629T011233.729956Z.json]: Valid JSON (5634 bytes)
+- [PASS] watchdog_report_20260629T111215.903183Z.json Watchdog verdict [watchdog_report_20260629T111215.903183Z.json] (verdict.verdict): Watchdog report is PASS
+- [PASS] watchdog_report_20260629T111251.661921Z.json Watchdog verdict [watchdog_report_20260629T111251.661921Z.json] (verdict.verdict): Watchdog report is PASS
+- [PASS] watchdog_report_20260629T112716.629865Z.json Watchdog verdict [watchdog_report_20260629T112716.629865Z.json] (verdict.verdict): Watchdog report is PASS
+- [PASS] watchdog_report_20260629T112752.284749Z.json Watchdog verdict [watchdog_report_20260629T112752.284749Z.json] (verdict.verdict): Watchdog report is PASS
+- [PASS] watchdog_report_20260629T114217.488056Z.json Watchdog verdict [watchdog_report_20260629T114217.488056Z.json] (verdict.verdict): Watchdog report is PASS
+- [PASS] watchdog_report_20260629T114252.920024Z.json Watchdog verdict [watchdog_report_20260629T114252.920024Z.json] (verdict.verdict): Watchdog report is PASS
+- [PASS] watchdog_report_20260629T115718.201420Z.json Watchdog verdict [watchdog_report_20260629T115718.201420Z.json] (verdict.verdict): Watchdog report is PASS
+- [PASS] watchdog_report_20260629T115753.619990Z.json Watchdog verdict [watchdog_report_20260629T115753.619990Z.json] (verdict.verdict): Watchdog report is PASS
+- [PASS] watchdog_report_20260629T121218.891836Z.json Watchdog verdict [watchdog_report_20260629T121218.891836Z.json] (verdict.verdict): Watchdog report is PASS
+- [PASS] watchdog_report_20260629T121254.279917Z.json Watchdog verdict [watchdog_report_20260629T121254.279917Z.json] (verdict.verdict): Watchdog report is PASS
+- [PASS] snapshot_20260629T011233.729956Z.json schema version [snapshot_20260629T011233.729956Z.json] (metadata.schema_version): metadata.schema_version matches cdb.evidence_harvester.snapshot.v1
+- [PASS] watchdog_report_20260629T122719.639543Z.json Watchdog verdict [watchdog_report_20260629T122719.639543Z.json] (verdict.verdict): Watchdog report is PASS
+- [PASS] watchdog_report_20260629T122754.960906Z.json Watchdog verdict [watchdog_report_20260629T122754.960906Z.json] (verdict.verdict): Watchdog report is PASS
+- [PASS] watchdog_report_20260629T124220.684108Z.json Watchdog verdict [watchdog_report_20260629T124220.684108Z.json] (verdict.verdict): Watchdog report is PASS
+- [PASS] watchdog_report_20260629T124256.230963Z.json Watchdog verdict [watchdog_report_20260629T124256.230963Z.json] (verdict.verdict): Watchdog report is PASS
+- [PASS] watchdog_report_20260629T125723.136228Z.json Watchdog verdict [watchdog_report_20260629T125723.136228Z.json] (verdict.verdict): Watchdog report is PASS
+- [PASS] watchdog_report_20260629T125804.007362Z.json Watchdog verdict [watchdog_report_20260629T125804.007362Z.json] (verdict.verdict): Watchdog report is PASS
+- [PASS] watchdog_report_20260629T131224.181983Z.json Watchdog verdict [watchdog_report_20260629T131224.181983Z.json] (verdict.verdict): Watchdog report is PASS
+- [PASS] watchdog_report_20260629T131304.889188Z.json Watchdog verdict [watchdog_report_20260629T131304.889188Z.json] (verdict.verdict): Watchdog report is PASS
+- [PASS] watchdog_report_20260629T132725.882130Z.json Watchdog verdict [watchdog_report_20260629T132725.882130Z.json] (verdict.verdict): Watchdog report is PASS
+- [PASS] watchdog_report_20260629T132806.599768Z.json Watchdog verdict [watchdog_report_20260629T132806.599768Z.json] (verdict.verdict): Watchdog report is PASS
+- [PASS] snapshot_20260629T012655.870979Z.json parses as JSON [snapshot_20260629T012655.870979Z.json]: Valid JSON (5634 bytes)
+- [PASS] Watchdog verdict history: All watchdog reports are PASS
+- [PASS] Watchdog coordinator liveness [watchdog_report_20260628T202647.095428Z.json]: Watchdog coordinator liveness: RUNNING_HEALTHY — Coordinator status is 'running' and heartbeat is fresh
+- [PASS] Watchdog coordinator liveness [watchdog_report_20260628T202725.754548Z.json]: Watchdog coordinator liveness: RUNNING_HEALTHY — Coordinator status is 'running' and heartbeat is fresh
+- [PASS] Watchdog coordinator liveness [watchdog_report_20260628T204147.136310Z.json]: Watchdog coordinator liveness: RUNNING_HEALTHY — Coordinator status is 'running' and heartbeat is fresh
+- [PASS] Watchdog coordinator liveness [watchdog_report_20260628T204225.822673Z.json]: Watchdog coordinator liveness: RUNNING_HEALTHY — Coordinator status is 'running' and heartbeat is fresh
+- [PASS] Watchdog coordinator liveness [watchdog_report_20260628T205647.228228Z.json]: Watchdog coordinator liveness: RUNNING_HEALTHY — Coordinator status is 'running' and heartbeat is fresh
+- [PASS] Watchdog coordinator liveness [watchdog_report_20260628T205725.879579Z.json]: Watchdog coordinator liveness: RUNNING_HEALTHY — Coordinator status is 'running' and heartbeat is fresh
+- [PASS] Watchdog coordinator liveness [watchdog_report_20260628T211147.340626Z.json]: Watchdog coordinator liveness: RUNNING_HEALTHY — Coordinator status is 'running' and heartbeat is fresh
+- [PASS] Watchdog coordinator liveness [watchdog_report_20260628T211225.977739Z.json]: Watchdog coordinator liveness: RUNNING_HEALTHY — Coordinator status is 'running' and heartbeat is fresh
+- [PASS] Watchdog coordinator liveness [watchdog_report_20260628T212647.438144Z.json]: Watchdog coordinator liveness: RUNNING_HEALTHY — Coordinator status is 'running' and heartbeat is fresh
+- [PASS] snapshot_20260629T012655.870979Z.json schema version [snapshot_20260629T012655.870979Z.json] (metadata.schema_version): metadata.schema_version matches cdb.evidence_harvester.snapshot.v1
+- [PASS] Watchdog coordinator liveness [watchdog_report_20260628T212726.085888Z.json]: Watchdog coordinator liveness: RUNNING_HEALTHY — Coordinator status is 'running' and heartbeat is fresh
+- [PASS] Watchdog coordinator liveness [watchdog_report_20260628T214147.524830Z.json]: Watchdog coordinator liveness: RUNNING_HEALTHY — Coordinator status is 'running' and heartbeat is fresh
+- [PASS] Watchdog coordinator liveness [watchdog_report_20260628T214226.178738Z.json]: Watchdog coordinator liveness: RUNNING_HEALTHY — Coordinator status is 'running' and heartbeat is fresh
+- [PASS] Watchdog coordinator liveness [watchdog_report_20260628T215647.638424Z.json]: Watchdog coordinator liveness: RUNNING_HEALTHY — Coordinator status is 'running' and heartbeat is fresh
+- [PASS] Watchdog coordinator liveness [watchdog_report_20260628T215726.259263Z.json]: Watchdog coordinator liveness: RUNNING_HEALTHY — Coordinator status is 'running' and heartbeat is fresh
+- [PASS] Watchdog coordinator liveness [watchdog_report_20260628T221147.773162Z.json]: Watchdog coordinator liveness: RUNNING_HEALTHY — Coordinator status is 'running' and heartbeat is fresh
+- [PASS] Watchdog coordinator liveness [watchdog_report_20260628T221226.358702Z.json]: Watchdog coordinator liveness: RUNNING_HEALTHY — Coordinator status is 'running' and heartbeat is fresh
+- [PASS] Watchdog coordinator liveness [watchdog_report_20260628T222647.925582Z.json]: Watchdog coordinator liveness: RUNNING_HEALTHY — Coordinator status is 'running' and heartbeat is fresh
+- [PASS] Watchdog coordinator liveness [watchdog_report_20260628T222726.481222Z.json]: Watchdog coordinator liveness: RUNNING_HEALTHY — Coordinator status is 'running' and heartbeat is fresh
+- [PASS] Watchdog coordinator liveness [watchdog_report_20260628T224148.050365Z.json]: Watchdog coordinator liveness: RUNNING_HEALTHY — Coordinator status is 'running' and heartbeat is fresh
+- [PASS] snapshot_20260629T012734.022974Z.json parses as JSON [snapshot_20260629T012734.022974Z.json]: Valid JSON (5634 bytes)
+- [PASS] Watchdog coordinator liveness [watchdog_report_20260628T224226.622382Z.json]: Watchdog coordinator liveness: RUNNING_HEALTHY — Coordinator status is 'running' and heartbeat is fresh
+- [PASS] Watchdog coordinator liveness [watchdog_report_20260628T225653.430691Z.json]: Watchdog coordinator liveness: RUNNING_HEALTHY — Coordinator status is 'running' and heartbeat is fresh
+- [PASS] Watchdog coordinator liveness [watchdog_report_20260628T225732.008211Z.json]: Watchdog coordinator liveness: RUNNING_HEALTHY — Coordinator status is 'running' and heartbeat is fresh
+- [PASS] Watchdog coordinator liveness [watchdog_report_20260628T231153.609636Z.json]: Watchdog coordinator liveness: RUNNING_HEALTHY — Coordinator status is 'running' and heartbeat is fresh
+- [PASS] Watchdog coordinator liveness [watchdog_report_20260628T231232.158446Z.json]: Watchdog coordinator liveness: RUNNING_HEALTHY — Coordinator status is 'running' and heartbeat is fresh
+- [PASS] Watchdog coordinator liveness [watchdog_report_20260628T232653.786742Z.json]: Watchdog coordinator liveness: RUNNING_HEALTHY — Coordinator status is 'running' and heartbeat is fresh
+- [PASS] Watchdog coordinator liveness [watchdog_report_20260628T232732.326637Z.json]: Watchdog coordinator liveness: RUNNING_HEALTHY — Coordinator status is 'running' and heartbeat is fresh
+- [PASS] Watchdog coordinator liveness [watchdog_report_20260628T234153.975890Z.json]: Watchdog coordinator liveness: RUNNING_HEALTHY — Coordinator status is 'running' and heartbeat is fresh
+- [PASS] Watchdog coordinator liveness [watchdog_report_20260628T234232.480715Z.json]: Watchdog coordinator liveness: RUNNING_HEALTHY — Coordinator status is 'running' and heartbeat is fresh
+- [PASS] Watchdog coordinator liveness [watchdog_report_20260628T235654.200874Z.json]: Watchdog coordinator liveness: RUNNING_HEALTHY — Coordinator status is 'running' and heartbeat is fresh
+- [PASS] snapshot_20260629T012734.022974Z.json schema version [snapshot_20260629T012734.022974Z.json] (metadata.schema_version): metadata.schema_version matches cdb.evidence_harvester.snapshot.v1
+- [PASS] Watchdog coordinator liveness [watchdog_report_20260628T235732.645061Z.json]: Watchdog coordinator liveness: RUNNING_HEALTHY — Coordinator status is 'running' and heartbeat is fresh
+- [PASS] Watchdog coordinator liveness [watchdog_report_20260629T001154.501508Z.json]: Watchdog coordinator liveness: RUNNING_HEALTHY — Coordinator status is 'running' and heartbeat is fresh
+- [PASS] Watchdog coordinator liveness [watchdog_report_20260629T001232.824905Z.json]: Watchdog coordinator liveness: RUNNING_HEALTHY — Coordinator status is 'running' and heartbeat is fresh
+- [PASS] Watchdog coordinator liveness [watchdog_report_20260629T002654.774738Z.json]: Watchdog coordinator liveness: RUNNING_HEALTHY — Coordinator status is 'running' and heartbeat is fresh
+- [PASS] Watchdog coordinator liveness [watchdog_report_20260629T002733.036521Z.json]: Watchdog coordinator liveness: RUNNING_HEALTHY — Coordinator status is 'running' and heartbeat is fresh
+- [PASS] Watchdog coordinator liveness [watchdog_report_20260629T004155.046745Z.json]: Watchdog coordinator liveness: RUNNING_HEALTHY — Coordinator status is 'running' and heartbeat is fresh
+- [PASS] Watchdog coordinator liveness [watchdog_report_20260629T004233.286267Z.json]: Watchdog coordinator liveness: RUNNING_HEALTHY — Coordinator status is 'running' and heartbeat is fresh
+- [PASS] Watchdog coordinator liveness [watchdog_report_20260629T005655.286180Z.json]: Watchdog coordinator liveness: RUNNING_HEALTHY — Coordinator status is 'running' and heartbeat is fresh
+- [PASS] Watchdog coordinator liveness [watchdog_report_20260629T005733.500216Z.json]: Watchdog coordinator liveness: RUNNING_HEALTHY — Coordinator status is 'running' and heartbeat is fresh
+- [PASS] Watchdog coordinator liveness [watchdog_report_20260629T011155.540856Z.json]: Watchdog coordinator liveness: RUNNING_HEALTHY — Coordinator status is 'running' and heartbeat is fresh
+- [PASS] snapshot_20260629T014156.252608Z.json parses as JSON [snapshot_20260629T014156.252608Z.json]: Valid JSON (5634 bytes)
+- [PASS] Watchdog coordinator liveness [watchdog_report_20260629T011233.729956Z.json]: Watchdog coordinator liveness: RUNNING_HEALTHY — Coordinator status is 'running' and heartbeat is fresh
+- [PASS] Watchdog coordinator liveness [watchdog_report_20260629T012655.870979Z.json]: Watchdog coordinator liveness: RUNNING_HEALTHY — Coordinator status is 'running' and heartbeat is fresh
+- [PASS] Watchdog coordinator liveness [watchdog_report_20260629T012734.022974Z.json]: Watchdog coordinator liveness: RUNNING_HEALTHY — Coordinator status is 'running' and heartbeat is fresh
+- [PASS] Watchdog coordinator liveness [watchdog_report_20260629T014156.252608Z.json]: Watchdog coordinator liveness: RUNNING_HEALTHY — Coordinator status is 'running' and heartbeat is fresh
+- [PASS] Watchdog coordinator liveness [watchdog_report_20260629T014234.291063Z.json]: Watchdog coordinator liveness: RUNNING_HEALTHY — Coordinator status is 'running' and heartbeat is fresh
+- [PASS] Watchdog coordinator liveness [watchdog_report_20260629T015656.659674Z.json]: Watchdog coordinator liveness: RUNNING_HEALTHY — Coordinator status is 'running' and heartbeat is fresh
+- [PASS] Watchdog coordinator liveness [watchdog_report_20260629T015734.550802Z.json]: Watchdog coordinator liveness: RUNNING_HEALTHY — Coordinator status is 'running' and heartbeat is fresh
+- [PASS] Watchdog coordinator liveness [watchdog_report_20260629T021156.961887Z.json]: Watchdog coordinator liveness: RUNNING_HEALTHY — Coordinator status is 'running' and heartbeat is fresh
+- [PASS] Watchdog coordinator liveness [watchdog_report_20260629T021234.839515Z.json]: Watchdog coordinator liveness: RUNNING_HEALTHY — Coordinator status is 'running' and heartbeat is fresh
+- [PASS] Watchdog coordinator liveness [watchdog_report_20260629T022657.261292Z.json]: Watchdog coordinator liveness: RUNNING_HEALTHY — Coordinator status is 'running' and heartbeat is fresh
+- [PASS] snapshot_20260629T014156.252608Z.json schema version [snapshot_20260629T014156.252608Z.json] (metadata.schema_version): metadata.schema_version matches cdb.evidence_harvester.snapshot.v1
+- [PASS] Watchdog coordinator liveness [watchdog_report_20260629T022735.088379Z.json]: Watchdog coordinator liveness: RUNNING_HEALTHY — Coordinator status is 'running' and heartbeat is fresh
+- [PASS] Watchdog coordinator liveness [watchdog_report_20260629T024157.543626Z.json]: Watchdog coordinator liveness: RUNNING_HEALTHY — Coordinator status is 'running' and heartbeat is fresh
+- [PASS] Watchdog coordinator liveness [watchdog_report_20260629T024235.366805Z.json]: Watchdog coordinator liveness: RUNNING_HEALTHY — Coordinator status is 'running' and heartbeat is fresh
+- [PASS] Watchdog coordinator liveness [watchdog_report_20260629T025657.877035Z.json]: Watchdog coordinator liveness: RUNNING_HEALTHY — Coordinator status is 'running' and heartbeat is fresh
+- [PASS] Watchdog coordinator liveness [watchdog_report_20260629T025735.674598Z.json]: Watchdog coordinator liveness: RUNNING_HEALTHY — Coordinator status is 'running' and heartbeat is fresh
+- [PASS] Watchdog coordinator liveness [watchdog_report_20260629T031158.281708Z.json]: Watchdog coordinator liveness: RUNNING_HEALTHY — Coordinator status is 'running' and heartbeat is fresh
+- [PASS] Watchdog coordinator liveness [watchdog_report_20260629T031235.977270Z.json]: Watchdog coordinator liveness: RUNNING_HEALTHY — Coordinator status is 'running' and heartbeat is fresh
+- [PASS] Watchdog coordinator liveness [watchdog_report_20260629T032658.655687Z.json]: Watchdog coordinator liveness: RUNNING_HEALTHY — Coordinator status is 'running' and heartbeat is fresh
+- [PASS] Watchdog coordinator liveness [watchdog_report_20260629T032736.303267Z.json]: Watchdog coordinator liveness: RUNNING_HEALTHY — Coordinator status is 'running' and heartbeat is fresh
+- [PASS] Watchdog coordinator liveness [watchdog_report_20260629T034159.055539Z.json]: Watchdog coordinator liveness: RUNNING_HEALTHY — Coordinator status is 'running' and heartbeat is fresh
+- [PASS] snapshot_20260629T014234.291063Z.json parses as JSON [snapshot_20260629T014234.291063Z.json]: Valid JSON (5634 bytes)
+- [PASS] Watchdog coordinator liveness [watchdog_report_20260629T034236.662044Z.json]: Watchdog coordinator liveness: RUNNING_HEALTHY — Coordinator status is 'running' and heartbeat is fresh
+- [PASS] Watchdog coordinator liveness [watchdog_report_20260629T035659.403750Z.json]: Watchdog coordinator liveness: RUNNING_HEALTHY — Coordinator status is 'running' and heartbeat is fresh
+- [PASS] Watchdog coordinator liveness [watchdog_report_20260629T035736.996291Z.json]: Watchdog coordinator liveness: RUNNING_HEALTHY — Coordinator status is 'running' and heartbeat is fresh
+- [PASS] Watchdog coordinator liveness [watchdog_report_20260629T041159.834473Z.json]: Watchdog coordinator liveness: RUNNING_HEALTHY — Coordinator status is 'running' and heartbeat is fresh
+- [PASS] Watchdog coordinator liveness [watchdog_report_20260629T041237.420710Z.json]: Watchdog coordinator liveness: RUNNING_HEALTHY — Coordinator status is 'running' and heartbeat is fresh
+- [PASS] Watchdog coordinator liveness [watchdog_report_20260629T042700.207061Z.json]: Watchdog coordinator liveness: RUNNING_HEALTHY — Coordinator status is 'running' and heartbeat is fresh
+- [PASS] Watchdog coordinator liveness [watchdog_report_20260629T042737.755496Z.json]: Watchdog coordinator liveness: RUNNING_HEALTHY — Coordinator status is 'running' and heartbeat is fresh
+- [PASS] Watchdog coordinator liveness [watchdog_report_20260629T044200.553296Z.json]: Watchdog coordinator liveness: RUNNING_HEALTHY — Coordinator status is 'running' and heartbeat is fresh
+- [PASS] Watchdog coordinator liveness [watchdog_report_20260629T044238.097659Z.json]: Watchdog coordinator liveness: RUNNING_HEALTHY — Coordinator status is 'running' and heartbeat is fresh
+- [PASS] Watchdog coordinator liveness [watchdog_report_20260629T045700.953009Z.json]: Watchdog coordinator liveness: RUNNING_HEALTHY — Coordinator status is 'running' and heartbeat is fresh
+- [PASS] snapshot_20260629T014234.291063Z.json schema version [snapshot_20260629T014234.291063Z.json] (metadata.schema_version): metadata.schema_version matches cdb.evidence_harvester.snapshot.v1
+- [PASS] Watchdog coordinator liveness [watchdog_report_20260629T045738.476486Z.json]: Watchdog coordinator liveness: RUNNING_HEALTHY — Coordinator status is 'running' and heartbeat is fresh
+- [PASS] Watchdog coordinator liveness [watchdog_report_20260629T051201.371370Z.json]: Watchdog coordinator liveness: RUNNING_HEALTHY — Coordinator status is 'running' and heartbeat is fresh
+- [PASS] Watchdog coordinator liveness [watchdog_report_20260629T051238.868752Z.json]: Watchdog coordinator liveness: RUNNING_HEALTHY — Coordinator status is 'running' and heartbeat is fresh
+- [PASS] Watchdog coordinator liveness [watchdog_report_20260629T052701.813024Z.json]: Watchdog coordinator liveness: RUNNING_HEALTHY — Coordinator status is 'running' and heartbeat is fresh
+- [PASS] Watchdog coordinator liveness [watchdog_report_20260629T052739.269183Z.json]: Watchdog coordinator liveness: RUNNING_HEALTHY — Coordinator status is 'running' and heartbeat is fresh
+- [PASS] Watchdog coordinator liveness [watchdog_report_20260629T054202.209467Z.json]: Watchdog coordinator liveness: RUNNING_HEALTHY — Coordinator status is 'running' and heartbeat is fresh
+- [PASS] Watchdog coordinator liveness [watchdog_report_20260629T054239.631909Z.json]: Watchdog coordinator liveness: RUNNING_HEALTHY — Coordinator status is 'running' and heartbeat is fresh
+- [PASS] Watchdog coordinator liveness [watchdog_report_20260629T055702.593495Z.json]: Watchdog coordinator liveness: RUNNING_HEALTHY — Coordinator status is 'running' and heartbeat is fresh
+- [PASS] Watchdog coordinator liveness [watchdog_report_20260629T055740.036252Z.json]: Watchdog coordinator liveness: RUNNING_HEALTHY — Coordinator status is 'running' and heartbeat is fresh
+- [PASS] Watchdog coordinator liveness [watchdog_report_20260629T061203.038198Z.json]: Watchdog coordinator liveness: RUNNING_HEALTHY — Coordinator status is 'running' and heartbeat is fresh
+- [PASS] snapshot_20260629T015656.659674Z.json parses as JSON [snapshot_20260629T015656.659674Z.json]: Valid JSON (5634 bytes)
+- [PASS] Watchdog coordinator liveness [watchdog_report_20260629T061240.476343Z.json]: Watchdog coordinator liveness: RUNNING_HEALTHY — Coordinator status is 'running' and heartbeat is fresh
+- [PASS] Watchdog coordinator liveness [watchdog_report_20260629T062703.502916Z.json]: Watchdog coordinator liveness: RUNNING_HEALTHY — Coordinator status is 'running' and heartbeat is fresh
+- [PASS] Watchdog coordinator liveness [watchdog_report_20260629T062740.937526Z.json]: Watchdog coordinator liveness: RUNNING_HEALTHY — Coordinator status is 'running' and heartbeat is fresh
+- [PASS] Watchdog coordinator liveness [watchdog_report_20260629T064203.999298Z.json]: Watchdog coordinator liveness: RUNNING_HEALTHY — Coordinator status is 'running' and heartbeat is fresh
+- [PASS] Watchdog coordinator liveness [watchdog_report_20260629T064241.410579Z.json]: Watchdog coordinator liveness: RUNNING_HEALTHY — Coordinator status is 'running' and heartbeat is fresh
+- [PASS] Watchdog coordinator liveness [watchdog_report_20260629T065704.492040Z.json]: Watchdog coordinator liveness: RUNNING_HEALTHY — Coordinator status is 'running' and heartbeat is fresh
+- [PASS] Watchdog coordinator liveness [watchdog_report_20260629T065741.876917Z.json]: Watchdog coordinator liveness: RUNNING_HEALTHY — Coordinator status is 'running' and heartbeat is fresh
+- [PASS] Watchdog coordinator liveness [watchdog_report_20260629T071205.045950Z.json]: Watchdog coordinator liveness: RUNNING_HEALTHY — Coordinator status is 'running' and heartbeat is fresh
+- [PASS] Watchdog coordinator liveness [watchdog_report_20260629T071242.337870Z.json]: Watchdog coordinator liveness: RUNNING_HEALTHY — Coordinator status is 'running' and heartbeat is fresh
+- [PASS] Watchdog coordinator liveness [watchdog_report_20260629T072705.612761Z.json]: Watchdog coordinator liveness: RUNNING_HEALTHY — Coordinator status is 'running' and heartbeat is fresh
+- [PASS] snapshot_20260629T015656.659674Z.json schema version [snapshot_20260629T015656.659674Z.json] (metadata.schema_version): metadata.schema_version matches cdb.evidence_harvester.snapshot.v1
+- [PASS] Watchdog coordinator liveness [watchdog_report_20260629T072742.814909Z.json]: Watchdog coordinator liveness: RUNNING_HEALTHY — Coordinator status is 'running' and heartbeat is fresh
+- [PASS] Watchdog coordinator liveness [watchdog_report_20260629T074206.239038Z.json]: Watchdog coordinator liveness: RUNNING_HEALTHY — Coordinator status is 'running' and heartbeat is fresh
+- [PASS] Watchdog coordinator liveness [watchdog_report_20260629T074243.386975Z.json]: Watchdog coordinator liveness: RUNNING_HEALTHY — Coordinator status is 'running' and heartbeat is fresh
+- [PASS] Watchdog coordinator liveness [watchdog_report_20260629T075706.941690Z.json]: Watchdog coordinator liveness: RUNNING_HEALTHY — Coordinator status is 'running' and heartbeat is fresh
+- [PASS] Watchdog coordinator liveness [watchdog_report_20260629T075744.017413Z.json]: Watchdog coordinator liveness: RUNNING_HEALTHY — Coordinator status is 'running' and heartbeat is fresh
+- [PASS] Watchdog coordinator liveness [watchdog_report_20260629T081207.538860Z.json]: Watchdog coordinator liveness: RUNNING_HEALTHY — Coordinator status is 'running' and heartbeat is fresh
+- [PASS] Watchdog coordinator liveness [watchdog_report_20260629T081244.519282Z.json]: Watchdog coordinator liveness: RUNNING_HEALTHY — Coordinator status is 'running' and heartbeat is fresh
+- [PASS] Watchdog coordinator liveness [watchdog_report_20260629T082708.140490Z.json]: Watchdog coordinator liveness: RUNNING_HEALTHY — Coordinator status is 'running' and heartbeat is fresh
+- [PASS] Watchdog coordinator liveness [watchdog_report_20260629T082745.060332Z.json]: Watchdog coordinator liveness: RUNNING_HEALTHY — Coordinator status is 'running' and heartbeat is fresh
+- [PASS] Watchdog coordinator liveness [watchdog_report_20260629T084208.790950Z.json]: Watchdog coordinator liveness: RUNNING_HEALTHY — Coordinator status is 'running' and heartbeat is fresh
+- [PASS] snapshot_20260629T015734.550802Z.json parses as JSON [snapshot_20260629T015734.550802Z.json]: Valid JSON (5634 bytes)
+- [PASS] Watchdog coordinator liveness [watchdog_report_20260629T084245.597847Z.json]: Watchdog coordinator liveness: RUNNING_HEALTHY — Coordinator status is 'running' and heartbeat is fresh
+- [PASS] Watchdog coordinator liveness [watchdog_report_20260629T085709.431205Z.json]: Watchdog coordinator liveness: RUNNING_HEALTHY — Coordinator status is 'running' and heartbeat is fresh
+- [PASS] Watchdog coordinator liveness [watchdog_report_20260629T085746.133858Z.json]: Watchdog coordinator liveness: RUNNING_HEALTHY — Coordinator status is 'running' and heartbeat is fresh
+- [PASS] Watchdog coordinator liveness [watchdog_report_20260629T091210.137367Z.json]: Watchdog coordinator liveness: RUNNING_HEALTHY — Coordinator status is 'running' and heartbeat is fresh
+- [PASS] Watchdog coordinator liveness [watchdog_report_20260629T091246.700715Z.json]: Watchdog coordinator liveness: RUNNING_HEALTHY — Coordinator status is 'running' and heartbeat is fresh
+- [PASS] Watchdog coordinator liveness [watchdog_report_20260629T092710.901206Z.json]: Watchdog coordinator liveness: RUNNING_HEALTHY — Coordinator status is 'running' and heartbeat is fresh
+- [PASS] Watchdog coordinator liveness [watchdog_report_20260629T092747.293172Z.json]: Watchdog coordinator liveness: RUNNING_HEALTHY — Coordinator status is 'running' and heartbeat is fresh
+- [PASS] Watchdog coordinator liveness [watchdog_report_20260629T094211.695111Z.json]: Watchdog coordinator liveness: RUNNING_HEALTHY — Coordinator status is 'running' and heartbeat is fresh
+- [PASS] Watchdog coordinator liveness [watchdog_report_20260629T094247.903918Z.json]: Watchdog coordinator liveness: RUNNING_HEALTHY — Coordinator status is 'running' and heartbeat is fresh
+- [PASS] Watchdog coordinator liveness [watchdog_report_20260629T095712.307200Z.json]: Watchdog coordinator liveness: RUNNING_HEALTHY — Coordinator status is 'running' and heartbeat is fresh
+- [PASS] snapshot_20260629T015734.550802Z.json schema version [snapshot_20260629T015734.550802Z.json] (metadata.schema_version): metadata.schema_version matches cdb.evidence_harvester.snapshot.v1
+- [PASS] Watchdog coordinator liveness [watchdog_report_20260629T095748.490461Z.json]: Watchdog coordinator liveness: RUNNING_HEALTHY — Coordinator status is 'running' and heartbeat is fresh
+- [PASS] Watchdog coordinator liveness [watchdog_report_20260629T101213.089179Z.json]: Watchdog coordinator liveness: RUNNING_HEALTHY — Coordinator status is 'running' and heartbeat is fresh
+- [PASS] Watchdog coordinator liveness [watchdog_report_20260629T101249.139878Z.json]: Watchdog coordinator liveness: RUNNING_HEALTHY — Coordinator status is 'running' and heartbeat is fresh
+- [PASS] Watchdog coordinator liveness [watchdog_report_20260629T102713.736465Z.json]: Watchdog coordinator liveness: RUNNING_HEALTHY — Coordinator status is 'running' and heartbeat is fresh
+- [PASS] Watchdog coordinator liveness [watchdog_report_20260629T102749.736234Z.json]: Watchdog coordinator liveness: RUNNING_HEALTHY — Coordinator status is 'running' and heartbeat is fresh
+- [PASS] Watchdog coordinator liveness [watchdog_report_20260629T104214.526487Z.json]: Watchdog coordinator liveness: RUNNING_HEALTHY — Coordinator status is 'running' and heartbeat is fresh
+- [PASS] Watchdog coordinator liveness [watchdog_report_20260629T104250.386199Z.json]: Watchdog coordinator liveness: RUNNING_HEALTHY — Coordinator status is 'running' and heartbeat is fresh
+- [PASS] Watchdog coordinator liveness [watchdog_report_20260629T105715.204661Z.json]: Watchdog coordinator liveness: RUNNING_HEALTHY — Coordinator status is 'running' and heartbeat is fresh
+- [PASS] Watchdog coordinator liveness [watchdog_report_20260629T105751.025839Z.json]: Watchdog coordinator liveness: RUNNING_HEALTHY — Coordinator status is 'running' and heartbeat is fresh
+- [PASS] Watchdog coordinator liveness [watchdog_report_20260629T111215.903183Z.json]: Watchdog coordinator liveness: RUNNING_HEALTHY — Coordinator status is 'running' and heartbeat is fresh
+- [PASS] snapshot_20260629T021156.961887Z.json parses as JSON [snapshot_20260629T021156.961887Z.json]: Valid JSON (5634 bytes)
+- [PASS] Watchdog coordinator liveness [watchdog_report_20260629T111251.661921Z.json]: Watchdog coordinator liveness: RUNNING_HEALTHY — Coordinator status is 'running' and heartbeat is fresh
+- [PASS] Watchdog coordinator liveness [watchdog_report_20260629T112716.629865Z.json]: Watchdog coordinator liveness: RUNNING_HEALTHY — Coordinator status is 'running' and heartbeat is fresh
+- [PASS] Watchdog coordinator liveness [watchdog_report_20260629T112752.284749Z.json]: Watchdog coordinator liveness: RUNNING_HEALTHY — Coordinator status is 'running' and heartbeat is fresh
+- [PASS] Watchdog coordinator liveness [watchdog_report_20260629T114217.488056Z.json]: Watchdog coordinator liveness: RUNNING_HEALTHY — Coordinator status is 'running' and heartbeat is fresh
+- [PASS] Watchdog coordinator liveness [watchdog_report_20260629T114252.920024Z.json]: Watchdog coordinator liveness: RUNNING_HEALTHY — Coordinator status is 'running' and heartbeat is fresh
+- [PASS] Watchdog coordinator liveness [watchdog_report_20260629T115718.201420Z.json]: Watchdog coordinator liveness: RUNNING_HEALTHY — Coordinator status is 'running' and heartbeat is fresh
+- [PASS] Watchdog coordinator liveness [watchdog_report_20260629T115753.619990Z.json]: Watchdog coordinator liveness: RUNNING_HEALTHY — Coordinator status is 'running' and heartbeat is fresh
+- [PASS] Watchdog coordinator liveness [watchdog_report_20260629T121218.891836Z.json]: Watchdog coordinator liveness: RUNNING_HEALTHY — Coordinator status is 'running' and heartbeat is fresh
+- [PASS] Watchdog coordinator liveness [watchdog_report_20260629T121254.279917Z.json]: Watchdog coordinator liveness: RUNNING_HEALTHY — Coordinator status is 'running' and heartbeat is fresh
+- [PASS] Watchdog coordinator liveness [watchdog_report_20260629T122719.639543Z.json]: Watchdog coordinator liveness: RUNNING_HEALTHY — Coordinator status is 'running' and heartbeat is fresh
+- [PASS] snapshot_20260629T021156.961887Z.json schema version [snapshot_20260629T021156.961887Z.json] (metadata.schema_version): metadata.schema_version matches cdb.evidence_harvester.snapshot.v1
+- [PASS] Watchdog coordinator liveness [watchdog_report_20260629T122754.960906Z.json]: Watchdog coordinator liveness: RUNNING_HEALTHY — Coordinator status is 'running' and heartbeat is fresh
+- [PASS] Watchdog coordinator liveness [watchdog_report_20260629T124220.684108Z.json]: Watchdog coordinator liveness: RUNNING_HEALTHY — Coordinator status is 'running' and heartbeat is fresh
+- [PASS] Watchdog coordinator liveness [watchdog_report_20260629T124256.230963Z.json]: Watchdog coordinator liveness: RUNNING_HEALTHY — Coordinator status is 'running' and heartbeat is fresh
+- [PASS] Watchdog coordinator liveness [watchdog_report_20260629T125723.136228Z.json]: Watchdog coordinator liveness: RUNNING_HEALTHY — Coordinator status is 'running' and heartbeat is fresh
+- [PASS] Watchdog coordinator liveness [watchdog_report_20260629T125804.007362Z.json]: Watchdog coordinator liveness: RUNNING_HEALTHY — Coordinator status is 'running' and heartbeat is fresh
+- [PASS] Watchdog coordinator liveness [watchdog_report_20260629T131224.181983Z.json]: Watchdog coordinator liveness: RUNNING_HEALTHY — Coordinator status is 'running' and heartbeat is fresh
+- [PASS] Watchdog coordinator liveness [watchdog_report_20260629T131304.889188Z.json]: Watchdog coordinator liveness: RUNNING_HEALTHY — Coordinator status is 'running' and heartbeat is fresh
+- [PASS] Watchdog coordinator liveness [watchdog_report_20260629T132725.882130Z.json]: Watchdog coordinator liveness: RUNNING_HEALTHY — Coordinator status is 'running' and heartbeat is fresh
+- [PASS] Watchdog coordinator liveness [watchdog_report_20260629T132806.599768Z.json]: Watchdog coordinator liveness: RUNNING_HEALTHY — Coordinator status is 'running' and heartbeat is fresh
+- [PASS] write_audit_report_20260628T202647.095428Z.json Write-audit verdict [write_audit_report_20260628T202647.095428Z.json] (verdict.verdict): Write-audit report is PASS
+- [PASS] snapshot_20260629T021234.839515Z.json parses as JSON [snapshot_20260629T021234.839515Z.json]: Valid JSON (5634 bytes)
+- [PASS] write_audit_report_20260628T202725.754548Z.json Write-audit verdict [write_audit_report_20260628T202725.754548Z.json] (verdict.verdict): Write-audit report is PASS
+- [PASS] write_audit_report_20260628T204147.136310Z.json Write-audit verdict [write_audit_report_20260628T204147.136310Z.json] (verdict.verdict): Write-audit report is PASS
+- [PASS] write_audit_report_20260628T204225.822673Z.json Write-audit verdict [write_audit_report_20260628T204225.822673Z.json] (verdict.verdict): Write-audit report is PASS
+- [PASS] write_audit_report_20260628T205647.228228Z.json Write-audit verdict [write_audit_report_20260628T205647.228228Z.json] (verdict.verdict): Write-audit report is PASS
+- [PASS] write_audit_report_20260628T205725.879579Z.json Write-audit verdict [write_audit_report_20260628T205725.879579Z.json] (verdict.verdict): Write-audit report is PASS
+- [PASS] write_audit_report_20260628T211147.340626Z.json Write-audit verdict [write_audit_report_20260628T211147.340626Z.json] (verdict.verdict): Write-audit report is PASS
+- [PASS] write_audit_report_20260628T211225.977739Z.json Write-audit verdict [write_audit_report_20260628T211225.977739Z.json] (verdict.verdict): Write-audit report is PASS
+- [PASS] write_audit_report_20260628T212647.438144Z.json Write-audit verdict [write_audit_report_20260628T212647.438144Z.json] (verdict.verdict): Write-audit report is PASS
+- [PASS] write_audit_report_20260628T212726.085888Z.json Write-audit verdict [write_audit_report_20260628T212726.085888Z.json] (verdict.verdict): Write-audit report is PASS
+- [PASS] write_audit_report_20260628T214147.524830Z.json Write-audit verdict [write_audit_report_20260628T214147.524830Z.json] (verdict.verdict): Write-audit report is PASS
+- [PASS] snapshot_20260629T021234.839515Z.json schema version [snapshot_20260629T021234.839515Z.json] (metadata.schema_version): metadata.schema_version matches cdb.evidence_harvester.snapshot.v1
+- [PASS] write_audit_report_20260628T214226.178738Z.json Write-audit verdict [write_audit_report_20260628T214226.178738Z.json] (verdict.verdict): Write-audit report is PASS
+- [PASS] write_audit_report_20260628T215647.638424Z.json Write-audit verdict [write_audit_report_20260628T215647.638424Z.json] (verdict.verdict): Write-audit report is PASS
+- [PASS] write_audit_report_20260628T215726.259263Z.json Write-audit verdict [write_audit_report_20260628T215726.259263Z.json] (verdict.verdict): Write-audit report is PASS
+- [PASS] write_audit_report_20260628T221147.773162Z.json Write-audit verdict [write_audit_report_20260628T221147.773162Z.json] (verdict.verdict): Write-audit report is PASS
+- [PASS] write_audit_report_20260628T221226.358702Z.json Write-audit verdict [write_audit_report_20260628T221226.358702Z.json] (verdict.verdict): Write-audit report is PASS
+- [PASS] write_audit_report_20260628T222647.925582Z.json Write-audit verdict [write_audit_report_20260628T222647.925582Z.json] (verdict.verdict): Write-audit report is PASS
+- [PASS] write_audit_report_20260628T222726.481222Z.json Write-audit verdict [write_audit_report_20260628T222726.481222Z.json] (verdict.verdict): Write-audit report is PASS
+- [PASS] write_audit_report_20260628T224148.050365Z.json Write-audit verdict [write_audit_report_20260628T224148.050365Z.json] (verdict.verdict): Write-audit report is PASS
+- [PASS] write_audit_report_20260628T224226.622382Z.json Write-audit verdict [write_audit_report_20260628T224226.622382Z.json] (verdict.verdict): Write-audit report is PASS
+- [PASS] write_audit_report_20260628T225653.430691Z.json Write-audit verdict [write_audit_report_20260628T225653.430691Z.json] (verdict.verdict): Write-audit report is PASS
+- [PASS] snapshot_20260629T022657.261292Z.json parses as JSON [snapshot_20260629T022657.261292Z.json]: Valid JSON (5634 bytes)
+- [PASS] write_audit_report_20260628T225732.008211Z.json Write-audit verdict [write_audit_report_20260628T225732.008211Z.json] (verdict.verdict): Write-audit report is PASS
+- [PASS] write_audit_report_20260628T231153.609636Z.json Write-audit verdict [write_audit_report_20260628T231153.609636Z.json] (verdict.verdict): Write-audit report is PASS
+- [PASS] write_audit_report_20260628T231232.158446Z.json Write-audit verdict [write_audit_report_20260628T231232.158446Z.json] (verdict.verdict): Write-audit report is PASS
+- [PASS] write_audit_report_20260628T232653.786742Z.json Write-audit verdict [write_audit_report_20260628T232653.786742Z.json] (verdict.verdict): Write-audit report is PASS
+- [PASS] write_audit_report_20260628T232732.326637Z.json Write-audit verdict [write_audit_report_20260628T232732.326637Z.json] (verdict.verdict): Write-audit report is PASS
+- [PASS] write_audit_report_20260628T234153.975890Z.json Write-audit verdict [write_audit_report_20260628T234153.975890Z.json] (verdict.verdict): Write-audit report is PASS
+- [PASS] write_audit_report_20260628T234232.480715Z.json Write-audit verdict [write_audit_report_20260628T234232.480715Z.json] (verdict.verdict): Write-audit report is PASS
+- [PASS] write_audit_report_20260628T235654.200874Z.json Write-audit verdict [write_audit_report_20260628T235654.200874Z.json] (verdict.verdict): Write-audit report is PASS
+- [PASS] write_audit_report_20260628T235732.645061Z.json Write-audit verdict [write_audit_report_20260628T235732.645061Z.json] (verdict.verdict): Write-audit report is PASS
+- [PASS] write_audit_report_20260629T001154.501508Z.json Write-audit verdict [write_audit_report_20260629T001154.501508Z.json] (verdict.verdict): Write-audit report is PASS
+- [PASS] snapshot_20260629T022657.261292Z.json schema version [snapshot_20260629T022657.261292Z.json] (metadata.schema_version): metadata.schema_version matches cdb.evidence_harvester.snapshot.v1
+- [PASS] write_audit_report_20260629T001232.824905Z.json Write-audit verdict [write_audit_report_20260629T001232.824905Z.json] (verdict.verdict): Write-audit report is PASS
+- [PASS] write_audit_report_20260629T002654.774738Z.json Write-audit verdict [write_audit_report_20260629T002654.774738Z.json] (verdict.verdict): Write-audit report is PASS
+- [PASS] write_audit_report_20260629T002733.036521Z.json Write-audit verdict [write_audit_report_20260629T002733.036521Z.json] (verdict.verdict): Write-audit report is PASS
+- [PASS] write_audit_report_20260629T004155.046745Z.json Write-audit verdict [write_audit_report_20260629T004155.046745Z.json] (verdict.verdict): Write-audit report is PASS
+- [PASS] write_audit_report_20260629T004233.286267Z.json Write-audit verdict [write_audit_report_20260629T004233.286267Z.json] (verdict.verdict): Write-audit report is PASS
+- [PASS] write_audit_report_20260629T005655.286180Z.json Write-audit verdict [write_audit_report_20260629T005655.286180Z.json] (verdict.verdict): Write-audit report is PASS
+- [PASS] write_audit_report_20260629T005733.500216Z.json Write-audit verdict [write_audit_report_20260629T005733.500216Z.json] (verdict.verdict): Write-audit report is PASS
+- [PASS] write_audit_report_20260629T011155.540856Z.json Write-audit verdict [write_audit_report_20260629T011155.540856Z.json] (verdict.verdict): Write-audit report is PASS
+- [PASS] write_audit_report_20260629T011233.729956Z.json Write-audit verdict [write_audit_report_20260629T011233.729956Z.json] (verdict.verdict): Write-audit report is PASS
+- [PASS] write_audit_report_20260629T012655.870979Z.json Write-audit verdict [write_audit_report_20260629T012655.870979Z.json] (verdict.verdict): Write-audit report is PASS
+- [PASS] snapshot_20260629T022735.088379Z.json parses as JSON [snapshot_20260629T022735.088379Z.json]: Valid JSON (5634 bytes)
+- [PASS] write_audit_report_20260629T012734.022974Z.json Write-audit verdict [write_audit_report_20260629T012734.022974Z.json] (verdict.verdict): Write-audit report is PASS
+- [PASS] write_audit_report_20260629T014156.252608Z.json Write-audit verdict [write_audit_report_20260629T014156.252608Z.json] (verdict.verdict): Write-audit report is PASS
+- [PASS] write_audit_report_20260629T014234.291063Z.json Write-audit verdict [write_audit_report_20260629T014234.291063Z.json] (verdict.verdict): Write-audit report is PASS
+- [PASS] write_audit_report_20260629T015656.659674Z.json Write-audit verdict [write_audit_report_20260629T015656.659674Z.json] (verdict.verdict): Write-audit report is PASS
+- [PASS] write_audit_report_20260629T015734.550802Z.json Write-audit verdict [write_audit_report_20260629T015734.550802Z.json] (verdict.verdict): Write-audit report is PASS
+- [PASS] write_audit_report_20260629T021156.961887Z.json Write-audit verdict [write_audit_report_20260629T021156.961887Z.json] (verdict.verdict): Write-audit report is PASS
+- [PASS] write_audit_report_20260629T021234.839515Z.json Write-audit verdict [write_audit_report_20260629T021234.839515Z.json] (verdict.verdict): Write-audit report is PASS
+- [PASS] write_audit_report_20260629T022657.261292Z.json Write-audit verdict [write_audit_report_20260629T022657.261292Z.json] (verdict.verdict): Write-audit report is PASS
+- [PASS] write_audit_report_20260629T022735.088379Z.json Write-audit verdict [write_audit_report_20260629T022735.088379Z.json] (verdict.verdict): Write-audit report is PASS
+- [PASS] write_audit_report_20260629T024157.543626Z.json Write-audit verdict [write_audit_report_20260629T024157.543626Z.json] (verdict.verdict): Write-audit report is PASS
+- [PASS] snapshot_20260629T022735.088379Z.json schema version [snapshot_20260629T022735.088379Z.json] (metadata.schema_version): metadata.schema_version matches cdb.evidence_harvester.snapshot.v1
+- [PASS] write_audit_report_20260629T024235.366805Z.json Write-audit verdict [write_audit_report_20260629T024235.366805Z.json] (verdict.verdict): Write-audit report is PASS
+- [PASS] write_audit_report_20260629T025657.877035Z.json Write-audit verdict [write_audit_report_20260629T025657.877035Z.json] (verdict.verdict): Write-audit report is PASS
+- [PASS] write_audit_report_20260629T025735.674598Z.json Write-audit verdict [write_audit_report_20260629T025735.674598Z.json] (verdict.verdict): Write-audit report is PASS
+- [PASS] write_audit_report_20260629T031158.281708Z.json Write-audit verdict [write_audit_report_20260629T031158.281708Z.json] (verdict.verdict): Write-audit report is PASS
+- [PASS] write_audit_report_20260629T031235.977270Z.json Write-audit verdict [write_audit_report_20260629T031235.977270Z.json] (verdict.verdict): Write-audit report is PASS
+- [PASS] write_audit_report_20260629T032658.655687Z.json Write-audit verdict [write_audit_report_20260629T032658.655687Z.json] (verdict.verdict): Write-audit report is PASS
+- [PASS] write_audit_report_20260629T032736.303267Z.json Write-audit verdict [write_audit_report_20260629T032736.303267Z.json] (verdict.verdict): Write-audit report is PASS
+- [PASS] write_audit_report_20260629T034159.055539Z.json Write-audit verdict [write_audit_report_20260629T034159.055539Z.json] (verdict.verdict): Write-audit report is PASS
+- [PASS] write_audit_report_20260629T034236.662044Z.json Write-audit verdict [write_audit_report_20260629T034236.662044Z.json] (verdict.verdict): Write-audit report is PASS
+- [PASS] write_audit_report_20260629T035659.403750Z.json Write-audit verdict [write_audit_report_20260629T035659.403750Z.json] (verdict.verdict): Write-audit report is PASS
+- [PASS] snapshot_20260629T024157.543626Z.json parses as JSON [snapshot_20260629T024157.543626Z.json]: Valid JSON (5634 bytes)
+- [PASS] write_audit_report_20260629T035736.996291Z.json Write-audit verdict [write_audit_report_20260629T035736.996291Z.json] (verdict.verdict): Write-audit report is PASS
+- [PASS] write_audit_report_20260629T041159.834473Z.json Write-audit verdict [write_audit_report_20260629T041159.834473Z.json] (verdict.verdict): Write-audit report is PASS
+- [PASS] write_audit_report_20260629T041237.420710Z.json Write-audit verdict [write_audit_report_20260629T041237.420710Z.json] (verdict.verdict): Write-audit report is PASS
+- [PASS] write_audit_report_20260629T042700.207061Z.json Write-audit verdict [write_audit_report_20260629T042700.207061Z.json] (verdict.verdict): Write-audit report is PASS
+- [PASS] write_audit_report_20260629T042737.755496Z.json Write-audit verdict [write_audit_report_20260629T042737.755496Z.json] (verdict.verdict): Write-audit report is PASS
+- [PASS] write_audit_report_20260629T044200.553296Z.json Write-audit verdict [write_audit_report_20260629T044200.553296Z.json] (verdict.verdict): Write-audit report is PASS
+- [PASS] write_audit_report_20260629T044238.097659Z.json Write-audit verdict [write_audit_report_20260629T044238.097659Z.json] (verdict.verdict): Write-audit report is PASS
+- [PASS] write_audit_report_20260629T045700.953009Z.json Write-audit verdict [write_audit_report_20260629T045700.953009Z.json] (verdict.verdict): Write-audit report is PASS
+- [PASS] write_audit_report_20260629T045738.476486Z.json Write-audit verdict [write_audit_report_20260629T045738.476486Z.json] (verdict.verdict): Write-audit report is PASS
+- [PASS] write_audit_report_20260629T051201.371370Z.json Write-audit verdict [write_audit_report_20260629T051201.371370Z.json] (verdict.verdict): Write-audit report is PASS
+- [PASS] snapshot_20260629T024157.543626Z.json schema version [snapshot_20260629T024157.543626Z.json] (metadata.schema_version): metadata.schema_version matches cdb.evidence_harvester.snapshot.v1
+- [PASS] write_audit_report_20260629T051238.868752Z.json Write-audit verdict [write_audit_report_20260629T051238.868752Z.json] (verdict.verdict): Write-audit report is PASS
+- [PASS] write_audit_report_20260629T052701.813024Z.json Write-audit verdict [write_audit_report_20260629T052701.813024Z.json] (verdict.verdict): Write-audit report is PASS
+- [PASS] write_audit_report_20260629T052739.269183Z.json Write-audit verdict [write_audit_report_20260629T052739.269183Z.json] (verdict.verdict): Write-audit report is PASS
+- [PASS] write_audit_report_20260629T054202.209467Z.json Write-audit verdict [write_audit_report_20260629T054202.209467Z.json] (verdict.verdict): Write-audit report is PASS
+- [PASS] write_audit_report_20260629T054239.631909Z.json Write-audit verdict [write_audit_report_20260629T054239.631909Z.json] (verdict.verdict): Write-audit report is PASS
+- [PASS] write_audit_report_20260629T055702.593495Z.json Write-audit verdict [write_audit_report_20260629T055702.593495Z.json] (verdict.verdict): Write-audit report is PASS
+- [PASS] write_audit_report_20260629T055740.036252Z.json Write-audit verdict [write_audit_report_20260629T055740.036252Z.json] (verdict.verdict): Write-audit report is PASS
+- [PASS] write_audit_report_20260629T061203.038198Z.json Write-audit verdict [write_audit_report_20260629T061203.038198Z.json] (verdict.verdict): Write-audit report is PASS
+- [PASS] write_audit_report_20260629T061240.476343Z.json Write-audit verdict [write_audit_report_20260629T061240.476343Z.json] (verdict.verdict): Write-audit report is PASS
+- [PASS] write_audit_report_20260629T062703.502916Z.json Write-audit verdict [write_audit_report_20260629T062703.502916Z.json] (verdict.verdict): Write-audit report is PASS
+- [PASS] snapshot_20260629T024235.366805Z.json parses as JSON [snapshot_20260629T024235.366805Z.json]: Valid JSON (5634 bytes)
+- [PASS] write_audit_report_20260629T062740.937526Z.json Write-audit verdict [write_audit_report_20260629T062740.937526Z.json] (verdict.verdict): Write-audit report is PASS
+- [PASS] write_audit_report_20260629T064203.999298Z.json Write-audit verdict [write_audit_report_20260629T064203.999298Z.json] (verdict.verdict): Write-audit report is PASS
+- [PASS] write_audit_report_20260629T064241.410579Z.json Write-audit verdict [write_audit_report_20260629T064241.410579Z.json] (verdict.verdict): Write-audit report is PASS
+- [PASS] write_audit_report_20260629T065704.492040Z.json Write-audit verdict [write_audit_report_20260629T065704.492040Z.json] (verdict.verdict): Write-audit report is PASS
+- [PASS] write_audit_report_20260629T065741.876917Z.json Write-audit verdict [write_audit_report_20260629T065741.876917Z.json] (verdict.verdict): Write-audit report is PASS
+- [PASS] write_audit_report_20260629T071205.045950Z.json Write-audit verdict [write_audit_report_20260629T071205.045950Z.json] (verdict.verdict): Write-audit report is PASS
+- [PASS] write_audit_report_20260629T071242.337870Z.json Write-audit verdict [write_audit_report_20260629T071242.337870Z.json] (verdict.verdict): Write-audit report is PASS
+- [PASS] write_audit_report_20260629T072705.612761Z.json Write-audit verdict [write_audit_report_20260629T072705.612761Z.json] (verdict.verdict): Write-audit report is PASS
+- [PASS] write_audit_report_20260629T072742.814909Z.json Write-audit verdict [write_audit_report_20260629T072742.814909Z.json] (verdict.verdict): Write-audit report is PASS
+- [PASS] write_audit_report_20260629T074206.239038Z.json Write-audit verdict [write_audit_report_20260629T074206.239038Z.json] (verdict.verdict): Write-audit report is PASS
+- [PASS] snapshot_20260629T024235.366805Z.json schema version [snapshot_20260629T024235.366805Z.json] (metadata.schema_version): metadata.schema_version matches cdb.evidence_harvester.snapshot.v1
+- [PASS] write_audit_report_20260629T074243.386975Z.json Write-audit verdict [write_audit_report_20260629T074243.386975Z.json] (verdict.verdict): Write-audit report is PASS
+- [PASS] write_audit_report_20260629T075706.941690Z.json Write-audit verdict [write_audit_report_20260629T075706.941690Z.json] (verdict.verdict): Write-audit report is PASS
+- [PASS] write_audit_report_20260629T075744.017413Z.json Write-audit verdict [write_audit_report_20260629T075744.017413Z.json] (verdict.verdict): Write-audit report is PASS
+- [PASS] write_audit_report_20260629T081207.538860Z.json Write-audit verdict [write_audit_report_20260629T081207.538860Z.json] (verdict.verdict): Write-audit report is PASS
+- [PASS] write_audit_report_20260629T081244.519282Z.json Write-audit verdict [write_audit_report_20260629T081244.519282Z.json] (verdict.verdict): Write-audit report is PASS
+- [PASS] write_audit_report_20260629T082708.140490Z.json Write-audit verdict [write_audit_report_20260629T082708.140490Z.json] (verdict.verdict): Write-audit report is PASS
+- [PASS] write_audit_report_20260629T082745.060332Z.json Write-audit verdict [write_audit_report_20260629T082745.060332Z.json] (verdict.verdict): Write-audit report is PASS
+- [PASS] write_audit_report_20260629T084208.790950Z.json Write-audit verdict [write_audit_report_20260629T084208.790950Z.json] (verdict.verdict): Write-audit report is PASS
+- [PASS] write_audit_report_20260629T084245.597847Z.json Write-audit verdict [write_audit_report_20260629T084245.597847Z.json] (verdict.verdict): Write-audit report is PASS
+- [PASS] write_audit_report_20260629T085709.431205Z.json Write-audit verdict [write_audit_report_20260629T085709.431205Z.json] (verdict.verdict): Write-audit report is PASS
+- [PASS] snapshot_20260629T025657.877035Z.json parses as JSON [snapshot_20260629T025657.877035Z.json]: Valid JSON (5634 bytes)
+- [PASS] write_audit_report_20260629T085746.133858Z.json Write-audit verdict [write_audit_report_20260629T085746.133858Z.json] (verdict.verdict): Write-audit report is PASS
+- [PASS] write_audit_report_20260629T091210.137367Z.json Write-audit verdict [write_audit_report_20260629T091210.137367Z.json] (verdict.verdict): Write-audit report is PASS
+- [PASS] write_audit_report_20260629T091246.700715Z.json Write-audit verdict [write_audit_report_20260629T091246.700715Z.json] (verdict.verdict): Write-audit report is PASS
+- [PASS] write_audit_report_20260629T092710.901206Z.json Write-audit verdict [write_audit_report_20260629T092710.901206Z.json] (verdict.verdict): Write-audit report is PASS
+- [PASS] write_audit_report_20260629T092747.293172Z.json Write-audit verdict [write_audit_report_20260629T092747.293172Z.json] (verdict.verdict): Write-audit report is PASS
+- [PASS] write_audit_report_20260629T094211.695111Z.json Write-audit verdict [write_audit_report_20260629T094211.695111Z.json] (verdict.verdict): Write-audit report is PASS
+- [PASS] write_audit_report_20260629T094247.903918Z.json Write-audit verdict [write_audit_report_20260629T094247.903918Z.json] (verdict.verdict): Write-audit report is PASS
+- [PASS] write_audit_report_20260629T095712.307200Z.json Write-audit verdict [write_audit_report_20260629T095712.307200Z.json] (verdict.verdict): Write-audit report is PASS
+- [PASS] write_audit_report_20260629T095748.490461Z.json Write-audit verdict [write_audit_report_20260629T095748.490461Z.json] (verdict.verdict): Write-audit report is PASS
+- [PASS] write_audit_report_20260629T101213.089179Z.json Write-audit verdict [write_audit_report_20260629T101213.089179Z.json] (verdict.verdict): Write-audit report is PASS
+- [PASS] snapshot_20260629T025657.877035Z.json schema version [snapshot_20260629T025657.877035Z.json] (metadata.schema_version): metadata.schema_version matches cdb.evidence_harvester.snapshot.v1
+- [PASS] write_audit_report_20260629T101249.139878Z.json Write-audit verdict [write_audit_report_20260629T101249.139878Z.json] (verdict.verdict): Write-audit report is PASS
+- [PASS] write_audit_report_20260629T102713.736465Z.json Write-audit verdict [write_audit_report_20260629T102713.736465Z.json] (verdict.verdict): Write-audit report is PASS
+- [PASS] write_audit_report_20260629T102749.736234Z.json Write-audit verdict [write_audit_report_20260629T102749.736234Z.json] (verdict.verdict): Write-audit report is PASS
+- [PASS] write_audit_report_20260629T104214.526487Z.json Write-audit verdict [write_audit_report_20260629T104214.526487Z.json] (verdict.verdict): Write-audit report is PASS
+- [PASS] write_audit_report_20260629T104250.386199Z.json Write-audit verdict [write_audit_report_20260629T104250.386199Z.json] (verdict.verdict): Write-audit report is PASS
+- [PASS] write_audit_report_20260629T105715.204661Z.json Write-audit verdict [write_audit_report_20260629T105715.204661Z.json] (verdict.verdict): Write-audit report is PASS
+- [PASS] write_audit_report_20260629T105751.025839Z.json Write-audit verdict [write_audit_report_20260629T105751.025839Z.json] (verdict.verdict): Write-audit report is PASS
+- [PASS] write_audit_report_20260629T111215.903183Z.json Write-audit verdict [write_audit_report_20260629T111215.903183Z.json] (verdict.verdict): Write-audit report is PASS
+- [PASS] write_audit_report_20260629T111251.661921Z.json Write-audit verdict [write_audit_report_20260629T111251.661921Z.json] (verdict.verdict): Write-audit report is PASS
+- [PASS] write_audit_report_20260629T112716.629865Z.json Write-audit verdict [write_audit_report_20260629T112716.629865Z.json] (verdict.verdict): Write-audit report is PASS
+- [PASS] snapshot_20260629T025735.674598Z.json parses as JSON [snapshot_20260629T025735.674598Z.json]: Valid JSON (5634 bytes)
+- [PASS] write_audit_report_20260629T112752.284749Z.json Write-audit verdict [write_audit_report_20260629T112752.284749Z.json] (verdict.verdict): Write-audit report is PASS
+- [PASS] write_audit_report_20260629T114217.488056Z.json Write-audit verdict [write_audit_report_20260629T114217.488056Z.json] (verdict.verdict): Write-audit report is PASS
+- [PASS] write_audit_report_20260629T114252.920024Z.json Write-audit verdict [write_audit_report_20260629T114252.920024Z.json] (verdict.verdict): Write-audit report is PASS
+- [PASS] write_audit_report_20260629T115718.201420Z.json Write-audit verdict [write_audit_report_20260629T115718.201420Z.json] (verdict.verdict): Write-audit report is PASS
+- [PASS] write_audit_report_20260629T115753.619990Z.json Write-audit verdict [write_audit_report_20260629T115753.619990Z.json] (verdict.verdict): Write-audit report is PASS
+- [PASS] write_audit_report_20260629T121218.891836Z.json Write-audit verdict [write_audit_report_20260629T121218.891836Z.json] (verdict.verdict): Write-audit report is PASS
+- [PASS] write_audit_report_20260629T121254.279917Z.json Write-audit verdict [write_audit_report_20260629T121254.279917Z.json] (verdict.verdict): Write-audit report is PASS
+- [PASS] write_audit_report_20260629T122719.639543Z.json Write-audit verdict [write_audit_report_20260629T122719.639543Z.json] (verdict.verdict): Write-audit report is PASS
+- [PASS] write_audit_report_20260629T122754.960906Z.json Write-audit verdict [write_audit_report_20260629T122754.960906Z.json] (verdict.verdict): Write-audit report is PASS
+- [PASS] write_audit_report_20260629T124220.684108Z.json Write-audit verdict [write_audit_report_20260629T124220.684108Z.json] (verdict.verdict): Write-audit report is PASS
+- [PASS] snapshot_20260629T025735.674598Z.json schema version [snapshot_20260629T025735.674598Z.json] (metadata.schema_version): metadata.schema_version matches cdb.evidence_harvester.snapshot.v1
+- [PASS] write_audit_report_20260629T124256.230963Z.json Write-audit verdict [write_audit_report_20260629T124256.230963Z.json] (verdict.verdict): Write-audit report is PASS
+- [PASS] write_audit_report_20260629T125723.136228Z.json Write-audit verdict [write_audit_report_20260629T125723.136228Z.json] (verdict.verdict): Write-audit report is PASS
+- [PASS] write_audit_report_20260629T125804.007362Z.json Write-audit verdict [write_audit_report_20260629T125804.007362Z.json] (verdict.verdict): Write-audit report is PASS
+- [PASS] write_audit_report_20260629T131224.181983Z.json Write-audit verdict [write_audit_report_20260629T131224.181983Z.json] (verdict.verdict): Write-audit report is PASS
+- [PASS] write_audit_report_20260629T131304.889188Z.json Write-audit verdict [write_audit_report_20260629T131304.889188Z.json] (verdict.verdict): Write-audit report is PASS
+- [PASS] write_audit_report_20260629T132725.882130Z.json Write-audit verdict [write_audit_report_20260629T132725.882130Z.json] (verdict.verdict): Write-audit report is PASS
+- [PASS] write_audit_report_20260629T132806.599768Z.json Write-audit verdict [write_audit_report_20260629T132806.599768Z.json] (verdict.verdict): Write-audit report is PASS
+- [PASS] Write-audit verdict history: All write-audit reports are PASS
+- [PASS] boot_readiness_report.json boot readiness verdict [boot_readiness_report.json] (verdict.verdict): Boot readiness report is PASS
+- [PASS] snapshot_20260629T031158.281708Z.json parses as JSON [snapshot_20260629T031158.281708Z.json]: Valid JSON (5634 bytes)
+- [PASS] Snapshot cadence continuity: All gaps are within cadence target
+- [PASS] Alert cadence continuity: All gaps are within cadence target
+- [PASS] Watchdog cadence continuity: All gaps are within cadence target
+- [PASS] Write-audit cadence continuity: All gaps are within cadence target
+- [PASS] snapshot_20260629T031158.281708Z.json schema version [snapshot_20260629T031158.281708Z.json] (metadata.schema_version): metadata.schema_version matches cdb.evidence_harvester.snapshot.v1
+- [PASS] Runner failed runs [runner_state.json] (failed_runs): failed_runs=0
+- [PASS] Runner last cycle verdict [runner_state.json] (last_cycle_verdict): last_cycle_verdict is PASS
+- [PASS] Runner state aligns with latest snapshot [runner_state.json] (last_cycle_ended_at_utc): last_cycle_ended_at_utc aligns with the latest snapshot
+- [PASS] snapshot_20260629T031235.977270Z.json parses as JSON [snapshot_20260629T031235.977270Z.json]: Valid JSON (5634 bytes)
+- [PASS] snapshot_20260629T031235.977270Z.json schema version [snapshot_20260629T031235.977270Z.json] (metadata.schema_version): metadata.schema_version matches cdb.evidence_harvester.snapshot.v1
+- [PASS] snapshot_20260629T032658.655687Z.json parses as JSON [snapshot_20260629T032658.655687Z.json]: Valid JSON (5634 bytes)
+- [PASS] snapshot_20260629T032658.655687Z.json schema version [snapshot_20260629T032658.655687Z.json] (metadata.schema_version): metadata.schema_version matches cdb.evidence_harvester.snapshot.v1
+- [PASS] snapshot_20260629T032736.303267Z.json parses as JSON [snapshot_20260629T032736.303267Z.json]: Valid JSON (5634 bytes)
+- [PASS] snapshot_20260629T032736.303267Z.json schema version [snapshot_20260629T032736.303267Z.json] (metadata.schema_version): metadata.schema_version matches cdb.evidence_harvester.snapshot.v1
+- [PASS] snapshot_20260629T034159.055539Z.json parses as JSON [snapshot_20260629T034159.055539Z.json]: Valid JSON (5634 bytes)
+- [PASS] snapshot_20260629T034159.055539Z.json schema version [snapshot_20260629T034159.055539Z.json] (metadata.schema_version): metadata.schema_version matches cdb.evidence_harvester.snapshot.v1
+- [PASS] snapshot_20260629T034236.662044Z.json parses as JSON [snapshot_20260629T034236.662044Z.json]: Valid JSON (5634 bytes)
+- [PASS] snapshot_20260629T034236.662044Z.json schema version [snapshot_20260629T034236.662044Z.json] (metadata.schema_version): metadata.schema_version matches cdb.evidence_harvester.snapshot.v1
+- [PASS] snapshot_20260629T035659.403750Z.json parses as JSON [snapshot_20260629T035659.403750Z.json]: Valid JSON (5634 bytes)
+- [PASS] snapshot_20260629T035659.403750Z.json schema version [snapshot_20260629T035659.403750Z.json] (metadata.schema_version): metadata.schema_version matches cdb.evidence_harvester.snapshot.v1
+- [PASS] snapshot_20260629T035736.996291Z.json parses as JSON [snapshot_20260629T035736.996291Z.json]: Valid JSON (5634 bytes)
+- [PASS] snapshot_20260629T035736.996291Z.json schema version [snapshot_20260629T035736.996291Z.json] (metadata.schema_version): metadata.schema_version matches cdb.evidence_harvester.snapshot.v1
+- [PASS] snapshot_20260629T041159.834473Z.json parses as JSON [snapshot_20260629T041159.834473Z.json]: Valid JSON (5634 bytes)
+- [PASS] snapshot_20260629T041159.834473Z.json schema version [snapshot_20260629T041159.834473Z.json] (metadata.schema_version): metadata.schema_version matches cdb.evidence_harvester.snapshot.v1
+- [PASS] snapshot_20260629T041237.420710Z.json parses as JSON [snapshot_20260629T041237.420710Z.json]: Valid JSON (5634 bytes)
+- [PASS] snapshot_20260629T041237.420710Z.json schema version [snapshot_20260629T041237.420710Z.json] (metadata.schema_version): metadata.schema_version matches cdb.evidence_harvester.snapshot.v1
+- [PASS] snapshot_20260629T042700.207061Z.json parses as JSON [snapshot_20260629T042700.207061Z.json]: Valid JSON (5634 bytes)
+- [PASS] snapshot_20260629T042700.207061Z.json schema version [snapshot_20260629T042700.207061Z.json] (metadata.schema_version): metadata.schema_version matches cdb.evidence_harvester.snapshot.v1
+- [PASS] snapshot_20260629T042737.755496Z.json parses as JSON [snapshot_20260629T042737.755496Z.json]: Valid JSON (5634 bytes)
+- [PASS] snapshot_20260629T042737.755496Z.json schema version [snapshot_20260629T042737.755496Z.json] (metadata.schema_version): metadata.schema_version matches cdb.evidence_harvester.snapshot.v1
+- [PASS] snapshot_20260629T044200.553296Z.json parses as JSON [snapshot_20260629T044200.553296Z.json]: Valid JSON (5634 bytes)
+- [PASS] snapshot_20260629T044200.553296Z.json schema version [snapshot_20260629T044200.553296Z.json] (metadata.schema_version): metadata.schema_version matches cdb.evidence_harvester.snapshot.v1
+- [PASS] snapshot_20260629T044238.097659Z.json parses as JSON [snapshot_20260629T044238.097659Z.json]: Valid JSON (5634 bytes)
+- [PASS] snapshot_20260629T044238.097659Z.json schema version [snapshot_20260629T044238.097659Z.json] (metadata.schema_version): metadata.schema_version matches cdb.evidence_harvester.snapshot.v1
+- [PASS] snapshot_20260629T045700.953009Z.json parses as JSON [snapshot_20260629T045700.953009Z.json]: Valid JSON (5634 bytes)
+- [PASS] snapshot_20260629T045700.953009Z.json schema version [snapshot_20260629T045700.953009Z.json] (metadata.schema_version): metadata.schema_version matches cdb.evidence_harvester.snapshot.v1
+- [PASS] snapshot_20260629T045738.476486Z.json parses as JSON [snapshot_20260629T045738.476486Z.json]: Valid JSON (5634 bytes)
+- [PASS] snapshot_20260629T045738.476486Z.json schema version [snapshot_20260629T045738.476486Z.json] (metadata.schema_version): metadata.schema_version matches cdb.evidence_harvester.snapshot.v1
+- [PASS] snapshot_20260629T051201.371370Z.json parses as JSON [snapshot_20260629T051201.371370Z.json]: Valid JSON (5634 bytes)
+- [PASS] snapshot_20260629T051201.371370Z.json schema version [snapshot_20260629T051201.371370Z.json] (metadata.schema_version): metadata.schema_version matches cdb.evidence_harvester.snapshot.v1
+- [PASS] snapshot_20260629T051238.868752Z.json parses as JSON [snapshot_20260629T051238.868752Z.json]: Valid JSON (5634 bytes)
+- [PASS] snapshot_20260629T051238.868752Z.json schema version [snapshot_20260629T051238.868752Z.json] (metadata.schema_version): metadata.schema_version matches cdb.evidence_harvester.snapshot.v1
+- [PASS] snapshot_20260629T052701.813024Z.json parses as JSON [snapshot_20260629T052701.813024Z.json]: Valid JSON (5634 bytes)
+- [PASS] snapshot_20260629T052701.813024Z.json schema version [snapshot_20260629T052701.813024Z.json] (metadata.schema_version): metadata.schema_version matches cdb.evidence_harvester.snapshot.v1
+- [PASS] snapshot_20260629T052739.269183Z.json parses as JSON [snapshot_20260629T052739.269183Z.json]: Valid JSON (5634 bytes)
+- [PASS] snapshot_20260629T052739.269183Z.json schema version [snapshot_20260629T052739.269183Z.json] (metadata.schema_version): metadata.schema_version matches cdb.evidence_harvester.snapshot.v1
+- [PASS] snapshot_20260629T054202.209467Z.json parses as JSON [snapshot_20260629T054202.209467Z.json]: Valid JSON (5634 bytes)
+- [PASS] snapshot_20260629T054202.209467Z.json schema version [snapshot_20260629T054202.209467Z.json] (metadata.schema_version): metadata.schema_version matches cdb.evidence_harvester.snapshot.v1
+- [PASS] snapshot_20260629T054239.631909Z.json parses as JSON [snapshot_20260629T054239.631909Z.json]: Valid JSON (5634 bytes)
+- [PASS] snapshot_20260629T054239.631909Z.json schema version [snapshot_20260629T054239.631909Z.json] (metadata.schema_version): metadata.schema_version matches cdb.evidence_harvester.snapshot.v1
+- [PASS] snapshot_20260629T055702.593495Z.json parses as JSON [snapshot_20260629T055702.593495Z.json]: Valid JSON (5634 bytes)
+- [PASS] snapshot_20260629T055702.593495Z.json schema version [snapshot_20260629T055702.593495Z.json] (metadata.schema_version): metadata.schema_version matches cdb.evidence_harvester.snapshot.v1
+- [PASS] snapshot_20260629T055740.036252Z.json parses as JSON [snapshot_20260629T055740.036252Z.json]: Valid JSON (5634 bytes)
+- [PASS] snapshot_20260629T055740.036252Z.json schema version [snapshot_20260629T055740.036252Z.json] (metadata.schema_version): metadata.schema_version matches cdb.evidence_harvester.snapshot.v1
+- [PASS] snapshot_20260629T061203.038198Z.json parses as JSON [snapshot_20260629T061203.038198Z.json]: Valid JSON (5634 bytes)
+- [PASS] snapshot_20260629T061203.038198Z.json schema version [snapshot_20260629T061203.038198Z.json] (metadata.schema_version): metadata.schema_version matches cdb.evidence_harvester.snapshot.v1
+- [PASS] snapshot_20260629T061240.476343Z.json parses as JSON [snapshot_20260629T061240.476343Z.json]: Valid JSON (5634 bytes)
+- [PASS] snapshot_20260629T061240.476343Z.json schema version [snapshot_20260629T061240.476343Z.json] (metadata.schema_version): metadata.schema_version matches cdb.evidence_harvester.snapshot.v1
+- [PASS] snapshot_20260629T062703.502916Z.json parses as JSON [snapshot_20260629T062703.502916Z.json]: Valid JSON (5634 bytes)
+- [PASS] snapshot_20260629T062703.502916Z.json schema version [snapshot_20260629T062703.502916Z.json] (metadata.schema_version): metadata.schema_version matches cdb.evidence_harvester.snapshot.v1
+- [PASS] snapshot_20260629T062740.937526Z.json parses as JSON [snapshot_20260629T062740.937526Z.json]: Valid JSON (5634 bytes)
+- [PASS] snapshot_20260629T062740.937526Z.json schema version [snapshot_20260629T062740.937526Z.json] (metadata.schema_version): metadata.schema_version matches cdb.evidence_harvester.snapshot.v1
+- [PASS] snapshot_20260629T064203.999298Z.json parses as JSON [snapshot_20260629T064203.999298Z.json]: Valid JSON (5634 bytes)
+- [PASS] snapshot_20260629T064203.999298Z.json schema version [snapshot_20260629T064203.999298Z.json] (metadata.schema_version): metadata.schema_version matches cdb.evidence_harvester.snapshot.v1
+- [PASS] snapshot_20260629T064241.410579Z.json parses as JSON [snapshot_20260629T064241.410579Z.json]: Valid JSON (5634 bytes)
+- [PASS] snapshot_20260629T064241.410579Z.json schema version [snapshot_20260629T064241.410579Z.json] (metadata.schema_version): metadata.schema_version matches cdb.evidence_harvester.snapshot.v1
+- [PASS] snapshot_20260629T065704.492040Z.json parses as JSON [snapshot_20260629T065704.492040Z.json]: Valid JSON (5634 bytes)
+- [PASS] snapshot_20260629T065704.492040Z.json schema version [snapshot_20260629T065704.492040Z.json] (metadata.schema_version): metadata.schema_version matches cdb.evidence_harvester.snapshot.v1
+- [PASS] snapshot_20260629T065741.876917Z.json parses as JSON [snapshot_20260629T065741.876917Z.json]: Valid JSON (5634 bytes)
+- [PASS] snapshot_20260629T065741.876917Z.json schema version [snapshot_20260629T065741.876917Z.json] (metadata.schema_version): metadata.schema_version matches cdb.evidence_harvester.snapshot.v1
+- [PASS] snapshot_20260629T071205.045950Z.json parses as JSON [snapshot_20260629T071205.045950Z.json]: Valid JSON (5634 bytes)
+- [PASS] snapshot_20260629T071205.045950Z.json schema version [snapshot_20260629T071205.045950Z.json] (metadata.schema_version): metadata.schema_version matches cdb.evidence_harvester.snapshot.v1
+- [PASS] snapshot_20260629T071242.337870Z.json parses as JSON [snapshot_20260629T071242.337870Z.json]: Valid JSON (5634 bytes)
+- [PASS] snapshot_20260629T071242.337870Z.json schema version [snapshot_20260629T071242.337870Z.json] (metadata.schema_version): metadata.schema_version matches cdb.evidence_harvester.snapshot.v1
+- [PASS] snapshot_20260629T072705.612761Z.json parses as JSON [snapshot_20260629T072705.612761Z.json]: Valid JSON (5634 bytes)
+- [PASS] snapshot_20260629T072705.612761Z.json schema version [snapshot_20260629T072705.612761Z.json] (metadata.schema_version): metadata.schema_version matches cdb.evidence_harvester.snapshot.v1
+- [PASS] snapshot_20260629T072742.814909Z.json parses as JSON [snapshot_20260629T072742.814909Z.json]: Valid JSON (5634 bytes)
+- [PASS] snapshot_20260629T072742.814909Z.json schema version [snapshot_20260629T072742.814909Z.json] (metadata.schema_version): metadata.schema_version matches cdb.evidence_harvester.snapshot.v1
+- [PASS] snapshot_20260629T074206.239038Z.json parses as JSON [snapshot_20260629T074206.239038Z.json]: Valid JSON (5634 bytes)
+- [PASS] snapshot_20260629T074206.239038Z.json schema version [snapshot_20260629T074206.239038Z.json] (metadata.schema_version): metadata.schema_version matches cdb.evidence_harvester.snapshot.v1
+- [PASS] snapshot_20260629T074243.386975Z.json parses as JSON [snapshot_20260629T074243.386975Z.json]: Valid JSON (5634 bytes)
+- [PASS] snapshot_20260629T074243.386975Z.json schema version [snapshot_20260629T074243.386975Z.json] (metadata.schema_version): metadata.schema_version matches cdb.evidence_harvester.snapshot.v1
+- [PASS] snapshot_20260629T075706.941690Z.json parses as JSON [snapshot_20260629T075706.941690Z.json]: Valid JSON (5634 bytes)
+- [PASS] snapshot_20260629T075706.941690Z.json schema version [snapshot_20260629T075706.941690Z.json] (metadata.schema_version): metadata.schema_version matches cdb.evidence_harvester.snapshot.v1
+- [PASS] snapshot_20260629T075744.017413Z.json parses as JSON [snapshot_20260629T075744.017413Z.json]: Valid JSON (5634 bytes)
+- [PASS] snapshot_20260629T075744.017413Z.json schema version [snapshot_20260629T075744.017413Z.json] (metadata.schema_version): metadata.schema_version matches cdb.evidence_harvester.snapshot.v1
+- [PASS] snapshot_20260629T081207.538860Z.json parses as JSON [snapshot_20260629T081207.538860Z.json]: Valid JSON (5634 bytes)
+- [PASS] snapshot_20260629T081207.538860Z.json schema version [snapshot_20260629T081207.538860Z.json] (metadata.schema_version): metadata.schema_version matches cdb.evidence_harvester.snapshot.v1
+- [PASS] snapshot_20260629T081244.519282Z.json parses as JSON [snapshot_20260629T081244.519282Z.json]: Valid JSON (5634 bytes)
+- [PASS] snapshot_20260629T081244.519282Z.json schema version [snapshot_20260629T081244.519282Z.json] (metadata.schema_version): metadata.schema_version matches cdb.evidence_harvester.snapshot.v1
+- [PASS] snapshot_20260629T082708.140490Z.json parses as JSON [snapshot_20260629T082708.140490Z.json]: Valid JSON (5634 bytes)
+- [PASS] snapshot_20260629T082708.140490Z.json schema version [snapshot_20260629T082708.140490Z.json] (metadata.schema_version): metadata.schema_version matches cdb.evidence_harvester.snapshot.v1
+- [PASS] snapshot_20260629T082745.060332Z.json parses as JSON [snapshot_20260629T082745.060332Z.json]: Valid JSON (5634 bytes)
+- [PASS] snapshot_20260629T082745.060332Z.json schema version [snapshot_20260629T082745.060332Z.json] (metadata.schema_version): metadata.schema_version matches cdb.evidence_harvester.snapshot.v1
+- [PASS] snapshot_20260629T084208.790950Z.json parses as JSON [snapshot_20260629T084208.790950Z.json]: Valid JSON (5634 bytes)
+- [PASS] snapshot_20260629T084208.790950Z.json schema version [snapshot_20260629T084208.790950Z.json] (metadata.schema_version): metadata.schema_version matches cdb.evidence_harvester.snapshot.v1
+- [PASS] snapshot_20260629T084245.597847Z.json parses as JSON [snapshot_20260629T084245.597847Z.json]: Valid JSON (5634 bytes)
+- [PASS] snapshot_20260629T084245.597847Z.json schema version [snapshot_20260629T084245.597847Z.json] (metadata.schema_version): metadata.schema_version matches cdb.evidence_harvester.snapshot.v1
+- [PASS] snapshot_20260629T085709.431205Z.json parses as JSON [snapshot_20260629T085709.431205Z.json]: Valid JSON (5634 bytes)
+- [PASS] snapshot_20260629T085709.431205Z.json schema version [snapshot_20260629T085709.431205Z.json] (metadata.schema_version): metadata.schema_version matches cdb.evidence_harvester.snapshot.v1
+- [PASS] snapshot_20260629T085746.133858Z.json parses as JSON [snapshot_20260629T085746.133858Z.json]: Valid JSON (5634 bytes)
+- [PASS] snapshot_20260629T085746.133858Z.json schema version [snapshot_20260629T085746.133858Z.json] (metadata.schema_version): metadata.schema_version matches cdb.evidence_harvester.snapshot.v1
+- [PASS] snapshot_20260629T091210.137367Z.json parses as JSON [snapshot_20260629T091210.137367Z.json]: Valid JSON (5634 bytes)
+- [PASS] snapshot_20260629T091210.137367Z.json schema version [snapshot_20260629T091210.137367Z.json] (metadata.schema_version): metadata.schema_version matches cdb.evidence_harvester.snapshot.v1
+- [PASS] snapshot_20260629T091246.700715Z.json parses as JSON [snapshot_20260629T091246.700715Z.json]: Valid JSON (5634 bytes)
+- [PASS] snapshot_20260629T091246.700715Z.json schema version [snapshot_20260629T091246.700715Z.json] (metadata.schema_version): metadata.schema_version matches cdb.evidence_harvester.snapshot.v1
+- [PASS] snapshot_20260629T092710.901206Z.json parses as JSON [snapshot_20260629T092710.901206Z.json]: Valid JSON (5634 bytes)
+- [PASS] snapshot_20260629T092710.901206Z.json schema version [snapshot_20260629T092710.901206Z.json] (metadata.schema_version): metadata.schema_version matches cdb.evidence_harvester.snapshot.v1
+- [PASS] snapshot_20260629T092747.293172Z.json parses as JSON [snapshot_20260629T092747.293172Z.json]: Valid JSON (5634 bytes)
+- [PASS] snapshot_20260629T092747.293172Z.json schema version [snapshot_20260629T092747.293172Z.json] (metadata.schema_version): metadata.schema_version matches cdb.evidence_harvester.snapshot.v1
+- [PASS] snapshot_20260629T094211.695111Z.json parses as JSON [snapshot_20260629T094211.695111Z.json]: Valid JSON (5634 bytes)
+- [PASS] snapshot_20260629T094211.695111Z.json schema version [snapshot_20260629T094211.695111Z.json] (metadata.schema_version): metadata.schema_version matches cdb.evidence_harvester.snapshot.v1
+- [PASS] snapshot_20260629T094247.903918Z.json parses as JSON [snapshot_20260629T094247.903918Z.json]: Valid JSON (5634 bytes)
+- [PASS] snapshot_20260629T094247.903918Z.json schema version [snapshot_20260629T094247.903918Z.json] (metadata.schema_version): metadata.schema_version matches cdb.evidence_harvester.snapshot.v1
+- [PASS] snapshot_20260629T095712.307200Z.json parses as JSON [snapshot_20260629T095712.307200Z.json]: Valid JSON (5634 bytes)
+- [PASS] snapshot_20260629T095712.307200Z.json schema version [snapshot_20260629T095712.307200Z.json] (metadata.schema_version): metadata.schema_version matches cdb.evidence_harvester.snapshot.v1
+- [PASS] snapshot_20260629T095748.490461Z.json parses as JSON [snapshot_20260629T095748.490461Z.json]: Valid JSON (5634 bytes)
+- [PASS] snapshot_20260629T095748.490461Z.json schema version [snapshot_20260629T095748.490461Z.json] (metadata.schema_version): metadata.schema_version matches cdb.evidence_harvester.snapshot.v1
+- [PASS] snapshot_20260629T101213.089179Z.json parses as JSON [snapshot_20260629T101213.089179Z.json]: Valid JSON (5634 bytes)
+- [PASS] snapshot_20260629T101213.089179Z.json schema version [snapshot_20260629T101213.089179Z.json] (metadata.schema_version): metadata.schema_version matches cdb.evidence_harvester.snapshot.v1
+- [PASS] snapshot_20260629T101249.139878Z.json parses as JSON [snapshot_20260629T101249.139878Z.json]: Valid JSON (5634 bytes)
+- [PASS] snapshot_20260629T101249.139878Z.json schema version [snapshot_20260629T101249.139878Z.json] (metadata.schema_version): metadata.schema_version matches cdb.evidence_harvester.snapshot.v1
+- [PASS] snapshot_20260629T102713.736465Z.json parses as JSON [snapshot_20260629T102713.736465Z.json]: Valid JSON (5634 bytes)
+- [PASS] snapshot_20260629T102713.736465Z.json schema version [snapshot_20260629T102713.736465Z.json] (metadata.schema_version): metadata.schema_version matches cdb.evidence_harvester.snapshot.v1
+- [PASS] snapshot_20260629T102749.736234Z.json parses as JSON [snapshot_20260629T102749.736234Z.json]: Valid JSON (5634 bytes)
+- [PASS] snapshot_20260629T102749.736234Z.json schema version [snapshot_20260629T102749.736234Z.json] (metadata.schema_version): metadata.schema_version matches cdb.evidence_harvester.snapshot.v1
+- [PASS] snapshot_20260629T104214.526487Z.json parses as JSON [snapshot_20260629T104214.526487Z.json]: Valid JSON (5634 bytes)
+- [PASS] snapshot_20260629T104214.526487Z.json schema version [snapshot_20260629T104214.526487Z.json] (metadata.schema_version): metadata.schema_version matches cdb.evidence_harvester.snapshot.v1
+- [PASS] snapshot_20260629T104250.386199Z.json parses as JSON [snapshot_20260629T104250.386199Z.json]: Valid JSON (5634 bytes)
+- [PASS] snapshot_20260629T104250.386199Z.json schema version [snapshot_20260629T104250.386199Z.json] (metadata.schema_version): metadata.schema_version matches cdb.evidence_harvester.snapshot.v1
+- [PASS] snapshot_20260629T105715.204661Z.json parses as JSON [snapshot_20260629T105715.204661Z.json]: Valid JSON (5634 bytes)
+- [PASS] snapshot_20260629T105715.204661Z.json schema version [snapshot_20260629T105715.204661Z.json] (metadata.schema_version): metadata.schema_version matches cdb.evidence_harvester.snapshot.v1
+- [PASS] snapshot_20260629T105751.025839Z.json parses as JSON [snapshot_20260629T105751.025839Z.json]: Valid JSON (5634 bytes)
+- [PASS] snapshot_20260629T105751.025839Z.json schema version [snapshot_20260629T105751.025839Z.json] (metadata.schema_version): metadata.schema_version matches cdb.evidence_harvester.snapshot.v1
+- [PASS] snapshot_20260629T111215.903183Z.json parses as JSON [snapshot_20260629T111215.903183Z.json]: Valid JSON (5634 bytes)
+- [PASS] snapshot_20260629T111215.903183Z.json schema version [snapshot_20260629T111215.903183Z.json] (metadata.schema_version): metadata.schema_version matches cdb.evidence_harvester.snapshot.v1
+- [PASS] snapshot_20260629T111251.661921Z.json parses as JSON [snapshot_20260629T111251.661921Z.json]: Valid JSON (5634 bytes)
+- [PASS] snapshot_20260629T111251.661921Z.json schema version [snapshot_20260629T111251.661921Z.json] (metadata.schema_version): metadata.schema_version matches cdb.evidence_harvester.snapshot.v1
+- [PASS] snapshot_20260629T112716.629865Z.json parses as JSON [snapshot_20260629T112716.629865Z.json]: Valid JSON (5634 bytes)
+- [PASS] snapshot_20260629T112716.629865Z.json schema version [snapshot_20260629T112716.629865Z.json] (metadata.schema_version): metadata.schema_version matches cdb.evidence_harvester.snapshot.v1
+- [PASS] snapshot_20260629T112752.284749Z.json parses as JSON [snapshot_20260629T112752.284749Z.json]: Valid JSON (5634 bytes)
+- [PASS] snapshot_20260629T112752.284749Z.json schema version [snapshot_20260629T112752.284749Z.json] (metadata.schema_version): metadata.schema_version matches cdb.evidence_harvester.snapshot.v1
+- [PASS] snapshot_20260629T114217.488056Z.json parses as JSON [snapshot_20260629T114217.488056Z.json]: Valid JSON (5634 bytes)
+- [PASS] snapshot_20260629T114217.488056Z.json schema version [snapshot_20260629T114217.488056Z.json] (metadata.schema_version): metadata.schema_version matches cdb.evidence_harvester.snapshot.v1
+- [PASS] snapshot_20260629T114252.920024Z.json parses as JSON [snapshot_20260629T114252.920024Z.json]: Valid JSON (5634 bytes)
+- [PASS] snapshot_20260629T114252.920024Z.json schema version [snapshot_20260629T114252.920024Z.json] (metadata.schema_version): metadata.schema_version matches cdb.evidence_harvester.snapshot.v1
+- [PASS] snapshot_20260629T115718.201420Z.json parses as JSON [snapshot_20260629T115718.201420Z.json]: Valid JSON (5634 bytes)
+- [PASS] snapshot_20260629T115718.201420Z.json schema version [snapshot_20260629T115718.201420Z.json] (metadata.schema_version): metadata.schema_version matches cdb.evidence_harvester.snapshot.v1
+- [PASS] snapshot_20260629T115753.619990Z.json parses as JSON [snapshot_20260629T115753.619990Z.json]: Valid JSON (5634 bytes)
+- [PASS] snapshot_20260629T115753.619990Z.json schema version [snapshot_20260629T115753.619990Z.json] (metadata.schema_version): metadata.schema_version matches cdb.evidence_harvester.snapshot.v1
+- [PASS] snapshot_20260629T121218.891836Z.json parses as JSON [snapshot_20260629T121218.891836Z.json]: Valid JSON (5634 bytes)
+- [PASS] snapshot_20260629T121218.891836Z.json schema version [snapshot_20260629T121218.891836Z.json] (metadata.schema_version): metadata.schema_version matches cdb.evidence_harvester.snapshot.v1
+- [PASS] snapshot_20260629T121254.279917Z.json parses as JSON [snapshot_20260629T121254.279917Z.json]: Valid JSON (5634 bytes)
+- [PASS] snapshot_20260629T121254.279917Z.json schema version [snapshot_20260629T121254.279917Z.json] (metadata.schema_version): metadata.schema_version matches cdb.evidence_harvester.snapshot.v1
+- [PASS] snapshot_20260629T122719.639543Z.json parses as JSON [snapshot_20260629T122719.639543Z.json]: Valid JSON (5634 bytes)
+- [PASS] snapshot_20260629T122719.639543Z.json schema version [snapshot_20260629T122719.639543Z.json] (metadata.schema_version): metadata.schema_version matches cdb.evidence_harvester.snapshot.v1
+- [PASS] snapshot_20260629T122754.960906Z.json parses as JSON [snapshot_20260629T122754.960906Z.json]: Valid JSON (5634 bytes)
+- [PASS] snapshot_20260629T122754.960906Z.json schema version [snapshot_20260629T122754.960906Z.json] (metadata.schema_version): metadata.schema_version matches cdb.evidence_harvester.snapshot.v1
+- [PASS] snapshot_20260629T124220.684108Z.json parses as JSON [snapshot_20260629T124220.684108Z.json]: Valid JSON (5634 bytes)
+- [PASS] snapshot_20260629T124220.684108Z.json schema version [snapshot_20260629T124220.684108Z.json] (metadata.schema_version): metadata.schema_version matches cdb.evidence_harvester.snapshot.v1
+- [PASS] snapshot_20260629T124256.230963Z.json parses as JSON [snapshot_20260629T124256.230963Z.json]: Valid JSON (5634 bytes)
+- [PASS] snapshot_20260629T124256.230963Z.json schema version [snapshot_20260629T124256.230963Z.json] (metadata.schema_version): metadata.schema_version matches cdb.evidence_harvester.snapshot.v1
+- [PASS] snapshot_20260629T125723.136228Z.json parses as JSON [snapshot_20260629T125723.136228Z.json]: Valid JSON (5634 bytes)
+- [PASS] snapshot_20260629T125723.136228Z.json schema version [snapshot_20260629T125723.136228Z.json] (metadata.schema_version): metadata.schema_version matches cdb.evidence_harvester.snapshot.v1
+- [PASS] snapshot_20260629T125804.007362Z.json parses as JSON [snapshot_20260629T125804.007362Z.json]: Valid JSON (5634 bytes)
+- [PASS] snapshot_20260629T125804.007362Z.json schema version [snapshot_20260629T125804.007362Z.json] (metadata.schema_version): metadata.schema_version matches cdb.evidence_harvester.snapshot.v1
+- [PASS] snapshot_20260629T131224.181983Z.json parses as JSON [snapshot_20260629T131224.181983Z.json]: Valid JSON (5634 bytes)
+- [PASS] snapshot_20260629T131224.181983Z.json schema version [snapshot_20260629T131224.181983Z.json] (metadata.schema_version): metadata.schema_version matches cdb.evidence_harvester.snapshot.v1
+- [PASS] snapshot_20260629T131304.889188Z.json parses as JSON [snapshot_20260629T131304.889188Z.json]: Valid JSON (5634 bytes)
+- [PASS] snapshot_20260629T131304.889188Z.json schema version [snapshot_20260629T131304.889188Z.json] (metadata.schema_version): metadata.schema_version matches cdb.evidence_harvester.snapshot.v1
+- [PASS] snapshot_20260629T132725.882130Z.json parses as JSON [snapshot_20260629T132725.882130Z.json]: Valid JSON (5634 bytes)
+- [PASS] snapshot_20260629T132725.882130Z.json schema version [snapshot_20260629T132725.882130Z.json] (metadata.schema_version): metadata.schema_version matches cdb.evidence_harvester.snapshot.v1
+- [PASS] snapshot_20260629T132806.599768Z.json parses as JSON [snapshot_20260629T132806.599768Z.json]: Valid JSON (5634 bytes)
+- [PASS] snapshot_20260629T132806.599768Z.json schema version [snapshot_20260629T132806.599768Z.json] (metadata.schema_version): metadata.schema_version matches cdb.evidence_harvester.snapshot.v1
+- [PASS] alert_20260628T202647.095428Z.json parses as JSON [alert_20260628T202647.095428Z.json]: Valid JSON (2906 bytes)
+- [PASS] alert_20260628T202647.095428Z.json schema version [alert_20260628T202647.095428Z.json] (schema_version): schema_version matches cdb.evidence_harvester.alert_report.v1
+- [PASS] alert_20260628T202725.754548Z.json parses as JSON [alert_20260628T202725.754548Z.json]: Valid JSON (2906 bytes)
+- [PASS] alert_20260628T202725.754548Z.json schema version [alert_20260628T202725.754548Z.json] (schema_version): schema_version matches cdb.evidence_harvester.alert_report.v1
+- [PASS] alert_20260628T204147.136310Z.json parses as JSON [alert_20260628T204147.136310Z.json]: Valid JSON (2906 bytes)
+- [PASS] alert_20260628T204147.136310Z.json schema version [alert_20260628T204147.136310Z.json] (schema_version): schema_version matches cdb.evidence_harvester.alert_report.v1
+- [PASS] alert_20260628T204225.822673Z.json parses as JSON [alert_20260628T204225.822673Z.json]: Valid JSON (2906 bytes)
+- [PASS] alert_20260628T204225.822673Z.json schema version [alert_20260628T204225.822673Z.json] (schema_version): schema_version matches cdb.evidence_harvester.alert_report.v1
+- [PASS] alert_20260628T205647.228228Z.json parses as JSON [alert_20260628T205647.228228Z.json]: Valid JSON (2906 bytes)
+- [PASS] alert_20260628T205647.228228Z.json schema version [alert_20260628T205647.228228Z.json] (schema_version): schema_version matches cdb.evidence_harvester.alert_report.v1
+- [PASS] alert_20260628T205725.879579Z.json parses as JSON [alert_20260628T205725.879579Z.json]: Valid JSON (2906 bytes)
+- [PASS] alert_20260628T205725.879579Z.json schema version [alert_20260628T205725.879579Z.json] (schema_version): schema_version matches cdb.evidence_harvester.alert_report.v1
+- [PASS] alert_20260628T211147.340626Z.json parses as JSON [alert_20260628T211147.340626Z.json]: Valid JSON (2906 bytes)
+- [PASS] alert_20260628T211147.340626Z.json schema version [alert_20260628T211147.340626Z.json] (schema_version): schema_version matches cdb.evidence_harvester.alert_report.v1
+- [PASS] alert_20260628T211225.977739Z.json parses as JSON [alert_20260628T211225.977739Z.json]: Valid JSON (2906 bytes)
+- [PASS] alert_20260628T211225.977739Z.json schema version [alert_20260628T211225.977739Z.json] (schema_version): schema_version matches cdb.evidence_harvester.alert_report.v1
+- [PASS] alert_20260628T212647.438144Z.json parses as JSON [alert_20260628T212647.438144Z.json]: Valid JSON (2906 bytes)
+- [PASS] alert_20260628T212647.438144Z.json schema version [alert_20260628T212647.438144Z.json] (schema_version): schema_version matches cdb.evidence_harvester.alert_report.v1
+- [PASS] alert_20260628T212726.085888Z.json parses as JSON [alert_20260628T212726.085888Z.json]: Valid JSON (2906 bytes)
+- [PASS] alert_20260628T212726.085888Z.json schema version [alert_20260628T212726.085888Z.json] (schema_version): schema_version matches cdb.evidence_harvester.alert_report.v1
+- [PASS] alert_20260628T214147.524830Z.json parses as JSON [alert_20260628T214147.524830Z.json]: Valid JSON (2906 bytes)
+- [PASS] alert_20260628T214147.524830Z.json schema version [alert_20260628T214147.524830Z.json] (schema_version): schema_version matches cdb.evidence_harvester.alert_report.v1
+- [PASS] alert_20260628T214226.178738Z.json parses as JSON [alert_20260628T214226.178738Z.json]: Valid JSON (2906 bytes)
+- [PASS] alert_20260628T214226.178738Z.json schema version [alert_20260628T214226.178738Z.json] (schema_version): schema_version matches cdb.evidence_harvester.alert_report.v1
+- [PASS] alert_20260628T215647.638424Z.json parses as JSON [alert_20260628T215647.638424Z.json]: Valid JSON (2906 bytes)
+- [PASS] alert_20260628T215647.638424Z.json schema version [alert_20260628T215647.638424Z.json] (schema_version): schema_version matches cdb.evidence_harvester.alert_report.v1
+- [PASS] alert_20260628T215726.259263Z.json parses as JSON [alert_20260628T215726.259263Z.json]: Valid JSON (2906 bytes)
+- [PASS] alert_20260628T215726.259263Z.json schema version [alert_20260628T215726.259263Z.json] (schema_version): schema_version matches cdb.evidence_harvester.alert_report.v1
+- [PASS] alert_20260628T221147.773162Z.json parses as JSON [alert_20260628T221147.773162Z.json]: Valid JSON (2906 bytes)
+- [PASS] alert_20260628T221147.773162Z.json schema version [alert_20260628T221147.773162Z.json] (schema_version): schema_version matches cdb.evidence_harvester.alert_report.v1
+- [PASS] alert_20260628T221226.358702Z.json parses as JSON [alert_20260628T221226.358702Z.json]: Valid JSON (2906 bytes)
+- [PASS] alert_20260628T221226.358702Z.json schema version [alert_20260628T221226.358702Z.json] (schema_version): schema_version matches cdb.evidence_harvester.alert_report.v1
+- [PASS] alert_20260628T222647.925582Z.json parses as JSON [alert_20260628T222647.925582Z.json]: Valid JSON (2906 bytes)
+- [PASS] alert_20260628T222647.925582Z.json schema version [alert_20260628T222647.925582Z.json] (schema_version): schema_version matches cdb.evidence_harvester.alert_report.v1
+- [PASS] alert_20260628T222726.481222Z.json parses as JSON [alert_20260628T222726.481222Z.json]: Valid JSON (2906 bytes)
+- [PASS] alert_20260628T222726.481222Z.json schema version [alert_20260628T222726.481222Z.json] (schema_version): schema_version matches cdb.evidence_harvester.alert_report.v1
+- [PASS] alert_20260628T224148.050365Z.json parses as JSON [alert_20260628T224148.050365Z.json]: Valid JSON (2906 bytes)
+- [PASS] alert_20260628T224148.050365Z.json schema version [alert_20260628T224148.050365Z.json] (schema_version): schema_version matches cdb.evidence_harvester.alert_report.v1
+- [PASS] alert_20260628T224226.622382Z.json parses as JSON [alert_20260628T224226.622382Z.json]: Valid JSON (2906 bytes)
+- [PASS] alert_20260628T224226.622382Z.json schema version [alert_20260628T224226.622382Z.json] (schema_version): schema_version matches cdb.evidence_harvester.alert_report.v1
+- [PASS] alert_20260628T225653.430691Z.json parses as JSON [alert_20260628T225653.430691Z.json]: Valid JSON (2906 bytes)
+- [PASS] alert_20260628T225653.430691Z.json schema version [alert_20260628T225653.430691Z.json] (schema_version): schema_version matches cdb.evidence_harvester.alert_report.v1
+- [PASS] alert_20260628T225732.008211Z.json parses as JSON [alert_20260628T225732.008211Z.json]: Valid JSON (2906 bytes)
+- [PASS] alert_20260628T225732.008211Z.json schema version [alert_20260628T225732.008211Z.json] (schema_version): schema_version matches cdb.evidence_harvester.alert_report.v1
+- [PASS] alert_20260628T231153.609636Z.json parses as JSON [alert_20260628T231153.609636Z.json]: Valid JSON (2906 bytes)
+- [PASS] alert_20260628T231153.609636Z.json schema version [alert_20260628T231153.609636Z.json] (schema_version): schema_version matches cdb.evidence_harvester.alert_report.v1
+- [PASS] alert_20260628T231232.158446Z.json parses as JSON [alert_20260628T231232.158446Z.json]: Valid JSON (2906 bytes)
+- [PASS] alert_20260628T231232.158446Z.json schema version [alert_20260628T231232.158446Z.json] (schema_version): schema_version matches cdb.evidence_harvester.alert_report.v1
+- [PASS] alert_20260628T232653.786742Z.json parses as JSON [alert_20260628T232653.786742Z.json]: Valid JSON (2906 bytes)
+- [PASS] alert_20260628T232653.786742Z.json schema version [alert_20260628T232653.786742Z.json] (schema_version): schema_version matches cdb.evidence_harvester.alert_report.v1
+- [PASS] alert_20260628T232732.326637Z.json parses as JSON [alert_20260628T232732.326637Z.json]: Valid JSON (2906 bytes)
+- [PASS] alert_20260628T232732.326637Z.json schema version [alert_20260628T232732.326637Z.json] (schema_version): schema_version matches cdb.evidence_harvester.alert_report.v1
+- [PASS] alert_20260628T234153.975890Z.json parses as JSON [alert_20260628T234153.975890Z.json]: Valid JSON (2906 bytes)
+- [PASS] alert_20260628T234153.975890Z.json schema version [alert_20260628T234153.975890Z.json] (schema_version): schema_version matches cdb.evidence_harvester.alert_report.v1
+- [PASS] alert_20260628T234232.480715Z.json parses as JSON [alert_20260628T234232.480715Z.json]: Valid JSON (2906 bytes)
+- [PASS] alert_20260628T234232.480715Z.json schema version [alert_20260628T234232.480715Z.json] (schema_version): schema_version matches cdb.evidence_harvester.alert_report.v1
+- [PASS] alert_20260628T235654.200874Z.json parses as JSON [alert_20260628T235654.200874Z.json]: Valid JSON (2906 bytes)
+- [PASS] alert_20260628T235654.200874Z.json schema version [alert_20260628T235654.200874Z.json] (schema_version): schema_version matches cdb.evidence_harvester.alert_report.v1
+- [PASS] alert_20260628T235732.645061Z.json parses as JSON [alert_20260628T235732.645061Z.json]: Valid JSON (2906 bytes)
+- [PASS] alert_20260628T235732.645061Z.json schema version [alert_20260628T235732.645061Z.json] (schema_version): schema_version matches cdb.evidence_harvester.alert_report.v1
+- [PASS] alert_20260629T001154.501508Z.json parses as JSON [alert_20260629T001154.501508Z.json]: Valid JSON (2906 bytes)
+- [PASS] alert_20260629T001154.501508Z.json schema version [alert_20260629T001154.501508Z.json] (schema_version): schema_version matches cdb.evidence_harvester.alert_report.v1
+- [PASS] alert_20260629T001232.824905Z.json parses as JSON [alert_20260629T001232.824905Z.json]: Valid JSON (2906 bytes)
+- [PASS] alert_20260629T001232.824905Z.json schema version [alert_20260629T001232.824905Z.json] (schema_version): schema_version matches cdb.evidence_harvester.alert_report.v1
+- [PASS] alert_20260629T002654.774738Z.json parses as JSON [alert_20260629T002654.774738Z.json]: Valid JSON (2906 bytes)
+- [PASS] alert_20260629T002654.774738Z.json schema version [alert_20260629T002654.774738Z.json] (schema_version): schema_version matches cdb.evidence_harvester.alert_report.v1
+- [PASS] alert_20260629T002733.036521Z.json parses as JSON [alert_20260629T002733.036521Z.json]: Valid JSON (2906 bytes)
+- [PASS] alert_20260629T002733.036521Z.json schema version [alert_20260629T002733.036521Z.json] (schema_version): schema_version matches cdb.evidence_harvester.alert_report.v1
+- [PASS] alert_20260629T004155.046745Z.json parses as JSON [alert_20260629T004155.046745Z.json]: Valid JSON (2906 bytes)
+- [PASS] alert_20260629T004155.046745Z.json schema version [alert_20260629T004155.046745Z.json] (schema_version): schema_version matches cdb.evidence_harvester.alert_report.v1
+- [PASS] alert_20260629T004233.286267Z.json parses as JSON [alert_20260629T004233.286267Z.json]: Valid JSON (2906 bytes)
+- [PASS] alert_20260629T004233.286267Z.json schema version [alert_20260629T004233.286267Z.json] (schema_version): schema_version matches cdb.evidence_harvester.alert_report.v1
+- [PASS] alert_20260629T005655.286180Z.json parses as JSON [alert_20260629T005655.286180Z.json]: Valid JSON (2906 bytes)
+- [PASS] alert_20260629T005655.286180Z.json schema version [alert_20260629T005655.286180Z.json] (schema_version): schema_version matches cdb.evidence_harvester.alert_report.v1
+- [PASS] alert_20260629T005733.500216Z.json parses as JSON [alert_20260629T005733.500216Z.json]: Valid JSON (2906 bytes)
+- [PASS] alert_20260629T005733.500216Z.json schema version [alert_20260629T005733.500216Z.json] (schema_version): schema_version matches cdb.evidence_harvester.alert_report.v1
+- [PASS] alert_20260629T011155.540856Z.json parses as JSON [alert_20260629T011155.540856Z.json]: Valid JSON (2906 bytes)
+- [PASS] alert_20260629T011155.540856Z.json schema version [alert_20260629T011155.540856Z.json] (schema_version): schema_version matches cdb.evidence_harvester.alert_report.v1
+- [PASS] alert_20260629T011233.729956Z.json parses as JSON [alert_20260629T011233.729956Z.json]: Valid JSON (2906 bytes)
+- [PASS] alert_20260629T011233.729956Z.json schema version [alert_20260629T011233.729956Z.json] (schema_version): schema_version matches cdb.evidence_harvester.alert_report.v1
+- [PASS] alert_20260629T012655.870979Z.json parses as JSON [alert_20260629T012655.870979Z.json]: Valid JSON (2906 bytes)
+- [PASS] alert_20260629T012655.870979Z.json schema version [alert_20260629T012655.870979Z.json] (schema_version): schema_version matches cdb.evidence_harvester.alert_report.v1
+- [PASS] alert_20260629T012734.022974Z.json parses as JSON [alert_20260629T012734.022974Z.json]: Valid JSON (2906 bytes)
+- [PASS] alert_20260629T012734.022974Z.json schema version [alert_20260629T012734.022974Z.json] (schema_version): schema_version matches cdb.evidence_harvester.alert_report.v1
+- [PASS] alert_20260629T014156.252608Z.json parses as JSON [alert_20260629T014156.252608Z.json]: Valid JSON (2906 bytes)
+- [PASS] alert_20260629T014156.252608Z.json schema version [alert_20260629T014156.252608Z.json] (schema_version): schema_version matches cdb.evidence_harvester.alert_report.v1
+- [PASS] alert_20260629T014234.291063Z.json parses as JSON [alert_20260629T014234.291063Z.json]: Valid JSON (2906 bytes)
+- [PASS] alert_20260629T014234.291063Z.json schema version [alert_20260629T014234.291063Z.json] (schema_version): schema_version matches cdb.evidence_harvester.alert_report.v1
+- [PASS] alert_20260629T015656.659674Z.json parses as JSON [alert_20260629T015656.659674Z.json]: Valid JSON (2906 bytes)
+- [PASS] alert_20260629T015656.659674Z.json schema version [alert_20260629T015656.659674Z.json] (schema_version): schema_version matches cdb.evidence_harvester.alert_report.v1
+- [PASS] alert_20260629T015734.550802Z.json parses as JSON [alert_20260629T015734.550802Z.json]: Valid JSON (2906 bytes)
+- [PASS] alert_20260629T015734.550802Z.json schema version [alert_20260629T015734.550802Z.json] (schema_version): schema_version matches cdb.evidence_harvester.alert_report.v1
+- [PASS] alert_20260629T021156.961887Z.json parses as JSON [alert_20260629T021156.961887Z.json]: Valid JSON (2906 bytes)
+- [PASS] alert_20260629T021156.961887Z.json schema version [alert_20260629T021156.961887Z.json] (schema_version): schema_version matches cdb.evidence_harvester.alert_report.v1
+- [PASS] alert_20260629T021234.839515Z.json parses as JSON [alert_20260629T021234.839515Z.json]: Valid JSON (2906 bytes)
+- [PASS] alert_20260629T021234.839515Z.json schema version [alert_20260629T021234.839515Z.json] (schema_version): schema_version matches cdb.evidence_harvester.alert_report.v1
+- [PASS] alert_20260629T022657.261292Z.json parses as JSON [alert_20260629T022657.261292Z.json]: Valid JSON (2906 bytes)
+- [PASS] alert_20260629T022657.261292Z.json schema version [alert_20260629T022657.261292Z.json] (schema_version): schema_version matches cdb.evidence_harvester.alert_report.v1
+- [PASS] alert_20260629T022735.088379Z.json parses as JSON [alert_20260629T022735.088379Z.json]: Valid JSON (2906 bytes)
+- [PASS] alert_20260629T022735.088379Z.json schema version [alert_20260629T022735.088379Z.json] (schema_version): schema_version matches cdb.evidence_harvester.alert_report.v1
+- [PASS] alert_20260629T024157.543626Z.json parses as JSON [alert_20260629T024157.543626Z.json]: Valid JSON (2906 bytes)
+- [PASS] alert_20260629T024157.543626Z.json schema version [alert_20260629T024157.543626Z.json] (schema_version): schema_version matches cdb.evidence_harvester.alert_report.v1
+- [PASS] alert_20260629T024235.366805Z.json parses as JSON [alert_20260629T024235.366805Z.json]: Valid JSON (2906 bytes)
+- [PASS] alert_20260629T024235.366805Z.json schema version [alert_20260629T024235.366805Z.json] (schema_version): schema_version matches cdb.evidence_harvester.alert_report.v1
+- [PASS] alert_20260629T025657.877035Z.json parses as JSON [alert_20260629T025657.877035Z.json]: Valid JSON (2906 bytes)
+- [PASS] alert_20260629T025657.877035Z.json schema version [alert_20260629T025657.877035Z.json] (schema_version): schema_version matches cdb.evidence_harvester.alert_report.v1
+- [PASS] alert_20260629T025735.674598Z.json parses as JSON [alert_20260629T025735.674598Z.json]: Valid JSON (2906 bytes)
+- [PASS] alert_20260629T025735.674598Z.json schema version [alert_20260629T025735.674598Z.json] (schema_version): schema_version matches cdb.evidence_harvester.alert_report.v1
+- [PASS] alert_20260629T031158.281708Z.json parses as JSON [alert_20260629T031158.281708Z.json]: Valid JSON (2906 bytes)
+- [PASS] alert_20260629T031158.281708Z.json schema version [alert_20260629T031158.281708Z.json] (schema_version): schema_version matches cdb.evidence_harvester.alert_report.v1
+- [PASS] alert_20260629T031235.977270Z.json parses as JSON [alert_20260629T031235.977270Z.json]: Valid JSON (2906 bytes)
+- [PASS] alert_20260629T031235.977270Z.json schema version [alert_20260629T031235.977270Z.json] (schema_version): schema_version matches cdb.evidence_harvester.alert_report.v1
+- [PASS] alert_20260629T032658.655687Z.json parses as JSON [alert_20260629T032658.655687Z.json]: Valid JSON (2906 bytes)
+- [PASS] alert_20260629T032658.655687Z.json schema version [alert_20260629T032658.655687Z.json] (schema_version): schema_version matches cdb.evidence_harvester.alert_report.v1
+- [PASS] alert_20260629T032736.303267Z.json parses as JSON [alert_20260629T032736.303267Z.json]: Valid JSON (2906 bytes)
+- [PASS] alert_20260629T032736.303267Z.json schema version [alert_20260629T032736.303267Z.json] (schema_version): schema_version matches cdb.evidence_harvester.alert_report.v1
+- [PASS] alert_20260629T034159.055539Z.json parses as JSON [alert_20260629T034159.055539Z.json]: Valid JSON (2906 bytes)
+- [PASS] alert_20260629T034159.055539Z.json schema version [alert_20260629T034159.055539Z.json] (schema_version): schema_version matches cdb.evidence_harvester.alert_report.v1
+- [PASS] alert_20260629T034236.662044Z.json parses as JSON [alert_20260629T034236.662044Z.json]: Valid JSON (2906 bytes)
+- [PASS] alert_20260629T034236.662044Z.json schema version [alert_20260629T034236.662044Z.json] (schema_version): schema_version matches cdb.evidence_harvester.alert_report.v1
+- [PASS] alert_20260629T035659.403750Z.json parses as JSON [alert_20260629T035659.403750Z.json]: Valid JSON (2906 bytes)
+- [PASS] alert_20260629T035659.403750Z.json schema version [alert_20260629T035659.403750Z.json] (schema_version): schema_version matches cdb.evidence_harvester.alert_report.v1
+- [PASS] alert_20260629T035736.996291Z.json parses as JSON [alert_20260629T035736.996291Z.json]: Valid JSON (2906 bytes)
+- [PASS] alert_20260629T035736.996291Z.json schema version [alert_20260629T035736.996291Z.json] (schema_version): schema_version matches cdb.evidence_harvester.alert_report.v1
+- [PASS] alert_20260629T041159.834473Z.json parses as JSON [alert_20260629T041159.834473Z.json]: Valid JSON (2906 bytes)
+- [PASS] alert_20260629T041159.834473Z.json schema version [alert_20260629T041159.834473Z.json] (schema_version): schema_version matches cdb.evidence_harvester.alert_report.v1
+- [PASS] alert_20260629T041237.420710Z.json parses as JSON [alert_20260629T041237.420710Z.json]: Valid JSON (2906 bytes)
+- [PASS] alert_20260629T041237.420710Z.json schema version [alert_20260629T041237.420710Z.json] (schema_version): schema_version matches cdb.evidence_harvester.alert_report.v1
+- [PASS] alert_20260629T042700.207061Z.json parses as JSON [alert_20260629T042700.207061Z.json]: Valid JSON (2906 bytes)
+- [PASS] alert_20260629T042700.207061Z.json schema version [alert_20260629T042700.207061Z.json] (schema_version): schema_version matches cdb.evidence_harvester.alert_report.v1
+- [PASS] alert_20260629T042737.755496Z.json parses as JSON [alert_20260629T042737.755496Z.json]: Valid JSON (2906 bytes)
+- [PASS] alert_20260629T042737.755496Z.json schema version [alert_20260629T042737.755496Z.json] (schema_version): schema_version matches cdb.evidence_harvester.alert_report.v1
+- [PASS] alert_20260629T044200.553296Z.json parses as JSON [alert_20260629T044200.553296Z.json]: Valid JSON (2906 bytes)
+- [PASS] alert_20260629T044200.553296Z.json schema version [alert_20260629T044200.553296Z.json] (schema_version): schema_version matches cdb.evidence_harvester.alert_report.v1
+- [PASS] alert_20260629T044238.097659Z.json parses as JSON [alert_20260629T044238.097659Z.json]: Valid JSON (2906 bytes)
+- [PASS] alert_20260629T044238.097659Z.json schema version [alert_20260629T044238.097659Z.json] (schema_version): schema_version matches cdb.evidence_harvester.alert_report.v1
+- [PASS] alert_20260629T045700.953009Z.json parses as JSON [alert_20260629T045700.953009Z.json]: Valid JSON (2906 bytes)
+- [PASS] alert_20260629T045700.953009Z.json schema version [alert_20260629T045700.953009Z.json] (schema_version): schema_version matches cdb.evidence_harvester.alert_report.v1
+- [PASS] alert_20260629T045738.476486Z.json parses as JSON [alert_20260629T045738.476486Z.json]: Valid JSON (2906 bytes)
+- [PASS] alert_20260629T045738.476486Z.json schema version [alert_20260629T045738.476486Z.json] (schema_version): schema_version matches cdb.evidence_harvester.alert_report.v1
+- [PASS] alert_20260629T051201.371370Z.json parses as JSON [alert_20260629T051201.371370Z.json]: Valid JSON (2906 bytes)
+- [PASS] alert_20260629T051201.371370Z.json schema version [alert_20260629T051201.371370Z.json] (schema_version): schema_version matches cdb.evidence_harvester.alert_report.v1
+- [PASS] alert_20260629T051238.868752Z.json parses as JSON [alert_20260629T051238.868752Z.json]: Valid JSON (2906 bytes)
+- [PASS] alert_20260629T051238.868752Z.json schema version [alert_20260629T051238.868752Z.json] (schema_version): schema_version matches cdb.evidence_harvester.alert_report.v1
+- [PASS] alert_20260629T052701.813024Z.json parses as JSON [alert_20260629T052701.813024Z.json]: Valid JSON (2906 bytes)
+- [PASS] alert_20260629T052701.813024Z.json schema version [alert_20260629T052701.813024Z.json] (schema_version): schema_version matches cdb.evidence_harvester.alert_report.v1
+- [PASS] alert_20260629T052739.269183Z.json parses as JSON [alert_20260629T052739.269183Z.json]: Valid JSON (2906 bytes)
+- [PASS] alert_20260629T052739.269183Z.json schema version [alert_20260629T052739.269183Z.json] (schema_version): schema_version matches cdb.evidence_harvester.alert_report.v1
+- [PASS] alert_20260629T054202.209467Z.json parses as JSON [alert_20260629T054202.209467Z.json]: Valid JSON (2906 bytes)
+- [PASS] alert_20260629T054202.209467Z.json schema version [alert_20260629T054202.209467Z.json] (schema_version): schema_version matches cdb.evidence_harvester.alert_report.v1
+- [PASS] alert_20260629T054239.631909Z.json parses as JSON [alert_20260629T054239.631909Z.json]: Valid JSON (2906 bytes)
+- [PASS] alert_20260629T054239.631909Z.json schema version [alert_20260629T054239.631909Z.json] (schema_version): schema_version matches cdb.evidence_harvester.alert_report.v1
+- [PASS] alert_20260629T055702.593495Z.json parses as JSON [alert_20260629T055702.593495Z.json]: Valid JSON (2906 bytes)
+- [PASS] alert_20260629T055702.593495Z.json schema version [alert_20260629T055702.593495Z.json] (schema_version): schema_version matches cdb.evidence_harvester.alert_report.v1
+- [PASS] alert_20260629T055740.036252Z.json parses as JSON [alert_20260629T055740.036252Z.json]: Valid JSON (2906 bytes)
+- [PASS] alert_20260629T055740.036252Z.json schema version [alert_20260629T055740.036252Z.json] (schema_version): schema_version matches cdb.evidence_harvester.alert_report.v1
+- [PASS] alert_20260629T061203.038198Z.json parses as JSON [alert_20260629T061203.038198Z.json]: Valid JSON (2906 bytes)
+- [PASS] alert_20260629T061203.038198Z.json schema version [alert_20260629T061203.038198Z.json] (schema_version): schema_version matches cdb.evidence_harvester.alert_report.v1
+- [PASS] alert_20260629T061240.476343Z.json parses as JSON [alert_20260629T061240.476343Z.json]: Valid JSON (2906 bytes)
+- [PASS] alert_20260629T061240.476343Z.json schema version [alert_20260629T061240.476343Z.json] (schema_version): schema_version matches cdb.evidence_harvester.alert_report.v1
+- [PASS] alert_20260629T062703.502916Z.json parses as JSON [alert_20260629T062703.502916Z.json]: Valid JSON (2906 bytes)
+- [PASS] alert_20260629T062703.502916Z.json schema version [alert_20260629T062703.502916Z.json] (schema_version): schema_version matches cdb.evidence_harvester.alert_report.v1
+- [PASS] alert_20260629T062740.937526Z.json parses as JSON [alert_20260629T062740.937526Z.json]: Valid JSON (2906 bytes)
+- [PASS] alert_20260629T062740.937526Z.json schema version [alert_20260629T062740.937526Z.json] (schema_version): schema_version matches cdb.evidence_harvester.alert_report.v1
+- [PASS] alert_20260629T064203.999298Z.json parses as JSON [alert_20260629T064203.999298Z.json]: Valid JSON (2906 bytes)
+- [PASS] alert_20260629T064203.999298Z.json schema version [alert_20260629T064203.999298Z.json] (schema_version): schema_version matches cdb.evidence_harvester.alert_report.v1
+- [PASS] alert_20260629T064241.410579Z.json parses as JSON [alert_20260629T064241.410579Z.json]: Valid JSON (2906 bytes)
+- [PASS] alert_20260629T064241.410579Z.json schema version [alert_20260629T064241.410579Z.json] (schema_version): schema_version matches cdb.evidence_harvester.alert_report.v1
+- [PASS] alert_20260629T065704.492040Z.json parses as JSON [alert_20260629T065704.492040Z.json]: Valid JSON (2906 bytes)
+- [PASS] alert_20260629T065704.492040Z.json schema version [alert_20260629T065704.492040Z.json] (schema_version): schema_version matches cdb.evidence_harvester.alert_report.v1
+- [PASS] alert_20260629T065741.876917Z.json parses as JSON [alert_20260629T065741.876917Z.json]: Valid JSON (2906 bytes)
+- [PASS] alert_20260629T065741.876917Z.json schema version [alert_20260629T065741.876917Z.json] (schema_version): schema_version matches cdb.evidence_harvester.alert_report.v1
+- [PASS] alert_20260629T071205.045950Z.json parses as JSON [alert_20260629T071205.045950Z.json]: Valid JSON (2906 bytes)
+- [PASS] alert_20260629T071205.045950Z.json schema version [alert_20260629T071205.045950Z.json] (schema_version): schema_version matches cdb.evidence_harvester.alert_report.v1
+- [PASS] alert_20260629T071242.337870Z.json parses as JSON [alert_20260629T071242.337870Z.json]: Valid JSON (2906 bytes)
+- [PASS] alert_20260629T071242.337870Z.json schema version [alert_20260629T071242.337870Z.json] (schema_version): schema_version matches cdb.evidence_harvester.alert_report.v1
+- [PASS] alert_20260629T072705.612761Z.json parses as JSON [alert_20260629T072705.612761Z.json]: Valid JSON (2906 bytes)
+- [PASS] alert_20260629T072705.612761Z.json schema version [alert_20260629T072705.612761Z.json] (schema_version): schema_version matches cdb.evidence_harvester.alert_report.v1
+- [PASS] alert_20260629T072742.814909Z.json parses as JSON [alert_20260629T072742.814909Z.json]: Valid JSON (2906 bytes)
+- [PASS] alert_20260629T072742.814909Z.json schema version [alert_20260629T072742.814909Z.json] (schema_version): schema_version matches cdb.evidence_harvester.alert_report.v1
+- [PASS] alert_20260629T074206.239038Z.json parses as JSON [alert_20260629T074206.239038Z.json]: Valid JSON (2906 bytes)
+- [PASS] alert_20260629T074206.239038Z.json schema version [alert_20260629T074206.239038Z.json] (schema_version): schema_version matches cdb.evidence_harvester.alert_report.v1
+- [PASS] alert_20260629T074243.386975Z.json parses as JSON [alert_20260629T074243.386975Z.json]: Valid JSON (2906 bytes)
+- [PASS] alert_20260629T074243.386975Z.json schema version [alert_20260629T074243.386975Z.json] (schema_version): schema_version matches cdb.evidence_harvester.alert_report.v1
+- [PASS] alert_20260629T075706.941690Z.json parses as JSON [alert_20260629T075706.941690Z.json]: Valid JSON (2906 bytes)
+- [PASS] alert_20260629T075706.941690Z.json schema version [alert_20260629T075706.941690Z.json] (schema_version): schema_version matches cdb.evidence_harvester.alert_report.v1
+- [PASS] alert_20260629T075744.017413Z.json parses as JSON [alert_20260629T075744.017413Z.json]: Valid JSON (2906 bytes)
+- [PASS] alert_20260629T075744.017413Z.json schema version [alert_20260629T075744.017413Z.json] (schema_version): schema_version matches cdb.evidence_harvester.alert_report.v1
+- [PASS] alert_20260629T081207.538860Z.json parses as JSON [alert_20260629T081207.538860Z.json]: Valid JSON (2906 bytes)
+- [PASS] alert_20260629T081207.538860Z.json schema version [alert_20260629T081207.538860Z.json] (schema_version): schema_version matches cdb.evidence_harvester.alert_report.v1
+- [PASS] alert_20260629T081244.519282Z.json parses as JSON [alert_20260629T081244.519282Z.json]: Valid JSON (2906 bytes)
+- [PASS] alert_20260629T081244.519282Z.json schema version [alert_20260629T081244.519282Z.json] (schema_version): schema_version matches cdb.evidence_harvester.alert_report.v1
+- [PASS] alert_20260629T082708.140490Z.json parses as JSON [alert_20260629T082708.140490Z.json]: Valid JSON (2906 bytes)
+- [PASS] alert_20260629T082708.140490Z.json schema version [alert_20260629T082708.140490Z.json] (schema_version): schema_version matches cdb.evidence_harvester.alert_report.v1
+- [PASS] alert_20260629T082745.060332Z.json parses as JSON [alert_20260629T082745.060332Z.json]: Valid JSON (2906 bytes)
+- [PASS] alert_20260629T082745.060332Z.json schema version [alert_20260629T082745.060332Z.json] (schema_version): schema_version matches cdb.evidence_harvester.alert_report.v1
+- [PASS] alert_20260629T084208.790950Z.json parses as JSON [alert_20260629T084208.790950Z.json]: Valid JSON (2906 bytes)
+- [PASS] alert_20260629T084208.790950Z.json schema version [alert_20260629T084208.790950Z.json] (schema_version): schema_version matches cdb.evidence_harvester.alert_report.v1
+- [PASS] alert_20260629T084245.597847Z.json parses as JSON [alert_20260629T084245.597847Z.json]: Valid JSON (2906 bytes)
+- [PASS] alert_20260629T084245.597847Z.json schema version [alert_20260629T084245.597847Z.json] (schema_version): schema_version matches cdb.evidence_harvester.alert_report.v1
+- [PASS] alert_20260629T085709.431205Z.json parses as JSON [alert_20260629T085709.431205Z.json]: Valid JSON (2906 bytes)
+- [PASS] alert_20260629T085709.431205Z.json schema version [alert_20260629T085709.431205Z.json] (schema_version): schema_version matches cdb.evidence_harvester.alert_report.v1
+- [PASS] alert_20260629T085746.133858Z.json parses as JSON [alert_20260629T085746.133858Z.json]: Valid JSON (2906 bytes)
+- [PASS] alert_20260629T085746.133858Z.json schema version [alert_20260629T085746.133858Z.json] (schema_version): schema_version matches cdb.evidence_harvester.alert_report.v1
+- [PASS] alert_20260629T091210.137367Z.json parses as JSON [alert_20260629T091210.137367Z.json]: Valid JSON (2906 bytes)
+- [PASS] alert_20260629T091210.137367Z.json schema version [alert_20260629T091210.137367Z.json] (schema_version): schema_version matches cdb.evidence_harvester.alert_report.v1
+- [PASS] alert_20260629T091246.700715Z.json parses as JSON [alert_20260629T091246.700715Z.json]: Valid JSON (2906 bytes)
+- [PASS] alert_20260629T091246.700715Z.json schema version [alert_20260629T091246.700715Z.json] (schema_version): schema_version matches cdb.evidence_harvester.alert_report.v1
+- [PASS] alert_20260629T092710.901206Z.json parses as JSON [alert_20260629T092710.901206Z.json]: Valid JSON (2906 bytes)
+- [PASS] alert_20260629T092710.901206Z.json schema version [alert_20260629T092710.901206Z.json] (schema_version): schema_version matches cdb.evidence_harvester.alert_report.v1
+- [PASS] alert_20260629T092747.293172Z.json parses as JSON [alert_20260629T092747.293172Z.json]: Valid JSON (2906 bytes)
+- [PASS] alert_20260629T092747.293172Z.json schema version [alert_20260629T092747.293172Z.json] (schema_version): schema_version matches cdb.evidence_harvester.alert_report.v1
+- [PASS] alert_20260629T094211.695111Z.json parses as JSON [alert_20260629T094211.695111Z.json]: Valid JSON (2906 bytes)
+- [PASS] alert_20260629T094211.695111Z.json schema version [alert_20260629T094211.695111Z.json] (schema_version): schema_version matches cdb.evidence_harvester.alert_report.v1
+- [PASS] alert_20260629T094247.903918Z.json parses as JSON [alert_20260629T094247.903918Z.json]: Valid JSON (2906 bytes)
+- [PASS] alert_20260629T094247.903918Z.json schema version [alert_20260629T094247.903918Z.json] (schema_version): schema_version matches cdb.evidence_harvester.alert_report.v1
+- [PASS] alert_20260629T095712.307200Z.json parses as JSON [alert_20260629T095712.307200Z.json]: Valid JSON (2906 bytes)
+- [PASS] alert_20260629T095712.307200Z.json schema version [alert_20260629T095712.307200Z.json] (schema_version): schema_version matches cdb.evidence_harvester.alert_report.v1
+- [PASS] alert_20260629T095748.490461Z.json parses as JSON [alert_20260629T095748.490461Z.json]: Valid JSON (2906 bytes)
+- [PASS] alert_20260629T095748.490461Z.json schema version [alert_20260629T095748.490461Z.json] (schema_version): schema_version matches cdb.evidence_harvester.alert_report.v1
+- [PASS] alert_20260629T101213.089179Z.json parses as JSON [alert_20260629T101213.089179Z.json]: Valid JSON (2906 bytes)
+- [PASS] alert_20260629T101213.089179Z.json schema version [alert_20260629T101213.089179Z.json] (schema_version): schema_version matches cdb.evidence_harvester.alert_report.v1
+- [PASS] alert_20260629T101249.139878Z.json parses as JSON [alert_20260629T101249.139878Z.json]: Valid JSON (2906 bytes)
+- [PASS] alert_20260629T101249.139878Z.json schema version [alert_20260629T101249.139878Z.json] (schema_version): schema_version matches cdb.evidence_harvester.alert_report.v1
+- [PASS] alert_20260629T102713.736465Z.json parses as JSON [alert_20260629T102713.736465Z.json]: Valid JSON (2906 bytes)
+- [PASS] alert_20260629T102713.736465Z.json schema version [alert_20260629T102713.736465Z.json] (schema_version): schema_version matches cdb.evidence_harvester.alert_report.v1
+- [PASS] alert_20260629T102749.736234Z.json parses as JSON [alert_20260629T102749.736234Z.json]: Valid JSON (2906 bytes)
+- [PASS] alert_20260629T102749.736234Z.json schema version [alert_20260629T102749.736234Z.json] (schema_version): schema_version matches cdb.evidence_harvester.alert_report.v1
+- [PASS] alert_20260629T104214.526487Z.json parses as JSON [alert_20260629T104214.526487Z.json]: Valid JSON (2906 bytes)
+- [PASS] alert_20260629T104214.526487Z.json schema version [alert_20260629T104214.526487Z.json] (schema_version): schema_version matches cdb.evidence_harvester.alert_report.v1
+- [PASS] alert_20260629T104250.386199Z.json parses as JSON [alert_20260629T104250.386199Z.json]: Valid JSON (2906 bytes)
+- [PASS] alert_20260629T104250.386199Z.json schema version [alert_20260629T104250.386199Z.json] (schema_version): schema_version matches cdb.evidence_harvester.alert_report.v1
+- [PASS] alert_20260629T105715.204661Z.json parses as JSON [alert_20260629T105715.204661Z.json]: Valid JSON (2906 bytes)
+- [PASS] alert_20260629T105715.204661Z.json schema version [alert_20260629T105715.204661Z.json] (schema_version): schema_version matches cdb.evidence_harvester.alert_report.v1
+- [PASS] alert_20260629T105751.025839Z.json parses as JSON [alert_20260629T105751.025839Z.json]: Valid JSON (2906 bytes)
+- [PASS] alert_20260629T105751.025839Z.json schema version [alert_20260629T105751.025839Z.json] (schema_version): schema_version matches cdb.evidence_harvester.alert_report.v1
+- [PASS] alert_20260629T111215.903183Z.json parses as JSON [alert_20260629T111215.903183Z.json]: Valid JSON (2906 bytes)
+- [PASS] alert_20260629T111215.903183Z.json schema version [alert_20260629T111215.903183Z.json] (schema_version): schema_version matches cdb.evidence_harvester.alert_report.v1
+- [PASS] alert_20260629T111251.661921Z.json parses as JSON [alert_20260629T111251.661921Z.json]: Valid JSON (2906 bytes)
+- [PASS] alert_20260629T111251.661921Z.json schema version [alert_20260629T111251.661921Z.json] (schema_version): schema_version matches cdb.evidence_harvester.alert_report.v1
+- [PASS] alert_20260629T112716.629865Z.json parses as JSON [alert_20260629T112716.629865Z.json]: Valid JSON (2906 bytes)
+- [PASS] alert_20260629T112716.629865Z.json schema version [alert_20260629T112716.629865Z.json] (schema_version): schema_version matches cdb.evidence_harvester.alert_report.v1
+- [PASS] alert_20260629T112752.284749Z.json parses as JSON [alert_20260629T112752.284749Z.json]: Valid JSON (2906 bytes)
+- [PASS] alert_20260629T112752.284749Z.json schema version [alert_20260629T112752.284749Z.json] (schema_version): schema_version matches cdb.evidence_harvester.alert_report.v1
+- [PASS] alert_20260629T114217.488056Z.json parses as JSON [alert_20260629T114217.488056Z.json]: Valid JSON (2906 bytes)
+- [PASS] alert_20260629T114217.488056Z.json schema version [alert_20260629T114217.488056Z.json] (schema_version): schema_version matches cdb.evidence_harvester.alert_report.v1
+- [PASS] alert_20260629T114252.920024Z.json parses as JSON [alert_20260629T114252.920024Z.json]: Valid JSON (2906 bytes)
+- [PASS] alert_20260629T114252.920024Z.json schema version [alert_20260629T114252.920024Z.json] (schema_version): schema_version matches cdb.evidence_harvester.alert_report.v1
+- [PASS] alert_20260629T115718.201420Z.json parses as JSON [alert_20260629T115718.201420Z.json]: Valid JSON (2906 bytes)
+- [PASS] alert_20260629T115718.201420Z.json schema version [alert_20260629T115718.201420Z.json] (schema_version): schema_version matches cdb.evidence_harvester.alert_report.v1
+- [PASS] alert_20260629T115753.619990Z.json parses as JSON [alert_20260629T115753.619990Z.json]: Valid JSON (2906 bytes)
+- [PASS] alert_20260629T115753.619990Z.json schema version [alert_20260629T115753.619990Z.json] (schema_version): schema_version matches cdb.evidence_harvester.alert_report.v1
+- [PASS] alert_20260629T121218.891836Z.json parses as JSON [alert_20260629T121218.891836Z.json]: Valid JSON (2906 bytes)
+- [PASS] alert_20260629T121218.891836Z.json schema version [alert_20260629T121218.891836Z.json] (schema_version): schema_version matches cdb.evidence_harvester.alert_report.v1
+- [PASS] alert_20260629T121254.279917Z.json parses as JSON [alert_20260629T121254.279917Z.json]: Valid JSON (2906 bytes)
+- [PASS] alert_20260629T121254.279917Z.json schema version [alert_20260629T121254.279917Z.json] (schema_version): schema_version matches cdb.evidence_harvester.alert_report.v1
+- [PASS] alert_20260629T122719.639543Z.json parses as JSON [alert_20260629T122719.639543Z.json]: Valid JSON (2906 bytes)
+- [PASS] alert_20260629T122719.639543Z.json schema version [alert_20260629T122719.639543Z.json] (schema_version): schema_version matches cdb.evidence_harvester.alert_report.v1
+- [PASS] alert_20260629T122754.960906Z.json parses as JSON [alert_20260629T122754.960906Z.json]: Valid JSON (2906 bytes)
+- [PASS] alert_20260629T122754.960906Z.json schema version [alert_20260629T122754.960906Z.json] (schema_version): schema_version matches cdb.evidence_harvester.alert_report.v1
+- [PASS] alert_20260629T124220.684108Z.json parses as JSON [alert_20260629T124220.684108Z.json]: Valid JSON (2906 bytes)
+- [PASS] alert_20260629T124220.684108Z.json schema version [alert_20260629T124220.684108Z.json] (schema_version): schema_version matches cdb.evidence_harvester.alert_report.v1
+- [PASS] alert_20260629T124256.230963Z.json parses as JSON [alert_20260629T124256.230963Z.json]: Valid JSON (2906 bytes)
+- [PASS] alert_20260629T124256.230963Z.json schema version [alert_20260629T124256.230963Z.json] (schema_version): schema_version matches cdb.evidence_harvester.alert_report.v1
+- [PASS] alert_20260629T125723.136228Z.json parses as JSON [alert_20260629T125723.136228Z.json]: Valid JSON (2906 bytes)
+- [PASS] alert_20260629T125723.136228Z.json schema version [alert_20260629T125723.136228Z.json] (schema_version): schema_version matches cdb.evidence_harvester.alert_report.v1
+- [PASS] alert_20260629T125804.007362Z.json parses as JSON [alert_20260629T125804.007362Z.json]: Valid JSON (2906 bytes)
+- [PASS] alert_20260629T125804.007362Z.json schema version [alert_20260629T125804.007362Z.json] (schema_version): schema_version matches cdb.evidence_harvester.alert_report.v1
+- [PASS] alert_20260629T131224.181983Z.json parses as JSON [alert_20260629T131224.181983Z.json]: Valid JSON (2906 bytes)
+- [PASS] alert_20260629T131224.181983Z.json schema version [alert_20260629T131224.181983Z.json] (schema_version): schema_version matches cdb.evidence_harvester.alert_report.v1
+- [PASS] alert_20260629T131304.889188Z.json parses as JSON [alert_20260629T131304.889188Z.json]: Valid JSON (2906 bytes)
+- [PASS] alert_20260629T131304.889188Z.json schema version [alert_20260629T131304.889188Z.json] (schema_version): schema_version matches cdb.evidence_harvester.alert_report.v1
+- [PASS] alert_20260629T132725.882130Z.json parses as JSON [alert_20260629T132725.882130Z.json]: Valid JSON (2906 bytes)
+- [PASS] alert_20260629T132725.882130Z.json schema version [alert_20260629T132725.882130Z.json] (schema_version): schema_version matches cdb.evidence_harvester.alert_report.v1
+- [PASS] alert_20260629T132806.599768Z.json parses as JSON [alert_20260629T132806.599768Z.json]: Valid JSON (2906 bytes)
+- [PASS] alert_20260629T132806.599768Z.json schema version [alert_20260629T132806.599768Z.json] (schema_version): schema_version matches cdb.evidence_harvester.alert_report.v1
+- [PASS] runner_heartbeat.json parses as JSON [runner_heartbeat.json]: Valid JSON (1249 bytes)
+- [PASS] runner_heartbeat.json schema version [runner_heartbeat.json] (schema_version): schema_version matches cdb.evidence_harvester.runner_heartbeat.v1
+- [PASS] coordinator_events.jsonl line 1 parses as JSON [coordinator_events.jsonl]: Lifecycle event line is valid JSON
+- [PASS] coordinator_events.jsonl line 2 parses as JSON [coordinator_events.jsonl]: Lifecycle event line is valid JSON
+- [PASS] coordinator_events.jsonl line 3 parses as JSON [coordinator_events.jsonl]: Lifecycle event line is valid JSON
+- [PASS] coordinator_events.jsonl line 4 parses as JSON [coordinator_events.jsonl]: Lifecycle event line is valid JSON
+- [PASS] coordinator_events.jsonl line 5 parses as JSON [coordinator_events.jsonl]: Lifecycle event line is valid JSON
+- [PASS] coordinator_events.jsonl line 6 parses as JSON [coordinator_events.jsonl]: Lifecycle event line is valid JSON
+- [PASS] coordinator_events.jsonl line 7 parses as JSON [coordinator_events.jsonl]: Lifecycle event line is valid JSON
+- [PASS] coordinator_events.jsonl line 8 parses as JSON [coordinator_events.jsonl]: Lifecycle event line is valid JSON
+- [PASS] coordinator_events.jsonl line 9 parses as JSON [coordinator_events.jsonl]: Lifecycle event line is valid JSON
+- [PASS] coordinator_events.jsonl line 10 parses as JSON [coordinator_events.jsonl]: Lifecycle event line is valid JSON
+- [PASS] coordinator_events.jsonl line 11 parses as JSON [coordinator_events.jsonl]: Lifecycle event line is valid JSON
+- [PASS] coordinator_events.jsonl line 12 parses as JSON [coordinator_events.jsonl]: Lifecycle event line is valid JSON
+- [PASS] coordinator_events.jsonl line 13 parses as JSON [coordinator_events.jsonl]: Lifecycle event line is valid JSON
+- [PASS] coordinator_events.jsonl line 14 parses as JSON [coordinator_events.jsonl]: Lifecycle event line is valid JSON
+- [PASS] coordinator_events.jsonl line 15 parses as JSON [coordinator_events.jsonl]: Lifecycle event line is valid JSON
+- [PASS] coordinator_events.jsonl line 16 parses as JSON [coordinator_events.jsonl]: Lifecycle event line is valid JSON
+- [PASS] coordinator_events.jsonl line 17 parses as JSON [coordinator_events.jsonl]: Lifecycle event line is valid JSON
+- [PASS] coordinator_events.jsonl line 18 parses as JSON [coordinator_events.jsonl]: Lifecycle event line is valid JSON
+- [PASS] coordinator_events.jsonl line 19 parses as JSON [coordinator_events.jsonl]: Lifecycle event line is valid JSON
+- [PASS] coordinator_events.jsonl line 20 parses as JSON [coordinator_events.jsonl]: Lifecycle event line is valid JSON
+- [PASS] coordinator_events.jsonl line 21 parses as JSON [coordinator_events.jsonl]: Lifecycle event line is valid JSON
+- [PASS] coordinator_events.jsonl line 22 parses as JSON [coordinator_events.jsonl]: Lifecycle event line is valid JSON
+- [PASS] coordinator_events.jsonl line 23 parses as JSON [coordinator_events.jsonl]: Lifecycle event line is valid JSON
+- [PASS] coordinator_events.jsonl line 24 parses as JSON [coordinator_events.jsonl]: Lifecycle event line is valid JSON
+- [PASS] coordinator_events.jsonl line 25 parses as JSON [coordinator_events.jsonl]: Lifecycle event line is valid JSON
+- [PASS] coordinator_events.jsonl line 26 parses as JSON [coordinator_events.jsonl]: Lifecycle event line is valid JSON
+- [PASS] coordinator_events.jsonl line 27 parses as JSON [coordinator_events.jsonl]: Lifecycle event line is valid JSON
+- [PASS] coordinator_events.jsonl line 28 parses as JSON [coordinator_events.jsonl]: Lifecycle event line is valid JSON
+- [PASS] coordinator_events.jsonl line 29 parses as JSON [coordinator_events.jsonl]: Lifecycle event line is valid JSON
+- [PASS] coordinator_events.jsonl line 30 parses as JSON [coordinator_events.jsonl]: Lifecycle event line is valid JSON
+- [PASS] coordinator_events.jsonl line 31 parses as JSON [coordinator_events.jsonl]: Lifecycle event line is valid JSON
+- [PASS] coordinator_events.jsonl line 32 parses as JSON [coordinator_events.jsonl]: Lifecycle event line is valid JSON
+- [PASS] coordinator_events.jsonl line 33 parses as JSON [coordinator_events.jsonl]: Lifecycle event line is valid JSON
+- [PASS] coordinator_events.jsonl line 34 parses as JSON [coordinator_events.jsonl]: Lifecycle event line is valid JSON
+- [PASS] coordinator_events.jsonl line 35 parses as JSON [coordinator_events.jsonl]: Lifecycle event line is valid JSON
+- [PASS] coordinator_events.jsonl line 36 parses as JSON [coordinator_events.jsonl]: Lifecycle event line is valid JSON
+- [PASS] coordinator_events.jsonl line 37 parses as JSON [coordinator_events.jsonl]: Lifecycle event line is valid JSON
+- [PASS] coordinator_events.jsonl line 38 parses as JSON [coordinator_events.jsonl]: Lifecycle event line is valid JSON
+- [PASS] coordinator_events.jsonl line 39 parses as JSON [coordinator_events.jsonl]: Lifecycle event line is valid JSON
+- [PASS] coordinator_events.jsonl line 40 parses as JSON [coordinator_events.jsonl]: Lifecycle event line is valid JSON
+- [PASS] coordinator_events.jsonl line 41 parses as JSON [coordinator_events.jsonl]: Lifecycle event line is valid JSON
+- [PASS] coordinator_events.jsonl line 42 parses as JSON [coordinator_events.jsonl]: Lifecycle event line is valid JSON
+- [PASS] coordinator_events.jsonl line 43 parses as JSON [coordinator_events.jsonl]: Lifecycle event line is valid JSON
+- [PASS] coordinator_events.jsonl line 44 parses as JSON [coordinator_events.jsonl]: Lifecycle event line is valid JSON
+- [PASS] coordinator_events.jsonl line 45 parses as JSON [coordinator_events.jsonl]: Lifecycle event line is valid JSON
+- [PASS] coordinator_events.jsonl line 46 parses as JSON [coordinator_events.jsonl]: Lifecycle event line is valid JSON
+- [PASS] coordinator_events.jsonl line 47 parses as JSON [coordinator_events.jsonl]: Lifecycle event line is valid JSON
+- [PASS] coordinator_events.jsonl line 48 parses as JSON [coordinator_events.jsonl]: Lifecycle event line is valid JSON
+- [PASS] coordinator_events.jsonl line 49 parses as JSON [coordinator_events.jsonl]: Lifecycle event line is valid JSON
+- [PASS] coordinator_events.jsonl line 50 parses as JSON [coordinator_events.jsonl]: Lifecycle event line is valid JSON
+- [PASS] coordinator_events.jsonl line 51 parses as JSON [coordinator_events.jsonl]: Lifecycle event line is valid JSON
+- [PASS] coordinator_events.jsonl line 52 parses as JSON [coordinator_events.jsonl]: Lifecycle event line is valid JSON
+- [PASS] coordinator_events.jsonl line 53 parses as JSON [coordinator_events.jsonl]: Lifecycle event line is valid JSON
+- [PASS] coordinator_events.jsonl line 54 parses as JSON [coordinator_events.jsonl]: Lifecycle event line is valid JSON
+- [PASS] coordinator_events.jsonl line 55 parses as JSON [coordinator_events.jsonl]: Lifecycle event line is valid JSON
+- [PASS] coordinator_events.jsonl line 56 parses as JSON [coordinator_events.jsonl]: Lifecycle event line is valid JSON
+- [PASS] coordinator_events.jsonl line 57 parses as JSON [coordinator_events.jsonl]: Lifecycle event line is valid JSON
+- [PASS] coordinator_events.jsonl line 58 parses as JSON [coordinator_events.jsonl]: Lifecycle event line is valid JSON
+- [PASS] coordinator_events.jsonl line 59 parses as JSON [coordinator_events.jsonl]: Lifecycle event line is valid JSON
+- [PASS] coordinator_events.jsonl line 60 parses as JSON [coordinator_events.jsonl]: Lifecycle event line is valid JSON
+- [PASS] coordinator_events.jsonl line 61 parses as JSON [coordinator_events.jsonl]: Lifecycle event line is valid JSON
+- [PASS] coordinator_events.jsonl line 62 parses as JSON [coordinator_events.jsonl]: Lifecycle event line is valid JSON
+- [PASS] coordinator_events.jsonl line 63 parses as JSON [coordinator_events.jsonl]: Lifecycle event line is valid JSON
+- [PASS] coordinator_events.jsonl line 64 parses as JSON [coordinator_events.jsonl]: Lifecycle event line is valid JSON
+- [PASS] coordinator_events.jsonl line 65 parses as JSON [coordinator_events.jsonl]: Lifecycle event line is valid JSON
+- [PASS] coordinator_events.jsonl line 66 parses as JSON [coordinator_events.jsonl]: Lifecycle event line is valid JSON
+- [PASS] coordinator_events.jsonl line 67 parses as JSON [coordinator_events.jsonl]: Lifecycle event line is valid JSON
+- [PASS] coordinator_events.jsonl line 68 parses as JSON [coordinator_events.jsonl]: Lifecycle event line is valid JSON
+- [PASS] coordinator_events.jsonl line 69 parses as JSON [coordinator_events.jsonl]: Lifecycle event line is valid JSON
+- [PASS] coordinator_events.jsonl line 70 parses as JSON [coordinator_events.jsonl]: Lifecycle event line is valid JSON
+- [PASS] coordinator_events.jsonl line 71 parses as JSON [coordinator_events.jsonl]: Lifecycle event line is valid JSON
+- [PASS] coordinator_events.jsonl line 72 parses as JSON [coordinator_events.jsonl]: Lifecycle event line is valid JSON
+- [PASS] coordinator_events.jsonl line 73 parses as JSON [coordinator_events.jsonl]: Lifecycle event line is valid JSON
+- [PASS] coordinator_events.jsonl line 74 parses as JSON [coordinator_events.jsonl]: Lifecycle event line is valid JSON
+- [PASS] coordinator_events.jsonl line 75 parses as JSON [coordinator_events.jsonl]: Lifecycle event line is valid JSON
+- [PASS] coordinator_events.jsonl line 76 parses as JSON [coordinator_events.jsonl]: Lifecycle event line is valid JSON
+- [PASS] coordinator_events.jsonl line 77 parses as JSON [coordinator_events.jsonl]: Lifecycle event line is valid JSON
+- [PASS] coordinator_events.jsonl line 78 parses as JSON [coordinator_events.jsonl]: Lifecycle event line is valid JSON
+- [PASS] coordinator_events.jsonl line 79 parses as JSON [coordinator_events.jsonl]: Lifecycle event line is valid JSON
+- [PASS] coordinator_events.jsonl line 80 parses as JSON [coordinator_events.jsonl]: Lifecycle event line is valid JSON
+- [PASS] coordinator_events.jsonl line 81 parses as JSON [coordinator_events.jsonl]: Lifecycle event line is valid JSON
+- [PASS] coordinator_events.jsonl line 82 parses as JSON [coordinator_events.jsonl]: Lifecycle event line is valid JSON
+- [PASS] coordinator_events.jsonl line 83 parses as JSON [coordinator_events.jsonl]: Lifecycle event line is valid JSON
+- [PASS] coordinator_events.jsonl line 84 parses as JSON [coordinator_events.jsonl]: Lifecycle event line is valid JSON
+- [PASS] coordinator_events.jsonl line 85 parses as JSON [coordinator_events.jsonl]: Lifecycle event line is valid JSON
+- [PASS] coordinator_events.jsonl line 86 parses as JSON [coordinator_events.jsonl]: Lifecycle event line is valid JSON
+- [PASS] coordinator_events.jsonl line 87 parses as JSON [coordinator_events.jsonl]: Lifecycle event line is valid JSON
+- [PASS] coordinator_events.jsonl line 88 parses as JSON [coordinator_events.jsonl]: Lifecycle event line is valid JSON
+- [PASS] coordinator_events.jsonl line 89 parses as JSON [coordinator_events.jsonl]: Lifecycle event line is valid JSON
+- [PASS] coordinator_events.jsonl line 90 parses as JSON [coordinator_events.jsonl]: Lifecycle event line is valid JSON
+- [PASS] coordinator_events.jsonl line 91 parses as JSON [coordinator_events.jsonl]: Lifecycle event line is valid JSON
+- [PASS] coordinator_events.jsonl line 92 parses as JSON [coordinator_events.jsonl]: Lifecycle event line is valid JSON
+- [PASS] coordinator_events.jsonl line 93 parses as JSON [coordinator_events.jsonl]: Lifecycle event line is valid JSON
+- [PASS] coordinator_events.jsonl line 94 parses as JSON [coordinator_events.jsonl]: Lifecycle event line is valid JSON
+- [PASS] coordinator_events.jsonl line 95 parses as JSON [coordinator_events.jsonl]: Lifecycle event line is valid JSON
+- [PASS] coordinator_events.jsonl line 96 parses as JSON [coordinator_events.jsonl]: Lifecycle event line is valid JSON
+- [PASS] coordinator_events.jsonl line 97 parses as JSON [coordinator_events.jsonl]: Lifecycle event line is valid JSON
+- [PASS] coordinator_events.jsonl line 98 parses as JSON [coordinator_events.jsonl]: Lifecycle event line is valid JSON
+- [PASS] coordinator_events.jsonl line 99 parses as JSON [coordinator_events.jsonl]: Lifecycle event line is valid JSON
+- [PASS] coordinator_events.jsonl line 100 parses as JSON [coordinator_events.jsonl]: Lifecycle event line is valid JSON
+- [PASS] coordinator_events.jsonl line 101 parses as JSON [coordinator_events.jsonl]: Lifecycle event line is valid JSON
+- [PASS] coordinator_events.jsonl line 102 parses as JSON [coordinator_events.jsonl]: Lifecycle event line is valid JSON
+- [PASS] coordinator_events.jsonl line 103 parses as JSON [coordinator_events.jsonl]: Lifecycle event line is valid JSON
+- [PASS] coordinator_events.jsonl line 104 parses as JSON [coordinator_events.jsonl]: Lifecycle event line is valid JSON
+- [PASS] coordinator_events.jsonl line 105 parses as JSON [coordinator_events.jsonl]: Lifecycle event line is valid JSON
+- [PASS] coordinator_events.jsonl line 106 parses as JSON [coordinator_events.jsonl]: Lifecycle event line is valid JSON
+- [PASS] coordinator_events.jsonl line 107 parses as JSON [coordinator_events.jsonl]: Lifecycle event line is valid JSON
+- [PASS] coordinator_events.jsonl line 108 parses as JSON [coordinator_events.jsonl]: Lifecycle event line is valid JSON
+- [PASS] coordinator_events.jsonl line 109 parses as JSON [coordinator_events.jsonl]: Lifecycle event line is valid JSON
+- [PASS] coordinator_events.jsonl line 110 parses as JSON [coordinator_events.jsonl]: Lifecycle event line is valid JSON
+- [PASS] coordinator_events.jsonl line 111 parses as JSON [coordinator_events.jsonl]: Lifecycle event line is valid JSON
+- [PASS] coordinator_events.jsonl line 112 parses as JSON [coordinator_events.jsonl]: Lifecycle event line is valid JSON
+- [PASS] coordinator_events.jsonl line 113 parses as JSON [coordinator_events.jsonl]: Lifecycle event line is valid JSON
+- [PASS] coordinator_events.jsonl line 114 parses as JSON [coordinator_events.jsonl]: Lifecycle event line is valid JSON
+- [PASS] coordinator_events.jsonl line 115 parses as JSON [coordinator_events.jsonl]: Lifecycle event line is valid JSON
+- [PASS] coordinator_events.jsonl line 116 parses as JSON [coordinator_events.jsonl]: Lifecycle event line is valid JSON
+- [PASS] coordinator_events.jsonl line 117 parses as JSON [coordinator_events.jsonl]: Lifecycle event line is valid JSON
+- [PASS] coordinator_events.jsonl line 118 parses as JSON [coordinator_events.jsonl]: Lifecycle event line is valid JSON
+- [PASS] coordinator_events.jsonl line 119 parses as JSON [coordinator_events.jsonl]: Lifecycle event line is valid JSON
+- [PASS] coordinator_events.jsonl line 120 parses as JSON [coordinator_events.jsonl]: Lifecycle event line is valid JSON
+- [PASS] coordinator_events.jsonl line 121 parses as JSON [coordinator_events.jsonl]: Lifecycle event line is valid JSON
+- [PASS] coordinator_events.jsonl line 122 parses as JSON [coordinator_events.jsonl]: Lifecycle event line is valid JSON
+- [PASS] coordinator_events.jsonl line 123 parses as JSON [coordinator_events.jsonl]: Lifecycle event line is valid JSON
+- [PASS] coordinator_events.jsonl line 124 parses as JSON [coordinator_events.jsonl]: Lifecycle event line is valid JSON
+- [PASS] coordinator_events.jsonl line 125 parses as JSON [coordinator_events.jsonl]: Lifecycle event line is valid JSON
+- [PASS] coordinator_events.jsonl line 126 parses as JSON [coordinator_events.jsonl]: Lifecycle event line is valid JSON
+- [PASS] coordinator_events.jsonl line 127 parses as JSON [coordinator_events.jsonl]: Lifecycle event line is valid JSON
+- [PASS] coordinator_events.jsonl line 128 parses as JSON [coordinator_events.jsonl]: Lifecycle event line is valid JSON
+- [PASS] coordinator_events.jsonl line 129 parses as JSON [coordinator_events.jsonl]: Lifecycle event line is valid JSON
+- [PASS] coordinator_events.jsonl line 130 parses as JSON [coordinator_events.jsonl]: Lifecycle event line is valid JSON
+- [PASS] coordinator_events.jsonl line 131 parses as JSON [coordinator_events.jsonl]: Lifecycle event line is valid JSON
+- [PASS] coordinator_events.jsonl line 132 parses as JSON [coordinator_events.jsonl]: Lifecycle event line is valid JSON
+- [PASS] coordinator_events.jsonl line 133 parses as JSON [coordinator_events.jsonl]: Lifecycle event line is valid JSON
+- [PASS] coordinator_events.jsonl line 134 parses as JSON [coordinator_events.jsonl]: Lifecycle event line is valid JSON
+- [PASS] coordinator_events.jsonl line 135 parses as JSON [coordinator_events.jsonl]: Lifecycle event line is valid JSON
+- [PASS] coordinator_events.jsonl line 136 parses as JSON [coordinator_events.jsonl]: Lifecycle event line is valid JSON
+- [PASS] coordinator_events.jsonl line 137 parses as JSON [coordinator_events.jsonl]: Lifecycle event line is valid JSON
+- [PASS] coordinator_events.jsonl line 138 parses as JSON [coordinator_events.jsonl]: Lifecycle event line is valid JSON
+- [PASS] coordinator_events.jsonl line 139 parses as JSON [coordinator_events.jsonl]: Lifecycle event line is valid JSON
+- [PASS] coordinator_events.jsonl line 140 parses as JSON [coordinator_events.jsonl]: Lifecycle event line is valid JSON
+- [PASS] coordinator_events.jsonl line 141 parses as JSON [coordinator_events.jsonl]: Lifecycle event line is valid JSON
+- [PASS] coordinator_events.jsonl line 142 parses as JSON [coordinator_events.jsonl]: Lifecycle event line is valid JSON
+- [PASS] coordinator_events.jsonl line 143 parses as JSON [coordinator_events.jsonl]: Lifecycle event line is valid JSON
+- [PASS] coordinator_events.jsonl line 144 parses as JSON [coordinator_events.jsonl]: Lifecycle event line is valid JSON
+- [PASS] coordinator_events.jsonl line 145 parses as JSON [coordinator_events.jsonl]: Lifecycle event line is valid JSON
+- [PASS] coordinator_events.jsonl line 146 parses as JSON [coordinator_events.jsonl]: Lifecycle event line is valid JSON
+- [PASS] coordinator_events.jsonl line 147 parses as JSON [coordinator_events.jsonl]: Lifecycle event line is valid JSON
+- [PASS] coordinator_events.jsonl line 148 parses as JSON [coordinator_events.jsonl]: Lifecycle event line is valid JSON
+- [PASS] coordinator_events.jsonl line 149 parses as JSON [coordinator_events.jsonl]: Lifecycle event line is valid JSON
+- [PASS] coordinator_events.jsonl line 150 parses as JSON [coordinator_events.jsonl]: Lifecycle event line is valid JSON
+
+## 72h Validation Contract
+- PASS requires >=72h coverage, continuous runner evidence cadence, lifecycle telemetry, no FAIL in watchdog/write-audit/boot, consistent cycle counts, and no side effects.
+- WARN allows minor cadence drift, a justified boot/watchdog warning with no FAIL findings, or missing lifecycle telemetry in non-final validation.
+- FAIL means the always-on dry operation is not proven fail-closed.
+
+## Runtime Handoff
+- Artifact dir template: `artifacts/evidence_harvester/72h_ops_validation/<run_id>/`
+- Seed fixture: `artifacts/evidence_harvester/24h_dry_run/collector_input.json`
+- Runner cadence seconds: 900
+- Required window hours: 72
+- Expected minimum cycles: 288
+- Watchdog after each runner cycle: yes
+- Write-audit after each runner cycle: yes
+
+### Required Artifacts
+- `collector_report_<stamp>.json`
+- `snapshot_<stamp>.json`
+- `snapshot_<stamp>.md`
+- `alert_<stamp>.json`
+- `alert_<stamp>.md`
+- `coordinator_events.jsonl`
+- `runner_heartbeat.json`
+- `runner_state.json`
+- `watchdog_report_<stamp>.json`
+- `watchdog_report_<stamp>.md`
+- `write_audit_report_<stamp>.json`
+- `write_audit_report_<stamp>.md`
+- `boot_readiness_report.json`
+- `boot_readiness_report.md`
+- `recovery_event_<stamp>.json (optional)`
+- `recovery_event_<stamp>.md (optional)`
+- `ops_validation_report.json`
+- `ops_validation_report.md`
+
+### Boot Preflight Commands
+- `python -m tools.evidence_harvester.boot status --pretty`
+- `python -m tools.evidence_harvester.boot status --json-output artifacts/evidence_harvester/72h_ops_validation/<run_id>\boot_readiness_report.json --markdown-output artifacts/evidence_harvester/72h_ops_validation/<run_id>\boot_readiness_report.md --pretty`
+
+### Enable Commands
+- `No Windows Task install in Phase 1.`
+- `Runtime-GO only if scheduling is required: python -m tools.evidence_harvester.scheduler install --fixture artifacts/evidence_harvester/24h_dry_run/collector_input.json --explicit`
+
+### Start Commands
+- `python -m tools.evidence_harvester.coordinator --pretty run-fixture-window --fixture artifacts/evidence_harvester/24h_dry_run/collector_input.json --artifact-dir artifacts/evidence_harvester/72h_ops_validation/<run_id> --iterations 289 --cadence-seconds 900 --max-restart-count 3 --restart-backoff-seconds 30`
+- `After each runner cycle, write the latest watchdog report for write-audit compatibility and archive a stamped copy: watchdog_report.json plus watchdog_report_<stamp>.json in artifacts/evidence_harvester/72h_ops_validation/<run_id>`
+- `After each runner cycle, archive write-audit outputs as write_audit_report_<stamp>.json/.md in artifacts/evidence_harvester/72h_ops_validation/<run_id>`
+
+### Stop Commands
+- `Stop the runner process after the bounded loop completes.`
+- `If scheduling was enabled under a separate Runtime-GO: python -m tools.evidence_harvester.scheduler uninstall --explicit`
+- `Run final validation: python -m tools.evidence_harvester.ops_validation validate-dir --artifact-dir artifacts/evidence_harvester/72h_ops_validation/<run_id> --pretty`
+
+### Side-Effect Checklist
+- No Docker start/stop or compose mutation without explicit operator approval.
+- No runtime, DB, Redis, secrets, or GitHub write action from module code.
+- No LR-Go, no Live-Go, no Echtgeld-Go.
+- No trading, order, risk, or execution mutation.
+
+### Operator Approval Checkpoint
+- Before any Docker or infrastructure mutation, stop and obtain documented explicit operator approval via Jannek-Ops-GO / Infra-Mutation-Gate.
+
+### Safety Statement
+- Dry/paper/research only. LR remains NO-GO. No Live-Go. No Echtgeld-Go.
+
+### Notes
+- The 72h validation depends on per-cycle stamped watchdog and write-audit archives.
+- Keep latest watchdog_report.json/.md current as a compatibility surface for write_audit.py.
+- Optional recovery_event_<stamp>.json/.md artifacts are accepted when they are audited and bounded.
+
+## Safety Boundaries
+- No actual 72h run is started by this module.
+- No Windows Task install, no Docker/runtime/DB/secrets mutation.
+- No GitHub writes from module code.
+- No LR-Go, no Live-Go, no Echtgeld-Go.
