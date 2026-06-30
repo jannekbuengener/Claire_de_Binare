@@ -47,9 +47,9 @@ def test_surrealdb_memory_proof_workflow_minimal_permissions() -> None:
 
 
 @pytest.mark.unit
-def test_surrealdb_memory_proof_workflow_uses_self_hosted_docker() -> None:
+def test_surrealdb_memory_proof_workflow_uses_github_hosted_runner() -> None:
     content = WORKFLOW_PATH.read_text(encoding="utf-8")
-    assert "runs-on: [self-hosted, cdb, docker]" in content
+    assert "runs-on: ubuntu-latest" in content
 
 
 @pytest.mark.unit

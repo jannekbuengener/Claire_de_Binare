@@ -46,7 +46,7 @@ compose changes; closing #2606; SurrealDB in required CI (~26 min `context-smoke
 | `make context-claim-evidence-proof` | Claim evidence at rest on run-scoped fixtures (#2719) | No (operator; minutes) |
 | `make context-memory-rediscovery-proof` | Cross-session memory_id+scope rediscovery (#2720) | No (operator; minutes) |
 | `pytest -m local_only` memory proof tests | Same as CLI cycle with env gate | No |
-| `.github/workflows/surrealdb-memory-proof.yml` | Preflight + optional operator proofs on self-hosted Docker runner | No (opt-in `workflow_dispatch` only) |
+| `.github/workflows/surrealdb-memory-proof.yml` | Preflight + optional operator proofs on GitHub-hosted manual workflow | No (opt-in `workflow_dispatch` only) |
 
 **CI policy:** Do not add live SurrealDB to required `.github/workflows/ci.yml`.
 Optional proof workflow: `surrealdb-memory-proof.yml` (#2721) — `continue-on-error: true`,
