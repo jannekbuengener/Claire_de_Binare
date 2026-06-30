@@ -41,6 +41,7 @@ Repo-versionierte Session-Skills für Cursor Agents. Jeder Skill lebt in `<name>
 |---|---|
 | [`gh-fix-ci`](gh-fix-ci/SKILL.md) | CI failures |
 | [`gh-address-comments`](gh-address-comments/SKILL.md) | PR review comments |
+| [`cdb-github-api-ops`](cdb-github-api-ops/SKILL.md) | GitHub API-aware agent routing |
 
 ## Related surfaces
 
