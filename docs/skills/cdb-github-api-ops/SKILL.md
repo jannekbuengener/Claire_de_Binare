@@ -5,7 +5,6 @@ Sync Status: mirrored
 Last Verified: 2026-06-30
 Drift Policy: Surface darf nur abweichen, wenn Begruendung in docs/skills/cdb-github-api-ops/SKILL.md dokumentiert ist.
 -->
-
 ---
 name: cdb-github-api-ops
 description: >
@@ -142,6 +141,16 @@ If an API call fails due to missing scope or permissions:
 - Do NOT treat the partial result as complete
 - Output must include `partial_visibility` and `collection_errors`
 
+Example:
+
+```text
+partial_visibility:
+  - ProjectV2: BLOCKED (missing read:project scope)
+  - Checks details: BLOCKED (fine-grained PAT cannot access Checks API)
+collection_errors:
+  - gh project view 8: FORBIDDEN
+```
+
 ### 5. Write gate
 
 | Intent | Rule |
@@ -175,7 +184,8 @@ When a write seems necessary but no approved scope exists:
 
 - Broad read, narrow write. Snapshot MVP is strictly read-only.
 - Fine-grained PAT has known gaps: cannot call Checks API, cannot access
-  user-owned Projects per GitHub docs.
+  user-owned Projects per GitHub docs (see Fine-grained PAT permissions
+  matrix: https://docs.github.com/en/rest/overview/permissions-required-for-fine-grained-personal-access-tokens).
 - Classic PAT has `repo` scope but no `read:project` — ProjectV2 remains
   invisible without it.
 - GitHub App is the target architecture for stable broad read access but
@@ -188,6 +198,8 @@ When a write seems necessary but no approved scope exists:
 - `read:project` scope is required to read ProjectV2 items via GraphQL.
 - If `read:project` is missing, mark ProjectV2 as a known visibility gap.
 - Do NOT infer ProjectV2 field values from other data sources.
+- The existing `project_reconcile_daily.yml` workflow prefers GitHub App
+  over PAT for this reason.
 
 ### Rate limit discipline
 
@@ -200,9 +212,12 @@ When a write seems necessary but no approved scope exists:
 
 ### Fail-closed on auth ambiguity
 
+- If auth scope is unclear, test with a minimal read before assuming
+  access.
+- If a read returns 403/404, record it as a visibility gap, not as
+  "nothing there."
 - If auth scope is unclear, test with a minimal read before assuming access.
-- If a read returns 403/404, record it as a visibility gap, not as "nothing
-  there."
+- If a read returns 403/404, record it as a visibility gap, not as "nothing there."
 - Do NOT retry with elevated privileges or different tokens automatically.
 
 ## API surface reference

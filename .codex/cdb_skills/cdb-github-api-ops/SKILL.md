@@ -5,7 +5,6 @@ Sync Status: mirrored
 Last Verified: 2026-06-30
 Drift Policy: Surface darf nur abweichen, wenn Begruendung in docs/skills/cdb-github-api-ops/SKILL.md dokumentiert ist.
 -->
-
 ---
 name: cdb-github-api-ops
 description: >
@@ -106,7 +105,14 @@ gh api graphql -f query='
   repository(owner: "jannekbuengener", name: "Claire_de_Binare") {
     pullRequests(states: [OPEN], first: 10, orderBy: {field: UPDATED_AT, direction: DESC}) {
       nodes {
+<<<<<<< HEAD
+        number
+        title
+        reviewDecision
+        mergeStateStatus
+=======
         number title reviewDecision mergeStateStatus
+>>>>>>> a1c7fc80 (docs(skills): define canonical skill surface registry)
         statusCheckRollup { nodes { state description } }
       }
     }
@@ -142,6 +148,19 @@ If an API call fails due to missing scope or permissions:
 - Do NOT treat the partial result as complete
 - Output must include `partial_visibility` and `collection_errors`
 
+<<<<<<< HEAD
+Example:
+
+```text
+partial_visibility:
+  - ProjectV2: BLOCKED (missing read:project scope)
+  - Checks details: BLOCKED (fine-grained PAT cannot access Checks API)
+collection_errors:
+  - gh project view 8: FORBIDDEN
+```
+
+=======
+>>>>>>> a1c7fc80 (docs(skills): define canonical skill surface registry)
 ### 5. Write gate
 
 | Intent | Rule |
@@ -175,7 +194,12 @@ When a write seems necessary but no approved scope exists:
 
 - Broad read, narrow write. Snapshot MVP is strictly read-only.
 - Fine-grained PAT has known gaps: cannot call Checks API, cannot access
+<<<<<<< HEAD
+  user-owned Projects per GitHub docs (see Fine-grained PAT permissions
+  matrix: https://docs.github.com/en/rest/overview/permissions-required-for-fine-grained-personal-access-tokens).
+=======
   user-owned Projects per GitHub docs.
+>>>>>>> a1c7fc80 (docs(skills): define canonical skill surface registry)
 - Classic PAT has `repo` scope but no `read:project` — ProjectV2 remains
   invisible without it.
 - GitHub App is the target architecture for stable broad read access but
@@ -188,6 +212,11 @@ When a write seems necessary but no approved scope exists:
 - `read:project` scope is required to read ProjectV2 items via GraphQL.
 - If `read:project` is missing, mark ProjectV2 as a known visibility gap.
 - Do NOT infer ProjectV2 field values from other data sources.
+<<<<<<< HEAD
+- The existing `project_reconcile_daily.yml` workflow prefers GitHub App
+  over PAT for this reason.
+=======
+>>>>>>> a1c7fc80 (docs(skills): define canonical skill surface registry)
 
 ### Rate limit discipline
 
@@ -200,9 +229,16 @@ When a write seems necessary but no approved scope exists:
 
 ### Fail-closed on auth ambiguity
 
+<<<<<<< HEAD
+- If auth scope is unclear, test with a minimal read before assuming
+  access.
+- If a read returns 403/404, record it as a visibility gap, not as
+  "nothing there."
+=======
 - If auth scope is unclear, test with a minimal read before assuming access.
 - If a read returns 403/404, record it as a visibility gap, not as "nothing
   there."
+>>>>>>> a1c7fc80 (docs(skills): define canonical skill surface registry)
 - Do NOT retry with elevated privileges or different tokens automatically.
 
 ## API surface reference
