@@ -41,8 +41,9 @@ Canon-Pointer:
   - [`infrastructure/scripts/manage_secrets.ps1`](../../infrastructure/scripts/manage_secrets.ps1)
   - [`infrastructure/scripts/init-secrets.ps1`](../../infrastructure/scripts/init-secrets.ps1)
   - [`infrastructure/scripts/check_env.ps1`](../../infrastructure/scripts/check_env.ps1)
-- Self-hosted Runner Env:
-  - [`infrastructure/actions-runner/.env.runner.example`](../../infrastructure/actions-runner/.env.runner.example)
+- Self-hosted Runner Env (decommissioned from active CI per #3575, historical):
+  - [`infrastructure/actions-runner/README.md`](../../infrastructure/actions-runner/README.md) — decommissioned status
+  - [`infrastructure/actions-runner/.env.runner.example`](../../infrastructure/actions-runner/.env.runner.example) — local-only reference
   - `RUNNER_TOKEN` is bootstrap-only / registration-only; keep `.env.runner*`
     local-only and out of commits, logs, screenshots, and Docker build context
   - Do not inherit a foreign/global `COMPOSE_PROJECT_NAME` when launching runner compose files

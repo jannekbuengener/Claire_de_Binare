@@ -191,7 +191,7 @@ Coverage target: 80% on `core/` and `services/` (enforced by `make test-coverage
 - `policy-gate` categorizes PRs; core/service PRs need label `allow-core-change` or `manual-approval`
 - `strict: true` — branch must be up-to-date with main before merge
 - Bot review threads (Sourcery, Copilot) must be resolved before merge
-- Runner: self-hosted `[self-hosted, cdb]` for `ci.yml`; labels defined in `infrastructure/actions-runner/`
+- Runner: `ci.yml` runs on `ubuntu-latest` (GitHub-hosted); self-hosted runners decommissioned from active CI per #3575; historical labels defined in `infrastructure/actions-runner/`
 
 ### Key Governance Files
 
