@@ -69,7 +69,7 @@ If a field cannot be resolved from row + profile + override, treat it as **not s
 - `perm:w-contents` — includes `contents:write`
 - `perm:w-packages` — includes `packages:write`
 - `perm:w-security` — includes `security-events:write`
-- `perm:oidc` — includes `id-token:write`
+- `perm:oidc` — includes GitHub Actions OIDC publish scope (see Actions permissions reference)
 - `perm:models-read` — includes `models:read`
 - `perm:checks-read` — includes `checks:read`
 - `perm:actions-read` — includes `actions:read`
@@ -228,7 +228,7 @@ Repo health, staleness, documentation quality, and audit cleanliness.
 | File | Status | Trigger(s) | Purpose | Scripts | Key Outputs | FP | HT |
 |---|---|---|---|---|---|---|---|
 | `stale.yml` | aktiv | sched, dispatch | Close stale issues/PRs after inactivity | — | Stale label + issue close | O | Stale list review |
-| `docs-hub-guard.yml` | aktiv | push, PR, dispatch | Block tracked `*.log` files and `/logs/` paths from being committed | — | Fail if log committed | **C** | PR block; fix before merge. Known pre-existing: `artifacts/*/audit.log` tracked in git triggers failure. |
+| `docs-hub-guard.yml` | aktiv | push, PR, dispatch | Block tracked `*.log` files and `/logs/` paths from being committed | — | Fail if log committed | **C** | PR block; fix before merge. Generated `artifacts/**/audit.log` must stay untracked (resolved #3667/#3668, merge `0eae84ac`). |
 | `docs-conflict-guard.yml` | aktiv | PR, push, dispatch | Detect documentation conflicts and drift | — | Conflict flag | O | On docs conflict detection |
 | `root-session-hygiene-warning.yml` | aktiv | dispatch | Warn on session-state artifacts in root | `scripts/root_session_hygiene_warn.py` | PR warning comment | O | Operator: manual trigger |
 | `copilot-housekeeping.yml` | aktiv | sched, dispatch | Copilot workspace cleanup | — | Cleaned workspace state | O | Post-session cleanup |
@@ -299,7 +299,7 @@ Secret scanning, vulnerability detection, and security audit.
 
 | File | Status | Trigger(s) | Purpose | Scripts | Key Outputs | FP | HT |
 |---|---|---|---|---|---|---|---|
-| `gitleaks.yml` | aktiv | push, sched, dispatch | Scan for secrets and credentials in commits | — | Gitleaks report; fail on secrets found | **C** | Fix secrets before merge |
+| `gitleaks.yml` | aktiv | push, sched, dispatch | Scan for credentials and sensitive strings in commits | — | Gitleaks report; fail on leak matches | **C** | Fix credential leaks before merge |
 | `trivy.yml` | aktiv | push, sched, dispatch | Container/dependency vulnerability scan (Trivy) | — | Trivy vulnerability report | O | Review CVEs |
 | `security-scan.yml` | aktiv | sched, push, dispatch | Combined security scan: gitleaks + ruff + bandit | — | Security scan report | O | Weekly security review |
 | `codeql-python.yml` | aktiv | push, PR, sched, dispatch | CodeQL Python SAST: `security-and-quality` Queries | — | SARIF-Upload (`security-events: write`) | O | Alert-Review via Security Tab |
@@ -309,9 +309,14 @@ Secret scanning, vulnerability detection, and security audit.
 | Workflow | Failure | Root cause |
 |---|---|---|
 | `codeql-python.yml` | SARIF upload fails: CodeQL analyses from advanced configurations cannot be processed when the default setup is enabled | GitHub Code Scanning default setup is enabled at repo level, conflicting with advanced CodeQL workflow SARIF upload |
-| `docs-hub-guard.yml` | "Block runtime artifacts" step fails: tracked `audit.log` files in `artifacts/` directory | Historical `.log` files in `artifacts/calibration/` and `artifacts/controlled_lab_evidence/` that violate the guard check |
 
 These failures existed before the NOISE-FREEZE restore but were not visible (workflow_dispatch only). They are not regressions from #3659/#3662. Follow-up issues may be appropriate if the failures are actionable.
+
+### Resolved guard hygiene (2026-07-01)
+
+| Workflow | Former failure | Resolution |
+|---|---|---|
+| `docs-hub-guard.yml` | "Block runtime artifacts" failed on four tracked generated `artifacts/**/audit.log` files | Removed from git index, `.gitignore` hardened, guard green on `main` — PR #3668 (`0eae84ac`), closes #3667 |
 
 ---
 
@@ -380,7 +385,7 @@ Legacy label and milestone automation. Not actively maintained; do not enable wi
 | `ci.yml` | Required check — blocks merge without explicit bypass |
 | `docs-hub-guard.yml` | Blocks tracked log files from being committed |
 | `policy-gate.yml` | Gates PR type classification; patterns downstream checks |
-| `gitleaks.yml` | Fails on detected secrets |
+| `gitleaks.yml` | Fails on detected credential-like strings |
 
 ### Branch protection merge blockers on `main` (#2837)
 
