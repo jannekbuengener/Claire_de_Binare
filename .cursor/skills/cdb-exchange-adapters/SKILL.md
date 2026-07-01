@@ -1,3 +1,10 @@
+<!--
+Canonical Skill Source: docs/skills/cdb-exchange-adapters/SKILL.md
+Surface: cursor
+Sync Status: mirrored-from-canon
+Last Verified: 2026-07-01
+Drift Policy: Surface-Adapter duerfen nur mit dokumentierter Begruendung abweichen.
+-->
 ---
 name: cdb-exchange-adapters
 description: CDB exchange-adapter work in the current working repo. Use when Codex needs to implement or harden REST or websocket adapters, order or market-data normalization, rate-limit handling, reconnect logic, or idempotent exchange boundaries. Prefer current repo realities and active integrations; treat MEXC as the default exchange only when the repo context proves it, and keep all work in paper or testnet-safe scope.

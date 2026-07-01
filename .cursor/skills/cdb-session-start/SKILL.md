@@ -1,3 +1,10 @@
+<!--
+Canonical Skill Source: docs/skills/cdb-session-start/SKILL.md
+Surface: cursor
+Sync Status: mirrored-from-canon
+Last Verified: 2026-07-01
+Drift Policy: Surface-Adapter duerfen nur mit dokumentierter Begruendung abweichen.
+-->
 ---
 name: cdb-session-start
 description: >
@@ -107,7 +114,7 @@ Establish a verified, fail-closed starting state before any repo work begins.
      pattern reference.
    - Proceed with test planning alongside implementation planning.
 
-   Reference: `.cursor/skills/cdb-test-first/SKILL.md` (all surfaces);
+   Reference: `.opencode/skills/cdb-test-first/SKILL.md` (all surfaces);
    `knowledge/testing/TEST_FIRST_PROCESSING_CONTRACT.md`.
 
 6. Brain Evidence Gate (scope-abhängig):
@@ -121,19 +128,27 @@ Establish a verified, fail-closed starting state before any repo work begins.
    `tools_or_queries`, `records_or_results`, `repo_crosscheck`, `impact_on_plan`,
    `limitations`) with honest values.
 
-   **No plan may claim Memory/Evidence/Decision consideration without
-   record/tool/query evidence.**
+    **No plan may claim Memory/Evidence/Decision consideration without
+    record/tool/query evidence.**
 
-   If the block is missing or incomplete:
-   - STOP.
-   - Report which fields are missing or which values are unsubstantiated.
-   - Do not proceed to implementation planning.
+    Post-#3449: `cdb_context_briefing` / `context.briefing` enrichment check.
+    - Context trust floor: MEDIUM. Nur HIGH/MEDIUM sind nutzbar (`context_available=true`).
+    - Prüfe ob evidence_records/claim_records/decision_events/memory_records übergeben wurden.
+    - Ohne Records → `brain_source=repo-only`, `brain_status=not-used`, `context_available=false`.
+    - Inline-Records → `brain_source=in_memory`, max `context_trust_level=MEDIUM`.
+    - HIGH nur mit `record_source=surrealdb-local` + Record-IDs + kein stale/disputed/blocking.
+    - LOW/BLOCKED sind keine operative Agentenoption; hinter `none` verborgen.
 
-   Reference: `agents/AGENTS.md` § Brain Evidence Gate;
-   default posture SSOT: `knowledge/decisions/CDB_CONTEXT_BRAIN_DEFAULT_POSTURE.md`
-   (#2775). Until verified MCP/DB evidence: `brain_source=repo-only`,
-   `brain_status=not-used`. `PERSIST_ALLOWED=False` / `MUTATION_ALLOWED=False`
-   on `main`; Context Brain output does not authorize writes or issue creation.
+    If the block is missing or incomplete:
+    - STOP.
+    - Report which fields are missing or which values are unsubstantiated.
+    - Do not proceed to implementation planning.
+
+    Reference: `agents/AGENTS.md` § Brain Evidence Gate;
+    default posture SSOT: `knowledge/decisions/CDB_CONTEXT_BRAIN_DEFAULT_POSTURE.md`
+    (#2775). Until verified MCP/DB evidence: `brain_source=repo-only`,
+    `brain_status=not-used`. `PERSIST_ALLOWED=False` / `MUTATION_ALLOWED=False`
+    on `main`; Context Brain output does not authorize writes or issue creation.
 
 7. MCP Capability Resolution Gate (conditional):
 

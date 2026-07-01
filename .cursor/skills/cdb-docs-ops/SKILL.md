@@ -1,3 +1,10 @@
+<!--
+Canonical Skill Source: docs/skills/cdb-docs-ops/SKILL.md
+Surface: cursor
+Sync Status: mirrored-from-canon
+Last Verified: 2026-07-01
+Drift Policy: Surface-Adapter duerfen nur mit dokumentierter Begruendung abweichen.
+-->
 ---
 name: cdb-docs-ops
 description: 'Create or update CDB operational documentation from the working-repo canon. Use when Codex needs to capture system state, derive a health/status digest, write a tactical runbook, or build a crisis playbook. Keep the current SSOT split explicit: `CURRENT_STATUS.md` for repo state, `docs/live-readiness/LR-AUDIT-STATUS-2026-03-05.md` for Echtgeld Go/No-Go, and `docs/runbooks/CONTROL_REGISTER.md` for Board stage and operating focus.'

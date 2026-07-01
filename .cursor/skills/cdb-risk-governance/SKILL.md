@@ -1,3 +1,10 @@
+<!--
+Canonical Skill Source: docs/skills/cdb-risk-governance/SKILL.md
+Surface: cursor
+Sync Status: mirrored-from-canon
+Last Verified: 2026-07-01
+Drift Policy: Surface-Adapter duerfen nur mit dokumentierter Begruendung abweichen.
+-->
 ---
 name: cdb-risk-governance
 description: CDB risk-governance changes for the current Risk Service (`cdb_risk`). Use when Codex needs to implement or harden enforceable limits, kill-switches, drawdown or exposure caps, fail-closed gating, or human-approval semantics. Respect the current repo canon, the `Risk Service` naming, and the fact that Board stage does not clear live trading.

@@ -1,3 +1,10 @@
+<!--
+Canonical Skill Source: docs/skills/cdb-drift-reconcile/SKILL.md
+Surface: cursor
+Sync Status: mirrored-from-canon
+Last Verified: 2026-07-01
+Drift Policy: Surface-Adapter duerfen nur mit dokumentierter Begruendung abweichen.
+-->
 ---
 name: cdb-drift-reconcile
 description: >

@@ -1,3 +1,10 @@
+<!--
+Canonical Skill Source: docs/skills/gh-address-comments/SKILL.md
+Surface: cursor
+Sync Status: mirrored-from-canon
+Last Verified: 2026-07-01
+Drift Policy: Surface-Adapter duerfen nur mit dokumentierter Begruendung abweichen.
+-->
 ---
 name: gh-address-comments
 description: Address GitHub PR review comments in the current repo with `gh`. Use when the user wants comment triage, replies, or code changes for review feedback on the current-branch PR or a specified PR. Verify `gh` authentication first, rebuild context control-first, and do not assume an open PR exists. This skill does not handle generic issue-comment threads unless a separate workflow is added.

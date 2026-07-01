@@ -7,7 +7,8 @@ Alle anderen Surface-Pfade (`.opencode/`, `.cursor/`, `.codex/`,
 `.claude/`) sind Mirror-Adapter und muessen gegen diese Dateien
 synchron gehalten werden.
 
-**Aenderungen an Skills starten hier.** Surface-Adapter werden daraus gespiegelt.
+**Aenderungen an Skills starten hier.** Surface-Adapter werden daraus gespiegelt
+(`Sync Status: mirrored-from-canon`, Last Verified 2026-07-01, Issue #3639).
 
 ## Kanonische Skill-Dateien (25 aktive CDB-Repo-Skills)
 

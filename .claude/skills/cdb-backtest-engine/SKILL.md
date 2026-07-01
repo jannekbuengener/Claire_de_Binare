@@ -1,3 +1,10 @@
+<!--
+Canonical Skill Source: docs/skills/cdb-backtest-engine/SKILL.md
+Surface: claude
+Sync Status: mirrored-from-canon
+Last Verified: 2026-07-01
+Drift Policy: Surface-Adapter duerfen nur mit dokumentierter Begruendung abweichen.
+-->
 ---
 name: cdb-backtest-engine
 description: Deterministic CDB backtesting and strategy evaluation in the working repo. Use when Codex needs to run or update offline backtests, parameter sweeps, walk-forward tests, baseline comparisons, or PR-ready evidence packs. Treat the local working repo as canon, not the retired external docs repo; never infer live readiness from Board stage; no live keys, no live or testnet execution.

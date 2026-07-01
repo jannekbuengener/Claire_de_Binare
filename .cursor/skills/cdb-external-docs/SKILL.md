@@ -1,3 +1,10 @@
+<!--
+Canonical Skill Source: docs/skills/cdb-external-docs/SKILL.md
+Surface: cursor
+Sync Status: mirrored-from-canon
+Last Verified: 2026-07-01
+Drift Policy: Surface-Adapter duerfen nur mit dokumentierter Begruendung abweichen.
+-->
 ---
 name: cdb-external-docs
 description: CDB External Documentation Lookup Skill. Use when an agent needs to determine which external documentation is relevant for a given task, resolve contradictions between external docs and CDB canon, or handle scenarios where internet/browsing is unavailable. References the canonical external docs index at docs/external-docs/index.md.
