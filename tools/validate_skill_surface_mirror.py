@@ -68,6 +68,10 @@ OUT_OF_SCOPE_NOTES: list[str] = [
 ]
 
 _HEADER_RE = re.compile(r"^\ufeff?\s*<!--.*?-->\s*", flags=re.DOTALL)
+_HEADER_BLOCK_RE = re.compile(r"^\ufeff?\s*<!--(.*?)-->", flags=re.DOTALL)
+
+# Adapters must declare they are mirrored from canon (Registry §7).
+MIRRORED_MARKER = "mirrored-from-canon"
 
 
 class DriftCheckError(Exception):
@@ -77,6 +81,31 @@ class DriftCheckError(Exception):
 def strip_header(text: str) -> str:
     """Remove a leading HTML-comment surface header block, if present."""
     return _HEADER_RE.sub("", text, count=1)
+
+
+def extract_header(text: str) -> str | None:
+    """Return the leading HTML-comment header block content, or None if absent."""
+    match = _HEADER_BLOCK_RE.match(text)
+    return match.group(1) if match else None
+
+
+def header_issue(skill: str, text: str) -> str | None:
+    """Return a reason string if the adapter header is missing/invalid, else None.
+
+    Enforces the Registry §7 rule that mirrored adapters must carry a
+    ``mirrored-from-canon`` surface header referencing the canonical source.
+    A body-only match is not sufficient: a lost or wrong header means the file
+    is effectively unregistered / wrongly classified.
+    """
+    header = extract_header(text)
+    if header is None:
+        return "adapter has no surface header block (expected mirrored-from-canon)"
+    if MIRRORED_MARKER not in header:
+        return f"adapter header missing '{MIRRORED_MARKER}' marker"
+    expected_source = f"docs/skills/{skill}/SKILL.md"
+    if expected_source not in header:
+        return f"adapter header does not reference canon source '{expected_source}'"
+    return None
 
 
 def normalize_body(text: str) -> str:
@@ -142,13 +171,26 @@ def check_skill(repo_root: Path, skill: str) -> dict:
             continue
 
         adapter_count += 1
-        if normalize_body(_read_text(adapter_path)) != canon_body:
+        adapter_text = _read_text(adapter_path)
+        if normalize_body(adapter_text) != canon_body:
             mismatches.append(
                 {
                     "skill": skill,
                     "surface": surface,
                     "path": rel,
+                    "kind": "body",
                     "reason": "adapter body differs from canon (header ignored)",
+                }
+            )
+        head_reason = header_issue(skill, adapter_text)
+        if head_reason is not None:
+            mismatches.append(
+                {
+                    "skill": skill,
+                    "surface": surface,
+                    "path": rel,
+                    "kind": "header",
+                    "reason": head_reason,
                 }
             )
 
@@ -220,7 +262,9 @@ def format_human(report: dict) -> str:
     lines.append(f"Mismatches ({len(mismatches)}):")
     if mismatches:
         for m in mismatches:
-            lines.append(f"  - DRIFT {m['skill']} [{m['surface']}] {m['path']}: {m['reason']}")
+            kind = m.get("kind", "")
+            tag = f"DRIFT/{kind}" if kind else "DRIFT"
+            lines.append(f"  - {tag} {m['skill']} [{m['surface']}] {m['path']}: {m['reason']}")
     else:
         lines.append("  - none")
 

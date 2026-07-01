@@ -143,6 +143,9 @@ python tools/validate_skill_surface_mirror.py --skill <name>
 ```
 
 - Exit codes: `0` = PASS, `1` = DRIFT_FOUND, `2` = BLOCKED.
+- Prueft Body-Parity **und** den Pflicht-Header (`mirrored-from-canon` +
+  korrekte Canon-Quelle je Adapter, siehe §7); ein Body-Match mit fehlendem
+  Header ist Drift.
 - **Pflicht:** Nach jeder Aenderung an `docs/skills/<name>/SKILL.md` den
   Drift-Guard laufen lassen und Adapter nachziehen, bevor die Session als
   vollstaendig abgeschlossen gilt. Bei `DRIFT_FOUND` re-mirror im Scope oder

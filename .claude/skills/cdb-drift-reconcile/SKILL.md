@@ -84,8 +84,10 @@ the adapters, so this drift vector has a dedicated, scriptable check.
   ```
 
 - Result semantics and exit codes:
-  - `PASS` (exit 0): every expected adapter body matches canon (header ignored).
-  - `DRIFT_FOUND` (exit 1): an adapter body differs, or an expected adapter is missing.
+  - `PASS` (exit 0): every expected adapter matches canon in body (header ignored)
+    and carries a valid `mirrored-from-canon` surface header.
+  - `DRIFT_FOUND` (exit 1): an adapter body differs, an adapter header is missing or
+    not `mirrored-from-canon`, or an expected adapter is missing.
   - `BLOCKED` (exit 2): missing canon tree, unknown skill, or parse/usage error.
 - Documented exclusions (not drift): `cdb-onboarding` is codex-only alias;
   `gh-fix-ci` keeps `META.yaml`/`evals.json`/`scripts/` canon-only (only `SKILL.md`

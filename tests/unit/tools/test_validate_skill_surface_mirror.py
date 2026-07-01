@@ -84,6 +84,15 @@ def test_normalize_body_ignores_header_and_line_endings() -> None:
     assert guard.normalize_body(canon) == guard.normalize_body(adapter)
 
 
+def test_header_issue_detects_missing_and_valid_headers() -> None:
+    valid = ADAPTER_HEADER.format(name="cdb-alpha", surface="cursor") + "body"
+    assert guard.header_issue("cdb-alpha", valid) is None
+    assert guard.header_issue("cdb-alpha", "no header body") is not None
+    canon_hdr = CANON_HEADER.format(name="cdb-alpha") + "body"
+    # canon header lacks the mirrored-from-canon marker
+    assert guard.header_issue("cdb-alpha", canon_hdr) is not None
+
+
 # --- PASS ---
 
 
@@ -114,6 +123,30 @@ def test_drift_found_on_modified_adapter_body(tmp_path: Path) -> None:
 
 
 # --- DRIFT: missing expected adapter ---
+
+
+def test_drift_found_on_missing_adapter_header(tmp_path: Path) -> None:
+    _make_skill(tmp_path, "cdb-delta")
+    # Overwrite one adapter with the correct body but NO surface header.
+    adapter = _adapter_path(tmp_path, "opencode", "cdb-delta")
+    adapter.write_text(BODY.format(name="cdb-delta"), encoding="utf-8")
+    report = guard.run(tmp_path)
+    assert report["status"] == "DRIFT_FOUND"
+    header_mismatches = [m for m in report["mismatches"] if m.get("kind") == "header"]
+    assert len(header_mismatches) == 1
+    assert header_mismatches[0]["surface"] == "opencode"
+
+
+def test_drift_found_on_wrong_sync_status_header(tmp_path: Path) -> None:
+    _make_skill(tmp_path, "cdb-epsilon")
+    adapter = _adapter_path(tmp_path, "cursor", "cdb-epsilon")
+    wrong_header = ADAPTER_HEADER.format(name="cdb-epsilon", surface="cursor").replace(
+        "mirrored-from-canon", "canonical"
+    )
+    adapter.write_text(wrong_header + BODY.format(name="cdb-epsilon"), encoding="utf-8")
+    report = guard.run(tmp_path)
+    assert report["status"] == "DRIFT_FOUND"
+    assert any(m.get("kind") == "header" for m in report["mismatches"])
 
 
 def test_drift_found_on_missing_expected_adapter(tmp_path: Path) -> None:
