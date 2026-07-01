@@ -183,7 +183,11 @@ services:
     entrypoint: ["/bin/sh", "-c"]
     command: ["exec redis_exporter --redis.addr=redis://cdb_redis:6379 --redis.password=$$(cat /run/secrets/redis_password | tr -d '\\n')"]
     healthcheck:
-      test: ["CMD-SHELL", "nc -z localhost 9121 || exit 1"]
+      test:
+        [
+          "CMD-SHELL",
+          "bash -c 'exec 3<>/dev/tcp/127.0.0.1/9121' || exit 1",
+        ]
       interval: 30s
       timeout: 10s
       retries: 3
