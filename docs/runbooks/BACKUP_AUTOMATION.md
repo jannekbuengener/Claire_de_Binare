@@ -6,6 +6,7 @@
 ## Übersicht
 
 - `infrastructure/scripts/backup_all.ps1` erstellt Postgres- und Redis-Backups als ZIP unter `F:\Claire_Backups`.
+- `manifest.json` markiert in `Components.*` nur tatsächlich erfasste Artefakte; `ComponentSelection.*` beschreibt den geplanten Scope.
 - Optional kann `backup_all.ps1 -IncludeSurrealDB` den lokalen SurrealDB-File-Backend-Volume-Stand physisch mit in dasselbe Archiv aufnehmen.
 - `infrastructure/scripts/setup_backup_task.ps1` registriert den Windows Task `Claire_Hourly_Backup`.
 - `infrastructure/scripts/backup_health_check.ps1` prüft auf ein aktuelles Archiv (`exit 0 = PASS`, `exit 1 = FAIL`).

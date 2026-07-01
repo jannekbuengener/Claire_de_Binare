@@ -23,6 +23,8 @@ param(
 
 $ErrorActionPreference = "Stop"
 
+. (Join-Path $PSScriptRoot "backup_manifest_helpers.ps1")
+
 function Write-Pass { param([string]$Msg) Write-Host "PASS  $Msg" -ForegroundColor Green }
 function Write-Fail { param([string]$Msg) Write-Host "FAIL  $Msg" -ForegroundColor Red }
 function Write-Step { param([string]$Msg) Write-Host "---   $Msg" -ForegroundColor Cyan }
@@ -270,6 +272,22 @@ if (-not $manifestFile) {
 $manifest = Get-Content $manifestFile.FullName | ConvertFrom-Json
 $backupRoot = $manifestFile.DirectoryName
 
+$postgresResolution = Resolve-BackupComponentInclusion `
+    -BackupRoot $backupRoot `
+    -ManifestFlag ([bool]$manifest.Components.Postgres) `
+    -ComponentName "Postgres" `
+    -ArtifactPattern "postgres_dump.sql" `
+    -ArtifactLabel "postgres_dump.sql"
+$postgresIncluded = $postgresResolution.Included
+
+$redisResolution = Resolve-BackupComponentInclusion `
+    -BackupRoot $backupRoot `
+    -ManifestFlag ([bool]$manifest.Components.Redis) `
+    -ComponentName "Redis" `
+    -ArtifactPattern "redis_dump.rdb" `
+    -ArtifactLabel "redis_dump.rdb"
+$redisIncluded = $redisResolution.Included
+
 $surrealDbEvidence = $null
 if (Test-ObjectProperty -Object $manifest -Name "Evidence" -and (Test-ObjectProperty -Object $manifest.Evidence -Name "SurrealDB")) {
     $surrealDbEvidence = $manifest.Evidence.SurrealDB
@@ -332,16 +350,16 @@ if ($surrealDbIncluded) {
 Write-Pass "Manifest loaded"
 Write-Host "      Backup from:  $($manifest.Timestamp)"
 Write-Host "      Git commit:   $($manifest.GitCommit)"
-Write-Host "      Postgres:     $(if ($manifest.Components.Postgres) { 'included' } else { 'not included' })"
-Write-Host "      Redis:        $(if ($manifest.Components.Redis) { 'included' } else { 'not included' })"
+Write-Host "      Postgres:     $(if ($postgresIncluded) { 'included' } else { 'not included' })"
+Write-Host "      Redis:        $(if ($redisIncluded) { 'included' } else { 'not included' })"
 Write-Host "      SurrealDB:    $surrealDbDisplay"
 Write-Host ""
 
 # ── Safety confirmation ──────────────────────────────────────────────────
 
 $restoreTargets = @()
-if ($manifest.Components.Postgres) { $restoreTargets += "Postgres" }
-if ($manifest.Components.Redis) { $restoreTargets += "Redis" }
+if ($postgresIncluded) { $restoreTargets += "Postgres" }
+if ($redisIncluded) { $restoreTargets += "Redis" }
 if ($surrealDbIncluded) { $restoreTargets += "SurrealDB" }
 
 if ($restoreTargets.Count -eq 0) {
@@ -371,7 +389,7 @@ $restoreResults = @{
 
 # ── Restore Postgres ─────────────────────────────────────────────────────
 
-if ($manifest.Components.Postgres) {
+if ($postgresIncluded) {
     Write-Step "Restoring Postgres..."
 
     $pgDump = Get-ChildItem -Path $backupRoot -Filter "postgres_dump.sql" -Recurse | Select-Object -First 1
@@ -416,7 +434,7 @@ if ($manifest.Components.Postgres) {
 
 # ── Restore Redis ────────────────────────────────────────────────────────
 
-if ($manifest.Components.Redis) {
+if ($redisIncluded) {
     Write-Step "Restoring Redis..."
 
     $redisDump = Get-ChildItem -Path $backupRoot -Filter "redis_dump.rdb" -Recurse | Select-Object -First 1
@@ -607,12 +625,12 @@ if ($surrealDbIncluded) {
 Write-Host ""
 
 # Exit code: fail if any included component failed
-if ($manifest.Components.Postgres -and -not $restoreResults.Postgres) {
+if ($postgresIncluded -and -not $restoreResults.Postgres) {
     Write-Fail "Restore incomplete - Postgres failed"
     exit 1
 }
 
-if ($manifest.Components.Redis -and -not $restoreResults.Redis) {
+if ($redisIncluded -and -not $restoreResults.Redis) {
     Write-Fail "Restore incomplete - Redis failed"
     exit 1
 }

@@ -32,6 +32,8 @@ param(
 
 $ErrorActionPreference = "Stop"
 
+. (Join-Path $PSScriptRoot "backup_manifest_helpers.ps1")
+
 $TIMESTAMP = Get-Date -Format "yyyyMMdd_HHmmss"
 $BACKUP_NAME = "cdb_backup_$TIMESTAMP"
 $WORK_DIR = Join-Path $BackupDir $BACKUP_NAME
@@ -333,22 +335,30 @@ if ($redisRunning -notmatch "cdb_redis") {
             docker exec cdb_redis redis-cli SAVE 2>&1 | Out-Null
         }
 
-        if ($LASTEXITCODE -ne 0) {
-            Write-Fail "redis-cli SAVE failed"
-        } else {
-            # Copy RDB from container
-            docker cp cdb_redis:/data/dump.rdb $redisFile 2>&1
+        $saveExitCode = $LASTEXITCODE
+        if ($saveExitCode -ne 0) {
+            Write-Fail "redis-cli SAVE failed (exit $saveExitCode)"
+        }
 
-            if ($LASTEXITCODE -ne 0 -or -not (Test-Path $redisFile)) {
-                Write-Fail "Redis RDB copy failed"
+        docker cp cdb_redis:/data/dump.rdb $redisFile 2>&1 | Out-Null
+        $copyExitCode = $LASTEXITCODE
+
+        if (Test-BackupArtifactPresent -Path $redisFile) {
+            if ($copyExitCode -ne 0) {
+                Write-Host "WARN  Redis RDB present but docker cp exit code was $copyExitCode" -ForegroundColor Yellow
+            }
+            $redisSizeKB = [math]::Round((Get-Item $redisFile).Length / 1KB, 2)
+            $componentStatus.Redis = $true
+            $componentEvidence.Redis = @{
+                Artifact = "redis_dump.rdb"
+                SizeBytes = [int64](Get-Item $redisFile).Length
+            }
+            Write-Pass "Redis backup: $redisSizeKB KB"
+        } else {
+            if ($copyExitCode -ne 0) {
+                Write-Fail "Redis RDB copy failed (exit $copyExitCode)"
             } else {
-                $redisSizeKB = [math]::Round((Get-Item $redisFile).Length / 1KB, 2)
-                $componentStatus.Redis = $true
-                $componentEvidence.Redis = @{
-                    Artifact = "redis_dump.rdb"
-                    SizeBytes = [int64](Get-Item $redisFile).Length
-                }
-                Write-Pass "Redis backup: $redisSizeKB KB"
+                Write-Fail "Redis RDB copy produced no artifact"
             }
         }
     } catch {
@@ -417,6 +427,11 @@ if ($IncludeSurrealDB) {
 # ── 5. Manifest ──────────────────────────────────────────────────────────
 
 Write-Step "Writing manifest..."
+
+Sync-BackupComponentManifest `
+    -WorkDir $WORK_DIR `
+    -ComponentStatus $componentStatus `
+    -ComponentEvidence $componentEvidence
 
 $gitCommit = "unknown"
 try {
