@@ -302,13 +302,11 @@ Secret scanning, vulnerability detection, and security audit.
 | `gitleaks.yml` | aktiv | push, sched, dispatch | Scan for credentials and sensitive strings in commits | — | Gitleaks report; fail on leak matches | **C** | Fix credential leaks before merge |
 | `trivy.yml` | aktiv | push, sched, dispatch | Container/dependency vulnerability scan (Trivy) | — | Trivy vulnerability report | O | Review CVEs |
 | `security-scan.yml` | aktiv | sched, push, dispatch | Combined security scan: gitleaks + ruff + bandit | — | Security scan report | O | Weekly security review |
-| `codeql-python.yml` | aktiv | push, PR, sched, dispatch | CodeQL Python SAST: `security-and-quality` Queries | — | SARIF-Upload (`security-events: write`) | O | Alert-Review via Security Tab |
+| `codeql-python.yml` | aktiv | push, PR, sched, dispatch | CodeQL Python SAST: `security-and-quality` queries (advanced validation path) | — | Local analysis only (`upload: false`); repo default setup owns Code Scanning alerts | O | #3670: dedupe with default setup; no SARIF upload from this workflow |
 
 ### Known pre-existing failures (post-C1 restore, not caused by #3659)
 
-| Workflow | Failure | Root cause |
-|---|---|---|
-| `codeql-python.yml` | SARIF upload fails: CodeQL analyses from advanced configurations cannot be processed when the default setup is enabled | GitHub Code Scanning default setup is enabled at repo level, conflicting with advanced CodeQL workflow SARIF upload |
+_No open entries after #3670; see resolved sections below._
 
 These failures existed before the NOISE-FREEZE restore but were not visible (workflow_dispatch only). They are not regressions from #3659/#3662. Follow-up issues may be appropriate if the failures are actionable.
 
@@ -317,6 +315,12 @@ These failures existed before the NOISE-FREEZE restore but were not visible (wor
 | Workflow | Former failure | Resolution |
 |---|---|---|
 | `docs-hub-guard.yml` | "Block runtime artifacts" failed on four tracked generated `artifacts/**/audit.log` files | Removed from git index, `.gitignore` hardened, guard green on `main` — PR #3668 (`0eae84ac`), closes #3667 |
+
+### Resolved CodeQL Python SARIF conflict (2026-07-01)
+
+| Workflow | Former failure | Resolution |
+|---|---|---|
+| `codeql-python.yml` | SARIF upload rejected while repo CodeQL default setup is enabled | Advanced workflow keeps local Python analysis with `upload: false`; default setup remains authoritative for Code Scanning alerts — #3670 |
 
 ---
 
