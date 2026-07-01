@@ -1,3 +1,10 @@
+<!--
+Canonical Skill Source: docs/skills/cdb-session-close/SKILL.md
+Surface: cursor
+Sync Status: mirrored
+Last Verified: 2026-07-01
+Drift Policy: Surface darf nur abweichen, wenn Begruendung in docs/skills/cdb-session-close/SKILL.md dokumentiert ist.
+-->
 ---
 name: cdb-session-close
 description: >
@@ -9,7 +16,8 @@ description: >
   comment without overstating completion. Use after implementation,
   reconciliation, or validation work when the session needs an honest close.
   When a PR was merged during the session, also verifies delivery on main,
-  normalizes local main, and classifies temporary git surfaces before marking
+  normalizes local main, classifies temporary git surfaces, and performs
+  mandatory post-close Control-Plane follow-up issue intake before marking
   the session complete.
 ---
 
@@ -20,9 +28,15 @@ Close a working session so the repo, git state, and issue thread reflect reality
 ## Inputs
 
 - Current working tree and session context.
+- Session start timestamp or last known issue/PR checkpoint.
 - Optional issue number, PR, branch context, or prior session goal.
+- Merged PR number and merge timestamp when a PR was merged in this session.
 - Optional prior outputs from `cdb-control-intake` or `cdb-issue-to-session-plan`.
 - Access to git status, diffs, staged state, and issue or PR context when relevant.
+- Access to GitHub issues, PRs, workflow runs, and relevant Control-Plane runbooks.
+- Optional outputs or artifacts from:
+  - `cdb-post-merge-followup-scanner`
+  - `cdb-control-followup-classifier`
 
 ## Workflow
 
@@ -90,7 +104,66 @@ Close a working session so the repo, git state, and issue thread reflect reality
    - If a feature branch is merged and clearly tied to this session: `git branch -d <branch>`.
    - Otherwise: record as `n.a.` or `pending` — no blind deletes.
    - Leftover untracked files (session logs, patches): name each one explicitly and state whether it is committed, discarded, or pending. Do not ignore.
-8. Produce the close-out summary:
+8. Post-close Control-Plane Follow-up Intake — mandatory after steps 6–7 when applicable, or after any issue-driven session close:
+
+   Always after a merged PR or issue-driven session close, sweep for new
+   Control-/Drift-/Post-Merge follow-up issues:
+
+   ```bash
+   gh issue list --state open --limit 30 --json number,title,createdAt,labels,body,url
+   ```
+
+   Identify issues created since session start or PR merge. Search titles,
+   labels, and bodies for markers including:
+
+   - `cdb-post-merge-followup-scanner`
+   - `CDB Post-Merge Follow-up Scanner`
+   - `cdb-control-followup-classifier`
+   - `control follow-up`
+   - `post-merge follow-up`
+   - `drift`
+   - `docs after PR`
+   - `runbook_evidence_followup_drift`
+   - `architecture_service_catalog_drift`
+   - `discovery_surface_drift`
+   - `canon_terminology_drift`
+   - `docker_runtime_rebuild_followup_required`
+
+   Also inspect workflow-run artifacts or comments referencing the above
+   scanners when available.
+
+   For each candidate issue, determine whether it was directly triggered by
+   this session's PR, merge commit, branch, or changed files. If yes,
+   classify as `post-close follow-up candidate`.
+
+   **Candidate rules:**
+
+   - If exactly one candidate exists and it is small and safe:
+     - Pull the issue into the next work hop.
+     - Apply `cdb-control-intake`, then `cdb-issue-to-session-plan` on that issue.
+     - When Plan-GO or routine docs/control/reconcile follow-up autonomy already
+       applies: start directly.
+     - When no valid GO context exists: emit a concrete next-issue handoff
+       instruction instead of auto-starting.
+   - If multiple candidates exist, prioritize by direct causality:
+     1. explicit mention of this PR/branch/merge
+     2. identical changed files
+     3. workflow marker with PR number
+     4. newest issue
+     - Start at most one issue automatically; list the rest under Reststatus.
+   - If the candidate is unclear, large, safety-critical, CI-red,
+     LR-/Live-/Trading-relevant, or scope-expanding: fail-closed; do not
+     auto-start; formulate a clear handoff.
+
+   **Bounded autonomy:**
+
+   - At most one automatic follow-up hop per session close.
+   - No recursive endless agent loop.
+   - After completing the follow-up issue, run normal `cdb-session-close` again.
+   - If the second close finds new issues again: report only; do not auto-start
+     unless Jannek grants explicit new GO.
+
+9. Produce the close-out summary:
    - State the factual result.
    - Name changed files and artifacts.
    - Name the root cause or central insight if one exists.
@@ -108,6 +181,8 @@ Close a working session so the repo, git state, and issue thread reflect reality
 - Use `erledigt` only when the issue-facing work is actually verified and the claimed git or GitHub state is real.
 - Do not imply LR uplift, live approval, or a Board-stage interpretation from a successful session close.
 - Respect solo-maintainer reality; do not invent reviewer, approver, or handoff ceremonies.
+- Do not auto-start more than one follow-up issue per session close.
+- Do not recurse into endless follow-up chains without explicit new GO.
 
 ## Fail-Closed Rules
 
@@ -123,6 +198,12 @@ Close a working session so the repo, git state, and issue thread reflect reality
 - If the issue comment would overstate what landed, what was pushed, or what is actually done, downgrade the final status and state the pending step explicitly.
 - If a PR was merged but the merge commit cannot be verified on `origin/main`: the session is incomplete; do not set status to `erledigt`.
 - If `git merge --ff-only origin/main` fails: report as pending; do not force a merge or ignore the divergence.
+- If new follow-up issues are found but their link to this session is unclear: do not auto-start.
+- If more than one equally ranked candidate exists: do not pick blindly; emit a prioritized list.
+- If the candidate issue has Runtime-, Docker-rebuild-, Secrets-, Security-, LR-, Live-,
+  or Echtgeld impact: no auto-start without explicit GO.
+- If GitHub issues or workflow runs cannot be read: Reststatus = `follow-up intake unknown`, not `erledigt`.
+- If new Control-Plane issues exist and were not checked: do not mark the session fully complete.
 
 ## Output
 
@@ -151,6 +232,14 @@ Surface-Cleanup (nur wenn applicable, sonst n.a.)
 - Feature-Branch: gelöscht: <name> / n.a. / pending
 - Leftover-Files: <klassifikation> / keine / n.a.
 
+Post-Close Follow-up Intake
+- GitHub-Issue-Sweep: geprüft / nicht geprüft / pending
+- Workflow-Follow-up-Artefakte: geprüft / nicht gefunden / pending
+- Neue Follow-up-Issues seit Session-Start/PR-Merge: <liste> / keine / unknown
+- Direkt zugehöriger Candidate: #<nr> / keiner / unklar
+- Auto-Start nächstes Issue: ja / nein / blocked
+- Begründung: ...
+
 Issue-Kommentar
 Befund
 - ...
@@ -169,6 +258,12 @@ Validierung / Checks
 
 Restunsicherheiten
 - ...
+
+Post-Close Follow-up
+- GitHub-Issue-Sweep: ...
+- Candidate: ...
+- Auto-Start: ...
+- Begründung: ...
 
 Status
 - erledigt | weitere Zuarbeit noetig | bereit fuer Claude Code

@@ -216,7 +216,7 @@ Nach Canon-Tree-Merge (2026-07-01):
 - `[SKILLS] Mirror surface adapters from docs/skills canon` — Header + byte-sync
   fuer Skills mit bekannter Drift (`cdb-session-start`, `onboarding`, `gh-fix-ci`,
   `cdb-github-api-ops`)
-- `[SKILLS] Extend cdb-session-close with post-close follow-up issue intake`
+- `[SKILLS] Extend cdb-session-close with post-close follow-up issue intake` — **done** (Issue #3638; Canon + `cdb-session-close` adapters only)
 - `[SKILLS] Apply Surface-Adapter-Header to all existing mirrored skills`
 - `[SKILLS] Add drift-reconcile hook for skill surface adapters`
 - `[SKILLS] Add skill-meta schema (META.yaml + evals.json) for new CDB domain skills`
@@ -233,7 +233,7 @@ Drift ist dokumentiert.
 | Skill | Canon | opencode | cursor | codex | claude | Body-Drift |
 |---|---|---|---|---|---|---|
 | cdb-session-start | Y | Y | Y | Y | Y | cursor, codex, claude |
-| cdb-session-close | Y | Y | Y | Y | Y | — |
+| cdb-session-close | Y | Y | Y | Y | Y | — (Post-Close Follow-up Intake #3638; adapters synced) |
 | cdb-control-intake | Y | Y | Y | Y | Y | — |
 | cdb-issue-to-session-plan | Y | Y | Y | Y | Y | — |
 | cdb-operator | Y | Y | Y | Y | Y | — |

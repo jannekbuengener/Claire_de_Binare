@@ -32,7 +32,7 @@ starten in `docs/skills/`.
 | Skill | Canon | Surface-Adapter |
 | --- | --- | --- |
 | `cdb-session-start` | [`cdb-session-start/SKILL.md`](cdb-session-start/SKILL.md) | opencode, cursor, codex, claude |
-| `cdb-session-close` | [`cdb-session-close/SKILL.md`](cdb-session-close/SKILL.md) | opencode, cursor, codex, claude |
+| `cdb-session-close` | [`cdb-session-close/SKILL.md`](cdb-session-close/SKILL.md) | opencode, cursor, codex, claude — includes Post-Close Follow-up Intake (Issue #3638) |
 | `cdb-control-intake` | [`cdb-control-intake/SKILL.md`](cdb-control-intake/SKILL.md) | opencode, cursor, codex, claude |
 | `cdb-issue-to-session-plan` | [`cdb-issue-to-session-plan/SKILL.md`](cdb-issue-to-session-plan/SKILL.md) | opencode, cursor, codex, claude |
 | `onboarding` | [`onboarding/SKILL.md`](onboarding/SKILL.md) | opencode, cursor, codex, claude |
@@ -98,5 +98,6 @@ SSOT Activation: [`CDB_SURREALDB_SKILLS_RULES_ACTIVATION.md`](CDB_SURREALDB_SKIL
 ## Non-goals
 
 - Keine Runtime-/Config-/Compose-Änderungen
-- Keine fachliche Erweiterung von `cdb-session-close` in diesem Index
+- Keine fachliche Erweiterung weiterer Skills in diesem Index
+- `cdb-session-close` Post-Close Follow-up Intake: Canon + Adapter gespiegelt (Issue #3638); breiter Surface-Mirror bleibt #3639
 - LR bleibt **NO-GO**
