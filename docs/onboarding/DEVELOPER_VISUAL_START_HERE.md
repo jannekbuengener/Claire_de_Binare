@@ -115,6 +115,7 @@ flowchart TD
 - First-issue sandbox (guided rehearsal): [`first_issue_sandbox.md`](first_issue_sandbox.md)
 - First issue-to-PR flow (companion example): [`examples/first_issue_to_pr_flow.md`](examples/first_issue_to_pr_flow.md)
 - Repo Brain / Context Intelligence onboarding: [`repo_brain_context_intelligence.md`](repo_brain_context_intelligence.md)
+- Agent Onboarding Readiness (optional, informational): [`AGENT_COMPATIBILITY_READINESS.md`](AGENT_COMPATIBILITY_READINESS.md)
 - First Repo Brain / Context use: [`examples/repo_brain_first_use.md`](examples/repo_brain_first_use.md)
 - Agent prompt template: [`templates/agent_prompt_template.md`](templates/agent_prompt_template.md)
 - Evidence doc template: [`templates/evidence_doc_template.md`](templates/evidence_doc_template.md)

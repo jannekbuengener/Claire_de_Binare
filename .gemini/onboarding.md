@@ -44,3 +44,9 @@ Wenn der Intent auf eine geführte Generalprobe zielt (`onboarding rehearsal`, `
 - Keine Echtgeld-Transaktionen
 - Keine Runtime-Änderungen
 - Keine Secrets in Outputs
+
+## Agent Onboarding Readiness
+
+Optionaler, rein informativer Readiness-Hinweis (kein CI-Gate, kein Blocker).
+Kanonische Beschreibung: [`../docs/onboarding/AGENT_COMPATIBILITY_READINESS.md`](../docs/onboarding/AGENT_COMPATIBILITY_READINESS.md).
+Externer Scanner `npx -y agent-compatibility@latest .` ist optional; fehlendes Node/npm/Netz (`ENV_UNAVAILABLE`) ist kein Repo-Defekt. LR bleibt NO-GO.
