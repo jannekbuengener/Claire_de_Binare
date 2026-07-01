@@ -14,6 +14,7 @@ Es bringt die neue Business- und Governance-Schicht offiziell ins Repo und dient
 
 - #3034 Candidate Contract + Evidence Packet v1
 - #3035 Dataset Quality Gate
+- #3467 No-Trade Taxonomy + Missed-Opportunity Boundaries ([`CDB_NO_TRADE_TAXONOMY.md`](CDB_NO_TRADE_TAXONOMY.md))
 
 Das Dokument ist strikt:
 
@@ -260,6 +261,7 @@ Kanonische Roadmap fuer die Profitability-Schicht:
 | #205 | geparkt, spaeterer Multi-Strategy-Routing-Anker |
 | #211 | geparkt, spaeterer Multi-Asset- und Portfolio-Anker |
 | #2985 | getrennte Live-Roadmap |
+| #3467 | No-Trade Taxonomy; Live/Paper reasons vs offline missed-opportunity boundaries |
 
 ## 12. Open-Source Tooling Policy
 
