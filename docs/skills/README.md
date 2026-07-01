@@ -7,36 +7,68 @@ Alle anderen Surface-Pfade (`.opencode/`, `.cursor/`, `.codex/`,
 `.claude/`) sind Mirror-Adapter und muessen gegen diese Dateien
 synchron gehalten werden.
 
-## Kanonische Skill-Dateien
+**Aenderungen an Skills starten hier.** Surface-Adapter werden daraus gespiegelt.
 
-| Skill / Dokument | Pfad | Eingefuehrt |
+## Kanonische Skill-Dateien (25 aktive CDB-Repo-Skills)
+
+| Skill | Pfad | Surfaces |
 |---|---|---|
-| `gh-fix-ci` | [`gh-fix-ci/SKILL.md`](gh-fix-ci/SKILL.md) | bestehend |
-| `cdb-github-api-ops` | [`cdb-github-api-ops/SKILL.md`](cdb-github-api-ops/SKILL.md) | PR #3569 |
+| `onboarding` | [`onboarding/SKILL.md`](onboarding/SKILL.md) | opencode, cursor, codex, claude |
+| `cdb-onboarding` | [`cdb-onboarding/SKILL.md`](cdb-onboarding/SKILL.md) | codex (alias → onboarding) |
+| `cdb-session-start` | [`cdb-session-start/SKILL.md`](cdb-session-start/SKILL.md) | opencode, cursor, codex, claude |
+| `cdb-session-close` | [`cdb-session-close/SKILL.md`](cdb-session-close/SKILL.md) | opencode, cursor, codex, claude |
+| `cdb-control-intake` | [`cdb-control-intake/SKILL.md`](cdb-control-intake/SKILL.md) | opencode, cursor, codex, claude |
+| `cdb-issue-to-session-plan` | [`cdb-issue-to-session-plan/SKILL.md`](cdb-issue-to-session-plan/SKILL.md) | opencode, cursor, codex, claude |
+| `cdb-operator` | [`cdb-operator/SKILL.md`](cdb-operator/SKILL.md) | opencode, cursor, codex, claude |
+| `cdb-test-first` | [`cdb-test-first/SKILL.md`](cdb-test-first/SKILL.md) | opencode, cursor, codex, claude |
+| `cdb-trading-core` | [`cdb-trading-core/SKILL.md`](cdb-trading-core/SKILL.md) | opencode, cursor, codex, claude |
+| `cdb-risk-governance` | [`cdb-risk-governance/SKILL.md`](cdb-risk-governance/SKILL.md) | opencode, cursor, codex, claude |
+| `cdb-exchange-adapters` | [`cdb-exchange-adapters/SKILL.md`](cdb-exchange-adapters/SKILL.md) | opencode, cursor, codex, claude |
+| `cdb-backtest-engine` | [`cdb-backtest-engine/SKILL.md`](cdb-backtest-engine/SKILL.md) | opencode, cursor, codex, claude |
+| `cdb-shadow-validation` | [`cdb-shadow-validation/SKILL.md`](cdb-shadow-validation/SKILL.md) | opencode, cursor, codex, claude |
+| `cdb-contract-evidence-gatekeeper` | [`cdb-contract-evidence-gatekeeper/SKILL.md`](cdb-contract-evidence-gatekeeper/SKILL.md) | opencode, cursor, codex, claude |
+| `cdb-drift-reconcile` | [`cdb-drift-reconcile/SKILL.md`](cdb-drift-reconcile/SKILL.md) | opencode, cursor, codex, claude |
+| `cdb-docs-ops` | [`cdb-docs-ops/SKILL.md`](cdb-docs-ops/SKILL.md) | opencode, cursor, codex, claude |
+| `cdb-external-docs` | [`cdb-external-docs/SKILL.md`](cdb-external-docs/SKILL.md) | opencode, cursor, codex, claude |
+| `cdb-ci-cd-guard` | [`cdb-ci-cd-guard/SKILL.md`](cdb-ci-cd-guard/SKILL.md) | opencode, cursor, codex, claude |
+| `ctb-docker-stack` | [`ctb-docker-stack/SKILL.md`](ctb-docker-stack/SKILL.md) | opencode, cursor, codex, claude |
+| `gh-fix-ci` | [`gh-fix-ci/SKILL.md`](gh-fix-ci/SKILL.md) | opencode, cursor, codex, claude |
+| `gh-address-comments` | [`gh-address-comments/SKILL.md`](gh-address-comments/SKILL.md) | opencode, cursor, codex, claude |
+| `cdb-github-api-ops` | [`cdb-github-api-ops/SKILL.md`](cdb-github-api-ops/SKILL.md) | opencode, cursor, codex, claude |
+| `surrealql` | [`surrealql/SKILL.md`](surrealql/SKILL.md) | opencode, cursor, codex, claude |
+| `surrealdb-vector` | [`surrealdb-vector/SKILL.md`](surrealdb-vector/SKILL.md) | opencode, cursor, codex, claude |
+| `surrealdb-python` | [`surrealdb-python/SKILL.md`](surrealdb-python/SKILL.md) | opencode, cursor, codex, claude |
+
+## Routing / Index (kein SKILL.md-Mirror)
+
+| Dokument | Pfad | Rolle |
+|---|---|---|
 | Redis Skill Routing (SSOT) | [`CDB_REDIS_SKILL_ROUTING.md`](CDB_REDIS_SKILL_ROUTING.md) | PR #3597 |
-| Verfuegbare Skills (Index) | [`CDB.VERFUEGBARE.SKILLS_LISTE_2026-06-30.md`](CDB.VERFUEGBARE.SKILLS_LISTE_2026-06-30.md) | PR #3598 |
+| Verfuegbare Skills (Index) | [`CDB.VERFUEGBARE.SKILLS_LISTE_2026-07-01.md`](CDB.VERFUEGBARE.SKILLS_LISTE_2026-07-01.md) | aktueller Index |
+| Verfuegbare Skills (Vorgaenger) | [`CDB.VERFUEGBARE.SKILLS_LISTE_2026-06-30.md`](CDB.VERFUEGBARE.SKILLS_LISTE_2026-06-30.md) | PR #3598 |
 | SurrealDB Skills Activation | [`CDB_SURREALDB_SKILLS_RULES_ACTIVATION.md`](CDB_SURREALDB_SKILLS_RULES_ACTIVATION.md) | #3482 |
+
+## Nicht als aktive Skills
+
+| Fläche | Grund |
+|---|---|
+| `skillforge/` | Meta-Tool, gitignored, Registry §5 |
+| `mockexchange/` | Kein `SKILL.md` |
+| `codex-primary-runtime` | Kein verifizierter Skill-Inhalt |
+| `.cursor/rules/`, `.cursor/agents/` | Rules/Subagents |
+| Redis Plugin Skills | Routing-only (extern) |
+| `.claude/skills/*.skill` | Alias/Paketfläche, nicht primäre Quelle |
+| `.gemini/skills/` | Eingeschraenkt (4 Skills), nicht Domain-Mirror |
 
 ## Redis Skills (extern — Routing only)
 
 Redis-Plugin-Skills sind **nicht** repo-mirrored. Routing-SSOT:
 [`CDB_REDIS_SKILL_ROUTING.md`](CDB_REDIS_SKILL_ROUTING.md).
 
-- **Core:** `redis-development`, `redis-core`, `redis-connections`,
-  `redis-security`, `redis-observability`
-- **Event/Runtime-Zusatz:** `messaging-redis-streams`, `ctb-docker-stack`,
-  `cdb-shadow-validation`
-- **Parking-Lot:** `redis-search`, `redis-semantic-cache`, RedisVL, LangCache,
-  RQE/Vector — nicht Default
-
-SurrealDB bleibt Brain; Redis bleibt Runtime/Cache/Messaging. Siehe auch
-[`CDB.VERFUEGBARE.SKILLS_LISTE_2026-06-30.md`](CDB.VERFUEGBARE.SKILLS_LISTE_2026-06-30.md).
-
 ## Registry
 
 - [`SKILL_SURFACE_REGISTRY.md`](SKILL_SURFACE_REGISTRY.md): verbindliche
-  Definition der kanonischen Flaeche, der Surface-Adapter-Typen und
-  der Drift-Regeln.
+  Definition der kanonischen Flaeche, Inventar, Drift-Matrix und Adapter-Regeln.
 
 ## Neue Skills
 
