@@ -20,6 +20,10 @@ erfindet keine neuen Slash-Befehle.
 (`.opencode/`, `.cursor/`, `.codex/`, `.claude/`) sind auf Canon gespiegelt
 (Issue #3639; Header `mirrored-from-canon`, Body-Parity verifiziert).
 
+**Drift-Guard (Issue #3643):** `python tools/validate_skill_surface_mirror.py`
+prueft Canon vs Adapter (read-only; `PASS`/`DRIFT_FOUND`/`BLOCKED`). Nach jeder
+Skill-Canon-Aenderung ausfuehren; Details in `SKILL_SURFACE_REGISTRY.md` §8.1.
+
 ## Grenze: Brain vs Runtime
 
 | Rolle | Technologie | SSOT |

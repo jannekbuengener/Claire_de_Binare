@@ -128,8 +128,32 @@ gelistet werden.
 - `mirrored`-Adapter, die vom kanonischen Inhalt abweichen, sind kein
   gültiger Zustand und muessen sofort synchronisiert oder auf `adapted`
   umgestellt werden.
-- Drift-Erkennung gehoert zum `cdb-drift-reconcile`-Workflow und wird in
-  Folge-Issues verfeinert.
+- Drift-Erkennung gehoert zum `cdb-drift-reconcile`-Workflow.
+
+### 8.1 Skill Surface Mirror Drift Guard (Issue #3643)
+
+Der Drift-Guard `tools/validate_skill_surface_mirror.py` prueft Canon-Body
+gegen alle erwarteten Adapter (Header ignoriert). Er ist read-only, macht
+keine Datei-, Netzwerk-, GitHub-, DB- oder MCP-Aktionen.
+
+```bash
+python tools/validate_skill_surface_mirror.py          # human report
+python tools/validate_skill_surface_mirror.py --json   # machine-readable
+python tools/validate_skill_surface_mirror.py --skill <name>
+```
+
+- Exit codes: `0` = PASS, `1` = DRIFT_FOUND, `2` = BLOCKED.
+- Prueft Body-Parity **und** den Pflicht-Header (`mirrored-from-canon` +
+  korrekte Canon-Quelle je Adapter, siehe §7); ein Body-Match mit fehlendem
+  Header ist Drift.
+- **Pflicht:** Nach jeder Aenderung an `docs/skills/<name>/SKILL.md` den
+  Drift-Guard laufen lassen und Adapter nachziehen, bevor die Session als
+  vollstaendig abgeschlossen gilt. Bei `DRIFT_FOUND` re-mirror im Scope oder
+  dedupliziertes Re-Mirror-Follow-up-Issue anlegen (kein Auto-Merge ohne gruene
+  Required Checks).
+- Dokumentierte Ausnahmen (kein Drift): `cdb-onboarding` (codex-only Alias),
+  `gh-fix-ci` Canon-Extras (`META.yaml`/`evals.json`/`scripts/`; nur `SKILL.md`
+  wird verglichen), `.claude/skills/*.skill`, `.gemini/skills/`.
 
 ## 9. Skill-Neuanlage-Workflow
 
@@ -220,7 +244,7 @@ Nach Canon-Tree-Merge (2026-07-01):
 - `[SKILLS] Mirror surface adapters from docs/skills canon` — **done** (Issue #3639; 25/25 canon, 99 adapter SKILL.md synced)
 - `[SKILLS] Extend cdb-session-close with post-close follow-up issue intake` — **done** (Issue #3638)
 - `[SKILLS] Apply Surface-Adapter-Header to all existing mirrored skills` — **done** (merged into #3639)
-- `[SKILLS] Add drift-reconcile hook for skill surface adapters`
+- `[SKILLS] Add drift-reconcile hook for skill surface adapters` — **done** (Issue #3643; `tools/validate_skill_surface_mirror.py` + tests, `cdb-drift-reconcile` §Skill Surface Mirror Drift)
 - `[SKILLS] Add skill-meta schema (META.yaml + evals.json) for new CDB domain skills`
 - `[SKILLS] Document `.gemini/` activation policy if domain skills are ever needed`
 
@@ -228,9 +252,11 @@ Diese Issues werden dedupliziert und mit klarem Scope angelegt.
 
 ## 16. Aktives Skill-Inventar (2026-07-01)
 
-Status nach Surface-Mirror-Slice (#3639): **25/25** Canon-Dateien;
-**99/99** erwartete Adapter-`SKILL.md` mit `mirrored-from-canon` Header und
-byte-parity zum Canon-Body (minus Header). `docs/skills/` bleibt SSOT.
+Status nach Surface-Mirror-Slice (#3639) und Drift-Guard (#3643): **25/25**
+Canon-Dateien; **97/97** erwartete Adapter-`SKILL.md` mit `mirrored-from-canon`
+Header und body-parity zum Canon-Body (minus Header). Verifiziert durch
+`tools/validate_skill_surface_mirror.py` (`PASS`, 97 Adapter, 3 dokumentierte
+`cdb-onboarding`-Ausnahmen). `docs/skills/` bleibt SSOT.
 
 | Skill | Canon | opencode | cursor | codex | claude | Body-Drift |
 |---|---|---|---|---|---|---|
@@ -274,7 +300,9 @@ byte-parity zum Canon-Body (minus Header). `docs/skills/` bleibt SSOT.
 Redis Plugin (routing-only), `.claude/skills/*.skill` (Alias).
 
 **Mirror-Workflow:** Aenderungen starten in `docs/skills/<name>/SKILL.md`,
-danach Adapter spiegeln (Header `mirrored-from-canon` + identischer Body).
+danach Adapter spiegeln (Header `mirrored-from-canon` + identischer Body) und
+`python tools/validate_skill_surface_mirror.py` bis `PASS` laufen lassen
+(siehe §8.1).
 
 ## Anti-Patterns
 
