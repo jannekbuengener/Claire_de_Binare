@@ -1,0 +1,42 @@
+---
+# CDB Skill-Meta template v1 — copy to docs/skills/<skill-name>/META.yaml
+# Contract: docs/skills/SKILL_META_SCHEMA.md
+
+skill_name: <skill-name>
+version: 0.1.0
+created: YYYY-MM-DD
+last_updated: YYYY-MM-DD
+status: draft  # active | deprecated | draft
+
+description: |
+  One-sentence summary of what this CDB domain skill does.
+
+maintainer: jannekbuengener
+
+canonical_location: docs/skills/<skill-name>/
+
+dependencies:
+  required:
+    python: ">=3.12"
+  optional: {}
+
+files:
+  - SKILL.md
+  # - META.yaml
+  # - evals.json
+  # - scripts/example.py
+
+invocation:
+  default: "<primary command or slash invocation>"
+  examples:
+    - command: "<example command>"
+      description: "<what this example demonstrates>"
+
+safety_rules:
+  - "No live trading or echtgeld actions without explicit human gate."
+  - "LR remains NO-GO unless canon explicitly changes."
+  - "No secrets in skill files, issues, or PRs."
+
+tags:
+  - cdb
+  - <domain-tag>

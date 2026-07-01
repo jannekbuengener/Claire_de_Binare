@@ -1,0 +1,28 @@
+{
+  "skill_name": "<skill-name>",
+  "version": "0.1.0",
+  "evals": [
+    {
+      "name": "smoke_read_skill",
+      "description": "Canon SKILL.md exists and is readable",
+      "note": "Manual: open docs/skills/<skill-name>/SKILL.md and verify required sections."
+    },
+    {
+      "name": "optional_command_smoke",
+      "description": "Primary invocation runs without tool/auth errors",
+      "command": "<replace with skill default command>",
+      "expected_exit_code": 0,
+      "note": "Replace or remove before marking skill active."
+    }
+  ],
+  "test_instructions": {
+    "setup": [
+      "Read docs/skills/SKILL_META_SCHEMA.md for eval contract limits.",
+      "Ensure required tools from META.yaml are available."
+    ],
+    "run_evals": [
+      "Run each eval command manually or document skip_reason if not applicable.",
+      "Do not add CI integration in the skill-meta v1 slice."
+    ]
+  }
+}
