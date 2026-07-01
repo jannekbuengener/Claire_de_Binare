@@ -250,7 +250,7 @@ Nach Canon-Tree-Merge (2026-07-01):
 - `[SKILLS] Extend cdb-session-close with Residual Work / Restunsicherheits-Intake` — **done** (PR #3645; merge afd98aa3)
 - `[SKILLS] Apply Surface-Adapter-Header to all existing mirrored skills` — **done** (merged into #3639)
 - `[SKILLS] Add drift-reconcile hook for skill surface adapters` — **done** (Issue #3643; `tools/validate_skill_surface_mirror.py` + tests, `cdb-drift-reconcile` §Skill Surface Mirror Drift)
-- `[SKILLS] Add skill-meta schema (META.yaml + evals.json) for new CDB domain skills` — **in flight** (pending merge finalization)
+- `[SKILLS] Add Skill-Meta Schema v1 (META.yaml + evals.json)` — **done** (Issue #3647; PR #3648; merge 6a6ef980)
 - `[SKILLS] Document `.gemini/` activation policy if domain skills are ever needed`
 
 Diese Issues werden dedupliziert und mit klarem Scope angelegt.
