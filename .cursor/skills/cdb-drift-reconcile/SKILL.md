@@ -5,6 +5,7 @@ Sync Status: mirrored-from-canon
 Last Verified: 2026-07-01
 Drift Policy: Surface-Adapter duerfen nur mit dokumentierter Begruendung abweichen.
 -->
+
 ---
 name: cdb-drift-reconcile
 description: >
@@ -39,6 +40,7 @@ Always check these areas unless the request explicitly narrows scope further:
 - SSOT-Grenzen between `CURRENT_STATUS.md` and `docs/live-readiness/LR-AUDIT-STATUS-2026-03-05.md`
 - Discovery-Surfaces / EntryPoints / Cheatsheets
 - `ARCHITECTURE_MAP` / `SERVICE_CATALOG` when service changes are implicated
+- Skill Surface Mirror Drift: canon `docs/skills/<name>/SKILL.md` vs adapter surfaces `.opencode`, `.cursor`, `.codex`, `.claude`
 
 ## Workflow
 
@@ -63,6 +65,39 @@ Always check these areas unless the request explicitly narrows scope further:
    - Treat canon-boundary uncertainty as unresolved, not as clean.
    - Do not convert every drift finding into a follow-up issue or workflow change.
    - Keep Board stage separate from LR status at all times.
+
+## Skill Surface Mirror Drift
+
+Since PR #3637 the canonical skill source is `docs/skills/<name>/SKILL.md`.
+Surface adapters mirror those bodies (PR #3641). Canon edits can silently drift
+the adapters, so this drift vector has a dedicated, scriptable check.
+
+- Canon: `docs/skills/<name>/SKILL.md`
+- Adapters: `.opencode/skills/<name>/SKILL.md`, `.cursor/skills/<name>/SKILL.md`,
+  `.codex/cdb_skills/<name>/SKILL.md`, `.claude/skills/<name>/SKILL.md`
+- Check command (read-only, no writes, no network):
+
+  ```bash
+  python tools/validate_skill_surface_mirror.py          # human report
+  python tools/validate_skill_surface_mirror.py --json   # machine-readable
+  python tools/validate_skill_surface_mirror.py --skill <name>
+  ```
+
+- Result semantics and exit codes:
+  - `PASS` (exit 0): every expected adapter body matches canon (header ignored).
+  - `DRIFT_FOUND` (exit 1): an adapter body differs, or an expected adapter is missing.
+  - `BLOCKED` (exit 2): missing canon tree, unknown skill, or parse/usage error.
+- Documented exclusions (not drift): `cdb-onboarding` is codex-only alias;
+  `gh-fix-ci` keeps `META.yaml`/`evals.json`/`scripts/` canon-only (only `SKILL.md`
+  bodies are compared); `.claude/skills/*.skill` and `.gemini/skills/` are out of scope.
+
+**Fail-Closed rule:** If `docs/skills/<name>/SKILL.md` was changed in the session
+and the drift checker was not run, do not mark the session as fully complete —
+report `skill surface drift unknown`.
+
+**Follow-up rule:** On `DRIFT_FOUND`, either re-mirror the affected adapters from
+canon within the current scope, or create a deduplicated re-mirror follow-up issue
+and hand off. Never auto-merge without green required checks.
 
 ## Classification Rules
 
