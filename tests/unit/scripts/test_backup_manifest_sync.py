@@ -3,6 +3,8 @@
 from __future__ import annotations
 
 import json
+import platform
+import shutil
 import subprocess
 from pathlib import Path
 
@@ -10,6 +12,12 @@ import pytest
 
 REPO_ROOT = Path(__file__).resolve().parents[3]
 HELPERS = REPO_ROOT / "infrastructure" / "scripts" / "backup_manifest_helpers.ps1"
+
+POWERSHELL = shutil.which("powershell.exe") or shutil.which("powershell")
+pytestmark = pytest.mark.skipif(
+    platform.system() != "Windows" or POWERSHELL is None,
+    reason="backup manifest helper tests require Windows PowerShell",
+)
 
 
 def _ps_path(path: Path) -> str:
@@ -20,7 +28,7 @@ def _run_helpers(script_body: str) -> dict:
     command = f". '{_ps_path(HELPERS)}'; {script_body}"
     result = subprocess.run(
         [
-            "powershell.exe",
+            POWERSHELL,
             "-NoProfile",
             "-ExecutionPolicy",
             "Bypass",

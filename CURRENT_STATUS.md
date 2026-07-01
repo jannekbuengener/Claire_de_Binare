@@ -10,7 +10,7 @@
 
 ## Repo / Engineering Status (2026-07-01)
 
-- **Backup manifest Redis drift #3614 / PR #TBD**: `Components.Redis` aligned with `redis_dump.rdb` artifact via `Sync-BackupComponentManifest`; restore tolerates legacy drift ZIPs. Closes #3614. LR NO-GO.
+- **Backup manifest Redis drift #3614 / PR #3615**: `Components.Redis` aligned with `redis_dump.rdb` artifact via `Sync-BackupComponentManifest`; restore tolerates legacy drift ZIPs. Closes #3614. LR NO-GO.
 
 - **`.pg15_archived` cleanup follow-up #3612`**: OPEN — optional volume cleanup after PG18 retention window (earliest 2026-07-15); no delete authorized yet. LR NO-GO.
 
