@@ -30,6 +30,7 @@ Repo-versionierte Session-Skills für Cursor Agents. Jeder Skill lebt in `<name>
 | [`cdb-contract-evidence-gatekeeper`](cdb-contract-evidence-gatekeeper/SKILL.md) | Contract evidence |
 | [`cdb-drift-reconcile`](cdb-drift-reconcile/SKILL.md) | Drift reconcile |
 | [`cdb-root-cause`](cdb-root-cause/SKILL.md) | Symptom to root-cause isolation, evidence, fix plan |
+| [`cdb-symptom-triage`](cdb-symptom-triage/SKILL.md) | Frame and route a raw debug symptom |
 | [`cdb-docs-ops`](cdb-docs-ops/SKILL.md) | Docs maintenance |
 | [`ctb-docker-stack`](ctb-docker-stack/SKILL.md) | Docker BLUE+RED |
 | [`surrealql`](surrealql/SKILL.md) | CDB-curated official SurrealQL skill |

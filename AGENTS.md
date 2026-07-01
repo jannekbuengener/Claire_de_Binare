@@ -281,6 +281,7 @@ OpenCode skill surface zusaetzlich: `.opencode/skills/` (gezielt laden, nicht pa
 | `cdb-contract-evidence-gatekeeper` | Contract evidence gating | `.cursor/skills/cdb-contract-evidence-gatekeeper/SKILL.md` |
 | `cdb-drift-reconcile` | Drift reconciliation | `.cursor/skills/cdb-drift-reconcile/SKILL.md` |
 | `cdb-root-cause` | Symptom to root-cause isolation with evidence and minimal fix plan | `.cursor/skills/cdb-root-cause/SKILL.md` |
+| `cdb-symptom-triage` | Frame and route a raw debug symptom to the right skill/subagent | `.cursor/skills/cdb-symptom-triage/SKILL.md` |
 | `cdb-exchange-adapters` | Exchange adapter operations | `.cursor/skills/cdb-exchange-adapters/SKILL.md` |
 | `cdb-risk-governance` | Risk governance operations | `.cursor/skills/cdb-risk-governance/SKILL.md` |
 | `cdb-trading-core` | Trading core operations | `.cursor/skills/cdb-trading-core/SKILL.md` |
