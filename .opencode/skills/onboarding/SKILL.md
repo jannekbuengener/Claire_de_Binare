@@ -219,6 +219,16 @@ When onboarding orientation mentions external tools or agent surfaces:
 - Relevant for new agents: Agent Surfaces section, GitHub Docs, MCP / Context docs.
 - If internet is unavailable, reference local `docs/external-docs/index.md` and `AGENTS.md`.
 
+## Agent Onboarding Readiness
+
+Optional, informational readiness orientation for new agents and fresh clones.
+Canonical description: [`../../../docs/onboarding/AGENT_COMPATIBILITY_READINESS.md`](../../../docs/onboarding/AGENT_COMPATIBILITY_READINESS.md).
+
+- Four read-only checks: CLI compatibility scan, startup review, validation review, docs reliability review.
+- Score is informational only: no CI gate, no merge gate, no automatic blocker. The primary output is a prioritized Top-fixes list.
+- The external scanner `npx -y agent-compatibility@latest .` is optional and not bundled; missing Node/npm/network is `ENV_UNAVAILABLE` and must not be scored as a repo defect.
+- Boundaries unchanged: LR remains NO-GO, `trade-capable` is not Live-Go, no Echtgeld-Go.
+
 ## Non-Goals
 
 - No Live-Go.
