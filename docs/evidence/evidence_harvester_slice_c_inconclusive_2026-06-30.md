@@ -1,9 +1,12 @@
-# Evidence Harvester Slice-B/C INCONCLUSIVE Reconcile (2026-06-30)
+# Evidence Harvester Slice-B/C/D INCONCLUSIVE Reconcile (2026-06-30 / 2026-07-01)
 
 ## Purpose
 
-Formal post-hoc classification of the two post-#3403 `>=72h` coordinator runs that
-did not reach final PASS. Read-only artifact validation only; no runtime mutation.
+Formal post-hoc classification of post-#3403 `>=72h` coordinator runs that did not
+reach final PASS (Slice-B/C/D). Read-only artifact validation only; no runtime mutation.
+
+**Reconcile status (2026-07-01, #3384):** `RECONCILED_NEXT_BLOCKER_IDENTIFIED` — see
+`knowledge/logs/sessions/2026-07-01-issue-3384-evidence-harvester-reconcile.md`.
 
 ## Control State
 
@@ -12,7 +15,8 @@ did not reach final PASS. Read-only artifact validation only; no runtime mutatio
 | LR | NO-GO |
 | Live / Echtgeld | NO-GO |
 | #3362 | OPEN — `HOLD_72H_RUN_INCOMPLETE` |
-| #3384 | OPEN — `HOLD_INCONCLUSIVE_NEEDS_RECONCILE` |
+| #3384 | CLOSED — reconcile delivered 2026-07-01 |
+| #3589 | CLOSED — stale; Slice-C formal reports existed 2026-06-30 |
 | #3345 | OPEN — parent thread |
 | #3374 | CLOSED — superseded by Slice-B/C |
 | #3461 | CLOSED — Slice-B incident reference |
@@ -58,7 +62,22 @@ did not reach final PASS. Read-only artifact validation only; no runtime mutatio
 - Daemon deployment readiness (#3345 parent close).
 - Candidate profitability or LR evidence (#3382/#3383 still open).
 
-## Slice-D Ops-GO (prepared, not executed)
+## Slice-D (`slice-d-20260630T163853Z`) — formal INCONCLUSIVE (2026-07-01)
+
+| Field | Value |
+|---|---|
+| Started | 2026-06-30T16:39:10Z |
+| Last activity | 2026-06-30T18:39:11Z |
+| Observed window | **2.0h** |
+| Cycles | **9/289 PASS**, 0 failed |
+| Terminal state | `sleeping`; `sleep_started` cycle 9, no `sleep_completed` |
+| Classification | **INCONCLUSIVE / STALLED** (not PASS) |
+| Formal report | `artifacts/evidence_harvester/72h_ops_validation/slice-d-20260630T163853Z/ops_validation_report.{json,md}` |
+| Validator exit | FAIL with `Run outcome: INCONCLUSIVE` |
+| Status label | `SLICE_D_FORMAL_INCONCLUSIVE` |
+| Issue | #3632 CLOSED after formal post-hoc |
+
+## Slice-D Ops-GO (executed 2026-06-30; formal classification 2026-07-01)
 
 **Goal:** One canonical post-#3462 `>=72h` dry coordinator run with explicit
 process supervision against sleep-crash recurrence.
@@ -100,10 +119,17 @@ python -m tools.evidence_harvester.ops_validation --pretty validate-dir `
   --json-output artifacts/evidence_harvester/72h_ops_validation/slice-b-20260625T194946Z/ops_validation_report.json `
   --markdown-output artifacts/evidence_harvester/72h_ops_validation/slice-b-20260625T194946Z/ops_validation_report.md
 
-python -m tools.evidence_harvester.ops_validation --pretty validate-dir `
+python -m tools.evidence_harvester.ops_validation validate-dir `
   --artifact-dir artifacts/evidence_harvester/72h_ops_validation/slice-c-20260628T202640Z `
   --json-output artifacts/evidence_harvester/72h_ops_validation/slice-c-20260628T202640Z/ops_validation_report.json `
-  --markdown-output artifacts/evidence_harvester/72h_ops_validation/slice-c-20260628T202640Z/ops_validation_report.md
+  --markdown-output artifacts/evidence_harvester/72h_ops_validation/slice-c-20260628T202640Z/ops_validation_report.md `
+  --is-final
+
+python -m tools.evidence_harvester.ops_validation validate-dir `
+  --artifact-dir artifacts/evidence_harvester/72h_ops_validation/slice-d-20260630T163853Z `
+  --json-output artifacts/evidence_harvester/72h_ops_validation/slice-d-20260630T163853Z/ops_validation_report.json `
+  --markdown-output artifacts/evidence_harvester/72h_ops_validation/slice-d-20260630T163853Z/ops_validation_report.md `
+  --is-final
 ```
 
-Validated at UTC: 2026-06-30T16:26:08Z / 2026-06-30T16:26:09Z.
+Validated at UTC: 2026-06-30T16:26:08Z / 2026-06-30T16:26:09Z (Slice-B/C); 2026-07-01T19:24:11Z (Slice-D).
