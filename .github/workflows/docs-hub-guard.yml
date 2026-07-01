@@ -1,8 +1,12 @@
 name: Docs Hub Guard
 
 # NOISE-FREEZE (#2613): auto-triggers disabled due to billing/account-locked
-# non-required check noise. Manual workflow_dispatch remains available.
+# RESTORED (#3659): billing recovery complete, triggers re-enabled
 on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
   workflow_dispatch:
 
 permissions:
