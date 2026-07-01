@@ -17,8 +17,9 @@ description: >
   reconciliation, or validation work when the session needs an honest close.
   When a PR was merged during the session, also verifies delivery on main,
   normalizes local main, classifies temporary git surfaces, and performs
-  mandatory post-close Control-Plane follow-up issue intake before marking
-  the session complete.
+  mandatory post-close Control-Plane follow-up issue intake, and mandatory
+  Residual Work / Restunsicherheits-Intake immediately before final session
+  close.
 ---
 
 # CDB session close
@@ -163,7 +164,96 @@ Close a working session so the repo, git state, and issue thread reflect reality
    - If the second close finds new issues again: report only; do not auto-start
      unless Jannek grants explicit new GO.
 
-9. Produce the close-out summary:
+9. Residual Work / Restunsicherheits-Intake — mandatory, always immediately
+   before final session close:
+
+   Run this step **always**, after step 8 (or after steps 6–7 when step 8 is
+   n.a.), and **before** producing the final close-out summary. This is the
+   last active check before session end.
+
+   The agent must actively review the session and answer each question honestly:
+
+   - Was something visible that lay outside the original scope?
+   - Is there residual uncertainty that was not cleanly closed?
+   - Is there an assumption that must be verified later?
+   - Was a check, test, review, drift reconciliation, or evidence proof
+     intentionally not executed?
+   - Did the agent's own changes create new follow-up work?
+   - Are there stale docs, skill-/surface drift, CI-/workflow drift,
+     contract drift, or missing acceptance evidence?
+   - Is there a topic that makes sense but must not be secretly pulled into
+     the current scope?
+
+   Record each answer. If **at least one** question is **yes**, proceed with
+   deduplicated follow-up issue handling:
+
+   **Dedupe search (mandatory when any yes):**
+
+   ```bash
+   gh issue list --state open --limit 50 --json number,title,body,labels,url
+   ```
+
+   Additionally search open issues and PRs for relevant keywords derived from
+   the finding: affected file paths, module names, PR numbers, workflow names,
+   drift types, contract names, skill names, and error/check identifiers.
+
+   **When no matching open issue exists — create a focused follow-up issue:**
+
+   - Title: clear, cause-oriented (not a generic “cleanup” or “misc”).
+   - Body must include all sections:
+     - **Auslöser / Beobachtung**
+     - **Warum außerhalb des aktuellen Scopes**
+     - **Betroffene Dateien, PRs, Workflows oder Docs**
+     - **Evidence / Commands / Befund**
+     - **Acceptance Criteria**
+     - **Non-goals**
+     - **Safety Boundaries**
+     - **Vorgeschlagene Skills für die nächste Session**
+   - Set labels only when they exist in the repo and fit; do not invent labels.
+     Known usable labels (verify live when creating):
+     - `follow-up`
+     - `docs` or `type:docs` or `scope:docs`
+     - `ci`, `scope:ci`, or `ci-cd`
+     - `triage:offen` (when triage is needed)
+     - `scope:governance` (control-/canon-/policy-adjacent topics)
+     Labels **not** registered in repo (do not use unless created separately):
+     `drift`, `control-plane`, `needs-triage`.
+   - Prefer **multiple deduplicated issues** over one catch-all issue when
+     rest points are independent.
+
+   **When a matching open issue exists:**
+
+   - Do **not** create a duplicate.
+   - Link the existing issue in the close-out report.
+   - When GitHub write is allowed: post a supplementary comment with new
+     evidence, commands, and session context.
+
+   **When GitHub write is not available (read-only close, blocked `gh`, or no GO
+   for GitHub mutations):**
+
+   - Output issue-ready title, full body, and intended labels in the close-out.
+   - Set residual status: `FOLLOW_UP_ISSUE_REQUIRED_BUT_NOT_CREATED`.
+   - Do **not** mark the session as fully clean/complete (`erledigt`).
+
+   **Fail-closed rules for this step:**
+
+   - No silent scope expansion to “fix while here”.
+   - No automatic Runtime-, Docker-, Secrets-, DB-, LR-, Live-, or Echtgeld
+     follow-up execution — issue only, do not run.
+   - Safety-/LR-/Runtime-related rest gaps: create or link issue; stop there.
+   - No endless loop: create/link follow-up, then close — do not continue
+     unbounded extra work in the same session.
+   - Residual-work follow-up issue **creation** is allowed without extra
+     micro-GO when session-close write path is active (aligned with
+     `CDB-Follow-up-Issue-Rule`). In read-only analysis mode (step 0, no GO),
+     draft only and mark `FOLLOW_UP_ISSUE_REQUIRED_BUT_NOT_CREATED`.
+
+   **When all questions are no:**
+
+   - Record `Residual Work / Restunsicherheits-Intake: clean`.
+   - Proceed to step 10.
+
+10. Produce the close-out summary:
    - State the factual result.
    - Name changed files and artifacts.
    - Name the root cause or central insight if one exists.
@@ -181,8 +271,13 @@ Close a working session so the repo, git state, and issue thread reflect reality
 - Use `erledigt` only when the issue-facing work is actually verified and the claimed git or GitHub state is real.
 - Do not imply LR uplift, live approval, or a Board-stage interpretation from a successful session close.
 - Respect solo-maintainer reality; do not invent reviewer, approver, or handoff ceremonies.
-- Do not auto-start more than one follow-up issue per session close.
+- Do not auto-start more than one follow-up issue per session close (step 8
+  auto-start hop). Step 9 may create or link **multiple deduplicated** residual
+  follow-up issues when rest points are independent.
 - Do not recurse into endless follow-up chains without explicit new GO.
+- Do not mark a session `erledigt` when step 9 found residual work requiring a
+  follow-up issue that was not created or linked.
+- Do not silently expand scope to resolve residual findings during close.
 
 ## Fail-Closed Rules
 
@@ -204,6 +299,13 @@ Close a working session so the repo, git state, and issue thread reflect reality
   or Echtgeld impact: no auto-start without explicit GO.
 - If GitHub issues or workflow runs cannot be read: Reststatus = `follow-up intake unknown`, not `erledigt`.
 - If new Control-Plane issues exist and were not checked: do not mark the session fully complete.
+- If step 9 Residual Work intake was skipped: do not mark the session fully complete.
+- If step 9 found residual work and no dedupe search was performed: do not mark
+  the session fully complete.
+- If step 9 requires a follow-up issue but GitHub write failed or was blocked:
+  status = `FOLLOW_UP_ISSUE_REQUIRED_BUT_NOT_CREATED`; not `erledigt`.
+- If residual findings have Runtime-, Docker-, Secrets-, LR-, Live-, or
+  Echtgeld impact: create/link issue only; do not execute remediation in close.
 
 ## Output
 
@@ -240,6 +342,16 @@ Post-Close Follow-up Intake
 - Auto-Start nächstes Issue: ja / nein / blocked
 - Begründung: ...
 
+Residual Work / Restunsicherheits-Intake
+- Out-of-scope erkannt: ja / nein
+- Restunsicherheit erkannt: ja / nein
+- Nacharbeit nötig: ja / nein
+- Dedupe geprüft: ja / nein / n.a.
+- Existing Issue: #<nr> / keines / unknown
+- Neues Follow-up-Issue erstellt: #<nr> / nein / blocked
+- Grund: ...
+- Issue-ready Entwurf (nur wenn blocked): <titel + body-summary> / n.a.
+
 Issue-Kommentar
 Befund
 - ...
@@ -265,8 +377,17 @@ Post-Close Follow-up
 - Auto-Start: ...
 - Begründung: ...
 
+Residual Work / Restunsicherheit
+- Out-of-scope: ...
+- Restunsicherheit: ...
+- Nacharbeit: ...
+- Dedupe: ...
+- Existing Issue: ...
+- Neues Issue: ...
+- Grund: ...
+
 Status
-- erledigt | weitere Zuarbeit noetig | bereit fuer Claude Code
+- erledigt | weitere Zuarbeit noetig | bereit fuer Claude Code | FOLLOW_UP_ISSUE_REQUIRED_BUT_NOT_CREATED
 ```
 
 ## Anti-Patterns
