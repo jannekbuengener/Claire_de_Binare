@@ -1,5 +1,8 @@
 name: CodeQL Python
 
+# Repo-level CodeQL default setup owns SARIF upload for push/PR (#3670).
+# This workflow keeps an advanced Python analysis path for validation without
+# uploading SARIF while default setup is enabled.
 on:
   push:
     branches: [main]
@@ -31,10 +34,10 @@ jobs:
         with:
           languages: python
           queries: security-and-quality
-          paths-ignore: |
-            services/ws/mexc_proto_gen/**
+          config-file: ./.github/codeql/codeql-config.yml
 
       - name: Perform CodeQL Analysis
         uses: github/codeql-action/analyze@8aad20d150bbac5944a9f9d289da16a4b0d87c1e # v3
         with:
           category: "/language:python"
+          upload: false
