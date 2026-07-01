@@ -4,7 +4,7 @@
 #
 # Scope:
 # - Adds an optional parallel Prometheus v3 canary service
-# - Does not change default runtime service cdb_prometheus (v3.11.3)
+# - Does not change default runtime service cdb_prometheus (v3.12.0)
 
 services:
   cdb_prometheus_v3:
