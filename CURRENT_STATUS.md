@@ -10,9 +10,13 @@
 
 ## Repo / Engineering Status (2026-07-01)
 
-- **Architecture docs sync after Dependabot #3528/#3530 / PR #3604 / `f20ef70b`**: MERGED. `SERVICE_CATALOG.md` Redis `8.8.0-alpine` + `ARCHITECTURE_MAP.md` changelog/image-SSOT cross-ref + `ARCHITECTURE_COCKPIT.md` canonical doc links. Closes #3593. Refs #3595, #3601, #3602, #3603. Runtime rebuilds (#3592, #3594, #3600) remain open. LR NO-GO.
+- **Redis exporter health #3606 / PR #3607 / `498c8b5a`**: MERGED. `cdb_redis_exporter` healthcheck von `nc -z` auf bash `/dev/tcp` umgestellt (`base.yml`, `compose.red.yml`); Ursache: `bitnami/redis-exporter` ohne `nc`. Runtime recreate exporter only → **healthy**. Closes #3606. LR NO-GO.
 
-- **Control docs reconcile after Dependabot #3528/#3530 / PR #3602 / `40910d7e`**: MERGED. `CONTROL_REGISTER.md` workflow-control notes for Redis `8.8.0-alpine` (#3528) and Postgres `18.4-alpine` (#3530) semver-major bumps in `security-scan.yml`. Closes #3595, #3601. Runtime rebuilds (#3592, #3594, #3600) and architecture sync (#3593) out of scope. LR NO-GO.
+- **Runtime rebuild batch (operator sessions)**: #3592 CI-Lab Python 3.14 CLOSED; #3594 Redis `8.8.0-alpine` CLOSED; #3600 Postgres `18.4-alpine` dump/restore CLOSED. Stack verify 10/10. LR NO-GO.
+
+- **Architecture docs sync after Dependabot #3528/#3530 / PR #3604 / `f20ef70b`**: MERGED. Closes #3593. LR NO-GO.
+
+- **Control docs reconcile after Dependabot #3528/#3530 / PR #3602 / `40910d7e`**: MERGED. Closes #3595, #3601. LR NO-GO.
 
 - **#3441 ContextBrain Report / Gist Ledger Integration / PR #3441 / `76ac249a`**: MERGED. Report template, Gist-Ledger-Zielreferenz, Decision-Event-Ledger-Format, Foundation-Status-Matrix. `docs/surrealdb/context-brain-report-gist-ledger-v0.md`. Gist-URL dokumentiert (kein Live-Posting). Closes #3427. Closes meta #3418 (all 9 children previously CLOSED). LR NO-GO.
 
