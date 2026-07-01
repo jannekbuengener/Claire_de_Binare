@@ -1,7 +1,7 @@
 from __future__ import annotations
 
 import json
-from datetime import UTC, datetime
+from datetime import UTC, datetime, timedelta
 from pathlib import Path
 
 import pytest
@@ -11,6 +11,8 @@ from tools.evidence_harvester.coordinator import (
     RECOVERY_EVENT_SCHEMA,
     CoordinatorError,
     _now_utc,
+    _remaining_sleep_seconds,
+    _seed_restart_count,
     _sleep_with_interval_check,
     run_fixture_window,
 )
@@ -807,3 +809,222 @@ def test_resumed_run_clears_sleep_and_inconclusive_validators(
     _check_inconclusive_run(state_payload, events, 1.0, 72, _add_finding)
 
     assert findings == []
+
+
+def _iso_z(delta_seconds: int) -> str:
+    stamp = _now_utc() + timedelta(seconds=delta_seconds)
+    return stamp.isoformat().replace("+00:00", "Z")
+
+
+def _craft_stalled_run(
+    artifact_dir: Path,
+    *,
+    run_id: str,
+    completed: int,
+    next_due: str,
+    restart_events: int = 0,
+) -> None:
+    artifact_dir.mkdir(parents=True, exist_ok=True)
+    _write_json(
+        artifact_dir / "runner_state.json",
+        {
+            "schema_version": "cdb.evidence_harvester.runner_state.v1",
+            "run_id": run_id,
+            "total_runs": completed,
+            "successful_runs": completed,
+            "failed_runs": 0,
+            "last_cycle_verdict": "PASS",
+            "last_cycle_ended_at_utc": "2026-06-19T00:00:00Z",
+            "total_cycles_started": completed,
+            "total_cycles_completed": completed,
+            "total_successful_cycles": completed,
+            "total_failed_cycles": 0,
+            "last_cycle_started_at_utc": "2026-06-19T00:00:00Z",
+            "next_cycle_due_at_utc": next_due,
+            "last_successful_artifact_stamp": "20260619T000000Z",
+            "coordinator_status": "sleeping",
+        },
+    )
+    events = [
+        {
+            "schema_version": COORDINATOR_EVENT_SCHEMA,
+            "event_at_utc": "2026-06-19T00:00:00Z",
+            "run_id": run_id,
+            "event_type": "cycle_completed",
+        },
+        {
+            "schema_version": COORDINATOR_EVENT_SCHEMA,
+            "event_at_utc": "2026-06-19T00:00:01Z",
+            "run_id": run_id,
+            "event_type": "sleep_started",
+        },
+    ]
+    (artifact_dir / "coordinator_events.jsonl").write_text(
+        "\n".join(json.dumps(event) for event in events) + "\n", encoding="utf-8"
+    )
+    for index in range(restart_events):
+        _write_json(
+            artifact_dir / f"recovery_event_2026061900000{index}Z.json",
+            {
+                "schema_version": RECOVERY_EVENT_SCHEMA,
+                "action": "restart_cycle",
+                "restart_count": index + 1,
+            },
+        )
+
+
+@pytest.mark.unit
+def test_seed_restart_count_counts_only_restart_cycle(tmp_path: Path) -> None:
+    _write_json(tmp_path / "recovery_event_1.json", {"action": "restart_cycle"})
+    _write_json(tmp_path / "recovery_event_2.json", {"action": "restart_cycle"})
+    _write_json(
+        tmp_path / "recovery_event_3.json", {"action": "resume_cycle_window"}
+    )
+    _write_json(tmp_path / "recovery_event_4.json", {"action": "stop"})
+    assert _seed_restart_count(tmp_path) == 2
+
+
+@pytest.mark.unit
+def test_remaining_sleep_seconds_bounds() -> None:
+    assert _remaining_sleep_seconds("") == 0
+    assert _remaining_sleep_seconds(_iso_z(-100)) == 0
+    assert 90 <= _remaining_sleep_seconds(_iso_z(100)) <= 100
+
+
+@pytest.mark.unit
+def test_resume_preserves_restart_budget(tmp_path: Path) -> None:
+    artifact_dir = tmp_path / "run-budget"
+    _craft_stalled_run(
+        artifact_dir,
+        run_id="run-budget",
+        completed=2,
+        next_due=_iso_z(-10),
+        restart_events=2,
+    )
+    fixture = tmp_path / "collector_input.json"
+    fixture.write_text("{}", encoding="utf-8")
+
+    def guard_cycle_runner(
+        repo_root: Path, fixture_path: Path, out_dir: Path
+    ) -> tuple[int, str]:
+        raise AssertionError("no new cycles expected on a completed resume")
+
+    run_fixture_window(
+        repo_root=tmp_path,
+        fixture_path=fixture,
+        artifact_dir=artifact_dir,
+        iterations=2,
+        cadence_seconds=1,
+        max_restart_count=3,
+        restart_backoff_seconds=0,
+        resume=True,
+        sleep_fn=lambda seconds: None,
+        boot_runner=_pass_boot_runner,
+        cycle_runner=guard_cycle_runner,
+        watchdog_runner=_pass_watchdog_runner,
+        write_audit_runner=_pass_write_audit_runner,
+        final_validator=_noop_final_validator,
+    )
+
+    sleep_stall = [
+        json.loads(path.read_text(encoding="utf-8"))
+        for path in artifact_dir.glob("recovery_event_*.json")
+    ]
+    sleep_stall = [e for e in sleep_stall if e.get("failure_source") == "sleep_stall"]
+    assert sleep_stall
+    assert sleep_stall[0]["restart_count"] == 2
+
+
+@pytest.mark.unit
+def test_resume_honors_remaining_sleep_window(tmp_path: Path) -> None:
+    artifact_dir = tmp_path / "run-future"
+    _craft_stalled_run(
+        artifact_dir,
+        run_id="run-future",
+        completed=2,
+        next_due=_iso_z(600),
+    )
+    fixture = tmp_path / "collector_input.json"
+    fixture.write_text("{}", encoding="utf-8")
+    sleeps: list[float] = []
+
+    def guard_cycle_runner(
+        repo_root: Path, fixture_path: Path, out_dir: Path
+    ) -> tuple[int, str]:
+        raise AssertionError("no new cycles expected on a completed resume")
+
+    run_fixture_window(
+        repo_root=tmp_path,
+        fixture_path=fixture,
+        artifact_dir=artifact_dir,
+        iterations=2,
+        cadence_seconds=1,
+        max_restart_count=3,
+        restart_backoff_seconds=0,
+        resume=True,
+        sleep_fn=lambda seconds: sleeps.append(seconds),
+        boot_runner=_pass_boot_runner,
+        cycle_runner=guard_cycle_runner,
+        watchdog_runner=_pass_watchdog_runner,
+        write_audit_runner=_pass_write_audit_runner,
+        final_validator=_noop_final_validator,
+    )
+
+    # The remaining ~600s sleep window is honored, not skipped.
+    assert sum(sleeps) >= 300
+
+    events = [
+        json.loads(line)
+        for line in (artifact_dir / "coordinator_events.jsonl")
+        .read_text(encoding="utf-8")
+        .splitlines()
+    ]
+    types = [event["event_type"] for event in events]
+    assert "sleep_resumed" in types
+    assert "sleep_completed" in types
+    assert types[-1] == "final_validation_completed"
+
+
+@pytest.mark.unit
+def test_resume_overdue_sleep_does_not_wait(tmp_path: Path) -> None:
+    artifact_dir = tmp_path / "run-overdue"
+    _craft_stalled_run(
+        artifact_dir,
+        run_id="run-overdue",
+        completed=2,
+        next_due=_iso_z(-600),
+    )
+    fixture = tmp_path / "collector_input.json"
+    fixture.write_text("{}", encoding="utf-8")
+    sleeps: list[float] = []
+
+    def guard_cycle_runner(
+        repo_root: Path, fixture_path: Path, out_dir: Path
+    ) -> tuple[int, str]:
+        raise AssertionError("no new cycles expected on a completed resume")
+
+    run_fixture_window(
+        repo_root=tmp_path,
+        fixture_path=fixture,
+        artifact_dir=artifact_dir,
+        iterations=2,
+        cadence_seconds=1,
+        max_restart_count=3,
+        restart_backoff_seconds=0,
+        resume=True,
+        sleep_fn=lambda seconds: sleeps.append(seconds),
+        boot_runner=_pass_boot_runner,
+        cycle_runner=guard_cycle_runner,
+        watchdog_runner=_pass_watchdog_runner,
+        write_audit_runner=_pass_write_audit_runner,
+        final_validator=_noop_final_validator,
+    )
+
+    assert sum(sleeps) == 0
+    events = [
+        json.loads(line)
+        for line in (artifact_dir / "coordinator_events.jsonl")
+        .read_text(encoding="utf-8")
+        .splitlines()
+    ]
+    assert "sleep_completed" in [event["event_type"] for event in events]

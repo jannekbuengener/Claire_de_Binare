@@ -234,6 +234,50 @@ def _prepare_resume(artifact_dir: Path, run_id: str) -> tuple[RunnerState, int]:
     return state, completed_cycles
 
 
+def _seed_restart_count(artifact_dir: Path) -> int:
+    """Reconstruct the consumed cycle-restart budget from durable recovery events.
+
+    Only ``action == "restart_cycle"`` events count against ``max_restart_count``;
+    the ``resume_cycle_window`` sleep-stall recovery is a resume marker, not a
+    cycle restart, so it is excluded.
+    """
+    count = 0
+    for path in sorted(artifact_dir.glob("recovery_event_*.json")):
+        try:
+            payload = json.loads(path.read_text(encoding="utf-8"))
+        except (OSError, json.JSONDecodeError):
+            continue
+        if isinstance(payload, dict) and payload.get("action") == "restart_cycle":
+            count += 1
+    return count
+
+
+def _parse_utc_ts(value: str) -> datetime | None:
+    text = (value or "").strip()
+    if not text:
+        return None
+    if text.endswith("Z"):
+        text = text[:-1] + "+00:00"
+    try:
+        parsed = datetime.fromisoformat(text)
+    except ValueError:
+        return None
+    if parsed.tzinfo is None:
+        return parsed.replace(tzinfo=UTC)
+    return parsed.astimezone(UTC)
+
+
+def _remaining_sleep_seconds(next_cycle_due_at_utc: str) -> int:
+    """Seconds still owed on an interrupted sleep window (0 if overdue/unknown)."""
+    due = _parse_utc_ts(next_cycle_due_at_utc)
+    if due is None:
+        return 0
+    remaining = (due - _now_utc()).total_seconds()
+    if remaining <= 0:
+        return 0
+    return int(remaining)
+
+
 def _write_coordinator_event(
     artifact_dir: Path,
     *,
@@ -650,6 +694,9 @@ def run_fixture_window(
 
     if resume:
         state, completed_cycles = _prepare_resume(artifact_dir, run_id)
+        # Preserve the bounded recovery budget across resumes (do not grant a
+        # fresh max_restart_count on every relaunch).
+        restart_count = _seed_restart_count(artifact_dir)
         prior_events = _read_coordinator_events(artifact_dir)
         _write_coordinator_event(
             artifact_dir,
@@ -679,13 +726,28 @@ def run_fixture_window(
                 reason_codes=("sleep_started_without_sleep_completed",),
                 covered_report_names=(),
                 restart_attempted=True,
-                restart_count=0,
+                restart_count=restart_count,
                 max_restart_count=max_restart_count,
                 backoff_seconds=0,
                 action="resume_cycle_window",
                 limit_exceeded=False,
             )
             recovery_events_written += 1
+            # Honor the remainder of the interrupted sleep window so an early
+            # resume does not compress the cadence / observation window.
+            remaining_sleep = _remaining_sleep_seconds(state.next_cycle_due_at_utc)
+            if remaining_sleep > 0:
+                _sleep_with_interval_check(
+                    sleep_fn, remaining_sleep, chunk_seconds=60
+                )
+            _write_coordinator_event(
+                artifact_dir,
+                run_id=run_id,
+                event_type="sleep_completed",
+                cycle_index=resume_cycle_index or None,
+                next_cycle_due_at_utc=state.next_cycle_due_at_utc,
+                coordinator_status="resuming",
+            )
         state = _update_runner_state(
             state,
             run_id=run_id,
