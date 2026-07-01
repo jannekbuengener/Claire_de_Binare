@@ -10,7 +10,7 @@
 
 ## Repo / Engineering Status (2026-07-01)
 
-- **Architecture docs sync after Dependabot #3528/#3530 / PR #3604 / merge SHA pending**: DOCS PR. `SERVICE_CATALOG.md` Redis `8.8.0-alpine` + `ARCHITECTURE_MAP.md` changelog/image-SSOT cross-ref + `ARCHITECTURE_COCKPIT.md` canonical doc links. Closes #3593. Refs #3595, #3601, #3602, #3603. Runtime rebuilds (#3592, #3594, #3600) remain open. LR NO-GO.
+- **Architecture docs sync after Dependabot #3528/#3530 / PR #3604 / `f20ef70b`**: MERGED. `SERVICE_CATALOG.md` Redis `8.8.0-alpine` + `ARCHITECTURE_MAP.md` changelog/image-SSOT cross-ref + `ARCHITECTURE_COCKPIT.md` canonical doc links. Closes #3593. Refs #3595, #3601, #3602, #3603. Runtime rebuilds (#3592, #3594, #3600) remain open. LR NO-GO.
 
 - **Control docs reconcile after Dependabot #3528/#3530 / PR #3602 / `40910d7e`**: MERGED. `CONTROL_REGISTER.md` workflow-control notes for Redis `8.8.0-alpine` (#3528) and Postgres `18.4-alpine` (#3530) semver-major bumps in `security-scan.yml`. Closes #3595, #3601. Runtime rebuilds (#3592, #3594, #3600) and architecture sync (#3593) out of scope. LR NO-GO.
 
