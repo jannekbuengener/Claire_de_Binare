@@ -35,9 +35,9 @@ Branch: `docs/3593-architecture-sync` von `origin/main` (`f5cb5932`).
 
 ## Validation
 
-- `git diff --check`: pending
-- Stale image tags in primary architecture docs: pending
-- Diff docs-only: pending
+- `git diff --check`: pass
+- Stale image tags in primary architecture docs: none (`SERVICE_CATALOG` Redis `8.8.0-alpine`, Postgres `18.4-alpine`)
+- Diff docs-only: 5 markdown files
 
 ## Safety Boundaries
 
@@ -47,6 +47,6 @@ Branch: `docs/3593-architecture-sync` von `origin/main` (`f5cb5932`).
 
 ## Merge / Close
 
-- PR: pending
-- Merge SHA: pending
-- Issue #3593: pending close after merge
+- PR: #3604 MERGED
+- Merge SHA: `f20ef70bd50fb5c648f054a8a9cb7464fdf8f458`
+- Issue #3593: CLOSED (2026-07-01T00:12:51Z)
