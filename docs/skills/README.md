@@ -10,7 +10,7 @@ synchron gehalten werden.
 **Aenderungen an Skills starten hier.** Surface-Adapter werden daraus gespiegelt
 (`Sync Status: mirrored-from-canon`, Last Verified 2026-07-01, Issue #3639).
 
-## Kanonische Skill-Dateien (27 aktive CDB-Repo-Skills)
+## Kanonische Skill-Dateien (28 aktive CDB-Repo-Skills)
 
 | Skill | Pfad | Surfaces |
 |---|---|---|
@@ -31,6 +31,7 @@ synchron gehalten werden.
 | `cdb-drift-reconcile` | [`cdb-drift-reconcile/SKILL.md`](cdb-drift-reconcile/SKILL.md) | opencode, cursor, codex, claude |
 | `cdb-root-cause` | [`cdb-root-cause/SKILL.md`](cdb-root-cause/SKILL.md) | opencode, cursor, codex, claude |
 | `cdb-symptom-triage` | [`cdb-symptom-triage/SKILL.md`](cdb-symptom-triage/SKILL.md) | opencode, cursor, codex, claude |
+| `cdb-regression-gap` | [`cdb-regression-gap/SKILL.md`](cdb-regression-gap/SKILL.md) | opencode, cursor, codex, claude |
 | `cdb-docs-ops` | [`cdb-docs-ops/SKILL.md`](cdb-docs-ops/SKILL.md) | opencode, cursor, codex, claude |
 | `cdb-external-docs` | [`cdb-external-docs/SKILL.md`](cdb-external-docs/SKILL.md) | opencode, cursor, codex, claude |
 | `cdb-ci-cd-guard` | [`cdb-ci-cd-guard/SKILL.md`](cdb-ci-cd-guard/SKILL.md) | opencode, cursor, codex, claude |

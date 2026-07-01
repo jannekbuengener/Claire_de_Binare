@@ -260,10 +260,10 @@ Diese Issues werden dedupliziert und mit klarem Scope angelegt.
 ## 16. Aktives Skill-Inventar (2026-07-01)
 
 Status nach Surface-Mirror-Slice (#3639), Drift-Guard (#3643) und Debug-Skill-
-Familie Slice 2 (`cdb-symptom-triage`): **27/27** Canon-Dateien; **105/105**
+Familie Slice 3 (`cdb-regression-gap`): **28/28** Canon-Dateien; **109/109**
 erwartete Adapter-`SKILL.md` mit `mirrored-from-canon` Header und body-parity zum
 Canon-Body (minus Header). Verifiziert durch
-`tools/validate_skill_surface_mirror.py` (`PASS`, 105 Adapter, 3 dokumentierte
+`tools/validate_skill_surface_mirror.py` (`PASS`, 109 Adapter, 3 dokumentierte
 `cdb-onboarding`-Ausnahmen). `docs/skills/` bleibt SSOT.
 
 | Skill | Canon | opencode | cursor | codex | claude | Body-Drift |
@@ -285,6 +285,7 @@ Canon-Body (minus Header). Verifiziert durch
 | cdb-drift-reconcile | Y | sync | sync | sync | sync | — |
 | cdb-root-cause | Y | sync | sync | sync | sync | — |
 | cdb-symptom-triage | Y | sync | sync | sync | sync | — |
+| cdb-regression-gap | Y | sync | sync | sync | sync | — |
 | cdb-docs-ops | Y | sync | sync | sync | sync | — |
 | cdb-external-docs | Y | sync | sync | sync | sync | — |
 | cdb-ci-cd-guard | Y | sync | sync | sync | sync | — |
