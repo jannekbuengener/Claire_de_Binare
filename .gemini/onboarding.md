@@ -49,4 +49,4 @@ Wenn der Intent auf eine geführte Generalprobe zielt (`onboarding rehearsal`, `
 
 Optionaler, rein informativer Readiness-Hinweis (kein CI-Gate, kein Blocker).
 Kanonische Beschreibung: [`../docs/onboarding/AGENT_COMPATIBILITY_READINESS.md`](../docs/onboarding/AGENT_COMPATIBILITY_READINESS.md).
-Externer Scanner `npx -y agent-compatibility@latest .` ist optional; fehlendes Node/npm/Netz (`ENV_UNAVAILABLE`) ist kein Repo-Defekt. LR bleibt NO-GO.
+Externer Scanner `npx -y agent-compatibility@0.1.7 .` ist optional; fehlendes Node/npm/Netz (`ENV_UNAVAILABLE`) ist kein Repo-Defekt. LR bleibt NO-GO.
