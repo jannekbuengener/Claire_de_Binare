@@ -114,7 +114,7 @@ Hinweis: Der Config-Default fuer `SIGNAL_PORT` liegt in `services/signal/config.
 | Service | Container | Image | Port | Status | Funktion |
 |---------|-----------|-------|------|--------|----------|
 | **PostgreSQL** | cdb_postgres | postgres:18.4-alpine | 5432 | **AKTIV** | Persistenz |
-| **Redis** | cdb_redis | redis:7.4.8-alpine | 6379 | **AKTIV** | Cache, Pub/Sub, Streams |
+| **Redis** | cdb_redis | redis:8.8.0-alpine | 6379 | **AKTIV** | Cache, Pub/Sub, Streams |
 
 ### RED Stack (compose.red.yml) — Monitoring
 
@@ -275,6 +275,7 @@ Referenz: `infrastructure/compose/SERVICE_MAPPING.md`, PR #2670.
 | 2026-06-18 | Audit #3302: Entfernte-Services-Sektion ergänzt; cdb_node_exporter als LEGACY mit Decommission-Datum, Grund, Alternative, erwartetem Runtime-Zustand und Runbook-Prüfpfad dokumentiert; Prüf-Checkliste um Legacy-Check ergänzt | Codex |
 | 2026-06-18 | Audit #3304: `lr030_soak_monitor` + `lr040_soak_monitor` als LEGACY dokumentiert; Container decommissioned, Windows-Tasks `CDB_LR040_SoakMonitor` + `CDB_Soak_Sidecar` deaktiviert; Runbooks um Windows-Scheduler-Cleanup ergänzt | OpenCode |
 | 2026-06-18 | Audit #3305: MockX Valkey als non-canonical dev/test reference infra dokumentiert; Expected-State `absent by default`; Boundary `mockx-valkey` ist nicht CDB-canonical Redis und darf `cdb_redis` nie ersetzen; Refs #1648 | OpenCode |
+| 2026-07-01 | PRs #3528/#3530 Nachzug (#3593): BLUE base images — Redis `8.8.0-alpine`, Postgres `18.4-alpine` — mit `compose.blue.yml` synchron; Runtime-Recreate bleibt #3594/#3600 | Cursor |
 ## PostgreSQL Schema Artefacts
 
 | Artefakt | Migration | Status | Bedeutung |

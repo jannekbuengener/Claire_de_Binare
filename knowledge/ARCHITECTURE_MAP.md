@@ -247,6 +247,8 @@ logging.yml        -> Logging Overlay (Loki + Promtail + Alertmanager) [separate
 
 Legacy-Layer (base.yml, dev.yml, tls.yml, etc.) existieren noch, sind nicht mehr kanonisch.
 
+Kanonische Image-Pins fuer BLUE-Datenlayer (`cdb_postgres`, `cdb_redis`): `governance/SERVICE_CATALOG.md` § Infrastruktur-Services (Spiegel von `compose.blue.yml`).
+
 ---
 
 ## Changelog
@@ -271,6 +273,7 @@ Legacy-Layer (base.yml, dev.yml, tls.yml, etc.) existieren noch, sind nicht mehr
 | 2026-06-05 | PRs #2989/#2992/#3006 Nachzug: `paper_runtime_stimulus_runner.py` als runtime-adjacent ARVP operator CLI dokumentiert; `stimulus_fixture`-Events mit `stimulus_run_id` erzeugen deterministische `signal_id`s fuer exportierbare paper chains. Kein Live-Go; keine DB-Schreibfläche (Issues #2990/#2993/#3008) | Codex |
 | 2026-06-06 | PRs #3016/#3019/#3022 Nachzug: `paper_runtime_stimulus_runner.py` Determinismus-Härtung (`stimulus_run_id` -> `signal_id`) und Wall-Clock-Override für Stimulus-Freshness (RC_004 Safety) in `cdb_market` und `cdb_candles` dokumentiert (Issues #3017/#3020/#3023) | Codex |
 | 2026-06-08 | PR #3081 Nachzug: `historical_bridge.py` + `evaluate_price_policies.py` als Replay-Infrastruktur-Komponenten dokumentiert; `price_policy`-Support vermerkt (Issue #3082) | Codex |
+| 2026-07-01 | PRs #3528/#3530 Nachzug (#3593): BLUE base images Redis `8.8.0-alpine` / Postgres `18.4-alpine`; Image-SSOT-Hinweis in §7 Compose Layer Referenz; Runtime-Recreate bleibt #3594/#3600 | Cursor |
 ### PostgreSQL Schema Artefacts (PR #2793)
 
 | Artifact | Migration | Status | Bedeutung |
