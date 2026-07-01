@@ -1,3 +1,10 @@
+<!--
+Canonical Skill Source: docs/skills/cdb-operator/SKILL.md
+Surface: cursor
+Sync Status: mirrored-from-canon
+Last Verified: 2026-07-01
+Drift Policy: Surface-Adapter duerfen nur mit dokumentierter Begruendung abweichen.
+-->
 ---
 name: cdb-operator
 description: Enforces Claire de Binare operator workflow: bootloader first, live GitHub truth, dry-run planning, strict GO gates, no merge without human approval.

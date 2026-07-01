@@ -1,7 +1,7 @@
 <!--
 Canonical Skill Source: docs/skills/cdb-drift-reconcile/SKILL.md
 Surface: docs (canonical)
-Sync Status: mirrored
+Sync Status: canonical
 Last Verified: 2026-07-01
 Drift Policy: Surface-Adapter duerfen nur mit dokumentierter Begruendung abweichen.
 -->

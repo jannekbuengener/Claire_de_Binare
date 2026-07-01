@@ -103,12 +103,16 @@ enthalten (Markdown-Frontmatter oder erster Markdown-Block):
 ```text
 <!--
 Canonical Skill Source: docs/skills/<skill-name>/SKILL.md
-Surface: <opencode | cursor | codex | claude>
-Sync Status: <mirrored | adapted | alias | deprecated>
-Last Verified: <YYYY-MM-DD | <commit-sha>>
-Drift Policy: Surface darf nur abweichen, wenn Begruendung in <kanonischer Quelldatei> dokumentiert ist.
+Surface: <docs (canonical) | opencode | cursor | codex | claude>
+Sync Status: <canonical | mirrored-from-canon | adapted | alias | deprecated>
+Last Verified: <YYYY-MM-DD>
+Drift Policy: Surface-Adapter duerfen nur mit dokumentierter Begruendung abweichen.
 -->
 ```
+
+Kanonische Dateien verwenden `Surface: docs (canonical)` und
+`Sync Status: canonical`. Aktive Adapter verwenden
+`Sync Status: mirrored-from-canon` (Issue #3639, 2026-07-01).
 
 Wird der Header weggelassen, gilt die Datei als **nicht-registriert**
 und darf in der Surface-README nicht ohne Eintrag in dieser Registry
@@ -213,11 +217,9 @@ Regeln:
 
 Nach Canon-Tree-Merge (2026-07-01):
 
-- `[SKILLS] Mirror surface adapters from docs/skills canon` — Header + byte-sync
-  fuer Skills mit bekannter Drift (`cdb-session-start`, `onboarding`, `gh-fix-ci`,
-  `cdb-github-api-ops`)
-- `[SKILLS] Extend cdb-session-close with post-close follow-up issue intake` — **done** (Issue #3638; Canon + `cdb-session-close` adapters only)
-- `[SKILLS] Apply Surface-Adapter-Header to all existing mirrored skills`
+- `[SKILLS] Mirror surface adapters from docs/skills canon` — **done** (Issue #3639; 25/25 canon, 99 adapter SKILL.md synced)
+- `[SKILLS] Extend cdb-session-close with post-close follow-up issue intake` — **done** (Issue #3638)
+- `[SKILLS] Apply Surface-Adapter-Header to all existing mirrored skills` — **done** (merged into #3639)
 - `[SKILLS] Add drift-reconcile hook for skill surface adapters`
 - `[SKILLS] Add skill-meta schema (META.yaml + evals.json) for new CDB domain skills`
 - `[SKILLS] Document `.gemini/` activation policy if domain skills are ever needed`
@@ -226,44 +228,53 @@ Diese Issues werden dedupliziert und mit klarem Scope angelegt.
 
 ## 16. Aktives Skill-Inventar (2026-07-01)
 
-Status nach Canon-Tree-Slice: **25/25** aktive CDB-Repo-Skills haben
-`docs/skills/<name>/SKILL.md`. Surface-Adapter bleiben vorerst unveraendert;
-Drift ist dokumentiert.
+Status nach Surface-Mirror-Slice (#3639): **25/25** Canon-Dateien;
+**99/99** erwartete Adapter-`SKILL.md` mit `mirrored-from-canon` Header und
+byte-parity zum Canon-Body (minus Header). `docs/skills/` bleibt SSOT.
 
 | Skill | Canon | opencode | cursor | codex | claude | Body-Drift |
 |---|---|---|---|---|---|---|
-| cdb-session-start | Y | Y | Y | Y | Y | cursor, codex, claude |
-| cdb-session-close | Y | Y | Y | Y | Y | — (Post-Close Follow-up Intake #3638; adapters synced) |
-| cdb-control-intake | Y | Y | Y | Y | Y | — |
-| cdb-issue-to-session-plan | Y | Y | Y | Y | Y | — |
-| cdb-operator | Y | Y | Y | Y | Y | — |
-| onboarding | Y | Y | Y | Y | Y | cursor, codex, claude |
-| cdb-onboarding | Y | — | — | Y | — | — (alias) |
-| cdb-test-first | Y | Y | Y | Y | Y | — |
-| cdb-trading-core | Y | Y | Y | Y | Y | — |
-| cdb-risk-governance | Y | Y | Y | Y | Y | — |
-| cdb-exchange-adapters | Y | Y | Y | Y | Y | — |
-| cdb-backtest-engine | Y | Y | Y | Y | Y | — |
-| cdb-shadow-validation | Y | Y | Y | Y | Y | — |
-| cdb-contract-evidence-gatekeeper | Y | Y | Y | Y | Y | — |
-| cdb-drift-reconcile | Y | Y | Y | Y | Y | — |
-| cdb-docs-ops | Y | Y | Y | Y | Y | — |
-| cdb-external-docs | Y | Y | Y | Y | Y | — |
-| cdb-ci-cd-guard | Y | Y | Y | Y | Y | — |
-| ctb-docker-stack | Y | Y | Y | Y | Y | — |
-| gh-fix-ci | Y | Y | Y | Y | Y | alle Adapter (Canon hat scripts/META) |
-| gh-address-comments | Y | Y | Y | Y | Y | — |
-| cdb-github-api-ops | Y | Y | Y | Y | Y | alle Adapter (Header-only auf Canon) |
-| surrealql | Y | Y | Y | Y | Y | — |
-| surrealdb-vector | Y | Y | Y | Y | Y | — |
-| surrealdb-python | Y | Y | Y | Y | Y | — |
+| cdb-session-start | Y | sync | sync | sync | sync | — |
+| cdb-session-close | Y | sync | sync | sync | sync | — |
+| cdb-control-intake | Y | sync | sync | sync | sync | — |
+| cdb-issue-to-session-plan | Y | sync | sync | sync | sync | — |
+| cdb-operator | Y | sync | sync | sync | sync | — |
+| onboarding | Y | sync | sync | sync | sync | — |
+| cdb-onboarding | Y | — | — | sync | — | alias; codex-only |
+| cdb-test-first | Y | sync | sync | sync | sync | — |
+| cdb-trading-core | Y | sync | sync | sync | sync | — |
+| cdb-risk-governance | Y | sync | sync | sync | sync | — |
+| cdb-exchange-adapters | Y | sync | sync | sync | sync | — |
+| cdb-backtest-engine | Y | sync | sync | sync | sync | — |
+| cdb-shadow-validation | Y | sync | sync | sync | sync | — |
+| cdb-contract-evidence-gatekeeper | Y | sync | sync | sync | sync | — |
+| cdb-drift-reconcile | Y | sync | sync | sync | sync | — |
+| cdb-docs-ops | Y | sync | sync | sync | sync | — |
+| cdb-external-docs | Y | sync | sync | sync | sync | — |
+| cdb-ci-cd-guard | Y | sync | sync | sync | sync | — |
+| ctb-docker-stack | Y | sync | sync | sync | sync | — |
+| gh-fix-ci | Y | sync | sync | sync | sync | canon-only: META.yaml, evals.json, scripts/ |
+| gh-address-comments | Y | sync | sync | sync | sync | — |
+| cdb-github-api-ops | Y | sync | sync | sync | sync | — |
+| surrealql | Y | sync | sync | sync | sync | — |
+| surrealdb-vector | Y | sync | sync | sync | sync | — |
+| surrealdb-python | Y | sync | sync | sync | sync | — |
+
+**Bewusste Abweichungen (kein Body-Drift):**
+
+| Skill | Abweichung | Begruendung |
+|---|---|---|
+| `cdb-onboarding` | Nur Codex-Adapter | Duenner Alias auf `onboarding`; andere Surfaces nutzen `onboarding` direkt |
+| `gh-fix-ci` | Zusatzartefakte nur im Canon-Verzeichnis | `META.yaml`, `evals.json`, `scripts/` sind Canon-Erweiterungen; Adapter erhalten nur `SKILL.md` |
+| `.claude/skills/*.skill` | Nicht gespiegelt | Paket-/Aliasflaeche; out of scope #3639 |
+| `.gemini/skills/` | Nicht gespiegelt | Eingeschraenkter Surface; kein CDB-Domain-Mirror |
 
 **Nicht gezaehlt:** `skillforge` (Meta-Tool, gitignored), `mockexchange`
 (kein SKILL.md), `codex-primary-runtime` (kein SKILL.md), Cursor Rules/Subagents,
 Redis Plugin (routing-only), `.claude/skills/*.skill` (Alias).
 
-**Drift-Policy dieses Slices:** Canon-Inhalt aus OpenCode-Prioritaet; Adapter-Sync
-ist Follow-up-Issue `[SKILLS] Mirror surface adapters from docs/skills canon`.
+**Mirror-Workflow:** Aenderungen starten in `docs/skills/<name>/SKILL.md`,
+danach Adapter spiegeln (Header `mirrored-from-canon` + identischer Body).
 
 ## Anti-Patterns
 

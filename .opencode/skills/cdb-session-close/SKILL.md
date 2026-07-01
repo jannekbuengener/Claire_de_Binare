@@ -1,9 +1,9 @@
 <!--
 Canonical Skill Source: docs/skills/cdb-session-close/SKILL.md
 Surface: opencode
-Sync Status: mirrored
+Sync Status: mirrored-from-canon
 Last Verified: 2026-07-01
-Drift Policy: Surface darf nur abweichen, wenn Begruendung in docs/skills/cdb-session-close/SKILL.md dokumentiert ist.
+Drift Policy: Surface-Adapter duerfen nur mit dokumentierter Begruendung abweichen.
 -->
 ---
 name: cdb-session-close

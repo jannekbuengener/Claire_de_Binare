@@ -1,3 +1,10 @@
+<!--
+Canonical Skill Source: docs/skills/surrealdb-python/SKILL.md
+Surface: claude
+Sync Status: mirrored-from-canon
+Last Verified: 2026-07-01
+Drift Policy: Surface-Adapter duerfen nur mit dokumentierter Begruendung abweichen.
+-->
 ---
 name: surrealdb-python
 description: "CDB-curated, script-free activation of the official SurrealDB Python skill."

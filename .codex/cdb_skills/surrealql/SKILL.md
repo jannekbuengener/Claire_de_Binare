@@ -1,3 +1,10 @@
+<!--
+Canonical Skill Source: docs/skills/surrealql/SKILL.md
+Surface: codex
+Sync Status: mirrored-from-canon
+Last Verified: 2026-07-01
+Drift Policy: Surface-Adapter duerfen nur mit dokumentierter Begruendung abweichen.
+-->
 ---
 name: surrealql
 description: "CDB-curated, script-free activation of the official SurrealQL agent skill."

@@ -1,3 +1,10 @@
+<!--
+Canonical Skill Source: docs/skills/cdb-ci-cd-guard/SKILL.md
+Surface: codex
+Sync Status: mirrored-from-canon
+Last Verified: 2026-07-01
+Drift Policy: Surface-Adapter duerfen nur mit dokumentierter Begruendung abweichen.
+-->
 ---
 name: cdb-ci-cd-guard
 description: CDB CI/CD governance audit and hardening for the working repo. Use when GitHub Actions, rulesets, required checks, secret guards, or fake-green behavior need to be verified or fixed. Derive protected refs, required checks, and enforcement behavior from current repo evidence and GitHub state instead of assuming old branch patterns or legacy docs-hub paths.

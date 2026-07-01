@@ -15,10 +15,10 @@ erfindet keine neuen Slash-Befehle.
 
 **Registry / Mirror-Modell:** [`SKILL_SURFACE_REGISTRY.md`](SKILL_SURFACE_REGISTRY.md)
 
-**Canon-Update 2026-07-01:** Alle 25 aktiven CDB-Repo-Skills haben jetzt
+**Canon-Update 2026-07-01:** Alle 25 aktiven CDB-Repo-Skills haben
 `docs/skills/<name>/SKILL.md` als Single Source of Truth. Surface-Adapter
-(`.opencode/`, `.cursor/`, `.codex/`, `.claude/`) sind Mirror — Änderungen
-starten in `docs/skills/`.
+(`.opencode/`, `.cursor/`, `.codex/`, `.claude/`) sind auf Canon gespiegelt
+(Issue #3639; Header `mirrored-from-canon`, Body-Parity verifiziert).
 
 ## Grenze: Brain vs Runtime
 
@@ -98,6 +98,6 @@ SSOT Activation: [`CDB_SURREALDB_SKILLS_RULES_ACTIVATION.md`](CDB_SURREALDB_SKIL
 ## Non-goals
 
 - Keine Runtime-/Config-/Compose-Änderungen
-- Keine fachliche Erweiterung weiterer Skills in diesem Index
-- `cdb-session-close` Post-Close Follow-up Intake: Canon + Adapter gespiegelt (Issue #3638); breiter Surface-Mirror bleibt #3639
+- Keine fachliche Erweiterung der Skill-Inhalte in diesem Slice
+- Surface-Mirror abgeschlossen (#3639); `cdb-session-close` Follow-up Intake (#3638)
 - LR bleibt **NO-GO**

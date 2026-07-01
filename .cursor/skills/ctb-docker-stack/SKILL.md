@@ -1,3 +1,10 @@
+<!--
+Canonical Skill Source: docs/skills/ctb-docker-stack/SKILL.md
+Surface: cursor
+Sync Status: mirrored-from-canon
+Last Verified: 2026-07-01
+Drift Policy: Surface-Adapter duerfen nur mit dokumentierter Begruendung abweichen.
+-->
 ---
 name: ctb-ops-stack-skillpack
 description: Ops skillpack for the current CDB stack. Use when Codex needs command-first PowerShell guidance for Docker, compose, DR, rollback, incident response, or stack inspection in the working repo. Use canonical BLUE+RED runtime paths, respect `SECRETS_PATH`, and require explicit user approval before any mutating Docker or compose action.

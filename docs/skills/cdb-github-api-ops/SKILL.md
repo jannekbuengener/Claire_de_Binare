@@ -1,9 +1,9 @@
 <!--
 Canonical Skill Source: docs/skills/cdb-github-api-ops/SKILL.md
 Surface: docs (canonical)
-Sync Status: mirrored
-Last Verified: 2026-06-30
-Drift Policy: Surface darf nur abweichen, wenn Begruendung in docs/skills/cdb-github-api-ops/SKILL.md dokumentiert ist.
+Sync Status: canonical
+Last Verified: 2026-07-01
+Drift Policy: Surface-Adapter duerfen nur mit dokumentierter Begruendung abweichen.
 -->
 ---
 name: cdb-github-api-ops
