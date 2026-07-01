@@ -6,7 +6,7 @@ import time
 from dataclasses import asdict, dataclass
 from datetime import UTC, datetime
 from pathlib import Path
-from typing import Any, Callable, Mapping
+from typing import Any, Callable, Mapping, Sequence
 
 from core.utils.clock import utcnow as cdb_utcnow
 
@@ -18,6 +18,9 @@ RECOVERY_EVENT_SCHEMA = "cdb.evidence_harvester.recovery_event.v1"
 DEFAULT_MAX_RESTART_COUNT = 3
 DEFAULT_RESTART_BACKOFF_SECONDS = 30
 DEFAULT_CADENCE_SECONDS = 900
+
+# Terminal coordinator states that a resume must not silently reopen.
+_RESUME_REFUSED_STATUSES = frozenset({"completed", "failed", "fatal_stop"})
 
 
 class CoordinatorError(ValueError):
@@ -104,6 +107,25 @@ def _coordinator_events_path(artifact_dir: Path) -> Path:
     return artifact_dir / "coordinator_events.jsonl"
 
 
+def _read_coordinator_events(artifact_dir: Path) -> list[dict[str, Any]]:
+    """Read durable coordinator lifecycle events, skipping malformed lines."""
+    path = _coordinator_events_path(artifact_dir)
+    if not path.exists():
+        return []
+    events: list[dict[str, Any]] = []
+    for line in path.read_text(encoding="utf-8").splitlines():
+        stripped = line.strip()
+        if not stripped:
+            continue
+        try:
+            payload = json.loads(stripped)
+        except json.JSONDecodeError:
+            continue
+        if isinstance(payload, dict):
+            events.append(payload)
+    return events
+
+
 def _derive_run_id(artifact_dir: Path) -> str:
     name = artifact_dir.name.strip()
     return name or _event_stamp()
@@ -176,6 +198,40 @@ def _update_runner_state(
     )
     payload["failed_runs"] = payload.get("total_failed_cycles", payload["failed_runs"])
     return RunnerState(**payload)
+
+
+def _last_event_is_stalled_sleep(
+    events: Sequence[Mapping[str, Any]],
+    coordinator_status: str,
+) -> bool:
+    """Detect the Slice-B/C/D stall: last durable event is sleep_started."""
+    if not events:
+        return False
+    last_type = str(events[-1].get("event_type", "")).strip()
+    if last_type != "sleep_started":
+        return False
+    return coordinator_status == "sleeping"
+
+
+def _prepare_resume(artifact_dir: Path, run_id: str) -> tuple[RunnerState, int]:
+    """Fail-closed resume preflight: require matching, non-terminal prior state."""
+    state = _read_runner_state(artifact_dir)
+    if state is None:
+        raise CoordinatorError(
+            "resume requires an existing runner_state.json in the artifact dir"
+        )
+    if state.run_id and state.run_id != run_id:
+        raise CoordinatorError(
+            f"resume run_id mismatch: runner_state.run_id={state.run_id!r} "
+            f"but artifact dir implies run_id={run_id!r}"
+        )
+    if state.coordinator_status in _RESUME_REFUSED_STATUSES:
+        raise CoordinatorError(
+            "resume refused: coordinator_status is terminal "
+            f"({state.coordinator_status!r})"
+        )
+    completed_cycles = int(state.total_cycles_completed or 0)
+    return state, completed_cycles
 
 
 def _write_coordinator_event(
@@ -556,6 +612,7 @@ def run_fixture_window(
     cadence_seconds: int = DEFAULT_CADENCE_SECONDS,
     max_restart_count: int = DEFAULT_MAX_RESTART_COUNT,
     restart_backoff_seconds: int = DEFAULT_RESTART_BACKOFF_SECONDS,
+    resume: bool = False,
     sleep_fn: Callable[[float], None] = time.sleep,
     boot_runner: Callable[
         [Path, Path], tuple[int, dict[str, Any] | None]
@@ -590,16 +647,64 @@ def run_fixture_window(
     completed_cycles = 0
     final_validation_started = False
     stop_reason = ""
-    state = _seed_runner_state(artifact_dir, run_id)
 
-    _write_coordinator_event(
-        artifact_dir,
-        run_id=run_id,
-        event_type="run_started",
-        coordinator_status="starting",
-    )
-    state = _update_runner_state(state, run_id=run_id, coordinator_status="starting")
-    _write_runner_state(artifact_dir, state)
+    if resume:
+        state, completed_cycles = _prepare_resume(artifact_dir, run_id)
+        prior_events = _read_coordinator_events(artifact_dir)
+        _write_coordinator_event(
+            artifact_dir,
+            run_id=run_id,
+            event_type="run_resumed",
+            coordinator_status="resuming",
+        )
+        if _last_event_is_stalled_sleep(prior_events, state.coordinator_status):
+            resume_cycle_index = int(state.total_cycles_started or 0)
+            resume_stamp = state.last_successful_artifact_stamp or _event_stamp()
+            _write_coordinator_event(
+                artifact_dir,
+                run_id=run_id,
+                event_type="sleep_resumed",
+                cycle_index=resume_cycle_index or None,
+                artifact_stamp=state.last_successful_artifact_stamp,
+                next_cycle_due_at_utc=state.next_cycle_due_at_utc,
+                coordinator_status="resuming",
+            )
+            _write_recovery_event(
+                artifact_dir,
+                cycle_stamp=resume_stamp,
+                failure_source="sleep_stall",
+                trigger_report_name="coordinator_events.jsonl",
+                trigger_verdict="INCONCLUSIVE",
+                classification="recoverable",
+                reason_codes=("sleep_started_without_sleep_completed",),
+                covered_report_names=(),
+                restart_attempted=True,
+                restart_count=0,
+                max_restart_count=max_restart_count,
+                backoff_seconds=0,
+                action="resume_cycle_window",
+                limit_exceeded=False,
+            )
+            recovery_events_written += 1
+        state = _update_runner_state(
+            state,
+            run_id=run_id,
+            coordinator_status="running",
+            next_cycle_due_at_utc="",
+        )
+        _write_runner_state(artifact_dir, state)
+    else:
+        state = _seed_runner_state(artifact_dir, run_id)
+        _write_coordinator_event(
+            artifact_dir,
+            run_id=run_id,
+            event_type="run_started",
+            coordinator_status="starting",
+        )
+        state = _update_runner_state(
+            state, run_id=run_id, coordinator_status="starting"
+        )
+        _write_runner_state(artifact_dir, state)
 
     boot_exit, boot_payload = boot_runner(repo_root, artifact_dir)
     boot_verdict = _extract_verdict(boot_payload) or (
@@ -1080,6 +1185,39 @@ def run_fixture_window(
     )
 
 
+def _add_window_args(parser: argparse.ArgumentParser) -> None:
+    parser.add_argument(
+        "--fixture", type=Path, required=True, help="Collector-input fixture path."
+    )
+    parser.add_argument(
+        "--artifact-dir", type=Path, required=True, help="Output artifact directory."
+    )
+    parser.add_argument(
+        "--iterations",
+        type=int,
+        required=True,
+        help="Number of successful cycles required.",
+    )
+    parser.add_argument(
+        "--cadence-seconds",
+        type=int,
+        default=DEFAULT_CADENCE_SECONDS,
+        help=f"Cycle cadence in seconds (default: {DEFAULT_CADENCE_SECONDS}).",
+    )
+    parser.add_argument(
+        "--max-restart-count",
+        type=int,
+        default=DEFAULT_MAX_RESTART_COUNT,
+        help=f"Maximum recoverable restarts (default: {DEFAULT_MAX_RESTART_COUNT}).",
+    )
+    parser.add_argument(
+        "--restart-backoff-seconds",
+        type=int,
+        default=DEFAULT_RESTART_BACKOFF_SECONDS,
+        help=f"Backoff between recoverable restarts (default: {DEFAULT_RESTART_BACKOFF_SECONDS}).",
+    )
+
+
 def parse_args(argv: list[str] | None = None) -> argparse.Namespace:
     parser = argparse.ArgumentParser(
         description="Evidence harvester 72h coordinator with bounded recovery."
@@ -1093,42 +1231,23 @@ def parse_args(argv: list[str] | None = None) -> argparse.Namespace:
         "run-fixture-window",
         help="Run fixture-backed harvester cycles with watchdog/write-audit recovery.",
     )
-    run_parser.add_argument(
-        "--fixture", type=Path, required=True, help="Collector-input fixture path."
+    _add_window_args(run_parser)
+
+    resume_parser = subparsers.add_parser(
+        "resume-fixture-window",
+        help=(
+            "Resume an interrupted fixture-backed run from durable state, "
+            "recovering a stalled sleep window (sleep_started without "
+            "sleep_completed)."
+        ),
     )
-    run_parser.add_argument(
-        "--artifact-dir", type=Path, required=True, help="Output artifact directory."
-    )
-    run_parser.add_argument(
-        "--iterations",
-        type=int,
-        required=True,
-        help="Number of successful cycles required.",
-    )
-    run_parser.add_argument(
-        "--cadence-seconds",
-        type=int,
-        default=DEFAULT_CADENCE_SECONDS,
-        help=f"Cycle cadence in seconds (default: {DEFAULT_CADENCE_SECONDS}).",
-    )
-    run_parser.add_argument(
-        "--max-restart-count",
-        type=int,
-        default=DEFAULT_MAX_RESTART_COUNT,
-        help=f"Maximum recoverable restarts (default: {DEFAULT_MAX_RESTART_COUNT}).",
-    )
-    run_parser.add_argument(
-        "--restart-backoff-seconds",
-        type=int,
-        default=DEFAULT_RESTART_BACKOFF_SECONDS,
-        help=f"Backoff between recoverable restarts (default: {DEFAULT_RESTART_BACKOFF_SECONDS}).",
-    )
+    _add_window_args(resume_parser)
     return parser.parse_args(argv)
 
 
 def main(argv: list[str] | None = None) -> int:
     args = parse_args(argv)
-    if args.command != "run-fixture-window":
+    if args.command not in ("run-fixture-window", "resume-fixture-window"):
         raise CoordinatorError(f"Unsupported command: {args.command}")
     summary = run_fixture_window(
         repo_root=_repo_root(),
@@ -1138,6 +1257,7 @@ def main(argv: list[str] | None = None) -> int:
         cadence_seconds=args.cadence_seconds,
         max_restart_count=args.max_restart_count,
         restart_backoff_seconds=args.restart_backoff_seconds,
+        resume=(args.command == "resume-fixture-window"),
     )
     payload = summary.to_dict()
     print(

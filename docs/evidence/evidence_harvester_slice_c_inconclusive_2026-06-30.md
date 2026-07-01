@@ -111,6 +111,53 @@ process supervision against sleep-crash recurrence.
 - Side-effect checklist clean
 - Result posted to #3362 and referenced from #3384 reconcile
 
+## #3634 Sleep-Stall Root Cause & Fix (2026-07-01)
+
+### Root cause (code-backed)
+
+`tools/evidence_harvester/coordinator.py::run_fixture_window` re-initialised
+`completed_cycles = 0` on every launch and looped `while completed_cycles <
+iterations`. The durable events `sleep_started` and `sleep_completed` bracket a
+single in-process blocking `_sleep_with_interval_check`. When the host/process
+died inside that sleep, `sleep_completed` was never written, no
+`final_validation_*` followed, and nothing resumed — the exact Slice-B/C/D
+signature (O264 sleep-lifecycle warn + O303 INCONCLUSIVE). There was no safe
+resume: a restart re-ran the window or double-counted.
+
+### Fix delivered (#3634)
+
+- **Resume-safe coordinator:** new `resume-fixture-window` subcommand
+  (`resume=True`) seeds `completed_cycles` from
+  `runner_state.total_cycles_completed`, detects the stalled sleep, writes a
+  `sleep_resumed` lifecycle event + audited `recovery_event`
+  (`failure_source="sleep_stall"`, `action="resume_cycle_window"`), and
+  continues to the next cycle or directly to final validation. Fail-closed on
+  missing state, `run_id` mismatch, or terminal status.
+- **Testable supervisor:** `tools/evidence_harvester/supervisor.py` adds a pure
+  `decide_supervision` decision (`WAIT | RELAUNCH_RESUME | DONE | STOP_FATAL |
+  STOP_LIMIT`) and an injectable, bounded `supervise_loop`. No process spawn, no
+  scheduler install, no Docker/DB/Redis/secrets.
+- **Regression proof:** a resumed run reaching `final_validation_completed`
+  clears both `_check_sleep_lifecycle_completeness` (O264) and
+  `_check_inconclusive_run` (O303); covered by unit tests in
+  `tests/unit/tools/evidence_harvester/test_coordinator.py` and
+  `tests/unit/tools/evidence_harvester/test_supervisor.py`.
+
+### Slice-E plan (documented; needs Runtime-GO — not executed here)
+
+1. Start a fresh `run_id` with `run-fixture-window` (cadence 900s, iterations
+   ≥288) on a post-#3634 `main` SHA.
+2. Attach the supervisor (`supervisor supervise --explicit` or an external
+   wrapper) so a sleep-window process death triggers `RELAUNCH_RESUME` instead
+   of ending INCONCLUSIVE.
+3. On any stall, resume writes `sleep_resumed` + recovery evidence and continues
+   to `>=72h`, then `ops_validation --is-final`.
+4. Success = `observed_window_hours >= 72` with final verdict PASS or accepted
+   WARN; post result to #3362.
+
+No new 72h run was executed in the #3634 slice. LR remains NO-GO; no Live-Go, no
+Echtgeld-Go.
+
 ## Validation Commands Used
 
 ```powershell

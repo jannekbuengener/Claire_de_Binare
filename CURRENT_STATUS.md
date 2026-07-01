@@ -10,6 +10,8 @@
 
 ## Repo / Engineering Status (2026-07-01)
 
+- **Coordinator sleep-window stall fix (#3634)**: Resume-safe coordinator + testable sleep-stall supervisor. `resume-fixture-window` seeds `completed_cycles` from durable `runner_state`, emits `sleep_resumed` + audited recovery on a stalled sleep, and is fail-closed (missing state / `run_id` mismatch / terminal status). New `tools/evidence_harvester/supervisor.py` (`decide_supervision` + bounded `supervise_loop`, no process spawn / scheduler / Docker). A resumed run reaching `final_validation_completed` clears O264/O303. Tests: 29 unit (coordinator+supervisor), full harvester suite 260 PASS, ruff clean. No new 72h run; Slice-E documented only. LR NO-GO.
+
 - **Evidence-Harvester Reconcile (#3384)**: `RECONCILED_NEXT_BLOCKER_IDENTIFIED` — Slice-B/C/D all formal INCONCLUSIVE; #3384/#3589 CLOSED; #3362/#3345 OPEN. Next blocker: **#3634** (coordinator sleep-window stall). LR NO-GO.
 
 - **PR #3635 / #3384 reconcile closeout**: MERGED `325369fb` (2026-07-01, squash). Reconcile docs + Slice-B/C artifact reports on `main`. #3634 triage started (sleep-window stall). LR NO-GO.
