@@ -1,8 +1,8 @@
 # GitHub Workflow Register
 
 **Repo:** Claire de Binare
-**Canon date:** 2026-05 (generated for #1640 from #1633 audit + live trigger scan)
-**Total workflow definitions:** 66 YAML files
+**Canon date:** 2026-07 (updated for #3660 after #3659 restore)
+**Total workflow definitions:** 69 YAML files
 **Non-workflow file in `/workflows/`:** `labels.json` (label spec — consumed by `sync-labels.yml`)
 
 **Related docs:**
@@ -25,6 +25,10 @@
 | **Key outputs** | Primary outputs / artifacts / mutation surfaces |
 | **FP** | Fail posture: `C` = fail-closed (blocks CI/merge), `O` = fail-open (advisory) |
 | **HT** | Human touchpoint |
+
+---
+
+> **NOISE-FREEZE resolved (#3659 → #3662):** 8 security-relevant workflows had their push/pull_request triggers restored after GitHub billing recovery. See C1 (#3659, PR #3662) for details. NOISE-FREEZE (#2613) comments preserved as history with `RESTORED (#3659)` markers. Known pre-existing failures exposed by the restore are documented below.
 
 ---
 
@@ -181,11 +185,11 @@ Build, test, and quality assurance automation.
 | `ci.yaml` | historisch | push, PR | **FROZEN legacy copy of ci.yml** — do not activate | — | Duplicate CI (frozen) | C | Do not touch |
 | `contracts.yml` | aktiv | push, dispatch, sched | Contract/schema smoke tests | — | Contract test results | O | On contract schema changes |
 | `lr021_replay_smoke.yml` | aktiv | dispatch, sched | LR-021 offline replay smoke (control-visible artifact bundle) | — | PASS/FAIL + Step Summary + `replay-smoke-<run_id>` artifact | O | Cockpit `#1445` spiegeln; optional `#1784`/`#1786` |
-| `python-compat.yml` | aktiv | sched, dispatch, push | Python version compatibility matrix | — | Compat matrix results | O | On major Python upgrade |
-| `performance-monitor.yml` | aktiv | push, dispatch, sched | Performance benchmark monitoring | — | Perf report / artifact | O | On regression detection |
+| `python-compat.yml` | aktiv | sched, dispatch | Python version compatibility matrix | — | Compat matrix results | O | On major Python upgrade |
+| `performance-monitor.yml` | aktiv | dispatch | Performance benchmark monitoring | — | Perf report / artifact | O | On regression detection |
 | `e2e.yml` | aktiv | push, dispatch, sched | End-to-end test suite (container-required) | — | E2E pass/fail | O | Local/CD env only |
 | `e2e-tests.yml` | aktiv | dispatch, sched | E2E test variant (alternate config) | — | E2E pass/fail | O | Manual trigger / scheduled |
-| `e2e-happy-path.yaml` | aktiv | push, dispatch, sched | Happy-path E2E post-merge | — | Happy-path pass/fail | O | Post-merge review |
+| `e2e-happy-path.yaml` | aktiv | dispatch, sched | Happy-path E2E post-merge | — | Happy-path pass/fail | O | Post-merge review |
 | `core-guard.yml` | aktiv | push, dispatch, sched | Core service guard: validates critical service health | — | Guard pass/fail | O | On core service changes |
 | `shadow-soak-evidence.yml` | aktiv | dispatch, sched | Shadow soak evidence runner | — | Evidence artifact | O | Operator: soak review |
 
@@ -211,7 +215,7 @@ AI-backed review, triage, agent invocation, emoji automation, and MCP runtime.
 | `gemini-review.yml` | aktiv | wcall | **Reusable:** Gemini AI code review | `commands/gemini-review.toml` | PR review comment | O | No internal caller in this repo |
 | `gemini-triage.yml` | aktiv | wcall | **Reusable:** Gemini AI issue triage + labeling | `commands/gemini-triage.toml` | Issue labels + triage comment | O | No internal caller in this repo |
 | `gemini-scheduled-triage.yml` | **parked** | dispatch (schedule removed) | Gemini scheduled triage — **PARKED fail-closed** | `commands/gemini-scheduled-triage.toml` | (Disabled) | — | Re-enable requires explicit decision |
-| `emoji-filter.yml` | aktiv | push, sched, dispatch | Filter/enforce emoji usage rules in issues/PRs | `scripts/advanced-emoji-filter.py` | Filtered content / report | O | Config via `emoji-config.yaml` |
+| `emoji-filter.yml` | aktiv | dispatch | Filter/enforce emoji usage rules in issues/PRs | `scripts/advanced-emoji-filter.py` | Filtered content / report | O | Config via `emoji-config.yaml` |
 | `emoji-bot.yml` | aktiv | dispatch | Manual emoji bot operations | `scripts/advanced-emoji-filter.py` | Bot comment or action | O | Manual-only |
 | `mcp_runtime.yml` | aktiv | dispatch, sched | MCP (Model Context Protocol) runtime management | — | MCP runtime state | O | Operator: MCP lifecycle |
 
@@ -224,9 +228,9 @@ Repo health, staleness, documentation quality, and audit cleanliness.
 | File | Status | Trigger(s) | Purpose | Scripts | Key Outputs | FP | HT |
 |---|---|---|---|---|---|---|---|
 | `stale.yml` | aktiv | sched, dispatch | Close stale issues/PRs after inactivity | — | Stale label + issue close | O | Stale list review |
-| `docs-hub-guard.yml` | aktiv | push, dispatch, sched | Block tracked `*.log` files and `/logs/` paths from being committed | — | Fail if log committed | **C** | PR block; fix before merge |
+| `docs-hub-guard.yml` | aktiv | push, PR, dispatch | Block tracked `*.log` files and `/logs/` paths from being committed | — | Fail if log committed | **C** | PR block; fix before merge. Known pre-existing: `artifacts/*/audit.log` tracked in git triggers failure. |
 | `docs-conflict-guard.yml` | aktiv | PR, push, dispatch | Detect documentation conflicts and drift | — | Conflict flag | O | On docs conflict detection |
-| `root-session-hygiene-warning.yml` | aktiv | PR, dispatch | Warn on session-state artifacts in root | `scripts/root_session_hygiene_warn.py` | PR warning comment | O | PR review |
+| `root-session-hygiene-warning.yml` | aktiv | dispatch | Warn on session-state artifacts in root | `scripts/root_session_hygiene_warn.py` | PR warning comment | O | Operator: manual trigger |
 | `copilot-housekeeping.yml` | aktiv | sched, dispatch | Copilot workspace cleanup | — | Cleaned workspace state | O | Post-session cleanup |
 | `branch-policy.yml` | aktiv | sched, dispatch | Enforce branch naming / protection policy | — | Policy report | O | On branch policy violation |
 | `required-checks-audit.yml` | manual-only | dispatch | Audit required check configuration | — | Required checks report | O | On CI config changes |
@@ -300,6 +304,15 @@ Secret scanning, vulnerability detection, and security audit.
 | `security-scan.yml` | aktiv | sched, push, dispatch | Combined security scan: gitleaks + ruff + bandit | — | Security scan report | O | Weekly security review |
 | `codeql-python.yml` | aktiv | push, PR, sched, dispatch | CodeQL Python SAST: `security-and-quality` Queries | — | SARIF-Upload (`security-events: write`) | O | Alert-Review via Security Tab |
 
+### Known pre-existing failures (post-C1 restore, not caused by #3659)
+
+| Workflow | Failure | Root cause |
+|---|---|---|
+| `codeql-python.yml` | SARIF upload fails: CodeQL analyses from advanced configurations cannot be processed when the default setup is enabled | GitHub Code Scanning default setup is enabled at repo level, conflicting with advanced CodeQL workflow SARIF upload |
+| `docs-hub-guard.yml` | "Block runtime artifacts" step fails: tracked `audit.log` files in `artifacts/` directory | Historical `.log` files in `artifacts/calibration/` and `artifacts/controlled_lab_evidence/` that violate the guard check |
+
+These failures existed before the NOISE-FREEZE restore but were not visible (workflow_dispatch only). They are not regressions from #3659/#3662. Follow-up issues may be appropriate if the failures are actionable.
+
 ---
 
 ## Group 9: Historisch / Unklar — 5 workflows
@@ -337,13 +350,14 @@ Legacy label and milestone automation. Not actively maintained; do not enable wi
 | parked | 6 (`gemini-scheduled-triage`, `issue-governance`, `auto-label`, `comprehensive-issue-labeling`, `control_board_auto_routing`, `control-board-routing-label-dispatch`) |
 | historisch | 2 |
 | frozen legacy | 1 (`ci.yaml`) |
-| **Total** | **66** (aktiv 53 + manual 4 + parked 6 + historisch 2 + frozen 1 = 66... see note below) |
+| **Total** | **69** (66 registered + 3 unregistered new) — see note below |
 
 > **Count note:** `ci.yaml` is tracked separately as `frozen legacy`, not folded into the `historisch` bucket.
 > Of the 53 active workflows, 3 (`gemini-invoke.yml`, `gemini-review.yml`, `gemini-triage.yml`) are `workflow_call` reusable units and are not independently triggerable.
 > `parked` updated from 1→4 in #1642: `issue-governance.yml` (PR #1658), `auto-label.yml` and `comprehensive-issue-labeling.yml` (PR #1702).
 > `parked` updated from 4→5 in #2772: `control_board_auto_routing.yml` (auto `issues`/`pull_request`/`repository_dispatch` triggers removed; dispatch stub only).
 > `parked` updated from 5→6 in #2805: `control-board-routing-label-dispatch.yml` (auto `issues` trigger removed; dispatch stub only; `createDispatchEvent` removed).
+> 3 new workflows exist on disk but are not yet registered: `cdb-context-refresh-report.yml`, `security-alert-readout.yml`, `surrealdb-memory-proof.yml`.
 
 | Status | Count |
 |---|---|---|
@@ -353,9 +367,9 @@ Legacy label and milestone automation. Not actively maintained; do not enable wi
 | parked | 6 |
 | historisch / unklar | 2 |
 | frozen legacy | 1 (`ci.yaml`) |
-| **Total** | **66** |
+| **Total** | **69** (66 registered + 3 unregistered new) |
 
-> **Methodology note:** The current repo has 66 tracked workflow YAML files. `ci.yaml` is split out as `frozen legacy`; the three Gemini `workflow_call` units are active but non-standalone reusable workflows. `control_board_auto_routing.yml` (#2772) and `control-board-routing-label-dispatch.yml` (#2805) are parked but retained as `workflow_dispatch` diagnostic stubs.
+> **Methodology note:** The current repo has 69 tracked workflow YAML files (66 registered + 3 unregistered). `ci.yaml` is split out as `frozen legacy`; the three Gemini `workflow_call` units are active but non-standalone reusable workflows. `control_board_auto_routing.yml` (#2772) and `control-board-routing-label-dispatch.yml` (#2805) are parked but retained as `workflow_dispatch` diagnostic stubs. 3 new workflows (`cdb-context-refresh-report.yml`, `security-alert-readout.yml`, `surrealdb-memory-proof.yml`) exist on disk but are not yet registered here — they were added after the 2026-05 canon date and are outside the #3654/#3659/#3660 scope.
 
 ---
 
