@@ -12,6 +12,8 @@
 
 - **Evidence-Harvester Reconcile (#3384)**: `RECONCILED_NEXT_BLOCKER_IDENTIFIED` — Slice-B/C/D all formal INCONCLUSIVE; #3384/#3589 CLOSED; #3362/#3345 OPEN. Next blocker: **#3634** (coordinator sleep-window stall). LR NO-GO.
 
+- **PR #3635 / #3384 reconcile closeout**: MERGED `325369fb` (2026-07-01, squash). Reconcile docs + Slice-B/C artifact reports on `main`. #3634 triage started (sleep-window stall). LR NO-GO.
+
 - **Slice-D formal INCONCLUSIVE (#3632)**: Read-only `ops_validation --is-final` on stalled run `slice-d-20260630T163853Z` (9/289 PASS, 2.0h). Verdict FAIL / `Run outcome: INCONCLUSIVE`. Reports: `artifacts/evidence_harvester/72h_ops_validation/slice-d-20260630T163853Z/ops_validation_report.{json,md}`. #3632 CLOSED. #3362 remains OPEN. LR NO-GO.
 
 - **CVE-2026-11824 BLUE services #3619–#3625 / PR #3629 / `23401b21`**: MERGED (evidence-only). Verdict **UPSTREAM_BLOCKED** — `libsqlite3-0` in `python:3.14-slim-trixie`; Debian Trixie `<no-dsa>`. Issues #3619–#3625 bleiben **OPEN** (`status:blocked`). Evidence: `docs/evidence/security/CDB_SECURITY_BATCH_MATRIX_3619-3625-CVE-11824_2026-07-01.md`. Re-Triage via Tracker #2513. LR NO-GO.
@@ -71,7 +73,7 @@
   - **Next blocker:** #3634 — coordinator sleep-window stall (blocks Slice-E `>=72h` retry)
   - LR remains **NO-GO**
 
-- **main**: `0d5748ee` (post Trust-Welle / runtime batches; Evidence-Harvester reconcile docs on branch)
+- **main**: `325369fb` — PR #3635 merged (squash): Evidence-Harvester #3384 reconcile closeout docs on main
 - **Active GitHub focus (manual, non-exhaustive)**:
   - #3362/#3345 + sleep-stall blocker follow-up (Evidence-Harvester — Slice-B/C/D all INCONCLUSIVE; no >=72h PASS)
   - #2440 (LR-030 Shadow/Soak Run) — **OPEN**
