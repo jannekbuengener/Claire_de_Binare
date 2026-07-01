@@ -69,15 +69,33 @@ any npm dependency, `package.json`, or lockfile entry.
 Run it on demand (optional):
 
 ```bash
-npx -y agent-compatibility@latest .
-npx -y agent-compatibility@latest --json .
+npx -y agent-compatibility@0.1.7 .
+npx -y agent-compatibility@0.1.7 --json .
 ```
+
+The canonical pin is **`0.1.7`** (verified via `npm view agent-compatibility version`
+at documentation time). Use this exact version for reproducible
+`Deterministic Compatibility Score` results on the same repo commit.
+
+### Version pinning
+
+Pinning keeps onboarding readiness comparable and auditable:
+
+- Same repo commit + same pinned scanner version → stable, comparable scores.
+- Score changes are easier to attribute to repo changes vs. upstream tool drift.
+- The scanner remains **optional**; pinning does not make it a CI gate or
+  required check.
+
+**Deliberate upgrade** (maintainer or docs slice, not automatic):
+
+1. Run `npm view agent-compatibility version` (read-only; needs npm/network).
+2. Update this file and the onboarding surface pointers that echo the command.
+3. Open a focused docs PR; note the old and new pin in the PR body.
+4. If npm/network is unavailable (`ENV_UNAVAILABLE`), do not guess a version —
+   hold the pin update until a version can be verified.
 
 Known limitations:
 
-- `@latest` is convenient but **not version-stable**: results can drift between
-  runs as the published package changes. Pin a specific version if you need a
-  reproducible number (tracked as a follow-up, not part of this slice).
 - The scanner is **heuristic**. It surfaces likely friction; it is not a full
   quality verdict on the codebase.
 - If Node, npm, or network access is missing, the scan is `ENV_UNAVAILABLE`.

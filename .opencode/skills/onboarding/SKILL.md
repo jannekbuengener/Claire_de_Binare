@@ -226,7 +226,7 @@ Canonical description: [`../../../docs/onboarding/AGENT_COMPATIBILITY_READINESS.
 
 - Four read-only checks: CLI compatibility scan, startup review, validation review, docs reliability review.
 - Score is informational only: no CI gate, no merge gate, no automatic blocker. The primary output is a prioritized Top-fixes list.
-- The external scanner `npx -y agent-compatibility@latest .` is optional and not bundled; missing Node/npm/network is `ENV_UNAVAILABLE` and must not be scored as a repo defect.
+- The external scanner `npx -y agent-compatibility@0.1.7 .` is optional and not bundled; missing Node/npm/network is `ENV_UNAVAILABLE` and must not be scored as a repo defect.
 - Boundaries unchanged: LR remains NO-GO, `trade-capable` is not Live-Go, no Echtgeld-Go.
 
 ## Non-Goals
