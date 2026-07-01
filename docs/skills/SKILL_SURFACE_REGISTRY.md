@@ -73,12 +73,14 @@ expliziter Adapter dokumentiert sein.
 
 | Surface | Pfad | Status | Begruendung |
 |---|---|---|---|
-| Gemini | `.gemini/skills/` | Eingeschraenkt | Bewusst eingeschraenkter Surface-Set, Onboarding-only; nur 4 Skills deploybar (`cdb-external-docs`, `surrealdb-python`, `surrealdb-vector`, `surrealql`). Domain-Skills wie CDB-Workflow-Skills sind **nicht** auf Gemini-Surface vorgesehen. |
+| Gemini | `.gemini/skills/` | Eingeschraenkt | Bewusst eingeschraenkter Surface-Set, Onboarding-only; nur 4 Skills deploybar (`cdb-external-docs`, `surrealdb-python`, `surrealdb-vector`, `surrealql`). Domain-Skills wie CDB-Workflow-Skills sind **nicht** auf Gemini-Surface vorgesehen. Aktivierungs-Policy: [`GEMINI_ACTIVATION_POLICY.md`](GEMINI_ACTIVATION_POLICY.md). |
 | Skillforge assets | `.opencode/skills/skillforge/` | Tooling, nicht Skill | Skillforge ist Meta-Tool fuer Skill-Erstellung, kein Domain-Skill |
 | Codex system | `.codex/cdb_skills/.system/` | Codex-spezifisch | Nur fuer Codex-Clients sichtbar |
 | Archiv / Legacy | `docs/archive/...` | Read-only | Historische Referenz, kein aktiver Skill |
 
 Regel: keine Skills auf `.gemini/` ohne explizite Surface-Entscheidung.
+Details, Fail-Closed-Regeln und kuenftige Aktivierungs-Gates:
+[`GEMINI_ACTIVATION_POLICY.md`](GEMINI_ACTIVATION_POLICY.md).
 
 ## 6. Surface-Adapter-Modell
 
@@ -251,7 +253,7 @@ Nach Canon-Tree-Merge (2026-07-01):
 - `[SKILLS] Apply Surface-Adapter-Header to all existing mirrored skills` — **done** (merged into #3639)
 - `[SKILLS] Add drift-reconcile hook for skill surface adapters` — **done** (Issue #3643; `tools/validate_skill_surface_mirror.py` + tests, `cdb-drift-reconcile` §Skill Surface Mirror Drift)
 - `[SKILLS] Add Skill-Meta Schema v1 (META.yaml + evals.json)` — **done** (Issue #3647; PR #3648; merge 6a6ef980)
-- `[SKILLS] Document `.gemini/` activation policy if domain skills are ever needed`
+- `[SKILLS] Document `.gemini/` activation policy if domain skills are ever needed` — **in flight** (Issue #3652; Policy [`GEMINI_ACTIVATION_POLICY.md`](GEMINI_ACTIVATION_POLICY.md); pending merge finalization)
 
 Diese Issues werden dedupliziert und mit klarem Scope angelegt.
 
