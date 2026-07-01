@@ -158,7 +158,11 @@ python tools/validate_skill_surface_mirror.py --skill <name>
 ## 9. Skill-Neuanlage-Workflow
 
 1. Skill-Inhalt in `docs/skills/<skill-name>/SKILL.md` anlegen.
-2. Optional `META.yaml` und `evals.json` (nur fuer CDB, falls Pruefung noetig).
+2. Optional `META.yaml` und `evals.json` (nur fuer CDB, falls Pruefung noetig):
+   Vertrag: [`SKILL_META_SCHEMA.md`](SKILL_META_SCHEMA.md);
+   Starter: [`_templates/META.yaml`](_templates/META.yaml),
+   [`_templates/evals.json`](_templates/evals.json).
+   Meta-Artefakte bleiben canon-only (Adapter spiegeln nur `SKILL.md`).
 3. Surface-Adapter-Header (Abschnitt 7) in der kanonischen Datei setzen.
 4. Mirror auf alle aktiven Surfaces (Abschnitt 4).
 5. `.claude/skills/cdb-<name>.skill` Index anlegen, falls Claude relevant.
@@ -246,7 +250,7 @@ Nach Canon-Tree-Merge (2026-07-01):
 - `[SKILLS] Extend cdb-session-close with Residual Work / Restunsicherheits-Intake` — **done** (PR #3645; merge afd98aa3)
 - `[SKILLS] Apply Surface-Adapter-Header to all existing mirrored skills` — **done** (merged into #3639)
 - `[SKILLS] Add drift-reconcile hook for skill surface adapters` — **done** (Issue #3643; `tools/validate_skill_surface_mirror.py` + tests, `cdb-drift-reconcile` §Skill Surface Mirror Drift)
-- `[SKILLS] Add skill-meta schema (META.yaml + evals.json) for new CDB domain skills`
+- `[SKILLS] Add skill-meta schema (META.yaml + evals.json) for new CDB domain skills` — **in flight** (pending merge finalization)
 - `[SKILLS] Document `.gemini/` activation policy if domain skills are ever needed`
 
 Diese Issues werden dedupliziert und mit klarem Scope angelegt.
