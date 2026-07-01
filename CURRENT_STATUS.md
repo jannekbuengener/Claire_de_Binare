@@ -25,7 +25,21 @@
   | Gemini activation policy | [#3652](https://github.com/jannekbuengener/Claire_de_Binare/issues/3652) | [#3653](https://github.com/jannekbuengener/Claire_de_Binare/pull/3653) | `52cd0000` |
   | Registry finalization Gemini policy | [#3655](https://github.com/jannekbuengener/Claire_de_Binare/issues/3655) | [#3656](https://github.com/jannekbuengener/Claire_de_Binare/pull/3656) | `26eedc5a` |
 
-  **Offene Restpunkte (nicht erledigt):** [#3631](https://github.com/jannekbuengener/Claire_de_Binare/issues/3631) Control-Reconcile bleibt **OPEN**; automatisierter `.gemini/skills/`-Validator nicht umgesetzt (Policy: `docs/skills/GEMINI_ACTIVATION_POLICY.md`). LR NO-GO.
+  **Offene Restpunkte (nicht erledigt):** automatisierter `.gemini/skills/`-Validator nicht umgesetzt (Policy: `docs/skills/GEMINI_ACTIVATION_POLICY.md`); CodeQL Advanced-Workflow optional später auf `workflow_dispatch`-only (Option B — Later, nicht dringend). LR NO-GO.
+
+- **CI-/Workflow-Hygiene-Welle (#3654-Kampagne / #3659–#3673)**: **COMPLETED** — GitHub-Actions-Rückmigration und Post-Restore-Reconcile; docs/control surfaces only where noted; kein Runtime/Docker/DB/MCP/LR/Live-Go.
+
+  | Slice | Issue | PR | Merge SHA |
+  |---|---|---|---|
+  | NOISE-FREEZE security trigger restore | [#3659](https://github.com/jannekbuengener/Claire_de_Binare/issues/3659) | [#3662](https://github.com/jannekbuengener/Claire_de_Binare/pull/3662) | `5f2f1af5` |
+  | Workflow register sync | [#3660](https://github.com/jannekbuengener/Claire_de_Binare/issues/3660) | [#3664](https://github.com/jannekbuengener/Claire_de_Binare/pull/3664) | `78ae9beb` |
+  | Self-hosted runner docs finalize | [#3661](https://github.com/jannekbuengener/Claire_de_Binare/issues/3661) | [#3666](https://github.com/jannekbuengener/Claire_de_Binare/pull/3666) | `030fc8eb` |
+  | Control reconcile post #3630 | [#3631](https://github.com/jannekbuengener/Claire_de_Binare/issues/3631) | [#3665](https://github.com/jannekbuengener/Claire_de_Binare/pull/3665) | `91c6ed0b` |
+  | Docs Hub Guard audit.log hygiene | [#3667](https://github.com/jannekbuengener/Claire_de_Binare/issues/3667) | [#3668](https://github.com/jannekbuengener/Claire_de_Binare/pull/3668) | `0eae84ac` |
+  | Workflow register guard reconcile | [#3671](https://github.com/jannekbuengener/Claire_de_Binare/issues/3671) | [#3672](https://github.com/jannekbuengener/Claire_de_Binare/pull/3672) | `868b3598` |
+  | CodeQL Python SARIF / default-setup dedupe | [#3670](https://github.com/jannekbuengener/Claire_de_Binare/issues/3670) | [#3673](https://github.com/jannekbuengener/Claire_de_Binare/pull/3673) | `c961c30e` |
+
+  **CodeQL operating mode (post-#3673):** GitHub CodeQL **Default Setup** liefert Code-Scanning-Alerts. Advanced `codeql-python.yml` bleibt als Validierungspfad mit `upload: false` (kein primärer SARIF-Pfad). Reduktion auf `workflow_dispatch`-only (Option B) bewusst **Later**. Register-Detail: `docs/runbooks/GITHUB_WORKFLOW_REGISTER.md` (#3672). LR NO-GO.
 
 - **Coordinator sleep-window stall fix (#3634)**: Resume-safe coordinator + testable sleep-stall supervisor. `resume-fixture-window` seeds `completed_cycles` from durable `runner_state`, emits `sleep_resumed` + audited recovery on a stalled sleep, and is fail-closed (missing state / `run_id` mismatch / terminal status). New `tools/evidence_harvester/supervisor.py` (`decide_supervision` + bounded `supervise_loop`, no process spawn / scheduler / Docker). A resumed run reaching `final_validation_completed` clears O264/O303. Tests: 29 unit (coordinator+supervisor), full harvester suite 260 PASS, ruff clean. No new 72h run; Slice-E documented only. LR NO-GO.
 
@@ -92,7 +106,7 @@
   - **Next blocker:** #3634 — coordinator sleep-window stall (blocks Slice-E `>=72h` retry)
   - LR remains **NO-GO**
 
-- **main**: `26eedc5a` — PR #3656 merged (squash): Skill-Governance-Welle Registry §15 Gemini-policy **done** finalization; prior #3635 reconcile closeout on main
+- **main**: `c961c30e` — PR #3673 merged (squash): CodeQL Python SARIF/default-setup dedupe (`upload: false`); prior CI-hygiene wave #3662–#3672 on main
 - **Active GitHub focus (manual, non-exhaustive)**:
   - #3362/#3345 + sleep-stall blocker follow-up (Evidence-Harvester — Slice-B/C/D all INCONCLUSIVE; no >=72h PASS)
   - #2440 (LR-030 Shadow/Soak Run) — **OPEN**
