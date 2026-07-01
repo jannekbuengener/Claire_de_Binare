@@ -16,7 +16,7 @@ synchron gehalten werden.
 | `onboarding` | [`onboarding/SKILL.md`](onboarding/SKILL.md) | opencode, cursor, codex, claude |
 | `cdb-onboarding` | [`cdb-onboarding/SKILL.md`](cdb-onboarding/SKILL.md) | codex (alias → onboarding) |
 | `cdb-session-start` | [`cdb-session-start/SKILL.md`](cdb-session-start/SKILL.md) | opencode, cursor, codex, claude |
-| `cdb-session-close` | [`cdb-session-close/SKILL.md`](cdb-session-close/SKILL.md) | opencode, cursor, codex, claude |
+| `cdb-session-close` | [`cdb-session-close/SKILL.md`](cdb-session-close/SKILL.md) | opencode, cursor, codex, claude — Post-Close Follow-up Intake (#3638) |
 | `cdb-control-intake` | [`cdb-control-intake/SKILL.md`](cdb-control-intake/SKILL.md) | opencode, cursor, codex, claude |
 | `cdb-issue-to-session-plan` | [`cdb-issue-to-session-plan/SKILL.md`](cdb-issue-to-session-plan/SKILL.md) | opencode, cursor, codex, claude |
 | `cdb-operator` | [`cdb-operator/SKILL.md`](cdb-operator/SKILL.md) | opencode, cursor, codex, claude |
