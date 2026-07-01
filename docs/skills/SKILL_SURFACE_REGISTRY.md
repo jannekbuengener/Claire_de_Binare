@@ -243,7 +243,7 @@ Nach Canon-Tree-Merge (2026-07-01):
 
 - `[SKILLS] Mirror surface adapters from docs/skills canon` — **done** (Issue #3639; 25/25 canon, 99 adapter SKILL.md synced)
 - `[SKILLS] Extend cdb-session-close with post-close follow-up issue intake` — **done** (Issue #3638)
-- `[SKILLS] Extend cdb-session-close with Residual Work / Restunsicherheits-Intake` — **in flight** (mandatory step 9; dedupe + follow-up issue path; canon + 4 mirrors)
+- `[SKILLS] Extend cdb-session-close with Residual Work / Restunsicherheits-Intake` — **done** (PR #3645; merge afd98aa3)
 - `[SKILLS] Apply Surface-Adapter-Header to all existing mirrored skills` — **done** (merged into #3639)
 - `[SKILLS] Add drift-reconcile hook for skill surface adapters` — **done** (Issue #3643; `tools/validate_skill_surface_mirror.py` + tests, `cdb-drift-reconcile` §Skill Surface Mirror Drift)
 - `[SKILLS] Add skill-meta schema (META.yaml + evals.json) for new CDB domain skills`
