@@ -7,6 +7,11 @@
 - **Working Repo Code**: GitHub-Link mit Branch-Placeholder:  
   `https://github.com/jannekbuengener/Claire_de_Binare/blob/{{BRANCH}}/<path>`
 
+## Kanonische Architektur-Docs
+
+- [ARCHITECTURE_MAP.md](./ARCHITECTURE_MAP.md) — BLUE/RED-Topologie, Service Map, Redis-Channels
+- [SERVICE_CATALOG.md](./governance/SERVICE_CATALOG.md) — Service-Inventar inkl. pinned Base-Images (`cdb_postgres`, `cdb_redis`)
+
 ---
 
 ## 🗺️ Systemkarte (20-Sekunden-Überblick)
