@@ -104,7 +104,7 @@ Version: `cdb.evidence_harvester.runner_state.v1`
 | `last_cycle_started_at_utc` | string | ISO-8601 UTC of last cycle start |
 | `next_cycle_due_at_utc` | string | ISO-8601 UTC of the next scheduled cycle while sleeping |
 | `last_successful_artifact_stamp` | string | Stamp of the last successful artifact cycle |
-| `coordinator_status` | string | Coordinator lifecycle status such as `running`, `sleeping`, `recovering`, `final_validation`, `completed`, or `failed` |
+| `coordinator_status` | string | Coordinator lifecycle status such as `running`, `sleeping`, `resuming`, `recovering`, `final_validation`, `completed`, or `failed` |
 
 ## Coordinator Lifecycle Telemetry
 
@@ -301,10 +301,87 @@ findings on `runner_heartbeat.json.current_run_at_utc` and
 - no recovery
 - fail validation
 
+## Coordinator Resume & Sleep-Stall Supervisor (#3634)
+
+### Root cause
+
+Slice-B/C/D all ended `INCONCLUSIVE` with the same signature: the coordinator
+process died inside the in-process blocking sleep between the durable
+`sleep_started` and `sleep_completed` events. `run_fixture_window` re-initialised
+`completed_cycles = 0` on every launch, so there was no safe resume — a restart
+either re-ran the whole window or double-counted. `ops_validation` detects the
+post-hoc symptom (O264 sleep-lifecycle warn, O303 INCONCLUSIVE) but cannot
+recover it.
+
+### Resume-safe coordinator
+
+`resume-fixture-window` (same arguments as `run-fixture-window`) continues an
+interrupted run from durable state instead of restarting it:
+
+```powershell
+python -m tools.evidence_harvester.coordinator resume-fixture-window ^
+    --fixture artifacts\evidence_harvester\24h_dry_run\collector_input.json ^
+    --artifact-dir artifacts\evidence_harvester\72h_ops_validation\<run_id> ^
+    --iterations 288 ^
+    --cadence-seconds 900
+```
+
+- Seeds `completed_cycles` from `runner_state.total_cycles_completed` (no
+  re-run, no double count).
+- Stall predicate: last durable event is `sleep_started` and
+  `coordinator_status == "sleeping"`. On match it writes a `sleep_resumed`
+  lifecycle event plus an audited `recovery_event_<stamp>.json`
+  (`failure_source="sleep_stall"`, `action="resume_cycle_window"`), then
+  continues to the next cycle — or straight to final validation if all cycles
+  are already complete.
+- Idempotent: resuming a fully-cycled window goes directly to
+  `final_validation_started`/`final_validation_completed` without repeating
+  cycles.
+- Fail-closed guards (raise `CoordinatorError`): missing `runner_state.json`,
+  `run_id` mismatch vs the artifact directory, or terminal status
+  (`completed` / `failed` / `fatal_stop`).
+
+A resumed run that reaches `final_validation_completed` clears both O264 and
+O303: the event stream no longer ends on `sleep_started`, and a final validation
+marker exists.
+
+### Sleep-stall supervisor
+
+`supervisor.py` is a testable decision + bounded-relaunch layer. It does not
+spawn processes, install an OS scheduler, or touch Docker/DB/Redis/secrets.
+
+`decide_supervision(state, events, now, process_alive, relaunch_count,
+max_relaunch_count)` returns exactly one action:
+
+| Action | Condition |
+|---|---|
+| `DONE` | `coordinator_status == "completed"` or a `final_validation_completed` event is present |
+| `STOP_FATAL` | terminal status `failed` / `fatal_stop` |
+| `RELAUNCH_RESUME` | stalled sleep (`sleep_started` last, status `sleeping`) past `next_cycle_due_at_utc` with a dead process, within relaunch budget |
+| `STOP_LIMIT` | relaunch condition met but `relaunch_count >= max_relaunch_count` |
+| `WAIT` | process alive, or no relaunch condition met |
+
+Read-only decision preview:
+
+```powershell
+python -m tools.evidence_harvester.supervisor status ^
+    --artifact-dir artifacts\evidence_harvester\72h_ops_validation\<run_id> ^
+    --pretty
+```
+
+`supervise` runs the poll/relaunch loop in-process and is fail-closed behind
+`--explicit` (without it, only the plan is printed). The loop is fully injectable
+(`launcher`, `process_alive_fn`, `now_fn`, `sleep_fn`) and bounded by
+`--max-relaunch-count` and optional `--max-polls`. Real external supervision
+(subprocess spawn / scheduled wake probe) remains a Slice-E operational wrapper
+that requires its own Runtime-GO.
+
 ## Safety Boundaries
 
 - No Docker start/stop, runtime start, DB execution/mutation, secrets access
 - No LR-Go, no Live-Go, no Echtgeld-Go
+- `resume-fixture-window` reads durable state only; it never rewinds completed cycles
+- `supervisor supervise` requires `--explicit`; `supervisor status` is read-only
 - `loop-fixture` is always bounded (`--iterations N` required)
 - Failure in one loop iteration raises immediately (fail-closed)
 - Signal handling: SIGTERM/SIGINT cleanly stop the loop at the next iteration boundary
@@ -482,6 +559,8 @@ Do not populate until the replacement run has completed.
 
 - `tools/evidence_harvester/README.md` — module-level documentation
 - `tools/evidence_harvester/runner.py` — source
+- `tools/evidence_harvester/coordinator.py` — coordinator + resume source (#3634)
+- `tools/evidence_harvester/supervisor.py` — sleep-stall supervisor source (#3634)
 - `tools/evidence_harvester/boot.py` — boot readiness source
 - `docs/runbooks/CDB_EVIDENCE_HARVESTER_24H_DRY_VALIDATION.md` — 24h dry validation runbook
 - `docs/runbooks/CDB_EVIDENCE_HARVESTER_72H_OPS_VALIDATION.md` — final >=72h validation runbook
