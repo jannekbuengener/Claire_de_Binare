@@ -228,7 +228,7 @@ Repo health, staleness, documentation quality, and audit cleanliness.
 | File | Status | Trigger(s) | Purpose | Scripts | Key Outputs | FP | HT |
 |---|---|---|---|---|---|---|---|
 | `stale.yml` | aktiv | sched, dispatch | Close stale issues/PRs after inactivity | — | Stale label + issue close | O | Stale list review |
-| `docs-hub-guard.yml` | Block tracked `*.log` files and `/logs/` paths from being committed | — | Fail if log committed | **C** | PR block; fix before merge. |
+| `docs-hub-guard.yml` | aktiv | push, PR, dispatch | Block tracked `*.log` files and `/logs/` paths from being committed | — | Fail if log committed | **C** | PR block; fix before merge. Known pre-existing: `artifacts/*/audit.log` tracked in git triggers failure. |
 | `docs-conflict-guard.yml` | aktiv | PR, push, dispatch | Detect documentation conflicts and drift | — | Conflict flag | O | On docs conflict detection |
 | `root-session-hygiene-warning.yml` | aktiv | dispatch | Warn on session-state artifacts in root | `scripts/root_session_hygiene_warn.py` | PR warning comment | O | Operator: manual trigger |
 | `copilot-housekeeping.yml` | aktiv | sched, dispatch | Copilot workspace cleanup | — | Cleaned workspace state | O | Post-session cleanup |
@@ -309,10 +309,9 @@ Secret scanning, vulnerability detection, and security audit.
 | Workflow | Failure | Root cause |
 |---|---|---|
 | `codeql-python.yml` | SARIF upload fails: CodeQL analyses from advanced configurations cannot be processed when the default setup is enabled | GitHub Code Scanning default setup is enabled at repo level, conflicting with advanced CodeQL workflow SARIF upload |
+| `docs-hub-guard.yml` | "Block runtime artifacts" step fails: tracked `audit.log` files in `artifacts/` directory | Historical `.log` files in `artifacts/calibration/` and `artifacts/controlled_lab_evidence/` that violate the guard check |
 
 These failures existed before the NOISE-FREEZE restore but were not visible (workflow_dispatch only). They are not regressions from #3659/#3662. Follow-up issues may be appropriate if the failures are actionable.
-
-**Resolved (2026-07-01, #3667):** `docs-hub-guard.yml` tracked `artifacts/**/audit.log` — untracked; guard passes when no other `*.log` files are committed.
 
 ---
 
