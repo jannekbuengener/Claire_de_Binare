@@ -10,6 +10,23 @@
 
 ## Repo / Engineering Status (2026-07-01)
 
+- **Skill-Governance-Welle (#3637–#3656)**: **COMPLETED** — docs/skills/governance only; kein Runtime/Docker/DB/MCP/Secrets/LR/Live-Go. `docs/skills/` bleibt SSOT; 25/25 Canon-Skills, 97 Mirror-Adapter (`tools/validate_skill_surface_mirror.py` PASS). Registry §15: alle Slices **done** (Mirror #3639, Drift-Guard #3643, Session-Close-Intake #3638, Residual-Intake PR #3645, Skill-Meta #3647, Gemini-Policy #3652).
+
+  | Slice | Issue | PR | Merge SHA |
+  |---|---|---|---|
+  | Canon skill source tree | — | [#3637](https://github.com/jannekbuengener/Claire_de_Binare/pull/3637) | `1d12b774` |
+  | Mirror surface adapters | [#3639](https://github.com/jannekbuengener/Claire_de_Binare/issues/3639) | — | (in #3639 chain) |
+  | Drift-reconcile hook | [#3643](https://github.com/jannekbuengener/Claire_de_Binare/issues/3643) | — | — |
+  | Session-close follow-up intake | [#3638](https://github.com/jannekbuengener/Claire_de_Binare/issues/3638) | — | — |
+  | Session-close Residual/Restunsicherheits-Intake | — | [#3645](https://github.com/jannekbuengener/Claire_de_Binare/pull/3645) | `afd98aa3` |
+  | Registry finalization (#3645) | — | [#3646](https://github.com/jannekbuengener/Claire_de_Binare/pull/3646) | `7111635d` |
+  | Skill-Meta Schema v1 | [#3647](https://github.com/jannekbuengener/Claire_de_Binare/issues/3647) | [#3648](https://github.com/jannekbuengener/Claire_de_Binare/pull/3648) | `6a6ef980` |
+  | Registry finalization Skill-Meta | [#3649](https://github.com/jannekbuengener/Claire_de_Binare/issues/3649) | [#3650](https://github.com/jannekbuengener/Claire_de_Binare/pull/3650) | `d77523eb` |
+  | Gemini activation policy | [#3652](https://github.com/jannekbuengener/Claire_de_Binare/issues/3652) | [#3653](https://github.com/jannekbuengener/Claire_de_Binare/pull/3653) | `52cd0000` |
+  | Registry finalization Gemini policy | [#3655](https://github.com/jannekbuengener/Claire_de_Binare/issues/3655) | [#3656](https://github.com/jannekbuengener/Claire_de_Binare/pull/3656) | `26eedc5a` |
+
+  **Offene Restpunkte (nicht erledigt):** [#3631](https://github.com/jannekbuengener/Claire_de_Binare/issues/3631) Control-Reconcile bleibt **OPEN**; automatisierter `.gemini/skills/`-Validator nicht umgesetzt (Policy: `docs/skills/GEMINI_ACTIVATION_POLICY.md`). LR NO-GO.
+
 - **Coordinator sleep-window stall fix (#3634)**: Resume-safe coordinator + testable sleep-stall supervisor. `resume-fixture-window` seeds `completed_cycles` from durable `runner_state`, emits `sleep_resumed` + audited recovery on a stalled sleep, and is fail-closed (missing state / `run_id` mismatch / terminal status). New `tools/evidence_harvester/supervisor.py` (`decide_supervision` + bounded `supervise_loop`, no process spawn / scheduler / Docker). A resumed run reaching `final_validation_completed` clears O264/O303. Tests: 29 unit (coordinator+supervisor), full harvester suite 260 PASS, ruff clean. No new 72h run; Slice-E documented only. LR NO-GO.
 
 - **Evidence-Harvester Reconcile (#3384)**: `RECONCILED_NEXT_BLOCKER_IDENTIFIED` — Slice-B/C/D all formal INCONCLUSIVE; #3384/#3589 CLOSED; #3362/#3345 OPEN. Next blocker: **#3634** (coordinator sleep-window stall). LR NO-GO.
@@ -75,7 +92,7 @@
   - **Next blocker:** #3634 — coordinator sleep-window stall (blocks Slice-E `>=72h` retry)
   - LR remains **NO-GO**
 
-- **main**: `325369fb` — PR #3635 merged (squash): Evidence-Harvester #3384 reconcile closeout docs on main
+- **main**: `26eedc5a` — PR #3656 merged (squash): Skill-Governance-Welle Registry §15 Gemini-policy **done** finalization; prior #3635 reconcile closeout on main
 - **Active GitHub focus (manual, non-exhaustive)**:
   - #3362/#3345 + sleep-stall blocker follow-up (Evidence-Harvester — Slice-B/C/D all INCONCLUSIVE; no >=72h PASS)
   - #2440 (LR-030 Shadow/Soak Run) — **OPEN**
