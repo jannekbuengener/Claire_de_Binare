@@ -10,6 +10,10 @@
 
 ## Repo / Engineering Status (2026-07-01)
 
+- **Backup manifest Redis drift #3614 / PR #TBD**: `Components.Redis` aligned with `redis_dump.rdb` artifact via `Sync-BackupComponentManifest`; restore tolerates legacy drift ZIPs. Closes #3614. LR NO-GO.
+
+- **`.pg15_archived` cleanup follow-up #3612`**: OPEN — optional volume cleanup after PG18 retention window (earliest 2026-07-15); no delete authorized yet. LR NO-GO.
+
 - **Redis AOF runbook SSOT sync (docs-only)**: `redis_aof_corruption_recovery.md` — Recovery-One-off und Current-Runtime-Zeile auf `redis:8.8.0-alpine` (#3594); Incident-Evidence 7.4.9 historisch belassen. LR NO-GO.
 
 - **Redis exporter health #3606 / PR #3607 / `498c8b5a`**: MERGED. `cdb_redis_exporter` healthcheck von `nc -z` auf bash `/dev/tcp` umgestellt (`base.yml`, `compose.red.yml`); Ursache: `bitnami/redis-exporter` ohne `nc`. Runtime recreate exporter only → **healthy**. Closes #3606. LR NO-GO.
