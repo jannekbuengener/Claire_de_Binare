@@ -10,6 +10,8 @@
 
 ## Repo / Engineering Status (2026-07-01)
 
+- **CVE-2026-11824 BLUE services #3619–#3625 / PR #3629 / `23401b21`**: MERGED (evidence-only). Verdict **UPSTREAM_BLOCKED** — `libsqlite3-0` in `python:3.14-slim-trixie`; Debian Trixie `<no-dsa>`. Issues #3619–#3625 bleiben **OPEN** (`status:blocked`). Evidence: `docs/evidence/security/CDB_SECURITY_BATCH_MATRIX_3619-3625-CVE-11824_2026-07-01.md`. Re-Triage via Tracker #2513. LR NO-GO.
+
 - **Backup manifest Redis drift #3614 / PR #3615**: `Components.Redis` aligned with `redis_dump.rdb` artifact via `Sync-BackupComponentManifest`; restore tolerates legacy drift ZIPs. Closes #3614. LR NO-GO.
 
 - **`.pg15_archived` cleanup follow-up #3612`**: OPEN — optional volume cleanup after PG18 retention window (earliest 2026-07-15); no delete authorized yet. LR NO-GO.
