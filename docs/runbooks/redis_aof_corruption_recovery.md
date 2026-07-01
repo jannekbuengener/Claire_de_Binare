@@ -17,7 +17,9 @@ Primary session log: [`knowledge/logs/sessions/2026-05-29-redis-aof-recovery.md`
 | Corruption | 3422-byte tail truncation in `appendonly.aof.179.incr.aof` (`ok_up_to=38757026` of `38760448`) |
 | Repair tool | `redis-check-aof --fix` on `/data/appendonlydir/appendonly.aof.manifest` |
 | Post-repair | `PONG`, `Ready to accept connections`, no AOF parse errors |
-| Runtime config | `redis:7.4.9-alpine`, `--appendonly yes` in [`compose.blue.yml`](../../infrastructure/compose/compose.blue.yml) |
+| Incident runtime (2026-05-29) | `redis:7.4.9-alpine` |
+| Current runtime SSOT | `redis:8.8.0-alpine@sha256:9d317178eceac8454a2284a9e6df2466b93c745529947f0cd42a0fa9609d7005` in [`compose.blue.yml`](../../infrastructure/compose/compose.blue.yml) (runtime rebuild #3594, 2026-07-01) |
+| AOF config | `--appendonly yes` (unchanged across rebuild) |
 | Volume | `claire_de_binare_redis_data` → `/data` |
 | Backup (2026-05-29) | `artifacts/redis_aof_recovery_20260529_004112/redis_data_full.tar.gz` (16 106 009 bytes) |
 | Backup SHA256 | `5021085D8D39159633149656756D9F89DDEFF54DAA089E1B025F45B5D81697E6` |
@@ -57,10 +59,10 @@ Do **not** re-run unless a new incident occurs. Steps from the 2026-05-29 recove
 
 1. **Backup** the Redis volume to `artifacts/` (tar.gz + SHA256).
 2. `docker stop cdb_redis`
-3. Start a one-off container with the Redis data volume mounted:
+3. Start a one-off container with the Redis data volume mounted. Use the **current compose SSOT image** (not the historical 7.4.9 incident image):
 
    ```bash
-   docker run --rm -v claire_de_binare_redis_data:/data redis:7.4.9-alpine \
+   docker run --rm -v claire_de_binare_redis_data:/data redis:8.8.0-alpine@sha256:9d317178eceac8454a2284a9e6df2466b93c745529947f0cd42a0fa9609d7005 \
      sh -c "yes y | redis-check-aof --fix /data/appendonlydir/appendonly.aof.manifest"
    ```
 
@@ -79,3 +81,4 @@ Do **not** re-run unless a new incident occurs. Steps from the 2026-05-29 recove
 
 - **#2668 / #2669:** Stack verify logging default + Windows `docker-health` — fixed in PR #2670.
 - **#2667:** This runbook closes the RCA documentation gap.
+- **#3594:** Runtime rebuild to `redis:8.8.0-alpine` (2026-07-01); AOF volume preserved; post-rebuild validation PASS.
