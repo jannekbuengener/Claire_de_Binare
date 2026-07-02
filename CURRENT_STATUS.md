@@ -38,6 +38,7 @@
   | Docs Hub Guard audit.log hygiene | [#3667](https://github.com/jannekbuengener/Claire_de_Binare/issues/3667) | [#3668](https://github.com/jannekbuengener/Claire_de_Binare/pull/3668) | `0eae84ac` |
   | Workflow register guard reconcile | [#3671](https://github.com/jannekbuengener/Claire_de_Binare/issues/3671) | [#3672](https://github.com/jannekbuengener/Claire_de_Binare/pull/3672) | `868b3598` |
   | CodeQL Python SARIF / default-setup dedupe | [#3670](https://github.com/jannekbuengener/Claire_de_Binare/issues/3670) | [#3673](https://github.com/jannekbuengener/Claire_de_Binare/pull/3673) | `c961c30e` |
+  | Control/ledger docs reconcile post #3662 | [#3663](https://github.com/jannekbuengener/Claire_de_Binare/issues/3663) | [#3675](https://github.com/jannekbuengener/Claire_de_Binare/pull/3675) | `1fbfcb9c` |
 
   **CodeQL operating mode (post-#3673):** GitHub CodeQL **Default Setup** liefert Code-Scanning-Alerts. Advanced `codeql-python.yml` bleibt als Validierungspfad mit `upload: false` (kein primärer SARIF-Pfad). Reduktion auf `workflow_dispatch`-only (Option B) bewusst **Later**. Register-Detail: `docs/runbooks/GITHUB_WORKFLOW_REGISTER.md` (#3672). LR NO-GO.
 
@@ -106,7 +107,7 @@
   - **Next blocker:** #3634 — coordinator sleep-window stall (blocks Slice-E `>=72h` retry)
   - LR remains **NO-GO**
 
-- **main**: `c961c30e` — PR #3673 merged (squash): CodeQL Python SARIF/default-setup dedupe (`upload: false`); prior CI-hygiene wave #3662–#3672 on main
+- **main**: `1fbfcb9c` — PR #3675 merged (squash): control/ledger docs reconcile (#3663); prior tip `c961c30e` (PR #3673 CodeQL `upload: false`)
 - **Active GitHub focus (manual, non-exhaustive)**:
   - #3362/#3345 + sleep-stall blocker follow-up (Evidence-Harvester — Slice-B/C/D all INCONCLUSIVE; no >=72h PASS)
   - #2440 (LR-030 Shadow/Soak Run) — **OPEN**
