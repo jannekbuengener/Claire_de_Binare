@@ -1,0 +1,37 @@
+{
+  "schema_version": "profitability_league_table_report.v1",
+  "report_id": "pltr-primary-breakout-scoring-v1-sentinel-3682",
+  "model_id": "pltm-profitability-scoring-v1",
+  "generated_at": "2026-07-02T12:00:00+00:00",
+  "table_status": "PARTIAL",
+  "candidate_rankings": [
+    {
+      "candidate_id": "cand-primary-breakout-v1-btcusdt-mexc-3032",
+      "rank": 1,
+      "total_score": 0.0,
+      "ranking_ready": false,
+      "net_return": -0.1221562421,
+      "dimension_scores": [
+        {"dimension": "NET_ECONOMICS", "score": 0.0},
+        {"dimension": "ROBUSTNESS", "score": 0.0},
+        {"dimension": "EVIDENCE_COMPLETENESS", "score": 0.0},
+        {"dimension": "SAFETY_STATUS", "score": 0.0},
+        {"dimension": "PAPER_REFERENCE_CONFIDENCE", "score": 0.0},
+        {"dimension": "EXECUTION_REALISM", "score": 0.0}
+      ],
+      "recommendation": "PARK",
+      "limitations_summary": [
+        "Sentinel mode: replay_vs_paper_status=not_run and simulator_drift=not_assessed block ranking_ready.",
+        "Formula ref: docs/strategy/CDB_PROFITABILITY_LEAGUE_SCORING_FORMULA_V1.md — zero scores are not performance metrics.",
+        "PARK is a research hold; not promotion, not paper-ready, not live-ready.",
+        "LR remains NO-GO."
+      ]
+    }
+  ],
+  "limitations": [
+    "Worked example for Formula v1 sentinel mode (#3682).",
+    "Input PEP: profitability_evidence_packet_primary_breakout_v1_mexc_multi_window_3032.json.",
+    "Computed dimension scores would be non-zero for some dimensions, but hard gates force sentinel 0.0.",
+    "League table output is advisory only and cannot authorize promotion or capital."
+  ]
+}

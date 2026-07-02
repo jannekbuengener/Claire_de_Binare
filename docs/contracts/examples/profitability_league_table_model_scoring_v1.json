@@ -1,0 +1,92 @@
+{
+  "schema_version": "profitability_league_table_model.v1",
+  "model_id": "pltm-profitability-scoring-v1",
+  "created_at": "2026-07-02T12:00:00+00:00",
+  "parent_issue": "#3032",
+  "scoring_formula_ref": "docs/strategy/CDB_PROFITABILITY_LEAGUE_SCORING_FORMULA_V1.md",
+  "scoring_dimensions": [
+    {
+      "dimension": "NET_ECONOMICS",
+      "weight_pct": 25.0,
+      "requires_net_economics": true,
+      "description": "Fee-adjusted net return relative to neutral baseline; drawdown penalty."
+    },
+    {
+      "dimension": "ROBUSTNESS",
+      "weight_pct": 20.0,
+      "requires_net_economics": true,
+      "description": "Scenario stability, loss streak, and stress gate outcomes."
+    },
+    {
+      "dimension": "EVIDENCE_COMPLETENESS",
+      "weight_pct": 15.0,
+      "requires_net_economics": false,
+      "description": "Non-null trade metrics, regime scorecard, and source refs."
+    },
+    {
+      "dimension": "SAFETY_STATUS",
+      "weight_pct": 15.0,
+      "requires_net_economics": false,
+      "description": "Recommendation and risk/kill-switch signals; PARK is not promotion."
+    },
+    {
+      "dimension": "PAPER_REFERENCE_CONFIDENCE",
+      "weight_pct": 15.0,
+      "requires_net_economics": false,
+      "description": "Replay-vs-paper alignment and simulator drift classification."
+    },
+    {
+      "dimension": "EXECUTION_REALISM",
+      "weight_pct": 10.0,
+      "requires_net_economics": true,
+      "description": "Explicit fees, spread, and slippage attribution quality."
+    }
+  ],
+  "ranking_rules": {
+    "gross_only_ranking_allowed": false,
+    "ranking_ready_required": true,
+    "tie_breakers": [
+      "HIGHER_EVIDENCE_COMPLETENESS",
+      "BETTER_STRESS_OUTCOME",
+      "LOWER_DRAWDOWN"
+    ],
+    "blocked_conditions": [
+      "replay_vs_paper_status in (not_run, missing_reference)",
+      "simulator_drift in (not_assessed, unusable)",
+      "execution_economics_assessment.ranking_ready=false",
+      "candidate status is UNSAFE",
+      "dataset quality verdict is BLOCKED"
+    ]
+  },
+  "recommendation_semantics": {
+    "allowed_recommendations": [
+      "REJECT",
+      "PARK",
+      "PROMOTE_TO_NEXT_RESEARCH_GATE",
+      "UNSAFE",
+      "NO_RECOMMENDATION"
+    ],
+    "automatic_promotion_allowed": false,
+    "capital_authority": "NONE",
+    "notes": "League table output is advisory only. PARK is a research hold, not promotion or capital authority."
+  },
+  "report_contract": {
+    "report_ref": "docs/contracts/profitability_league_table_report.v1.schema.json",
+    "candidate_minimum_fields": [
+      "candidate_id",
+      "rank",
+      "total_score",
+      "net_return",
+      "recommendation",
+      "ranking_ready",
+      "evidence_completeness",
+      "limitations_summary"
+    ],
+    "score_range": "0_to_100"
+  },
+  "limitations": [
+    "Formula v1 per docs/strategy/CDB_PROFITABILITY_LEAGUE_SCORING_FORMULA_V1.md.",
+    "Sentinel 0.0 scores apply when ranking_ready=false due to missing paper reference or other hard gates.",
+    "League Table remains research-only and not an execution or allocation authority."
+  ]
+}

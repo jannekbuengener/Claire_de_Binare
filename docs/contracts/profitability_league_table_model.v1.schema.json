@@ -16,6 +16,10 @@
     "limitations"
   ],
   "properties": {
+    "scoring_formula_ref": {
+      "type": "string",
+      "const": "docs/strategy/CDB_PROFITABILITY_LEAGUE_SCORING_FORMULA_V1.md"
+    },
     "schema_version": {
       "const": "profitability_league_table_model.v1"
     },
@@ -47,10 +51,13 @@
           "dimension": {
             "type": "string",
             "enum": [
+              "NET_ECONOMICS",
               "NET_RETURN",
               "ROBUSTNESS",
               "EVIDENCE_COMPLETENESS",
               "SAFETY_STATUS",
+              "PAPER_REFERENCE_CONFIDENCE",
+              "EXECUTION_REALISM",
               "DRAWDOWN_DISCIPLINE",
               "STRESS_RESILIENCE"
             ]

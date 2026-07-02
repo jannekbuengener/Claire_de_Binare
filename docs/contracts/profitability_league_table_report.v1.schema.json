@@ -90,10 +90,13 @@
                 "dimension": {
                   "type": "string",
                   "enum": [
+                    "NET_ECONOMICS",
                     "NET_RETURN",
                     "ROBUSTNESS",
                     "EVIDENCE_COMPLETENESS",
                     "SAFETY_STATUS",
+                    "PAPER_REFERENCE_CONFIDENCE",
+                    "EXECUTION_REALISM",
                     "DRAWDOWN_DISCIPLINE",
                     "STRESS_RESILIENCE"
                   ]

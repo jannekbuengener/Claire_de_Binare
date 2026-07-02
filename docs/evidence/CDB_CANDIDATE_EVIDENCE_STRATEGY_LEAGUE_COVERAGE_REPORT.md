@@ -273,10 +273,10 @@ Existing open issues already cover the gaps. **No new issues required** in this 
 | LR-050 refresh | **#2977** | CLOSED after #3382; not reopened here |
 | Strategy selector (downstream) | **#205** | Consumes #3383 output; not reactivated |
 
-**Numeric scoring formula gap** (League `total_score` / `dimension_scores`) is the one
-genuinely uncovered item. It sits inside the League Table v1 scope (`#3040` lineage);
-tracked via the League Table surface, not created as a new issue in this docs-only
-slice. If ops wants explicit tracking, open a focused follow-up referencing this report.
+**Numeric scoring formula gap** — addressed by
+`docs/strategy/CDB_PROFITABILITY_LEAGUE_SCORING_FORMULA_V1.md` (#3682). League
+seeds may continue to show sentinel `0.0` until paper-reference evidence is wired
+and `ranking_ready` gates pass.
 
 ---
 

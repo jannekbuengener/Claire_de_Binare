@@ -23,6 +23,9 @@ completeness, and safety status before any next research gate is considered.
 | League table report schema | `docs/contracts/profitability_league_table_report.v1.schema.json` | Candidate ranking output and report shape |
 | Model example | `docs/contracts/examples/profitability_league_table_model_valid.json` | Valid research-only ranking model fixture |
 | Report example | `docs/contracts/examples/profitability_league_table_report_valid.json` | Valid research-only ranking report fixture |
+| Scoring formula v1 | `docs/strategy/CDB_PROFITABILITY_LEAGUE_SCORING_FORMULA_V1.md` | Executable `total_score` / `dimension_scores` rules (#3682) |
+| Scoring model fixture | `docs/contracts/examples/profitability_league_table_model_scoring_v1.json` | Six-dimension weights for Formula v1 |
+| Scoring worked example | `docs/contracts/examples/profitability_league_table_scoring_worked_example_v1.json` | Sentinel-mode PARK candidate |
 
 ## Relationship To Existing Repo Surfaces
 
@@ -41,15 +44,21 @@ new runtime evaluator.
 
 League Table v1 records weighted scoring dimensions such as:
 
-- net return
+- net economics
 - robustness
 - evidence completeness
 - safety status
-- stress resilience
+- paper-reference confidence
+- execution realism
 
 Weights are explicit, and gross-only ranking is forbidden. A candidate without
 net-economics readiness may still appear in the report, but it must not be
 treated as fully rankable.
+
+**Normative calculation rules** live in
+`docs/strategy/CDB_PROFITABILITY_LEAGUE_SCORING_FORMULA_V1.md` (#3682). Before
+that formula, repo seeds used `0.0` fail-closed sentinels when mandatory evidence
+(e.g. paper reference) was missing (#3383).
 
 ## Ranking Rules
 
