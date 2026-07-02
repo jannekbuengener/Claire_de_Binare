@@ -32,6 +32,7 @@ Repo-versionierte Session-Skills für Cursor Agents. Jeder Skill lebt in `<name>
 | [`cdb-root-cause`](cdb-root-cause/SKILL.md) | Symptom to root-cause isolation, evidence, fix plan |
 | [`cdb-symptom-triage`](cdb-symptom-triage/SKILL.md) | Frame and route a raw debug symptom |
 | [`cdb-regression-gap`](cdb-regression-gap/SKILL.md) | Name the missing test/guard/evidence for a defect |
+| [`cdb-debug-handoff`](cdb-debug-handoff/SKILL.md) | Package a resolved/parked debug record and route it onward |
 | [`cdb-docs-ops`](cdb-docs-ops/SKILL.md) | Docs maintenance |
 | [`ctb-docker-stack`](ctb-docker-stack/SKILL.md) | Docker BLUE+RED |
 | [`surrealql`](surrealql/SKILL.md) | CDB-curated official SurrealQL skill |
