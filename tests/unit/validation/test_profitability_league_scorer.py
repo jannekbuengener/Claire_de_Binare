@@ -282,6 +282,36 @@ def test_dataset_quality_blocked_is_hard_gate() -> None:
     assert any("dataset quality verdict=BLOCKED" in note for note in failures)
 
 
+@pytest.mark.unit
+def test_missing_gross_return_forces_sentinel() -> None:
+    pep = _ranking_ready_pep()
+    pep["gross_return"] = None
+
+    failures = hard_gate_failures(pep)
+    assert any("gross_return" in note for note in failures)
+
+    result = score_candidate(pep)
+    assert result.sentinel_mode is True
+    assert result.ranking_ready is False
+    assert result.total_score == 0.0
+
+
+@pytest.mark.unit
+def test_non_finite_numeric_inputs_fail_closed() -> None:
+    nan_pep = _ranking_ready_pep()
+    nan_pep["net_return"] = float("nan")
+    nan_result = score_candidate(nan_pep)
+    assert nan_result.sentinel_mode is True
+    assert nan_result.ranking_ready is False
+    assert nan_result.total_score == 0.0
+
+    inf_pep = _ranking_ready_pep()
+    inf_pep["gross_return"] = float("inf")
+    inf_result = score_candidate(inf_pep)
+    assert inf_result.sentinel_mode is True
+    assert inf_result.ranking_ready is False
+
+
 # --------------------------------------------------------------------------- #
 # Table status + ordering
 # --------------------------------------------------------------------------- #

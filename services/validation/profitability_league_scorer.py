@@ -23,6 +23,7 @@ from __future__ import annotations
 
 import argparse
 import json
+import math
 import sys
 from dataclasses import dataclass
 from pathlib import Path
@@ -110,7 +111,12 @@ def _as_number(value: object) -> float | None:
     if isinstance(value, bool):
         return None
     if isinstance(value, (int, float)):
-        return float(value)
+        number = float(value)
+        # Reject NaN/Infinity (accepted by Python's json.loads) so malformed
+        # evidence fails closed instead of producing a bogus finite score.
+        if not math.isfinite(number):
+            return None
+        return number
     return None
 
 
@@ -159,6 +165,12 @@ def hard_gate_failures(
 
     if pep.get("fees") is None or _as_number(pep.get("fees")) is None:
         reasons.append("fees is null (net economics unassessable)")  # row 2
+
+    # NET_ECONOMICS (requires_net_economics=true) needs gross_return; a missing
+    # required input must keep the candidate in sentinel mode (row 10), not just
+    # score NET_ECONOMICS as 0.0 while still allowing ranking_ready=true.
+    if pep.get("gross_return") is None or _as_number(pep.get("gross_return")) is None:
+        reasons.append("gross_return is null (net economics unassessable)")  # row 10
 
     replay_status = pep.get("replay_vs_paper_status")
     if replay_status in ("not_run", "missing_reference"):
