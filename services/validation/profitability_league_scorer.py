@@ -25,11 +25,12 @@ import argparse
 import json
 import sys
 from dataclasses import dataclass
-from datetime import UTC, datetime
 from pathlib import Path
 from typing import Any, Mapping, Sequence
 
 from jsonschema.validators import validator_for
+
+from core.utils.clock import utcnow
 
 PROJECT_ROOT = Path(__file__).resolve().parents[2]
 CONTRACTS_DIR = PROJECT_ROOT / "docs" / "contracts"
@@ -527,7 +528,9 @@ def _table_status(scores: Sequence[CandidateScore]) -> str:
 
 
 def _generated_at_now() -> str:
-    return datetime.now(UTC).isoformat().replace("+00:00", "Z")
+    # Uses the injectable CDB clock (UTC) instead of datetime.now/utcnow so the
+    # core.utils.clock guardrail stays satisfied and replay stays deterministic.
+    return utcnow().strftime("%Y-%m-%dT%H:%M:%SZ")
 
 
 def build_league_table_report(
@@ -613,7 +616,7 @@ def build_league_table_report(
 
 
 def _default_report_id() -> str:
-    stamp = datetime.now(UTC).strftime("%Y%m%d%H%M%S")
+    stamp = utcnow().strftime("%Y%m%d%H%M%S")
     return f"pltr-offline-scorer-{stamp}"
 
 

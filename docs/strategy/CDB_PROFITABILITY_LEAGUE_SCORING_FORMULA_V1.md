@@ -39,10 +39,8 @@ joined with:
 - `profitability_execution_economics_assessment.v1` (when present)
 - `profitability_dataset_quality_report.v1` (when present)
 
-No runtime scorer is required for this slice. An offline, fail-closed
-implementation of these rules exists at
-`services/validation/profitability_league_scorer.py` (#3684); it is decision
-support only and does not authorize promotion, paper capital, or live capital.
+No runtime scorer is required for this slice. A future assembler may implement
+these rules mechanically.
 
 ## Schema Dimension Mapping
 
