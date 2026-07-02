@@ -87,7 +87,7 @@ adding a structured `handoff` block (additive per the contract section 4.3 / 8):
 ```yaml
 handoff:
   handoff_state: ready | partial | blocked
-  destination: session-close | follow-up-issue | next-session | root-cause | regression-gap | symptom-triage
+  destination: session-close | follow-up-issue | next-session | root-cause | regression-gap | symptom-triage | contract-evidence-gatekeeper
   handoff_reason: <one line: why this destination>
   unresolved_fields: []            # core Debug-Record fields still empty
   carry_forward_evidence: []       # INV-011 refs carried from earlier gears
