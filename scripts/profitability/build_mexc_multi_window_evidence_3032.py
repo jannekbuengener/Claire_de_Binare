@@ -1051,6 +1051,12 @@ def build_evidence_packet_json(
             "No Live-Go, no Echtgeld-Go, LR remains NO-GO.",
             "public.candles_1m has no source/venue column; MEXC attribution for this BTCUSDT series is inherited from prior same-venue evidence and runtime canon, not from per-row DB labels.",
         ],
+        "safety_boundaries": [
+            "LR remains NO-GO; no Live-Go and no Echtgeld-Go.",
+            "Controlled-lab evidence only; no runtime, config, or strategy change.",
+            "PARK is a research hold; not a promotion, not paper-ready, not live-ready.",
+            "This packet authorizes no candidate promotion and no capital allocation.",
+        ],
         "evidence_class": EVIDENCE_CLASS,
         "lr_status": LR_STATUS,
         "board_stage": BOARD_STAGE,
