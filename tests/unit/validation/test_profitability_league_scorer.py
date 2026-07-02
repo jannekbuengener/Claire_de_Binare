@@ -12,7 +12,10 @@ from services.validation.profitability_league_scorer import (
     FORMULA_REF,
     ProfitabilityLeagueScorerError,
     _DIMENSION_ORDER,
+    _PACKET_SCHEMA_PATH,
     _WEIGHTS,
+    _read_pep_file,
+    _validate_against_schema,
     _validate_report,
     build_league_table_report,
     hard_gate_failures,
@@ -20,6 +23,14 @@ from services.validation.profitability_league_scorer import (
     score_candidate,
     score_net_economics,
     score_safety_status,
+)
+
+# Canonical, repo-backed worked example named in Formula v1 (#3682) and #3686.
+CANONICAL_PEP_PATH = (
+    Path(__file__).resolve().parents[3]
+    / "docs"
+    / "evidence"
+    / "profitability_evidence_packet_primary_breakout_v1_mexc_multi_window_3032.json"
 )
 
 # ===========================================================================
@@ -310,6 +321,81 @@ def test_non_finite_numeric_inputs_fail_closed() -> None:
     inf_result = score_candidate(inf_pep)
     assert inf_result.sentinel_mode is True
     assert inf_result.ranking_ready is False
+
+
+# --------------------------------------------------------------------------- #
+# Contract alignment (#3686): nullable metrics + canonical worked example
+# --------------------------------------------------------------------------- #
+
+
+@pytest.mark.unit
+def test_canonical_pep_with_null_metrics_is_schema_valid_and_sentinel() -> None:
+    # #3686: the canonical worked example sets profit_factor/avg_win/avg_loss/
+    # max_drawdown to null. It MUST validate against the PEP schema (i.e. run
+    # through the scorer WITHOUT --no-validate-input) and, because
+    # replay_vs_paper_status=not_run, resolve fail-closed to the sentinel case.
+    pep = _read_pep_file(CANONICAL_PEP_PATH, validate=True)  # must not raise
+
+    assert pep["profit_factor"] is None
+    assert pep["avg_win"] is None
+    assert pep["avg_loss"] is None
+    assert pep["max_drawdown"] is None
+
+    result = score_candidate(pep)
+    assert result.sentinel_mode is True
+    assert result.ranking_ready is False
+    assert result.total_score == 0.0
+    assert all(dim.score == 0.0 for dim in result.dimension_scores)
+
+
+@pytest.mark.unit
+def test_pep_schema_allows_null_metrics_but_rejects_non_number() -> None:
+    # null is an evidence gap (metric not reliably computable) — allowed.
+    # A non-null, non-number value stays fail-closed (rejected).
+    base = _ranking_ready_pep()
+
+    for field in ("profit_factor", "avg_win", "avg_loss", "max_drawdown"):
+        ok = copy.deepcopy(base)
+        ok[field] = None
+        _validate_against_schema(  # must not raise
+            ok, schema_path=_PACKET_SCHEMA_PATH, artifact_role=f"pep-null-{field}"
+        )
+
+        bad = copy.deepcopy(base)
+        bad[field] = "not-a-number"
+        with pytest.raises(ProfitabilityLeagueScorerError):
+            _validate_against_schema(
+                bad, schema_path=_PACKET_SCHEMA_PATH, artifact_role=f"pep-bad-{field}"
+            )
+
+
+@pytest.mark.unit
+def test_pep_schema_documents_canonical_evidence_fields() -> None:
+    # The canonical packet carries advisory evidence/governance/traceability
+    # fields; the schema must accept them under additionalProperties=false.
+    base = _ranking_ready_pep()
+    base.update(
+        {
+            "evidence_class": "controlled_lab_evidence",
+            "lr_status": "NO-GO",
+            "board_stage": "trade-capable",
+            "board_stage_note": "Board stage is orthogonal to LR.",
+            "sample_size_verdict": "pass",
+            "sample_size_note": "Multi-window sample threshold reached.",
+            "parent_issue": "#3032",
+            "child_issue": "#3152",
+        }
+    )
+    _validate_against_schema(  # must not raise
+        base, schema_path=_PACKET_SCHEMA_PATH, artifact_role="pep-evidence-fields"
+    )
+
+    unknown = copy.deepcopy(base)
+    unknown["totally_unexpected_field"] = "x"
+    with pytest.raises(ProfitabilityLeagueScorerError):
+        _validate_against_schema(
+            unknown, schema_path=_PACKET_SCHEMA_PATH, artifact_role="pep-unknown"
+        )
 
 
 # --------------------------------------------------------------------------- #

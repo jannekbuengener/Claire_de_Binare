@@ -89,8 +89,16 @@
       "minimum": 0.0
     },
     "profit_factor": {
-      "type": "number",
-      "minimum": 0.0
+      "oneOf": [
+        {
+          "type": "null"
+        },
+        {
+          "type": "number",
+          "minimum": 0.0
+        }
+      ],
+      "description": "null means the metric could not be reliably computed from the evidence (evidence gap); null is not 0.0 and not a positive result."
     },
     "expectancy": {
       "type": "number"
@@ -101,16 +109,40 @@
       "maximum": 1.0
     },
     "avg_win": {
-      "type": "number",
-      "minimum": 0.0
+      "oneOf": [
+        {
+          "type": "null"
+        },
+        {
+          "type": "number",
+          "minimum": 0.0
+        }
+      ],
+      "description": "null means the metric could not be reliably computed from the evidence (evidence gap); null is not 0.0 and not a positive result."
     },
     "avg_loss": {
-      "type": "number",
-      "minimum": 0.0
+      "oneOf": [
+        {
+          "type": "null"
+        },
+        {
+          "type": "number",
+          "minimum": 0.0
+        }
+      ],
+      "description": "null means the metric could not be reliably computed from the evidence (evidence gap); null is not 0.0 and not a positive result."
     },
     "max_drawdown": {
-      "type": "number",
-      "minimum": 0.0
+      "oneOf": [
+        {
+          "type": "null"
+        },
+        {
+          "type": "number",
+          "minimum": 0.0
+        }
+      ],
+      "description": "null means the metric could not be reliably computed from the evidence (evidence gap); null is not 0.0 and not a positive result."
     },
     "loss_streak": {
       "type": "integer",
@@ -387,6 +419,54 @@
           "maxLength": 1000
         }
       }
+    },
+    "evidence_class": {
+      "type": "string",
+      "minLength": 1,
+      "maxLength": 120,
+      "description": "Advisory evidence classification (e.g. controlled_lab_evidence). Descriptive metadata; authorizes nothing."
+    },
+    "lr_status": {
+      "type": "string",
+      "minLength": 1,
+      "maxLength": 40,
+      "description": "Live-Readiness verdict recorded with the packet (e.g. NO-GO). Descriptive only; never a Live/Echtgeld authorization."
+    },
+    "board_stage": {
+      "type": "string",
+      "minLength": 1,
+      "maxLength": 60,
+      "description": "Control-board stage recorded with the packet (e.g. trade-capable). Orthogonal to LR; authorizes no live capital."
+    },
+    "board_stage_note": {
+      "type": "string",
+      "minLength": 1,
+      "maxLength": 1000,
+      "description": "Free-text clarification of board_stage semantics."
+    },
+    "sample_size_verdict": {
+      "type": "string",
+      "minLength": 1,
+      "maxLength": 60,
+      "description": "Advisory sample-size assessment for the packet's aggregate evidence."
+    },
+    "sample_size_note": {
+      "type": "string",
+      "minLength": 1,
+      "maxLength": 1000,
+      "description": "Free-text clarification of the sample_size_verdict."
+    },
+    "parent_issue": {
+      "type": "string",
+      "minLength": 1,
+      "maxLength": 40,
+      "description": "Traceability reference to the parent GitHub issue (e.g. #3032)."
+    },
+    "child_issue": {
+      "type": "string",
+      "minLength": 1,
+      "maxLength": 40,
+      "description": "Traceability reference to a follow-up GitHub issue (e.g. #3152)."
     }
   }
 }
