@@ -3,9 +3,9 @@
 | Field | Value |
 |-------|-------|
 | Issue | [#2983](https://github.com/jannekbuengener/Claire_de_Binare/issues/2983) |
-| Proof date | 2026-07-03 |
-| `aggregate_gate` | **INCONCLUSIVE** |
-| `result` | **INCONCLUSIVE** |
+| Proof date | 2026-07-03 (S7 re-attestation completed 2026-07-03T23:09:50Z) |
+| `aggregate_gate` | **PASS** |
+| `result` | **PASS** |
 | `lr_verdict_at_proof` | **NO-GO** |
 | `live_go` | `false` |
 | `echtgeld_go` | `false` |
@@ -23,25 +23,23 @@
 | S4 | PASS | No secret values in evidence artifacts |
 | S5 | PASS | Forbidden permissions all `disabled` |
 | S6 | PASS | `permission_scope_class=trade_limited` (not excessive) |
-| S7 | **INCONCLUSIVE** | `ip_allowlist_status=unknown`; entry count not attested |
+| S7 | **PASS** | `ip_allowlist_status=configured`; `ip_allowlist_entry_count=1` (operator re-attestation) |
 | S8 | PASS | Account binding and testnet/mainnet separation `verified` |
 | S9 | PASS | Agent did not read credentials |
 | S10 | PASS | No exchange API used for proof |
-| S11 | INCONCLUSIVE | `designated_key_class=undecided` (#2976) — documented, non-blocking alone |
+| S11 | INCONCLUSIVE | `designated_key_class=undecided` (#2976) — informational only; non-blocking per aggregate rule |
 | S12 | PASS | Manifest rotation gap for MEXC keys acknowledged |
 
-## Blockers (issue remains OPEN)
+## Aggregate verdict
 
-1. **S7:** IP allowlist / egress binding not conclusively reviewed (`unknown`). Operator must
-   attest `configured` / `not_configured` / `not_required` plus integer `entry_count` only —
-   without IP literals — before aggregate PASS.
-2. **S11 (informational):** Canary key class still `undecided` per #2976; does not alone block
-   #2983 once S7 is resolved.
+Per [`LR-050-SECRETS-ACCOUNT-READINESS-PREFLIGHT-2026-07-03.md`](../../../docs/live-readiness/LR-050-SECRETS-ACCOUNT-READINESS-PREFLIGHT-2026-07-03.md):
+S1–S3, S4, S5, S6–S8, S9–S10 PASS with redacted pack → **aggregate PASS**.
 
-## Next step
+S7 blocker resolved via operator re-attestation (enum + integer count only).
 
-Re-run operator attestation for S7 only (enum + integer count), refresh evidence pack,
-merge PR with aggregate **PASS**, then close #2983.
+## Informational gap (non-blocking)
+
+- **S11:** Canary key class still `undecided` per #2976; tracked separately; does not block #2983 closure.
 
 ## Explicit boundaries
 

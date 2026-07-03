@@ -11,7 +11,9 @@ and account binding — without secret values, IPs, account IDs, or venue API ca
 | Field | Value (UTC) |
 |-------|-------------|
 | `proof_window_utc_start` | `2026-07-03T20:25:00Z` |
-| `proof_window_utc_end` | `2026-07-03T20:32:05Z` |
+| `proof_window_utc_end` | `2026-07-03T23:09:50Z` |
+| `s7_reattest_window_utc_start` | `2026-07-03T23:05:00Z` |
+| `s7_reattest_window_utc_end` | `2026-07-03T23:09:50Z` |
 
 ## S1–S3 — Local SSOT and env
 
@@ -53,16 +55,15 @@ Agent did **not** read secret file contents.
 |-------|-------|
 | `permission_scope_class` | `trade_limited` |
 
-## S7 — IP allowlist / egress binding
+## S7 — IP allowlist / egress binding (re-attested)
 
 | Field | Value |
 |-------|-------|
-| `ip_allowlist_status` | `unknown` |
-| `ip_allowlist_entry_count` | `unknown` |
+| `ip_allowlist_status` | `configured` |
+| `ip_allowlist_entry_count` | `1` |
 
-**Note:** Operator initially indicated `configured` but corrected to `unknown` when
-entry count could not be attested without disclosing policy detail. Gate S7 remains
-**not reviewed** for aggregate purposes.
+Operator re-attestation (enum + integer count only; no IP literals, no screenshots,
+no venue API). Gate S7 **PASS** for aggregate purposes.
 
 ## S8 — Account / channel binding
 
@@ -96,7 +97,7 @@ does not substitute S7 review.
 - File presence: local name-only checks under `[REDACTED_LOCAL_SSOT]`
 - Permission scope and forbidden flags: venue dashboard review (no API calls, no proof orders)
 - Account binding and testnet/mainnet separation: venue dashboard review (enum only)
-- IP allowlist: **not conclusively reviewed** in this window (S7 `unknown`)
+- IP allowlist: operator re-attested `configured` with integer entry count `1` (S7 PASS)
 
 ## Boundaries (unchanged)
 
