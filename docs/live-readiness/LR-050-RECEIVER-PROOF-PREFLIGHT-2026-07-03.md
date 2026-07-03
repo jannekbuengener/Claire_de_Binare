@@ -6,6 +6,8 @@ Read-only preflight for [#2981](https://github.com/jannekbuengener/Claire_de_Bin
 identify how Alertmanager / monitoring receiver proof can be executed **safely** and
 **redacted**, without Live-Go, trading, or secret exposure in repo artifacts.
 
+**Canonical path (post-preflight):** [`LR-050-RECEIVER-PROOF-CANON-2026-07-03.md`](./LR-050-RECEIVER-PROOF-CANON-2026-07-03.md) — Grafana SMTP Test Notification, receiver class `grafana-smtp-operator`.
+
 This document does **not** trigger alerts, start Docker, or close #2981.
 
 ## Scope
@@ -40,8 +42,9 @@ Out of scope:
 
 | Field | Value |
 |---|---|
-| **Decision** | **`BLOCKED_NEEDS_CONFIG`** |
-| Secondary gate | **`BLOCKED_NEEDS_SECRET_CONTEXT`** (for execution only — operator verifies SMTP secrets locally) |
+| **Decision (preflight)** | **`BLOCKED_NEEDS_CONFIG`** — channel undeclared at preflight time |
+| **Decision (post-canon)** | **`READY_FOR_OPERATOR_RECEIVER_TEST`** — see [`LR-050-RECEIVER-PROOF-CANON-2026-07-03.md`](./LR-050-RECEIVER-PROOF-CANON-2026-07-03.md) |
+| Secondary gate | **`BLOCKED_NEEDS_SECRET_CONTEXT`** at execution — operator verifies SMTP secrets locally |
 | Operator-GO required for test? | **Yes** — stack interaction + human receipt attestation |
 | #2981 status after preflight | **Stays OPEN** — no evidence artifact on `main` |
 
