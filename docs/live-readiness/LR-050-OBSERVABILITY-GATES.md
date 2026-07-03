@@ -144,9 +144,15 @@ Historical shadow digest material under `reports/shadow_mode/` is **not** LR-050
 |---------|-------------|-------------|
 | Prometheus → Alertmanager | `alerts.yml` + `alertmanager.yml` | Primary **documented** path for `ServiceDown`, `DatabaseConnectionLost`, `CircuitBreakerTriggered` |
 | Grafana Unified Alerting | `infrastructure/monitoring/grafana/provisioning/alerting/*.yml` | e.g. high rejection rate, orders rejected, circuit breaker — **parallel** path |
-| Operator notification | Grafana notification policies (see shadow reports) vs Alertmanager receivers | **blocker_before_live** until #2532 names canonical operator channel |
+| Operator notification | Grafana notification policies (see shadow reports) vs Alertmanager receivers | **blocker_before_live** until operator receipt proof on `main` |
 
-Canary Plan ([#2532](https://github.com/jannekbuengener/Claire_de_Binare/issues/2532)) MUST declare which channel is authoritative for operator paging during live-capital canary.
+**LR-050 #2981 canonical operator paging proof:** Grafana SMTP Test Notification,
+receiver class `grafana-smtp-operator` — SSOT:
+[`LR-050-RECEIVER-PROOF-CANON-2026-07-03.md`](./LR-050-RECEIVER-PROOF-CANON-2026-07-03.md).
+Alertmanager webhook ingest remains **not** operator receipt (§3). Prometheus →
+Alertmanager rules stay the infra alert path; they do not substitute for #2981 proof.
+
+Canary Plan ([#2532](https://github.com/jannekbuengener/Claire_de_Binare/issues/2532)) MUST align live-capital paging with this canon or document an explicit superseding operator decision.
 
 ---
 
