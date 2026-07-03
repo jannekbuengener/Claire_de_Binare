@@ -3,10 +3,14 @@
 **Status Class**: Working Repo / Engineering Status
 **Authority**: Current repo/main/test/dependency snapshot; not the canonical live-readiness or Echtgeld Go/No-Go source.
 **Operational Canon**: `docs/live-readiness/LR-AUDIT-STATUS-2026-03-05.md`
-**Last Updated**: 2026-07-01
+**Last Updated**: 2026-07-03
 **GitHub Boundary**: The live commit and PR state is tracked in GitHub (UI/API or `gh`); this file is a curated repo/engineering ledger, not a live mirror.
 
 ---
+
+## Repo / Engineering Status (2026-07-03)
+
+- **#2977 LR-050 Blocker Refresh Matrix**: **IN FLIGHT** — docs-only refresh from existing evidence mapping (#3382 / PR #3680); deliverable [`docs/live-readiness/LR-050-BLOCKER-REFRESH-MATRIX-2026-07-03.md`](docs/live-readiness/LR-050-BLOCKER-REFRESH-MATRIX-2026-07-03.md). All seven `blocker_before_live` rows remain **OPEN** / **TBD** / **Policy**; child gates #2976, #2978, #2979, #2981, #2983, #2984 stay **OPEN**; #3362 Harvester `>=72h` proof **PENDING**. LR **NO-GO** unchanged; no runtime/secrets/trading.
 
 ## Repo / Engineering Status (2026-07-01)
 
