@@ -18,7 +18,14 @@ SERVICE_PORT = 8003
 # MEXC API Configuration (Docker secrets with .env fallback)
 MEXC_API_KEY = read_secret("mexc_api_key", "MEXC_API_KEY")
 MEXC_API_SECRET = read_secret("mexc_api_secret", "MEXC_API_SECRET")
-MEXC_BASE_URL = os.getenv("MEXC_BASE_URL", "https://contract.mexc.com")
+# Spot REST base. Default is the mainnet spot host https://api.mexc.com.
+# MEXC has no spot testnet; the former https://contract.mexc.com futures host was
+# discontinued 2026-01-19 and must not be a spot default.
+# See docs/live-readiness/LR-050-VENUE-ENDPOINT-SEMANTICS-2026-07-03.md §4.
+MEXC_BASE_URL = os.getenv("MEXC_BASE_URL", "https://api.mexc.com")
+# Nominal flag only: MEXC_TESTNET is NOT a no-send proof and selects no real sandbox
+# (no MEXC spot testnet exists). No-send depends on DRY_RUN + MOCK_TRADING
+# (mock_builtin). See LR-050-VENUE-ENDPOINT-SEMANTICS-2026-07-03.md §5.
 MEXC_TESTNET = os.getenv("MEXC_TESTNET", "true").lower() == "true"
 
 # Trading Mode

@@ -52,13 +52,36 @@ class MexcClient:
                 "MEXC API credentials required. Set MEXC_API_KEY and MEXC_API_SECRET"
             )
 
-        # API Endpoints
+        # API Endpoints (spot REST).
+        #
+        # MEXC offers NO Spot API testnet/sandbox: the spot API connects directly to
+        # the live trading environment. The former host "https://contract.mexc.com"
+        # was the MEXC *Futures* access domain (discontinued 2026-01-19) and never
+        # served the spot /api/v3/* paths this client uses. Routing "testnet" there
+        # was a stale, mislabeled default and an API-family mismatch.
+        #
+        # Fail closed on testnet=True instead of silently talking to a deprecated
+        # futures host, and never silently fall back to mainnet. `testnet` is also
+        # NOT a no-send proof: no-send for CDB depends on DRY_RUN=true +
+        # MOCK_TRADING=true (mock_builtin), not on this flag.
+        # See docs/live-readiness/LR-050-VENUE-ENDPOINT-SEMANTICS-2026-07-03.md
+        # §3.3 (no spot testnet), §4 (reconciliation), §5 (no-send boundary).
         if testnet:
-            self.base_url = "https://contract.mexc.com"  # Testnet URL
-            logger.info("🧪 MEXC Client initialized in TESTNET mode")
-        else:
-            self.base_url = "https://api.mexc.com"
-            logger.warning("🔴 MEXC Client initialized in LIVE mode - real money!")
+            raise ValueError(
+                "MEXC has no Spot API testnet/sandbox; testnet=True is unsupported. "
+                "The former host https://contract.mexc.com was a deprecated MEXC "
+                "Futures domain (discontinued 2026-01-19), not a spot testnet. Use "
+                "the mainnet spot base https://api.mexc.com and rely on DRY_RUN=true "
+                "+ MOCK_TRADING=true for no-send safety (testnet is not a no-send "
+                "proof)."
+            )
+
+        self.base_url = "https://api.mexc.com"
+        logger.warning(
+            "🔴 MEXC Client initialized against mainnet spot base %s - real money "
+            "when DRY_RUN/MOCK_TRADING are off!",
+            self.base_url,
+        )
 
         self.session = requests.Session()
         self.session.headers.update(
@@ -109,7 +132,9 @@ class MexcClient:
             response.raise_for_status()
             data = response.json()
 
-            logger.info(f"✅ Fetched account balance: {len(data.get('balances', []))} assets")
+            logger.info(
+                f"✅ Fetched account balance: {len(data.get('balances', []))} assets"
+            )
             return data
 
         except requests.exceptions.RequestException as e:

@@ -19,6 +19,7 @@ logger = logging.getLogger(__name__)
 
 class BalanceFetchError(Exception):
     """Raised when balance cannot be fetched - FAIL FAST"""
+
     pass
 
 
@@ -29,7 +30,10 @@ class RealBalanceFetcher:
         # Use unified secret loader: Docker secrets first, then env fallback
         self.api_key = read_secret("mexc_api_key", "MEXC_API_KEY")
         self.api_secret = read_secret("mexc_api_secret", "MEXC_API_SECRET")
-        self.base_url = os.getenv("MEXC_BASE_URL", "https://contract.mexc.com")
+        # Spot REST base; mainnet spot host by default. MEXC has no spot testnet and
+        # the former contract.mexc.com futures host was discontinued 2026-01-19, so it
+        # must not be a spot default (LR-050-VENUE-ENDPOINT-SEMANTICS-2026-07-03.md §4).
+        self.base_url = os.getenv("MEXC_BASE_URL", "https://api.mexc.com")
 
         if not self.api_key or not self.api_secret:
             raise ValueError("MEXC API credentials required for real balance")
@@ -149,7 +153,9 @@ class RealBalanceFetcher:
         except requests.RequestException as e:
             # FAIL FAST: Try cache, then raise exception
             if self._balance_cache and (time.time() - self._cache_timestamp) < 300:
-                logger.warning(f"API failed, using cached balance (age: {time.time() - self._cache_timestamp:.0f}s): {e}")
+                logger.warning(
+                    f"API failed, using cached balance (age: {time.time() - self._cache_timestamp:.0f}s): {e}"
+                )
                 return self._balance_cache
 
             raise BalanceFetchError(
