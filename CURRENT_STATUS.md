@@ -10,7 +10,7 @@
 
 ## Repo / Engineering Status (2026-07-04)
 
-- **#2985 Live-Roadmap Meta Reconcile**: **IN PROGRESS** — #2985 body + reconcile comment updated (issue **stays OPEN**). Docs PR: `CURRENT_STATUS.md`, `ARVP_TO_LIVE_GO_ROADMAP_2026-06.md`, `LR-050-FINAL-RECONCILE.md` post-gate banner. LR **NO-GO** unchanged.
+- **#2985 Live-Roadmap Meta Reconcile**: **COMPLETED** — #2985 body + reconcile comment updated (issue **stays OPEN**). PR [#3723](https://github.com/jannekbuengener/Claire_de_Binare/pull/3723) squash-merged (`db8f5209`). LR-050 execution gates #2977–#2984 **CLOSED** (2026-07-03 evidence); canary **residual** (`TBD_BLOCKER_BEFORE_LIVE`); #3362 Harvester `>=72h` **PENDING**; LR **NO-GO** unchanged. Session log: `knowledge/logs/sessions/2026-07-04-live-roadmap-reconcile-2985.md`.
 
 ## Repo / Engineering Status (2026-07-03)
 
