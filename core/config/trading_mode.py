@@ -5,7 +5,9 @@ Provides centralized trading mode management with safe defaults.
 CRITICAL SAFETY:
 - Default mode is PAPER (no real money)
 - LIVE mode requires explicit confirmation
-- STAGED mode uses testnet
+- STAGED sets the nominal MEXC_TESTNET flag; note MEXC has no spot testnet and
+  MEXC_TESTNET is not a no-send proof (no-send = DRY_RUN + MOCK_TRADING).
+  See docs/live-readiness/LR-050-VENUE-ENDPOINT-SEMANTICS-2026-07-03.md §5.
 """
 
 import os
@@ -94,9 +96,7 @@ def get_trading_mode(
     if mode == TradingMode.LIVE and require_confirmation:
         confirmation = os.getenv("LIVE_TRADING_CONFIRMED", "").lower().strip()
         if confirmation != "yes":
-            logger.critical(
-                "🚨 LIVE TRADING MODE BLOCKED 🚨"
-            )
+            logger.critical("🚨 LIVE TRADING MODE BLOCKED 🚨")
             logger.critical(
                 "LIVE mode requires LIVE_TRADING_CONFIRMED=yes environment variable"
             )
@@ -104,7 +104,8 @@ def get_trading_mode(
                 "This is a safety measure to prevent accidental real-money trading"
             )
             logger.critical(
-                "Current LIVE_TRADING_CONFIRMED value: '%s'", confirmation or "(not set)"
+                "Current LIVE_TRADING_CONFIRMED value: '%s'",
+                confirmation or "(not set)",
             )
             sys.exit(1)
 
@@ -204,7 +205,9 @@ def get_legacy_config(mode: TradingMode) -> dict:
         return {
             "MOCK_TRADING": False,  # Use real executor
             "DRY_RUN": False,  # Execute orders
-            "MEXC_TESTNET": True,  # Use testnet
+            # Nominal flag only: no MEXC spot testnet exists and this is not a
+            # no-send proof; STAGED is exchange-capable (LR-050 venue semantics §4/§5).
+            "MEXC_TESTNET": True,
         }
     elif mode == TradingMode.LIVE:
         return {

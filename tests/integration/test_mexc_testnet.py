@@ -1,5 +1,13 @@
 """
-MEXC Testnet Integration Tests (offline by default)
+MEXC Spot Client Integration Tests (offline by default)
+
+NOTE (Issue #3719 / LR-050 venue endpoint semantics): MEXC offers no Spot API
+testnet/sandbox. The former host contract.mexc.com was a deprecated MEXC Futures
+domain (discontinued 2026-01-19), not a spot testnet, so `MexcClient(testnet=True)`
+now fails closed. These tests therefore exercise the mainnet spot base
+https://api.mexc.com (offline requests are stubbed; no live venue calls in CI).
+The dedicated fail-closed regression lives in
+tests/unit/core/test_mexc_base_url_3719.py.
 
 Offline tests use requests-mock to stub network calls.
 External tests are opt-in: set CDB_EXTERNAL_TESTS=1 and MEXC_API_KEY/MEXC_API_SECRET.
@@ -18,11 +26,17 @@ completely different UUIDs. This requires disciplined event design:
 import os
 import sys
 import pytest
-requests_mock = pytest.importorskip("requests_mock", reason="test requires requests-mock")
+
+requests_mock = pytest.importorskip(
+    "requests_mock", reason="test requires requests-mock"
+)
 import logging
 from urllib.parse import urlparse, parse_qsl
+
 # Add services to path
-sys.path.insert(0, os.path.join(os.path.dirname(__file__), "..", "..", "services", "execution"))
+sys.path.insert(
+    0, os.path.join(os.path.dirname(__file__), "..", "..", "services", "execution")
+)
 
 import mexc_client
 
@@ -36,22 +50,28 @@ def _external_enabled() -> bool:
 
 @pytest.fixture
 def offline_client(monkeypatch):
-    """Create an offline client with stubbed session and fixed time."""
+    """Create an offline mainnet spot client with stubbed session and fixed time."""
     monkeypatch.setattr(mexc_client.time, "time", lambda: 1700000000.0)
-    client = mexc_client.MexcClient(api_key="test_key", api_secret="test_secret", testnet=True)
+    client = mexc_client.MexcClient(api_key="test_key", api_secret="test_secret")
     return client
 
 
 @pytest.fixture
 def external_client():
-    """Create a real testnet client (opt-in via CDB_EXTERNAL_TESTS=1)."""
+    """Create a real mainnet spot client (opt-in via CDB_EXTERNAL_TESTS=1).
+
+    No MEXC spot testnet exists (#3719); external smoke tests target the mainnet
+    spot base. Deeply opt-in and excluded from CI.
+    """
     if not _external_enabled():
         pytest.skip("External tests disabled (set CDB_EXTERNAL_TESTS=1 to enable)")
     api_key = os.getenv("MEXC_API_KEY")
     api_secret = os.getenv("MEXC_API_SECRET")
     if not api_key or not api_secret:
-        pytest.skip("MEXC API credentials not configured (set MEXC_API_KEY and MEXC_API_SECRET)")
-    return mexc_client.MexcClient(api_key=api_key, api_secret=api_secret, testnet=True)
+        pytest.skip(
+            "MEXC API credentials not configured (set MEXC_API_KEY and MEXC_API_SECRET)"
+        )
+    return mexc_client.MexcClient(api_key=api_key, api_secret=api_secret)
 
 
 def _validate_request_signature(request, client):
@@ -66,7 +86,9 @@ def _validate_request_signature(request, client):
     signature = params["signature"]
     unsigned = {k: v for k, v in params.items() if k != "signature"}
     expected_signature = client._sign_request(unsigned)
-    assert signature == expected_signature, f"Invalid signature: {signature} != {expected_signature}"
+    assert (
+        signature == expected_signature
+    ), f"Invalid signature: {signature} != {expected_signature}"
 
 
 @pytest.mark.integration
@@ -75,6 +97,7 @@ class TestMexcTestnetOffline:
 
     def test_get_account_balance(self, offline_client, requests_mock):
         """Test account balance retrieval with mocked API response."""
+
         # Mock the account endpoint
         def custom_matcher(request):
             _validate_request_signature(request, offline_client)
@@ -83,7 +106,7 @@ class TestMexcTestnetOffline:
         requests_mock.get(
             f"{offline_client.base_url}/api/v3/account",
             additional_matcher=custom_matcher,
-            json={"balances": [{"asset": "USDT", "free": "12.5"}]}
+            json={"balances": [{"asset": "USDT", "free": "12.5"}]},
         )
 
         balance_data = offline_client.get_account_balance()
@@ -94,6 +117,7 @@ class TestMexcTestnetOffline:
 
     def test_get_usdt_balance(self, offline_client, requests_mock):
         """Test USDT balance parsing with mocked API response."""
+
         def custom_matcher(request):
             _validate_request_signature(request, offline_client)
             return True
@@ -101,7 +125,7 @@ class TestMexcTestnetOffline:
         requests_mock.get(
             f"{offline_client.base_url}/api/v3/account",
             additional_matcher=custom_matcher,
-            json={"balances": [{"asset": "USDT", "free": "12.5"}]}
+            json={"balances": [{"asset": "USDT", "free": "12.5"}]},
         )
 
         usdt_balance = offline_client.get_balance("USDT")
@@ -111,8 +135,7 @@ class TestMexcTestnetOffline:
     def test_get_ticker_price(self, offline_client, requests_mock):
         """Test ticker price retrieval (unsigned endpoint)."""
         requests_mock.get(
-            f"{offline_client.base_url}/api/v3/ticker/price",
-            json={"price": "50000.0"}
+            f"{offline_client.base_url}/api/v3/ticker/price", json={"price": "50000.0"}
         )
 
         btc_price = offline_client.get_ticker_price("BTCUSDT")
@@ -126,6 +149,7 @@ class TestMexcTestnetOffline:
 
     def test_get_order_status(self, offline_client, requests_mock):
         """Test order status retrieval with signed request."""
+
         def custom_matcher(request):
             _validate_request_signature(request, offline_client)
             # Verify orderId is in params
@@ -137,7 +161,7 @@ class TestMexcTestnetOffline:
         requests_mock.get(
             f"{offline_client.base_url}/api/v3/order",
             additional_matcher=custom_matcher,
-            json={"orderId": "ORDER123", "status": "FILLED"}
+            json={"orderId": "ORDER123", "status": "FILLED"},
         )
 
         result = offline_client.get_order_status("BTCUSDT", "ORDER123")
@@ -147,6 +171,7 @@ class TestMexcTestnetOffline:
 
     def test_place_order(self, offline_client, requests_mock):
         """Test order placement with signed POST request."""
+
         def custom_matcher(request):
             _validate_request_signature(request, offline_client)
             # Verify order params are present
@@ -158,7 +183,7 @@ class TestMexcTestnetOffline:
         requests_mock.post(
             f"{offline_client.base_url}/api/v3/order",
             additional_matcher=custom_matcher,
-            json={"orderId": "123456", "status": "FILLED"}
+            json={"orderId": "123456", "status": "FILLED"},
         )
 
         # This would call client.place_order() - assuming such a method exists
@@ -167,20 +192,26 @@ class TestMexcTestnetOffline:
 
 
 @pytest.mark.external
-class TestMexcTestnetExternal:
-    """External smoke tests (opt-in) - these make real network calls to MEXC testnet."""
+class TestMexcMainnetSpotExternal:
+    """External smoke tests (opt-in) - real network calls to the MEXC mainnet spot API.
 
-    def test_testnet_client_initialization(self, external_client):
-        """Verify testnet client is properly initialized."""
+    There is no MEXC spot testnet (#3719); these smoke tests target the mainnet
+    spot base. They are opt-in (CDB_EXTERNAL_TESTS=1 + credentials) and excluded
+    from CI.
+    """
+
+    def test_mainnet_spot_client_initialization(self, external_client):
+        """Verify the client initializes against the mainnet spot base."""
         assert external_client is not None
         parsed_url = urlparse(external_client.base_url)
         hostname = (parsed_url.hostname or "").lower()
         assert parsed_url.scheme == "https"
-        assert hostname == "contract.mexc.com"
-        logger.info("Testnet client initialized")
+        assert hostname == "api.mexc.com"
+        assert hostname != "contract.mexc.com"
+        logger.info("Mainnet spot client initialized")
 
     def test_get_account_balance(self, external_client):
-        """Test real account balance retrieval from testnet."""
+        """Test real account balance retrieval from the mainnet spot API."""
         balance_data = external_client.get_account_balance()
         assert balance_data is not None
         assert "balances" in balance_data
@@ -188,7 +219,7 @@ class TestMexcTestnetExternal:
         logger.info("Fetched balance: %s assets", len(balance_data["balances"]))
 
     def test_get_ticker_price(self, external_client):
-        """Test real ticker price from testnet."""
+        """Test real ticker price from the mainnet spot API."""
         btc_price = external_client.get_ticker_price("BTCUSDT")
         assert isinstance(btc_price, float)
         assert btc_price > 0
