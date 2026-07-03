@@ -12,7 +12,7 @@
 
 - **#2977 LR-050 Blocker Refresh Matrix**: **COMPLETED** — PR [#3707](https://github.com/jannekbuengener/Claire_de_Binare/pull/3707) squash-merged (`9d2a38d0`); deliverable [`docs/live-readiness/LR-050-BLOCKER-REFRESH-MATRIX-2026-07-03.md`](docs/live-readiness/LR-050-BLOCKER-REFRESH-MATRIX-2026-07-03.md). All seven `blocker_before_live` rows remain **OPEN** / **TBD** / **Policy**; child gates #2976, #2978, #2979, #2981, #2983, #2984 stay **OPEN**; #3362 Harvester `>=72h` proof **PENDING**. GitHub-live: #2977 **CLOSED**. LR **NO-GO** unchanged; no runtime/secrets/trading. Session log: `knowledge/logs/sessions/2026-07-03-lr-050-blocker-refresh-2977.md`.
 
-- **#2981 LR-050 Receiver Proof Canon**: **IN FLIGHT** — canonical path `grafana-smtp-operator` via Grafana SMTP Test Notification; preflight PR [#3709](https://github.com/jannekbuengener/Claire_de_Binare/pull/3709) (`a2d6451d`). #2981 **OPEN**; next slice = Operator-GO proof run. LR **NO-GO**; no alerts/secrets/runtime in canon slice.
+- **#2981 LR-050 Receiver Proof Canon**: **COMPLETED** — PR [#3710](https://github.com/jannekbuengener/Claire_de_Binare/pull/3710) squash-merged (`a5c805a1`); SSOT [`docs/live-readiness/LR-050-RECEIVER-PROOF-CANON-2026-07-03.md`](docs/live-readiness/LR-050-RECEIVER-PROOF-CANON-2026-07-03.md). Canonical path: `grafana-smtp-operator` via Grafana SMTP Test Notification. #2981 **OPEN**; next slice = Operator-GO proof run. LR **NO-GO**; no alerts/secrets/runtime in canon slice.
 
 ## Repo / Engineering Status (2026-07-01)
 
