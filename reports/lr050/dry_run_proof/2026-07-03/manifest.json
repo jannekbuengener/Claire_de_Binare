@@ -1,0 +1,40 @@
+{
+  "proof_type": "lr050_runtime_dry_run",
+  "issue": "2978",
+  "canon_ref": "docs/live-readiness/LR-050-DRY-RUN-PROOF.md",
+  "result": "PASS",
+  "dry_run": true,
+  "mock_trading": true,
+  "no_real_orders": true,
+  "no_live_go": true,
+  "no_trading": true,
+  "no_secret_values": true,
+  "lr_verdict_at_proof": "NO-GO",
+  "timestamp_utc": "2026-07-03T19:52:30Z",
+  "repo_head_at_proof": "a90037fb2e3a6040da0ba99098661755d8d569f3",
+  "stack_mode": "BLUE+RED running, non-destructive read-only capture",
+  "operator_attestation_ref": "operator_attestation.md",
+  "artifact_files": [
+    "manifest.json",
+    "config_snapshot_redacted.md",
+    "metrics_snapshot.md",
+    "logs_redacted.md",
+    "no_send_proof.md",
+    "operator_attestation.md"
+  ],
+  "checks": {
+    "dry_run_confirmed": true,
+    "mock_trading_confirmed": true,
+    "mock_builtin_adapter": true,
+    "no_venue_client_init": true,
+    "no_place_order_logs": true,
+    "redis_streams_active": true,
+    "risk_gating_metrics_present": true,
+    "kill_switch_reachable": true,
+    "kill_switch_drill_executed": false,
+    "ac3_operator_attestation": true,
+    "exchange_side_agent_verification": false
+  },
+  "refs": ["2976", "2984", "3712"],
+  "notes": "Runtime dry-run evidence for LR-050 blocker #1. Does not authorize live capital, canary, or kill-switch drill (#2984)."
+}
