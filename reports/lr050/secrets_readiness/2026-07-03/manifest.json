@@ -1,0 +1,62 @@
+{
+  "proof_type": "lr050_secrets_account_readiness",
+  "issue": "2983",
+  "result": "INCONCLUSIVE",
+  "aggregate_gate": "INCONCLUSIVE",
+  "lr_verdict_at_proof": "NO-GO",
+  "live_go": false,
+  "echtgeld_go": false,
+  "proof_ts_utc": "2026-07-03T20:32:05Z",
+  "proof_window_utc_start": "2026-07-03T20:25:00Z",
+  "proof_window_utc_end": "2026-07-03T20:32:05Z",
+  "repo_head_at_proof": "88b0bf1ddb037b81b7e304d092b69330b10a00aa",
+  "ssot_path_status": "PRESENT",
+  "secrets_path_env": "SET",
+  "ssot_files": {
+    "REDIS_PASSWORD": "PRESENT",
+    "POSTGRES_PASSWORD": "PRESENT",
+    "MEXC_API_KEY.txt": "PRESENT",
+    "MEXC_API_SECRET.txt": "PRESENT",
+    "POSTGRES_PASSWORD_DSN": "PRESENT",
+    "GRAFANA_PASSWORD": "PRESENT",
+    "SMTP_USER": "PRESENT",
+    "SMTP_PASSWORD": "PRESENT",
+    "SMTP_FROM": "PRESENT",
+    "ALERT_EMAIL_TO": "PRESENT"
+  },
+  "gate_results": {
+    "S1": "PASS",
+    "S2": "PASS",
+    "S3": "PASS",
+    "S4": "PASS",
+    "S5": "PASS",
+    "S6": "PASS",
+    "S7": "INCONCLUSIVE",
+    "S8": "PASS",
+    "S9": "PASS",
+    "S10": "PASS",
+    "S11": "INCONCLUSIVE",
+    "S12": "PASS"
+  },
+  "permission_scope_class": "trade_limited",
+  "forbidden_permissions": {
+    "withdrawal": "disabled",
+    "transfer": "disabled",
+    "admin": "disabled"
+  },
+  "ip_allowlist_status": "unknown",
+  "ip_allowlist_entry_count": null,
+  "account_binding_status": "verified",
+  "testnet_mainnet_separation": "verified",
+  "designated_key_class": "undecided",
+  "agent_read_credentials": false,
+  "exchange_api_called": false,
+  "redaction_pass": true,
+  "blockers": [
+    "S7 ip_allowlist_status unknown — operator could not attest status/count without policy detail exposure",
+    "S11 designated_key_class undecided pending #2976 (non-blocking for aggregate per scope; documented)"
+  ],
+  "redaction_policy": "LR-050-SECRETS-READINESS.md §9 + LR-050-SECRETS-ACCOUNT-READINESS-PREFLIGHT-2026-07-03.md",
+  "operator_attestation_ref": "operator_attestation.md",
+  "notes": "LR-050 readiness attestation only. Does not clear LR-050 or authorize live capital."
+}
