@@ -50,7 +50,7 @@
 
 - **Slice-D formal INCONCLUSIVE (#3632)**: Read-only `ops_validation --is-final` on stalled run `slice-d-20260630T163853Z` (9/289 PASS, 2.0h). Verdict FAIL / `Run outcome: INCONCLUSIVE`. Reports: `artifacts/evidence_harvester/72h_ops_validation/slice-d-20260630T163853Z/ops_validation_report.{json,md}`. #3632 CLOSED. #3362 remains OPEN. LR NO-GO.
 
-- **CVE-2026-11824 BLUE services #3619–#3625 / PR #3629 / `23401b21`**: MERGED (evidence-only). Verdict **UPSTREAM_BLOCKED** — `libsqlite3-0` in `python:3.14-slim-trixie`; Debian Trixie `<no-dsa>`. Issues #3619–#3625 bleiben **OPEN** (`status:blocked`). Evidence: `docs/evidence/security/CDB_SECURITY_BATCH_MATRIX_3619-3625-CVE-11824_2026-07-01.md`. Re-Triage via Tracker #2513. LR NO-GO.
+- **CVE-2026-11824 BLUE services #3619–#3625 / PR #3629 / `23401b21`**: MERGED (evidence-only). Verdict **UPSTREAM_BLOCKED** — `libsqlite3-0` in `python:3.14-slim-trixie`; Debian Trixie `<no-dsa>`. Issues #3619–#3625 bleiben **OPEN** (`status:blocked`); konsolidiert unter Residual-Cluster [#3705](https://github.com/jannekbuengener/Claire_de_Binare/issues/3705) / Parent [#2513](https://github.com/jannekbuengener/Claire_de_Binare/issues/2513). Evidence: `docs/evidence/security/CDB_SECURITY_BATCH_MATRIX_3619-3625-CVE-11824_2026-07-01.md`. LR NO-GO.
 
 - **Backup manifest Redis drift #3614 / PR #3615**: `Components.Redis` aligned with `redis_dump.rdb` artifact via `Sync-BackupComponentManifest`; restore tolerates legacy drift ZIPs. Closes #3614. LR NO-GO.
 
