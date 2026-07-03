@@ -1,6 +1,6 @@
 # Control Register
 
-**Letzte Aktualisierung:** 2026-07-01
+**Letzte Aktualisierung:** 2026-07-03
 **SSOT Live-Readiness:** `docs/live-readiness/LR-AUDIT-STATUS-2026-03-05.md`
 **Verdict:** NO-GO
 **Control-Board Stage:** `trade-capable` (ratifiziert 2026-04-08 via Issue `#1492`)
@@ -173,6 +173,7 @@ Kontext-Issue-Nummern sind historische Anker (alle CLOSED) — nicht als offene 
 - Self-hosted runner docs (PR #3666, gemergt 2026-07-01T23:00:28Z, Commit `030fc8eb`, Issue #3661): Runner-Doku auf decommissioned-Status finalisiert; Merge-Gate laeuft auf `ubuntu-latest` (#3405). Kein LR-/Live-/Echtgeld-Signal.
 - `docs-hub-guard.yml` / artifact hygiene (PR #3668, gemergt 2026-07-01T23:07:48Z, Commit `0eae84ac`, Issue #3667): Vier tracked generierte `artifacts/**/audit.log` entfernt; `.gitignore` gehaertet; Guard auf `main` gruen. Kein LR-/Live-/Echtgeld-Signal.
 - `codeql-python.yml` (PR #3673, gemergt 2026-07-01T23:22:26Z, Commit `c961c30e`, Issue #3670): **Aktuelle Posture** — GitHub CodeQL Default Setup ist autoritativ fuer Code-Scanning-Alerts; Advanced-Workflow behaelt `security-and-quality`-Queries und `config-file`, setzt aber `upload: false` im analyze-Step (kein SARIF-Upload solange Default Setup aktiv). Non-required Check `Analyze Python` gruen auf `main`. Option B (Trigger-Reduktion auf `workflow_dispatch`-only) bewusst **Later**. Register-Detail in `GITHUB_WORKFLOW_REGISTER.md` (#3672). Kein LR-/Live-/Echtgeld-Signal.
+- `security-scan.yml` (PR TBD, Slice 2026-07-03): CVE-2026-27145 + CVE-2026-39827/28/29 — Prometheus/Promtool Image-Bump `prom/prometheus:v3.12.0@sha256:69f524…` → `v3.13.0@sha256:c6b27ea…` in `trivy-scan-base`-Matrix, `base.yml`, `compose.red.yml`, `compose.prometheus-v3.yml` und `SERVICE_CATALOG.md`. Closes #3692, #3693, #3696–#3701. Trivy local: 0 HIGH/CRITICAL auf Ziel-Digest. Evidence: `docs/evidence/security/CDB_SECURITY_BATCH_MATRIX_3692-3701_2026-07-03.md`. #3694/#3695 bleiben upstream-blocked unter #2933. Kein LR-/Live-/Echtgeld-Signal.
 
 ---
 
