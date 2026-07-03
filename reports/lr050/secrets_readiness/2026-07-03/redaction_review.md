@@ -47,6 +47,14 @@ Literal identifiers allowed in this pack:
 - no PEM blocks or token prefixes (`ghp_`, `AKIA`, `xoxb-`)
 - redaction placeholders used: `[REDACTED_LOCAL_SSOT]`, `[REDACTED_VENUE_ACCOUNT_CHANNEL]`
 
+## S7 re-attestation scan (2026-07-03T23:09:50Z)
+
+Re-scanned after S7-only update (`ip_allowlist_status=configured`, `ip_allowlist_entry_count=1`):
+
+- no IP address literals added
+- no secret values, account IDs, token prefixes, or screenshot references
+- integer `1` only for entry count (allowed)
+
 ## Verdict
 
 `redaction_pass: true`

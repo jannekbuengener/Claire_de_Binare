@@ -10,6 +10,8 @@
 
 ## Repo / Engineering Status (2026-07-03)
 
+- **#2983 LR-050 Secrets & Account Readiness**: **COMPLETED** — PR #3717 baseline (`b758edd1`) + S7 completion PR; evidence [`reports/lr050/secrets_readiness/2026-07-03/`](reports/lr050/secrets_readiness/2026-07-03/) result **PASS** (S7 `configured`, entry count `1`; S1–S6, S8–S10 PASS; redaction PASS). GitHub-live: #2983 **CLOSED** on aggregate PASS. LR **NO-GO** unchanged. Session logs: `knowledge/logs/sessions/2026-07-03-lr050-secrets-readiness-2983.md`, `knowledge/logs/sessions/2026-07-04-lr050-s7-complete-2983.md`.
+
 - **#2984 LR-050 Kill-Switch Drill**: **COMPLETED** — PR [#3714](https://github.com/jannekbuengener/Claire_de_Binare/pull/3714) squash-merged (`641501cd`); evidence [`reports/lr050/kill_switch_drill/2026-07-03/`](reports/lr050/kill_switch_drill/2026-07-03/) result **PASS**. Staged File Kill Switch activate/deactivate under `DRY_RUN=true`, `MOCK_TRADING=true`; latency + rollback + correlated Grafana-SMTP receipt; no Prometheus auto-alert on `risk_kill_switch_active` claimed. GitHub-live: #2984 **CLOSED**. LR **NO-GO** unchanged. Session log: `knowledge/logs/sessions/2026-07-03-lr050-kill-switch-drill-2984.md`.
 
 - **#2978 LR-050 Runtime Dry-Run Proof**: **COMPLETED** — PR [#3713](https://github.com/jannekbuengener/Claire_de_Binare/pull/3713) squash-merged (`7b1d4fa0`); evidence [`reports/lr050/dry_run_proof/2026-07-03/`](reports/lr050/dry_run_proof/2026-07-03/) result **PASS**. GitHub-live: #2978 **CLOSED**. LR **NO-GO** unchanged. Session log: `knowledge/logs/sessions/2026-07-03-lr050-dry-run-proof-2978.md`.

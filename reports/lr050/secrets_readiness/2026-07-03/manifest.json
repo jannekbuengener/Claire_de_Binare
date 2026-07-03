@@ -1,15 +1,17 @@
 {
   "proof_type": "lr050_secrets_account_readiness",
   "issue": "2983",
-  "result": "INCONCLUSIVE",
-  "aggregate_gate": "INCONCLUSIVE",
+  "result": "PASS",
+  "aggregate_gate": "PASS",
   "lr_verdict_at_proof": "NO-GO",
   "live_go": false,
   "echtgeld_go": false,
-  "proof_ts_utc": "2026-07-03T20:32:05Z",
+  "proof_ts_utc": "2026-07-03T23:09:50Z",
   "proof_window_utc_start": "2026-07-03T20:25:00Z",
-  "proof_window_utc_end": "2026-07-03T20:32:05Z",
-  "repo_head_at_proof": "88b0bf1ddb037b81b7e304d092b69330b10a00aa",
+  "proof_window_utc_end": "2026-07-03T23:09:50Z",
+  "s7_reattest_window_utc_start": "2026-07-03T23:05:00Z",
+  "s7_reattest_window_utc_end": "2026-07-03T23:09:50Z",
+  "repo_head_at_proof": "4c97fc443bcc62303d4777eb2f18f61ae24ea4c8",
   "ssot_path_status": "PRESENT",
   "secrets_path_env": "SET",
   "ssot_files": {
@@ -31,7 +33,7 @@
     "S4": "PASS",
     "S5": "PASS",
     "S6": "PASS",
-    "S7": "INCONCLUSIVE",
+    "S7": "PASS",
     "S8": "PASS",
     "S9": "PASS",
     "S10": "PASS",
@@ -44,19 +46,19 @@
     "transfer": "disabled",
     "admin": "disabled"
   },
-  "ip_allowlist_status": "unknown",
-  "ip_allowlist_entry_count": null,
+  "ip_allowlist_status": "configured",
+  "ip_allowlist_entry_count": 1,
   "account_binding_status": "verified",
   "testnet_mainnet_separation": "verified",
   "designated_key_class": "undecided",
   "agent_read_credentials": false,
   "exchange_api_called": false,
   "redaction_pass": true,
-  "blockers": [
-    "S7 ip_allowlist_status unknown — operator could not attest status/count without policy detail exposure",
-    "S11 designated_key_class undecided pending #2976 (non-blocking for aggregate per scope; documented)"
+  "blockers": [],
+  "informational_gaps": [
+    "S11 designated_key_class undecided pending #2976 (non-blocking per LR-050 aggregate rule)"
   ],
   "redaction_policy": "LR-050-SECRETS-READINESS.md §9 + LR-050-SECRETS-ACCOUNT-READINESS-PREFLIGHT-2026-07-03.md",
   "operator_attestation_ref": "operator_attestation.md",
-  "notes": "LR-050 readiness attestation only. Does not clear LR-050 or authorize live capital."
+  "notes": "LR-050 readiness attestation only. S7 re-attested operator-only (enum + integer count). Does not clear LR-050 or authorize live capital."
 }
