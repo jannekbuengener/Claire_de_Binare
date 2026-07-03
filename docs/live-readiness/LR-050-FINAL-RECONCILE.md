@@ -22,6 +22,12 @@
 | Board stage `trade-capable` | **Not** live-capital authorization (orthogonal to LR) |
 | Runtime / exchange / secrets via this document | **None** |
 
+### Post-gate navigation (2026-07-04)
+
+This document remains the **2026-06-04 planning-wave reconcile** for child SSOTs #2526–#2534. Since then, LR-050 **execution gate issues** #2977–#2984 delivered operator/runtime evidence (2026-07-03); see `reports/lr050/` and [`LR-050-BLOCKER-REFRESH-MATRIX-2026-07-03.md`](./LR-050-BLOCKER-REFRESH-MATRIX-2026-07-03.md). Live navigation SSOT: [#2985](https://github.com/jannekbuengener/Claire_de_Binare/issues/2985).
+
+**Verdict unchanged:** LR-050 **NO-GO**. Issue/PR closure and gate evidence do **not** authorize live capital. Canary parameters remain `TBD_BLOCKER_BEFORE_LIVE` in [`LR-050-RISK-LIMITS.md`](./LR-050-RISK-LIMITS.md) / [`LR-050-CANARY-PLAN.md`](./LR-050-CANARY-PLAN.md). Exact Human Approval not on record. §3 blocker table below is a **historical snapshot** at reconcile time; do not read closed GitHub issues alone as live-capital clearance.
+
 ---
 
 ## 1. Verdict
