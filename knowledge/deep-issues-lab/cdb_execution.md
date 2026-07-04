@@ -84,7 +84,7 @@ import hmac
 import hashlib
 import time
 
-def generate_signature(params: dict, api_secret: str) -> str:
+def generate_signature(params: dict, signing_key: str) -> str:
     # 1. Sortiere Parameter alphabetisch
     sorted_params = sorted(params.items())
     
@@ -93,7 +93,7 @@ def generate_signature(params: dict, api_secret: str) -> str:
     
     # 3. HMAC-SHA256 Hash
     signature = hmac.new(
-        api_secret.encode("utf-8"),
+        signing_key.encode("utf-8"),
         query_string.encode("utf-8"),
         hashlib.sha256
     ).hexdigest()
@@ -326,7 +326,7 @@ if config.execution_mode == "LIVE":
     
     response = await self.http_client.post(
         f"{config.mexc_base_url}/api/v3/order",
-        headers={"X-MEXC-APIKEY": config.mexc_api_key},
+        headers={"X-MEXC-APIKEY": config.mexc_key},
         params={**order_params, "signature": signature}
     )
     
@@ -343,7 +343,7 @@ async def validate_live_mode_requirements(self):
     checks = []
     
     # 1. API Key vorhanden?
-    checks.append(bool(config.mexc_api_key))
+    checks.append(bool(config.mexc_key))
     
     # 2. Server Time Sync?
     server_time = await self._get_server_time()
@@ -479,7 +479,7 @@ params = {
     "timestamp": "1698745123456",
     "recvWindow": "5000"
 }
-signature = generate_signature(params, api_secret)
+signature = generate_signature(params, signing_key)
 
 # 2. POST zu MEXC
 response = requests.post(
@@ -643,7 +643,7 @@ query_string = "&".join([f"{k}={v}" for k, v in sorted(params.items())])
 print(f"Query String: {query_string}")
 
 # 2. Print Signature
-signature = generate_signature(params, api_secret)
+signature = generate_signature(params, signing_key)
 print(f"Signature: {signature}")
 
 # 3. Test mit MEXC Signature Tool
