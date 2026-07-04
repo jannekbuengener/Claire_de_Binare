@@ -7,8 +7,12 @@
 | Mode | Real Money | Exchange Connection | Safety | Use Case |
 |------|------------|---------------------|--------|----------|
 | **PAPER** | ❌ No | ❌ No | 🟢 Highest | Development, testing strategies |
-| **STAGED** | ❌ No | ✅ Testnet | 🟡 Medium | Pre-production validation |
+| **STAGED** | ❌ No* | ⚠️ Nominal `MEXC_TESTNET` only — **no spot testnet** | 🟡 Medium | Pre-production validation (exchange-capable on mainnet spot host when `DRY_RUN=false`) |
 | **LIVE** | ✅ YES | ✅ Production | 🔴 DANGER | Real trading |
+
+\* STAGED sets `MOCK_TRADING=false`, `DRY_RUN=false` in legacy mapping — **exchange-capable**
+on mainnet spot REST (`https://api.mexc.com`); not a sandbox. No-send remains
+`DRY_RUN=true` + `MOCK_TRADING=true`. See LR-050 venue semantics (PR #3720).
 
 ---
 
@@ -29,7 +33,8 @@ LIVE_TRADING_CONFIRMED=yes
 The system automatically sets these based on `TRADING_MODE`:
 - `MOCK_TRADING` - Use mock executor vs real exchange executor
 - `DRY_RUN` - Log trades vs execute trades
-- `MEXC_TESTNET` - Use testnet vs production exchange
+- `MEXC_TESTNET` - **Nominal flag only** (no MEXC spot testnet; not a no-send proof;
+  `MexcClient(testnet=True)` fail-closed per PR #3720)
 
 ---
 
@@ -65,34 +70,34 @@ TRADING_MODE=paper
 
 ---
 
-### STAGED Mode (Testnet)
+### STAGED Mode (Pre-production — not a spot testnet)
 
 **Characteristics:**
-- ✅ Real exchange connection (testnet)
-- ❌ No real money (testnet funds)
-- 🟡 Medium safety
+- ⚠️ **Exchange-capable** when `DRY_RUN=false` and `MOCK_TRADING=false` (mainnet spot REST)
+- ❌ **No MEXC Spot testnet/sandbox** — `MEXC_TESTNET=true` is nominal only (PR #3720)
+- ❌ No real money **by intent** — but not fail-closed without `DRY_RUN`/`MOCK_TRADING`
+- 🟡 Medium safety — requires explicit no-send gates for safe testing
 
 **Use Cases:**
-- Pre-production validation
-- Exchange integration testing
-- Order execution verification
-- Network latency testing
+- Pre-production validation with real network latency (mainnet spot host)
+- Order execution path verification **with** `DRY_RUN=true` / mock executor for safety
+- API integration testing under controlled gates
 
 **Configuration Example:**
 ```bash
 # .env
 TRADING_MODE=staged
 
-# Testnet API credentials required
-MEXC_API_KEY=/run/secrets/mexc_testnet_api_key
-MEXC_API_SECRET=/run/secrets/mexc_testnet_api_secret
+# API credentials required when exchange-capable (mainnet spot — not a sandbox)
+MEXC_API_KEY=/run/secrets/mexc_api_key
+MEXC_API_SECRET=/run/secrets/mexc_api_secret
 ```
 
 **What Happens:**
-- Orders sent to MEXC testnet
-- Real network latency
-- Testnet fills (not real money)
-- API rate limits apply
+- Legacy mapping sets `MEXC_TESTNET=true`, `MOCK_TRADING=false`, `DRY_RUN=false`
+- Orders **may** be sent to mainnet spot REST (`https://api.mexc.com`) — **not** a testnet
+- `MexcClient(testnet=True)` **fail-closed** (`ValueError`); no spot sandbox exists
+- For safe testing prefer **PAPER** mode or explicit `DRY_RUN=true` + `MOCK_TRADING=true`
 
 ---
 
@@ -191,7 +196,9 @@ mode = get_trading_mode()  # Validates LIVE confirmation if needed
 if mode == TradingMode.PAPER:
     executor = MockExecutor()
 elif mode == TradingMode.STAGED:
-    executor = MexcExecutor(testnet=True)
+    # Exchange-capable on mainnet spot; MEXC_TESTNET nominal — not a sandbox.
+    # MexcClient(testnet=True) fail-closed (PR #3720).
+    executor = MexcExecutor(testnet=False)
 else:  # LIVE
     executor = MexcExecutor(testnet=False)
 ```
@@ -287,10 +294,10 @@ python -m pytest tests/unit/config/test_trading_mode.py::TestGetTradingMode::tes
 Before enabling LIVE mode:
 
 - [ ] All E2E tests passing in PAPER mode
-- [ ] All E2E tests passing in STAGED mode (testnet)
+- [ ] All E2E tests passing in STAGED mapping (with explicit no-send gates where required)
 - [ ] 14-day paper trading completed successfully
-- [ ] Risk limits validated on testnet
-- [ ] Circuit breakers tested on testnet
+- [ ] Risk limits validated under controlled pre-production runs
+- [ ] Circuit breakers tested under controlled pre-production runs
 - [ ] Emergency stop mechanism tested
 - [ ] Production API credentials secured (Docker secrets)
 - [ ] `LIVE_TRADING_CONFIRMED=yes` set explicitly
@@ -350,5 +357,5 @@ ls /run/secrets/
 
 ---
 
-**Last Updated:** 2025-12-27
+**Last Updated:** 2026-07-04 (MEXC venue semantics reconcile, PR #3720 / #3726)
 **Status:** ✅ Implemented (Issue #252)

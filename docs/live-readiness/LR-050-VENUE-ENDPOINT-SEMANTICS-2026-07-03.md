@@ -3,8 +3,9 @@
 - **Control:** `LR-050` (P5 Canary Echtgeld / Live-Kapital)
 - **GitHub issue:** [#2979](https://github.com/jannekbuengener/Claire_de_Binare/issues/2979) — `[LR-050][VENUE] Verify MEXC venue/testnet/mainnet endpoint semantics`
 - **Document role:** Repo-backed **and** official-public-doc-backed verification of MEXC venue / testnet / mainnet REST + WebSocket endpoint semantics. Documentation-only evidence artifact.
-- **Reconcile date:** 2026-07-03
-- **Repo anchor:** `origin/main` @ `b758edd16c131206d4de64c47a5158c4eb6ffb5e`
+- **Reconcile date:** 2026-07-03 (initial); **post-#3720 table refresh:** 2026-07-04 (PR [#3726](https://github.com/jannekbuengener/Claire_de_Binare/issues/3726))
+- **Repo anchor (initial):** `origin/main` @ `b758edd16c131206d4de64c47a5158c4eb6ffb5e`
+- **Repo anchor (§2 post-#3720 refresh):** `origin/main` @ `c5eb52a7e8aedd259bc1180e25287caf57915e0f` (includes PR [#3720](https://github.com/jannekbuengener/Claire_de_Binare/pull/3720) merge `4c97fc44`)
 - **Verdict authority (unchanged):** [`LR-AUDIT-STATUS-2026-03-05.md`](./LR-AUDIT-STATUS-2026-03-05.md)
 - **Upstream inventory (not duplicated here):** [`LR-050-VENUE-AUDIT.md`](./LR-050-VENUE-AUDIT.md) (#2527), [`LR-050-DRY-RUN-PROOF.md`](./LR-050-DRY-RUN-PROOF.md) (#2533), [`LR-050-FINAL-RECONCILE.md`](./LR-050-FINAL-RECONCILE.md) §4 (#2535)
 
@@ -63,8 +64,8 @@ Answer, with repo evidence cross-checked against **official public MEXC document
 |------|-------|---------|------|
 | `MOCK_TRADING` | [`services/execution/config.py`](../../services/execution/config.py) L25 | `true` | Mock adapter (`mock_builtin`) vs real executor |
 | `DRY_RUN` | [`services/execution/config.py`](../../services/execution/config.py) L26-28 | `true` | `LiveExecutor` logs only, no venue send |
-| `MEXC_TESTNET` | [`services/execution/config.py`](../../services/execution/config.py) L22 | `true` | Selects `MexcClient(testnet=…)` base URL; **not** a non-send flag (see §5) |
-| `MEXC_BASE_URL` | [`services/execution/config.py`](../../services/execution/config.py) L21; [`services/risk/balance_fetcher.py`](../../services/risk/balance_fetcher.py) L32 | `https://contract.mexc.com` | Explicit base-URL override; default points at deprecated futures host (see §4) |
+| `MEXC_TESTNET` | [`services/execution/config.py`](../../services/execution/config.py) L29 | `true` | Nominal flag only; **not** a no-send proof; no spot testnet exists (see §5) |
+| `MEXC_BASE_URL` | [`services/execution/config.py`](../../services/execution/config.py) L25; [`services/risk/balance_fetcher.py`](../../services/risk/balance_fetcher.py) L36 | `https://api.mexc.com` | Explicit base-URL override; default is mainnet spot host (PR #3720) |
 | `MEXC_API_KEY` / `MEXC_API_SECRET` | [`services/execution/config.py`](../../services/execution/config.py) L19-20 | via `read_secret` | Required only when `DRY_RUN=false` on MEXC path (names only) |
 | `CONFIRM_LIVE_TRADING` | [`services/execution/service.py`](../../services/execution/service.py) L993 | unset | Required `true` for mainnet tuple |
 | `LIVE_TRADING_CONFIRMED` | [`core/config/trading_mode.py`](../../core/config/trading_mode.py) L95 | unset | Required `yes` for `TRADING_MODE=live` parsing |
@@ -75,10 +76,10 @@ Answer, with repo evidence cross-checked against **official public MEXC document
 
 | Component | Path / symbol | Transport | Base URL in repo |
 |-----------|---------------|-----------|------------------|
-| REST client (shared) | [`core/clients/mexc.py`](../../core/clients/mexc.py) `MexcClient` | REST (`requests` + HMAC-SHA256) | `testnet=False` → `https://api.mexc.com` (L60); `testnet=True` → `https://contract.mexc.com` (L57, comment "Testnet URL") |
-| REST spot endpoints used | `MexcClient` | REST | `/api/v3/account` (L99), `/api/v3/order` (L158, L206, L252), `/api/v3/ticker/price` (L282) |
-| Execution config | [`services/execution/config.py`](../../services/execution/config.py) | — | `MEXC_BASE_URL` default `https://contract.mexc.com` (L21) |
-| Risk balance fetcher | [`services/risk/balance_fetcher.py`](../../services/risk/balance_fetcher.py) | REST | `MEXC_BASE_URL` default `https://contract.mexc.com` (L32); calls `/api/v3/ticker/price` (L69) |
+| REST client (shared) | [`core/clients/mexc.py`](../../core/clients/mexc.py) `MexcClient` | REST (`requests` + HMAC-SHA256) | Default `https://api.mexc.com`; `testnet=True` **fail-closed** (`ValueError`, PR #3720) |
+| REST spot endpoints used | `MexcClient` | REST | `/api/v3/account`, `/api/v3/order`, `/api/v3/ticker/price` (spot paths on mainnet host) |
+| Execution config | [`services/execution/config.py`](../../services/execution/config.py) | — | `MEXC_BASE_URL` default `https://api.mexc.com` (L25) |
+| Risk balance fetcher | [`services/risk/balance_fetcher.py`](../../services/risk/balance_fetcher.py) | REST | `MEXC_BASE_URL` default `https://api.mexc.com` (L36); calls `/api/v3/ticker/price` |
 | WebSocket market data | [`services/ws/mexc_v3_client.py`](../../services/ws/mexc_v3_client.py) `MexcV3Client` | WebSocket protobuf | `wss://wbs-api.mexc.com/ws` (L30) |
 | Trading-mode helper (legacy) | [`core/config/trading_mode.py`](../../core/config/trading_mode.py) `get_legacy_config` | — | Bundle table only; **not** wired into `cdb_execution` runtime |
 
@@ -144,14 +145,19 @@ Repo WS URL `wss://wbs-api.mexc.com/ws` ([`mexc_v3_client.py`](../../services/ws
 
 | Repo location | Repo value | Official semantics | Verdict |
 |---------------|-----------|--------------------|---------|
-| [`core/clients/mexc.py`](../../core/clients/mexc.py) L60 (live) | `https://api.mexc.com` + spot `/api/v3/*` | Spot REST base `https://api.mexc.com` | **Correct** (mainnet spot) |
+| [`core/clients/mexc.py`](../../core/clients/mexc.py) (live default) | `https://api.mexc.com` + spot `/api/v3/*` | Spot REST base `https://api.mexc.com` | **Correct** (mainnet spot) |
 | [`services/ws/mexc_v3_client.py`](../../services/ws/mexc_v3_client.py) L30 | `wss://wbs-api.mexc.com/ws` | Spot WS base `ws(s)://wbs-api.mexc.com/ws` | **Correct** (mainnet spot WS) |
-| [`core/clients/mexc.py`](../../core/clients/mexc.py) L57 (testnet) | `https://contract.mexc.com` labeled "Testnet URL", still using spot `/api/v3/*` | `contract.mexc.com` = former **Futures** host, **deprecated since 2026-01-19**; **no** spot testnet exists | **Incorrect / stale label** — not a real spot testnet; deprecated host; wrong API family for spot paths |
-| [`services/execution/config.py`](../../services/execution/config.py) L21 (`MEXC_BASE_URL` default) | `https://contract.mexc.com` | deprecated futures host | **Stale default** |
-| [`services/risk/balance_fetcher.py`](../../services/risk/balance_fetcher.py) L32 + L69 | `https://contract.mexc.com` + spot `/api/v3/ticker/price` | deprecated futures host + spot path | **Stale default + family mismatch** |
-| [`core/config/trading_mode.py`](../../core/config/trading_mode.py) L203-208 `STAGED` | `MOCK_TRADING=False, DRY_RUN=False, MEXC_TESTNET=True` (labeled "testnet") | No spot testnet; combination is exchange-capable | **Exchange-capable, not dry-run; "testnet" is nominal** |
+| [`core/clients/mexc.py`](../../core/clients/mexc.py) `testnet=True` | **Fail-closed** (`ValueError`) | No spot testnet; deprecated `contract.mexc.com` was futures host | **Correct post-#3720** — no silent routing to deprecated host |
+| [`services/execution/config.py`](../../services/execution/config.py) `MEXC_BASE_URL` default | `https://api.mexc.com` | Mainnet spot REST base | **Correct post-#3720** (PR #3720) |
+| [`services/risk/balance_fetcher.py`](../../services/risk/balance_fetcher.py) default | `https://api.mexc.com` + spot `/api/v3/ticker/price` | Mainnet spot host + spot path | **Correct post-#3720** (PR #3720) |
+| [`core/config/trading_mode.py`](../../core/config/trading_mode.py) `STAGED` | `MOCK_TRADING=False, DRY_RUN=False, MEXC_TESTNET=True` (nominal) | No spot testnet; combination is exchange-capable on mainnet | **Exchange-capable, not dry-run; `MEXC_TESTNET` is nominal only** |
 
-**Repo finding (code-level, out of scope for this docs gate):** the `testnet=True` branch and the `MEXC_BASE_URL` defaults point at the deprecated `contract.mexc.com` futures host and are labeled "Testnet URL", although MEXC offers no spot testnet. Setting `MEXC_TESTNET=true` today would not route to a safe sandbox; against a discontinued domain it would more likely fail to connect. This is a documentation/verification finding here; the code correction is tracked as a **separate deduplicated follow-up issue** (linked in the delivering PR) and is not fixed in this documentation-only change.
+**Repo finding (pre-#3720, now fixed in PR #3720):** Before PR #3720, the `testnet=True`
+branch and `MEXC_BASE_URL` defaults pointed at the deprecated `contract.mexc.com` futures
+host and were labeled "Testnet URL", although MEXC offers no spot testnet. PR #3720
+corrected defaults to `https://api.mexc.com` and made `testnet=True` **fail-closed**.
+This document's §2 tables were refreshed post-merge via PR #3726; global LR verdict
+unchanged.
 
 ---
 
@@ -160,7 +166,7 @@ Repo WS URL `wss://wbs-api.mexc.com/ws` ([`mexc_v3_client.py`](../../services/ws
 `MEXC_TESTNET` alone is **not** a no-send proof, on two independent grounds:
 
 1. **Startup-gate only, not a send blocker.** [`_require_live_confirmation()`](../../services/execution/service.py) L988 treats `MEXC_TESTNET=true` like `MOCK_TRADING` / `DRY_RUN`: it **skips** the `CONFIRM_LIVE_TRADING` exit. With `MOCK_TRADING=false`, `DRY_RUN=false`, `MEXC_TESTNET=true`, [`LiveExecutor`](../../services/execution/live_executor.py) still constructs `MexcClient` and may call `place_market_order` / `place_limit_order` ([`core/clients/mexc.py`](../../core/clients/mexc.py)). This matches [`LR-050-DRY-RUN-PROOF.md`](./LR-050-DRY-RUN-PROOF.md) §2.2 and [`LR-050-FINAL-RECONCILE.md`](./LR-050-FINAL-RECONCILE.md) §4.
-2. **No real venue isolation.** Per §3-§4, there is no MEXC spot testnet, and the configured "testnet" host is a deprecated futures domain — so `MEXC_TESTNET=true` provides neither a documented sandbox nor a reliable non-production venue.
+2. **No real venue isolation.** Per §3-§4, there is no MEXC spot testnet; `MexcClient(testnet=True)` is **fail-closed** (PR #3720), and `MEXC_TESTNET=true` alone provides neither a documented sandbox nor a reliable non-production venue.
 
 **No-send for CDB remains dependent on all of:**
 
@@ -215,7 +221,7 @@ No LR-wide release is implied. This document does not authorize live capital.
 
 ## 8. Method / validation (docs-only)
 
-- Repo read-only inspection of the files cited above at `origin/main` `b758edd1`.
+- Repo read-only inspection of the files cited above at `origin/main` `c5eb52a7` (post-#3720).
 - Official MEXC public documentation read via web without credentials, account access, or API calls.
 - No authenticated exchange call, no order (including test order), no secret read.
 - Redaction review: no IP addresses, no account identifiers, no email addresses, no tokens, no secret values.
@@ -226,13 +232,13 @@ No LR-wide release is implied. This document does not authorize live capital.
 
 - Official docs are a public snapshot (2026-07-03); MEXC may change domains, limits, or demo scope over time.
 - No authenticated/live connection was made; this is documentation verification, not an operator live-venue drill.
-- The deprecated `contract.mexc.com` "testnet" configuration is a code-level defect tracked as a separate follow-up; it is documented but not fixed here.
+- Pre-#3720 `contract.mexc.com` defaults and `testnet=True` routing were **fixed in PR #3720**; §2 tables refreshed in PR #3726.
 
 ---
 
 ## 10. Sources
 
-Repo (at `origin/main` `b758edd1`):
+Repo (at `origin/main` `c5eb52a7` post-#3720 / #3725):
 
 - [`core/clients/mexc.py`](../../core/clients/mexc.py), [`services/execution/config.py`](../../services/execution/config.py), [`services/execution/service.py`](../../services/execution/service.py), [`services/risk/balance_fetcher.py`](../../services/risk/balance_fetcher.py), [`services/ws/mexc_v3_client.py`](../../services/ws/mexc_v3_client.py), [`core/config/trading_mode.py`](../../core/config/trading_mode.py)
 - [`reports/lr050/dry_run_proof/2026-07-03/manifest.json`](../../reports/lr050/dry_run_proof/2026-07-03/manifest.json)

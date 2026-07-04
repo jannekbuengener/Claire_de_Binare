@@ -6,12 +6,29 @@
 > pre-canonical setup model. The current runtime uses Docker secrets
 > (`~/Documents/.secrets/.cdb/`) and the Blue/Red compose canon. For secret setup use
 > `.\tools\cdb.ps1 secrets init`; for stack start use `.\tools\cdb.ps1 runtime up`.
-> The sections below are retained for MEXC testnet credential context and historical
-> reference only — they do not describe the current operational path.
+> The sections below are retained for historical reference only — they do **not**
+> describe the current operational path.
+>
+> **Venue semantics (post PR #3720, Refs #3718/#3719):** MEXC offers **no** Spot API
+> testnet/sandbox. Spot REST default is `https://api.mexc.com`. `MexcClient(testnet=True)`
+> **fail-closed** (`ValueError`). `MEXC_TESTNET` is a **nominal** legacy flag only — not a
+> no-send proof and not a sandbox venue. Safe non-trading is `DRY_RUN=true` +
+> `MOCK_TRADING=true`. Spot WS uses `wss://wbs-api.mexc.com/ws` (independent of
+> `MEXC_TESTNET`). The former `https://contract.mexc.com` host was a deprecated MEXC
+> **Futures** domain, not a spot testnet. See
+> `docs/live-readiness/LR-050-VENUE-ENDPOINT-SEMANTICS-2026-07-03.md` and
+> `knowledge/ARCHITECTURE_MAP.md` §6. **LR remains NO-GO.**
 
 ## Overview
 
-The MEXC Testnet provides a risk-free environment to test trading operations with **fake money** before going live.
+> **Historical:** This guide was written when a MEXC Spot "testnet" was assumed. Official
+> MEXC documentation and repo verification (LR-050, PR #3720) confirm **no Spot API
+> testnet/sandbox** exists. CDB safe testing uses **Paper mode** (`DRY_RUN=true`,
+> `MOCK_TRADING=true`) — not a separate spot testnet URL.
+
+The MEXC Testnet **web UI** (`testnet.mexc.com`) provided a risk-free environment to test
+trading operations with **fake money** before going live. That UI context is **not** wired
+into the current CDB spot REST/WS path.
 
 ### Key Benefits
 
@@ -101,24 +118,23 @@ DRY_RUN=true
 
 ---
 
-### 🟡 Testnet Mode (Safe Testing)
+### 🟡 Testnet Mode (Historical — not current CDB spot path)
 
-**Configuration:**
+> **Historical / misleading:** There is **no** MEXC Spot API testnet. Setting
+> `MEXC_TESTNET=true` with `DRY_RUN=false` is **exchange-capable** on the mainnet spot
+> host (`https://api.mexc.com`) and is **not** a sandbox. `MexcClient(testnet=True)` now
+> **fail-closed** (PR #3720). For safe integration testing use **Dry Run Mode** or
+> **Paper mode** (`TRADING_MODE=paper`).
+
+**Configuration (legacy model — do not use as operational guidance):**
 ```bash
 MEXC_TESTNET=true
 DRY_RUN=false
 ```
 
-**Behavior:**
-- Orders sent to **MEXC Testnet**
-- Uses **fake money** (no risk)
-- Real API responses and execution
-- Tests full order lifecycle
-
-**Use When:**
-- Validating API integration
-- Testing order execution
-- End-to-end system testing
+**Behavior (pre-#3720 assumption — stale):**
+- Was documented as orders sent to a "MEXC Testnet" spot host
+- **Current code:** no spot testnet; `testnet=True` raises `ValueError`
 
 ---
 
@@ -163,19 +179,24 @@ docker logs -f cdb_execution
 # Expected: Orders logged, parameters validated
 ```
 
-### Phase 2: Testnet Testing
+### Phase 2: Testnet Testing (Historical)
+
+> **Historical:** Phase 2 assumed a spot testnet connection. Post PR #3720,
+> `test_mexc_testnet.py` validates **fail-closed** `testnet=True` behavior and mainnet
+> defaults — not a live spot sandbox.
 
 ```bash
-# 1. Switch to testnet mode
+# 1. (Historical) Switch to testnet mode — NOT a sandbox in current code
 DRY_RUN=false
 
-# 2. Run integration tests
+# 2. Run integration tests (fail-closed + mainnet default semantics)
 pytest tests/integration/test_mexc_testnet.py -v
 
-# 3. Test manual order flow
+# 3. Test manual order flow — testnet=True FAILS CLOSED (ValueError)
 python -c "
-from services.execution.mexc_client import MexcClient
-client = MexcClient(testnet=True)
+from core.clients.mexc import MexcClient
+# MexcClient(testnet=True)  # raises ValueError — no spot testnet
+client = MexcClient(testnet=False)  # mainnet spot base https://api.mexc.com
 
 # Get balance
 balance = client.get_balance('USDT')
@@ -233,10 +254,10 @@ MEXC_API_SECRET=def456...
 **Causes:**
 - Invalid API key/secret
 - API key not enabled for Spot Trading
-- Wrong testnet URL
+- Wrong API host (historical docs referenced deprecated `contract.mexc.com`)
 
 **Solution:**
-1. Regenerate API key on testnet.mexc.com
+1. Regenerate API key on testnet.mexc.com (web UI only — not CDB spot REST path)
 2. Enable Spot Trading permission
 3. Update `.env` with new credentials
 
@@ -265,13 +286,22 @@ MEXC_API_SECRET=def456...
 
 ## API Endpoints
 
-### Testnet URLs
+### Current CDB spot endpoints (post PR #3720)
 
-- **Spot API:** `https://contract.mexc.com`
-- **Web UI:** `https://testnet.mexc.com/`
+| Surface | URL | Notes |
+|---------|-----|-------|
+| Spot REST (default) | `https://api.mexc.com` | Mainnet spot; no spot testnet exists |
+| Spot WebSocket | `wss://wbs-api.mexc.com/ws` | Public feed; not switched by `MEXC_TESTNET` |
+| `MexcClient(testnet=True)` | — | **Fail-closed** (`ValueError`) |
+
+### Historical / external references (not CDB spot REST path)
+
+- **Deprecated futures host (do not use):** `https://contract.mexc.com` — former MEXC
+  **Futures** domain, discontinued 2026-01-19; was mislabeled "testnet" in old docs
+- **MEXC web testnet UI (external):** `https://testnet.mexc.com/` — not the CDB spot API
 - **Docs:** `https://mexcdevelop.github.io/apidocs/spot_v3_en/`
 
-### Production URLs
+### Production URLs (official mainnet spot)
 
 - **Spot API:** `https://api.mexc.com`
 - **Web UI:** `https://www.mexc.com/`
@@ -334,9 +364,10 @@ docker logs -f cdb_risk
 ### Check Order History
 
 ```python
-from services.execution.mexc_client import MexcClient
+from core.clients.mexc import MexcClient
 
-client = MexcClient(testnet=True)
+# Historical example used testnet=True — now fail-closed (ValueError).
+client = MexcClient(testnet=False)  # https://api.mexc.com
 
 # Get recent orders
 orders = client.session.get(
