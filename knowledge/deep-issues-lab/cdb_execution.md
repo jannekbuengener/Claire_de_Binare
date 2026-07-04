@@ -5,6 +5,13 @@
 **Service**: Execution Service (Port 8003)  
 **Zweck**: Live Order Execution via MEXC Exchange API
 
+> **Historical / deep-research lab snapshot.** Endpoint examples below may cite pre-#3720
+> defaults. **Aktuelle CDB Spot-Semantik (post PR #3720):** REST default
+> `https://api.mexc.com`; kein Spot-Testnet; `MEXC_TESTNET` ist nominal/legacy (kein
+> No-Send-Gate — No-Send = `DRY_RUN=true` + `MOCK_TRADING=true` / mock builtin).
+> Der deprecated Host `https://contract.mexc.com` war der ehemalige MEXC Futures host,
+> nie der aktuelle Spot-REST-Default.
+
 ---
 
 ## 📋 Executive Summary
@@ -22,7 +29,9 @@ Der Execution Service ist die **einzige Komponente mit direktem Exchange-Zugriff
 ```env
 MEXC_API_KEY=REDACTED_MEXC_KEY
 MEXC_API_SECRET=REDACTED_MEXC_SECRET
-MEXC_BASE_URL=https://contract.mexc.com
+# Historical lab snapshot (pre #3720 — NOT current default):
+# MEXC_BASE_URL=https://contract.mexc.com
+MEXC_BASE_URL=https://api.mexc.com
 ```
 
 ---
