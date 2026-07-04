@@ -44,8 +44,8 @@ Docs-only operator indices from PRs #2999, #3001, #3003. Ersetzen keine kanonisc
 | **Candles** | cdb_candles | 8007 | services/candles/ | [README](../../services/candles/README.md) | **AKTIV** | Tick→1-min Aggregation; implements stimulus_fixture wall-clock override in market-state update to preserve freshness for RC_004 (PR #3022) |
 | **Regime** | cdb_regime | 8008 | services/regime/ | [README](../../services/regime/README.md) | **AKTIV** | ADX/ATR Regime Classification |
 | **Allocation** | cdb_allocation | 8006 | services/allocation/ | [README](../../services/allocation/README.md) | **AKTIV** | Regime→Allocation Mapping |
-| **Risk** | cdb_risk | 8002 | services/risk/ | [README](../../services/risk/README.md) | **AKTIV** | Risk Gate, Circuit Breaker, Kill-Switch; `/kill-switch` Fehlerantworten fail-closed ohne Exception-Details |
-| **Execution** | cdb_execution | 8003 | services/execution/ | [README](../../services/execution/README.md) | **AKTIV** | Order Execution (MOCK_TRADING=true default); `/orders` Fehlerantworten nur mit sicherem Fehlercode |
+| **Risk** | cdb_risk | 8002 | services/risk/ | [README](../../services/risk/README.md) | **AKTIV** | Risk Gate, Circuit Breaker, Kill-Switch; `/kill-switch` Fehlerantworten fail-closed ohne Exception-Details; `RealBalanceFetcher` spot REST default `MEXC_BASE_URL=https://api.mexc.com` (PR #3720; no MEXC spot testnet) |
+| **Execution** | cdb_execution | 8003 | services/execution/ | [README](../../services/execution/README.md) | **AKTIV** | Order Execution (`MOCK_TRADING=true`, `DRY_RUN=true` default); spot REST default `MEXC_BASE_URL=https://api.mexc.com`; `MEXC_TESTNET` nominal only (not no-send proof; `MexcClient(testnet=True)` fail-closed); `/orders` Fehlerantworten nur mit sicherem Fehlercode (PR #3720) |
 | **DB Writer** | cdb_db_writer | — | services/db_writer/ | [README](../../services/db_writer/README.md) | **AKTIV** | Redis→PostgreSQL Persistenz; `db_writer.py` schreibt `stream.candles_1m` in `candles_1m` (Postgres), `candle_normalizer.py` normalisiert die Stream-Payloads auf dem Write-Pfad (PR #1856) |
 | **Paper Runner** | cdb_paper_runner | 8004 | tools/paper_trading/ | [README](../../tools/paper_trading/README.md) | **AKTIV** | Paper Trading Orchestrator |
 
@@ -53,7 +53,7 @@ Docs-only operator indices from PRs #2999, #3001, #3003. Ersetzen keine kanonisc
 
 | Service | Container | Port | Code | README | Status | Funktion |
 |---------|-----------|------|------|--------|--------|----------|
-| **WebSocket** | cdb_ws | 8000 | services/ws/ | [README](../../services/ws/README.md) | **AKTIV** | MEXC Market Data Stream (protobuf); `MexcV3Client` wird nur bei `WS_SOURCE=mexc_pb` lazy geladen (Health-/Metrics-Surface bleibt importierbar ohne websocket-spezifische Dependency); `decoded_messages_total` und `decode_errors_total` werden via Delta-Logik aus absoluten Client-Werten als Prometheus Counter fortgeschrieben |
+| **WebSocket** | cdb_ws | 8000 | services/ws/ | [README](../../services/ws/README.md) | **AKTIV** | MEXC spot market data stream (protobuf) via `wss://wbs-api.mexc.com/ws`; **not** switched by `MEXC_TESTNET`; `MexcV3Client` wird nur bei `WS_SOURCE=mexc_pb` lazy geladen (Health-/Metrics-Surface bleibt importierbar ohne websocket-spezifische Dependency); `decoded_messages_total` und `decode_errors_total` werden via Delta-Logik aus absoluten Client-Werten als Prometheus Counter fortgeschrieben |
 | **Signal** | cdb_signal | 8005 (Runtime) | services/signal/ | [README](../../services/signal/README.md) | **AKTIV** | Signal Generation (`primary_breakout_v1` default nutzt zeitbasierte Lookback-Semantik, `momentum_builtin` statische Adapter-Grenze); audit metadata: `config_snapshot` (deterministic runtime params snapshot) + `config_hash` (full SHA-256); `SIGNAL_BOT_ID` environment variable wired via compose.red.yml (PR #2129) liefert Experiment-Kontext im SIGNAL-Payload, aber keine neue first-class Ledger-ID; `source=stimulus_fixture` + `stimulus_run_id` erzeugen deterministische `signal_id`s fuer exportierbare paper chains; reserved metadata keys (strategy_id, bot_id, config_snapshot, config_hash, signal_reason, signal_inputs) sind immutable und können nicht durch Candidate-Signal-Metadata überschrieben werden |
 | **Reports** | cdb_reports | — | services/reports/ | — | **AKTIV** | Daily Order Summary + Email |
 
@@ -103,7 +103,7 @@ Hinweis: Der Config-Default fuer `SIGNAL_PORT` liegt in `services/signal/config.
 
 **Interne Abhängigkeiten:** Nutzen `core/replay/canonical_json.py` (deterministic serialization), `core/replay/envelopes.py` (envelope tracking).
 
-**Externe Abhängigkeiten:** `core/domain/` (models, events), `core/clients/` (MEXC API), `core/indicators/` (technical indicators), `core/contracts/` (decision contracts).
+**Externe Abhängigkeiten:** `core/domain/` (models, events), `core/clients/` (MEXC spot REST via `core/clients/mexc.py` — mainnet base `https://api.mexc.com`, `testnet=True` fail-closed; no MEXC spot testnet; see PR #3720 and `docs/live-readiness/LR-050-VENUE-ENDPOINT-SEMANTICS-2026-07-03.md`), `core/indicators/` (technical indicators), `core/contracts/` (decision contracts).
 
 **Tests:** 453 unit tests (core/replay/ + services/validation/ replay-specific tests), alle grün.
 
@@ -280,6 +280,7 @@ Referenz: `infrastructure/compose/SERVICE_MAPPING.md`, PR #2670.
 | 2026-07-01 | PRs #3528/#3530 Nachzug (#3593): BLUE base images — Redis `8.8.0-alpine`, Postgres `18.4-alpine` — mit `compose.blue.yml` synchron; Runtime-Recreate bleibt #3594/#3600 | Cursor |
 | 2026-07-02 | PR #3685 Nachzug (#3687): `profitability_league_scorer.py` als Offline Strategy League Scorer CLI im Core-Libraries/Validation-Katalog ergänzt; offline/read-only/fail-closed, keine Runtime-Service-Erweiterung | Cursor |
 | 2026-07-02 | PR #3404 Nachzug (#3690): `profitability_evidence_packet_assembler.py` als Profitability Evidence Packet Assembler CLI im Core-Libraries/Validation-Katalog ergänzt; offline/deterministisch, keine Runtime-Service-Erweiterung | Cursor |
+| 2026-07-04 | PR #3720 Nachzug (#3721): MEXC venue endpoint semantics in Risk/Execution/WebSocket rows + `core/clients/` dependency note (spot REST `api.mexc.com`, no spot testnet, `MEXC_TESTNET` nominal) | Cursor |
 ## PostgreSQL Schema Artefacts
 
 | Artefakt | Migration | Status | Bedeutung |

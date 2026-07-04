@@ -193,7 +193,7 @@ cdb_reports           Up (healthy)
 | **Regime Scorecard CLI** | `services/validation/arvp_regime_scorecard_runner.py` | Operator-facing CLI (`--run-id ID --replay-trace FILE --comparison FILE --output-dir DIR`). Optional inputs; fail-closed on invalid JSON. Produces arvp_regime_scorecard.json + arvp_regime_scorecard_summary.md. Exit codes: 0 ok / 1 usage / 2 parse error. | **AKTIV** (PR #1918) |
 | **Paper Reference Window Export** | `core/replay/paper_reference_window_export.py` | Export comparison-grade paper_reference_window from correlation_ledger. Fail-closed on missing/invalid fields; deterministic ordering by (timestamp_ms, event_pk). Requires ≥1 ORDER + ≥1 FILL with paper_-prefix. `order_id` bleibt der kanonische interne Ledger-Bezug; `exchange_order_id` wird nur als Payload-Kontext geführt, wenn er vom kanonischen Wert abweicht. `bot_id`/`config_hash` werden als SIGNAL-anchor-/payload-abgeleiteter Queryability-Kontext genutzt, nicht als neue first-class Ledger-IDs. | **AKTIV** (PR #1920, PR #2949) |
 | **Paper Reference Window CLI** | `services/validation/paper_reference_window_runner.py` | Operator-facing CLI (`--strategy-id ID --symbol SYM --start-ts-ms TS --end-ts-ms TS --output FILE`). Reads correlation_ledger from Postgres via required `POSTGRES_READONLY_PASSWORD_DSN`; fail-closed unless `current_user` and `session_user` both resolve to `cdb_readonly`, effective `SELECT` on `public.correlation_ledger` is present, and any `INSERT`/`UPDATE`/`DELETE` privilege drift is rejected. Produces arvp_paper_reference_window.v1 JSON. Exit codes: 0 success / 1 usage / 2 DB/contract error. Optionale `--bot-id`/`--config-hash` Filter qualifizieren ueber SIGNAL-Anker, fuehren aber keine neue first-class Experiment-ID ein. | **AKTIV** (PR #1920, PR #2479) |
-| **Paper Runtime Stimulus CLI** | `services/validation/paper_runtime_stimulus_runner.py` | Runtime-adjacent operator CLI: publishes a canonical BTCUSDT 1m breakout fixture to Redis `market_data` (default `--dry-run-preview`; `--publish` only after safety preflight `MOCK_TRADING=true`, `DRY_RUN=true`, `MEXC_TESTNET=true`). Supports `--runtime-relative` / `--base-ts-ms` to shift fixture timestamps to current wall-clock aligned to 1m cadence while preserving breakout shape (PR #2992). For `source=stimulus_fixture`, `stimulus_run_id` now seeds deterministic `signal_id` generation in `services/signal/service.py`, and services (`cdb_market`, `cdb_candles`) now enforce wall-clock aligned `last_tick_ts_ms` to satisfy RC_004 freshness guards in `cdb_risk` (PRs #3016, #3019, #3022). No DB writes; no Live-Go. Intended to help produce comparison-grade `paper_` chains for #2968/#2969. Exit codes: 0 success / 1 usage / 2 safety or publish failure. | **AKTIV** (PR #2989, PR #2992, PR #3006, PR #3016, PR #3019, PR #3022) |
+| **Paper Runtime Stimulus CLI** | `services/validation/paper_runtime_stimulus_runner.py` | Runtime-adjacent operator CLI: publishes a canonical BTCUSDT 1m breakout fixture to Redis `market_data` (default `--dry-run-preview`; `--publish` only after safety preflight `MOCK_TRADING=true`, `DRY_RUN=true`, plus nominal `MEXC_TESTNET=true` gate — **not** venue isolation; no-send = `MOCK_TRADING` + `DRY_RUN`, see §6 MEXC Venue). Supports `--runtime-relative` / `--base-ts-ms` to shift fixture timestamps to current wall-clock aligned to 1m cadence while preserving breakout shape (PR #2992). For `source=stimulus_fixture`, `stimulus_run_id` now seeds deterministic `signal_id` generation in `services/signal/service.py`, and services (`cdb_market`, `cdb_candles`) now enforce wall-clock aligned `last_tick_ts_ms` to satisfy RC_004 freshness guards in `cdb_risk` (PRs #3016, #3019, #3022). No DB writes; no Live-Go. Intended to help produce comparison-grade `paper_` chains for #2968/#2969. Exit codes: 0 success / 1 usage / 2 safety or publish failure. | **AKTIV** (PR #2989, PR #2992, PR #3006, PR #3016, PR #3019, PR #3022) |
 | **Price Policy Evaluation CLI** | `tools/replay/evaluate_price_policies.py` | Operator-facing CLI for `price_policy` evaluation against replay report. Produces price-policy-evaluation JSON + summary evidence; consumes `report.json` from a replay run. Used for #3079 price-policy gap analysis. Exit codes: 0 success / 1 usage error. | **AKTIV** (PR #3081) |
 | **Profitability Evidence Packet Assembler CLI** | `services/validation/profitability_evidence_packet_assembler.py` | Offline, deterministic validation CLI (#3381). Validates explicit local input artifacts (candidate contract, data-quality, replay, scenario, economics, harvester refs; optional compare/scorecard), assembles schema-validated `profitability_evidence_packet.v1` JSON + Markdown. Evidence/validation support only; no runtime/BLUE/RED, no DB mutation, no trading authorization, no candidate promotion, no capital allocation. LR NO-GO. Exit codes: 0 success / 1 usage / 2 validation error. | **AKTIV** (PR #3404) |
 | **Offline Strategy League Scorer CLI** | `services/validation/profitability_league_scorer.py` | Offline, read-only, fail-closed Strategy League scorer v1 (#3682). Reads `profitability_evidence_packet.v1`, computes Formula v1 `dimension_scores`/`total_score`, emits schema-validated `profitability_league_table_report.v1`. Hard-gate failure ⇒ sentinel mode (`ranking_ready=false`, scores `0.0`). `PARK` = research hold only. Decision support only; no runtime/BLUE/RED, no DB mutation, no candidate promotion, no capital allocation. LR NO-GO. Exit codes: 0 success / 1 usage / 2 validation error. | **AKTIV** (PR #3685) |
@@ -201,6 +201,23 @@ cdb_reports           Up (healthy)
 ---
 
 ## 6. Strategic Service Semantics (Runtime vs Validation)
+
+### MEXC Venue / Endpoint Semantik (PR #3720, Refs #3718/#3719)
+
+Repo-backed venue defaults after PR #3720; LR remains **NO-GO**. See
+`docs/live-readiness/LR-050-VENUE-ENDPOINT-SEMANTICS-2026-07-03.md`.
+
+| Surface | Code | Spot REST default | Semantik |
+|---------|------|-------------------|----------|
+| Shared REST client | `core/clients/mexc.py` | `https://api.mexc.com` | `testnet=True` **fail-closed** (`ValueError`); MEXC has **no** spot testnet/sandbox |
+| Execution | `services/execution/config.py` | `MEXC_BASE_URL` → `https://api.mexc.com` | `MEXC_TESTNET` is **nominal only**; not a no-send proof |
+| Risk balance | `services/risk/balance_fetcher.py` | `MEXC_BASE_URL` → `https://api.mexc.com` | Same spot REST host; no spot testnet |
+| WebSocket feed | `services/ws/mexc_v3_client.py` | `wss://wbs-api.mexc.com/ws` | Public spot WS; **not** switched by `MEXC_TESTNET` |
+
+**No-send boundary (unchanged):** `DRY_RUN=true` + `MOCK_TRADING=true` (`mock_builtin`).
+`MEXC_TESTNET=true` skips live-confirmation startup gating but does **not** guarantee
+non-send or a sandbox venue. The former `https://contract.mexc.com` host was a
+deprecated MEXC **Futures** domain (discontinued 2026-01-19), not a spot testnet.
 
 ### Signal Lookback Semantik (primary_breakout_v1)
 - **Zeitgestempelte Historie**: High/Low-Werte werden mit `ts_ms` gepflegt.
@@ -278,6 +295,7 @@ Kanonische Image-Pins fuer BLUE-Datenlayer (`cdb_postgres`, `cdb_redis`): `gover
 | 2026-07-01 | PRs #3528/#3530 Nachzug (#3593): BLUE base images Redis `8.8.0-alpine` / Postgres `18.4-alpine`; Image-SSOT-Hinweis in §7 Compose Layer Referenz; Runtime-Recreate bleibt #3594/#3600 | Cursor |
 | 2026-07-02 | PR #3685 Nachzug (#3687): `profitability_league_scorer.py` als Offline Strategy League Scorer CLI in Replay/Validation-Inventar dokumentiert; offline/read-only/fail-closed, keine Runtime-Komponente | Cursor |
 | 2026-07-02 | PR #3404 Nachzug (#3690): `profitability_evidence_packet_assembler.py` als Profitability Evidence Packet Assembler CLI in Replay/Validation-Inventar dokumentiert; offline/deterministisch, keine Runtime-Komponente | Cursor |
+| 2026-07-04 | PR #3720 Nachzug (#3721): §6 MEXC Venue/Endpoint-Semantik (spot REST `api.mexc.com`, fail-closed `testnet=True`, no-send boundary); Paper Stimulus preflight präzisiert | Cursor |
 ### PostgreSQL Schema Artefacts (PR #2793)
 
 | Artifact | Migration | Status | Bedeutung |
