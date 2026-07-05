@@ -41,7 +41,7 @@ This roadmap sequences work into five phases (A–E), each with explicit gates. 
 | Controlled-lab evidence lane | **Delivered** (`#3172-#3184`) | `arvp_post_run_005_primary_breakout_v1_decision_3181.md`, `arvp_exit_regime_decay_diagnosis_3183.md` |
 | `primary_breakout_v1` status | **PARKED** | `arvp_exit_regime_decay_diagnosis_3183.md` |
 | ARVP execution realism | **`#1905` CLOSED/PARKED**; no unpark from this lane | GitHub live `#1905`, `#2970` decision |
-| Next active research lane | **Candidate selection/spec only** | `arvp_roadmap_reconcile_after_primary_breakout_park_2985_1900.md` |
+| Next active research lane | **#3742** — read-only natural-paper window bank for `regime_segments` | #1900 reconcile 2026-07-05 |
 | LR-050 execution gates | #2977–#2984 **CLOSED** (2026-07-03 evidence); canary **residual** `TBD_BLOCKER_BEFORE_LIVE`; LR verdict **NO-GO** | #2985, `reports/lr050/`, `LR-050-FINAL-RECONCILE.md` post-gate banner |
 | P0–P4 | All **DONE** | `LR-AUDIT-STATUS-2026-03-05.md` §B |
 | P5 prestart pack | **Committed** (does not authorize live capital) | `reports/p5_canary/2026-04-04/` |
