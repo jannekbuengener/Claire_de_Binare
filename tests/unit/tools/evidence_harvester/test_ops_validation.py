@@ -737,6 +737,58 @@ class TestValidate72hWindowFromDir:
         assert any("runner_heartbeat.json" in f.message for f in report.findings)
 
     @pytest.mark.unit
+    def test_pass_coordinator_run_once_fixture_zero_heartbeat_iteration(
+        self, tmp_path: Path
+    ) -> None:
+        """Slice-E pattern: coordinator per-cycle run-once-fixture leaves iteration=0."""
+        start = datetime(2026, 6, 19, 0, 0, tzinfo=UTC)
+        _write_valid_run(tmp_path, start=start, hours=2, cadence_seconds=3600)
+        final_ts = _ts(start + timedelta(hours=2))
+        _write_json(
+            tmp_path / "runner_heartbeat.json",
+            {
+                **_heartbeat_payload(_ts(start), final_ts, 0),
+                "runner_mode": "run-once-fixture",
+            },
+        )
+        report = validate_72h_window_from_dir(
+            tmp_path,
+            required_window_hours=2,
+            runner_cadence_seconds=3600,
+            is_final=True,
+        )
+        assert report.summary.verdict == "PASS"
+        assert any(
+            "run-once-fixture coordinator mode" in f.message
+            and f.severity == "pass"
+            for f in report.findings
+        )
+
+    @pytest.mark.unit
+    def test_fail_loop_fixture_zero_heartbeat_iteration(self, tmp_path: Path) -> None:
+        start = datetime(2026, 6, 19, 0, 0, tzinfo=UTC)
+        _write_valid_run(tmp_path, start=start, hours=2, cadence_seconds=3600)
+        final_ts = _ts(start + timedelta(hours=2))
+        _write_json(
+            tmp_path / "runner_heartbeat.json",
+            {
+                **_heartbeat_payload(_ts(start), final_ts, 0),
+                "runner_mode": "loop-fixture",
+            },
+        )
+        report = validate_72h_window_from_dir(
+            tmp_path,
+            required_window_hours=2,
+            runner_cadence_seconds=3600,
+            is_final=True,
+        )
+        assert report.summary.verdict == "FAIL"
+        assert any(
+            "Runner heartbeat iteration count" in f.check_name and f.severity == "fail"
+            for f in report.findings
+        )
+
+    @pytest.mark.unit
     def test_fail_on_watchdog_fail(self, tmp_path: Path) -> None:
         start = datetime(2026, 6, 19, 0, 0, tzinfo=UTC)
         _write_valid_run(

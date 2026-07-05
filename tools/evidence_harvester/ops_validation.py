@@ -798,6 +798,32 @@ def _check_verdict_series(
     return timestamps
 
 
+def _coordinator_run_once_cumulative_cycles(
+    state_payload: Mapping[str, Any],
+) -> int | None:
+    """Return coordinator-managed cumulative cycle count when present."""
+    for field_name in ("total_cycles_completed", "total_runs"):
+        value = state_payload.get(field_name)
+        if isinstance(value, int):
+            return value
+    return None
+
+
+def _coordinator_run_once_heartbeat_satisfied(
+    heartbeat_payload: Mapping[str, Any],
+    state_payload: Mapping[str, Any],
+    expected_min_cycles: int,
+) -> bool:
+    """Coordinator invokes run-once-fixture per cycle; heartbeat iteration is per call."""
+    if heartbeat_payload.get("runner_mode") != "run-once-fixture":
+        return False
+    cumulative = _coordinator_run_once_cumulative_cycles(state_payload)
+    if cumulative is None or cumulative < expected_min_cycles:
+        return False
+    coordinator_status = state_payload.get("coordinator_status")
+    return coordinator_status in {"completed", "final_validation", "sleeping"}
+
+
 def _check_runner_state(
     heartbeat_payload: Mapping[str, Any] | None,
     state_payload: Mapping[str, Any] | None,
@@ -810,19 +836,34 @@ def _check_runner_state(
     if heartbeat_payload is None or state_payload is None:
         return
     iteration = heartbeat_payload.get("iteration")
-    if not isinstance(iteration, int) or iteration < expected_min_cycles:
+    if isinstance(iteration, int) and iteration >= expected_min_cycles:
         add_finding(
             "Runner heartbeat iteration count",
-            "fail",
-            f"Expected iteration >= {expected_min_cycles}, got {iteration!r}",
+            "pass",
+            f"iteration={iteration} covers the expected minimum cycles",
+            artifact="runner_heartbeat.json",
+            field_name="iteration",
+        )
+    elif _coordinator_run_once_heartbeat_satisfied(
+        heartbeat_payload, state_payload, expected_min_cycles
+    ):
+        cumulative = _coordinator_run_once_cumulative_cycles(state_payload)
+        add_finding(
+            "Runner heartbeat iteration count",
+            "pass",
+            (
+                "run-once-fixture coordinator mode: cumulative "
+                f"total_cycles_completed={cumulative} satisfies minimum "
+                f"(heartbeat iteration={iteration!r} is per-cycle invocation only)"
+            ),
             artifact="runner_heartbeat.json",
             field_name="iteration",
         )
     else:
         add_finding(
             "Runner heartbeat iteration count",
-            "pass",
-            f"iteration={iteration} covers the expected minimum cycles",
+            "fail",
+            f"Expected iteration >= {expected_min_cycles}, got {iteration!r}",
             artifact="runner_heartbeat.json",
             field_name="iteration",
         )

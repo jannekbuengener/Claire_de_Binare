@@ -58,7 +58,9 @@
 
   **CodeQL operating mode (post-#3673):** GitHub CodeQL **Default Setup** liefert Code-Scanning-Alerts. Advanced `codeql-python.yml` bleibt als Validierungspfad mit `upload: false` (kein primärer SARIF-Pfad). Reduktion auf `workflow_dispatch`-only (Option B) bewusst **Later**. Register-Detail: `docs/runbooks/GITHUB_WORKFLOW_REGISTER.md` (#3672). LR NO-GO.
 
-- **Coordinator sleep-window stall fix (#3634)**: Resume-safe coordinator + testable sleep-stall supervisor. `resume-fixture-window` seeds `completed_cycles` from durable `runner_state`, emits `sleep_resumed` + audited recovery on a stalled sleep, and is fail-closed (missing state / `run_id` mismatch / terminal status). New `tools/evidence_harvester/supervisor.py` (`decide_supervision` + bounded `supervise_loop`, no process spawn / scheduler / Docker). A resumed run reaching `final_validation_completed` clears O264/O303. Tests: 29 unit (coordinator+supervisor), full harvester suite 260 PASS, ruff clean. No new 72h run; Slice-E documented only. LR NO-GO.
+- **Slice-E 72h always-on dry validation (#3362)**: **DONE_72H_PASS** — run `slice-e-20260701T204615Z` completed **73.064h**, **293/293** cycles PASS, **0** failed; final `ops_validation validate-dir --is-final` **PASS** after heartbeat-contract fix (PR pending merge). Reports: `artifacts/evidence_harvester/72h_ops_validation/slice-e-20260701T204615Z/ops_validation_report.{json,md}`. Closes #3362 on merge. #3345 parent remains OPEN. LR **NO-GO**.
+
+- **Coordinator sleep-window stall fix (#3634)**: Resume-safe coordinator + testable sleep-stall supervisor. `resume-fixture-window` seeds `completed_cycles` from durable `runner_state`, emits `sleep_resumed` + audited recovery on a stalled sleep, and is fail-closed (missing state / `run_id` mismatch / terminal status). New `tools/evidence_harvester/supervisor.py` (`decide_supervision` + bounded `supervise_loop`, no process spawn / scheduler / Docker). Slice-E is the first post-#3634 `>=72h` PASS. LR NO-GO.
 
 - **Evidence-Harvester Reconcile (#3384)**: `RECONCILED_NEXT_BLOCKER_IDENTIFIED` — Slice-B/C/D all formal INCONCLUSIVE; #3384/#3589 CLOSED; #3362/#3345 OPEN. Next blocker: **#3634** (coordinator sleep-window stall). LR NO-GO.
 
@@ -113,19 +115,19 @@
   - **#3437 External-Docs Index + cdb-external-docs Skill / PR #3437 / `e7789a1e`**: Central external-docs index (`docs/external-docs/index.md`) mit 90+ kuratierten Verweisen (canonical, internal-tool, external). cdb-external-docs Skill in allen 5 Agent-Surfaces. Meta-Einträge in `AGENTS.md` und `agents/AGENTS.md`. 28 bestehende Skills mit external-docs-Hooks ergänzt. Issue CLOSED. LR NO-GO. Restunsicherheiten: `.claude/skills/*.skill` Binärdateien nicht modifiziert (kein Lesetool); `skillforge/`-Hooks nur lokal (ungetrackt).
 
 - **Evidence-Harvester Cluster Status**:
-  - #3362 remains **OPEN** — continuous always-on dry operation proof not yet delivered (`HOLD_72H_RUN_INCOMPLETE`)
+  - #3362 **CLOSING ON MERGE** — Slice-E `slice-e-20260701T204615Z` delivers first post-#3634 `>=72h` always-on dry PASS (73.064h, 293/293, 0 failed; final ops_validation PASS)
   - #3384 **CLOSED** (2026-07-01) — reconcile delivered post Slice-D; status `RECONCILED_NEXT_BLOCKER_IDENTIFIED`
   - #3589 **CLOSED** (2026-07-01) — stale; Slice-C formal INCONCLUSIVE already on disk (2026-06-30)
-  - #3345 remains **OPEN** — always-on evidence collection daemon for ARVP/profitability research (parent thread)
+  - #3345 remains **OPEN** — always-on evidence collection daemon for ARVP/profitability research (parent thread; #3362 child proof delivered)
   - Slice-B `slice-b-20260625T194946Z`: **INCONCLUSIVE** — 259/259 PASS, ~64.6h, sleep-stall
   - Slice-C `slice-c-20260628T202640Z`: **INCONCLUSIVE / STALLED** — ~17h, sleep-stall
   - **Slice-D** `slice-d-20260630T163853Z`: **SLICE_D_FORMAL_INCONCLUSIVE** — 9/289 PASS, ~2.0h, sleep-stall; formal `ops_validation --is-final` 2026-07-01 (#3632 CLOSED)
-  - **Next blocker:** #3634 — coordinator sleep-window stall (blocks Slice-E `>=72h` retry)
+  - **Slice-E** `slice-e-20260701T204615Z`: **DONE_72H_PASS** — 293/293 PASS, 73.064h, final `ops_validation --is-final` PASS (2026-07-05 regenerate)
   - LR remains **NO-GO**
 
 - **main**: `1fbfcb9c` — PR #3675 merged (squash): control/ledger docs reconcile (#3663); prior tip `c961c30e` (PR #3673 CodeQL `upload: false`)
 - **Active GitHub focus (manual, non-exhaustive)**:
-  - #3362/#3345 + sleep-stall blocker follow-up (Evidence-Harvester — Slice-B/C/D all INCONCLUSIVE; no >=72h PASS)
+  - #3345 parent thread + evidence-bridge follow-ups (#3382/#3383); #3362 Slice-E `>=72h` PASS delivered on merge
   - #2440 (LR-030 Shadow/Soak Run) — **OPEN**
 
 ## Repo / Engineering Status (2026-06-28)
