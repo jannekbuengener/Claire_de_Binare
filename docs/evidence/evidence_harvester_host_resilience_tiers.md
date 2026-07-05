@@ -1,6 +1,10 @@
 # Evidence Harvester Host-Resilience Tiers (#3733)
 
-Status: Phase 1 scaffold merged — **no Tier-1 runtime proof in this slice**.
+Status: Phase 1 scaffold merged; **Tier-1 first runtime proof failed** on Windows
+(`tier1-20260705T104800Z`); Windows resume launcher hardening landed in follow-up
+PR (detached `Popen`, launch evidence). **Tier-1 re-proof pending** separate
+Operator Runtime-GO.
+
 LR remains **NO-GO**. No Live-Go, no Echtgeld-Go.
 
 Parent issue [#3345](https://github.com/jannekbuengener/Claire_de_Binare/issues/3345)
@@ -16,7 +20,7 @@ not deployment-ready external auto-resume across all host events.
 
 | Tier | Scenario | Phase 1 status | Proof requirement |
 |------|----------|----------------|-------------------|
-| **Tier 1** | Coordinator process killed during sleep window | Scaffold only | Controlled kill → external supervisor `RELAUNCH_RESUME` → `sleep_resumed` + continued cycles. Requires separate **Operator Runtime-GO**. |
+| **Tier 1** | Coordinator process killed during sleep window | Scaffold + Windows launcher fix | Controlled kill → external supervisor `RELAUNCH_RESUME` → `run_resumed` + continued cycles. Requires separate **Operator Runtime-GO**. First proof `tier1-20260705T104800Z` **FAIL** (relaunch ok, detached resume child did not emit `run_resumed`). Retry with cadence **120s**, kill during cycle-1 sleep. |
 | **Tier 2** | Shell / IDE close while detached coordinator runs | Covered by Slice-E pattern | Documented; no new proof required in #3733 Phase 1. |
 | **Tier 3** | Host sleep / hibernate / reboot across evidence window | **Not proven** | Explicit limitation in Phase 1. Future path: Windows Task + boot readiness (#3733 Phase 2+ or separate Ops GO). |
 
@@ -27,6 +31,8 @@ not deployment-ready external auto-resume across all host events.
   - `supervision_state.json` durable poll/relaunch state
   - `plan-external`, `supervise-external`, `record-coordinator-pid` CLI
   - injectable subprocess resume launcher (fail-closed without `--explicit`)
+- Windows-hardened detached resume `Popen` (`DETACHED_PROCESS`, new process group,
+  breakaway from job) + `resume_launch_evidence.jsonl` per relaunch
 - `scripts/evidence_harvester_supervisor.ps1` — safe default `plan`; execution requires `-Explicit`
 - Unit tests under `tests/unit/tools/evidence_harvester/test_supervisor_external.py`
 

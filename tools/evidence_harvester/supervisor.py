@@ -50,6 +50,14 @@ COORDINATOR_PID_SCHEMA = "cdb.evidence_harvester.coordinator_pid.v1"
 SUPERVISION_STATE_SCHEMA = "cdb.evidence_harvester.supervision_state.v1"
 COORDINATOR_PID_FILENAME = "coordinator_pid.json"
 SUPERVISION_STATE_FILENAME = "supervision_state.json"
+RESUME_LAUNCH_EVIDENCE_FILENAME = "resume_launch_evidence.jsonl"
+
+_WINDOWS_DETACHED_FLAGS = (
+    getattr(subprocess, "DETACHED_PROCESS", 0)
+    | getattr(subprocess, "CREATE_NEW_PROCESS_GROUP", 0)
+    | getattr(subprocess, "CREATE_NO_WINDOW", 0)
+    | getattr(subprocess, "CREATE_BREAKAWAY_FROM_JOB", 0)
+)
 
 DEFAULT_MAX_RELAUNCH_COUNT = 5
 DEFAULT_POLL_SECONDS = 60
@@ -480,6 +488,41 @@ def _resume_launcher(
     return _launch
 
 
+def _build_detached_subprocess_popen_kwargs(
+    *,
+    repo_root: Path,
+    stderr_path: Path,
+) -> dict[str, Any]:
+    """Build ``Popen`` kwargs for a coordinator resume child detached from the supervisor."""
+    stderr_path.parent.mkdir(parents=True, exist_ok=True)
+    kwargs: dict[str, Any] = {
+        "cwd": str(repo_root.resolve()),
+        "env": os.environ.copy(),
+        "stdin": subprocess.DEVNULL,
+        "stdout": subprocess.DEVNULL,
+        "stderr": stderr_path.open("ab"),
+        "shell": False,
+    }
+    if os.name == "nt":
+        if _WINDOWS_DETACHED_FLAGS:
+            kwargs["creationflags"] = _WINDOWS_DETACHED_FLAGS
+    else:
+        kwargs["start_new_session"] = True
+        kwargs["close_fds"] = True
+    return kwargs
+
+
+def _append_resume_launch_evidence(
+    artifact_dir: Path, payload: Mapping[str, Any]
+) -> None:
+    artifact_dir.mkdir(parents=True, exist_ok=True)
+    path = artifact_dir / RESUME_LAUNCH_EVIDENCE_FILENAME
+    with path.open("a", encoding="utf-8") as handle:
+        handle.write(
+            json.dumps(dict(payload), sort_keys=True, ensure_ascii=True) + "\n"
+        )
+
+
 def build_subprocess_resume_launcher(
     *,
     repo_root: Path,
@@ -496,6 +539,7 @@ def build_subprocess_resume_launcher(
     """Spawn ``resume-fixture-window`` as a detached subprocess resume launcher."""
 
     def _launch() -> CoordinatorSummary:
+        started_at_utc = _now_utc().isoformat().replace("+00:00", "Z")
         executable = python_executable or sys.executable
         cmd = [
             executable,
@@ -503,9 +547,9 @@ def build_subprocess_resume_launcher(
             "tools.evidence_harvester.coordinator",
             "resume-fixture-window",
             "--fixture",
-            str(fixture_path),
+            str(fixture_path.resolve()),
             "--artifact-dir",
-            str(artifact_dir),
+            str(artifact_dir.resolve()),
             "--iterations",
             str(iterations),
             "--cadence-seconds",
@@ -515,17 +559,51 @@ def build_subprocess_resume_launcher(
             "--restart-backoff-seconds",
             str(restart_backoff_seconds),
         ]
-        popen = popen_fn or subprocess.Popen
-        proc = popen(
-            cmd,
-            cwd=str(repo_root),
-            stdout=subprocess.DEVNULL,
-            stderr=subprocess.DEVNULL,
+        stderr_path = artifact_dir / (
+            "resume_launch_"
+            f"{started_at_utc.replace('-', '').replace(':', '')}.stderr.log"
         )
-        state = _read_runner_state(artifact_dir)
-        run_id = state.run_id if state is not None else artifact_dir.name
-        if write_pid:
-            write_coordinator_pid_record(artifact_dir, pid=proc.pid, run_id=run_id)
+        popen_kwargs = _build_detached_subprocess_popen_kwargs(
+            repo_root=repo_root,
+            stderr_path=stderr_path,
+        )
+        launch_error = ""
+        child_pid = 0
+        immediate_exit_code: int | None = None
+        popen = popen_fn or subprocess.Popen
+        try:
+            proc = popen(cmd, **popen_kwargs)
+            child_pid = int(proc.pid)
+            immediate_exit_code = proc.poll()
+            if immediate_exit_code is not None:
+                launch_error = f"child_exited_immediately:rc={immediate_exit_code}"
+        except OSError as exc:
+            launch_error = f"popen_failed:{exc.__class__.__name__}"
+            raise SupervisorError(f"resume subprocess launch failed: {exc}") from exc
+        finally:
+            state = _read_runner_state(artifact_dir)
+            run_id = state.run_id if state is not None else artifact_dir.name
+            _append_resume_launch_evidence(
+                artifact_dir,
+                {
+                    "schema_version": "cdb.evidence_harvester.resume_launch.v1",
+                    "started_at_utc": started_at_utc,
+                    "run_id": run_id,
+                    "argv": cmd,
+                    "cwd": str(repo_root.resolve()),
+                    "pid": child_pid,
+                    "immediate_exit_code": immediate_exit_code,
+                    "launch_error": launch_error,
+                    "stderr_log": str(stderr_path),
+                    "detached": True,
+                    "platform": os.name,
+                },
+            )
+        if write_pid and child_pid > 0 and immediate_exit_code is None:
+            write_coordinator_pid_record(artifact_dir, pid=child_pid, run_id=run_id)
+        stop_reason = "external_subprocess_resume_launch"
+        if launch_error:
+            stop_reason = f"{stop_reason}:{launch_error}"
         return CoordinatorSummary(
             status="LAUNCHED",
             artifact_dir=str(artifact_dir),
@@ -534,7 +612,7 @@ def build_subprocess_resume_launcher(
             restart_count=0,
             max_restart_count=max_restart_count,
             final_validation_started=False,
-            stop_reason="external_subprocess_resume_launch",
+            stop_reason=stop_reason,
         )
 
     return _launch

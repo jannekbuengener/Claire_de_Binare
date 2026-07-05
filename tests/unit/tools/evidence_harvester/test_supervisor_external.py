@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import json
+import os
 from pathlib import Path
 from unittest.mock import MagicMock
 
@@ -9,9 +10,11 @@ import pytest
 from tools.evidence_harvester.coordinator import CoordinatorSummary
 from tools.evidence_harvester.supervisor import (
     COORDINATOR_PID_FILENAME,
+    RESUME_LAUNCH_EVIDENCE_FILENAME,
     SUPERVISION_STATE_FILENAME,
     SUPERVISION_STATE_SCHEMA,
     SupervisorError,
+    _build_detached_subprocess_popen_kwargs,
     build_subprocess_resume_launcher,
     main,
     parse_args,
@@ -142,10 +145,11 @@ def test_build_subprocess_resume_launcher_uses_injected_popen(tmp_path: Path) ->
     _write_runner_state(artifact_dir)
     mock_proc = MagicMock()
     mock_proc.pid = 4242
-    popen_calls: list[list[str]] = []
+    mock_proc.poll.return_value = None
+    popen_calls: list[dict[str, object]] = []
 
     def fake_popen(cmd: list[str], **kwargs: object) -> MagicMock:
-        popen_calls.append(cmd)
+        popen_calls.append({"cmd": cmd, "kwargs": kwargs})
         return mock_proc
 
     launcher = build_subprocess_resume_launcher(
@@ -161,10 +165,78 @@ def test_build_subprocess_resume_launcher_uses_injected_popen(tmp_path: Path) ->
     summary = launcher()
     assert summary.status == "LAUNCHED"
     assert popen_calls
-    assert "resume-fixture-window" in popen_calls[0]
+    assert "resume-fixture-window" in popen_calls[0]["cmd"]
+    kwargs = popen_calls[0]["kwargs"]
+    assert kwargs["cwd"] == str(tmp_path.resolve())
+    assert kwargs["stdin"] is not None
+    assert kwargs["shell"] is False
+    assert kwargs["env"] is not None
     pid_record = read_coordinator_pid_record(artifact_dir)
     assert pid_record is not None
     assert pid_record.pid == 4242
+    evidence_path = artifact_dir / RESUME_LAUNCH_EVIDENCE_FILENAME
+    assert evidence_path.exists()
+    evidence = json.loads(evidence_path.read_text(encoding="utf-8").splitlines()[0])
+    assert evidence["pid"] == 4242
+    assert evidence["detached"] is True
+
+
+@pytest.mark.unit
+def test_build_detached_subprocess_popen_kwargs_contract(tmp_path: Path) -> None:
+    stderr_path = tmp_path / "run" / "resume.stderr.log"
+    kwargs = _build_detached_subprocess_popen_kwargs(
+        repo_root=tmp_path,
+        stderr_path=stderr_path,
+    )
+    assert kwargs["cwd"] == str(tmp_path.resolve())
+    assert kwargs["shell"] is False
+    assert kwargs["stdin"] is not None
+    assert kwargs["stdout"] is not None
+    assert kwargs["env"] is not None
+    if os.name == "nt":
+        assert kwargs.get("creationflags", 0) != 0
+    else:
+        assert kwargs["start_new_session"] is True
+        assert kwargs["close_fds"] is True
+
+
+@pytest.mark.unit
+def test_build_subprocess_resume_launcher_skips_pid_on_immediate_exit(
+    tmp_path: Path,
+) -> None:
+    artifact_dir = tmp_path / "run"
+    artifact_dir.mkdir()
+    _write_runner_state(artifact_dir)
+    mock_proc = MagicMock()
+    mock_proc.pid = 9999
+    mock_proc.poll.return_value = 1
+
+    launcher = build_subprocess_resume_launcher(
+        repo_root=tmp_path,
+        fixture_path=tmp_path / "fixture.json",
+        artifact_dir=artifact_dir,
+        iterations=10,
+        cadence_seconds=900,
+        max_restart_count=3,
+        restart_backoff_seconds=30,
+        popen_fn=lambda cmd, **kwargs: mock_proc,
+    )
+    summary = launcher()
+    assert "child_exited_immediately" in summary.stop_reason
+    assert read_coordinator_pid_record(artifact_dir) is None
+
+
+@pytest.mark.unit
+def test_supervisor_ps1_avoids_automatic_pid_param_collision() -> None:
+    script_path = (
+        Path(__file__).resolve().parents[4]
+        / "scripts"
+        / "evidence_harvester_supervisor.ps1"
+    )
+    content = script_path.read_text(encoding="utf-8")
+    assert "[int]$Pid" not in content
+    assert "$CoordinatorPid" in content
+    assert "-CoordinatorPid" in content
 
 
 @pytest.mark.unit
