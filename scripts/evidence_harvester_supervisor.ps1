@@ -10,7 +10,7 @@ param(
     [int]$MaxRelaunchCount = 5,
     [int]$PollSeconds = 60,
     [int]$MaxPolls = 0,
-    [int]$Pid = 0,
+    [int]$CoordinatorPid = 0,
     [string]$PythonExecutable = 'python',
     [switch]$UsePidProbe,
     [switch]$AssumeProcessAlive,
@@ -82,13 +82,13 @@ switch ($Action) {
         }
     }
     'record-pid' {
-        if (-not $ArtifactDir -or $Pid -le 0) {
-            throw 'record-pid requires -ArtifactDir and -Pid.'
+        if (-not $ArtifactDir -or $CoordinatorPid -le 0) {
+            throw 'record-pid requires -ArtifactDir and -CoordinatorPid.'
         }
         $moduleArgs += @(
             'record-coordinator-pid',
             '--artifact-dir', $ArtifactDir,
-            '--pid', $Pid
+            '--pid', $CoordinatorPid
         )
     }
 }

@@ -385,7 +385,8 @@ proof in the merge slice. See
 | `coordinator_pid.json` | PID record for injectable liveness probe |
 | `supervision_state.json` | Poll/relaunch durable state |
 | `plan-external` | Safe plan JSON (default) |
-| `supervise-external --explicit` | PID probe + subprocess resume launcher |
+| `supervise-external --explicit` | PID probe + detached subprocess resume launcher |
+| `resume_launch_evidence.jsonl` | Per-relaunch argv/cwd/pid/launch_error audit trail |
 | `record-coordinator-pid` | Write PID record after detached coordinator start |
 
 PowerShell wrapper (safe default `plan`):
@@ -408,6 +409,20 @@ python -m tools.evidence_harvester.supervisor status `
 Execution (`supervise-external`) requires `--explicit` and a separate **Operator
 Runtime-GO**. LR remains **NO-GO**. #3345 stays **OPEN** until Tier-1 proof or
 accepted downgrade closes #3733.
+
+**Tier-1 retry parameters (recommended after Windows launcher fix):**
+
+| Parameter | Value |
+|---|---|
+| `cadence-seconds` | **120** (avoid killing before cycle-1 sleep settles) |
+| Kill timing | During cycle-1 sleep, after `sleep_started` and before `next_cycle_due_at_utc` |
+| Proof dir | `artifacts/evidence_harvester/host_resilience_proof/tier1-retry-<UTC>/` |
+| Pass criteria | `relaunch_count >= 1`, supervisor-spawned `run_resumed`, post-resume PASS cycle |
+
+First canonical proof run `tier1-20260705T104800Z` **FAIL** — stall detection and
+`relaunch_count=1` worked; subprocess resume child exited without `run_resumed`
+(manual identical `Popen` control succeeded). See
+[`docs/evidence/evidence_harvester_host_resilience_tiers.md`](../evidence/evidence_harvester_host_resilience_tiers.md).
 
 ## Safety Boundaries
 
