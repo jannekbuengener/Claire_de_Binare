@@ -3,9 +3,9 @@
 Status: **PASS** — closes [#3733](https://github.com/jannekbuengener/Claire_de_Binare/issues/3733)
 Tier-1 scope. LR remains **NO-GO**. No Live-Go, no Echtgeld-Go.
 
-Parent [#3345](https://github.com/jannekbuengener/Claire_de_Binare/issues/3345) stays **OPEN**
-(Tier 3 host sleep/hibernate/reboot not proven; deployment-ready always-on daemon not
-fully closed).
+Parent [#3345](https://github.com/jannekbuengener/Claire_de_Binare/issues/3345) **CLOSED** (2026-07-05).
+Tier-3 host sleep/hibernate/reboot and deployment-ready scheduler proof remain
+explicit limitations tracked in follow-up [#3738](https://github.com/jannekbuengener/Claire_de_Binare/issues/3738).
 
 ## Run summary
 
@@ -50,7 +50,7 @@ Full runtime tree (local operator): `artifacts/evidence_harvester/host_resilienc
 
 - **#3733:** CLOSED — Tier-1 proof + Tier-3 limitation documented (issue acceptance:
   host-resilience proof **or** documented limitation with evidence).
-- **#3345:** OPEN — parent daemon/deployment bridge; Tier 3 + scheduler install remain.
+- **#3345:** **CLOSED** — parent scope delivered (#3362 + #3733 + #3382); Tier-3/scheduler → #3738.
 
 ## References
 

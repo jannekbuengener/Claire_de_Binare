@@ -39,11 +39,11 @@ Out of scope:
 | Global LR audit | [`LR-AUDIT-STATUS-2026-03-05.md`](./LR-AUDIT-STATUS-2026-03-05.md) — **NO-GO** |
 | Board stage | `trade-capable` per [`CONTROL_REGISTER.md`](../runbooks/CONTROL_REGISTER.md) — **not** Live-Go |
 | LR-050 refresh parent | #2977 **CLOSED** (2026-07-03 evidence matrix + child gate closure) |
-| Harvester parent | #3345 **OPEN** — Tier 3 host-resilience + deployment-ready daemon residual |
+| Harvester parent | #3345 **CLOSED** (2026-07-05) — #3362 72h PASS + #3733 Tier-1 PASS; Tier-3/scheduler → #3738 |
 | Harvester 72h proof | #3362 **CLOSED** — Slice-E **DONE_72H_PASS** (PR #3732, `c38a0f9b`) |
 | External supervisor / Tier-1 host-resilience | #3733 **CLOSED** — Tier-1 proof **PASS** (`tier1-retry-20260705T111436Z`); Tier 3 not proven |
 | Profitability bridge | #3380 **CLOSED** — [`evidence_harvester_to_profitability_packet_mapping.md`](../evidence/evidence_harvester_to_profitability_packet_mapping.md) |
-| Repo anchor | `origin/main` @ `c38a0f9b` (2026-07-05 reconcile) |
+| Repo anchor | `origin/main` @ `ef2795ac` (2026-07-05 #3345 parent close reconcile) |
 | Context Brain | repo-only fallback; no DB-backed claims |
 
 **Hard rule:** Harvester operational evidence, ARVP strategy evidence, and
@@ -122,7 +122,7 @@ No promotable candidate exists to justify concrete live-canary parameter selecti
 
 ## LR-050 Child Gate Matrix
 
-Mapping date: 2026-07-05. GitHub live: #2977–#2984 execution gates **CLOSED** (2026-07-03 evidence); #3362 **CLOSED** (Slice-E PASS); #3733 **CLOSED** (Tier-1 supervisor proof PASS); #3345 **OPEN** (Tier 3 / deployment residual).
+Mapping date: 2026-07-05. GitHub live: #2977–#2984 execution gates **CLOSED** (2026-07-03 evidence); #3362 **CLOSED** (Slice-E PASS); #3733 **CLOSED** (Tier-1 supervisor proof PASS); #3345 **CLOSED** (parent scope delivered; Tier-3/scheduler → #3738).
 
 | Issue | LR-050 blocker (FINAL-RECONCILE §3) | Primary classification | Harvester evidence | ARVP / Profitability evidence | Still blocked because | Missing evidence / follow-up |
 |---|---|---|---|---|---|---|
@@ -141,8 +141,8 @@ Mapping date: 2026-07-05. GitHub live: #2977–#2984 execution gates **CLOSED** 
 | Status | **CLOSED** (2026-07-03) — refresh matrix + child gate evidence delivered |
 | Classification | Planning matrix delivered; LR verdict remains **NO-GO** |
 | Harvester / ARVP contribution | Mapping ([#3382](https://github.com/jannekbuengener/Claire_de_Binare/issues/3382)) + Slice-E PASS (#3362) + ARVP negative closure inform **planning** only |
-| Blocker | LR **NO-GO** unchanged; canary caps `TBD_BLOCKER_BEFORE_LIVE`; #3345 parent residual (Tier 3 / deployment) |
-| Next legitimate step | #3345 parent close when Tier-3 limitation accepted or proven + bridge criteria met — **not** LR status upgrade |
+| Blocker | LR **NO-GO** unchanged; canary caps `TBD_BLOCKER_BEFORE_LIVE`; Tier-3/scheduler residual tracked in #3738 |
+| Next legitimate step | #3738 Tier-3/scheduler Ops proof — **not** LR status upgrade |
 
 ---
 
@@ -187,7 +187,7 @@ position above.
 | Canary parameters undefined | #2976 **CLOSED** (issue) but `TBD_BLOCKER_BEFORE_LIVE` persists in SSOT |
 | ARVP negative closure | No promotable candidate |
 | Harvester 72h | **DONE_72H_PASS** — #3362 **CLOSED** (Slice-E); B/C/D remain INCONCLUSIVE history |
-| Harvester parent daemon | #3345 **OPEN** — Tier 3 / deployment residual; #3733 **CLOSED** (Tier-1 PASS) |
+| Harvester parent daemon | #3345 **CLOSED** — parent delivered; Tier-3/scheduler → #3738 |
 | Board stage orthogonal | `trade-capable` ≠ live capital authorization |
 | Human Approval rule | Only explicit operator text counts; no PR/issue merge substitutes |
 
@@ -202,7 +202,8 @@ scope wants finer splits.
 |---|---|---|
 | LR-050 evidence mapping | **#3382** (this delivery) | Closes after PR merge |
 | Harvester `>=72h` proof | **#3362** | **CLOSED** — Slice-E PASS (PR #3732) |
-| Harvester parent close | **#3345** | **OPEN** — Tier 3 / deployment residual |
+| Harvester parent close | **#3345** | **CLOSED** — 72h PASS + Tier-1 PASS; Tier-3/scheduler → #3738 |
+| Tier-3 / scheduler residual | **#3738** | **OPEN** — host sleep/reboot + deployment-ready scheduler proof |
 | External auto-resume Tier-1 | **#3733** | **CLOSED** — Tier-1 proof PASS; Tier 3 limitation documented |
 | LR-050 refresh execution | **#2977** | **CLOSED** (2026-07-03) |
 | Runtime stack dry-run | **#2978** | **CLOSED** (2026-07-03) |
@@ -216,8 +217,11 @@ scope wants finer splits.
 
 **#3733 Tier-1 closeout (2026-07-05):** #3733 **CLOSED** after Tier-1 external
 supervisor proof **PASS** (`tier1-retry-20260705T111436Z`). Tier 3 sleep/hibernate/reboot
-remains **not proven**. #3345 parent stays **OPEN** for deployment + Tier-3 residual.
-See [`evidence_harvester_tier1_supervisor_proof_2026-07-05.md`](../evidence/evidence_harvester_tier1_supervisor_proof_2026-07-05.md).
+remains **not proven** (follow-up [#3738](https://github.com/jannekbuengener/Claire_de_Binare/issues/3738)).
+
+**#3345 parent close (2026-07-05):** #3345 **CLOSED** after #3362 Slice-E PASS +
+#3733 Tier-1 PASS + #3382 bridge complete. Tier-3/scheduler explicitly out of parent
+closure scope → #3738. See [`evidence_harvester_tier1_supervisor_proof_2026-07-05.md`](../evidence/evidence_harvester_tier1_supervisor_proof_2026-07-05.md).
 
 ---
 

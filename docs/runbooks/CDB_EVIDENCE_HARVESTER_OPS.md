@@ -407,8 +407,8 @@ python -m tools.evidence_harvester.supervisor status `
 ```
 
 Execution (`supervise-external`) requires `--explicit` and a separate **Operator
-Runtime-GO**. LR remains **NO-GO**. #3733 **CLOSED** (Tier-1 proof PASS). #3345 stays
-**OPEN** (Tier 3 / deployment residual).
+Runtime-GO**. LR remains **NO-GO**. #3733 **CLOSED** (Tier-1 proof PASS). #3345
+**CLOSED** (parent delivered); Tier-3/scheduler residual → #3738.
 
 **Tier-1 proof PASS (2026-07-05):**
 
