@@ -141,8 +141,8 @@ Mapping date: 2026-07-05. GitHub live: #2977–#2984 execution gates **CLOSED** 
 | Status | **CLOSED** (2026-07-03) — refresh matrix + child gate evidence delivered |
 | Classification | Planning matrix delivered; LR verdict remains **NO-GO** |
 | Harvester / ARVP contribution | Mapping ([#3382](https://github.com/jannekbuengener/Claire_de_Binare/issues/3382)) + Slice-E PASS (#3362) + ARVP negative closure inform **planning** only |
-| Blocker | LR **NO-GO** unchanged; canary caps `TBD_BLOCKER_BEFORE_LIVE`; Tier-3/scheduler residual tracked in #3738 |
-| Next legitimate step | #3738 Tier-3/scheduler Ops proof — **not** LR status upgrade |
+| Blocker | LR **NO-GO** unchanged; canary caps `TBD_BLOCKER_BEFORE_LIVE`; ARVP Phase A not Product-Complete (#1900) |
+| Next legitimate step | #1900 ARVP Phase-A bounded slice — **not** LR status upgrade |
 
 ---
 

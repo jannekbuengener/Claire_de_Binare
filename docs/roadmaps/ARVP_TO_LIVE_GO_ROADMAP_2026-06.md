@@ -210,7 +210,7 @@ These workstreams are sequenced AFTER ARVP product-complete. They cannot be hone
 
 **Goal:** Re-evaluate LR-050 blockers with ARVP evidence in hand.
 
-**Status (2026-07-04):** #2977 **CLOSED** — [`LR-050-BLOCKER-REFRESH-MATRIX-2026-07-03.md`](../live-readiness/LR-050-BLOCKER-REFRESH-MATRIX-2026-07-03.md). Execution gates #2978–#2984 delivered evidence (2026-07-03). **Residual for live-capital:** canary `TBD_BLOCKER_BEFORE_LIVE`, exact Human Approval absent, Harvester #3362 `>=72h` pending. LR **NO-GO** unchanged.
+**Status (2026-07-05):** #2977 **CLOSED** — [`LR-050-BLOCKER-REFRESH-MATRIX-2026-07-03.md`](../live-readiness/LR-050-BLOCKER-REFRESH-MATRIX-2026-07-03.md). Execution gates #2978–#2984 delivered evidence (2026-07-03). Harvester/Ops **DONE** (#3345, #3362, #3733, #3738 CLOSED). **Residual for live-capital:** ARVP Phase A not Product-Complete (#1900), canary `TBD_BLOCKER_BEFORE_LIVE`, exact Human Approval absent, executable #2982 Final-GO blocked. **Next focus:** #1900. LR **NO-GO** unchanged.
 
 **Gate:** Phase A complete for ARVP-informed canary bounds; operator gates largely evidenced but do not clear LR.
 

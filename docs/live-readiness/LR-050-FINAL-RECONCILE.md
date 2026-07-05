@@ -28,6 +28,10 @@ This document remains the **2026-06-04 planning-wave reconcile** for child SSOTs
 
 **Verdict unchanged:** LR-050 **NO-GO**. Issue/PR closure and gate evidence do **not** authorize live capital. Canary parameters remain `TBD_BLOCKER_BEFORE_LIVE` in [`LR-050-RISK-LIMITS.md`](./LR-050-RISK-LIMITS.md) / [`LR-050-CANARY-PLAN.md`](./LR-050-CANARY-PLAN.md). Exact Human Approval not on record. §3 blocker table below is a **historical snapshot** at reconcile time; do not read closed GitHub issues alone as live-capital clearance.
 
+### Post-Harvester navigation addendum (2026-07-05)
+
+Evidence Harvester/Ops spine **DONE** ([#3345](https://github.com/jannekbuengener/Claire_de_Binare/issues/3345), [#3362](https://github.com/jannekbuengener/Claire_de_Binare/issues/3362), [#3733](https://github.com/jannekbuengener/Claire_de_Binare/issues/3733), [#3738](https://github.com/jannekbuengener/Claire_de_Binare/issues/3738) CLOSED). Live navigation SSOT: [#2985](https://github.com/jannekbuengener/Claire_de_Binare/issues/2985). **Next strategic focus:** [#1900](https://github.com/jannekbuengener/Claire_de_Binare/issues/1900) ARVP Phase A (no promotable candidate; `regime_segments` gap). LR **NO-GO** unchanged.
+
 ---
 
 ## 1. Verdict

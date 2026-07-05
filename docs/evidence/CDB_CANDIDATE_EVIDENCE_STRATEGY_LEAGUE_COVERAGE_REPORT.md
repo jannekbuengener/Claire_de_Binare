@@ -268,8 +268,8 @@ Existing open issues already cover the gaps. **No new issues required** in this 
 | Packet assembler wiring | **#3381** | Assembles refs, applies recommendation policy |
 | Harvester→PEP mapping | **#3380** (CLOSED) | Input contract for #3381/#3383 |
 | LR-050 evidence mapping | **#3382** (CLOSED) | Sister mapping |
-| Harvester `>=72h` proof | **#3362** | Slice-E interim; OPEN |
-| Harvester parent | **#3345** | OPEN |
+| Harvester `>=72h` proof | **#3362** (CLOSED) | Slice-E **PASS** (73.064h, 293/293); see §11 addendum |
+| Harvester parent | **#3345** (CLOSED) | Always-on backbone delivered; see §11 addendum |
 | LR-050 refresh | **#2977** | CLOSED after #3382; not reopened here |
 | Strategy selector (downstream) | **#205** | Consumes #3383 output; not reactivated |
 
@@ -289,9 +289,16 @@ and `ranking_ready` gates pass.
 - No Docker / DB / Redis / secrets mutation.
 - No candidate promotion, recommendation execution, or capital allocation.
 - Board stage `trade-capable` is orthogonal to LR and is not Live-Go.
-- Slice-E is **interim/in-progress operational evidence only** — no `>=72h` PASS.
+- Slice-E `>=72h` **PASS** delivered 2026-07-05 (#3362 CLOSED); does not imply LR-Go.
 - ARVP, backtest, replay, and paper evidence are research inputs, not approval.
 - This report ranks nothing and authorizes nothing.
+
+### §11 addendum (2026-07-05, #2985 reconcile)
+
+Historical §11 rows listed #3345/#3362 as OPEN at report publish time. GitHub-live
+(2026-07-05): **#3345 CLOSED**, **#3362 CLOSED** (Slice-E PASS), **#3733 CLOSED**
+(Tier-1 supervisor PASS), **#3738 CLOSED** (scheduler PASS + Tier-3 limitation).
+Harvester/Ops does not clear LR-Go. **Next strategic focus: #1900** (ARVP Phase A).
 
 ---
 
