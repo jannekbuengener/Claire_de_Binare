@@ -3,14 +3,18 @@
 **Status Class**: Working Repo / Engineering Status
 **Authority**: Current repo/main/test/dependency snapshot; not the canonical live-readiness or Echtgeld Go/No-Go source.
 **Operational Canon**: `docs/live-readiness/LR-AUDIT-STATUS-2026-03-05.md`
-**Last Updated**: 2026-07-04
+**Last Updated**: 2026-07-05
 **GitHub Boundary**: The live commit and PR state is tracked in GitHub (UI/API or `gh`); this file is a curated repo/engineering ledger, not a live mirror.
 
 ---
 
+## Repo / Engineering Status (2026-07-05)
+
+- **#3345 Parent Reconcile after #3362 Slice-E 72h PASS**: **RECONCILED_PARENT_OPEN** — #3362 **CLOSED** via PR [#3732](https://github.com/jannekbuengener/Claire_de_Binare/pull/3732) squash-merged (`c38a0f9b`). Slice-E `slice-e-20260701T204615Z`: **73.064h**, **293/293** cycles PASS, **0** failed; final `ops_validation validate-dir --is-final` **PASS** (8546/0/0). #3345 remains **OPEN** (`HOLD_3345_DAEMON_BRIDGE_EVIDENCE_OPEN`) — external auto-resume daemon / host sleep-reboot resilience not proven; residual scope deduplicated to [#3733](https://github.com/jannekbuengener/Claire_de_Binare/issues/3733). LR **NO-GO** unchanged. No Live-Go / Echtgeld-Go.
+
 ## Repo / Engineering Status (2026-07-04)
 
-- **#2985 Live-Roadmap Meta Reconcile**: **COMPLETED** — #2985 body + reconcile comment updated (issue **stays OPEN**). PR [#3723](https://github.com/jannekbuengener/Claire_de_Binare/pull/3723) squash-merged (`db8f5209`). LR-050 execution gates #2977–#2984 **CLOSED** (2026-07-03 evidence); canary **residual** (`TBD_BLOCKER_BEFORE_LIVE`); #3362 Harvester `>=72h` **PENDING**; LR **NO-GO** unchanged. Session log: `knowledge/logs/sessions/2026-07-04-live-roadmap-reconcile-2985.md`.
+- **#2985 Live-Roadmap Meta Reconcile**: **COMPLETED** — #2985 body + reconcile comment updated (issue **stays OPEN**). PR [#3723](https://github.com/jannekbuengener/Claire_de_Binare/pull/3723) squash-merged (`db8f5209`). LR-050 execution gates #2977–#2984 **CLOSED** (2026-07-03 evidence); canary **residual** (`TBD_BLOCKER_BEFORE_LIVE`); #3362 Harvester `>=72h` **DONE_72H_PASS** (closed 2026-07-05 via PR #3732); LR **NO-GO** unchanged. Session log: `knowledge/logs/sessions/2026-07-04-live-roadmap-reconcile-2985.md`.
 
 ## Repo / Engineering Status (2026-07-03)
 
@@ -22,7 +26,7 @@
 
 - **#2981 LR-050 Receiver Proof**: **COMPLETED** — PR [#3712](https://github.com/jannekbuengener/Claire_de_Binare/pull/3712) squash-merged; evidence [`reports/lr050/receiver_proof/2026-07-03/`](reports/lr050/receiver_proof/2026-07-03/) result **PASS** (Grafana SMTP test notification). Canon: [`LR-050-RECEIVER-PROOF-CANON-2026-07-03.md`](docs/live-readiness/LR-050-RECEIVER-PROOF-CANON-2026-07-03.md) via PR [#3710](https://github.com/jannekbuengener/Claire_de_Binare/pull/3710). GitHub-live: #2981 **CLOSED**. LR **NO-GO** unchanged. Session log: `knowledge/logs/sessions/2026-07-03-lr050-receiver-proof-2981.md`.
 
-- **#2977 LR-050 Blocker Refresh Matrix**: **COMPLETED** — PR [#3707](https://github.com/jannekbuengener/Claire_de_Binare/pull/3707) squash-merged (`9d2a38d0`); deliverable [`docs/live-readiness/LR-050-BLOCKER-REFRESH-MATRIX-2026-07-03.md`](docs/live-readiness/LR-050-BLOCKER-REFRESH-MATRIX-2026-07-03.md). Planning matrix delivered; LR **NO-GO** unchanged. Child execution gates **CLOSED with evidence (2026-07-03):** #2978, #2979, #2981, #2983, #2984; #2976 **CLOSED** (issue) but canary caps remain `TBD_BLOCKER_BEFORE_LIVE` in SSOT. #3719 venue URL fix **CLOSED**. #3362 Harvester `>=72h` proof **PENDING**. GitHub-live: #2977 **CLOSED**. Session log: `knowledge/logs/sessions/2026-07-03-lr-050-blocker-refresh-2977.md`.
+- **#2977 LR-050 Blocker Refresh Matrix**: **COMPLETED** — PR [#3707](https://github.com/jannekbuengener/Claire_de_Binare/pull/3707) squash-merged (`9d2a38d0`); deliverable [`docs/live-readiness/LR-050-BLOCKER-REFRESH-MATRIX-2026-07-03.md`](docs/live-readiness/LR-050-BLOCKER-REFRESH-MATRIX-2026-07-03.md). Planning matrix delivered; LR **NO-GO** unchanged. Child execution gates **CLOSED with evidence (2026-07-03):** #2978, #2979, #2981, #2983, #2984; #2976 **CLOSED** (issue) but canary caps remain `TBD_BLOCKER_BEFORE_LIVE` in SSOT. #3719 venue URL fix **CLOSED**. #3362 Harvester `>=72h` proof **DONE_72H_PASS** (PR #3732, 2026-07-05). GitHub-live: #2977 **CLOSED**. Session log: `knowledge/logs/sessions/2026-07-03-lr-050-blocker-refresh-2977.md`.
 
 ## Repo / Engineering Status (2026-07-01)
 
@@ -58,11 +62,11 @@
 
   **CodeQL operating mode (post-#3673):** GitHub CodeQL **Default Setup** liefert Code-Scanning-Alerts. Advanced `codeql-python.yml` bleibt als Validierungspfad mit `upload: false` (kein primärer SARIF-Pfad). Reduktion auf `workflow_dispatch`-only (Option B) bewusst **Later**. Register-Detail: `docs/runbooks/GITHUB_WORKFLOW_REGISTER.md` (#3672). LR NO-GO.
 
-- **Slice-E 72h always-on dry validation (#3362)**: **DONE_72H_PASS** — run `slice-e-20260701T204615Z` completed **73.064h**, **293/293** cycles PASS, **0** failed; final `ops_validation validate-dir --is-final` **PASS** after heartbeat-contract fix (PR pending merge). Reports: `artifacts/evidence_harvester/72h_ops_validation/slice-e-20260701T204615Z/ops_validation_report.{json,md}`. Closes #3362 on merge. #3345 parent remains OPEN. LR **NO-GO**.
+- **Slice-E 72h always-on dry validation (#3362)**: **DONE_72H_PASS** — run `slice-e-20260701T204615Z` completed **73.064h**, **293/293** cycles PASS, **0** failed; final `ops_validation validate-dir --is-final` **PASS** (8546/0/0) after heartbeat-contract fix. PR [#3732](https://github.com/jannekbuengener/Claire_de_Binare/pull/3732) squash-merged (`c38a0f9b`); GitHub-live: #3362 **CLOSED**. Reports: `artifacts/evidence_harvester/72h_ops_validation/slice-e-20260701T204615Z/ops_validation_report.{json,md}`. #3345 parent remains **OPEN** (`HOLD_3345_DAEMON_BRIDGE_EVIDENCE_OPEN`). LR **NO-GO**.
 
 - **Coordinator sleep-window stall fix (#3634)**: Resume-safe coordinator + testable sleep-stall supervisor. `resume-fixture-window` seeds `completed_cycles` from durable `runner_state`, emits `sleep_resumed` + audited recovery on a stalled sleep, and is fail-closed (missing state / `run_id` mismatch / terminal status). New `tools/evidence_harvester/supervisor.py` (`decide_supervision` + bounded `supervise_loop`, no process spawn / scheduler / Docker). Slice-E is the first post-#3634 `>=72h` PASS. LR NO-GO.
 
-- **Evidence-Harvester Reconcile (#3384)**: `RECONCILED_NEXT_BLOCKER_IDENTIFIED` — Slice-B/C/D all formal INCONCLUSIVE; #3384/#3589 CLOSED; #3362/#3345 OPEN. Next blocker: **#3634** (coordinator sleep-window stall). LR NO-GO.
+- **Evidence-Harvester Reconcile (#3384)**: `RECONCILED_NEXT_BLOCKER_IDENTIFIED` — Slice-B/C/D all formal INCONCLUSIVE; #3384/#3589 CLOSED; #3634 sleep-stall fix delivered (PR #3642 chain). #3362 **CLOSED** (Slice-E 72h PASS, PR #3732). #3345 **OPEN** — daemon/host-resilience residual. LR NO-GO.
 
 - **PR #3635 / #3384 reconcile closeout**: MERGED `325369fb` (2026-07-01, squash). Reconcile docs + Slice-B/C artifact reports on `main`. #3634 triage started (sleep-window stall). LR NO-GO.
 
@@ -115,19 +119,19 @@
   - **#3437 External-Docs Index + cdb-external-docs Skill / PR #3437 / `e7789a1e`**: Central external-docs index (`docs/external-docs/index.md`) mit 90+ kuratierten Verweisen (canonical, internal-tool, external). cdb-external-docs Skill in allen 5 Agent-Surfaces. Meta-Einträge in `AGENTS.md` und `agents/AGENTS.md`. 28 bestehende Skills mit external-docs-Hooks ergänzt. Issue CLOSED. LR NO-GO. Restunsicherheiten: `.claude/skills/*.skill` Binärdateien nicht modifiziert (kein Lesetool); `skillforge/`-Hooks nur lokal (ungetrackt).
 
 - **Evidence-Harvester Cluster Status**:
-  - #3362 **CLOSING ON MERGE** — Slice-E `slice-e-20260701T204615Z` delivers first post-#3634 `>=72h` always-on dry PASS (73.064h, 293/293, 0 failed; final ops_validation PASS)
+  - #3362 **CLOSED** (2026-07-05) — Slice-E `slice-e-20260701T204615Z` **DONE_72H_PASS** via PR #3732 (`c38a0f9b`): 73.064h, 293/293, 0 failed; final ops_validation PASS
   - #3384 **CLOSED** (2026-07-01) — reconcile delivered post Slice-D; status `RECONCILED_NEXT_BLOCKER_IDENTIFIED`
   - #3589 **CLOSED** (2026-07-01) — stale; Slice-C formal INCONCLUSIVE already on disk (2026-06-30)
-  - #3345 remains **OPEN** — always-on evidence collection daemon for ARVP/profitability research (parent thread; #3362 child proof delivered)
+  - #3345 remains **OPEN** — `HOLD_3345_DAEMON_BRIDGE_EVIDENCE_OPEN`; always-on daemon / host-resilience proof outstanding ([#3733](https://github.com/jannekbuengener/Claire_de_Binare/issues/3733); child #3362 delivered)
   - Slice-B `slice-b-20260625T194946Z`: **INCONCLUSIVE** — 259/259 PASS, ~64.6h, sleep-stall
   - Slice-C `slice-c-20260628T202640Z`: **INCONCLUSIVE / STALLED** — ~17h, sleep-stall
   - **Slice-D** `slice-d-20260630T163853Z`: **SLICE_D_FORMAL_INCONCLUSIVE** — 9/289 PASS, ~2.0h, sleep-stall; formal `ops_validation --is-final` 2026-07-01 (#3632 CLOSED)
-  - **Slice-E** `slice-e-20260701T204615Z`: **DONE_72H_PASS** — 293/293 PASS, 73.064h, final `ops_validation --is-final` PASS (2026-07-05 regenerate)
+  - **Slice-E** `slice-e-20260701T204615Z`: **DONE_72H_PASS** — 293/293 PASS, 73.064h, final `ops_validation --is-final` PASS (2026-07-05)
   - LR remains **NO-GO**
 
-- **main**: `1fbfcb9c` — PR #3675 merged (squash): control/ledger docs reconcile (#3663); prior tip `c961c30e` (PR #3673 CodeQL `upload: false`)
+- **main**: `c38a0f9b` — PR #3732 merged (squash): Slice-E 72h final validation heartbeat gap (#3362); prior tip `75ccac9c`
 - **Active GitHub focus (manual, non-exhaustive)**:
-  - #3345 parent thread + evidence-bridge follow-ups (#3382/#3383); #3362 Slice-E `>=72h` PASS delivered on merge
+  - #3345 parent thread — daemon/host-resilience follow-up (post-#3362 reconcile)
   - #2440 (LR-030 Shadow/Soak Run) — **OPEN**
 
 ## Repo / Engineering Status (2026-06-28)

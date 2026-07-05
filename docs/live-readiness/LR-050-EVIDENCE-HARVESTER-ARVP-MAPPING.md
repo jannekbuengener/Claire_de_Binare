@@ -38,11 +38,12 @@ Out of scope:
 | LR-050 verdict SSOT | [`LR-050-FINAL-RECONCILE.md`](./LR-050-FINAL-RECONCILE.md) — **NO-GO** |
 | Global LR audit | [`LR-AUDIT-STATUS-2026-03-05.md`](./LR-AUDIT-STATUS-2026-03-05.md) — **NO-GO** |
 | Board stage | `trade-capable` per [`CONTROL_REGISTER.md`](../runbooks/CONTROL_REGISTER.md) — **not** Live-Go |
-| LR-050 refresh parent | #2977 **OPEN** — blocked until child gates have evidence |
-| Harvester parent | #3345 **OPEN** — daemon / always-on thread not closed |
-| Harvester 72h proof | #3362 **OPEN** — no final `>=72h` PASS |
+| LR-050 refresh parent | #2977 **CLOSED** (2026-07-03 evidence matrix + child gate closure) |
+| Harvester parent | #3345 **OPEN** — `HOLD_3345_DAEMON_BRIDGE_EVIDENCE_OPEN`; external daemon / host-resilience not closed |
+| Harvester 72h proof | #3362 **CLOSED** — Slice-E **DONE_72H_PASS** (PR #3732, `c38a0f9b`) |
+| Daemon / host-resilience follow-up | #3733 **OPEN** — plan/proof for external auto-resume daemon |
 | Profitability bridge | #3380 **CLOSED** — [`evidence_harvester_to_profitability_packet_mapping.md`](../evidence/evidence_harvester_to_profitability_packet_mapping.md) |
-| Repo anchor | `origin/main` @ mapping session (2026-07-02) |
+| Repo anchor | `origin/main` @ `c38a0f9b` (2026-07-05 reconcile) |
 | Context Brain | repo-only fallback; no DB-backed claims |
 
 **Hard rule:** Harvester operational evidence, ARVP strategy evidence, and
@@ -121,27 +122,27 @@ No promotable candidate exists to justify concrete live-canary parameter selecti
 
 ## LR-050 Child Gate Matrix
 
-Mapping date: 2026-07-02. GitHub live: all listed children **OPEN** except #2982 **CLOSED**.
+Mapping date: 2026-07-05. GitHub live: #2977–#2984 execution gates **CLOSED** (2026-07-03 evidence); #3362 **CLOSED** (Slice-E PASS); #3345 **OPEN**; #3733 **OPEN** (daemon residual).
 
 | Issue | LR-050 blocker (FINAL-RECONCILE §3) | Primary classification | Harvester evidence | ARVP / Profitability evidence | Still blocked because | Missing evidence / follow-up |
 |---|---|---|---|---|---|---|
 | [#2976](https://github.com/jannekbuengener/Claire_de_Binare/issues/2976) | Concrete canary values (`TBD_BLOCKER_BEFORE_LIVE`) | `PARTIALLY_SATISFIED` | None for numeric caps. Harvester safety flags confirm `LR=NO-GO` only. | Tri-candidate rollup: **negative closure** — no promotable candidate; G7 economics FAIL; pessimistic drift docs inform **bounds**, not approved caps. PEP mapping: no canary fields. | `LR-050-RISK-LIMITS.md` / `LR-050-CANARY-PLAN.md` still hold `TBD_BLOCKER_BEFORE_LIVE`. ARVP does not authorize symbolset/notional/loss-cap selection. | Operator + ARVP-informed parameter definition slice; depends on promotable candidate path or explicit conservative human-chosen caps with documented rationale. |
-| [#2978](https://github.com/jannekbuengener/Claire_de_Binare/issues/2978) | Runtime dry-run evidence not executed | `REQUIRES_NEW_RUNTIME_DRY_RUN` | 24h fixture PASS + 72h coordinator slices (B/C/D INCONCLUSIVE; E interim) prove **harvester fixture dry** continuity only. | Replay/shadow suites prove **offline/controlled-lab** paths, not stack prestart pack. | `LR-050-DRY-RUN-PROOF.md` requires full stack under `DRY_RUN=true`, `MOCK_TRADING=true` with envelope/metrics/logs — **not delivered**. | **Human-GO** runtime slice: execute stack dry-run, commit redacted evidence pack. Harvester artifacts may be **referenced** as supplementary ops health, not substitute. |
-| [#2979](https://github.com/jannekbuengener/Claire_de_Binare/issues/2979) | Venue / testnet / endpoint semantics externally unverified | `REQUIRES_VENUE_PROOF` | None. Harvester uses fixture `source_mode`; no MEXC endpoint verification. | None. ARVP replay does not verify live venue URLs/WS semantics. | `LR-050-VENUE-AUDIT.md` is repo inventory `docs_only`. | External/docs-based MEXC REST+WS verification; document `MEXC_TESTNET` is **not** non-send proof (policy row in FINAL-RECONCILE §3). |
-| [#2981](https://github.com/jannekbuengener/Claire_de_Binare/issues/2981) | Operator Receiver Proof missing | `REQUIRES_OPERATOR_PROOF` | Harvester `alerts.py` produces **local** gap reports (`manual_escalation_only`); no Alertmanager delivery proof. | None. | `LR-050-OBSERVABILITY-GATES.md` defines policy; no staged alert → operator receipt record. | Synthetic/staged alert delivery test with redacted operator receipt evidence. Requires stack/runtime **Human-GO** if RED monitoring path used. |
-| [#2983](https://github.com/jannekbuengener/Claire_de_Binare/issues/2983) | Secret / permission / IP / account-binding readiness | `REQUIRES_SECRET_ACCOUNT_PROOF` | None. Harvester explicitly avoids secrets. | None. | `LR-050-SECRETS-READINESS.md` gate matrix without operator attestation. | Redacted operator checklist: permission scope, IP allowlist, testnet/mainnet binding — **no secret values** in repo. Agent cannot execute. |
-| [#2984](https://github.com/jannekbuengener/Claire_de_Binare/issues/2984) | Kill-switch / rollback not runtime-proven | `REQUIRES_KILL_SWITCH_DRILL` | Harvester safety flags visible; no kill-switch latency drill. P4/LR-030 soak evidence exists for **shadow** scope, not LR-050 canary staged drill. | None. | `LR-050-KILL-SWITCH-RUNBOOK.md` not drilled under `MOCK_TRADING=true` + `DRY_RUN=true` with alert correlation. Depends on #2978 + #2981. | Staged drill: measure kill-switch latency, verify rollback, observe alerting. **Human-GO** required. |
+| [#2978](https://github.com/jannekbuengener/Claire_de_Binare/issues/2978) | Runtime dry-run evidence not executed | `SATISFIED_BY_EXISTING_EVIDENCE` (2026-07-03) | 24h fixture PASS + 72h coordinator slices (B/C/D INCONCLUSIVE; E **PASS**) prove **harvester fixture dry** continuity; stack dry-run evidence delivered per #2978 closure. | Replay/shadow suites prove **offline/controlled-lab** paths, not stack prestart pack. | Issue **CLOSED** (2026-07-03): [`reports/lr050/dry_run_proof/2026-07-03/`](../../reports/lr050/dry_run_proof/2026-07-03/). Harvester Slice-E is supplementary ops health, not substitute for stack proof. | N/A — gate closed. |
+| [#2979](https://github.com/jannekbuengener/Claire_de_Binare/issues/2979) | Venue / testnet / endpoint semantics externally unverified | `SATISFIED_BY_EXISTING_EVIDENCE` (2026-07-03) | None from Harvester path. | None. | Issue **CLOSED** (2026-07-03 venue proof scope). | N/A — gate closed. |
+| [#2981](https://github.com/jannekbuengener/Claire_de_Binare/issues/2981) | Operator Receiver Proof missing | `SATISFIED_BY_EXISTING_EVIDENCE` (2026-07-03) | Harvester `alerts.py` produces **local** gap reports only; receiver proof delivered separately. | None. | Issue **CLOSED** (2026-07-03 Grafana SMTP proof). | N/A — gate closed. |
+| [#2983](https://github.com/jannekbuengener/Claire_de_Binare/issues/2983) | Secret / permission / IP / account-binding readiness | `SATISFIED_BY_EXISTING_EVIDENCE` (2026-07-03) | None. Harvester explicitly avoids secrets. | None. | Issue **CLOSED** (2026-07-03 secrets readiness PASS). | N/A — gate closed. |
+| [#2984](https://github.com/jannekbuengener/Claire_de_Binare/issues/2984) | Kill-switch / rollback not runtime-proven | `SATISFIED_BY_EXISTING_EVIDENCE` (2026-07-03) | Harvester safety flags visible; kill-switch drill delivered separately. | None. | Issue **CLOSED** (2026-07-03 staged drill PASS). | N/A — gate closed. |
 | [#2982](https://github.com/jannekbuengener/Claire_de_Binare/issues/2982) | Exact Human Approval / final decision package | `SATISFIED_BY_EXISTING_EVIDENCE` (planning SSOT only) | N/A | N/A | Issue **CLOSED** (2026-06-30 backlog sweep): planning package exists via FINAL-RECONCILE + child SSOTs. **Executable** live-canary GO package remains blocked until #2976–#2984 evidence gates close. | Reopen only if a later scope requires refreshed assembly after upstream gates close. No agent may self-authorize Live-Go. |
 
 ### Parent [#2977](https://github.com/jannekbuengener/Claire_de_Binare/issues/2977)
 
 | Field | Value |
 |---|---|
-| Status | **OPEN** — remains open per #3382 acceptance and user scope |
-| Classification | `NOT_SATISFIED` (refresh execution blocked) |
-| Harvester / ARVP contribution | Mapping ([#3382](https://github.com/jannekbuengener/Claire_de_Binare/issues/3382)) + ARVP negative closure rollup inform **planning** only |
-| Blocker | All 7 `blocker_before_live` rows in FINAL-RECONCILE §3 remain open; tri-candidate rollup explicitly blocked refresh (2026-06-15) |
-| Next legitimate step | After this mapping: resolve child gates with scoped runtime/operator evidence — **not** LR status upgrade |
+| Status | **CLOSED** (2026-07-03) — refresh matrix + child gate evidence delivered |
+| Classification | Planning matrix delivered; LR verdict remains **NO-GO** |
+| Harvester / ARVP contribution | Mapping ([#3382](https://github.com/jannekbuengener/Claire_de_Binare/issues/3382)) + Slice-E PASS (#3362) + ARVP negative closure inform **planning** only |
+| Blocker | LR **NO-GO** unchanged; canary caps `TBD_BLOCKER_BEFORE_LIVE`; #3345 daemon residual via #3733 |
+| Next legitimate step | #3345 parent close only after #3733 daemon/host-resilience proof or explicit downgrade — **not** LR status upgrade |
 
 ---
 
@@ -179,13 +180,14 @@ position above.
 | Reason | Evidence |
 |---|---|
 | LR-050 verdict unchanged | FINAL-RECONCILE + LR-AUDIT-STATUS: **NO-GO** |
-| Runtime dry-run gate open | #2978 `REQUIRES_NEW_RUNTIME_DRY_RUN` — Harvester fixture dry ≠ stack proof |
-| Operator proofs absent | #2981 receiver, #2983 secrets — require human attestation |
-| Venue unverified | #2979 `REQUIRES_VENUE_PROOF` |
-| Safety drill absent | #2984 `REQUIRES_KILL_SWITCH_DRILL` |
-| Canary parameters undefined | #2976 `PARTIALLY_SATISFIED` at best — `TBD_BLOCKER_BEFORE_LIVE` persists |
-| ARVP negative closure | No promotable candidate; #2977 refresh blocked |
-| Harvester 72h incomplete | **Resolved for Slice-E** (#3362 closing on merge); B/C/D remain INCONCLUSIVE history |
+| Runtime dry-run gate | #2978 **CLOSED** (2026-07-03) — Harvester fixture dry ≠ stack proof, but stack dry-run evidence delivered separately |
+| Operator proofs | #2981, #2983 **CLOSED** (2026-07-03) |
+| Venue | #2979 **CLOSED** (2026-07-03) |
+| Safety drill | #2984 **CLOSED** (2026-07-03) |
+| Canary parameters undefined | #2976 **CLOSED** (issue) but `TBD_BLOCKER_BEFORE_LIVE` persists in SSOT |
+| ARVP negative closure | No promotable candidate |
+| Harvester 72h | **DONE_72H_PASS** — #3362 **CLOSED** (Slice-E); B/C/D remain INCONCLUSIVE history |
+| Harvester parent daemon | #3345 **OPEN** — #3733 tracks external auto-resume / host-resilience |
 | Board stage orthogonal | `trade-capable` ≠ live capital authorization |
 | Human Approval rule | Only explicit operator text counts; no PR/issue merge substitutes |
 
@@ -199,21 +201,22 @@ scope wants finer splits.
 | Gap | Existing issue / path | Notes |
 |---|---|---|
 | LR-050 evidence mapping | **#3382** (this delivery) | Closes after PR merge |
-| Harvester `>=72h` proof | **#3362** | Slice-E+ or successor run |
-| Harvester parent close | **#3345** | Blocked on #3362 + bridges |
-| LR-050 refresh execution | **#2977** | Stays OPEN |
-| Runtime stack dry-run | **#2978** | Needs Runtime Human-GO |
-| Venue verification | **#2979** | Research/docs + operator |
-| Receiver proof | **#2981** | Ops Human-GO |
-| Secrets readiness | **#2983** | Operator-only |
-| Kill-switch drill | **#2984** | After #2978/#2981 |
+| Harvester `>=72h` proof | **#3362** | **CLOSED** — Slice-E PASS (PR #3732) |
+| Harvester parent close | **#3345** | **OPEN** — blocked on #3733 daemon/host-resilience |
+| External auto-resume daemon | **#3733** | **OPEN** — plan/proof or explicit downgrade |
+| LR-050 refresh execution | **#2977** | **CLOSED** (2026-07-03) |
+| Runtime stack dry-run | **#2978** | **CLOSED** (2026-07-03) |
+| Venue verification | **#2979** | **CLOSED** (2026-07-03) |
+| Receiver proof | **#2981** | **CLOSED** (2026-07-03) |
+| Secrets readiness | **#2983** | **CLOSED** (2026-07-03) |
+| Kill-switch drill | **#2984** | **CLOSED** (2026-07-03) |
 | Canary caps | **#2976** | After ARVP path or explicit conservative caps |
 | Profitability coverage | **#3383** | Separate from LR-050 gates |
 | Harvester reconcile | **#3384** | CLOSED 2026-07-01; B/C/D reconciled |
 
-**Potential new issue (only if ops wants explicit tracking):** coordinator
-sleep-stall / external supervisor daemon for host-resilience (#3345 scope note on
-Slice-E). Not created in #3382 slice — track via #3362 / #3345 comments.
+**Daemon residual (#3733):** Created 2026-07-05 to track external auto-resume daemon
+and host-resilience proof separately from #3345 parent reconcile. Slice-E PASS
+proves coordinator run continuity, not deployment-ready always-on daemon.
 
 ---
 
@@ -244,7 +247,7 @@ gh issue view 2977 2976 2978 2979 2981 2983 2984 2982 --json number,title,state
 Content review:
 
 - Harvester / ARVP / Profitability boundaries aligned with #3380 and FINAL-RECONCILE.
-- Slice-E treated as interim only; no `>=72h` PASS language.
+- Slice-E **DONE_72H_PASS** documented; #3362/#2977 GitHub states reconciled.
 - No LR-Go / Live-Go / Echtgeld-Go authorization language.
 
 ---
