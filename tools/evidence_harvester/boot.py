@@ -270,7 +270,7 @@ def _check_scheduler_script(
                     check_id="B004",
                     check_name=f"Scheduler script missing: {rel_path}",
                     severity="warn",
-                    message=f"Script not found: {resolved}. Install via 3362 OPS validation.",
+                    message=f"Script not found: {resolved}. Install via #3733 / Operator Runtime-GO.",
                     artifact=rel_path,
                 )
             )
@@ -576,7 +576,7 @@ def _render_operator_handoff_md(report: BootReadinessReport) -> str:
         "   python -m tools.evidence_harvester.boot status --pretty",
         "   ```",
         "",
-        "2. **Install Windows Task Scheduler** (requires 3362 OPS validation GO):",
+        "2. **Install Windows Task Scheduler** (requires #3733 / Operator Runtime-GO):",
         "",
         "   ```powershell",
         "   python -m tools.evidence_harvester.scheduler install --fixture <path> --explicit",
@@ -587,7 +587,7 @@ def _render_operator_handoff_md(report: BootReadinessReport) -> str:
         "   - Verify `docker_available` is True in boot readiness.",
         "   - Use `boot install-plan` to see the full command surface before any Docker action.",
         "   - Do not start Docker stack from the boot module — Docker mutation requires explicit",
-        "     Infra-Mutation-Gate approval (see #3362 OPS validation runbook).",
+        "     Infra-Mutation-Gate approval (see #3733 host-resilience tiers doc).",
         "",
         "4. **Verify scheduled task runs**:",
         "",
@@ -604,7 +604,7 @@ def _render_operator_handoff_md(report: BootReadinessReport) -> str:
         "",
         "## Reboot-Resilience",
         "",
-        "After the Windows Task is installed (3362), the task survives reboots automatically:",
+        "After the Windows Task is installed (#3733 / Operator Runtime-GO), the task survives reboots automatically:",
         "- Windows Task Scheduler starts the harvester daily at the configured time.",
         "- The boot module can be run at any time to verify readiness post-reboot.",
         "- If Docker is used instead, a Docker restart policy or Windows scheduled task",
@@ -813,7 +813,7 @@ def _build_install_plan_payload(
             {
                 "step": "install-windows-task",
                 "command": "python -m tools.evidence_harvester.scheduler install --fixture <path> --explicit",
-                "requires_go": "3362 OPS_VALIDATION",
+                "requires_go": "#3733 Operator Runtime-GO",
             },
             {
                 "step": "start-docker-stack",
@@ -824,7 +824,7 @@ def _build_install_plan_payload(
         "safety": [
             "Plan-only. No action taken.",
             "No Docker/runtime/DB/secrets mutation.",
-            "Each step requires its own GO gate (3362 OPS_VALIDATION, Infra-Mutation-Gate).",
+            "Each step requires its own GO gate (#3733 Operator Runtime-GO, Infra-Mutation-Gate).",
             "No LR-Go / No Live-Go / No Echtgeld-Go.",
         ],
     }

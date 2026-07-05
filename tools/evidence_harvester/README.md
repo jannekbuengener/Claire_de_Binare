@@ -581,13 +581,43 @@ pwsh -NoProfile -File .\scripts\evidence_harvester_boot.ps1 -Action status -Pret
 - No Docker start/stop, runtime start, DB mutation, secrets access, or network write
 - `install-plan` prints steps but does not execute them
 - Docker mutation requires separate Infra-Mutation-Gate approval
-- Windows Task install requires separate GO (see #3362 OPS validation)
+- Windows Task install requires separate GO (see #3733 Operator Runtime-GO)
 - No LR-Go, no Live-Go, no Echtgeld-Go
 
 ### Related issues
 
 - #3360 — boot readiness (this module)
-- #3362 — OPS validation (Windows Task installation and Docker enablement)
+- #3362 — OPS validation (`>=72h` dry proof; CLOSED via Slice-E PASS)
+- #3733 — external supervisor scaffold + host-resilience tiers (OPEN)
+
+## External Supervisor Scaffold (#3733 Phase 1)
+
+Out-of-process supervision for sleep-stall recovery. Phase 1 is **scaffold +
+tests + docs only** — Tier-1 runtime proof requires a separate Operator
+Runtime-GO. LR remains **NO-GO**. #3345 stays **OPEN** until #3733 closes.
+
+Tier model:
+[`docs/evidence/evidence_harvester_host_resilience_tiers.md`](../docs/evidence/evidence_harvester_host_resilience_tiers.md)
+
+Safe plan (default):
+
+```powershell
+.\scripts\evidence_harvester_supervisor.ps1 -Action plan `
+    -ArtifactDir artifacts\evidence_harvester\72h_ops_validation\<run_id> `
+    -Fixture artifacts\evidence_harvester\24h_dry_run\collector_input.json `
+    -Iterations 293 -Pretty
+```
+
+Read-only status with PID probe:
+
+```powershell
+python -m tools.evidence_harvester.supervisor status `
+    --artifact-dir artifacts\evidence_harvester\72h_ops_validation\<run_id> `
+    --use-pid-probe --pretty
+```
+
+Execution requires `-Explicit` on the PowerShell wrapper or `--explicit` on
+`supervise-external`. No Windows Task install in Phase 1.
 
 ## Future-gated live reads
 
