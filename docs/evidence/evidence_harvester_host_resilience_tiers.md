@@ -7,8 +7,8 @@ remains **not proven** — explicit limitation.
 LR remains **NO-GO**. No Live-Go, no Echtgeld-Go.
 
 Parent issue [#3345](https://github.com/jannekbuengener/Claire_de_Binare/issues/3345)
-remains **OPEN** — deployment-ready always-on daemon and Tier-3 host events are parent
-residual scope, not #3733 closure blockers.
+**CLOSED** (2026-07-05). Tier-3 host events and deployment-ready scheduler proof
+tracked in follow-up [#3738](https://github.com/jannekbuengener/Claire_de_Binare/issues/3738).
 
 Child [#3362](https://github.com/jannekbuengener/Claire_de_Binare/issues/3362) is
 **CLOSED** — Slice-E `>=72h` PASS proves in-process coordinator continuity only,
@@ -23,7 +23,7 @@ Canonical Tier-1 evidence:
 |------|----------|--------|-------------------|
 | **Tier 1** | Coordinator process killed during sleep window | **PASS** (`tier1-retry-20260705T111436Z`) | Controlled kill → external supervisor `RELAUNCH_RESUME` → `run_resumed` + continued cycles. First attempt `tier1-20260705T104800Z` **FAIL**; fixed in PR #3736; retry PASS under Operator Runtime-GO. |
 | **Tier 2** | Shell / IDE close while detached coordinator runs | Covered by Slice-E pattern | Documented; no separate proof required in #3733. |
-| **Tier 3** | Host sleep / hibernate / reboot across evidence window | **Not proven** | Explicit limitation. Future path: Windows Task + boot readiness under separate Ops GO / #3345 parent scope. |
+| **Tier 3** | Host sleep / hibernate / reboot across evidence window | **Not proven** | Explicit limitation. Follow-up [#3738](https://github.com/jannekbuengener/Claire_de_Binare/issues/3738) — Windows Task + boot readiness under separate Ops GO. |
 
 ## Engineering deliverables (merged)
 
@@ -78,10 +78,10 @@ Append-only relaunch audit (PR #3736): argv, cwd, pid, immediate exit, launch_er
 Tier-1 runtime proof PASS + Tier-3 documented limitation satisfies issue acceptance
 (host-resilience proof **or** documented limitation with evidence).
 
-### #3345 — still OPEN
+### #3345 — CLOSED
 
-Tier-1 external supervisor proof delivered; parent still tracks deployment-ready
-always-on daemon, Tier-3 host events, and evidence-bridge follow-ups ([#3382](https://github.com/jannekbuengener/Claire_de_Binare/issues/3382) etc.).
+Tier-1 external supervisor proof delivered; parent closed after #3362 72h PASS +
+#3733 Tier-1 PASS. Tier-3 host events and deployment-ready scheduler → #3738.
 
 ## Safety boundaries
 

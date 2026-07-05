@@ -594,7 +594,7 @@ pwsh -NoProfile -File .\scripts\evidence_harvester_boot.ps1 -Action status -Pret
 
 Out-of-process supervision for sleep-stall recovery. Phase 1 is **scaffold +
 tests + docs only** — Tier-1 runtime proof requires a separate Operator
-Runtime-GO. LR remains **NO-GO**. #3345 stays **OPEN** until #3733 closes.
+Runtime-GO. LR remains **NO-GO**. #3345 **CLOSED**; Tier-3/scheduler residual → #3738.
 
 Tier model:
 [`docs/evidence/evidence_harvester_host_resilience_tiers.md`](../docs/evidence/evidence_harvester_host_resilience_tiers.md)
