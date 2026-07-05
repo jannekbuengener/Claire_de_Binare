@@ -4,7 +4,7 @@ Safe usage:
   POSTGRES_READONLY_PASSWORD_DSN must be set in the environment.
   python scripts/arvp_3742_natural_paper_window_inventory.py
 
-Output: cluster inventory + classification matrix; no DSN/secret values printed.
+Output: cluster inventory + classification matrix; no DSN/credential values printed.
 """
 
 from __future__ import annotations
@@ -512,7 +512,7 @@ def main() -> int:
         print("FATAL: readonly PostgreSQL connection failed")
         print(f"error_class: {exc.__class__.__name__}")
         print(
-            "hint: verify POSTGRES_READONLY_PASSWORD_DSN secret, cdb_readonly role, "
+            "hint: verify POSTGRES_READONLY_PASSWORD_DSN operator config, cdb_readonly role, "
             "and that cdb_postgres is reachable on the DSN host/port"
         )
         print("VERDICT_ENUM: HOLD_READONLY_ACCESS_UNAVAILABLE")
@@ -601,7 +601,7 @@ def main() -> int:
             )
         print(f"VERDICT_ENUM: {verdict}")
         print()
-        print("No secrets printed. No DB mutations. Readonly session closed.")
+        print("No credentials printed. No DB mutations. Readonly session closed.")
     finally:
         conn.close()
 

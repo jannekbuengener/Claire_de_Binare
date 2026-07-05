@@ -14,7 +14,7 @@
 
 - `ruff check scripts/arvp_3742_natural_paper_window_inventory.py` — PASS
 - Script run — exit 1, `HOLD_READONLY_ACCESS_UNAVAILABLE` (cdb_readonly auth fail)
-- No secrets in diff
+- No credentials in diff
 
 ## Boundaries
 

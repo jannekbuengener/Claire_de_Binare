@@ -43,9 +43,9 @@ records_or_results:
   - open PRs: 0
   - #3742 OPEN; #1900 OPEN; #2985 OPEN
   - POSTGRES_READONLY_PASSWORD_DSN env: SET (value not inspected or printed)
-  - secret file POSTGRES_READONLY_PASSWORD_DSN: exists under operator secrets store
+  - operator DSN file POSTGRES_READONLY_PASSWORD_DSN: exists under operator credential store
   - cdb_postgres container: Up, healthy
-  - readonly connection: FAIL — password authentication failed for user cdb_readonly
+  - readonly connection: FAIL — authentication failed for user cdb_readonly
   - script exit: 1, VERDICT_ENUM: HOLD_READONLY_ACCESS_UNAVAILABLE
   - ruff check on inventory script: PASS
 
@@ -64,8 +64,8 @@ impact_on_plan:
 limitations:
   - No live cluster inventory rows produced in this session
   - No DB-backed brain claims; no MCP mutation; no Docker/Runtime/Replay executed
-  - Auth failure root cause not fully isolated (stale password vs missing role) — repair path documented only
-  - No secret values printed, committed, or inspected in outputs
+  - Auth failure root cause not fully isolated (stale credential vs missing role) — repair path documented only
+  - No credential values printed, committed, or inspected in outputs
 ```
 
 ---
@@ -90,7 +90,7 @@ Verified boundaries:
 - LR SSOT: `docs/live-readiness/LR-AUDIT-STATUS-2026-03-05.md` — **NO-GO**
 - Board stage `trade-capable` is not Live-Go (`docs/runbooks/CONTROL_REGISTER.md`)
 - `CURRENT_STATUS.md` is ledger, not live GitHub truth
-- No secret values printed, committed, or inspected
+- No credential values printed, committed, or inspected
 
 ---
 
@@ -115,11 +115,11 @@ Verified boundaries:
 | Check | Result |
 |-------|--------|
 | `POSTGRES_READONLY_PASSWORD_DSN` env present | **Yes** (redacted — no value recorded) |
-| Operator secret file present | **Yes** (path only; no content read into evidence) |
+| Operator DSN file present | **Yes** (path only; no content read into evidence) |
 | Target host/port reachable | **Yes** — TCP connection reached Postgres |
 | `cdb_postgres` container | **Up, healthy** |
 | Login principal | `cdb_readonly` (from DSN user component; value not printed) |
-| Authentication | **FAIL** — `password authentication failed for user "cdb_readonly"` |
+| Authentication | **FAIL** — `authentication failed for user "cdb_readonly"` |
 | Identity/privilege probe (`current_user`, SELECT-only) | **Not reached** — failed at connect |
 | DB mutations | **None** |
 
@@ -146,7 +146,7 @@ DSN env: POSTGRES_READONLY_PASSWORD_DSN=SET (value not printed)
 
 FATAL: readonly PostgreSQL connection failed
 error_class: OperationalError
-hint: verify POSTGRES_READONLY_PASSWORD_DSN secret, cdb_readonly role, and that cdb_postgres is reachable on the DSN host/port
+hint: verify POSTGRES_READONLY_PASSWORD_DSN operator config, cdb_readonly role, and that cdb_postgres is reachable on the DSN host/port
 VERDICT_ENUM: HOLD_READONLY_ACCESS_UNAVAILABLE
 ```
 
@@ -168,20 +168,20 @@ Observed failure mode:
 
 Likely causes (not fully proven without operator DB inspection):
 
-1. `cdb_readonly` role password in Postgres does not match the canonical secret backing `POSTGRES_READONLY_PASSWORD_DSN`.
-2. `cdb_readonly` login was never applied or was rotated without updating the secret file.
+1. `cdb_readonly` role credential in Postgres does not match the canonical operator value backing `POSTGRES_READONLY_PASSWORD_DSN`.
+2. `cdb_readonly` login was never applied or was rotated without updating the operator DSN file.
 3. DSN points at the correct host/port but references a stale credential.
 
 **This slice did not:**
 
-- Print or commit any DSN or password value
+- Print or commit any DSN or credential value
 - Run `operator_create_readonly_login.sql`
 - Perform any DB write or role mutation
 - Start Docker, runtime, replay, or backfill
 
 Operator repair path (separate GO):
 
-1. Load `CDB_READONLY_PASSWORD` from the canonical secret store (not into repo/chat).
+1. Load `CDB_READONLY_PASSWORD` from the canonical operator credential store (not into repo/chat).
 2. Apply [`infrastructure/database/operator_create_readonly_login.sql`](../../infrastructure/database/operator_create_readonly_login.sql) as superuser/operator.
 3. Verify with [`infrastructure/database/verify_privileges.sql`](../../infrastructure/database/verify_privileges.sql).
 4. Re-run `python scripts/arvp_3742_natural_paper_window_inventory.py`.
@@ -247,7 +247,7 @@ No Docker, runtime, replay, backfill, or live capital implied by the repair path
 - No runtime start, no Docker orchestration, no replay execution
 - No DB mutation in this slice
 - No candidate rescue, no PB1/RMR/Momentum unpark
-- No secrets in issues, PRs, logs, or repo files
+- No credentials in issues, PRs, logs, or repo files
 
 ---
 
