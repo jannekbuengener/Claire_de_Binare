@@ -407,21 +407,29 @@ python -m tools.evidence_harvester.supervisor status `
 ```
 
 Execution (`supervise-external`) requires `--explicit` and a separate **Operator
-Runtime-GO**. LR remains **NO-GO**. #3345 stays **OPEN** until Tier-1 proof or
-accepted downgrade closes #3733.
+Runtime-GO**. LR remains **NO-GO**. #3733 **CLOSED** (Tier-1 proof PASS). #3345 stays
+**OPEN** (Tier 3 / deployment residual).
 
-**Tier-1 retry parameters (recommended after Windows launcher fix):**
+**Tier-1 proof PASS (2026-07-05):**
+
+| Field | Value |
+|-------|-------|
+| run_id | `tier1-retry-20260705T111436Z` |
+| main_sha | `2b007240` (PR #3736) |
+| result | kill → supervisor relaunch → `run_resumed` → post-resume cycle **PASS** |
+| compact evidence | [`docs/evidence/evidence_harvester_tier1_supervisor_proof_2026-07-05.md`](../evidence/evidence_harvester_tier1_supervisor_proof_2026-07-05.md) |
+| Tier 3 | sleep/hibernate/reboot **not proven** |
+
+**Tier-1 retry parameters (used in PASS run):**
 
 | Parameter | Value |
 |---|---|
-| `cadence-seconds` | **120** (avoid killing before cycle-1 sleep settles) |
-| Kill timing | During cycle-1 sleep, after `sleep_started` and before `next_cycle_due_at_utc` |
+| `cadence-seconds` | **120** |
+| Kill timing | During cycle-1 sleep, after `sleep_started` |
 | Proof dir | `artifacts/evidence_harvester/host_resilience_proof/tier1-retry-<UTC>/` |
 | Pass criteria | `relaunch_count >= 1`, supervisor-spawned `run_resumed`, post-resume PASS cycle |
 
-First canonical proof run `tier1-20260705T104800Z` **FAIL** — stall detection and
-`relaunch_count=1` worked; subprocess resume child exited without `run_resumed`
-(manual identical `Popen` control succeeded). See
+First attempt `tier1-20260705T104800Z` **FAIL** (fixed in PR #3736). See
 [`docs/evidence/evidence_harvester_host_resilience_tiers.md`](../evidence/evidence_harvester_host_resilience_tiers.md).
 
 ## Safety Boundaries

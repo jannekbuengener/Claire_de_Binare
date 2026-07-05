@@ -1,0 +1,25 @@
+{
+  "cycles_after_resume": 1,
+  "cycles_before_stop": 1,
+  "ended_at_utc": "2026-07-05T11:17:47.908Z",
+  "fix_pr": 3736,
+  "last_cycle_verdict": "PASS",
+  "limitations": [
+    "Tier-1 process-kill only",
+    "Tier-3 sleep/hibernate/reboot not proven",
+    "LR NO-GO"
+  ],
+  "main_sha": "2b007240",
+  "new_pid_or_resume_evidence": {
+    "resume_launch_evidence": "docs/evidence/host_resilience_proof/tier1-retry-20260705T111436Z/resume_launch_evidence.jsonl",
+    "run_resumed_at_utc": "2026-07-05T11:16:53.449039Z",
+    "run_resumed_from_supervisor": true,
+    "supervisor_recorded_pid": 13516,
+    "supervisor_relaunch_at_utc": "2026-07-05T11:16:52.787672Z"
+  },
+  "old_pid": 21760,
+  "proof_verdict": "PASS",
+  "relaunch_count": 1,
+  "run_id": "tier1-retry-20260705T111436Z",
+  "started_at_utc": "2026-07-05T11:14:49Z"
+}

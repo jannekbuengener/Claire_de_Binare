@@ -1,38 +1,38 @@
 # Evidence Harvester Host-Resilience Tiers (#3733)
 
-Status: Phase 1 scaffold merged; **Tier-1 first runtime proof failed** on Windows
-(`tier1-20260705T104800Z`); Windows resume launcher hardening landed in follow-up
-PR (detached `Popen`, launch evidence). **Tier-1 re-proof pending** separate
-Operator Runtime-GO.
+Status: **#3733 CLOSED** — Tier-1 external supervisor proof **PASS**
+(`tier1-retry-20260705T111436Z`, main @ `2b007240`). Tier 3 (host sleep/hibernate/reboot)
+remains **not proven** — explicit limitation.
 
 LR remains **NO-GO**. No Live-Go, no Echtgeld-Go.
 
 Parent issue [#3345](https://github.com/jannekbuengener/Claire_de_Binare/issues/3345)
-remains **OPEN** (`HOLD_3345_DAEMON_BRIDGE_EVIDENCE_OPEN`) until
-[#3733](https://github.com/jannekbuengener/Claire_de_Binare/issues/3733) delivers
-Tier-1 proof **or** an accepted formal requirement downgrade.
+remains **OPEN** — deployment-ready always-on daemon and Tier-3 host events are parent
+residual scope, not #3733 closure blockers.
 
 Child [#3362](https://github.com/jannekbuengener/Claire_de_Binare/issues/3362) is
 **CLOSED** — Slice-E `>=72h` PASS proves in-process coordinator continuity only,
 not deployment-ready external auto-resume across all host events.
 
+Canonical Tier-1 evidence:
+[`evidence_harvester_tier1_supervisor_proof_2026-07-05.md`](evidence_harvester_tier1_supervisor_proof_2026-07-05.md)
+
 ## Tier model
 
-| Tier | Scenario | Phase 1 status | Proof requirement |
-|------|----------|----------------|-------------------|
-| **Tier 1** | Coordinator process killed during sleep window | Scaffold + Windows launcher fix | Controlled kill → external supervisor `RELAUNCH_RESUME` → `run_resumed` + continued cycles. Requires separate **Operator Runtime-GO**. First proof `tier1-20260705T104800Z` **FAIL** (relaunch ok, detached resume child did not emit `run_resumed`). Retry with cadence **120s**, kill during cycle-1 sleep. |
-| **Tier 2** | Shell / IDE close while detached coordinator runs | Covered by Slice-E pattern | Documented; no new proof required in #3733 Phase 1. |
-| **Tier 3** | Host sleep / hibernate / reboot across evidence window | **Not proven** | Explicit limitation in Phase 1. Future path: Windows Task + boot readiness (#3733 Phase 2+ or separate Ops GO). |
+| Tier | Scenario | Status | Proof requirement |
+|------|----------|--------|-------------------|
+| **Tier 1** | Coordinator process killed during sleep window | **PASS** (`tier1-retry-20260705T111436Z`) | Controlled kill → external supervisor `RELAUNCH_RESUME` → `run_resumed` + continued cycles. First attempt `tier1-20260705T104800Z` **FAIL**; fixed in PR #3736; retry PASS under Operator Runtime-GO. |
+| **Tier 2** | Shell / IDE close while detached coordinator runs | Covered by Slice-E pattern | Documented; no separate proof required in #3733. |
+| **Tier 3** | Host sleep / hibernate / reboot across evidence window | **Not proven** | Explicit limitation. Future path: Windows Task + boot readiness under separate Ops GO / #3345 parent scope. |
 
-## Phase 1 deliverables (engineering scaffold)
+## Engineering deliverables (merged)
 
 - `tools/evidence_harvester/supervisor.py`
   - `coordinator_pid.json` record + PID liveness probe
   - `supervision_state.json` durable poll/relaunch state
   - `plan-external`, `supervise-external`, `record-coordinator-pid` CLI
   - injectable subprocess resume launcher (fail-closed without `--explicit`)
-- Windows-hardened detached resume `Popen` (`DETACHED_PROCESS`, new process group,
-  breakaway from job) + `resume_launch_evidence.jsonl` per relaunch
+- Windows-hardened detached resume `Popen` (PR #3736) + `resume_launch_evidence.jsonl` per relaunch
 - `scripts/evidence_harvester_supervisor.ps1` — safe default `plan`; execution requires `-Explicit`
 - Unit tests under `tests/unit/tools/evidence_harvester/test_supervisor_external.py`
 
@@ -67,31 +67,34 @@ Written during external supervision polls.
 | `last_error` | Non-empty on stale PID or probe errors |
 | `updated_at_utc` | UTC timestamp |
 
+### `resume_launch_evidence.jsonl`
+
+Append-only relaunch audit (PR #3736): argv, cwd, pid, immediate exit, launch_error.
+
 ## Closure linkage
 
-### #3733 closes when
+### #3733 — CLOSED
 
-- Tier-1 runtime proof artifacts exist under
-  `artifacts/evidence_harvester/host_resilience_proof/<run_id>/`, **or**
-- A formal downgrade ADR is merged and accepted by issue semantics.
+Tier-1 runtime proof PASS + Tier-3 documented limitation satisfies issue acceptance
+(host-resilience proof **or** documented limitation with evidence).
 
-Phase 1 alone does **not** close #3733.
+### #3345 — still OPEN
 
-### #3345 becomes closure-ready when
-
-- #3733 is **CLOSED** with proof or accepted downgrade, and
-- Parent reconcile criteria from PR #3734 remain satisfied.
+Tier-1 external supervisor proof delivered; parent still tracks deployment-ready
+always-on daemon, Tier-3 host events, and evidence-bridge follow-ups ([#3382](https://github.com/jannekbuengener/Claire_de_Binare/issues/3382) etc.).
 
 ## Safety boundaries
 
 - Fixture/dry research only
-- No Windows Task install in Phase 1
+- No Windows Task install in Tier-1 proof slice
 - No Docker / BLUE+RED / DB / MCP mutation
-- No new `>=72h` coordinator run
+- No new `>=72h` coordinator run in #3733
 - LR **NO-GO** unchanged
 
 ## References
 
+- [`docs/evidence/evidence_harvester_tier1_supervisor_proof_2026-07-05.md`](evidence_harvester_tier1_supervisor_proof_2026-07-05.md)
 - [`docs/runbooks/CDB_EVIDENCE_HARVESTER_OPS.md`](../runbooks/CDB_EVIDENCE_HARVESTER_OPS.md)
 - [`tools/evidence_harvester/README.md`](../../tools/evidence_harvester/README.md)
 - Slice-E PASS: `artifacts/evidence_harvester/72h_ops_validation/slice-e-20260701T204615Z/`
+- Tier-1 PASS compact artifacts: `docs/evidence/host_resilience_proof/tier1-retry-20260705T111436Z/`
