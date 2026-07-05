@@ -171,7 +171,7 @@ def test_render_operator_handoff_includes_install_instructions(
     assert "Windows Task Scheduler" in output
     assert "Docker-based background runner" in output
     assert "Infra-Mutation-Gate" in output
-    assert "3362" in output
+    assert "3733" in output
     assert "No LR-Go" in output
 
 

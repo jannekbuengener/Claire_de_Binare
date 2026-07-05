@@ -372,9 +372,42 @@ python -m tools.evidence_harvester.supervisor status ^
 `supervise` runs the poll/relaunch loop in-process and is fail-closed behind
 `--explicit` (without it, only the plan is printed). The loop is fully injectable
 (`launcher`, `process_alive_fn`, `now_fn`, `sleep_fn`) and bounded by
-`--max-relaunch-count` and optional `--max-polls`. Real external supervision
-(subprocess spawn / scheduled wake probe) remains a Slice-E operational wrapper
-that requires its own Runtime-GO.
+`--max-relaunch-count` and optional `--max-polls`.
+
+### External supervisor scaffold (#3733 Phase 1)
+
+Phase 1 adds out-of-process supervision **scaffold only** — no Tier-1 runtime
+proof in the merge slice. See
+[`docs/evidence/evidence_harvester_host_resilience_tiers.md`](../evidence/evidence_harvester_host_resilience_tiers.md).
+
+| Artifact / command | Purpose |
+|---|---|
+| `coordinator_pid.json` | PID record for injectable liveness probe |
+| `supervision_state.json` | Poll/relaunch durable state |
+| `plan-external` | Safe plan JSON (default) |
+| `supervise-external --explicit` | PID probe + subprocess resume launcher |
+| `record-coordinator-pid` | Write PID record after detached coordinator start |
+
+PowerShell wrapper (safe default `plan`):
+
+```powershell
+.\scripts\evidence_harvester_supervisor.ps1 -Action plan `
+    -ArtifactDir artifacts\evidence_harvester\72h_ops_validation\<run_id> `
+    -Fixture artifacts\evidence_harvester\24h_dry_run\collector_input.json `
+    -Iterations 293 -Pretty
+```
+
+Read-only status with PID probe:
+
+```powershell
+python -m tools.evidence_harvester.supervisor status `
+    --artifact-dir artifacts\evidence_harvester\72h_ops_validation\<run_id> `
+    --use-pid-probe --pretty
+```
+
+Execution (`supervise-external`) requires `--explicit` and a separate **Operator
+Runtime-GO**. LR remains **NO-GO**. #3345 stays **OPEN** until Tier-1 proof or
+accepted downgrade closes #3733.
 
 ## Safety Boundaries
 
