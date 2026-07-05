@@ -39,9 +39,9 @@ Out of scope:
 | Global LR audit | [`LR-AUDIT-STATUS-2026-03-05.md`](./LR-AUDIT-STATUS-2026-03-05.md) — **NO-GO** |
 | Board stage | `trade-capable` per [`CONTROL_REGISTER.md`](../runbooks/CONTROL_REGISTER.md) — **not** Live-Go |
 | LR-050 refresh parent | #2977 **CLOSED** (2026-07-03 evidence matrix + child gate closure) |
-| Harvester parent | #3345 **OPEN** — `HOLD_3345_DAEMON_BRIDGE_EVIDENCE_OPEN`; external daemon / host-resilience not closed |
+| Harvester parent | #3345 **OPEN** — Tier 3 host-resilience + deployment-ready daemon residual |
 | Harvester 72h proof | #3362 **CLOSED** — Slice-E **DONE_72H_PASS** (PR #3732, `c38a0f9b`) |
-| Daemon / host-resilience follow-up | #3733 **OPEN** — plan/proof for external auto-resume daemon |
+| External supervisor / Tier-1 host-resilience | #3733 **CLOSED** — Tier-1 proof **PASS** (`tier1-retry-20260705T111436Z`); Tier 3 not proven |
 | Profitability bridge | #3380 **CLOSED** — [`evidence_harvester_to_profitability_packet_mapping.md`](../evidence/evidence_harvester_to_profitability_packet_mapping.md) |
 | Repo anchor | `origin/main` @ `c38a0f9b` (2026-07-05 reconcile) |
 | Context Brain | repo-only fallback; no DB-backed claims |
@@ -122,7 +122,7 @@ No promotable candidate exists to justify concrete live-canary parameter selecti
 
 ## LR-050 Child Gate Matrix
 
-Mapping date: 2026-07-05. GitHub live: #2977–#2984 execution gates **CLOSED** (2026-07-03 evidence); #3362 **CLOSED** (Slice-E PASS); #3345 **OPEN**; #3733 **OPEN** (daemon residual).
+Mapping date: 2026-07-05. GitHub live: #2977–#2984 execution gates **CLOSED** (2026-07-03 evidence); #3362 **CLOSED** (Slice-E PASS); #3733 **CLOSED** (Tier-1 supervisor proof PASS); #3345 **OPEN** (Tier 3 / deployment residual).
 
 | Issue | LR-050 blocker (FINAL-RECONCILE §3) | Primary classification | Harvester evidence | ARVP / Profitability evidence | Still blocked because | Missing evidence / follow-up |
 |---|---|---|---|---|---|---|
@@ -141,8 +141,8 @@ Mapping date: 2026-07-05. GitHub live: #2977–#2984 execution gates **CLOSED** 
 | Status | **CLOSED** (2026-07-03) — refresh matrix + child gate evidence delivered |
 | Classification | Planning matrix delivered; LR verdict remains **NO-GO** |
 | Harvester / ARVP contribution | Mapping ([#3382](https://github.com/jannekbuengener/Claire_de_Binare/issues/3382)) + Slice-E PASS (#3362) + ARVP negative closure inform **planning** only |
-| Blocker | LR **NO-GO** unchanged; canary caps `TBD_BLOCKER_BEFORE_LIVE`; #3345 daemon residual via #3733 |
-| Next legitimate step | #3345 parent close only after #3733 daemon/host-resilience proof or explicit downgrade — **not** LR status upgrade |
+| Blocker | LR **NO-GO** unchanged; canary caps `TBD_BLOCKER_BEFORE_LIVE`; #3345 parent residual (Tier 3 / deployment) |
+| Next legitimate step | #3345 parent close when Tier-3 limitation accepted or proven + bridge criteria met — **not** LR status upgrade |
 
 ---
 
@@ -187,7 +187,7 @@ position above.
 | Canary parameters undefined | #2976 **CLOSED** (issue) but `TBD_BLOCKER_BEFORE_LIVE` persists in SSOT |
 | ARVP negative closure | No promotable candidate |
 | Harvester 72h | **DONE_72H_PASS** — #3362 **CLOSED** (Slice-E); B/C/D remain INCONCLUSIVE history |
-| Harvester parent daemon | #3345 **OPEN** — #3733 tracks external auto-resume / host-resilience |
+| Harvester parent daemon | #3345 **OPEN** — Tier 3 / deployment residual; #3733 **CLOSED** (Tier-1 PASS) |
 | Board stage orthogonal | `trade-capable` ≠ live capital authorization |
 | Human Approval rule | Only explicit operator text counts; no PR/issue merge substitutes |
 
@@ -202,8 +202,8 @@ scope wants finer splits.
 |---|---|---|
 | LR-050 evidence mapping | **#3382** (this delivery) | Closes after PR merge |
 | Harvester `>=72h` proof | **#3362** | **CLOSED** — Slice-E PASS (PR #3732) |
-| Harvester parent close | **#3345** | **OPEN** — blocked on #3733 daemon/host-resilience |
-| External auto-resume daemon | **#3733** | **OPEN** — plan/proof or explicit downgrade |
+| Harvester parent close | **#3345** | **OPEN** — Tier 3 / deployment residual |
+| External auto-resume Tier-1 | **#3733** | **CLOSED** — Tier-1 proof PASS; Tier 3 limitation documented |
 | LR-050 refresh execution | **#2977** | **CLOSED** (2026-07-03) |
 | Runtime stack dry-run | **#2978** | **CLOSED** (2026-07-03) |
 | Venue verification | **#2979** | **CLOSED** (2026-07-03) |
@@ -214,9 +214,10 @@ scope wants finer splits.
 | Profitability coverage | **#3383** | Separate from LR-050 gates |
 | Harvester reconcile | **#3384** | CLOSED 2026-07-01; B/C/D reconciled |
 
-**Daemon residual (#3733):** Created 2026-07-05 to track external auto-resume daemon
-and host-resilience proof separately from #3345 parent reconcile. Slice-E PASS
-proves coordinator run continuity, not deployment-ready always-on daemon.
+**#3733 Tier-1 closeout (2026-07-05):** #3733 **CLOSED** after Tier-1 external
+supervisor proof **PASS** (`tier1-retry-20260705T111436Z`). Tier 3 sleep/hibernate/reboot
+remains **not proven**. #3345 parent stays **OPEN** for deployment + Tier-3 residual.
+See [`evidence_harvester_tier1_supervisor_proof_2026-07-05.md`](../evidence/evidence_harvester_tier1_supervisor_proof_2026-07-05.md).
 
 ---
 
