@@ -1,8 +1,9 @@
 # Evidence Harvester Host-Resilience Tiers (#3733)
 
 Status: **#3733 CLOSED** — Tier-1 external supervisor proof **PASS**
-(`tier1-retry-20260705T111436Z`, main @ `2b007240`). Tier 3 (host sleep/hibernate/reboot)
-remains **not proven** — explicit limitation.
+(`tier1-retry-20260705T111436Z`, main @ `2b007240`). **#3738** scheduler deployment
+**PASS** (`scheduler-20260705T114504Z`); Tier 3 host sleep/hibernate/reboot
+**LIMITATION** (bounded run + explicit docs, 2026-07-05).
 
 LR remains **NO-GO**. No Live-Go, no Echtgeld-Go.
 
@@ -23,7 +24,7 @@ Canonical Tier-1 evidence:
 |------|----------|--------|-------------------|
 | **Tier 1** | Coordinator process killed during sleep window | **PASS** (`tier1-retry-20260705T111436Z`) | Controlled kill → external supervisor `RELAUNCH_RESUME` → `run_resumed` + continued cycles. First attempt `tier1-20260705T104800Z` **FAIL**; fixed in PR #3736; retry PASS under Operator Runtime-GO. |
 | **Tier 2** | Shell / IDE close while detached coordinator runs | Covered by Slice-E pattern | Documented; no separate proof required in #3733. |
-| **Tier 3** | Host sleep / hibernate / reboot across evidence window | **Not proven** | Explicit limitation. Follow-up [#3738](https://github.com/jannekbuengener/Claire_de_Binare/issues/3738) — Windows Task + boot readiness under separate Ops GO. |
+| **Tier 3** | Host sleep / hibernate / reboot across evidence window | **LIMITATION** (#3738) | OS sleep/reboot/hibernate not proven. Bounded in-process sleep/wake PASS (`tier3-sleep-20260705T114800Z`). Reboot/hibernate + startup autostart: explicit limitation doc. Scheduler DAILY install PASS (`scheduler-20260705T114504Z`). |
 
 ## Engineering deliverables (merged)
 
@@ -81,7 +82,13 @@ Tier-1 runtime proof PASS + Tier-3 documented limitation satisfies issue accepta
 ### #3345 — CLOSED
 
 Tier-1 external supervisor proof delivered; parent closed after #3362 72h PASS +
-#3733 Tier-1 PASS. Tier-3 host events and deployment-ready scheduler → #3738.
+#3733 Tier-1 PASS. Tier-3 / scheduler residuals → #3738.
+
+### #3738 — scheduler PASS / Tier-3 LIMITATION
+
+- Scheduler deployment smoke **PASS**: [`evidence_harvester_scheduler_deployment_proof_2026-07-05.md`](evidence_harvester_scheduler_deployment_proof_2026-07-05.md)
+- Tier-3 bounded run **LIMITATION**: [`evidence_harvester_tier3_sleep_proof_2026-07-05.md`](evidence_harvester_tier3_sleep_proof_2026-07-05.md)
+- Reboot/hibernate **LIMITATION**: [`evidence_harvester_tier3_reboot_hibernate_limitation_2026-07-05.md`](evidence_harvester_tier3_reboot_hibernate_limitation_2026-07-05.md)
 
 ## Safety boundaries
 
@@ -98,3 +105,5 @@ Tier-1 external supervisor proof delivered; parent closed after #3362 72h PASS +
 - [`tools/evidence_harvester/README.md`](../../tools/evidence_harvester/README.md)
 - Slice-E PASS: `artifacts/evidence_harvester/72h_ops_validation/slice-e-20260701T204615Z/`
 - Tier-1 PASS compact artifacts: `docs/evidence/host_resilience_proof/tier1-retry-20260705T111436Z/`
+- #3738 scheduler PASS: `docs/evidence/host_resilience_proof/scheduler-20260705T114504Z/`
+- #3738 Tier-3 LIMITATION: `docs/evidence/host_resilience_proof/tier3-sleep-20260705T114800Z/`

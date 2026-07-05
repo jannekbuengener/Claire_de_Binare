@@ -1,0 +1,26 @@
+{
+  "proof_verdict": "PASS",
+  "run_id": "scheduler-20260705T114504Z",
+  "main_sha": "41ca6ba4",
+  "runtime_go": "RUNTIME-GO #3738 Scheduler Deployment Smoke",
+  "started_at_utc": "2026-07-05T11:45:04Z",
+  "ended_at_utc": "2026-07-05T11:46:30Z",
+  "boot_preflight_verdict": "PASS",
+  "boot_status_verdict": "PASS",
+  "scheduler_install": true,
+  "scheduler_uninstall": true,
+  "schtasks_run_triggered": true,
+  "task_trigger_snapshot_generated_at_utc": "2026-07-05T11:46:17.635900Z",
+  "install_fix": "run_task.cmd short-path launcher for schtasks /TR 261-char limit",
+  "safety_flags": {
+    "lr_status": "NO-GO",
+    "live_status": "NO-GO",
+    "echtgeld_status": "NO-GO"
+  },
+  "limitations": [
+    "DAILY fixture snapshot task only; not coordinator+supervisor daemon autostart",
+    "No post-reboot validation in this slice",
+    "LR NO-GO"
+  ],
+  "artifact_dir": "artifacts/evidence_harvester/host_resilience_proof/scheduler-20260705T114504Z"
+}

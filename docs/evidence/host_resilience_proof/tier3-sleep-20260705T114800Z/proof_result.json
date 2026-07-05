@@ -1,0 +1,24 @@
+{
+  "proof_verdict": "LIMITATION",
+  "run_id": "tier3-sleep-20260705T114800Z",
+  "main_sha": "41ca6ba4",
+  "runtime_go": "RUNTIME-GO #3738 Tier-3 Sleep Bounded Proof",
+  "started_at_utc": "2026-07-05T11:46:49Z",
+  "ended_at_utc": "2026-07-05T11:48:49Z",
+  "cycles_completed": 2,
+  "total_failed_cycles": 0,
+  "in_process_sleep_wake": "PASS",
+  "os_host_sleep_triggered": false,
+  "os_host_reboot_triggered": false,
+  "os_host_hibernate_triggered": false,
+  "supervisor_pre_sleep_decision": "WAIT",
+  "relaunch_count": 0,
+  "limitations": [
+    "No OS sleep/hibernate/reboot event executed in this bounded slice",
+    "In-process coordinator sleep/wake PASS only (not Tier-3 host event proof)",
+    "Tier-1 PASS covers process-kill during sleep window (#3733)",
+    "Reboot/Hibernate explicit LIMITATION — see evidence_harvester_tier3_reboot_hibernate_limitation_2026-07-05.md",
+    "LR NO-GO"
+  ],
+  "artifact_dir": "artifacts/evidence_harvester/host_resilience_proof/tier3-sleep-20260705T114800Z"
+}

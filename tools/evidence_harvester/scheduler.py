@@ -13,6 +13,8 @@ from .snapshot import build_snapshot, snapshot_to_markdown
 
 TASK_NAME = "CDB Evidence Harvester"
 DEFAULT_START_TIME = "04:00"
+SCHTASKS_TR_MAX_LEN = 261
+RUN_TASK_CMD_NAME = "run_task.cmd"
 
 
 class SchedulerValidationError(ValueError):
@@ -57,6 +59,57 @@ def _resolve_output_dir(path: Path | None) -> Path:
 
 def _run_stamp(generated_at_utc: str) -> str:
     return generated_at_utc.replace("-", "").replace(":", "")
+
+
+def _write_run_task_cmd(
+    output_dir: Path,
+    fixture: Path,
+    python_executable: str,
+    *,
+    pretty: bool,
+) -> Path:
+    """Write a short-path launcher for schtasks /TR (261-char Windows limit)."""
+    output_dir.mkdir(parents=True, exist_ok=True)
+    cmd_path = output_dir / RUN_TASK_CMD_NAME
+    parts = [
+        python_executable,
+        "-m",
+        "tools.evidence_harvester.scheduler",
+        "run-once-fixture",
+        "--fixture",
+        str(fixture),
+        "--output-dir",
+        str(output_dir),
+    ]
+    if pretty:
+        parts.append("--pretty")
+    inner = subprocess.list2cmdline(parts)
+    repo = _repo_root()
+    content = f'@echo off\r\ncd /d "{repo}"\r\n{inner}\r\n'
+    cmd_path.write_text(content, encoding="utf-8")
+    return cmd_path.resolve()
+
+
+def _schtasks_tr_command(
+    output_dir: Path,
+    fixture: Path,
+    python_executable: str,
+    *,
+    pretty: bool,
+) -> str:
+    cmd_path = _write_run_task_cmd(
+        output_dir,
+        fixture,
+        python_executable,
+        pretty=pretty,
+    )
+    tr_command = str(cmd_path)
+    if len(tr_command) > SCHTASKS_TR_MAX_LEN:
+        raise SchedulerValidationError(
+            f"schtasks /TR path exceeds {SCHTASKS_TR_MAX_LEN} characters: "
+            f"{len(tr_command)} chars in {tr_command}"
+        )
+    return tr_command
 
 
 def _wrapper_command(
@@ -137,9 +190,13 @@ def _planned_surface(
                 "/ST",
                 start_time,
                 "/TR",
-                subprocess.list2cmdline(wrapper_command),
+                "<run_task.cmd path written at install; <=261 chars>",
                 "/F",
             ]
+        ),
+        "schtasks_tr_strategy": (
+            "install writes artifacts/evidence_harvester/scheduled/run_task.cmd "
+            f"and passes its path to /TR (Windows limit {SCHTASKS_TR_MAX_LEN} chars)"
         ),
         "uninstall_command_preview": subprocess.list2cmdline(
             ["schtasks.exe", "/Delete", "/TN", task_name, "/F"]
@@ -298,7 +355,12 @@ def install_command(args: argparse.Namespace) -> int:
         args.start_time,
         args.task_name,
     )
-    task_command = payload["task_scheduler"]["wrapper_command"]
+    task_command = _schtasks_tr_command(
+        output_dir,
+        fixture,
+        args.python_executable,
+        pretty=args.pretty,
+    )
     subprocess.run(
         [
             "schtasks.exe",
@@ -324,6 +386,8 @@ def install_command(args: argparse.Namespace) -> int:
             "output_dir": str(output_dir),
             "start_time": args.start_time,
             "command": task_command,
+            "run_task_cmd": task_command,
+            "wrapper_command": payload["task_scheduler"]["wrapper_command"],
             "safety": [
                 "explicit flag required",
                 "scheduled action remains fixture-only",
