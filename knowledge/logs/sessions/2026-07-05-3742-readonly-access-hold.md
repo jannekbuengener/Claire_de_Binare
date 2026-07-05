@@ -26,3 +26,10 @@
 
 - Operator repair: `operator_create_readonly_login.sql` + `verify_privileges.sql`
 - Re-run inventory script; continue #3742 data feasibility slice
+
+## Merge closeout (2026-07-05)
+
+- PR #3744 **MERGED** (squash) @ `5f7d33fd`
+- Branch `docs/arvp-3742-readonly-access-hold` deleted
+- #3742 **OPEN**; #1900 **OPEN**
+- LR **NO-GO** unchanged; §5.2.4 **NOT MET**
