@@ -1212,21 +1212,28 @@ def run_fixture_window(
         event_type="final_validation_started",
         coordinator_status="final_validation",
     )
-    final_validation_exit, final_validation_payload = final_validator(
-        repo_root, artifact_dir
-    )
-    final_validation_verdict = _extract_verdict(final_validation_payload) or (
-        "PASS" if final_validation_exit == 0 else "FAIL"
-    )
+    from .ops_validation import validate_72h_window_from_dir
+
+    interim_report = validate_72h_window_from_dir(artifact_dir, is_final=False)
+    interim_verdict = interim_report.summary.verdict
     _write_coordinator_event(
         artifact_dir,
         run_id=run_id,
         event_type="final_validation_completed",
-        verdict=final_validation_verdict,
+        verdict=interim_verdict,
         coordinator_status="final_validation",
     )
+    final_validation_exit, final_validation_payload = final_validator(
+        repo_root, artifact_dir
+    )
 
-    status = "PASS" if completed_cycles == iterations and not stop_reason else "FAIL"
+    status = (
+        "PASS"
+        if completed_cycles == iterations
+        and not stop_reason
+        and final_validation_exit == 0
+        else "FAIL"
+    )
     if not stop_reason and completed_cycles != iterations:
         stop_reason = "incomplete_cycle_window"
     state = _update_runner_state(

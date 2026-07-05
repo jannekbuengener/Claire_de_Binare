@@ -20,7 +20,7 @@ In scope:
 - Separate evidence that **counts**, evidence that **partially counts**, and evidence
   that **does not count** toward LR-050 gate closure.
 - Document missing proof and deduplicated follow-up candidates.
-- Treat Slice-E as **interim operational evidence only** (no `>=72h` PASS claim).
+- Treat Slice-E as **final `>=72h` PASS evidence** when citing `ops_validation_report.*` from `slice-e-20260701T204615Z` (closes #3362 on merge).
 
 Out of scope:
 
@@ -63,7 +63,7 @@ Approval.
 | 72h Slice-B | `artifacts/evidence_harvester/72h_ops_validation/slice-b-20260625T194946Z/` | **INCONCLUSIVE** | 259/259 PASS cycles over ~64.6h; sleep-stall terminal pattern documented | `>=72h` always-on proof (#3362); LR gate closure |
 | 72h Slice-C | `artifacts/evidence_harvester/72h_ops_validation/slice-c-20260628T202640Z/` | **INCONCLUSIVE** | 69–70 PASS cycles over ~17h; formal `--is-final` FAIL | Same as Slice-B |
 | 72h Slice-D | `artifacts/evidence_harvester/72h_ops_validation/slice-d-20260630T163853Z/` | **INCONCLUSIVE** | 9/289 PASS over ~2h; formal `--is-final` FAIL (#3632 closed) | Same as Slice-B |
-| 72h Slice-E | `artifacts/evidence_harvester/72h_ops_validation/slice-e-20260701T204615Z/` | **INTERIM ONLY** | Early cycles PASS; 2 clean sleep→wake windows post-#3634; run in progress per #3362 (2026-07-01) | **No** `>=72h` PASS; **no** LR-Go; **no** Live-Go; **no** Echtgeld-Go |
+| 72h Slice-E | `artifacts/evidence_harvester/72h_ops_validation/slice-e-20260701T204615Z/` | **PASS** | 293/293 PASS over 73.064h; final `--is-final` PASS (2026-07-05); closes #3362 on merge | **No** LR-Go; **no** Live-Go; **no** Echtgeld-Go; satisfies Harvester always-on proof only |
 | Reconcile doc | [`evidence_harvester_slice_c_inconclusive_2026-06-30.md`](../evidence/evidence_harvester_slice_c_inconclusive_2026-06-30.md) | **COUNTS (classification)** | Formal B/C/D INCONCLUSIVE taxonomy; Slice-E plan documented | LR-050 gate satisfaction |
 
 **Harvester boundary (from #3380):** proves evidence production, provenance,
@@ -145,21 +145,32 @@ Mapping date: 2026-07-02. GitHub live: all listed children **OPEN** except #2982
 
 ---
 
-## Slice-E Interim Position (explicit)
+## Slice-E Final Position (2026-07-05)
 
-Slice-E (`slice-e-20260701T204615Z`) is documented on #3362 as **STARTED** with early
-PASS cycles and clean sleep→wake windows post-#3634. As of mapping date:
+Slice-E (`slice-e-20260701T204615Z`) completed the always-on dry coordinator run and
+passed authoritative final validation after the heartbeat-contract fix (#3362).
+
+| Field | Value |
+|---|---|
+| Observed window | **73.064h** (required 72h) |
+| Cycles | **293/293 PASS**, 0 failed |
+| Final validation | `ops_validation validate-dir --is-final` **PASS** |
+| Reports | `artifacts/evidence_harvester/72h_ops_validation/slice-e-20260701T204615Z/ops_validation_report.{json,md}` |
 
 | Claim | Allowed? |
 |---|---|
-| Interim operational / coordinator health signal | **Yes** — cite with run_id and early-cycle evidence only |
-| Harvester `>=72h` always-on PASS | **No** — #3362 OPEN |
+| Harvester `>=72h` always-on dry PASS | **Yes** — with final report + run_id |
 | LR-050 `#2978` runtime dry-run satisfaction | **No** — fixture coordinator ≠ stack dry-run |
 | LR-Go / Live-Go / Echtgeld-Go | **No** — forbidden |
 
-Final Slice-E outcome requires authoritative `ops_validation validate-dir --is-final`
-at `>=72h` (~2026-07-04 earliest per #3362). Until then: **interim operational
-evidence only**.
+LR remains **NO-GO**. Board stage `trade-capable` is orthogonal.
+
+---
+
+## Slice-E Interim Position (superseded 2026-07-05)
+
+Historical note: before final closeout, Slice-E was **interim only**. See final
+position above.
 
 ---
 
@@ -174,7 +185,7 @@ evidence only**.
 | Safety drill absent | #2984 `REQUIRES_KILL_SWITCH_DRILL` |
 | Canary parameters undefined | #2976 `PARTIALLY_SATISFIED` at best — `TBD_BLOCKER_BEFORE_LIVE` persists |
 | ARVP negative closure | No promotable candidate; #2977 refresh blocked |
-| Harvester 72h incomplete | #3362 OPEN; B/C/D INCONCLUSIVE; E interim only |
+| Harvester 72h incomplete | **Resolved for Slice-E** (#3362 closing on merge); B/C/D remain INCONCLUSIVE history |
 | Board stage orthogonal | `trade-capable` ≠ live capital authorization |
 | Human Approval rule | Only explicit operator text counts; no PR/issue merge substitutes |
 
