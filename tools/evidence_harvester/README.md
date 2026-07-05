@@ -158,6 +158,8 @@ Default behavior:
 - bare `python -m tools.evidence_harvester.scheduler` resolves to safe `plan`
 - `status` reads local artifacts only; it does not query Docker, DB, Redis, or runtime services
 - scheduled action is limited to the safe fixture-backed snapshot path
+- `install --explicit` writes `artifacts/evidence_harvester/scheduled/run_task.cmd`
+  and registers that short path with schtasks `/TR` (Windows 261-char limit)
 
 Recommended cadence:
 

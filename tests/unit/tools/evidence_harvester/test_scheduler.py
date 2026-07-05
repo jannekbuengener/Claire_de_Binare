@@ -197,6 +197,11 @@ def test_install_path_is_patchable_and_does_not_run_real_task_install_in_tests(
     assert calls
     assert calls[0][0] == "schtasks.exe"
     assert "/Create" in calls[0]
+    tr_index = calls[0].index("/TR") + 1
+    tr_command = calls[0][tr_index]
+    assert tr_command.endswith("run_task.cmd")
+    assert len(tr_command) <= 261
     payload = json.loads(capsys.readouterr().out)
     assert payload["installed"] is True
     assert payload["start_time"] == "04:30"
+    assert Path(payload["run_task_cmd"]).exists()
