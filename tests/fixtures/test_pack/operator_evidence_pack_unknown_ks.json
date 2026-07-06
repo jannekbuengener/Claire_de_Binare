@@ -1,0 +1,20 @@
+{
+  "readme_text": "# Evidence Pack\n\nDate/Time (UTC): 2026-07-06T12:00:00Z\nOperator (if drill): drill-operator\nPASS/FAIL: PASS\nRequired artifacts:\n- sources_manifest.txt\n- run_config.json\n- timeline.json\n",
+  "timeline": [
+    {"ts": "2026-07-06T12:00:01Z", "event": "DRILL_START"},
+    {"ts": "2026-07-06T12:00:02Z", "event": "ALERT_TRIGGERED"},
+    {"ts": "2026-07-06T12:00:10Z", "event": "VERIFY_KILL_SWITCH_ERROR"},
+    {"ts": "2026-07-06T12:00:11Z", "event": "DRILL_END"}
+  ],
+  "run_config": {
+    "ts_utc": "2026-07-06T12:00:00Z",
+    "drill_type": "operator_kill_switch"
+  },
+  "drill_verdict": {
+    "verdict": "PASS"
+  },
+  "kill_switch_verification": {
+    "kill_switch_active": null,
+    "verification_source": "simulation"
+  }
+}
