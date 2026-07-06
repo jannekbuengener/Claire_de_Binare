@@ -1,0 +1,77 @@
+{
+  "_comment": "Regression bundle for #3779 drift/stale/contradiction detection. Synthetic fixture only — no secrets, no live trading/runtime data.",
+  "meta": {
+    "as_of": "2026-07-06T12:00:00+00:00",
+    "session_id": "regression-3779-v1",
+    "issue_ref": "3779"
+  },
+  "stale_bundle": {
+    "sources": [
+      {
+        "source_id": "src-stale-doc-3779",
+        "path": "docs/architecture/overview.md",
+        "current_hash": "c0ffee01deadbeef3779",
+        "last_verified_hash": "00000000legacyhash01"
+      }
+    ]
+  },
+  "repo_vs_context_records": {
+    "source_records": [
+      {
+        "source_id": "repo-file-3779",
+        "path": "knowledge/governance/CDB_CONSTITUTION.md",
+        "updated_at": "2026-07-06T10:00:00+00:00",
+        "contradicts_memory": ["memory-context-3779"]
+      }
+    ],
+    "memory_records": [
+      {
+        "memory_id": "memory-context-3779",
+        "source_ref": "repo-file-3779",
+        "updated_at": "2026-01-01T00:00:00+00:00",
+        "content_summary": "Stale context-layer claim diverges from repo file"
+      }
+    ]
+  },
+  "ledger_vs_live_records": {
+    "status_ledger_records": [
+      {
+        "ledger_id": "current-status-md",
+        "item_id": "issue-3779",
+        "status": "closed"
+      }
+    ],
+    "live_surface_records": [
+      {
+        "surface_id": "github-live-fixture",
+        "item_id": "issue-3779",
+        "status": "open"
+      }
+    ]
+  },
+  "scope_drift_bundle": {
+    "declared_scope": {
+      "task_scope": "Regression tests for stale documentation and scope drift (#3779)",
+      "target_issue": "3779",
+      "target_paths": [
+        "tests/unit/surrealdb/",
+        "tests/fixtures/surrealdb/drift_stale_contradiction/"
+      ]
+    },
+    "touched_artifacts": [
+      {
+        "path": "services/risk/service.py",
+        "surface_type": "runtime"
+      }
+    ],
+    "issue_refs": [
+      {
+        "issue_id": "3779",
+        "state": "OPEN",
+        "label": "tests-only"
+      }
+    ],
+    "generated_findings": [],
+    "forbidden_surfaces": []
+  }
+}
