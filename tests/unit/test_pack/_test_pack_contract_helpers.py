@@ -1,4 +1,4 @@
-"""Shared helpers for Test Pack contract tests (#3873, #3874, #3875)."""
+"""Shared helpers for Test Pack contract tests (#3873–#3878)."""
 
 from __future__ import annotations
 
@@ -20,6 +20,22 @@ SCENARIO_CATALOG = TEST_PACK_ROOT / "scenarios" / "catalog.yaml"
 EVIDENCE_README_TEMPLATE = TEST_PACK_ROOT / "templates" / "evidence_pack_README.md"
 OPERATOR_DRILL_SCRIPT = TEST_PACK_ROOT / "tools" / "drills" / "trigger-operator-drill.ps1"
 KILL_SWITCH_CHECKLIST_REPO = REPO_ROOT / "docs" / "operations" / "KILL_SWITCH_OPERATOR_CHECKLIST.md"
+MOCK_EXCHANGE_SHIM = TEST_PACK_ROOT / "tools" / "mock_exchange" / "mock_exchange.py"
+CHAOS_GENERATE_SCENARIO = TEST_PACK_ROOT / "tools" / "chaos" / "generate_scenario.py"
+EVALUATE_ASSERTIONS_SCRIPT = TEST_PACK_ROOT / "tools" / "assertions" / "evaluate_assertions.py"
+METRICS_SNAPSHOT_SCRIPT = TEST_PACK_ROOT / "tools" / "metrics" / "metrics_snapshot.py"
+METRICS_SMOKE_PS1 = TEST_PACK_ROOT / "tools" / "metrics" / "metrics-smoke.ps1"
+METRICS_MATRIX_DOC = REPO_ROOT / "infrastructure" / "monitoring" / "METRICS_MATRIX.md"
+LR041_RUNNER = REPO_ROOT / "scripts" / "drills" / "lr041_redis_postgres_failure_runner.py"
+LR042_RUNNER = REPO_ROOT / "scripts" / "drills" / "lr042_network_latency_packet_loss_runner.py"
+MOCKEXCHANGE_TEST_MAP = REPO_ROOT / "knowledge" / "testing" / "MOCKEXCHANGE_CDB_TEST_MAP.md"
+
+CANONICAL_REDIS_CONTAINER = "cdb_redis"
+VALKEY_DRIFT_PATTERNS = (
+    re.compile(r"mockx-valkey"),
+    re.compile(r"\bVALKEY_HOST\b"),
+    re.compile(r"\bvalkey\b", re.I),
+)
 
 VERDICT_VALUES = frozenset({"PASS", "WARN", "FAIL"})
 KILL_SWITCH_STATES = frozenset({"active", "inactive", "unknown"})
@@ -268,3 +284,175 @@ def simulate_kill_switch_drill(
         fail_reasons=tuple(fail_reasons),
         evidence_artifacts=artifacts,
     )
+
+
+@dataclass(frozen=True)
+class MockExchangeOrderSimulation:
+    http_status: int
+    order_status: str | None
+    error: str | None = None
+    filled_qty: float | None = None
+
+
+def simulate_mock_exchange_order(
+    *,
+    symbol: str,
+    side: str,
+    qty: float,
+    price: float | None = None,
+    partial_fill_ratio: float = 1.0,
+) -> MockExchangeOrderSimulation:
+    """Contract simulation of Test Pack mock_exchange shim — no HTTP, no live exchange."""
+    try:
+        normalized_side = str(side).upper()
+        normalized_qty = float(qty)
+        if normalized_side not in {"BUY", "SELL"} or normalized_qty <= 0:
+            raise ValueError("bad_order")
+        if not str(symbol).strip():
+            raise ValueError("bad_symbol")
+    except (TypeError, ValueError):
+        return MockExchangeOrderSimulation(400, None, error="bad_order_payload")
+
+    if price is None:
+        return MockExchangeOrderSimulation(200, "NEW")
+
+    if partial_fill_ratio < 1.0:
+        if partial_fill_ratio <= 0:
+            return MockExchangeOrderSimulation(200, "REJECTED", filled_qty=0.0)
+        filled = round(normalized_qty * partial_fill_ratio, 8)
+        return MockExchangeOrderSimulation(200, "PARTIAL", filled_qty=filled)
+
+    return MockExchangeOrderSimulation(200, "FILLED", filled_qty=normalized_qty)
+
+
+def simulate_mock_exchange_cancel(
+    *,
+    order_status: str,
+) -> MockExchangeOrderSimulation:
+    if order_status in {"FILLED", "CANCELED"}:
+        return MockExchangeOrderSimulation(200, order_status)
+    if order_status == "NEW":
+        return MockExchangeOrderSimulation(200, "CANCELED")
+    return MockExchangeOrderSimulation(404, None, error="unknown_order")
+
+
+def scan_text_for_valkey_drift(text: str, *, label: str) -> list[str]:
+    violations: list[str] = []
+    for pattern in VALKEY_DRIFT_PATTERNS:
+        if pattern.search(text):
+            violations.append(f"{label}: valkey drift pattern {pattern.pattern!r}")
+    return violations
+
+
+def extract_prometheus_values(result_payload: dict[str, Any]) -> list[float]:
+    data = result_payload.get("data", {}) if isinstance(result_payload, dict) else {}
+    items = data.get("data", {}).get("result", []) if isinstance(data, dict) else []
+    values: list[float] = []
+    for item in items:
+        value = item.get("value")
+        if isinstance(value, list) and len(value) == 2:
+            try:
+                values.append(float(value[1]))
+            except ValueError:
+                continue
+    return values
+
+
+@dataclass(frozen=True)
+class ChaosAssertionEvaluation:
+    overall_pass: bool
+    failed_ids: tuple[str, ...]
+    assertion_count: int
+
+
+def evaluate_chaos_assertions_from_snapshot(snapshot: dict[str, Any]) -> ChaosAssertionEvaluation:
+    """Mirror evaluate_assertions.py semantics for fixture-based contract tests."""
+    assertions: list[dict[str, Any]] = []
+    queries = snapshot.get("queries", {}) if isinstance(snapshot, dict) else {}
+
+    up_vals = extract_prometheus_values(queries.get("up_cdb", {}))
+    up_pass = bool(up_vals) and all(v >= 1 for v in up_vals)
+    assertions.append({"id": "up_cdb", "pass": up_pass})
+
+    cb_vals = extract_prometheus_values(queries.get("circuit_breaker_active", {}))
+    assertions.append({"id": "circuit_breaker_metric", "pass": bool(cb_vals)})
+
+    approved = extract_prometheus_values(queries.get("orders_approved_total", {}))
+    blocked = extract_prometheus_values(queries.get("orders_blocked_total", {}))
+    assertions.append(
+        {"id": "orders_metrics_present", "pass": bool(approved) or bool(blocked)}
+    )
+
+    failed = tuple(a["id"] for a in assertions if not a["pass"])
+    return ChaosAssertionEvaluation(
+        overall_pass=not failed,
+        failed_ids=failed,
+        assertion_count=len(assertions),
+    )
+
+
+@dataclass(frozen=True)
+class MetricsSmokeScore:
+    verdict: Literal["PASS", "WARN", "FAIL"]
+    reasons: tuple[str, ...]
+    no_data_detected: bool
+    prometheus_reachable: bool
+    grafana_reachable: bool
+
+
+def score_metrics_smoke_report(report: dict[str, Any]) -> MetricsSmokeScore:
+    """Fixture-based metrics smoke scoring — not live Prometheus/Grafana proof."""
+    reasons: list[str] = []
+    prom = report.get("prometheus", {}) if isinstance(report, dict) else {}
+    grafana = report.get("grafana", {}) if isinstance(report, dict) else {}
+
+    prom_error = prom.get("error")
+    grafana_error = grafana.get("error") if isinstance(grafana, dict) else None
+
+    prom_reachable = prom_error is None
+    grafana_reachable = grafana_error is None
+
+    active_targets = prom.get("targets_active")
+    if prom_reachable and active_targets is None:
+        active_targets = prom.get("active_targets")
+
+    no_data = False
+    if prom_reachable:
+        if active_targets == 0:
+            no_data = True
+            reasons.append("prometheus has zero active targets")
+        elif active_targets is None and prom.get("query_no_data"):
+            no_data = True
+            reasons.append("prometheus query returned no data")
+
+    if not prom_reachable:
+        reasons.append(f"prometheus unreachable: {prom_error}")
+    if not grafana_reachable:
+        reasons.append(f"grafana unreachable: {grafana_error}")
+
+    if not prom_reachable and not grafana_reachable:
+        return MetricsSmokeScore("FAIL", tuple(reasons), no_data, False, False)
+
+    if no_data or (prom_reachable and not grafana_reachable):
+        return MetricsSmokeScore(
+            "WARN",
+            tuple(reasons or ("partial monitoring visibility",)),
+            no_data,
+            prom_reachable,
+            grafana_reachable,
+        )
+
+    if prom_reachable and grafana_reachable:
+        return MetricsSmokeScore("PASS", tuple(reasons), False, True, True)
+
+    return MetricsSmokeScore("FAIL", tuple(reasons or ("metrics smoke incomplete",)), no_data, prom_reachable, grafana_reachable)
+
+
+def runtime_drill_operator_markers(script_text: str) -> dict[str, bool]:
+    lowered = script_text.lower()
+    return {
+        "uses_docker_subprocess": "subprocess" in lowered and "docker" in lowered,
+        "mentions_container_restart": "restart" in lowered and "cdb_" in script_text,
+        "mentions_netem": "netem" in lowered,
+        "requires_cdb_redis": CANONICAL_REDIS_CONTAINER in script_text,
+    }
