@@ -1,4 +1,4 @@
-# tools/metrics/metrics-smoke.ps1
+# tools/test_pack/tools/metrics/metrics-smoke.ps1
 <#
 Status:
   Experimental helper under tools/test_pack; not the canonical repo-wide 431C drill source of truth.
@@ -7,7 +7,8 @@ Purpose:
   Quick "are we blind?" check before running longer drills.
   - Prometheus targets reachable?
   - Grafana health ok?
-  - Optional: detect "No data" by running a minimal query (TODO hook)
+  - No-data detection: zero active targets sets query_no_data on the report
+    (PASS/WARN/FAIL scoring lives in tests/unit/test_pack/test_metrics_smoke_contract.py)
 
 This is a lightweight helper, not a full monitoring test suite.
 #>
@@ -36,8 +37,13 @@ $report = [ordered]@{
 
 try {
   $targets = Invoke-RestMethod -Uri "$PromUrl/api/v1/targets" -Method GET -TimeoutSec 10
-  $report.prometheus.targets_active = @($targets.data.activeTargets).Count
+  $activeCount = @($targets.data.activeTargets).Count
+  $report.prometheus.targets_active = $activeCount
   $report.prometheus.targets_dropped = @($targets.data.droppedTargets).Count
+  if ($activeCount -eq 0) {
+    $report.prometheus.query_no_data = $true
+    $report.notes += "no-data: prometheus has zero active targets"
+  }
   Write-Json (Join-Path $OutDir "prometheus_targets.json") $targets
 } catch {
   $report.prometheus.error = $_.Exception.Message

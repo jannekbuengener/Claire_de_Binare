@@ -114,9 +114,23 @@ This scan evaluates two external reference repositories for usability within the
 | **Link Extraction** | ✅ Many references to external tools | ✅ Structured lists with URLs |
 | **Ranking** | ⚠️ No explicit ranking, manual sort | ✅ Community sort (Stars), partially categorized |
 | **Stale-Knowledge Detection** | ⚠️ Many temporary URLs (marked with `*`) | ✅ Active maintenance, regular updates |
-| **Retrieval Regressions** | ⚠️ No tests defined | ⚠️ No tests defined |
+| **Retrieval Regressions** | ⚠️ No tests defined | ✅ Synthetic fixture corpus (#3777) |
 
 **Recommendation:** `awesome-python` is more suitable as test corpus due to clear structure and active maintenance. `the-book-of-secret-knowledge` is useful as reference but less structured for automated tests.
+
+### Retrieval regression corpus (#3777)
+
+Hybrid retrieval ranking regressions use a **synthetic, CDB-owned fixture corpus** — no external repository content is copied into CI.
+
+| Item | Path |
+|------|------|
+| Regression tests | `tests/unit/surrealdb/test_hybrid_retrieval_regression.py` |
+| Fixture corpus | `tests/fixtures/surrealdb/hybrid_retrieval_ranking/regression_corpus_v1.json` |
+| Ranking module | `tools/surrealdb/hybrid_retrieval_ranking.py` |
+| BM25 contract | `artifacts/surrealdb/context_fulltext_bm25_contract.json` |
+| SurrealQL hybrid proof | `infrastructure/surrealdb/hybrid_retrieval_fixtures.surql` |
+
+**Corpus provenance:** Structure inspired by `awesome-python` category/list layout (reference-only). License of the external list (CC0-1.0) applies only to that external project; the regression fixture is synthetic with fixed IDs, scores, and graph distances. **No network** and **no live SurrealDB** in standard CI.
 
 ---
 

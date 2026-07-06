@@ -1,0 +1,12 @@
+{
+  "ts": "2026-07-06T12:00:00+00:00",
+  "prometheus": {
+    "targets_active": 12,
+    "targets_dropped": 0
+  },
+  "grafana": {
+    "database": "ok",
+    "version": "10.0.0"
+  },
+  "notes": []
+}

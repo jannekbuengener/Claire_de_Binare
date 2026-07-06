@@ -1,0 +1,38 @@
+{
+  "ts": "2026-07-06T12:00:00+00:00",
+  "prom_url": "http://127.0.0.1:19090",
+  "queries": {
+    "up_cdb": {
+      "query": "up{job=~\"cdb_.*\"}",
+      "status": "success",
+      "data": {
+        "status": "success",
+        "data": {"result": []}
+      }
+    },
+    "circuit_breaker_active": {
+      "query": "circuit_breaker_active",
+      "status": "success",
+      "data": {
+        "status": "success",
+        "data": {"result": []}
+      }
+    },
+    "orders_approved_total": {
+      "query": "orders_approved_total",
+      "status": "success",
+      "data": {
+        "status": "success",
+        "data": {"result": []}
+      }
+    },
+    "orders_blocked_total": {
+      "query": "orders_blocked_total",
+      "status": "success",
+      "data": {
+        "status": "success",
+        "data": {"result": []}
+      }
+    }
+  }
+}
