@@ -41,7 +41,7 @@ else
   SECRETS_PATH ?= $(HOME)/Documents/.secrets/.cdb
 endif
 
-.PHONY: help test test-unit test-integration test-e2e test-local test-local-stress test-local-performance test-local-lifecycle test-local-cli test-local-chaos test-local-backup test-full-system test-coverage docker-up docker-down docker-health systemcheck daily-check backup backup-postgres-only restore backup-health paper-trading-start paper-trading-logs paper-trading-stop replay-shadow-run rollback cleanup mcp-config-validate security-scan pre-close onboarding-doctor context-env-check context-query-config-init context-up context-down context-status context-logs context-restart context-schema-apply context-schema-check context-reset-local context-scan context-import-dry-run context-import-local context-query-smoke context-smoke context-smoke-db context-graph-vector-proof context-memory-db-proof context-claim-evidence-proof context-memory-rediscovery-proof context-doctor context-certify context-live-invoke context-live-invoke-full audit-trail-t3-bootstrap audit-trail-t3-proof audit-trail-t3-status audit-trail-t3-down surreal-validate
+.PHONY: help test test-unit test-integration test-e2e test-local test-local-stress test-local-performance test-local-lifecycle test-local-cli test-local-chaos test-local-backup test-full-system test-coverage docker-up docker-down docker-health systemcheck daily-check backup backup-postgres-only restore backup-health paper-trading-start paper-trading-logs paper-trading-stop replay-shadow-run rollback cleanup mcp-config-validate security-scan pre-close onboarding-doctor context-env-check context-query-config-init context-up context-down context-status context-logs context-restart context-schema-apply context-schema-check context-reset-local context-scan context-import-dry-run context-import-local context-query-smoke context-readonly-query-harness context-smoke context-smoke-db context-graph-vector-proof context-memory-db-proof context-claim-evidence-proof context-memory-rediscovery-proof context-doctor context-certify context-live-invoke context-live-invoke-full audit-trail-t3-bootstrap audit-trail-t3-proof audit-trail-t3-status audit-trail-t3-down surreal-validate
 
 help:
 	@echo "Claire de Binare - Test Commands"
@@ -103,6 +103,7 @@ help:
 	@echo "  make context-import-dry-run  - Import planen, kein DB-Write"
 	@echo "  make context-import-local    - Context-Daten in lokale SurrealDB importieren"
 	@echo "  make context-query-smoke     - Lese-Query-Smoke (graceful fail)"
+	@echo "  make context-readonly-query-harness - Read-only query harness unit contract (#3776)"
 	@echo "  make context-smoke           - Komplette lokale Pipeline (smoke test)"
 	@echo "  make context-smoke-db        - Hard fail-closed DB-backed smoke (#2460)"
 	@echo "  make context-graph-vector-proof - Isolated Graph + Vector capability proof (no Docker)"
@@ -513,6 +514,12 @@ context-query-smoke:
 	@$(PYTHON) -m tools.surrealdb.context_query --config infrastructure/config/surrealdb/context_query.local.example.yaml show-drift 2>&1 || echo "[NOTE] show-drift: Container nicht laufend oder keine Daten"
 	@$(PYTHON) -m tools.surrealdb.context_query --config infrastructure/config/surrealdb/context_query.local.example.yaml find-artifact 2>&1 || echo "[NOTE] find-artifact: Container nicht laufend oder keine Daten"
 	@echo "[OK] Context query smoke abgeschlossen"
+
+context-readonly-query-harness:
+	@echo "=== Read-only Context Query Harness (#3776) ==="
+	@echo "NOTE: Unit contract only. local_only integration requires CDB_RUN_REAL_SURREALDB_READONLY_QUERY=1"
+	@$(PYTHON) -m pytest -q tests/unit/surrealdb/test_context_readonly_query_harness.py
+	@echo "[OK] context-readonly-query-harness: unit contract passed (LR: NO-GO)"
 
 context-smoke:
 	@echo "=== Context Smoke: vollstaendige lokale Pipeline ==="
