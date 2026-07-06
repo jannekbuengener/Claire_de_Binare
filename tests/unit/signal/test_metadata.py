@@ -45,6 +45,8 @@ def test_build_runtime_config_snapshot_contains_expected_fields() -> None:
         "breakout_buffer": 0.0005,
         "min_minutes_between_entries": 60,
         "trade_side_mode": "long_only",
+        "entry_channel_bars": 20,
+        "exit_channel_bars": 10,
         "market_state_key_prefix": "market_state",
         "market_state_staleness_s": 30,
     }
