@@ -254,7 +254,7 @@ records_or_results:
   - HEAD base: b3076fa76ce79fd9eb4241ce86122002294a3b55 (origin/main)
   - cdb_postgres: Up, healthy
   - POSTGRES_READONLY_PASSWORD_DSN env: SET (not printed)
-  - POSTGRES_READONLY_PASSWORD secret file: EXISTS (not printed)
+  - POSTGRES_READONLY_PASSWORD operator credential file: EXISTS (not printed)
   - roles_and_grants.sql: applied — cdb_reader/cdb_writer/cdb_admin created
   - operator_create_readonly_login.sql: applied — cdb_readonly LOGIN created
   - verify_privileges: PASS — cdb_readonly LOGIN, not superuser, member of cdb_reader only
@@ -307,7 +307,7 @@ No schema migration. No business/trading/evidence table data changes. No credent
 | `candles_1m` SELECT | **Yes** |
 | Session identity | `current_user=session_user=cdb_readonly` |
 
-### 13.4 Inventory Command Summary (No Secrets)
+### 13.4 Inventory Command Summary (No Credentials)
 
 ```text
 # Operator repair (superuser claire_user inside cdb_postgres):
