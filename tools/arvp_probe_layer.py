@@ -787,7 +787,7 @@ def probe_ledger(
             "SELECT event_type, COUNT(*) as cnt "
             "FROM correlation_ledger "
             "GROUP BY event_type ORDER BY event_type",
-        )
+        ) or []
         events_by_type: list[dict] = []
         for row in grouped:
             events_by_type.append(
