@@ -20,6 +20,10 @@ and emit honest Brain Evidence without inventing DB-backed claims?
 | #3868 | `tests/smoke/test_onboarding_orchestrator.py` | Orchestrator CLI smoke (no mutations) |
 | #3868 | `tests/smoke/test_onboarding_cross_agent_surfaces.py` | Cross-surface onboarding routing |
 | #3869 | `tests/unit/agents/test_agent_role_consistency_contract.py` | Agent role LR/Live/MCP/write/onboarding consistency |
+| #3870 | `tests/unit/agents/test_mcp_capability_resolution_contract.py` | MCP capability resolution: config, inventory, dispatch, fallback semantics |
+| #3870 | `tests/unit/tools/test_context_tool_inventory.py` | Tool inventory / exposure truth (#3493) |
+| #3871 | `tests/unit/agents/test_agent_knowledge_skill_map_contract.py` | Skill registry, onboarding map, docs/knowledge, archive guards |
+| #3871 | `tools/validate_onboarding_docs.py` | Active onboarding surface integrity (#3233) |
 
 Shared helpers: `tests/unit/agents/_bootloader_read_order_helpers.py`,
 `tests/unit/agents/_agent_os_contract_helpers.py`.
@@ -38,6 +42,9 @@ pytest -q tests/unit/agents/test_skill_surface_adapter_drift_contract.py
 pytest -q tests/unit/agents/test_brain_evidence_agent_os_regression_contract.py
 pytest -q tests/unit/agents/test_onboarding_fresh_agent_contract.py
 pytest -q tests/unit/agents/test_agent_role_consistency_contract.py
+pytest -q tests/unit/agents/test_mcp_capability_resolution_contract.py
+pytest -q tests/unit/agents/test_agent_knowledge_skill_map_contract.py
+pytest -q tests/unit/tools/test_context_tool_inventory.py
 pytest -q tests/unit/tools/test_validate_skill_surface_mirror.py
 pytest -q tests/unit -k "onboarding or agent or role or guardrail or brain_evidence"
 pytest -q tests/smoke -k "onboarding"
