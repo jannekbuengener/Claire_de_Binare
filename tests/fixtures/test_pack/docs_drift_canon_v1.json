@@ -1,0 +1,29 @@
+{
+  "readme_frozen_markers": [
+    "Frozen experimental",
+    "import snapshot",
+    "Not maintained as an active repo path"
+  ],
+  "readme_quickstart_tools": [
+    "tools/chaos/generate_scenario.py",
+    "infrastructure/scripts/run-chaos-drill.ps1",
+    "tools/drills/trigger-operator-drill.ps1",
+    "tools/mock_exchange/mock_exchange.py"
+  ],
+  "issue_pack_prompt_refs": [
+    "prompts/PROMPT_CodeX_IssuePack_CDB_LiveReadiness.md"
+  ],
+  "expected_stale_todo_hooks": [
+    "TODO hooks for ingestion + metrics/assertions",
+    "Known gaps / TODOs",
+    "adapters/ADAPTERS.md"
+  ],
+  "no_auto_fix_contract": {
+    "mode": "detect_only",
+    "forbidden": [
+      "auto-fix docs",
+      "automatic issue creation",
+      "template rewrite"
+    ]
+  }
+}
