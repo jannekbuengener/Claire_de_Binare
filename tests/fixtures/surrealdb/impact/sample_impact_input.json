@@ -1,10 +1,99 @@
 {
-    "target_paths": ["core/utils/clock.py"],
-    "target_symbols": ["utcnow"],
-    "target_issue": "#2108",
-    "target_concepts": ["impact", "radar"],
-    "operation_mode": "read_only",
-    "dependency_edges": [],
-    "code_symbols": [],
-    "artifacts": []
+  "target_paths": ["core/utils/clock.py"],
+  "target_symbols": ["utcnow"],
+  "target_issue": "#3778",
+  "target_concepts": ["impact", "radar"],
+  "operation_mode": "write (code/docs)",
+  "artifacts": [
+    {
+      "artifact_id": "art-1",
+      "artifact_type": "source",
+      "source_path": "core/utils/clock.py",
+      "source_hash": "abc123"
+    },
+    {
+      "artifact_id": "art-2",
+      "artifact_type": "documentation",
+      "source_path": "docs/surrealdb/context-impact-radar-contract-v1.md",
+      "source_hash": ""
+    },
+    {
+      "artifact_id": "art-3",
+      "artifact_type": "contract",
+      "source_path": "docs/contracts/context_tooling/db_record_evidence.schema.json",
+      "source_hash": "def456"
+    },
+    {
+      "artifact_id": "art-4",
+      "artifact_type": "decision",
+      "source_path": "knowledge/agent_trust/ledger/sample-decision-event.yaml",
+      "source_hash": ""
+    },
+    {
+      "artifact_id": "art-5",
+      "artifact_type": "source",
+      "source_path": "services/signal/models.py",
+      "source_hash": ""
+    }
+  ],
+  "code_symbols": [
+    {
+      "symbol_id": "sym-1",
+      "name": "utcnow",
+      "qualified_name": "utcnow",
+      "symbol_type": "function",
+      "source_path": "core/utils/clock.py"
+    }
+  ],
+  "test_cases": [
+    {
+      "test_id": "t-1",
+      "test_name": "test_utcnow",
+      "source_path": "tests/unit/core/test_clock.py",
+      "test_type": "unit"
+    },
+    {
+      "test_id": "t-2",
+      "test_name": "test_other_module",
+      "source_path": "tests/unit/other/test_other.py",
+      "test_type": "unit"
+    }
+  ],
+  "dependency_edges": [
+    {
+      "edge_id": "e-1",
+      "from_id": "core/utils/clock.py",
+      "to_id": "tests/unit/core/test_clock.py",
+      "edge_type": "imports",
+      "inferred": false
+    },
+    {
+      "edge_id": "e-2",
+      "from_id": "core/utils/clock.py",
+      "to_id": "services/signal/models.py",
+      "edge_type": "imports",
+      "inferred": false
+    },
+    {
+      "edge_id": "e-3",
+      "from_id": "core/utils/clock.py",
+      "to_id": "docs/contracts/context_tooling/db_record_evidence.schema.json",
+      "edge_type": "references",
+      "inferred": false
+    },
+    {
+      "edge_id": "e-4",
+      "from_id": "core/utils/clock.py",
+      "to_id": "docs/surrealdb/context-impact-radar-contract-v1.md",
+      "edge_type": "references",
+      "inferred": false
+    },
+    {
+      "edge_id": "e-5",
+      "from_id": "core/utils/clock.py",
+      "to_id": "knowledge/agent_trust/ledger/sample-decision-event.yaml",
+      "edge_type": "references",
+      "inferred": false
+    }
+  ]
 }

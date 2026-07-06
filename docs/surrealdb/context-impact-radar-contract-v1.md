@@ -60,6 +60,8 @@ Derived deterministically from affected paths and symbols:
 - Commands to consider (never auto-run)
 - Manual review requirements
 - Blocking preconditions
+- `scope_growth_signals` — dependency propagation beyond declared `target_paths`
+- `missing_child_issue_signals` — write spanning multiple top-level domains on one issue ref
 
 ## 3. Input Contract
 
