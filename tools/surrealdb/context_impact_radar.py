@@ -227,6 +227,54 @@ def _detect_gate_risks(paths: tuple[str, ...]) -> frozenset[str]:
     return frozenset(risks)
 
 
+def _detect_scope_growth_signals(
+    target_paths: tuple[str, ...],
+    affected_paths: frozenset[str],
+) -> tuple[str, ...]:
+    """Signal when dependency propagation expands beyond declared targets."""
+    target_set = frozenset(target_paths)
+    propagated = sorted(p for p in affected_paths if p not in target_set)
+    if not propagated:
+        return ()
+
+    target_roots = {
+        tp.split("/", 1)[0] for tp in target_paths if tp and "/" in tp
+    }
+    signals: list[str] = []
+    for path in propagated:
+        root = path.split("/", 1)[0] if "/" in path else path
+        if target_roots and root not in target_roots:
+            roots = ", ".join(sorted(target_roots))
+            signals.append(
+                f"scope_growth: dependency reached {path} outside declared root(s) [{roots}]"
+            )
+        else:
+            signals.append(
+                f"scope_growth: dependency propagation added {path} beyond target_paths"
+            )
+    return tuple(signals)
+
+
+def _detect_missing_child_issue_signals(
+    target_issue: str | None,
+    target_paths: tuple[str, ...],
+    operation_mode: str,
+) -> tuple[str, ...]:
+    """Signal when a parent/meta issue lacks a focused child tracking slice."""
+    if not target_issue or not operation_mode.lower().startswith("write"):
+        return ()
+
+    top_levels = {p.split("/", 1)[0] for p in target_paths if p}
+    if len(top_levels) <= 1:
+        return ()
+
+    domains = ", ".join(sorted(top_levels))
+    return (
+        f"missing_child_issue: write on {target_issue} spans multiple domains "
+        f"[{domains}] — prefer a focused child issue for tracking",
+    )
+
+
 def _derived_confidence(
     edges: tuple[dict[str, Any], ...],
     symbols: tuple[dict[str, Any], ...],
@@ -561,6 +609,13 @@ def compute_impact(input_data: ImpactRadarInput) -> ImpactReport:
             "Secrets surface touched — verify no credential exposure"
         )
 
+    scope_growth_signals = _detect_scope_growth_signals(
+        target_paths, affected_paths
+    )
+    missing_child_issue_signals = _detect_missing_child_issue_signals(
+        input_data.target_issue, target_paths, operation_mode
+    )
+
     required_validation: dict[str, Any] = {
         "docs_to_review": docs_to_review,
         "suggested_tests": suggested_tests,
@@ -568,6 +623,8 @@ def compute_impact(input_data: ImpactRadarInput) -> ImpactReport:
         "commands_to_consider": commands_to_consider,
         "manual_review_needed": manual_review_needed,
         "blocking_preconditions": blocking_preconditions,
+        "scope_growth_signals": list(scope_growth_signals),
+        "missing_child_issue_signals": list(missing_child_issue_signals),
     }
 
     # --- Stop conditions ---
