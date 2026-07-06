@@ -118,4 +118,13 @@ Diese Fragmente sind K8s-ready:
 ## Nächste Schritte
 
 - [ ] Sekundaere Workflow-Pfade bei Bedarf spaeter auf die 431B-Baseline ziehen
+
+## Contract Tests (static / fixture)
+
+Issue slices **#3856** / **#3857** (parent **#3855**) add repo-local guards under
+`tests/unit/infra/`. They classify compose layers, protect BLUE/RED canon vs legacy
+topology, and assert stack-lifecycle script fail-closed semantics.
+
+These tests do **not** start Docker or prove runtime health — see
+`tests/unit/infra/README.md`.
 - [ ] K8s-Manifeste aus Fragmenten generieren (via Kompose)
