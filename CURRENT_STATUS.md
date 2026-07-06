@@ -3,14 +3,18 @@
 **Status Class**: Working Repo / Engineering Status
 **Authority**: Current repo/main/test/dependency snapshot; not the canonical live-readiness or Echtgeld Go/No-Go source.
 **Operational Canon**: `docs/live-readiness/LR-AUDIT-STATUS-2026-03-05.md`
-**Last Updated**: 2026-07-05
+**Last Updated**: 2026-07-06
 **GitHub Boundary**: The live commit and PR state is tracked in GitHub (UI/API or `gh`); this file is a curated repo/engineering ledger, not a live mirror.
 
 ---
 
+## Repo / Engineering Status (2026-07-06)
+
+- **#3742 Fresh-Paper Route Preflight (post-readonly inventory)**: **DONE_MERGED_DECISION_READY** — PR [#3770](https://github.com/jannekbuengener/Claire_de_Binare/pull/3770) squash-merged @ `0da263e5`. Readonly inventory complete (**`HOLD_NO_VALID_WINDOWS_READONLY`**, PR #3769 @ `0e614b2`): 34,256 rows, 0 new >=2h comparable windows, `regime_segments` unavailable. Preflight evidence: [`docs/evidence/arvp_fresh_paper_runtime_preflight_after_3742.md`](docs/evidence/arvp_fresh_paper_runtime_preflight_after_3742.md). **Recommended:** `PACK_A_EXECUTE_NEXT_NON_NATURAL_PAPER` (follow-up **#3780** OPEN). Fresh-paper runtime conditional only (`READY_FOR_FRESH_PAPER_GO`) with new execute issue + RUNTIME-GO — not blind #3095 repeat. #3742 **stays OPEN** (§5.2.4 tracker). LR **NO-GO** unchanged.
+
 ## Repo / Engineering Status (2026-07-05)
 
-- **#3742 ARVP Readonly Window-Bank Inventory**: **HOLD_READONLY_ACCESS_UNAVAILABLE** — Inventory script [`scripts/arvp_3742_natural_paper_window_inventory.py`](scripts/arvp_3742_natural_paper_window_inventory.py) created; readonly preflight blocked at `cdb_readonly` auth (`authentication failed`). DSN env + operator DSN file present; `cdb_postgres` healthy; no cluster inventory executed. Evidence: [`docs/evidence/arvp_natural_paper_window_bank_readonly_feasibility_3742.md`](docs/evidence/arvp_natural_paper_window_bank_readonly_feasibility_3742.md). §5.2.4 **NOT MET** (prior #3219/#3343 evidence unchanged). Next: operator readonly-login repair (`operator_create_readonly_login.sql`), then script re-run. LR **NO-GO** unchanged.
+- **#3742 ARVP Readonly Window-Bank Inventory**: **SUPERSEDED** — prior `HOLD_READONLY_ACCESS_UNAVAILABLE` line; superseded by 2026-07-06 readonly repair + inventory rerun (PR #3769) and fresh-paper preflight (PR #3770).
 
 - **#1900 ARVP North-Star Reconcile + Phase-A Child #3742**: **DONE_1900_RECONCILED_CHILD_3742_OPEN** — GitHub-live: #1900 body + reconcile comment updated (issue **stays OPEN**). Base `origin/main` @ `04c88fca`. Harvester/Ops **DONE**; ARVP Phase A **not Product-Complete** (§5.2.4 `regime_segments` hard blocker); no promotable candidate (#3383). Child **#3742** OPEN: read-only natural-paper window bank extraction feasibility. LR **NO-GO** unchanged.
 
