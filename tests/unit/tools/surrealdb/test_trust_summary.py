@@ -68,9 +68,11 @@ def _run_lookups():
 
     mem_list = _load_jsonl("agent_memories.jsonl")
     mem_input = [_normalize_memory_row(r) for r in mem_list]
+    # Align freshness reference with fixture materialization (stale_after=7d).
     mem_result = read_memory_v1(
         mem_input,
         MemoryReadRequest(mode="by_scope", scope="wave14", limit=200),
+        now=FIXED_NOW,
     )
 
     return ev_result, cl_result, dec_result, mem_result

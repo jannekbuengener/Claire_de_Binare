@@ -6,6 +6,7 @@ Event-getriebene Signal-Erzeugung aus `market_data` mit statischer Adapter-Grenz
 
 - Erzeugt Signale fuer den Risk Service (`cdb_risk`).
 - Default-Strategiepfad ist `primary_breakout_v1`.
+- Runtime-Pfad `donchian_breakout_v1` nutzt bar-basierte Donchian-Kanaele (Pack-A §7.2, frozen defaults via `SIGNAL_ENTRY_CHANNEL_BARS` / `SIGNAL_EXIT_CHANNEL_BARS`).
 - Adapter-Auswahl bleibt fail-closed und statisch (kein dynamisches Runtime-Routing).
 - Kein Live-Authorization-Gate: Stage/LR-Gates bleiben ausserhalb dieses Service.
 
@@ -34,6 +35,8 @@ docker compose -f infrastructure/compose/compose.red.yml up -d cdb_signal
 - `SIGNAL_EXIT_LOOKBACK_MIN`
 - `SIGNAL_BREAKOUT_BUFFER`
 - `SIGNAL_MIN_MINUTES_BETWEEN_ENTRIES`
+- `SIGNAL_ENTRY_CHANNEL_BARS` (donchian_breakout_v1, default `20`)
+- `SIGNAL_EXIT_CHANNEL_BARS` (donchian_breakout_v1, default `10`)
 - `SIGNAL_OUTPUT_STREAM`
 
 ## Canonical References

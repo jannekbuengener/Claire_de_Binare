@@ -38,6 +38,10 @@ from core.utils.uuid_gen import (
     compute_event_pk,
 )
 from core.contracts import PRIMARY_BREAKOUT_V1_STRATEGY_ID
+from core.replay.pack_a_breakout_common import (
+    DONCHIAN_BREAKOUT_STRATEGY_ID,
+    cooldown_allows_entry,
+)
 from core.utils.paper_probe_toggle import paper_evidence_probe_enabled
 from core.contracts.external_adapter_contracts import (
     StrategyAdapterRequest,
@@ -124,6 +128,8 @@ def _build_runtime_config_snapshot(config: SignalConfig) -> dict[str, Any]:
             "breakout_buffer": config.breakout_buffer,
             "min_minutes_between_entries": config.min_minutes_between_entries,
             "trade_side_mode": config.trade_side_mode,
+            "entry_channel_bars": config.entry_channel_bars,
+            "exit_channel_bars": config.exit_channel_bars,
             "market_state_key_prefix": config.market_state_key_prefix,
             "market_state_staleness_s": config.market_state_staleness_s,
         }
@@ -225,14 +231,16 @@ class SignalEngine:
 
         adapter_id = os.getenv(SIGNAL_ADAPTER_ENV_VAR)
         if (
-            self.config.strategy_id == PRIMARY_BREAKOUT_V1_STRATEGY_ID
+            self.config.strategy_id
+            in (PRIMARY_BREAKOUT_V1_STRATEGY_ID, DONCHIAN_BREAKOUT_STRATEGY_ID)
             and adapter_id
             and adapter_id.strip() != MOMENTUM_BUILTIN
         ):
             logger.error(
-                "Config-Fehler: SIGNAL_ADAPTER_ID=%r ist fuer primary_breakout_v1 ungueltig "
+                "Config-Fehler: SIGNAL_ADAPTER_ID=%r ist fuer %s ungueltig "
                 "(erwartet: %s)",
                 adapter_id,
+                self.config.strategy_id,
                 MOMENTUM_BUILTIN,
             )
             sys.exit(1)
@@ -355,6 +363,40 @@ class SignalEngine:
                         metadata={
                             "adapter_id": adapter_id,
                             "signal_metadata": breakout_signal.metadata or {},
+                        },
+                    ),
+                ),
+                diagnostics={
+                    "adapter_id": adapter_id,
+                    "status": "signal_emitted",
+                },
+            )
+
+        if self.config.strategy_id == DONCHIAN_BREAKOUT_STRATEGY_ID:
+            donchian_signal = self._process_donchian_breakout_v1(
+                market_data,
+                dict(request.market_event),
+            )
+            if donchian_signal is None:
+                return StrategyAdapterResponse(
+                    diagnostics={
+                        "adapter_id": adapter_id,
+                        "status": "no_signal",
+                    }
+                )
+            return StrategyAdapterResponse(
+                signals=(
+                    StrategySignalCandidate(
+                        strategy_id=donchian_signal.strategy_id,
+                        symbol=donchian_signal.symbol,
+                        side=donchian_signal.side,
+                        reason=donchian_signal.reason,
+                        confidence=donchian_signal.confidence,
+                        price=donchian_signal.price,
+                        pct_change=donchian_signal.pct_change,
+                        metadata={
+                            "adapter_id": adapter_id,
+                            "signal_metadata": donchian_signal.metadata or {},
                         },
                     ),
                 ),
@@ -539,6 +581,149 @@ class SignalEngine:
             highs.pop(0)
         while lows and lows[0][0] < limit_ms:
             lows.pop(0)
+
+    def _update_donchian_history(
+        self, symbol: str, high_now: float, low_now: float, now_ms: int
+    ) -> None:
+        max_bars = max(self.config.entry_channel_bars, self.config.exit_channel_bars)
+        highs = self._high_history[symbol]
+        lows = self._low_history[symbol]
+
+        highs.append((now_ms, high_now))
+        lows.append((now_ms, low_now))
+
+        while len(highs) > max_bars:
+            highs.pop(0)
+        while len(lows) > max_bars:
+            lows.pop(0)
+
+    def _donchian_channel_levels(self, symbol: str) -> tuple[float | None, float | None]:
+        highs = [price for _, price in self._high_history[symbol]]
+        lows = [price for _, price in self._low_history[symbol]]
+        entry_bars = self.config.entry_channel_bars
+        exit_bars = self.config.exit_channel_bars
+
+        upper_level = (
+            max(highs[-entry_bars:])
+            if len(highs) >= entry_bars
+            else None
+        )
+        lower_level = (
+            min(lows[-exit_bars:]) if len(lows) >= exit_bars else None
+        )
+        return upper_level, lower_level
+
+    def _process_donchian_breakout_v1(
+        self, market_data: MarketData, raw_data: dict[str, Any]
+    ) -> Optional[Signal]:
+        symbol = market_data.symbol.upper()
+        if symbol != self.config.symbol:
+            return None
+
+        config_snapshot = _build_runtime_config_snapshot(self.config)
+        config_hash = _build_config_hash(config_snapshot)
+        close_now = float(market_data.close or market_data.price)
+        high_now = float(market_data.high or close_now)
+        low_now = float(market_data.low or close_now)
+        now_ms = int(market_data.timestamp or int(time.time() * 1000))
+
+        upper_level, lower_level = self._donchian_channel_levels(symbol)
+
+        entry_blocked = any(
+            _as_bool(raw_data.get(name))
+            for name in (
+                "shutdown_active",
+                "kill_switch_active",
+                "risk_blocked",
+                "allocation_blocked",
+                "core_blocked",
+            )
+        )
+
+        result_signal = None
+
+        if (
+            self._position_open_by_symbol[symbol]
+            and lower_level is not None
+            and close_now < lower_level
+        ):
+            result_signal = Signal(
+                signal_id=f"sig-{generate_uuid_hex(length=32)}",
+                symbol=symbol,
+                side="SELL",
+                reason="donchian_lower_break",
+                timestamp=now_ms // 1000,
+                ts_ms=now_ms,
+                price=close_now,
+                pct_change=market_data.pct_change,
+                pct_change_15m=market_data.pct_change,
+                volume_15m=market_data.volume,
+                strategy_id=self.config.strategy_id,
+                bot_id=self.config.bot_id,
+            )
+            result_signal.metadata = _compact_metadata(
+                {
+                    **_build_signal_metadata(
+                        result_signal,
+                        config_snapshot=config_snapshot,
+                        config_hash=config_hash,
+                    ),
+                    "close_now": close_now,
+                    "donchian_upper": upper_level,
+                    "donchian_lower": lower_level,
+                    "entry_channel_bars": self.config.entry_channel_bars,
+                    "exit_channel_bars": self.config.exit_channel_bars,
+                    "min_minutes_between_entries": self.config.min_minutes_between_entries,
+                    "trade_side_mode": self.config.trade_side_mode,
+                }
+            )
+            self._position_open_by_symbol[symbol] = False
+        elif (
+            not self._position_open_by_symbol[symbol]
+            and upper_level is not None
+            and close_now > upper_level
+            and not entry_blocked
+            and cooldown_allows_entry(
+                now_ms,
+                self._last_entry_ts_ms.get(symbol),
+                min_minutes_between_entries=self.config.min_minutes_between_entries,
+            )
+        ):
+            result_signal = Signal(
+                signal_id=f"sig-{generate_uuid_hex(length=32)}",
+                symbol=symbol,
+                side="BUY",
+                reason="donchian_upper_break",
+                timestamp=now_ms // 1000,
+                ts_ms=now_ms,
+                price=close_now,
+                pct_change=market_data.pct_change,
+                pct_change_15m=market_data.pct_change,
+                volume_15m=market_data.volume,
+                strategy_id=self.config.strategy_id,
+                bot_id=self.config.bot_id,
+            )
+            result_signal.metadata = _compact_metadata(
+                {
+                    **_build_signal_metadata(
+                        result_signal,
+                        config_snapshot=config_snapshot,
+                        config_hash=config_hash,
+                    ),
+                    "close_now": close_now,
+                    "donchian_upper": upper_level,
+                    "donchian_lower": lower_level,
+                    "entry_channel_bars": self.config.entry_channel_bars,
+                    "exit_channel_bars": self.config.exit_channel_bars,
+                    "min_minutes_between_entries": self.config.min_minutes_between_entries,
+                    "trade_side_mode": self.config.trade_side_mode,
+                }
+            )
+            self._last_entry_ts_ms[symbol] = now_ms
+            self._position_open_by_symbol[symbol] = True
+
+        self._update_donchian_history(symbol, high_now, low_now, now_ms)
+        return result_signal
 
     def _process_primary_breakout_v1(
         self, market_data: MarketData, raw_data: dict[str, Any]
@@ -855,6 +1040,13 @@ class SignalEngine:
                 self.config.exit_lookback_minutes,
             )
             logger.info("   Breakout Buffer: %s", self.config.breakout_buffer)
+        elif self.config.strategy_id == DONCHIAN_BREAKOUT_STRATEGY_ID:
+            logger.info("   Strategie: donchian_breakout_v1")
+            logger.info(
+                "   Entry/Exit Channel Bars: %s/%s",
+                self.config.entry_channel_bars,
+                self.config.exit_channel_bars,
+            )
         else:
             logger.info(f"   Schwelle: {self.config.threshold_pct}%")
             logger.info(f"   Lookback: {self.config.lookback_minutes}min")

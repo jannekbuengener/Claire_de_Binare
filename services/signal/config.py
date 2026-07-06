@@ -12,6 +12,12 @@ from core.contracts import (
     PRIMARY_BREAKOUT_V1_STRATEGY_ID,
     PRIMARY_BREAKOUT_V1_SYMBOL,
 )
+from core.replay.pack_a_breakout_common import (
+    DONCHIAN_BREAKOUT_STRATEGY_ID,
+    ENTRY_CHANNEL_BARS,
+    EXIT_CHANNEL_BARS,
+    PACK_A_SYMBOL,
+)
 
 
 @dataclass
@@ -77,6 +83,12 @@ class SignalConfig:
     market_state_staleness_s: int = int(
         os.getenv("SIGNAL_MARKET_STATE_STALENESS_S", "30")
     )
+    entry_channel_bars: int = int(
+        os.getenv("SIGNAL_ENTRY_CHANNEL_BARS", str(ENTRY_CHANNEL_BARS))
+    )
+    exit_channel_bars: int = int(
+        os.getenv("SIGNAL_EXIT_CHANNEL_BARS", str(EXIT_CHANNEL_BARS))
+    )
 
     # Topics
     input_topic: str = "market_data"
@@ -107,6 +119,21 @@ class SignalConfig:
             if self.trade_side_mode != PRIMARY_BREAKOUT_V1_DEFAULT_CONFIG.trade_side_mode:
                 raise ValueError(
                     "SIGNAL_TRADE_SIDE_MODE muss fuer primary_breakout_v1 long_only sein"
+                )
+        if self.strategy_id == DONCHIAN_BREAKOUT_STRATEGY_ID:
+            if self.symbol != PACK_A_SYMBOL:
+                raise ValueError(
+                    "SIGNAL_SYMBOL muss fuer donchian_breakout_v1 BTCUSDT sein"
+                )
+            if self.entry_channel_bars <= 0:
+                raise ValueError("SIGNAL_ENTRY_CHANNEL_BARS muss > 0 sein")
+            if self.exit_channel_bars <= 0:
+                raise ValueError("SIGNAL_EXIT_CHANNEL_BARS muss > 0 sein")
+            if self.min_minutes_between_entries < 0:
+                raise ValueError("SIGNAL_MIN_MINUTES_BETWEEN_ENTRIES muss >= 0 sein")
+            if self.trade_side_mode != "long_only":
+                raise ValueError(
+                    "SIGNAL_TRADE_SIDE_MODE muss fuer donchian_breakout_v1 long_only sein"
                 )
         return True
 
