@@ -1,6 +1,6 @@
 # ARVP Natural-Paper Window Bank — Readonly Feasibility (#3742)
 
-Status Class: Scoped evidence / access hold (blocked preflight)
+Status Class: Scoped evidence — readonly access repaired; data verdict HOLD_NO_VALID_WINDOWS_READONLY
 Issue: #3742
 Parent: #1900
 Control Refs: #2985, #3343, #3212, #3217, #3219, #2974
@@ -202,9 +202,9 @@ Operator repair path (separate GO):
 
 ---
 
-## 8. Verdict
+## 8. Verdict (Prior Session — 2026-07-05)
 
-**`HOLD_READONLY_ACCESS_UNAVAILABLE`**
+**`HOLD_READONLY_ACCESS_UNAVAILABLE`** *(superseded by §13 post-repair rerun; retained as prior state)*
 
 Why this verdict (and not a data verdict):
 
@@ -218,21 +218,166 @@ What remains true from prior repo-backed evidence:
 - Window bank remains 3 windows with **regime_segments unavailable** on all (#3219).
 - #3343 PB1-only readonly expansion was exhausted under a working readonly session (2026-06-19).
 
-**#3742 stays OPEN** until either:
-
-1. Readonly access is repaired and the inventory script completes, or
-2. Control explicitly parks the slice with a separate decision.
+**#3742 stayed OPEN** pending operator readonly repair and inventory re-run.
 
 ---
 
-## 9. Operator Follow-Up (Out of #3742 Write Scope)
+## 13. Post-Access-Repair Rerun (2026-07-06)
 
-| Step | Owner | Scope |
-|------|-------|-------|
-| Repair `cdb_readonly` login | Operator / separate GO | `operator_create_readonly_login.sql` |
-| Verify privileges | Operator | `verify_privileges.sql` |
-| Re-run inventory | #3742 continuation | `scripts/arvp_3742_natural_paper_window_inventory.py` |
-| If DB still has no valid windows | Future slice | `REQUIRES_RUNTIME_GO_FOR_FRESH_PAPER` under #1784 |
+Operator Human-GO applied for `cdb_readonly` login repair and SELECT-only inventory re-run.
+
+### 13.1 Brain Evidence Block
+
+```text
+brain_source: repo-only
+brain_status: used
+context_brain_attempted: true
+context_brain_used: false
+context_available: false
+repo_fallback_used: true
+repo_fallback_reason: insufficient_evidence
+context_tool_status: available
+context_trust_level: none
+records_found: none
+
+tools_or_queries:
+  - read: agents/AGENTS.md, docs/evidence/arvp_natural_paper_window_bank_readonly_feasibility_3742.md
+  - gh: issue view 3742/1900/2985/2974/3219/3343; pr view 3767
+  - bash: git fetch; git switch ops/3742-readonly-login-repair-inventory-rerun @ b3076fa
+  - operator: roles_and_grants.sql (prerequisite — missing cdb_* roles on fresh cdb_postgres)
+  - operator: operator_create_readonly_login.sql via claire_user superuser
+  - operator: verify_privileges.sql
+  - execute: python scripts/arvp_3742_natural_paper_window_inventory.py
+  - fix: scripts/arvp_3742_natural_paper_window_inventory.py candles_1m column ts_ms (was open_time_ms)
+
+records_or_results:
+  - HEAD base: b3076fa76ce79fd9eb4241ce86122002294a3b55 (origin/main)
+  - cdb_postgres: Up, healthy
+  - POSTGRES_READONLY_PASSWORD_DSN env: SET (not printed)
+  - POSTGRES_READONLY_PASSWORD secret file: EXISTS (not printed)
+  - roles_and_grants.sql: applied — cdb_reader/cdb_writer/cdb_admin created
+  - operator_create_readonly_login.sql: applied — cdb_readonly LOGIN created
+  - verify_privileges: PASS — cdb_readonly LOGIN, not superuser, member of cdb_reader only
+  - correlation_ledger effective: SELECT=yes, INSERT/UPDATE/DELETE=no
+  - candles_1m effective: SELECT=yes, write=no
+  - inventory: 34256 correlation_ledger rows; 12 clusters scanned
+  - trade-dense clusters (paper ORDER+FILL): 6; >=2h span: 0; new comparable: 0
+  - VERDICT_ENUM: HOLD_NO_VALID_WINDOWS_READONLY
+  - artifact: artifacts/evidence/arvp_3742_readonly_inventory/inventory_rerun_2026-07-06.txt
+
+repo_crosscheck:
+  - docs/evidence/arvp_window_bank_expansion_regime_segments_3343.md (prior PB1 negative)
+  - docs/evidence/arvp_three_window_replay_vs_paper_calibration_3219.md (A4 FAIL)
+  - docs/runbooks/postgres_least_privilege_rls.md (Step 1 roles_and_grants before Step 2 readonly login)
+
+impact_on_plan:
+  - HOLD_READONLY_ACCESS_UNAVAILABLE resolved — readonly path now operational
+  - Live DB inventory executed; confirms no new >=2h comparable natural-paper window
+  - §5.2.4 remains NOT MET; next honest gate is fresh-paper runtime under #1784
+
+limitations:
+  - roles_and_grants.sql was required prerequisite (cdb_* roles absent on ~36min fresh postgres)
+  - regime_segments not populated via readonly export path; replay/compare still required
+  - No MCP brain records; no business-table data mutation
+```
+
+### 13.2 Operator Boundary
+
+| Step | Action | Result |
+|------|--------|--------|
+| Preflight | `cdb_postgres` healthy; DSN env SET; password file EXISTS | PASS |
+| Prerequisite | `roles_and_grants.sql` (idempotent role foundation) | Applied — roles missing on fresh container |
+| Repair | `operator_create_readonly_login.sql` with `CDB_READONLY_PASSWORD` psql var | Applied |
+| Verify | `verify_privileges.sql` | PASS — least-privilege readonly login |
+| Inventory | `scripts/arvp_3742_natural_paper_window_inventory.py` | Completed (exit 0) |
+
+No schema migration. No business/trading/evidence table data changes. No credentials printed.
+
+### 13.3 Readonly Identity / Privilege Verification
+
+| Check | Result |
+|-------|--------|
+| `cdb_readonly` exists | **Yes** |
+| `rolcanlogin` | **true** |
+| `rolsuper` / `createdb` / `createrole` / `replication` / `bypassrls` | **all false** |
+| Member of `cdb_reader` | **Yes** |
+| Member of `cdb_writer` / `cdb_admin` | **No** |
+| `correlation_ledger` SELECT | **Yes** |
+| `correlation_ledger` INSERT/UPDATE/DELETE | **No** |
+| `candles_1m` SELECT | **Yes** |
+| Session identity | `current_user=session_user=cdb_readonly` |
+
+### 13.4 Inventory Command Summary (No Secrets)
+
+```text
+# Operator repair (superuser claire_user inside cdb_postgres):
+# 1) roles_and_grants.sql — prerequisite when cdb_* roles absent
+# 2) operator_create_readonly_login.sql -v CDB_READONLY_PASSWORD=...
+# 3) verify_privileges.sql
+
+# Inventory (host shell, DSN from env only):
+python scripts/arvp_3742_natural_paper_window_inventory.py
+```
+
+### 13.5 Cluster / Window Classification
+
+| Source | Clusters | Trade-dense | >=2h span | New comparable | regime_segments |
+|--------|----------|-------------|-----------|----------------|-----------------|
+| `primary_breakout_v1` | 5 | 3 | 0 | 0 | unavailable / not_assessable |
+| `paper` | 4 | 0 | 0 | 0 | not_assessable (inadmissible) |
+| `paper_`-qualified chains | 3 | 3 | 0 | 0 | unavailable |
+
+Key readonly findings:
+
+- Largest `strategy_id=paper` cluster: **23.4h** span but **inadmissible** (no paper_-qualified ORDER+FILL chain; not PB1-comparable).
+- Longest trade-dense PB1 cluster: **1.81h** — below 2h comparison target; no paper orders/fills.
+- All trade-dense clusters overlap existing bank or fall below span threshold.
+- **0** new comparable candidates outside the existing 3-window bank.
+
+### 13.6 regime_segments Feasibility
+
+| Path | Status |
+|------|--------|
+| Readonly `paper_reference_window` export | **unavailable** — segments not in export surface |
+| Artifact path | **no populated segments** in prior repo evidence (#3219) |
+| Live DB clusters | **unavailable** on all classified candidates |
+
+§5.2.4 gate: **still NOT MET**.
+
+### 13.7 Final Verdict (Rerun)
+
+**`HOLD_NO_VALID_WINDOWS_READONLY`**
+
+Follow-up gate (honest next step, out of #3742 write scope):
+
+**`REQUIRES_RUNTIME_GO_FOR_FRESH_PAPER`** — separate Runtime Human-GO under #1784 lineage.
+
+Access hold **`HOLD_READONLY_ACCESS_UNAVAILABLE` is resolved**. Data verdict is now evidence-backed from live readonly SELECT.
+
+**#3742 stays OPEN** — inventory complete but §5.2.4 not satisfied; fresh-paper route remains blocked pending Runtime-GO.
+
+---
+
+## 12. Status (Updated 2026-07-06)
+
+**Prior (2026-07-05):** `HOLD_READONLY_ACCESS_UNAVAILABLE` — evidence documented; issue OPEN pending operator repair.
+
+**Current:** Readonly login repaired and verified; inventory re-run complete.
+
+**Verdict:** `HOLD_NO_VALID_WINDOWS_READONLY` with follow-up `REQUIRES_RUNTIME_GO_FOR_FRESH_PAPER`.
+
+**§5.2.4:** NOT MET. LR **NO-GO** unchanged. No Live-Go / Echtgeld-Go. No Product-Complete claim.
+
+---
+
+## 9. Operator Follow-Up (Prior — Superseded by §13)
+
+| Step | Owner | Scope | 2026-07-06 status |
+|------|-------|-------|-------------------|
+| Repair `cdb_readonly` login | Operator | `operator_create_readonly_login.sql` | **Done** |
+| Verify privileges | Operator | `verify_privileges.sql` | **Done** |
+| Re-run inventory | #3742 continuation | `scripts/arvp_3742_natural_paper_window_inventory.py` | **Done** |
+| If DB still has no valid windows | Future slice | `REQUIRES_RUNTIME_GO_FOR_FRESH_PAPER` under #1784 | **Next gate** |
 
 No Docker, runtime, replay, backfill, or live capital implied by the repair path alone.
 
@@ -248,17 +393,22 @@ No Docker, runtime, replay, backfill, or live capital implied by the repair path
 - No DB mutation in this slice
 - No candidate rescue, no PB1/RMR/Momentum unpark
 - No credentials in issues, PRs, logs, or repo files
+- Operator prerequisite `roles_and_grants.sql` applied only because `cdb_*` foundation was missing (documented in §13)
 
 ---
 
-## 11. Restunsicherheiten
+## 11. Restunsicherheiten (Prior Session)
 
 1. Whether `cdb_readonly` role exists in the live DB was not verified inside this slice (connect failed first).
 2. Whether a successful repair would change the prior #3343/#3219 data-negative picture is unknown until inventory re-run.
-3. Even with repaired readonly access and new windows, `regime_segments` still require replay/compare pipeline work — not solved by extraction alone.
+3. Even with repaired readonly access and new windows, `regime_segments` still require replay/compare pipeline work — not solved by extraction alone. *(Confirmed by 2026-07-06 rerun: all clusters regime_segments unavailable.)*
 
 ---
 
-## 12. Status
+## 14. Restunsicherheiten (Post-Rerun)
 
-**`HOLD_READONLY_ACCESS_UNAVAILABLE` — evidence documented; issue remains OPEN pending operator readonly repair and inventory re-run.**
+1. `roles_and_grants.sql` was required because `cdb_*` roles were absent on a freshly restarted `cdb_postgres`; long-lived operator DBs may already have had the foundation.
+2. Whether fresh-paper runtime under #1784 would yield populated `regime_segments` is unproven until Runtime-GO + replay/compare runs.
+3. `strategy_id=paper` long clusters (23h+) remain analytically interesting but inadmissible under current PB1-comparable contract without adapter scope change.
+
+---
