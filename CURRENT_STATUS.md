@@ -10,6 +10,8 @@
 
 ## Repo / Engineering Status (2026-07-06)
 
+- **#3772 Context Graph contract tests (P0, #3771 child)**: **DONE_MERGED_CLOSED** — PR [#3806](https://github.com/jannekbuengener/Claire_de_Binare/pull/3806) squash-merged @ `09d1e880`. Read-only `context_graph_contract` validators + 19 fixture-backed unit/contract tests (nodes, edges, deterministic IDs, fingerprints, orphan/duplicate/stale regressions, repo-only fallback). Standard CI only; no live SurrealDB. #3772 **CLOSED**. Next P0 slice: #3773. LR **NO-GO** unchanged.
+
 - **OS-layer Security Probe (#3756–#3765 / CVE-2026-41992 & CVE-2026-54369)**: **DONE_EVIDENCE_MERGED_UPSTREAM_BLOCKED** — Trivy `0.72.0` probe on `python:3.14-slim-trixie` service images confirms `gzip@1.13-1` (8 alerts #3756–#3763) and `libacl1@2.3.2-2+b1` (#3765 + shared OS layer); `FixedVersion` empty → **UPSTREAM_BLOCKED**. Evidence PR [#3804](https://github.com/jannekbuengener/Claire_de_Binare/pull/3804) squash-merged @ `8e6ab100`. Parent clusters [#3802](https://github.com/jannekbuengener/Claire_de_Binare/issues/3802) (gzip), [#3803](https://github.com/jannekbuengener/Claire_de_Binare/issues/3803) (libacl1). Alert issues **stay OPEN**; no dismissals. LR **NO-GO** unchanged.
 
 - **Dependabot workflow control-docs reconcile (#3795/#3797/#3800)**: **DONE_MERGED** — docs-only nach Workflow-Merges #3752 (`d8469751`, `docker/build-push-action` 7.2.0→7.3.0), #3796 (`ba2c5d33`, `github/codeql-action` 4.36.2→4.36.3 konsolidiert), #3798 (`99c8d871`, `docker/setup-buildx-action` 4.1.0→4.2.0). `CONTROL_REGISTER.md` Workflow-Control-Notizen nachgezogen. Offener Dependabot-PR **#3755** bleibt **HOLD_UPSTREAM_BLOCKED** (Grafana 13.1.0 / CVE-2026-42504). Closes #3795, #3797, #3800. LR **NO-GO** unchanged.
