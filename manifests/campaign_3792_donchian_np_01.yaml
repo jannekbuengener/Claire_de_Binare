@@ -1,0 +1,78 @@
+schema_version: "1.0"
+campaign_id: arvp_3792_natural_paper_donchian_20260706_1136
+hypothesis_id: HYP-NP-DONCHIAN-02
+parent_issue: 3792
+related_issues:
+  - 3742
+  - 1900
+  - 1784
+  - 3748
+  - 3789
+  - 3790
+  - 3786
+  - 3787
+symbol: BTCUSDT
+strategy_id: donchian_breakout_v1
+evidence_class: natural_paper_evidence
+start_utc: "2026-07-06T11:36:12Z"
+timeout_utc: "2026-07-06T19:36:12Z"
+max_duration_hours: 8.0
+start_criteria:
+  pre_documented: true
+  description: "Fresh natural-paper bounded observation for donchian_breakout_v1 per #3792; RUNTIME-GO documented on issue before stack reconfiguration."
+  start_policy_ref: docs/evidence/arvp_fresh_paper_runtime_preflight_after_3742.md
+  criteria_met: true
+  criteria_met_reason: "Preflight PASS — donchian runtime path verified, safety flags OK, monitoring entered running state."
+signal_compose_override: manifests/runtime_3792_signal_compose_override.yml
+safety_flags:
+  mock_trading: true
+  use_real_balance: false
+  dry_run: true
+  mexc_testnet: true
+runtime_targets:
+  - cdb_ws
+  - cdb_market
+  - cdb_candles
+  - cdb_regime
+  - cdb_allocation
+  - cdb_signal
+  - cdb_risk
+  - cdb_execution
+  - cdb_db_writer
+  - cdb_paper_runner
+db_readonly_targets:
+  - public.correlation_ledger
+  - public.candles_1m
+evidence_doc: docs/evidence/arvp_fresh_natural_paper_donchian_3792.md
+evidence_log_jsonl: artifacts/campaigns/arvp_3792_natural_paper_donchian_20260706_1136/evidence_log.jsonl
+campaign_status_md: artifacts/campaigns/arvp_3792_natural_paper_donchian_20260706_1136/campaign_status.md
+github_reporting:
+  post_on_issue_3792: true
+  post_on_issue_3742: true
+  post_on_issue_1900: true
+  post_on_issue_1784: false
+  pr_create_on_chain_found: true
+  issue_close_after_acceptance: false
+allowed_statuses:
+  - planned
+  - preflight_failed
+  - running
+  - chain_found
+  - timeout_no_chain
+  - interrupted
+  - blocked_runtime
+  - blocked_db_readonly
+  - blocked_governance
+  - evidence_pr_open
+  - evidence_merged
+terminal_statuses:
+  - chain_found
+  - timeout_no_chain
+  - interrupted
+  - blocked_runtime
+  - blocked_db_readonly
+  - blocked_governance
+  - evidence_merged
+  - preflight_failed
+campaign_status: timeout_no_chain
+verdict_enum: TIMEOUT_NO_CHAIN

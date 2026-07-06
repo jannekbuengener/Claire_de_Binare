@@ -1,0 +1,12 @@
+# Campaign-scoped compose override for #3792 — donchian_breakout_v1 signal path.
+# Apply only during HYP-NP-DONCHIAN-02 observation; not canonical default.
+services:
+  cdb_signal:
+    environment:
+      SIGNAL_STRATEGY_ID: donchian_breakout_v1
+      SIGNAL_SYMBOL: BTCUSDT
+      SIGNAL_ADAPTER_ID: momentum_builtin
+      SIGNAL_ENTRY_CHANNEL_BARS: "20"
+      SIGNAL_EXIT_CHANNEL_BARS: "10"
+      SIGNAL_MIN_MINUTES_BETWEEN_ENTRIES: "30"
+      SIGNAL_TRADE_SIDE_MODE: long_only

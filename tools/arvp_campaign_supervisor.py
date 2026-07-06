@@ -150,6 +150,11 @@ def detect_chain(probes: list[dict[str, Any]]) -> dict[str, Any] | None:
     if ledger is None or ledger.get("status") != "ok":
         return None
 
+    evidence = ledger.get("evidence", {})
+    count_since = evidence.get("events_since_campaign_start")
+    if count_since is not None and count_since <= 0:
+        return None
+
     detector = ChainDetector.from_probe_result(ledger)
     result = detector.detect()
 
