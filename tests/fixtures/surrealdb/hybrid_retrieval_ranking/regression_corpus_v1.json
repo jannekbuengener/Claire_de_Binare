@@ -1,0 +1,149 @@
+{
+  "schema_version": "hybrid-retrieval-regression-corpus/v1",
+  "corpus_provenance": {
+    "origin": "synthetic",
+    "structure_inspired_by": "awesome-python (reference-only; no external content copied)",
+    "license": "N/A — CDB-owned synthetic fixture",
+    "reference_doc": "docs/surrealdb/context-intelligence/external-reference-scan.md",
+    "network_required": false,
+    "live_surrealdb_required": false
+  },
+  "query_context": {
+    "query": "redis connection pooling",
+    "as_of": "2026-06-15T12:00:00Z",
+    "hybrid_mode": "hybrid_ranked",
+    "retrieval_modes": ["full_text", "vector_search", "graph_traversal"],
+    "context_search_status": "fixture-only"
+  },
+  "candidates": [
+    {
+      "result_id": "reg-primary-redis",
+      "source_ref": "doc_chunk:redis-pool-primary",
+      "title": "Redis connection pooling",
+      "summary": "Synthetic primary BM25 + graph match for redis pooling.",
+      "confidence": 0.91,
+      "freshness": 0.88,
+      "source_match": 0.94,
+      "graph_distance": 0,
+      "evidence_strength": "strong",
+      "scope_match": 0.85,
+      "memory_trust": 0.8,
+      "retrieval_mode": "hybrid_ranked",
+      "matched_on": ["full_text", "graph_traversal", "vector_search"],
+      "vector_score": 0.93
+    },
+    {
+      "result_id": "reg-secondary-redis",
+      "source_ref": "doc_chunk:redis-pool-secondary",
+      "title": "Redis client reuse patterns",
+      "summary": "Secondary redis pooling doc with moderate keyword overlap.",
+      "confidence": 0.78,
+      "freshness": 0.75,
+      "source_match": 0.72,
+      "graph_distance": 2,
+      "evidence_strength": "moderate",
+      "scope_match": 0.7,
+      "memory_trust": 0.65,
+      "retrieval_mode": "hybrid_ranked",
+      "matched_on": ["full_text", "graph_traversal"],
+      "vector_score": 0.81
+    },
+    {
+      "result_id": "reg-graph-near-weak-keyword",
+      "source_ref": "doc_chunk:graph-near-weak",
+      "title": "Adjacent cache topic",
+      "summary": "Graph-neighbor with weak BM25 but high vector similarity.",
+      "confidence": 0.7,
+      "freshness": 0.72,
+      "source_match": 0.38,
+      "graph_distance": 1,
+      "evidence_strength": "moderate",
+      "scope_match": 0.55,
+      "memory_trust": 0.6,
+      "retrieval_mode": "hybrid_ranked",
+      "matched_on": ["graph_traversal", "vector_search"],
+      "vector_score": 0.97
+    },
+    {
+      "result_id": "reg-irrelevant-trading",
+      "source_ref": "doc_chunk:unrelated-trading",
+      "title": "Live order execution controls",
+      "summary": "Unrelated trading runtime topic; should demote.",
+      "confidence": 0.35,
+      "freshness": 0.4,
+      "source_match": 0.11,
+      "graph_distance": 9,
+      "evidence_strength": "weak",
+      "scope_match": 0.15,
+      "memory_trust": "weak",
+      "retrieval_mode": "full_text",
+      "matched_on": ["keyword"],
+      "vector_score": 0.22
+    },
+    {
+      "result_id": "reg-tie-aaa",
+      "source_ref": "doc_chunk:tie-aaa",
+      "title": "Tie candidate A",
+      "summary": "Deterministic tie-break lower source_ref.",
+      "confidence": 0.7,
+      "freshness": 0.7,
+      "source_match": 0.7,
+      "graph_distance_score": 0.7,
+      "evidence_strength": 0.7,
+      "scope_match": 0.7,
+      "memory_trust": 0.7,
+      "retrieval_mode": "hybrid_ranked",
+      "matched_on": ["full_text"]
+    },
+    {
+      "result_id": "reg-tie-aab",
+      "source_ref": "doc_chunk:tie-aab",
+      "title": "Tie candidate B",
+      "summary": "Deterministic tie-break higher source_ref.",
+      "confidence": 0.7,
+      "freshness": 0.7,
+      "source_match": 0.7,
+      "graph_distance_score": 0.7,
+      "evidence_strength": 0.7,
+      "scope_match": 0.7,
+      "memory_trust": 0.7,
+      "retrieval_mode": "hybrid_ranked",
+      "matched_on": ["full_text"],
+      "vector_score": 0.95
+    },
+    {
+      "result_id": "reg-bm25-only-strong",
+      "source_ref": "doc_chunk:bm25-only",
+      "title": "Keyword-only redis pooling note",
+      "summary": "Strong BM25 signal without graph_distance factor.",
+      "confidence": 0.82,
+      "freshness": 0.8,
+      "source_match": 0.89,
+      "evidence_strength": "strong",
+      "scope_match": 0.75,
+      "memory_trust": 0.7,
+      "retrieval_mode": "full_text",
+      "matched_on": ["full_text"]
+    }
+  ],
+  "expected_ranking": {
+    "order": [
+      "reg-primary-redis",
+      "reg-bm25-only-strong",
+      "reg-secondary-redis",
+      "reg-tie-aaa",
+      "reg-tie-aab",
+      "reg-graph-near-weak-keyword",
+      "reg-irrelevant-trading"
+    ],
+    "pinned_scores": {
+      "reg-primary-redis": 0.912,
+      "reg-bm25-only-strong": 0.7595,
+      "reg-secondary-redis": 0.7175,
+      "reg-tie-aaa": 0.7,
+      "reg-tie-aab": 0.7,
+      "reg-graph-near-weak-keyword": 0.6265,
+      "reg-irrelevant-trading": 0.232
+    }
+  }
+}
