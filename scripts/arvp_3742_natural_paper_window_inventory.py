@@ -376,8 +376,8 @@ def _candles_coverage(conn, min_ts_ms: int, max_ts_ms: int) -> dict[str, Any] | 
             SELECT COUNT(*)::bigint
             FROM public.candles_1m
             WHERE symbol = %s
-              AND open_time_ms >= %s
-              AND open_time_ms <= %s
+              AND ts_ms >= %s
+              AND ts_ms <= %s
             """,
             (_SYMBOL, min_ts_ms, max_ts_ms),
         )
