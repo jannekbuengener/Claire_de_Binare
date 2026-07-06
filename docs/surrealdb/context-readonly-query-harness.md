@@ -16,7 +16,7 @@ Local-only integration surface for read-only Context Intelligence queries agains
 
 - `MUTATION_ALLOWED=False` (module constant in `tools/mcp/memory_write_intent_tools.py`)
 - Harness module has **no** productive write imports (`context_importer`, write gates, smoke writers)
-- LR remains **NO-GO**; no trading-state tables, no secrets in fixtures
+- LR remains **NO-GO**; no trading-state tables, no sensitive values in fixtures
 
 ## Test layers
 
