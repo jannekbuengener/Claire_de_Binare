@@ -118,6 +118,53 @@ MCP_CAPABILITY_REFERENCE_ANCHORS: tuple[str, ...] = (
     "Repo-Präsenz ist nicht gleich MCP-Verfügbarkeit",
 )
 
+MCP_CAPABILITY_RUNBOOK_ANCHORS: tuple[str, ...] = (
+    "MCP Capability Resolution Protocol",
+    "Capability beats assumption",
+    "Repo presence is not MCP availability",
+    "context.briefing",
+    "context.required_reads",
+    "context.readiness",
+    "claire-de-binare.mcp.json",
+    "cdb_context",
+)
+
+MCP_CAPABILITY_CONTEXT_TOOLS: tuple[str, ...] = (
+    "context.briefing",
+    "context.required_reads",
+    "context.readiness",
+)
+
+MCP_CONFIG_PATH = "claire-de-binare.mcp.json"
+
+KNOWLEDGE_SKILL_MAP_ANCHORS: tuple[str, ...] = (
+    "docs/skills/",
+    "SKILL_SURFACE_REGISTRY",
+    "AGENT_ROOT_SURFACE_MATRIX",
+    "onboarding_orchestrator",
+    "WORKING_REPO_CANON",
+    "CDB_KNOWLEDGE_HUB",
+)
+
+ACTIVE_CANON_PATHS: tuple[str, ...] = (
+    "agents/AGENTS.md",
+    "docs/skills/SKILL_SURFACE_REGISTRY.md",
+    "docs/onboarding/AGENT_ROOT_SURFACE_MATRIX.md",
+    "knowledge/CDB_KNOWLEDGE_HUB.md",
+    "docs/meta/WORKING_REPO_CANON.md",
+)
+
+ARCHIVE_ONLY_PATHS: tuple[str, ...] = (
+    "docs/archive/docs_hub_snapshot/",
+)
+
+HISTORICAL_SNAPSHOT_PATHS: tuple[str, ...] = (
+    "PROJECT_STATUS.md",
+    "knowledge/CURRENT_STATUS.md",
+)
+
+SKILLS_LIST_GLOB = "docs/skills/CDB.VERFUEGBARE.SKILLS_LISTE_*.md"
+
 
 def parse_registry_excluded_onboarding_surfaces(registry_text: str) -> frozenset[str]:
     """Return surfaces documented as excluded for cdb-onboarding in Registry §16."""
