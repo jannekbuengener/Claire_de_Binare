@@ -10,6 +10,8 @@
 
 ## Repo / Engineering Status (2026-07-06)
 
+- **#3872 Test-Pack Meta (P0–P2)**: **DONE_MERGED_META_CLOSED** — final slice PR [#3888](https://github.com/jannekbuengener/Claire_de_Binare/pull/3888) squash-merged @ `0add68dd`. Children **#3873–#3879** all **CLOSED**; meta **#3872 CLOSED**. P0 PR [#3886](https://github.com/jannekbuengener/Claire_de_Binare/pull/3886) @ `fa3fe465` (#3873–#3875); P1 PR [#3887](https://github.com/jannekbuengener/Claire_de_Binare/pull/3887) @ `49a7ca3c` (#3876–#3878); P2: `test_docs_issue_pack_drift_contract.py`, drift fixtures, extended `_test_pack_contract_helpers.py`, `knowledge/testing/TEST_PACK_CONTRACT_TESTS.md`. 98 test_pack contract tests; detect-only drift (no auto-fix/issue autopilot). Refs #1445, #1784, #2985 (stay open). LR **NO-GO** unchanged.
+
 - **#3864 Agent-OS Test Coverage Meta (P0)**: **DONE_MERGED_META_CLOSED** — final slice PR [#3884](https://github.com/jannekbuengener/Claire_de_Binare/pull/3884) squash-merged @ `58afa6fc`. Children **#3865–#3871** all **CLOSED**; meta **#3864 CLOSED**. Final delivery: `test_mcp_capability_resolution_contract.py` (#3870), `test_agent_knowledge_skill_map_contract.py` (#3871), `_agent_os_contract_helpers.py`, `AGENT_OS_CONTRACT_TESTS.md`. Prior slices: #3880 (#3865), #3881 (#3866+#3867), #3883 (#3868+#3869). Refs #1445 (stays open). LR **NO-GO** unchanged.
 
 - **#3870 + #3871 MCP Capability + Knowledge Map contract tests (#3864 final children)**: **DONE_MERGED_CLOSED** — PR [#3884](https://github.com/jannekbuengener/Claire_de_Binare/pull/3884) @ `58afa6fc`. MCP config/bridge inventory, handler dispatch, fallback semantics (tool_blocked ≠ DB-proof); skill registry, onboarding map, docs/knowledge/archive guards. #3870 **CLOSED**, #3871 **CLOSED**.
