@@ -243,7 +243,7 @@ deprecated MEXC **Futures** domain (discontinued 2026-01-19), not a spot testnet
 4. **Determinismus**: Reproduzierbare Ergebnisse via Event Replay (LR-021: deterministic shadow replay via `core/replay/` stack)
 5. **TLS Optional**: Aktivierbar via `-TLS` Flag (Redis + PostgreSQL)
 6. **Localhost Binding**: Alle Ports auf 127.0.0.1 (keine externe Exposition)
-7. **Secrets/Logging Hygiene**: Secret-Loader und SMTP-Alerter protokollieren keine secret-abgeleiteten Identifikatoren oder Empfaengeradressen im Klartext; Service-API-Fehlerantworten bleiben auf sichere Fehlercodes ohne Exception-/Stacktrace-Details begrenzt.
+7. **Zugangsdaten-/Logging-Hygiene**: Der Zugangsdaten-Loader und SMTP-Alerter protokollieren keine zugangsdaten-abgeleiteten Identifikatoren oder Empfaengeradressen im Klartext; Service-API-Fehlerantworten bleiben auf sichere Fehlercodes ohne Exception-/Stacktrace-Details begrenzt.
 8. **Canonical Determinism**: Alle kanonischen Report-Felder sind frei von Wall-Clock-Zeit; deterministische JSON-Serialisierung via `core/replay/canonical_json.py` (LR-021)
 
 ---
@@ -282,7 +282,7 @@ Kanonische Image-Pins fuer BLUE-Datenlayer (`cdb_postgres`, `cdb_redis`): `gover
 | 2026-03-29 | BLUE/RED reconciliation: alle Services nach Compose-Realitaet, Known Drifts bereinigt, Compose-Referenzen aktualisiert (#1302) | Claude |
 | 2026-04-01 | Logging Overlay: Aktivierungsspalte auf compose-Datei-Referenz umgestellt (war: -Logging Flag); Compose-Referenzblock präzisiert (#1409) | Claude |
 | 2026-04-11 | Signal-Port-Semantik präzisiert: Config-Default `SIGNAL_PORT=8001`, kanonischer Runtime-Port `8005` via `compose.red.yml` | Codex |
-| 2026-04-18 | Security-Hygiene nach PR #1752 ergänzt: Secret-/SMTP-Logging ohne secret-abgeleitete Klartext-Details dokumentiert | Codex |
+| 2026-04-18 | Security-Hygiene nach PR #1752 ergänzt: Zugangsdaten-/SMTP-Logging ohne zugangsdaten-abgeleitete Klartext-Details dokumentiert | Codex |
 | 2026-04-18 | PR #1755 Nachzug: fail-closed Fehlerantworten ohne Stacktrace-/Exception-Text für Risk/Execution/Kill-Switch dokumentiert | Codex |
 | 2026-04-20 | PR #1808 Nachzug: LR-021 deterministic replay infrastructure (core/replay + services/validation reporter/CLI) als Core Libraries dokumentiert (Issue #1809) | Codex |
 | 2026-04-22 | PR #1856 Nachzug: ARVP §4.2 DatasetSpec + DatasetProvider (FileBackedDatasetProvider + DBBackedDatasetProvider) ergänzt (Issue #1857) | Codex |
