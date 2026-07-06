@@ -1,6 +1,6 @@
 # ARVP Fresh Natural-Paper Observation — Donchian (#3792)
 
-Status Class: Scoped runtime evidence — **observation RUNNING**
+Status Class: Scoped runtime evidence — **observation COMPLETE**
 Issue: [#3792](https://github.com/jannekbuengener/Claire_de_Binare/issues/3792)
 Hypothesis: `HYP-NP-DONCHIAN-02`
 Parent: [#1900](https://github.com/jannekbuengener/Claire_de_Binare/issues/1900)
@@ -10,9 +10,9 @@ Runtime adapter: [#3790](https://github.com/jannekbuengener/Claire_de_Binare/pul
 Live-Readiness: **NO-GO**
 Echtgeld: **not authorized**
 
-**Verdict enum:** *pending* (window ends `2026-07-06T19:36:12Z` unless early chain)
+**Verdict enum:** `TIMEOUT_NO_CHAIN`
 
-**No-evidence-yet assertion:** No `natural_paper_evidence` claim before campaign terminal verdict. Cycle 1 supervisor run showed `events_since_campaign_start=0` (historical ledger chains excluded by campaign-scoped guard).
+**No-evidence-yet assertion:** No `natural_paper_evidence` claim. Campaign completed full 8h window with healthy stack and donchian runtime path verified, but **zero campaign-scoped** SIGNAL→DECISION→ORDER(paper_)→FILL chains.
 
 ---
 
@@ -37,7 +37,8 @@ RUNTIME-GO #3792 ARVP fresh natural-paper observation — hypothesis HYP-NP-DONC
 | strategy_id | `donchian_breakout_v1` |
 | start_utc | `2026-07-06T11:36:12Z` |
 | timeout_utc | `2026-07-06T19:36:12Z` |
-| campaign_status | `running` |
+| campaign_status | `timeout_no_chain` |
+| verdict_enum | `TIMEOUT_NO_CHAIN` |
 
 Signal override: `manifests/runtime_3792_signal_compose_override.yml`
 
@@ -47,18 +48,18 @@ Signal override: `manifests/runtime_3792_signal_compose_override.yml`
 
 | Check | Result |
 |-------|--------|
-| Safety flags (`cdb_execution`) | PASS |
-| `cdb_signal` strategy | `donchian_breakout_v1` (logs: Entry/Exit Channel Bars 20/10) |
+| Safety flags (`cdb_execution`) | PASS — MOCK_TRADING=true, USE_REAL_BALANCE=false |
+| `cdb_signal` strategy | `donchian_breakout_v1` (Entry/Exit Channel Bars 20/10) |
 | Runtime path vs manifest | PASS (#3790 adapter) |
-| Kill-switch | inactive (prior session check) |
-| Supervisor cycle 1 | `CAMPAIGN_RUNNING`, `events_since_campaign_start=0` |
+| Kill-switch | inactive at start |
+| Container restarts | 0 (`cdb_signal` RestartCount=0) |
 
 ---
 
 ## 4. Runtime reconfiguration
 
-- `cdb_signal` image rebuilt from `main` @ `7181f9d4`
-- Recreated with compose override (`SIGNAL_STRATEGY_ID=donchian_breakout_v1`, frozen channel bars 20/10, cooldown 30m)
+- `cdb_signal` container started `2026-07-06T11:36:45Z`
+- Compose override: `SIGNAL_STRATEGY_ID=donchian_breakout_v1`, channel bars 20/10, cooldown 30m, `long_only`
 
 ---
 
@@ -66,16 +67,50 @@ Signal override: `manifests/runtime_3792_signal_compose_override.yml`
 
 Supervisor loop: `python -m tools.arvp_campaign_supervisor` (poll 900s)  
 Evidence log: `artifacts/campaigns/arvp_3792_natural_paper_donchian_20260706_1136/evidence_log.jsonl`  
-Status: `artifacts/campaigns/arvp_3792_natural_paper_donchian_20260706_1136/campaign_status.md`
+Terminal status: `artifacts/campaigns/arvp_3792_natural_paper_donchian_20260706_1136/campaign_status.md` (Cycle 32 @ `2026-07-06T19:41:11Z`)
+
+**Supervisor note:** Cycle 1 briefly reported `CHAIN_FOUND` with historical ledger events (34256); campaign-scoped guard corrected to `events_since_campaign_start=0` from cycle 1 onward.
 
 ---
 
-## 6. Boundaries
+## 6. Run metrics (campaign window)
+
+| Metric | Count | Source |
+|--------|------:|--------|
+| Signals generated | 34 (17 BUY + 17 SELL) | `cdb_signal` logs |
+| Signals persisted | 34 (DB IDs 222244–222277) | `cdb_db_writer` logs |
+| Risk approvals | 0 | `cdb_risk` logs |
+| Risk blocks (RC_001) | 34 | `cdb_risk` logs |
+| Orders | 0 | `cdb_execution` logs |
+| Fills | 0 | `cdb_execution` logs |
+| Campaign-scoped chain events | 0 | Supervisor + campaign_status |
+| Regime during window | `HIGH_VOL_CHAOTIC` (risk_off=True) | `cdb_risk` logs |
+| PnL / regime_segments | not belegbar | no chain / no window extraction |
+
+**Primary block reason:** `RC_001` — unfavorable regime (`regime_id` 2/3 per `services/risk/reason_codes.py`).
+
+---
+
+## 7. Verdict and §5.2.4 assessment
+
+| Outcome | Value |
+|---------|-------|
+| Verdict enum | **`TIMEOUT_NO_CHAIN`** |
+| Infrastructure | PASS — full 8h, healthy stack, strategy path correct |
+| ARVP chain hypothesis | **Falsified** for 8h window under observed regime |
+| `natural_paper_evidence` | **Not claimed** |
+| §5.2.4 / `regime_segments` | **Not satisfied** — no extractable chain window |
+| Follow-up | New execute issue required for 24h observation (`HYP-NP-DONCHIAN-03`); not a silent retry |
+
+---
+
+## 8. Boundaries
 
 - LR **NO-GO** unchanged
-- No Product-Complete / §5.2.4 claim until post-compare evidence
-- No `natural_paper_evidence` claim until terminal verdict with chain
+- No Product-Complete claim
+- No Live-Go / Echtgeld-Go
+- No risk-gate bypass or parameter tuning applied
 
 ---
 
-*Evidence file opened 2026-07-06 — update on campaign terminal state.*
+*Evidence finalized 2026-07-06 — terminal state TIMEOUT_NO_CHAIN.*

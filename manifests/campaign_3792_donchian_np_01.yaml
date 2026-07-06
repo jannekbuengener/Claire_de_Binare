@@ -74,5 +74,5 @@ terminal_statuses:
   - blocked_governance
   - evidence_merged
   - preflight_failed
-campaign_status: running
-verdict_enum: null
+campaign_status: timeout_no_chain
+verdict_enum: TIMEOUT_NO_CHAIN
