@@ -1,4 +1,4 @@
-"""Shared helpers for Test Pack contract tests (#3873–#3878)."""
+"""Shared helpers for Test Pack contract tests (#3873–#3879)."""
 
 from __future__ import annotations
 
@@ -29,6 +29,62 @@ METRICS_MATRIX_DOC = REPO_ROOT / "infrastructure" / "monitoring" / "METRICS_MATR
 LR041_RUNNER = REPO_ROOT / "scripts" / "drills" / "lr041_redis_postgres_failure_runner.py"
 LR042_RUNNER = REPO_ROOT / "scripts" / "drills" / "lr042_network_latency_packet_loss_runner.py"
 MOCKEXCHANGE_TEST_MAP = REPO_ROOT / "knowledge" / "testing" / "MOCKEXCHANGE_CDB_TEST_MAP.md"
+TEST_PACK_README = TEST_PACK_ROOT / "README.md"
+ISSUE_PACK_ROOT = TEST_PACK_ROOT / "issue_pack"
+ISSUE_PACK_README = ISSUE_PACK_ROOT / "README.md"
+PROMPT_IMPORT_TESTPACK = TEST_PACK_ROOT / "prompts" / "PROMPT_CodeX_Import_TestPack_v2.md"
+PROMPT_ISSUE_PACK = TEST_PACK_ROOT / "prompts" / "PROMPT_CodeX_IssuePack_CDB_LiveReadiness.md"
+CHAOS_DRILL_SCRIPT = TEST_PACK_ROOT / "infrastructure" / "scripts" / "run-chaos-drill.ps1"
+PLANNING_LINT_SCRIPT = TEST_PACK_ROOT / "tools" / "planning" / "planning_lint.py"
+
+README_FROZEN_STATUS_MARKERS: tuple[str, ...] = (
+    "Frozen experimental",
+    "import snapshot",
+    "Not maintained as an active repo path",
+)
+
+README_QUICKSTART_TOOL_PATHS: tuple[str, ...] = (
+    "tools/chaos/generate_scenario.py",
+    "infrastructure/scripts/run-chaos-drill.ps1",
+    "tools/drills/trigger-operator-drill.ps1",
+    "tools/mock_exchange/mock_exchange.py",
+)
+
+README_EXTENSION_TOOL_PATHS: tuple[str, ...] = (
+    "tools/assertions/evaluate_assertions.py",
+    "tools/metrics/metrics_snapshot.py",
+    "scenarios/catalog.yaml",
+)
+
+ISSUE_PACK_PROMPT_REFS: tuple[str, ...] = (
+    "prompts/PROMPT_CodeX_IssuePack_CDB_LiveReadiness.md",
+)
+
+STALE_TODO_HOOK_PATTERNS: tuple[re.Pattern[str], ...] = (
+    re.compile(r"TODO hooks for ingestion \+ metrics/assertions", re.I),
+    re.compile(r"Known gaps / TODOs?", re.I),
+    re.compile(r"adapters/ADAPTERS\.md", re.I),
+)
+
+STALE_OPTIONAL_PACK_PATHS = frozenset(
+    {
+        "adapters/ADAPTERS.md",
+        "tools/test_pack/adapters/ADAPTERS.md",
+    }
+)
+
+PACK_RELATIVE_PATH_PATTERN = re.compile(
+    r"(?<![\w./])"
+    r"(?:tools|scenarios|templates|runbooks|prompts|issue_pack|pack|infrastructure)/"
+    r"[\w./-]+\.(?:py|ps1|yaml|yml|md|json|jsonl|txt)"
+)
+
+NO_AUTO_FIX_FORBIDDEN_SOURCE_PATTERNS: tuple[re.Pattern[str], ...] = (
+    re.compile(r"\bgh\s+issue\s+create\b"),
+    re.compile(r"\bsubprocess\.run\b"),
+    re.compile(r"\.write_text\("),
+    re.compile(r"\.write_bytes\("),
+)
 
 CANONICAL_REDIS_CONTAINER = "cdb_redis"
 VALKEY_DRIFT_PATTERNS = (
@@ -90,13 +146,26 @@ def load_scenario_catalog() -> dict[str, Any]:
     return yaml.safe_load(SCENARIO_CATALOG.read_text(encoding="utf-8"))
 
 
+PACK_ROOT_PREFIXES = (
+    "templates/",
+    "runbooks/",
+    "pack/",
+    "scenarios/",
+    "infrastructure/",
+    "prompts/",
+    "issue_pack/",
+)
+
+PACK_ROOT_FILES = frozenset({"README.md", "PACK_MANIFEST.json", "CHANGELOG.md"})
+
+
 def resolve_pack_relative(relative_path: str) -> Path:
     normalized = relative_path.replace("\\", "/").lstrip("/")
     if normalized.startswith("tools/"):
         normalized = normalized.removeprefix("tools/")
-    return TEST_PACK_ROOT / "tools" / normalized if not normalized.startswith(
-        ("templates/", "runbooks/", "pack/", "scenarios/")
-    ) else TEST_PACK_ROOT / normalized
+    if normalized.startswith(PACK_ROOT_PREFIXES) or normalized in PACK_ROOT_FILES:
+        return TEST_PACK_ROOT / normalized
+    return TEST_PACK_ROOT / "tools" / normalized
 
 
 def scenario_artifact_paths(scenario: dict[str, Any]) -> list[str]:
@@ -446,6 +515,208 @@ def score_metrics_smoke_report(report: dict[str, Any]) -> MetricsSmokeScore:
         return MetricsSmokeScore("PASS", tuple(reasons), False, True, True)
 
     return MetricsSmokeScore("FAIL", tuple(reasons or ("metrics smoke incomplete",)), no_data, prom_reachable, grafana_reachable)
+
+
+@dataclass(frozen=True)
+class DocsDriftFinding:
+    category: str
+    source: str
+    detail: str
+
+
+@dataclass(frozen=True)
+class DocsDriftScanResult:
+    missing_paths: tuple[str, ...]
+    stale_todo_hooks: tuple[str, ...]
+    findings: tuple[DocsDriftFinding, ...]
+
+    @property
+    def has_missing_paths(self) -> bool:
+        return bool(self.missing_paths)
+
+
+def resolve_repo_or_pack_path(path: str) -> Path:
+    """Resolve repo-root or pack-relative references from docs/prompts."""
+    normalized = path.replace("\\", "/").lstrip("/")
+    if normalized.startswith("tools/test_pack/"):
+        remainder = normalized.removeprefix("tools/test_pack/")
+        if remainder in PACK_ROOT_FILES:
+            return TEST_PACK_ROOT / remainder
+        return resolve_pack_relative(remainder)
+    if normalized.startswith(
+        ("tools/", "scenarios/", "templates/", "runbooks/", "prompts/", "issue_pack/", "pack/", "infrastructure/")
+    ):
+        return resolve_pack_relative(normalized)
+    return REPO_ROOT / normalized
+
+
+def extract_pack_relative_paths(text: str) -> list[str]:
+    """Extract pack-relative tool/doc paths from markdown or yaml text."""
+    normalized_text = text.replace("\\", "/")
+    seen: set[str] = set()
+    ordered: list[str] = []
+    for match in PACK_RELATIVE_PATH_PATTERN.finditer(normalized_text):
+        path = match.group(0).replace("\\", "/")
+        if path not in seen:
+            seen.add(path)
+            ordered.append(path)
+    return ordered
+
+
+def collect_stale_todo_hooks(text: str, *, label: str) -> list[str]:
+    """Surface known stale TODO hooks — detection only, no auto-fix."""
+    hooks: list[str] = []
+    for pattern in STALE_TODO_HOOK_PATTERNS:
+        if pattern.search(text):
+            hooks.append(f"{label}: {pattern.pattern}")
+    return hooks
+
+
+def scan_paths_exist(
+    paths: tuple[str, ...] | list[str],
+    *,
+    category: str,
+    source: str,
+) -> tuple[list[str], list[DocsDriftFinding]]:
+    """Read-only path existence check for pack-relative references."""
+    missing: list[str] = []
+    findings: list[DocsDriftFinding] = []
+    for rel in paths:
+        candidate = resolve_repo_or_pack_path(rel)
+        if not candidate.exists():
+            missing.append(rel)
+            findings.append(
+                DocsDriftFinding(
+                    category=category,
+                    source=source,
+                    detail=f"missing pack path: {rel}",
+                )
+            )
+    return missing, findings
+
+
+def scan_test_pack_docs_drift() -> DocsDriftScanResult:
+    """Read-only docs/issue-pack drift scan — reports only, never mutates."""
+    missing: list[str] = []
+    findings: list[DocsDriftFinding] = []
+    stale_hooks: list[str] = []
+
+    readme_text = TEST_PACK_README.read_text(encoding="utf-8")
+    for marker in README_FROZEN_STATUS_MARKERS:
+        if marker not in readme_text:
+            findings.append(
+                DocsDriftFinding(
+                    category="readme",
+                    source="tools/test_pack/README.md",
+                    detail=f"missing frozen-status marker: {marker!r}",
+                )
+            )
+
+    path_groups: tuple[tuple[str, tuple[str, ...], str], ...] = (
+        ("readme_quickstart", README_QUICKSTART_TOOL_PATHS, "tools/test_pack/README.md"),
+        ("readme_extension", README_EXTENSION_TOOL_PATHS, "tools/test_pack/README.md"),
+        ("issue_pack", ISSUE_PACK_PROMPT_REFS, "tools/test_pack/issue_pack/README.md"),
+    )
+    for category, paths, source in path_groups:
+        gaps, group_findings = scan_paths_exist(paths, category=category, source=source)
+        missing.extend(gaps)
+        findings.extend(group_findings)
+
+    issue_pack_readme = ISSUE_PACK_README.read_text(encoding="utf-8")
+    stale_hooks.extend(collect_stale_todo_hooks(issue_pack_readme, label="issue_pack/README"))
+
+    for issue_file in sorted((ISSUE_PACK_ROOT / "issues").glob("*.md")):
+        issue_text = issue_file.read_text(encoding="utf-8")
+        stale_hooks.extend(collect_stale_todo_hooks(issue_text, label=issue_file.name))
+
+    for prompt_path in (PROMPT_IMPORT_TESTPACK, PROMPT_ISSUE_PACK):
+        prompt_text = prompt_path.read_text(encoding="utf-8")
+        stale_hooks.extend(collect_stale_todo_hooks(prompt_text, label=prompt_path.name))
+        for rel in extract_pack_relative_paths(prompt_text):
+            if rel in STALE_OPTIONAL_PACK_PATHS:
+                continue
+            candidate = resolve_repo_or_pack_path(rel)
+            if not candidate.exists():
+                missing.append(rel)
+                findings.append(
+                    DocsDriftFinding(
+                        category="prompt",
+                        source=str(prompt_path.relative_to(REPO_ROOT)).replace("\\", "/"),
+                        detail=f"missing pack path: {rel}",
+                    )
+                )
+
+    catalog = load_scenario_catalog()
+    for scenario in catalog.get("scenarios", []):
+        for rel in scenario_artifact_paths(scenario):
+            candidate = resolve_pack_relative(rel)
+            if not candidate.exists():
+                missing.append(rel)
+                findings.append(
+                    DocsDriftFinding(
+                        category="scenario",
+                        source=f"scenarios/catalog.yaml:{scenario.get('id')}",
+                        detail=f"missing pack path: {rel}",
+                    )
+                )
+
+    evidence_template = EVIDENCE_README_TEMPLATE.read_text(encoding="utf-8")
+    stale_hooks.extend(
+        collect_stale_todo_hooks(evidence_template, label="templates/evidence_pack_README.md")
+    )
+
+    return DocsDriftScanResult(
+        missing_paths=tuple(dict.fromkeys(missing)),
+        stale_todo_hooks=tuple(dict.fromkeys(stale_hooks)),
+        findings=tuple(findings),
+    )
+
+
+def score_docs_drift_fixture(fixture: dict[str, Any]) -> DocsDriftScanResult:
+    """Fixture-based docs drift scoring — mirrors scan semantics without repo writes."""
+    missing: list[str] = []
+    findings: list[DocsDriftFinding] = []
+    stale_hooks: list[str] = []
+
+    for doc in fixture.get("documents", []):
+        label = str(doc.get("label", "fixture"))
+        text = str(doc.get("text", ""))
+        stale_hooks.extend(collect_stale_todo_hooks(text, label=label))
+        for rel in doc.get("required_paths", []):
+            if rel in doc.get("missing_paths", []):
+                missing.append(rel)
+                findings.append(
+                    DocsDriftFinding(
+                        category=str(doc.get("category", "fixture")),
+                        source=label,
+                        detail=f"missing pack path: {rel}",
+                    )
+                )
+
+    for hook in fixture.get("expected_stale_hooks", []):
+        if hook not in stale_hooks:
+            findings.append(
+                DocsDriftFinding(
+                    category="stale_todo",
+                    source="fixture",
+                    detail=f"expected stale hook not visible: {hook}",
+                )
+            )
+
+    return DocsDriftScanResult(
+        missing_paths=tuple(missing),
+        stale_todo_hooks=tuple(stale_hooks),
+        findings=tuple(findings),
+    )
+
+
+def assert_drift_scanner_source_is_read_only(helper_source: str) -> list[str]:
+    """Contract guard: drift helpers must not auto-fix docs or create issues."""
+    violations: list[str] = []
+    for pattern in NO_AUTO_FIX_FORBIDDEN_SOURCE_PATTERNS:
+        if pattern.search(helper_source):
+            violations.append(f"forbidden no-auto-fix pattern in helpers: {pattern.pattern!r}")
+    return violations
 
 
 def runtime_drill_operator_markers(script_text: str) -> dict[str, bool]:

@@ -1,0 +1,19 @@
+{
+  "documents": [
+    {
+      "label": "fixture_readme",
+      "category": "readme",
+      "text": "Frozen experimental import snapshot. TODO hooks for ingestion + metrics/assertions remain.",
+      "required_paths": [
+        "tools/chaos/generate_scenario.py",
+        "tools/metrics/missing_snapshot.py"
+      ],
+      "missing_paths": [
+        "tools/metrics/missing_snapshot.py"
+      ]
+    }
+  ],
+  "expected_stale_hooks": [
+    "fixture_readme: TODO hooks for ingestion \\+ metrics/assertions"
+  ]
+}
