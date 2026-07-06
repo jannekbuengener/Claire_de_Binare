@@ -16,6 +16,10 @@ and emit honest Brain Evidence without inventing DB-backed claims?
 | #3866 | `tests/unit/tools/test_validate_skill_surface_mirror.py` | Drift guard implementation (#3643) |
 | #3867 | `tests/unit/agents/test_brain_evidence_agent_os_regression_contract.py` | Brain Evidence block + final report shape |
 | #3867 | `tests/unit/agents/test_brain_evidence_block_contract.py` | MCP briefing Brain Evidence gate (#3774) |
+| #3868 | `tests/unit/agents/test_onboarding_fresh_agent_contract.py` | Fresh-agent read-only default, setup GO gate, simulation modes |
+| #3868 | `tests/smoke/test_onboarding_orchestrator.py` | Orchestrator CLI smoke (no mutations) |
+| #3868 | `tests/smoke/test_onboarding_cross_agent_surfaces.py` | Cross-surface onboarding routing |
+| #3869 | `tests/unit/agents/test_agent_role_consistency_contract.py` | Agent role LR/Live/MCP/write/onboarding consistency |
 
 Shared helpers: `tests/unit/agents/_bootloader_read_order_helpers.py`,
 `tests/unit/agents/_agent_os_contract_helpers.py`.
@@ -32,8 +36,11 @@ Shared helpers: `tests/unit/agents/_bootloader_read_order_helpers.py`,
 ```bash
 pytest -q tests/unit/agents/test_skill_surface_adapter_drift_contract.py
 pytest -q tests/unit/agents/test_brain_evidence_agent_os_regression_contract.py
+pytest -q tests/unit/agents/test_onboarding_fresh_agent_contract.py
+pytest -q tests/unit/agents/test_agent_role_consistency_contract.py
 pytest -q tests/unit/tools/test_validate_skill_surface_mirror.py
-pytest -q tests/unit -k "skill or surface or mirror or brain_evidence or bootloader"
+pytest -q tests/unit -k "onboarding or agent or role or guardrail or brain_evidence"
+pytest -q tests/smoke -k "onboarding"
 python tools/validate_skill_surface_mirror.py
 ```
 

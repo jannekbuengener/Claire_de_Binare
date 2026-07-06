@@ -47,6 +47,77 @@ REGISTRY_SURFACE_PATHS: dict[str, str] = {
 
 SECTION_16_ONBOARDING_SURFACES: frozenset[str] = frozenset({"opencode", "cursor", "claude"})
 
+# Canonical agent role files (#3869).
+CANONICAL_AGENT_ROLE_PATHS: dict[str, str] = {
+    "codex": "agents/roles/CODEX.md",
+    "claude": "agents/roles/CLAUDE.md",
+    "gemini": "agents/roles/GEMINI.md",
+    "copilot": "agents/roles/COPILOT.md",
+    "opencode": "agents/roles/OPENCODE.md",
+}
+
+SHARED_ROLE_GUARDRAIL_ANCHORS: tuple[str, ...] = (
+    "Brain Evidence Gate",
+    "agents/AGENTS.md",
+    "LR-AUDIT-STATUS",
+    "read-only",
+)
+
+LR_STAGE_SEPARATION_ANCHORS: tuple[str, ...] = (
+    "trade-capable",
+    "NO-GO",
+)
+
+FORBIDDEN_ROLE_LIVE_GO_PHRASES: tuple[str, ...] = (
+    "Live-Go approved",
+    "Echtgeld-Go erteilt",
+    "trade-capable erlaubt Live",
+    "trade-capable ist Live-Go",
+    "autorisiert Live-Kapital",
+)
+
+# Negated LR-GO phrases are allowed (e.g. "kein LR-GO").
+FORBIDDEN_ROLE_LIVE_GO_STANDALONE: tuple[str, ...] = (
+    "LR GO",
+    "LR-GO",
+)
+
+ROLE_SPECIFIC_GUARDRAIL_ANCHORS: dict[str, tuple[str, ...]] = {
+    "codex": SHARED_ROLE_GUARDRAIL_ANCHORS + LR_STAGE_SEPARATION_ANCHORS,
+    "claude": SHARED_ROLE_GUARDRAIL_ANCHORS
+    + (
+        "LR-Go/No-Go",
+        "CONTROL_REGISTER",
+        "docs/live-readiness",
+    ),
+    "gemini": SHARED_ROLE_GUARDRAIL_ANCHORS
+    + (
+        "trade-capable",
+        "kein LR-GO",
+        "LR-AUDIT-STATUS",
+    ),
+    "copilot": SHARED_ROLE_GUARDRAIL_ANCHORS + LR_STAGE_SEPARATION_ANCHORS,
+    "opencode": (
+        "Brain Evidence Gate",
+        "agents/AGENTS.md",
+        "read-only",
+        "Canon-Governance ist read-only",
+    ),
+}
+
+ONBOARDING_PRIMARY_ROUTE = "python -m tools.onboarding_orchestrator"
+ONBOARDING_ROUTING_ROLE_PATHS: tuple[str, ...] = (
+    "agents/roles/CODEX.md",
+    "GEMINI.md",
+    "AGENTS.md",
+)
+
+MCP_CAPABILITY_REFERENCE_ANCHORS: tuple[str, ...] = (
+    "MCP Capability",
+    "surrealdb_context_mcp_access.md",
+    "Repo-Präsenz ist nicht gleich MCP-Verfügbarkeit",
+)
+
 
 def parse_registry_excluded_onboarding_surfaces(registry_text: str) -> frozenset[str]:
     """Return surfaces documented as excluded for cdb-onboarding in Registry §16."""
