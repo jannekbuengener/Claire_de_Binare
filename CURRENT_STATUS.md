@@ -10,6 +10,12 @@
 
 ## Repo / Engineering Status (2026-07-06)
 
+- **#3864 Agent-OS Test Coverage Meta (P0)**: **DONE_MERGED_META_CLOSED** — final slice PR [#3884](https://github.com/jannekbuengener/Claire_de_Binare/pull/3884) squash-merged @ `58afa6fc`. Children **#3865–#3871** all **CLOSED**; meta **#3864 CLOSED**. Final delivery: `test_mcp_capability_resolution_contract.py` (#3870), `test_agent_knowledge_skill_map_contract.py` (#3871), `_agent_os_contract_helpers.py`, `AGENT_OS_CONTRACT_TESTS.md`. Prior slices: #3880 (#3865), #3881 (#3866+#3867), #3883 (#3868+#3869). Refs #1445 (stays open). LR **NO-GO** unchanged.
+
+- **#3870 + #3871 MCP Capability + Knowledge Map contract tests (#3864 final children)**: **DONE_MERGED_CLOSED** — PR [#3884](https://github.com/jannekbuengener/Claire_de_Binare/pull/3884) @ `58afa6fc`. MCP config/bridge inventory, handler dispatch, fallback semantics (tool_blocked ≠ DB-proof); skill registry, onboarding map, docs/knowledge/archive guards. #3870 **CLOSED**, #3871 **CLOSED**.
+
+- **#3868 + #3869 Onboarding + Role Consistency contract tests (#3864 children)**: **DONE_MERGED_CLOSED** — PR [#3883](https://github.com/jannekbuengener/Claire_de_Binare/pull/3883) squash-merged @ `91439da3`. `test_onboarding_fresh_agent_contract.py`, `test_agent_role_consistency_contract.py`. #3868 **CLOSED**, #3869 **CLOSED**.
+
 - **#3866 + #3867 Agent-OS Skill Surface + Brain Evidence contract tests (P0, #3864 children)**: **DONE_MERGED_CLOSED** — PR [#3881](https://github.com/jannekbuengener/Claire_de_Binare/pull/3881) squash-merged @ `ba7c450b`. `test_skill_surface_adapter_drift_contract.py` (Registry↔Validator alignment, cdb-onboarding exclusions, real-repo PASS gate); `test_brain_evidence_agent_os_regression_contract.py` (required fields, repo-only fail-closed, fallback matrix, final-report shape); `_agent_os_contract_helpers.py`; `knowledge/testing/AGENT_OS_CONTRACT_TESTS.md`. Builds on #3643 drift guard + #3774 Brain Evidence block tests. #3866 **CLOSED**, #3867 **CLOSED**. Parent #3864 **OPEN** (next slices #3868–#3871). LR **NO-GO** unchanged.
 
 - **#3865 Agent Read-Order Bootloader contract tests (P0, #3864 child)**: **DONE_MERGED_CLOSED** — PR [#3880](https://github.com/jannekbuengener/Claire_de_Binare/pull/3880) squash-merged @ `fde65c01`. `test_agent_read_order_bootloader_contract.py` + `_bootloader_read_order_helpers.py`. #3865 **CLOSED**. LR **NO-GO** unchanged.
