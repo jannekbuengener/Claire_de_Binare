@@ -1,0 +1,74 @@
+schema_version: "1.0"
+campaign_id: arvp_3786_natural_paper_donchian_20260706_1054
+hypothesis_id: HYP-NP-DONCHIAN-01
+parent_issue: 3786
+related_issues:
+  - 3742
+  - 1900
+  - 1784
+  - 3087
+  - 3748
+  - 3780
+symbol: BTCUSDT
+strategy_id: donchian_breakout_v1
+evidence_class: natural_paper_evidence
+start_utc: "2026-07-06T10:54:56Z"
+timeout_utc: "2026-07-06T18:54:56Z"
+max_duration_hours: 8.0
+start_criteria:
+  pre_documented: true
+  description: "Fresh natural-paper bounded observation for non-PB1 donchian_breakout_v1 per #3786; RUNTIME-GO documented on issue before preflight."
+  start_policy_ref: docs/evidence/arvp_fresh_paper_runtime_preflight_after_3742.md
+  criteria_met: false
+  criteria_met_reason: "Preflight blocked — runtime signal path for donchian_breakout_v1 not implemented (HOLD_RUNTIME_ABORT)."
+safety_flags:
+  mock_trading: true
+  use_real_balance: false
+  dry_run: true
+  mexc_testnet: true
+runtime_targets:
+  - cdb_ws
+  - cdb_market
+  - cdb_candles
+  - cdb_regime
+  - cdb_allocation
+  - cdb_signal
+  - cdb_risk
+  - cdb_execution
+  - cdb_db_writer
+  - cdb_paper_runner
+db_readonly_targets:
+  - public.correlation_ledger
+  - public.candles_1m
+evidence_doc: docs/evidence/arvp_fresh_natural_paper_donchian_3786.md
+evidence_log_jsonl: artifacts/campaigns/arvp_3786_natural_paper_donchian_20260706_1054/evidence_log.jsonl
+github_reporting:
+  post_on_issue_3786: true
+  post_on_issue_3742: true
+  post_on_issue_1900: true
+  post_on_issue_1784: false
+  pr_create_on_chain_found: true
+  issue_close_after_acceptance: true
+allowed_statuses:
+  - planned
+  - preflight_failed
+  - running
+  - chain_found
+  - timeout_no_chain
+  - interrupted
+  - blocked_runtime
+  - blocked_db_readonly
+  - blocked_governance
+  - evidence_pr_open
+  - evidence_merged
+terminal_statuses:
+  - chain_found
+  - timeout_no_chain
+  - interrupted
+  - blocked_runtime
+  - blocked_db_readonly
+  - blocked_governance
+  - evidence_merged
+  - preflight_failed
+campaign_status: preflight_failed
+verdict_enum: HOLD_RUNTIME_ABORT

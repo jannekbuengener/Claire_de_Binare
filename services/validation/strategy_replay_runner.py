@@ -85,6 +85,16 @@ from core.replay.historical_bridge import (
     MOMENTUM_CAPTURE_SYMBOL,
     build_primary_breakout_historical_bridge,
 )
+from core.replay.pack_a_breakout_common import (
+    BREAKOUT_TREND_FILTER_STRATEGY_ID,
+    DONCHIAN_BREAKOUT_STRATEGY_ID,
+    ENTRY_CHANNEL_BARS,
+    EXIT_CHANNEL_BARS,
+    MIN_MINUTES_BETWEEN_ENTRIES,
+    TREND_EMA_PERIOD_5M,
+    breakout_trend_warmup_candles,
+    donchian_warmup_candles,
+)
 from core.replay.replay_contracts import (
     EnvelopeSummary,
     ReplayExecutionResult,
@@ -146,6 +156,12 @@ from services.validation.rmr_backtest_runner import (
 from services.validation.momentum_backtest_runner import (
     run_momentum_capture_backtest,
 )
+from services.validation.donchian_breakout_backtest_runner import (
+    run_donchian_breakout_backtest,
+)
+from services.validation.breakout_trend_filter_backtest_runner import (
+    run_breakout_trend_filter_backtest,
+)
 from services.validation.strategy_backtest_runner import (
     PrimaryBreakoutBacktestError,
     PrimaryBreakoutBacktestRunConfig,
@@ -159,6 +175,8 @@ from services.validation.strategy_backtest_runner import (
 _SUPPORTED_STRATEGY_IDS: frozenset[str] = frozenset(
     {
         PRIMARY_BREAKOUT_STRATEGY_ID,
+        DONCHIAN_BREAKOUT_STRATEGY_ID,
+        BREAKOUT_TREND_FILTER_STRATEGY_ID,
         RANGE_MEAN_REVERSION_STRATEGY_ID,
         MOMENTUM_CAPTURE_STRATEGY_ID,
     }
@@ -173,6 +191,8 @@ _SUPPORTED_SYMBOLS: frozenset[str] = frozenset(
 _SUPPORTED_ADAPTER_IDS: frozenset[str] = frozenset(
     {
         "primary_breakout_runner_v1",
+        "donchian_breakout_runner_v1",
+        "breakout_trend_filter_runner_v1",
         "range_mean_reversion_runner_v1",
         "momentum_capture_runner_v1",
     }
@@ -605,6 +625,25 @@ def _build_provenance_config_snapshot(
             "cooldown_minutes": MOMENTUM_COOLDOWN_MINUTES,
             "regime_hvc": MOMENTUM_REGIME_HVC,
         }
+    if config.strategy_id == DONCHIAN_BREAKOUT_STRATEGY_ID:
+        return {
+            "order_size": config.order_size,
+            "order_book_depth_multiplier": config.order_book_depth_multiplier,
+            "entry_channel_bars": ENTRY_CHANNEL_BARS,
+            "exit_channel_bars": EXIT_CHANNEL_BARS,
+            "min_minutes_between_entries": MIN_MINUTES_BETWEEN_ENTRIES,
+            "ranking_ready": False,
+        }
+    if config.strategy_id == BREAKOUT_TREND_FILTER_STRATEGY_ID:
+        return {
+            "order_size": config.order_size,
+            "order_book_depth_multiplier": config.order_book_depth_multiplier,
+            "entry_channel_bars": ENTRY_CHANNEL_BARS,
+            "exit_channel_bars": EXIT_CHANNEL_BARS,
+            "min_minutes_between_entries": MIN_MINUTES_BETWEEN_ENTRIES,
+            "trend_ema_period_5m": TREND_EMA_PERIOD_5M,
+            "ranking_ready": False,
+        }
     return {
         "order_size": config.order_size,
         "order_book_depth_multiplier": config.order_book_depth_multiplier,
@@ -805,6 +844,172 @@ def _build_momentum_execution_provenance_id(
     }
     digest = hashlib.sha256(canonical_json_dumps(payload).encode("utf-8")).hexdigest()
     return f"bt-{digest[:16]}"
+
+
+def _build_pack_a_execution_provenance_id(
+    candles: list[dict[str, Any]],
+    *,
+    strategy_id: str,
+    code_commit: str,
+    config_payload: dict[str, Any],
+) -> str:
+    import hashlib
+
+    candles_hash = canonical_hash(
+        [
+            {
+                k: c.get(k)
+                for k in (
+                    "ts_ms",
+                    "open",
+                    "high",
+                    "low",
+                    "close",
+                    "volume",
+                    "regime_id",
+                )
+            }
+            for c in candles
+        ]
+    )
+    payload = {
+        "code_commit": code_commit,
+        "candles_hash": candles_hash,
+        "strategy_id": strategy_id,
+        **config_payload,
+    }
+    digest = hashlib.sha256(canonical_json_dumps(payload).encode("utf-8")).hexdigest()
+    return f"bt-{digest[:16]}"
+
+
+def _strategy_warmup_count(config: ARVPReplayConfig) -> int:
+    if config.strategy_id == RANGE_MEAN_REVERSION_STRATEGY_ID:
+        return RMR_WARMUP_CANDLES
+    if config.strategy_id == MOMENTUM_CAPTURE_STRATEGY_ID:
+        return MOMENTUM_WARMUP_CANDLES
+    if config.strategy_id == DONCHIAN_BREAKOUT_STRATEGY_ID:
+        return donchian_warmup_candles()
+    if config.strategy_id == BREAKOUT_TREND_FILTER_STRATEGY_ID:
+        return breakout_trend_warmup_candles()
+    return max(config.entry_lookback_minutes, config.exit_lookback_minutes)
+
+
+def _is_no_two_pass_determinism_strategy(strategy_id: str) -> bool:
+    return strategy_id in {
+        RANGE_MEAN_REVERSION_STRATEGY_ID,
+        MOMENTUM_CAPTURE_STRATEGY_ID,
+        DONCHIAN_BREAKOUT_STRATEGY_ID,
+        BREAKOUT_TREND_FILTER_STRATEGY_ID,
+    }
+
+
+def _build_execution_provenance_id_for_config(
+    config: ARVPReplayConfig,
+    candles: list[dict[str, Any]],
+    *,
+    code_commit: str,
+) -> str:
+    if config.strategy_id == RANGE_MEAN_REVERSION_STRATEGY_ID:
+        return _build_rmr_execution_provenance_id(candles, code_commit=code_commit)
+    if config.strategy_id == MOMENTUM_CAPTURE_STRATEGY_ID:
+        return _build_momentum_execution_provenance_id(candles, code_commit=code_commit)
+    if config.strategy_id == DONCHIAN_BREAKOUT_STRATEGY_ID:
+        return _build_pack_a_execution_provenance_id(
+            candles,
+            strategy_id=DONCHIAN_BREAKOUT_STRATEGY_ID,
+            code_commit=code_commit,
+            config_payload={
+                "entry_channel_bars": ENTRY_CHANNEL_BARS,
+                "exit_channel_bars": EXIT_CHANNEL_BARS,
+                "min_minutes_between_entries": MIN_MINUTES_BETWEEN_ENTRIES,
+            },
+        )
+    if config.strategy_id == BREAKOUT_TREND_FILTER_STRATEGY_ID:
+        return _build_pack_a_execution_provenance_id(
+            candles,
+            strategy_id=BREAKOUT_TREND_FILTER_STRATEGY_ID,
+            code_commit=code_commit,
+            config_payload={
+                "entry_channel_bars": ENTRY_CHANNEL_BARS,
+                "exit_channel_bars": EXIT_CHANNEL_BARS,
+                "min_minutes_between_entries": MIN_MINUTES_BETWEEN_ENTRIES,
+                "trend_ema_period_5m": TREND_EMA_PERIOD_5M,
+            },
+        )
+    run_cfg = PrimaryBreakoutBacktestRunConfig(
+        bridge=PrimaryBreakoutBridgeConfig(
+            entry_lookback_minutes=config.entry_lookback_minutes,
+            exit_lookback_minutes=config.exit_lookback_minutes,
+            breakout_buffer=config.breakout_buffer,
+            min_minutes_between_entries=config.min_minutes_between_entries,
+        ),
+        order_size=config.order_size,
+        order_book_depth_multiplier=config.order_book_depth_multiplier,
+    )
+    return _build_execution_provenance_id(
+        candles,
+        run_config=run_cfg,
+        code_commit=code_commit,
+    )
+
+
+def _run_strategy_backtest(
+    config: ARVPReplayConfig,
+    candles: list[dict[str, Any]],
+    *,
+    code_commit: str,
+    run_id: str | None = None,
+    run_cfg: PrimaryBreakoutBacktestRunConfig | None = None,
+    simulator_config: dict[str, Any] | None = None,
+) -> dict[str, Any]:
+    if config.strategy_id == RANGE_MEAN_REVERSION_STRATEGY_ID:
+        return run_range_mean_reversion_backtest(
+            candles,
+            run_config=None,
+            simulator_config=simulator_config,
+            code_commit=code_commit,
+            run_id=run_id,
+        )
+    if config.strategy_id == MOMENTUM_CAPTURE_STRATEGY_ID:
+        return run_momentum_capture_backtest(
+            candles,
+            run_config=None,
+            simulator_config=simulator_config,
+            code_commit=code_commit,
+            run_id=run_id,
+        )
+    if config.strategy_id == DONCHIAN_BREAKOUT_STRATEGY_ID:
+        return run_donchian_breakout_backtest(
+            candles,
+            simulator_config=simulator_config,
+            code_commit=code_commit,
+            run_id=run_id,
+        )
+    if config.strategy_id == BREAKOUT_TREND_FILTER_STRATEGY_ID:
+        return run_breakout_trend_filter_backtest(
+            candles,
+            simulator_config=simulator_config,
+            code_commit=code_commit,
+            run_id=run_id,
+        )
+    if run_cfg is None:
+        run_cfg = PrimaryBreakoutBacktestRunConfig(
+            bridge=PrimaryBreakoutBridgeConfig(
+                entry_lookback_minutes=config.entry_lookback_minutes,
+                exit_lookback_minutes=config.exit_lookback_minutes,
+                breakout_buffer=config.breakout_buffer,
+                min_minutes_between_entries=config.min_minutes_between_entries,
+            ),
+            order_size=config.order_size,
+            order_book_depth_multiplier=config.order_book_depth_multiplier,
+        )
+    return run_primary_breakout_backtest(
+        candles,
+        run_config=run_cfg,
+        simulator_config=simulator_config,
+        code_commit=code_commit,
+        gate_trace_path=config.gate_trace_path,
+    )
 
 
 def _write_operator_summary_artifact(
@@ -1019,15 +1224,7 @@ def run_arvp_replay(config: ARVPReplayConfig) -> int:
         Exit code integer: 0 success, 1 config error, 2 runtime/input error.
     """
     # Strategy-aware warmup count
-    if config.strategy_id == RANGE_MEAN_REVERSION_STRATEGY_ID:
-        warmup_count = RMR_WARMUP_CANDLES
-    elif config.strategy_id == MOMENTUM_CAPTURE_STRATEGY_ID:
-        warmup_count = MOMENTUM_WARMUP_CANDLES
-    else:
-        warmup_count = max(
-            config.entry_lookback_minutes,
-            config.exit_lookback_minutes,
-        )
+    warmup_count = _strategy_warmup_count(config)
 
     # Scenario group path (supported for all strategies)
     if config.scenario_ids:
@@ -1056,17 +1253,12 @@ def run_arvp_replay(config: ARVPReplayConfig) -> int:
             dataset_result,
             speedup_profile=config.speedup_profile,
         )
-        if config.strategy_id == RANGE_MEAN_REVERSION_STRATEGY_ID:
-            execution_provenance_id = _build_rmr_execution_provenance_id(
-                candles,
-                code_commit=code_commit,
-            )
-        elif config.strategy_id == MOMENTUM_CAPTURE_STRATEGY_ID:
-            execution_provenance_id = _build_momentum_execution_provenance_id(
-                candles,
-                code_commit=code_commit,
-            )
-        else:
+        execution_provenance_id = _build_execution_provenance_id_for_config(
+            config,
+            candles,
+            code_commit=code_commit,
+        )
+        if config.strategy_id == PRIMARY_BREAKOUT_STRATEGY_ID:
             run_cfg = PrimaryBreakoutBacktestRunConfig(
                 bridge=PrimaryBreakoutBridgeConfig(
                     entry_lookback_minutes=config.entry_lookback_minutes,
@@ -1077,11 +1269,8 @@ def run_arvp_replay(config: ARVPReplayConfig) -> int:
                 order_size=config.order_size,
                 order_book_depth_multiplier=config.order_book_depth_multiplier,
             )
-            execution_provenance_id = _build_execution_provenance_id(
-                candles,
-                run_config=run_cfg,
-                code_commit=code_commit,
-            )
+        else:
+            run_cfg = None
         provenance_fingerprint = build_replay_provenance_fingerprint(
             strategy_id=config.strategy_id,
             symbol=config.symbol,
@@ -1126,29 +1315,13 @@ def run_arvp_replay(config: ARVPReplayConfig) -> int:
 
     # Delegate to the strategy-specific backtest surface
     try:
-        if config.strategy_id == RANGE_MEAN_REVERSION_STRATEGY_ID:
-            backtest_report = run_range_mean_reversion_backtest(
-                candles,
-                run_config=None,
-                simulator_config=None,
-                code_commit=code_commit,
-                run_id=run_id,
-            )
-        elif config.strategy_id == MOMENTUM_CAPTURE_STRATEGY_ID:
-            backtest_report = run_momentum_capture_backtest(
-                candles,
-                run_config=None,
-                simulator_config=None,
-                code_commit=code_commit,
-                run_id=run_id,
-            )
-        else:
-            backtest_report = run_primary_breakout_backtest(
-                candles,
-                run_config=run_cfg,
-                code_commit=code_commit,
-                gate_trace_path=config.gate_trace_path,
-            )
+        backtest_report = _run_strategy_backtest(
+            config,
+            candles,
+            code_commit=code_commit,
+            run_id=run_id,
+            run_cfg=run_cfg,
+        )
     except (HistoricalBridgeError, PrimaryBreakoutBacktestError) as exc:
         try:
             _append_failed_record(
@@ -1285,23 +1458,17 @@ def run_arvp_replay(config: ARVPReplayConfig) -> int:
 
     # Determinism check
     gate_status = (backtest_report.get("gate_result") or {}).get("status")
-    is_rmr = config.strategy_id == RANGE_MEAN_REVERSION_STRATEGY_ID
-    is_momentum = config.strategy_id == MOMENTUM_CAPTURE_STRATEGY_ID
-    if is_rmr or is_momentum:
+    no_two_pass = _is_no_two_pass_determinism_strategy(config.strategy_id)
+    if no_two_pass:
         deterministic_replay_ok = False
     else:
         metrics = backtest_report.get("metrics", {})
         deterministic_replay_ok = bool(metrics.get("deterministic_replay_ok", False))
 
     if not deterministic_replay_ok:
-        if is_rmr:
+        if no_two_pass:
             print(
-                "INFO: deterministic_replay_ok=False — RMR has no two-pass check.",
-                file=sys.stderr,
-            )
-        elif is_momentum:
-            print(
-                "INFO: deterministic_replay_ok=False — momentum_capture_v1 has no two-pass check.",
+                f"INFO: deterministic_replay_ok=False — {config.strategy_id} has no two-pass check.",
                 file=sys.stderr,
             )
         else:
@@ -1310,7 +1477,7 @@ def run_arvp_replay(config: ARVPReplayConfig) -> int:
                 "inconsistent outputs.",
                 file=sys.stderr,
             )
-        if config.deterministic_verify and not is_rmr and not is_momentum:
+        if config.deterministic_verify and not no_two_pass:
             failed_record: ReplayRunRecord | None = None
             try:
                 failed_record = _append_failed_record(
@@ -1505,6 +1672,32 @@ def _build_argument_parser() -> argparse.ArgumentParser:
     return parser
 
 
+def _write_scenario_metrics_artifact(
+    *,
+    output_dir: Path,
+    config: ARVPReplayConfig,
+    spec: ScenarioSpec,
+    backtest_report: dict[str, Any],
+) -> None:
+    if config.scenario_group_id:
+        summary_dir = output_dir / config.scenario_group_id
+    else:
+        summary_dir = output_dir
+    summary_dir.mkdir(parents=True, exist_ok=True)
+    summary_payload = {
+        "scenario_id": spec.scenario_id,
+        "run_id": backtest_report["run_metadata"]["run_id"],
+        "strategy_id": config.strategy_id,
+        "metrics": backtest_report.get("metrics", {}),
+        "dataset_summary": backtest_report.get("dataset_summary", {}),
+        "ranking_ready": False,
+    }
+    (summary_dir / f"{spec.scenario_id}_metrics.json").write_text(
+        json.dumps(summary_payload, indent=2, sort_keys=True),
+        encoding="utf-8",
+    )
+
+
 def _make_pb_run_single_fn(
     candles: list[dict[str, Any]],
     config: ARVPReplayConfig,
@@ -1543,6 +1736,12 @@ def _make_pb_run_single_fn(
                 code_commit=code_commit,
             )
 
+            _write_scenario_metrics_artifact(
+                output_dir=output_dir,
+                config=config,
+                spec=spec,
+                backtest_report=backtest_report,
+            )
             run_id = backtest_report["run_metadata"]["run_id"]
             return ScenarioRunResult(
                 scenario_id=spec.scenario_id,
@@ -1659,6 +1858,57 @@ def _make_momentum_run_single_fn(
     return run_single
 
 
+def _make_pack_a_run_single_fn(
+    candles: list[dict[str, Any]],
+    config: ARVPReplayConfig,
+    code_commit: str | None,
+    output_dir: Path,
+) -> Callable[[ScenarioSpec], ScenarioRunResult]:
+    def run_single(spec: ScenarioSpec) -> ScenarioRunResult:
+        try:
+            resolved_overrides = _apply_scenario_overrides(
+                config, spec.config_overrides
+            )
+            warmup_count = _strategy_warmup_count(config)
+            scenario_candles = _apply_replay_data_overrides(
+                candles,
+                resolved_overrides.replay_data_overrides,
+                warmup_count=warmup_count,
+            )
+            backtest_report = _run_strategy_backtest(
+                config,
+                scenario_candles,
+                code_commit=code_commit,
+                simulator_config=resolved_overrides.simulator_config,
+            )
+            run_id = backtest_report["run_metadata"]["run_id"]
+            _write_scenario_metrics_artifact(
+                output_dir=output_dir,
+                config=config,
+                spec=spec,
+                backtest_report=backtest_report,
+            )
+            return ScenarioRunResult(
+                scenario_id=spec.scenario_id,
+                exit_code=0,
+                run_id=run_id,
+            )
+        except ReplayRunnerError as exc:
+            return ScenarioRunResult(
+                scenario_id=spec.scenario_id,
+                exit_code=2,
+                failure_reason=str(exc),
+            )
+        except Exception as exc:
+            return ScenarioRunResult(
+                scenario_id=spec.scenario_id,
+                exit_code=2,
+                failure_reason=str(exc),
+            )
+
+    return run_single
+
+
 def _run_scenario_group_path_with_candles(
     config: ARVPReplayConfig,
     *,
@@ -1694,6 +1944,11 @@ def _run_scenario_group_path(
         run_single = _make_rmr_run_single_fn(candles, config, code_commit, output_dir)
     elif config.strategy_id == MOMENTUM_CAPTURE_STRATEGY_ID:
         run_single = _make_momentum_run_single_fn(candles, config, code_commit, output_dir)
+    elif config.strategy_id in {
+        DONCHIAN_BREAKOUT_STRATEGY_ID,
+        BREAKOUT_TREND_FILTER_STRATEGY_ID,
+    }:
+        run_single = _make_pack_a_run_single_fn(candles, config, code_commit, output_dir)
     else:
         run_single = _make_pb_run_single_fn(candles, config, code_commit, output_dir)
 

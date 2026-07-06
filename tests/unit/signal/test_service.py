@@ -89,6 +89,49 @@ def test_config_validation():
     ):
         invalid_breakout.validate()
 
+    invalid_donchian = SignalConfig(
+        strategy_id="donchian_breakout_v1",
+        symbol="ETHUSDT",
+        trade_side_mode="long_only",
+    )
+    with pytest.raises(
+        ValueError,
+        match="SIGNAL_SYMBOL muss fuer donchian_breakout_v1 BTCUSDT sein",
+    ):
+        invalid_donchian.validate()
+
+
+@pytest.mark.unit
+def test_donchian_breakout_v1_does_not_use_momentum_threshold():
+    test_config = SignalConfig(
+        strategy_id="donchian_breakout_v1",
+        symbol="BTCUSDT",
+        threshold_pct=0.1,
+        min_volume=1.0,
+        entry_channel_bars=3,
+        exit_channel_bars=2,
+        min_minutes_between_entries=0,
+        trade_side_mode="long_only",
+    )
+
+    with patch("service.config", test_config):
+        engine = SignalEngine()
+        signal = engine.process_market_data(
+            {
+                "symbol": "BTCUSDT",
+                "timestamp": 1700000000,
+                "price": 50000.0,
+                "close": 50000.0,
+                "high": 50000.0,
+                "low": 49900.0,
+                "volume": 1_000_000.0,
+                "pct_change": 10.0,
+            }
+        )
+
+        assert signal is None
+        assert "Momentum" not in (signal.reason if signal else "")
+
 
 @pytest.mark.unit
 def test_primary_breakout_v1_rejects_non_canonical_strategy_adapter(monkeypatch):
