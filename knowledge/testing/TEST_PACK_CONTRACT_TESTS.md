@@ -13,7 +13,7 @@ activation. LR remains NO-GO; simulation and drill evidence are not Live-Go.
 | Issue | Test module | Rule protected |
 |---|---|---|
 | #3873 | `tests/unit/test_pack/test_test_pack_manifest_catalog_contract.py` | Manifest/catalog parseability, scenario IDs, artifact links, no live defaults |
-| #3874 | `tests/unit/test_pack/test_operator_drill_evidence_pack_contract.py` | Evidence pack template, timestamps, operator fields, PASS/WARN/FAIL, no-secret |
+| #3874 | `tests/unit/test_pack/test_operator_drill_evidence_pack_contract.py` | Evidence pack template, timestamps, operator fields, PASS/WARN/FAIL, no credentials in evidence |
 | #3875 | `tests/unit/test_pack/test_kill_switch_drill_simulation_contract.py` | Simulated drill states (active/inactive/unknown), fail-closed unknown |
 
 Shared helpers: `tests/unit/test_pack/_test_pack_contract_helpers.py`  
@@ -22,7 +22,7 @@ Fixtures: `tests/fixtures/test_pack/`
 ## Why contract / fixture / simulation tests
 
 - **Testart:** Contract-Test + Simulation (see `knowledge/testing/README.md`).
-- **Fail-closed:** Missing artifacts, unknown kill-switch state, or secret-like
+- **Fail-closed:** Missing artifacts, unknown kill-switch state, or credential-like
   evidence content fails CI before operators treat partial packs as PASS.
 - **No runtime:** No BLUE/RED, no HTTP to risk service, no kill-switch file writes.
 
