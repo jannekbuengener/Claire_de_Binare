@@ -1,0 +1,77 @@
+{
+  "schema_version": "arvp_window_qualification.v1",
+  "cases": [
+    {
+      "case_id": "strict_cadence_pass",
+      "expected_verdict": "PASS",
+      "warmup_candles": 2,
+      "candles": [
+        {"ts_ms": 1704067020000, "high": 101.0, "low": 99.0, "close": 100.0},
+        {"ts_ms": 1704067080000, "high": 101.0, "low": 99.0, "close": 100.0},
+        {"ts_ms": 1704067140000, "high": 101.0, "low": 99.0, "close": 100.0},
+        {"ts_ms": 1704067200000, "high": 101.0, "low": 99.0, "close": 100.0},
+        {"ts_ms": 1704067260000, "high": 101.0, "low": 99.0, "close": 100.0}
+      ],
+      "regime_trace": {
+        "run_id": "replay-test-0001",
+        "steps": [{"ts_ms": 1, "regime_id": 0, "signals_emitted": 1}],
+        "trades": []
+      },
+      "paper_events": "complete_chain_paper_order"
+    },
+    {
+      "case_id": "cadence_gap_blocked",
+      "expected_verdict": "BLOCKED",
+      "warmup_candles": 1,
+      "candles": [
+        {"ts_ms": 1704067020000, "high": 101.0, "low": 99.0, "close": 100.0},
+        {"ts_ms": 1704067140000, "high": 101.0, "low": 99.0, "close": 100.0}
+      ],
+      "regime_trace": null,
+      "paper_events": null
+    },
+    {
+      "case_id": "missing_regime_warn",
+      "expected_verdict": "WARN",
+      "warmup_candles": 1,
+      "candles": [
+        {"ts_ms": 1704067020000, "high": 101.0, "low": 99.0, "close": 100.0},
+        {"ts_ms": 1704067080000, "high": 101.0, "low": 99.0, "close": 100.0},
+        {"ts_ms": 1704067140000, "high": 101.0, "low": 99.0, "close": 100.0}
+      ],
+      "regime_trace": {
+        "run_id": "replay-test-0002",
+        "steps": [{"ts_ms": 1, "regime_id": null, "signals_emitted": 1}],
+        "trades": []
+      },
+      "paper_events": "complete_chain_paper_order"
+    },
+    {
+      "case_id": "paper_reference_missing_warn",
+      "expected_verdict": "WARN",
+      "warmup_candles": 1,
+      "candles": [
+        {"ts_ms": 1704067020000, "high": 101.0, "low": 99.0, "close": 100.0},
+        {"ts_ms": 1704067080000, "high": 101.0, "low": 99.0, "close": 100.0},
+        {"ts_ms": 1704067140000, "high": 101.0, "low": 99.0, "close": 100.0}
+      ],
+      "regime_trace": {
+        "run_id": "replay-test-0003",
+        "steps": [{"ts_ms": 1, "regime_id": 0, "signals_emitted": 1}],
+        "trades": []
+      },
+      "paper_events": "signal_only"
+    },
+    {
+      "case_id": "all_warmup_no_live_blocked",
+      "expected_verdict": "BLOCKED",
+      "warmup_candles": 2,
+      "candles": [
+        {"ts_ms": 1704067020000, "high": 101.0, "low": 99.0, "close": 100.0},
+        {"ts_ms": 1704067080000, "high": 101.0, "low": 99.0, "close": 100.0}
+      ],
+      "regime_trace": null,
+      "paper_events": null
+    }
+  ]
+}

@@ -1,0 +1,47 @@
+{
+  "schema_version": "arvp_evidence_mapping.v1",
+  "cases": [
+    {
+      "case_id": "harvester_gap_zero_paper_chains",
+      "harvester": {
+        "limitations": ["zero paper chains observed in harvest window"],
+        "safety_boundaries": ["LR NO-GO; coverage signal only"],
+        "source_run_refs": ["run-harvester-gap-001"]
+      },
+      "data_quality_verdict": "WARNING",
+      "regime_status": "unavailable",
+      "replay_vs_paper_status": "misaligned",
+      "expect_coverage_ready": true,
+      "expect_ranking_complete": false,
+      "expect_limitation_substrings": ["zero paper chains"]
+    },
+    {
+      "case_id": "stale_feed_blocked",
+      "harvester": {
+        "limitations": ["stale feed detected in harvest window"],
+        "safety_boundaries": ["No live execution without human gate"],
+        "source_run_refs": ["run-harvester-stale-001"]
+      },
+      "data_quality_verdict": "BLOCKED",
+      "regime_status": "ok",
+      "replay_vs_paper_status": "aligned",
+      "expect_coverage_ready": false,
+      "expect_ranking_complete": false,
+      "expect_limitation_substrings": ["stale feed"]
+    },
+    {
+      "case_id": "coverage_signal_does_not_promote_to_proof",
+      "harvester": {
+        "limitations": ["partial coverage only"],
+        "safety_boundaries": ["Harvester health is not profitability proof"],
+        "source_run_refs": ["run-harvester-coverage-001"]
+      },
+      "data_quality_verdict": "PASS",
+      "regime_status": "unavailable",
+      "replay_vs_paper_status": "misaligned",
+      "expect_coverage_ready": true,
+      "expect_ranking_complete": false,
+      "expect_recommendation_not": "APPROVE"
+    }
+  ]
+}
