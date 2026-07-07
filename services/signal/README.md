@@ -27,6 +27,21 @@ Start im RED-Stack:
 docker compose -f infrastructure/compose/compose.red.yml up -d cdb_signal
 ```
 
+Parallel natural-paper (campaign-scoped, **not** canonical default; requires separate
+RUNTIME-GO; #3912 remains NOT READY):
+
+```powershell
+# Static validation only in CI/docs — do not run up without RUNTIME-GO
+docker compose `
+  -f infrastructure/compose/compose.red.yml `
+  -f manifests/runtime_np_parallel_signal_compose_override.yml `
+  config
+```
+
+See `manifests/README.md` for `cdb_signal_pb1` / `cdb_signal_donchian` bot-id
+convention, allocation override pairing, and risk-side filter contract (#3911).
+LR remains **NO-GO**.
+
 ## Key Config
 
 - `SIGNAL_STRATEGY_ID`
