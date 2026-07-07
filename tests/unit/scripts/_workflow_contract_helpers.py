@@ -1,4 +1,4 @@
-"""Shared helpers for workflow control-plane contract tests (#3844–#3847)."""
+"""Shared helpers for workflow control-plane contract tests (#3844–#3852)."""
 
 from __future__ import annotations
 
@@ -331,3 +331,334 @@ def load_required_checks_baseline(path: Path) -> list[str]:
             if isinstance(ctx, str) and str(ctx).strip()
         }
     )
+
+
+# --- P1 scope (#3848–#3852) -------------------------------------------------
+
+LABEL_CASCADE_WORKFLOW_FILES = frozenset(
+    {
+        "auto-milestone.yml",
+        "auto-milestone-label-dispatch.yml",
+        "project_status_sync.yml",
+        "project_status_label_map.yml",
+        "triage_guard.yml",
+        "add_to_project.yml",
+        "sync-labels.yml",
+    }
+)
+
+ISSUES_LABELED_CASCADE_FILES = frozenset(
+    {
+        "auto-milestone-label-dispatch.yml",
+        "project_status_label_map.yml",
+    }
+)
+
+MILESTONE_DISPATCH_CASCADE = (
+    ("auto-milestone-label-dispatch.yml", "auto_milestone_issue_label", "auto-milestone.yml"),
+)
+
+PROJECT_API_MARKERS = (
+    "gh api graphql",
+    "projectV2",
+    "addProjectV2ItemById",
+    "updateProjectV2ItemFieldValue",
+    "ensure_project_membership.py",
+)
+
+REUSABLE_GEMINI_WORKFLOW_FILES = frozenset(
+    {
+        "gemini-invoke.yml",
+        "gemini-review.yml",
+        "gemini-triage.yml",
+    }
+)
+
+REACHABLE_AGENT_AI_WORKFLOW_FILES = frozenset(
+    {
+        "gemini-dispatch.yml",
+        "opencode.yml",
+        "copilot-setup-steps.yml",
+        "copilot-housekeeping.yml",
+        "ai-review-router.yml",
+    }
+)
+
+GEMINI_DISPATCH_PLACEHOLDER_MARKERS = (
+    "gemini-dispatch placeholder",
+    'echo "gemini-dispatch placeholder"',
+)
+
+SECURITY_WORKFLOW_FILES = frozenset(
+    {
+        "trivy.yml",
+        "gitleaks.yml",
+        "codeql-python.yml",
+        "security-scan.yml",
+        "security-alert-readout.yml",
+    }
+)
+
+P1_SCHEDULED_WORKFLOW_FILES = frozenset(
+    {
+        "weekly_digest.yml",
+        "weekly_digest_failure_alert.yml",
+        "cdb-daily-delta-triage.yml",
+        "cdb-weekly-control-hygiene-classifier.yml",
+        "cdb-context-refresh-report.yml",
+        "stale.yml",
+        "python-compat.yml",
+        "e2e.yml",
+        "e2e-tests.yml",
+        "e2e-happy-path.yaml",
+    }
+)
+
+CONTROL_PLANE_COLLECTION_DIR = REPO_ROOT / ".github" / "control-plane" / "src"
+CONTROL_PLANE_VALIDATOR = REPO_ROOT / ".github" / "scripts" / "control_plane_validate.py"
+
+MANIFEST_STATUS_VALUES = frozenset(
+    {
+        "active",
+        "manual_only",
+        "parked",
+        "historical_unclear",
+    }
+)
+
+FORBIDDEN_SECRET_PERSISTENCE_MARKERS = (
+    "upload-artifact",
+    "actions/cache/save",
+    "persist_secret",
+    "secrets.json",
+)
+
+
+@dataclass(frozen=True)
+class LabelCascadeRow:
+    filename: str
+    triggers: tuple[str, ...]
+    issues_types: tuple[str, ...]
+    write_permissions: tuple[str, ...]
+    uses_project_api: bool
+    uses_repository_dispatch: bool
+    has_noise_guard: bool
+
+
+@dataclass(frozen=True)
+class ScheduleEntry:
+    filename: str
+    crons: tuple[str, ...]
+    has_workflow_dispatch: bool
+    has_schedule: bool
+    has_workflow_run: bool
+
+
+@dataclass(frozen=True)
+class SecurityWorkflowBoundary:
+    filename: str
+    triggers: tuple[str, ...]
+    has_workflow_dispatch: bool
+    has_schedule: bool
+    write_permissions: tuple[str, ...]
+    forbids_secret_artifact_upload: bool
+
+
+def extract_issues_event_types(workflow: dict[str, Any]) -> tuple[str, ...]:
+    on_section = workflow.get("on") or workflow.get(True)
+    if not isinstance(on_section, dict):
+        return ()
+    issues_block = on_section.get("issues")
+    if issues_block is None:
+        return ()
+    if isinstance(issues_block, dict):
+        types = issues_block.get("types") or []
+        return tuple(sorted(str(item) for item in types))
+    if isinstance(issues_block, list):
+        return tuple(sorted(str(item) for item in issues_block))
+    return ()
+
+
+def workflow_content_markers(path: Path, markers: tuple[str, ...]) -> bool:
+    content = path.read_text(encoding="utf-8")
+    return any(marker in content for marker in markers)
+
+
+def workflow_uses_project_api(path: Path) -> bool:
+    return workflow_content_markers(path, PROJECT_API_MARKERS)
+
+
+def workflow_uses_repository_dispatch(path: Path) -> bool:
+    content = path.read_text(encoding="utf-8")
+    return "createDispatchEvent" in content or "repository_dispatch" in content
+
+
+def workflow_has_noise_guard(path: Path) -> bool:
+    content = path.read_text(encoding="utf-8").lower()
+    guard_tokens = (
+        "concurrency:",
+        "cancel-in-progress",
+        "no-op",
+        "skipping",
+        "idempotent",
+        "prune: false",
+        "ambiguous",
+        "if:",
+        "startsWith(",
+        "--retries",
+    )
+    return any(token in content for token in guard_tokens)
+
+
+def build_label_cascade_row(workflow_path: Path) -> LabelCascadeRow:
+    workflow = load_workflow_yaml(workflow_path)
+    row = build_trigger_permission_row(workflow_path)
+    return LabelCascadeRow(
+        filename=workflow_path.name,
+        triggers=row.triggers,
+        issues_types=extract_issues_event_types(workflow),
+        write_permissions=row.write_permissions,
+        uses_project_api=workflow_uses_project_api(workflow_path),
+        uses_repository_dispatch=workflow_uses_repository_dispatch(workflow_path),
+        has_noise_guard=workflow_has_noise_guard(workflow_path),
+    )
+
+
+def build_label_cascade_map() -> dict[str, LabelCascadeRow]:
+    return {
+        filename: build_label_cascade_row(WORKFLOWS_DIR / filename)
+        for filename in sorted(LABEL_CASCADE_WORKFLOW_FILES)
+        if (WORKFLOWS_DIR / filename).is_file()
+    }
+
+
+def reusable_workflow_is_workflow_call_only(workflow_path: Path) -> bool:
+    workflow = load_workflow_yaml(workflow_path)
+    triggers = extract_on_triggers(workflow)
+    automatic = triggers.intersection(AUTOMATIC_TRIGGERS)
+    return triggers == {"workflow_call"} and not automatic
+
+
+def extract_schedule_crons(workflow: dict[str, Any]) -> tuple[str, ...]:
+    on_section = workflow.get("on") or workflow.get(True)
+    if not isinstance(on_section, dict):
+        return ()
+    schedule_block = on_section.get("schedule")
+    if schedule_block is None:
+        return ()
+    if not isinstance(schedule_block, list):
+        return ()
+    crons: list[str] = []
+    for entry in schedule_block:
+        if isinstance(entry, dict) and entry.get("cron"):
+            crons.append(str(entry["cron"]).strip())
+    return tuple(sorted(crons))
+
+
+def build_schedule_entry(workflow_path: Path) -> ScheduleEntry:
+    workflow = load_workflow_yaml(workflow_path)
+    triggers = extract_on_triggers(workflow)
+    return ScheduleEntry(
+        filename=workflow_path.name,
+        crons=extract_schedule_crons(workflow),
+        has_workflow_dispatch="workflow_dispatch" in triggers,
+        has_schedule="schedule" in triggers,
+        has_workflow_run="workflow_run" in triggers,
+    )
+
+
+def build_p1_schedule_map() -> dict[str, ScheduleEntry]:
+    entries: dict[str, ScheduleEntry] = {}
+    for filename in sorted(P1_SCHEDULED_WORKFLOW_FILES):
+        path = WORKFLOWS_DIR / filename
+        if path.is_file():
+            entries[filename] = build_schedule_entry(path)
+    return entries
+
+
+def find_cron_collisions(schedule_map: dict[str, ScheduleEntry]) -> dict[str, tuple[str, ...]]:
+    collisions: dict[str, list[str]] = {}
+    for filename, entry in schedule_map.items():
+        for cron in entry.crons:
+            collisions.setdefault(cron, []).append(filename)
+    return {
+        cron: tuple(sorted(files))
+        for cron, files in collisions.items()
+        if len(files) > 1
+    }
+
+
+def build_security_boundary_row(workflow_path: Path) -> SecurityWorkflowBoundary:
+    workflow = load_workflow_yaml(workflow_path)
+    triggers = tuple(sorted(extract_on_triggers(workflow)))
+    content = workflow_path.read_text(encoding="utf-8").lower()
+    row = build_trigger_permission_row(workflow_path)
+    forbids_upload = not any(
+        marker in content for marker in FORBIDDEN_SECRET_PERSISTENCE_MARKERS
+    )
+    if workflow_path.name == "gitleaks.yml":
+        forbids_upload = "upload-artifact" not in content
+    if workflow_path.name == "security-scan.yml":
+        forbids_upload = False
+    return SecurityWorkflowBoundary(
+        filename=workflow_path.name,
+        triggers=triggers,
+        has_workflow_dispatch="workflow_dispatch" in triggers,
+        has_schedule="schedule" in triggers,
+        write_permissions=row.write_permissions,
+        forbids_secret_artifact_upload=forbids_upload,
+    )
+
+
+def list_manifest_unit_dirs(collection_dir: Path = CONTROL_PLANE_COLLECTION_DIR) -> list[Path]:
+    if not collection_dir.exists():
+        return []
+    return sorted(
+        path
+        for path in collection_dir.iterdir()
+        if path.is_dir() and (path / "manifest.yaml").is_file()
+    )
+
+
+def load_manifest_yaml(manifest_path: Path) -> dict[str, Any]:
+    payload = yaml.safe_load(manifest_path.read_text(encoding="utf-8"))
+    if not isinstance(payload, dict):
+        raise ValueError(f"manifest must be a mapping: {manifest_path}")
+    return payload
+
+
+def manifest_triggers_match_yaml(manifest: dict[str, Any], workflow_path: Path) -> bool:
+    declared = {
+        str(item).split(":")[0].strip()
+        for item in (manifest.get("workflow") or {}).get("triggers") or []
+    }
+    workflow = load_workflow_yaml(workflow_path)
+    actual = extract_on_triggers(workflow)
+    return declared == actual
+
+
+def manifest_permissions_match_yaml(manifest: dict[str, Any], workflow_path: Path) -> bool:
+    declared = (manifest.get("workflow") or {}).get("permissions") or {}
+    if not isinstance(declared, dict):
+        return False
+    workflow = load_workflow_yaml(workflow_path)
+    actual = extract_top_level_permissions(workflow)
+    normalized_declared = {str(k): str(v) for k, v in declared.items()}
+    return normalized_declared == actual
+
+
+def control_plane_missing_unit_findings() -> tuple[str, ...]:
+    cataloged: set[str] = set()
+    for unit_dir in list_manifest_unit_dirs():
+        manifest = load_manifest_yaml(unit_dir / "manifest.yaml")
+        workflow_path = (manifest.get("workflow") or {}).get("path", "")
+        if isinstance(workflow_path, str) and workflow_path.strip():
+            cataloged.add(workflow_path.rsplit("/", 1)[-1])
+    disk = set(list_workflow_yaml_files(WORKFLOWS_DIR))
+    expected_catalog = {
+        "cdb-control-followup-classifier.yml",
+        "cdb-daily-delta-triage.yml",
+        "cdb-post-merge-followup-scanner.yml",
+    }
+    missing = sorted(name for name in expected_catalog if name in disk and name not in cataloged)
+    return tuple(missing)
