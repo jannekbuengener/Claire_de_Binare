@@ -1,0 +1,10 @@
+{
+  "description": "Malformed ledger events — must not promote (#3821).",
+  "events": [
+    {
+      "id": 1,
+      "event_type": "SIGNAL",
+      "status": "active"
+    }
+  ]
+}

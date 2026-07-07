@@ -1,0 +1,51 @@
+{
+  "contract_version": "arvp_paper_reference_window.v1",
+  "end_ts_ms_utc": 1704153600000,
+  "events": [
+    {
+      "correlation_id": "c0",
+      "event_pk": "s0",
+      "event_type": "SIGNAL",
+      "payload": {
+        "strategy_id": "primary_breakout_v1"
+      },
+      "signal_id": "sig-0",
+      "symbol": "BTCUSDT",
+      "timestamp_ms": 1704067200000
+    },
+    {
+      "correlation_id": "c0",
+      "decision_id": "dec-0",
+      "event_pk": "o0",
+      "event_type": "ORDER",
+      "order_id": "paper_000",
+      "payload": {
+        "strategy_id": "primary_breakout_v1"
+      },
+      "signal_id": "sig-0",
+      "symbol": "BTCUSDT",
+      "timestamp_ms": 1704067320000
+    },
+    {
+      "correlation_id": "c0",
+      "decision_id": "dec-0",
+      "event_pk": "f0",
+      "event_type": "FILL",
+      "fill_id": "fill-0",
+      "order_id": "paper_000",
+      "payload": {
+        "strategy_id": "primary_breakout_v1"
+      },
+      "signal_id": "sig-0",
+      "symbol": "BTCUSDT",
+      "timestamp_ms": 1704067380000
+    }
+  ],
+  "extracted_at_utc": "2026-04-24T00:00:00+00:00",
+  "extracted_by": "unit-test",
+  "source_query_intent": "arvp-p0-contract",
+  "source_table": "public.correlation_ledger",
+  "start_ts_ms_utc": 1704067200000,
+  "strategy_id": "primary_breakout_v1",
+  "symbol": "BTCUSDT"
+}

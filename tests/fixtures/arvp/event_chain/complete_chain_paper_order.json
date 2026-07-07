@@ -1,0 +1,33 @@
+{
+  "description": "Fixture-only SIGNAL→DECISION→ORDER(paper_)→FILL chain for ARVP P0 contract (#3821).",
+  "events": [
+    {
+      "id": 101,
+      "ts_ms": "2026-06-11T11:45:00Z",
+      "event_type": "SIGNAL",
+      "status": "active",
+      "lineage_hash": "lineage-arvp-3821"
+    },
+    {
+      "id": 102,
+      "ts_ms": "2026-06-11T11:46:00Z",
+      "event_type": "DECISION",
+      "status": "executed",
+      "lineage_hash": "lineage-arvp-3821"
+    },
+    {
+      "id": 103,
+      "ts_ms": "2026-06-11T11:47:00Z",
+      "event_type": "ORDER(paper_)",
+      "status": "filled",
+      "lineage_hash": "lineage-arvp-3821"
+    },
+    {
+      "id": 104,
+      "ts_ms": "2026-06-11T11:48:00Z",
+      "event_type": "FILL",
+      "status": "confirmed",
+      "lineage_hash": "lineage-arvp-3821"
+    }
+  ]
+}
