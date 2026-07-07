@@ -1,0 +1,52 @@
+{
+  "artifact_manifest": {
+    "envelope_log_uri": "none",
+    "event_loop_states_uri": "none",
+    "report_artifact_uri": "report.json"
+  },
+  "dataset_summary": {
+    "period_end_ts_ms": 1704153600000,
+    "period_start_ts_ms": 1704067200000
+  },
+  "envelope_summary": {
+    "decision_envelopes_total": 0,
+    "fill_envelopes_total": 2,
+    "order_envelopes_total": 2
+  },
+  "execution_result": {
+    "decisions_made": 0,
+    "envelope_hashes": [],
+    "events_processed": 10,
+    "fills_recorded": 2,
+    "orders_placed": 2,
+    "run_id": "replay-aabbccddee11-0001"
+  },
+  "metrics": {
+    "buy_signals_total": 2,
+    "closed_trades_total": 2,
+    "sell_signals_total": 1,
+    "signals_total": 3
+  },
+  "replay_integrity": {
+    "envelope_chain_hash": "cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc",
+    "envelope_count": 0,
+    "event_loop_states_hash": "cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc",
+    "integrity_ok": true,
+    "run_id": "replay-aabbccddee11-0001"
+  },
+  "report_type": "shadow_replay",
+  "run_spec": {
+    "code_commit": "aaaaaaa",
+    "end_ts_ms": 1704153600000,
+    "metadata": {
+      "dataset_fingerprint": "bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb"
+    },
+    "replay_run_id": "replay-aabbccddee11-0001",
+    "run_mode": "shadow",
+    "start_ts_ms": 1704067200000,
+    "strategy_id": "primary_breakout_v1",
+    "symbol": "BTCUSDT"
+  },
+  "schema_version": "replay_report.v1",
+  "strategy_id": "primary_breakout_v1"
+}
