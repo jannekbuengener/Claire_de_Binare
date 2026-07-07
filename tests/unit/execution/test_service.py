@@ -2,16 +2,21 @@
 Unit-Tests für Execution Service.
 
 Governance: CDB_AGENT_POLICY.md, CDB_PSM_POLICY.md
-
-Note: Placeholder tests marked with @pytest.mark.skip (Issue #308)
 """
+
+from __future__ import annotations
+
+from unittest.mock import MagicMock
 
 import pytest
 
 from services.execution import config, service
 
-# TODO(#308): Import actual service when implementation is stable
-# from services.execution.service import ExecutionService
+from tests.unit.execution._execution_boundary_contract_helpers import (
+    ExecutionHarness,
+    execution_harness,
+    valid_order_payload,
+)
 
 
 @pytest.mark.unit
@@ -26,38 +31,43 @@ def test_health_endpoint_reports_ok() -> None:
 
 
 @pytest.mark.unit
-@pytest.mark.skip(reason="Placeholder - needs implementation (Issue #308)")
-def test_service_initialization(mock_redis, mock_postgres, test_config):
-    """
-    Test: Execution Service kann initialisiert werden.
-
-    Prüft, dass der Service mit Mock-Dependencies korrekt erstellt wird.
-    """
-    # TODO(#308): Implement when ExecutionService class is available
-    # service = ExecutionService(redis_client=mock_redis, db_conn=mock_postgres, config=test_config)
-    # assert service is not None
-    pass
-
-
-@pytest.mark.unit
-@pytest.mark.skip(reason="Placeholder - needs implementation (Issue #308)")
-def test_config_validation(test_config):
-    """
-    Test: Config wird korrekt validiert.
-
-    Prüft, dass ungültige Configs abgelehnt werden.
-    """
-    # TODO(#308): Implement config validation test
-    pass
+def test_service_stats_initialized_after_process_order(
+    execution_harness: ExecutionHarness,
+) -> None:
+    execution_harness.executor.execute_order.return_value = MagicMock(
+        status="FILLED",
+        filled_quantity=0.001,
+        fill_id="f1",
+        order_id="o1",
+        symbol="BTCUSDT",
+        side="BUY",
+        price=50000.0,
+        error_message=None,
+    )
+    before = service.get_stats_copy()
+    service.process_order(valid_order_payload(run_mode="paper"))
+    after = service.get_stats_copy()
+    assert after["orders_received"] == before["orders_received"] + 1
 
 
 @pytest.mark.unit
-@pytest.mark.skip(reason="Placeholder - needs implementation (Issue #308)")
-def test_order_submission(mock_redis, order_factory):
-    """
-    Test: Order kann submitted werden.
+def test_config_mock_trading_default_is_safe_for_ci() -> None:
+    assert config.MOCK_TRADING is True or config.DRY_RUN is True
 
-    Prüft, dass Orders korrekt an die Exchange weitergeleitet werden.
-    """
-    # TODO(#308): Implement order submission test
-    pass
+
+@pytest.mark.unit
+def test_order_submission_calls_mock_executor_not_live(
+    execution_harness: ExecutionHarness,
+) -> None:
+    execution_harness.executor.execute_order.return_value = MagicMock(
+        status="FILLED",
+        filled_quantity=0.001,
+        fill_id="f1",
+        order_id="o1",
+        symbol="BTCUSDT",
+        side="BUY",
+        price=50000.0,
+        error_message=None,
+    )
+    service.process_order(valid_order_payload(run_mode="paper"))
+    execution_harness.executor.execute_order.assert_called_once()
