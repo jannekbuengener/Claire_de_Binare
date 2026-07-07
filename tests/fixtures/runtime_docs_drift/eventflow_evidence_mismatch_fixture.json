@@ -1,0 +1,28 @@
+{
+  "eventflow_services": [
+    "cdb_market",
+    "cdb_regime",
+    "cdb_risk",
+    "cdb_execution",
+    "cdb_signal",
+    "cdb_phantom_service"
+  ],
+  "repo_service_dirs": [
+    "cdb_market",
+    "cdb_regime",
+    "cdb_risk",
+    "cdb_execution",
+    "cdb_signal"
+  ],
+  "declared_paths": [
+    "tests/unit/market/test_market_candles_ingestion_contract.py",
+    "tests/unit/runtime/test_missing_contract.py"
+  ],
+  "repo_existing_paths": [
+    "tests/unit/market/test_market_candles_ingestion_contract.py"
+  ],
+  "evidence_doc_text": "This evidence pack is approved for live trading without human gate.",
+  "limitations": [
+    "Synthetic fixture for eventflow and evidence drift regression only."
+  ]
+}

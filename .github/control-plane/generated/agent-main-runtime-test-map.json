@@ -1,0 +1,201 @@
+{
+  "schema_version": "1",
+  "coverage": "partial",
+  "catalog_scope": "agent-facing-main-runtime-test-map-p2",
+  "limitations": [
+    "Partial coverage only \u2014 not all runtime services have contract-test entries.",
+    "Eventflow surfaces allocation, candles, ws, and db_writer are not mapped here.",
+    "Map lists primary P0/P1 contract tests; broader unit suites are out of scope.",
+    "Missing mappings are surfaced explicitly; absence does not imply no tests exist.",
+    "No coverage percentage or complete-coverage claim."
+  ],
+  "required_surfaces": [
+    "execution",
+    "market",
+    "regime",
+    "risk",
+    "signal",
+    "validation"
+  ],
+  "mapped_surfaces": [
+    "execution",
+    "market",
+    "regime",
+    "risk",
+    "signal",
+    "validation"
+  ],
+  "missing_required_surfaces": [],
+  "known_unmapped_runtime_surfaces": [
+    {
+      "service": "cdb_candles",
+      "reason": "no dedicated P0/P1 contract-test entry in this map"
+    },
+    {
+      "service": "cdb_allocation",
+      "reason": "no dedicated P0/P1 contract-test entry in this map"
+    },
+    {
+      "service": "cdb_ws",
+      "reason": "RED stack feed; no dedicated main-runtime contract entry"
+    },
+    {
+      "service": "cdb_db_writer",
+      "reason": "persistence consumer; covered indirectly via IO contract"
+    }
+  ],
+  "entry_count": 18,
+  "canonical_entry_count": 14,
+  "supplemental_entry_count": 4,
+  "entries": [
+    {
+      "surface": "market",
+      "behavior": "ingest candles and publish market_state with fail-closed validation",
+      "service": "cdb_market",
+      "test": "tests/unit/market/test_market_candles_ingestion_contract.py",
+      "fixtures": [],
+      "issue_ref": "#3831"
+    },
+    {
+      "surface": "regime",
+      "behavior": "classify market regime and emit UNKNOWN on invalid candles",
+      "service": "cdb_regime",
+      "test": "tests/unit/regime/test_regime_service_contract.py",
+      "fixtures": [],
+      "issue_ref": "#3832"
+    },
+    {
+      "surface": "regime",
+      "behavior": "regime_id semantics and risk-boundary mapping",
+      "service": "cdb_regime",
+      "test": "tests/unit/regime/test_regime_id_semantics_contract.py",
+      "fixtures": [],
+      "issue_ref": "#3832"
+    },
+    {
+      "surface": "signal",
+      "behavior": "signal core fail-closed and config hash contract",
+      "service": "cdb_signal",
+      "test": "tests/unit/signal/test_signal_core_contract.py",
+      "fixtures": [],
+      "issue_ref": "#3833"
+    },
+    {
+      "surface": "signal",
+      "behavior": "optimizer stub contract and unknown adapter fail-closed",
+      "service": "cdb_signal",
+      "test": "tests/unit/signal/test_optimizer_contract.py",
+      "fixtures": [],
+      "issue_ref": "#3833"
+    },
+    {
+      "surface": "signal",
+      "behavior": "market classifier warmup and UNKNOWN emit contract",
+      "service": "cdb_signal",
+      "test": "tests/unit/signal/test_market_classifier_contract.py",
+      "fixtures": [],
+      "issue_ref": "#3832"
+    },
+    {
+      "surface": "risk",
+      "behavior": "decision matrix allow/block semantics",
+      "service": "cdb_risk",
+      "test": "tests/unit/risk/test_decision_matrix_contract.py",
+      "fixtures": [],
+      "issue_ref": "#3834"
+    },
+    {
+      "surface": "risk",
+      "behavior": "reason-code contract and fail-closed blocking",
+      "service": "cdb_risk",
+      "test": "tests/unit/risk/test_reason_codes_contract.py",
+      "fixtures": [],
+      "issue_ref": "#3834"
+    },
+    {
+      "surface": "risk",
+      "behavior": "live-trading gate blocks without explicit confirmation",
+      "service": "cdb_risk",
+      "test": "tests/unit/risk/test_live_trading_gate_contract.py",
+      "fixtures": [],
+      "issue_ref": "#3834"
+    },
+    {
+      "surface": "execution",
+      "behavior": "paper/live boundary and mock-trading fail-closed",
+      "service": "cdb_execution",
+      "test": "tests/unit/execution/test_execution_boundary_contract.py",
+      "fixtures": [],
+      "issue_ref": "#3835"
+    },
+    {
+      "surface": "execution",
+      "behavior": "order state-machine transitions",
+      "service": "cdb_execution",
+      "test": "tests/unit/execution/test_state_machine_contract.py",
+      "fixtures": [],
+      "issue_ref": "#3835"
+    },
+    {
+      "surface": "execution",
+      "behavior": "paper order result contract",
+      "service": "cdb_execution",
+      "test": "tests/unit/execution/test_paper_order_contract.py",
+      "fixtures": [],
+      "issue_ref": "#3835"
+    },
+    {
+      "surface": "validation",
+      "behavior": "profitability validation regression and evidence-only scoring",
+      "service": "cdb_validation",
+      "test": "tests/unit/validation/test_profitability_validation_regression_contract.py",
+      "fixtures": [],
+      "issue_ref": "#3840"
+    },
+    {
+      "surface": "validation",
+      "behavior": "stimulus regime signal contract",
+      "service": "cdb_validation",
+      "test": "tests/unit/validation/test_stimulus_regime_signal_contract.py",
+      "fixtures": [],
+      "issue_ref": "#3840"
+    },
+    {
+      "surface": "runtime_flow",
+      "behavior": "fixture-based market\u2192signal\u2192risk\u2192paper execution chain",
+      "service": "cross-cutting",
+      "test": "tests/unit/runtime/test_main_runtime_flow_contract.py",
+      "fixtures": [
+        "tests/fixtures/runtime_flow/market_tick_happy.json",
+        "tests/fixtures/runtime_flow/stale_context.json",
+        "tests/fixtures/runtime_flow/blocked_regime.json",
+        "tests/fixtures/runtime_flow/invalid_execution_order.json"
+      ],
+      "issue_ref": "#3838"
+    },
+    {
+      "surface": "runtime_io",
+      "behavior": "redis/postgres/ledger IO fail-closed contracts",
+      "service": "cross-cutting",
+      "test": "tests/unit/utils/test_runtime_io_ledger_contract.py",
+      "fixtures": [],
+      "issue_ref": "#3836"
+    },
+    {
+      "surface": "config_safety",
+      "behavior": "trading mode, feature flags, LR NO-GO canon",
+      "service": "cross-cutting",
+      "test": "tests/unit/config/test_config_safety_gate_contract.py",
+      "fixtures": [],
+      "issue_ref": "#3837"
+    },
+    {
+      "surface": "health_metrics",
+      "behavior": "health/status/metrics without Live-Go markers",
+      "service": "cross-cutting",
+      "test": "tests/unit/runtime/test_health_metrics_contract.py",
+      "fixtures": [],
+      "issue_ref": "#3839"
+    }
+  ]
+}
