@@ -1,0 +1,60 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "title": "Gear Reason Codes v1",
+  "description": "Canonical taxonomy for gearbox selection, rejection, and idle reason codes.",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["schema_version", "codes"],
+  "properties": {
+    "schema_version": {
+      "const": "gear_reason_codes.v1"
+    },
+    "codes": {
+      "type": "array",
+      "minItems": 8,
+      "uniqueItems": true,
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": ["code", "category", "description"],
+        "properties": {
+          "code": {
+            "type": "string",
+            "enum": [
+              "SELECTED",
+              "PARKED",
+              "BLOCKED",
+              "IDLE",
+              "EVIDENCE_GAP",
+              "RISK_BLOCKED",
+              "REGIME_MISMATCH",
+              "NOT_RUNTIME_READY",
+              "DATA_STALE",
+              "CORRELATION_RISK",
+              "SLEEVE_LIMIT"
+            ]
+          },
+          "category": {
+            "type": "string",
+            "enum": [
+              "selection",
+              "lifecycle",
+              "evidence",
+              "risk",
+              "regime",
+              "runtime",
+              "data",
+              "correlation",
+              "sleeve"
+            ]
+          },
+          "description": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 500
+          }
+        }
+      }
+    }
+  }
+}

@@ -1,0 +1,28 @@
+{
+  "schema_version": "loop_boundary.v1",
+  "learning_loop": {
+    "may_evaluate": [
+      "rank_gears",
+      "collect_evidence",
+      "produce_selector_advisory",
+      "update_gear_registry_state"
+    ],
+    "must_not": [
+      "submit_orders",
+      "bypass_risk_gate",
+      "bypass_kill_switch",
+      "bypass_execution_gate"
+    ]
+  },
+  "trading_loop": {
+    "may_act_only_after": ["risk_gate", "kill_switch", "execution_gate"],
+    "must_not": [
+      "collapse_learning_into_trading",
+      "treat_selector_as_order_approval",
+      "force_trade_from_idle"
+    ]
+  },
+  "selector_output_is_not_order_approval": true,
+  "evidence_does_not_replace_runtime_gates": true,
+  "loops_must_not_collapse": true
+}

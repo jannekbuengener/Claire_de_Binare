@@ -1,0 +1,43 @@
+{
+  "schema_version": "strategy_gear_registry.v1",
+  "gear_id": "gear-primary-breakout-v1-btcusdt",
+  "strategy_id": "primary_breakout_v1",
+  "bot_id": "np-pb1-01",
+  "supported_modes": {
+    "shadow": true,
+    "paper": true,
+    "live": false
+  },
+  "runtime_readiness": "runtime",
+  "evidence_requirements": {
+    "lifecycle_state": "ELIGIBLE",
+    "ranking_ready": true,
+    "net_economics_ready": false,
+    "last_evidence_packet_ref": "docs/evidence/arvp_natural_paper_window_bank_readonly_feasibility_3742.md"
+  },
+  "allocation_profile": {
+    "rules_ref": "ALLOCATION_RULES_JSON:primary_breakout_v1",
+    "max_allocation_pct_hint": "0.25"
+  },
+  "risk_boundaries": {
+    "sleeve": "EXPERIMENTAL",
+    "exposure_cap_hint": "0.25",
+    "no_live_authority": true
+  },
+  "allowed_outputs": [
+    "selector_advisory",
+    "ranking_signal",
+    "evidence_snapshot",
+    "protective_idle_report"
+  ],
+  "known_limitations": [
+    "LR NO-GO — no live authority",
+    "Shared risk/execution path under parallel pilot"
+  ],
+  "routing_state": {
+    "lifecycle_state": "ELIGIBLE",
+    "eligible_for_shadow": true,
+    "eligible_for_paper": true,
+    "eligible_for_live": false
+  }
+}

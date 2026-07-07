@@ -1,0 +1,24 @@
+{
+  "schema_version": "selector_decision.v1",
+  "decision_id": "sel-20260707-np-parallel-01",
+  "selected_gear": null,
+  "eligible_gears": [
+    "gear-primary-breakout-v1-btcusdt",
+    "gear-donchian-breakout-v1-btcusdt"
+  ],
+  "rejected_gears": [
+    {
+      "gear_id": "gear-donchian-breakout-v1-btcusdt",
+      "reason_codes": ["REGIME_MISMATCH"]
+    }
+  ],
+  "reason_codes": ["IDLE", "REGIME_MISMATCH"],
+  "protective_idle_allowed": true,
+  "evidence_snapshot_ref": "docs/design/arvp_gearbox_design_contracts_3913.md",
+  "no_trade_approval": true,
+  "decision_scope": {
+    "symbol": "BTCUSDT",
+    "timeframe": "1m",
+    "evaluation_window_ref": "HYP-NP-PARALLEL-2S-01"
+  }
+}

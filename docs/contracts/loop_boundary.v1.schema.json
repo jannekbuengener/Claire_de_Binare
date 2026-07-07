@@ -1,0 +1,93 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "title": "Loop Boundary v1",
+  "description": "Separation contract between Learning Loop and Trading Loop in the CDB gearbox.",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "schema_version",
+    "learning_loop",
+    "trading_loop",
+    "selector_output_is_not_order_approval",
+    "evidence_does_not_replace_runtime_gates",
+    "loops_must_not_collapse"
+  ],
+  "properties": {
+    "schema_version": {
+      "const": "loop_boundary.v1"
+    },
+    "learning_loop": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["may_evaluate", "must_not"],
+      "properties": {
+        "may_evaluate": {
+          "type": "array",
+          "minItems": 1,
+          "uniqueItems": true,
+          "items": {
+            "type": "string",
+            "enum": [
+              "rank_gears",
+              "collect_evidence",
+              "produce_selector_advisory",
+              "update_gear_registry_state"
+            ]
+          }
+        },
+        "must_not": {
+          "type": "array",
+          "minItems": 1,
+          "uniqueItems": true,
+          "items": {
+            "type": "string",
+            "enum": [
+              "submit_orders",
+              "bypass_risk_gate",
+              "bypass_kill_switch",
+              "bypass_execution_gate"
+            ]
+          }
+        }
+      }
+    },
+    "trading_loop": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["may_act_only_after", "must_not"],
+      "properties": {
+        "may_act_only_after": {
+          "type": "array",
+          "minItems": 3,
+          "uniqueItems": true,
+          "items": {
+            "type": "string",
+            "enum": ["risk_gate", "kill_switch", "execution_gate"]
+          }
+        },
+        "must_not": {
+          "type": "array",
+          "minItems": 1,
+          "uniqueItems": true,
+          "items": {
+            "type": "string",
+            "enum": [
+              "collapse_learning_into_trading",
+              "treat_selector_as_order_approval",
+              "force_trade_from_idle"
+            ]
+          }
+        }
+      }
+    },
+    "selector_output_is_not_order_approval": {
+      "const": true
+    },
+    "evidence_does_not_replace_runtime_gates": {
+      "const": true
+    },
+    "loops_must_not_collapse": {
+      "const": true
+    }
+  }
+}
