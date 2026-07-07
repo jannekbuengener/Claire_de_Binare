@@ -1,0 +1,62 @@
+{
+  "schema_version": "arvp_scenario_pack_matrix.v1",
+  "canonical_adapter_by_strategy": {
+    "primary_breakout_v1": "primary_breakout_runner_v1",
+    "donchian_breakout_v1": "donchian_breakout_runner_v1",
+    "breakout_trend_filter_v1": "breakout_trend_filter_runner_v1",
+    "range_mean_reversion_v1": "range_mean_reversion_runner_v1",
+    "momentum_capture_v1": "momentum_capture_runner_v1"
+  },
+  "builtin_scenario_ids": [
+    "baseline",
+    "pessimistic_execution",
+    "delayed_execution",
+    "low_liquidity",
+    "feed_gap"
+  ],
+  "supported_examples": [
+    {
+      "strategy_id": "primary_breakout_v1",
+      "adapter_id": "primary_breakout_runner_v1",
+      "scenario_id": "baseline"
+    },
+    {
+      "strategy_id": "donchian_breakout_v1",
+      "adapter_id": "donchian_breakout_runner_v1",
+      "scenario_id": "feed_gap"
+    },
+    {
+      "strategy_id": "range_mean_reversion_v1",
+      "adapter_id": "range_mean_reversion_runner_v1",
+      "scenario_id": "pessimistic_execution"
+    }
+  ],
+  "unsupported_examples": [
+    {
+      "strategy_id": "primary_breakout_v1",
+      "adapter_id": "donchian_breakout_runner_v1",
+      "scenario_id": "baseline",
+      "reason": "adapter_strategy_mismatch"
+    },
+    {
+      "strategy_id": "not_a_strategy",
+      "adapter_id": "primary_breakout_runner_v1",
+      "scenario_id": "baseline",
+      "reason": "unsupported_strategy_id"
+    },
+    {
+      "strategy_id": "primary_breakout_v1",
+      "adapter_id": "unknown_adapter",
+      "scenario_id": "baseline",
+      "reason": "unsupported_adapter_id"
+    }
+  ],
+  "blocked_examples": [
+    {
+      "strategy_id": "primary_breakout_v1",
+      "adapter_id": "primary_breakout_runner_v1",
+      "scenario_id": "not_a_real_pack",
+      "reason": "unknown_scenario_pack"
+    }
+  ]
+}
