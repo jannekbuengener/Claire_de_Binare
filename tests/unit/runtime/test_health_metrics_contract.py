@@ -5,6 +5,7 @@ No external monitoring stack; Flask test clients only.
 
 from __future__ import annotations
 
+import importlib
 from unittest.mock import MagicMock, patch
 
 import pytest
@@ -88,19 +89,45 @@ def test_risk_health_reports_running_state(monkeypatch: pytest.MonkeyPatch) -> N
 def test_risk_metrics_include_kill_switch_and_do_not_claim_live_go(
     monkeypatch: pytest.MonkeyPatch,
 ) -> None:
-    risk_svc.stats["status"] = "running"
-    risk_svc.stats["signals_received"] = 3
-    risk_svc.stats["orders_blocked"] = 1
-    risk_svc.risk_state.circuit_breaker_active = False
-    with patch(
-        "services.risk.service.get_kill_switch_details",
-        return_value=(True, "MANUAL", "test", "2026-01-01T00:00:00Z"),
-    ):
-        body = risk_svc.app.test_client().get("/metrics").get_data(as_text=True)
+    risk_mod = importlib.import_module("services.risk.service")
+    if risk_mod.app is None:
+        pytest.skip("Flask app unavailable after risk service reload")
+
+    risk_mod.stats["status"] = "running"
+    risk_mod.stats["signals_received"] = 3
+    risk_mod.stats["orders_blocked"] = 1
+    risk_mod.risk_state.circuit_breaker_active = False
+    monkeypatch.setattr(
+        risk_mod,
+        "get_kill_switch_details",
+        lambda create_if_missing=False: (True, "MANUAL", "test", "2026-01-01T00:00:00Z"),
+    )
+    body = risk_mod.app.test_client().get("/metrics").get_data(as_text=True)
     assert "risk_kill_switch_active 1" in body
     lowered = body.lower()
     for marker in _LIVE_GO_MARKERS:
         assert marker not in lowered
+
+
+@pytest.mark.skipif(
+    not hasattr(risk_svc, "app"),
+    reason="Flask unavailable in risk service import surface",
+)
+def test_risk_metrics_kill_switch_read_failure_defaults_to_zero(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    risk_mod = importlib.import_module("services.risk.service")
+    if risk_mod.app is None:
+        pytest.skip("Flask app unavailable after risk service reload")
+
+    risk_mod.stats["status"] = "running"
+    monkeypatch.setattr(
+        risk_mod,
+        "get_kill_switch_details",
+        lambda create_if_missing=False: (_ for _ in ()).throw(OSError("state unreadable")),
+    )
+    body = risk_mod.app.test_client().get("/metrics").get_data(as_text=True)
+    assert "risk_kill_switch_active 0" in body
 
 
 @pytest.mark.skipif(
