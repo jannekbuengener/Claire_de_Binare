@@ -10,6 +10,8 @@
 
 ## Repo / Engineering Status (2026-07-07)
 
+- **#3830 Main Runtime Test Coverage Meta (P0–P2)**: **DONE_MERGED_META_CLOSED** — final slice PR [#3902](https://github.com/jannekbuengener/Claire_de_Binare/pull/3902) squash-merged @ `d3ad7d4c`. Children **#3831–#3842** all **CLOSED**; meta **#3830 CLOSED**. Prior slices: #3900 (#3831–#3835 P0), #3901 (#3836–#3840 P1). Final delivery: `agent-main-runtime-test-map.json` + `test_main_runtime_test_map_contract.py` (#3841); `test_main_runtime_docs_evidence_drift_contract.py` + drift fixtures (#3842). Partial map (`coverage: partial`); detect-only drift (no auto-fix). 39 runtime contract tests (`pytest -q tests/unit/runtime -m contract`). Refs #1445 (stays open). LR **NO-GO** unchanged.
+
 - **#3855 Infra / Ops / Stack Test Coverage Meta (P0–P2)**: **DONE_MERGED_META_CLOSED** — final slice PR [#3898](https://github.com/jannekbuengener/Claire_de_Binare/pull/3898) squash-merged @ `68d5eb02`. Children **#3856–#3863** all **CLOSED**; meta **#3855 CLOSED**. Prior slices: #3890 (#3856+#3857), #3891 (#3858+#3859). Final delivery: TLS/network (`test_tls_network_contract.py`), monitoring provisioning (`test_monitoring_config_contract.py`), legacy quarantine (`test_legacy_script_quarantine_contract.py`), infra runbook drift (`test_infra_runbook_drift_contract.py`) + helpers under `tests/unit/infra/`. 137 infra contract tests (`pytest -q tests/unit/infra -m contract`). Static/fixture-only; no Docker/runtime/TLS/monitoring mutation. Refs #1445, #2985 (stay open). LR **NO-GO** unchanged.
 
 ## Repo / Engineering Status (2026-07-06)
