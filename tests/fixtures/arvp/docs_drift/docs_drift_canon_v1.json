@@ -1,0 +1,18 @@
+{
+  "schema_version": "1",
+  "no_auto_fix_contract": {
+    "mode": "detect_only",
+    "forbidden": [
+      "automatic doc correction",
+      "automatic issue closure",
+      "automatic issue creation",
+      "auto_mutate_db",
+      "live_github_fetch_in_ci"
+    ]
+  },
+  "limitations": [
+    "Fixture-backed ARVP drift detection only; real repo scan is separate.",
+    "ARVP flow docs are onboarding orientation, not authoritative runtime truth.",
+    "Roadmap/evidence mismatch fixtures demonstrate detection patterns only."
+  ]
+}

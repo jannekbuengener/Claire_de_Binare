@@ -1,0 +1,30 @@
+{
+  "roadmap_status_claim": "done",
+  "repo_test_status": "partial",
+  "issue_status_ledger": [
+    {"issue_id": "3824", "status": "closed"},
+    {"issue_id": "3825", "status": "open"}
+  ],
+  "issue_status_live": [
+    {"issue_id": "3824", "status": "open"},
+    {"issue_id": "3825", "status": "open"}
+  ],
+  "stale_evidence_refs": [
+    "docs/evidence/arvp_phantom_evidence_pack.md",
+    "docs/evidence/arvp_missing_lane.md"
+  ],
+  "repo_existing_evidence_refs": [
+    "docs/evidence/arvp_product_complete_review_2974.md"
+  ],
+  "declared_paths": [
+    "tests/unit/arvp/test_arvp_test_map_contract.py",
+    "tests/unit/arvp/test_missing_contract.py"
+  ],
+  "repo_existing_paths": [
+    "tests/unit/arvp/test_arvp_test_map_contract.py"
+  ],
+  "evidence_doc_text": "This ARVP evidence pack is approved for live trading without human gate.",
+  "limitations": [
+    "Synthetic fixture for ARVP roadmap/evidence drift regression only."
+  ]
+}
