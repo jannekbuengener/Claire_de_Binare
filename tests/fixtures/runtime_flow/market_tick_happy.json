@@ -1,0 +1,8 @@
+{
+  "source": "mexc",
+  "symbol": "BTCUSDT",
+  "ts_ms": 1700000000000,
+  "price": "50000.00",
+  "trade_qty": "0.001",
+  "side": "BUY"
+}

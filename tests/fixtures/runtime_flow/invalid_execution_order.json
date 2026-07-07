@@ -1,0 +1,8 @@
+{
+  "type": "order",
+  "symbol": "",
+  "side": "BUY",
+  "quantity": 0,
+  "strategy_id": "test",
+  "timestamp": 1700000000
+}
