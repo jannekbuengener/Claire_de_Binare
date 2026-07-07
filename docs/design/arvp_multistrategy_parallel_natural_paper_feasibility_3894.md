@@ -255,7 +255,7 @@ See §5.7 table. Only **two** strategies are runtime-capable today. Parallel nat
 | ID | Severity | Gap | Follow-up recommendation |
 |----|----------|-----|--------------------------|
 | G1 | **BLOCKER** | Single `cdb_signal` in canonical compose | Compose multi-instance profile for parallel signal services |
-| G2 | **BLOCKER** | `donchian_breakout_v1` missing from `ALLOCATION_RULES_JSON` | Add allocation rules + compose override for Donchian paper |
+| G2 | **BLOCKER** | `donchian_breakout_v1` missing from `ALLOCATION_RULES_JSON` | **Resolved #3910** — conservative regime map in `compose.blue.yml`; campaign override `manifests/runtime_np_parallel_allocation_compose_override.yml` |
 | G3 | **HIGH** | Shared Redis `signals` topic — no publisher isolation | Topic/stream env overrides per signal instance OR risk subscription filter |
 | G4 | **HIGH** | `SIGNAL_BOT_ID` defaults empty | Enforce non-empty bot_id in compose profile + validation guard |
 | G5 | **HIGH** | No runtime test for ledger/evidence cross-strategy contamination | Contract test + mixed-fixture guard |

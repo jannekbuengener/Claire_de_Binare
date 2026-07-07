@@ -1,0 +1,8 @@
+# Campaign-scoped allocation override for parallel natural-paper (#3910 / #3912 prerequisite).
+# Apply only during HYP-NP-PARALLEL-2S-01 observation; not canonical default.
+# Conservative per-strategy caps: Donchian uses half of PB1 regime map for shared capital pool.
+# LR NO-GO — no Live/Echtgeld authorization from this manifest.
+services:
+  cdb_allocation:
+    environment:
+      ALLOCATION_RULES_JSON: '{"paper": {"STEADY_BULLISH": 0.3, "TREND": 0.3, "VOLATILE_RANGE": 0.1, "RANGE": 0.1, "HIGH_VOL_CHAOTIC": 0.02, "UNKNOWN": 0.0}, "primary_breakout_v1": {"STEADY_BULLISH": 0.3, "TREND": 0.3, "VOLATILE_RANGE": 0.1, "RANGE": 0.1, "HIGH_VOL_CHAOTIC": 0.02, "UNKNOWN": 0.0}, "donchian_breakout_v1": {"STEADY_BULLISH": 0.15, "TREND": 0.15, "VOLATILE_RANGE": 0.05, "RANGE": 0.05, "HIGH_VOL_CHAOTIC": 0.01, "UNKNOWN": 0.0}}'
