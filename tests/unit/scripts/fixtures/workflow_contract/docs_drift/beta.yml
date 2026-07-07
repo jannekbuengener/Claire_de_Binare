@@ -1,0 +1,9 @@
+name: Beta Fixture
+on:
+  push:
+    branches: [main]
+jobs:
+  noop:
+    runs-on: ubuntu-latest
+    steps:
+      - run: echo ok

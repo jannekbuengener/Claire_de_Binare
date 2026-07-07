@@ -662,3 +662,329 @@ def control_plane_missing_unit_findings() -> tuple[str, ...]:
     }
     missing = sorted(name for name in expected_catalog if name in disk and name not in cataloged)
     return tuple(missing)
+
+
+# --- P2 scope (#3853–#3854) -------------------------------------------------
+
+RUNBOOK_MD = REPO_ROOT / "docs" / "runbooks" / "GITHUB_CONTROL_PLANE_RUNBOOK.md"
+GRAPH_MD = REPO_ROOT / "docs" / "runbooks" / "GITHUB_CONTROL_PLANE_GRAPH.md"
+CONTROL_PLANE_ENTRYPOINT = REPO_ROOT / ".github" / "CONTROL_PLANE.md"
+AGENT_WORKFLOW_MAP_JSON = (
+    REPO_ROOT / ".github" / "control-plane" / "generated" / "agent-workflow-map.json"
+)
+
+REQUIRED_CHECK_PRODUCER_FILES = frozenset({"ci.yml", "policy-gate.yml"})
+
+RISKY_CASCADE_FAMILIES: dict[str, tuple[str, ...]] = {
+    "label_event_cascade": tuple(sorted(LABEL_CASCADE_WORKFLOW_FILES)),
+    "gemini_workflow_call_chain": (
+        "gemini-dispatch.yml",
+        "gemini-invoke.yml",
+        "gemini-review.yml",
+        "gemini-triage.yml",
+    ),
+    "workflow_run_downstream": (
+        "weekly_digest_failure_alert.yml",
+        "auto-milestone-pr-apply.yml",
+    ),
+}
+
+P2_DOCS_DRIFT_LIMITATIONS: tuple[str, ...] = (
+    "Register markdown table is partial vs disk (known unregistered workflows).",
+    "Control-plane generated register is partial by design (catalog_scope=sprint1).",
+    "Runbook/graph numeric claims may lag register header updates; surfaced not auto-fixed.",
+    "Graph workflow references are relationship-focused, not a full inventory.",
+    "Graph parser ignores issue-template and root-config backtick references.",
+    "Agent workflow map does not claim exhaustive register or control-plane parity.",
+)
+
+GRAPH_NON_WORKFLOW_REFERENCE_FILES = frozenset(
+    {
+        "cdb-control-followup.prompt.yml",
+        "dependabot.yml",
+        "emoji-config.yaml",
+    }
+)
+
+KNOWN_DOCS_COUNT_DRIFTS: dict[str, tuple[int, str]] = {
+    "runbook_workflow_count": (
+        66,
+        "GITHUB_CONTROL_PLANE_RUNBOOK.md claims 66 workflow definitions; disk has more.",
+    ),
+    "control_plane_entrypoint_count": (
+        65,
+        ".github/CONTROL_PLANE.md claims 65 YAML workflow definitions; disk has more.",
+    ),
+    "graph_register_count_reference": (
+        65,
+        "GITHUB_CONTROL_PLANE_GRAPH.md cross-link still references a 65-workflow register.",
+    ),
+}
+
+
+@dataclass(frozen=True)
+class WorkflowDocsDriftFinding:
+    kind: str
+    detail: str
+
+
+@dataclass(frozen=True)
+class WorkflowDocsDriftScan:
+    disk_count: int
+    register_table_count: int
+    register_header_count: int | None
+    runbook_count_claim: int | None
+    control_plane_entrypoint_count_claim: int | None
+    graph_referenced_workflows: tuple[str, ...]
+    graph_missing_on_disk: tuple[str, ...]
+    limitations: tuple[str, ...]
+    findings: tuple[WorkflowDocsDriftFinding, ...]
+
+
+def parse_markdown_workflow_filenames(markdown_path: Path) -> set[str]:
+    text = markdown_path.read_text(encoding="utf-8")
+    return set(re.findall(r"`([^`]+\.(?:yml|yaml))`", text))
+
+
+def parse_graph_workflow_inventory_references(graph_path: Path) -> set[str]:
+    text = graph_path.read_text(encoding="utf-8")
+    refs: set[str] = set()
+    refs.update(
+        re.findall(r"^\| `([^`]+\.(?:yml|yaml))` \|", text, flags=re.MULTILINE)
+    )
+    refs.update(re.findall(r"\[[^\]]*?([a-zA-Z0-9_.-]+\.(?:yml|yaml))", text))
+    for match in re.findall(r"\.github/workflows/([^\s`]+)", text):
+        refs.add(match.rsplit("/", 1)[-1])
+    return refs
+
+
+def parse_runbook_workflow_count_claim(runbook_path: Path) -> int | None:
+    text = runbook_path.read_text(encoding="utf-8")
+    match = re.search(r"(\d+)\s+workflow definitions", text, flags=re.IGNORECASE)
+    return int(match.group(1)) if match else None
+
+
+def parse_control_plane_yaml_count_claim(entrypoint_path: Path) -> int | None:
+    text = entrypoint_path.read_text(encoding="utf-8")
+    match = re.search(r"(\d+)\s+YAML workflow definitions", text, flags=re.IGNORECASE)
+    return int(match.group(1)) if match else None
+
+
+def parse_register_total_count_claim(register_path: Path) -> int | None:
+    text = register_path.read_text(encoding="utf-8")
+    match = re.search(r"\*\*Total workflow definitions:\*\* (\d+)", text)
+    return int(match.group(1)) if match else None
+
+
+def scan_workflow_docs_drift(
+    *,
+    workflows_dir: Path,
+    register_md_path: Path,
+    runbook_md_path: Path,
+    graph_md_path: Path,
+    control_plane_entrypoint_path: Path,
+) -> WorkflowDocsDriftScan:
+    disk = list_workflow_yaml_files(workflows_dir)
+    disk_set = set(disk)
+    register_table = parse_register_table_workflows(register_md_path)
+    register_header = parse_register_total_count_claim(register_md_path)
+    runbook_claim = parse_runbook_workflow_count_claim(runbook_md_path)
+    entrypoint_claim = parse_control_plane_yaml_count_claim(control_plane_entrypoint_path)
+    graph_refs = sorted(
+        name
+        for name in parse_graph_workflow_inventory_references(graph_md_path)
+        if name not in GRAPH_NON_WORKFLOW_REFERENCE_FILES
+    )
+    graph_missing = tuple(sorted(set(graph_refs) - disk_set))
+
+    findings: list[WorkflowDocsDriftFinding] = []
+    if register_header is not None and register_header != len(disk):
+        findings.append(
+            WorkflowDocsDriftFinding(
+                kind="register_header_count_drift",
+                detail=(
+                    f"Register header declares {register_header} workflows; "
+                    f"disk has {len(disk)}"
+                ),
+            )
+        )
+    if runbook_claim is not None and runbook_claim != len(disk):
+        findings.append(
+            WorkflowDocsDriftFinding(
+                kind="runbook_count_drift",
+                detail=(
+                    f"Runbook claims {runbook_claim} workflow definitions; "
+                    f"disk has {len(disk)}"
+                ),
+            )
+        )
+    if entrypoint_claim is not None and entrypoint_claim != len(disk):
+        findings.append(
+            WorkflowDocsDriftFinding(
+                kind="control_plane_entrypoint_count_drift",
+                detail=(
+                    f"CONTROL_PLANE.md claims {entrypoint_claim} YAML workflows; "
+                    f"disk has {len(disk)}"
+                ),
+            )
+        )
+    graph_text = graph_md_path.read_text(encoding="utf-8")
+    if re.search(r"\bfull\s+\d+-workflow register\b", graph_text, flags=re.IGNORECASE):
+        findings.append(
+            WorkflowDocsDriftFinding(
+                kind="graph_stale_register_count_reference",
+                detail=(
+                    "Graph cross-link references a stale full-workflow-register count"
+                ),
+            )
+        )
+    for name in graph_missing:
+        findings.append(
+            WorkflowDocsDriftFinding(
+                kind="graph_missing_on_disk",
+                detail=f"{name} is referenced in graph docs but missing on disk",
+            )
+        )
+    if len(register_table) != len(set(register_table)):
+        findings.append(
+            WorkflowDocsDriftFinding(
+                kind="register_duplicate_rows",
+                detail="Register table lists duplicate workflow filenames",
+            )
+        )
+
+    return WorkflowDocsDriftScan(
+        disk_count=len(disk),
+        register_table_count=len(set(register_table)),
+        register_header_count=register_header,
+        runbook_count_claim=runbook_claim,
+        control_plane_entrypoint_count_claim=entrypoint_claim,
+        graph_referenced_workflows=tuple(graph_refs),
+        graph_missing_on_disk=graph_missing,
+        limitations=P2_DOCS_DRIFT_LIMITATIONS,
+        findings=tuple(findings),
+    )
+
+
+def classify_workflow_operational_status(
+    filename: str,
+    *,
+    workflows_dir: Path = WORKFLOWS_DIR,
+    register_md_path: Path = WORKFLOW_REGISTER_MD,
+) -> str:
+    if filename in FROZEN_LEGACY_WORKFLOW_FILES:
+        return "frozen"
+    if filename in PARKED_WORKFLOW_FILES:
+        return "parked"
+    workflow_path = workflows_dir / filename
+    if workflow_path.is_file() and reusable_workflow_is_workflow_call_only(workflow_path):
+        return "reusable"
+    status_map = parse_register_status_map(register_md_path)
+    register_status = status_map.get(filename, "")
+    if "parked" in register_status:
+        return "parked"
+    if "manual" in register_status:
+        return "manual_only"
+    if "historisch" in register_status:
+        return "frozen"
+    if workflow_path.is_file() and workflow_has_only_dispatch_trigger(workflow_path):
+        return "manual_only"
+    return "active"
+
+
+def classify_workflow_risk(
+    filename: str,
+    row: WorkflowTriggerPermissionRow,
+    schedule_entry: ScheduleEntry,
+) -> str:
+    if row.forbidden_triggers:
+        return "high"
+    automatic = set(row.triggers).intersection(AUTOMATIC_TRIGGERS)
+    if row.write_permissions and automatic:
+        if filename in LABEL_CASCADE_WORKFLOW_FILES or filename in ISSUES_LABELED_CASCADE_FILES:
+            return "high"
+        return "medium"
+    if schedule_entry.has_schedule and row.write_permissions:
+        return "medium"
+    if filename in RISKY_CASCADE_FAMILIES["workflow_run_downstream"]:
+        return "medium"
+    if row.write_permissions:
+        return "medium"
+    if schedule_entry.has_schedule:
+        return "low"
+    return "low"
+
+
+def build_agent_workflow_map_entry(
+    filename: str,
+    *,
+    workflows_dir: Path = WORKFLOWS_DIR,
+    register_md_path: Path = WORKFLOW_REGISTER_MD,
+) -> dict[str, Any]:
+    workflow_path = workflows_dir / filename
+    workflow = load_workflow_yaml(workflow_path)
+    row = build_trigger_permission_row(workflow_path)
+    schedule_entry = build_schedule_entry(workflow_path)
+    register_set = set(parse_register_table_workflows(register_md_path))
+    return {
+        "file": filename,
+        "name": str(workflow.get("name") or filename),
+        "purpose": str(workflow.get("name") or filename),
+        "triggers": list(row.triggers),
+        "permissions": list(row.write_permissions) if row.write_permissions else ["read-only"],
+        "writes_github": bool(row.write_permissions),
+        "has_schedule": schedule_entry.has_schedule,
+        "status": classify_workflow_operational_status(
+            filename, workflows_dir=workflows_dir, register_md_path=register_md_path
+        ),
+        "required_check_producer": filename in REQUIRED_CHECK_PRODUCER_FILES,
+        "registered_in_markdown_register": filename in register_set,
+        "risk": classify_workflow_risk(filename, row, schedule_entry),
+    }
+
+
+def build_full_schedule_collision_map(
+    workflows_dir: Path = WORKFLOWS_DIR,
+) -> dict[str, tuple[str, ...]]:
+    schedule_map: dict[str, ScheduleEntry] = {}
+    for filename in list_workflow_yaml_files(workflows_dir):
+        path = workflows_dir / filename
+        entry = build_schedule_entry(path)
+        if entry.has_schedule:
+            schedule_map[filename] = entry
+    return find_cron_collisions(schedule_map)
+
+
+def build_agent_workflow_map(
+    *,
+    workflows_dir: Path = WORKFLOWS_DIR,
+    register_md_path: Path = WORKFLOW_REGISTER_MD,
+) -> dict[str, Any]:
+    disk = list_workflow_yaml_files(workflows_dir)
+    register_set = set(parse_register_table_workflows(register_md_path))
+    unregistered = sorted(set(disk) - register_set)
+    entries = [
+        build_agent_workflow_map_entry(
+            filename, workflows_dir=workflows_dir, register_md_path=register_md_path
+        )
+        for filename in disk
+    ]
+    collisions = build_full_schedule_collision_map(workflows_dir)
+    return {
+        "schema_version": "1",
+        "coverage": "partial",
+        "catalog_scope": "agent-facing-workflow-map-p2",
+        "limitations": list(P2_DOCS_DRIFT_LIMITATIONS),
+        "required_check_contexts": sorted(REQUIRED_CHECK_CONTEXTS),
+        "unregistered_on_disk": unregistered,
+        "risky_schedule_collisions": {
+            cron: list(files) for cron, files in sorted(collisions.items())
+        },
+        "risky_cascade_families": {
+            key: list(value) for key, value in RISKY_CASCADE_FAMILIES.items()
+        },
+        "entry_count": len(entries),
+        "disk_workflow_count": len(disk),
+        "register_table_count": len(register_set),
+        "entries": entries,
+    }
