@@ -304,16 +304,7 @@ python .github/scripts/control_plane_validate.py --generate
 
 # Run CI tests for the collection layer
 pytest tests/test_control_plane.py -v
-
-# Workflow P0 contract tests (#3844–#3847): inventory/register drift,
-# trigger/permission matrix, parked fail-closed stubs, required-check split
-pytest tests/unit/scripts/test_workflow_inventory_register_contract.py \
-  tests/unit/scripts/test_workflow_trigger_permission_matrix.py \
-  tests/unit/scripts/test_parked_workflow_fail_closed_contract.py \
-  tests/unit/scripts/test_required_checks_policy_gate_contract.py -q
 ```
-
-These tests are static/fixture-based (no live GitHub dependency). They surface register drift as explicit findings and do **not** auto-rewrite `GITHUB_WORKFLOW_REGISTER.md` or workflow YAML.
 
 ### What the validator checks
 - All `manifest.yaml` files parse against the schema
