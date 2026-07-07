@@ -19,6 +19,7 @@ Repo-backed JSON/YAML schemas und Contract-Dokumente für Messages, Replay und C
 | Profitability league table | `profitability_league_table_model.v1.schema.json`, `profitability_league_table_report.v1.schema.json` | Ranking model and recommendation report contracts |
 | Profitability capital sleeves | `profitability_capital_sleeve_model.v1.schema.json`, `profitability_paper_accounting_report.v1.schema.json` | Sleeve-governance model and paper-accounting report contracts |
 | Profitability control room | `profitability_control_room_requirements.v1.schema.json`, `profitability_control_room_snapshot.v1.schema.json` | Control-room requirements and read-only snapshot contracts |
+| ARVP Gearbox (design) | `strategy_gear_registry.v1.schema.json`, `selector_decision.v1.schema.json`, `gear_reason_codes.v1.schema.json`, `protective_idle.v1.schema.json`, `loop_boundary.v1.schema.json` | Design-only gearbox contracts ([#3913](https://github.com/jannekbuengener/Claire_de_Binare/issues/3913)); selector output is not trade approval |
 
 ## Related canon (not duplicated here)
 

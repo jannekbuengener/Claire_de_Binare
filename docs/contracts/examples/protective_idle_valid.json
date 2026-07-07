@@ -1,0 +1,11 @@
+{
+  "schema_version": "protective_idle.v1",
+  "idle_id": "idle-20260707-np-parallel-01",
+  "state": "PROTECTIVE_IDLE",
+  "is_valid_output": true,
+  "is_error": false,
+  "is_trade_approval": false,
+  "reason_codes": ["IDLE", "REGIME_MISMATCH"],
+  "trigger_sources": ["regime_mismatch", "missing_eligibility"],
+  "evidence_snapshot_ref": "docs/design/arvp_gearbox_design_contracts_3913.md"
+}

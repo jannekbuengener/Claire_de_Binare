@@ -1,0 +1,147 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "title": "Strategy Gear Registry v1",
+  "description": "Design contract declaring a strategy lane as a controlled CDB gearbox gear. Not a trade approval, runtime contract, or live-readiness signal.",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "schema_version",
+    "gear_id",
+    "strategy_id",
+    "bot_id",
+    "supported_modes",
+    "runtime_readiness",
+    "evidence_requirements",
+    "allocation_profile",
+    "risk_boundaries",
+    "allowed_outputs",
+    "known_limitations",
+    "routing_state"
+  ],
+  "properties": {
+    "schema_version": {
+      "const": "strategy_gear_registry.v1"
+    },
+    "gear_id": {
+      "type": "string",
+      "pattern": "^gear-[a-z0-9][a-z0-9_-]{2,80}$"
+    },
+    "strategy_id": {
+      "type": "string",
+      "minLength": 1,
+      "maxLength": 120
+    },
+    "bot_id": {
+      "type": "string",
+      "minLength": 1,
+      "maxLength": 120
+    },
+    "supported_modes": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["shadow", "paper", "live"],
+      "properties": {
+        "shadow": { "type": "boolean" },
+        "paper": { "type": "boolean" },
+        "live": { "type": "boolean" }
+      }
+    },
+    "runtime_readiness": {
+      "type": "string",
+      "enum": ["runtime", "replay_only"]
+    },
+    "evidence_requirements": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "lifecycle_state",
+        "ranking_ready",
+        "net_economics_ready",
+        "last_evidence_packet_ref"
+      ],
+      "properties": {
+        "lifecycle_state": {
+          "type": "string",
+          "enum": ["PARKED", "ELIGIBLE", "SELECTED", "IDLE", "BLOCKED"]
+        },
+        "ranking_ready": { "type": "boolean" },
+        "net_economics_ready": { "type": "boolean" },
+        "last_evidence_packet_ref": {
+          "type": "string",
+          "minLength": 1
+        }
+      }
+    },
+    "allocation_profile": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["rules_ref", "max_allocation_pct_hint"],
+      "properties": {
+        "rules_ref": {
+          "type": "string",
+          "minLength": 1
+        },
+        "max_allocation_pct_hint": {
+          "type": "string",
+          "pattern": "^[0-9]+(\\.[0-9]+)?$"
+        }
+      }
+    },
+    "risk_boundaries": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["sleeve", "no_live_authority"],
+      "properties": {
+        "sleeve": {
+          "type": "string",
+          "enum": ["EXPERIMENTAL", "PAPER", "CORE", "PROTECTIVE"]
+        },
+        "exposure_cap_hint": {
+          "type": "string",
+          "pattern": "^[0-9]+(\\.[0-9]+)?$"
+        },
+        "no_live_authority": {
+          "const": true
+        }
+      }
+    },
+    "allowed_outputs": {
+      "type": "array",
+      "minItems": 1,
+      "uniqueItems": true,
+      "items": {
+        "type": "string",
+        "enum": [
+          "selector_advisory",
+          "ranking_signal",
+          "evidence_snapshot",
+          "protective_idle_report"
+        ]
+      }
+    },
+    "known_limitations": {
+      "type": "array",
+      "minItems": 1,
+      "items": { "type": "string", "minLength": 1 }
+    },
+    "routing_state": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "lifecycle_state",
+        "eligible_for_shadow",
+        "eligible_for_paper",
+        "eligible_for_live"
+      ],
+      "properties": {
+        "lifecycle_state": {
+          "type": "string",
+          "enum": ["PARKED", "ELIGIBLE", "SELECTED", "IDLE", "BLOCKED"]
+        },
+        "eligible_for_shadow": { "type": "boolean" },
+        "eligible_for_paper": { "type": "boolean" },
+        "eligible_for_live": { "type": "boolean" }
+      }
+    }
+  }
+}

@@ -1,0 +1,79 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "title": "Protective Idle v1",
+  "description": "Valid gearbox output when no gear should trade. Idle is not failure and not trade approval.",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "schema_version",
+    "idle_id",
+    "state",
+    "is_valid_output",
+    "is_error",
+    "is_trade_approval",
+    "reason_codes",
+    "trigger_sources",
+    "evidence_snapshot_ref"
+  ],
+  "properties": {
+    "schema_version": {
+      "const": "protective_idle.v1"
+    },
+    "idle_id": {
+      "type": "string",
+      "minLength": 8,
+      "maxLength": 128
+    },
+    "state": {
+      "const": "PROTECTIVE_IDLE"
+    },
+    "is_valid_output": {
+      "const": true
+    },
+    "is_error": {
+      "const": false
+    },
+    "is_trade_approval": {
+      "const": false
+    },
+    "reason_codes": {
+      "type": "array",
+      "minItems": 1,
+      "uniqueItems": true,
+      "items": {
+        "type": "string",
+        "enum": [
+          "IDLE",
+          "EVIDENCE_GAP",
+          "RISK_BLOCKED",
+          "REGIME_MISMATCH",
+          "NOT_RUNTIME_READY",
+          "DATA_STALE",
+          "CORRELATION_RISK",
+          "SLEEVE_LIMIT",
+          "PARKED"
+        ]
+      }
+    },
+    "trigger_sources": {
+      "type": "array",
+      "minItems": 1,
+      "uniqueItems": true,
+      "items": {
+        "type": "string",
+        "enum": [
+          "evidence_gap",
+          "regime_mismatch",
+          "risk_block",
+          "missing_eligibility",
+          "unclear_market_state",
+          "global_gate_dirty"
+        ]
+      }
+    },
+    "evidence_snapshot_ref": {
+      "type": "string",
+      "minLength": 1
+    }
+  }
+}

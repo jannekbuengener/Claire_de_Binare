@@ -1,0 +1,60 @@
+{
+  "schema_version": "gear_reason_codes.v1",
+  "codes": [
+    {
+      "code": "SELECTED",
+      "category": "selection",
+      "description": "Gear chosen for the current evaluation context."
+    },
+    {
+      "code": "PARKED",
+      "category": "lifecycle",
+      "description": "Gear exists but is not eligible for selection."
+    },
+    {
+      "code": "BLOCKED",
+      "category": "lifecycle",
+      "description": "Gear is explicitly blocked from selection."
+    },
+    {
+      "code": "IDLE",
+      "category": "lifecycle",
+      "description": "Protective Idle — no gear should trade."
+    },
+    {
+      "code": "EVIDENCE_GAP",
+      "category": "evidence",
+      "description": "Required evidence is missing or stale."
+    },
+    {
+      "code": "RISK_BLOCKED",
+      "category": "risk",
+      "description": "Risk gate would block action for this gear."
+    },
+    {
+      "code": "REGIME_MISMATCH",
+      "category": "regime",
+      "description": "Current regime is outside the gear scope."
+    },
+    {
+      "code": "NOT_RUNTIME_READY",
+      "category": "runtime",
+      "description": "Gear is replay-only or missing runtime adapter."
+    },
+    {
+      "code": "DATA_STALE",
+      "category": "data",
+      "description": "Market or data freshness requirements are not met."
+    },
+    {
+      "code": "CORRELATION_RISK",
+      "category": "correlation",
+      "description": "Cross-lane correlation exceeds allowed threshold."
+    },
+    {
+      "code": "SLEEVE_LIMIT",
+      "category": "sleeve",
+      "description": "Capital sleeve limit prevents engagement."
+    }
+  ]
+}
