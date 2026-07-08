@@ -34,7 +34,7 @@
 | Layer | Detail |
 |-------|--------|
 | **Service** | `cdb_postgres` (BLUE core) |
-| **Image pin** | `postgres:18.4-alpine@sha256:1b1689b20d16a014a3d195653381cf2caa75a41a92d93b255a9d6ea29fd353aa` |
+| **Image pin** | `postgres:18.4-alpine@sha256:1b1689b20d16a014a3d195653381cf2caa75a41a92d93b255a9d6ea29fd353aa` (Stand 2026-07-03; **superseded** by PR [#3921](https://github.com/jannekbuengener/Claire_de_Binare/pull/3921) → `ecafd342…`; gosu sub-cluster unveraendert upstream-blocked) |
 | **Compose** | `infrastructure/compose/base.yml`, `infrastructure/compose/compose.blue.yml` |
 | **Trivy matrix** | `.github/workflows/security-scan.yml` (`trivy-scan-base`, `scan_name: postgres`) |
 | **CDB code fix** | **None available** — gosu is embedded by upstream `docker-library/postgres`; CDB does not build or patch this binary |

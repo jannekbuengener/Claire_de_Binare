@@ -3,10 +3,16 @@
 **Status Class**: Working Repo / Engineering Status
 **Authority**: Current repo/main/test/dependency snapshot; not the canonical live-readiness or Echtgeld Go/No-Go source.
 **Operational Canon**: `docs/live-readiness/LR-AUDIT-STATUS-2026-03-05.md`
-**Last Updated**: 2026-07-07
+**Last Updated**: 2026-07-08
 **GitHub Boundary**: The live commit and PR state is tracked in GitHub (UI/API or `gh`); this file is a curated repo/engineering ledger, not a live mirror.
 
 ---
+
+## Repo / Engineering Status (2026-07-08)
+
+- **#3922 Control docs reconcile (post-#3921)**: in delivery — `CONTROL_REGISTER.md` workflow-control note for PR [#3921](https://github.com/jannekbuengener/Claire_de_Binare/pull/3921); evidence cross-ref in `CDB_SECURITY_RESIDUALS_3694-3695`; session logs. Closes #3922. LR **NO-GO** unchanged.
+
+- **POSTGRES_ALPINE_REBUILD_PROBE (libcurl digest refresh)**: **DONE_MERGED** — PR [#3921](https://github.com/jannekbuengener/Claire_de_Binare/pull/3921) squash-merged @ `384de27b`. Digest-only refresh `postgres:18.4-alpine` `1b1689b…` → `ecafd342…` (upstream rebuild 2026-07-07). Local Trivy 0.72.0: **12 libcurl HIGH cleared**; gosu residual (14 HIGH/CRITICAL) remains **UPSTREAM_BLOCKED** under [#2933](https://github.com/jannekbuengener/Claire_de_Binare/issues/2933). Evidence: `docs/evidence/security/CDB_SECURITY_POSTGRES_ALPINE_LIBCURL_REBUILD_2026-07-08.md`. GitHub Code Scanning delta pending next `security-scan.yml` run. No dismissals; #3755 Grafana HOLD untouched. LR **NO-GO** unchanged.
 
 ## Repo / Engineering Status (2026-07-07)
 
