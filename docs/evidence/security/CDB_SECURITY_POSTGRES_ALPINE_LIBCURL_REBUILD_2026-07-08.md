@@ -84,3 +84,4 @@ After merge + next `security-scan.yml` run, **12** `library/postgres` libcurl HI
 - Read-only triage: `knowledge/logs/sessions/2026-07-08-security-retriage-readonly-report.md`
 - Prior gosu residual doc: `docs/evidence/security/CDB_SECURITY_RESIDUALS_3694-3695_2026-07-03.md`
 - Runbook: `docs/security/TRIAGE_RUNBOOK.md`
+- Control note: `docs/runbooks/CONTROL_REGISTER.md` (PR #3921 workflow-control entry; reconcile #3922)
