@@ -47,7 +47,7 @@ Claire de Binare ist ein **event-getriebenes Krypto-Trading-System** mit:
 | Market | cdb_market | 8009 | services/market/ | [services/market/README.md](../services/market/README.md) |
 | Candles | cdb_candles | 8007 | services/candles/ | [services/candles/README.md](../services/candles/README.md) |
 | Regime | cdb_regime | 8008 | services/regime/ | [services/regime/README.md](../services/regime/README.md) |
-| Allocation | cdb_allocation | 8006 | services/allocation/ | [services/allocation/README.md](../services/allocation/README.md) |
+| Allocation | cdb_allocation | 8006 | services/allocation/ | [services/allocation/README.md](../services/allocation/README.md) — `ALLOCATION_RULES_JSON` in `compose.blue.yml` maps `paper`, `primary_breakout_v1`, and `donchian_breakout_v1` (conservative half-cap Donchian regime map; PR #3915) |
 | Risk | cdb_risk | 8002 | services/risk/ | [services/risk/README.md](../services/risk/README.md) |
 | Execution | cdb_execution | 8003 | services/execution/ | [services/execution/README.md](../services/execution/README.md) |
 | DB Writer | cdb_db_writer | — | services/db_writer/ | [services/db_writer/README.md](../services/db_writer/README.md) |
@@ -70,6 +70,28 @@ Claire de Binare ist ein **event-getriebenes Krypto-Trading-System** mit:
 | cAdvisor | cdb_cadvisor | — | Container Metrics |
 
 Hinweis: `services/signal/config.py` hat `SIGNAL_PORT`-Default `8001`; der kanonische Runtime-Port ist `8005`, weil `infrastructure/compose/compose.red.yml` fuer `cdb_signal` `SIGNAL_PORT=8005` setzt.
+
+### Campaign Runtime Overlays (`manifests/`) — nicht kanonischer Default
+
+Campaign-scoped Compose-Overlays fuer begrenzte ARVP natural-paper Beobachtungen. LR bleibt **NO-GO**; Manifest-Praesenz allein autorisiert kein Live/Echtgeld. Separate **RUNTIME-GO** erforderlich vor `docker compose up`.
+
+| Overlay | Compose-Datei | Zweck |
+|---------|---------------|-------|
+| Parallel 2-strategy signal | `manifests/runtime_np_parallel_signal_compose_override.yml` | `cdb_signal_pb1` (`primary_breakout_v1`, Port `8015`) + `cdb_signal_donchian` (`donchian_breakout_v1`, Port `8016`); kanonischer `cdb_signal` auf Profil `single-signal-default` (PR #3918 / #3909) |
+| Parallel allocation caps | `manifests/runtime_np_parallel_allocation_compose_override.yml` | Gleiche `ALLOCATION_RULES_JSON`-Semantik wie kanonisches BLUE (`donchian_breakout_v1` half-cap; PR #3910 / #3915) |
+
+Statische Validierung (kein `up` ohne RUNTIME-GO):
+
+```powershell
+docker compose `
+  -f infrastructure/compose/compose.red.yml `
+  -f manifests/runtime_np_parallel_signal_compose_override.yml `
+  config
+```
+
+Risk-Seite: beide parallelen Signal-Instanzen publizieren auf **shared** Redis-Topic `signals` und Stream `stream.signals`; `cdb_risk` routet per Payload `strategy_id` / `bot_id`. Ledger-/Evidence-Isolation: **#3911**. Parallel-Pilot **#3912** bleibt NOT READY.
+
+Siehe `manifests/README.md` und `services/signal/README.md`.
 
 ### Logging Overlay (logging.yml) — separates Overlay, nicht Teil des Standard-BLUE/RED-Starts
 
@@ -138,7 +160,7 @@ cdb_reports           Up (healthy)
 | Channel | Publisher | Subscriber(s) |
 |---------|-----------|---------------|
 | market_data | cdb_ws | cdb_market, cdb_candles, cdb_signal, cdb_paper_runner |
-| signals | cdb_signal | cdb_risk, cdb_db_writer |
+| signals | cdb_signal (kanonisch); campaign overlay: `cdb_signal_pb1`, `cdb_signal_donchian` | cdb_risk, cdb_db_writer |
 | orders | cdb_risk | cdb_execution, cdb_db_writer |
 | order_results | cdb_execution | cdb_risk, cdb_db_writer |
 | alerts | cdb_risk | — (kein verifizierter Subscriber; Fire-and-forget) |
@@ -300,6 +322,7 @@ Kanonische Image-Pins fuer BLUE-Datenlayer (`cdb_postgres`, `cdb_redis`): `gover
 | 2026-07-02 | PR #3404 Nachzug (#3690): `profitability_evidence_packet_assembler.py` als Profitability Evidence Packet Assembler CLI in Replay/Validation-Inventar dokumentiert; offline/deterministisch, keine Runtime-Komponente | Cursor |
 | 2026-07-04 | PR #3720 Nachzug (#3721): §6 MEXC Venue/Endpoint-Semantik (spot REST `api.mexc.com`, fail-closed `testnet=True`, no-send boundary); Paper Stimulus preflight präzisiert | Cursor |
 | 2026-07-06 | PR #3782 Nachzug (#3783): Pack-A offline breakout helpers + Donchian/Bo+Trend backtest runners; ARVP Replay CLI multi-strategy dispatch + scenario metrics artifacts dokumentiert | Cursor |
+| 2026-07-08 | PR #3915/#3918 Nachzug (#3916/#3919): `ALLOCATION_RULES_JSON` Donchian half-cap in BLUE-Allocation-Zeile; Campaign-Runtime-Overlays (`cdb_signal_pb1`/`cdb_signal_donchian`, parallel allocation manifest) + shared-bus Risk-Hinweis dokumentiert | Cursor |
 ### PostgreSQL Schema Artefacts (PR #2793)
 
 | Artifact | Migration | Status | Bedeutung |
