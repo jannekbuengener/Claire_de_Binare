@@ -701,7 +701,6 @@ def handle_cdb_context_trust_summary(request: Mapping[str, Any]) -> dict[str, An
                 message=str(exc),
             )
         _source = derive_guarded_source_label(params, adapter=_adapter)
-        _topic = _as_str_or_none(params.get("topic"))
         _artifact = _as_str_or_none(params.get("artifact"))
         evidence_result_raw: dict[str, Any] | None = None
         claim_result_raw: dict[str, Any] | None = None

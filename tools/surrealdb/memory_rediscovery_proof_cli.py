@@ -4,7 +4,6 @@ from __future__ import annotations
 
 import argparse
 import json
-import sys
 from pathlib import Path
 
 from tools.surrealdb.memory_rediscovery_proof_runtime import (

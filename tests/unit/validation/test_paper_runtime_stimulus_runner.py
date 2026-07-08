@@ -9,7 +9,6 @@ from __future__ import annotations
 
 import json
 import os
-import sys
 import time
 from pathlib import Path
 from unittest.mock import MagicMock, patch
@@ -294,7 +293,7 @@ class TestPublishMode:
         mock_publisher = MagicMock(spec=StimulusPublisher)
         mock_publisher.publish.return_value = 1
 
-        output = run_publish(candles, fixture_spec, mock_publisher, delay_seconds=0)
+        run_publish(candles, fixture_spec, mock_publisher, delay_seconds=0)
 
         assert mock_publisher.publish.call_count == len(candles)
 

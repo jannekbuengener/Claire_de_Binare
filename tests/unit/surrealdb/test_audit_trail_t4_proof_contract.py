@@ -218,9 +218,6 @@ def test_write_proof_row_fails_matrix_when_hgw_env_missing(
     def fake_guard(url):
         return "audit-trail.example"
 
-    def fake_table_exists(*args, **kwargs):
-        return True
-
     def fake_container_names(*args, **kwargs):
         return True, {"audit_trail_net"}
 

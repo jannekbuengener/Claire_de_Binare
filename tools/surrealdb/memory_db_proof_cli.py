@@ -4,7 +4,6 @@ from __future__ import annotations
 
 import argparse
 import json
-import sys
 
 from tools.surrealdb.memory_db_proof_runtime import (
     check_memory_db_proof_preconditions,

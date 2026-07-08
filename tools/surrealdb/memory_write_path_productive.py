@@ -71,13 +71,13 @@ class ProductiveWriteAuthorization:
 class ProductiveAuditSink(Protocol):
     """Mock-only sink abstraction for contract proof."""
 
-    def mode(self) -> str: ...
+    def mode(self) -> str: pass
 
     def upsert_audit_observation(
         self, observation_id: str, payload: Mapping[str, Any]
-    ) -> None: ...
+    ) -> None: pass
 
-    def observation_exists(self, observation_id: str) -> bool: ...
+    def observation_exists(self, observation_id: str) -> bool: pass
 
 
 def productive_env_enabled() -> bool:

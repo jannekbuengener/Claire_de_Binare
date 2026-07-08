@@ -4,7 +4,6 @@ from __future__ import annotations
 
 import argparse
 import json
-import sys
 
 from tools.surrealdb.claim_evidence_proof_runtime import (
     check_claim_evidence_proof_preconditions,

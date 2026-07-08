@@ -143,6 +143,7 @@ def main() -> None:
         try:
             check_statement_results(cleanup_body)
         except ValueError:
+            # Optional cleanup: table may already be absent after schema apply.
             pass
     print("[OK] Schema applied (audit_observation only)")
     print("NOTE: T3 endpoint provisioned; productive persist path NOT activated.")

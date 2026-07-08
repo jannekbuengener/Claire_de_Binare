@@ -205,6 +205,7 @@ def detect_private_lan_ipv4() -> str:
                     if line.strip()
                 )
         except (OSError, subprocess.TimeoutExpired):
+            # Best-effort: PowerShell LAN probe is optional on Windows.
             pass
 
     try:
@@ -212,11 +213,13 @@ def detect_private_lan_ipv4() -> str:
         probe.connect(("8.8.8.8", 80))
         candidates.append(probe.getsockname()[0])
     except OSError:
+        # Best-effort: UDP route probe may fail offline.
         pass
     finally:
         try:
             probe.close()
         except Exception:
+            # Best-effort: ignore socket close errors after probe.
             pass
 
     for candidate in candidates:

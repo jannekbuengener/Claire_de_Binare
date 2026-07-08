@@ -422,3 +422,11 @@ def cleanup_run_records(
             if client.record_exists(table, raw_id):
                 client.delete_record(table, raw_id)
     assert_run_records_absent(client, plan)
+
+
+__all__ = [
+    "LOCAL_SURR_URL",
+    "LOCAL_NS",
+    "LOCAL_DB",
+    "WAVE14_SMOKE_TABLES",
+]

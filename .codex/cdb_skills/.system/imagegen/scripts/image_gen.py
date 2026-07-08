@@ -875,6 +875,7 @@ class _SingleFile:
             try:
                 self._handle.close()
             except Exception:
+                # Best-effort: ignore close errors on optional file handles.
                 pass
         return False
 
@@ -893,6 +894,7 @@ class _FileBundle:
             try:
                 handle.close()
             except Exception:
+                # Best-effort: ignore close errors on optional file handles.
                 pass
         return False
 

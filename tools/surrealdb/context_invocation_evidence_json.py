@@ -16,7 +16,6 @@ from tools.surrealdb.db_record_evidence_contract import (
     ACCEPTED_LIMITATION_CODES,
     SCHEMA_VERSION as CLAIM_SCHEMA_VERSION,
     build_example_claim,
-    compute_determinism_hash,
     validate_db_record_evidence_claim,
 )
 

@@ -54,13 +54,17 @@ from tools.surrealdb.context_importer import EXPECTED_JSONL_FILES, main as impor
 
 pytestmark = pytest.mark.local_only
 
-_REPO_ROOT = Path(__file__).resolve().parents[4]
-_FIXTURE_DIR = _REPO_ROOT / "tests" / "fixtures" / "surrealdb" / "wave14_real_smoke"
+_WAVE14_REPO_ROOT = Path(__file__).resolve().parents[4]
+_FIXTURE_DIR = _WAVE14_REPO_ROOT / "tests" / "fixtures" / "surrealdb" / "wave14_real_smoke"
 _QUERY_CONFIG_PATH = (
-    _REPO_ROOT / "infrastructure" / "config" / "surrealdb" / "context_query.local.yaml"
+    _WAVE14_REPO_ROOT
+    / "infrastructure"
+    / "config"
+    / "surrealdb"
+    / "context_query.local.yaml"
 )
 _IMPORT_CONFIG_PATH = (
-    _REPO_ROOT
+    _WAVE14_REPO_ROOT
     / "infrastructure"
     / "config"
     / "surrealdb"

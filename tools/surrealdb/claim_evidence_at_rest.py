@@ -75,7 +75,7 @@ class ClaimEvidenceProofAdapter(Protocol):
 
     status: str
 
-    def execute(self, query: str) -> list[dict[str, Any]]: ...
+    def execute(self, query: str) -> list[dict[str, Any]]: pass
 
 
 def _as_str(value: Any) -> str | None:

@@ -20,7 +20,7 @@ from __future__ import annotations
 
 import hashlib
 from dataclasses import dataclass
-from typing import Any, Mapping, Optional
+from typing import Any, Mapping
 
 from core.replay.canonical_json import canonical_json_dumps
 from core.utils.clock import utcnow as cdb_utcnow
