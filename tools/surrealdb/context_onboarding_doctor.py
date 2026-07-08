@@ -32,7 +32,7 @@ from dataclasses import dataclass, field
 from pathlib import Path
 from typing import Any, Callable, Literal
 
-from tools.surrealdb.sensitive_output import redact_sensitive_text
+from tools.surrealdb.sensitive_output import redact_sensitive_json, redact_sensitive_text
 from tools.surrealdb.local_schema_check import (
     DEFAULT_DB,
     DEFAULT_NS,
@@ -483,7 +483,7 @@ def build_report(
 
 def format_report(report: DoctorReport, fmt: str) -> str:
     if fmt == "json":
-        return json.dumps(report.to_dict(), indent=2, sort_keys=True)
+        return redact_sensitive_json(report.to_dict())
     if fmt != "text":
         raise ValueError(f"unsupported format: {fmt!r}")
 
@@ -520,7 +520,7 @@ def format_report(report: DoctorReport, fmt: str) -> str:
         lines.append("blocking_findings:")
         for finding in report.blocking_findings:
             lines.append(f"  - {finding}")
-    return "\n".join(lines)
+    return redact_sensitive_text("\n".join(lines))
 
 
 def _validate_output_safe(text: str) -> None:
@@ -539,7 +539,7 @@ Examples:
 
 Exit codes:
   0  checks OK or only non-blocking warnings
-  1  onboarding not usable (missing secrets/config/DB/schema)
+  1  onboarding not usable (missing credential store/config/DB/schema)
   2  CLI usage error
 """
 
@@ -583,7 +583,7 @@ def main(argv: list[str] | None = None) -> int:
         skip_mcp=args.skip_mcp,
         skip_schema=args.skip_schema,
     )
-    output = redact_sensitive_text(format_report(report, args.format))
+    output = format_report(report, args.format)
     _validate_output_safe(output)
     print(output)
     return compute_exit_code(report)

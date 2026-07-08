@@ -362,6 +362,33 @@ def test_text_output_contains_no_secret_values(tmp_path: Path) -> None:
     assert "SURREAL_PASS" not in text
 
 
+def test_main_stdout_contains_no_secret_values(
+    tmp_path: Path,
+    monkeypatch: pytest.MonkeyPatch,
+    capsys: pytest.CaptureFixture[str],
+) -> None:
+    secrets = tmp_path / "secrets"
+    secrets.mkdir()
+    (secrets / "SURREALDB_ENV").write_text(
+        "SURREAL_USER=root\nSURREAL_PASS=super-secret-password\n",
+        encoding="utf-8",
+    )
+
+    report = doctor.build_report(
+        tmp_path,
+        skip_mcp=True,
+        skip_schema=True,
+        tcp_checker=lambda _h, _p, _t: False,
+        environ={"SECRETS_PATH": str(secrets)},
+    )
+    monkeypatch.setattr(doctor, "build_report", lambda *_args, **_kwargs: report)
+    exit_code = doctor.main(["--format", "json"])
+    captured = capsys.readouterr()
+    assert exit_code == 1
+    assert "super-secret-password" not in captured.out
+    assert "SURREAL_PASS" not in captured.out
+
+
 def test_compute_exit_code_blocking_and_ok() -> None:
     blocked = doctor.DoctorReport(
         secrets_canon_store="missing",

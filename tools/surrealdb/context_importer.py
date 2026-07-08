@@ -4222,15 +4222,13 @@ def _handle(args: argparse.Namespace) -> tuple[dict[str, Any], int]:
 
 
 def _emit_error(exc: ContextImporterError) -> str:
-    return json.dumps(
+    return redact_sensitive_json(
         {
             "schema_version": SCHEMA_VERSION,
             "status": "error",
             "error": exc.code,
             "message": exc.message,
-        },
-        ensure_ascii=True,
-        sort_keys=True,
+        }
     )
 
 

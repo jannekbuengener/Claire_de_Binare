@@ -36,3 +36,30 @@ def test_main_internal_error_redacts_sensitive_message(
     payload = json.loads(captured.out.strip())
     assert payload["error"] == "INTERNAL"
     assert REDACT_PLACEHOLDER in payload["message"]
+
+
+def test_main_context_importer_error_redacts_sensitive_message(
+    capsys: pytest.CaptureFixture[str],
+) -> None:
+    args = MagicMock()
+    args.format = "json"
+
+    with (
+        patch.object(importer, "build_parser") as mock_build_parser,
+        patch.object(
+            importer,
+            "_handle",
+            side_effect=importer.ConfigValidationError(
+                "SURREAL_PASS=leaked-pass-value"
+            ),
+        ),
+    ):
+        mock_build_parser.return_value.parse_args.return_value = args
+        exit_code = importer.main([])
+
+    captured = capsys.readouterr()
+    assert exit_code == importer.EXIT_VALIDATION_ERROR
+    assert "leaked-pass-value" not in captured.out
+    payload = json.loads(captured.out.strip())
+    assert payload["error"] == "CONFIG_VALIDATION_ERROR"
+    assert REDACT_PLACEHOLDER in payload["message"]
