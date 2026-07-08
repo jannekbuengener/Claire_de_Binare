@@ -43,7 +43,7 @@ class MemoryProofAdapter(Protocol):
 
     status: str
 
-    def execute(self, query: str) -> list[dict[str, Any]]: ...
+    def execute(self, query: str) -> list[dict[str, Any]]: pass
 
 
 def _safe_surql_str(value: str | None) -> str | None:

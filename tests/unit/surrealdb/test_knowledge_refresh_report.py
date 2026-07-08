@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import importlib.util
 import json
 import socket
 from pathlib import Path
@@ -244,9 +245,9 @@ def test_schema_and_classifications_present() -> None:
 
 @pytest.mark.unit
 def test_no_forbidden_imports_in_report_module() -> None:
-    import tools.surrealdb.knowledge_refresh_report as mod
-
-    source = Path(mod.__file__).read_text(encoding="utf-8")
+    spec = importlib.util.find_spec("tools.surrealdb.knowledge_refresh_report")
+    assert spec is not None and spec.origin is not None
+    source = Path(spec.origin).read_text(encoding="utf-8")
     for forbidden in ("surrealdb", "requests", "httpx", "subprocess"):
         assert f"import {forbidden}" not in source
 

@@ -3,7 +3,6 @@
 from __future__ import annotations
 
 import json
-import os
 from pathlib import Path
 from typing import Any
 
@@ -11,8 +10,6 @@ from tools.mcp.context_evidence_memory_tools import TOOL_CDB_CONTEXT_MEMORY_GET
 from tools.mcp.surrealdb_adapter_factory import build_adapter_from_params
 from tools.surrealdb.claim_evidence_at_rest import prove_claim_evidence_at_rest_db_v1
 from tools.surrealdb.memory_db_proof_local_dev import (
-    ENV_REAL_SURREALDB_MEMORY_SMOKE,
-    LOCAL_SURR_URL,
     QUERY_CONFIG_REL,
     MemoryDbProofRecordPlan,
     assert_memory_proof_records_absent,
@@ -20,7 +17,6 @@ from tools.surrealdb.memory_db_proof_local_dev import (
     build_memory_proof_record_plan,
     cleanup_memory_proof_records,
     cleanup_memory_proof_tmp,
-    http_status,
     materialize_memory_proof_bundle,
     memory_proof_tmp_root,
     repo_root,
@@ -34,10 +30,6 @@ from tools.surrealdb.memory_db_proof_runtime import (
 )
 
 CLAIM_PROOF_RUNTIME_SCHEMA = "claim-evidence-proof-runtime/v1"
-_LOCAL_HEALTH_URLS = (
-    f"{LOCAL_SURR_URL}/health",
-    f"{LOCAL_SURR_URL}/version",
-)
 
 
 def _redact_for_output(

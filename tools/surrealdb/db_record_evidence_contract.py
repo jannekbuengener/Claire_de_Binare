@@ -6,7 +6,6 @@ LR remains NO-GO. Caller-supplied brain_source/metadata.source is not evidence.
 
 from __future__ import annotations
 
-import copy
 import re
 from typing import Any, Mapping
 

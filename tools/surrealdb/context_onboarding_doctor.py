@@ -94,6 +94,7 @@ def evaluate_env_var(name: str, environ: dict[str, str] | None = None) -> EnvVar
         if path.is_dir():
             return "set_valid"
     except OSError:
+        # Best-effort: path probe may fail on invalid SECRETS_PATH values.
         pass
     return "set_invalid"
 

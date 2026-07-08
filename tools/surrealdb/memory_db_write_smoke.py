@@ -35,9 +35,9 @@ class MemoryWriteSmokeError(RuntimeError):
 class MemoryWriteSqlClient(Protocol):
     """Minimal SQL client surface for local write smoke."""
 
-    def upsert_create(self, table: str, record_id: str, payload: dict[str, Any]) -> None: ...
+    def upsert_create(self, table: str, record_id: str, payload: dict[str, Any]) -> None: pass
 
-    def record_exists(self, table: str, raw_id: str, *, id_field: str) -> bool: ...
+    def record_exists(self, table: str, raw_id: str, *, id_field: str) -> bool: pass
 
 
 def write_smoke_env_enabled() -> bool:

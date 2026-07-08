@@ -371,7 +371,6 @@ def test_evidence_resolve_invalid_limit_returns_invalid_parameters(monkeypatch) 
 
 @pytest.mark.unit
 def test_decision_history_invalid_mode_returns_invalid_request() -> None:
-    fx = _load_fixture()
     result = handle_cdb_context_decision_history(
         {
             "tool": TOOL_CDB_CONTEXT_DECISION_HISTORY,

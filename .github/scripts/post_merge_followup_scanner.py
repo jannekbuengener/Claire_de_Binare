@@ -843,9 +843,11 @@ def build_summary(result: dict[str, Any]) -> str:
             [
                 "## Degraded: Rate Limited",
                 "",
-                "The GitHub Models API returned a rate-limit or abuse-detection error. "
-                "Model classification was not available for one or more findings. "
-                "No blind follow-up issues were created based on unavailable model output.",
+                (
+                    "The GitHub Models API returned a rate-limit or abuse-detection error. "
+                    "Model classification was not available for one or more findings. "
+                    "No blind follow-up issues were created based on unavailable model output."
+                ),
                 "Run the scanner manually via `workflow_dispatch` when the rate limit resets.",
                 "",
             ]
