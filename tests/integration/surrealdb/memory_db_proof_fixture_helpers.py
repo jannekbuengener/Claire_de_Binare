@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import json
+from datetime import datetime, timezone
 from pathlib import Path
 from typing import Any
 
@@ -13,6 +14,16 @@ _FIXTURE_PATH = (
     _REPO_ROOT / "tests" / "fixtures" / "surrealdb" / "memory_db_proof" / "agent_memories.jsonl"
 )
 _SCOPE = "memory_db_proof"
+_NOW = datetime(2026, 5, 29, 12, 0, 0, tzinfo=timezone.utc)
+
+__all__ = [
+    "_NOW",
+    "FixtureBackedMemoryAdapter",
+    "assert_read_proof_invariants",
+    "assert_stale_scan_invariants",
+    "fixture_memory_ids",
+    "load_agent_memory_fixture_rows",
+]
 
 
 class FixtureBackedMemoryAdapter:
