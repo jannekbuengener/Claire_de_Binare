@@ -22,6 +22,7 @@
     "campaign_supervisor",
     "evidence_mapping",
     "negative_controls",
+    "parallel_ledger_isolation",
     "replay_paper_calibration",
     "runtime_chain",
     "scenario_packs",
@@ -46,8 +47,8 @@
       "reason": "non-contract ARVP tests exist but are not indexed here"
     }
   ],
-  "entry_count": 7,
-  "canonical_entry_count": 7,
+  "entry_count": 8,
+  "canonical_entry_count": 8,
   "entries": [
     {
       "surface": "runtime_chain",
@@ -126,6 +127,16 @@
         "tests/fixtures/arvp/paper_runtime_stimulus_btcusdt_breakout_v1.json"
       ],
       "issue_ref": "#3829"
+    },
+    {
+      "surface": "parallel_ledger_isolation",
+      "behavior": "mixed correlation_ledger windows export per strategy/bot/config without cross-rows",
+      "service": "core/replay/paper_reference_window_export",
+      "test": "tests/unit/arvp/test_arvp_parallel_ledger_evidence_isolation_contract_3911.py",
+      "fixtures": [
+        "tests/fixtures/arvp/parallel_ledger_isolation/mixed_pb1_donchian_chains_v1.json"
+      ],
+      "issue_ref": "#3911"
     }
   ]
 }

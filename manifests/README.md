@@ -50,7 +50,13 @@ and stream `stream.signals` (default `SIGNAL_OUTPUT_STREAM`). `cdb_risk` subscri
 to the shared bus and routes decisions using payload `strategy_id` and `bot_id`.
 
 Per-publisher topic partitioning is **not** implemented in this slice. Runtime
-ledger/evidence isolation guards are tracked in **#3911**.
+ledger/evidence isolation is guarded by contract tests in
+`tests/unit/arvp/test_arvp_parallel_ledger_evidence_isolation_contract_3911.py`
+(mixed PB1 + Donchian fixture; export qualifiers: `strategy_id`, `bot_id`,
+`config_hash`). Unqualified mixed-window export fails closed (`mixed bot_id`).
+
+**#3912** still requires alignment review + explicit **RUNTIME-GO** even after
+#3911 guards land.
 
 ## Single-strategy prior art
 

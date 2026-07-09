@@ -1,0 +1,126 @@
+{
+  "schema_version": "1",
+  "case_id": "mixed_pb1_donchian_parallel_window",
+  "description": "Mixed correlation_ledger rows from PB1 and Donchian parallel publishers in one BTCUSDT window (#3911).",
+  "symbol": "BTCUSDT",
+  "start_ts_ms_utc": 1000,
+  "end_ts_ms_utc": 5000,
+  "strategies": {
+    "pb1": {
+      "strategy_id": "primary_breakout_v1",
+      "bot_id": "np-pb1-parallel-01",
+      "config_hash": "cfg-pb1-parallel-v1",
+      "correlation_id": "corr-pb1-01"
+    },
+    "donchian": {
+      "strategy_id": "donchian_breakout_v1",
+      "bot_id": "np-donchian-parallel-01",
+      "config_hash": "cfg-donchian-parallel-v1",
+      "correlation_id": "corr-donchian-01"
+    }
+  },
+  "ledger_rows": [
+    {
+      "event_pk": "pb1-sig",
+      "correlation_id": "corr-pb1-01",
+      "signal_id": "sig-pb1-01",
+      "decision_id": null,
+      "order_id": null,
+      "fill_id": null,
+      "event_type": "SIGNAL",
+      "symbol": "BTCUSDT",
+      "timestamp_ms": 1200,
+      "payload": {
+        "strategy_id": "primary_breakout_v1",
+        "bot_id": "np-pb1-parallel-01",
+        "metadata": {
+          "bot_id": "np-pb1-parallel-01",
+          "config_hash": "cfg-pb1-parallel-v1",
+          "config_snapshot": {
+            "strategy_id": "primary_breakout_v1",
+            "bot_id": "np-pb1-parallel-01"
+          }
+        }
+      }
+    },
+    {
+      "event_pk": "pb1-ord",
+      "correlation_id": "corr-pb1-01",
+      "signal_id": "sig-pb1-01",
+      "decision_id": "dec-pb1-01",
+      "order_id": "paper_pb1_001",
+      "fill_id": null,
+      "event_type": "ORDER",
+      "symbol": "BTCUSDT",
+      "timestamp_ms": 1300,
+      "payload": {
+        "strategy_id": "primary_breakout_v1"
+      }
+    },
+    {
+      "event_pk": "pb1-fill",
+      "correlation_id": "corr-pb1-01",
+      "signal_id": "sig-pb1-01",
+      "decision_id": "dec-pb1-01",
+      "order_id": "paper_pb1_001",
+      "fill_id": "fill-pb1-01",
+      "event_type": "FILL",
+      "symbol": "BTCUSDT",
+      "timestamp_ms": 1400,
+      "payload": {
+        "strategy_id": "primary_breakout_v1"
+      }
+    },
+    {
+      "event_pk": "don-sig",
+      "correlation_id": "corr-donchian-01",
+      "signal_id": "sig-don-01",
+      "decision_id": null,
+      "order_id": null,
+      "fill_id": null,
+      "event_type": "SIGNAL",
+      "symbol": "BTCUSDT",
+      "timestamp_ms": 2200,
+      "payload": {
+        "strategy_id": "donchian_breakout_v1",
+        "bot_id": "np-donchian-parallel-01",
+        "metadata": {
+          "bot_id": "np-donchian-parallel-01",
+          "config_hash": "cfg-donchian-parallel-v1",
+          "config_snapshot": {
+            "strategy_id": "donchian_breakout_v1",
+            "bot_id": "np-donchian-parallel-01"
+          }
+        }
+      }
+    },
+    {
+      "event_pk": "don-ord",
+      "correlation_id": "corr-donchian-01",
+      "signal_id": "sig-don-01",
+      "decision_id": "dec-don-01",
+      "order_id": "paper_don_001",
+      "fill_id": null,
+      "event_type": "ORDER",
+      "symbol": "BTCUSDT",
+      "timestamp_ms": 2300,
+      "payload": {
+        "strategy_id": "donchian_breakout_v1"
+      }
+    },
+    {
+      "event_pk": "don-fill",
+      "correlation_id": "corr-donchian-01",
+      "signal_id": "sig-don-01",
+      "decision_id": "dec-don-01",
+      "order_id": "paper_don_001",
+      "fill_id": "fill-don-01",
+      "event_type": "FILL",
+      "symbol": "BTCUSDT",
+      "timestamp_ms": 2400,
+      "payload": {
+        "strategy_id": "donchian_breakout_v1"
+      }
+    }
+  ]
+}
