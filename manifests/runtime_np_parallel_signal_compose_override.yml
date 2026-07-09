@@ -21,7 +21,7 @@ services:
 
   cdb_signal_pb1:
     build:
-      context: ..
+      context: ../..
       dockerfile: services/signal/Dockerfile
     container_name: cdb_signal_pb1
     restart: unless-stopped
@@ -69,7 +69,7 @@ services:
 
   cdb_signal_donchian:
     build:
-      context: ..
+      context: ../..
       dockerfile: services/signal/Dockerfile
     container_name: cdb_signal_donchian
     restart: unless-stopped
