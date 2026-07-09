@@ -242,9 +242,10 @@ def export_paper_reference_window(
         payload = row.get("payload")
         payload = {} if payload is None else _require_mapping(payload, "payload")
 
-        # strategy_id resolution (chain-level, #3025):
+        # strategy_id resolution (chain-level, #3025; parallel isolation #3911):
         # If payload.strategy_id is present and non-empty, it must match
-        # request.strategy_id (strict per-row contract check).
+        # request.strategy_id for inclusion. Foreign-strategy rows in a shared
+        # symbol/window query are skipped so per-strategy export stays isolated.
         # If absent or empty, it will be resolved from the SIGNAL anchor of the
         # same correlation chain after all rows are processed.
         raw_strategy = payload.get("strategy_id")
@@ -255,9 +256,7 @@ def export_paper_reference_window(
         ):
             resolved_strategy = raw_strategy.strip()
             if resolved_strategy != request.strategy_id:
-                raise PaperReferenceExportError(
-                    f"payload.strategy_id mismatch: expected {request.strategy_id!r}, got {resolved_strategy!r}"
-                )
+                continue
             needs_chain_resolution = False
         else:
             needs_chain_resolution = True
