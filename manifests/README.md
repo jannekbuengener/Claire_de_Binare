@@ -37,11 +37,21 @@ docker compose `
 ### Application gates
 
 - **Separate RUNTIME-GO required** before any `docker compose up`.
-- **#3912** (parallel pilot execute) remains **NOT READY** until:
-  - #3911 ledger/evidence isolation guards land
-  - alignment review against gearbox design contracts (#3913)
-  - explicit RUNTIME-GO
-- **#3893** (single-strategy Donchian 24h observation) is a **separate lane** — do not conflate or schedule against without coordination.
+- **#3912** (parallel pilot execute): prerequisites #3909–#3911 + gearbox alignment
+  review landed; **pending Jannek RUNTIME-GO** on #3912. Preflight:
+  `docs/evidence/arvp_parallel_natural_paper_3912_preflight.md`.
+- **#3893** (single-strategy Donchian 24h) **CLOSED** (`TIMEOUT_NO_CHAIN`) — stack
+  returned to canonical `cdb_signal` baseline before #3912 scheduling.
+
+### Campaign manifests (#3912)
+
+| Artifact | Lane |
+|----------|------|
+| `campaign_3912_np_parallel_pb1.yaml` | `primary_breakout_v1` / `np-pb1-parallel-01` |
+| `campaign_3912_np_parallel_donchian.yaml` | `donchian_breakout_v1` / `np-donchian-parallel-01` |
+
+Rewrite `campaign_id`, `start_utc`, and `timeout_utc` at RUNTIME-GO execute (templates
+use `*_TEMPLATE` / `RUNTIME_GO_SET` placeholders).
 
 ### Risk-side filter contract (topic/stream isolation)
 
@@ -55,8 +65,8 @@ ledger/evidence isolation is guarded by contract tests in
 (mixed PB1 + Donchian fixture; export qualifiers: `strategy_id`, `bot_id`,
 `config_hash`). Unqualified mixed-window export fails closed (`mixed bot_id`).
 
-**#3912** still requires alignment review + explicit **RUNTIME-GO** even after
-#3911 guards land.
+Gearbox alignment: `docs/evidence/arvp_parallel_pilot_gearbox_alignment_3912.md`.
+**#3912** still requires explicit **RUNTIME-GO** before execute.
 
 ## Single-strategy prior art
 

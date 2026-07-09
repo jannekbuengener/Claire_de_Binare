@@ -3,10 +3,20 @@
 **Status Class**: Working Repo / Engineering Status
 **Authority**: Current repo/main/test/dependency snapshot; not the canonical live-readiness or Echtgeld Go/No-Go source.
 **Operational Canon**: `docs/live-readiness/LR-AUDIT-STATUS-2026-03-05.md`
-**Last Updated**: 2026-07-08
+**Last Updated**: 2026-07-09
 **GitHub Boundary**: The live commit and PR state is tracked in GitHub (UI/API or `gh`); this file is a curated repo/engineering ledger, not a live mirror.
 
 ---
+
+## Repo / Engineering Status (2026-07-09)
+
+- **#3911 ARVP parallel ledger/evidence isolation**: **DONE_MERGED_CLOSED** — PR [#3941](https://github.com/jannekbuengener/Claire_de_Binare/pull/3941) @ `0f273b15`. Closes #3911.
+
+- **#3912 ARVP parallel natural-paper pilot (PB1+Donchian)**: **READY_PENDING_RUNTIME_GO** — prerequisites #3909–#3911 + gearbox alignment complete; campaign templates + preflight landed (`docs/evidence/arvp_parallel_natural_paper_3912_preflight.md`, `manifests/campaign_3912_np_parallel_*.yaml`). **Awaiting Jannek RUNTIME-GO** on #3912. No pilot execute in prep slice. LR **NO-GO** unchanged.
+
+- **#3893 24h Donchian natural-paper**: **DONE_CLOSED** — Attempt 2 terminal `TIMEOUT_NO_CHAIN` (24h window `2026-07-07T02:17Z` → `2026-07-08T02:17:00Z`). Evidence: `docs/evidence/arvp_fresh_natural_paper_donchian_3893.md`. Stack restored to canonical `cdb_signal` (`primary_breakout_v1`). LR **NO-GO** unchanged.
+
+- **#3939 CodeQL cyclic-import (harness ↔ evidence_json)**: **DONE_MERGED_CLOSED** — PR [#3940](https://github.com/jannekbuengener/Claire_de_Binare/pull/3940) squash-merged @ `913579e9`. Shared types extracted to `tools/surrealdb/context_invocation_harness_types.py`; breaks `py/cyclic-import` module-level cycle. Evidence: `docs/evidence/security/CDB_SECURITY_CODEQL_CYCLIC_IMPORT_3939_2026-07-09.md`. GitHub alerts #4616/#4617 closure pending Default Setup rescan on `main`. No dismissals; #3755/#3936 untouched. LR **NO-GO** unchanged.
 
 ## Repo / Engineering Status (2026-07-08)
 
