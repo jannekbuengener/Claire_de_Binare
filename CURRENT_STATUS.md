@@ -12,7 +12,7 @@
 
 - **#3911 ARVP parallel ledger/evidence isolation**: **DONE_MERGED_CLOSED** — PR [#3941](https://github.com/jannekbuengener/Claire_de_Binare/pull/3941) @ `0f273b15`. Closes #3911.
 
-- **#3912 ARVP parallel natural-paper pilot (PB1+Donchian)**: **READY_PENDING_RUNTIME_GO** — prerequisites #3909–#3911 + gearbox alignment complete; campaign templates + preflight landed (`docs/evidence/arvp_parallel_natural_paper_3912_preflight.md`, `manifests/campaign_3912_np_parallel_*.yaml`). **Awaiting Jannek RUNTIME-GO** on #3912. No pilot execute in prep slice. LR **NO-GO** unchanged.
+- **#3912 ARVP parallel natural-paper pilot (PB1+Donchian)**: **OBSERVATION_RUNNING** — RUNTIME-GO posted; execute started `2026-07-09T13:27:00Z` → `2026-07-10T01:27:00Z` (12h). Campaigns `arvp_3912_np_parallel_pb1_20260709_1327` + `arvp_3912_np_parallel_donchian_20260709_1327`; supervisors polling 900s. Prep PR [#3942](https://github.com/jannekbuengener/Claire_de_Binare/pull/3942) @ `841d49b0`; compose context fix [#3943](https://github.com/jannekbuengener/Claire_de_Binare/pull/3943) @ `e436ae2d`. Evidence: `docs/evidence/arvp_parallel_natural_paper_3912.md` (local execute). Terminal + baseline restore after window. LR **NO-GO** unchanged.
 
 - **#3893 24h Donchian natural-paper**: **DONE_CLOSED** — Attempt 2 terminal `TIMEOUT_NO_CHAIN` (24h window `2026-07-07T02:17Z` → `2026-07-08T02:17:00Z`). Evidence: `docs/evidence/arvp_fresh_natural_paper_donchian_3893.md`. Stack restored to canonical `cdb_signal` (`primary_breakout_v1`). LR **NO-GO** unchanged.
 
