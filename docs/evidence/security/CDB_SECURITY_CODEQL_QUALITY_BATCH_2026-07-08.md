@@ -43,7 +43,7 @@
 | `py/import-and-import-from` | 2 | **Fixed** — single import style in tests |
 | `py/implicit-string-concatenation-in-list` | 1 | **Fixed** — explicit concatenation in scanner |
 | `py/uninitialized-local-variable` | 1 | **Deferred** — .codex plugin-creator (already has `= None` on main; scan lag) |
-| `py/cyclic-import` | 2 | **Deferred** — harness ↔ evidence_json refactor slice |
+| cyclic-import | 2 | **Fixed** in #3939 — shared types extracted to `context_invocation_harness_types.py` |
 | `py/file-not-closed` | 1 | **Deferred** — paper stimulus test fixture lifecycle |
 | `py/polluting-import` | 1 | **Deferred** — local test helper import semantics |
 
@@ -65,7 +65,7 @@
 
 | Cluster | Alerts | Rationale | Follow-up |
 |---------|--------|-----------|-----------|
-| cyclic-import | 2 | `context_invocation_evidence_json` ↔ `context_live_invocation_harness` needs module split / lazy import design | Separate refactor slice if no existing issue |
+| cyclic-import | 2 | `context_invocation_evidence_json` ↔ `context_live_invocation_harness` — fixed in #3939 via `context_invocation_harness_types.py` | #3939 (closed) |
 | file-not-closed | 1 | `test_paper_runtime_stimulus_runner.py` — fixture lifecycle semantics | Document only |
 | polluting-import | 1 | `memory_db_proof_helpers.py` — test-local import pattern | Document only |
 
