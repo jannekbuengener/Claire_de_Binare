@@ -16,6 +16,22 @@ from tools.surrealdb.db_record_evidence_contract import (
 
 pytestmark = pytest.mark.unit
 
+
+def test_modules_import_without_cyclic_dependency() -> None:
+    """Regression guard for CodeQL py/cyclic-import (#3939)."""
+    import importlib
+    import sys
+
+    for name in (
+        "tools.surrealdb.context_invocation_harness_types",
+        "tools.surrealdb.context_invocation_evidence_json",
+        "tools.surrealdb.context_live_invocation_harness",
+    ):
+        sys.modules.pop(name, None)
+    importlib.import_module("tools.surrealdb.context_invocation_evidence_json")
+    importlib.import_module("tools.surrealdb.context_live_invocation_harness")
+
+
 _REQUIRED_TOP_LEVEL = frozenset(
     {
         "schema_version",
