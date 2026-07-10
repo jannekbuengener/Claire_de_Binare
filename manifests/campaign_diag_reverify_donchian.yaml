@@ -1,0 +1,84 @@
+schema_version: "1.0"
+campaign_id: arvp_diag_p0r_donchian_20260710t1600z
+hypothesis_id: HYP-ARVP-DIAG-TELEMETRY-REVERIFY-01
+parent_issue: 3973
+related_issues:
+  - 3967
+  - 3970
+  - 3971
+  - 3955
+  - 3960
+  - 3963
+symbol: BTCUSDT
+strategy_id: donchian_breakout_v1
+bot_id: np-donchian-reverify-01
+evidence_class: natural_paper_evidence
+expected_source_sha: "251faf59d94f50bd77972c06b3a7cf23d6ecf401"
+# Rewrite start_utc / timeout_utc at RUNTIME-GO execute (2h window recommended)
+start_utc: "TBD_AT_RUNTIME_GO"
+timeout_utc: "TBD_AT_RUNTIME_GO"
+max_duration_hours: 2.0
+start_criteria:
+  pre_documented: true
+  description: "Short ARVP telemetry re-verify lane B (Donchian) after #3971."
+  start_policy_ref: docs/evidence/arvp_diag_telemetry_reverify_preflight_3973.md
+  criteria_met: false
+  criteria_met_reason: "Awaiting RUNTIME-GO on #3973 with rebuilt signal images."
+signal_compose_override: manifests/runtime_np_diag_reverify_signal_compose_override.yml
+allocation_compose_override: manifests/runtime_np_parallel_allocation_compose_override.yml
+safety_flags:
+  mock_trading: true
+  use_real_balance: false
+  dry_run: true
+  mexc_testnet: true
+runtime_targets:
+  - cdb_ws
+  - cdb_market
+  - cdb_candles
+  - cdb_regime
+  - cdb_allocation
+  - cdb_signal_donchian
+  - cdb_risk
+  - cdb_execution
+  - cdb_db_writer
+  - cdb_paper_runner
+db_readonly_targets:
+  - public.correlation_ledger
+  - public.candles_1m
+evidence_doc: docs/evidence/arvp_diag_telemetry_reverify_run.md
+evidence_log_jsonl: artifacts/campaigns/arvp_diag_p0r_donchian_20260710t1600z/evidence_log.jsonl
+campaign_status_md: artifacts/campaigns/arvp_diag_p0r_donchian_20260710t1600z/campaign_status.md
+github_reporting:
+  post_on_issue_3973: true
+  issue_close_after_acceptance: false
+allowed_statuses:
+  - planned
+  - preflight_failed
+  - running
+  - pass_telemetry_reverified
+  - fail_stale_image_guard
+  - fail_signal_id_collision_reproduced
+  - fail_ledger_conflict_silent
+  - fail_campaign_id_not_propagated
+  - timeout_no_signal_activity
+  - hold_runtime_blocker
+  - blocked_runtime
+  - blocked_db_readonly
+  - blocked_governance
+  - evidence_pr_open
+  - evidence_merged
+terminal_statuses:
+  - pass_telemetry_reverified
+  - fail_stale_image_guard
+  - fail_signal_id_collision_reproduced
+  - fail_ledger_conflict_silent
+  - fail_campaign_id_not_propagated
+  - timeout_no_signal_activity
+  - hold_runtime_blocker
+  - blocked_runtime
+  - blocked_db_readonly
+  - blocked_governance
+  - evidence_merged
+  - preflight_failed
+campaign_status: planned
+gear_id: gear-donchian-breakout-v1-diag-reverify-btcusdt
