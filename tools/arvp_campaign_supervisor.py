@@ -125,7 +125,13 @@ def run_all_probes(manifest: dict[str, Any]) -> list[dict[str, Any]]:
     results.append(
         {
             "probe": "correlation_ledger",
-            **probe_ledger(campaign_start_utc=start_utc, include_events=True),
+            **probe_ledger(
+                campaign_start_utc=start_utc,
+                include_events=True,
+                bot_id=manifest.get("bot_id"),
+                strategy_id=manifest.get("strategy_id"),
+                campaign_id=manifest.get("campaign_id"),
+            ),
         }
     )
     results.append({"probe": "regime", **probe_regime()})
@@ -145,13 +151,31 @@ def _check_blocked(probes: list[dict[str, Any]], name: str) -> bool:
     return p is not None and p.get("status") in ("blocked",)
 
 
-def detect_chain(probes: list[dict[str, Any]]) -> dict[str, Any] | None:
+def _ledger_activity_count(
+    evidence: dict[str, Any], manifest: dict[str, Any]
+) -> int | None:
+    """Prefer lane-scoped ledger count when manifest supplies bot_id."""
+    global_count = evidence.get("events_since_campaign_start")
+    bot_count = evidence.get("events_since_campaign_start_bot_id")
+    strategy_count = evidence.get("events_since_campaign_start_strategy_id")
+    if manifest.get("bot_id") and bot_count is not None:
+        return bot_count
+    if manifest.get("strategy_id") and strategy_count is not None:
+        return strategy_count
+    return global_count
+
+
+def detect_chain(
+    probes: list[dict[str, Any]], manifest: dict[str, Any] | None = None
+) -> dict[str, Any] | None:
     ledger = _find_probe(probes, "correlation_ledger")
     if ledger is None or ledger.get("status") != "ok":
         return None
 
     evidence = ledger.get("evidence", {})
     count_since = evidence.get("events_since_campaign_start")
+    if manifest is not None:
+        count_since = _ledger_activity_count(evidence, manifest)
     if count_since is not None and count_since <= 0:
         return None
 
@@ -203,7 +227,7 @@ def evaluate_state(
     if safety is not None and safety.get("status") == "blocked":
         return STATE_BLOCKED_GOVERNANCE
 
-    chain_result = detect_chain(probes)
+    chain_result = detect_chain(probes, manifest)
     if (
         chain_result is not None
         and chain_result.get("chain_status") == "complete_chain"
@@ -234,13 +258,30 @@ def _build_cycle_entry(
 ) -> dict[str, Any]:
     ledger = _find_probe(probes, "correlation_ledger")
     event_count = None
+    ledger_counts: dict[str, Any] = {}
     if ledger is not None:
         ev = ledger.get("evidence", {})
         event_count = ev.get("events_since_campaign_start")
+        lane_count = _ledger_activity_count(ev, manifest)
+        ledger_counts = {
+            "global_since_start": ev.get("events_since_campaign_start_global"),
+            "bot_id_since_start": ev.get("events_since_campaign_start_bot_id"),
+            "strategy_id_since_start": ev.get(
+                "events_since_campaign_start_strategy_id"
+            ),
+            "campaign_id_since_start": ev.get(
+                "events_since_campaign_start_campaign_id"
+            ),
+            "config_hash_since_start": ev.get(
+                "events_since_campaign_start_config_hash"
+            ),
+            "lane_effective_since_start": lane_count,
+            "attribution": ev.get("ledger_attribution"),
+        }
 
     probe_statuses = {p["probe"]: p.get("status") for p in probes}
 
-    chain_details = detect_chain(probes)
+    chain_details = detect_chain(probes, manifest)
 
     entry: dict[str, Any] = {
         "observed_at_utc": _utcnow(),
@@ -249,9 +290,13 @@ def _build_cycle_entry(
         "state": state,
         "probe_statuses": probe_statuses,
         "event_count_since_start": event_count,
+        "event_count_since_start_lane": ledger_counts.get(
+            "lane_effective_since_start"
+        ),
+        "ledger_counts": ledger_counts,
         "chain_detected": state == STATE_CHAIN_FOUND,
         "no_mutation": True,
-        "limitations": [],
+        "limitations": list(ledger.get("limitations", [])) if ledger else [],
     }
 
     if chain_details is not None:
@@ -303,7 +348,8 @@ def write_status_md(path: str, entry: dict[str, Any], manifest: dict[str, Any]) 
         f"- **Strategy:** {manifest.get('strategy_id', '-')}",
         f"- **Start (UTC):** {manifest.get('start_utc', '-')}",
         f"- **Timeout (UTC):** {manifest.get('timeout_utc', '-')}",
-        f"- **Event count since start:** {entry.get('event_count_since_start', '-')}",
+        f"- **Event count since start (global):** {entry.get('event_count_since_start', '-')}",
+        f"- **Event count since start (lane):** {entry.get('event_count_since_start_lane', '-')}",
         f"- **Chain detected:** {entry.get('chain_detected', False)}",
         "",
         "## Safety Flags",

@@ -33,6 +33,7 @@ from core.replay.canonical_json import canonical_hash
 from core.utils.clock import utcnow
 from core.utils.redis_payload import sanitize_signal
 from core.utils.uuid_gen import (
+    format_runtime_signal_id,
     generate_uuid_hex,
     compute_correlation_id,
     compute_event_pk,
@@ -294,8 +295,13 @@ class SignalEngine:
                         f"stimulus:{stimulus_run_id}:{candidate.symbol}:"
                         f"{candidate.side}:{market_data.timestamp}"
                     )
+        signal_id = (
+            f"sig-{generate_uuid_hex(name=signal_id_name, length=32)}"
+            if signal_id_name
+            else format_runtime_signal_id(length=32)
+        )
         signal = Signal(
-            signal_id=f"sig-{generate_uuid_hex(name=signal_id_name, length=32)}",
+            signal_id=signal_id,
             symbol=candidate.symbol,
             side=candidate.side,
             reason=candidate.reason,
@@ -648,7 +654,7 @@ class SignalEngine:
             and close_now < lower_level
         ):
             result_signal = Signal(
-                signal_id=f"sig-{generate_uuid_hex(length=32)}",
+                signal_id=format_runtime_signal_id(length=32),
                 symbol=symbol,
                 side="SELL",
                 reason="donchian_lower_break",
@@ -690,7 +696,7 @@ class SignalEngine:
             )
         ):
             result_signal = Signal(
-                signal_id=f"sig-{generate_uuid_hex(length=32)}",
+                signal_id=format_runtime_signal_id(length=32),
                 symbol=symbol,
                 side="BUY",
                 reason="donchian_upper_break",
@@ -816,7 +822,7 @@ class SignalEngine:
             and close_now < lowest_low
         ):
             result_signal = Signal(
-                signal_id=f"sig-{generate_uuid_hex(length=32)}",
+                signal_id=format_runtime_signal_id(length=32),
                 symbol=symbol,
                 side="SELL",
                 reason="channel_exit",
@@ -861,7 +867,7 @@ class SignalEngine:
             )
             if entry_ready:
                 result_signal = Signal(
-                    signal_id=f"sig-{generate_uuid_hex(length=32)}",
+                    signal_id=format_runtime_signal_id(length=32),
                     symbol=symbol,
                     side="BUY",
                     reason="breakout_entry",
