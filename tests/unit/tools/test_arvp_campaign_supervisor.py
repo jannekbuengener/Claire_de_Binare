@@ -578,7 +578,7 @@ class TestRunAllProbes:
         )
         monkeypatch.setattr(
             "tools.arvp_campaign_supervisor.probe_ledger",
-            lambda campaign_start_utc=None, include_events=False: _ok(
+            lambda campaign_start_utc=None, include_events=False, **kwargs: _ok(
                 "correlation_ledger"
             ),
         )
