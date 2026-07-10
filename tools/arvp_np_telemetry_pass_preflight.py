@@ -34,7 +34,7 @@ NP_SIGNAL_COMPOSE_OVERRIDE = (
     "manifests/runtime_np_telemetry_pass_signal_compose_override.yml"
 )
 
-EXPECTED_SOURCE_SHA = "441fb9d6d0731f2111142899a1b8be828a4a046a"
+EXPECTED_SOURCE_SHA = "c4ba7428e605cca09b1d3e2c9469a431ac475554"
 
 EXPECTED_BOT_IDS = {
     "cdb_signal_pb1": "np-pb1-telemetry-pass-01",

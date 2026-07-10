@@ -9,7 +9,7 @@
 # Static validation (no runtime start):
 #   $env:CDB_CAMPAIGN_ID_PB1 = "<pb1 manifest campaign_id>"
 #   $env:CDB_CAMPAIGN_ID_DONCHIAN = "<donchian manifest campaign_id>"
-#   $env:CDB_SOURCE_SHA = "441fb9d6d0731f2111142899a1b8be828a4a046a"
+#   $env:CDB_SOURCE_SHA = "c4ba7428e605cca09b1d3e2c9469a431ac475554"
 #   docker compose -f infrastructure/compose/compose.blue.yml `
 #     -f infrastructure/compose/compose.red.yml `
 #     -f manifests/runtime_np_telemetry_pass_signal_compose_override.yml `
@@ -30,7 +30,7 @@ services:
       context: ../..
       dockerfile: services/signal/Dockerfile
       args:
-        CDB_SOURCE_SHA: ${CDB_SOURCE_SHA:-441fb9d6d0731f2111142899a1b8be828a4a046a}
+        CDB_SOURCE_SHA: ${CDB_SOURCE_SHA:-c4ba7428e605cca09b1d3e2c9469a431ac475554}
     container_name: cdb_signal_pb1
     restart: unless-stopped
     secrets:
@@ -47,7 +47,7 @@ services:
       SIGNAL_ADAPTER_ID: momentum_builtin
       SIGNAL_BOT_ID: np-pb1-telemetry-pass-01
       CDB_CAMPAIGN_ID: ${CDB_CAMPAIGN_ID_PB1:-}
-      CDB_SOURCE_SHA: ${CDB_SOURCE_SHA:-441fb9d6d0731f2111142899a1b8be828a4a046a}
+      CDB_SOURCE_SHA: ${CDB_SOURCE_SHA:-c4ba7428e605cca09b1d3e2c9469a431ac475554}
       SIGNAL_ENTRY_LOOKBACK_MIN: "240"
       SIGNAL_EXIT_LOOKBACK_MIN: "120"
       SIGNAL_BREAKOUT_BUFFER: "0.0005"
@@ -82,7 +82,7 @@ services:
       context: ../..
       dockerfile: services/signal/Dockerfile
       args:
-        CDB_SOURCE_SHA: ${CDB_SOURCE_SHA:-441fb9d6d0731f2111142899a1b8be828a4a046a}
+        CDB_SOURCE_SHA: ${CDB_SOURCE_SHA:-c4ba7428e605cca09b1d3e2c9469a431ac475554}
     container_name: cdb_signal_donchian
     restart: unless-stopped
     secrets:
@@ -99,7 +99,7 @@ services:
       SIGNAL_ADAPTER_ID: momentum_builtin
       SIGNAL_BOT_ID: np-donchian-telemetry-pass-01
       CDB_CAMPAIGN_ID: ${CDB_CAMPAIGN_ID_DONCHIAN:-}
-      CDB_SOURCE_SHA: ${CDB_SOURCE_SHA:-441fb9d6d0731f2111142899a1b8be828a4a046a}
+      CDB_SOURCE_SHA: ${CDB_SOURCE_SHA:-c4ba7428e605cca09b1d3e2c9469a431ac475554}
       SIGNAL_ENTRY_CHANNEL_BARS: "20"
       SIGNAL_EXIT_CHANNEL_BARS: "10"
       SIGNAL_MIN_MINUTES_BETWEEN_ENTRIES: "30"
