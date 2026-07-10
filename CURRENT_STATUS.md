@@ -3,16 +3,18 @@
 **Status Class**: Working Repo / Engineering Status
 **Authority**: Current repo/main/test/dependency snapshot; not the canonical live-readiness or Echtgeld Go/No-Go source.
 **Operational Canon**: `docs/live-readiness/LR-AUDIT-STATUS-2026-03-05.md`
-**Last Updated**: 2026-07-09
+**Last Updated**: 2026-07-10
 **GitHub Boundary**: The live commit and PR state is tracked in GitHub (UI/API or `gh`); this file is a curated repo/engineering ledger, not a live mirror.
 
 ---
 
+## Repo / Engineering Status (2026-07-10)
+
+- **#3912 ARVP parallel natural-paper pilot (PB1+Donchian)**: **DONE_MERGED_CLOSED** — Verdict `TIMEOUT_NO_CHAIN` both lanes (12h window `2026-07-09T13:27:00Z` → `2026-07-10T01:27:00Z`). Root cause: PB1 regime-idle (0 signals); Donchian 50 signals, 50× `RC_001`, 0 orders/fills. Closeout PR [#3958](https://github.com/jannekbuengener/Claire_de_Binare/pull/3958) @ `dd8216be`; closes #3912 @ `2026-07-10T10:18:32Z`. P0 telemetry false-zero fix [#3955](https://github.com/jannekbuengener/Claire_de_Binare/issues/3955) / PR [#3956](https://github.com/jannekbuengener/Claire_de_Binare/pull/3956) @ `03b27a99` (collision-safe runtime signal IDs; global/lane-scoped supervisor counts). Campaigns `arvp_3912_np_parallel_pb1_20260709_1327` + `arvp_3912_np_parallel_donchian_20260709_1327`. Prep PR [#3942](https://github.com/jannekbuengener/Claire_de_Binare/pull/3942) @ `841d49b0`; compose context fix [#3943](https://github.com/jannekbuengener/Claire_de_Binare/pull/3943) @ `e436ae2d`. Evidence: `docs/evidence/arvp_parallel_natural_paper_3912.md`. Stack baseline restored post-window. #3742 **stays OPEN**. No promotion claim. LR **NO-GO** unchanged.
+
 ## Repo / Engineering Status (2026-07-09)
 
 - **#3911 ARVP parallel ledger/evidence isolation**: **DONE_MERGED_CLOSED** — PR [#3941](https://github.com/jannekbuengener/Claire_de_Binare/pull/3941) @ `0f273b15`. Closes #3911.
-
-- **#3912 ARVP parallel natural-paper pilot (PB1+Donchian)**: **OBSERVATION_RUNNING** — RUNTIME-GO posted; execute started `2026-07-09T13:27:00Z` → `2026-07-10T01:27:00Z` (12h). Campaigns `arvp_3912_np_parallel_pb1_20260709_1327` + `arvp_3912_np_parallel_donchian_20260709_1327`; supervisors polling 900s. Prep PR [#3942](https://github.com/jannekbuengener/Claire_de_Binare/pull/3942) @ `841d49b0`; compose context fix [#3943](https://github.com/jannekbuengener/Claire_de_Binare/pull/3943) @ `e436ae2d`. Evidence: `docs/evidence/arvp_parallel_natural_paper_3912.md` (local execute). Terminal + baseline restore after window. LR **NO-GO** unchanged.
 
 - **#3893 24h Donchian natural-paper**: **DONE_CLOSED** — Attempt 2 terminal `TIMEOUT_NO_CHAIN` (24h window `2026-07-07T02:17Z` → `2026-07-08T02:17:00Z`). Evidence: `docs/evidence/arvp_fresh_natural_paper_donchian_3893.md`. Stack restored to canonical `cdb_signal` (`primary_breakout_v1`). LR **NO-GO** unchanged.
 
