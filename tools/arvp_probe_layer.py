@@ -11,6 +11,8 @@ import sys
 from datetime import datetime, timezone
 from typing import Any
 
+from core.replay.correlation_ledger_attribution import aggregate_lane_campaign_evidence
+
 logger = logging.getLogger(__name__)
 
 ProbeResult = dict[str, Any]
@@ -770,6 +772,53 @@ def _ledger_count_since_start(
     return int(rows[0][0]) if rows else 0
 
 
+def _ledger_events_since_start(
+    host: str,
+    port: int,
+    dbname: str,
+    user: str,
+    campaign_start_utc: str,
+    *,
+    bot_id: str | None = None,
+    strategy_id: str | None = None,
+    campaign_id: str | None = None,
+    config_hash: str | None = None,
+) -> list[dict[str, Any]]:
+    start_expr = _campaign_start_ms_expr(campaign_start_utc)
+    clauses = [f"timestamp_ms >= {start_expr}"]
+    if bot_id:
+        clauses.append(f"payload->>'bot_id' = '{bot_id}'")
+    if strategy_id:
+        clauses.append(f"payload->>'strategy_id' = '{strategy_id}'")
+    if campaign_id:
+        clauses.append(f"payload->>'campaign_id' = '{campaign_id}'")
+    if config_hash:
+        clauses.append(
+            f"COALESCE(payload->'metadata'->>'config_hash', '') = '{config_hash}'"
+        )
+    where = " AND ".join(clauses)
+    rows = _run_sql(
+        host,
+        port,
+        dbname,
+        user,
+        "SELECT event_type, payload "
+        f"FROM correlation_ledger WHERE {where} ORDER BY timestamp_ms ASC",
+    ) or []
+    events: list[dict[str, Any]] = []
+    for row in rows:
+        payload = row[1]
+        if isinstance(payload, str):
+            try:
+                payload = json.loads(payload)
+            except json.JSONDecodeError:
+                payload = {}
+        if not isinstance(payload, dict):
+            payload = {}
+        events.append({"event_type": row[0], "payload": payload})
+    return events
+
+
 def probe_ledger(
     campaign_start_utc: str | None = None,
     host: str = DB_DEFAULTS["host"],
@@ -905,13 +954,43 @@ def probe_ledger(
         if campaign_id and count_campaign_id == 0:
             limitations.append(
                 "campaign_id filter returned 0 rows; campaign_id is not "
-                "propagated to correlation_ledger payload today"
+                "propagated to correlation_ledger payload yet"
             )
             evidence["ledger_attribution"]["campaign_id_propagated_to_ledger"] = False
+        elif campaign_id and count_campaign_id and count_campaign_id > 0:
+            evidence["ledger_attribution"]["campaign_id_propagated_to_ledger"] = True
         if bot_id is None and strategy_id is None:
             limitations.append(
                 "no bot_id/strategy_id filter supplied; only global ledger count available"
             )
+
+        if campaign_start_utc and (bot_id or strategy_id):
+            try:
+                lane_rows = _ledger_events_since_start(
+                    host,
+                    port,
+                    dbname,
+                    user,
+                    campaign_start_utc,
+                    bot_id=bot_id,
+                    strategy_id=strategy_id,
+                    campaign_id=campaign_id,
+                    config_hash=config_hash,
+                )
+                evidence["lane_campaign_evidence"] = aggregate_lane_campaign_evidence(
+                    lane_rows,
+                    bot_id=bot_id,
+                    strategy_id=strategy_id,
+                    campaign_id=campaign_id,
+                    config_hash=config_hash,
+                )
+                evidence["queries"].append(
+                    "SELECT event_type, payload FROM correlation_ledger "
+                    "WHERE timestamp_ms >= ... [lane filters]"
+                )
+            except Exception as exc:
+                logger.warning("lane campaign evidence query failed: %s", exc)
+                evidence["lane_campaign_evidence_error"] = str(exc)
 
         events_raw: list[dict] | None = None
         if include_events:

@@ -30,6 +30,7 @@ import psycopg2
 import psycopg2.extensions
 
 from core.replay.canonical_json import canonical_hash
+from core.replay.correlation_ledger_attribution import build_signal_ledger_payload
 from core.utils.clock import utcnow
 from core.utils.redis_payload import sanitize_signal
 from core.utils.uuid_gen import (
@@ -508,7 +509,7 @@ class SignalEngine:
                     event_type,
                     signal.symbol,
                     signal.ts_ms,
-                    json.dumps(signal.to_dict()),
+                    json.dumps(build_signal_ledger_payload(signal.to_dict())),
                 ),
             )
             logger.debug(f"📊 correlation_ledger SIGNAL: {signal.signal_id}")
