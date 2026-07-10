@@ -1,7 +1,7 @@
 schema_version: "1.0"
 campaign_id: arvp_diag_p15_pb1_20260710t1100z
 hypothesis_id: HYP-ARVP-DIAG-TELEMETRY-01
-parent_issue: 3965
+parent_issue: 3967
 related_issues:
   - 3912
   - 3955
@@ -12,15 +12,15 @@ strategy_id: primary_breakout_v1
 bot_id: np-pb1-diag-01
 evidence_class: natural_paper_evidence
 # Rewrite start_utc / timeout_utc at RUNTIME-GO execute (2h window recommended)
-start_utc: "RUNTIME_GO_SET"
-timeout_utc: "RUNTIME_GO_SET"
+start_utc: "2026-07-10T11:30:00Z"
+timeout_utc: "2026-07-10T13:30:00Z"
 max_duration_hours: 2.0
 start_criteria:
   pre_documented: true
   description: "Short ARVP telemetry diagnostic lane A (PB1) after #3964."
   start_policy_ref: docs/evidence/arvp_diag_telemetry_verification_preflight.md
-  criteria_met: false
-  criteria_met_reason: "Awaiting Jannek RUNTIME-GO on #3965."
+  criteria_met: true
+  criteria_met_reason: "RUNTIME-GO posted; execute #3967."
 signal_compose_override: manifests/runtime_np_diag_telemetry_signal_compose_override.yml
 allocation_compose_override: manifests/runtime_np_parallel_allocation_compose_override.yml
 safety_flags:
