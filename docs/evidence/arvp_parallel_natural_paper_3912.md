@@ -1,15 +1,16 @@
 # ARVP Parallel Natural-Paper Pilot — Execute (#3912)
 
-Status Class: **OBSERVATION_RUNNING**
+Status Class: **OBSERVATION_COMPLETE**
 Issue: [#3912](https://github.com/jannekbuengener/Claire_de_Binare/issues/3912)
 Hypothesis: `HYP-NP-PARALLEL-2S-01`
 Parent: [#1900](https://github.com/jannekbuengener/Claire_de_Binare/issues/1900)
 Preflight: [`arvp_parallel_natural_paper_3912_preflight.md`](arvp_parallel_natural_paper_3912_preflight.md)
 Gearbox alignment: [`arvp_parallel_pilot_gearbox_alignment_3912.md`](arvp_parallel_pilot_gearbox_alignment_3912.md)
+Telemetry fix: [#3955](https://github.com/jannekbuengener/Claire_de_Binare/issues/3955) / PR [#3956](https://github.com/jannekbuengener/Claire_de_Binare/pull/3956) @ `03b27a99`
 Live-Readiness: **NO-GO**
 Echtgeld: **not authorized**
 
-**Verdict enum:** *pending* — 12h window in progress
+**Verdict enum:** `TIMEOUT_NO_CHAIN` (both lanes)
 
 ---
 
@@ -62,19 +63,52 @@ Evidence logs:
 
 ## 5. Terminal evaluation
 
-*Pending — re-run after window timeout per lane.*
+**Evaluated at (UTC):** `2026-07-10T01:38:37Z` (supervisor cycle 48)
 
-Per-lane verdicts (expected enum): `CHAIN_FOUND` | `TIMEOUT_NO_CHAIN` | `INTERRUPTED` | `BLOCKED_*`
+| Lane | Terminal state | Supervisor `events_since_start` | chain_detected | Actual lane activity |
+|------|----------------|----------------------------------:|----------------|----------------------|
+| PB1 | `TIMEOUT_NO_CHAIN` | 0 | false | 0 signals (regime-gated idle) |
+| Donchian | `TIMEOUT_NO_CHAIN` | 0 | false | 50 signals emitted; 0 orders / 0 fills |
+
+Infrastructure probes: docker/safety/db ok; host/regime warn (non-blocking).
+
+**Stack baseline restored** post-eval: `cdb_signal` → `primary_breakout_v1`; parallel containers stopped.
+
+No `natural_paper_evidence` promotion claim. Hypothesis `HYP-NP-PARALLEL-2S-01`: infrastructure parallel observation complete; no campaign-scoped promotable chains in either lane.
 
 ---
 
-## 6. Boundaries
+## 6. Root cause (terminal understanding)
+
+### Lane outcomes
+
+| Lane | Signals | Risk | Orders / Fills | Verdict rationale |
+|------|--------:|------|----------------|-------------------|
+| PB1 | 0 | — | 0 / 0 | `primary_breakout_v1` requires TREND regime; window was `HIGH_VOL_CHAOTIC` throughout |
+| Donchian | 50 | 50× **RC_001** | 0 / 0 | Signals emitted but allocation gate blocked every path; no promotable chain |
+
+`TIMEOUT_NO_CHAIN` is correct for both lanes: no SIGNAL→DECISION→ORDER→FILL chain completed in the observation window.
+
+### Why supervisor showed `events_since_start=0` on Donchian (telemetry gap, not strategy success)
+
+At terminal evaluation the supervisor reported `events_since_start=0` on **both** lanes. For PB1 this matched reality (0 signals). For Donchian it was **misleading**:
+
+1. **Deterministic `signal_id` collision** — runtime IDs reused after container restart collided with prior `correlation_ledger` rows; `ON CONFLICT DO NOTHING` suppressed new inserts in the window.
+2. **Global-only ledger count** — supervisor counted all ledger rows since `start_utc` without `bot_id` / `strategy_id` lane filters.
+
+Post-run RCA and engineering fix: [#3955](https://github.com/jannekbuengener/Claire_de_Binare/issues/3955) / PR [#3956](https://github.com/jannekbuengener/Claire_de_Binare/pull/3956) @ `03b27a99`. Detail: [`arvp_3912_zero_event_telemetry_fix_3955.md`](arvp_3912_zero_event_telemetry_fix_3955.md).
+
+Future runs will expose lane-scoped counts and collision-safe runtime signal IDs. This does **not** change the #3912 terminal verdict.
+
+---
+
+## 7. Boundaries
 
 - LR **NO-GO** unchanged
 - No Live/Echtgeld authorization
-- No `natural_paper_evidence` promotion claim until terminal evaluation
-- #3742 stays OPEN
+- No `natural_paper_evidence` promotion claim
+- [#3742](https://github.com/jannekbuengener/Claire_de_Binare/issues/3742) stays OPEN
 
 ---
 
-*Opened at execute start 2026-07-09 on `main` @ `841d49b0`.*
+*Opened at execute start 2026-07-09 on `main` @ `841d49b0`. Closeout reconciled 2026-07-10 after telemetry fix #3956.*
