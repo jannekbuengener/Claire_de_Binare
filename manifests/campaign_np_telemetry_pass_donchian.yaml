@@ -13,17 +13,16 @@ symbol: BTCUSDT
 strategy_id: donchian_breakout_v1
 bot_id: np-donchian-telemetry-pass-01
 evidence_class: natural_paper_evidence
-expected_source_sha: "441fb9d6d0731f2111142899a1b8be828a4a046a"
-# Rewrite start_utc / timeout_utc at RUNTIME-GO execute (4h window recommended)
-start_utc: "RUNTIME_GO_SET"
-timeout_utc: "RUNTIME_GO_SET"
+expected_source_sha: "c4ba7428e605cca09b1d3e2c9469a431ac475554"
+start_utc: "2026-07-10T17:20:00Z"
+timeout_utc: "2026-07-10T21:20:00Z"
 max_duration_hours: 4.0
 start_criteria:
   pre_documented: true
   description: "Parallel natural-paper lane B (Donchian) after telemetry PASS per #3980."
   start_policy_ref: docs/evidence/arvp_np_parallel_after_telemetry_pass_preflight.md
-  criteria_met: false
-  criteria_met_reason: "Preflight READY_PENDING_RUNTIME_GO; awaiting RUNTIME-GO on #3980."
+  criteria_met: true
+  criteria_met_reason: "RUNTIME-GO executed; 4h window 17:20Z-21:20Z; terminal CHAIN_FOUND cycle 1."
 signal_compose_override: manifests/runtime_np_telemetry_pass_signal_compose_override.yml
 allocation_compose_override: manifests/runtime_np_parallel_allocation_compose_override.yml
 safety_flags:
@@ -74,5 +73,5 @@ terminal_statuses:
   - blocked_governance
   - evidence_merged
   - preflight_failed
-campaign_status: planned
+campaign_status: chain_found
 gear_id: gear-donchian-breakout-v1-np-telemetry-pass-btcusdt
