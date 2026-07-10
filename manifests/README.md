@@ -79,6 +79,21 @@ ledger/evidence isolation is guarded by contract tests in
 Gearbox alignment: `docs/evidence/arvp_parallel_pilot_gearbox_alignment_3912.md`.
 **#3912** still requires explicit **RUNTIME-GO** before execute.
 
+### Diagnostic telemetry verification (#3965)
+
+Short 2h parallel run to prove post-#3964 telemetry (collision-safe `signal_id`,
+lane-scoped counts, `campaign_id` propagation, block-reason evidence).
+
+| Artifact | Lane |
+|----------|------|
+| `campaign_diag_telemetry_pb1.yaml` | `primary_breakout_v1` / `np-pb1-diag-01` |
+| `campaign_diag_telemetry_donchian.yaml` | `donchian_breakout_v1` / `np-donchian-diag-01` |
+| `runtime_np_diag_telemetry_signal_compose_override.yml` | Diagnostic bot IDs + P1.5 `CDB_CAMPAIGN_ID` wiring |
+
+Preflight: `docs/evidence/arvp_diag_telemetry_verification_preflight.md`.
+Helper: `python -m tools.arvp_diag_telemetry_preflight`.
+**Pending Jannek RUNTIME-GO on #3965.**
+
 ## Single-strategy prior art
 
 | Artifact | Purpose |
