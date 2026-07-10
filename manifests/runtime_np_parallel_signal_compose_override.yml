@@ -13,6 +13,11 @@
 # Risk-side filter contract (G3): both instances publish to shared Redis topic `signals`
 # and stream `stream.signals`. cdb_risk consumes the shared bus and routes by payload
 # `strategy_id` / `bot_id`. Ledger/evidence isolation guards are #3911 — not in this slice.
+#
+# Campaign ID contract (P1.5): set host env from rewritten campaign manifests at RUNTIME-GO:
+#   CDB_CAMPAIGN_ID_PB1=<pb1 manifest campaign_id>
+#   CDB_CAMPAIGN_ID_DONCHIAN=<donchian manifest campaign_id>
+# Each signal service receives CDB_CAMPAIGN_ID via lane-specific substitution (not shared).
 
 services:
   cdb_signal:
@@ -38,6 +43,7 @@ services:
       SIGNAL_SYMBOL: BTCUSDT
       SIGNAL_ADAPTER_ID: momentum_builtin
       SIGNAL_BOT_ID: np-pb1-parallel-01
+      CDB_CAMPAIGN_ID: ${CDB_CAMPAIGN_ID_PB1:-}
       SIGNAL_ENTRY_LOOKBACK_MIN: "240"
       SIGNAL_EXIT_LOOKBACK_MIN: "120"
       SIGNAL_BREAKOUT_BUFFER: "0.0005"
@@ -86,6 +92,7 @@ services:
       SIGNAL_SYMBOL: BTCUSDT
       SIGNAL_ADAPTER_ID: momentum_builtin
       SIGNAL_BOT_ID: np-donchian-parallel-01
+      CDB_CAMPAIGN_ID: ${CDB_CAMPAIGN_ID_DONCHIAN:-}
       SIGNAL_ENTRY_CHANNEL_BARS: "20"
       SIGNAL_EXIT_CHANNEL_BARS: "10"
       SIGNAL_MIN_MINUTES_BETWEEN_ENTRIES: "30"

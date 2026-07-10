@@ -53,6 +53,17 @@ docker compose `
 Rewrite `campaign_id`, `start_utc`, and `timeout_utc` at RUNTIME-GO execute (templates
 use `*_TEMPLATE` / `RUNTIME_GO_SET` placeholders).
 
+At RUNTIME-GO, export lane-specific host env from rewritten manifests before `docker compose up`:
+
+```text
+CDB_CAMPAIGN_ID_PB1=<pb1 manifest campaign_id>
+CDB_CAMPAIGN_ID_DONCHIAN=<donchian manifest campaign_id>
+```
+
+Helper: `tools.arvp_parallel_lane_compose_contract.build_parallel_compose_host_env()`.
+Each parallel signal service receives `CDB_CAMPAIGN_ID` via compose substitution (P1.5 / #3963).
+Values must be distinct.
+
 ### Risk-side filter contract (topic/stream isolation)
 
 Both parallel signal instances publish to the **shared** Redis pub/sub topic `signals`
