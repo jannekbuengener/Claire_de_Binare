@@ -12,6 +12,10 @@ from datetime import datetime, timezone
 from typing import Any
 
 from core.replay.correlation_ledger_attribution import aggregate_lane_campaign_evidence
+from core.replay.correlation_ledger_insert import (
+    evaluate_false_zero_event_risk,
+    parse_prometheus_counter,
+)
 
 logger = logging.getLogger(__name__)
 
@@ -817,6 +821,52 @@ def _ledger_events_since_start(
             payload = {}
         events.append({"event_type": row[0], "payload": payload})
     return events
+
+
+def resolve_signal_metrics_url(manifest: dict[str, Any]) -> str | None:
+    """Derive lane signal /metrics URL from manifest (optional explicit override)."""
+    explicit = manifest.get("signal_metrics_url")
+    if isinstance(explicit, str) and explicit.strip():
+        return explicit.strip()
+    strategy_id = manifest.get("strategy_id")
+    host = manifest.get("signal_metrics_host", "127.0.0.1")
+    if strategy_id == "donchian_breakout_v1":
+        return f"http://{host}:8016/metrics"
+    if strategy_id == "primary_breakout_v1":
+        return f"http://{host}:8015/metrics"
+    return None
+
+
+def probe_signal_metrics(metrics_url: str) -> ProbeResult:
+    """Read-only signal engine Prometheus metrics (insert conflict visibility)."""
+    import urllib.error
+    import urllib.request
+
+    try:
+        with urllib.request.urlopen(metrics_url, timeout=5) as response:
+            body = response.read().decode("utf-8", errors="replace")
+    except (urllib.error.URLError, TimeoutError, OSError) as exc:
+        return _blocked(
+            {"metrics_url": metrics_url, "error": str(exc)},
+            ["signal metrics endpoint unreachable"],
+        )
+
+    conflicts = parse_prometheus_counter(
+        body, "correlation_ledger_insert_conflicts_total"
+    )
+    signals = parse_prometheus_counter(body, "signals_generated_total")
+    return _ok(
+        {
+            "metrics_url": metrics_url,
+            "correlation_ledger_insert_conflicts_total": conflicts,
+            "signals_generated_total": signals,
+        },
+        limitations=(
+            ["counter totals are process-lifetime since last container start"]
+            if conflicts is None and signals is None
+            else []
+        ),
+    )
 
 
 def probe_ledger(

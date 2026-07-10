@@ -8,6 +8,7 @@ from __future__ import annotations
 
 import argparse
 import json
+import subprocess
 import sys
 from pathlib import Path
 from typing import Any
@@ -116,6 +117,36 @@ def validate_diag_compose_alignment(
             raise ValueError(f"host env {host_key} must be non-empty")
 
 
+def resolve_repo_source_sha(root: Path) -> str | None:
+    """Return current git HEAD for runtime image freshness checks."""
+    try:
+        proc = subprocess.run(
+            ["git", "rev-parse", "HEAD"],
+            cwd=root,
+            capture_output=True,
+            text=True,
+            check=True,
+            timeout=5,
+        )
+        sha = proc.stdout.strip()
+        return sha or None
+    except (OSError, subprocess.SubprocessError):
+        return None
+
+
+def build_runtime_freshness_guard(root: Path) -> dict[str, Any]:
+    sha = resolve_repo_source_sha(root)
+    return {
+        "expected_source_sha": sha,
+        "container_build_marker_env": "CDB_SOURCE_SHA",
+        "rebuild_required_after_telemetry_fix": True,
+        "limitation": (
+            "Preflight cannot verify running container image SHA without docker inspect; "
+            "operator must rebuild signal services after P0 telemetry merges."
+        ),
+    }
+
+
 def format_powershell_exports(host_env: dict[str, str]) -> str:
     lines = [
         f'$env:{key} = "{value}"'
@@ -156,6 +187,7 @@ def build_preflight_report(root: Path | None = None) -> dict[str, Any]:
             "powershell": format_powershell_exports(host_env),
             "bash": format_bash_exports(host_env),
         },
+        "runtime_freshness": build_runtime_freshness_guard(base),
         "runtime_not_started": True,
         "lr_status": "NO-GO",
     }

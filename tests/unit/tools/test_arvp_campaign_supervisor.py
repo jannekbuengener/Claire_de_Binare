@@ -582,11 +582,16 @@ class TestRunAllProbes:
                 "correlation_ledger"
             ),
         )
+        monkeypatch.setattr(
+            "tools.arvp_campaign_supervisor.probe_signal_metrics",
+            lambda metrics_url: _ok("signal_metrics"),
+        )
 
         manifest = _minimal_manifest()
         results = run_all_probes(manifest)
-        assert len(results) == 7
+        assert len(results) == 8
         assert all(r["status"] == "ok" for r in results)
+        assert any(r["probe"] == "signal_metrics" for r in results)
 
 
 # ---------------------------------------------------------------------------

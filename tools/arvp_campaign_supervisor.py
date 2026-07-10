@@ -18,7 +18,10 @@ from tools.arvp_probe_layer import (
     probe_ledger,
     probe_regime,
     probe_safety,
+    probe_signal_metrics,
+    resolve_signal_metrics_url,
 )
+from core.replay.correlation_ledger_insert import evaluate_false_zero_event_risk
 
 logger = logging.getLogger(__name__)
 
@@ -136,6 +139,12 @@ def run_all_probes(manifest: dict[str, Any]) -> list[dict[str, Any]]:
         }
     )
     results.append({"probe": "regime", **probe_regime()})
+
+    metrics_url = resolve_signal_metrics_url(manifest)
+    if metrics_url:
+        results.append(
+            {"probe": "signal_metrics", **probe_signal_metrics(metrics_url)}
+        )
 
     return results
 
@@ -258,8 +267,10 @@ def _build_cycle_entry(
     manifest: dict[str, Any],
 ) -> dict[str, Any]:
     ledger = _find_probe(probes, "correlation_ledger")
+    signal_metrics = _find_probe(probes, "signal_metrics")
     event_count = None
     ledger_counts: dict[str, Any] = {}
+    ledger_telemetry_risk: dict[str, Any] | None = None
     if ledger is not None:
         ev = ledger.get("evidence", {})
         event_count = ev.get("events_since_campaign_start")
@@ -280,6 +291,18 @@ def _build_cycle_entry(
             "attribution": ev.get("ledger_attribution"),
         }
         lane_campaign_evidence = ev.get("lane_campaign_evidence")
+        sm_evidence = (
+            signal_metrics.get("evidence", {})
+            if signal_metrics is not None
+            else {}
+        )
+        ledger_telemetry_risk = evaluate_false_zero_event_risk(
+            ledger_lane_count=lane_count,
+            insert_conflicts_total=sm_evidence.get(
+                "correlation_ledger_insert_conflicts_total"
+            ),
+            signals_generated_total=sm_evidence.get("signals_generated_total"),
+        )
     else:
         lane_campaign_evidence = None
 
@@ -299,6 +322,7 @@ def _build_cycle_entry(
         ),
         "ledger_counts": ledger_counts,
         "lane_campaign_evidence": lane_campaign_evidence,
+        "ledger_telemetry_risk": ledger_telemetry_risk,
         "no_chain_reason": (
             lane_campaign_evidence.get("no_chain_reason")
             if isinstance(lane_campaign_evidence, dict)
