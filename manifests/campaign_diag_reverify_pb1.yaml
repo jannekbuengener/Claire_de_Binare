@@ -15,15 +15,15 @@ bot_id: np-pb1-reverify-01
 evidence_class: natural_paper_evidence
 expected_source_sha: "251faf59d94f50bd77972c06b3a7cf23d6ecf401"
 # Rewrite start_utc / timeout_utc at RUNTIME-GO execute (2h window recommended)
-start_utc: "TBD_AT_RUNTIME_GO"
-timeout_utc: "TBD_AT_RUNTIME_GO"
+start_utc: "2026-07-10T16:20:00Z"
+timeout_utc: "2026-07-10T18:20:00Z"
 max_duration_hours: 2.0
 start_criteria:
   pre_documented: true
   description: "Short ARVP telemetry re-verify lane A (PB1) after #3971."
   start_policy_ref: docs/evidence/arvp_diag_telemetry_reverify_preflight_3973.md
-  criteria_met: false
-  criteria_met_reason: "Awaiting RUNTIME-GO on #3973 with rebuilt signal images."
+  criteria_met: true
+  criteria_met_reason: "RUNTIME-GO posted; execute re-verify after #3971."
 signal_compose_override: manifests/runtime_np_diag_reverify_signal_compose_override.yml
 allocation_compose_override: manifests/runtime_np_parallel_allocation_compose_override.yml
 safety_flags:
@@ -80,5 +80,5 @@ terminal_statuses:
   - blocked_governance
   - evidence_merged
   - preflight_failed
-campaign_status: planned
+campaign_status: pass_telemetry_reverified
 gear_id: gear-primary-breakout-v1-diag-reverify-btcusdt
