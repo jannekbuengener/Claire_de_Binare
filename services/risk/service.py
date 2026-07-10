@@ -58,6 +58,7 @@ from core.replay.policy_snapshot import (
     build_policy_snapshot,
     policy_snapshot_binding_enabled,
 )
+from core.replay.correlation_ledger_attribution import build_decision_ledger_payload
 from core.contracts.decision_contract_v1 import (
     DecisionContractError,
     build_decision_contract_v1_bundle,
@@ -1676,7 +1677,12 @@ class RiskManager:
                     symbol=signal.symbol,
                     timestamp_ms=now_ms,
                     decision_id=decision_id,
-                    payload=evidence,
+                    payload=build_decision_ledger_payload(
+                        evidence,
+                        signal=signal,
+                        decision=decision,
+                        reason_code=reason_code,
+                    ),
                 ):
                     logger.warning(
                         f"⚠️ correlation_ledger DECISION write failed (evidence debt)"

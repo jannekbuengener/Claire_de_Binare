@@ -131,6 +131,7 @@ def run_all_probes(manifest: dict[str, Any]) -> list[dict[str, Any]]:
                 bot_id=manifest.get("bot_id"),
                 strategy_id=manifest.get("strategy_id"),
                 campaign_id=manifest.get("campaign_id"),
+                config_hash=manifest.get("config_hash"),
             ),
         }
     )
@@ -278,6 +279,9 @@ def _build_cycle_entry(
             "lane_effective_since_start": lane_count,
             "attribution": ev.get("ledger_attribution"),
         }
+        lane_campaign_evidence = ev.get("lane_campaign_evidence")
+    else:
+        lane_campaign_evidence = None
 
     probe_statuses = {p["probe"]: p.get("status") for p in probes}
 
@@ -294,6 +298,12 @@ def _build_cycle_entry(
             "lane_effective_since_start"
         ),
         "ledger_counts": ledger_counts,
+        "lane_campaign_evidence": lane_campaign_evidence,
+        "no_chain_reason": (
+            lane_campaign_evidence.get("no_chain_reason")
+            if isinstance(lane_campaign_evidence, dict)
+            else None
+        ),
         "chain_detected": state == STATE_CHAIN_FOUND,
         "no_mutation": True,
         "limitations": list(ledger.get("limitations", [])) if ledger else [],
@@ -351,7 +361,23 @@ def write_status_md(path: str, entry: dict[str, Any], manifest: dict[str, Any]) 
         f"- **Event count since start (global):** {entry.get('event_count_since_start', '-')}",
         f"- **Event count since start (lane):** {entry.get('event_count_since_start_lane', '-')}",
         f"- **Chain detected:** {entry.get('chain_detected', False)}",
+        f"- **No-chain reason:** {entry.get('no_chain_reason', '-')}",
         "",
+    ]
+    lane_evidence = entry.get("lane_campaign_evidence")
+    if isinstance(lane_evidence, dict):
+        lines += [
+            "## Lane Campaign Evidence",
+            f"- **Signals emitted:** {lane_evidence.get('signals_emitted', '-')}",
+            f"- **Decisions total:** {lane_evidence.get('decisions_total', '-')}",
+            f"- **Approvals:** {lane_evidence.get('approvals', '-')}",
+            f"- **Blocks total:** {lane_evidence.get('blocks_total', '-')}",
+            f"- **Blocks by reason:** {lane_evidence.get('blocks_by_reason', {})}",
+            f"- **Orders:** {lane_evidence.get('orders', '-')}",
+            f"- **Fills:** {lane_evidence.get('fills', '-')}",
+            "",
+        ]
+    lines += [
         "## Safety Flags",
     ]
     for flag, val in safety.items():
