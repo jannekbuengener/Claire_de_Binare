@@ -94,6 +94,21 @@ Preflight: `docs/evidence/arvp_diag_telemetry_verification_preflight.md`.
 Helper: `python -m tools.arvp_diag_telemetry_preflight`.
 **Pending Jannek RUNTIME-GO on #3965.**
 
+### Parallel natural-paper after telemetry PASS (#3980)
+
+Strategy validation run after #3977 `PASS_TELEMETRY_REVERIFIED`. **4h first window**
+(recommended; not 12h).
+
+| Artifact | Lane |
+|----------|------|
+| `campaign_np_telemetry_pass_pb1.yaml` | `primary_breakout_v1` / `np-pb1-telemetry-pass-01` |
+| `campaign_np_telemetry_pass_donchian.yaml` | `donchian_breakout_v1` / `np-donchian-telemetry-pass-01` |
+| `runtime_np_telemetry_pass_signal_compose_override.yml` | Telemetry-pass bot IDs + P1.5 `CDB_CAMPAIGN_ID` + `CDB_SOURCE_SHA` wiring |
+
+Preflight: `docs/evidence/arvp_np_parallel_after_telemetry_pass_preflight.md`.
+Helper: `python -m tools.arvp_np_telemetry_pass_preflight`.
+**Pending Jannek RUNTIME-GO on #3980.**
+
 ## Single-strategy prior art
 
 | Artifact | Purpose |

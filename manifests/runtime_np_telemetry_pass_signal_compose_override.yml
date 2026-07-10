@@ -1,0 +1,129 @@
+# Parallel natural-paper compose override after telemetry PASS (#3980).
+# Post-#3977 strategy validation run (PB1 + Donchian, 4h first window).
+# Distinct telemetry-pass bot IDs — do not reuse #3912 / #3967 / #3977 IDs.
+# Requires signal images with CDB_SOURCE_SHA before RUNTIME-GO.
+# Apply only after RUNTIME-GO on #3980; not canonical default.
+# Combine with manifests/runtime_np_parallel_allocation_compose_override.yml.
+# LR NO-GO — no Live/Echtgeld authorization from this manifest.
+#
+# Static validation (no runtime start):
+#   $env:CDB_CAMPAIGN_ID_PB1 = "<pb1 manifest campaign_id>"
+#   $env:CDB_CAMPAIGN_ID_DONCHIAN = "<donchian manifest campaign_id>"
+#   $env:CDB_SOURCE_SHA = "441fb9d6d0731f2111142899a1b8be828a4a046a"
+#   docker compose -f infrastructure/compose/compose.blue.yml `
+#     -f infrastructure/compose/compose.red.yml `
+#     -f manifests/runtime_np_telemetry_pass_signal_compose_override.yml `
+#     -f manifests/runtime_np_parallel_allocation_compose_override.yml config
+#
+# Execute rebuild (recommended before observation):
+#   docker compose -f infrastructure/compose/compose.red.yml `
+#     -f manifests/runtime_np_telemetry_pass_signal_compose_override.yml `
+#     build --no-cache cdb_signal_pb1 cdb_signal_donchian
+
+services:
+  cdb_signal:
+    profiles:
+      - single-signal-default
+
+  cdb_signal_pb1:
+    build:
+      context: ../..
+      dockerfile: services/signal/Dockerfile
+      args:
+        CDB_SOURCE_SHA: ${CDB_SOURCE_SHA:-441fb9d6d0731f2111142899a1b8be828a4a046a}
+    container_name: cdb_signal_pb1
+    restart: unless-stopped
+    secrets:
+      - redis_password
+      - postgres_password
+    environment:
+      ENV: "development"
+      LOG_LEVEL: "DEBUG"
+      REDIS_HOST: cdb_redis
+      POSTGRES_HOST: cdb_postgres
+      POSTGRES_USER: ${POSTGRES_USER:-claire_user}
+      SIGNAL_STRATEGY_ID: primary_breakout_v1
+      SIGNAL_SYMBOL: BTCUSDT
+      SIGNAL_ADAPTER_ID: momentum_builtin
+      SIGNAL_BOT_ID: np-pb1-telemetry-pass-01
+      CDB_CAMPAIGN_ID: ${CDB_CAMPAIGN_ID_PB1:-}
+      CDB_SOURCE_SHA: ${CDB_SOURCE_SHA:-441fb9d6d0731f2111142899a1b8be828a4a046a}
+      SIGNAL_ENTRY_LOOKBACK_MIN: "240"
+      SIGNAL_EXIT_LOOKBACK_MIN: "120"
+      SIGNAL_BREAKOUT_BUFFER: "0.0005"
+      SIGNAL_MIN_MINUTES_BETWEEN_ENTRIES: "60"
+      SIGNAL_TRADE_SIDE_MODE: long_only
+      SIGNAL_PORT: "8015"
+      SIGNAL_THRESHOLD_PCT: "0.005"
+      SIGNAL_MIN_VOLUME: "0"
+    entrypoint:
+      [
+        "sh",
+        "-c",
+        "export REDIS_PASSWORD=$(cat /run/secrets/redis_password) && export POSTGRES_PASSWORD=$(cat /run/secrets/postgres_password) && exec python -m services.signal.service",
+      ]
+    ports:
+      - "127.0.0.1:8015:8015"
+    volumes:
+      - ../logs:/app/logs
+    depends_on:
+      cdb_ws:
+        condition: service_started
+    healthcheck:
+      test: ["CMD", "curl", "-fsS", "http://localhost:8015/health"]
+      interval: 30s
+      timeout: 5s
+      retries: 3
+    networks:
+      - cdb_network
+
+  cdb_signal_donchian:
+    build:
+      context: ../..
+      dockerfile: services/signal/Dockerfile
+      args:
+        CDB_SOURCE_SHA: ${CDB_SOURCE_SHA:-441fb9d6d0731f2111142899a1b8be828a4a046a}
+    container_name: cdb_signal_donchian
+    restart: unless-stopped
+    secrets:
+      - redis_password
+      - postgres_password
+    environment:
+      ENV: "development"
+      LOG_LEVEL: "DEBUG"
+      REDIS_HOST: cdb_redis
+      POSTGRES_HOST: cdb_postgres
+      POSTGRES_USER: ${POSTGRES_USER:-claire_user}
+      SIGNAL_STRATEGY_ID: donchian_breakout_v1
+      SIGNAL_SYMBOL: BTCUSDT
+      SIGNAL_ADAPTER_ID: momentum_builtin
+      SIGNAL_BOT_ID: np-donchian-telemetry-pass-01
+      CDB_CAMPAIGN_ID: ${CDB_CAMPAIGN_ID_DONCHIAN:-}
+      CDB_SOURCE_SHA: ${CDB_SOURCE_SHA:-441fb9d6d0731f2111142899a1b8be828a4a046a}
+      SIGNAL_ENTRY_CHANNEL_BARS: "20"
+      SIGNAL_EXIT_CHANNEL_BARS: "10"
+      SIGNAL_MIN_MINUTES_BETWEEN_ENTRIES: "30"
+      SIGNAL_TRADE_SIDE_MODE: long_only
+      SIGNAL_PORT: "8016"
+      SIGNAL_THRESHOLD_PCT: "0.005"
+      SIGNAL_MIN_VOLUME: "0"
+    entrypoint:
+      [
+        "sh",
+        "-c",
+        "export REDIS_PASSWORD=$(cat /run/secrets/redis_password) && export POSTGRES_PASSWORD=$(cat /run/secrets/postgres_password) && exec python -m services.signal.service",
+      ]
+    ports:
+      - "127.0.0.1:8016:8016"
+    volumes:
+      - ../logs:/app/logs
+    depends_on:
+      cdb_ws:
+        condition: service_started
+    healthcheck:
+      test: ["CMD", "curl", "-fsS", "http://localhost:8016/health"]
+      interval: 30s
+      timeout: 5s
+      retries: 3
+    networks:
+      - cdb_network
