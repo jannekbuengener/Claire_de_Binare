@@ -55,6 +55,13 @@ ALLOWED_SCENARIOS: frozenset[str] = frozenset(
 )
 
 _HEX64_RE = re.compile(r"^[a-f0-9]{64}$")
+SCENARIO_GROUP_ID_RE = re.compile(r"^[a-zA-Z0-9_-]{1,64}$")
+_SCENARIO_GROUP_FINGERPRINT_CHARS = 16
+_STRATEGY_SLUGS: dict[str, str] = {
+    "donchian_breakout_v1": "donchian",
+    "breakout_trend_filter_v1": "btf",
+    "primary_breakout_v1": "pbo",
+}
 
 
 class VacationContractError(ValueError):
@@ -320,6 +327,67 @@ def build_job_id(strategy_id: str, dataset_id: str) -> str:
     safe_strategy = strategy_id.replace("_", "-")
     safe_dataset = re.sub(r"[^a-zA-Z0-9._-]+", "-", dataset_id)
     return f"vac-{safe_strategy}-{safe_dataset}-scenarios"
+
+
+def _strategy_slug(strategy_id: str) -> str:
+    if strategy_id in _STRATEGY_SLUGS:
+        return _STRATEGY_SLUGS[strategy_id]
+    slug = re.sub(r"[^a-zA-Z0-9]+", "_", strategy_id).strip("_").lower()
+    if slug.endswith("_v1"):
+        slug = slug[:-3]
+    return slug[:24] or "strategy"
+
+
+def build_scenario_group_id(strategy_id: str, job_fingerprint: str) -> str:
+    """Derive a harness-safe scenario group id from strategy + job fingerprint."""
+    fp = job_fingerprint.strip().lower()
+    if not _HEX64_RE.match(fp):
+        raise VacationContractError(
+            "job_fingerprint must be a 64-char lowercase hex string"
+        )
+    slug = _strategy_slug(strategy_id)
+    prefix = fp[:_SCENARIO_GROUP_FINGERPRINT_CHARS]
+    group_id = f"vac_{slug}_{prefix}"
+    if len(group_id) > 64 or not SCENARIO_GROUP_ID_RE.match(group_id):
+        raise VacationContractError(
+            f"derived scenario_group_id invalid: {group_id!r}"
+        )
+    return group_id
+
+
+def resolve_scenario_group_id(job: Mapping[str, Any]) -> str:
+    """Return persisted scenario_group_id or derive deterministically from the job."""
+    stored = job.get("scenario_group_id")
+    if isinstance(stored, str) and stored.strip():
+        group_id = stored.strip()
+        if not SCENARIO_GROUP_ID_RE.match(group_id):
+            raise VacationContractError(
+                f"invalid stored scenario_group_id: {group_id!r}"
+            )
+        return group_id
+    strategy_id = job.get("strategy_id")
+    fingerprint = job.get("fingerprint")
+    if not isinstance(strategy_id, str) or not isinstance(fingerprint, str):
+        raise VacationContractError(
+            "job record missing strategy_id/fingerprint; "
+            "cannot derive scenario_group_id"
+        )
+    return build_scenario_group_id(strategy_id, fingerprint)
+
+
+def backfill_scenario_group_ids(state: Mapping[str, Any]) -> dict[str, Any]:
+    """Ensure every job record carries a deterministic scenario_group_id."""
+    updated = dict(state)
+    jobs: list[dict[str, Any]] = []
+    for raw in updated.get("jobs") or []:
+        if not isinstance(raw, dict):
+            continue
+        job = dict(raw)
+        if not job.get("scenario_group_id"):
+            job["scenario_group_id"] = resolve_scenario_group_id(job)
+        jobs.append(job)
+    updated["jobs"] = jobs
+    return updated
 
 
 def campaign_artifact_dir(manifest: VacationManifest, repo_root: Path | None = None) -> Path:

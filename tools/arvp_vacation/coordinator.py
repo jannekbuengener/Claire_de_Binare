@@ -24,6 +24,8 @@ from .contract import (
     VacationManifest,
     build_job_fingerprint,
     build_job_id,
+    build_scenario_group_id,
+    backfill_scenario_group_ids,
     campaign_artifact_dir,
     discover_datasets,
     git_head_sha,
@@ -81,8 +83,10 @@ def _new_job_record(
         speedup_profile=manifest.speedup_profile,
     )
     job_id = build_job_id(strategy_id, str(dataset["dataset_id"]))
+    scenario_group_id = build_scenario_group_id(strategy_id, fingerprint)
     return {
         "job_id": job_id,
+        "scenario_group_id": scenario_group_id,
         "fingerprint": fingerprint,
         "strategy_id": strategy_id,
         "strategy_role": strategy_role,
@@ -335,7 +339,7 @@ def run_coordinator_cycle(
         return fatal_state
 
     if state_path.exists() and resume:
-        state = read_queue_state(state_path)
+        state = backfill_scenario_group_ids(read_queue_state(state_path))
         state, interrupted = recover_orphan_running_jobs(state, now_fn=now_fn)
         for job_id in interrupted:
             emit_event(
@@ -346,7 +350,7 @@ def run_coordinator_cycle(
                 now_fn=now_fn,
             )
     elif state_path.exists():
-        state = read_queue_state(state_path)
+        state = backfill_scenario_group_ids(read_queue_state(state_path))
     else:
         state = initialize_queue_state(manifest, root)
         emit_event(

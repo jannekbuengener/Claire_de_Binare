@@ -9,11 +9,16 @@ import yaml
 
 from tools.arvp_vacation.contract import (
     JOB_SKIPPED_DUPLICATE,
+    SCENARIO_GROUP_ID_RE,
     VacationContractError,
+    backfill_scenario_group_ids,
     build_job_fingerprint,
+    build_job_id,
+    build_scenario_group_id,
     discover_datasets,
     load_manifest,
     parse_dataset_spec,
+    resolve_scenario_group_id,
 )
 from tools.arvp_vacation.coordinator import (
     CAMPAIGN_FATAL_STOP,
@@ -22,7 +27,11 @@ from tools.arvp_vacation.coordinator import (
     preflight_manifest,
     run_coordinator_cycle,
 )
-from tools.arvp_vacation.job_runner import JobRunResult, build_replay_command, run_replay_job
+from tools.arvp_vacation.job_runner import (
+    JobRunResult,
+    build_replay_command,
+    run_replay_job,
+)
 from tools.arvp_vacation.queue_store import (
     QUEUE_STATE_FILENAME,
     atomic_write_json,
@@ -205,13 +214,17 @@ def _mock_subprocess_factory(group_dir: Path):
     return _runner
 
 
+def _scenario_group_id_from_command(command: list[str]) -> str:
+    return command[command.index("--scenario-group-id") + 1]
+
+
 def test_coordinator_runs_job_and_persists(vacation_repo: Path) -> None:
     manifest = load_manifest(vacation_repo / "manifest.yaml")
 
     def runner(command, **kwargs):
         output_dir = Path(command[command.index("--output-dir") + 1])
-        job_id = command[command.index("--scenario-group-id") + 1]
-        return _mock_subprocess_factory(output_dir / job_id)(command, **kwargs)
+        group_id = _scenario_group_id_from_command(command)
+        return _mock_subprocess_factory(output_dir / group_id)(command, **kwargs)
 
     state = run_coordinator_cycle(
         manifest_path=vacation_repo / "manifest.yaml",
@@ -269,8 +282,8 @@ def test_duplicate_skip_on_completed_fingerprint(vacation_repo: Path) -> None:
 
     def runner(command, **kwargs):
         output_dir = Path(command[command.index("--output-dir") + 1])
-        job_id = command[command.index("--scenario-group-id") + 1]
-        return _mock_subprocess_factory(output_dir / job_id)(command, **kwargs)
+        group_id = _scenario_group_id_from_command(command)
+        return _mock_subprocess_factory(output_dir / group_id)(command, **kwargs)
 
     state = run_coordinator_cycle(
         manifest_path=vacation_repo / "manifest.yaml",
@@ -314,3 +327,118 @@ def test_preflight_manifest(vacation_repo: Path) -> None:
     info = preflight_manifest(vacation_repo / "manifest.yaml", vacation_repo)
     assert info["dataset_count"] == 2
     assert info["job_count_estimate"] == 4
+
+
+def _realistic_job_fingerprint() -> str:
+    return build_job_fingerprint(
+        source_sha="bde716af52d662010edb5871afb1df9f9326b7f3",
+        strategy_id="breakout_trend_filter_v1",
+        dataset_fingerprint="618064a3ec6f2f4e51f9f3a8a5ba4ccfe30c30d60685e17794d49c11a78b4586",
+        scenarios=["baseline", "pessimistic_execution", "feed_gap"],
+        speedup_profile="instant",
+    )
+
+
+def test_scenario_group_id_valid_for_real_long_job_names() -> None:
+    strategy_id = "breakout_trend_filter_v1"
+    dataset_id = "mexc_strict_window_3091_island_3"
+    fingerprint = _realistic_job_fingerprint()
+    job_id = build_job_id(strategy_id, dataset_id)
+    group_id = build_scenario_group_id(strategy_id, fingerprint)
+    assert len(job_id) > 64
+    assert len(group_id) <= 64
+    assert SCENARIO_GROUP_ID_RE.fullmatch(group_id)
+    assert group_id.startswith("vac_btf_")
+
+
+def test_scenario_group_id_stable_and_unique() -> None:
+    fp = _realistic_job_fingerprint()
+    gid1 = build_scenario_group_id("donchian_breakout_v1", fp)
+    gid2 = build_scenario_group_id("donchian_breakout_v1", fp)
+    other = build_scenario_group_id(
+        "donchian_breakout_v1",
+        build_job_fingerprint(
+            source_sha="bde716af52d662010edb5871afb1df9f9326b7f3",
+            strategy_id="donchian_breakout_v1",
+            dataset_fingerprint="a" * 64,
+            scenarios=["baseline"],
+            speedup_profile="instant",
+        ),
+    )
+    assert gid1 == gid2
+    assert gid1 != other
+
+
+def test_build_replay_command_passes_scenario_group_id_not_job_id(
+    vacation_repo: Path,
+) -> None:
+    manifest = load_manifest(vacation_repo / "manifest.yaml")
+    job = initialize_queue_state(manifest, vacation_repo)["jobs"][0]
+    cmd = build_replay_command(
+        repo_root=vacation_repo,
+        manifest=manifest,
+        job=job,
+        replay_output_dir=vacation_repo / "out",
+    )
+    group_id = cmd[cmd.index("--scenario-group-id") + 1]
+    assert group_id == job["scenario_group_id"]
+    assert group_id != job["job_id"]
+    assert len(group_id) <= 64
+
+
+def test_artifact_resolution_uses_scenario_group_dir(vacation_repo: Path) -> None:
+    manifest = load_manifest(vacation_repo / "manifest.yaml")
+    job = initialize_queue_state(manifest, vacation_repo)["jobs"][0]
+    job_dir = vacation_repo / "job-artifacts"
+    replay_dir = job_dir / "replay"
+    group_dir = replay_dir / job["scenario_group_id"]
+    group_dir.mkdir(parents=True)
+    (group_dir / "scenario_group_manifest.json").write_text("{}", encoding="utf-8")
+    (group_dir / "baseline_metrics.json").write_text("{}", encoding="utf-8")
+    (group_dir / "scenario_comparison_summary.md").write_text("# ok\n")
+
+    def runner(command, **kwargs):
+        return subprocess.CompletedProcess(command, 0, stdout="", stderr="")
+
+    result = run_replay_job(
+        repo_root=vacation_repo,
+        manifest=manifest,
+        job=job,
+        job_artifact_dir=job_dir,
+        timeout_seconds=30,
+        subprocess_runner=runner,
+    )
+    assert result.artifacts_complete is True
+    assert "scenario_group_manifest.json" in result.artifacts_present
+
+
+def test_legacy_queue_state_backfills_scenario_group_id(vacation_repo: Path) -> None:
+    manifest = load_manifest(vacation_repo / "manifest.yaml")
+    state = initialize_queue_state(manifest, vacation_repo)
+    legacy_job = dict(state["jobs"][0])
+    legacy_job.pop("scenario_group_id", None)
+    backfilled = backfill_scenario_group_ids({"jobs": [legacy_job]})
+    job = backfilled["jobs"][0]
+    assert job["scenario_group_id"] == resolve_scenario_group_id(job)
+    assert len(job["scenario_group_id"]) <= 64
+
+
+def test_harness_accepts_generated_scenario_group_id(tmp_path: Path) -> None:
+    from core.replay.scenario_harness import ScenarioSpec, run_scenario_group
+
+    fingerprint = _realistic_job_fingerprint()
+    group_id = build_scenario_group_id("donchian_breakout_v1", fingerprint)
+
+    def _run_fn(spec: ScenarioSpec):
+        from core.replay.scenario_harness import ScenarioRunResult
+
+        return ScenarioRunResult(scenario_id=spec.scenario_id, exit_code=0)
+
+    manifest = run_scenario_group(
+        [ScenarioSpec("baseline", "baseline", {})],
+        run_fn=_run_fn,
+        output_dir=tmp_path,
+        group_id=group_id,
+    )
+    assert manifest.group_id == group_id
+    assert (tmp_path / group_id / "scenario_group_manifest.json").exists()

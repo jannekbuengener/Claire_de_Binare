@@ -6,7 +6,7 @@ from pathlib import Path
 
 import yaml
 
-from tools.arvp_vacation.contract import load_manifest
+from tools.arvp_vacation.contract import backfill_scenario_group_ids, load_manifest
 from tools.arvp_vacation.coordinator import (
     initialize_queue_state,
     run_coordinator_cycle,
@@ -64,8 +64,8 @@ def _mock_runner(output_root: Path):
         if calls["count"] == 2:
             raise subprocess.TimeoutExpired(cmd=command, timeout=1)
         output_dir = Path(command[command.index("--output-dir") + 1])
-        job_id = command[command.index("--scenario-group-id") + 1]
-        group_dir = output_dir / job_id
+        group_id = command[command.index("--scenario-group-id") + 1]
+        group_dir = output_dir / group_id
         group_dir.mkdir(parents=True, exist_ok=True)
         (group_dir / "scenario_group_manifest.json").write_text(
             json.dumps({"failed_count": 0}), encoding="utf-8"
@@ -154,3 +154,24 @@ def test_acceptance_drill_six_jobs_summary(tmp_path: Path) -> None:
     assert len(state["jobs"]) >= 6
     assert (tmp_path / "artifacts/arvp_vacation/vac_recovery/vacation_summary.json").exists()
     assert calls["count"] >= 1
+
+
+def test_recovery_preserves_scenario_group_id(tmp_path: Path) -> None:
+    roots = ["datasets/a", "datasets/b"]
+    for i, rel in enumerate(roots):
+        _write_dataset(
+            tmp_path,
+            rel,
+            dataset_id=f"w{i}",
+            fingerprint=f"{i+20:064d}",
+        )
+    manifest_path = tmp_path / "manifest.yaml"
+    manifest_path.write_text(_manifest_yaml(roots), encoding="utf-8")
+    manifest = load_manifest(manifest_path)
+    state = initialize_queue_state(manifest, tmp_path)
+    original = state["jobs"][0]["scenario_group_id"]
+    legacy = dict(state["jobs"][0])
+    legacy.pop("scenario_group_id", None)
+    state["jobs"][0] = legacy
+    backfilled = backfill_scenario_group_ids(state)
+    assert backfilled["jobs"][0]["scenario_group_id"] == original
