@@ -35,6 +35,7 @@ if str(REPO_ROOT) not in sys.path:
 
 from core.replay.dataset_provider import FileBackedDatasetProvider
 from core.replay.dataset_spec import DatasetSpec
+from core.utils.clock import Clock, utcnow
 
 ONE_MINUTE_MS = 60_000
 FIVE_MINUTE_MS = 300_000
@@ -170,7 +171,7 @@ class SourceDiscovery:
 
 
 def utc_now_iso() -> str:
-    return datetime.now(UTC).replace(microsecond=0).isoformat()
+    return utcnow().replace(microsecond=0).isoformat() + "Z"
 
 
 def sha256_file(path: Path) -> str:
@@ -698,7 +699,7 @@ def build_quality_report(
         candles, start_ts_ms=start_ts_ms, end_ts_ms=end_ts_ms, step_ms=step_ms
     )
     anomalies = validate_ohlc(candles)
-    now_ms = int(datetime.now(UTC).timestamp() * 1000)
+    now_ms = int(Clock.now() * 1000)
     future_rows = [c.ts_ms for c in candles if c.ts_ms > now_ms]
     monotonic = all(
         candles[idx].ts_ms < candles[idx + 1].ts_ms
