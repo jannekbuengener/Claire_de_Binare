@@ -7,7 +7,12 @@ from dataclasses import dataclass
 from pathlib import Path
 from typing import Any, Callable, Mapping, Sequence
 
-from .contract import STRATEGY_ADAPTERS, VacationManifest
+from .contract import (
+    STRATEGY_ADAPTERS,
+    VacationContractError,
+    VacationManifest,
+    resolve_scenario_group_id,
+)
 
 EXPECTED_SCENARIO_ARTIFACTS = (
     "scenario_group_manifest.json",
@@ -43,6 +48,7 @@ def build_replay_command(
     adapter_id = STRATEGY_ADAPTERS[strategy_id]
     scenarios = job.get("scenarios") or manifest.scenarios
     scenario_csv = ",".join(str(s) for s in scenarios)
+    scenario_group_id = resolve_scenario_group_id(job)
     return [
         sys.executable,
         "-m",
@@ -64,7 +70,7 @@ def build_replay_command(
         "--scenario-group",
         scenario_csv,
         "--scenario-group-id",
-        str(job["job_id"]),
+        scenario_group_id,
     ]
 
 
@@ -101,6 +107,21 @@ def _load_scenario_metrics(group_dir: Path) -> dict[str, Any]:
         except (OSError, json.JSONDecodeError):
             pass
     return metrics
+
+
+def resolve_replay_group_dir(
+    replay_output_dir: Path, scenario_group_id: str
+) -> Path:
+    """Resolve scenario artifacts under replay_output_dir / scenario_group_id."""
+    primary = replay_output_dir / scenario_group_id
+    if primary.is_dir():
+        return primary
+    if not replay_output_dir.is_dir():
+        return primary
+    alt_dirs = [p for p in replay_output_dir.iterdir() if p.is_dir()]
+    if len(alt_dirs) == 1 and not primary.exists():
+        return alt_dirs[0]
+    return primary
 
 
 def run_replay_job(
@@ -152,14 +173,21 @@ def run_replay_job(
     (job_artifact_dir / "stdout.log").write_text(completed.stdout or "", encoding="utf-8")
     (job_artifact_dir / "stderr.log").write_text(completed.stderr or "", encoding="utf-8")
     (job_artifact_dir / "command.json").write_text(
-        json.dumps({"command": command}, indent=2) + "\n",
+        json.dumps(
+            {
+                "command": command,
+                "job_id": job.get("job_id"),
+                "scenario_group_id": resolve_scenario_group_id(job),
+                "fingerprint": job.get("fingerprint"),
+            },
+            indent=2,
+        )
+        + "\n",
         encoding="utf-8",
     )
 
-    group_dir = replay_output_dir / str(job["job_id"])
-    if not group_dir.exists():
-        alt_dirs = [p for p in replay_output_dir.iterdir() if p.is_dir()]
-        group_dir = alt_dirs[0] if len(alt_dirs) == 1 else group_dir
+    scenario_group_id = resolve_scenario_group_id(job)
+    group_dir = resolve_replay_group_dir(replay_output_dir, scenario_group_id)
 
     present, missing, complete = _collect_artifact_status(group_dir)
     metrics = _load_scenario_metrics(group_dir) if group_dir.exists() else {}
