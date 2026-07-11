@@ -173,7 +173,7 @@ No DB writes. No large artifact commits.
 - No signal/strategy execution, paper trading, orders, live-go, LR upgrade
 - No deletion/overwrite of existing candles
 - No compose `down -v`
-- No secrets in evidence artifacts
+- No credentials in evidence artifacts
 
 ## Verdicts
 

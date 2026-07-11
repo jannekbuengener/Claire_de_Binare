@@ -7,6 +7,8 @@ from typing import Any, Mapping, Sequence
 
 import yaml
 
+from core.utils.clock import utcnow as cdb_utcnow
+
 from .contract import VacationContractError, git_head_sha
 
 DATA_CAPTURE_SCHEMA_VERSION = "1.0"
@@ -214,7 +216,7 @@ def resolve_source_sha(manifest: DataCaptureManifest, repo_root: Path | None = N
 def resolve_runtime_window(
     manifest: DataCaptureManifest, *, now: datetime | None = None
 ) -> tuple[str, str]:
-    moment = now or datetime.now(tz=UTC)
+    moment = now or cdb_utcnow()
     if moment.tzinfo is None:
         moment = moment.replace(tzinfo=UTC)
     start = moment.astimezone(UTC).replace(microsecond=0)

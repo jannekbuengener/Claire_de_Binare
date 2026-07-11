@@ -387,7 +387,7 @@ def build_status_report(
     )
     start_ts_ms = state.get("start_ts_ms")
     coverage = coverage_probe(root, manifest.symbol, start_ts_ms)
-    now_ms = int(datetime.now(tz=UTC).timestamp() * 1000)
+    now_ms = int(cdb_utcnow().timestamp() * 1000)
     stale = False
     last_ts = coverage.get("max_ts_ms")
     if last_ts is not None and state.get("status") == CAMPAIGN_RUNNING:
@@ -563,7 +563,10 @@ def resume_campaign(
     planned_end = state.get("planned_end_utc", "")
     if planned_end:
         end_dt = datetime.fromisoformat(planned_end.replace("Z", "+00:00"))
-        if datetime.now(tz=UTC) >= end_dt.astimezone(UTC):
+        now = cdb_utcnow()
+        if now.tzinfo is None:
+            now = now.replace(tzinfo=UTC)
+        if now.astimezone(UTC) >= end_dt.astimezone(UTC):
             raise DataCaptureError("campaign planned_end_utc has passed")
 
     running = container_lister() if not skip_docker else []
