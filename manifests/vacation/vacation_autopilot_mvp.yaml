@@ -1,0 +1,30 @@
+schema_version: "1.0"
+campaign_id: "arvp_vacation_mvp_20260713"
+source_sha: "RUNTIME_RESOLVE"
+evidence_class: controlled_lab_evidence
+artifact_root: artifacts/arvp_vacation
+allow_paper_jobs: false
+symbol: BTCUSDT
+speedup_profile: instant
+
+dataset_roots:
+  - artifacts/candles/mexc_strict_window_3091
+  - artifacts/candles/mexc_multi_window_3032/window_015
+  - artifacts/candles/mexc_multi_window_3032/window_020
+
+strategies:
+  - strategy_id: donchian_breakout_v1
+    role: active
+  - strategy_id: breakout_trend_filter_v1
+    role: active
+  - strategy_id: primary_breakout_v1
+    role: parked_reference
+
+scenarios:
+  - baseline
+  - pessimistic_execution
+  - feed_gap
+
+max_job_runtime_seconds: 3600
+max_attempts_per_job: 2
+min_free_disk_gb: 1
