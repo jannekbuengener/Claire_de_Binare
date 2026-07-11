@@ -1,0 +1,36 @@
+schema_version: "1.0"
+campaign_id: "arvp_vacation_data_capture_14d_20260711"
+source_sha: "RUNTIME_RESOLVE"
+evidence_class: controlled_lab_evidence
+symbol: BTCUSDT
+venue: MEXC
+timeframe: 1m
+start_utc: "RUNTIME_RESOLVE"
+planned_end_utc: "RUNTIME_RESOLVE"
+max_duration_days: 14
+allowed_services:
+  - cdb_postgres
+  - cdb_redis
+  - cdb_ws
+  - cdb_candles
+  - cdb_db_writer
+forbidden_services:
+  - cdb_signal
+  - cdb_risk
+  - cdb_allocation
+  - cdb_execution
+  - cdb_paper_runner
+database_target: public.candles_1m
+heartbeat_interval_seconds: 300
+stale_threshold_seconds: 180
+min_free_disk_gb: 5
+max_restart_budget: 3
+evidence_dir: artifacts/arvp_vacation/data_capture
+allow_signal: false
+allow_execution: false
+allow_paper: false
+allow_live_trading: false
+compose_blue: infrastructure/compose/compose.blue.yml
+compose_red: infrastructure/compose/compose.red.yml
+drill_duration_minutes: 15
+drill_campaign_id: "arvp_vacation_data_capture_drill_20260711"
