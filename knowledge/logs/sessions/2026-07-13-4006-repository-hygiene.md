@@ -36,7 +36,7 @@ Tracking-Refs und Stashes; Re-Inventur; Evidence-PR; Issue-Close.
 ## Boundaries
 
 - LR NO-GO unchanged
-- No secrets logged
+- No credential values logged
 - Main worktree branch not switched (stale `docs/4017-session-close` checkout documented)
 
 ## Follow-ups

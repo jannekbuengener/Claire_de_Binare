@@ -64,7 +64,7 @@ Deleted remotes (merged-PR evidence): `chore/2799-session-log`,
 `context/indexer-cli-contract-1989`, `epic-code`, `feat/2605-readonly-context-mcp-slice-4`,
 `feat/arvp-1843-runner`, `feat/cdb-market-move-to-blue-1202`,
 `feat/context-doc-chunking-1988`, `feat/market-prometheus-metrics-1148`,
-`fix/1712-empty-gh-models-guard`, `real-task-proof-2821-secret-policy`.
+`fix/1712-empty-gh-models-guard`, `real-task-proof-2821` (policy branch).
 
 ## Stashes
 
@@ -95,7 +95,7 @@ git fsck --full                → 538 pre-existing "Could not read" missing obj
 ## Safety boundaries
 
 - No runtime/trading/DB/MCP mutations
-- No secrets in this document
+- No credential values in this document
 - Local backup ledger: `.local/repository_hygiene_4006/` (gitignored)
 
 ## Remaining HOLD (documented, not deleted)
