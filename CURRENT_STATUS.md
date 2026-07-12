@@ -10,7 +10,7 @@
 
 ## Repo / Engineering Status (2026-07-12)
 
-- **#3990 Binance BTCUSDT 1m full archive import + ARVP window bank**: **DONE_MERGED_CLOSED** — PR [#3997](https://github.com/jannekbuengener/Claire_de_Binare/pull/3997) squash-merged @ `10bb00d6`. Import `FULL_IMPORT_PARTIAL`: 81 STRICT_COMPLETE / 26 PARTIAL_USABLE months (2017-08..2026-06), 4.65M candles. Window bank: 106 deduplicated windows. Campaign `arvp_binance_historical_3990_2bb32b68_20260712T111944Z`: 318 jobs, 312 PASS / 6 FAIL (stress cadence, fixed in PR). Regime `PASS_WITH_CAVEAT` (absolute ATR threshold). Cross-venue research only; not MEXC same-venue. Evidence: `docs/evidence/binance_full_archive_import_3990.md`, `docs/evidence/arvp_binance_historical_campaign_3990.md`. LR **NO-GO** unchanged.
+- **#3990 Binance BTCUSDT 1m full archive import + ARVP window bank**: **HISTORICAL_CAMPAIGN_COMPLETE** — PR [#3997](https://github.com/jannekbuengener/Claire_de_Binare/pull/3997) @ `10bb00d6`; stress-v2 closeout PR [#4009](https://github.com/jannekbuengener/Claire_de_Binare/pull/4009) @ `a3dde535` (Issue [#4008](https://github.com/jannekbuengener/Claire_de_Binare/issues/4008) CLOSED). Import: 81 STRICT_COMPLETE / 26 PARTIAL_USABLE months, 4.65M candles; window bank 108 (incl. 2 stress_v2 on D:). Campaign `arvp_binance_historical_3990_2bb32b68_20260712T111944Z`: **318 technical PASS / 0 technical FAIL** (6 legacy stress FAILs superseded by v2 rerun). Cross-venue research only; `ranking_ready=false`. Evidence: `docs/evidence/arvp_binance_historical_stress_v2_closeout.md`. LR **NO-GO** unchanged.
 
 ## Repo / Engineering Status (2026-07-10)
 
