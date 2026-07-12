@@ -122,6 +122,9 @@ def test_build_inventory_counts(tmp_path: Path, monkeypatch: pytest.MonkeyPatch)
                 "classification_rules": {
                     "fixture_testdata": {"path_prefixes": ["tests/fixtures/"]},
                 },
+                "explicit_active_surfaces": {
+                    "paths": ["CURRENT_STATUS.md"],
+                },
             }
         ),
         encoding="utf-8",
@@ -133,9 +136,40 @@ def test_build_inventory_counts(tmp_path: Path, monkeypatch: pytest.MonkeyPatch)
     )
 
     inv = readme_validator.build_inventory(tmp_path, policy_path)
-    assert inv["total"] == 2
+    assert inv["total_readmes"] == 2
+    assert inv["total"] == 3
+    assert inv["explicit_active_surfaces"] == ["CURRENT_STATUS.md"]
     assert inv["by_classification"]["active"] == 1
     assert inv["by_classification"]["fixture_testdata"] == 1
+
+
+def test_validate_all_checks_explicit_active_surfaces(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    policy_path = tmp_path / "policy.yaml"
+    policy_path.write_text(
+        yaml.safe_dump(
+            {
+                "default_classification": "active",
+                "explicit_active_surfaces": {"paths": ["CURRENT_STATUS.md"]},
+            }
+        ),
+        encoding="utf-8",
+    )
+    _make_file(tmp_path, "CURRENT_STATUS.md", "[broken](missing.md)")
+    monkeypatch.setattr(
+        readme_validator,
+        "discover_tracked_readmes",
+        lambda _root: [],
+    )
+
+    errors = readme_validator.validate_all(tmp_path, policy_path)
+    assert len(errors) == 1
+    assert "CURRENT_STATUS.md" in errors[0]
+
+
+def test_explicit_active_surfaces_empty_when_omitted() -> None:
+    assert readme_validator.explicit_active_surfaces({}) == []
 
 
 def test_shared_extract_relative_links() -> None:

@@ -117,7 +117,7 @@ help:
 	@echo "  make context-live-invoke-full - Same harness with inline records, 27 PASS (#2852)"
 	@echo "  make context-negative-controls - Write-intent/mutation negative-control regression (#2854)"
 	@echo "  make onboarding-docs-guard   - Validate active onboarding docs links/entrypoints (#3233)"
-	@echo "  make readme-links-guard      - Validate active README.md relative links (#3994)"
+	@echo "  make readme-links-guard      - Validate README + explicit canon entry point links (#3994/#3995)"
 	@echo "  make context-root-inventory  - Cross-repo root + GitHub target inventory (#2853)"
 	@echo "  make local-dev-hygiene-inventory - Local D:\\Dev read-only inventory (#3999)"
 	@echo ""

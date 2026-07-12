@@ -46,3 +46,9 @@ pytest -v -m local_only   # explicit local_only only
 - [`pytest.ini`](../pytest.ini) — markers and defaults
 - [`Makefile`](../Makefile) — `test`, `test-unit`, `test-integration`, `test-e2e`, `test-coverage`
 - [`tests/fixtures/README.md`](fixtures/README.md) — deterministic fixtures
+
+## Navigation
+
+- [Projektübersicht](../README.md)
+- [Dokumentationsindex](../docs/index.md)
+- [Developer onboarding](../DEVELOPER_ONBOARDING.md)
