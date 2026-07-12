@@ -118,6 +118,7 @@ help:
 	@echo "  make context-negative-controls - Write-intent/mutation negative-control regression (#2854)"
 	@echo "  make onboarding-docs-guard   - Validate active onboarding docs links/entrypoints (#3233)"
 	@echo "  make context-root-inventory  - Cross-repo root + GitHub target inventory (#2853)"
+	@echo "  make local-dev-hygiene-inventory - Local D:\\Dev read-only inventory (#3999)"
 	@echo ""
 	@echo "SurrealQL Syntax Validation:"
 	@echo "  make surreal-validate       - Validate .surql syntax via SurrealDB CLI (#3430)"
@@ -435,6 +436,11 @@ context-negative-controls:
 context-root-inventory:
 	@echo "=== Cross-repo root and GitHub target inventory (#2853) ==="
 	@$(PYTHON) -m tools.mcp.cross_repo_root_inventory --format markdown
+
+local-dev-hygiene-inventory:
+	@echo "=== Local D:\\Dev workspace inventory (#3999, read-only) ==="
+	@powershell -NoProfile -ExecutionPolicy Bypass -File tools/cleanup/local_dev_workspace_inventory.ps1 -ConfigPath infrastructure/config/ops/local_dev_hygiene.json
+	@$(PYTHON) -m tools.cleanup.local_dev_hygiene_classify --inventory artifacts/local-dev-hygiene/workspace_inventory.json
 
 # ============================================================================
 # SurrealQL Syntax Validation (#3430)
