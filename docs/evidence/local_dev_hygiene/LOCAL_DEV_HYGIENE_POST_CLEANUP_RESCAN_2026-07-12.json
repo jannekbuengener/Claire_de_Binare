@@ -402,5 +402,5 @@
     "Ollama system uninstall not verified; only D:\\Dev\\AI\\Ollama path absence.",
     "No further cleanup recommendations in this slice."
   ],
-  "redaction_note": "Aggregated metadata only; no secret paths, full file lists, or file contents."
+  "redaction_note": "Aggregated metadata only; no credential paths, full file lists, or file contents."
 }

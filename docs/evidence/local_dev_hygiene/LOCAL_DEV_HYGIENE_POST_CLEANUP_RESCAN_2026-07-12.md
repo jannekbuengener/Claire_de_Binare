@@ -79,4 +79,4 @@ Scan as of (UTC): `2026-07-12T19:48:38.1614490Z`
 - Ollama system uninstall not verified; only D:\Dev\AI\Ollama path absence.
 - No further cleanup recommendations in this slice.
 
-Aggregated metadata only; no secret paths, full file lists, or file contents.
+Aggregated metadata only; no credential paths, full file lists, or file contents.
