@@ -33,3 +33,9 @@ reviews, and evidence that must stay close to the working codebase.
 This directory is no longer a pointer layer for an external docs repository.
 Productive knowledge lives here. Historical docs-hub residue is preserved locally under
 archive paths when provenance matters.
+
+## Navigation
+
+- [Projektübersicht](../README.md)
+- [Dokumentationsindex](../docs/index.md)
+- [Agenten-Bootloader](../agents/AGENTS.md)

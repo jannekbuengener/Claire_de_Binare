@@ -3,12 +3,14 @@
 **Status Class**: Working Repo / Engineering Status
 **Authority**: Current repo/main/test/dependency snapshot; not the canonical live-readiness or Echtgeld Go/No-Go source.
 **Operational Canon**: `docs/live-readiness/LR-AUDIT-STATUS-2026-03-05.md`
-**Last Updated**: 2026-07-12
+**Last Updated**: 2026-07-13
 **GitHub Boundary**: The live commit and PR state is tracked in GitHub (UI/API or `gh`); this file is a curated repo/engineering ledger, not a live mirror.
 
 ---
 
 ## Repo / Engineering Status (2026-07-12)
+
+- **#3994 README / canon link guard**: **DONE_MERGED_CLOSED** — PR [#4011](https://github.com/jannekbuengener/Claire_de_Binare/pull/4011) @ `49eb7546`. Shared `tools/markdown_link_utils.py`, offline README link guard + CI step, CONTRIBUTING § README Link Convention. Prerequisite landed for [#3995](https://github.com/jannekbuengener/Claire_de_Binare/issues/3995) (OPEN — nav/snapshot reconcile in delivery). LR **NO-GO** unchanged.
 
 - **#3990 Binance BTCUSDT 1m full archive import + ARVP window bank**: **HISTORICAL_CAMPAIGN_COMPLETE** — PR [#3997](https://github.com/jannekbuengener/Claire_de_Binare/pull/3997) @ `10bb00d6`; stress-v2 closeout PR [#4009](https://github.com/jannekbuengener/Claire_de_Binare/pull/4009) @ `a3dde535` (Issue [#4008](https://github.com/jannekbuengener/Claire_de_Binare/issues/4008) CLOSED). Import: 81 STRICT_COMPLETE / 26 PARTIAL_USABLE months, 4.65M candles; window bank 108 (incl. 2 stress_v2 on D:). Campaign `arvp_binance_historical_3990_2bb32b68_20260712T111944Z`: **318 technical PASS / 0 technical FAIL** (6 legacy stress FAILs superseded by v2 rerun). Cross-venue research only; `ranking_ready=false`. Evidence: `docs/evidence/arvp_binance_historical_stress_v2_closeout.md`. LR **NO-GO** unchanged.
 

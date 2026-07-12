@@ -1,20 +1,20 @@
 # Control Register
 
-**Letzte Aktualisierung:** 2026-07-06
-**SSOT Live-Readiness:** `docs/live-readiness/LR-AUDIT-STATUS-2026-03-05.md`
+**Letzte Aktualisierung:** 2026-07-13 (Nav-/Issue-Link-Reconcile #3995)
+**SSOT Live-Readiness:** [`docs/live-readiness/LR-AUDIT-STATUS-2026-03-05.md`](../live-readiness/LR-AUDIT-STATUS-2026-03-05.md)
 **Verdict:** NO-GO
-**Control-Board Stage:** `trade-capable` (ratifiziert 2026-04-08 via Issue `#1492`)
+**Control-Board Stage:** `trade-capable` (ratifiziert 2026-04-08 via Issue [#1492](https://github.com/jannekbuengener/Claire_de_Binare/issues/1492))
 
 ---
 
 ## Cockpit-Einstieg
 
-1. GitHub Issue `[CONTROL] Claire de Binare — Operatives Cockpit (dauerhaft offen)` — **#1445**
-   - Rebaseline 2026-05-13: `docs/runbooks/control-cockpit/CONTROL_COCKPIT_1445_REBASELINE_2026-05-13.md`
+1. GitHub Issue `[CONTROL] Claire de Binare — Operatives Cockpit (dauerhaft offen)` — **[#1445](https://github.com/jannekbuengener/Claire_de_Binare/issues/1445)**
+   - Rebaseline 2026-05-13: [`docs/runbooks/control-cockpit/CONTROL_COCKPIT_1445_REBASELINE_2026-05-13.md`](control-cockpit/CONTROL_COCKPIT_1445_REBASELINE_2026-05-13.md)
    - Alte Kommentare sind Ledger/Telemetry, keine Live-Wahrheit.
-2. GitHub Issue `#1492` — ratifizierter Stage-Uebergang `stability -> trade-capable`
-3. `CURRENT_STATUS.md` — Repo/Engineering-Status, Session-Ledger
-4. `docs/live-readiness/LR-AUDIT-STATUS-2026-03-05.md` — Live-Readiness-Verdikt
+2. GitHub Issue [#1492](https://github.com/jannekbuengener/Claire_de_Binare/issues/1492) — ratifizierter Stage-Uebergang `stability -> trade-capable`
+3. [`CURRENT_STATUS.md`](../../CURRENT_STATUS.md) — Repo/Engineering-Status, Session-Ledger
+4. [`docs/live-readiness/LR-AUDIT-STATUS-2026-03-05.md`](../live-readiness/LR-AUDIT-STATUS-2026-03-05.md) — Live-Readiness-Verdikt
 
 ---
 

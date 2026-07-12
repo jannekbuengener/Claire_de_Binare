@@ -12,4 +12,10 @@
 *   [Service implementations (services/)](../services/)
 
 ## SSOT boundary
-Contract and status SSOTs live outside this directory — see `knowledge/contracts/README.md` and `CURRENT_STATUS.md`.
+Contract and status SSOTs live outside this directory — see [`knowledge/contracts/README.md`](../knowledge/contracts/README.md) and [`CURRENT_STATUS.md`](../CURRENT_STATUS.md).
+
+## Navigation
+
+- [Projektübersicht](../README.md)
+- [Dokumentationsindex](../docs/index.md)
+- [Services](../services/README.md)
