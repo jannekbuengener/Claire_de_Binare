@@ -35,6 +35,7 @@ QUALITY_VERDICTS = frozenset(
         "PARTIAL_USABLE",
         "SOURCE_INVALID",
         "SOURCE_UNAVAILABLE",
+        "CHECKSUM_FAILED",
     }
 )
 
@@ -502,6 +503,18 @@ def write_jsonl(path: Path, rows: Sequence[dict[str, Any]]) -> None:
     with path.open("w", encoding="utf-8") as handle:
         for row in rows:
             handle.write(json.dumps(row, ensure_ascii=False) + "\n")
+
+
+def write_jsonl_and_hash(path: Path, rows: Sequence[dict[str, Any]]) -> str:
+    """Write JSONL and return SHA-256 without loading entire file back."""
+    path.parent.mkdir(parents=True, exist_ok=True)
+    digest = hashlib.sha256()
+    with path.open("w", encoding="utf-8") as handle:
+        for row in rows:
+            line = json.dumps(row, ensure_ascii=False) + "\n"
+            digest.update(line.encode("utf-8"))
+            handle.write(line)
+    return digest.hexdigest()
 
 
 def arvp_load_smoke(
