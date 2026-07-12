@@ -1,0 +1,16 @@
+{
+  "schema_version": "arvp_league_table_report_fixture.v1",
+  "description": "Golden league report expectations for slice candidate bundle (#4017)",
+  "campaign_id": "arvp_binance_historical_3990_2bb32b68_20260712T111944Z",
+  "source_content_hash": "ad3d4ccc449e81e4aa5ec81185d6b3229d12a9e05b2e4970dd352b7471e5b7ad",
+  "candidate_bundle_hash": "60ab9973f898c5819d5f3cb56767ef22f124078416fc9fe1aaff530e5e9f0d80",
+  "table_status": "PARTIAL",
+  "ranking_ready": false,
+  "winner": null,
+  "official_ranking": [],
+  "candidate_count": 2,
+  "officially_ranked_count": 0,
+  "not_rankable_count": 2,
+  "partial_evidence_count": 0,
+  "promotion_status": "NOT_AUTHORIZED"
+}
