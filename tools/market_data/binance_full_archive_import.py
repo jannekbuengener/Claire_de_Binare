@@ -24,6 +24,7 @@ REPO_ROOT = Path(__file__).resolve().parents[2]
 if str(REPO_ROOT) not in sys.path:
     sys.path.insert(0, str(REPO_ROOT))
 
+from core.utils.clock import utcnow
 from tools.market_data import binance_historical_probe as probe
 from tools.market_data.assign_regime_offline import (
     RegimeCarryState,
@@ -101,7 +102,9 @@ def last_complete_month(
     available: Sequence[str] | None = None,
 ) -> str:
     """Last fully completed calendar month (excludes current incomplete month)."""
-    now = now or datetime.now(tz=UTC)
+    now = now or utcnow()
+    if now.tzinfo is None:
+        now = now.replace(tzinfo=UTC)
     if now.month == 1:
         complete_end = f"{now.year - 1}-12"
     else:

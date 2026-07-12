@@ -22,6 +22,7 @@ REPO_ROOT = Path(__file__).resolve().parents[2]
 if str(REPO_ROOT) not in sys.path:
     sys.path.insert(0, str(REPO_ROOT))
 
+from core.utils.clock import utcnow
 from tools.market_data.binance_full_archive_import import (
     REPO_ROOT as IMPORT_REPO,
     _enriched_dir,
@@ -558,7 +559,7 @@ def build_vacation_manifest(
     smoke_only: bool = False,
 ) -> Path:
     source_sha = bank.get("source_sha", "RUNTIME_RESOLVE")
-    ts = datetime.now(tz=UTC).strftime("%Y%m%dT%H%M%SZ")
+    ts = utcnow().strftime("%Y%m%dT%H%M%SZ")
     campaign_id = f"arvp_binance_historical_3990_{str(source_sha)[:8]}_{ts}"
 
     bank_root = bank.get("bank_root", "")
