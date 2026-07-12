@@ -22,6 +22,30 @@ Start here if you are new to the project:
 3. [`docs/onboarding/DEVELOPER_VISUAL_START_HERE.md`](docs/onboarding/DEVELOPER_VISUAL_START_HERE.md) — Visual developer start
 4. [`DEVELOPER_ONBOARDING.md`](DEVELOPER_ONBOARDING.md) — Full setup guide
 
+### README Link Convention
+
+For repository-internal documentation paths in **active** `README.md` files:
+
+- Use **relative Markdown links**, not bare inline-code paths, when the path is
+  navigation-relevant (entry points, parent/root/index, runbooks, contracts).
+- Keep **inline code** for shell commands, config examples, and illustrative
+  paths inside code blocks.
+- Prefer a small `## Navigation` block where a README is an area index (adapt
+  links to directory depth; no blind copy-paste).
+- Archive trees (`docs/archive/`, `knowledge/archive/`) and fixture paths are
+  classified out of the README link guard — see
+  [`tests/fixtures/readme_link_policy.yaml`](tests/fixtures/readme_link_policy.yaml).
+
+Validation (offline, no network):
+
+```bash
+make readme-links-guard      # all active tracked README.md link targets (#3994)
+make onboarding-docs-guard   # onboarding front-door surfaces (#3233)
+```
+
+See also [`docs/meta/WORKING_REPO_CANON.md`](docs/meta/WORKING_REPO_CANON.md)
+(README vs. `docs/index.md` navigation rule).
+
 ### Local Setup
 
 ```bash

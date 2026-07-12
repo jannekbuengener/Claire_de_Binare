@@ -12,9 +12,9 @@ Repo-versionierte Gemini-Konfigurationsfläche. Teil des CDB-Agent-Root-Surface-
 
 ## Einstiegspunkte
 
-- **Gemini-Bootloader**: [`GEMINI.md`](GEMINI.md) (Repo-Root) — primärer Einstiegspunkt mit Read-Order, Tool-First-Pflicht und Onboarding-Intent-Router.
+- **Gemini-Bootloader**: [`GEMINI.md`](../GEMINI.md) (Repo-Root) — primärer Einstiegspunkt mit Read-Order, Tool-First-Pflicht und Onboarding-Intent-Router.
 - **Onboarding-Intent**: Siehe `onboarding.md` in diesem Verzeichnis oder `GEMINI.md` §6.
-- **Canonical Registry**: [`agents/AGENTS.md`](agents/AGENTS.md)
+- **Canonical Registry**: [`agents/AGENTS.md`](../agents/AGENTS.md)
 
 ## Onboarding-Route
 

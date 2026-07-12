@@ -72,14 +72,14 @@ Details und Session-Ledger: `CURRENT_STATUS.md`.
 
 ## Docs / Canonical Entrypoints
 
-1. `docs/runbooks/CONTROL_REGISTER.md`
+1. [`docs/runbooks/CONTROL_REGISTER.md`](docs/runbooks/CONTROL_REGISTER.md)
 2. GitHub Issue `#1445` (inkl. neuestem Wochenkommentar)
-3. `CURRENT_STATUS.md`
-4. `docs/live-readiness/LR-AUDIT-STATUS-2026-03-05.md`
-5. `docs/meta/WORKING_REPO_CANON.md`
-6. `agents/AGENTS.md`
-7. `docs/index.md`
-8. `DEVELOPER_ONBOARDING.md`
+3. [`CURRENT_STATUS.md`](CURRENT_STATUS.md)
+4. [`docs/live-readiness/LR-AUDIT-STATUS-2026-03-05.md`](docs/live-readiness/LR-AUDIT-STATUS-2026-03-05.md)
+5. [`docs/meta/WORKING_REPO_CANON.md`](docs/meta/WORKING_REPO_CANON.md)
+6. [`agents/AGENTS.md`](agents/AGENTS.md)
+7. [`docs/index.md`](docs/index.md)
+8. [`DEVELOPER_ONBOARDING.md`](DEVELOPER_ONBOARDING.md)
 
 ## Tooling / Tests / Services
 
@@ -138,9 +138,9 @@ docker compose -f infrastructure/compose/base.yml -f infrastructure/compose/test
 
 ## Navigation
 
-- `mcp_navpack_working_repo/ENTRYPOINTS.yaml`
-- `mcp_navpack_working_repo/CHEATSHEET.md`
-- `docs/meta/WORKING_REPO_CANON.md`
+- [`mcp_navpack_working_repo/ENTRYPOINTS.yaml`](mcp_navpack_working_repo/ENTRYPOINTS.yaml)
+- [`mcp_navpack_working_repo/CHEATSHEET.md`](mcp_navpack_working_repo/CHEATSHEET.md)
+- [`docs/meta/WORKING_REPO_CANON.md`](docs/meta/WORKING_REPO_CANON.md)
 
 ## Boundary
 

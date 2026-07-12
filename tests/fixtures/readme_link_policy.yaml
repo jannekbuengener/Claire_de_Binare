@@ -1,0 +1,27 @@
+# README link validation policy (#3994)
+#
+# Discovery: git ls-files '**/README.md' (automatic, fail-closed for new files)
+# This fixture holds only classification rules and documented exceptions — not
+# a manual inventory of every README path.
+
+version: 1
+issue: 3994
+
+# Unmatched README paths use this class and are validated (fail-closed).
+default_classification: active
+
+classification_rules:
+  archive_snapshot:
+    description: Historical snapshots; link integrity not enforced (#3994).
+    path_prefixes:
+      - docs/archive/
+      - knowledge/archive/
+  fixture_testdata:
+    description: Test fixtures and generated evidence trees; out of nav scope.
+    path_prefixes:
+      - tests/fixtures/
+      - artifacts/
+      - reports/p5_canary/
+
+# Explicit per-path overrides (use sparingly).
+documented_exceptions: []
