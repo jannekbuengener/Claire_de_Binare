@@ -157,7 +157,8 @@ def import_range(
 
     records: list[MonthImportRecord] = []
     regime_state: RegimeCarryState | None = None
-    all_enriched_rows: list[dict[str, Any]] = []
+    plausibility_sample: list[dict[str, Any]] = []
+    max_plausibility_sample = 50_000
 
     for month in months:
         record = MonthImportRecord(month=month)
@@ -199,8 +200,12 @@ def import_range(
                     record.local_enriched_path = str(
                         _enriched_dir(repo_root, month) / "candles.jsonl"
                     ).replace("\\", "/")
-                    record.enriched_hash = _hash_jsonl_rows(enriched_rows)
-                    all_enriched_rows.extend(enriched_rows)
+                    record.enriched_hash = hash_jsonl_file(
+                        Path(record.local_enriched_path)
+                    )
+                    if len(plausibility_sample) < max_plausibility_sample:
+                        remaining = max_plausibility_sample - len(plausibility_sample)
+                        plausibility_sample.extend(enriched_rows[:remaining])
                 elif enrich_regime:
                     record.regime_status = "skipped_quality"
                 records.append(record)
@@ -228,11 +233,11 @@ def import_range(
         r for r in records if r.quality_verdict == "STRICT_COMPLETE"
     ]
     regime_plausibility = None
-    if all_enriched_rows:
-        regime_plausibility = analyze_regime_plausibility(all_enriched_rows)
+    if plausibility_sample:
+        regime_plausibility = analyze_regime_plausibility(plausibility_sample)
         manifest["regime_plausibility"] = regime_plausibility
-        manifest["regime_distribution_total"] = regime_distribution(
-            all_enriched_rows
+        manifest["regime_distribution_sample"] = regime_distribution(
+            plausibility_sample
         )
 
     complete = sum(1 for r in records if r.quality_verdict == "STRICT_COMPLETE")
@@ -312,10 +317,22 @@ def _raw_dir(repo_root: Path, month: str) -> Path:
 def _hash_jsonl_rows(rows: Sequence[dict[str, Any]]) -> str:
     import hashlib
 
-    raw = json.dumps(
-        rows, sort_keys=True, separators=(",", ":"), ensure_ascii=True
-    )
-    return hashlib.sha256(raw.encode("utf-8")).hexdigest()
+    digest = hashlib.sha256()
+    for row in rows:
+        line = json.dumps(row, sort_keys=True, separators=(",", ":"), ensure_ascii=True)
+        digest.update(line.encode("utf-8"))
+        digest.update(b"\n")
+    return digest.hexdigest()
+
+
+def hash_jsonl_file(path: Path) -> str:
+    import hashlib
+
+    digest = hashlib.sha256()
+    with path.open("rb") as handle:
+        for chunk in iter(lambda: handle.read(1024 * 1024), b""):
+            digest.update(chunk)
+    return digest.hexdigest()
 
 
 def _enrich_month(
@@ -452,26 +469,18 @@ def _import_single_month(
     )
 
     norm_hash = normalized_hash(candles)
-    second_hash = normalized_hash(
-        probe.parse_binance_kline_csv(
-            csv_bytes,
-            symbol="BTCUSDT",
-            timeframe="1m",
-            source_file_sha256=download_sha,
-        )[0]
-    )
+    norm_dir = _normalized_dir(repo_root, month)
+    jsonl_path = norm_dir / "candles.jsonl"
+    write_jsonl(jsonl_path, [c.to_dict() for c in candles])
+    file_hash = sha256_file(jsonl_path)
     quality = build_quality_report(
         candles,
         start_ts_ms=start_ts_ms,
         end_ts_ms=end_ts_ms,
         step_ms=ONE_MINUTE_MS,
-        source_hash=norm_hash,
-        second_parse_hash=second_hash,
+        source_hash=file_hash,
+        second_parse_hash=file_hash,
     )
-
-    norm_dir = _normalized_dir(repo_root, month)
-    jsonl_path = norm_dir / "candles.jsonl"
-    write_jsonl(jsonl_path, [c.to_dict() for c in candles])
     write_json(norm_dir / "quality_report.json", quality)
     write_json(norm_dir / "gap_report.json", quality["gaps"])
     write_json(
@@ -486,7 +495,7 @@ def _import_single_month(
                 source_hash=download_sha,
                 quality_verdict=quality["verdict"],
                 regime_enriched=False,
-                normalized_hash_value=norm_hash,
+                normalized_hash_value=file_hash,
             ),
             "fingerprint": sha256_file(jsonl_path),
             "candles_sha256": sha256_file(jsonl_path),
@@ -525,7 +534,7 @@ def _import_single_month(
         "raw_zip": str(raw_zip).replace("\\", "/"),
         "normalized_jsonl": str(jsonl_path).replace("\\", "/"),
         "raw_hash": download_sha,
-        "normalized_hash": norm_hash,
+        "normalized_hash": file_hash,
         "candle_count": len(candles),
         "gaps": quality["gaps"],
         "duplicates": quality["duplicates"],
