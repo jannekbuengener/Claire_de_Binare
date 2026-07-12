@@ -13,15 +13,18 @@ SCHEMA_PATH = (
 )
 MATRIX_PATH = REPO_ROOT / "docs" / "evidence" / "arvp_3990_metric_availability_matrix.md"
 CAMPAIGN_ID = "arvp_binance_historical_3990_2bb32b68_20260712T111944Z"
-CANONICAL_JOB_COUNT = 318
-SUPERSEDED_JOB_COUNT = 6
-QUEUE_RECORD_COUNT = 324
-CANONICAL_SELECTOR = "superseded_by_stress_v2_rerun != true"
-OUTCOME_READY = "READY_FOR_METRIC_EXTRACTION"
-
-
-class VacationMetricContractError(ValueError):
-    """Fail-closed contract violation for vacation metric availability."""
+from tools.arvp_vacation.metric_contract import (
+    CANONICAL_JOB_COUNT,
+    CANONICAL_SELECTOR,
+    OUTCOME_READY,
+    QUEUE_RECORD_COUNT,
+    SUPERSEDED_JOB_COUNT,
+    VacationMetricContractError,
+    is_canonical_queue_job,
+    is_rankable_job_metrics,
+    metric_is_missing,
+    select_canonical_jobs,
+)
 
 
 METRIC_MATRIX: tuple[dict[str, str], ...] = (
@@ -229,45 +232,6 @@ METRIC_MATRIX: tuple[dict[str, str], ...] = (
 def load_json(path: Path) -> dict[str, Any]:
     with path.open("r", encoding="utf-8") as handle:
         return json.load(handle)
-
-
-def is_canonical_queue_job(job: Mapping[str, Any]) -> bool:
-    """Return True for canonical jobs per superseded_by_stress_v2_rerun != true."""
-    superseded = job.get("superseded_by_stress_v2_rerun")
-    if superseded is True:
-        return False
-    if superseded is False or superseded is None:
-        return True
-    raise VacationMetricContractError(
-        f"unknown superseded_by_stress_v2_rerun value: {superseded!r}"
-    )
-
-
-def select_canonical_jobs(jobs: Iterable[Mapping[str, Any]]) -> list[dict[str, Any]]:
-    canonical: list[dict[str, Any]] = []
-    for job in jobs:
-        if not isinstance(job, dict):
-            raise VacationMetricContractError("queue job must be object")
-        if is_canonical_queue_job(job):
-            canonical.append(job)
-    return canonical
-
-
-def is_rankable_job_metrics(metrics: Mapping[str, Any]) -> bool:
-    if "closed_trades_total" not in metrics:
-        return False
-    try:
-        return int(metrics["closed_trades_total"]) > 0
-    except (TypeError, ValueError) as exc:
-        raise VacationMetricContractError(
-            "closed_trades_total must be integer-like"
-        ) from exc
-
-
-def metric_is_missing(metrics: Mapping[str, Any], field: str) -> bool:
-    if field not in metrics:
-        return True
-    return metrics[field] is None
 
 
 def scenario_metric_field_path(scenario_id: str, metric_field: str) -> str:

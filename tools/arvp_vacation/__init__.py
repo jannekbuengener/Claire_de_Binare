@@ -6,6 +6,8 @@ __all__ = [
     "contract",
     "coordinator",
     "job_runner",
+    "metric_contract",
     "queue_store",
+    "strategy_metric_extraction",
     "summary",
 ]
