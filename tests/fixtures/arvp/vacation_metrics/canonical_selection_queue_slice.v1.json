@@ -1,0 +1,104 @@
+{
+  "schema_version": "1.0",
+  "campaign_id": "arvp_binance_historical_3990_2bb32b68_20260712T111944Z",
+  "jobs": [
+    {
+      "job_id": "vac-donchian-breakout-v1-binance_1m_month_2017_10-scenarios",
+      "strategy_id": "donchian_breakout_v1",
+      "dataset_id": "binance_1m_month_2017_10",
+      "status": "PASS",
+      "artifacts_complete": true,
+      "scenario_metrics": {
+        "baseline": {
+          "metrics": {
+            "closed_trades_total": 563,
+            "net_pnl_quote": -12000.0,
+            "gross_pnl_quote": -9000.0,
+            "fees_total_quote": 3000.0
+          }
+        }
+      }
+    },
+    {
+      "job_id": "vac-donchian-breakout-v1-binance_1m_stress_max_drawdown-scenarios",
+      "strategy_id": "donchian_breakout_v1",
+      "dataset_id": "binance_1m_stress_max_drawdown",
+      "status": "FAIL",
+      "superseded_by_stress_v2_rerun": true,
+      "artifacts_complete": false
+    },
+    {
+      "job_id": "vac-breakout-trend-filter-v1-binance_1m_stress_max_drawdown-scenarios",
+      "strategy_id": "breakout_trend_filter_v1",
+      "dataset_id": "binance_1m_stress_max_drawdown",
+      "status": "FAIL",
+      "superseded_by_stress_v2_rerun": true,
+      "artifacts_complete": false
+    },
+    {
+      "job_id": "vac-primary-breakout-v1-binance_1m_stress_max_drawdown-scenarios",
+      "strategy_id": "primary_breakout_v1",
+      "dataset_id": "binance_1m_stress_max_drawdown",
+      "status": "FAIL",
+      "superseded_by_stress_v2_rerun": true,
+      "artifacts_complete": false
+    },
+    {
+      "job_id": "vac-donchian-breakout-v1-binance_1m_stress_max_volatility-scenarios",
+      "strategy_id": "donchian_breakout_v1",
+      "dataset_id": "binance_1m_stress_max_volatility",
+      "status": "FAIL",
+      "superseded_by_stress_v2_rerun": true,
+      "artifacts_complete": false
+    },
+    {
+      "job_id": "vac-breakout-trend-filter-v1-binance_1m_stress_max_volatility-scenarios",
+      "strategy_id": "breakout_trend_filter_v1",
+      "dataset_id": "binance_1m_stress_max_volatility",
+      "status": "FAIL",
+      "superseded_by_stress_v2_rerun": true,
+      "artifacts_complete": false
+    },
+    {
+      "job_id": "vac-primary-breakout-v1-binance_1m_stress_max_volatility-scenarios",
+      "strategy_id": "primary_breakout_v1",
+      "dataset_id": "binance_1m_stress_max_volatility",
+      "status": "FAIL",
+      "superseded_by_stress_v2_rerun": true,
+      "artifacts_complete": false
+    },
+    {
+      "job_id": "vac-donchian-breakout-v1-binance_1m_stress_max_drawdown_v2-scenarios",
+      "strategy_id": "donchian_breakout_v1",
+      "dataset_id": "binance_1m_stress_max_drawdown_v2",
+      "status": "PASS",
+      "artifacts_complete": true,
+      "scenario_metrics": {
+        "baseline": {
+          "metrics": {
+            "closed_trades_total": 140,
+            "net_pnl_quote": -24608.44
+          }
+        }
+      }
+    },
+    {
+      "job_id": "vac-primary-breakout-v1-binance_1m_month_2017_11-scenarios",
+      "strategy_id": "primary_breakout_v1",
+      "dataset_id": "binance_1m_month_2017_11",
+      "status": "PASS",
+      "artifacts_complete": true,
+      "scenario_metrics": {
+        "baseline": {
+          "metrics": {
+            "closed_trades_total": 0,
+            "net_pnl_quote": 0,
+            "fee_adjusted_max_drawdown_r": null,
+            "avg_win_r": null
+          }
+        }
+      }
+    }
+  ],
+  "_fixture_note": "Redacted queue slice from campaign arvp_binance_historical_3990_2bb32b68_20260712T111944Z. Six superseded stress jobs + canonical replacements and zero-trade sample."
+}

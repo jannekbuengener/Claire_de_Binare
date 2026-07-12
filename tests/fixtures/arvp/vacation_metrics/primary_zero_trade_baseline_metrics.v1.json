@@ -1,0 +1,36 @@
+{
+  "schema_version": "arvp_vacation_job_metrics.v1",
+  "scenario_id": "baseline",
+  "strategy_id": "primary_breakout_v1",
+  "run_id": "redacted-run-id",
+  "ranking_ready": false,
+  "dataset_summary": {
+    "symbol": "BTCUSDT",
+    "timeframe": "1m",
+    "candles_total": 43200,
+    "period_start_ts_ms": 1509508800000,
+    "period_end_ts_ms": 1512086340000
+  },
+  "metrics": {
+    "closed_trades_total": 0,
+    "gross_pnl_quote": 0,
+    "net_pnl_quote": 0,
+    "fees_total_quote": 0,
+    "max_drawdown_r": 0.0,
+    "profit_factor": 0.0,
+    "expectancy_r": 0.0,
+    "win_rate": 0.0,
+    "fee_adjusted_max_drawdown_r": null,
+    "fee_adjusted_profit_factor": null,
+    "fee_adjusted_expectancy_r": null,
+    "avg_win_r": null,
+    "avg_loss_r": null,
+    "signals_total": 0,
+    "sample_size_verdict": "no_trades",
+    "metrics_availability": {
+      "slippage_per_trade_available": false,
+      "trade_level_pnl_available": false
+    }
+  },
+  "_fixture_note": "Redacted from vac-primary-breakout-v1-binance_1m_month_2017_11-scenarios zero-trade baseline_metrics.json"
+}
