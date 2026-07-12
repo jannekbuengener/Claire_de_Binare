@@ -1,23 +1,30 @@
 # Security Policy
 
+Claire de Binare (CDB) operates in shadow/paper mode. This policy documents
+security reporting and repository measures. It does **not** authorize live
+capital, production trading, or Echtgeld operations. Live-Readiness remains
+**NO-GO** — SSOT: [`docs/live-readiness/LR-AUDIT-STATUS-2026-03-05.md`](../docs/live-readiness/LR-AUDIT-STATUS-2026-03-05.md).
+
+---
+
 ## Supported Versions
 
-Currently supported versions for security updates:
+Only the `main` branch receives security updates.
 
 | Version | Supported          |
 | ------- | ------------------ |
-| main    | :white_check_mark: |
-| dev     | :white_check_mark: |
-| < 1.0   | :x:                |
+| `main`  | :white_check_mark: |
+| other   | :x:                |
 
 ---
 
 ## Reporting a Vulnerability
 
-**DO NOT** create public issues for security vulnerabilities.
+**DO NOT** create public GitHub issues for security vulnerabilities.
 
-### Preferred Method
-1. **Email:** [Security contact - add your email]
+Report suspected vulnerabilities privately:
+
+1. **Email:** modusmono.dev@gmail.com
 2. **Subject:** `[SECURITY] CDB Vulnerability Report`
 3. **Include:**
    - Description of the vulnerability
@@ -25,118 +32,63 @@ Currently supported versions for security updates:
    - Potential impact
    - Suggested fix (if any)
 
-### Response Timeline
-- **Acknowledgment:** Within 24 hours
-- **Initial Assessment:** Within 72 hours
-- **Status Update:** Weekly until resolved
-- **Fix Timeline:** Critical (7 days), High (14 days), Medium (30 days)
+Reports are reviewed. Further handling and coordinated disclosure are managed
+case by case. **No fixed response, triage, patch, or disclosure timelines are
+promised.**
+
+Maintainers may also use [GitHub Security Advisories](https://docs.github.com/en/code-security/security-advisories) for private coordination when appropriate. Private Vulnerability Reporting is not claimed as enabled in this repository unless separately verified on GitHub.
 
 ---
 
-## Security Measures
+## Security Scope
 
-### Implemented
-- ✅ Secrets scanning (Gitleaks)
-- ✅ Dependency audit (pip-audit)
-- ✅ Security linting (Bandit)
-- ✅ `.env` templates (no secrets in repo)
-- ✅ Docker secret management
-- ✅ API key restrictions (IP-binding, asset limits)
+In scope for this policy:
 
-### Planned (M8 - Production Hardening)
-- 🔄 Penetration testing
-- 🔄 Container image scanning (Trivy)
-- 🔄 TLS/SSL for all external connections
-- 🔄 Redis authentication
-- 🔄 PostgreSQL hardening
-- 🔄 Network isolation review
+- Secrets or credentials exposure in the repository or documented operator paths
+- Dependency and supply-chain vulnerabilities affecting supported code on `main`
+- CI/workflow misconfigurations with demonstrable security impact
+- Container image vulnerabilities surfaced by repository scanning workflows
+- Unsafe defaults on order, risk, or execution paths in code reviewed on `main`
 
----
+Out of scope:
 
-## Security Checklist (Pre-Deployment)
-
-### Code
-- [ ] No hardcoded secrets
-- [ ] All ENV vars in `.env.example`
-- [ ] Bandit scan passes
-- [ ] Dependencies audited (pip-audit)
-- [ ] Type checking passes (mypy)
-
-### Infrastructure
-- [ ] Docker secrets configured
-- [ ] PostgreSQL password rotation
-- [ ] Redis AUTH enabled
-- [ ] Firewall rules configured
-- [ ] Logs secured (no PII)
-
-### API Security
-- [ ] MEXC API key IP-bound
-- [ ] Asset whitelist active (BTC/USDC/USDE)
-- [ ] Rate limiting configured
-- [ ] TLS certificate valid
-
-### Monitoring
-- [ ] Security alerts configured
-- [ ] Audit logs enabled
-- [ ] Anomaly detection active
-- [ ] Incident response plan documented
+- Live trading authorization or capital deployment decisions
+- LR re-evaluation or board-stage changes
+- Production runtime changes without an explicit scoped issue
+- General feature requests or non-security bugs (use public issues)
+- Historical archive trees under `docs/archive/` and `knowledge/archive/`
 
 ---
 
-## Known Security Boundaries
+## Implemented Measures (live-verified)
 
-### By Design
-- **Paper Trading Mode:** No real capital at risk (M7 phase)
-- **Kill Switch:** Manual intervention required (not automated)
-- **Tresor Zone:** Physically separated (not in Docker stack)
+Repository and platform controls currently in use:
 
-### Dependencies
-- Root `requirements.txt` / `requirements-dev.txt` cover CI, test, and local convenience dependencies.
-- Active runtime Python dependencies are defined per service via service-local `requirements.txt` files or, where applicable, service Dockerfiles.
-- Regular updates via Dependabot
-- Critical CVEs patched within 7 days
+| Measure | Location / evidence |
+| ------- | ------------------- |
+| Gitleaks secret scanning | [`.github/workflows/gitleaks.yml`](workflows/gitleaks.yml) |
+| CodeQL Python analysis | [`.github/workflows/codeql-python.yml`](workflows/codeql-python.yml) |
+| Trivy container scanning | [`.github/workflows/trivy.yml`](workflows/trivy.yml), [`.github/workflows/security-scan.yml`](workflows/security-scan.yml) |
+| Dependabot version updates | [`.github/dependabot.yml`](dependabot.yml) |
+| GitHub Secret Scanning | enabled (repository security settings) |
+| GitHub Push Protection | enabled (repository security settings) |
+| Dependabot security updates | enabled (repository security settings) |
+| Local security scan helper | `make security-scan` (Gitleaks when installed, Bandit, Ruff) |
 
----
+Security triage and readouts: [`docs/security/README.md`](../docs/security/README.md).
 
-## Compliance
-
-### Standards
-- OWASP Top 10 awareness
-- Secure coding practices (Bandit rules)
-- Dependency hygiene (SemVer, audit)
-
-### Audit Trail
-- Git history (all changes tracked)
-- Event sourcing (all trading events logged)
-- PostgreSQL audit logs
+Secrets governance: [`knowledge/governance/SECRETS_POLICY.md`](../knowledge/governance/SECRETS_POLICY.md).
 
 ---
 
-## Security Roadmap
+## Operator Boundaries
 
-### M8 - Production Hardening & Security Review
-- [ ] Full penetration test
-- [ ] Container security scan
-- [ ] Network isolation review
-- [ ] Secrets rotation policy
-- [ ] Incident response playbook
-
-### M9 - Release 1.0
-- [ ] Security audit sign-off
-- [ ] Production deployment checklist
-- [ ] Monitoring dashboards live
-- [ ] Kill-switch tested
+- No secrets in the repository; use the documented secrets path and Docker secrets.
+- Productive database writes, MCP mutations, and BLUE/RED runtime changes require
+  explicit human scope — not implied by this policy.
+- Board stage `trade-capable` is orthogonal to live-readiness and does not grant
+  live-capital authorization.
 
 ---
 
-## Contact
-
-For security concerns:
-- **Repository:** Private (no public disclosure)
-- **Maintainer:** @jannekbuengener
-- **Security Lead:** TBD
-
----
-
-**Last Updated:** 2025-12-16  
-**Policy Version:** 1.0
+**Last Updated:** 2026-07-13
