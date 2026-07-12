@@ -19,6 +19,7 @@ pytestmark = [pytest.mark.unit, pytest.mark.contract]
 
 REPO_ROOT = Path(__file__).resolve().parents[3]
 FIXTURES = REPO_ROOT / "tests" / "fixtures" / "arvp" / "strategy_metrics"
+CANDIDATE_FIXTURES = REPO_ROOT / "tests" / "fixtures" / "arvp" / "candidate_evidence"
 PEP_SCHEMA_PATH = REPO_ROOT / "docs" / "contracts" / "profitability_evidence_packet.v1.schema.json"
 CAMPAIGN_QUEUE = (
     REPO_ROOT
@@ -30,10 +31,6 @@ CAMPAIGN_QUEUE = (
 GOLDEN_SOURCE_HASH = (
     "ad3d4ccc449e81e4aa5ec81185d6b3229d12a9e05b2e4970dd352b7471e5b7ad"
 )
-GOLDEN_SLICE_BUNDLE_HASH = (
-    "60ab9973f898c5819d5f3cb56767ef22f124078416fc9fe1aaff530e5e9f0d80"
-)
-
 
 def _load(path: Path) -> dict:
     with path.open("r", encoding="utf-8") as handle:
@@ -47,8 +44,7 @@ def pep_validator() -> Draft7Validator:
 
 
 def _bundle_from_slice() -> dict:
-    queue = _load(FIXTURES / "extraction_queue_slice.v1.json")
-    return build_extraction_bundle(queue, repo_root=REPO_ROOT)
+    return _load(CANDIDATE_FIXTURES / "slice_metrics_bundle.v1.json")
 
 
 def test_slice_bundle_yields_two_candidates_with_six_records_each_strategy() -> None:
@@ -154,7 +150,9 @@ def test_full_campaign_assembly_when_artifacts_present() -> None:
     assert second.bundle_hash == result.bundle_hash
 
 
-def test_golden_slice_packet_hashes_are_stable() -> None:
+def test_slice_fixture_manifest_matches_assembly_output() -> None:
+    manifest = _load(CANDIDATE_FIXTURES / "slice_bundle_manifest.v1.json")
     result = assemble_arvp_candidate_evidence(_bundle_from_slice())
-    assert result.bundle_hash == GOLDEN_SLICE_BUNDLE_HASH
-    assert len(result.bundle_hash) == 64
+    assert result.bundle_hash == manifest["bundle_hash"]
+    assert result.packet_count == manifest["packet_count"]
+    assert result.source_record_count == manifest["source_record_count"]

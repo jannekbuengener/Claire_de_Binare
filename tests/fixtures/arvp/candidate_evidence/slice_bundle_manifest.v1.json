@@ -1,11 +1,12 @@
 {
   "schema_version": "arvp_candidate_evidence_bundle.v1",
-  "fixture_note": "Golden slice manifest for extraction_queue_slice.v1.json (#4016).",
-  "source_content_hash": "computed_from_slice_queue",
   "bundle_hash": "60ab9973f898c5819d5f3cb56767ef22f124078416fc9fe1aaff530e5e9f0d80",
   "packet_count": 2,
   "source_record_count": 6,
-  "candidates": ["donchian_breakout_v1", "primary_breakout_v1"],
+  "candidates": [
+    "donchian_breakout_v1",
+    "primary_breakout_v1"
+  ],
   "packets": [
     {
       "strategy_id": "donchian_breakout_v1",
