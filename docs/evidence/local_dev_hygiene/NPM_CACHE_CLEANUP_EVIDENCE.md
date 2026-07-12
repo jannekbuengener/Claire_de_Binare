@@ -1,15 +1,13 @@
-# npm-cache Cleanup Evidence (redacted, preflight + dry-run)
+# npm-cache Cleanup Evidence (redacted)
 
 Issue: [#4001](https://github.com/jannekbuengener/Claire_de_Binare/issues/4001)  
 Parent: [#3999](https://github.com/jannekbuengener/Claire_de_Binare/issues/3999)  
-Phase: **Preflight + Dry-run only** (no apply)  
-Scan as of (UTC): `2026-07-12T18:36:07Z`
+Phase: **Preflight + Apply + Verification**  
+Apply as of (UTC): `2026-07-12T19:30:54Z`
 
 ## Status
 
-**`READY_FOR_HUMAN_APPLY_GO`**
-
-Apply remains **blocked** until explicit Human-GO (`apply-approved` or equivalent) on #4001.
+**`DONE_APPLY_OK`** — Human-GO (`APPLY_APPROVED`) executed; awaiting PR merge for `DONE_MERGED_CLOSED`.
 
 ## Scope confirmation
 
@@ -18,35 +16,69 @@ Apply remains **blocked** until explicit Human-GO (`apply-approved` or equivalen
 | Exclusive path | `D:\Dev\Tools\npm-cache` |
 | `npm config get cache` | matches scope |
 | Root reparse/junction | none |
-| Excluded paths untouched | yes |
+| Excluded paths untouched | yes (existence verified) |
 
-## Live preflight measurement
+## Before (preflight baseline)
 
 | Metric | Value |
 |--------|------:|
 | Size (GB) | 58.714 |
+| Size (bytes) | 63,043,419,766 |
 | Files | 57,958 |
 | Directories | 17,461 |
-| Scan duration (s) | 5.82 |
+| Access errors | 0 |
+
+## Apply
+
+| Field | Value |
+|-------|------:|
+| Command | `npm cache clean --force` |
+| Exit code | 0 |
+| Duration (s) | 18.29 |
+
+## After (post-apply measurement)
+
+| Metric | Value |
+|--------|------:|
+| Size (GB) | 0.27 |
+| Size (bytes) | 290,025,604 |
+| Files | 45,599 |
+| Directories | 5,268 |
 | Access errors | 0 |
 | Scan status | complete |
 
-#3999 estimate (58.714 GB) matches live preflight exactly.
+## Reclaim vs preflight baseline
 
-## Dry-run plan
+| Metric | Value |
+|--------|------:|
+| Bytes freed | 62,753,394,162 |
+| GB freed | 58.444 |
 
-- **Planned action:** `npm cache clean --force`
-- **Expected reclaim:** ~58.7 GB
-- **Risk:** low (REGENERABLE)
-- **Recovery:** cache rebuilds on next `npm install` / `npm ci`; optional `npm cache verify`
+Remaining ~0.27 GB is empty npm cache skeleton (directory structure); `npm cache verify` reports **0 content bytes**.
 
-Internal npm hardlink entries (`@@@` suffix) were observed but not traversed; canonical apply uses npm tooling, not manual deletion.
+## Cache smoke
+
+```
+npm cache verify → exit 0
+Content verified: 0 (0 bytes)
+Index entries: 0
+```
+
+## Protected areas (unchanged)
+
+- `D:\Dev\Tools\npm` — present
+- `D:\Dev\AI` (Ollama) — present
+- `D:\Dev\Backups` — present
+- `D:\Dev\Workspaces\Repos` — present
+
+## Tools
+
+- Preflight: `tools/cleanup/npm_cache_preflight.ps1`
+- Apply + verify: `tools/cleanup/npm_cache_apply.ps1`
 
 ## Raw artifacts (local, gitignored)
 
 - `artifacts/local-dev-hygiene/npm-cache-cleanup/preflight.json`
 - `artifacts/local-dev-hygiene/npm-cache-cleanup/dry_run.md`
-
-## Next step
-
-Human-GO on #4001 for Phase 3 apply, then post-apply verification (Phase 4).
+- `artifacts/local-dev-hygiene/npm-cache-cleanup/apply_result.json`
+- `artifacts/local-dev-hygiene/npm-cache-cleanup/before_after.md`

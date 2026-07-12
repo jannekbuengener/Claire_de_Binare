@@ -2,10 +2,11 @@
   "schema_version": "npm_cache_cleanup_evidence_redacted.v1",
   "issue": "#4001",
   "parent_issue": "#3999",
-  "phase": "preflight_and_dry_run",
+  "phase": "preflight_apply_verify",
   "scan_as_of_utc": "2026-07-12T18:36:07.2223880Z",
-  "status": "READY_FOR_HUMAN_APPLY_GO",
-  "apply_gate": "blocked_until_human_go_apply_approved",
+  "apply_as_of_utc": "2026-07-12T19:30:54.7019604Z",
+  "status": "DONE_APPLY_OK",
+  "apply_gate": "human_go_apply_approved_executed",
   "scope_path": "D:\\Dev\\Tools\\npm-cache",
   "scope_exclusive": true,
   "npm_cache_config_match": true,
@@ -21,6 +22,35 @@
     "internal_reparse_points_count": 30,
     "internal_reparse_note": "expected npm cache hardlinks; apply via npm cache clean"
   },
+  "apply": {
+    "command": "npm cache clean --force",
+    "exit_code": 0,
+    "duration_seconds": 18.29,
+    "started_utc": "2026-07-12T19:30:54.7019604Z",
+    "finished_utc": "2026-07-12T19:31:12.9950508Z",
+    "executed": true
+  },
+  "post_apply": {
+    "size_bytes": 290025604,
+    "size_gb": 0.27,
+    "file_count": 45599,
+    "directory_count": 5268,
+    "scan_duration_seconds": 5.41,
+    "scan_status": "complete",
+    "access_error_count": 0
+  },
+  "reclaim": {
+    "bytes_vs_preflight_baseline": 62753394162,
+    "gb_vs_preflight_baseline": 58.444,
+    "preflight_baseline_bytes": 63043419766,
+    "post_apply_bytes": 290025604
+  },
+  "verify": {
+    "command": "npm cache verify",
+    "exit_code": 0,
+    "content_verified_bytes": 0,
+    "index_entries": 0
+  },
   "issue_3999_estimate_gb": 58.714,
   "estimate_vs_live_delta_gb": 0.0,
   "dry_run": {
@@ -28,7 +58,7 @@
     "expected_reclaim_gb": 58.714,
     "risk": "low",
     "classification": "REGENERABLE",
-    "apply_executed": false
+    "apply_executed": true
   },
   "recovery": {
     "methods": [
@@ -38,11 +68,17 @@
     ],
     "no_impact_on": ["git repos", "node_modules", "lockfiles", "source code"]
   },
+  "protected_paths_verified": {
+    "D:\\Dev\\Tools\\npm": true,
+    "D:\\Dev\\AI": true,
+    "D:\\Dev\\Backups": true,
+    "D:\\Dev\\Workspaces\\Repos": true
+  },
   "excluded_paths": [
     "D:\\Dev\\Tools\\npm",
     "D:\\Dev\\AI",
     "D:\\Dev\\Backups",
     "D:\\Dev\\Workspaces\\Repos"
   ],
-  "redaction_note": "Raw preflight under artifacts/local-dev-hygiene/npm-cache-cleanup/ is gitignored."
+  "redaction_note": "Raw artifacts under artifacts/local-dev-hygiene/npm-cache-cleanup/ are gitignored."
 }
