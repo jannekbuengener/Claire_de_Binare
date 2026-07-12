@@ -1,0 +1,406 @@
+{
+  "schema_version": "local_dev_hygiene_post_cleanup_rescan.v1",
+  "parent_issue": "#3999",
+  "npm_cleanup_issue": "#4001",
+  "npm_cleanup_pr": "#4002",
+  "npm_cleanup_merge_sha": "7ebbcdc7",
+  "scan_as_of_utc": "2026-07-12T19:48:38.1614490Z",
+  "generated_at_utc": "2026-07-12T19:53:38.779314+00:00",
+  "raw_inventory_path": "artifacts/local-dev-hygiene/post-cleanup-rescan-2026-07-12/workspace_inventory.json",
+  "aggregate": {
+    "scan_as_of_utc": "2026-07-12T19:48:38.1614490Z",
+    "total_size_bytes": 23401358960,
+    "total_size_gb": 21.79,
+    "total_files": 194058,
+    "total_directories": 33297,
+    "completeness": "partial"
+  },
+  "baseline_comparison": {
+    "screenshot_baseline": {
+      "total_size_gb": 134.27,
+      "files": 414174,
+      "directories": 71093
+    },
+    "pre_cleanup_scan": {
+      "scan_as_of_utc": "2026-07-12T18:10:49.1235222Z",
+      "total_size_gb": 120.06,
+      "total_files": 207113,
+      "total_directories": 45542,
+      "completeness": "partial"
+    },
+    "post_cleanup_scan": {
+      "total_size_gb": 21.79,
+      "total_files": 194058,
+      "total_directories": 33297,
+      "completeness": "partial"
+    },
+    "delta_screenshot_to_post": {
+      "size_gb": 112.48,
+      "files": 220116,
+      "directories": 37796,
+      "notes": "Screenshot vs logical scan; Explorer vs byte totals may differ."
+    },
+    "delta_pre_cleanup_to_post": {
+      "size_bytes": 105512084429,
+      "size_gb_measured": 98.27,
+      "files": 13055,
+      "directories": 12245
+    }
+  },
+  "verification": {
+    "npm_cache": {
+      "path": "D:\\Dev\\Tools\\npm-cache",
+      "present": true,
+      "measured_bytes": 290025160,
+      "measured_gb": 0.27,
+      "baseline_after_bytes_4001": 290025604,
+      "matches_4001_baseline": true,
+      "notes": "Skeleton cache only; no npm commands executed during rescan."
+    },
+    "ollama": {
+      "path": "D:\\Dev\\AI\\Ollama",
+      "path_exists": false,
+      "ollama_models_pattern_hits": 0,
+      "manual_removal_confirmed_by_scan": true,
+      "notes": "No Ollama system install or registry checked; filesystem path/pattern only."
+    },
+    "manual_empty_dirs_removed": {
+      "verified_by_scan": false,
+      "notes": "Caller-reported; not independently verifiable without pre/post directory inventory."
+    }
+  },
+  "roots": [
+    {
+      "root": "D:\\Dev\\AI",
+      "scan_status": "partial",
+      "completeness": "partial",
+      "size_gb": 0.39,
+      "size_bytes": 423067554,
+      "file_count": 4517,
+      "directory_count": 314,
+      "scan_duration_seconds": 4.7,
+      "skipped_reparse_points_count": 0,
+      "access_error_count": 3,
+      "limitations": [
+        "Access or path-length errors encountered."
+      ],
+      "top_directories": [
+        {
+          "path": "D:\\Dev\\AI\\Claude",
+          "size_gb": 0.388
+        },
+        {
+          "path": "D:\\Dev\\AI\\OpenAI",
+          "size_gb": 0.006
+        },
+        {
+          "path": "D:\\Dev\\AI\\AgentMemory",
+          "size_gb": 0.0
+        }
+      ],
+      "pattern_groups": [],
+      "pre_cleanup_size_gb": 40.22,
+      "delta_gb_vs_pre_cleanup": 39.83
+    },
+    {
+      "root": "D:\\Dev\\Backups",
+      "scan_status": "partial",
+      "completeness": "partial",
+      "size_gb": 8.02,
+      "size_bytes": 8613600694,
+      "file_count": 83095,
+      "directory_count": 12553,
+      "scan_duration_seconds": 78.24,
+      "skipped_reparse_points_count": 0,
+      "access_error_count": 50,
+      "limitations": [
+        "Access or path-length errors encountered."
+      ],
+      "top_directories": [
+        {
+          "path": "D:\\Dev\\Backups\\extensions",
+          "size_gb": 7.913
+        },
+        {
+          "path": "D:\\Dev\\Backups\\docker_reinstall_20251231_075507",
+          "size_gb": 0.109
+        },
+        {
+          "path": "D:\\Dev\\Backups\\Claude",
+          "size_gb": 0.0
+        }
+      ],
+      "pattern_groups": [],
+      "pre_cleanup_size_gb": 8.02,
+      "delta_gb_vs_pre_cleanup": 0.0
+    },
+    {
+      "root": "D:\\Dev\\Workspaces\\Repos",
+      "scan_status": "partial",
+      "completeness": "partial",
+      "size_gb": 7.4,
+      "size_bytes": 7944458979,
+      "file_count": 38787,
+      "directory_count": 8614,
+      "scan_duration_seconds": 72.7,
+      "skipped_reparse_points_count": 20,
+      "access_error_count": 50,
+      "limitations": [
+        "Access or path-length errors encountered.",
+        "Reparse points recorded but not traversed."
+      ],
+      "top_directories": [
+        {
+          "path": "D:\\Dev\\Workspaces\\Repos\\Claire_de_Binare",
+          "size_gb": 6.556
+        },
+        {
+          "path": "D:\\Dev\\Workspaces\\Repos\\sample-brain",
+          "size_gb": 0.129
+        },
+        {
+          "path": "D:\\Dev\\Workspaces\\Repos\\Claire_de_Binare-wt-diag-telemetry-preflight",
+          "size_gb": 0.103
+        },
+        {
+          "path": "D:\\Dev\\Workspaces\\Repos\\Claire_de_Binare-p1-telemetry",
+          "size_gb": 0.103
+        },
+        {
+          "path": "D:\\Dev\\Workspaces\\Repos\\Claire_de_Binare__arvp-3912-closeout",
+          "size_gb": 0.103
+        },
+        {
+          "path": "D:\\Dev\\Workspaces\\Repos\\Claire_de_Binare__feat-arvp-p15-campaign-id-compose-contract",
+          "size_gb": 0.103
+        },
+        {
+          "path": "D:\\Dev\\Workspaces\\Repos\\Claire_de_Binare__arvp-3912-telemetry",
+          "size_gb": 0.103
+        },
+        {
+          "path": "D:\\Dev\\Workspaces\\Repos\\Everlast-AI",
+          "size_gb": 0.066
+        },
+        {
+          "path": "D:\\Dev\\Workspaces\\Repos\\Claire_de_Binare_codex_slice6",
+          "size_gb": 0.039
+        },
+        {
+          "path": "D:\\Dev\\Workspaces\\Repos\\Claire_de_Binare_codex_slice5",
+          "size_gb": 0.039
+        }
+      ],
+      "pattern_groups": [],
+      "pre_cleanup_size_gb": 7.4,
+      "delta_gb_vs_pre_cleanup": 0.0
+    },
+    {
+      "root": "D:\\Dev\\Tools",
+      "scan_status": "partial",
+      "completeness": "partial",
+      "size_gb": 5.98,
+      "size_bytes": 6420231733,
+      "file_count": 67659,
+      "directory_count": 11816,
+      "scan_duration_seconds": 76.93,
+      "skipped_reparse_points_count": 0,
+      "access_error_count": 27,
+      "limitations": [
+        "Access or path-length errors encountered."
+      ],
+      "top_directories": [
+        {
+          "path": "D:\\Dev\\Tools\\PowerShell",
+          "size_gb": 2.966
+        },
+        {
+          "path": "D:\\Dev\\Tools\\GitHub",
+          "size_gb": 2.4
+        },
+        {
+          "path": "D:\\Dev\\Tools\\npm-cache",
+          "size_gb": 0.27
+        },
+        {
+          "path": "D:\\Dev\\Tools\\trivy",
+          "size_gb": 0.16
+        },
+        {
+          "path": "D:\\Dev\\Tools\\Node",
+          "size_gb": 0.086
+        },
+        {
+          "path": "D:\\Dev\\Tools\\Terminal.Pre",
+          "size_gb": 0.031
+        },
+        {
+          "path": "D:\\Dev\\Tools\\npm",
+          "size_gb": 0.021
+        },
+        {
+          "path": "D:\\Dev\\Tools\\curl",
+          "size_gb": 0.019
+        },
+        {
+          "path": "D:\\Dev\\Tools\\Rye",
+          "size_gb": 0.013
+        },
+        {
+          "path": "D:\\Dev\\Tools\\bat",
+          "size_gb": 0.007
+        }
+      ],
+      "pattern_groups": [
+        {
+          "pattern_id": "npm_cache",
+          "hit_count": 1,
+          "file_count": 45600,
+          "directory_count": 5269,
+          "size_bytes": 290025160,
+          "size_gb": 0.27
+        }
+      ],
+      "pre_cleanup_size_gb": 64.42,
+      "delta_gb_vs_pre_cleanup": 58.44
+    }
+  ],
+  "git_repository_count": 21,
+  "git_repositories": [
+    {
+      "path": "D:\\Dev\\Workspaces\\Repos\\Claire_de_Binare",
+      "head_commit": "7ebbcdc757ad",
+      "remote_url": "https://github.com/jannekbuengener/Claire_de_Binare.git",
+      "is_clean": false
+    },
+    {
+      "path": "D:\\Dev\\Workspaces\\Repos\\Claire_de_Binare-p1-telemetry",
+      "head_commit": "aa2c229bdcce",
+      "remote_url": "https://github.com/jannekbuengener/Claire_de_Binare.git",
+      "is_clean": false
+    },
+    {
+      "path": "D:\\Dev\\Workspaces\\Repos\\Claire_de_Binare-wt-diag-telemetry-preflight",
+      "head_commit": "496c448638e1",
+      "remote_url": "https://github.com/jannekbuengener/Claire_de_Binare.git",
+      "is_clean": false
+    },
+    {
+      "path": "D:\\Dev\\Workspaces\\Repos\\Claire_de_Binare_codex_slice5",
+      "head_commit": "f7d0f9a88e6b",
+      "remote_url": "https://github.com/jannekbuengener/Claire_de_Binare.git",
+      "is_clean": true
+    },
+    {
+      "path": "D:\\Dev\\Workspaces\\Repos\\Claire_de_Binare_codex_slice6",
+      "head_commit": "cf73ed82e319",
+      "remote_url": "https://github.com/jannekbuengener/Claire_de_Binare.git",
+      "is_clean": true
+    },
+    {
+      "path": "D:\\Dev\\Workspaces\\Repos\\Claire_de_Binare__arvp-3912-closeout",
+      "head_commit": "0b6b5b55ab3c",
+      "remote_url": "https://github.com/jannekbuengener/Claire_de_Binare.git",
+      "is_clean": false
+    },
+    {
+      "path": "D:\\Dev\\Workspaces\\Repos\\Claire_de_Binare__arvp-3912-telemetry",
+      "head_commit": "d0cb727f3b0f",
+      "remote_url": "https://github.com/jannekbuengener/Claire_de_Binare.git",
+      "is_clean": true
+    },
+    {
+      "path": "D:\\Dev\\Workspaces\\Repos\\Claire_de_Binare__feat-arvp-p15-campaign-id-compose-contract",
+      "head_commit": "08a8b7500853",
+      "remote_url": "https://github.com/jannekbuengener/Claire_de_Binare.git",
+      "is_clean": false
+    },
+    {
+      "path": "D:\\Dev\\Workspaces\\Repos\\Clipboard-Brudi",
+      "head_commit": "7be7c989a516",
+      "remote_url": "https://github.com/jannekbuengener/Clipboard-Brudi.git",
+      "is_clean": false
+    },
+    {
+      "path": "D:\\Dev\\Workspaces\\Repos\\Everlast-AI",
+      "head_commit": "76f01cb4eea3",
+      "remote_url": "https://github.com/jannekbuengener/Everlast-AI.git",
+      "is_clean": false
+    },
+    {
+      "path": "D:\\Dev\\Workspaces\\Repos\\lazy-boy",
+      "head_commit": "ad70b277ac0f",
+      "remote_url": "git@github.com:jannekbuengener/lazy-boy.git",
+      "is_clean": false
+    },
+    {
+      "path": "D:\\Dev\\Workspaces\\Repos\\modusmono-blog",
+      "head_commit": "af8cad63292c",
+      "remote_url": "git@github.com:jannekbuengener/modusmono-blog.git",
+      "is_clean": false
+    },
+    {
+      "path": "D:\\Dev\\Workspaces\\Repos\\sample-brain",
+      "head_commit": "5aa7e255c38c",
+      "remote_url": "https://github.com/jannekbuengener/sample-brain.git",
+      "is_clean": true
+    },
+    {
+      "path": "D:\\Dev\\Workspaces\\Repos\\TraumTaenzer",
+      "head_commit": "8aa43b2d0622",
+      "remote_url": "https://github.com/jannekbuengener/TraumTaenzer.git",
+      "is_clean": false
+    },
+    {
+      "path": "D:\\Dev\\Workspaces\\Repos\\TraumTaenzer-issue69",
+      "head_commit": "937e5de1f346",
+      "remote_url": "https://github.com/jannekbuengener/TraumTaenzer.git",
+      "is_clean": true
+    },
+    {
+      "path": "D:\\Dev\\Workspaces\\Repos\\TraumTaenzer_issue58",
+      "head_commit": "c2ad9ec143e0",
+      "remote_url": "https://github.com/jannekbuengener/TraumTaenzer.git",
+      "is_clean": true
+    },
+    {
+      "path": "D:\\Dev\\Workspaces\\Repos\\TraumTaenzer_issue60_next",
+      "head_commit": "08efaa818da6",
+      "remote_url": "https://github.com/jannekbuengener/TraumTaenzer.git",
+      "is_clean": true
+    },
+    {
+      "path": "D:\\Dev\\Workspaces\\Repos\\TraumTaenzer_recut_workdir_contract",
+      "head_commit": "3107f28ce82f",
+      "remote_url": "https://github.com/jannekbuengener/TraumTaenzer.git",
+      "is_clean": true
+    },
+    {
+      "path": "D:\\Dev\\Workspaces\\Repos\\TraumTaenzer_reslice_docs",
+      "head_commit": "0e9006efb161",
+      "remote_url": "https://github.com/jannekbuengener/TraumTaenzer.git",
+      "is_clean": true
+    },
+    {
+      "path": "D:\\Dev\\Workspaces\\Repos\\TraumTaenzer_reslice_foundation",
+      "head_commit": "86f273d53aa7",
+      "remote_url": "https://github.com/jannekbuengener/TraumTaenzer.git",
+      "is_clean": true
+    },
+    {
+      "path": "D:\\Dev\\Workspaces\\Repos\\TraumTaenzer_reslice_runtime",
+      "head_commit": "7b98958386bd",
+      "remote_url": "https://github.com/jannekbuengener/TraumTaenzer.git",
+      "is_clean": true
+    }
+  ],
+  "worktree_count": 21,
+  "worktrees_protected": true,
+  "limitations": [
+    "Partial scan completeness on all four roots (access errors and/or reparse skips).",
+    "Pre-cleanup byte total derived from GB aggregate; minor rounding vs exact bytes.",
+    "Ollama system uninstall not verified; only D:\\Dev\\AI\\Ollama path absence.",
+    "No further cleanup recommendations in this slice."
+  ],
+  "redaction_note": "Aggregated metadata only; no secret paths, full file lists, or file contents."
+}
