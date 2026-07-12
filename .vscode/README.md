@@ -24,7 +24,7 @@ Keine Autorität für Governance-, Stage- oder LR-Entscheidungen.
 
 Bei `/onboarding`-Intent: `python -m tools.onboarding_orchestrator`
 
-Siehe auch: [`AGENTS.md`](AGENTS.md), [`docs/onboarding/AGENT_ROOT_SURFACE_MATRIX.md`](docs/onboarding/AGENT_ROOT_SURFACE_MATRIX.md)
+Siehe auch: [`AGENTS.md`](../AGENTS.md), [`docs/onboarding/AGENT_ROOT_SURFACE_MATRIX.md`](../docs/onboarding/AGENT_ROOT_SURFACE_MATRIX.md)
 
 ## Safety Boundaries
 

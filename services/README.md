@@ -34,4 +34,10 @@ docker compose -f infrastructure/compose/compose.blue.yml up -d
 docker compose -f infrastructure/compose/compose.red.yml up -d
 ```
 
-See `infrastructure/compose/README.md` and linked service READMEs above.
+## Navigation
+
+- [Projektübersicht](../README.md)
+- [Dokumentationsindex](../docs/index.md)
+- [Service-Index](../services/README.md)
+
+See [`infrastructure/compose/README.md`](../infrastructure/compose/README.md) and linked service READMEs above.

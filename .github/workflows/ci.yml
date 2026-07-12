@@ -86,3 +86,6 @@ jobs:
 
       - name: Onboarding Docs Guard
         run: python -m tools.validate_onboarding_docs
+
+      - name: README Links Guard
+        run: python -m tools.validate_readme_links
