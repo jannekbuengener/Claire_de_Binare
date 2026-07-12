@@ -1,0 +1,198 @@
+{
+  "schema_version": "local_dev_hygiene_config.v1",
+  "issue": "#3999",
+  "roots": [
+    "D:\\Dev\\AI",
+    "D:\\Dev\\Backups",
+    "D:\\Dev\\Workspaces\\Repos",
+    "D:\\Dev\\Tools"
+  ],
+  "repos_scan_root": "D:\\Dev\\Workspaces\\Repos",
+  "screenshot_baseline": {
+    "total_size_gb": 134.27,
+    "total_files": 414174,
+    "total_directories": 71093,
+    "per_root_gb": {
+      "D:\\Dev\\AI": 40.2,
+      "D:\\Dev\\Backups": 9.27,
+      "D:\\Dev\\Workspaces\\Repos": 18.4,
+      "D:\\Dev\\Tools": 66.4
+    },
+    "tolerance": {
+      "size_gb_pct": 10.0,
+      "file_count_pct": 5.0,
+      "directory_count_pct": 5.0,
+      "notes": "Logical size vs Explorer may differ; compare using byte totals with documented tolerance."
+    }
+  },
+  "scan_limits": {
+    "top_directories_per_root": 25,
+    "large_file_threshold_bytes": 524288000,
+    "large_files_max_entries": 40,
+    "skipped_reparse_points_max_samples": 30,
+    "access_errors_max_samples": 50,
+    "max_path_length": 260
+  },
+  "pattern_catalog": [
+    {
+      "id": "venv",
+      "match_type": "directory_name",
+      "pattern": ".venv",
+      "aggregate": true
+    },
+    {
+      "id": "node_modules",
+      "match_type": "directory_name",
+      "pattern": "node_modules",
+      "aggregate": true
+    },
+    {
+      "id": "pycache",
+      "match_type": "directory_name",
+      "pattern": "__pycache__",
+      "aggregate": true
+    },
+    {
+      "id": "logs",
+      "match_type": "file_extension",
+      "pattern": ".log",
+      "aggregate": true
+    },
+    {
+      "id": "npm_cache",
+      "match_type": "path_suffix",
+      "pattern": "Tools\\npm-cache",
+      "aggregate": true
+    },
+    {
+      "id": "ollama_models",
+      "match_type": "path_suffix",
+      "pattern": "AI\\Ollama\\models",
+      "aggregate": true
+    },
+    {
+      "id": "governance_work",
+      "match_type": "directory_glob",
+      "pattern": "governance_*_work",
+      "aggregate": true
+    },
+    {
+      "id": "temp_dirs",
+      "match_type": "directory_name",
+      "pattern": "temp",
+      "aggregate": true
+    },
+    {
+      "id": "tmp_dirs",
+      "match_type": "directory_name",
+      "pattern": "tmp",
+      "aggregate": true
+    }
+  ],
+  "secret_path_patterns": [
+    ".env",
+    ".secrets",
+    "api_key",
+    "api_secret",
+    "password",
+    "token",
+    "credential",
+    "mcp.json"
+  ],
+  "classification_rules": [
+    {
+      "rule_id": "protected_worktree",
+      "classification": "PROTECTED",
+      "confidence": "high",
+      "match": "is_worktree",
+      "reason": "Registered git worktree; never automated cleanup."
+    },
+    {
+      "rule_id": "protected_git_metadata",
+      "classification": "PROTECTED",
+      "confidence": "high",
+      "match": "path_contains",
+      "pattern": "\\.git",
+      "reason": "Git metadata must remain intact."
+    },
+    {
+      "rule_id": "keep_provenance_governance",
+      "classification": "KEEP_PROVENANCE",
+      "confidence": "high",
+      "match": "pattern_id",
+      "pattern_id": "governance_work",
+      "reason": "Historical governance provenance surface (#1332)."
+    },
+    {
+      "rule_id": "regenerable_npm_cache",
+      "classification": "REGENERABLE",
+      "confidence": "high",
+      "match": "pattern_id",
+      "pattern_id": "npm_cache",
+      "recovery_method": "npm cache clean / reinstall",
+      "risk": "low",
+      "required_approval": "human_go_regenerable"
+    },
+    {
+      "rule_id": "regenerable_venv",
+      "classification": "REGENERABLE",
+      "confidence": "high",
+      "match": "pattern_id",
+      "pattern_id": "venv",
+      "recovery_method": "python -m venv + pip install -r requirements",
+      "risk": "low",
+      "required_approval": "human_go_regenerable"
+    },
+    {
+      "rule_id": "regenerable_node_modules",
+      "classification": "REGENERABLE",
+      "confidence": "high",
+      "match": "pattern_id",
+      "pattern_id": "node_modules",
+      "recovery_method": "package manager reinstall from lockfile",
+      "risk": "low",
+      "required_approval": "human_go_regenerable"
+    },
+    {
+      "rule_id": "archive_ollama",
+      "classification": "ARCHIVE_MOVE",
+      "confidence": "medium",
+      "match": "pattern_id",
+      "pattern_id": "ollama_models",
+      "recovery_method": "ollama pull after archive restore",
+      "risk": "medium",
+      "required_approval": "human_go_archive"
+    },
+    {
+      "rule_id": "quarantine_logs",
+      "classification": "QUARANTINE_REVIEW",
+      "confidence": "medium",
+      "match": "pattern_id",
+      "pattern_id": "logs",
+      "reason": "Logs may contain evidence; review before delete.",
+      "required_approval": "human_go_quarantine"
+    },
+    {
+      "rule_id": "delete_candidate_temp",
+      "classification": "DELETE_CANDIDATE",
+      "confidence": "medium",
+      "match": "pattern_id",
+      "pattern_id": "temp_dirs",
+      "recovery_method": "regenerate from tooling",
+      "risk": "medium",
+      "required_approval": "human_go_delete"
+    }
+  ],
+  "deduplicate_evidence_requirements": [
+    "identical_git_remote_and_commit",
+    "clean_worktree_no_unique_changes",
+    "bounded_hash_match"
+  ],
+  "raw_output_dir": "artifacts/local-dev-hygiene",
+  "published_evidence_dir": "docs/evidence/local_dev_hygiene",
+  "age_bucket_days": {
+    "lt_30": 30,
+    "d30_90": 90,
+    "d90_180": 180
+  }
+}

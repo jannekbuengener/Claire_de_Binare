@@ -229,6 +229,9 @@ infrastructure/config/surrealdb/context_query.local.yaml
 # Local-only ops helper artifact (do not version)
 scripts/cdb_ops.ps1
 
+# Local D:\Dev hygiene raw scan outputs (#3999) — redacted summary only in docs/evidence/
+artifacts/local-dev-hygiene/
+
 # Decision Contract audit records (generated at runtime + by tests)
 reports/decision_contract/
 
