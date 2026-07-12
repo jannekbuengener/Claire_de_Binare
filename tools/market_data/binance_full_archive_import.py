@@ -246,9 +246,6 @@ def import_range(
     manifest["coverage"] = coverage
     manifest["finished_at_utc"] = utc_now_iso()
 
-    strict_months = [
-        r for r in records if r.quality_verdict == "STRICT_COMPLETE"
-    ]
     regime_plausibility = None
     if plausibility_sample:
         regime_plausibility = analyze_regime_plausibility(plausibility_sample)
