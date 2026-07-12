@@ -381,7 +381,7 @@ def _append_plausibility_sample(
     month: str,
     max_size: int,
     *,
-    per_month: int = 500,
+    per_month: int = 100,
 ) -> None:
     if len(sample) >= max_size:
         return
@@ -433,9 +433,23 @@ def _load_cached_month_record(
         duplicates=quality.get("duplicates", {}),
     )
     if record.local_normalized_path and Path(record.local_normalized_path).exists():
-        record.normalized_hash = hash_jsonl_file(Path(record.local_normalized_path))
+        spec_path = norm / "dataset_spec.json"
+        if spec_path.exists():
+            spec = json.loads(spec_path.read_text(encoding="utf-8"))
+            fp = spec.get("fingerprint") or spec.get("candles_sha256")
+            if isinstance(fp, str):
+                record.normalized_hash = fp
+        if not record.normalized_hash:
+            record.normalized_hash = hash_jsonl_file(Path(record.local_normalized_path))
     if record.local_enriched_path and Path(record.local_enriched_path).exists():
-        record.enriched_hash = hash_jsonl_file(Path(record.local_enriched_path))
+        espec = _enriched_dir(repo_root, month) / "dataset_spec.json"
+        if espec.exists():
+            spec = json.loads(espec.read_text(encoding="utf-8"))
+            fp = spec.get("fingerprint") or spec.get("candles_sha256")
+            if isinstance(fp, str):
+                record.enriched_hash = fp
+        if not record.enriched_hash:
+            record.enriched_hash = hash_jsonl_file(Path(record.local_enriched_path))
     if zip_files:
         record.raw_file_hash = sha256_file(zip_files[0])
     return record
@@ -710,6 +724,46 @@ def build_coverage_report(
     }
 
 
+def run_import_by_year(
+    *,
+    repo_root: Path = REPO_ROOT,
+    start_year: int | None = None,
+    end_year: int | None = None,
+) -> dict[str, Any]:
+    """Run one subprocess per year to avoid long-run memory fragmentation."""
+    available = list_available_months()
+    start = start_year or int(available[0].split("-")[0])
+    end = end_year or int(last_complete_month(available=available).split("-")[0])
+    results: list[dict[str, Any]] = []
+    for year in range(start, end + 1):
+        year_months = [m for m in available if m.startswith(f"{year}-")]
+        if not year_months:
+            continue
+        cmd = [
+            sys.executable,
+            "-m",
+            "tools.market_data.binance_full_archive_import",
+            "--start-month",
+            year_months[0],
+            "--end-month",
+            year_months[-1],
+            "--no-subprocess",
+        ]
+        completed = subprocess.run(
+            cmd, cwd=str(repo_root), capture_output=True, text=True, check=False
+        )
+        results.append(
+            {
+                "year": year,
+                "exit_code": completed.returncode,
+                "stderr_tail": completed.stderr[-2000:],
+            }
+        )
+        if completed.returncode == 3:
+            break
+    return import_range(repo_root=repo_root)
+
+
 def run_smoke_replays(
     *,
     repo_root: Path = REPO_ROOT,
@@ -757,6 +811,8 @@ def main() -> int:
     parser.add_argument("--no-regime", action="store_true")
     parser.add_argument("--smoke-replay", action="store_true")
     parser.add_argument("--smoke-month", default="2026-06")
+    parser.add_argument("--no-subprocess", action="store_true")
+    parser.add_argument("--by-year", action="store_true")
     args = parser.parse_args()
 
     try:
@@ -778,6 +834,11 @@ def main() -> int:
             result = run_smoke_replays(month=args.smoke_month)
             print(json.dumps(result, indent=2))
             return 0 if result["status"] == "PASS" else 2
+
+        if args.by_year:
+            manifest = run_import_by_year()
+            print(json.dumps(manifest, indent=2))
+            return 0 if manifest.get("import_status") == "FULL_IMPORT_PASS" else 2
 
         manifest = import_range(
             start_month=args.start_month,
