@@ -45,7 +45,7 @@ Scope: Docs-only navigation, snapshot freshness, cross-hub links
 | D5 | `tests/`, `tools/`, `knowledge/` READMEs lacked root/docs index return path | Navigation blocks added where parent path missing | **fixed** (runbooks already had `../index.md`) |
 | D6 | No link guard for non-README canon surfaces | `explicit_active_surfaces` in readme policy + engine extension | **fixed** |
 | D7 | `CONTROL_REGISTER.md` plain issue/path refs | Linked issues + SSOT paths | **fixed** |
-| D8 | `CDB_KNOWLEDGE_HUB` snapshot read as quasi-current | Historical banner strengthened; GitLab CI marked historical | **fixed** |
+| D8 | `CDB_KNOWLEDGE_HUB` snapshot read as quasi-current | Historical banner on hub file blocked by Docs Hub Guard secret-pattern false positives on legacy handoff lines; **historical marking moved to `knowledge/README.md` entry** | **fixed (via knowledge/README)** |
 | D9 | Skill-pack catalog inline paths | Documented exception (#3994); no primary nav breakage found | **unchanged (exception)** |
 | D10 | #4012 architecture map drift | Out of scope | **deferred → #4012** |
 

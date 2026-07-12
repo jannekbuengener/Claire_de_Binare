@@ -19,28 +19,25 @@ Status: Canonical (non-governance)
 
 ---
 
-## EXECUTIVE SNAPSHOT (historical — read-only)
-
-**Status Class:** Historical knowledge snapshot (2025-12-15)
-**Not current repo/engineering or live-readiness truth.** See [`CURRENT_STATUS.md`](../CURRENT_STATUS.md) and [`docs/live-readiness/LR-AUDIT-STATUS-2026-03-05.md`](../docs/live-readiness/LR-AUDIT-STATUS-2026-03-05.md).
+## EXECUTIVE SNAPSHOT (read-only)
 
 Stand: 2025-12-15  
-Gültig bis: explizites Update (Block bleibt historischer Anker)
+Gültig bis: explizites Update
 
 **Projekt:** Claire de Binare (CDB)  
-**Systemstatus (historisch):** stabile Infrastruktur-Baseline erreicht
+**Systemstatus:** stabile Infrastruktur-Baseline erreicht
 
-### Kernergebnisse (historischer Kontext — nicht live spiegeln)
+### Kernergebnisse
 - Das Working Repo traegt den aktiven lokalen Dokumentations-Canon
 - Agenten-, Governance- und Knowledge-Pfade sind lokal aufloesbar
 - PR-Block 01–06 vollständig umgesetzt und gepusht
-- GitLab CI aktiv (CI-Guard, Write-Zone-Checks) — **historisch**; aktueller CI-Canon: GitHub Actions (siehe [`CURRENT_STATUS.md`](../CURRENT_STATUS.md))
+- GitLab CI aktiv (CI-Guard, Write-Zone-Checks)
 - Unit-Test-Baseline vorhanden
 - Modulare Compose-Architektur (base / dev / prod)
 - Determinismus-Hooks für Replay vorbereitet
 
 > Dieser Snapshot ist **kein Live-Status**.  
-> Metriken und Toolchain-Hinweise hier sind **historisch** und duerfen nicht gegen `CURRENT_STATUS.md` oder GitHub-live gemergte PRs gelesen werden.
+> Er ist ein komprimierter Zustandsanker für neue Sessions und Agenten.
 
 ---
 
