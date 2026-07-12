@@ -23,5 +23,17 @@ classification_rules:
       - artifacts/
       - reports/p5_canary/
 
+# Non-README canon entry points — same offline link rules as active READMEs (#3995).
+# Discovery is explicit (not git ls-files); paths must stay tracked in git.
+explicit_active_surfaces:
+  description: >-
+    Tier-A navigation/status surfaces outside README.md trees; validated by the
+    same engine as active READMEs (tools/validate_readme_links.py).
+  paths:
+    - CURRENT_STATUS.md
+    - docs/runbooks/CONTROL_REGISTER.md
+    - docs/meta/WORKING_REPO_CANON.md
+    - knowledge/CDB_KNOWLEDGE_HUB.md
+
 # Explicit per-path overrides (use sparingly).
 documented_exceptions: []
