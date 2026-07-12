@@ -14,7 +14,7 @@ import sys
 from dataclasses import asdict, dataclass
 from datetime import UTC, datetime
 from pathlib import Path
-from typing import Any, Sequence
+from typing import Any, Mapping, Sequence
 
 import yaml
 
@@ -89,6 +89,35 @@ def strict_complete_months(manifest: dict[str, Any]) -> list[str]:
     return sorted(months)
 
 
+def resolve_build_months(repo_root: Path = IMPORT_REPO) -> list[str]:
+    """Months usable for window-bank builds (STRICT_COMPLETE; disk fallback if manifest partial)."""
+    manifest = load_import_manifest(repo_root)
+    by_month = {str(entry["month"]): entry for entry in manifest.get("months") or []}
+    enriched_base = (
+        repo_root / "artifacts" / "market_data" / "enriched" / "binance" / "spot" / "BTCUSDT" / "1m"
+    )
+    months: list[str] = []
+    if enriched_base.is_dir():
+        for month_dir in sorted(enriched_base.iterdir()):
+            if not month_dir.is_dir():
+                continue
+            month = month_dir.name
+            if not (month_dir / "candles.jsonl").exists():
+                continue
+            entry = by_month.get(month)
+            if entry is not None:
+                verdict = str(entry.get("quality_verdict", ""))
+                if verdict in EXCLUDED_VERDICTS or verdict == "PARTIAL_USABLE":
+                    continue
+                if verdict == "STRICT_COMPLETE":
+                    months.append(month)
+            else:
+                months.append(month)
+    if months:
+        return months
+    return strict_complete_months(manifest)
+
+
 def _load_month_candles(repo_root: Path, month: str, *, enriched: bool = True) -> list[dict[str, Any]]:
     base = _enriched_dir(repo_root, month) if enriched else _normalized_dir(repo_root, month)
     path = base / "candles.jsonl"
@@ -136,6 +165,270 @@ def _enforce_contiguous_cadence(
             break
         out.append(candle)
     return out
+
+
+def _contiguous_islands(
+    candles: Sequence[dict[str, Any]],
+    *,
+    gap_ms: int = ONE_MINUTE_MS,
+) -> list[list[dict[str, Any]]]:
+    """Split a candle timeline into maximal contiguous 1m islands."""
+    if not candles:
+        return []
+    islands: list[list[dict[str, Any]]] = []
+    current = [candles[0]]
+    for candle in candles[1:]:
+        if int(candle["ts_ms"]) - int(current[-1]["ts_ms"]) != gap_ms:
+            islands.append(current)
+            current = [candle]
+        else:
+            current.append(candle)
+    islands.append(current)
+    return islands
+
+
+def _cadence_gaps(
+    candles: Sequence[dict[str, Any]],
+    *,
+    gap_ms: int = ONE_MINUTE_MS,
+) -> list[dict[str, Any]]:
+    """Return cadence violations as index/prev_ts/cur_ts/delta_ms records."""
+    gaps: list[dict[str, Any]] = []
+    for idx in range(1, len(candles)):
+        prev_ts = int(candles[idx - 1]["ts_ms"])
+        cur_ts = int(candles[idx]["ts_ms"])
+        delta = cur_ts - prev_ts
+        if delta != gap_ms:
+            gaps.append(
+                {
+                    "index": idx,
+                    "prev_ts_ms": prev_ts,
+                    "cur_ts_ms": cur_ts,
+                    "delta_ms": delta,
+                }
+            )
+    return gaps
+
+
+def _validate_stress_window_candles(
+    candles: Sequence[dict[str, Any]],
+    *,
+    window_minutes: int,
+    gap_ms: int = ONE_MINUTE_MS,
+) -> None:
+    """Fail-closed validation before stress replay."""
+    if len(candles) != window_minutes:
+        raise HistoricalProbeError(
+            f"stress window candle_count={len(candles)} expected={window_minutes}"
+        )
+    seen_ts: set[int] = set()
+    for idx, candle in enumerate(candles):
+        ts = int(candle["ts_ms"])
+        if ts in seen_ts:
+            raise HistoricalProbeError(f"duplicate ts_ms at index {idx}: {ts}")
+        seen_ts.add(ts)
+        if idx > 0:
+            prev_ts = int(candles[idx - 1]["ts_ms"])
+            if ts - prev_ts != gap_ms:
+                raise HistoricalProbeError(
+                    f"cadence gap at index {idx}: delta={ts - prev_ts}ms"
+                )
+        regime = candle.get("regime_id")
+        if regime is None:
+            regime = candle.get("regime")
+        if regime is None or str(regime).strip() == "":
+            raise HistoricalProbeError(f"missing regime at index {idx}")
+
+
+def _load_strict_timeline(
+    months: Sequence[str],
+    repo_root: Path,
+) -> tuple[list[dict[str, Any]], dict[int, str]]:
+    """Load STRICT_COMPLETE months in order as one timeline + month lookup."""
+    all_candles: list[dict[str, Any]] = []
+    month_by_ts: dict[int, str] = {}
+    for month in sorted(months):
+        for row in _load_month_candles(repo_root, month):
+            ts = int(row["ts_ms"])
+            all_candles.append(row)
+            month_by_ts[ts] = month
+    return all_candles, month_by_ts
+
+
+def _month_candle_bounds(
+    repo_root: Path,
+    month: str,
+) -> tuple[int, int, int, bool] | None:
+    """Return first_ts, last_ts, count, contiguous for a month without full parse."""
+    candles = _load_month_candles(repo_root, month)
+    if not candles:
+        return None
+    contiguous = _is_contiguous_cadence(candles)
+    return int(candles[0]["ts_ms"]), int(candles[-1]["ts_ms"]), len(candles), contiguous
+
+
+def _cross_month_segments(months: Sequence[str], repo_root: Path) -> list[tuple[str, ...]]:
+    """Group consecutive months whose boundary timestamps are contiguous."""
+    ordered = sorted(months)
+    if not ordered:
+        return []
+    segments: list[list[str]] = [[ordered[0]]]
+    prev_bounds = _month_candle_bounds(repo_root, ordered[0])
+    for month in ordered[1:]:
+        bounds = _month_candle_bounds(repo_root, month)
+        if (
+            prev_bounds is not None
+            and bounds is not None
+            and prev_bounds[3]
+            and bounds[3]
+            and bounds[0] - prev_bounds[1] == ONE_MINUTE_MS
+        ):
+            segments[-1].append(month)
+        else:
+            segments.append([month])
+        prev_bounds = bounds
+    return [tuple(segment) for segment in segments if segment]
+
+
+def _load_segment_candles(
+    repo_root: Path,
+    segment_months: Sequence[str],
+) -> list[dict[str, Any]]:
+    candles: list[dict[str, Any]] = []
+    for month in segment_months:
+        candles.extend(_load_month_candles(repo_root, month))
+    return candles
+
+
+def _update_metric_best(
+    best: dict[str, tuple[float, int, list[dict[str, Any]], tuple[str, ...]]],
+    *,
+    metric_key: str,
+    reverse: bool,
+    islands: Sequence[Sequence[dict[str, Any]]],
+    window_minutes: int,
+    step: int,
+    segment_months: tuple[str, ...],
+) -> None:
+    metric_field = {
+        "max_drawdown": "max_dd",
+        "max_vol": "vol",
+        "min_vol": "vol",
+        "max_uptrend": "trend",
+        "max_downtrend": "trend",
+    }[metric_key]
+    for island in islands:
+        for _metric, _island_idx, _start_idx, chunk in _rank_stress_candidates(
+            [island],
+            metric_key=metric_key,
+            window_minutes=window_minutes,
+            step=step,
+            reverse=reverse,
+        ):
+            try:
+                _validate_stress_window_candles(chunk, window_minutes=window_minutes)
+            except HistoricalProbeError:
+                continue
+            value = _window_metrics(chunk)[metric_field]
+            current = best.get(metric_key)
+            if current is None:
+                best[metric_key] = (value, int(chunk[0]["ts_ms"]), chunk, segment_months)
+                continue
+            cur_val, cur_start, _, _ = current
+            better = value > cur_val if reverse else value < cur_val
+            if better or (value == cur_val and int(chunk[0]["ts_ms"]) < cur_start):
+                best[metric_key] = (value, int(chunk[0]["ts_ms"]), chunk, segment_months)
+
+
+def _window_metrics(chunk: Sequence[dict[str, Any]]) -> dict[str, float]:
+    closes = [float(c["close"]) for c in chunk]
+    rets = [
+        math.log(closes[i] / closes[i - 1])
+        for i in range(1, len(closes))
+        if closes[i - 1] > 0
+    ]
+    vol = (sum(r * r for r in rets) / len(rets)) ** 0.5 if rets else 0.0
+    peak = closes[0]
+    max_dd = 0.0
+    for price in closes:
+        peak = max(peak, price)
+        dd = (peak - price) / peak if peak else 0.0
+        max_dd = max(max_dd, dd)
+    trend = (closes[-1] - closes[0]) / closes[0] if closes[0] else 0.0
+    return {"vol": vol, "max_dd": max_dd, "trend": trend}
+
+
+def _rank_stress_candidates(
+    islands: Sequence[Sequence[dict[str, Any]]],
+    *,
+    metric_key: str,
+    window_minutes: int,
+    step: int,
+    reverse: bool = True,
+) -> list[tuple[float, int, int, list[dict[str, Any]]]]:
+    """Return ranked (metric, island_idx, start_idx, chunk) tuples."""
+    metric_field = {
+        "max_drawdown": "max_dd",
+        "max_vol": "vol",
+        "min_vol": "vol",
+        "max_uptrend": "trend",
+        "max_downtrend": "trend",
+    }[metric_key]
+    candidates: list[tuple[float, int, int, list[dict[str, Any]]]] = []
+    for island_idx, island in enumerate(islands):
+        if len(island) < window_minutes:
+            continue
+        for start_idx in range(0, len(island) - window_minutes + 1, step):
+            chunk = list(island[start_idx : start_idx + window_minutes])
+            if not _is_contiguous_cadence(chunk):
+                continue
+            metric = _window_metrics(chunk)[metric_field]
+            candidates.append((metric, island_idx, start_idx, chunk))
+    if metric_key == "min_vol":
+        candidates.sort(key=lambda item: (item[0], int(item[3][0]["ts_ms"])))
+    elif metric_key == "max_downtrend":
+        candidates.sort(key=lambda item: (item[0], int(item[3][0]["ts_ms"])))
+    else:
+        candidates.sort(key=lambda item: (-item[0], int(item[3][0]["ts_ms"])))
+    if not reverse and metric_key in {"min_vol", "max_downtrend"}:
+        return candidates
+    if reverse and metric_key in {"min_vol", "max_downtrend"}:
+        return list(reversed(candidates))
+    return candidates
+
+
+def _select_stress_chunk(
+    candidates: Sequence[tuple[float, int, int, list[dict[str, Any]]]],
+    *,
+    window_minutes: int,
+    reject_start_ts_ms: int | None = None,
+) -> tuple[list[dict[str, Any]], dict[str, Any]] | None:
+    """Pick first valid candidate, optionally skipping a rejected start timestamp."""
+    for metric, island_idx, start_idx, chunk in candidates:
+        start_ts = int(chunk[0]["ts_ms"])
+        if reject_start_ts_ms is not None and start_ts == reject_start_ts_ms:
+            continue
+        try:
+            _validate_stress_window_candles(chunk, window_minutes=window_minutes)
+        except HistoricalProbeError:
+            continue
+        return chunk, {
+            "metric_value": metric,
+            "island_index": island_idx,
+            "start_index": start_idx,
+            "start_ts_ms": start_ts,
+            "end_ts_ms": int(chunk[-1]["ts_ms"]),
+        }
+    return None
+
+
+STRESS_METRIC_DEFS: tuple[tuple[str, str, bool], ...] = (
+    ("stress_max_drawdown", "max_drawdown", True),
+    ("stress_max_volatility", "max_vol", True),
+    ("stress_min_volatility", "min_vol", False),
+    ("stress_max_uptrend", "max_uptrend", True),
+    ("stress_max_downtrend", "max_downtrend", False),
+)
 
 
 def _write_window_dataset(
@@ -352,84 +645,85 @@ def build_stress_windows(
     repo_root: Path = IMPORT_REPO,
     *,
     window_minutes: int = 7 * 24 * 60,
+    revision_suffix: str = "",
+    reject_windows: Mapping[str, int] | None = None,
+    metrics_filter: Sequence[str] | None = None,
 ) -> list[WindowSpec]:
-    """Data-driven stress windows (deduplicated by fingerprint)."""
-    all_candles: list[dict[str, Any]] = []
-    month_by_ts: dict[int, str] = {}
-    for month in sorted(months):
-        for row in _load_month_candles(repo_root, month):
-            ts = int(row["ts_ms"])
-            all_candles.append(row)
-            month_by_ts[ts] = month
-    if len(all_candles) < window_minutes:
+    """Data-driven stress windows from contiguous 1m islands only."""
+    if len(months) == 0:
         return []
 
-    def _window_metrics(chunk: list[dict[str, Any]]) -> dict[str, float]:
-        closes = [float(c["close"]) for c in chunk]
-        rets = [
-            math.log(closes[i] / closes[i - 1])
-            for i in range(1, len(closes))
-            if closes[i - 1] > 0
-        ]
-        vol = (sum(r * r for r in rets) / len(rets)) ** 0.5 if rets else 0.0
-        peak = closes[0]
-        max_dd = 0.0
-        for price in closes:
-            peak = max(peak, price)
-            dd = (peak - price) / peak if peak else 0.0
-            max_dd = max(max_dd, dd)
-        trend = (closes[-1] - closes[0]) / closes[0] if closes[0] else 0.0
-        return {"vol": vol, "max_dd": max_dd, "trend": trend}
+    step = window_minutes // 4
+    reject = dict(reject_windows or {})
+    best: dict[str, tuple[float, int, list[dict[str, Any]], tuple[str, ...]]] = {}
 
-    best: dict[str, tuple[float, int]] = {
-        "max_drawdown": (0.0, 0),
-        "max_vol": (0.0, 0),
-        "min_vol": (float("inf"), 0),
-        "max_uptrend": (float("-inf"), 0),
-        "max_downtrend": (float("inf"), 0),
-    }
+    for segment in _cross_month_segments(months, repo_root):
+        segment_candles = _load_segment_candles(repo_root, segment)
+        islands = _contiguous_islands(segment_candles)
+        for wid_base, metric_key, reverse in STRESS_METRIC_DEFS:
+            if metrics_filter is not None and wid_base not in metrics_filter:
+                continue
+            _update_metric_best(
+                best,
+                metric_key=metric_key,
+                reverse=reverse,
+                islands=islands,
+                window_minutes=window_minutes,
+                step=step,
+                segment_months=segment,
+            )
 
-    for start_idx in range(0, len(all_candles) - window_minutes, window_minutes // 4):
-        chunk = all_candles[start_idx : start_idx + window_minutes]
-        if not _is_contiguous_cadence(chunk):
-            continue
-        m = _window_metrics(chunk)
-        if m["max_dd"] > best["max_drawdown"][0]:
-            best["max_drawdown"] = (m["max_dd"], start_idx)
-        if m["vol"] > best["max_vol"][0]:
-            best["max_vol"] = (m["vol"], start_idx)
-        if m["vol"] < best["min_vol"][0]:
-            best["min_vol"] = (m["vol"], start_idx)
-        if m["trend"] > best["max_uptrend"][0]:
-            best["max_uptrend"] = (m["trend"], start_idx)
-        if m["trend"] < best["max_downtrend"][0]:
-            best["max_downtrend"] = (m["trend"], start_idx)
-
-    stress_defs = [
-        ("stress_max_drawdown", "max_drawdown"),
-        ("stress_max_volatility", "max_vol"),
-        ("stress_min_volatility", "min_vol"),
-        ("stress_max_uptrend", "max_uptrend"),
-        ("stress_max_downtrend", "max_downtrend"),
-    ]
     windows: list[WindowSpec] = []
     seen_starts: set[int] = set()
-    for wid, key in stress_defs:
-        _, start_idx = best[key]
-        if start_idx in seen_starts:
+
+    for wid_base, metric_key, _reverse in STRESS_METRIC_DEFS:
+        if metrics_filter is not None and wid_base not in metrics_filter:
             continue
-        seen_starts.add(start_idx)
-        chunk = _enforce_contiguous_cadence(
-            all_candles[start_idx : start_idx + window_minutes]
-        )
-        if len(chunk) < window_minutes:
+        entry = best.get(metric_key)
+        if entry is None:
             continue
-        source_months = sorted(
-            {month_by_ts.get(int(c["ts_ms"]), "") for c in chunk} - {""}
-        )
+        _value, start_ts, chunk, _segment = entry
+        if reject.get(wid_base) == start_ts:
+            # pick next-best deterministically within already ranked scan
+            candidates: list[tuple[float, int, list[dict[str, Any]], tuple[str, ...]]] = []
+            for segment in _cross_month_segments(months, repo_root):
+                segment_candles = _load_segment_candles(repo_root, segment)
+                for island in _contiguous_islands(segment_candles):
+                    for metric, _, _, subchunk in _rank_stress_candidates(
+                        [island],
+                        metric_key=metric_key,
+                        window_minutes=window_minutes,
+                        step=step,
+                        reverse=_reverse,
+                    ):
+                        try:
+                            _validate_stress_window_candles(
+                                subchunk, window_minutes=window_minutes
+                            )
+                        except HistoricalProbeError:
+                            continue
+                        candidates.append(
+                            (metric, int(subchunk[0]["ts_ms"]), subchunk, segment)
+                        )
+            candidates = [
+                c for c in candidates if c[1] != reject.get(wid_base, -1)
+            ]
+            if not candidates:
+                continue
+            if metric_key in {"min_vol", "max_downtrend"}:
+                candidates.sort(key=lambda item: (item[0], item[1]))
+            else:
+                candidates.sort(key=lambda item: (-item[0], item[1]))
+            _value, start_ts, chunk, _segment = candidates[0]
+
+        if start_ts in seen_starts:
+            continue
+        seen_starts.add(start_ts)
+        source_months = _source_months_from_chunk(chunk, repo_root, _segment)
+        wid = f"binance_1m_{wid_base}{revision_suffix}"
         windows.append(
             WindowSpec(
-                window_id=f"binance_1m_{wid}",
+                window_id=wid,
                 start_ts_ms=int(chunk[0]["ts_ms"]),
                 end_ts_ms=int(chunk[-1]["ts_ms"]),
                 candle_count=len(chunk),
@@ -445,6 +739,408 @@ def build_stress_windows(
             )
         )
     return windows
+
+
+def _source_months_from_chunk(
+    chunk: Sequence[dict[str, Any]],
+    repo_root: Path,
+    candidate_months: Sequence[str],
+) -> tuple[str, ...]:
+    start = int(chunk[0]["ts_ms"])
+    end = int(chunk[-1]["ts_ms"])
+    selected: list[str] = []
+    for month in sorted(candidate_months):
+        bounds = _month_candle_bounds(repo_root, month)
+        if bounds is None:
+            continue
+        first, last, _, _ = bounds
+        if last < start or first > end:
+            continue
+        selected.append(month)
+    return tuple(selected)
+
+
+def _extract_stress_window_candles(
+    repo_root: Path,
+    source_months: Sequence[str],
+    *,
+    start_ts_ms: int,
+    end_ts_ms: int,
+    window_minutes: int,
+) -> list[dict[str, Any]]:
+    """Extract an exact contiguous stress slice from contiguous source months."""
+    candles: list[dict[str, Any]] = []
+    for month in sorted(source_months):
+        candles.extend(_load_month_candles(repo_root, month))
+    chunk = _slice_candles(candles, start_ts_ms, end_ts_ms)
+    chunk = _enforce_contiguous_cadence(chunk)
+    if len(chunk) < window_minutes:
+        raise HistoricalProbeError(
+            f"stress slice truncated to {len(chunk)} candles (< {window_minutes})"
+        )
+    chunk = chunk[:window_minutes]
+    _validate_stress_window_candles(chunk, window_minutes=window_minutes)
+    return chunk
+
+
+def write_stress_rejection_evidence(
+    repo_root: Path,
+    *,
+    window_id: str,
+    reason: str,
+    start_ts_ms: int,
+    end_ts_ms: int,
+    source_months: Sequence[str],
+    expected_candles: int,
+    actual_candles: int,
+    gaps: Sequence[Mapping[str, Any]],
+) -> Path:
+    """Persist why an original stress window was rejected (no overwrite of candles)."""
+    out_dir = (
+        repo_root
+        / "artifacts"
+        / "market_data"
+        / "window_bank"
+        / "binance"
+        / "spot"
+        / "BTCUSDT"
+        / "1m"
+        / window_id
+    )
+    out_dir.mkdir(parents=True, exist_ok=True)
+    payload = {
+        "schema_version": "stress_window_rejection.v1",
+        "window_id": window_id,
+        "rejected_at_utc": utc_now_iso(),
+        "reason": reason,
+        "start_ts_ms": start_ts_ms,
+        "end_ts_ms": end_ts_ms,
+        "source_months": list(source_months),
+        "expected_candle_count": expected_candles,
+        "actual_candle_count": actual_candles,
+        "cadence_gaps": list(gaps),
+        "issue": "#3990",
+    }
+    path = out_dir / "rejection_evidence.json"
+    write_json(path, payload)
+    return path
+
+
+STRESS_V2_WINDOW_IDS = (
+    "binance_1m_stress_max_drawdown_v2",
+    "binance_1m_stress_max_volatility_v2",
+)
+STRESS_V2_WINDOW_MINUTES = 7 * 24 * 60
+_LEGACY_MARKET_DATA_MARKERS = ("E:/CDB_artifacts", "E:\\CDB_artifacts", "CDB_artifacts")
+
+
+def _assert_no_legacy_market_data_path(path_text: str) -> None:
+    normalized = path_text.replace("\\", "/").upper()
+    for marker in _LEGACY_MARKET_DATA_MARKERS:
+        if marker.replace("\\", "/").upper() in normalized:
+            raise HistoricalProbeError(
+                f"legacy market_data path reference forbidden: {path_text}"
+            )
+
+
+def _resolve_bank_candles_path(repo_root: Path, candles_path: str) -> Path:
+    """Resolve a window-bank candles_path (absolute or repo-relative)."""
+    raw = candles_path.strip()
+    if not raw:
+        return repo_root / "__missing__"
+    path = Path(raw)
+    if path.is_absolute():
+        return path
+    return repo_root / path
+
+
+def _verify_stress_v2_storage_readonly(repo_root: Path, file_path: str) -> str:
+    """Read-only storage checks for on-disk stress v2 windows (POSIX-safe)."""
+    from tools.market_data.market_data_storage_guard import validate_market_data_storage
+
+    _assert_no_legacy_market_data_path(file_path)
+    resolved = Path(file_path)
+    if not resolved.is_absolute():
+        resolved = (repo_root / resolved).resolve()
+    else:
+        resolved = resolved.resolve()
+    try:
+        resolved.relative_to(repo_root.resolve())
+    except ValueError as exc:
+        raise HistoricalProbeError(
+            "stress v2 file_path must live under repo_root"
+        ) from exc
+    storage = validate_market_data_storage(
+        repo_root=repo_root,
+        required_write_bytes=0,
+        expected_repo_volume_label=None,
+    )
+    if storage.allowed:
+        return storage.reason_code
+    if storage.reason_code in {
+        "VOLUME_PROBE_FAILED",
+        "UNKNOWN_VOLUME_ID",
+        "UNKNOWN_FREE_SPACE",
+    }:
+        return "READ_ONLY_VERIFY_SKIPPED"
+    raise HistoricalProbeError(
+        f"market_data storage guard blocked: {storage.reason_code}"
+    )
+
+
+def verify_stress_v2_window(
+    repo_root: Path,
+    window_id: str,
+    *,
+    window_minutes: int = STRESS_V2_WINDOW_MINUTES,
+) -> dict[str, Any]:
+    """Fail-closed validation for an on-disk stress v2 window."""
+    from core.replay.dataset_provider import FileBackedDatasetProvider
+    from core.replay.dataset_spec import DatasetSpec
+
+    window_dir = (
+        repo_root
+        / "artifacts"
+        / "market_data"
+        / "window_bank"
+        / "binance"
+        / "spot"
+        / "BTCUSDT"
+        / "1m"
+        / window_id
+    )
+    spec_path = window_dir / "dataset_spec.json"
+    candles_path = window_dir / "candles.jsonl"
+    if not spec_path.exists() or not candles_path.exists():
+        raise HistoricalProbeError(f"missing stress v2 artifacts for {window_id}")
+
+    spec = json.loads(spec_path.read_text(encoding="utf-8"))
+    file_path = str(spec.get("file_path", ""))
+    storage_reason = _verify_stress_v2_storage_readonly(repo_root, file_path)
+
+    candles = [
+        json.loads(line)
+        for line in candles_path.read_text(encoding="utf-8").splitlines()
+        if line.strip()
+    ]
+    _validate_stress_window_candles(candles, window_minutes=window_minutes)
+
+    start_ts = int(spec["start_ts_ms"])
+    end_ts = int(spec["end_ts_ms"])
+    if int(candles[0]["ts_ms"]) != start_ts or int(candles[-1]["ts_ms"]) != end_ts:
+        raise HistoricalProbeError(
+            f"{window_id}: candle bounds mismatch spec start/end"
+        )
+
+    fp = sha256_file(candles_path)
+    spec_fp = str(spec.get("fingerprint", "")).lower()
+    candles_fp = str(spec.get("candles_sha256", "")).lower()
+    if fp != spec_fp or fp != candles_fp:
+        raise HistoricalProbeError(f"{window_id}: fingerprint mismatch")
+
+    if spec.get("data_quality_verdict") != "STRICT_COMPLETE":
+        raise HistoricalProbeError(f"{window_id}: quality verdict not STRICT_COMPLETE")
+    if spec.get("venue") != "binance":
+        raise HistoricalProbeError(f"{window_id}: venue must be binance")
+    if spec.get("evidence_subclass") != "historical_cross_venue_research":
+        raise HistoricalProbeError(f"{window_id}: evidence_subclass mismatch")
+    if spec.get("ranking_ready") is not False:
+        raise HistoricalProbeError(f"{window_id}: ranking_ready must be false")
+
+    resolved_candles = candles_path.resolve()
+    dataset_spec = DatasetSpec(
+        source="file",
+        file_path=str(resolved_candles),
+        symbol="BTCUSDT",
+        timeframe="1m",
+        start_ts_ms=start_ts,
+        end_ts_ms=end_ts,
+        warmup_candles=0,
+    )
+    FileBackedDatasetProvider().load(dataset_spec)
+
+    metrics = _window_metrics(candles)
+    return {
+        "window_id": window_id,
+        "candle_count": len(candles),
+        "start_ts_ms": start_ts,
+        "end_ts_ms": end_ts,
+        "source_months": list(spec.get("source_months") or []),
+        "fingerprint": fp,
+        "cadence_gaps": 0,
+        "max_drawdown": metrics["max_dd"],
+        "volatility": metrics["vol"],
+        "file_path": file_path,
+        "storage_guard": storage_reason,
+        "dataset_provider_load": "PASS",
+    }
+
+
+def verify_stress_v2_windows(
+    repo_root: Path = IMPORT_REPO,
+    *,
+    window_ids: Sequence[str] = STRESS_V2_WINDOW_IDS,
+) -> dict[str, Any]:
+    """Validate all configured stress v2 windows; returns per-window evidence."""
+    results = [verify_stress_v2_window(repo_root, wid) for wid in window_ids]
+    return {
+        "verified_at_utc": utc_now_iso(),
+        "window_count": len(results),
+        "windows": results,
+        "all_valid": True,
+    }
+
+
+def rebuild_stress_windows_v2(
+    repo_root: Path = IMPORT_REPO,
+    *,
+    metrics: Sequence[str] = ("stress_max_drawdown", "stress_max_volatility"),
+) -> dict[str, Any]:
+    """Rebuild selected stress windows as *_v2 from contiguous islands only."""
+    try:
+        existing_validation = verify_stress_v2_windows(repo_root)
+        return {
+            "skipped_rebuild": True,
+            "reason": "existing_v2_windows_valid",
+            "validation": existing_validation,
+            "written_v2": [],
+            "rejections": [],
+        }
+    except HistoricalProbeError:
+        pass
+
+    months = resolve_build_months(repo_root)
+    if not months:
+        raise HistoricalProbeError("No STRICT_COMPLETE months in import manifest")
+
+    bank_manifest_path = (
+        repo_root
+        / "artifacts"
+        / "market_data"
+        / "window_bank"
+        / "binance"
+        / "spot"
+        / "BTCUSDT"
+        / "1m"
+        / "window_bank_manifest.json"
+    )
+    existing_bank = (
+        json.loads(bank_manifest_path.read_text(encoding="utf-8"))
+        if bank_manifest_path.exists()
+        else {"windows": []}
+    )
+    existing_by_id = {
+        str(w["window_id"]): w for w in existing_bank.get("windows") or []
+    }
+
+    reject_starts: dict[str, int] = {}
+    rejections: list[dict[str, Any]] = []
+    window_minutes = 7 * 24 * 60
+
+    for metric_base in metrics:
+        old_id = f"binance_1m_{metric_base}"
+        old = existing_by_id.get(old_id)
+        if old is None:
+            continue
+        old_path = _resolve_bank_candles_path(
+            repo_root, str(old.get("candles_path", ""))
+        )
+        if old_path.exists():
+            old_candles = [
+                json.loads(line)
+                for line in old_path.read_text(encoding="utf-8").splitlines()
+                if line.strip()
+            ]
+            gaps = _cadence_gaps(old_candles)
+            if gaps:
+                write_stress_rejection_evidence(
+                    repo_root,
+                    window_id=old_id,
+                    reason="non_contiguous_source_month_reload_gap",
+                    start_ts_ms=int(old["start_ts_ms"]),
+                    end_ts_ms=int(old["end_ts_ms"]),
+                    source_months=old.get("source_months") or [],
+                    expected_candles=window_minutes,
+                    actual_candles=len(old_candles),
+                    gaps=gaps,
+                )
+                rejections.append(
+                    {
+                        "window_id": old_id,
+                        "v2_id": f"{old_id}_v2",
+                        "gap_count": len(gaps),
+                        "first_gap": gaps[0],
+                        "source_months": old.get("source_months"),
+                    }
+                )
+                reject_starts[metric_base] = int(old["start_ts_ms"])
+
+    v2_specs = build_stress_windows(
+        months,
+        repo_root,
+        revision_suffix="_v2",
+        reject_windows=reject_starts,
+        metrics_filter=tuple(metrics),
+    )
+
+    written: list[dict[str, Any]] = []
+    for spec in v2_specs:
+        candles = _extract_stress_window_candles(
+            repo_root,
+            spec.source_months,
+            start_ts_ms=spec.start_ts_ms,
+            end_ts_ms=spec.end_ts_ms,
+            window_minutes=window_minutes,
+        )
+        spec_path = _write_window_dataset(repo_root, spec, candles)
+        fp = sha256_file(spec_path.parent / "candles.jsonl")
+        written.append(
+            {
+                **asdict(spec),
+                "dataset_fingerprint": fp,
+                "candles_path": str((spec_path.parent / "candles.jsonl")).replace(
+                    "\\", "/"
+                ),
+                "spec_path": str(spec_path).replace("\\", "/"),
+                "revision": "v2",
+                "replaces_window_id": spec.window_id.replace("_v2", ""),
+            }
+        )
+
+    merged_windows = list(existing_bank.get("windows") or [])
+    merged_ids = {str(w["window_id"]) for w in merged_windows}
+    for row in written:
+        if row["window_id"] not in merged_ids:
+            merged_windows.append(row)
+            merged_ids.add(row["window_id"])
+
+    by_class: dict[str, int] = {}
+    for w in merged_windows:
+        cls = w.get("overlap_class", "unknown")
+        by_class[cls] = by_class.get(cls, 0) + 1
+
+    bank_root = bank_manifest_path.parent
+    bank_manifest = {
+        **existing_bank,
+        "schema_version": WINDOW_BANK_SCHEMA,
+        "updated_at_utc": utc_now_iso(),
+        "window_count": len(merged_windows),
+        "windows_by_class": by_class,
+        "windows": merged_windows,
+        "bank_root": str(bank_root).replace("\\", "/"),
+        "stress_v2_rebuild": {
+            "rebuilt_at_utc": utc_now_iso(),
+            "metrics": list(metrics),
+            "rejections": rejections,
+            "written_v2": [w["window_id"] for w in written],
+        },
+    }
+    write_json(bank_manifest_path, bank_manifest)
+    return {
+        "written_v2": written,
+        "rejections": rejections,
+        "bank_manifest_path": str(bank_manifest_path),
+    }
 
 
 def deduplicate_windows(windows: Sequence[WindowSpec]) -> list[WindowSpec]:
@@ -465,7 +1161,7 @@ def build_window_bank(
     include_stress: bool = True,
 ) -> dict[str, Any]:
     manifest = load_import_manifest(repo_root)
-    months = strict_complete_months(manifest)
+    months = resolve_build_months(repo_root)
     if not months:
         raise HistoricalProbeError("No STRICT_COMPLETE months in import manifest")
 
@@ -484,13 +1180,18 @@ def build_window_bank(
     for spec in all_specs:
         if spec.overlap_class == "monthly":
             candles = _load_month_candles(repo_root, spec.source_months[0])
-        elif spec.overlap_class in {"quarterly", "yearly", "stress"}:
+        elif spec.overlap_class in {"quarterly", "yearly"}:
             candles = []
             for m in spec.source_months:
                 candles.extend(_load_month_candles(repo_root, m))
-            if spec.overlap_class == "stress":
-                candles = _slice_candles(candles, spec.start_ts_ms, spec.end_ts_ms)
-                candles = _enforce_contiguous_cadence(candles)
+        elif spec.overlap_class == "stress":
+            candles = _extract_stress_window_candles(
+                repo_root,
+                spec.source_months,
+                start_ts_ms=spec.start_ts_ms,
+                end_ts_ms=spec.end_ts_ms,
+                window_minutes=spec.candle_count,
+            )
         else:
             continue
 
@@ -549,6 +1250,179 @@ def build_window_bank(
     write_json(manifest_path, bank_manifest)
     bank_manifest["manifest_path"] = str(manifest_path).replace("\\", "/")
     return bank_manifest
+
+
+def build_stress_rerun_manifest(
+    repo_root: Path = IMPORT_REPO,
+    *,
+    campaign_id: str,
+    source_sha: str | None = None,
+) -> Path:
+    """Manifest targeting only the two stress v2 windows (6 jobs)."""
+    bank_root = (
+        repo_root
+        / "artifacts"
+        / "market_data"
+        / "window_bank"
+        / "binance"
+        / "spot"
+        / "BTCUSDT"
+        / "1m"
+    )
+    v2_roots = [
+        str(bank_root / "binance_1m_stress_max_drawdown_v2").replace("\\", "/"),
+        str(bank_root / "binance_1m_stress_max_volatility_v2").replace("\\", "/"),
+    ]
+    for root in v2_roots:
+        if not Path(root).exists():
+            raise HistoricalProbeError(f"Missing v2 stress window: {root}")
+
+    if source_sha is None:
+        import_manifest = load_import_manifest(repo_root)
+        source_sha = str(import_manifest.get("source_sha", "RUNTIME_RESOLVE"))
+
+    payload: dict[str, Any] = {
+        "schema_version": "1.0",
+        "campaign_id": campaign_id,
+        "source_sha": source_sha,
+        "evidence_class": "controlled_lab_evidence",
+        "artifact_root": "artifacts/arvp_vacation",
+        "allow_paper_jobs": False,
+        "symbol": "BTCUSDT",
+        "speedup_profile": "instant",
+        "dataset_roots": v2_roots,
+        "strategies": [
+            {"strategy_id": "donchian_breakout_v1", "role": "active"},
+            {"strategy_id": "breakout_trend_filter_v1", "role": "active"},
+            {"strategy_id": "primary_breakout_v1", "role": "active"},
+        ],
+        "scenarios": ["baseline", "pessimistic_execution", "feed_gap"],
+        "max_job_runtime_seconds": 7200,
+        "max_attempts_per_job": 2,
+        "min_free_disk_gb": 5,
+        "metadata": {
+            "issue": "#3990",
+            "venue": "binance",
+            "evidence_subclass": "historical_cross_venue_research",
+            "stress_v2_rerun": True,
+            "job_count_expected": 6,
+        },
+    }
+    out_dir = repo_root / "artifacts" / "arvp_vacation" / "manifests"
+    out_dir.mkdir(parents=True, exist_ok=True)
+    out_path = out_dir / "binance_stress_v2_rerun_3990.yaml"
+    out_path.write_text(yaml.dump(payload, sort_keys=False), encoding="utf-8")
+    return out_path
+
+
+def _repo_relative_path(repo_root: Path, campaign_dir: Path) -> str:
+    candidate = campaign_dir
+    if not candidate.is_absolute():
+        candidate = repo_root / candidate
+    try:
+        return candidate.resolve().relative_to(repo_root.resolve()).as_posix()
+    except ValueError:
+        return campaign_dir.as_posix()
+
+
+_STRESS_V2_DATASET_SUFFIXES = (
+    "stress_max_drawdown_v2",
+    "stress_max_volatility_v2",
+)
+_STRESS_V1_FAIL_SUFFIXES = ("stress_max_drawdown", "stress_max_volatility")
+
+
+def _is_stress_v2_job(job: dict[str, Any]) -> bool:
+    dataset_id = str(job.get("dataset_id", ""))
+    return any(dataset_id.endswith(suffix) for suffix in _STRESS_V2_DATASET_SUFFIXES)
+
+
+def merge_stress_v2_into_campaign(
+    *,
+    original_campaign_dir: Path,
+    rerun_campaign_dir: Path,
+    repo_root: Path = IMPORT_REPO,
+) -> dict[str, Any]:
+    """Merge 6 v2 rerun jobs into the original campaign queue/summary."""
+    from tools.arvp_vacation.contract import JOB_FAIL, JOB_PASS, load_manifest
+    from tools.arvp_vacation.queue_store import QUEUE_STATE_FILENAME
+    from tools.arvp_vacation.summary import write_summary
+
+    orig_state_path = (repo_root / original_campaign_dir).resolve() / QUEUE_STATE_FILENAME
+    rerun_state_path = (repo_root / rerun_campaign_dir).resolve() / QUEUE_STATE_FILENAME
+    rerun_rel = (
+        rerun_campaign_dir.as_posix()
+        if not rerun_campaign_dir.is_absolute()
+        else _repo_relative_path(repo_root, rerun_campaign_dir)
+    )
+    original_campaign_dir = orig_state_path.parent
+    rerun_campaign_dir = rerun_state_path.parent
+    if not orig_state_path.exists() or not rerun_state_path.exists():
+        raise HistoricalProbeError("Missing queue_state for campaign merge")
+
+    orig_state = json.loads(orig_state_path.read_text(encoding="utf-8"))
+    rerun_state = json.loads(rerun_state_path.read_text(encoding="utf-8"))
+
+    orig_jobs = list(orig_state.get("jobs") or [])
+    base_jobs = [j for j in orig_jobs if isinstance(j, dict) and not _is_stress_v2_job(j)]
+    rerun_jobs = [j for j in rerun_state.get("jobs") or [] if isinstance(j, dict)]
+    if len(rerun_jobs) != 6:
+        raise HistoricalProbeError(
+            f"Expected exactly 6 rerun jobs, got {len(rerun_jobs)}"
+        )
+
+    superseded_ids = {
+        str(j.get("job_id"))
+        for j in base_jobs
+        if j.get("status") == JOB_FAIL
+        and any(
+            str(j.get("dataset_id", "")).endswith(suffix)
+            for suffix in _STRESS_V1_FAIL_SUFFIXES
+        )
+        and not _is_stress_v2_job(j)
+    }
+    for job in base_jobs:
+        if job.get("job_id") in superseded_ids:
+            job["superseded_by_stress_v2_rerun"] = True
+            job["superseded_note"] = (
+                "Original FAIL retained; replaced in campaign totals by v2 rerun"
+            )
+
+    merged_jobs = base_jobs + rerun_jobs
+    pass_orig = sum(1 for j in base_jobs if j.get("status") == JOB_PASS)
+    fail_orig = sum(1 for j in base_jobs if j.get("status") == JOB_FAIL)
+    pass_v2 = sum(1 for j in rerun_jobs if j.get("status") == JOB_PASS)
+    fail_v2 = sum(1 for j in rerun_jobs if j.get("status") == JOB_FAIL)
+
+    merged_state = {
+        **orig_state,
+        "stress_v2_merge": {
+            "merged_at_utc": utc_now_iso(),
+            "original_pass": pass_orig,
+            "original_fail": fail_orig,
+            "v2_rerun_pass": pass_v2,
+            "v2_rerun_fail": fail_v2,
+            "combined_technical_pass": pass_orig + pass_v2,
+            "combined_technical_fail": fail_v2,
+            "rerun_campaign_dir": rerun_rel,
+        },
+        "jobs": merged_jobs,
+    }
+    write_json(orig_state_path, merged_state)
+
+    manifest_path = repo_root / "artifacts/arvp_vacation/manifests/binance_historical_campaign_3990.yaml"
+    manifest = load_manifest(manifest_path)
+    write_summary(manifest, merged_state, repo_root)
+
+    summary_path = original_campaign_dir / "vacation_summary.json"
+    summary = json.loads(summary_path.read_text(encoding="utf-8"))
+    summary["stress_v2_rebuild"] = merged_state["stress_v2_merge"]
+    summary["combined_technical_pass"] = pass_orig + pass_v2
+    summary["combined_technical_fail"] = fail_v2
+    summary["original_pass_fail"] = {"pass": pass_orig, "fail": fail_orig}
+    write_json(summary_path, summary)
+
+    return merged_state["stress_v2_merge"]
 
 
 def build_vacation_manifest(
@@ -650,10 +1524,52 @@ def main() -> int:
     parser.add_argument("--pilot-manifest", action="store_true")
     parser.add_argument("--smoke-manifest", action="store_true")
     parser.add_argument("--run-campaign", action="store_true")
+    parser.add_argument("--verify-stress-v2", action="store_true")
+    parser.add_argument("--rebuild-stress-v2", action="store_true")
+    parser.add_argument("--stress-v2-rerun", action="store_true")
+    parser.add_argument("--merge-stress-v2", action="store_true")
+    parser.add_argument("--original-campaign-dir", default=None)
+    parser.add_argument("--rerun-campaign-dir", default=None)
     parser.add_argument("--manifest-path", default=None)
     args = parser.parse_args()
 
     try:
+        if args.verify_stress_v2:
+            result = verify_stress_v2_windows()
+            print(json.dumps(result, indent=2))
+            return 0
+
+        if args.rebuild_stress_v2:
+            result = rebuild_stress_windows_v2()
+            print(json.dumps(result, indent=2, default=str))
+            return 0
+
+        if args.stress_v2_rerun:
+            import_manifest = load_import_manifest()
+            source_sha = str(import_manifest.get("source_sha", "RUNTIME_RESOLVE"))[:8]
+            campaign_id = (
+                f"arvp_binance_historical_3990_stress_v2_{source_sha}_"
+                f"{utcnow().strftime('%Y%m%dT%H%M%SZ')}"
+            )
+            verify_stress_v2_windows()
+            manifest_path = build_stress_rerun_manifest(
+                campaign_id=campaign_id,
+                source_sha=str(import_manifest.get("source_sha", "RUNTIME_RESOLVE")),
+            )
+            result = run_vacation_campaign(manifest_path)
+            print(json.dumps({**result, "campaign_id": campaign_id}, indent=2))
+            return 0 if result["exit_code"] == 0 else 2
+
+        if args.merge_stress_v2:
+            if not args.original_campaign_dir or not args.rerun_campaign_dir:
+                parser.error("--merge-stress-v2 requires --original-campaign-dir and --rerun-campaign-dir")
+            merge_result = merge_stress_v2_into_campaign(
+                original_campaign_dir=Path(args.original_campaign_dir),
+                rerun_campaign_dir=Path(args.rerun_campaign_dir),
+            )
+            print(json.dumps(merge_result, indent=2))
+            return 0
+
         if args.build_bank:
             bank = build_window_bank()
             print(json.dumps({"window_count": bank["window_count"]}, indent=2))
