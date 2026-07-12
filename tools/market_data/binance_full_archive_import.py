@@ -7,6 +7,7 @@ Cross-venue research corpus only — not MEXC same-venue execution evidence.
 from __future__ import annotations
 
 import argparse
+import gc
 import json
 import re
 import subprocess
@@ -124,6 +125,7 @@ def import_range(
     max_retries: int = 3,
     skip_download: bool = False,
     enrich_regime: bool = True,
+    resume: bool = True,
 ) -> dict[str, Any]:
     """Import all months in range with manifest and coverage report."""
     started_at = utc_now_iso()
@@ -162,6 +164,18 @@ def import_range(
 
     for month in months:
         record = MonthImportRecord(month=month)
+        if resume and _month_already_complete(repo_root, month):
+            cached = _load_cached_month_record(repo_root, month)
+            if cached:
+                records.append(cached)
+                regime_state = _load_regime_carry_state(repo_root, month)
+                _append_plausibility_sample(
+                    plausibility_sample,
+                    repo_root,
+                    month,
+                    max_plausibility_sample,
+                )
+                continue
         for attempt in range(1, max_retries + 1):
             record.retry_count = attempt
             try:
@@ -191,24 +205,27 @@ def import_range(
                 record.duplicates = month_result["duplicates"]
 
                 if enrich_regime and record.quality_verdict == "STRICT_COMPLETE":
-                    enriched_rows, regime_state = _enrich_month(
+                    row_count, regime_state, enriched_hash = _enrich_month(
                         month=month,
                         repo_root=repo_root,
                         regime_state=regime_state,
                     )
                     record.regime_status = "complete"
-                    record.local_enriched_path = str(
-                        _enriched_dir(repo_root, month) / "candles.jsonl"
-                    ).replace("\\", "/")
-                    record.enriched_hash = hash_jsonl_file(
-                        Path(record.local_enriched_path)
+                    enriched_path = _enriched_dir(repo_root, month) / "candles.jsonl"
+                    record.local_enriched_path = str(enriched_path).replace(
+                        "\\", "/"
                     )
-                    if len(plausibility_sample) < max_plausibility_sample:
-                        remaining = max_plausibility_sample - len(plausibility_sample)
-                        plausibility_sample.extend(enriched_rows[:remaining])
+                    record.enriched_hash = enriched_hash
+                    _append_plausibility_sample(
+                        plausibility_sample,
+                        repo_root,
+                        month,
+                        max_plausibility_sample,
+                    )
                 elif enrich_regime:
                     record.regime_status = "skipped_quality"
                 records.append(record)
+                gc.collect()
                 break
             except HistoricalProbeError as exc:
                 record.error_classification = str(exc)
@@ -335,12 +352,101 @@ def hash_jsonl_file(path: Path) -> str:
     return digest.hexdigest()
 
 
+def _load_regime_carry_state(repo_root: Path, month: str) -> RegimeCarryState | None:
+    report_path = _enriched_dir(repo_root, month) / "regime_report.json"
+    if not report_path.exists():
+        return None
+    report = json.loads(report_path.read_text(encoding="utf-8"))
+    carry = report.get("carry_state") or {}
+    buffer_path = _enriched_dir(repo_root, month) / "candles.jsonl"
+    buffer: list[dict[str, Any]] = []
+    if buffer_path.exists():
+        lines = buffer_path.read_text(encoding="utf-8").splitlines()
+        from tools.market_data.assign_regime_offline import BUFFER_MAXLEN
+
+        for line in lines[-BUFFER_MAXLEN:]:
+            if line.strip():
+                buffer.append(json.loads(line))
+    return RegimeCarryState(
+        current_regime=str(carry.get("current_regime", "UNKNOWN")),
+        candidate_regime=carry.get("candidate_regime"),
+        candidate_count=int(carry.get("candidate_count", 0)),
+        buffer=buffer,
+    )
+
+
+def _append_plausibility_sample(
+    sample: list[dict[str, Any]],
+    repo_root: Path,
+    month: str,
+    max_size: int,
+    *,
+    per_month: int = 500,
+) -> None:
+    if len(sample) >= max_size:
+        return
+    path = _enriched_dir(repo_root, month) / "candles.jsonl"
+    if not path.exists():
+        return
+    taken = 0
+    with path.open(encoding="utf-8") as handle:
+        for line in handle:
+            if len(sample) >= max_size or taken >= per_month:
+                break
+            if line.strip():
+                sample.append(json.loads(line))
+                taken += 1
+
+
+def _month_already_complete(repo_root: Path, month: str) -> bool:
+    norm = _normalized_dir(repo_root, month)
+    enriched = _enriched_dir(repo_root, month)
+    return (norm / "quality_report.json").exists() and (
+        enriched / "candles.jsonl"
+    ).exists()
+
+
+def _load_cached_month_record(
+    repo_root: Path, month: str
+) -> MonthImportRecord | None:
+    norm = _normalized_dir(repo_root, month)
+    quality_path = norm / "quality_report.json"
+    if not quality_path.exists():
+        return None
+    quality = json.loads(quality_path.read_text(encoding="utf-8"))
+    raw_zip = _raw_dir(repo_root, month)
+    zip_files = list(raw_zip.glob("BTCUSDT-1m-*.zip"))
+    record = MonthImportRecord(
+        month=month,
+        download_status="complete",
+        checksum_status="verified",
+        normalization_status="complete",
+        regime_status="complete",
+        quality_verdict=str(quality.get("verdict", "SOURCE_INVALID")),
+        local_raw_path=str(zip_files[0]).replace("\\", "/") if zip_files else None,
+        local_normalized_path=str(norm / "candles.jsonl").replace("\\", "/"),
+        local_enriched_path=str(
+            (_enriched_dir(repo_root, month) / "candles.jsonl")
+        ).replace("\\", "/"),
+        candle_count=int(quality.get("gaps", {}).get("actual_candles", 0)),
+        gaps=quality.get("gaps", {}),
+        duplicates=quality.get("duplicates", {}),
+    )
+    if record.local_normalized_path and Path(record.local_normalized_path).exists():
+        record.normalized_hash = hash_jsonl_file(Path(record.local_normalized_path))
+    if record.local_enriched_path and Path(record.local_enriched_path).exists():
+        record.enriched_hash = hash_jsonl_file(Path(record.local_enriched_path))
+    if zip_files:
+        record.raw_file_hash = sha256_file(zip_files[0])
+    return record
+
+
 def _enrich_month(
     *,
     month: str,
     repo_root: Path,
     regime_state: RegimeCarryState | None,
-) -> tuple[list[dict[str, Any]], RegimeCarryState]:
+) -> tuple[int, RegimeCarryState, str]:
     norm_dir = _normalized_dir(repo_root, month)
     jsonl_path = norm_dir / "candles.jsonl"
     raw_rows = [
@@ -351,13 +457,15 @@ def _enrich_month(
     enriched_rows, new_state = assign_regime_ids_with_state(
         raw_rows, initial_state=regime_state
     )
+    del raw_rows
     enriched_dir = _enriched_dir(repo_root, month)
     enriched_jsonl = enriched_dir / "candles.jsonl"
-    write_jsonl(enriched_jsonl, enriched_rows)
+    from tools.market_data.historical_common import write_jsonl_and_hash
 
-    year, month_num = parse_year_month(month)
-    start_ts_ms, end_ts_ms, _ = month_bounds(year, month_num)
+    enriched_hash = write_jsonl_and_hash(enriched_jsonl, enriched_rows)
+    row_count = len(enriched_rows)
     dist = regime_distribution(enriched_rows)
+    del enriched_rows
     write_json(
         enriched_dir / "regime_report.json",
         {
@@ -366,7 +474,12 @@ def _enrich_month(
             "method": "offline_heuristic_adx_atr",
             "carry_over": True,
             "regime_distribution": dist,
-            "carry_state": new_state.to_dict(),
+            "carry_state": {
+                **new_state.to_dict(),
+                "current_regime": new_state.current_regime,
+                "candidate_regime": new_state.candidate_regime,
+                "candidate_count": new_state.candidate_count,
+            },
         },
     )
     norm_spec_path = norm_dir / "dataset_spec.json"
@@ -378,8 +491,8 @@ def _enrich_month(
                 **spec,
                 "file_path": str(enriched_jsonl).replace("\\", "/"),
                 "regime_enriched": True,
-                "fingerprint": sha256_file(enriched_jsonl),
-                "candles_sha256": sha256_file(enriched_jsonl),
+                "fingerprint": enriched_hash,
+                "candles_sha256": enriched_hash,
             },
         )
     write_json(
@@ -392,7 +505,7 @@ def _enrich_month(
             "evidence_class": "historical_cross_venue_research",
         },
     )
-    return enriched_rows, new_state
+    return row_count, new_state, enriched_hash
 
 
 def _import_single_month(
@@ -465,14 +578,16 @@ def _import_single_month(
     )
     from tools.market_data.historical_common import (
         build_quality_report,
-        normalized_hash,
+        write_jsonl_and_hash,
     )
 
-    norm_hash = normalized_hash(candles)
     norm_dir = _normalized_dir(repo_root, month)
     jsonl_path = norm_dir / "candles.jsonl"
-    write_jsonl(jsonl_path, [c.to_dict() for c in candles])
-    file_hash = sha256_file(jsonl_path)
+    file_hash = write_jsonl_and_hash(
+        jsonl_path,
+        [c.to_dict() for c in candles],
+    )
+    candle_count = len(candles)
     quality = build_quality_report(
         candles,
         start_ts_ms=start_ts_ms,
@@ -481,6 +596,7 @@ def _import_single_month(
         source_hash=file_hash,
         second_parse_hash=file_hash,
     )
+    del candles
     write_json(norm_dir / "quality_report.json", quality)
     write_json(norm_dir / "gap_report.json", quality["gaps"])
     write_json(
@@ -497,8 +613,8 @@ def _import_single_month(
                 regime_enriched=False,
                 normalized_hash_value=file_hash,
             ),
-            "fingerprint": sha256_file(jsonl_path),
-            "candles_sha256": sha256_file(jsonl_path),
+            "fingerprint": file_hash,
+            "candles_sha256": file_hash,
             "month": month,
         },
     )
@@ -535,7 +651,7 @@ def _import_single_month(
         "normalized_jsonl": str(jsonl_path).replace("\\", "/"),
         "raw_hash": download_sha,
         "normalized_hash": file_hash,
-        "candle_count": len(candles),
+        "candle_count": candle_count,
         "gaps": quality["gaps"],
         "duplicates": quality["duplicates"],
         "expected_candles": expected,
