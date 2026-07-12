@@ -28,6 +28,7 @@ from tools.market_data.binance_full_archive_import import (
     _normalized_dir,
 )
 from tools.market_data.historical_common import (
+    ONE_MINUTE_MS,
     HistoricalProbeError,
     month_bounds,
     parse_year_month,
@@ -105,6 +106,35 @@ def _slice_candles(
     end_ts_ms: int,
 ) -> list[dict[str, Any]]:
     return [c for c in candles if start_ts_ms <= int(c["ts_ms"]) <= end_ts_ms]
+
+
+def _is_contiguous_cadence(
+    candles: Sequence[dict[str, Any]],
+    *,
+    gap_ms: int = ONE_MINUTE_MS,
+) -> bool:
+    if len(candles) < 2:
+        return bool(candles)
+    for prev, cur in zip(candles, candles[1:]):
+        if int(cur["ts_ms"]) - int(prev["ts_ms"]) != gap_ms:
+            return False
+    return True
+
+
+def _enforce_contiguous_cadence(
+    candles: Sequence[dict[str, Any]],
+    *,
+    gap_ms: int = ONE_MINUTE_MS,
+) -> list[dict[str, Any]]:
+    """Return longest prefix with strict 1m cadence (stops at first gap)."""
+    if not candles:
+        return []
+    out = [candles[0]]
+    for candle in candles[1:]:
+        if int(candle["ts_ms"]) - int(out[-1]["ts_ms"]) != gap_ms:
+            break
+        out.append(candle)
+    return out
 
 
 def _write_window_dataset(
@@ -360,6 +390,8 @@ def build_stress_windows(
 
     for start_idx in range(0, len(all_candles) - window_minutes, window_minutes // 4):
         chunk = all_candles[start_idx : start_idx + window_minutes]
+        if not _is_contiguous_cadence(chunk):
+            continue
         m = _window_metrics(chunk)
         if m["max_dd"] > best["max_drawdown"][0]:
             best["max_drawdown"] = (m["max_dd"], start_idx)
@@ -386,7 +418,11 @@ def build_stress_windows(
         if start_idx in seen_starts:
             continue
         seen_starts.add(start_idx)
-        chunk = all_candles[start_idx : start_idx + window_minutes]
+        chunk = _enforce_contiguous_cadence(
+            all_candles[start_idx : start_idx + window_minutes]
+        )
+        if len(chunk) < window_minutes:
+            continue
         source_months = sorted(
             {month_by_ts.get(int(c["ts_ms"]), "") for c in chunk} - {""}
         )
@@ -453,7 +489,11 @@ def build_window_bank(
                 candles.extend(_load_month_candles(repo_root, m))
             if spec.overlap_class == "stress":
                 candles = _slice_candles(candles, spec.start_ts_ms, spec.end_ts_ms)
+                candles = _enforce_contiguous_cadence(candles)
         else:
+            continue
+
+        if not candles:
             continue
 
         spec_path = _write_window_dataset(repo_root, spec, candles)

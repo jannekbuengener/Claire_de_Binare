@@ -60,3 +60,18 @@ def test_build_window_bank_requires_manifest(tmp_path: Path) -> None:
     with patch.object(wb, "IMPORT_REPO", tmp_path):
         with pytest.raises(Exception, match="Import manifest missing"):
             wb.build_window_bank(tmp_path)
+
+
+@pytest.mark.unit
+def test_enforce_contiguous_cadence_stops_at_gap() -> None:
+    candles = [
+        {"ts_ms": 0},
+        {"ts_ms": 60_000},
+        {"ts_ms": 120_000},
+        {"ts_ms": 5_270_580_000},  # multi-day gap
+        {"ts_ms": 5_270_640_000},
+    ]
+    out = wb._enforce_contiguous_cadence(candles)
+    assert len(out) == 3
+    assert wb._is_contiguous_cadence(out)
+    assert not wb._is_contiguous_cadence(candles)
