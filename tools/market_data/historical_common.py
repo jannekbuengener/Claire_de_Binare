@@ -35,6 +35,7 @@ QUALITY_VERDICTS = frozenset(
         "PARTIAL_USABLE",
         "SOURCE_INVALID",
         "SOURCE_UNAVAILABLE",
+        "CHECKSUM_FAILED",
     }
 )
 

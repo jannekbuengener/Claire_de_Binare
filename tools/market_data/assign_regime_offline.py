@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 from collections import Counter
+from dataclasses import dataclass
 from typing import Any
 
 ADX_PERIOD = 14
@@ -21,6 +22,24 @@ REGIME_NAME_TO_ID = {
     "CRISIS": 3,
 }
 REGIME_ID_TO_NAME = {value: key for key, value in REGIME_NAME_TO_ID.items()}
+
+
+@dataclass
+class RegimeCarryState:
+    """Serializable carry-over state for chronological multi-chunk enrichment."""
+
+    current_regime: str = "UNKNOWN"
+    candidate_regime: str | None = None
+    candidate_count: int = 0
+    buffer: list[dict[str, Any]] | None = None
+
+    def to_dict(self) -> dict[str, Any]:
+        return {
+            "current_regime": self.current_regime,
+            "candidate_regime": self.candidate_regime,
+            "candidate_count": self.candidate_count,
+            "buffer_tail_len": len(self.buffer or []),
+        }
 
 
 def compute_atr(candles: list[dict[str, Any]], period: int) -> float | None:
@@ -102,14 +121,18 @@ def compute_adx(candles: list[dict[str, Any]], period: int) -> float | None:
     return adx
 
 
-def assign_regime_ids(raw_candles: list[dict[str, Any]]) -> list[dict[str, Any]]:
-    """Mirror services/regime/service.py offline ADX/ATR regime derivation."""
-    current_regime = "UNKNOWN"
-    candidate_regime: str | None = None
-    candidate_count = 0
-    assigned_regime_id = 0
+def assign_regime_ids_with_state(
+    raw_candles: list[dict[str, Any]],
+    *,
+    initial_state: RegimeCarryState | None = None,
+) -> tuple[list[dict[str, Any]], RegimeCarryState]:
+    """Mirror services/regime/service.py with optional carry-over across chunks."""
+    state = initial_state or RegimeCarryState()
+    current_regime = state.current_regime
+    candidate_regime = state.candidate_regime
+    candidate_count = state.candidate_count
+    buffer: list[dict[str, Any]] = list(state.buffer or [])
 
-    buffer: list[dict[str, Any]] = []
     derived: list[dict[str, Any]] = []
 
     for candle in raw_candles:
@@ -151,7 +174,94 @@ def assign_regime_ids(raw_candles: list[dict[str, Any]]) -> list[dict[str, Any]]
         row["regime_id"] = assigned_regime_id
         derived.append(row)
 
-    return derived
+    return derived, RegimeCarryState(
+        current_regime=current_regime,
+        candidate_regime=candidate_regime,
+        candidate_count=candidate_count,
+        buffer=list(buffer),
+    )
+
+
+def assign_regime_ids(raw_candles: list[dict[str, Any]]) -> list[dict[str, Any]]:
+    """Mirror services/regime/service.py offline ADX/ATR regime derivation."""
+    rows, _ = assign_regime_ids_with_state(raw_candles)
+    return rows
+
+
+def analyze_regime_plausibility(
+    candles: list[dict[str, Any]],
+    *,
+    sample_size: int = 500,
+) -> dict[str, Any]:
+    """Contract/plausibility check without changing thresholds."""
+    if not candles:
+        return {"status": "FAIL", "reason": "empty_candles"}
+
+    sample = candles[:sample_size]
+    atr_values: list[float] = []
+    adx_values: list[float] = []
+    buffer: list[dict[str, Any]] = []
+    for candle in sample:
+        buffer.append(candle)
+        if len(buffer) > BUFFER_MAXLEN:
+            buffer.pop(0)
+        adx = compute_adx(buffer, ADX_PERIOD)
+        atr = compute_atr(buffer, ATR_PERIOD)
+        if adx is not None:
+            adx_values.append(adx)
+        if atr is not None:
+            atr_values.append(atr)
+
+    dist = regime_distribution(candles)
+    high_vol_share = 0.0
+    total = len(candles)
+    for key, entry in dist.items():
+        if entry.get("regime_name") == "HIGH_VOL_CHAOTIC":
+            high_vol_share = entry.get("count", 0) / total if total else 0.0
+
+    avg_close = sum(float(c["close"]) for c in sample) / len(sample)
+    atr_above_threshold_pct = (
+        sum(1 for v in atr_values if v >= ATR_HIGH_VOL_THRESHOLD) / len(atr_values)
+        if atr_values
+        else 0.0
+    )
+
+    blocking = False
+    findings: list[str] = []
+    if avg_close > 1000 and atr_above_threshold_pct > 0.95:
+        findings.append(
+            "ATR_HIGH_VOL_THRESHOLD=2.0 is absolute price units; "
+            f"BTC avg_close~{avg_close:.2f} yields ATR>>2 → HIGH_VOL_CHAOTIC dominance. "
+            "Mirrors runtime compose REGIME_ATR_HIGH_VOL_THRESHOLD=2.0 — contract-consistent, "
+            "not a normalization defect."
+        )
+    if high_vol_share > 0.99:
+        findings.append(
+            f"HIGH_VOL_CHAOTIC share {high_vol_share:.4f} — expected for absolute ATR "
+            "threshold on high-price assets; document in evidence, do not silently repair."
+        )
+
+    return {
+        "status": "PASS_WITH_CAVEAT" if findings else "PASS",
+        "blocking": blocking,
+        "findings": findings,
+        "distribution": dist,
+        "sample_stats": {
+            "sample_size": len(sample),
+            "avg_close": avg_close,
+            "atr_min": min(atr_values) if atr_values else None,
+            "atr_max": max(atr_values) if atr_values else None,
+            "atr_median": sorted(atr_values)[len(atr_values) // 2] if atr_values else None,
+            "adx_median": sorted(adx_values)[len(adx_values) // 2] if adx_values else None,
+            "atr_above_threshold_pct": atr_above_threshold_pct,
+            "thresholds": {
+                "adx_trend": ADX_TREND_THRESHOLD,
+                "adx_range": ADX_RANGE_THRESHOLD,
+                "atr_high_vol": ATR_HIGH_VOL_THRESHOLD,
+            },
+        },
+        "runtime_mirror": "services/regime/service.py + compose REGIME_ATR_HIGH_VOL_THRESHOLD=2.0",
+    }
 
 
 def regime_distribution(candles: list[dict[str, Any]]) -> dict[str, Any]:
