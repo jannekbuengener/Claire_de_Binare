@@ -11,6 +11,8 @@ import json
 import re
 from dataclasses import dataclass
 from datetime import UTC, datetime
+
+from core.utils.clock import utcnow
 from pathlib import Path
 from typing import Any, Literal
 
@@ -595,7 +597,7 @@ def build_redacted_evidence(
         "schema_version": "local_dev_hygiene_evidence_redacted.v1",
         "issue": ISSUE_REF,
         "scan_as_of_utc": inventory.get("scan_as_of_utc"),
-        "generated_at_utc": datetime.now(UTC).isoformat(),
+        "generated_at_utc": utcnow().isoformat(),
         "aggregate": {
             "total_size_gb": agg.get("total_size_gb"),
             "total_files": agg.get("total_files"),
