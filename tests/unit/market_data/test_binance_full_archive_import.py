@@ -101,6 +101,7 @@ def test_missing_month_not_in_range() -> None:
                 end_month="2020-03",
                 fetcher=fetcher,
                 max_retries=1,
+                skip_storage_guard=True,
             )
     assert manifest["summary"]["failed"] >= 1
 

@@ -113,3 +113,57 @@ python -m tools.market_data.binance_window_bank --run-campaign --manifest-path a
 - Disk below `min_free_disk_gb` → fatal stop
 - Regime contract blocking → `FULL_IMPORT_PARTIAL_REGIME_BLOCKED`
 - Smoke/pilot FAIL → do not start full bank campaign
+
+---
+
+## Storage Location & Guard (#4004)
+
+**Canonical path:** `REPO_ROOT/artifacts/market_data` (physically on the repository volume, typically DevDrive `D:`).
+
+Historical full imports are **fail-closed** unless `tools.market_data.market_data_storage_guard` passes:
+
+- Repository and `artifacts/market_data` on the **same volume**
+- Volume label matches DevDrive (when resolvable)
+- No Reparse Point / Junction / Symlink in the path chain to the target
+- Resolved target **not** on blocked external drives (e.g. `E:` Backup II)
+- No Removable/Network storage
+- Free space ≥ expected write volume × 1.25
+
+**No automatic external-drive fallback.** Imports must not silently redirect to `E:` or other Backup volumes.
+
+`--list-months` and read-only offline reconcile are **not** blocked by the guard.
+
+---
+
+## Offline Reconcile vs Import (#4004)
+
+**Do not** use `binance_full_archive_import --skip-download` as a general read-only manifest rebuild. It may still touch network listing, download fallbacks, and dataset writes.
+
+Use the read-only reconciler instead:
+
+```powershell
+python -m tools.market_data.binance_archive_manifest_reconcile `
+  --market-data-root "<ROOT>" `
+  --output-dir "<OUTPUT_DIR>"
+```
+
+Outputs only under `--output-dir`: `reconciled_import_manifest.json`, `reconcile_report.json`, `reconcile_report.md`.
+
+---
+
+## E: → D: Relocation Flow (#4004)
+
+1. **Preflight** — read-only source/destination inventory
+2. **Copy** — `robocopy` to `market_data.__incoming_<UTC>` on D: (outside `artifacts` junction)
+3. **Verify** — streaming SHA256 source vs staging (`relocate_hash_manifest`)
+4. **Reconcile** — offline reconciler on staging copy
+5. **Cutover** — break `artifacts` junction; physical `market_data` on D:; per-subtree re-junction for other `E:\CDB_artifacts` content
+6. **Rename-test** — rename `E:\CDB_artifacts\market_data` → `market_data.__relocated_verified_<UTC>`; re-run smoke/preflight without E: dependency
+7. **Delete** — remove only the renamed verified source folder after all gates PASS
+
+Hash tooling:
+
+```powershell
+python -m tools.market_data.relocate_hash_manifest create --root "<ROOT>" --output "<FILE.jsonl>"
+python -m tools.market_data.relocate_hash_manifest compare --source "<SRC.jsonl>" --destination "<DST.jsonl>" --output "<COMPARE.json>"
+```

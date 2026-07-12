@@ -129,8 +129,16 @@ def import_range(
     skip_download: bool = False,
     enrich_regime: bool = True,
     resume: bool = True,
+    skip_storage_guard: bool = False,
 ) -> dict[str, Any]:
     """Import all months in range with manifest and coverage report."""
+    if not skip_storage_guard:
+        from tools.market_data.market_data_storage_guard import enforce_market_data_storage
+
+        enforce_market_data_storage(
+            repo_root=repo_root,
+            required_write_bytes=12_000_000_000,
+        )
     started_at = utc_now_iso()
     fetcher = fetcher or HttpFetcher()
     available = list_available_months(fetcher)

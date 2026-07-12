@@ -232,6 +232,10 @@ scripts/cdb_ops.ps1
 # Local D:\Dev hygiene raw scan outputs (#3999) — redacted summary only in docs/evidence/
 artifacts/local-dev-hygiene/
 
+# Binance market_data relocation staging and raw evidence (#4004)
+/market_data.__incoming_*/
+/data-relocation/
+
 # Decision Contract audit records (generated at runtime + by tests)
 reports/decision_contract/
 
