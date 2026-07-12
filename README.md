@@ -59,21 +59,20 @@ Stage und LR sind orthogonale Systeme: `trade-capable` autorisiert kein Live-Tra
 
 ## Current-main Snapshot
 
-Auf `origin/main` sind die juengsten Kern-Cluster gelandet, u. a.:
+Auf `origin/main` (`49eb7546`, Stand 2026-07-12) sind die juengsten relevanten Merge-Cluster u. a.:
 
-- **LR-050 Final Reconcile (#2535):** Child-SSOTs #2526–#2534 plus finales Reconcile-Dokument; Verdikt bleibt **NO-GO** / not ready for live capital.
-- **SurrealDB / Context Phase-2 closeout (#1976):** Grandparent arc geschlossen; Real-Task-Proofs, Wave-Matrix-Recert und Phase-2-Review auf `main`.
-- **Context / MCP tooling hardening (#2847):** Benchmark #2 ratifiziert; Harness PASS / PASS_WITH_LIMITS ohne produktive Writes.
-- **CI / Agent surface (#2994/#3405/#3575):** Canonical PR-Gate `.github/workflows/ci.yml` und `policy-gate.yml` laufen GitHub-hosted; self-hosted runner are decommissioned from active workflow dependencies.
+- **README / canon link guard ([#3994](https://github.com/jannekbuengener/Claire_de_Binare/issues/3994) / PR [#4011](https://github.com/jannekbuengener/Claire_de_Binare/pull/4011)):** Shared `markdown_link_utils`, offline README- und explizite Entry-Point-Linkpruefung in CI; CONTRIBUTING § README Link Convention.
+- **#3990 Binance historical campaign closeout ([#4010](https://github.com/jannekbuengener/Claire_de_Binare/issues/4010) / PR [#4009](https://github.com/jannekbuengener/Claire_de_Binare/pull/4009)):** Stress-v2 rerun; cross-venue research only; `ranking_ready=false`.
+- **Binance market_data relocation ([#4004](https://github.com/jannekbuengener/Claire_de_Binare/issues/4004) / PR [#4007](https://github.com/jannekbuengener/Claire_de_Binare/pull/4007)):** Ops tooling + evidence; keine LR-Implikation.
 
-Operatives Cockpit: GitHub Issue `#1445`. Aktiver Engineering-Fokus (nicht exhaustiv): `#2440` (LR-030 Shadow/Soak), `#2513` (Trivy upstream tracking, orthogonal).
+Operatives Cockpit: [Issue #1445](https://github.com/jannekbuengener/Claire_de_Binare/issues/1445). Nav-/Snapshot-Reconcile: [Issue #3995](https://github.com/jannekbuengener/Claire_de_Binare/issues/3995) (in delivery). Vollstaendiges Session-Ledger: [`CURRENT_STATUS.md`](CURRENT_STATUS.md).
 
-Details und Session-Ledger: `CURRENT_STATUS.md`.
+LR bleibt **NO-GO** — SSOT: [`docs/live-readiness/LR-AUDIT-STATUS-2026-03-05.md`](docs/live-readiness/LR-AUDIT-STATUS-2026-03-05.md).
 
 ## Docs / Canonical Entrypoints
 
 1. [`docs/runbooks/CONTROL_REGISTER.md`](docs/runbooks/CONTROL_REGISTER.md)
-2. GitHub Issue `#1445` (inkl. neuestem Wochenkommentar)
+2. [GitHub Issue #1445](https://github.com/jannekbuengener/Claire_de_Binare/issues/1445) (inkl. neuestem Wochenkommentar)
 3. [`CURRENT_STATUS.md`](CURRENT_STATUS.md)
 4. [`docs/live-readiness/LR-AUDIT-STATUS-2026-03-05.md`](docs/live-readiness/LR-AUDIT-STATUS-2026-03-05.md)
 5. [`docs/meta/WORKING_REPO_CANON.md`](docs/meta/WORKING_REPO_CANON.md)

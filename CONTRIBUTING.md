@@ -24,7 +24,10 @@ Start here if you are new to the project:
 
 ### README Link Convention
 
-For repository-internal documentation paths in **active** `README.md` files:
+For repository-internal documentation paths in **active** `README.md` files **and**
+explicit canon entry points listed in
+[`tests/fixtures/readme_link_policy.yaml`](tests/fixtures/readme_link_policy.yaml)
+(`explicit_active_surfaces`, e.g. `CURRENT_STATUS.md`, `CONTROL_REGISTER.md`):
 
 - Use **relative Markdown links**, not bare inline-code paths, when the path is
   navigation-relevant (entry points, parent/root/index, runbooks, contracts).
@@ -39,7 +42,7 @@ For repository-internal documentation paths in **active** `README.md` files:
 Validation (offline, no network):
 
 ```bash
-make readme-links-guard      # all active tracked README.md link targets (#3994)
+make readme-links-guard      # active README.md + explicit canon entry points (#3994/#3995)
 make onboarding-docs-guard   # onboarding front-door surfaces (#3233)
 ```
 

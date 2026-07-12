@@ -1,7 +1,9 @@
-"""Validate relative Markdown links in active tracked README.md files.
+"""Validate relative Markdown links on active documentation surfaces.
 
-Discovers READMEs via git, classifies them with rule-based policy, and
-fail-closed validates all `active` surfaces offline (no network).
+Discovers tracked README.md files via git, classifies them with rule-based
+policy, and fail-closed validates all `active` README surfaces offline.
+Also validates explicit non-README canon entry points listed in policy
+(`explicit_active_surfaces`, #3995) with the same link engine.
 
 Usage:
     python -m tools.validate_readme_links
@@ -9,10 +11,10 @@ Usage:
     python -m tools.validate_readme_links --inventory
 
 Exit codes:
-    0 - all active README link checks PASS
+    0 - all active surface link checks PASS
     1 - one or more validation failures
 
-Issue: #3994
+Issues: #3994 (README discovery), #3995 (explicit canon entry points)
 """
 
 from __future__ import annotations
@@ -66,6 +68,30 @@ def classify_readme(rel_path: str, policy: dict[str, Any]) -> str:
     return str(policy.get("default_classification", "active"))
 
 
+def explicit_active_surfaces(policy: dict[str, Any]) -> list[str]:
+    block = policy.get("explicit_active_surfaces") or {}
+    paths = block.get("paths") or []
+    return sorted({str(p).strip() for p in paths if str(p).strip()})
+
+
+def validate_surface_file(
+    root: Path,
+    rel_path: str,
+    *,
+    verbose: bool = False,
+    surface_kind: str = "active",
+) -> list[str]:
+    full_path = root / rel_path
+    if not full_path.is_file():
+        return [f"{rel_path}: tracked surface missing on disk"]
+
+    if verbose:
+        print(f"Validating ({surface_kind}): {rel_path}", file=sys.stderr)
+
+    content = full_path.read_text(encoding="utf-8", errors="replace")
+    return check_markdown_links(root, rel_path, content, verbose)
+
+
 def build_inventory(root: Path, policy_path: Path | None = None) -> dict[str, Any]:
     policy = load_policy(policy_path or DEFAULT_POLICY_PATH)
     readmes = discover_tracked_readmes(root)
@@ -74,8 +100,12 @@ def build_inventory(root: Path, policy_path: Path | None = None) -> dict[str, An
         cls = classify_readme(rel, policy)
         by_class.setdefault(cls, []).append(rel)
 
+    explicit = explicit_active_surfaces(policy)
+
     return {
-        "total": len(readmes),
+        "total_readmes": len(readmes),
+        "total": len(readmes) + len(explicit),
+        "explicit_active_surfaces": explicit,
         "by_classification": {k: len(v) for k, v in sorted(by_class.items())},
         "paths_by_classification": by_class,
         "policy_path": str((policy_path or DEFAULT_POLICY_PATH).relative_to(root)),
@@ -101,16 +131,19 @@ def validate_all(
                 )
             continue
 
-        full_path = r / rel_path
-        if not full_path.is_file():
-            all_errors.append(f"{rel_path}: tracked README.md missing on disk")
-            continue
+        all_errors.extend(
+            validate_surface_file(r, rel_path, verbose=verbose, surface_kind="active")
+        )
 
-        if verbose:
-            print(f"Validating (active): {rel_path}", file=sys.stderr)
-
-        content = full_path.read_text(encoding="utf-8", errors="replace")
-        all_errors.extend(check_markdown_links(r, rel_path, content, verbose))
+    for rel_path in explicit_active_surfaces(policy):
+        all_errors.extend(
+            validate_surface_file(
+                r,
+                rel_path,
+                verbose=verbose,
+                surface_kind="canon_entry_point",
+            )
+        )
 
     return all_errors
 
@@ -151,7 +184,7 @@ def main(argv: list[str] | None = None) -> int:
             print(f"  FAIL: {err}", file=sys.stderr)
         return 1
 
-    print("OK: all active README surfaces pass link validation")
+    print("OK: all active README and explicit canon entry surfaces pass link validation")
     return 0
 
 
