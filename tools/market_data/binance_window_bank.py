@@ -843,6 +843,51 @@ def _assert_no_legacy_market_data_path(path_text: str) -> None:
             )
 
 
+def _resolve_bank_candles_path(repo_root: Path, candles_path: str) -> Path:
+    """Resolve a window-bank candles_path (absolute or repo-relative)."""
+    raw = candles_path.strip()
+    if not raw:
+        return repo_root / "__missing__"
+    path = Path(raw)
+    if path.is_absolute():
+        return path
+    return repo_root / path
+
+
+def _verify_stress_v2_storage_readonly(repo_root: Path, file_path: str) -> str:
+    """Read-only storage checks for on-disk stress v2 windows (POSIX-safe)."""
+    from tools.market_data.market_data_storage_guard import validate_market_data_storage
+
+    _assert_no_legacy_market_data_path(file_path)
+    resolved = Path(file_path)
+    if not resolved.is_absolute():
+        resolved = (repo_root / resolved).resolve()
+    else:
+        resolved = resolved.resolve()
+    try:
+        resolved.relative_to(repo_root.resolve())
+    except ValueError as exc:
+        raise HistoricalProbeError(
+            "stress v2 file_path must live under repo_root"
+        ) from exc
+    storage = validate_market_data_storage(
+        repo_root=repo_root,
+        required_write_bytes=0,
+        expected_repo_volume_label=None,
+    )
+    if storage.allowed:
+        return storage.reason_code
+    if storage.reason_code in {
+        "VOLUME_PROBE_FAILED",
+        "UNKNOWN_VOLUME_ID",
+        "UNKNOWN_FREE_SPACE",
+    }:
+        return "READ_ONLY_VERIFY_SKIPPED"
+    raise HistoricalProbeError(
+        f"market_data storage guard blocked: {storage.reason_code}"
+    )
+
+
 def verify_stress_v2_window(
     repo_root: Path,
     window_id: str,
@@ -852,7 +897,6 @@ def verify_stress_v2_window(
     """Fail-closed validation for an on-disk stress v2 window."""
     from core.replay.dataset_provider import FileBackedDatasetProvider
     from core.replay.dataset_spec import DatasetSpec
-    from tools.market_data.market_data_storage_guard import validate_market_data_storage
 
     window_dir = (
         repo_root
@@ -872,16 +916,7 @@ def verify_stress_v2_window(
 
     spec = json.loads(spec_path.read_text(encoding="utf-8"))
     file_path = str(spec.get("file_path", ""))
-    _assert_no_legacy_market_data_path(file_path)
-
-    storage = validate_market_data_storage(
-        repo_root=repo_root,
-        required_write_bytes=0,
-    )
-    if not storage.allowed:
-        raise HistoricalProbeError(
-            f"market_data storage guard blocked: {storage.reason_code}"
-        )
+    storage_reason = _verify_stress_v2_storage_readonly(repo_root, file_path)
 
     candles = [
         json.loads(line)
@@ -936,7 +971,7 @@ def verify_stress_v2_window(
         "max_drawdown": metrics["max_dd"],
         "volatility": metrics["vol"],
         "file_path": file_path,
-        "storage_guard": storage.reason_code,
+        "storage_guard": storage_reason,
         "dataset_provider_load": "PASS",
     }
 
@@ -1007,7 +1042,9 @@ def rebuild_stress_windows_v2(
         old = existing_by_id.get(old_id)
         if old is None:
             continue
-        old_path = repo_root / str(old.get("candles_path", "")).replace("/", "\\")
+        old_path = _resolve_bank_candles_path(
+            repo_root, str(old.get("candles_path", ""))
+        )
         if old_path.exists():
             old_candles = [
                 json.loads(line)
