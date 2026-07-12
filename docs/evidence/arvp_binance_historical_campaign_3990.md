@@ -3,7 +3,9 @@
 **Date:** 2026-07-12  
 **Issue:** [#3990](https://github.com/jannekbuengener/Claire_de_Binare/issues/3990)  
 **LR:** NO-GO  
-**Final status:** `FULL_IMPORT_PASS_CAMPAIGN_PARTIAL`
+**Final status:** `HISTORICAL_CAMPAIGN_COMPLETE` (stress-v2 closeout 2026-07-12)
+
+See also: [`arvp_binance_historical_stress_v2_closeout.md`](arvp_binance_historical_stress_v2_closeout.md)
 
 ---
 
@@ -17,8 +19,8 @@
 | Scenarios | baseline, pessimistic_execution, feed_gap |
 | Datasets | 106 (window bank) |
 | Jobs | 318 |
-| PASS | 312 |
-| FAIL | 6 |
+| PASS | 312 (original) + 6 (stress v2) = **318 technical** |
+| FAIL | 6 (original, superseded) + 0 (v2) |
 | Evidence class | controlled_lab_evidence / historical_cross_venue_research |
 | `ranking_ready` | `false` |
 
@@ -43,7 +45,7 @@ All failures on **stress** windows crossing month-boundary gaps in concatenated 
 
 Error: `1m cadence violation` (multi-day gap between months in stress slice).
 
-**Fix delivered in PR:** `_enforce_contiguous_cadence` / `_is_contiguous_cadence` in `binance_window_bank.py`. Stress window rebuild recommended as follow-up validation, not blocking main bank delivery.
+**Fix delivered in PR #3997:** cadence guards in `binance_window_bank.py`. **Stress v2 closeout (2026-07-12):** two valid v2 windows reused from `2021-05`, selective 6-job re-run PASS, original FAILs superseded. Campaign evidence: `docs/evidence/arvp_binance_historical_stress_v2_closeout.md`.
 
 ---
 
