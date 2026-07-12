@@ -89,6 +89,18 @@ make context-doctor
 
 ## Development Workflow
 
+### Dedupe Before You Start
+
+Before opening an issue, branch, or PR:
+
+1. Search open issues and PRs for duplicates or overlapping scope.
+2. Extend existing work instead of creating parallel governance or doc hubs.
+3. Link related issues in the PR body (`Refs #...`).
+
+Worktree and branch cleanup of obsolete leftovers is tracked in
+[Issue #4006](https://github.com/jannekbuengener/Claire_de_Binare/issues/4006) —
+do not delete foreign worktrees or branches inside other scopes.
+
 ### Branch Naming
 
 Follow this pattern: `<type>/<issue-number>-<short-description>`
@@ -103,6 +115,15 @@ Follow this pattern: `<type>/<issue-number>-<short-description>`
 | `chore/` | Maintenance tasks |
 
 Example: `docs/3229-developer-onboarding-reconcile`
+
+### Branch and Worktree Hygiene
+
+- Branch from current `origin/main`.
+- Prefer a **dedicated git worktree** for issue-scoped delivery so parallel
+  sessions do not overwrite each other.
+- Keep the working tree clean before push; do not mix unrelated changes.
+- Cleanup of obsolete worktrees, branches, stashes, and remotes belongs to
+  [#4006](https://github.com/jannekbuengener/Claire_de_Binare/issues/4006).
 
 ### Commit Messages
 
@@ -166,10 +187,21 @@ pytest tests/e2e/ -v -m e2e
 
 ### Required Checks
 
-- CI gate (`.github/workflows/ci.yml`) must pass
-- `ruff check .` must pass
-- Tests must pass (unit + integration)
-- Coverage >= 80%
+Merge contract on `main` (SSOT:
+[`docs/runbooks/merge_policy_ci_gate.md`](docs/runbooks/merge_policy_ci_gate.md)):
+
+| Check | Source |
+|-------|--------|
+| `ci (Unit/Integration + Lint gesammelt)` | `.github/workflows/ci.yml` |
+| `policy-gate` | `.github/workflows/policy-gate.yml` |
+
+Inside the CI gate: `ruff check .`, unit/integration tests, and Black on changed
+Python under `services/` and `tests/`. Coverage >= 80% applies when running
+`make test-coverage` locally; the default CI slice does not enforce coverage on
+every PR.
+
+Classify your PR scope with the policy-gate rules in the merge-policy runbook.
+Do not assume labels without checking the live diff classification.
 
 ### Scope Boundaries
 
@@ -237,6 +269,29 @@ Claire_de_Binare/
 
 ---
 
+## Agents, Brain Evidence, and MCP Boundaries
+
+- Agent bootloader pointer: [`agents/AGENTS.md`](agents/AGENTS.md) (full Read Order
+  and operating rules live there — not duplicated here).
+- For strategy/runtime/module/service/contract/context scope, output the Brain
+  Evidence block from `agents/AGENTS.md` **before any plan**. Repo/GitHub live
+  evidence overrides brain or ledger claims.
+- Skills live under `.cursor/skills/`, `.codex/cdb_skills/`, `.opencode/skills/`
+  — load only what the task needs; skills do not grant write permission.
+- Context/MCP tools are read-only by default on `main`
+  (`PERSIST_ALLOWED=False`, `MUTATION_ALLOWED=False`). Productive DB writes, MCP
+  mutations, and runtime changes require explicit human scope.
+
+---
+
+## Security Reporting
+
+- **Do not** report security vulnerabilities as public GitHub issues.
+- Use the canonical policy: [`.github/SECURITY.md`](.github/SECURITY.md)
+- Contact: `modusmono.dev@gmail.com`
+
+---
+
 ## Safety / LR Boundaries
 
 - **LR bleibt NO-GO** — SSOT: `docs/live-readiness/LR-AUDIT-STATUS-2026-03-05.md`
@@ -250,7 +305,8 @@ Claire_de_Binare/
 
 ## Getting Help
 
-- **Issues:** Search existing issues or create a new one
+- **Issues:** Search existing issues or create a new one (not for security bugs)
 - **Documentation:** Start with [`docs/index.md`](docs/index.md)
 - **Repo Brain / Context:** `make context-doctor` or [`docs/surrealdb/README.md`](docs/surrealdb/README.md)
-- **Code of Conduct:** See [`CODE_OF_CONDUCT.md`](CODE_OF_CONDUCT.md)
+- **Code of Conduct:** [`CODE_OF_CONDUCT.md`](CODE_OF_CONDUCT.md)
+- **Security:** [`.github/SECURITY.md`](.github/SECURITY.md)
