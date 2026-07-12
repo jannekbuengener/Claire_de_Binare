@@ -8,6 +8,10 @@
 
 ---
 
+## Repo / Engineering Status (2026-07-13)
+
+- **#4013 ARVP Binance Historical Candidate Evidence → League Table (Meta)**: **DONE_MERGED_CLOSED_META_RECONCILED** — Child chain #4014–#4017 complete. Final PR [#4025](https://github.com/jannekbuengener/Claire_de_Binare/pull/4025) @ `f13419acc1cfbb4b65833a86b5f083d255be1e22` (Child 4 #4017). Exit: `HISTORICAL_LEAGUE_PARTIAL_NO_RANKABLE_WINNER` — `table_status=PARTIAL`, `ranking_ready=false`, `official_ranking=[]`, 2× NOT_RANKABLE + 1× PARTIAL_EVIDENCE. Report hash: `0252caea15ea5eb614bceda1bc0aeb3131fca896136079b67349c5724c296533`. Evidence: `docs/evidence/arvp_3990_strategy_league_table.md`. Prior children: #4019 @ `4fc7c323`, #4021 @ `15fba913`, #4022 @ `f9e0cb0a`. LR **NO-GO** unchanged.
+
 ## Repo / Engineering Status (2026-07-12)
 
 - **#3994 README / canon link guard**: **DONE_MERGED_CLOSED** — PR [#4011](https://github.com/jannekbuengener/Claire_de_Binare/pull/4011) @ `49eb7546`. Shared `tools/markdown_link_utils.py`, offline README link guard + CI step, CONTRIBUTING § README Link Convention. Prerequisite landed for [#3995](https://github.com/jannekbuengener/Claire_de_Binare/issues/3995) (OPEN — nav/snapshot reconcile in delivery). LR **NO-GO** unchanged.
