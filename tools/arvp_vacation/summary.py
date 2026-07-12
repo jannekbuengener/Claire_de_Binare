@@ -21,6 +21,35 @@ VERDICT_REJECT_ECON = "REJECT_ECONOMICS"
 VERDICT_INSUFFICIENT = "INSUFFICIENT_DATA"
 VERDICT_TECH_INVALID = "TECHNICALLY_INVALID"
 
+_SUMMARY_METRIC_ALIASES: dict[str, tuple[str, ...]] = {
+    "trade_count": ("closed_trades_total", "trade_count"),
+    "net_pnl": ("net_pnl_quote", "net_pnl", "total_return"),
+    "profit_factor": ("profit_factor",),
+    "expectancy": ("expectancy_r", "expectancy"),
+    "max_drawdown": ("max_drawdown_r", "max_drawdown"),
+    "win_rate": ("win_rate",),
+    "total_return": ("total_return", "net_pnl_quote", "net_pnl"),
+}
+
+
+def _resolve_scenario_metric(payload: Mapping[str, Any], *field_names: str) -> Any:
+    metrics = payload.get("metrics")
+    if isinstance(metrics, dict):
+        for field in field_names:
+            if field in metrics and metrics[field] is not None:
+                return metrics[field]
+    for field in field_names:
+        if field in payload and payload[field] is not None:
+            return payload[field]
+    return None
+
+
+def _resolve_trade_count(payload: Mapping[str, Any]) -> int | None:
+    value = _resolve_scenario_metric(payload, "closed_trades_total", "trade_count")
+    if value is None:
+        return None
+    return int(value)
+
 
 def _job_verdict(job: Mapping[str, Any]) -> str:
     status = job.get("status")
@@ -40,14 +69,21 @@ def _job_verdict(job: Mapping[str, Any]) -> str:
             return VERDICT_TECH_INVALID
     baseline = metrics.get("baseline") if isinstance(metrics, dict) else None
     if isinstance(baseline, dict):
-        trade_count = int(baseline.get("trade_count") or 0)
+        trade_count = _resolve_trade_count(baseline)
         if trade_count == 0:
             return VERDICT_HOLD
-        net = baseline.get("net_pnl") or baseline.get("total_return")
+        if trade_count is None:
+            return VERDICT_HOLD
+        net = _resolve_scenario_metric(baseline, "net_pnl_quote", "net_pnl", "total_return")
         if net is not None and float(net) < 0:
             pessimistic = metrics.get("pessimistic_execution")
             if isinstance(pessimistic, dict):
-                p_net = pessimistic.get("net_pnl") or pessimistic.get("total_return")
+                p_net = _resolve_scenario_metric(
+                    pessimistic,
+                    "net_pnl_quote",
+                    "net_pnl",
+                    "total_return",
+                )
                 if p_net is not None and float(p_net) < 0:
                     return VERDICT_REJECT_ECON
             return VERDICT_HOLD
@@ -110,9 +146,9 @@ def _metrics_summary(job: Mapping[str, Any]) -> dict[str, Any]:
         if scenario_id.startswith("_") or not isinstance(payload, dict):
             continue
         summary[scenario_id] = {
-            k: payload[k]
-            for k in ("trade_count", "net_pnl", "total_return", "win_rate")
-            if k in payload
+            summary_key: _resolve_scenario_metric(payload, *aliases)
+            for summary_key, aliases in _SUMMARY_METRIC_ALIASES.items()
+            if _resolve_scenario_metric(payload, *aliases) is not None
         }
     return summary
 

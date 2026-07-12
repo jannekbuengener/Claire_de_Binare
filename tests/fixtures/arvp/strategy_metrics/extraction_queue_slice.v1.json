@@ -1,0 +1,179 @@
+{
+  "schema_version": "1.0",
+  "campaign_id": "arvp_binance_historical_3990_2bb32b68_20260712T111944Z",
+  "jobs": [
+    {
+      "job_id": "vac-donchian-breakout-v1-binance_1m_month_2017_10-scenarios",
+      "strategy_id": "donchian_breakout_v1",
+      "dataset_id": "binance_1m_month_2017_10",
+      "spec_path": "artifacts/market_data/window_bank/binance/spot/BTCUSDT/1m/binance_1m_month_2017_10/dataset_spec.json",
+      "status": "PASS",
+      "artifacts_complete": true,
+      "scenarios": ["baseline", "pessimistic_execution", "feed_gap"],
+      "scenario_metrics": {
+        "baseline": {
+          "scenario_id": "baseline",
+          "strategy_id": "donchian_breakout_v1",
+          "dataset_summary": {
+            "candles_live": 44620,
+            "candles_total": 44640
+          },
+          "metrics": {
+            "closed_trades_total": 563,
+            "gross_pnl_quote": -8601.13,
+            "net_pnl_quote": -12152.38,
+            "fees_total_quote": 3551.25,
+            "max_drawdown_r": 2.35,
+            "profit_factor": 0.42,
+            "fee_adjusted_profit_factor": 0.2,
+            "expectancy_r": -0.003,
+            "fee_adjusted_expectancy_r": -0.004,
+            "win_rate": 0.19,
+            "avg_win_r": 0.0063,
+            "avg_loss_r": -0.0053,
+            "signals_total": 563,
+            "metrics_availability": {
+              "slippage_per_trade_available": false
+            }
+          }
+        },
+        "pessimistic_execution": {
+          "scenario_id": "pessimistic_execution",
+          "strategy_id": "donchian_breakout_v1",
+          "dataset_summary": {
+            "candles_live": 44620,
+            "candles_total": 44640
+          },
+          "metrics": {
+            "closed_trades_total": 563,
+            "gross_pnl_quote": -9000.0,
+            "net_pnl_quote": -12500.0,
+            "fees_total_quote": 3500.0,
+            "max_drawdown_r": 2.4,
+            "profit_factor": 0.4,
+            "fee_adjusted_profit_factor": 0.19,
+            "expectancy_r": -0.004,
+            "fee_adjusted_expectancy_r": -0.005,
+            "win_rate": 0.18,
+            "signals_total": 563,
+            "metrics_availability": {
+              "slippage_per_trade_available": false
+            }
+          }
+        },
+        "feed_gap": {
+          "scenario_id": "feed_gap",
+          "strategy_id": "donchian_breakout_v1",
+          "dataset_summary": {
+            "candles_live": 44620,
+            "candles_total": 44640
+          },
+          "metrics": {
+            "closed_trades_total": 560,
+            "gross_pnl_quote": -8500.0,
+            "net_pnl_quote": -12000.0,
+            "fees_total_quote": 3500.0,
+            "max_drawdown_r": 2.3,
+            "profit_factor": 0.41,
+            "fee_adjusted_profit_factor": 0.2,
+            "expectancy_r": -0.003,
+            "fee_adjusted_expectancy_r": -0.004,
+            "win_rate": 0.19,
+            "signals_total": 560,
+            "metrics_availability": {
+              "slippage_per_trade_available": false
+            }
+          }
+        }
+      }
+    },
+    {
+      "job_id": "vac-primary-breakout-v1-binance_1m_month_2017_11-scenarios",
+      "strategy_id": "primary_breakout_v1",
+      "dataset_id": "binance_1m_month_2017_11",
+      "spec_path": "artifacts/market_data/window_bank/binance/spot/BTCUSDT/1m/binance_1m_month_2017_11/dataset_spec.json",
+      "status": "PASS",
+      "artifacts_complete": true,
+      "scenarios": ["baseline", "pessimistic_execution", "feed_gap"],
+      "scenario_metrics": {
+        "baseline": {
+          "scenario_id": "baseline",
+          "strategy_id": "primary_breakout_v1",
+          "dataset_summary": {
+            "candles_total": 43200
+          },
+          "metrics": {
+            "closed_trades_total": 0,
+            "gross_pnl_quote": 0,
+            "net_pnl_quote": 0,
+            "fees_total_quote": 0,
+            "max_drawdown_r": 0.0,
+            "profit_factor": 0.0,
+            "expectancy_r": 0.0,
+            "win_rate": 0.0,
+            "fee_adjusted_max_drawdown_r": null,
+            "fee_adjusted_profit_factor": null,
+            "fee_adjusted_expectancy_r": null,
+            "avg_win_r": null,
+            "avg_loss_r": null,
+            "signals_total": 0,
+            "metrics_availability": {
+              "slippage_per_trade_available": false
+            }
+          }
+        },
+        "pessimistic_execution": {
+          "scenario_id": "pessimistic_execution",
+          "strategy_id": "primary_breakout_v1",
+          "dataset_summary": {
+            "candles_total": 43200
+          },
+          "metrics": {
+            "closed_trades_total": 0,
+            "gross_pnl_quote": 0,
+            "net_pnl_quote": 0,
+            "fees_total_quote": 0,
+            "max_drawdown_r": 0.0,
+            "profit_factor": 0.0,
+            "expectancy_r": 0.0,
+            "win_rate": 0.0,
+            "signals_total": 0,
+            "metrics_availability": {
+              "slippage_per_trade_available": false
+            }
+          }
+        },
+        "feed_gap": {
+          "scenario_id": "feed_gap",
+          "strategy_id": "primary_breakout_v1",
+          "dataset_summary": {
+            "candles_total": 43200
+          },
+          "metrics": {
+            "closed_trades_total": 0,
+            "gross_pnl_quote": 0,
+            "net_pnl_quote": 0,
+            "fees_total_quote": 0,
+            "max_drawdown_r": 0.0,
+            "profit_factor": 0.0,
+            "expectancy_r": 0.0,
+            "win_rate": 0.0,
+            "signals_total": 0,
+            "metrics_availability": {
+              "slippage_per_trade_available": false
+            }
+          }
+        }
+      }
+    },
+    {
+      "job_id": "vac-donchian-breakout-v1-binance_1m_stress_max_drawdown-scenarios",
+      "strategy_id": "donchian_breakout_v1",
+      "dataset_id": "binance_1m_stress_max_drawdown",
+      "status": "FAIL",
+      "superseded_by_stress_v2_rerun": true,
+      "artifacts_complete": false
+    }
+  ],
+  "_fixture_note": "Redacted extraction slice: 2 canonical jobs + 1 superseded stress job."
+}

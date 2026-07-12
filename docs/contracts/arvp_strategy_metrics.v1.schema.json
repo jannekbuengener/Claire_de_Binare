@@ -1,0 +1,180 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "title": "ARVP Strategy Metrics Contract",
+  "description": "Normalized per-job per-scenario strategy metrics for ARVP vacation replay campaigns. Issue #4015.",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "schema_version",
+    "campaign_id",
+    "canonical_job_selection",
+    "record_count",
+    "content_hash",
+    "records"
+  ],
+  "properties": {
+    "schema_version": {
+      "const": "arvp_strategy_metrics.v1"
+    },
+    "campaign_id": {
+      "type": "string",
+      "minLength": 1
+    },
+    "canonical_job_selection": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "selector",
+        "queue_record_count",
+        "canonical_job_count",
+        "excluded_superseded_job_count"
+      ],
+      "properties": {
+        "selector": {
+          "const": "superseded_by_stress_v2_rerun != true"
+        },
+        "queue_record_count": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "canonical_job_count": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "excluded_superseded_job_count": {
+          "type": "integer",
+          "minimum": 0
+        }
+      }
+    },
+    "record_count": {
+      "type": "integer",
+      "minimum": 0
+    },
+    "content_hash": {
+      "type": "string",
+      "pattern": "^[a-f0-9]{64}$"
+    },
+    "records": {
+      "type": "array",
+      "items": {
+        "$ref": "#/definitions/strategy_metric_record"
+      }
+    }
+  },
+  "definitions": {
+    "strategy_metric_record": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "schema_version",
+        "campaign_id",
+        "job_id",
+        "strategy_id",
+        "window_id",
+        "window_class",
+        "purpose",
+        "scenario",
+        "source_artifact",
+        "source_artifact_sha256",
+        "evidence_class",
+        "venue",
+        "canonical_job",
+        "gross_pnl_quote",
+        "net_pnl_quote",
+        "fees_total_quote",
+        "max_drawdown_r",
+        "fee_adjusted_max_drawdown_r",
+        "profit_factor",
+        "fee_adjusted_profit_factor",
+        "expectancy_r",
+        "fee_adjusted_expectancy_r",
+        "closed_trades_total",
+        "win_rate",
+        "avg_win_r",
+        "avg_loss_r",
+        "candles_total",
+        "slippage_availability",
+        "regime_availability",
+        "exposure_availability",
+        "rankable",
+        "not_rankable_reasons",
+        "data_quality_flags"
+      ],
+      "properties": {
+        "schema_version": {
+          "const": "arvp_strategy_metrics.v1"
+        },
+        "campaign_id": { "type": "string" },
+        "job_id": { "type": "string" },
+        "strategy_id": { "type": "string" },
+        "window_id": { "type": "string" },
+        "window_class": { "type": "string" },
+        "purpose": { "type": ["string", "null"] },
+        "scenario": {
+          "type": "string",
+          "enum": ["baseline", "pessimistic_execution", "feed_gap"]
+        },
+        "source_artifact": { "type": "string" },
+        "source_artifact_sha256": {
+          "type": "string",
+          "pattern": "^[a-f0-9]{64}$"
+        },
+        "evidence_class": {
+          "const": "historical_cross_venue_research"
+        },
+        "venue": { "const": "binance" },
+        "canonical_job": { "const": true },
+        "gross_pnl_quote": { "type": ["number", "null"] },
+        "net_pnl_quote": { "type": ["number", "null"] },
+        "fees_total_quote": { "type": ["number", "null"] },
+        "max_drawdown_r": { "type": ["number", "null"] },
+        "fee_adjusted_max_drawdown_r": { "type": ["number", "null"] },
+        "profit_factor": {
+          "oneOf": [
+            { "type": "number" },
+            { "type": "null" },
+            { "const": "infinity" },
+            { "const": "-infinity" }
+          ]
+        },
+        "fee_adjusted_profit_factor": {
+          "oneOf": [
+            { "type": "number" },
+            { "type": "null" },
+            { "const": "infinity" },
+            { "const": "-infinity" }
+          ]
+        },
+        "expectancy_r": { "type": ["number", "null"] },
+        "fee_adjusted_expectancy_r": { "type": ["number", "null"] },
+        "closed_trades_total": { "type": ["integer", "null"] },
+        "win_rate": { "type": ["number", "null"] },
+        "avg_win_r": { "type": ["number", "null"] },
+        "avg_loss_r": { "type": ["number", "null"] },
+        "candles_total": { "type": ["integer", "null"] },
+        "slippage_availability": {
+          "type": "string",
+          "enum": ["available", "not_available", "partial"]
+        },
+        "regime_availability": {
+          "type": "string",
+          "enum": ["available", "not_available", "partial"]
+        },
+        "exposure_availability": {
+          "type": "string",
+          "enum": ["available", "not_available", "partial"]
+        },
+        "rankable": { "type": "boolean" },
+        "not_rankable_reasons": {
+          "type": "array",
+          "items": { "type": "string" }
+        },
+        "data_quality_flags": {
+          "type": "array",
+          "items": { "type": "string" }
+        }
+      }
+    }
+  }
+}
