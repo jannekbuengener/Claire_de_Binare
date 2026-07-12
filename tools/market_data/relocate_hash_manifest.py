@@ -18,7 +18,7 @@ REPO_ROOT = Path(__file__).resolve().parents[2]
 if str(REPO_ROOT) not in sys.path:
     sys.path.insert(0, str(REPO_ROOT))
 
-from tools.market_data.historical_common import HistoricalProbeError, sha256_file, write_json
+from tools.market_data.historical_common import HistoricalProbeError, sha256_file, utc_now_iso, write_json
 
 CHUNK_SIZE = 1024 * 1024
 
@@ -79,10 +79,14 @@ def iter_hash_entries(root: Path) -> Iterator[HashEntry]:
             except OSError as exc:
                 raise RelocateHashError(f"access error: {file_path}") from exc
             last_write = datetime.fromtimestamp(stat_result.st_mtime, tz=UTC).isoformat()
+            try:
+                file_sha256 = sha256_file(file_path)
+            except OSError as exc:
+                raise RelocateHashError(f"access error: {file_path}") from exc
             yield HashEntry(
                 relative_path=_normalize_relative(root, file_path),
                 size_bytes=stat_result.st_size,
-                sha256=sha256_file(file_path),
+                sha256=file_sha256,
                 last_write_utc=last_write,
             )
 
@@ -109,7 +113,7 @@ def create_manifest(*, root: Path, output: Path) -> dict[str, Any]:
         "file_count": len(entries),
         "total_bytes": total_bytes,
         "manifest_fingerprint": manifest_fingerprint(entries),
-        "created_at_utc": datetime.now(tz=UTC).isoformat(),
+        "created_at_utc": utc_now_iso(),
     }
     return summary
 
@@ -188,7 +192,7 @@ def compare_manifests(
         "source_manifest_fingerprint": manifest_fingerprint(source_entries),
         "destination_manifest_fingerprint": manifest_fingerprint(dest_entries),
         "verdict": verdict,
-        "compared_at_utc": datetime.now(tz=UTC).isoformat(),
+        "compared_at_utc": utc_now_iso(),
     }
     write_json(output, report)
     return report

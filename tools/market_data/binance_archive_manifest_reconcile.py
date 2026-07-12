@@ -15,7 +15,7 @@ REPO_ROOT = Path(__file__).resolve().parents[2]
 if str(REPO_ROOT) not in sys.path:
     sys.path.insert(0, str(REPO_ROOT))
 
-from tools.market_data.historical_common import HistoricalProbeError, write_json
+from tools.market_data.historical_common import HistoricalProbeError, utc_now_iso, write_json
 
 SCHEMA_VERSION = "binance_archive_reconcile.v1"
 SYMBOL = "BTCUSDT"
@@ -195,7 +195,7 @@ def reconcile_market_data_root(
 
     earliest_month = norm_months[0] if norm_months else None
     latest_month = norm_months[-1] if norm_months else None
-    scan_as_of_utc = datetime.now(tz=UTC).isoformat()
+    scan_as_of_utc = utc_now_iso()
 
     report_core = {
         "schema_version": SCHEMA_VERSION,

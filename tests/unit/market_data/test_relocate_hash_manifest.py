@@ -115,13 +115,23 @@ def test_hash_manifest_access_error(tmp_path: Path, monkeypatch: pytest.MonkeyPa
     blocked = root / "blocked.txt"
     blocked.write_text("x", encoding="utf-8")
 
-    original_stat = Path.stat
+    if sys.platform == "win32":
+        original_stat = Path.stat
 
-    def _fail_stat(self: Path, *args, **kwargs):  # noqa: ANN002, ANN003
-        if self == blocked:
-            raise OSError("access denied")
-        return original_stat(self, *args, **kwargs)
+        def _fail_stat(self: Path, *args, **kwargs):  # noqa: ANN002, ANN003
+            if self.name == blocked.name and self.parent == blocked.parent:
+                raise OSError("access denied")
+            return original_stat(self, *args, **kwargs)
 
-    monkeypatch.setattr(Path, "stat", _fail_stat)
+        monkeypatch.setattr(Path, "stat", _fail_stat)
+    else:
+        blocked.chmod(0)
+        try:
+            with pytest.raises(RelocateHashError, match="access error"):
+                list(iter_hash_entries(root))
+            return
+        finally:
+            blocked.chmod(stat.S_IWUSR | stat.S_IRUSR)
+
     with pytest.raises(RelocateHashError, match="access error"):
         list(iter_hash_entries(root))
