@@ -467,6 +467,115 @@
       "minLength": 1,
       "maxLength": 40,
       "description": "Traceability reference to a follow-up GitHub issue (e.g. #3152)."
+    },
+    "strategy_id": {
+      "type": "string",
+      "minLength": 1,
+      "maxLength": 120,
+      "description": "Strategy identifier for ARVP campaign candidate packets (#4016)."
+    },
+    "parameter_fingerprint": {
+      "type": "string",
+      "minLength": 1,
+      "maxLength": 200,
+      "description": "Parameter fingerprint for candidate identity; campaign_default when no vector is present."
+    },
+    "campaign_id": {
+      "type": "string",
+      "minLength": 1,
+      "maxLength": 200,
+      "description": "ARVP vacation campaign identifier."
+    },
+    "source_contract": {
+      "type": "string",
+      "minLength": 1,
+      "maxLength": 120,
+      "description": "Upstream normalized metrics contract (e.g. arvp_strategy_metrics.v1)."
+    },
+    "source_content_hash": {
+      "type": "string",
+      "pattern": "^[a-f0-9]{64}$",
+      "description": "Deterministic SHA-256 hash over upstream metrics bundle records."
+    },
+    "source_record_count": {
+      "type": "integer",
+      "minimum": 0,
+      "description": "Count of upstream scenario records consumed."
+    },
+    "source_venue": {
+      "type": "string",
+      "minLength": 1,
+      "maxLength": 120,
+      "description": "Research venue label (e.g. Binance Spot BTCUSDT)."
+    },
+    "source_artifact_references": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": ["artifact_role", "schema_ref", "content_hash", "record_count"],
+        "properties": {
+          "artifact_role": { "type": "string" },
+          "schema_ref": { "type": "string" },
+          "content_hash": { "type": "string", "pattern": "^[a-f0-9]{64}$" },
+          "record_count": { "type": "integer", "minimum": 0 }
+        }
+      }
+    },
+    "ranking_ready": {
+      "type": "boolean",
+      "description": "Explicit ranking readiness flag; must remain false for ARVP cross-venue research."
+    },
+    "rankability_status": {
+      "type": "string",
+      "enum": [
+        "RANKABLE_FOR_CROSS_VENUE_COMPARISON",
+        "NOT_RANKABLE",
+        "PARTIAL_EVIDENCE"
+      ]
+    },
+    "rankability_reasons": {
+      "type": "array",
+      "items": { "type": "string" }
+    },
+    "paper_reference_status": {
+      "type": "string",
+      "enum": ["not_run", "aligned", "ambiguous_drift", "missing_reference"]
+    },
+    "same_venue_status": {
+      "type": "string",
+      "enum": ["not_run", "confirmed", "not_applicable"]
+    },
+    "data_quality_flags": {
+      "type": "array",
+      "items": { "type": "string" }
+    },
+    "content_hash": {
+      "type": "string",
+      "pattern": "^[a-f0-9]{64}$",
+      "description": "Deterministic SHA-256 hash over packet payload excluding generated_at."
+    },
+    "arvp_coverage": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "purpose_splits": { "type": "array", "items": { "type": "string" } },
+        "window_classes": { "type": "array", "items": { "type": "string" } },
+        "scenario_coverage": { "type": "array", "items": { "type": "string" } },
+        "sample_counts": { "type": "object" },
+        "trade_counts": { "type": "object" }
+      }
+    },
+    "arvp_evidence": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "economic_metric_summaries": { "type": "array" },
+        "scenario_sensitivity": { "type": "array" },
+        "split_stability": { "type": "array" },
+        "cost_evidence": { "type": "object" },
+        "stress_evidence": { "type": "object" }
+      }
     }
   }
 }
