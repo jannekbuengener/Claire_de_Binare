@@ -1,0 +1,48 @@
+{
+  "schema_version": "npm_cache_cleanup_evidence_redacted.v1",
+  "issue": "#4001",
+  "parent_issue": "#3999",
+  "phase": "preflight_and_dry_run",
+  "scan_as_of_utc": "2026-07-12T18:36:07.2223880Z",
+  "status": "READY_FOR_HUMAN_APPLY_GO",
+  "apply_gate": "blocked_until_human_go_apply_approved",
+  "scope_path": "D:\\Dev\\Tools\\npm-cache",
+  "scope_exclusive": true,
+  "npm_cache_config_match": true,
+  "npm_version": "11.16.0",
+  "preflight": {
+    "size_bytes": 63043419766,
+    "size_gb": 58.714,
+    "file_count": 57958,
+    "directory_count": 17461,
+    "scan_duration_seconds": 5.82,
+    "scan_status": "complete",
+    "access_error_count": 0,
+    "internal_reparse_points_count": 30,
+    "internal_reparse_note": "expected npm cache hardlinks; apply via npm cache clean"
+  },
+  "issue_3999_estimate_gb": 58.714,
+  "estimate_vs_live_delta_gb": 0.0,
+  "dry_run": {
+    "planned_action": "npm cache clean --force",
+    "expected_reclaim_gb": 58.714,
+    "risk": "low",
+    "classification": "REGENERABLE",
+    "apply_executed": false
+  },
+  "recovery": {
+    "methods": [
+      "npm cache clean --force",
+      "npm install or npm ci repopulates cache on demand",
+      "npm cache verify after rebuild"
+    ],
+    "no_impact_on": ["git repos", "node_modules", "lockfiles", "source code"]
+  },
+  "excluded_paths": [
+    "D:\\Dev\\Tools\\npm",
+    "D:\\Dev\\AI",
+    "D:\\Dev\\Backups",
+    "D:\\Dev\\Workspaces\\Repos"
+  ],
+  "redaction_note": "Raw preflight under artifacts/local-dev-hygiene/npm-cache-cleanup/ is gitignored."
+}
