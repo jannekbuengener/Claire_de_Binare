@@ -162,7 +162,7 @@
           "additionalProperties": true
         },
         "regime_stats": {
-          "$ref": "../regime_stats.v1.schema.json"
+          "$ref": "regime_stats.v1.schema.json"
         },
         "slippage_availability": {
           "type": "string",
