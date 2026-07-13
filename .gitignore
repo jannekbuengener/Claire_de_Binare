@@ -16,6 +16,15 @@
 !services/validation/momentum_backtest_runner.py
 !services/validation/donchian_breakout_backtest_runner.py
 !services/validation/breakout_trend_filter_backtest_runner.py
+!services/validation/breakout_volatility_filter_backtest_runner.py
+!services/validation/volatility_breakout_backtest_runner.py
+!services/validation/bollinger_squeeze_breakout_backtest_runner.py
+!services/validation/atr_expansion_backtest_runner.py
+!services/validation/ema_trend_follow_backtest_runner.py
+!services/validation/ma_crossover_backtest_runner.py
+!services/validation/opening_range_breakout_backtest_runner.py
+!services/validation/roc_breakout_confirm_backtest_runner.py
+!services/validation/pack_a_backtest_report.py
 !cdb_agent_sdk/tests/**/*.py
 !cdb_agent_sdk/tests/**/*.js
 debug_*.py
@@ -228,6 +237,13 @@ infrastructure/config/surrealdb/context_query.local.yaml
 
 # Local-only ops helper artifact (do not version)
 scripts/cdb_ops.ps1
+
+# Local D:\Dev hygiene raw scan outputs (#3999) — redacted summary only in docs/evidence/
+artifacts/local-dev-hygiene/
+
+# Binance market_data relocation staging and raw evidence (#4004)
+/market_data.__incoming_*/
+/data-relocation/
 
 # Decision Contract audit records (generated at runtime + by tests)
 reports/decision_contract/

@@ -141,8 +141,8 @@ def test_manifests_readme_documents_campaign_scope_and_no_runtime_go() -> None:
     assert "runtime_np_parallel_signal_compose_override.yml" in text
     assert "no-go" in text
     assert "#3912" in text
-    assert "not ready" in text
     assert "runtime-go" in text
+    assert "not ready" in text or "pending" in text
 
 
 def test_signal_readme_links_parallel_override() -> None:

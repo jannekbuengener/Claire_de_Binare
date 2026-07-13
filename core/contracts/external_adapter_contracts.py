@@ -52,6 +52,7 @@ class StrategySignalCandidate:
     confidence: float | None = None
     price: float | None = None
     pct_change: float | None = None
+    signal_id: str | None = None
     metadata: Mapping[str, Any] | None = None
 
 

@@ -30,9 +30,15 @@ import psycopg2
 import psycopg2.extensions
 
 from core.replay.canonical_json import canonical_hash
+from core.replay.correlation_ledger_attribution import build_signal_ledger_payload
+from core.replay.correlation_ledger_insert import (
+    CorrelationLedgerInsertResult,
+    classify_insert_rowcount,
+)
 from core.utils.clock import utcnow
 from core.utils.redis_payload import sanitize_signal
 from core.utils.uuid_gen import (
+    format_runtime_signal_id,
     generate_uuid_hex,
     compute_correlation_id,
     compute_event_pk,
@@ -97,6 +103,7 @@ stats = {
     "latency_count": 0,  # Number of processed messages
     "errors_total": 0,  # Total errors
     "errors_by_type": {},  # Errors grouped by error type
+    "ledger_insert_conflicts": 0,  # ON CONFLICT DO NOTHING suppressions
 }
 
 
@@ -294,8 +301,17 @@ class SignalEngine:
                         f"stimulus:{stimulus_run_id}:{candidate.symbol}:"
                         f"{candidate.side}:{market_data.timestamp}"
                     )
+        signal_id = (
+            candidate.signal_id
+            if candidate.signal_id
+            else (
+                f"sig-{generate_uuid_hex(name=signal_id_name, length=32)}"
+                if signal_id_name
+                else format_runtime_signal_id(length=32)
+            )
+        )
         signal = Signal(
-            signal_id=f"sig-{generate_uuid_hex(name=signal_id_name, length=32)}",
+            signal_id=signal_id,
             symbol=candidate.symbol,
             side=candidate.side,
             reason=candidate.reason,
@@ -360,6 +376,7 @@ class SignalEngine:
                         confidence=breakout_signal.confidence,
                         price=breakout_signal.price,
                         pct_change=breakout_signal.pct_change,
+                        signal_id=breakout_signal.signal_id,
                         metadata={
                             "adapter_id": adapter_id,
                             "signal_metadata": breakout_signal.metadata or {},
@@ -394,6 +411,7 @@ class SignalEngine:
                         confidence=donchian_signal.confidence,
                         price=donchian_signal.price,
                         pct_change=donchian_signal.pct_change,
+                        signal_id=donchian_signal.signal_id,
                         metadata={
                             "adapter_id": adapter_id,
                             "signal_metadata": donchian_signal.metadata or {},
@@ -461,12 +479,15 @@ class SignalEngine:
             self._pg_conn = None
             return None
 
-    def _persist_correlation_event(self, signal: "Signal", *, event_type: str) -> bool:
+    def _persist_correlation_event(
+        self, signal: "Signal", *, event_type: str
+    ) -> CorrelationLedgerInsertResult:
         """
         Persist SIGNAL event to correlation_ledger (Phase 8C).
 
         Fail-closed: If signal_id missing, raises ValueError.
-        ON CONFLICT (event_pk) DO NOTHING for idempotent writes.
+        ON CONFLICT (event_pk) DO NOTHING for idempotent writes; conflicts are
+        surfaced as CorrelationLedgerInsertResult.CONFLICT (not silent success).
         """
         if not signal.signal_id:
             raise ValueError(
@@ -480,7 +501,7 @@ class SignalEngine:
             conn = self._get_postgres_conn()
             if conn is None:
                 logger.warning("⚠️ correlation_ledger write skipped (no DB connection)")
-                return False
+                return CorrelationLedgerInsertResult.SKIPPED
 
             cursor = conn.cursor()
             cursor.execute("SET LOCAL statement_timeout = '250ms'")
@@ -502,14 +523,30 @@ class SignalEngine:
                     event_type,
                     signal.symbol,
                     signal.ts_ms,
-                    json.dumps(signal.to_dict()),
+                    json.dumps(build_signal_ledger_payload(signal.to_dict())),
                 ),
             )
-            logger.debug(f"📊 correlation_ledger SIGNAL: {signal.signal_id}")
-            return True
+            result = classify_insert_rowcount(cursor.rowcount)
+            if result == CorrelationLedgerInsertResult.INSERTED:
+                logger.debug(f"📊 correlation_ledger SIGNAL: {signal.signal_id}")
+            elif result == CorrelationLedgerInsertResult.CONFLICT:
+                stats["ledger_insert_conflicts"] += 1
+                logger.warning(
+                    "⚠️ correlation_ledger SIGNAL insert conflict "
+                    "(event_pk collision, row suppressed): signal_id=%s event_pk=%s",
+                    signal.signal_id,
+                    event_pk,
+                )
+            else:
+                logger.error(
+                    "❌ correlation_ledger SIGNAL unexpected rowcount=%s signal_id=%s",
+                    cursor.rowcount,
+                    signal.signal_id,
+                )
+            return result
         except Exception as e:
             logger.error(f"❌ correlation_ledger write failed: {e}")
-            return False
+            return CorrelationLedgerInsertResult.ERROR
 
     def connect_redis(self):
         """Verbindung zu Redis herstellen"""
@@ -648,7 +685,7 @@ class SignalEngine:
             and close_now < lower_level
         ):
             result_signal = Signal(
-                signal_id=f"sig-{generate_uuid_hex(length=32)}",
+                signal_id=format_runtime_signal_id(length=32),
                 symbol=symbol,
                 side="SELL",
                 reason="donchian_lower_break",
@@ -690,7 +727,7 @@ class SignalEngine:
             )
         ):
             result_signal = Signal(
-                signal_id=f"sig-{generate_uuid_hex(length=32)}",
+                signal_id=format_runtime_signal_id(length=32),
                 symbol=symbol,
                 side="BUY",
                 reason="donchian_upper_break",
@@ -816,7 +853,7 @@ class SignalEngine:
             and close_now < lowest_low
         ):
             result_signal = Signal(
-                signal_id=f"sig-{generate_uuid_hex(length=32)}",
+                signal_id=format_runtime_signal_id(length=32),
                 symbol=symbol,
                 side="SELL",
                 reason="channel_exit",
@@ -861,7 +898,7 @@ class SignalEngine:
             )
             if entry_ready:
                 result_signal = Signal(
-                    signal_id=f"sig-{generate_uuid_hex(length=32)}",
+                    signal_id=format_runtime_signal_id(length=32),
                     symbol=symbol,
                     side="BUY",
                     reason="breakout_entry",
@@ -997,9 +1034,16 @@ class SignalEngine:
             # Phase 8C: Persist SIGNAL event to correlation_ledger
             # ValueError (missing signal_id) = fail-closed (bubble up)
             # DB errors = warn-only (evidence debt, don't block trading)
-            if not self._persist_correlation_event(signal, event_type="SIGNAL"):
+            insert_result = self._persist_correlation_event(signal, event_type="SIGNAL")
+            if insert_result == CorrelationLedgerInsertResult.CONFLICT:
+                self._record_error("ledger_insert_conflict")
+            elif insert_result in (
+                CorrelationLedgerInsertResult.SKIPPED,
+                CorrelationLedgerInsertResult.ERROR,
+            ):
                 logger.warning(
-                    f"⚠️ correlation_ledger write failed for {signal.signal_id} (evidence debt)"
+                    f"⚠️ correlation_ledger write failed for {signal.signal_id} "
+                    f"(evidence debt, result={insert_result.value})"
                 )
 
             # Sanitize payload (Issue #349: None-filtering + contract v1.0 enforcement)
@@ -1161,6 +1205,11 @@ if _FLASK_AVAILABLE:
             "# HELP signals_generated_total Anzahl generierter Signale\n"
             "# TYPE signals_generated_total counter\n"
             f"signals_generated_total {stats['signals_generated']}\n\n"
+            "# HELP correlation_ledger_insert_conflicts_total "
+            "SIGNAL rows suppressed by event_pk ON CONFLICT DO NOTHING\n"
+            "# TYPE correlation_ledger_insert_conflicts_total counter\n"
+            f"correlation_ledger_insert_conflicts_total "
+            f"{stats['ledger_insert_conflicts']}\n\n"
             "# HELP signal_engine_status Service Status (1=running, 0=stopped)\n"
             "# TYPE signal_engine_status gauge\n"
             f"signal_engine_status {1 if stats['status'] == 'running' else 0}\n\n"

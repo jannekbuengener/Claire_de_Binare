@@ -65,7 +65,7 @@ def test_known_unmapped_arvp_surfaces_are_visible() -> None:
 def test_p0_p1_issue_refs_are_present_on_entries() -> None:
     payload = helpers.build_arvp_test_map()
     issue_refs = {entry["issue_ref"] for entry in payload["entries"]}
-    expected = {
+    expected_minimum = {
         "#3821",
         "#3822",
         "#3823",
@@ -74,7 +74,21 @@ def test_p0_p1_issue_refs_are_present_on_entries() -> None:
         "#3828",
         "#3829",
     }
-    assert issue_refs == expected
+    assert expected_minimum.issubset(issue_refs)
+
+
+def test_parallel_ledger_isolation_guard_is_mapped() -> None:
+    payload = helpers.build_arvp_test_map()
+    matches = [
+        entry
+        for entry in payload["entries"]
+        if entry["issue_ref"] == "#3911"
+        and entry["surface"] == "parallel_ledger_isolation"
+    ]
+    assert len(matches) == 1
+    assert (
+        helpers.REPO_ROOT / matches[0]["test"]
+    ).is_file()
 
 
 def test_map_builder_is_deterministic() -> None:

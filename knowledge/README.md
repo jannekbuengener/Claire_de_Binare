@@ -10,14 +10,14 @@ reviews, and evidence that must stay close to the working codebase.
 
 ## Key Entry Points
 
-- `knowledge/CDB_KNOWLEDGE_HUB.md`
-- `CURRENT_STATUS.md` (working repo / engineering status)
-- `docs/live-readiness/LR-AUDIT-STATUS-2026-03-05.md` (operational live-readiness status)
-- `docs/live-readiness/LR-050-FINAL-RECONCILE.md` (P5 live-capital verdict SSOT)
-- `knowledge/CURRENT_STATUS.md` (historical knowledge snapshot)
-- `knowledge/SYSTEM.CONTEXT.md`
-- `knowledge/ACTIVE_ROADMAP.md`
-- `knowledge/governance/`
+- [`knowledge/CDB_KNOWLEDGE_HUB.md`](CDB_KNOWLEDGE_HUB.md) — decision/handoff hub; **EXECUTIVE SNAPSHOT (2025-12-15) is historical**, not live repo/LR truth
+- [`CURRENT_STATUS.md`](../CURRENT_STATUS.md) (working repo / engineering status)
+- [`docs/live-readiness/LR-AUDIT-STATUS-2026-03-05.md`](../docs/live-readiness/LR-AUDIT-STATUS-2026-03-05.md) (operational live-readiness status)
+- [`docs/live-readiness/LR-050-FINAL-RECONCILE.md`](../docs/live-readiness/LR-050-FINAL-RECONCILE.md) (P5 live-capital verdict SSOT)
+- [`knowledge/CURRENT_STATUS.md`](CURRENT_STATUS.md) (historical knowledge snapshot)
+- [`knowledge/SYSTEM.CONTEXT.md`](SYSTEM.CONTEXT.md)
+- [`knowledge/ACTIVE_ROADMAP.md`](ACTIVE_ROADMAP.md)
+- [`knowledge/governance/`](governance/)
 
 ## Major Areas
 
@@ -33,3 +33,9 @@ reviews, and evidence that must stay close to the working codebase.
 This directory is no longer a pointer layer for an external docs repository.
 Productive knowledge lives here. Historical docs-hub residue is preserved locally under
 archive paths when provenance matters.
+
+## Navigation
+
+- [Projektübersicht](../README.md)
+- [Dokumentationsindex](../docs/index.md)
+- [Agenten-Bootloader](../agents/AGENTS.md)

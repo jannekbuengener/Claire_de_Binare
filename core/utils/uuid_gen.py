@@ -65,6 +65,25 @@ def generate_uuid_hex(
     return uuid.UUID(value).hex[:length]
 
 
+def generate_runtime_signal_id_hex(length: int = 32) -> str:
+    """Generate a collision-safe runtime signal id fragment (UUID4-based).
+
+    Use for live natural-paper/runtime paths. Do **not** use the module-global
+    deterministic counter here: container restarts would reuse ids and suppress
+    correlation_ledger inserts via ON CONFLICT DO NOTHING.
+
+    For replay/fixtures, keep using ``generate_uuid_hex(name=..., seed=...)``.
+    """
+    if length < 1 or length > 32:
+        raise ValueError("runtime signal id length must be between 1 and 32")
+    return uuid.uuid4().hex[:length]
+
+
+def format_runtime_signal_id(length: int = 32) -> str:
+    """Return a runtime ``sig-`` prefixed signal id safe across restarts."""
+    return f"sig-{generate_runtime_signal_id_hex(length=length)}"
+
+
 # Namespace for decision_pk (Phase 8B)
 DECISION_PK_NAMESPACE = uuid.UUID("a1b2c3d4-e5f6-7890-abcd-ef1234567890")
 

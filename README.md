@@ -18,6 +18,13 @@ Diese Root-README ist die GitHub-Haupt-Landingpage. Der aktive Pfad bleibt Shado
 - Repo-/Engineering-Ledger: [`CURRENT_STATUS.md`](CURRENT_STATUS.md)
 - Support: GitHub Sponsors is configured via [`.github/FUNDING.yml`](.github/FUNDING.yml) for people who want to support ongoing development.
 
+## Community & Governance
+
+- [Contributing](CONTRIBUTING.md) — development workflow, tests, and contribution rules
+- [Code of Conduct](CODE_OF_CONDUCT.md) — community standards (Contributor Covenant 3.0)
+- [License](LICENSE) — MIT License
+- [Security Policy](.github/SECURITY.md) — private vulnerability reporting (no public security issues)
+
 ## Safety / LR Status
 
 - **Control-Board Stage:** `trade-capable` (Board-Kontext, nicht LR-Freigabe)
@@ -59,27 +66,26 @@ Stage und LR sind orthogonale Systeme: `trade-capable` autorisiert kein Live-Tra
 
 ## Current-main Snapshot
 
-Auf `origin/main` sind die juengsten Kern-Cluster gelandet, u. a.:
+Auf `origin/main` (`f9e0cb0a`, Stand 2026-07-13) sind die juengsten relevanten Merge-Cluster u. a.:
 
-- **LR-050 Final Reconcile (#2535):** Child-SSOTs #2526–#2534 plus finales Reconcile-Dokument; Verdikt bleibt **NO-GO** / not ready for live capital.
-- **SurrealDB / Context Phase-2 closeout (#1976):** Grandparent arc geschlossen; Real-Task-Proofs, Wave-Matrix-Recert und Phase-2-Review auf `main`.
-- **Context / MCP tooling hardening (#2847):** Benchmark #2 ratifiziert; Harness PASS / PASS_WITH_LIMITS ohne produktive Writes.
-- **CI / Agent surface (#2994/#3405/#3575):** Canonical PR-Gate `.github/workflows/ci.yml` und `policy-gate.yml` laufen GitHub-hosted; self-hosted runner are decommissioned from active workflow dependencies.
+- **README / canon link guard ([#3994](https://github.com/jannekbuengener/Claire_de_Binare/issues/3994) / PR [#4011](https://github.com/jannekbuengener/Claire_de_Binare/pull/4011)):** Shared `markdown_link_utils`, offline README- und explizite Entry-Point-Linkpruefung in CI; CONTRIBUTING § README Link Convention.
+- **Nav-/Snapshot-Reconcile ([#3995](https://github.com/jannekbuengener/Claire_de_Binare/issues/3995) / PR [#4018](https://github.com/jannekbuengener/Claire_de_Binare/pull/4018)):** Entry-Point-Reconcile, Snapshot-Reconcile, Cross-Hub-Navigation.
+- **ARVP candidate evidence ([#4022](https://github.com/jannekbuengener/Claire_de_Binare/pull/4022)):** Deterministic candidate evidence packet assembly (shadow/research scope).
 
-Operatives Cockpit: GitHub Issue `#1445`. Aktiver Engineering-Fokus (nicht exhaustiv): `#2440` (LR-030 Shadow/Soak), `#2513` (Trivy upstream tracking, orthogonal).
+Operatives Cockpit: [Issue #1445](https://github.com/jannekbuengener/Claire_de_Binare/issues/1445). Community-Health-Reconcile: [Issue #4005](https://github.com/jannekbuengener/Claire_de_Binare/issues/4005) (in delivery). Vollstaendiges Session-Ledger: [`CURRENT_STATUS.md`](CURRENT_STATUS.md).
 
-Details und Session-Ledger: `CURRENT_STATUS.md`.
+LR bleibt **NO-GO** — SSOT: [`docs/live-readiness/LR-AUDIT-STATUS-2026-03-05.md`](docs/live-readiness/LR-AUDIT-STATUS-2026-03-05.md).
 
 ## Docs / Canonical Entrypoints
 
-1. `docs/runbooks/CONTROL_REGISTER.md`
-2. GitHub Issue `#1445` (inkl. neuestem Wochenkommentar)
-3. `CURRENT_STATUS.md`
-4. `docs/live-readiness/LR-AUDIT-STATUS-2026-03-05.md`
-5. `docs/meta/WORKING_REPO_CANON.md`
-6. `agents/AGENTS.md`
-7. `docs/index.md`
-8. `DEVELOPER_ONBOARDING.md`
+1. [`docs/runbooks/CONTROL_REGISTER.md`](docs/runbooks/CONTROL_REGISTER.md)
+2. [GitHub Issue #1445](https://github.com/jannekbuengener/Claire_de_Binare/issues/1445) (inkl. neuestem Wochenkommentar)
+3. [`CURRENT_STATUS.md`](CURRENT_STATUS.md)
+4. [`docs/live-readiness/LR-AUDIT-STATUS-2026-03-05.md`](docs/live-readiness/LR-AUDIT-STATUS-2026-03-05.md)
+5. [`docs/meta/WORKING_REPO_CANON.md`](docs/meta/WORKING_REPO_CANON.md)
+6. [`agents/AGENTS.md`](agents/AGENTS.md)
+7. [`docs/index.md`](docs/index.md)
+8. [`DEVELOPER_ONBOARDING.md`](DEVELOPER_ONBOARDING.md)
 
 ## Tooling / Tests / Services
 
@@ -138,9 +144,9 @@ docker compose -f infrastructure/compose/base.yml -f infrastructure/compose/test
 
 ## Navigation
 
-- `mcp_navpack_working_repo/ENTRYPOINTS.yaml`
-- `mcp_navpack_working_repo/CHEATSHEET.md`
-- `docs/meta/WORKING_REPO_CANON.md`
+- [`mcp_navpack_working_repo/ENTRYPOINTS.yaml`](mcp_navpack_working_repo/ENTRYPOINTS.yaml)
+- [`mcp_navpack_working_repo/CHEATSHEET.md`](mcp_navpack_working_repo/CHEATSHEET.md)
+- [`docs/meta/WORKING_REPO_CANON.md`](docs/meta/WORKING_REPO_CANON.md)
 
 ## Boundary
 

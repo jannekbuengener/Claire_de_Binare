@@ -53,6 +53,48 @@ LR remains **NO-GO**.
 - `SIGNAL_ENTRY_CHANNEL_BARS` (donchian_breakout_v1, default `20`)
 - `SIGNAL_EXIT_CHANNEL_BARS` (donchian_breakout_v1, default `10`)
 - `SIGNAL_OUTPUT_STREAM`
+- `SIGNAL_BOT_ID` (experiment audit identity; compose-wired)
+- `CDB_CAMPAIGN_ID` (campaign-scoped overlays; lane-specific via `CDB_CAMPAIGN_ID_PB1` / `CDB_CAMPAIGN_ID_DONCHIAN`)
+- `CDB_SOURCE_SHA` (image build marker; set at `docker build --build-arg`; verified before ARVP observation)
+
+## ARVP Telemetry (measurement chain only)
+
+After PRs #3956, #3961, #3971, #3974 the signal service participates in a
+**measurement chain** for bounded natural-paper/diagnostic runs:
+
+1. **Runtime signal IDs** — `format_runtime_signal_id()` assigns collision-safe
+   `sig-…` UUID4-hex IDs for natural-paper paths (not the deterministic replay
+   counter).
+2. **Ledger write** — each published signal persists to `correlation_ledger`
+   via `build_signal_ledger_payload()`; `campaign_id` comes from `CDB_CAMPAIGN_ID`.
+3. **Insert conflicts** — `ON CONFLICT DO NOTHING` suppressions increment
+   `correlation_ledger_insert_conflicts_total` (Prometheus on `/metrics`).
+   Non-zero conflicts with zero lane ledger rows indicate **false-zero risk**.
+4. **Supervisor evidence** — `tools/arvp_campaign_supervisor` reads lane metrics
+   and Postgres for `lane_campaign_evidence` and `blocks_by_reason`.
+
+**Telemetry PASS proves the measurement chain, not trading readiness.** LR remains
+**NO-GO**; no promotion claim.
+
+### Image freshness (`CDB_SOURCE_SHA`)
+
+Campaign overlays require rebuilt signal images. The Dockerfile exposes
+`ARG/ENV CDB_SOURCE_SHA`. Before any RUNTIME-GO observation:
+
+```powershell
+docker inspect cdb_signal_pb1 --format "{{range .Config.Env}}{{println .}}{{end}}" | findstr CDB_SOURCE_SHA
+```
+
+If the container SHA ≠ expected `origin/main` (or manifest pin) → **HOLD**.
+
+Rebuild/recreate review (docs-only): `docs/evidence/arvp_signal_runtime_rebuild_recreate_review_3976.md`.
+
+Preflight helpers:
+
+```powershell
+python -m tools.arvp_diag_reverify_preflight --json
+python -m tools.arvp_np_telemetry_pass_preflight --json
+```
 
 ## Canonical References
 

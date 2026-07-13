@@ -251,3 +251,16 @@ def parse_surql_table_fields(surql_text: str, table: str) -> frozenset[str]:
 
 def load_surql_text(path: Path = SURQL_PATH) -> str:
     return path.read_text(encoding="utf-8")
+
+
+__all__ = [
+    "SURQL_PATH",
+    "WAVE14_JSONL_ARTIFACTS",
+    "WAVE14_TABLES",
+    "WAVE14_PK_FIELDS",
+    "WAVE14_JSONL_REQUIRED",
+    "JSONL_ENVELOPE_FIELDS",
+    "SURQL_REQUIRED_DRAFT_FIELDS",
+    "EVIDENCE_SCHEMA_TO_LOOKUP_ALIASES",
+    "load_surql_text",
+]

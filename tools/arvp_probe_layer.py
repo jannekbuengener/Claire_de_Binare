@@ -11,6 +11,12 @@ import sys
 from datetime import datetime, timezone
 from typing import Any
 
+from core.replay.correlation_ledger_attribution import aggregate_lane_campaign_evidence
+from core.replay.correlation_ledger_insert import (
+    evaluate_false_zero_event_risk,
+    parse_prometheus_counter,
+)
+
 logger = logging.getLogger(__name__)
 
 ProbeResult = dict[str, Any]
@@ -729,6 +735,140 @@ def probe_candles(
 # ---------------------------------------------------------------------------
 
 
+def _campaign_start_ms_expr(campaign_start_utc: str) -> str:
+    return (
+        f"EXTRACT(EPOCH FROM '{campaign_start_utc}'::timestamptz)::bigint * 1000"
+    )
+
+
+def _ledger_count_since_start(
+    host: str,
+    port: int,
+    dbname: str,
+    user: str,
+    campaign_start_utc: str,
+    *,
+    bot_id: str | None = None,
+    strategy_id: str | None = None,
+    campaign_id: str | None = None,
+    config_hash: str | None = None,
+) -> int | None:
+    start_expr = _campaign_start_ms_expr(campaign_start_utc)
+    clauses = [f"timestamp_ms >= {start_expr}"]
+    if bot_id:
+        clauses.append(f"payload->>'bot_id' = '{bot_id}'")
+    if strategy_id:
+        clauses.append(f"payload->>'strategy_id' = '{strategy_id}'")
+    if campaign_id:
+        clauses.append(f"payload->>'campaign_id' = '{campaign_id}'")
+    if config_hash:
+        clauses.append(
+            f"COALESCE(payload->'metadata'->>'config_hash', '') = '{config_hash}'"
+        )
+    where = " AND ".join(clauses)
+    rows = _run_sql(
+        host,
+        port,
+        dbname,
+        user,
+        f"SELECT COUNT(*) FROM correlation_ledger WHERE {where}",
+    )
+    return int(rows[0][0]) if rows else 0
+
+
+def _ledger_events_since_start(
+    host: str,
+    port: int,
+    dbname: str,
+    user: str,
+    campaign_start_utc: str,
+    *,
+    bot_id: str | None = None,
+    strategy_id: str | None = None,
+    campaign_id: str | None = None,
+    config_hash: str | None = None,
+) -> list[dict[str, Any]]:
+    start_expr = _campaign_start_ms_expr(campaign_start_utc)
+    clauses = [f"timestamp_ms >= {start_expr}"]
+    if bot_id:
+        clauses.append(f"payload->>'bot_id' = '{bot_id}'")
+    if strategy_id:
+        clauses.append(f"payload->>'strategy_id' = '{strategy_id}'")
+    if campaign_id:
+        clauses.append(f"payload->>'campaign_id' = '{campaign_id}'")
+    if config_hash:
+        clauses.append(
+            f"COALESCE(payload->'metadata'->>'config_hash', '') = '{config_hash}'"
+        )
+    where = " AND ".join(clauses)
+    rows = _run_sql(
+        host,
+        port,
+        dbname,
+        user,
+        "SELECT event_type, payload "
+        f"FROM correlation_ledger WHERE {where} ORDER BY timestamp_ms ASC",
+    ) or []
+    events: list[dict[str, Any]] = []
+    for row in rows:
+        payload = row[1]
+        if isinstance(payload, str):
+            try:
+                payload = json.loads(payload)
+            except json.JSONDecodeError:
+                payload = {}
+        if not isinstance(payload, dict):
+            payload = {}
+        events.append({"event_type": row[0], "payload": payload})
+    return events
+
+
+def resolve_signal_metrics_url(manifest: dict[str, Any]) -> str | None:
+    """Derive lane signal /metrics URL from manifest (optional explicit override)."""
+    explicit = manifest.get("signal_metrics_url")
+    if isinstance(explicit, str) and explicit.strip():
+        return explicit.strip()
+    strategy_id = manifest.get("strategy_id")
+    host = manifest.get("signal_metrics_host", "127.0.0.1")
+    if strategy_id == "donchian_breakout_v1":
+        return f"http://{host}:8016/metrics"
+    if strategy_id == "primary_breakout_v1":
+        return f"http://{host}:8015/metrics"
+    return None
+
+
+def probe_signal_metrics(metrics_url: str) -> ProbeResult:
+    """Read-only signal engine Prometheus metrics (insert conflict visibility)."""
+    import urllib.error
+    import urllib.request
+
+    try:
+        with urllib.request.urlopen(metrics_url, timeout=5) as response:
+            body = response.read().decode("utf-8", errors="replace")
+    except (urllib.error.URLError, TimeoutError, OSError) as exc:
+        return _blocked(
+            {"metrics_url": metrics_url, "error": str(exc)},
+            ["signal metrics endpoint unreachable"],
+        )
+
+    conflicts = parse_prometheus_counter(
+        body, "correlation_ledger_insert_conflicts_total"
+    )
+    signals = parse_prometheus_counter(body, "signals_generated_total")
+    return _ok(
+        {
+            "metrics_url": metrics_url,
+            "correlation_ledger_insert_conflicts_total": conflicts,
+            "signals_generated_total": signals,
+        },
+        limitations=(
+            ["counter totals are process-lifetime since last container start"]
+            if conflicts is None and signals is None
+            else []
+        ),
+    )
+
+
 def probe_ledger(
     campaign_start_utc: str | None = None,
     host: str = DB_DEFAULTS["host"],
@@ -736,6 +876,10 @@ def probe_ledger(
     dbname: str = DB_DEFAULTS["dbname"],
     user: str = DB_DEFAULTS["user"],
     include_events: bool = False,
+    bot_id: str | None = None,
+    strategy_id: str | None = None,
+    campaign_id: str | None = None,
+    config_hash: str | None = None,
 ) -> ProbeResult:
     import importlib
 
@@ -767,17 +911,50 @@ def probe_ledger(
             }
 
         count_since_start: int | None = None
+        count_bot_id: int | None = None
+        count_strategy_id: int | None = None
+        count_campaign_id: int | None = None
+        count_config_hash: int | None = None
         if campaign_start_utc:
-            count_rows = _run_sql(
-                host,
-                port,
-                dbname,
-                user,
-                f"SELECT COUNT(*) FROM correlation_ledger "
-                f"WHERE timestamp_ms >= "
-                f"EXTRACT(EPOCH FROM '{campaign_start_utc}'::timestamptz)::bigint * 1000",
+            count_since_start = _ledger_count_since_start(
+                host, port, dbname, user, campaign_start_utc
             )
-            count_since_start = int(count_rows[0][0]) if count_rows else 0
+            if bot_id:
+                count_bot_id = _ledger_count_since_start(
+                    host,
+                    port,
+                    dbname,
+                    user,
+                    campaign_start_utc,
+                    bot_id=bot_id,
+                )
+            if strategy_id:
+                count_strategy_id = _ledger_count_since_start(
+                    host,
+                    port,
+                    dbname,
+                    user,
+                    campaign_start_utc,
+                    strategy_id=strategy_id,
+                )
+            if campaign_id:
+                count_campaign_id = _ledger_count_since_start(
+                    host,
+                    port,
+                    dbname,
+                    user,
+                    campaign_start_utc,
+                    campaign_id=campaign_id,
+                )
+            if config_hash:
+                count_config_hash = _ledger_count_since_start(
+                    host,
+                    port,
+                    dbname,
+                    user,
+                    campaign_start_utc,
+                    config_hash=config_hash,
+                )
 
         grouped = _run_sql(
             host,
@@ -800,14 +977,70 @@ def probe_ledger(
         evidence: dict[str, Any] = {
             "latest_event": latest_event,
             "events_since_campaign_start": count_since_start,
+            "events_since_campaign_start_global": count_since_start,
+            "events_since_campaign_start_bot_id": count_bot_id,
+            "events_since_campaign_start_strategy_id": count_strategy_id,
+            "events_since_campaign_start_campaign_id": count_campaign_id,
+            "events_since_campaign_start_config_hash": count_config_hash,
             "events_by_type_status": events_by_type,
             "campaign_start_utc": campaign_start_utc,
+            "ledger_attribution": {
+                "bot_id": bot_id,
+                "strategy_id": strategy_id,
+                "campaign_id": campaign_id,
+                "config_hash": config_hash,
+                "campaign_id_propagated_to_ledger": False,
+                "config_hash_path": "payload.metadata.config_hash",
+            },
             "queries": [
                 "SELECT ... FROM correlation_ledger ORDER BY timestamp_ms DESC LIMIT 1",
                 "SELECT COUNT(*) FROM correlation_ledger WHERE timestamp_ms >= ...",
+                "SELECT COUNT(*) FROM correlation_ledger WHERE timestamp_ms >= ... AND payload->>'bot_id' = ...",
+                "SELECT COUNT(*) FROM correlation_ledger WHERE timestamp_ms >= ... AND payload->>'strategy_id' = ...",
                 "SELECT event_type, COUNT(*) FROM correlation_ledger GROUP BY ...",
             ],
         }
+        limitations: list[str] = []
+        if campaign_id and count_campaign_id == 0:
+            limitations.append(
+                "campaign_id filter returned 0 rows; campaign_id is not "
+                "propagated to correlation_ledger payload yet"
+            )
+            evidence["ledger_attribution"]["campaign_id_propagated_to_ledger"] = False
+        elif campaign_id and count_campaign_id and count_campaign_id > 0:
+            evidence["ledger_attribution"]["campaign_id_propagated_to_ledger"] = True
+        if bot_id is None and strategy_id is None:
+            limitations.append(
+                "no bot_id/strategy_id filter supplied; only global ledger count available"
+            )
+
+        if campaign_start_utc and (bot_id or strategy_id):
+            try:
+                lane_rows = _ledger_events_since_start(
+                    host,
+                    port,
+                    dbname,
+                    user,
+                    campaign_start_utc,
+                    bot_id=bot_id,
+                    strategy_id=strategy_id,
+                    campaign_id=campaign_id,
+                    config_hash=config_hash,
+                )
+                evidence["lane_campaign_evidence"] = aggregate_lane_campaign_evidence(
+                    lane_rows,
+                    bot_id=bot_id,
+                    strategy_id=strategy_id,
+                    campaign_id=campaign_id,
+                    config_hash=config_hash,
+                )
+                evidence["queries"].append(
+                    "SELECT event_type, payload FROM correlation_ledger "
+                    "WHERE timestamp_ms >= ... [lane filters]"
+                )
+            except Exception as exc:
+                logger.warning("lane campaign evidence query failed: %s", exc)
+                evidence["lane_campaign_evidence_error"] = str(exc)
 
         events_raw: list[dict] | None = None
         if include_events:
@@ -843,7 +1076,13 @@ def probe_ledger(
                 logger.warning("events query failed: %s", exc)
                 evidence["events_error"] = str(exc)
 
-        return _ok(evidence)
+        return {
+            "status": "ok",
+            "evidence": evidence,
+            "observed_at_utc": _utcnow(),
+            "limitations": limitations,
+            "no_mutation": True,
+        }
     except Exception as exc:
         return _blocked(
             {"error": str(exc)},
@@ -949,6 +1188,16 @@ def main() -> None:
         "--campaign-start",
         help="Campaign start UTC (ISO-8601) for ledger probe",
     )
+    parser.add_argument("--bot-id", help="Lane bot_id filter for ledger probe")
+    parser.add_argument(
+        "--strategy-id", help="Lane strategy_id filter for ledger probe"
+    )
+    parser.add_argument(
+        "--campaign-id", help="Campaign id filter for ledger probe (optional)"
+    )
+    parser.add_argument(
+        "--config-hash", help="Config hash filter for ledger probe (optional)"
+    )
     parser.add_argument(
         "--docker-targets",
         nargs="*",
@@ -989,7 +1238,13 @@ def main() -> None:
         results.append(
             {
                 "probe": "correlation_ledger",
-                **probe_ledger(campaign_start_utc=args.campaign_start),
+                **probe_ledger(
+                    campaign_start_utc=args.campaign_start,
+                    bot_id=args.bot_id,
+                    strategy_id=args.strategy_id,
+                    campaign_id=args.campaign_id,
+                    config_hash=args.config_hash,
+                ),
             }
         )
     if args.all or args.regime:

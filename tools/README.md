@@ -61,3 +61,9 @@ Non-interactive form:
 - `infrastructure/scripts/stack_verify.ps1` - Older verification path; use `tools/verify_stack.ps1` for v1 discovery.
 - `infrastructure/scripts/stack_doctor.ps1` - Older infra-local diagnostic entrypoint; prefer `tools/cdb-stack-doctor.ps1` when that style of helper is needed.
 - `tools/stack_boot.ps1` - Legacy bootstrap helper; not the canonical BLUE+RED runtime entrypoint.
+
+## Navigation
+
+- [Projektübersicht](../README.md)
+- [Dokumentationsindex](../docs/index.md)
+- [Developer onboarding](../DEVELOPER_ONBOARDING.md)

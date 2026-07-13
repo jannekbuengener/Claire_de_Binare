@@ -3,7 +3,7 @@ from __future__ import annotations
 
 import hashlib
 
-from tools.surrealdb.audit_trail_t3_common import (  # noqa: F401 — re-export
+from tools.surrealdb.audit_trail_t3_common import (
     CONTAINER_NAME,
     DEFAULT_DB,
     DEFAULT_NS,
@@ -20,6 +20,24 @@ from tools.surrealdb.audit_trail_t3_common import (  # noqa: F401 — re-export
     resolve_secrets_path,
     sql_request,
 )
+
+__all__ = [
+    "CONTAINER_NAME",
+    "DEFAULT_DB",
+    "DEFAULT_NS",
+    "AuditTrailEnv",
+    "build_ssl_context",
+    "check_statement_results",
+    "container_network_names",
+    "t3_endpoint_fingerprint",
+    "guard_non_localhost",
+    "health_check",
+    "load_env_file",
+    "redact_output",
+    "resolve_env_file",
+    "resolve_secrets_path",
+    "sql_request",
+]
 
 T4_ENDPOINT_CLASS = "governed_non_localhost_T4"
 T4_PRODUCTIVE_ENV_VAR = "CDB_PERSIST_PRODUCTIVE_AGENT_MEMORY"

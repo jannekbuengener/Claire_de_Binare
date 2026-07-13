@@ -1,0 +1,32 @@
+{
+  "schema_version": "arvp_vacation_job_metrics.v1",
+  "scenario_id": "baseline",
+  "strategy_id": "donchian_breakout_v1",
+  "run_id": "redacted-run-id",
+  "ranking_ready": false,
+  "dataset_summary": {
+    "symbol": "BTCUSDT",
+    "timeframe": "1m",
+    "candles_live": 10060,
+    "candles_total": 10080,
+    "period_start_ts_ms": 1620885600000,
+    "period_end_ts_ms": 1621490340000,
+    "warmup_candles": 20
+  },
+  "metrics": {
+    "closed_trades_total": 140,
+    "gross_pnl_quote": -16912.74,
+    "net_pnl_quote": -24608.44,
+    "fees_total_quote": 7695.70,
+    "max_drawdown_r": 0.4166,
+    "profit_factor": 0.3805,
+    "fee_adjusted_profit_factor": 0.2553,
+    "expectancy_r": -0.0028,
+    "fee_adjusted_expectancy_r": -0.0040,
+    "win_rate": 0.3286,
+    "avg_win_r": 0.0052,
+    "avg_loss_r": -0.0066,
+    "signals_total": 141
+  },
+  "_fixture_note": "Redacted from stress_v2 closeout vac-donchian-breakout-v1-binance_1m_stress_max_drawdown_v2-scenarios baseline_metrics.json"
+}

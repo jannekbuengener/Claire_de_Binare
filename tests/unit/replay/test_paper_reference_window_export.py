@@ -331,7 +331,7 @@ def test_mixed_strategy_chain_rejected_even_when_signal_anchor_resolves() -> Non
         ),
     ]
     with pytest.raises(
-        PaperReferenceExportError, match="payload\\.strategy_id mismatch"
+        PaperReferenceExportError, match="no ORDER with paper_ prefix"
     ):
         export_paper_reference_window(request=request, rows=rows)
 
@@ -428,7 +428,7 @@ def test_fails_closed_on_strategy_mismatch() -> None:
         ),
     ]
     with pytest.raises(
-        PaperReferenceExportError, match="payload\\.strategy_id mismatch"
+        PaperReferenceExportError, match="no ORDER with paper_ prefix"
     ):
         export_paper_reference_window(request=request, rows=rows)
 

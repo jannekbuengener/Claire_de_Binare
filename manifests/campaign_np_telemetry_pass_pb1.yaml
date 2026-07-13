@@ -1,0 +1,77 @@
+schema_version: "1.0"
+campaign_id: arvp_np_pb1_after_telemetry_pass_20260710t1700z
+hypothesis_id: HYP-NP-PARALLEL-2S-01
+parent_issue: 3980
+related_issues:
+  - 1900
+  - 3912
+  - 3977
+  - 3978
+  - 3979
+  - 3742
+symbol: BTCUSDT
+strategy_id: primary_breakout_v1
+bot_id: np-pb1-telemetry-pass-01
+evidence_class: natural_paper_evidence
+expected_source_sha: "c4ba7428e605cca09b1d3e2c9469a431ac475554"
+start_utc: "2026-07-10T17:20:00Z"
+timeout_utc: "2026-07-10T21:20:00Z"
+max_duration_hours: 4.0
+start_criteria:
+  pre_documented: true
+  description: "Parallel natural-paper lane A (PB1) after telemetry PASS per #3980."
+  start_policy_ref: docs/evidence/arvp_np_parallel_after_telemetry_pass_preflight.md
+  criteria_met: true
+  criteria_met_reason: "RUNTIME-GO executed; 4h window 17:20Z-21:20Z; terminal TIMEOUT_NO_CHAIN."
+signal_compose_override: manifests/runtime_np_telemetry_pass_signal_compose_override.yml
+allocation_compose_override: manifests/runtime_np_parallel_allocation_compose_override.yml
+safety_flags:
+  mock_trading: true
+  use_real_balance: false
+  dry_run: true
+  mexc_testnet: true
+runtime_targets:
+  - cdb_ws
+  - cdb_market
+  - cdb_candles
+  - cdb_regime
+  - cdb_allocation
+  - cdb_signal_pb1
+  - cdb_risk
+  - cdb_execution
+  - cdb_db_writer
+  - cdb_paper_runner
+db_readonly_targets:
+  - public.correlation_ledger
+  - public.candles_1m
+evidence_doc: docs/evidence/arvp_np_parallel_after_telemetry_pass_run.md
+evidence_log_jsonl: artifacts/campaigns/arvp_np_pb1_after_telemetry_pass_20260710t1700z/evidence_log.jsonl
+campaign_status_md: artifacts/campaigns/arvp_np_pb1_after_telemetry_pass_20260710t1700z/campaign_status.md
+github_reporting:
+  post_on_issue_3980: true
+  post_on_issue_3742: true
+  post_on_issue_1900: false
+  issue_close_after_acceptance: false
+allowed_statuses:
+  - planned
+  - preflight_failed
+  - running
+  - chain_found
+  - timeout_no_chain
+  - interrupted
+  - blocked_runtime
+  - blocked_db_readonly
+  - blocked_governance
+  - evidence_pr_open
+  - evidence_merged
+terminal_statuses:
+  - chain_found
+  - timeout_no_chain
+  - interrupted
+  - blocked_runtime
+  - blocked_db_readonly
+  - blocked_governance
+  - evidence_merged
+  - preflight_failed
+campaign_status: timeout_no_chain
+gear_id: gear-primary-breakout-v1-np-telemetry-pass-btcusdt

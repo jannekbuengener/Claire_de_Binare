@@ -110,6 +110,16 @@ CANONICAL_ARVP_TEST_ENTRIES: tuple[dict[str, Any], ...] = (
         ),
         "issue_ref": "#3829",
     },
+    {
+        "surface": "parallel_ledger_isolation",
+        "behavior": "mixed correlation_ledger windows export per strategy/bot/config without cross-rows",
+        "service": "core/replay/paper_reference_window_export",
+        "test": "tests/unit/arvp/test_arvp_parallel_ledger_evidence_isolation_contract_3911.py",
+        "fixtures": (
+            "tests/fixtures/arvp/parallel_ledger_isolation/mixed_pb1_donchian_chains_v1.json",
+        ),
+        "issue_ref": "#3911",
+    },
 )
 
 KNOWN_UNMAPPED_ARVP_SURFACES: tuple[dict[str, str], ...] = (

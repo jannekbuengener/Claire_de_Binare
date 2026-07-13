@@ -69,11 +69,11 @@ Die Dokumente bauen inhaltlich aufeinander auf. Lies sie in dieser Reihenfolge:
 
 ## Quellenliste
 
-- [`knowledge/ARCHITECTURE_MAP.md`](../../knowledge/ARCHITECTURE_MAP.md)
-- [`services/README.md`](../../services/README.md)
-- [`docs/strategy/CDB_PROFITABILITY_ENGINE_CANON.md`](../../docs/strategy/CDB_PROFITABILITY_ENGINE_CANON.md)
-- [`docs/live-readiness/LR-AUDIT-STATUS-2026-03-05.md`](../../docs/live-readiness/LR-AUDIT-STATUS-2026-03-05.md)
-- [`docs/runbooks/CONTROL_REGISTER.md`](../../docs/runbooks/CONTROL_REGISTER.md)
+- [`knowledge/ARCHITECTURE_MAP.md`](../../../knowledge/ARCHITECTURE_MAP.md)
+- [`services/README.md`](../../../services/README.md)
+- [`docs/strategy/CDB_PROFITABILITY_ENGINE_CANON.md`](../../../docs/strategy/CDB_PROFITABILITY_ENGINE_CANON.md)
+- [`docs/live-readiness/LR-AUDIT-STATUS-2026-03-05.md`](../../../docs/live-readiness/LR-AUDIT-STATUS-2026-03-05.md)
+- [`docs/runbooks/CONTROL_REGISTER.md`](../../../docs/runbooks/CONTROL_REGISTER.md)
 - [`docs/onboarding/DEVELOPER_VISUAL_START_HERE.md`](../DEVELOPER_VISUAL_START_HERE.md)
 
 ## Glossary
@@ -86,7 +86,7 @@ und die Core-System-Flow-Begriffe aus
 
 ## Hinweis: Board trade-capable ist kein Live-Go
 
-Board stage `trade-capable` ([`docs/runbooks/CONTROL_REGISTER.md`](../../docs/runbooks/CONTROL_REGISTER.md))
+Board stage `trade-capable` ([`docs/runbooks/CONTROL_REGISTER.md`](../../../docs/runbooks/CONTROL_REGISTER.md))
 ist ein betrieblicher Fokus, keine Live-Freigabe. Das LR-System
-([`docs/live-readiness/LR-AUDIT-STATUS-2026-03-05.md`](../../docs/live-readiness/LR-AUDIT-STATUS-2026-03-05.md))
+([`docs/live-readiness/LR-AUDIT-STATUS-2026-03-05.md`](../../../docs/live-readiness/LR-AUDIT-STATUS-2026-03-05.md))
 bleibt die alleinige SSOT für Echtgeld Go/No-Go.

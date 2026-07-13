@@ -10,13 +10,12 @@ import json
 from typing import Any, Mapping
 
 from core.replay.canonical_json import canonical_hash, canonical_json_dumps
-from tools.surrealdb import context_live_invocation_harness as harness
+from tools.surrealdb import context_invocation_harness_types as harness_types
 from tools.surrealdb.negative_controls import negative_control_matrix_summary
 from tools.surrealdb.db_record_evidence_contract import (
     ACCEPTED_LIMITATION_CODES,
     SCHEMA_VERSION as CLAIM_SCHEMA_VERSION,
     build_example_claim,
-    compute_determinism_hash,
     validate_db_record_evidence_claim,
 )
 
@@ -50,7 +49,7 @@ def _stable_run_id(profile: str, git_sha: str) -> str:
     return f"context-live-invoke-{profile}-{sha}"
 
 
-def derive_evidence_final_verdict(report: harness.HarnessReport) -> str:
+def derive_evidence_final_verdict(report: harness_types.HarnessReport) -> str:
     """Map harness outcome to machine-readable final_verdict for JSON evidence."""
     if report.final_verdict == "fail":
         return "FAIL"
@@ -61,7 +60,7 @@ def derive_evidence_final_verdict(report: harness.HarnessReport) -> str:
 
 
 def _build_accepted_limitation_claim(
-    row: harness.MatrixRow,
+    row: harness_types.MatrixRow,
     *,
     profile: str,
     git_sha: str,
@@ -87,7 +86,7 @@ def _build_accepted_limitation_claim(
         record_hashes_or_content_fingerprints=[],
         record_timestamps_or_freshness_signal="not_applicable",
         repo_crosscheck={
-            "path": harness.RATIFICATION_DOC,
+            "path": harness_types.RATIFICATION_DOC,
             "symbol": "PASS_WITH_LIMITS_ERROR_CODES",
             "commit": (git_sha or "unknown")[:8],
         },
@@ -106,7 +105,9 @@ def _build_accepted_limitation_claim(
     return claim
 
 
-def _tool_invocation_row(row: harness.MatrixRow, *, profile: str) -> dict[str, Any]:
+def _tool_invocation_row(
+    row: harness_types.MatrixRow, *, profile: str
+) -> dict[str, Any]:
     return {
         "tool_name": row.tool_name,
         "invocation_id": _invocation_fingerprint(row.tool_name, row.call, profile),
@@ -122,7 +123,7 @@ def _tool_invocation_row(row: harness.MatrixRow, *, profile: str) -> dict[str, A
 
 
 def _accepted_limitations_list(
-    rows: list[harness.MatrixRow],
+    rows: list[harness_types.MatrixRow],
 ) -> list[dict[str, Any]]:
     out: list[dict[str, Any]] = []
     for row in rows:
@@ -141,7 +142,7 @@ def _accepted_limitations_list(
     return sorted(out, key=lambda item: item["tool_name"])
 
 
-def _missing_evidence_codes(rows: list[harness.MatrixRow]) -> list[str]:
+def _missing_evidence_codes(rows: list[harness_types.MatrixRow]) -> list[str]:
     codes: set[str] = set()
     for row in rows:
         if row.status == "PASS_WITH_LIMITS" and row.error_code:
@@ -149,7 +150,7 @@ def _missing_evidence_codes(rows: list[harness.MatrixRow]) -> list[str]:
     return sorted(codes)
 
 
-def _limits_block(report: harness.HarnessReport) -> list[dict[str, str]]:
+def _limits_block(report: harness_types.HarnessReport) -> list[dict[str, str]]:
     items = [
         {"code": "bridge_only", "description": GLOBAL_LIMITATIONS[0]},
         {"code": "safety_gates_default_off", "description": GLOBAL_LIMITATIONS[1]},
@@ -178,7 +179,9 @@ def compute_aggregate_determinism_hash(document: Mapping[str, Any]) -> str:
     return canonical_hash(hash_payload_for_determinism(document))
 
 
-def build_invocation_evidence(report: harness.HarnessReport) -> dict[str, Any]:
+def build_invocation_evidence(
+    report: harness_types.HarnessReport,
+) -> dict[str, Any]:
     """Build the #2850 machine-readable evidence document from a harness report."""
     limit_rows = [r for r in report.matrix if r.status == "PASS_WITH_LIMITS"]
     evidence_claims = [
@@ -210,7 +213,7 @@ def build_invocation_evidence(report: harness.HarnessReport) -> dict[str, Any]:
         "redaction_summary": "no sensitive values present; bridge benchmark payloads only",
         "limitations": list(GLOBAL_LIMITATIONS),
         "issue_ref": ISSUE_REF,
-        "parent_issue_ref": harness.ISSUE_REF,
+        "parent_issue_ref": harness_types.ISSUE_REF,
         "ratification_doc": report.ratification_doc,
         "claim_schema_version": CLAIM_SCHEMA_VERSION,
         "git_sha": report.git_sha,
@@ -226,7 +229,7 @@ def build_invocation_evidence(report: harness.HarnessReport) -> dict[str, Any]:
 
 
 def serialize_invocation_evidence(
-    report: harness.HarnessReport,
+    report: harness_types.HarnessReport,
     *,
     indent: int | None = 2,
 ) -> str:

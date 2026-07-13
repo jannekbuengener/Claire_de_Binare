@@ -19,7 +19,6 @@ from core.utils.clock import utcnow as cdb_utcnow
 from tools.mcp.surrealdb_adapter_factory import adapter_source
 from tools.surrealdb.claim_evidence_at_rest import prove_claim_evidence_at_rest_db_v1
 from tools.surrealdb.memory_contract import (
-    MemoryContractError,
     validate_memory_id_matches_record,
     validate_memory_record,
 )
@@ -56,7 +55,7 @@ class MemoryRediscoveryError(ValueError):
 class MemoryRediscoveryAdapter(Protocol):
     status: str
 
-    def execute(self, query: str) -> list[dict[str, Any]]: ...
+    def execute(self, query: str) -> list[dict[str, Any]]: pass
 
 
 @dataclass(frozen=True)
@@ -309,6 +308,7 @@ def cleanup_rediscovery_manifest(path: Path) -> None:
             if not any(parent.iterdir()):
                 parent.rmdir()
         except OSError:
+            # Best-effort: ignore race on empty manifest directory cleanup.
             pass
 
 

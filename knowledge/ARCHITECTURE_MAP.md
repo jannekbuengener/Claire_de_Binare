@@ -79,6 +79,9 @@ Campaign-scoped Compose-Overlays fuer begrenzte ARVP natural-paper Beobachtungen
 |---------|---------------|-------|
 | Parallel 2-strategy signal | `manifests/runtime_np_parallel_signal_compose_override.yml` | `cdb_signal_pb1` (`primary_breakout_v1`, Port `8015`) + `cdb_signal_donchian` (`donchian_breakout_v1`, Port `8016`); kanonischer `cdb_signal` auf Profil `single-signal-default` (PR #3918 / #3909) |
 | Parallel allocation caps | `manifests/runtime_np_parallel_allocation_compose_override.yml` | Gleiche `ALLOCATION_RULES_JSON`-Semantik wie kanonisches BLUE (`donchian_breakout_v1` half-cap; PR #3910 / #3915) |
+| Diagnostic telemetry | `manifests/runtime_np_diag_telemetry_signal_compose_override.yml` | 2h diagnostic PB1+Donchian; lane-scoped `CDB_CAMPAIGN_ID` via `CDB_CAMPAIGN_ID_PB1` / `CDB_CAMPAIGN_ID_DONCHIAN` (PR #3963 / #3964) |
+| Diagnostic re-verify | `manifests/runtime_np_diag_reverify_signal_compose_override.yml` | Post-#3971 re-verify; erfordert rebuilt signal images + `CDB_SOURCE_SHA` proof vor Observation (PR #3974) |
+| Telemetry-pass natural-paper | `manifests/runtime_np_telemetry_pass_signal_compose_override.yml` | 4h PB1+Donchian nach `PASS_TELEMETRY_REVERIFIED`; `CDB_SOURCE_SHA` + lane `CDB_CAMPAIGN_ID` (PR #3979 / #3982) |
 
 Statische Validierung (kein `up` ohne RUNTIME-GO):
 
@@ -222,6 +225,12 @@ cdb_reports           Up (healthy)
 | **Price Policy Evaluation CLI** | `tools/replay/evaluate_price_policies.py` | Operator-facing CLI for `price_policy` evaluation against replay report. Produces price-policy-evaluation JSON + summary evidence; consumes `report.json` from a replay run. Used for #3079 price-policy gap analysis. Exit codes: 0 success / 1 usage error. | **AKTIV** (PR #3081) |
 | **Profitability Evidence Packet Assembler CLI** | `services/validation/profitability_evidence_packet_assembler.py` | Offline, deterministic validation CLI (#3381). Validates explicit local input artifacts (candidate contract, data-quality, replay, scenario, economics, harvester refs; optional compare/scorecard), assembles schema-validated `profitability_evidence_packet.v1` JSON + Markdown. Evidence/validation support only; no runtime/BLUE/RED, no DB mutation, no trading authorization, no candidate promotion, no capital allocation. LR NO-GO. Exit codes: 0 success / 1 usage / 2 validation error. | **AKTIV** (PR #3404) |
 | **Offline Strategy League Scorer CLI** | `services/validation/profitability_league_scorer.py` | Offline, read-only, fail-closed Strategy League scorer v1 (#3682). Reads `profitability_evidence_packet.v1`, computes Formula v1 `dimension_scores`/`total_score`, emits schema-validated `profitability_league_table_report.v1`. Hard-gate failure ⇒ sentinel mode (`ranking_ready=false`, scores `0.0`). `PARK` = research hold only. Decision support only; no runtime/BLUE/RED, no DB mutation, no candidate promotion, no capital allocation. LR NO-GO. Exit codes: 0 success / 1 usage / 2 validation error. | **AKTIV** (PR #3685) |
+| **ARVP Candidate Evidence Assembler** | `services/validation/arvp_candidate_evidence_assembler.py` | Offline validation library (#4016/#4022): aggregates normalized `arvp_strategy_metrics.v1` records per candidate into deterministic `profitability_evidence_packet.v1` bundles (one PEP per strategy candidate). Overlap-safe aggregation; missing stays null; `ranking_ready=false`; `historical_cross_venue_research` only. Operator CLI: `python -m tools.arvp_vacation.candidate_evidence_assembly`. No runtime/BLUE/RED, no DB mutation, no promotion. LR NO-GO. | **AKTIV** (PR #4022) |
+| **Governance League Table Report Assembler** | `services/validation/profitability_league_table_report_assembler.py` | Offline validation library (#4017/#4025): builds governance-safe extended `profitability_league_table_report.v1` from PEP bundles. Uses Formula v1 via `profitability_league_scorer.py` but enforces ARVP rankability gates for official ranking (`official_ranking`, `winner`); no forced winner when gates fail. Operator CLI: `python -m tools.arvp_vacation.league_table_report`. Distinct from standalone `profitability_league_scorer.py` CLI. Decision support only; LR NO-GO. | **AKTIV** (PR #4025) |
+| **Correlation Ledger Attribution** | `core/replay/correlation_ledger_attribution.py` | Campaign/lane attribution helpers: `resolve_campaign_id()` (`CDB_CAMPAIGN_ID`), `build_signal_ledger_payload()`, `build_decision_ledger_payload()`, `aggregate_lane_campaign_evidence()`, `blocks_by_reason` aggregation. Runtime telemetry support; no promotion semantics. | **AKTIV** (PR #3961) |
+| **Correlation Ledger Insert** | `core/replay/correlation_ledger_insert.py` | Insert-result classification (`INSERTED`/`CONFLICT`/`SKIPPED`/`ERROR`), false-zero risk evaluation, Prometheus counter parsing. Surfaces silent `ON CONFLICT DO NOTHING` suppressions. | **AKTIV** (PR #3971) |
+
+**ARVP Vacation Evidence Pipeline (offline, research-only):** Vacation batch runner (`tools/arvp_vacation/coordinator.py`) → strategy metric extraction (`tools/arvp_vacation/strategy_metric_extraction.py`, contract `arvp_strategy_metrics.v1`) → candidate evidence assembly (`services/validation/arvp_candidate_evidence_assembler.py`, contract `profitability_evidence_packet.v1`) → governance league table report assembly (`services/validation/profitability_league_table_report_assembler.py`, contract `profitability_league_table_report.v1`). Python libraries and operator CLIs only — no always-on BLUE/RED service, no productive persistence, no trading execution, no strategy/live/Echtgeld authorization; LR remains **NO-GO**. Evidence: [`docs/evidence/arvp_3990_strategy_metric_extraction.md`](../../docs/evidence/arvp_3990_strategy_metric_extraction.md), [`docs/evidence/arvp_3990_candidate_evidence_assembly.md`](../../docs/evidence/arvp_3990_candidate_evidence_assembly.md), [`docs/evidence/arvp_3990_strategy_league_table.md`](../../docs/evidence/arvp_3990_strategy_league_table.md).
 
 ---
 
@@ -254,6 +263,23 @@ deprecated MEXC **Futures** domain (discontinued 2026-01-19), not a spot testnet
 - **Opt-in Diagnose**: Der `primary_breakout_v1` Gate-Trace ist eine opt-in Diagnosefläche für Backtests und Replays.
 - **Kein Standard-Output**: Ohne explizites `--gate-trace-path` erfolgt keine Trace-Emission.
 - **Audit-Zweck**: Dient der Identifizierung von Replay-/Paper-Drift durch detaillierte Protokollierung der Schwellenwert-Entscheidungen pro Schritt.
+
+### ARVP Telemetry Measurement Chain (PRs #3956, #3961, #3971, #3974)
+
+Operative Messkette fuer begrenzte ARVP natural-paper/diagnostic Beobachtungen. **Telemetry PASS beweist nur die Messkette** (signal → ledger → supervisor evidence); es ist **keine** Trading-Promotion, kein LR-Go und kein Live/Echtgeld-GO. LR bleibt **NO-GO**.
+
+| Schicht | Artefakt | Funktion |
+|---------|----------|----------|
+| Runtime signal IDs | `core/utils/uuid_gen.py` → `format_runtime_signal_id()` | Collision-safe UUID4-hex IDs (`sig-…`) fuer live natural-paper; **nicht** der deterministische Replay-Counter (PR #3956) |
+| Signal → ledger | `services/signal/service.py` + `core/replay/correlation_ledger_attribution.py` | `build_signal_ledger_payload()` injiziert `campaign_id` aus `CDB_CAMPAIGN_ID`; strategy-assigned `signal_id` bleibt erhalten (PR #3961, #3971) |
+| Insert classification | `core/replay/correlation_ledger_insert.py` | `CorrelationLedgerInsertResult`; `ON CONFLICT DO NOTHING` → `CONFLICT`; Prometheus `correlation_ledger_insert_conflicts_total` (PR #3971) |
+| Risk → ledger | `services/risk/service.py` + `build_decision_ledger_payload()` | BLOCK/ALLOW decisions mit `campaign_id` + `blocks_by_reason` Kontext im Ledger-Payload (PR #3961) |
+| Supervisor evidence | `tools/arvp_campaign_supervisor.py`, `tools/arvp_probe_layer.py` | Lane-scoped counts; `lane_campaign_evidence`, `ledger_telemetry_risk`, `insert_conflicts_total` (PR #3956, #3961, #3971) |
+| Build freshness | `services/signal/Dockerfile` `ARG/ENV CDB_SOURCE_SHA` | Image marker fuer erwarteten Source-SHA; Execute **HOLD** wenn Container-SHA ≠ erwartet (PR #3974) |
+
+**Campaign env wiring:** Compose-Overlays setzen pro Lane `CDB_CAMPAIGN_ID` via `CDB_CAMPAIGN_ID_PB1` / `CDB_CAMPAIGN_ID_DONCHIAN` (nicht shared). Preflight-Tools: `tools/arvp_diag_reverify_preflight.py`, `tools/arvp_np_telemetry_pass_preflight.py`.
+
+**Rebuild/recreate rule (docs-only; #3976):** Nach telemetry-/source-SHA-relevanten Merges auf `services/signal/` muessen Signal-Images neu gebaut und betroffene Container **recreate**t werden, bevor Runtime-Observation als belastbar gilt. Siehe `docs/evidence/arvp_signal_runtime_rebuild_recreate_review_3976.md`. Kein automatischer Docker-Befehl aus Agent-Workflows.
 
 ---
 
@@ -323,6 +349,10 @@ Kanonische Image-Pins fuer BLUE-Datenlayer (`cdb_postgres`, `cdb_redis`): `gover
 | 2026-07-04 | PR #3720 Nachzug (#3721): §6 MEXC Venue/Endpoint-Semantik (spot REST `api.mexc.com`, fail-closed `testnet=True`, no-send boundary); Paper Stimulus preflight präzisiert | Cursor |
 | 2026-07-06 | PR #3782 Nachzug (#3783): Pack-A offline breakout helpers + Donchian/Bo+Trend backtest runners; ARVP Replay CLI multi-strategy dispatch + scenario metrics artifacts dokumentiert | Cursor |
 | 2026-07-08 | PR #3915/#3918 Nachzug (#3916/#3919): `ALLOCATION_RULES_JSON` Donchian half-cap in BLUE-Allocation-Zeile; Campaign-Runtime-Overlays (`cdb_signal_pb1`/`cdb_signal_donchian`, parallel allocation manifest) + shared-bus Risk-Hinweis dokumentiert | Cursor |
+| 2026-07-10 | PRs #3956/#3961/#3971/#3974 Nachzug (#3957/#3962/#3972/#3975/#3976): ARVP telemetry measurement chain, `format_runtime_signal_id`, campaign/lane evidence, insert-conflict visibility, `CDB_SOURCE_SHA` build-freshness contract, diagnostic/telemetry-pass overlays dokumentiert | Cursor |
+| 2026-07-13 | PR #4022 Nachzug (#4023): `arvp_candidate_evidence_assembler.py` + vacation candidate-evidence CLI in Replay/Validation-Inventar; offline ARVP metrics→PEP pipeline documented | Cursor |
+| 2026-07-13 | PR #4025 Nachzug (#4026): `profitability_league_table_report_assembler.py` + vacation league-report CLI; governance-safe report assembly distinct from league scorer | Cursor |
+| 2026-07-13 | Batch reconcile (#4012/#4020/#4023/#4026): #4011/#4018 README navigation classified NO_DRIFT_FALSE_POSITIVE; no catalog rows added for navigation-only changes | Cursor |
 ### PostgreSQL Schema Artefacts (PR #2793)
 
 | Artifact | Migration | Status | Bedeutung |

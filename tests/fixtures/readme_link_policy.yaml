@@ -1,0 +1,45 @@
+# README link validation policy (#3994, extended #4037)
+#
+# Discovery: git ls-files '**/README.md' (automatic, fail-closed for new files)
+# This fixture holds only classification rules and documented exceptions — not
+# a manual inventory of every README path.
+
+version: 1
+issue: 3994
+follow_up_issue: 4037
+
+# Unmatched README paths use this class and are validated (fail-closed).
+default_classification: active
+
+classification_rules:
+  archive_snapshot:
+    description: Historical snapshots; link integrity not enforced (#3994).
+    path_prefixes:
+      - docs/archive/
+      - knowledge/archive/
+  fixture_testdata:
+    description: Test fixtures and generated evidence trees; out of nav scope.
+    path_prefixes:
+      - tests/fixtures/
+      - artifacts/
+      - reports/p5_canary/
+
+# Non-README canon entry points — same offline link rules as active READMEs (#3995).
+# Discovery is explicit (not git ls-files); paths must stay tracked in git.
+explicit_active_surfaces:
+  description: >-
+    Tier-A navigation/status surfaces outside README.md trees; validated by the
+    same engine as active READMEs (tools/validate_readme_links.py).
+  paths:
+    - CURRENT_STATUS.md
+    - docs/runbooks/CONTROL_REGISTER.md
+    - docs/meta/WORKING_REPO_CANON.md
+    - knowledge/CDB_KNOWLEDGE_HUB.md
+    - docs/index.md
+    - DEVELOPER_ONBOARDING.md
+    - docs/onboarding/cdb_glossary.md
+    - docs/onboarding/DEVELOPER_VISUAL_START_HERE.md
+    - docs/onboarding/repo_brain_context_intelligence.md
+
+# Explicit per-path overrides (use sparingly).
+documented_exceptions: []

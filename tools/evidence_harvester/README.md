@@ -599,7 +599,7 @@ tests + docs only** — Tier-1 runtime proof requires a separate Operator
 Runtime-GO. LR remains **NO-GO**. #3345 **CLOSED**; Tier-3/scheduler residual → #3738.
 
 Tier model:
-[`docs/evidence/evidence_harvester_host_resilience_tiers.md`](../docs/evidence/evidence_harvester_host_resilience_tiers.md)
+[`docs/evidence/evidence_harvester_host_resilience_tiers.md`](../../docs/evidence/evidence_harvester_host_resilience_tiers.md)
 
 Safe plan (default):
 

@@ -275,7 +275,7 @@ class TestARVPReplayConfig:
             dataset_source="s3",
             input_candles_file="candles.json",
         )
-        with pytest.raises(ValueError, match="dataset_source must be 'file' or 'db'"):
+        with pytest.raises(ValueError, match="dataset_source must be 'file', 'db', or 'binance_window'"):
             cfg.validate()
 
     def test_db_dataset_id_field_is_not_supported(self):

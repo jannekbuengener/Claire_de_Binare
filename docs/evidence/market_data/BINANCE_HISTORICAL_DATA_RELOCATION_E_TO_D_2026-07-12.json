@@ -1,0 +1,77 @@
+{
+  "schema_version": "cdb.market_data_relocation.v1",
+  "issue": 4004,
+  "upstream_issue": 3990,
+  "status": "DONE_MERGED_DATA_RELOCATED_E_TO_D",
+  "completed_at_utc": "2026-07-12T20:55:30Z",
+  "lr_status": "NO-GO",
+  "source": {
+    "volume_label": "Backup II",
+    "drive": "E:",
+    "path": "E:\\CDB_artifacts\\market_data",
+    "bytes": 8553025212,
+    "file_count": 1403,
+    "directory_count": 429
+  },
+  "destination": {
+    "volume_label": "DevDrive",
+    "drive": "D:",
+    "path": "D:\\Dev\\Workspaces\\Repos\\Claire_de_Binare\\artifacts\\market_data",
+    "physical": true,
+    "reparse_point": false
+  },
+  "staging_path": "D:\\Dev\\Workspaces\\Repos\\Claire_de_Binare\\market_data.__incoming_20260712T204710Z",
+  "copy": {
+    "robocopy_exit_code": 1,
+    "files_copied": 1403,
+    "bytes_copied": 8553025212,
+    "errors": 0
+  },
+  "hash_pre_transform": {
+    "verdict": "PASS",
+    "source_manifest_fingerprint": "434dde78d11434cedd691fd55be08b1674e4279ed6c6b48d0ad3f3d64ab1fb86",
+    "missing": 0,
+    "extra": 0,
+    "mismatched": 0
+  },
+  "manifest_transformation": {
+    "performed": true,
+    "relative_path": "manifests/binance_btcusdt_1m_full_import.json",
+    "old_sha256": "d80feda1fbedee702a27d60b97691f4ba8c76e9901f0239f7eb4131f848c1be5",
+    "new_sha256": "f3ed12dc320bd7fd933aa70c7e088be8762799fc7c374ae32ea5d686b01983b3",
+    "post_transform_mismatched_files": 1
+  },
+  "dataset_contract": {
+    "total_months": 107,
+    "strict_complete": 81,
+    "partial_usable": 26,
+    "failed": 0,
+    "total_candles": 4656799,
+    "base_window_count": 106,
+    "stress_v2_window_count": 2,
+    "total_window_count": 108,
+    "verdict": "PASS"
+  },
+  "cutover": {
+    "artifacts_junction_removed": true,
+    "per_subtree_rejunction": true,
+    "tracked_artifacts_missing": 0,
+    "verdict": "PASS"
+  },
+  "functional_validation": {
+    "smoke_replay_2026_06": "PASS",
+    "window_bank_pilot_manifest": "PASS",
+    "arvp_preflight_only": "PASS",
+    "post_rename_retests": "PASS",
+    "hidden_e_dependency_hits": 0
+  },
+  "source_lifecycle": {
+    "renamed_to": "E:\\CDB_artifacts\\market_data.__relocated_verified_20260712T205513Z",
+    "deleted": true,
+    "original_path_exists_after_delete": false
+  },
+  "limitations": [
+    "Full SHA256 jsonl manifests not committed; stored locally under data-relocation/4004/",
+    "ARVP preflight uses pilot dataset manifest (2 months); full bank remains offline-reconciled"
+  ]
+}

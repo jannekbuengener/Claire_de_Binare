@@ -411,6 +411,7 @@ def execute_hgw_proof_write(
                     observation_id=observation_id,
                 )
             except AuditTrailT4WriteError:
+                # Best-effort rollback: original write error is re-raised below.
                 pass
         raise
     except Exception as exc:
@@ -423,6 +424,7 @@ def execute_hgw_proof_write(
                     observation_id=observation_id,
                 )
             except AuditTrailT4WriteError:
+                # Best-effort rollback: original write error is re-raised below.
                 pass
         raise AuditTrailT4WriteError(str(exc)) from exc
 

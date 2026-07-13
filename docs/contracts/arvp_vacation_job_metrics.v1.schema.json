@@ -1,0 +1,123 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "title": "ARVP Vacation Job Metrics Contract",
+  "description": "Minimal machine-readable contract for per-scenario vacation replay metrics consumed from {scenario}_metrics.json and queue_state.scenario_metrics. Issue #4014.",
+  "type": "object",
+  "additionalProperties": true,
+  "required": [
+    "schema_version",
+    "scenario_id",
+    "strategy_id",
+    "metrics",
+    "ranking_ready"
+  ],
+  "properties": {
+    "schema_version": {
+      "const": "arvp_vacation_job_metrics.v1",
+      "description": "Fixed schema version identifier"
+    },
+    "scenario_id": {
+      "type": "string",
+      "enum": ["baseline", "pessimistic_execution", "feed_gap"],
+      "description": "Scenario identifier within a vacation job scenario group"
+    },
+    "strategy_id": {
+      "type": "string",
+      "minLength": 1,
+      "description": "Strategy identifier (e.g. donchian_breakout_v1)"
+    },
+    "run_id": {
+      "type": "string",
+      "minLength": 1,
+      "description": "Replay run identifier"
+    },
+    "ranking_ready": {
+      "const": false,
+      "description": "Campaign remains non-ranking; must stay false for #3990 historical research"
+    },
+    "dataset_summary": {
+      "type": "object",
+      "additionalProperties": true,
+      "properties": {
+        "symbol": { "type": "string" },
+        "timeframe": { "type": "string" },
+        "candles_live": { "type": "number" },
+        "candles_total": { "type": "number" },
+        "period_start_ts_ms": { "type": "number" },
+        "period_end_ts_ms": { "type": "number" },
+        "warmup_candles": { "type": "number" }
+      }
+    },
+    "metrics": {
+      "type": "object",
+      "additionalProperties": true,
+      "required": ["closed_trades_total"],
+      "properties": {
+        "gross_pnl_quote": { "type": "number" },
+        "net_pnl_quote": { "type": "number" },
+        "fees_total_quote": { "type": "number" },
+        "max_drawdown_r": { "type": "number" },
+        "fee_adjusted_max_drawdown_r": {
+          "type": ["number", "null"],
+          "description": "Present for primary_breakout_v1 with trades; absent/null otherwise"
+        },
+        "profit_factor": { "type": "number" },
+        "fee_adjusted_profit_factor": {
+          "type": ["number", "null"]
+        },
+        "expectancy_r": { "type": "number" },
+        "fee_adjusted_expectancy_r": {
+          "type": ["number", "null"]
+        },
+        "closed_trades_total": {
+          "type": "integer",
+          "minimum": 0,
+          "description": "Zero is valid; missing field is not zero"
+        },
+        "win_rate": { "type": "number" },
+        "avg_win_r": { "type": ["number", "null"] },
+        "avg_loss_r": { "type": ["number", "null"] },
+        "signals_total": { "type": "integer", "minimum": 0 },
+        "trades_win_count": { "type": "integer", "minimum": 0 },
+        "trades_loss_count": { "type": "integer", "minimum": 0 },
+        "sample_size_verdict": { "type": "string" },
+        "metrics_availability": {
+          "type": "object",
+          "additionalProperties": true,
+          "properties": {
+            "slippage_per_trade_available": { "type": "boolean" },
+            "slippage_note": { "type": "string" },
+            "trade_level_pnl_available": { "type": "boolean" },
+            "equity_curve_available": { "type": "boolean" }
+          }
+        }
+      }
+    },
+    "canonical_job_selection": {
+      "type": "object",
+      "description": "Documented selector for queue_state jobs; not embedded in each metrics file at runtime",
+      "additionalProperties": false,
+      "required": ["selector", "canonical_job_count", "superseded_job_count"],
+      "properties": {
+        "selector": {
+          "const": "superseded_by_stress_v2_rerun != true"
+        },
+        "canonical_job_count": {
+          "const": 318
+        },
+        "superseded_job_count": {
+          "const": 6
+        },
+        "queue_record_count": {
+          "const": 324
+        },
+        "fail_closed_on_unknown_superseded": {
+          "const": true
+        },
+        "zero_trade_rankable": {
+          "const": false
+        }
+      }
+    }
+  }
+}

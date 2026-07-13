@@ -1,7 +1,6 @@
 from __future__ import annotations
 
 import importlib.util
-import json
 import subprocess
 import sys
 from pathlib import Path
@@ -335,3 +334,224 @@ diff --git a/infrastructure/compose/compose.blue.yml b/infrastructure/compose/co
     findings = scanner.detect_findings(pr, diff_text)
 
     assert "architecture_service_catalog_drift" in _rule_ids(findings)
+
+
+def _architecture_finding(findings: list[object]):
+    return next(
+        (finding for finding in findings if finding.rule_id == "architecture_service_catalog_drift"),
+        None,
+    )
+
+
+# ---------------------------------------------------------------------------
+# README-only architecture suppression (#4036)
+# ---------------------------------------------------------------------------
+
+
+@pytest.mark.parametrize(
+    "paths",
+    [
+        ["services/README.md"],
+        ["services/validation/README.md"],
+        ["core/README.md"],
+        ["core/contracts/README.md"],
+        ["services/README.md", "services/validation/README.md", "core/README.md"],
+    ],
+)
+def test_readme_only_under_services_or_core_no_architecture_drift(paths: list[str]) -> None:
+    pr = _make_pr(4011, "docs: readme navigation", *paths)
+    findings = scanner.detect_findings(pr, "")
+    assert "architecture_service_catalog_drift" not in _rule_ids(findings)
+
+
+def test_readme_plus_non_structural_doc_no_architecture_drift() -> None:
+    pr = _make_pr(
+        4011,
+        "docs: readme navigation",
+        "services/README.md",
+        "docs/evidence/readme_link_inventory_3994.md",
+    )
+    findings = scanner.detect_findings(pr, "")
+    assert "architecture_service_catalog_drift" not in _rule_ids(findings)
+
+
+def test_readme_plus_architecture_map_no_architecture_drift() -> None:
+    pr = _make_pr(
+        4011,
+        "docs: readme + reconcile",
+        "services/README.md",
+        "knowledge/ARCHITECTURE_MAP.md",
+    )
+    findings = scanner.detect_findings(pr, "")
+    assert "architecture_service_catalog_drift" not in _rule_ids(findings)
+
+
+def test_readme_plus_service_catalog_no_architecture_drift() -> None:
+    pr = _make_pr(
+        4018,
+        "docs: readme + reconcile",
+        "core/README.md",
+        "knowledge/governance/SERVICE_CATALOG.md",
+    )
+    findings = scanner.detect_findings(pr, "")
+    assert "architecture_service_catalog_drift" not in _rule_ids(findings)
+
+
+@pytest.mark.parametrize(
+    "path",
+    [
+        "services/example.py",
+        "services/validation/new_component.py",
+        "core/example.py",
+    ],
+)
+def test_structural_py_triggers_architecture_drift(path: str) -> None:
+    pr = _make_pr(4022, "feat: structural change", path)
+    findings = scanner.detect_findings(pr, "")
+    assert "architecture_service_catalog_drift" in _rule_ids(findings)
+
+
+def test_structural_plus_readme_still_triggers_architecture_drift() -> None:
+    pr = _make_pr(
+        4022,
+        "feat: structural + readme",
+        "services/validation/arvp_candidate_evidence_assembler.py",
+        "services/validation/README.md",
+    )
+    findings = scanner.detect_findings(pr, "")
+    assert "architecture_service_catalog_drift" in _rule_ids(findings)
+
+
+def test_multiple_structural_files_triggers_architecture_drift() -> None:
+    pr = _make_pr(
+        4025,
+        "feat: multiple structural",
+        "services/validation/profitability_league_table_report_assembler.py",
+        "services/validation/profitability_league_scorer.py",
+    )
+    findings = scanner.detect_findings(pr, "")
+    assert "architecture_service_catalog_drift" in _rule_ids(findings)
+
+
+def test_structural_plus_both_canon_docs_no_architecture_drift() -> None:
+    pr = _make_pr(
+        4035,
+        "docs: reconcile",
+        "services/validation/arvp_candidate_evidence_assembler.py",
+        "knowledge/ARCHITECTURE_MAP.md",
+        "knowledge/governance/SERVICE_CATALOG.md",
+    )
+    findings = scanner.detect_findings(pr, "")
+    assert "architecture_service_catalog_drift" not in _rule_ids(findings)
+
+
+def test_pr_4011_regression_no_architecture_drift() -> None:
+    pr = _make_pr(
+        4011,
+        "docs(navigation): README link guard",
+        "services/README.md",
+        ".github/workflows/ci.yml",
+        "tools/validate_readme_links.py",
+    )
+    findings = scanner.detect_findings(pr, "")
+    assert "architecture_service_catalog_drift" not in _rule_ids(findings)
+
+
+def test_pr_4018_regression_no_architecture_drift() -> None:
+    pr = _make_pr(
+        4018,
+        "docs(nav): reconcile entry points",
+        "core/README.md",
+        "README.md",
+        "docs/runbooks/CONTROL_REGISTER.md",
+    )
+    findings = scanner.detect_findings(pr, "")
+    assert "architecture_service_catalog_drift" not in _rule_ids(findings)
+
+
+def test_pr_4022_regression_architecture_drift() -> None:
+    pr = _make_pr(
+        4022,
+        "feat(arvp): candidate evidence assembler",
+        "services/validation/arvp_candidate_evidence_assembler.py",
+        "tools/arvp_vacation/candidate_evidence_assembly.py",
+    )
+    findings = scanner.detect_findings(pr, "")
+    assert "architecture_service_catalog_drift" in _rule_ids(findings)
+
+
+def test_pr_4025_regression_architecture_drift() -> None:
+    pr = _make_pr(
+        4025,
+        "feat(arvp): league table report assembler",
+        "services/validation/profitability_league_table_report_assembler.py",
+        "tools/arvp_vacation/league_table_report.py",
+    )
+    findings = scanner.detect_findings(pr, "")
+    assert "architecture_service_catalog_drift" in _rule_ids(findings)
+
+
+def test_readme_only_can_still_trigger_discovery_drift() -> None:
+    pr = _make_pr(4011, "docs: services readme nav", "services/README.md")
+    findings = scanner.detect_findings(pr, "")
+    assert "architecture_service_catalog_drift" not in _rule_ids(findings)
+    assert "discovery_surface_drift" in _rule_ids(findings)
+
+
+def test_mixed_readme_code_fingerprint_matches_pre_fix_semantics() -> None:
+    pr = _make_pr(
+        4022,
+        "feat: mixed readme + code",
+        "services/README.md",
+        "services/validation/arvp_candidate_evidence_assembler.py",
+    )
+    findings = scanner.detect_findings(pr, "")
+    finding = _architecture_finding(findings)
+    assert finding is not None
+    expected_key = "|".join(
+        [
+            "4022",
+            "architecture_service_catalog_drift",
+            "services/README.md",
+            "services/validation/arvp_candidate_evidence_assembler.py",
+        ]
+    )
+    assert finding.fingerprint == scanner.sha16(expected_key)
+    assert finding.trigger_files == [
+        "services/README.md",
+        "services/validation/arvp_candidate_evidence_assembler.py",
+    ]
+
+
+def test_readme_plus_digest_only_compose_no_architecture_drift() -> None:
+    pr = _make_pr(
+        1719,
+        "docs + digest pin",
+        "services/README.md",
+        "infrastructure/compose/compose.blue.yml",
+    )
+    diff_text = """\
+diff --git a/infrastructure/compose/compose.blue.yml b/infrastructure/compose/compose.blue.yml
++++ b/infrastructure/compose/compose.blue.yml
+@@ -17,7 +17,7 @@ services:
+-    image: postgres:15.17-alpine
++    image: postgres:15.17-alpine@sha256:1c52f5ad23db5d7648a63634444af76de48e63b860fccbe3e3a5458b2812eaed
+diff --git a/services/README.md b/services/README.md
++++ b/services/README.md
+@@ -1,1 +1,2 @@
++Navigation update
+"""
+    findings = scanner.detect_findings(pr, diff_text)
+    assert "architecture_service_catalog_drift" not in _rule_ids(findings)
+
+
+def test_normalize_repo_path_preserves_dot_github_prefix() -> None:
+    assert scanner.normalize_repo_path(".github/workflows/ci.yml") == ".github/workflows/ci.yml"
+    assert scanner.normalize_repo_path("./services/README.md") == "services/README.md"
+    assert scanner.normalize_repo_path("services\\README.md") == "services/README.md"
+
+
+def test_is_services_or_core_readme_case_sensitive() -> None:
+    assert scanner.is_services_or_core_readme("services/README.md")
+    assert not scanner.is_services_or_core_readme("services/readme.md")
+    assert not scanner.is_services_or_core_readme(".github/README.md")

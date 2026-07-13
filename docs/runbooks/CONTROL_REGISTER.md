@@ -1,20 +1,20 @@
 # Control Register
 
-**Letzte Aktualisierung:** 2026-07-06
-**SSOT Live-Readiness:** `docs/live-readiness/LR-AUDIT-STATUS-2026-03-05.md`
+**Letzte Aktualisierung:** 2026-07-13 (Nav-/Issue-Link-Reconcile #3995)
+**SSOT Live-Readiness:** [`docs/live-readiness/LR-AUDIT-STATUS-2026-03-05.md`](../live-readiness/LR-AUDIT-STATUS-2026-03-05.md)
 **Verdict:** NO-GO
-**Control-Board Stage:** `trade-capable` (ratifiziert 2026-04-08 via Issue `#1492`)
+**Control-Board Stage:** `trade-capable` (ratifiziert 2026-04-08 via Issue [#1492](https://github.com/jannekbuengener/Claire_de_Binare/issues/1492))
 
 ---
 
 ## Cockpit-Einstieg
 
-1. GitHub Issue `[CONTROL] Claire de Binare — Operatives Cockpit (dauerhaft offen)` — **#1445**
-   - Rebaseline 2026-05-13: `docs/runbooks/control-cockpit/CONTROL_COCKPIT_1445_REBASELINE_2026-05-13.md`
+1. GitHub Issue `[CONTROL] Claire de Binare — Operatives Cockpit (dauerhaft offen)` — **[#1445](https://github.com/jannekbuengener/Claire_de_Binare/issues/1445)**
+   - Rebaseline 2026-05-13: [`docs/runbooks/control-cockpit/CONTROL_COCKPIT_1445_REBASELINE_2026-05-13.md`](control-cockpit/CONTROL_COCKPIT_1445_REBASELINE_2026-05-13.md)
    - Alte Kommentare sind Ledger/Telemetry, keine Live-Wahrheit.
-2. GitHub Issue `#1492` — ratifizierter Stage-Uebergang `stability -> trade-capable`
-3. `CURRENT_STATUS.md` — Repo/Engineering-Status, Session-Ledger
-4. `docs/live-readiness/LR-AUDIT-STATUS-2026-03-05.md` — Live-Readiness-Verdikt
+2. GitHub Issue [#1492](https://github.com/jannekbuengener/Claire_de_Binare/issues/1492) — ratifizierter Stage-Uebergang `stability -> trade-capable`
+3. [`CURRENT_STATUS.md`](../../CURRENT_STATUS.md) — Repo/Engineering-Status, Session-Ledger
+4. [`docs/live-readiness/LR-AUDIT-STATUS-2026-03-05.md`](../live-readiness/LR-AUDIT-STATUS-2026-03-05.md) — Live-Readiness-Verdikt
 
 ---
 
@@ -180,6 +180,7 @@ Kontext-Issue-Nummern sind historische Anker (alle CLOSED) — nicht als offene 
 - Action-Dependency-Bump (PR #3796, gemergt 2026-07-06, Commit `ba2c5d33`): Konsolidierter `github/codeql-action` Bump 4.36.2→4.36.3 (`54f647b7e1bb85c95cddabcd46b0c578ec92bc1a`) fuer alle `init`/`analyze`/`upload-sarif`-Refs in `codeql-python.yml`, `gitleaks.yml`, `security-scan.yml`, `trivy.yml`; supersediert partielle Dependabot-PRs #3751/#3753/#3754. Dependabot-Gruppe `codeql-action` in `.github/dependabot.yml` ergaenzt. SARIF-Kategorien und Security-Triage-Postur unveraendert; `codeql-python.yml` upload-Posture (#3673) bleibt `upload: false`. Control-Reconcile [#3797](https://github.com/jannekbuengener/Claire_de_Binare/issues/3797). Kein LR-/Live-/Echtgeld-Signal.
 - Action-Dependency-Bump (PR #3798, gemergt 2026-07-06, Commit `99c8d871`): `docker/setup-buildx-action` 4.1.0→4.2.0 (`bb05f3f5519dd87d3ba754cc423b652a5edd6d2c`) in `docker-publish.yml`. Kein Control-Workflow; Buildx-Setup-Semantik unveraendert. Control-Reconcile [#3800](https://github.com/jannekbuengener/Claire_de_Binare/issues/3800). Kein LR-/Live-/Echtgeld-Signal.
 - Dependabot-Queue residual (2026-07-06): Offener Dependabot-PR [#3755](https://github.com/jannekbuengener/Claire_de_Binare/pull/3755) (`grafana/grafana` 13.0.3→13.1.0) **HOLD_UPSTREAM_BLOCKED** — Grafana 13.1.0 loest CVE-2026-42504 nicht; Evidence: `docs/evidence/security/CDB_SECURITY_GRAFANA_3764_CVE-42504_VERIFY_2026-07-06.md` (PR #3799). Kein Merge, keine Security-Alert-Dismissals, keine Security-Issue-Closure in diesem Slice.
+- `security-scan.yml` (PR #3921, gemergt 2026-07-08T04:21:30Z, Commit `384de27b`): Postgres-Base-Image digest-only refresh `postgres:18.4-alpine@sha256:1b1689b2…` → `@sha256:ecafd342…` in `trivy-scan-base`, `scan-base-images` sowie Compose (`base.yml`, `compose.blue.yml`) synchron nachgezogen. Semantischer Tag unveraendert; upstream rebuild 2026-07-07. Trivy local: **12 libcurl HIGH** auf altem Pin → **0** alpine HIGH/CRITICAL auf neuem Pin (`libcurl 8.21.0-r0`). Trivy-SARIF-Kategorie `trivy-base-postgres` bleibt stabil; keine Aenderung an Triggern, Permissions, Upload-Verhalten oder Control-Surface-Semantik. `usr/local/bin/gosu` residual (14 HIGH/CRITICAL) bleibt **UPSTREAM_BLOCKED** unter [#2933](https://github.com/jannekbuengener/Claire_de_Binare/issues/2933). Evidence: `docs/evidence/security/CDB_SECURITY_POSTGRES_ALPINE_LIBCURL_REBUILD_2026-07-08.md`. GitHub Code Scanning alert delta erst nach naechstem `security-scan.yml`-Lauf auf `main` messbar; keine Alert-Dismissals. Control-Reconcile [#3922](https://github.com/jannekbuengener/Claire_de_Binare/issues/3922). Kein LR-/Live-/Echtgeld-Signal.
 
 ---
 

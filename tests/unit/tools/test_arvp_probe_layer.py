@@ -446,6 +446,104 @@ class TestProbeLedger:
         result = probe_ledger()
         assert result["status"] == "blocked"
 
+    def test_lane_scoped_counts_exposed(self, monkeypatch):
+        monkeypatch.setattr("importlib.util.find_spec", lambda _: True)
+
+        def fake_run_sql(host, port, dbname, user, query, container=None):
+            if "GROUP BY" in query:
+                return [("SIGNAL", 50)]
+            if "ORDER BY timestamp_ms DESC LIMIT 1" in query:
+                return [(1_783_603_620_000, "SIGNAL", "corr-1")]
+            if "payload->>'bot_id'" in query and "np-donchian-parallel-01" in query:
+                return [(50,)]
+            if "payload->>'strategy_id'" in query:
+                return [(50,)]
+            if "payload->>'campaign_id'" in query:
+                return [(0,)]
+            if "COUNT(*)" in query:
+                return [(0,)]
+            return []
+
+        monkeypatch.setattr("tools.arvp_probe_layer._run_sql", fake_run_sql)
+
+        result = probe_ledger(
+            campaign_start_utc="2026-07-09T13:27:00Z",
+            bot_id="np-donchian-parallel-01",
+            strategy_id="donchian_breakout_v1",
+            campaign_id="arvp_3912_np_parallel_donchian_20260709_1327",
+        )
+        evidence = result["evidence"]
+        assert result["status"] == "ok"
+        assert evidence["events_since_campaign_start_global"] == 0
+        assert evidence["events_since_campaign_start_bot_id"] == 50
+        assert evidence["events_since_campaign_start_strategy_id"] == 50
+        assert evidence["events_since_campaign_start_campaign_id"] == 0
+        assert any(
+            "campaign_id is not propagated" in item
+            for item in result["limitations"]
+        )
+
+    def test_lane_campaign_evidence_aggregated(self, monkeypatch):
+        monkeypatch.setattr("importlib.util.find_spec", lambda _: True)
+
+        lane_rows = []
+        for idx in range(2):
+            lane_rows.append(
+                (
+                    "SIGNAL",
+                    {
+                        "strategy_id": "donchian_breakout_v1",
+                        "bot_id": "np-donchian-parallel-01",
+                        "campaign_id": "arvp_3912_np_parallel_donchian_20260709_1327",
+                        "metadata": {"config_hash": "cfg-donchian-parallel-v1"},
+                    },
+                )
+            )
+            lane_rows.append(
+                (
+                    "DECISION",
+                    {
+                        "strategy_id": "donchian_breakout_v1",
+                        "bot_id": "np-donchian-parallel-01",
+                        "campaign_id": "arvp_3912_np_parallel_donchian_20260709_1327",
+                        "decision": "BLOCK",
+                        "reason_code": "RC_001",
+                    },
+                )
+            )
+
+        def fake_run_sql(host, port, dbname, user, query, container=None):
+            if "SELECT event_type, payload" in query:
+                return lane_rows
+            if "GROUP BY" in query:
+                return [("SIGNAL", 2), ("DECISION", 2)]
+            if "ORDER BY timestamp_ms DESC LIMIT 1" in query:
+                return [(1_783_603_620_000, "SIGNAL", "corr-1")]
+            if "payload->>'bot_id'" in query and "np-donchian-parallel-01" in query:
+                return [(4,)]
+            if "payload->>'strategy_id'" in query:
+                return [(4,)]
+            if "payload->>'campaign_id'" in query:
+                return [(4,)]
+            if "COUNT(*)" in query:
+                return [(4,)]
+            return []
+
+        monkeypatch.setattr("tools.arvp_probe_layer._run_sql", fake_run_sql)
+
+        result = probe_ledger(
+            campaign_start_utc="2026-07-09T13:27:00Z",
+            bot_id="np-donchian-parallel-01",
+            strategy_id="donchian_breakout_v1",
+            campaign_id="arvp_3912_np_parallel_donchian_20260709_1327",
+        )
+        lane_evidence = result["evidence"]["lane_campaign_evidence"]
+        assert lane_evidence["signals_emitted"] == 2
+        assert lane_evidence["blocks_by_reason"]["RC_001"] == 2
+        assert result["evidence"]["ledger_attribution"][
+            "campaign_id_propagated_to_ledger"
+        ] is True
+
 
 # ---------------------------------------------------------------------------
 # 7. Regime probe tests

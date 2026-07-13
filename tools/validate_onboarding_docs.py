@@ -25,7 +25,11 @@ import argparse
 import re
 import sys
 from pathlib import Path
-from typing import Iterator
+
+from tools.markdown_link_utils import (
+    check_markdown_links,
+    extract_relative_links,
+)
 
 REPO_ROOT = Path(__file__).resolve().parent.parent
 
@@ -39,6 +43,8 @@ ACTIVE_ONBOARDING_SURFACES: list[str] = [
     "tools/README.md",
     "docs/surrealdb/README.md",
     "docs/onboarding/DEVELOPER_VISUAL_START_HERE.md",
+    "docs/onboarding/cdb_glossary.md",
+    "docs/onboarding/core-eventflows/README.md",
     "docs/onboarding/AGENT_COMPATIBILITY_READINESS.md",
     "docs/onboarding/fresh_clone_rehearsal.md",
     "docs/onboarding/repo_brain_context_intelligence.md",
@@ -57,8 +63,6 @@ NAVPACK_SURFACES: list[str] = [
     "mcp_navpack_working_repo/ENTRYPOINTS.yaml",
     "mcp_navpack_working_repo/CHEATSHEET.md",
 ]
-
-MARKDOWN_LINK_RE = re.compile(r"\[([^\]]+)\]\(([^)]+)\)")
 
 YAML_PATH_RE = re.compile(r'^\s*path:\s*"([^"]+)"')
 
@@ -89,34 +93,6 @@ ARCHIVE_MARKERS: list[str] = [
 ]
 
 
-def _is_external_url(link: str) -> bool:
-    return link.startswith(("http://", "https://", "mailto:"))
-
-
-def _is_pure_anchor(link: str) -> bool:
-    return link.startswith("#")
-
-
-def _is_archive_path(link: str) -> bool:
-    return link.startswith(("docs/archive/", "knowledge/archive/"))
-
-
-def _resolve_link(source_file: Path, link: str) -> Path:
-    link_clean = link.split("#")[0].split("?")[0]
-    if not link_clean:
-        return source_file
-    return (source_file.parent / link_clean).resolve()
-
-
-def extract_relative_links(content: str) -> list[str]:
-    links: list[str] = []
-    for match in MARKDOWN_LINK_RE.finditer(content):
-        link = match.group(2).strip()
-        if not _is_external_url(link) and not _is_pure_anchor(link):
-            links.append(link)
-    return links
-
-
 def extract_navpack_paths(content: str) -> list[str]:
     paths: list[str] = []
     for line in content.splitlines():
@@ -126,32 +102,13 @@ def extract_navpack_paths(content: str) -> list[str]:
     return paths
 
 
-def check_markdown_links(
-    root: Path, source_rel: str, content: str, verbose: bool
-) -> list[str]:
-    errors: list[str] = []
-    source_path = (root / source_rel).resolve()
-    links = extract_relative_links(content)
-    for link in links:
-        if _is_archive_path(link):
-            continue
-        target = _resolve_link(source_path, link)
-        if not target.exists():
-            errors.append(
-                f"{source_rel}: broken relative link '{link}' -> {target} (not found)"
-            )
-        elif verbose:
-            print(f"  [OK] {source_rel}: '{link}' -> exists", file=sys.stderr)
-    return errors
-
-
 def check_navpack_entries(
     root: Path, source_rel: str, content: str, verbose: bool
 ) -> list[str]:
     errors: list[str] = []
     paths = extract_navpack_paths(content)
     for path_entry in paths:
-        if _is_external_url(path_entry) or path_entry.startswith("#"):
+        if path_entry.startswith(("http://", "https://", "mailto:", "#")):
             continue
         target = (root / path_entry.split("#")[0].split("?")[0]).resolve()
         if not target.exists():
