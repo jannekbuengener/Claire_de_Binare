@@ -5,6 +5,7 @@ from __future__ import annotations
 import pytest
 
 from core.replay.batch_a_strategy_registry import (
+    ImplementationMode,
     assert_batch_a_executable,
     batch_a_strategy_ids,
     executable_batch_a_strategy_ids,
@@ -22,8 +23,8 @@ def test_registry_lists_all_ten_locked_candidates() -> None:
 def test_only_implemented_runners_are_executable() -> None:
     executable = executable_batch_a_strategy_ids()
     pending = pending_batch_a_strategy_ids()
-    assert len(executable) == 2
-    assert len(pending) == 8
+    assert len(executable) == 6
+    assert len(pending) == 4
     assert executable.isdisjoint(pending)
 
 
@@ -34,7 +35,11 @@ def test_only_implemented_runners_are_executable() -> None:
 def test_implemented_candidates_are_executable(strategy_id: str) -> None:
     record = get_batch_a_strategy(strategy_id)
     assert record.executable
-    assert record.adapter_id is not None
+    assert record.runner_module is not None
+    if record.implementation_mode in {
+        ImplementationMode.REUSE_RESCREEN_CROSS_VENUE_WITH_PRIOR_NEGATIVE_EVIDENCE,
+    }:
+        assert record.adapter_id is not None
 
 
 @pytest.mark.parametrize(

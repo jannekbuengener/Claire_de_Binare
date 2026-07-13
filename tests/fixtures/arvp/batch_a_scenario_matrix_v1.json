@@ -22,18 +22,18 @@
     "momentum_capture_v1"
   ],
   "implemented_strategy_ids": [
+    "breakout_volatility_filter_v1",
+    "volatility_breakout_v1",
+    "bollinger_squeeze_breakout_v1",
+    "atr_expansion_v1",
     "range_mean_reversion_v1",
     "momentum_capture_v1"
   ],
   "implementation_pending_strategy_ids": [
-    "breakout_volatility_filter_v1",
-    "volatility_breakout_v1",
     "ema_trend_follow_v1",
     "ma_crossover_v1",
-    "bollinger_squeeze_breakout_v1",
     "roc_breakout_confirm_v1",
-    "opening_range_breakout_v1",
-    "atr_expansion_v1"
+    "opening_range_breakout_v1"
   ],
   "canonical_adapter_by_strategy": {
     "breakout_volatility_filter_v1": null,
