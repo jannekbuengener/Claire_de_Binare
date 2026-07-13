@@ -135,6 +135,7 @@ from core.replay.scenario_harness import (
     ScenarioRunResult,
     ScenarioSpec,
 )
+from core.replay.regime_stats import build_regime_stats_from_replay
 from core.replay.replay_report_builder import (
     build_scenario_comparison_summary,
 )
@@ -1839,12 +1840,32 @@ def _build_argument_parser() -> argparse.ArgumentParser:
     return parser
 
 
+def _resolve_regime_stats_block(
+    backtest_report: dict[str, Any],
+    candles: list[dict[str, Any]] | None = None,
+    *,
+    warmup: int = 0,
+) -> dict[str, Any]:
+    existing = backtest_report.get("regime_stats")
+    if isinstance(existing, dict) and existing.get("schema_version") == "regime_stats.v1":
+        return existing
+    if candles is None:
+        return build_regime_stats_from_replay([], backtest_report.get("trades") or [])
+    return build_regime_stats_from_replay(
+        candles,
+        backtest_report.get("trades") or [],
+        warmup=warmup,
+    )
+
+
 def _write_scenario_metrics_artifact(
     *,
     output_dir: Path,
     config: ARVPReplayConfig,
     spec: ScenarioSpec,
     backtest_report: dict[str, Any],
+    candles: list[dict[str, Any]] | None = None,
+    warmup: int = 0,
 ) -> None:
     if config.scenario_group_id:
         summary_dir = output_dir / config.scenario_group_id
@@ -1857,6 +1878,11 @@ def _write_scenario_metrics_artifact(
         "strategy_id": config.strategy_id,
         "metrics": backtest_report.get("metrics", {}),
         "dataset_summary": backtest_report.get("dataset_summary", {}),
+        "regime_stats": _resolve_regime_stats_block(
+            backtest_report,
+            candles,
+            warmup=warmup,
+        ),
         "ranking_ready": False,
     }
     (summary_dir / f"{spec.scenario_id}_metrics.json").write_text(
@@ -1908,6 +1934,8 @@ def _make_pb_run_single_fn(
                 config=config,
                 spec=spec,
                 backtest_report=backtest_report,
+                candles=scenario_candles,
+                warmup=warmup_count,
             )
             run_id = backtest_report["run_metadata"]["run_id"]
             return ScenarioRunResult(
@@ -2054,6 +2082,8 @@ def _make_pack_a_run_single_fn(
                 config=config,
                 spec=spec,
                 backtest_report=backtest_report,
+                candles=scenario_candles,
+                warmup=warmup_count,
             )
             return ScenarioRunResult(
                 scenario_id=spec.scenario_id,

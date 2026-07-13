@@ -21,6 +21,7 @@ from jsonschema.validators import validator_for
 
 from core.replay.canonical_json import canonical_hash, canonical_json_dumps
 
+from core.replay.regime_stats import regime_scorecard_status_from_stats
 from services.validation.profitability_evidence_packet_assembler import (
     _deterministic_json_dumps,
     _sha256_hex,
@@ -479,6 +480,35 @@ def _assess_candidate_rankability(records: Sequence[Mapping[str, Any]]) -> tuple
     return RANKABILITY_RANKABLE, reasons
 
 
+def _regime_scorecard_block_from_records(
+    records: Sequence[Mapping[str, Any]],
+) -> dict[str, Any]:
+    """Derive compact PEP regime_scorecard status from job-level regime_stats.v1."""
+    # Full arvp_regime_scorecard artifact wiring remains future work; stats.v1 is
+    # sufficient to mark multi-regime trade coverage for PARTIAL_EVIDENCE paths.
+    for record in records:
+        stats = record.get("regime_stats")
+        status = regime_scorecard_status_from_stats(
+            stats if isinstance(stats, Mapping) else None
+        )
+        if status == "ok":
+            return {
+                "status": "ok",
+                "artifact_ref": None,
+                "summary": (
+                    "Compact regime_stats.v1 shows trades in multiple regimes; "
+                    "full arvp_regime_scorecard artifact not attached."
+                ),
+            }
+    return {
+        "status": "unavailable",
+        "artifact_ref": None,
+        "summary": (
+            "Window-level regime_availability only; no multi-regime trade scorecard measured."
+        ),
+    }
+
+
 def _hashable_packet(packet: Mapping[str, Any]) -> dict[str, Any]:
     excluded = {"generated_at", "content_hash"}
     return {key: value for key, value in packet.items() if key not in excluded}
@@ -645,8 +675,10 @@ def build_candidate_evidence_packet(
         "Top-level gross_return/net_return are descriptive medians of per-window quote PnL, not additive total return."
     )
     limitations.append(
-        "Regime fields describe window-level regime_availability only, not strategy regime performance."
+        "Regime fields describe window-level regime_availability and compact regime_stats when present."
     )
+
+    regime_scorecard_block = _regime_scorecard_block_from_records(records)
 
     packet: dict[str, Any] = {
         "schema_version": "profitability_evidence_packet.v1",
@@ -691,13 +723,7 @@ def build_candidate_evidence_packet(
         "max_drawdown": summary["max_drawdown"],
         "loss_streak": summary["loss_streak"],
         "trade_count": summary["trade_count"],
-        "regime_scorecard": {
-            "status": "unavailable",
-            "artifact_ref": None,
-            "summary": (
-                "Window-level regime_availability only; no strategy regime scorecard measured."
-            ),
-        },
+        "regime_scorecard": regime_scorecard_block,
         "scenario_results": _scenario_results(records),
         "replay_vs_paper_status": "not_run",
         "simulator_drift": "not_assessed",
@@ -738,7 +764,7 @@ def build_candidate_evidence_packet(
             "scenario_ready": True,
             "replay_ready": False,
             "replay_vs_paper_ready": False,
-            "regime_scorecard_ready": False,
+            "regime_scorecard_ready": regime_scorecard_block["status"] == "ok",
             "harvester_refs_ready": True,
             "summary": (
                 "ARVP cross-venue research packet; ranking_inputs_complete=false; "

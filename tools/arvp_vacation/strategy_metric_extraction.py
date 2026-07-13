@@ -313,6 +313,10 @@ def extract_scenario_record(
             continue
         record[field] = _resolve_metric_value(metrics, field)
 
+    regime_stats = payload.get("regime_stats")
+    if isinstance(regime_stats, dict):
+        record["regime_stats"] = regime_stats
+
     return record
 
 
