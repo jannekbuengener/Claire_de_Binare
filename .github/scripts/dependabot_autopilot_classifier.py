@@ -93,6 +93,7 @@ REASON_RUNTIME = "RUNTIME_DEPENDENCY_CHANGE"
 REASON_DOCKER = "DOCKER_CHANGE"
 REASON_ACTIONS = "GITHUB_ACTIONS_CHANGE"
 REASON_FACTS_INVALID = "FACTS_INVALID"
+FACTS_INVALID_SUMMARY = "HOLD: FACTS_INVALID"
 REASON_EXECUTION_MODE = "EXECUTION_MODE_INVALID"
 REASON_HEAD_SHA = "HEAD_SHA_INVALID"
 REASON_VERSION_TRANSITION = "VERSION_TRANSITION_INVALID"
@@ -730,21 +731,27 @@ def _build_summary(
     )
 
 
+def _facts_invalid_hold_result() -> ClassificationResult:
+    return ClassificationResult(
+        classification="HOLD",
+        action="HOLD",
+        merge_authorized=False,
+        reason_codes=(REASON_FACTS_INVALID,),
+        human_summary=FACTS_INVALID_SUMMARY,
+    )
+
+
 def classify_dependabot_pr(
     facts: DependabotAutopilotFacts,
     policy: AllowlistPolicy,
 ) -> ClassificationResult:
     """Pure fail-closed classifier. Same inputs always yield the same decision."""
+    if not isinstance(facts, DependabotAutopilotFacts):
+        return _facts_invalid_hold_result()
+
     fact_errors = _validate_facts(facts)
     if fact_errors:
-        codes = (REASON_FACTS_INVALID,)
-        return ClassificationResult(
-            classification="HOLD",
-            action="HOLD",
-            merge_authorized=False,
-            reason_codes=codes,
-            human_summary=_build_summary("HOLD", "HOLD", False, codes, facts),
-        )
+        return _facts_invalid_hold_result()
 
     hold_reasons = _collect_hold_reasons(facts, policy)
     if hold_reasons:

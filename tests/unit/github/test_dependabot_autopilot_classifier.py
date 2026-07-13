@@ -576,6 +576,7 @@ def test_invalid_head_sha_empty_holds() -> None:
 
     assert result.classification == "HOLD"
     assert result.reason_codes == (classifier.REASON_FACTS_INVALID,)
+    assert result.human_summary == classifier.FACTS_INVALID_SUMMARY
 
 
 def test_invalid_head_sha_short_holds() -> None:
@@ -714,6 +715,44 @@ def test_malformed_facts_fail_closed_without_exception(overrides: dict) -> None:
     assert result.action == "HOLD"
     assert result.merge_authorized is False
     assert result.reason_codes == (classifier.REASON_FACTS_INVALID,)
+    assert result.human_summary == classifier.FACTS_INVALID_SUMMARY
+
+
+INVALID_FACTS_TOP_LEVEL_CASES = [
+    pytest.param({"required_checks": None}, id="required_checks_none"),  # type: ignore[dict-item]
+    pytest.param({"labels": None}, id="labels_none"),  # type: ignore[dict-item]
+    pytest.param({"changed_files": None}, id="changed_files_none"),  # type: ignore[dict-item]
+    pytest.param({"package_name": 123}, id="package_name_int"),  # type: ignore[dict-item]
+]
+
+
+@pytest.mark.parametrize("overrides", INVALID_FACTS_TOP_LEVEL_CASES)
+def test_invalid_fact_fields_use_constant_summary(overrides: dict) -> None:
+    result = classifier.classify_dependabot_pr(_facts(**overrides), _load_policy())
+
+    assert result.classification == "HOLD"
+    assert result.action == "HOLD"
+    assert result.merge_authorized is False
+    assert result.reason_codes == (classifier.REASON_FACTS_INVALID,)
+    assert result.human_summary == classifier.FACTS_INVALID_SUMMARY
+    assert "123" not in result.human_summary
+    assert "None" not in result.human_summary
+
+
+@pytest.mark.parametrize(
+    "facts_value",
+    [None, {}],
+)
+def test_non_dependabot_autopilot_facts_use_constant_summary(
+    facts_value: object,
+) -> None:
+    result = classifier.classify_dependabot_pr(facts_value, _load_policy())  # type: ignore[arg-type]
+
+    assert result.classification == "HOLD"
+    assert result.action == "HOLD"
+    assert result.merge_authorized is False
+    assert result.reason_codes == (classifier.REASON_FACTS_INVALID,)
+    assert result.human_summary == classifier.FACTS_INVALID_SUMMARY
 
 
 def test_policy_default_mode_phase1_is_invalid() -> None:
