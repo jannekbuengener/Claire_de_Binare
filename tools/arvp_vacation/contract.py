@@ -9,6 +9,10 @@ from typing import Any, Callable, Iterable, Mapping, Sequence
 import yaml
 
 from core.replay.canonical_json import canonical_hash
+from core.replay.batch_a_strategy_registry import (
+    BATCH_A_STRATEGY_REGISTRY,
+    executable_batch_a_strategy_ids,
+)
 
 MANIFEST_SCHEMA_VERSION = "1.0"
 QUEUE_STATE_SCHEMA_VERSION = "1.0"
@@ -36,18 +40,33 @@ TERMINAL_JOB_STATUSES = frozenset(
 STRATEGY_ACTIVE = "active"
 STRATEGY_PARKED = "parked_reference"
 
-ALLOWED_STRATEGIES: frozenset[str] = frozenset(
+_LEGACY_STRATEGY_IDS: frozenset[str] = frozenset(
     {
         "donchian_breakout_v1",
         "breakout_trend_filter_v1",
         "primary_breakout_v1",
     }
 )
+_BATCH_A_SHADOW_ADAPTER_ID = "batch_a_shadow_runner_v1"
+
+
+def batch_a_strategy_adapters() -> dict[str, str]:
+    adapters: dict[str, str] = {}
+    for strategy_id in sorted(executable_batch_a_strategy_ids()):
+        record = BATCH_A_STRATEGY_REGISTRY[strategy_id]
+        adapters[strategy_id] = record.adapter_id or _BATCH_A_SHADOW_ADAPTER_ID
+    return adapters
+
+
+ALLOWED_STRATEGIES: frozenset[str] = (
+    _LEGACY_STRATEGY_IDS | executable_batch_a_strategy_ids()
+)
 
 STRATEGY_ADAPTERS: dict[str, str] = {
     "donchian_breakout_v1": "donchian_breakout_runner_v1",
     "breakout_trend_filter_v1": "breakout_trend_filter_runner_v1",
     "primary_breakout_v1": "primary_breakout_runner_v1",
+    **batch_a_strategy_adapters(),
 }
 
 ALLOWED_SCENARIOS: frozenset[str] = frozenset(
