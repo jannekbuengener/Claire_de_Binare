@@ -3,6 +3,7 @@
 
 from __future__ import annotations
 
+import re
 from dataclasses import dataclass
 from typing import Any, Literal, Mapping, Sequence
 
@@ -12,6 +13,12 @@ Action = Literal["REPORT_ONLY", "MERGE_CANDIDATE", "HOLD"]
 SUPPORTED_SCHEMA_VERSION = 1
 DEFAULT_BASE_BRANCH = "main"
 DEFAULT_HEAD_PREFIX = "dependabot/"
+
+ALLOWED_EXECUTION_MODES = frozenset({"report_only", "phase1"})
+ALLOWED_DEFAULT_VALUES = frozenset({"HOLD"})
+SCHEMA_V1_ECOSYSTEM = "pip"
+SCHEMA_V1_DEPENDENCY_TYPE = "direct:development"
+SCHEMA_V1_UPDATE_TYPE = "version-update:semver-patch"
 
 DEPENDABOT_AUTHOR_LOGINS = frozenset(
     {
@@ -33,7 +40,10 @@ REQUIRED_CHECK_NAMES = (
     "policy-gate",
 )
 
-SUCCESS_CHECK_STATUSES = frozenset({"success", "completed"})
+CHECK_STATUS_COMPLETED = "COMPLETED"
+CHECK_CONCLUSION_SUCCESS = "SUCCESS"
+
+HEAD_SHA_PATTERN = re.compile(r"^[0-9a-f]{40}$")
 
 CONTROL_PLANE_PREFIXES = (
     ".github/workflows/",
@@ -49,13 +59,7 @@ DOCKER_PATH_MARKERS = (
     "infrastructure/compose/",
 )
 
-RUNTIME_REQUIREMENT_MARKERS = (
-    "requirements.txt",
-    "services/",
-)
-
 GITHUB_ACTIONS_ECOSYSTEMS = frozenset({"github-actions", "github_actions"})
-
 DOCKER_ECOSYSTEMS = frozenset({"docker", "docker-compose", "docker_compose"})
 
 PATCH_UPDATE_TYPE = "version-update:semver-patch"
@@ -85,15 +89,22 @@ REASON_DATE_VERSION = "DATE_VERSION_UNSUPPORTED"
 REASON_POLICY = "POLICY_INVALID"
 REASON_CHECK_MISSING = "REQUIRED_CHECK_MISSING"
 REASON_CHECK_FAIL = "REQUIRED_CHECK_NOT_SUCCESS"
+REASON_CHECK_AMBIGUOUS = "REQUIRED_CHECK_AMBIGUOUS"
 REASON_BRANCH = "BRANCH_NOT_CURRENT"
 REASON_MERGE_STATE = "MERGE_STATE_NOT_CLEAN"
 REASON_API = "API_ERROR"
 REASON_RUNTIME = "RUNTIME_DEPENDENCY_CHANGE"
 REASON_DOCKER = "DOCKER_CHANGE"
 REASON_ACTIONS = "GITHUB_ACTIONS_CHANGE"
+REASON_FACTS_INVALID = "FACTS_INVALID"
+REASON_EXECUTION_MODE = "EXECUTION_MODE_INVALID"
+REASON_HEAD_SHA = "HEAD_SHA_INVALID"
+REASON_VERSION_TRANSITION = "VERSION_TRANSITION_INVALID"
 
 HOLD_EVALUATION_ORDER = (
+    REASON_FACTS_INVALID,
     REASON_POLICY,
+    REASON_EXECUTION_MODE,
     REASON_API,
     REASON_AUTHOR,
     REASON_BASE,
@@ -102,10 +113,12 @@ HOLD_EVALUATION_ORDER = (
     REASON_MANUAL_REVIEW,
     REASON_COMMIT_COUNT,
     REASON_COMMIT_AUTHOR,
+    REASON_HEAD_SHA,
     REASON_DIFF,
     REASON_METADATA,
     REASON_RANGE,
     REASON_DATE_VERSION,
+    REASON_VERSION_TRANSITION,
     REASON_UPDATE_TYPE,
     REASON_CONTROL_PLANE,
     REASON_ACTIONS,
@@ -115,6 +128,7 @@ HOLD_EVALUATION_ORDER = (
     REASON_PACKAGE,
     REASON_DEP_TYPE,
     REASON_FILE,
+    REASON_CHECK_AMBIGUOUS,
     REASON_CHECK_MISSING,
     REASON_CHECK_FAIL,
     REASON_BRANCH,
@@ -126,6 +140,7 @@ HOLD_EVALUATION_ORDER = (
 class RequiredCheckFact:
     name: str
     status: str
+    conclusion: str
 
 
 @dataclass(frozen=True)
@@ -195,6 +210,10 @@ def _is_dependabot_login(login: str) -> bool:
     return normalized in {_normalize_login(item) for item in DEPENDABOT_AUTHOR_LOGINS}
 
 
+def _normalize_check_token(value: str) -> str:
+    return (value or "").strip().upper()
+
+
 def _path_is_control_plane(path: str) -> bool:
     normalized = path.replace("\\", "/").lower()
     return any(
@@ -225,7 +244,60 @@ def _is_date_version(value: str) -> bool:
     parts = text.split(".")
     if len(parts) != 3:
         return False
-    return all(part.isdigit() for part in parts) and len(parts[0]) == 4
+    if not all(part.isdigit() for part in parts):
+        return False
+    return len(parts[0]) == 4 and int(parts[0]) >= 1900
+
+
+def _parse_semver_triplet(value: str) -> tuple[int, int, int] | None:
+    text = (value or "").strip()
+    if not text or _is_date_version(text):
+        return None
+    parts = text.split(".")
+    if len(parts) != 3:
+        return None
+    try:
+        major, minor, patch = (int(part) for part in parts)
+    except ValueError:
+        return None
+    if major < 0 or minor < 0 or patch < 0:
+        return None
+    return major, minor, patch
+
+
+def _version_transition_valid(current_version: str, target_version: str) -> bool:
+    if _is_date_version(current_version) or _is_date_version(target_version):
+        return False
+    current = _parse_semver_triplet(current_version)
+    target = _parse_semver_triplet(target_version)
+    if current is None or target is None:
+        return False
+    if current[0] != target[0] or current[1] != target[1]:
+        return False
+    return target[2] > current[2]
+
+
+def _is_valid_head_sha(value: str) -> bool:
+    return bool(HEAD_SHA_PATTERN.match((value or "").strip().lower()))
+
+
+def _is_safe_allowlist_path(path: str) -> bool:
+    normalized = (path or "").strip()
+    if not normalized:
+        return False
+    if "\\" in normalized:
+        return False
+    if normalized.startswith("/"):
+        return False
+    if ".." in normalized.split("/"):
+        return False
+    if _path_is_control_plane(normalized):
+        return False
+    if _path_is_docker_surface(normalized):
+        return False
+    if _path_is_runtime_surface(normalized):
+        return False
+    return True
 
 
 def _ordered_unique(codes: Sequence[str]) -> tuple[str, ...]:
@@ -246,6 +318,50 @@ def _sort_hold_codes(codes: Sequence[str]) -> tuple[str, ...]:
     )
 
 
+def _safe_schema_version(value: Any) -> int | None:
+    if isinstance(value, bool):
+        return None
+    try:
+        return int(value)
+    except (TypeError, ValueError):
+        return None
+
+
+def _validate_default_mapping(defaults: Mapping[str, str], errors: list[str]) -> None:
+    for key in ("unknown_package", "unknown_ecosystem", "additional_file"):
+        raw = defaults.get(key, "HOLD")
+        if raw not in ALLOWED_DEFAULT_VALUES:
+            errors.append(f"defaults.{key} must be HOLD in schema v1")
+    for key, value in defaults.items():
+        if value not in ALLOWED_DEFAULT_VALUES:
+            errors.append(f"defaults.{key} has unsupported value {value!r}")
+
+
+def _validate_schema_v1_package_rule(
+    eco_key: str,
+    pkg_key: str,
+    dependency_type: str,
+    update_types: Sequence[str],
+    allowed_files: Sequence[str],
+    errors: list[str],
+) -> None:
+    if eco_key != SCHEMA_V1_ECOSYSTEM:
+        errors.append(f"entries.{eco_key} is not allowed in schema v1")
+    if dependency_type != SCHEMA_V1_DEPENDENCY_TYPE:
+        errors.append(
+            f"entries.{eco_key}.{pkg_key}.dependency_type must be "
+            f"{SCHEMA_V1_DEPENDENCY_TYPE!r}"
+        )
+    if set(update_types) != {SCHEMA_V1_UPDATE_TYPE}:
+        errors.append(
+            f"entries.{eco_key}.{pkg_key}.allowed_update_types must contain only "
+            f"{SCHEMA_V1_UPDATE_TYPE!r}"
+        )
+    for path in allowed_files:
+        if not _is_safe_allowlist_path(path):
+            errors.append(f"entries.{eco_key}.{pkg_key}.allowed_files has unsafe path")
+
+
 def parse_allowlist_policy(raw: Mapping[str, Any] | None) -> AllowlistPolicy:
     errors: list[str] = []
     if raw is None:
@@ -253,11 +369,20 @@ def parse_allowlist_policy(raw: Mapping[str, Any] | None) -> AllowlistPolicy:
             0, "report_only", {}, {}, False, ("policy payload missing",)
         )
 
-    schema_version = raw.get("schema_version")
+    if not isinstance(raw, Mapping):
+        return AllowlistPolicy(
+            0, "report_only", {}, {}, False, ("policy payload must be a mapping",)
+        )
+
+    schema_version_raw = raw.get("schema_version")
+    schema_version = _safe_schema_version(schema_version_raw)
     if schema_version != SUPPORTED_SCHEMA_VERSION:
-        errors.append(f"unsupported schema_version: {schema_version!r}")
+        errors.append(f"unsupported schema_version: {schema_version_raw!r}")
 
     default_mode = str(raw.get("default_mode", "report_only")).strip() or "report_only"
+    if default_mode not in ALLOWED_EXECUTION_MODES:
+        errors.append(f"default_mode must be one of {sorted(ALLOWED_EXECUTION_MODES)}")
+
     defaults_raw = raw.get("defaults") or {}
     if not isinstance(defaults_raw, Mapping):
         errors.append("defaults must be a mapping")
@@ -266,9 +391,15 @@ def parse_allowlist_policy(raw: Mapping[str, Any] | None) -> AllowlistPolicy:
     if isinstance(defaults_raw, Mapping):
         for key, value in defaults_raw.items():
             defaults[str(key)] = str(value)
+    _validate_default_mapping(defaults, errors)
 
-    entries_raw = raw.get("entries") or {}
-    if not isinstance(entries_raw, Mapping):
+    entries_raw = raw.get("entries")
+    if isinstance(entries_raw, list):
+        errors.append("entries must be a mapping")
+        entries_raw = {}
+    elif entries_raw is None:
+        entries_raw = {}
+    elif not isinstance(entries_raw, Mapping):
         errors.append("entries must be a mapping")
         entries_raw = {}
 
@@ -281,6 +412,8 @@ def parse_allowlist_policy(raw: Mapping[str, Any] | None) -> AllowlistPolicy:
             continue
         eco_key = str(ecosystem)
         parsed_entries.setdefault(eco_key, {})
+        if not packages:
+            errors.append(f"entries.{eco_key} must contain at least one package rule")
         for package_name, rule_raw in packages.items():
             if not isinstance(rule_raw, Mapping):
                 errors.append(f"entries.{eco_key}.{package_name} must be a mapping")
@@ -316,24 +449,113 @@ def parse_allowlist_policy(raw: Mapping[str, Any] | None) -> AllowlistPolicy:
             else:
                 allowed_files = [str(item) for item in files_raw]
 
+            if schema_version == SUPPORTED_SCHEMA_VERSION:
+                _validate_schema_v1_package_rule(
+                    eco_key,
+                    pkg_key,
+                    dependency_type,
+                    update_types,
+                    allowed_files,
+                    errors,
+                )
+
             parsed_entries[eco_key][pkg_key] = AllowlistPackageRule(
                 dependency_type=dependency_type,
                 allowed_update_types=frozenset(update_types),
                 allowed_files=frozenset(allowed_files),
             )
 
-    valid = not errors and bool(parsed_entries)
-    if not parsed_entries and not errors:
-        errors.append("entries must contain at least one package rule")
+    package_rule_count = sum(len(pkgs) for pkgs in parsed_entries.values())
+    if package_rule_count == 0:
+        errors.append("entries must contain at least one valid package rule")
 
+    valid = not errors and package_rule_count > 0
     return AllowlistPolicy(
-        schema_version=int(schema_version or 0),
+        schema_version=schema_version if schema_version is not None else 0,
         default_mode=default_mode,
         entries=parsed_entries,
         defaults=defaults,
         valid=valid,
         validation_errors=tuple(errors),
     )
+
+
+def _validate_facts(facts: DependabotAutopilotFacts) -> list[str]:
+    reasons: list[str] = []
+
+    required_strings = (
+        facts.pr_author,
+        facts.base_branch,
+        facts.head_branch,
+        facts.head_sha,
+        facts.merge_state,
+        facts.ecosystem,
+        facts.package_name,
+        facts.dependency_type,
+        facts.update_type,
+        facts.current_version,
+        facts.target_version,
+        facts.execution_mode,
+    )
+    if any(
+        not isinstance(value, str) or not value.strip() for value in required_strings
+    ):
+        reasons.append(REASON_FACTS_INVALID)
+
+    bool_fields = (
+        facts.is_draft,
+        facts.metadata_complete,
+        facts.diff_verified,
+        facts.range_change,
+        facts.date_versioned,
+        facts.api_error,
+        facts.branch_is_current,
+        facts.kill_switch_enabled,
+    )
+    if any(not isinstance(value, bool) for value in bool_fields):
+        reasons.append(REASON_FACTS_INVALID)
+
+    if not isinstance(facts.commit_count, int) or isinstance(facts.commit_count, bool):
+        reasons.append(REASON_FACTS_INVALID)
+    elif facts.commit_count < 0:
+        reasons.append(REASON_FACTS_INVALID)
+
+    if not isinstance(facts.labels, tuple) or any(
+        not isinstance(label, str) for label in facts.labels
+    ):
+        reasons.append(REASON_FACTS_INVALID)
+
+    if not isinstance(facts.commit_authors, tuple) or any(
+        not isinstance(author, str) for author in facts.commit_authors
+    ):
+        reasons.append(REASON_FACTS_INVALID)
+
+    if not isinstance(facts.changed_files, tuple) or any(
+        not isinstance(path, str) for path in facts.changed_files
+    ):
+        reasons.append(REASON_FACTS_INVALID)
+
+    if not isinstance(facts.required_checks, tuple):
+        reasons.append(REASON_FACTS_INVALID)
+    else:
+        for check in facts.required_checks:
+            if not isinstance(check, RequiredCheckFact):
+                reasons.append(REASON_FACTS_INVALID)
+                break
+            if not check.name.strip():
+                reasons.append(REASON_FACTS_INVALID)
+                break
+            if not isinstance(check.status, str) or not isinstance(
+                check.conclusion, str
+            ):
+                reasons.append(REASON_FACTS_INVALID)
+                break
+
+    return _ordered_unique(reasons)  # type: ignore[return-value]
+
+
+def _execution_mode_valid(mode: str) -> bool:
+    return (mode or "").strip() in ALLOWED_EXECUTION_MODES
 
 
 def _lookup_package_rule(
@@ -345,14 +567,51 @@ def _lookup_package_rule(
     return eco_rules.get(package_name)
 
 
+def _evaluate_required_checks(
+    checks: Sequence[RequiredCheckFact],
+) -> list[str]:
+    reasons: list[str] = []
+    grouped: dict[str, list[tuple[str, str]]] = {
+        name: [] for name in REQUIRED_CHECK_NAMES
+    }
+
+    for check in checks:
+        name = (check.name or "").strip()
+        if name not in REQUIRED_CHECK_NAMES:
+            continue
+        status = _normalize_check_token(check.status)
+        conclusion = _normalize_check_token(check.conclusion)
+        grouped[name].append((status, conclusion))
+
+    for required_name in REQUIRED_CHECK_NAMES:
+        entries = grouped[required_name]
+        if not entries:
+            reasons.append(REASON_CHECK_MISSING)
+            continue
+        if len(entries) != 1:
+            reasons.append(REASON_CHECK_AMBIGUOUS)
+            continue
+        status, conclusion = entries[0]
+        if status != CHECK_STATUS_COMPLETED or conclusion != CHECK_CONCLUSION_SUCCESS:
+            reasons.append(REASON_CHECK_FAIL)
+
+    return reasons
+
+
 def _collect_hold_reasons(
     facts: DependabotAutopilotFacts, policy: AllowlistPolicy
 ) -> list[str]:
-    reasons: list[str] = []
+    reasons = list(_validate_facts(facts))
 
     if not policy.valid:
         reasons.append(REASON_POLICY)
-        return reasons
+        return _ordered_unique(reasons)  # type: ignore[return-value]
+
+    execution_mode = (facts.execution_mode or "").strip()
+    if not _execution_mode_valid(execution_mode):
+        reasons.append(REASON_EXECUTION_MODE)
+    if not _execution_mode_valid(policy.default_mode):
+        reasons.append(REASON_EXECUTION_MODE)
 
     if facts.api_error:
         reasons.append(REASON_API)
@@ -376,10 +635,13 @@ def _collect_hold_reasons(
     if facts.commit_count != 1:
         reasons.append(REASON_COMMIT_COUNT)
 
-    if facts.commit_count > 0 and not all(
-        _is_dependabot_login(author) for author in facts.commit_authors
-    ):
+    if len(facts.commit_authors) != 1:
         reasons.append(REASON_COMMIT_AUTHOR)
+    elif not _is_dependabot_login(facts.commit_authors[0]):
+        reasons.append(REASON_COMMIT_AUTHOR)
+
+    if not _is_valid_head_sha(facts.head_sha):
+        reasons.append(REASON_HEAD_SHA)
 
     if not facts.diff_verified:
         reasons.append(REASON_DIFF)
@@ -390,8 +652,15 @@ def _collect_hold_reasons(
     if facts.range_change:
         reasons.append(REASON_RANGE)
 
-    if facts.date_versioned:
+    if (
+        facts.date_versioned
+        or _is_date_version(facts.current_version)
+        or _is_date_version(facts.target_version)
+    ):
         reasons.append(REASON_DATE_VERSION)
+
+    if not _version_transition_valid(facts.current_version, facts.target_version):
+        reasons.append(REASON_VERSION_TRANSITION)
 
     update_type = (facts.update_type or "").strip()
     if update_type in {MINOR_UPDATE_TYPE, MAJOR_UPDATE_TYPE}:
@@ -419,13 +688,8 @@ def _collect_hold_reasons(
 
     package_rule = _lookup_package_rule(policy, ecosystem, facts.package_name)
     if package_rule is None:
-        if (
-            policy.defaults.get("unknown_ecosystem", "HOLD") == "HOLD"
-            and ecosystem not in policy.entries
-        ):
-            reasons.append(REASON_ECOSYSTEM)
-        if policy.defaults.get("unknown_package", "HOLD") == "HOLD":
-            reasons.append(REASON_PACKAGE)
+        reasons.append(REASON_ECOSYSTEM)
+        reasons.append(REASON_PACKAGE)
     else:
         if facts.dependency_type != package_rule.dependency_type:
             reasons.append(REASON_DEP_TYPE)
@@ -438,17 +702,7 @@ def _collect_hold_reasons(
         if len(changed_files) != len(package_rule.allowed_files):
             reasons.append(REASON_FILE)
 
-    check_status_by_name = {
-        check.name: (check.status or "").strip().lower()
-        for check in facts.required_checks
-    }
-    for required_name in REQUIRED_CHECK_NAMES:
-        status = check_status_by_name.get(required_name)
-        if status is None:
-            reasons.append(REASON_CHECK_MISSING)
-            continue
-        if status not in SUCCESS_CHECK_STATUSES:
-            reasons.append(REASON_CHECK_FAIL)
+    reasons.extend(_evaluate_required_checks(facts.required_checks))
 
     if not facts.branch_is_current:
         reasons.append(REASON_BRANCH)
@@ -457,7 +711,7 @@ def _collect_hold_reasons(
     if merge_state != "CLEAN":
         reasons.append(REASON_MERGE_STATE)
 
-    return reasons
+    return list(_ordered_unique(reasons))
 
 
 def _build_summary(
@@ -499,9 +753,7 @@ def classify_dependabot_pr(
         )
 
     reason_codes: list[str] = [REASON_ELIGIBLE]
-    execution_mode = (
-        facts.execution_mode or policy.default_mode or "report_only"
-    ).strip()
+    execution_mode = (facts.execution_mode or "").strip()
     if execution_mode == "report_only":
         reason_codes.append(REASON_REPORT_ONLY)
         return ClassificationResult(
@@ -514,7 +766,7 @@ def classify_dependabot_pr(
             ),
         )
 
-    if not facts.kill_switch_enabled:
+    if facts.kill_switch_enabled is not True:
         reason_codes.append(REASON_AUTOMERGE_DISABLED)
         return ClassificationResult(
             classification="ELIGIBLE",

@@ -32,6 +32,8 @@ Facts = classifier.DependabotAutopilotFacts
 RequiredCheckFact = classifier.RequiredCheckFact
 Policy = classifier.parse_allowlist_policy
 
+VALID_HEAD_SHA = "b366010aa9cbcfca440497dc64b6c8746c50ff55"
+
 
 def _load_policy() -> classifier.AllowlistPolicy:
     raw = yaml.safe_load(ALLOWLIST_PATH.read_text(encoding="utf-8"))
@@ -39,16 +41,20 @@ def _load_policy() -> classifier.AllowlistPolicy:
 
 
 def _checks(
-    *, policy_ok: bool = True, ci_ok: bool = True
+    *,
+    policy_status: str = "COMPLETED",
+    policy_conclusion: str = "SUCCESS",
+    ci_status: str = "COMPLETED",
+    ci_conclusion: str = "SUCCESS",
 ) -> tuple[RequiredCheckFact, ...]:
-    checks = [
-        RequiredCheckFact("policy-gate", "success" if policy_ok else "failure"),
+    return (
+        RequiredCheckFact("policy-gate", policy_status, policy_conclusion),
         RequiredCheckFact(
             "ci (Unit/Integration + Lint gesammelt)",
-            "success" if ci_ok else "pending",
+            ci_status,
+            ci_conclusion,
         ),
-    ]
-    return tuple(checks)
+    )
 
 
 def _facts(**overrides: object) -> Facts:
@@ -58,7 +64,7 @@ def _facts(**overrides: object) -> Facts:
         "head_branch": "dependabot/pip/ruff-0.15.21",
         "is_draft": False,
         "labels": (),
-        "head_sha": "abc123",
+        "head_sha": VALID_HEAD_SHA,
         "commit_count": 1,
         "commit_authors": ("dependabot[bot]",),
         "changed_files": ("requirements-dev.txt",),
@@ -119,7 +125,7 @@ def test_phase1_with_kill_switch_true_yields_merge_candidate_only() -> None:
 
 def test_major_update_holds() -> None:
     result = classifier.classify_dependabot_pr(
-        _facts(update_type="version-update:semver-major"),
+        _facts(update_type="version-update:semver-major", target_version="1.0.0"),
         _load_policy(),
     )
 
@@ -129,7 +135,7 @@ def test_major_update_holds() -> None:
 
 def test_minor_update_holds() -> None:
     result = classifier.classify_dependabot_pr(
-        _facts(update_type="version-update:semver-minor"),
+        _facts(update_type="version-update:semver-minor", target_version="0.16.0"),
         _load_policy(),
     )
 
@@ -146,9 +152,24 @@ def test_range_change_holds() -> None:
     assert classifier.REASON_RANGE in result.reason_codes
 
 
-def test_date_version_holds() -> None:
+def test_date_version_boolean_holds() -> None:
     result = classifier.classify_dependabot_pr(
         _facts(date_versioned=True, target_version="2026.7.10"),
+        _load_policy(),
+    )
+
+    assert result.classification == "HOLD"
+    assert classifier.REASON_DATE_VERSION in result.reason_codes
+
+
+def test_date_version_detected_without_boolean_holds() -> None:
+    result = classifier.classify_dependabot_pr(
+        _facts(
+            date_versioned=False,
+            current_version="2026.6.4",
+            target_version="2026.7.10",
+            package_name="mcp-server-time",
+        ),
         _load_policy(),
     )
 
@@ -258,9 +279,39 @@ def test_two_commits_hold() -> None:
     assert classifier.REASON_COMMIT_COUNT in result.reason_codes
 
 
+def test_zero_commits_hold() -> None:
+    result = classifier.classify_dependabot_pr(
+        _facts(commit_count=0, commit_authors=()),
+        _load_policy(),
+    )
+
+    assert result.classification == "HOLD"
+    assert classifier.REASON_COMMIT_COUNT in result.reason_codes
+
+
+def test_empty_commit_authors_with_single_commit_count_hold() -> None:
+    result = classifier.classify_dependabot_pr(
+        _facts(commit_count=1, commit_authors=()),
+        _load_policy(),
+    )
+
+    assert result.classification == "HOLD"
+    assert classifier.REASON_COMMIT_AUTHOR in result.reason_codes
+
+
+def test_two_commit_authors_with_single_commit_count_hold() -> None:
+    result = classifier.classify_dependabot_pr(
+        _facts(commit_count=1, commit_authors=("dependabot[bot]", "human")),
+        _load_policy(),
+    )
+
+    assert result.classification == "HOLD"
+    assert classifier.REASON_COMMIT_AUTHOR in result.reason_codes
+
+
 def test_human_commit_author_holds() -> None:
     result = classifier.classify_dependabot_pr(
-        _facts(commit_authors=("dependabot[bot]", "jannekbuengener")),
+        _facts(commit_authors=("dependabot[bot]", "jannekbuengener"), commit_count=2),
         _load_policy(),
     )
 
@@ -300,7 +351,9 @@ def test_incomplete_metadata_holds() -> None:
 
 def test_missing_required_check_holds() -> None:
     result = classifier.classify_dependabot_pr(
-        _facts(required_checks=(RequiredCheckFact("policy-gate", "success"),)),
+        _facts(
+            required_checks=(RequiredCheckFact("policy-gate", "COMPLETED", "SUCCESS"),)
+        ),
         _load_policy(),
     )
 
@@ -308,14 +361,54 @@ def test_missing_required_check_holds() -> None:
     assert classifier.REASON_CHECK_MISSING in result.reason_codes
 
 
-def test_failed_required_check_holds() -> None:
+def test_completed_with_failure_conclusion_holds() -> None:
     result = classifier.classify_dependabot_pr(
-        _facts(required_checks=_checks(ci_ok=False)),
+        _facts(
+            required_checks=_checks(
+                ci_status="COMPLETED",
+                ci_conclusion="FAILURE",
+            )
+        ),
         _load_policy(),
     )
 
     assert result.classification == "HOLD"
     assert classifier.REASON_CHECK_FAIL in result.reason_codes
+
+
+def test_in_progress_with_success_conclusion_holds() -> None:
+    result = classifier.classify_dependabot_pr(
+        _facts(
+            required_checks=_checks(
+                ci_status="IN_PROGRESS",
+                ci_conclusion="SUCCESS",
+            )
+        ),
+        _load_policy(),
+    )
+
+    assert result.classification == "HOLD"
+    assert classifier.REASON_CHECK_FAIL in result.reason_codes
+
+
+def test_duplicate_required_check_with_conflicting_results_holds() -> None:
+    result = classifier.classify_dependabot_pr(
+        _facts(
+            required_checks=(
+                RequiredCheckFact("policy-gate", "COMPLETED", "SUCCESS"),
+                RequiredCheckFact("policy-gate", "COMPLETED", "FAILURE"),
+                RequiredCheckFact(
+                    "ci (Unit/Integration + Lint gesammelt)",
+                    "COMPLETED",
+                    "SUCCESS",
+                ),
+            )
+        ),
+        _load_policy(),
+    )
+
+    assert result.classification == "HOLD"
+    assert classifier.REASON_CHECK_AMBIGUOUS in result.reason_codes
 
 
 def test_branch_not_current_holds() -> None:
@@ -359,12 +452,81 @@ def test_unknown_package_holds() -> None:
     assert classifier.REASON_PACKAGE in result.reason_codes
 
 
+def test_unknown_package_allow_default_cannot_override_hold() -> None:
+    policy = Policy(
+        {
+            "schema_version": 1,
+            "default_mode": "report_only",
+            "defaults": {"unknown_package": "ALLOW"},
+            "entries": {
+                "pip": {
+                    "ruff": {
+                        "dependency_type": "direct:development",
+                        "allowed_update_types": ["version-update:semver-patch"],
+                        "allowed_files": ["requirements-dev.txt"],
+                    }
+                }
+            },
+        }
+    )
+    assert policy.valid is False
+    result = classifier.classify_dependabot_pr(
+        _facts(package_name="not-listed"),
+        policy,
+    )
+    assert result.classification == "HOLD"
+    assert classifier.REASON_POLICY in result.reason_codes
+
+
 def test_invalid_allowlist_holds() -> None:
     invalid = Policy({"schema_version": 99, "entries": {}})
     result = classifier.classify_dependabot_pr(_facts(), invalid)
 
     assert result.classification == "HOLD"
     assert classifier.REASON_POLICY in result.reason_codes
+
+
+def test_non_numeric_schema_version_does_not_raise() -> None:
+    invalid = Policy({"schema_version": "invalid", "entries": []})
+    assert invalid.valid is False
+    result = classifier.classify_dependabot_pr(_facts(), invalid)
+    assert result.classification == "HOLD"
+    assert classifier.REASON_POLICY in result.reason_codes
+
+
+def test_empty_ecosystem_mapping_is_policy_invalid() -> None:
+    invalid = Policy(
+        {
+            "schema_version": 1,
+            "default_mode": "report_only",
+            "defaults": {"unknown_package": "HOLD", "unknown_ecosystem": "HOLD"},
+            "entries": {"pip": {}},
+        }
+    )
+    assert invalid.valid is False
+    result = classifier.classify_dependabot_pr(_facts(), invalid)
+    assert result.classification == "HOLD"
+    assert classifier.REASON_POLICY in result.reason_codes
+
+
+def test_unsafe_allowlist_path_is_policy_invalid() -> None:
+    invalid = Policy(
+        {
+            "schema_version": 1,
+            "default_mode": "report_only",
+            "defaults": {"unknown_package": "HOLD", "unknown_ecosystem": "HOLD"},
+            "entries": {
+                "pip": {
+                    "ruff": {
+                        "dependency_type": "direct:development",
+                        "allowed_update_types": ["version-update:semver-patch"],
+                        "allowed_files": [".github/workflows/ci.yml"],
+                    }
+                }
+            },
+        }
+    )
+    assert invalid.valid is False
 
 
 def test_manual_review_label_holds() -> None:
@@ -385,6 +547,83 @@ def test_draft_pr_holds() -> None:
 
     assert result.classification == "HOLD"
     assert classifier.REASON_DRAFT in result.reason_codes
+
+
+def test_unknown_execution_mode_with_kill_switch_true_holds() -> None:
+    result = classifier.classify_dependabot_pr(
+        _facts(execution_mode="auto", kill_switch_enabled=True),
+        _load_policy(),
+    )
+
+    assert result.classification == "HOLD"
+    assert classifier.REASON_EXECUTION_MODE in result.reason_codes
+    assert result.action == "HOLD"
+    assert result.merge_authorized is False
+
+
+def test_string_kill_switch_value_holds() -> None:
+    result = classifier.classify_dependabot_pr(
+        _facts(kill_switch_enabled="false", execution_mode="phase1"),  # type: ignore[arg-type]
+        _load_policy(),
+    )
+
+    assert result.classification == "HOLD"
+    assert classifier.REASON_FACTS_INVALID in result.reason_codes
+
+
+def test_invalid_head_sha_empty_holds() -> None:
+    result = classifier.classify_dependabot_pr(_facts(head_sha=""), _load_policy())
+
+    assert result.classification == "HOLD"
+    assert classifier.REASON_HEAD_SHA in result.reason_codes
+
+
+def test_invalid_head_sha_short_holds() -> None:
+    result = classifier.classify_dependabot_pr(
+        _facts(head_sha="abc123"), _load_policy()
+    )
+
+    assert result.classification == "HOLD"
+    assert classifier.REASON_HEAD_SHA in result.reason_codes
+
+
+def test_identical_version_holds() -> None:
+    result = classifier.classify_dependabot_pr(
+        _facts(current_version="0.15.21", target_version="0.15.21"),
+        _load_policy(),
+    )
+
+    assert result.classification == "HOLD"
+    assert classifier.REASON_VERSION_TRANSITION in result.reason_codes
+
+
+def test_downgrade_holds() -> None:
+    result = classifier.classify_dependabot_pr(
+        _facts(current_version="0.15.21", target_version="0.15.20"),
+        _load_policy(),
+    )
+
+    assert result.classification == "HOLD"
+    assert classifier.REASON_VERSION_TRANSITION in result.reason_codes
+
+
+def test_non_consecutive_patch_bump_remains_eligible() -> None:
+    result = classifier.classify_dependabot_pr(
+        _facts(current_version="0.15.20", target_version="0.15.22"),
+        _load_policy(),
+    )
+
+    assert result.classification == "ELIGIBLE"
+
+
+def test_wrong_minor_patch_jump_holds() -> None:
+    result = classifier.classify_dependabot_pr(
+        _facts(current_version="0.15.20", target_version="0.16.1"),
+        _load_policy(),
+    )
+
+    assert result.classification == "HOLD"
+    assert classifier.REASON_VERSION_TRANSITION in result.reason_codes
 
 
 def test_repeated_evaluation_is_deterministic() -> None:
