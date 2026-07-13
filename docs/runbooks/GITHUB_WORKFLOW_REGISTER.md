@@ -2,7 +2,7 @@
 
 **Repo:** Claire de Binare
 **Canon date:** 2026-07 (updated for #3660 after #3659 restore)
-**Total workflow definitions:** 69 YAML files
+**Total workflow definitions:** 70 YAML files
 **Non-workflow file in `/workflows/`:** `labels.json` (label spec — consumed by `sync-labels.yml`)
 
 **Related docs:**
@@ -134,6 +134,7 @@ Only entries that differ materially from their group baseline are listed.
 | `bulk-issue-labeling.yml` | `perm:w-issues` | — |
 | `milestone-assignment.yml` | `perm:w-issues` | — |
 | `required-checks-audit.yml` | `perm:checks-read` (plus read-only scopes) | — |
+| `cdb-dependabot-autopilot.yml` | `perm:checks-read`, `perm:pr-read` (plus `contents:read`; report-only) | `in:script:dependabot_autopilot_report.py`, `in:allowlist:dependabot-autopilot-allowlist.yml` |
 | `governance-audit.yml` | `perm:actions-read` (plus read-only scopes) | — |
 | `ai-review-router.yml` | `perm:w-pr` | — |
 | `smart-insights.yml` | `perm:implicit` | — |
@@ -239,7 +240,7 @@ Repo health, staleness, documentation quality, and audit cleanliness.
 
 ---
 
-## Group 5: Reporting / Control Signals — 9 workflows
+## Group 5: Reporting / Control Signals — 10 workflows
 
 Digest, backlog/anomaly triage, post-merge scanning, and issue-signal creation.
 
@@ -254,6 +255,7 @@ Digest, backlog/anomaly triage, post-merge scanning, and issue-signal creation.
 | `cdb-daily-delta-triage.yml` | aktiv | sched (Tue/Wed/Fri/Sun 06:20 UTC), dispatch | Daily delta scoring: reads CONTROL_REGISTER.md, creates bounded issues | `scripts/daily_delta_triage.py` | Bounded issue creation (delta-scored) | O | Daily check in #1445 |
 | `cdb-post-merge-followup-scanner.yml` | aktiv | PR:merged, dispatch | Scan merged PRs for follow-up actions | `scripts/post_merge_followup_scanner.py` + `prompts/cdb-control-followup.prompt.yml` | Follow-up issues/comments | O | Post-merge review |
 | `cdb-weekly-control-hygiene-classifier.yml` | aktiv | sched (Mo/Do/Fr 07:30 UTC), dispatch | Weekly hygiene classification: creates hygiene issues | `scripts/weekly_control_hygiene_classifier.py` | Hygiene issues | O | Weekly review |
+| `cdb-dependabot-autopilot.yml` | aktiv | sched (Mo 05:00 UTC), dispatch | Phase-0 report-only Dependabot broker: classifies open Dependabot PRs via read-only GitHub API + S0 classifier; Job Summary only | `scripts/dependabot_autopilot_report.py`, `dependabot-autopilot-allowlist.yml` | Job Summary (no PR/issue mutations) | O | Human review before first dispatch (#4061 S1) |
 | `cdb-control-followup-classifier.yml` | manual-only | dispatch only | Classify pending control follow-up items | `scripts/run_cdb_control_followup.sh` → `prompts/cdb-control-followup.prompt.yml` | Issue comments / classifier output | O | Operator: manual classification runs |
 | `triage_guard.yml` | aktiv | issues | Guard triage pipeline: fire on issue events, enforce triage structure | — | Triage issue or label | O | Issue triage review |
 
@@ -346,7 +348,7 @@ Legacy label and milestone automation. Not actively maintained; do not enable wi
 |---|---|---|
 | `labels.json` | Canonical label definitions (machine-readable) | `sync-labels.yml`, `label-bootstrap.yml` |
 
-> `labels.json` is **not** a workflow definition. It is a data file. The count of 67 workflows does not include it.
+> `labels.json` is **not** a workflow definition. It is a data file. The count of 70 workflow YAML files does not include it.
 
 ---
 
@@ -354,15 +356,15 @@ Legacy label and milestone automation. Not actively maintained; do not enable wi
 
 | Status | Count |
 |---|---|---|
-| aktiv | 53 |
+| aktiv | 54 |
 | manual-only | 4 (`label-bootstrap`, `required-checks-audit`, `governance-audit`, `cdb-control-followup-classifier`) |
 | parked | 6 (`gemini-scheduled-triage`, `issue-governance`, `auto-label`, `comprehensive-issue-labeling`, `control_board_auto_routing`, `control-board-routing-label-dispatch`) |
 | historisch | 2 |
 | frozen legacy | 1 (`ci.yaml`) |
-| **Total** | **69** (66 registered + 3 unregistered new) — see note below |
+| **Total** | **70** (67 registered + 3 unregistered new) — see note below |
 
 > **Count note:** `ci.yaml` is tracked separately as `frozen legacy`, not folded into the `historisch` bucket.
-> Of the 53 active workflows, 3 (`gemini-invoke.yml`, `gemini-review.yml`, `gemini-triage.yml`) are `workflow_call` reusable units and are not independently triggerable.
+> Of the 54 active workflows, 3 (`gemini-invoke.yml`, `gemini-review.yml`, `gemini-triage.yml`) are `workflow_call` reusable units and are not independently triggerable.
 > `parked` updated from 1→4 in #1642: `issue-governance.yml` (PR #1658), `auto-label.yml` and `comprehensive-issue-labeling.yml` (PR #1702).
 > `parked` updated from 4→5 in #2772: `control_board_auto_routing.yml` (auto `issues`/`pull_request`/`repository_dispatch` triggers removed; dispatch stub only).
 > `parked` updated from 5→6 in #2805: `control-board-routing-label-dispatch.yml` (auto `issues` trigger removed; dispatch stub only; `createDispatchEvent` removed).
@@ -370,15 +372,15 @@ Legacy label and milestone automation. Not actively maintained; do not enable wi
 
 | Status | Count |
 |---|---|---|
-| aktiv (independently triggered) | 50 |
+| aktiv (independently triggered) | 51 |
 | reusable (workflow_call only) | 3 (`gemini-invoke`, `gemini-review`, `gemini-triage`) |
 | manual-only (dispatch-only) | 4 |
 | parked | 6 |
 | historisch / unklar | 2 |
 | frozen legacy | 1 (`ci.yaml`) |
-| **Total** | **69** (66 registered + 3 unregistered new) |
+| **Total** | **70** (67 registered + 3 unregistered new) |
 
-> **Methodology note:** The current repo has 69 tracked workflow YAML files (66 registered + 3 unregistered). `ci.yaml` is split out as `frozen legacy`; the three Gemini `workflow_call` units are active but non-standalone reusable workflows. `control_board_auto_routing.yml` (#2772) and `control-board-routing-label-dispatch.yml` (#2805) are parked but retained as `workflow_dispatch` diagnostic stubs. 3 new workflows (`cdb-context-refresh-report.yml`, `security-alert-readout.yml`, `surrealdb-memory-proof.yml`) exist on disk but are not yet registered here — they were added after the 2026-05 canon date and are outside the #3654/#3659/#3660 scope.
+> **Methodology note:** The current repo has 70 tracked workflow YAML files (67 registered + 3 unregistered). `ci.yaml` is split out as `frozen legacy`; the three Gemini `workflow_call` units are active but non-standalone reusable workflows. `control_board_auto_routing.yml` (#2772) and `control-board-routing-label-dispatch.yml` (#2805) are parked but retained as `workflow_dispatch` diagnostic stubs. 3 new workflows (`cdb-context-refresh-report.yml`, `security-alert-readout.yml`, `surrealdb-memory-proof.yml`) exist on disk but are not yet registered here — they were added after the 2026-05 canon date and are outside the #3654/#3659/#3660 scope.
 
 ---
 
