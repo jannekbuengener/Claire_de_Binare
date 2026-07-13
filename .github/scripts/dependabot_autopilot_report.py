@@ -6,6 +6,7 @@ from __future__ import annotations
 import argparse
 import importlib.util
 import json
+import os
 import re
 import subprocess
 import sys
@@ -152,8 +153,6 @@ class SubprocessGhTransport:
             "api",
             "--method",
             "GET",
-            "--repo",
-            self._repo,
             endpoint.lstrip("/"),
             "--paginate",
             "-H",
@@ -162,6 +161,7 @@ class SubprocessGhTransport:
         for key, value in (params or {}).items():
             args.extend(["-f", f"{key}={value}"])
 
+        env = {**os.environ, "GH_REPO": self._repo}
         proc = subprocess.run(
             args,
             capture_output=True,
@@ -170,6 +170,7 @@ class SubprocessGhTransport:
             errors="replace",
             timeout=120,
             check=False,
+            env=env,
         )
         if proc.returncode != 0:
             stderr = (proc.stderr or proc.stdout or "").strip()

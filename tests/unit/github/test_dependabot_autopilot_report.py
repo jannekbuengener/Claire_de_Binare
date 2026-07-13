@@ -2,8 +2,10 @@ from __future__ import annotations
 
 import importlib.util
 import re
+import subprocess
 import sys
 from pathlib import Path
+from typing import Any
 
 import pytest
 import yaml
@@ -499,6 +501,24 @@ def test_subprocess_transport_rejects_disallowed_endpoint() -> None:
     transport = report.SubprocessGhTransport(REPO)
     with pytest.raises(report.GitHubApiError, match="endpoint not allowed"):
         transport.get_json(f"repos/{REPO}/issues/1")
+
+
+def test_subprocess_transport_uses_gh_repo_env_not_repo_flag(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    captured: dict[str, Any] = {}
+
+    def fake_run(args, **kwargs):  # type: ignore[no-untyped-def]
+        captured["args"] = args
+        captured["env"] = kwargs.get("env")
+        return subprocess.CompletedProcess(args, 0, stdout="[]", stderr="")
+
+    monkeypatch.setattr(report.subprocess, "run", fake_run)
+    transport = report.SubprocessGhTransport(REPO)
+    transport.get_json(f"repos/{REPO}/pulls")
+
+    assert "--repo" not in captured["args"]
+    assert captured["env"]["GH_REPO"] == REPO
 
 
 def _load_workflow_yaml(path: Path) -> dict:
