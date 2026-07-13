@@ -82,7 +82,7 @@ def test_registry_matches_manifest_strategy_ids(manifest: dict) -> None:
     assert set(batch_a_strategy_ids()) == manifest_ids
 
 
-def test_slice_2b_runners_executable() -> None:
+def test_slice_2c_runners_executable() -> None:
     assert executable_batch_a_strategy_ids() == frozenset(
         {
             "range_mean_reversion_v1",
@@ -91,9 +91,12 @@ def test_slice_2b_runners_executable() -> None:
             "volatility_breakout_v1",
             "bollinger_squeeze_breakout_v1",
             "atr_expansion_v1",
+            "ema_trend_follow_v1",
+            "ma_crossover_v1",
+            "opening_range_breakout_v1",
         }
     )
-    assert len(pending_batch_a_strategy_ids()) == 4
+    assert pending_batch_a_strategy_ids() == frozenset({"roc_breakout_confirm_v1"})
 
 
 def test_pending_candidates_not_executable() -> None:
