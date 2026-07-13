@@ -575,7 +575,7 @@ def test_invalid_head_sha_empty_holds() -> None:
     result = classifier.classify_dependabot_pr(_facts(head_sha=""), _load_policy())
 
     assert result.classification == "HOLD"
-    assert classifier.REASON_HEAD_SHA in result.reason_codes
+    assert result.reason_codes == (classifier.REASON_FACTS_INVALID,)
 
 
 def test_invalid_head_sha_short_holds() -> None:
@@ -654,3 +654,172 @@ def test_anonymized_live_regression_fixture_two_commits_holds() -> None:
     assert classifier.REASON_COMMIT_AUTHOR in result.reason_codes
     assert classifier.REASON_BRANCH in result.reason_codes
     assert classifier.REASON_MERGE_STATE in result.reason_codes
+
+
+MALFORMED_FACT_CASES = [
+    pytest.param({"pr_author": 123}, id="pr_author_int"),
+    pytest.param({"labels": (123,)}, id="labels_int"),
+    pytest.param({"changed_files": (123,)}, id="changed_files_int"),
+    pytest.param({"commit_authors": (None,)}, id="commit_authors_none"),  # type: ignore[list-item]
+    pytest.param(
+        {
+            "required_checks": (
+                RequiredCheckFact(None, "COMPLETED", "SUCCESS"),  # type: ignore[arg-type]
+                RequiredCheckFact(
+                    "ci (Unit/Integration + Lint gesammelt)",
+                    "COMPLETED",
+                    "SUCCESS",
+                ),
+            )
+        },
+        id="required_check_name_none",
+    ),
+    pytest.param(
+        {
+            "required_checks": (
+                RequiredCheckFact("policy-gate", 123, "SUCCESS"),  # type: ignore[arg-type]
+                RequiredCheckFact(
+                    "ci (Unit/Integration + Lint gesammelt)",
+                    "COMPLETED",
+                    "SUCCESS",
+                ),
+            )
+        },
+        id="required_check_status_int",
+    ),
+    pytest.param(
+        {
+            "required_checks": (
+                RequiredCheckFact("policy-gate", "COMPLETED", []),  # type: ignore[arg-type]
+                RequiredCheckFact(
+                    "ci (Unit/Integration + Lint gesammelt)",
+                    "COMPLETED",
+                    "SUCCESS",
+                ),
+            )
+        },
+        id="required_check_conclusion_list",
+    ),
+    pytest.param({"execution_mode": None}, id="execution_mode_none"),  # type: ignore[dict-item]
+    pytest.param({"kill_switch_enabled": "true"}, id="kill_switch_string"),  # type: ignore[dict-item]
+    pytest.param({"commit_count": True}, id="commit_count_bool"),  # type: ignore[dict-item]
+]
+
+
+@pytest.mark.parametrize("overrides", MALFORMED_FACT_CASES)
+def test_malformed_facts_fail_closed_without_exception(overrides: dict) -> None:
+    result = classifier.classify_dependabot_pr(_facts(**overrides), _load_policy())
+
+    assert result.classification == "HOLD"
+    assert result.action == "HOLD"
+    assert result.merge_authorized is False
+    assert result.reason_codes == (classifier.REASON_FACTS_INVALID,)
+
+
+def test_policy_default_mode_phase1_is_invalid() -> None:
+    policy = Policy(
+        {
+            "schema_version": 1,
+            "default_mode": "phase1",
+            "defaults": {"unknown_package": "HOLD", "unknown_ecosystem": "HOLD"},
+            "entries": {
+                "pip": {
+                    "ruff": {
+                        "dependency_type": "direct:development",
+                        "allowed_update_types": ["version-update:semver-patch"],
+                        "allowed_files": ["requirements-dev.txt"],
+                    }
+                }
+            },
+        }
+    )
+    assert policy.valid is False
+    result = classifier.classify_dependabot_pr(_facts(), policy)
+    assert result.classification == "HOLD"
+    assert classifier.REASON_POLICY in result.reason_codes
+
+
+@pytest.mark.parametrize(
+    "schema_version",
+    [1.2, True, "1"],
+)
+def test_non_integer_schema_version_is_policy_invalid(schema_version: object) -> None:
+    policy = Policy(
+        {
+            "schema_version": schema_version,
+            "default_mode": "report_only",
+            "defaults": {"unknown_package": "HOLD", "unknown_ecosystem": "HOLD"},
+            "entries": {
+                "pip": {
+                    "ruff": {
+                        "dependency_type": "direct:development",
+                        "allowed_update_types": ["version-update:semver-patch"],
+                        "allowed_files": ["requirements-dev.txt"],
+                    }
+                }
+            },
+        }
+    )
+    assert policy.valid is False
+
+
+@pytest.mark.parametrize(
+    "path",
+    [
+        ".github/scripts/example.py",
+        ".github/actions/example/action.yml",
+        ".github/workflows/ci.yml",
+    ],
+)
+def test_changed_file_under_dot_github_is_control_plane_hold(path: str) -> None:
+    result = classifier.classify_dependabot_pr(
+        _facts(changed_files=(path,)),
+        _load_policy(),
+    )
+
+    assert result.classification == "HOLD"
+    assert classifier.REASON_CONTROL_PLANE in result.reason_codes
+
+
+@pytest.mark.parametrize(
+    "current_version,target_version",
+    [
+        ("+1.2.3", "1.2.4"),
+        ("1.-2.3", "1.2.4"),
+        ("1.2", "1.2.3"),
+        ("1.2.3.4", "1.2.5"),
+        ("1..3", "1.2.4"),
+        ("v1.2.3", "1.2.4"),
+        ("0.15.21", "0.15.21"),
+    ],
+)
+def test_invalid_semver_transition_holds(
+    current_version: str, target_version: str
+) -> None:
+    result = classifier.classify_dependabot_pr(
+        _facts(current_version=current_version, target_version=target_version),
+        _load_policy(),
+    )
+
+    assert result.classification == "HOLD"
+    assert classifier.REASON_VERSION_TRANSITION in result.reason_codes
+
+
+def test_allowlist_rejects_dot_github_scripts_path() -> None:
+    policy = Policy(
+        {
+            "schema_version": 1,
+            "default_mode": "report_only",
+            "defaults": {"unknown_package": "HOLD", "unknown_ecosystem": "HOLD"},
+            "entries": {
+                "pip": {
+                    "ruff": {
+                        "dependency_type": "direct:development",
+                        "allowed_update_types": ["version-update:semver-patch"],
+                        "allowed_files": [".github/scripts/example.py"],
+                    }
+                }
+            },
+        }
+    )
+    assert policy.valid is False

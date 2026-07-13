@@ -44,13 +44,9 @@ CHECK_STATUS_COMPLETED = "COMPLETED"
 CHECK_CONCLUSION_SUCCESS = "SUCCESS"
 
 HEAD_SHA_PATTERN = re.compile(r"^[0-9a-f]{40}$")
+SEMVER_TRIPLET_PATTERN = re.compile(r"^(0|[1-9]\d*)\.(0|[1-9]\d*)\.(0|[1-9]\d*)$")
 
-CONTROL_PLANE_PREFIXES = (
-    ".github/workflows/",
-    ".github/dependabot.yml",
-    ".github/CONTROL_PLANE.md",
-    ".github/pull_request_template.md",
-)
+POLICY_DEFAULT_MODE = "report_only"
 
 DOCKER_PATH_MARKERS = (
     "/dockerfile",
@@ -215,10 +211,10 @@ def _normalize_check_token(value: str) -> str:
 
 
 def _path_is_control_plane(path: str) -> bool:
+    if not isinstance(path, str):
+        return True
     normalized = path.replace("\\", "/").lower()
-    return any(
-        normalized.startswith(prefix.lower()) for prefix in CONTROL_PLANE_PREFIXES
-    )
+    return normalized.startswith(".github/")
 
 
 def _path_is_docker_surface(path: str) -> bool:
@@ -253,16 +249,10 @@ def _parse_semver_triplet(value: str) -> tuple[int, int, int] | None:
     text = (value or "").strip()
     if not text or _is_date_version(text):
         return None
-    parts = text.split(".")
-    if len(parts) != 3:
+    match = SEMVER_TRIPLET_PATTERN.fullmatch(text)
+    if match is None:
         return None
-    try:
-        major, minor, patch = (int(part) for part in parts)
-    except ValueError:
-        return None
-    if major < 0 or minor < 0 or patch < 0:
-        return None
-    return major, minor, patch
+    return int(match.group(1)), int(match.group(2)), int(match.group(3))
 
 
 def _version_transition_valid(current_version: str, target_version: str) -> bool:
@@ -319,12 +309,9 @@ def _sort_hold_codes(codes: Sequence[str]) -> tuple[str, ...]:
 
 
 def _safe_schema_version(value: Any) -> int | None:
-    if isinstance(value, bool):
+    if type(value) is not int:
         return None
-    try:
-        return int(value)
-    except (TypeError, ValueError):
-        return None
+    return value
 
 
 def _validate_default_mapping(defaults: Mapping[str, str], errors: list[str]) -> None:
@@ -379,9 +366,13 @@ def parse_allowlist_policy(raw: Mapping[str, Any] | None) -> AllowlistPolicy:
     if schema_version != SUPPORTED_SCHEMA_VERSION:
         errors.append(f"unsupported schema_version: {schema_version_raw!r}")
 
-    default_mode = str(raw.get("default_mode", "report_only")).strip() or "report_only"
-    if default_mode not in ALLOWED_EXECUTION_MODES:
-        errors.append(f"default_mode must be one of {sorted(ALLOWED_EXECUTION_MODES)}")
+    default_mode = raw.get("default_mode", POLICY_DEFAULT_MODE)
+    if default_mode != POLICY_DEFAULT_MODE:
+        errors.append(
+            f"default_mode must be {POLICY_DEFAULT_MODE!r} in schema v1; "
+            f"got {default_mode!r}"
+        )
+        default_mode = POLICY_DEFAULT_MODE
 
     defaults_raw = raw.get("defaults") or {}
     if not isinstance(defaults_raw, Mapping):
@@ -542,7 +533,7 @@ def _validate_facts(facts: DependabotAutopilotFacts) -> list[str]:
             if not isinstance(check, RequiredCheckFact):
                 reasons.append(REASON_FACTS_INVALID)
                 break
-            if not check.name.strip():
+            if not isinstance(check.name, str) or not check.name.strip():
                 reasons.append(REASON_FACTS_INVALID)
                 break
             if not isinstance(check.status, str) or not isinstance(
@@ -550,8 +541,11 @@ def _validate_facts(facts: DependabotAutopilotFacts) -> list[str]:
             ):
                 reasons.append(REASON_FACTS_INVALID)
                 break
+            if not check.status.strip() or not check.conclusion.strip():
+                reasons.append(REASON_FACTS_INVALID)
+                break
 
-    return _ordered_unique(reasons)  # type: ignore[return-value]
+    return list(_ordered_unique(reasons))
 
 
 def _execution_mode_valid(mode: str) -> bool:
@@ -601,7 +595,7 @@ def _evaluate_required_checks(
 def _collect_hold_reasons(
     facts: DependabotAutopilotFacts, policy: AllowlistPolicy
 ) -> list[str]:
-    reasons = list(_validate_facts(facts))
+    reasons: list[str] = []
 
     if not policy.valid:
         reasons.append(REASON_POLICY)
@@ -741,6 +735,17 @@ def classify_dependabot_pr(
     policy: AllowlistPolicy,
 ) -> ClassificationResult:
     """Pure fail-closed classifier. Same inputs always yield the same decision."""
+    fact_errors = _validate_facts(facts)
+    if fact_errors:
+        codes = (REASON_FACTS_INVALID,)
+        return ClassificationResult(
+            classification="HOLD",
+            action="HOLD",
+            merge_authorized=False,
+            reason_codes=codes,
+            human_summary=_build_summary("HOLD", "HOLD", False, codes, facts),
+        )
+
     hold_reasons = _collect_hold_reasons(facts, policy)
     if hold_reasons:
         codes = _sort_hold_codes(hold_reasons)
