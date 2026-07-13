@@ -1,0 +1,188 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://claire-de-binare/docs/contracts/batch_a_stage_b_confirmation_contract.v1.schema.json",
+  "title": "Batch-A Stage-B Confirmation Contract v1",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "schema_version",
+    "source_issue",
+    "parent_control_issue",
+    "plan_version",
+    "lr_status",
+    "ranking_ready",
+    "stage_b_window_counts",
+    "status_tiers",
+    "aggregation_slices",
+    "confirmation_rules",
+    "gates",
+    "verdict_logic",
+    "safety_boundaries"
+  ],
+  "properties": {
+    "schema_version": {
+      "const": "batch_a_stage_b_confirmation_contract.v1"
+    },
+    "source_issue": {
+      "type": "string",
+      "pattern": "^#4033$"
+    },
+    "parent_control_issue": {
+      "type": "string",
+      "pattern": "^#4029$"
+    },
+    "plan_version": {
+      "type": "string"
+    },
+    "go_amendments": {
+      "type": "array",
+      "items": {
+        "type": "string"
+      }
+    },
+    "lr_status": {
+      "const": "NO-GO"
+    },
+    "ranking_ready": {
+      "const": false
+    },
+    "stage_b_window_counts": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "total",
+        "validation",
+        "out_of_sample",
+        "stress",
+        "monthly_validation",
+        "monthly_out_of_sample"
+      ],
+      "properties": {
+        "total": {
+          "type": "integer",
+          "const": 62
+        },
+        "validation": {
+          "type": "integer"
+        },
+        "out_of_sample": {
+          "type": "integer"
+        },
+        "stress": {
+          "type": "integer",
+          "const": 5
+        },
+        "monthly_validation": {
+          "type": "integer",
+          "const": 27
+        },
+        "monthly_out_of_sample": {
+          "type": "integer",
+          "const": 15
+        },
+        "quarterly_validation": {
+          "type": "integer"
+        },
+        "yearly_validation": {
+          "type": "integer"
+        },
+        "quarterly_out_of_sample": {
+          "type": "integer"
+        },
+        "yearly_out_of_sample": {
+          "type": "integer"
+        }
+      }
+    },
+    "status_tiers": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["confirmed", "rejected", "partial_evidence"],
+      "properties": {
+        "confirmed": {
+          "const": "HISTORICALLY_CONFIRMED_CANDIDATE"
+        },
+        "rejected": {
+          "const": "REJECTED"
+        },
+        "partial_evidence": {
+          "const": "PARTIAL_EVIDENCE"
+        }
+      }
+    },
+    "aggregation_slices": {
+      "type": "object"
+    },
+    "confirmation_rules": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "evaluate_validation_and_oos_separately",
+        "stress_separate_verdict",
+        "forbid_overlap_double_weighting",
+        "require_slice_metadata"
+      ],
+      "properties": {
+        "evaluate_validation_and_oos_separately": {
+          "type": "boolean",
+          "const": true
+        },
+        "stress_separate_verdict": {
+          "type": "boolean",
+          "const": true
+        },
+        "forbid_overlap_double_weighting": {
+          "type": "boolean",
+          "const": true
+        },
+        "require_slice_metadata": {
+          "type": "array",
+          "minItems": 1,
+          "items": {
+            "type": "string"
+          }
+        }
+      }
+    },
+    "gates": {
+      "type": "array",
+      "minItems": 1,
+      "items": {
+        "type": "object",
+        "additionalProperties": true,
+        "required": ["gate_id", "label", "slice", "operator", "missing_semantics"],
+        "properties": {
+          "gate_id": {
+            "type": "string"
+          },
+          "label": {
+            "type": "string"
+          },
+          "slice": {
+            "type": "string"
+          },
+          "field": {
+            "type": "string"
+          },
+          "operator": {
+            "type": "string"
+          },
+          "value": {},
+          "missing_semantics": {
+            "type": "string"
+          }
+        }
+      }
+    },
+    "verdict_logic": {
+      "type": "object",
+      "additionalProperties": true
+    },
+    "safety_boundaries": {
+      "type": "array",
+      "items": {
+        "type": "string"
+      }
+    }
+  }
+}

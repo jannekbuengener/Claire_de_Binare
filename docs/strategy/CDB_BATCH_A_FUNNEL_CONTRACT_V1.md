@@ -87,10 +87,25 @@ Only `range_mean_reversion_v1` and `momentum_capture_v1` are marked
 `implemented` with adapter IDs. All ten Batch-A runners are now executable via
 `strategy_replay_runner` dispatch (slice 2d).
 
+## Three-tier decision semantics (WP3 #4032)
+
+Batch-A uses **three separate decision tiers**. They must never be conflated:
+
+| Tier | Status | Purpose | `ranking_ready` |
+|---|---|---|---|
+| Stage-A/B screening | `STAGE_A_SURVIVOR` | Dev-triage on Binance windows | **false** |
+| Historical confirmation | `HISTORICALLY_CONFIRMED_CANDIDATE` | Val/OOS/stress monthly confirmation | **false** |
+| Official ranking / promotion | `FINAL_RANKING_OR_PROMOTION_READY` | League hard gates + LR human gate | only with explicit LR-GO |
+
+Stage-A survivor scoring uses `batch_a_stage_a_gate_contract.v1` and
+`tools/arvp_vacation/batch_a_stage_a_survivor_scorer.py` — **not**
+`profitability_league_scorer.hard_gate_failures`. Stage-B confirmation uses
+`batch_a_stage_b_confirmation_contract.v1`; quarterly/yearly windows are
+corroborative only and do not enter primary combined medians (GO amendment A2).
+
 ## Non-goals (slice 2a)
 
 - No new strategy signal logic
-- No Stage-A screening campaign (#4032)
 - No parameter search or promotion
 - No runtime BLUE/RED or workflow changes
 - No ranking_ready change

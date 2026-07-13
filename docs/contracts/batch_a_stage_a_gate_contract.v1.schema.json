@@ -1,0 +1,245 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://claire-de-binare/docs/contracts/batch_a_stage_a_gate_contract.v1.schema.json",
+  "title": "Batch-A Stage-A Gate Contract v1",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "schema_version",
+    "source_issue",
+    "parent_control_issue",
+    "plan_version",
+    "lr_status",
+    "ranking_ready",
+    "development_window_count",
+    "stage_a_scenario_ids",
+    "status_tiers",
+    "paired_evidence_rules",
+    "aggregation_rules",
+    "blocked_quality_verdicts",
+    "gates",
+    "safety_boundaries"
+  ],
+  "properties": {
+    "schema_version": {
+      "const": "batch_a_stage_a_gate_contract.v1"
+    },
+    "source_issue": {
+      "type": "string",
+      "pattern": "^#4032$"
+    },
+    "parent_control_issue": {
+      "type": "string",
+      "pattern": "^#4029$"
+    },
+    "plan_version": {
+      "type": "string",
+      "minLength": 1
+    },
+    "go_amendments": {
+      "type": "array",
+      "items": {
+        "type": "string"
+      }
+    },
+    "lr_status": {
+      "const": "NO-GO"
+    },
+    "ranking_ready": {
+      "const": false
+    },
+    "development_window_count": {
+      "type": "integer",
+      "const": 39
+    },
+    "stage_a_scenario_ids": {
+      "type": "array",
+      "minItems": 2,
+      "maxItems": 2,
+      "items": {
+        "type": "string",
+        "enum": ["baseline", "pessimistic_execution"]
+      }
+    },
+    "status_tiers": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["survivor", "rejected", "insufficient_evidence"],
+      "properties": {
+        "survivor": {
+          "const": "STAGE_A_SURVIVOR"
+        },
+        "rejected": {
+          "const": "REJECTED"
+        },
+        "insufficient_evidence": {
+          "const": "INSUFFICIENT_EVIDENCE"
+        }
+      }
+    },
+    "paired_evidence_rules": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "pair_key_fields",
+        "baseline_scenario_id",
+        "pessimistic_scenario_id",
+        "require_same_window_set_for_economics",
+        "missing_pessimistic_cannot_drop_from_median",
+        "separate_rankable_coverage",
+        "min_paired_evaluable_window_share",
+        "min_pessimistic_positive_window_share",
+        "missing_pair_fail_closed_statuses"
+      ],
+      "properties": {
+        "pair_key_fields": {
+          "type": "array",
+          "minItems": 2,
+          "items": {
+            "type": "string"
+          }
+        },
+        "baseline_scenario_id": {
+          "const": "baseline"
+        },
+        "pessimistic_scenario_id": {
+          "const": "pessimistic_execution"
+        },
+        "require_same_window_set_for_economics": {
+          "type": "boolean",
+          "const": true
+        },
+        "missing_pessimistic_cannot_drop_from_median": {
+          "type": "boolean",
+          "const": true
+        },
+        "separate_rankable_coverage": {
+          "type": "boolean",
+          "const": true
+        },
+        "min_paired_evaluable_window_share": {
+          "type": "number",
+          "minimum": 0,
+          "maximum": 1
+        },
+        "min_pessimistic_positive_window_share": {
+          "type": "number",
+          "minimum": 0,
+          "maximum": 1
+        },
+        "missing_pair_fail_closed_statuses": {
+          "type": "array",
+          "minItems": 1,
+          "items": {
+            "type": "string",
+            "enum": ["REJECTED", "INSUFFICIENT_EVIDENCE"]
+          }
+        }
+      }
+    },
+    "aggregation_rules": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "economics_field",
+        "profit_factor_field",
+        "max_drawdown_field",
+        "expectancy_field",
+        "trade_count_field",
+        "use_median_for_economics",
+        "forbid_summed_overlap_pnl",
+        "rankable_requires_closed_trades_gt_zero"
+      ],
+      "properties": {
+        "economics_field": {
+          "const": "net_pnl_quote"
+        },
+        "profit_factor_field": {
+          "const": "profit_factor"
+        },
+        "max_drawdown_field": {
+          "const": "max_drawdown_r"
+        },
+        "expectancy_field": {
+          "const": "fee_adjusted_expectancy_r"
+        },
+        "trade_count_field": {
+          "const": "closed_trades_total"
+        },
+        "use_median_for_economics": {
+          "type": "boolean"
+        },
+        "forbid_summed_overlap_pnl": {
+          "type": "boolean"
+        },
+        "rankable_requires_closed_trades_gt_zero": {
+          "type": "boolean"
+        }
+      }
+    },
+    "blocked_quality_verdicts": {
+      "type": "array",
+      "minItems": 1,
+      "items": {
+        "type": "string"
+      }
+    },
+    "gates": {
+      "type": "array",
+      "minItems": 1,
+      "items": {
+        "type": "object",
+        "additionalProperties": true,
+        "required": [
+          "gate_id",
+          "label",
+          "scope",
+          "operator",
+          "missing_semantics",
+          "required_for_survivor"
+        ],
+        "properties": {
+          "gate_id": {
+            "type": "string",
+            "pattern": "^G-[A-Z0-9]+$"
+          },
+          "label": {
+            "type": "string"
+          },
+          "scope": {
+            "type": "string"
+          },
+          "field": {
+            "type": "string"
+          },
+          "operator": {
+            "type": "string"
+          },
+          "value": {},
+          "denominator": {
+            "type": "string"
+          },
+          "missing_semantics": {
+            "type": "string",
+            "enum": ["fail", "insufficient_evidence", "skip_with_flag"]
+          },
+          "skip_flag": {
+            "type": "string"
+          },
+          "required_for_survivor": {
+            "type": "boolean"
+          },
+          "infinity_pass_when_net_positive": {
+            "type": "boolean"
+          }
+        }
+      }
+    },
+    "safety_boundaries": {
+      "type": "array",
+      "items": {
+        "type": "string"
+      }
+    }
+  }
+}

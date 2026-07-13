@@ -1,0 +1,159 @@
+{
+  "schema_version": "batch_a_stage_b_confirmation_contract.v1",
+  "source_issue": "#4033",
+  "parent_control_issue": "#4029",
+  "plan_version": "arvp-funnel-v1.1-2026-07-13",
+  "go_amendments": ["A2"],
+  "lr_status": "NO-GO",
+  "ranking_ready": false,
+  "stage_b_window_counts": {
+    "total": 62,
+    "validation": 35,
+    "out_of_sample": 22,
+    "stress": 5,
+    "monthly_validation": 27,
+    "monthly_out_of_sample": 15,
+    "quarterly_validation": 6,
+    "yearly_validation": 2,
+    "quarterly_out_of_sample": 7,
+    "yearly_out_of_sample": 0
+  },
+  "status_tiers": {
+    "confirmed": "HISTORICALLY_CONFIRMED_CANDIDATE",
+    "rejected": "REJECTED",
+    "partial_evidence": "PARTIAL_EVIDENCE"
+  },
+  "aggregation_slices": {
+    "primary_monthly": {
+      "validation_monthly": {
+        "purpose": "validation",
+        "overlap_class": "monthly",
+        "expected_window_count": 27,
+        "include_in_primary_confirmation": true
+      },
+      "out_of_sample_monthly": {
+        "purpose": "out_of_sample",
+        "overlap_class": "monthly",
+        "expected_window_count": 15,
+        "include_in_primary_confirmation": true
+      },
+      "stress": {
+        "purpose": "stress",
+        "overlap_class": "stress",
+        "expected_window_count": 5,
+        "include_in_primary_confirmation": true,
+        "separate_verdict": true
+      }
+    },
+    "corroborative_only": {
+      "quarterly": {
+        "overlap_class": "quarterly",
+        "include_in_combined_median": false,
+        "include_in_sample_size_sum": false,
+        "role": "corroborative_robustness"
+      },
+      "yearly": {
+        "overlap_class": "yearly",
+        "include_in_combined_median": false,
+        "include_in_sample_size_sum": false,
+        "role": "corroborative_robustness"
+      }
+    }
+  },
+  "confirmation_rules": {
+    "evaluate_validation_and_oos_separately": true,
+    "stress_separate_verdict": true,
+    "forbid_overlap_double_weighting": true,
+    "require_slice_metadata": ["window_class", "purpose", "overlap_class"]
+  },
+  "gates": [
+    {
+      "gate_id": "B-V01",
+      "label": "validation_monthly_rankable_share",
+      "slice": "validation_monthly",
+      "operator": "rankable_share_gte",
+      "value": 0.5,
+      "missing_semantics": "partial_evidence"
+    },
+    {
+      "gate_id": "B-V02",
+      "label": "validation_monthly_median_net_pnl_quote",
+      "slice": "validation_monthly",
+      "field": "net_pnl_quote",
+      "operator": "median_gt",
+      "value": 0,
+      "missing_semantics": "fail"
+    },
+    {
+      "gate_id": "B-V03",
+      "label": "validation_monthly_positive_window_share",
+      "slice": "validation_monthly",
+      "field": "net_pnl_quote",
+      "operator": "positive_share_gte",
+      "value": 0.35,
+      "missing_semantics": "fail"
+    },
+    {
+      "gate_id": "B-O01",
+      "label": "oos_monthly_rankable_share",
+      "slice": "out_of_sample_monthly",
+      "operator": "rankable_share_gte",
+      "value": 0.5,
+      "missing_semantics": "partial_evidence"
+    },
+    {
+      "gate_id": "B-O02",
+      "label": "oos_monthly_median_net_pnl_quote",
+      "slice": "out_of_sample_monthly",
+      "field": "net_pnl_quote",
+      "operator": "median_gt",
+      "value": 0,
+      "missing_semantics": "fail"
+    },
+    {
+      "gate_id": "B-O03",
+      "label": "oos_monthly_positive_window_share",
+      "slice": "out_of_sample_monthly",
+      "field": "net_pnl_quote",
+      "operator": "positive_share_gte",
+      "value": 0.35,
+      "missing_semantics": "fail"
+    },
+    {
+      "gate_id": "B-S01",
+      "label": "stress_rankable_share",
+      "slice": "stress",
+      "operator": "rankable_share_gte",
+      "value": 0.6,
+      "missing_semantics": "partial_evidence"
+    },
+    {
+      "gate_id": "B-S02",
+      "label": "stress_median_net_pnl_quote",
+      "slice": "stress",
+      "field": "net_pnl_quote",
+      "operator": "median_gt",
+      "value": 0,
+      "missing_semantics": "fail"
+    }
+  ],
+  "verdict_logic": {
+    "historically_confirmed_requires": [
+      "B-V01",
+      "B-V02",
+      "B-V03",
+      "B-O01",
+      "B-O02",
+      "B-O03",
+      "B-S01",
+      "B-S02"
+    ],
+    "partial_evidence_when": "any_primary_slice_insufficient_or_mixed",
+    "rejected_when": "all_primary_slices_fail_with_sufficient_evidence"
+  },
+  "safety_boundaries": [
+    "HISTORICALLY_CONFIRMED_CANDIDATE is not ranking_ready or promotion",
+    "Quarterly/yearly never enter primary combined median or sample sum",
+    "Does not use profitability_league_scorer.hard_gate_failures"
+  ]
+}

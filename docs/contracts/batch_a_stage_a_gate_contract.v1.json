@@ -1,0 +1,198 @@
+{
+  "schema_version": "batch_a_stage_a_gate_contract.v1",
+  "source_issue": "#4032",
+  "parent_control_issue": "#4029",
+  "plan_version": "arvp-funnel-v1.1-2026-07-13",
+  "go_amendments": ["A1"],
+  "lr_status": "NO-GO",
+  "ranking_ready": false,
+  "development_window_count": 39,
+  "stage_a_scenario_ids": ["baseline", "pessimistic_execution"],
+  "status_tiers": {
+    "survivor": "STAGE_A_SURVIVOR",
+    "rejected": "REJECTED",
+    "insufficient_evidence": "INSUFFICIENT_EVIDENCE"
+  },
+  "paired_evidence_rules": {
+    "pair_key_fields": ["candidate_id", "window_id"],
+    "baseline_scenario_id": "baseline",
+    "pessimistic_scenario_id": "pessimistic_execution",
+    "require_same_window_set_for_economics": true,
+    "missing_pessimistic_cannot_drop_from_median": true,
+    "separate_rankable_coverage": true,
+    "min_paired_evaluable_window_share": 0.5,
+    "min_pessimistic_positive_window_share": 0.4,
+    "missing_pair_fail_closed_statuses": [
+      "REJECTED",
+      "INSUFFICIENT_EVIDENCE"
+    ]
+  },
+  "aggregation_rules": {
+    "economics_field": "net_pnl_quote",
+    "profit_factor_field": "profit_factor",
+    "max_drawdown_field": "max_drawdown_r",
+    "expectancy_field": "fee_adjusted_expectancy_r",
+    "trade_count_field": "closed_trades_total",
+    "use_median_for_economics": true,
+    "forbid_summed_overlap_pnl": true,
+    "rankable_requires_closed_trades_gt_zero": true
+  },
+  "blocked_quality_verdicts": [
+    "BLOCKED",
+    "SOURCE_INVALID",
+    "SOURCE_UNAVAILABLE",
+    "CHECKSUM_FAILED"
+  ],
+  "gates": [
+    {
+      "gate_id": "G-T01",
+      "label": "technical_job_completed",
+      "scope": "all_records",
+      "field": "job_status",
+      "operator": "eq",
+      "value": "completed",
+      "missing_semantics": "fail",
+      "required_for_survivor": true
+    },
+    {
+      "gate_id": "G-T02",
+      "label": "dataset_quality_not_blocked",
+      "scope": "all_records",
+      "field": "dataset_quality_verdict",
+      "operator": "not_in",
+      "value": [
+        "BLOCKED",
+        "SOURCE_INVALID",
+        "SOURCE_UNAVAILABLE",
+        "CHECKSUM_FAILED"
+      ],
+      "missing_semantics": "fail",
+      "required_for_survivor": true
+    },
+    {
+      "gate_id": "G-R01",
+      "label": "baseline_rankable_window_share",
+      "scope": "baseline_rankable",
+      "operator": "gte",
+      "value": 0.5,
+      "denominator": "development_window_count",
+      "missing_semantics": "fail",
+      "required_for_survivor": true
+    },
+    {
+      "gate_id": "G-R02",
+      "label": "baseline_rankable_closed_trades_sum",
+      "scope": "baseline_rankable",
+      "field": "closed_trades_total",
+      "operator": "gte",
+      "value": 10,
+      "missing_semantics": "fail",
+      "required_for_survivor": true
+    },
+    {
+      "gate_id": "G-P01",
+      "label": "paired_evaluable_window_share",
+      "scope": "paired_evaluable",
+      "operator": "gte",
+      "value": 0.5,
+      "denominator": "development_window_count",
+      "missing_semantics": "insufficient_evidence",
+      "required_for_survivor": true
+    },
+    {
+      "gate_id": "G-P02",
+      "label": "pessimistic_rankable_window_share",
+      "scope": "pessimistic_rankable",
+      "operator": "gte",
+      "value": 0.5,
+      "denominator": "development_window_count",
+      "missing_semantics": "insufficient_evidence",
+      "required_for_survivor": true
+    },
+    {
+      "gate_id": "G-E01",
+      "label": "baseline_median_net_pnl_quote",
+      "scope": "paired_baseline_rankable",
+      "field": "net_pnl_quote",
+      "operator": "gt",
+      "value": 0,
+      "missing_semantics": "fail",
+      "required_for_survivor": true
+    },
+    {
+      "gate_id": "G-E02",
+      "label": "pessimistic_median_net_pnl_quote",
+      "scope": "paired_pessimistic_rankable",
+      "field": "net_pnl_quote",
+      "operator": "gt",
+      "value": 0,
+      "missing_semantics": "fail",
+      "required_for_survivor": true
+    },
+    {
+      "gate_id": "G-E03",
+      "label": "baseline_median_fee_adjusted_expectancy_r",
+      "scope": "paired_baseline_rankable",
+      "field": "fee_adjusted_expectancy_r",
+      "operator": "gt",
+      "value": 0,
+      "missing_semantics": "skip_with_flag",
+      "skip_flag": "fee_adjusted_expectancy_unavailable",
+      "required_for_survivor": false
+    },
+    {
+      "gate_id": "G-E04",
+      "label": "baseline_median_profit_factor",
+      "scope": "paired_baseline_rankable",
+      "field": "profit_factor",
+      "operator": "gte",
+      "value": 1.05,
+      "infinity_pass_when_net_positive": true,
+      "missing_semantics": "fail",
+      "required_for_survivor": true
+    },
+    {
+      "gate_id": "G-E05",
+      "label": "baseline_positive_window_share",
+      "scope": "paired_baseline_rankable",
+      "field": "net_pnl_quote",
+      "operator": "positive_share_gte",
+      "value": 0.4,
+      "missing_semantics": "fail",
+      "required_for_survivor": true
+    },
+    {
+      "gate_id": "G-E06",
+      "label": "baseline_max_drawdown_r",
+      "scope": "paired_baseline_rankable",
+      "field": "max_drawdown_r",
+      "operator": "lte",
+      "value": 0.5,
+      "missing_semantics": "fail",
+      "required_for_survivor": true
+    },
+    {
+      "gate_id": "G-E07",
+      "label": "pessimistic_positive_window_share",
+      "scope": "paired_pessimistic_rankable",
+      "field": "net_pnl_quote",
+      "operator": "positive_share_gte",
+      "value": 0.4,
+      "missing_semantics": "fail",
+      "required_for_survivor": true
+    },
+    {
+      "gate_id": "G-E08",
+      "label": "pessimistic_anti_auto_pass",
+      "scope": "paired_baseline_pessimistic_rankable",
+      "operator": "anti_auto_pass",
+      "missing_semantics": "fail",
+      "required_for_survivor": true
+    }
+  ],
+  "safety_boundaries": [
+    "STAGE_A_SURVIVOR is not promotion or ranking_ready",
+    "Does not use profitability_league_scorer.hard_gate_failures",
+    "Binance cross-venue research only"
+  ]
+}
