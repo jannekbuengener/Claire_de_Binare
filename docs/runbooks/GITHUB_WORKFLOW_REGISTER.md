@@ -2,7 +2,7 @@
 
 **Repo:** Claire de Binare
 **Canon date:** 2026-07 (updated for #3660 after #3659 restore)
-**Total workflow definitions:** 69 YAML files
+**Total workflow definitions:** 70 YAML files
 **Non-workflow file in `/workflows/`:** `labels.json` (label spec — consumed by `sync-labels.yml`)
 
 **Related docs:**
@@ -134,6 +134,7 @@ Only entries that differ materially from their group baseline are listed.
 | `bulk-issue-labeling.yml` | `perm:w-issues` | — |
 | `milestone-assignment.yml` | `perm:w-issues` | — |
 | `required-checks-audit.yml` | `perm:checks-read` (plus read-only scopes) | — |
+| `cdb-dependabot-autopilot.yml` | `perm:checks-read`, `perm:pr-read` (plus `contents:read`; report-only) | `in:script:dependabot_autopilot_report.py`, `in:allowlist:dependabot-autopilot-allowlist.yml` |
 | `governance-audit.yml` | `perm:actions-read` (plus read-only scopes) | — |
 | `ai-review-router.yml` | `perm:w-pr` | — |
 | `smart-insights.yml` | `perm:implicit` | — |
@@ -239,7 +240,7 @@ Repo health, staleness, documentation quality, and audit cleanliness.
 
 ---
 
-## Group 5: Reporting / Control Signals — 9 workflows
+## Group 5: Reporting / Control Signals — 10 workflows
 
 Digest, backlog/anomaly triage, post-merge scanning, and issue-signal creation.
 
@@ -254,6 +255,7 @@ Digest, backlog/anomaly triage, post-merge scanning, and issue-signal creation.
 | `cdb-daily-delta-triage.yml` | aktiv | sched (Tue/Wed/Fri/Sun 06:20 UTC), dispatch | Daily delta scoring: reads CONTROL_REGISTER.md, creates bounded issues | `scripts/daily_delta_triage.py` | Bounded issue creation (delta-scored) | O | Daily check in #1445 |
 | `cdb-post-merge-followup-scanner.yml` | aktiv | PR:merged, dispatch | Scan merged PRs for follow-up actions | `scripts/post_merge_followup_scanner.py` + `prompts/cdb-control-followup.prompt.yml` | Follow-up issues/comments | O | Post-merge review |
 | `cdb-weekly-control-hygiene-classifier.yml` | aktiv | sched (Mo/Do/Fr 07:30 UTC), dispatch | Weekly hygiene classification: creates hygiene issues | `scripts/weekly_control_hygiene_classifier.py` | Hygiene issues | O | Weekly review |
+| `cdb-dependabot-autopilot.yml` | aktiv | sched (Mo 05:00 UTC), dispatch | Phase-0 report-only Dependabot broker: classifies open Dependabot PRs via read-only GitHub API + S0 classifier; Job Summary only | `scripts/dependabot_autopilot_report.py`, `dependabot-autopilot-allowlist.yml` | Job Summary (no PR/issue mutations) | O | Human review before first dispatch (#4061 S1) |
 | `cdb-control-followup-classifier.yml` | manual-only | dispatch only | Classify pending control follow-up items | `scripts/run_cdb_control_followup.sh` → `prompts/cdb-control-followup.prompt.yml` | Issue comments / classifier output | O | Operator: manual classification runs |
 | `triage_guard.yml` | aktiv | issues | Guard triage pipeline: fire on issue events, enforce triage structure | — | Triage issue or label | O | Issue triage review |
 

@@ -1,0 +1,74 @@
+name: CDB Dependabot Autopilot
+
+# Phase 0 report-only broker for Dependabot PR classification.
+# Schedule: Monday 05:00 UTC = 06:00 CET / 07:00 CEST, after Dependabot batch
+# (Monday 04:00-04:35 Europe/Berlin per .github/dependabot.yml).
+
+on:
+  schedule:
+    - cron: "0 5 * * 1"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  pull-requests: read
+  checks: read
+
+concurrency:
+  group: cdb-dependabot-autopilot-${{ github.ref || github.run_id }}
+  cancel-in-progress: true
+
+jobs:
+  report-only:
+    name: Dependabot report-only broker
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+
+    steps:
+      - name: Fail closed on non-main workflow_dispatch
+        if: github.event_name == 'workflow_dispatch' && github.ref != 'refs/heads/main'
+        shell: bash
+        run: |
+          echo "::error::workflow_dispatch is allowed only on refs/heads/main; got ${GITHUB_REF}"
+          exit 1
+
+      - name: Checkout trusted main code
+        uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0 # v7.0.0
+        with:
+          ref: main
+          persist-credentials: false
+
+      - name: Setup Python
+        uses: actions/setup-python@ece7cb06caefa5fff74198d8649806c4678c61a1 # v6.3.0
+        with:
+          python-version: "3.12"
+
+      - name: Install report dependencies
+        shell: bash
+        run: |
+          set -euo pipefail
+          python -m pip install --disable-pip-version-check pyyaml
+
+      - name: Run Dependabot report-only broker
+        id: broker
+        env:
+          GH_TOKEN: ${{ github.token }}
+        shell: bash
+        run: |
+          set -u
+          summary_file="${RUNNER_TEMP}/dependabot-autopilot-summary.md"
+          set +e
+          python .github/scripts/dependabot_autopilot_report.py \
+            --repo "${GITHUB_REPOSITORY}" \
+            --allowlist-path ".github/dependabot-autopilot-allowlist.yml" \
+            --summary-file "${summary_file}" \
+            --execution-mode report_only
+          exit_code=$?
+          set -e
+          if [[ -f "${summary_file}" ]]; then
+            cat "${summary_file}" >> "${GITHUB_STEP_SUMMARY}"
+          else
+            echo "::error::Dependabot report summary file was not written"
+            exit 1
+          fi
+          exit "${exit_code}"
