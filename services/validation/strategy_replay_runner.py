@@ -66,6 +66,15 @@ from datetime import timezone
 from pathlib import Path
 from typing import Any, Callable
 
+from core.replay.batch_a_strategy_registry import (
+    BATCH_A_STRATEGY_REGISTRY,
+    batch_a_strategy_ids,
+    get_batch_a_strategy,
+)
+from core.replay.binance_window_bank_adapter import (
+    BinanceWindowBankAdapterError,
+    load_binance_window_dataset,
+)
 from core.replay.canonical_json import canonical_hash, canonical_json_dumps
 from core.replay.dataset_provider import (
     DBBackedDatasetProvider,
@@ -162,6 +171,30 @@ from services.validation.donchian_breakout_backtest_runner import (
 from services.validation.breakout_trend_filter_backtest_runner import (
     run_breakout_trend_filter_backtest,
 )
+from services.validation.breakout_volatility_filter_backtest_runner import (
+    run_breakout_volatility_filter_backtest,
+)
+from services.validation.volatility_breakout_backtest_runner import (
+    run_volatility_breakout_backtest,
+)
+from services.validation.bollinger_squeeze_breakout_backtest_runner import (
+    run_bollinger_squeeze_breakout_backtest,
+)
+from services.validation.atr_expansion_backtest_runner import (
+    run_atr_expansion_backtest,
+)
+from services.validation.ema_trend_follow_backtest_runner import (
+    run_ema_trend_follow_backtest,
+)
+from services.validation.ma_crossover_backtest_runner import (
+    run_ma_crossover_backtest,
+)
+from services.validation.opening_range_breakout_backtest_runner import (
+    run_opening_range_breakout_backtest,
+)
+from services.validation.roc_breakout_confirm_backtest_runner import (
+    run_roc_breakout_confirm_backtest,
+)
 from services.validation.strategy_backtest_runner import (
     PrimaryBreakoutBacktestError,
     PrimaryBreakoutBacktestRunConfig,
@@ -172,14 +205,47 @@ from services.validation.strategy_backtest_runner import (
 # ---------------------------------------------------------------------------
 # Supported constants (fail-closed validation anchors)
 # ---------------------------------------------------------------------------
-_SUPPORTED_STRATEGY_IDS: frozenset[str] = frozenset(
+_BATCH_A_SHADOW_ADAPTER_ID = "batch_a_shadow_runner_v1"
+_BINANCE_WINDOW_DATASET_STRATEGIES: frozenset[str] = frozenset(
     {
-        PRIMARY_BREAKOUT_STRATEGY_ID,
-        DONCHIAN_BREAKOUT_STRATEGY_ID,
-        BREAKOUT_TREND_FILTER_STRATEGY_ID,
         RANGE_MEAN_REVERSION_STRATEGY_ID,
         MOMENTUM_CAPTURE_STRATEGY_ID,
     }
+)
+
+def _batch_a_runner_dispatch() -> dict[str, Callable[..., dict[str, Any]]]:
+    """Resolve Batch-A runners at call time so tests can patch module bindings."""
+    return {
+        "breakout_volatility_filter_v1": run_breakout_volatility_filter_backtest,
+        "volatility_breakout_v1": run_volatility_breakout_backtest,
+        "bollinger_squeeze_breakout_v1": run_bollinger_squeeze_breakout_backtest,
+        "atr_expansion_v1": run_atr_expansion_backtest,
+        "ema_trend_follow_v1": run_ema_trend_follow_backtest,
+        "ma_crossover_v1": run_ma_crossover_backtest,
+        "opening_range_breakout_v1": run_opening_range_breakout_backtest,
+        "roc_breakout_confirm_v1": run_roc_breakout_confirm_backtest,
+        RANGE_MEAN_REVERSION_STRATEGY_ID: run_range_mean_reversion_backtest,
+        MOMENTUM_CAPTURE_STRATEGY_ID: run_momentum_capture_backtest,
+    }
+
+
+def _batch_a_adapter_ids() -> frozenset[str]:
+    adapter_ids = {_BATCH_A_SHADOW_ADAPTER_ID}
+    for record in BATCH_A_STRATEGY_REGISTRY.values():
+        if record.adapter_id:
+            adapter_ids.add(record.adapter_id)
+    return frozenset(adapter_ids)
+
+
+_SUPPORTED_STRATEGY_IDS: frozenset[str] = (
+    frozenset(batch_a_strategy_ids())
+    | frozenset(
+        {
+            PRIMARY_BREAKOUT_STRATEGY_ID,
+            DONCHIAN_BREAKOUT_STRATEGY_ID,
+            BREAKOUT_TREND_FILTER_STRATEGY_ID,
+        }
+    )
 )
 _SUPPORTED_SYMBOLS: frozenset[str] = frozenset(
     {
@@ -188,13 +254,11 @@ _SUPPORTED_SYMBOLS: frozenset[str] = frozenset(
         MOMENTUM_CAPTURE_SYMBOL,
     }
 )
-_SUPPORTED_ADAPTER_IDS: frozenset[str] = frozenset(
+_SUPPORTED_ADAPTER_IDS: frozenset[str] = _batch_a_adapter_ids() | frozenset(
     {
         "primary_breakout_runner_v1",
         "donchian_breakout_runner_v1",
         "breakout_trend_filter_runner_v1",
-        "range_mean_reversion_runner_v1",
-        "momentum_capture_runner_v1",
     }
 )
 
@@ -254,6 +318,9 @@ class ARVPReplayConfig:
     db_dataset_window: str | None = None
     """DB-backed dataset window: 'START_TS_MS:END_TS_MS' (epoch millis)."""
 
+    binance_window_id: str | None = None
+    """Binance window-bank id when dataset_source='binance_window'."""
+
     strategy_id: str = _DEFAULT_STRATEGY_ID
     """Strategy identifier. Must be in _SUPPORTED_STRATEGY_IDS."""
 
@@ -305,9 +372,10 @@ class ARVPReplayConfig:
     def validate(self) -> None:
         """Fail-closed config validation. Raises ValueError on any violation."""
         dataset_source = (self.dataset_source or "").strip()
-        if dataset_source not in {"file", "db"}:
+        if dataset_source not in {"file", "db", "binance_window"}:
             raise ValueError(
-                f"dataset_source must be 'file' or 'db', got {self.dataset_source!r}"
+                "dataset_source must be 'file', 'db', or 'binance_window', "
+                f"got {self.dataset_source!r}"
             )
 
         if dataset_source == "file":
@@ -321,7 +389,13 @@ class ARVPReplayConfig:
                     "dataset_source='file' and dataset_source='db' are mutually exclusive: "
                     "db_dataset_window must be None when dataset_source='file'."
                 )
-        else:
+            if self.binance_window_id is not None:
+                raise ValueError(
+                    "dataset_source='file' and dataset_source='binance_window' are "
+                    "mutually exclusive: binance_window_id must be None when "
+                    "dataset_source='file'."
+                )
+        elif dataset_source == "db":
             if (
                 self.db_dataset_window is None
                 or not str(self.db_dataset_window).strip()
@@ -334,9 +408,39 @@ class ARVPReplayConfig:
                     "dataset_source='db' and dataset_source='file' are mutually exclusive: "
                     "input_candles_file must be empty when dataset_source='db'."
                 )
+            if self.binance_window_id is not None:
+                raise ValueError(
+                    "dataset_source='db' and dataset_source='binance_window' are "
+                    "mutually exclusive: binance_window_id must be None when "
+                    "dataset_source='db'."
+                )
 
             # Fail-closed: db_dataset_window must include an explicit window.
             _parse_db_dataset_window(self.db_dataset_window)
+        else:
+            if not self.binance_window_id or not str(self.binance_window_id).strip():
+                raise ValueError(
+                    "dataset_source='binance_window' requires binance_window_id "
+                    "(use --binance-window-id)"
+                )
+            if self.strategy_id not in _BINANCE_WINDOW_DATASET_STRATEGIES:
+                raise ValueError(
+                    "dataset_source='binance_window' is only supported for "
+                    f"{sorted(_BINANCE_WINDOW_DATASET_STRATEGIES)}, "
+                    f"got {self.strategy_id!r}"
+                )
+            if self.input_candles_file:
+                raise ValueError(
+                    "dataset_source='binance_window' and dataset_source='file' are "
+                    "mutually exclusive: input_candles_file must be empty when "
+                    "dataset_source='binance_window'."
+                )
+            if self.db_dataset_window is not None:
+                raise ValueError(
+                    "dataset_source='binance_window' and dataset_source='db' are "
+                    "mutually exclusive: db_dataset_window must be None when "
+                    "dataset_source='binance_window'."
+                )
         if self.strategy_id not in _SUPPORTED_STRATEGY_IDS:
             raise ValueError(
                 f"unsupported strategy_id {self.strategy_id!r}; "
@@ -352,6 +456,7 @@ class ARVPReplayConfig:
                 f"unsupported adapter_id {self.adapter_id!r}; "
                 f"supported: {sorted(_SUPPORTED_ADAPTER_IDS)}"
             )
+        _validate_strategy_adapter_pair(self.strategy_id, self.adapter_id)
         try:
             SchedulerConfig(profile=self.speedup_profile).validate()
         except SchedulerError as exc:
@@ -388,6 +493,28 @@ class ARVPReplayConfig:
 
 
 _DB_DATASET_WINDOW_RE = re.compile(r"^(?P<start>\d+):(?P<end>\d+)$")
+
+
+def _validate_strategy_adapter_pair(strategy_id: str, adapter_id: str) -> None:
+    if strategy_id not in BATCH_A_STRATEGY_REGISTRY:
+        return
+    record = get_batch_a_strategy(strategy_id)
+    if record.adapter_id:
+        if adapter_id != record.adapter_id:
+            raise ValueError(
+                f"adapter_id {adapter_id!r} does not match registry for "
+                f"{strategy_id!r}: expected {record.adapter_id!r}"
+            )
+        return
+    if adapter_id != _BATCH_A_SHADOW_ADAPTER_ID:
+        raise ValueError(
+            f"adapter_id {adapter_id!r} invalid for {strategy_id!r}; "
+            f"expected {_BATCH_A_SHADOW_ADAPTER_ID!r}"
+        )
+
+
+def _is_batch_a_strategy(strategy_id: str) -> bool:
+    return strategy_id in BATCH_A_STRATEGY_REGISTRY
 
 
 def _parse_db_dataset_window(db_dataset_window: str) -> tuple[int, int]:
@@ -603,6 +730,16 @@ def _utc_now_iso_not_before(started_at_utc: str) -> str:
 def _build_provenance_config_snapshot(
     config: ARVPReplayConfig,
 ) -> dict[str, Any]:
+    if config.strategy_id in BATCH_A_STRATEGY_REGISTRY:
+        record = get_batch_a_strategy(config.strategy_id)
+        snapshot = {
+            "order_size": config.order_size,
+            "order_book_depth_multiplier": config.order_book_depth_multiplier,
+            **dict(record.frozen_parameters),
+        }
+        if record.warmup_bars is not None:
+            snapshot["warmup_bars"] = record.warmup_bars
+        return snapshot
     if config.strategy_id == RANGE_MEAN_REVERSION_STRATEGY_ID:
         return {
             "order_size": config.order_size,
@@ -735,6 +872,23 @@ def _load_dataset_result(
                 logging.getLogger(__name__).debug(
                     "conn.close() raised in finally block (ignored)", exc_info=True
                 )
+
+    if dataset_source == "binance_window":
+        window_id = str(config.binance_window_id).strip()
+        try:
+            dataset = load_binance_window_dataset(
+                window_id,
+                warmup_candles=warmup_count,
+            )
+        except BinanceWindowBankAdapterError as exc:
+            raise ReplayRunnerError(str(exc)) from exc
+        return DatasetResult(
+            spec=dataset.dataset_result.spec,
+            candles=dataset.dataset_result.candles,
+            fingerprint=dataset.dataset_result.fingerprint,
+            warmup_count=warmup_count,
+            effective_candle_count=dataset.dataset_result.effective_candle_count,
+        )
 
     raise ReplayRunnerError(f"unsupported dataset_source: {config.dataset_source!r}")
 
@@ -883,6 +1037,10 @@ def _build_pack_a_execution_provenance_id(
 
 
 def _strategy_warmup_count(config: ARVPReplayConfig) -> int:
+    if config.strategy_id in BATCH_A_STRATEGY_REGISTRY:
+        record = get_batch_a_strategy(config.strategy_id)
+        if record.warmup_bars is not None:
+            return record.warmup_bars
     if config.strategy_id == RANGE_MEAN_REVERSION_STRATEGY_ID:
         return RMR_WARMUP_CANDLES
     if config.strategy_id == MOMENTUM_CAPTURE_STRATEGY_ID:
@@ -895,6 +1053,8 @@ def _strategy_warmup_count(config: ARVPReplayConfig) -> int:
 
 
 def _is_no_two_pass_determinism_strategy(strategy_id: str) -> bool:
+    if strategy_id in BATCH_A_STRATEGY_REGISTRY:
+        return True
     return strategy_id in {
         RANGE_MEAN_REVERSION_STRATEGY_ID,
         MOMENTUM_CAPTURE_STRATEGY_ID,
@@ -909,6 +1069,14 @@ def _build_execution_provenance_id_for_config(
     *,
     code_commit: str,
 ) -> str:
+    if config.strategy_id in BATCH_A_STRATEGY_REGISTRY:
+        record = get_batch_a_strategy(config.strategy_id)
+        return _build_pack_a_execution_provenance_id(
+            candles,
+            strategy_id=config.strategy_id,
+            code_commit=code_commit,
+            config_payload=dict(record.frozen_parameters),
+        )
     if config.strategy_id == RANGE_MEAN_REVERSION_STRATEGY_ID:
         return _build_rmr_execution_provenance_id(candles, code_commit=code_commit)
     if config.strategy_id == MOMENTUM_CAPTURE_STRATEGY_ID:
@@ -962,18 +1130,10 @@ def _run_strategy_backtest(
     run_cfg: PrimaryBreakoutBacktestRunConfig | None = None,
     simulator_config: dict[str, Any] | None = None,
 ) -> dict[str, Any]:
-    if config.strategy_id == RANGE_MEAN_REVERSION_STRATEGY_ID:
-        return run_range_mean_reversion_backtest(
+    batch_a_runner = _batch_a_runner_dispatch().get(config.strategy_id)
+    if batch_a_runner is not None:
+        return batch_a_runner(
             candles,
-            run_config=None,
-            simulator_config=simulator_config,
-            code_commit=code_commit,
-            run_id=run_id,
-        )
-    if config.strategy_id == MOMENTUM_CAPTURE_STRATEGY_ID:
-        return run_momentum_capture_backtest(
-            candles,
-            run_config=None,
             simulator_config=simulator_config,
             code_commit=code_commit,
             run_id=run_id,
@@ -1186,6 +1346,7 @@ def _write_supplementary_artifacts(
         "dataset_source": config.dataset_source,
         "input_candles_file": config.input_candles_file,
         "db_dataset_window": config.db_dataset_window,
+        "binance_window_id": config.binance_window_id,
         "strategy_id": config.strategy_id,
         "symbol": config.symbol,
         "adapter_id": config.adapter_id,
@@ -1592,7 +1753,7 @@ def _build_argument_parser() -> argparse.ArgumentParser:
     parser.add_argument(
         "--dataset-source",
         default="file",
-        choices=("file", "db"),
+        choices=("file", "db", "binance_window"),
         metavar="SOURCE",
         help="Dataset input source. Default: 'file'.",
     )
@@ -1607,6 +1768,12 @@ def _build_argument_parser() -> argparse.ArgumentParser:
         default=None,
         metavar="START_TS_MS:END_TS_MS",
         help="DB-backed dataset window (epoch millis). Required when --dataset-source=db.",
+    )
+    parser.add_argument(
+        "--binance-window-id",
+        default=None,
+        metavar="WINDOW_ID",
+        help="Binance window-bank id. Required when --dataset-source=binance_window.",
     )
     parser.add_argument(
         "--output-dir",
@@ -1940,14 +2107,12 @@ def _run_scenario_group_path(
     output_dir = Path(config.output_directory)
     code_commit = _get_code_commit()
 
-    if config.strategy_id == RANGE_MEAN_REVERSION_STRATEGY_ID:
-        run_single = _make_rmr_run_single_fn(candles, config, code_commit, output_dir)
-    elif config.strategy_id == MOMENTUM_CAPTURE_STRATEGY_ID:
-        run_single = _make_momentum_run_single_fn(candles, config, code_commit, output_dir)
-    elif config.strategy_id in {
+    if config.strategy_id in {
+        RANGE_MEAN_REVERSION_STRATEGY_ID,
+        MOMENTUM_CAPTURE_STRATEGY_ID,
         DONCHIAN_BREAKOUT_STRATEGY_ID,
         BREAKOUT_TREND_FILTER_STRATEGY_ID,
-    }:
+    } or _is_batch_a_strategy(config.strategy_id):
         run_single = _make_pack_a_run_single_fn(candles, config, code_commit, output_dir)
     else:
         run_single = _make_pb_run_single_fn(candles, config, code_commit, output_dir)
@@ -1986,6 +2151,7 @@ def main() -> int:
             input_candles_file=args.input_candles,
             dataset_source=args.dataset_source,
             db_dataset_window=args.db_dataset_window,
+            binance_window_id=args.binance_window_id,
             strategy_id=args.strategy_id,
             symbol=args.symbol,
             adapter_id=args.adapter_id,

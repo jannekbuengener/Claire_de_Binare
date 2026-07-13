@@ -20,6 +20,10 @@
 !services/validation/volatility_breakout_backtest_runner.py
 !services/validation/bollinger_squeeze_breakout_backtest_runner.py
 !services/validation/atr_expansion_backtest_runner.py
+!services/validation/ema_trend_follow_backtest_runner.py
+!services/validation/ma_crossover_backtest_runner.py
+!services/validation/opening_range_breakout_backtest_runner.py
+!services/validation/roc_breakout_confirm_backtest_runner.py
 !services/validation/pack_a_backtest_report.py
 !cdb_agent_sdk/tests/**/*.py
 !cdb_agent_sdk/tests/**/*.js

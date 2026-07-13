@@ -23,8 +23,8 @@ def test_registry_lists_all_ten_locked_candidates() -> None:
 def test_only_implemented_runners_are_executable() -> None:
     executable = executable_batch_a_strategy_ids()
     pending = pending_batch_a_strategy_ids()
-    assert len(executable) == 9
-    assert len(pending) == 1
+    assert len(executable) == 10
+    assert len(pending) == 0
     assert executable.isdisjoint(pending)
 
 
@@ -51,6 +51,10 @@ def test_pending_candidates_cannot_be_executed(strategy_id: str) -> None:
     assert not record.executable
     with pytest.raises(ValueError, match="implementation_pending"):
         assert_batch_a_executable(strategy_id)
+
+
+def test_no_pending_candidates_remain() -> None:
+    assert pending_batch_a_strategy_ids() == frozenset()
 
 
 def test_unknown_strategy_raises_key_error() -> None:
