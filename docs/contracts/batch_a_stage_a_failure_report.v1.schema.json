@@ -1,0 +1,51 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "title": "Batch-A Stage-A Failure Report",
+  "description": "Gate failure attribution for Batch-A Stage-A screening. Issue #4065.",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "schema_version",
+    "issue",
+    "campaign_id",
+    "metrics_content_hash_after_fix",
+    "survivor_count_after_fix",
+    "survivor_count_before_fix",
+    "candidates",
+    "aggregate",
+    "exit_gate",
+    "content_hash"
+  ],
+  "properties": {
+    "schema_version": {
+      "const": "batch_a_stage_a_failure_report.v1"
+    },
+    "issue": { "type": "string" },
+    "campaign_id": { "type": "string" },
+    "metrics_content_hash_after_fix": {
+      "type": "string",
+      "pattern": "^[a-f0-9]{64}$"
+    },
+    "metrics_content_hash_before_fix": {
+      "type": ["string", "null"],
+      "pattern": "^[a-f0-9]{64}$"
+    },
+    "survivor_count_after_fix": { "type": "integer", "minimum": 0 },
+    "survivor_count_before_fix": { "type": "integer", "minimum": 0 },
+    "candidates": {
+      "type": "array",
+      "items": { "type": "object", "additionalProperties": true }
+    },
+    "aggregate": {
+      "type": "object",
+      "additionalProperties": true
+    },
+    "exit_gate": {
+      "const": "FAILURE_REPORT_COMPLETE"
+    },
+    "content_hash": {
+      "type": "string",
+      "pattern": "^[a-f0-9]{64}$"
+    }
+  }
+}

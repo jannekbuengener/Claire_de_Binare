@@ -147,7 +147,27 @@ def test_slippage_availability_is_not_available() -> None:
     assert all(record["slippage_availability"] == "not_available" for record in records)
 
 
-def test_candles_total_prefers_live_on_conflict() -> None:
+def test_candles_total_preserves_producer_input_total() -> None:
+    from tools.arvp_vacation.candle_rankability import resolve_candle_rankability
+
+    result = resolve_candle_rankability(
+        dataset_summary={
+            "candles_total": 44640,
+            "candles_live": 44606,
+            "warmup_candles": 34,
+        },
+        strategy_id="breakout_volatility_filter_v1",
+        campaign_id="batch_a_stage_a_d0a4e72d_20260713",
+        parameter_fingerprint="abc",
+        campaign_source_sha="d0a4e72d10fced72a5fb2d2edf1e40f3c80f417a",
+        repo_root=REPO_ROOT,
+    )
+    assert result.candles_total == 44640
+    assert result.candles_evaluated == 44606
+    assert result.rankability_blocking_flags == ()
+
+
+def test_legacy_resolve_candles_total_still_flags_mismatch() -> None:
     candles, flags = resolve_candles_total(
         {"candles_live": 100, "candles_total": 120}
     )
@@ -161,7 +181,7 @@ def test_candles_total_falls_back_to_total() -> None:
     assert flags == []
 
 
-def test_conflicting_candle_values_surface_data_quality_flag() -> None:
+def test_warmup_trim_without_provenance_is_not_rankable() -> None:
     queue = _load(FIXTURES / "extraction_queue_slice.v1.json")
     records, _ = extract_campaign_metrics(queue, repo_root=REPO_ROOT)
     donchian = next(
@@ -170,8 +190,10 @@ def test_conflicting_candle_values_surface_data_quality_flag() -> None:
         if record["job_id"].startswith("vac-donchian-breakout-v1-binance_1m_month")
         and record["scenario"] == "baseline"
     )
-    assert donchian["candles_total"] == 44620
-    assert "candles_live_candles_total_mismatch" in donchian["data_quality_flags"]
+    assert donchian["candles_total"] == 44640
+    assert donchian["candles_input_total"] == 44640
+    assert donchian["rankable"] is False
+    assert "warmup_provenance_missing" in donchian["not_rankable_reasons"]
 
 
 def test_profit_factor_infinity_is_canonical() -> None:

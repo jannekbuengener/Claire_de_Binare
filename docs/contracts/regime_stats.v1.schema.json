@@ -1,0 +1,50 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "title": "ARVP Regime Stats Contract",
+  "description": "Compact regime evidence aggregation for ARVP replay jobs. Issue #4056 / #4065.",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "schema_version",
+    "coverage",
+    "diversity_flags",
+    "per_regime",
+    "stats_fingerprint"
+  ],
+  "properties": {
+    "schema_version": {
+      "const": "regime_stats.v1"
+    },
+    "coverage": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "candles_total",
+        "candles_with_regime_id",
+        "candles_missing_regime_id",
+        "regime_id_missing_flag"
+      ],
+      "properties": {
+        "candles_total": { "type": "integer", "minimum": 0 },
+        "candles_with_regime_id": { "type": "integer", "minimum": 0 },
+        "candles_missing_regime_id": { "type": "integer", "minimum": 0 },
+        "regime_id_missing_flag": { "type": "boolean" }
+      }
+    },
+    "diversity_flags": {
+      "type": "object",
+      "additionalProperties": true
+    },
+    "per_regime": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "additionalProperties": true
+      }
+    },
+    "stats_fingerprint": {
+      "type": "string",
+      "pattern": "^[a-f0-9]{64}$"
+    }
+  }
+}
