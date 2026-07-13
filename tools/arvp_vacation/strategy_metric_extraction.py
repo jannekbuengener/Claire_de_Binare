@@ -16,6 +16,11 @@ from typing import Any, Iterable, Mapping, Sequence
 
 from core.replay.canonical_json import canonical_hash, canonical_json_dumps
 
+from .candle_rankability import (
+    FLAG_WARMUP_TRIM_APPLIED,
+    legacy_resolve_candles_total,
+    resolve_candle_rankability,
+)
 from .metric_contract import (
     CANONICAL_JOB_COUNT,
     CANONICAL_SELECTOR,
@@ -172,18 +177,8 @@ def _resolve_metric_value(
 def resolve_candles_total(
     dataset_summary: Mapping[str, Any],
 ) -> tuple[int | None, list[str]]:
-    flags: list[str] = []
-    live = dataset_summary.get("candles_live")
-    total = dataset_summary.get("candles_total")
-    if live is not None and total is not None and live != total:
-        flags.append("candles_live_candles_total_mismatch")
-        return int(live), flags
-    if live is not None:
-        return int(live), flags
-    if total is not None:
-        return int(total), flags
-    flags.append("candles_total_missing")
-    return None, flags
+    """Deprecated pre-#4065 helper; retained for audit comparison tests only."""
+    return legacy_resolve_candles_total(dataset_summary)
 
 
 def _scenario_payload_sha256(payload: Mapping[str, Any]) -> str:
@@ -223,6 +218,7 @@ def _rankability_assessment(
     metrics: Mapping[str, Any],
     *,
     data_quality_flags: Sequence[str],
+    rankability_blocking_flags: Sequence[str],
 ) -> tuple[bool, list[str]]:
     reasons: list[str] = []
     if "closed_trades_total" not in metrics:
@@ -236,8 +232,10 @@ def _rankability_assessment(
             continue
         if metric_is_missing(metrics, field):
             reasons.append(f"missing_{field}")
+    for flag in rankability_blocking_flags:
+        reasons.append(flag)
     for flag in data_quality_flags:
-        if flag.startswith("missing_") or flag.endswith("_mismatch"):
+        if flag.startswith("missing_"):
             reasons.append(flag)
     if reasons:
         return False, sorted(set(reasons))
@@ -250,6 +248,7 @@ def extract_scenario_record(
     job: Mapping[str, Any],
     scenario_id: str,
     repo_root: Path,
+    campaign_source_sha: str | None = None,
 ) -> dict[str, Any]:
     if scenario_id not in ALLOWED_SCENARIOS:
         raise StrategyMetricExtractionError(f"unsupported scenario_id: {scenario_id}")
@@ -277,12 +276,21 @@ def extract_scenario_record(
     if not isinstance(dataset_summary, dict):
         dataset_summary = {}
 
-    candles_total, candle_flags = resolve_candles_total(dataset_summary)
-    data_quality_flags = list(candle_flags)
+    parameter_fingerprint = str(job.get("fingerprint") or "") or None
+    candle = resolve_candle_rankability(
+        dataset_summary=dataset_summary,
+        strategy_id=str(job.get("strategy_id") or ""),
+        campaign_id=campaign_id,
+        parameter_fingerprint=parameter_fingerprint,
+        campaign_source_sha=campaign_source_sha,
+        repo_root=repo_root,
+    )
+    data_quality_flags = list(candle.data_quality_flags)
 
     rankable, not_rankable_reasons = _rankability_assessment(
         metrics,
         data_quality_flags=data_quality_flags,
+        rankability_blocking_flags=candle.rankability_blocking_flags,
     )
 
     record: dict[str, Any] = {
@@ -301,7 +309,9 @@ def extract_scenario_record(
         "canonical_job": True,
         "slippage_availability": _slippage_availability(metrics),
         "regime_availability": _regime_availability(dataset_spec),
-        "exposure_availability": _exposure_availability(metrics, candles_total),
+        "exposure_availability": _exposure_availability(
+            metrics, candle.candles_evaluated
+        ),
         "rankable": rankable,
         "not_rankable_reasons": not_rankable_reasons,
         "data_quality_flags": sorted(set(data_quality_flags)),
@@ -309,9 +319,16 @@ def extract_scenario_record(
 
     for field in REQUIRED_METRIC_FIELDS + OPTIONAL_METRIC_FIELDS:
         if field == "candles_total":
-            record[field] = candles_total
+            record[field] = candle.candles_total
             continue
         record[field] = _resolve_metric_value(metrics, field)
+
+    record["candles_input_total"] = candle.candles_input_total
+    record["warmup_bars"] = candle.warmup_bars
+    record["candles_evaluated"] = candle.candles_evaluated
+    record["warmup_provenance"] = candle.warmup_provenance
+    if FLAG_WARMUP_TRIM_APPLIED in data_quality_flags:
+        record["warmup_trim_applied"] = True
 
     regime_stats = payload.get("regime_stats")
     if isinstance(regime_stats, dict):
@@ -333,6 +350,8 @@ def extract_campaign_metrics(
     campaign_id = str(queue_state.get("campaign_id") or "")
     if not campaign_id:
         raise StrategyMetricExtractionError("queue_state.campaign_id is required")
+    campaign_source_sha = queue_state.get("source_sha")
+    source_sha = str(campaign_source_sha) if campaign_source_sha else None
 
     jobs_raw = queue_state.get("jobs") or []
     if not isinstance(jobs_raw, list):
@@ -364,6 +383,7 @@ def extract_campaign_metrics(
                     job=job,
                     scenario_id=scenario_id,
                     repo_root=root,
+                    campaign_source_sha=source_sha,
                 )
             )
 

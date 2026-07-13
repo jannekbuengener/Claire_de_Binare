@@ -153,6 +153,17 @@
         "avg_win_r": { "type": ["number", "null"] },
         "avg_loss_r": { "type": ["number", "null"] },
         "candles_total": { "type": ["integer", "null"] },
+        "candles_input_total": { "type": ["integer", "null"] },
+        "warmup_bars": { "type": ["integer", "null"] },
+        "candles_evaluated": { "type": ["integer", "null"] },
+        "warmup_trim_applied": { "type": "boolean" },
+        "warmup_provenance": {
+          "type": "object",
+          "additionalProperties": true
+        },
+        "regime_stats": {
+          "$ref": "../regime_stats.v1.schema.json"
+        },
         "slippage_availability": {
           "type": "string",
           "enum": ["available", "not_available", "partial"]
