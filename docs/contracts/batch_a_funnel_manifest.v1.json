@@ -1,0 +1,360 @@
+{
+  "schema_version": "batch_a_funnel_manifest.v1",
+  "batch_id": "batch_a_established_strategy_funnel_v1",
+  "source_issue": "#4030",
+  "parent_control_issue": "#4029",
+  "candidate_lock_source": "GitHub issue #4030 evidence comment (BATCH_A_LOCKED)",
+  "lr_status": "NO-GO",
+  "ranking_ready": false,
+  "evidence_class": "historical_cross_venue_research",
+  "development_selection": {
+    "schema_version": "batch_a_development_selection.v1",
+    "venue": "binance",
+    "symbol": "BTCUSDT",
+    "timeframe": "1m",
+    "purpose": "development",
+    "overlap_class": "monthly",
+    "window_count": 39,
+    "selection_sha256": "3e9ed68736b51fecb299d228c856be80a597cb1dc72fcba595453b856b58bd52",
+    "window_ids": [
+      "binance_1m_month_2017_10",
+      "binance_1m_month_2017_11",
+      "binance_1m_month_2018_03",
+      "binance_1m_month_2018_04",
+      "binance_1m_month_2018_05",
+      "binance_1m_month_2018_08",
+      "binance_1m_month_2018_09",
+      "binance_1m_month_2018_12",
+      "binance_1m_month_2019_01",
+      "binance_1m_month_2019_02",
+      "binance_1m_month_2019_04",
+      "binance_1m_month_2019_07",
+      "binance_1m_month_2019_09",
+      "binance_1m_month_2019_10",
+      "binance_1m_month_2019_12",
+      "binance_1m_month_2020_01",
+      "binance_1m_month_2020_05",
+      "binance_1m_month_2020_07",
+      "binance_1m_month_2020_08",
+      "binance_1m_month_2020_09",
+      "binance_1m_month_2020_10",
+      "binance_1m_month_2021_01",
+      "binance_1m_month_2021_05",
+      "binance_1m_month_2021_06",
+      "binance_1m_month_2021_07",
+      "binance_1m_month_2021_10",
+      "binance_1m_month_2021_11",
+      "binance_1m_month_2021_12",
+      "binance_1m_month_2022_01",
+      "binance_1m_month_2022_02",
+      "binance_1m_month_2022_03",
+      "binance_1m_month_2022_04",
+      "binance_1m_month_2022_05",
+      "binance_1m_month_2022_06",
+      "binance_1m_month_2022_07",
+      "binance_1m_month_2022_08",
+      "binance_1m_month_2022_09",
+      "binance_1m_month_2022_10",
+      "binance_1m_month_2022_11"
+    ],
+    "excluded_overlap_classes": [
+      "quarterly",
+      "yearly"
+    ],
+    "excluded_purposes": [
+      "validation",
+      "out_of_sample",
+      "stress"
+    ]
+  },
+  "candidates": [
+    {
+      "strategy_id": "breakout_volatility_filter_v1",
+      "implementation_mode": "EXTEND",
+      "implementation_status": "implementation_pending",
+      "later_slice": "2b",
+      "adapter_id": null,
+      "runner_module": "services.validation.breakout_volatility_filter_backtest_runner",
+      "contract_ref": null,
+      "parameter_source": "docs/evidence/arvp_pack_a_breakout_baseline_spec_3748.md §7.4",
+      "frozen_parameters": {
+        "entry_channel_bars": 20,
+        "exit_channel_bars": 10,
+        "atr_period": 14,
+        "vol_floor": 0.0003,
+        "vol_ceiling": 0.003,
+        "min_minutes_between_entries": 30,
+        "trade_side_mode": "long_only"
+      },
+      "warmup_bars": 34,
+      "direction": "long_only",
+      "data_fields": [
+        "open",
+        "high",
+        "low",
+        "close",
+        "volume"
+      ],
+      "evidence_class": "historical_cross_venue_research"
+    },
+    {
+      "strategy_id": "volatility_breakout_v1",
+      "implementation_mode": "NEW",
+      "implementation_status": "implementation_pending",
+      "later_slice": "2b",
+      "adapter_id": null,
+      "runner_module": "services.validation.volatility_breakout_backtest_runner",
+      "contract_ref": null,
+      "parameter_source": "docs/evidence/arvp_pack_a_breakout_baseline_spec_3748.md §7.5",
+      "frozen_parameters": {
+        "breakout_lookback": 20,
+        "exit_lookback": 10,
+        "atr_period": 14,
+        "expansion_lag": 5,
+        "expansion_multiplier": 1.15,
+        "min_minutes_between_entries": 30
+      },
+      "warmup_bars": 25,
+      "direction": "long_only",
+      "data_fields": [
+        "open",
+        "high",
+        "low",
+        "close"
+      ],
+      "evidence_class": "historical_cross_venue_research"
+    },
+    {
+      "strategy_id": "ema_trend_follow_v1",
+      "implementation_mode": "NEW",
+      "implementation_status": "implementation_pending",
+      "later_slice": "2c",
+      "adapter_id": null,
+      "runner_module": "services.validation.ema_trend_follow_backtest_runner",
+      "contract_ref": null,
+      "parameter_source": "core/indicators/trend.py (canonical defaults)",
+      "frozen_parameters": {
+        "fast_ema_period": 20,
+        "slow_ema_period": 50,
+        "min_minutes_between_entries": 60
+      },
+      "warmup_bars": 50,
+      "direction": "long_only",
+      "data_fields": [
+        "open",
+        "high",
+        "low",
+        "close"
+      ],
+      "evidence_class": "historical_cross_venue_research"
+    },
+    {
+      "strategy_id": "ma_crossover_v1",
+      "implementation_mode": "NEW",
+      "implementation_status": "implementation_pending",
+      "later_slice": "2c",
+      "adapter_id": null,
+      "runner_module": "services.validation.ma_crossover_backtest_runner",
+      "contract_ref": null,
+      "parameter_source": "canonical SMA defaults",
+      "frozen_parameters": {
+        "fast_sma_period": 20,
+        "slow_sma_period": 50,
+        "min_minutes_between_entries": 60
+      },
+      "warmup_bars": 50,
+      "direction": "long_only",
+      "data_fields": [
+        "open",
+        "high",
+        "low",
+        "close"
+      ],
+      "evidence_class": "historical_cross_venue_research"
+    },
+    {
+      "strategy_id": "range_mean_reversion_v1",
+      "implementation_mode": "REUSE_RESCREEN_CROSS_VENUE_WITH_PRIOR_NEGATIVE_EVIDENCE",
+      "implementation_status": "implemented",
+      "later_slice": "2d",
+      "adapter_id": "range_mean_reversion_runner_v1",
+      "runner_module": "services.validation.rmr_backtest_runner",
+      "contract_ref": "docs/evidence/profitability_candidate_range_mean_reversion_v1_3157.json",
+      "parameter_source": "docs/evidence/profitability_candidate_range_mean_reversion_v1_3157.json",
+      "frozen_parameters": {
+        "zscore_lookback_periods": 20,
+        "entry_zscore_threshold": 2.0,
+        "exit_zscore_threshold": 0.0,
+        "atr_period": 14,
+        "atr_stop_multiplier": 1.5,
+        "cooldown_minutes": 60,
+        "position_sizing_pct": 0.01
+      },
+      "warmup_bars": 240,
+      "direction": "long_only",
+      "data_fields": [
+        "open",
+        "high",
+        "low",
+        "close",
+        "regime_id"
+      ],
+      "evidence_class": "historical_cross_venue_research"
+    },
+    {
+      "strategy_id": "bollinger_squeeze_breakout_v1",
+      "implementation_mode": "NEW",
+      "implementation_status": "implementation_pending",
+      "later_slice": "2b",
+      "adapter_id": null,
+      "runner_module": "services.validation.bollinger_squeeze_breakout_backtest_runner",
+      "contract_ref": null,
+      "parameter_source": "Bollinger canonical (20/2.0) + neutral squeeze constants",
+      "frozen_parameters": {
+        "bb_period": 20,
+        "bb_std_dev": 2.0,
+        "squeeze_threshold": 0.015,
+        "squeeze_bars_min": 5,
+        "expansion_ceiling": 0.04,
+        "min_minutes_between_entries": 60
+      },
+      "warmup_bars": 20,
+      "direction": "long_only",
+      "data_fields": [
+        "open",
+        "high",
+        "low",
+        "close"
+      ],
+      "evidence_class": "historical_cross_venue_research"
+    },
+    {
+      "strategy_id": "roc_breakout_confirm_v1",
+      "implementation_mode": "NEW",
+      "implementation_status": "implementation_pending",
+      "later_slice": "2d",
+      "adapter_id": null,
+      "runner_module": "services.validation.roc_breakout_confirm_backtest_runner",
+      "contract_ref": null,
+      "parameter_source": "ROC period 12 canonical; thresholds neutral",
+      "frozen_parameters": {
+        "breakout_lookback": 20,
+        "exit_lookback": 10,
+        "roc_period": 12,
+        "roc_entry_threshold": 0.005,
+        "roc_exit_threshold": 0.0,
+        "min_minutes_between_entries": 30
+      },
+      "warmup_bars": 20,
+      "direction": "long_only",
+      "data_fields": [
+        "open",
+        "high",
+        "low",
+        "close"
+      ],
+      "evidence_class": "historical_cross_venue_research"
+    },
+    {
+      "strategy_id": "opening_range_breakout_v1",
+      "implementation_mode": "NEW",
+      "implementation_status": "implementation_pending",
+      "later_slice": "2c",
+      "adapter_id": null,
+      "runner_module": "services.validation.opening_range_breakout_backtest_runner",
+      "contract_ref": null,
+      "parameter_source": "WP1 frozen neutral UTC boundary",
+      "frozen_parameters": {
+        "or_start_utc": "00:00",
+        "or_end_utc": "01:00",
+        "trade_end_utc": "20:00",
+        "min_minutes_between_entries": 1440
+      },
+      "warmup_bars": 60,
+      "direction": "long_only",
+      "data_fields": [
+        "open",
+        "high",
+        "low",
+        "close",
+        "timestamp_ms"
+      ],
+      "evidence_class": "historical_cross_venue_research"
+    },
+    {
+      "strategy_id": "atr_expansion_v1",
+      "implementation_mode": "NEW",
+      "implementation_status": "implementation_pending",
+      "later_slice": "2b",
+      "adapter_id": null,
+      "runner_module": "services.validation.atr_expansion_backtest_runner",
+      "contract_ref": null,
+      "parameter_source": "ATR period canonical; ratio thresholds neutral",
+      "frozen_parameters": {
+        "atr_period": 14,
+        "atr_ratio_threshold": 0.0025,
+        "atr_ratio_exit": 0.0018,
+        "sma_period": 20,
+        "min_minutes_between_entries": 60
+      },
+      "warmup_bars": 50,
+      "direction": "long_only",
+      "data_fields": [
+        "open",
+        "high",
+        "low",
+        "close"
+      ],
+      "evidence_class": "historical_cross_venue_research"
+    },
+    {
+      "strategy_id": "momentum_capture_v1",
+      "implementation_mode": "REUSE_RESCREEN_CROSS_VENUE_WITH_PRIOR_NEGATIVE_EVIDENCE",
+      "implementation_status": "implemented",
+      "later_slice": "2d",
+      "adapter_id": "momentum_capture_runner_v1",
+      "runner_module": "services.validation.momentum_backtest_runner",
+      "contract_ref": "docs/evidence/profitability_candidate_momentum_capture_v1_3166.json",
+      "parameter_source": "docs/evidence/profitability_candidate_momentum_capture_v1_3166.json",
+      "frozen_parameters": {
+        "directional_candle_atr_multiple": 1.0,
+        "exit_atr_contraction_multiple": 0.6,
+        "exit_trailing_stop_atr_multiple": 0.5,
+        "max_hold_bars": 240,
+        "cooldown_minutes": 60,
+        "position_sizing_pct": 0.01,
+        "atr_period": 14
+      },
+      "warmup_bars": 240,
+      "direction": "long_only",
+      "data_fields": [
+        "open",
+        "high",
+        "low",
+        "close",
+        "regime_id"
+      ],
+      "evidence_class": "historical_cross_venue_research"
+    }
+  ],
+  "data_requirements": {
+    "venue": "binance",
+    "symbol": "BTCUSDT",
+    "timeframe": "1m",
+    "window_bank_root": "artifacts/market_data/window_bank/binance/spot/BTCUSDT/1m",
+    "dataset_adapter_module": "core.replay.binance_window_bank_adapter",
+    "read_only": true
+  },
+  "safety_boundaries": [
+    "LR NO-GO — no live capital or promotion",
+    "ranking_ready=false",
+    "Binance cross-venue research only; not MEXC same-venue confirmation",
+    "No parameter optimization or campaign execution in slice 2a",
+    "Stage-A screening deferred to WP3 (#4032)"
+  ],
+  "limitations": [
+    "Eight candidates remain implementation_pending until slices 2b–2d",
+    "No strategy profitability claims",
+    "Regime labels are offline-enriched metadata only"
+  ]
+}

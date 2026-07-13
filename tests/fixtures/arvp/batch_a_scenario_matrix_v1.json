@@ -1,0 +1,52 @@
+{
+  "schema_version": "arvp_batch_a_scenario_matrix.v1",
+  "stage_a_scenario_ids": [
+    "baseline",
+    "pessimistic_execution"
+  ],
+  "excluded_stage_a_scenario_ids": [
+    "feed_gap",
+    "delayed_execution",
+    "low_liquidity"
+  ],
+  "batch_a_strategy_ids": [
+    "breakout_volatility_filter_v1",
+    "volatility_breakout_v1",
+    "ema_trend_follow_v1",
+    "ma_crossover_v1",
+    "range_mean_reversion_v1",
+    "bollinger_squeeze_breakout_v1",
+    "roc_breakout_confirm_v1",
+    "opening_range_breakout_v1",
+    "atr_expansion_v1",
+    "momentum_capture_v1"
+  ],
+  "implemented_strategy_ids": [
+    "range_mean_reversion_v1",
+    "momentum_capture_v1"
+  ],
+  "implementation_pending_strategy_ids": [
+    "breakout_volatility_filter_v1",
+    "volatility_breakout_v1",
+    "ema_trend_follow_v1",
+    "ma_crossover_v1",
+    "bollinger_squeeze_breakout_v1",
+    "roc_breakout_confirm_v1",
+    "opening_range_breakout_v1",
+    "atr_expansion_v1"
+  ],
+  "canonical_adapter_by_strategy": {
+    "breakout_volatility_filter_v1": null,
+    "volatility_breakout_v1": null,
+    "ema_trend_follow_v1": null,
+    "ma_crossover_v1": null,
+    "range_mean_reversion_v1": "range_mean_reversion_runner_v1",
+    "bollinger_squeeze_breakout_v1": null,
+    "roc_breakout_confirm_v1": null,
+    "opening_range_breakout_v1": null,
+    "atr_expansion_v1": null,
+    "momentum_capture_v1": "momentum_capture_runner_v1"
+  },
+  "manifest_ref": "docs/contracts/batch_a_funnel_manifest.v1.json",
+  "development_selection_sha256": "3e9ed68736b51fecb299d228c856be80a597cb1dc72fcba595453b856b58bd52"
+}
