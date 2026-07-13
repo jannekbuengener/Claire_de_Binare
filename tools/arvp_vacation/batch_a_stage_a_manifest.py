@@ -12,6 +12,8 @@ from dataclasses import dataclass
 from pathlib import Path
 from typing import Any, Mapping, Sequence
 
+import yaml
+
 from core.replay.batch_a_strategy_registry import batch_a_strategy_ids
 from core.replay.canonical_json import canonical_hash
 from tools.arvp_vacation.contract import build_job_fingerprint, build_job_id
@@ -21,6 +23,7 @@ from tools.market_data.development_window_selector import (
     DevelopmentSelectionError,
     default_window_bank_manifest_path,
     load_window_bank_manifest,
+    resolve_window_candles_path,
     select_batch_a_development_windows,
 )
 
@@ -237,3 +240,76 @@ def _is_sha256(value: str) -> bool:
     except ValueError:
         return False
     return True
+
+
+def build_vacation_coordinator_manifest_payload(
+    *,
+    campaign_id: str,
+    source_sha: str,
+    artifact_root: str = "artifacts/arvp_vacation",
+    manifest_path: Path | None = None,
+    repo_root: Path | None = None,
+) -> dict[str, Any]:
+    """YAML-ready vacation coordinator manifest for Batch-A Stage-A."""
+    root = repo_root or Path(__file__).resolve().parents[2]
+    bank_path = manifest_path or default_window_bank_manifest_path(root)
+    bank_manifest = load_window_bank_manifest(bank_path, repo_root=root)
+    selection = select_batch_a_development_windows(bank_manifest)
+    windows_by_id = _window_rows_by_id(selection.windows)
+    dataset_roots: list[str] = []
+    for window_id in LOCKED_BATCH_A_DEVELOPMENT_WINDOW_IDS:
+        row = windows_by_id[window_id]
+        spec_path = str(row.get("spec_path") or "").strip()
+        if spec_path:
+            spec = Path(spec_path)
+            if spec.is_absolute():
+                dataset_roots.append(str(spec.parent.relative_to(root)).replace("\\", "/"))
+            else:
+                dataset_roots.append(str(spec.parent).replace("\\", "/"))
+            continue
+        candles_path = resolve_window_candles_path(row, repo_root=root)
+        rel_parent = candles_path.parent
+        if rel_parent.is_absolute():
+            rel_parent = rel_parent.relative_to(root)
+        dataset_roots.append(str(rel_parent).replace("\\", "/"))
+
+    return {
+        "schema_version": "1.0",
+        "campaign_id": campaign_id,
+        "source_sha": source_sha.lower(),
+        "evidence_class": "controlled_lab_evidence",
+        "artifact_root": artifact_root,
+        "dataset_roots": dataset_roots,
+        "strategies": list(batch_a_strategy_ids()),
+        "scenarios": list(STAGE_A_SCENARIOS),
+        "max_job_runtime_seconds": 3600,
+        "max_attempts_per_job": 2,
+        "min_free_disk_gb": 5.0,
+        "allow_paper_jobs": False,
+        "speedup_profile": "instant",
+        "symbol": "BTCUSDT",
+        "batch_a_stage_a": {
+            "development_selection_sha256": selection.selection_sha256,
+            "job_count": EXPECTED_JOB_COUNT,
+            "scenario_run_count": EXPECTED_SCENARIO_RUN_COUNT,
+        },
+    }
+
+
+def write_vacation_coordinator_manifest(
+    path: Path,
+    *,
+    campaign_id: str,
+    source_sha: str,
+    manifest_path: Path | None = None,
+    repo_root: Path | None = None,
+) -> dict[str, Any]:
+    payload = build_vacation_coordinator_manifest_payload(
+        campaign_id=campaign_id,
+        source_sha=source_sha,
+        manifest_path=manifest_path,
+        repo_root=repo_root,
+    )
+    path.parent.mkdir(parents=True, exist_ok=True)
+    path.write_text(yaml.safe_dump(payload, sort_keys=False), encoding="utf-8")
+    return payload
