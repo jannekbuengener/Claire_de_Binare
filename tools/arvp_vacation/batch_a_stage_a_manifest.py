@@ -41,6 +41,8 @@ class StageACampaignManifest:
     schema_version: str
     campaign_kind: str
     source_issue: str
+    campaign_id: str
+    source_sha: str
     strategy_count: int
     window_count: int
     scenario_count: int
@@ -169,6 +171,8 @@ def build_stage_a_campaign_manifest(
         schema_version=MANIFEST_SCHEMA_VERSION,
         campaign_kind="batch_a_stage_a_development_screening",
         source_issue="#4032",
+        campaign_id=campaign_id,
+        source_sha=source_sha.lower(),
         strategy_count=len(strategies),
         window_count=selection.window_count,
         scenario_count=len(STAGE_A_SCENARIOS),
@@ -188,6 +192,8 @@ def manifest_to_dict(manifest: StageACampaignManifest) -> dict[str, Any]:
         "schema_version": manifest.schema_version,
         "campaign_kind": manifest.campaign_kind,
         "source_issue": manifest.source_issue,
+        "campaign_id": manifest.campaign_id,
+        "source_sha": manifest.source_sha,
         "strategy_count": manifest.strategy_count,
         "window_count": manifest.window_count,
         "scenario_count": manifest.scenario_count,

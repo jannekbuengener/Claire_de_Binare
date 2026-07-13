@@ -21,6 +21,7 @@ from tools.arvp_vacation.batch_a_gate_common import (
     max_of_field,
     median_of_field,
     positive_share,
+    profit_factor_gate_value,
     profit_factor_passes_gate,
     record_is_rankable,
     sum_of_field,
@@ -373,7 +374,7 @@ def score_stage_a_candidate(
                     skip_flags.append(skip_flag)
                     continue
         elif field == "profit_factor" and operator == "gte":
-            observed = median_of_field(rows, field)
+            observed = profit_factor_gate_value(rows, field=field)
             trade_sum = sum_of_field(rows, "closed_trades_total") or 0
             net_median = median_of_field(rows, "net_pnl_quote")
             passed = profit_factor_passes_gate(

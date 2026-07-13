@@ -6,6 +6,7 @@ from pathlib import Path
 
 import pytest
 
+from core.replay.canonical_json import canonical_hash
 from tools.arvp_vacation.batch_a_stage_a_manifest import (
     EXPECTED_JOB_COUNT,
     EXPECTED_SCENARIO_RUN_COUNT,
@@ -13,6 +14,7 @@ from tools.arvp_vacation.batch_a_stage_a_manifest import (
     EXPECTED_WINDOW_COUNT,
     StageAManifestError,
     build_stage_a_campaign_manifest,
+    manifest_to_dict,
 )
 from tools.market_data.development_window_selector import (
     LOCKED_DEVELOPMENT_SELECTION_SHA256,
@@ -65,6 +67,11 @@ def test_builds_780_scenario_run_manifest(bank_manifest_path: Path) -> None:
     assert manifest.job_count == EXPECTED_JOB_COUNT
     assert manifest.scenario_run_count == EXPECTED_SCENARIO_RUN_COUNT
     assert manifest.development_selection_sha256 == LOCKED_DEVELOPMENT_SELECTION_SHA256
+    payload = manifest_to_dict(manifest)
+    assert payload["campaign_id"] == "batch_a_stage_a_test"
+    assert payload["source_sha"] == SOURCE_SHA
+    hash_payload = {key: value for key, value in payload.items() if key != "manifest_sha256"}
+    assert manifest.manifest_sha256 == canonical_hash(hash_payload)
 
 
 def test_rejects_invalid_source_sha(bank_manifest_path: Path) -> None:

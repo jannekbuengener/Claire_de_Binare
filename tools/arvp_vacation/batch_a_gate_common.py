@@ -106,6 +106,33 @@ def median_of_field(records: Sequence[Mapping[str, Any]], field: str) -> float |
     return float(median(values))
 
 
+def profit_factor_gate_value(
+    records: Sequence[Mapping[str, Any]],
+    *,
+    field: str = "profit_factor",
+) -> float | str | None:
+    """Median numeric profit factor, preserving canonical infinity tokens."""
+    infinity_seen = False
+    values: list[float] = []
+    for record in records:
+        if metric_is_missing(record, field):
+            continue
+        raw = record.get(field)
+        if isinstance(raw, str) and raw.strip().lower() == PROFIT_FACTOR_INFINITY_TOKEN:
+            infinity_seen = True
+            continue
+        if isinstance(raw, str) and raw.strip().lower() == PROFIT_FACTOR_NEGATIVE_INFINITY_TOKEN:
+            return PROFIT_FACTOR_NEGATIVE_INFINITY_TOKEN
+        parsed = _as_float(raw)
+        if parsed is not None:
+            values.append(parsed)
+    if infinity_seen:
+        return PROFIT_FACTOR_INFINITY_TOKEN
+    if not values:
+        return None
+    return float(median(values))
+
+
 def positive_share(records: Sequence[Mapping[str, Any]], field: str) -> float | None:
     if not records:
         return None

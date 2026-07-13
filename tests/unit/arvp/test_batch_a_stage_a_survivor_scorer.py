@@ -90,3 +90,13 @@ def test_anti_auto_pass_requires_positive_pessimistic_median() -> None:
     result = score_stage_a_candidate(candidate_id=CANDIDATE, records=records)
     assert result.status == STATUS_REJECTED
     assert result.gate_results["gates"]["G-E08"]["passed"] is False
+
+
+def test_profit_factor_infinity_token_passes_when_net_positive() -> None:
+    records = _paired_survivor_records()
+    for record in records:
+        if record["scenario_id"] == BASELINE:
+            record["profit_factor"] = "infinity"
+    result = score_stage_a_candidate(candidate_id=CANDIDATE, records=records)
+    assert result.gate_results["gates"]["G-E04"]["passed"] is True
+    assert result.gate_results["gates"]["G-E04"]["observed"] == "infinity"
