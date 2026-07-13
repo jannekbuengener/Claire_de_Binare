@@ -1,0 +1,156 @@
+{
+  "campaign_id": "batch_a_stage_a_d0a4e72d_20260713",
+  "candidate_count": 10,
+  "candidates": {
+    "atr_expansion_v1": {
+      "coverage": {
+        "baseline_rankable_count": 0,
+        "baseline_rankable_share": 0.0,
+        "development_window_count": 39,
+        "missing_pair_count": 0,
+        "paired_evaluable_count": 0,
+        "paired_evaluable_share": 0.0,
+        "pessimistic_rankable_count": 0,
+        "pessimistic_rankable_share": 0.0
+      },
+      "gate_contract_sha256": "714b183b8219eb07050d99dab1caaa65797142d2671c1128f2036ac7213bdefc",
+      "status": "INSUFFICIENT_EVIDENCE"
+    },
+    "bollinger_squeeze_breakout_v1": {
+      "coverage": {
+        "baseline_rankable_count": 0,
+        "baseline_rankable_share": 0.0,
+        "development_window_count": 39,
+        "missing_pair_count": 0,
+        "paired_evaluable_count": 0,
+        "paired_evaluable_share": 0.0,
+        "pessimistic_rankable_count": 0,
+        "pessimistic_rankable_share": 0.0
+      },
+      "gate_contract_sha256": "714b183b8219eb07050d99dab1caaa65797142d2671c1128f2036ac7213bdefc",
+      "status": "INSUFFICIENT_EVIDENCE"
+    },
+    "breakout_volatility_filter_v1": {
+      "coverage": {
+        "baseline_rankable_count": 0,
+        "baseline_rankable_share": 0.0,
+        "development_window_count": 39,
+        "missing_pair_count": 0,
+        "paired_evaluable_count": 0,
+        "paired_evaluable_share": 0.0,
+        "pessimistic_rankable_count": 0,
+        "pessimistic_rankable_share": 0.0
+      },
+      "gate_contract_sha256": "714b183b8219eb07050d99dab1caaa65797142d2671c1128f2036ac7213bdefc",
+      "status": "INSUFFICIENT_EVIDENCE"
+    },
+    "ema_trend_follow_v1": {
+      "coverage": {
+        "baseline_rankable_count": 0,
+        "baseline_rankable_share": 0.0,
+        "development_window_count": 39,
+        "missing_pair_count": 0,
+        "paired_evaluable_count": 0,
+        "paired_evaluable_share": 0.0,
+        "pessimistic_rankable_count": 0,
+        "pessimistic_rankable_share": 0.0
+      },
+      "gate_contract_sha256": "714b183b8219eb07050d99dab1caaa65797142d2671c1128f2036ac7213bdefc",
+      "status": "INSUFFICIENT_EVIDENCE"
+    },
+    "ma_crossover_v1": {
+      "coverage": {
+        "baseline_rankable_count": 0,
+        "baseline_rankable_share": 0.0,
+        "development_window_count": 39,
+        "missing_pair_count": 0,
+        "paired_evaluable_count": 0,
+        "paired_evaluable_share": 0.0,
+        "pessimistic_rankable_count": 0,
+        "pessimistic_rankable_share": 0.0
+      },
+      "gate_contract_sha256": "714b183b8219eb07050d99dab1caaa65797142d2671c1128f2036ac7213bdefc",
+      "status": "INSUFFICIENT_EVIDENCE"
+    },
+    "momentum_capture_v1": {
+      "coverage": {
+        "baseline_rankable_count": 0,
+        "baseline_rankable_share": 0.0,
+        "development_window_count": 39,
+        "missing_pair_count": 0,
+        "paired_evaluable_count": 0,
+        "paired_evaluable_share": 0.0,
+        "pessimistic_rankable_count": 0,
+        "pessimistic_rankable_share": 0.0
+      },
+      "gate_contract_sha256": "714b183b8219eb07050d99dab1caaa65797142d2671c1128f2036ac7213bdefc",
+      "status": "INSUFFICIENT_EVIDENCE"
+    },
+    "opening_range_breakout_v1": {
+      "coverage": {
+        "baseline_rankable_count": 0,
+        "baseline_rankable_share": 0.0,
+        "development_window_count": 39,
+        "missing_pair_count": 0,
+        "paired_evaluable_count": 0,
+        "paired_evaluable_share": 0.0,
+        "pessimistic_rankable_count": 0,
+        "pessimistic_rankable_share": 0.0
+      },
+      "gate_contract_sha256": "714b183b8219eb07050d99dab1caaa65797142d2671c1128f2036ac7213bdefc",
+      "status": "INSUFFICIENT_EVIDENCE"
+    },
+    "range_mean_reversion_v1": {
+      "coverage": {
+        "baseline_rankable_count": 0,
+        "baseline_rankable_share": 0.0,
+        "development_window_count": 39,
+        "missing_pair_count": 0,
+        "paired_evaluable_count": 0,
+        "paired_evaluable_share": 0.0,
+        "pessimistic_rankable_count": 0,
+        "pessimistic_rankable_share": 0.0
+      },
+      "gate_contract_sha256": "714b183b8219eb07050d99dab1caaa65797142d2671c1128f2036ac7213bdefc",
+      "status": "INSUFFICIENT_EVIDENCE"
+    },
+    "roc_breakout_confirm_v1": {
+      "coverage": {
+        "baseline_rankable_count": 0,
+        "baseline_rankable_share": 0.0,
+        "development_window_count": 39,
+        "missing_pair_count": 0,
+        "paired_evaluable_count": 0,
+        "paired_evaluable_share": 0.0,
+        "pessimistic_rankable_count": 0,
+        "pessimistic_rankable_share": 0.0
+      },
+      "gate_contract_sha256": "714b183b8219eb07050d99dab1caaa65797142d2671c1128f2036ac7213bdefc",
+      "status": "INSUFFICIENT_EVIDENCE"
+    },
+    "volatility_breakout_v1": {
+      "coverage": {
+        "baseline_rankable_count": 0,
+        "baseline_rankable_share": 0.0,
+        "development_window_count": 39,
+        "missing_pair_count": 0,
+        "paired_evaluable_count": 0,
+        "paired_evaluable_share": 0.0,
+        "pessimistic_rankable_count": 0,
+        "pessimistic_rankable_share": 0.0
+      },
+      "gate_contract_sha256": "714b183b8219eb07050d99dab1caaa65797142d2671c1128f2036ac7213bdefc",
+      "status": "INSUFFICIENT_EVIDENCE"
+    }
+  },
+  "gate_merge_sha": "d0a4e72d10fced72a5fb2d2edf1e40f3c80f417a",
+  "insufficient_count": 10,
+  "lr_status": "NO-GO",
+  "metrics_content_hash": "3ee5c429cc8d7df499e9870f1253f350f235ebe2a6974dbfcddbb1a7f8c60958",
+  "ranking_ready": false,
+  "record_count": 780,
+  "rejected_count": 0,
+  "schema_version": "batch_a_stage_a_survivor_summary.v1",
+  "source_sha": "436209d89eadee82fa40319ffb202cf75b0be1b2",
+  "survivor_count": 0
+}
