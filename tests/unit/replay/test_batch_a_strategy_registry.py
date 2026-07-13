@@ -23,8 +23,8 @@ def test_registry_lists_all_ten_locked_candidates() -> None:
 def test_only_implemented_runners_are_executable() -> None:
     executable = executable_batch_a_strategy_ids()
     pending = pending_batch_a_strategy_ids()
-    assert len(executable) == 6
-    assert len(pending) == 4
+    assert len(executable) == 9
+    assert len(pending) == 1
     assert executable.isdisjoint(pending)
 
 

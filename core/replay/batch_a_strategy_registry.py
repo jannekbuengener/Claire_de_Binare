@@ -118,7 +118,7 @@ BATCH_A_STRATEGY_REGISTRY: dict[str, BatchAStrategyRecord] = {
     "ema_trend_follow_v1": BatchAStrategyRecord(
         strategy_id="ema_trend_follow_v1",
         implementation_mode=ImplementationMode.NEW,
-        implementation_status=ImplementationStatus.IMPLEMENTATION_PENDING,
+        implementation_status=ImplementationStatus.IMPLEMENTED,
         later_slice="2c",
         adapter_id=None,
         runner_module="services.validation.ema_trend_follow_backtest_runner",
@@ -136,7 +136,7 @@ BATCH_A_STRATEGY_REGISTRY: dict[str, BatchAStrategyRecord] = {
     "ma_crossover_v1": BatchAStrategyRecord(
         strategy_id="ma_crossover_v1",
         implementation_mode=ImplementationMode.NEW,
-        implementation_status=ImplementationStatus.IMPLEMENTATION_PENDING,
+        implementation_status=ImplementationStatus.IMPLEMENTED,
         later_slice="2c",
         adapter_id=None,
         runner_module="services.validation.ma_crossover_backtest_runner",
@@ -227,7 +227,7 @@ BATCH_A_STRATEGY_REGISTRY: dict[str, BatchAStrategyRecord] = {
     "opening_range_breakout_v1": BatchAStrategyRecord(
         strategy_id="opening_range_breakout_v1",
         implementation_mode=ImplementationMode.NEW,
-        implementation_status=ImplementationStatus.IMPLEMENTATION_PENDING,
+        implementation_status=ImplementationStatus.IMPLEMENTED,
         later_slice="2c",
         adapter_id=None,
         runner_module="services.validation.opening_range_breakout_backtest_runner",

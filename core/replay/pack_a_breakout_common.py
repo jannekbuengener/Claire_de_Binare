@@ -8,6 +8,7 @@ from __future__ import annotations
 
 import math
 from dataclasses import dataclass
+from datetime import datetime, timezone
 from typing import Any, Sequence
 
 from core.replay.historical_bridge import ONE_MINUTE_MS, PRIMARY_BREAKOUT_SYMBOL
@@ -18,6 +19,9 @@ BREAKOUT_VOLATILITY_FILTER_STRATEGY_ID = "breakout_volatility_filter_v1"
 VOLATILITY_BREAKOUT_STRATEGY_ID = "volatility_breakout_v1"
 BOLLINGER_SQUEEZE_BREAKOUT_STRATEGY_ID = "bollinger_squeeze_breakout_v1"
 ATR_EXPANSION_STRATEGY_ID = "atr_expansion_v1"
+EMA_TREND_FOLLOW_STRATEGY_ID = "ema_trend_follow_v1"
+MA_CROSSOVER_STRATEGY_ID = "ma_crossover_v1"
+OPENING_RANGE_BREAKOUT_STRATEGY_ID = "opening_range_breakout_v1"
 PACK_A_SYMBOL = PRIMARY_BREAKOUT_SYMBOL
 
 ENTRY_CHANNEL_BARS = 20
@@ -44,6 +48,16 @@ SMA_PERIOD = 20
 VOL_BREAKOUT_MIN_MINUTES_BETWEEN_ENTRIES = 30
 BOLLINGER_MIN_MINUTES_BETWEEN_ENTRIES = 60
 ATR_EXPANSION_MIN_MINUTES_BETWEEN_ENTRIES = 60
+FAST_EMA_PERIOD = 20
+SLOW_EMA_PERIOD = 50
+FAST_SMA_PERIOD = 20
+SLOW_SMA_PERIOD = 50
+TREND_MIN_MINUTES_BETWEEN_ENTRIES = 60
+OR_START_UTC = "00:00"
+OR_END_UTC = "01:00"
+TRADE_END_UTC = "20:00"
+ORB_MIN_MINUTES_BETWEEN_ENTRIES = 1440
+ORB_WARMUP_BARS = 60
 
 ORDER_SIZE = 1.0
 ORDER_BOOK_DEPTH_MULT = 10_000.0
@@ -222,6 +236,91 @@ def atr_expansion_warmup_candles(config: AtrExpansionConfig | None = None) -> in
     return max(active.sma_period + active.atr_period, 50)
 
 
+@dataclass(frozen=True, slots=True)
+class EmaTrendFollowConfig:
+    fast_ema_period: int = FAST_EMA_PERIOD
+    slow_ema_period: int = SLOW_EMA_PERIOD
+    min_minutes_between_entries: int = TREND_MIN_MINUTES_BETWEEN_ENTRIES
+    trade_side_mode: str = "long_only"
+
+    def validate(self) -> None:
+        if self.fast_ema_period <= 0:
+            raise PackABreakoutError("fast_ema_period must be > 0")
+        if self.slow_ema_period <= 0:
+            raise PackABreakoutError("slow_ema_period must be > 0")
+        if self.fast_ema_period >= self.slow_ema_period:
+            raise PackABreakoutError("fast_ema_period must be < slow_ema_period")
+        if self.min_minutes_between_entries < 0:
+            raise PackABreakoutError("min_minutes_between_entries must be >= 0")
+        if self.trade_side_mode != "long_only":
+            raise PackABreakoutError("trade_side_mode must be long_only")
+
+
+@dataclass(frozen=True, slots=True)
+class MaCrossoverConfig:
+    fast_sma_period: int = FAST_SMA_PERIOD
+    slow_sma_period: int = SLOW_SMA_PERIOD
+    min_minutes_between_entries: int = TREND_MIN_MINUTES_BETWEEN_ENTRIES
+    trade_side_mode: str = "long_only"
+
+    def validate(self) -> None:
+        if self.fast_sma_period <= 0:
+            raise PackABreakoutError("fast_sma_period must be > 0")
+        if self.slow_sma_period <= 0:
+            raise PackABreakoutError("slow_sma_period must be > 0")
+        if self.fast_sma_period >= self.slow_sma_period:
+            raise PackABreakoutError("fast_sma_period must be < slow_sma_period")
+        if self.min_minutes_between_entries < 0:
+            raise PackABreakoutError("min_minutes_between_entries must be >= 0")
+        if self.trade_side_mode != "long_only":
+            raise PackABreakoutError("trade_side_mode must be long_only")
+
+
+@dataclass(frozen=True, slots=True)
+class OpeningRangeBreakoutConfig:
+    or_start_utc: str = OR_START_UTC
+    or_end_utc: str = OR_END_UTC
+    trade_end_utc: str = TRADE_END_UTC
+    min_minutes_between_entries: int = ORB_MIN_MINUTES_BETWEEN_ENTRIES
+    trade_side_mode: str = "long_only"
+
+    def validate(self) -> None:
+        _parse_utc_hhmm(self.or_start_utc, field="or_start_utc")
+        or_end = _parse_utc_hhmm(self.or_end_utc, field="or_end_utc")
+        trade_end = _parse_utc_hhmm(self.trade_end_utc, field="trade_end_utc")
+        or_start = _parse_utc_hhmm(self.or_start_utc, field="or_start_utc")
+        if or_end <= or_start:
+            raise PackABreakoutError("or_end_utc must be after or_start_utc")
+        if trade_end <= or_end:
+            raise PackABreakoutError("trade_end_utc must be after or_end_utc")
+        if self.min_minutes_between_entries < 0:
+            raise PackABreakoutError("min_minutes_between_entries must be >= 0")
+        if self.trade_side_mode != "long_only":
+            raise PackABreakoutError("trade_side_mode must be long_only")
+
+
+def ema_trend_follow_warmup_candles(
+    config: EmaTrendFollowConfig | None = None,
+) -> int:
+    active = config or EmaTrendFollowConfig()
+    active.validate()
+    return active.slow_ema_period
+
+
+def ma_crossover_warmup_candles(config: MaCrossoverConfig | None = None) -> int:
+    active = config or MaCrossoverConfig()
+    active.validate()
+    return active.slow_sma_period
+
+
+def opening_range_breakout_warmup_candles(
+    config: OpeningRangeBreakoutConfig | None = None,
+) -> int:
+    active = config or OpeningRangeBreakoutConfig()
+    active.validate()
+    return ORB_WARMUP_BARS
+
+
 def _required_float(row: dict[str, Any], key: str) -> float:
     value = row.get(key)
     if value is None or isinstance(value, bool):
@@ -354,6 +453,14 @@ def compute_atr_series(
         smoothed = (smoothed * (period - 1) + tr) / period
         atr[atr_index] = smoothed
     return atr
+
+
+def compute_ema_series(
+    closes: Sequence[float],
+    period: int,
+) -> list[float | None]:
+    """EMA on closed 1m bars using SMA seed (matches core.indicators.trend.EMA)."""
+    return _ema(closes, period)
 
 
 def compute_sma_series(
@@ -532,3 +639,91 @@ def cooldown_allows_entry(
     if last_entry_ts_ms is None:
         return True
     return ts_ms - last_entry_ts_ms >= min_minutes_between_entries * ONE_MINUTE_MS
+
+
+def resolve_candle_ts_ms(row: dict[str, Any]) -> int:
+    """Return candle timestamp in ms from ``ts_ms`` or ``timestamp_ms``."""
+    for key in ("ts_ms", "timestamp_ms"):
+        value = row.get(key)
+        if value is None or isinstance(value, bool):
+            continue
+        try:
+            return int(value)
+        except (TypeError, ValueError) as exc:
+            raise PackABreakoutError(f"invalid integer field: {key}") from exc
+    raise PackABreakoutError("missing required field: ts_ms or timestamp_ms")
+
+
+def is_bullish_crossover(
+    fast_series: Sequence[float | None],
+    slow_series: Sequence[float | None],
+    index: int,
+) -> bool:
+    if index < 1:
+        return False
+    fast_prev = fast_series[index - 1]
+    fast_curr = fast_series[index]
+    slow_prev = slow_series[index - 1]
+    slow_curr = slow_series[index]
+    if None in (fast_prev, fast_curr, slow_prev, slow_curr):
+        return False
+    return fast_prev <= slow_prev and fast_curr > slow_curr
+
+
+def is_bearish_crossover(
+    fast_series: Sequence[float | None],
+    slow_series: Sequence[float | None],
+    index: int,
+) -> bool:
+    if index < 1:
+        return False
+    fast_prev = fast_series[index - 1]
+    fast_curr = fast_series[index]
+    slow_prev = slow_series[index - 1]
+    slow_curr = slow_series[index]
+    if None in (fast_prev, fast_curr, slow_prev, slow_curr):
+        return False
+    return fast_prev >= slow_prev and fast_curr < slow_curr
+
+
+def _parse_utc_hhmm(value: str, *, field: str) -> int:
+    parts = value.split(":")
+    if len(parts) != 2:
+        raise PackABreakoutError(f"{field} must be HH:MM")
+    try:
+        hour = int(parts[0])
+        minute = int(parts[1])
+    except ValueError as exc:
+        raise PackABreakoutError(f"{field} must be HH:MM") from exc
+    if not (0 <= hour <= 23 and 0 <= minute <= 59):
+        raise PackABreakoutError(f"{field} must be a valid UTC time")
+    return hour * 60 + minute
+
+
+def utc_minutes_of_day(ts_ms: int) -> int:
+    dt = datetime.fromtimestamp(ts_ms / 1000, tz=timezone.utc)
+    return dt.hour * 60 + dt.minute
+
+
+def utc_day_key(ts_ms: int) -> str:
+    dt = datetime.fromtimestamp(ts_ms / 1000, tz=timezone.utc)
+    return dt.strftime("%Y-%m-%d")
+
+
+def orb_session_phase(
+    ts_ms: int,
+    *,
+    or_start_utc: str,
+    or_end_utc: str,
+    trade_end_utc: str,
+) -> str:
+    """Return ``opening_range``, ``trading``, or ``closed`` for a UTC timestamp."""
+    minute = utc_minutes_of_day(ts_ms)
+    or_start = _parse_utc_hhmm(or_start_utc, field="or_start_utc")
+    or_end = _parse_utc_hhmm(or_end_utc, field="or_end_utc")
+    trade_end = _parse_utc_hhmm(trade_end_utc, field="trade_end_utc")
+    if or_start <= minute < or_end:
+        return "opening_range"
+    if or_end <= minute < trade_end:
+        return "trading"
+    return "closed"
