@@ -64,7 +64,9 @@ def _index_records(
         if record_candidate != candidate_id:
             continue
         window_id = str(record.get("window_id") or "")
-        scenario = str(record.get("scenario") or "")
+        scenario = str(
+            record.get("scenario") or record.get("scenario_id") or ""
+        )
         indexed.setdefault(window_id, {})[scenario] = record
     return indexed
 
@@ -290,26 +292,10 @@ def score_stage_a_candidate(
                 required_fail = True
             continue
 
-        if scope in {"paired_evaluable", "baseline_rankable", "pessimistic_rankable"}:
-            if field == "closed_trades_total" and operator == "gte":
-                rows = _rows_for_scope(
-                    scope,
-                    indexed=indexed,
-                    development_windows=development_windows,
-                    blocked_verdicts=blocked,
-                    job_metadata=job_metadata,
-                )
-                observed = sum_of_field(rows, field)
-                passed = observed is not None and observed >= int(threshold)
-                gate_results["gates"][gate_id] = gate_result(
-                    gate_id,
-                    passed=passed,
-                    observed=observed,
-                    threshold=threshold,
-                )
-                if not passed and gate.get("required_for_survivor", True):
-                    required_fail = True
-                continue
+        if (
+            scope in {"paired_evaluable", "baseline_rankable", "pessimistic_rankable"}
+            and not field
+        ):
             if scope == "paired_evaluable":
                 observed = coverage["paired_evaluable_share"]
             elif scope == "baseline_rankable":

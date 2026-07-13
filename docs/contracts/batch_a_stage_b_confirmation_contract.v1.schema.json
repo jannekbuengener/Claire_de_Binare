@@ -74,11 +74,11 @@
         },
         "monthly_validation": {
           "type": "integer",
-          "const": 27
+          "const": 25
         },
         "monthly_out_of_sample": {
           "type": "integer",
-          "const": 15
+          "const": 17
         },
         "quarterly_validation": {
           "type": "integer"

@@ -11,11 +11,11 @@
     "validation": 35,
     "out_of_sample": 22,
     "stress": 5,
-    "monthly_validation": 27,
-    "monthly_out_of_sample": 15,
-    "quarterly_validation": 6,
+    "monthly_validation": 25,
+    "monthly_out_of_sample": 17,
+    "quarterly_validation": 8,
     "yearly_validation": 2,
-    "quarterly_out_of_sample": 7,
+    "quarterly_out_of_sample": 5,
     "yearly_out_of_sample": 0
   },
   "status_tiers": {
@@ -28,13 +28,13 @@
       "validation_monthly": {
         "purpose": "validation",
         "overlap_class": "monthly",
-        "expected_window_count": 27,
+        "expected_window_count": 25,
         "include_in_primary_confirmation": true
       },
       "out_of_sample_monthly": {
         "purpose": "out_of_sample",
         "overlap_class": "monthly",
-        "expected_window_count": 15,
+        "expected_window_count": 17,
         "include_in_primary_confirmation": true
       },
       "stress": {

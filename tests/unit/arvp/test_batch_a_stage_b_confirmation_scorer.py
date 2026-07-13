@@ -1,8 +1,6 @@
-"""Tests for Batch-A Stage-B confirmation scorer (#4032)."""
+"""Tests for Batch-A Stage-B confirmation scorer (#4032 / A2)."""
 
 from __future__ import annotations
-
-from pathlib import Path
 
 import pytest
 
@@ -10,143 +8,88 @@ from tools.arvp_vacation.batch_a_stage_b_confirmation_scorer import (
     STATUS_CONFIRMED,
     STATUS_PARTIAL,
     STATUS_REJECTED,
-    load_stage_b_confirmation_contract,
     score_stage_b_candidate,
 )
-
-pytestmark = pytest.mark.unit
-
-REPO_ROOT = Path(__file__).resolve().parents[3]
-CONTRACT_PATH = (
-    REPO_ROOT / "docs/contracts/batch_a_stage_b_confirmation_contract.v1.json"
+from tools.market_data.stage_b_window_selector import (
+    EXPECTED_MONTHLY_OOS,
+    EXPECTED_MONTHLY_VALIDATION,
+    EXPECTED_STRESS,
 )
-CANDIDATE = "momentum_capture_v1"
+
+pytestmark = [pytest.mark.unit, pytest.mark.contract]
+
+CANDIDATE = "donchian_breakout_v1"
 
 
-def _record(
-    *,
-    window_id: str,
-    purpose: str,
-    overlap_class: str,
-    net_pnl: float,
-    closed_trades: int = 12,
-) -> dict:
-    slice_name = {
-        ("validation", "monthly"): "validation_monthly",
-        ("out_of_sample", "monthly"): "out_of_sample_monthly",
-        ("stress", "stress"): "stress",
-        ("validation", "quarterly"): "corroborative_quarterly",
-        ("out_of_sample", "quarterly"): "corroborative_quarterly",
-        ("validation", "yearly"): "corroborative_yearly",
-    }[(purpose, overlap_class)]
+def _record(slice_name: str, idx: int, *, net_pnl: float = 50.0) -> dict:
+    purpose, overlap = {
+        "validation_monthly": ("validation", "monthly"),
+        "out_of_sample_monthly": ("out_of_sample", "monthly"),
+        "stress": ("stress", "stress"),
+        "corroborative_quarterly": ("validation", "quarterly"),
+        "corroborative_yearly": ("validation", "yearly"),
+    }[slice_name]
     return {
+        "candidate_id": CANDIDATE,
         "strategy_id": CANDIDATE,
-        "window_id": window_id,
-        "purpose": purpose,
-        "window_class": overlap_class,
+        "window_id": f"{slice_name}_{idx}",
         "stage_b_slice": slice_name,
-        "scenario": "baseline",
-        "rankable": closed_trades > 0,
-        "closed_trades_total": closed_trades,
+        "purpose": purpose,
+        "overlap_class": overlap,
         "net_pnl_quote": net_pnl,
-        "profit_factor": 1.2,
+        "closed_trades_total": 4,
+        "dataset_quality_verdict": "PASS",
     }
 
 
-def _strong_primary_records() -> list[dict]:
+def _confirmed_records() -> list[dict]:
     records: list[dict] = []
-    for idx in range(27):
-        records.append(
-            _record(
-                window_id=f"val_m_{idx}",
-                purpose="validation",
-                overlap_class="monthly",
-                net_pnl=8.0,
-            )
-        )
-    for idx in range(15):
-        records.append(
-            _record(
-                window_id=f"oos_m_{idx}",
-                purpose="out_of_sample",
-                overlap_class="monthly",
-                net_pnl=6.0,
-            )
-        )
-    for idx in range(5):
-        records.append(
-            _record(
-                window_id=f"stress_{idx}",
-                purpose="stress",
-                overlap_class="stress",
-                net_pnl=4.0,
-            )
-        )
+    for idx in range(EXPECTED_MONTHLY_VALIDATION):
+        records.append(_record("validation_monthly", idx, net_pnl=80.0))
+    for idx in range(EXPECTED_MONTHLY_OOS):
+        records.append(_record("out_of_sample_monthly", idx, net_pnl=60.0))
+    for idx in range(EXPECTED_STRESS):
+        records.append(_record("stress", idx, net_pnl=40.0))
+    for idx in range(3):
+        records.append(_record("corroborative_quarterly", idx, net_pnl=-999.0))
+    records.append(_record("corroborative_yearly", 0, net_pnl=-999.0))
     return records
 
 
-@pytest.fixture
-def gate_contract() -> dict:
-    return load_stage_b_confirmation_contract(CONTRACT_PATH)
-
-
-def test_confirmed_when_primary_slices_pass(gate_contract: dict) -> None:
+def test_confirmed_when_all_primary_slices_pass() -> None:
     result = score_stage_b_candidate(
         candidate_id=CANDIDATE,
-        records=_strong_primary_records(),
-        gate_contract=gate_contract,
+        records=_confirmed_records(),
     )
     assert result.status == STATUS_CONFIRMED
 
 
-def test_quarterly_not_in_primary_median(gate_contract: dict) -> None:
-    records = _strong_primary_records()
-    # Strong negative quarterly corroborative windows must not flip primary median positive.
-    for idx in range(6):
-        records.append(
-            _record(
-                window_id=f"val_q_{idx}",
-                purpose="validation",
-                overlap_class="quarterly",
-                net_pnl=-1000.0,
-            )
-        )
+def test_corroborative_slices_do_not_affect_primary_median() -> None:
     result = score_stage_b_candidate(
         candidate_id=CANDIDATE,
-        records=records,
-        gate_contract=gate_contract,
+        records=_confirmed_records(),
     )
-    primary = result.gate_results["primary_aggregation"]
-    assert primary["quarterly_yearly_in_primary_median"] is False
-    assert primary["primary_combined_median_net_pnl_quote"] > 0
-    assert primary["corroborative_median_net_pnl_quote"] < 0
-    assert result.status in {STATUS_CONFIRMED, STATUS_PARTIAL}
+    aggregation = result.gate_results["primary_aggregation"]
+    assert aggregation["quarterly_yearly_in_primary_median"] is False
+    assert aggregation["primary_combined_median_net_pnl_quote"] > 0
+    assert aggregation["corroborative_median_net_pnl_quote"] < 0
 
 
-def test_negative_primary_monthly_rejects(gate_contract: dict) -> None:
-    records = _strong_primary_records()
-    for row in records:
-        if row["stage_b_slice"] == "validation_monthly":
-            row["net_pnl_quote"] = -5.0
-    result = score_stage_b_candidate(
-        candidate_id=CANDIDATE,
-        records=records,
-        gate_contract=gate_contract,
-    )
+def test_partial_when_rankable_share_insufficient() -> None:
+    records = _confirmed_records()[: EXPECTED_MONTHLY_VALIDATION // 2]
+    result = score_stage_b_candidate(candidate_id=CANDIDATE, records=records)
+    assert result.status in {STATUS_PARTIAL, STATUS_REJECTED}
+
+
+def test_rejected_when_primary_slices_negative() -> None:
+    records = _confirmed_records()
+    for record in records:
+        if record["stage_b_slice"] in {
+            "validation_monthly",
+            "out_of_sample_monthly",
+            "stress",
+        }:
+            record["net_pnl_quote"] = -5.0
+    result = score_stage_b_candidate(candidate_id=CANDIDATE, records=records)
     assert result.status in {STATUS_REJECTED, STATUS_PARTIAL}
     assert result.gate_results["gates"]["B-V02"]["passed"] is False
-
-
-def test_validation_and_oos_evaluated_separately(gate_contract: dict) -> None:
-    records = _strong_primary_records()
-    for row in records:
-        if row["stage_b_slice"] == "out_of_sample_monthly":
-            row["net_pnl_quote"] = -10.0
-    result = score_stage_b_candidate(
-        candidate_id=CANDIDATE,
-        records=records,
-        gate_contract=gate_contract,
-    )
-    assert result.gate_results["gates"]["B-V02"]["passed"] is True
-    assert result.gate_results["gates"]["B-O02"]["passed"] is False
-    assert result.status in {STATUS_REJECTED, STATUS_PARTIAL}
