@@ -18,7 +18,7 @@ deletion. Active delivery surfaces and protected runtime branches were preserved
 | Local branches | 145 | 5 |
 | `[gone]` upstream (local) | 119 | 1 |
 | Stashes | 22 | 19 |
-| `origin/*` remote-tracking refs | 48 | 38 |
+| `origin/*` remote-tracking refs | ~45 (pre-cleanup) | 28 (`4` protected + `24` HOLD) + `10` deleted on GitHub |
 | `origin/main` | `f13419a` | `5e4f889` |
 
 ## Worktrees removed (9)
@@ -59,6 +59,9 @@ lookup (`gh pr list --head`), and squash-safe `-d`/`-D` with ledger evidence.
 | DELETE_COMPLETED (pushed delete) | 10 |
 | KEEP_PROTECTED | 4 (`main`, grafana dependabot, `runtime/3893…`, `docs/3467…`) |
 | HOLD_UNCLEAR (stale, no merged PR proof) | 24 |
+
+Reconciliation: `28` remaining + `10` deleted = `38` origin branches classified;
+local `git branch -r` also includes `gitlab/*` refs (not in scope for this cleanup).
 
 Deleted remotes (merged-PR evidence): `chore/2799-session-log`,
 `context/indexer-cli-contract-1989`, `epic-code`, `feat/2605-readonly-context-mcp-slice-4`,
