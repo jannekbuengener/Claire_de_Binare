@@ -178,7 +178,12 @@ class SubprocessGhTransport:
                 f"gh api GET failed ({proc.returncode}) for {endpoint}: {stderr}"
             )
 
-        documents = _iter_json_documents(proc.stdout or "")
+        try:
+            documents = _iter_json_documents(proc.stdout or "")
+        except json.JSONDecodeError as exc:
+            raise GitHubApiError(
+                f"malformed gh api paginated JSON for {endpoint}: {exc}"
+            ) from exc
         payload = _merge_paginated_payload(documents)
         if isinstance(payload, Mapping) and "check_runs" in payload:
             return payload.get("check_runs") or []
@@ -238,11 +243,64 @@ def _is_dependabot_login(login: str) -> bool:
     return normalized in {_normalize_login(item) for item in DEPENDABOT_LOGINS}
 
 
+_CONTROL_CHAR_PATTERN = re.compile(r"[\x00-\x08\x0b\x0c\x0e-\x1f\x7f]")
+_TOKEN_PATTERNS = (
+    re.compile(r"(?i)(gh[pousr]_[A-Za-z0-9_]{20,})"),
+    re.compile(r"(?i)github_pat_[A-Za-z0-9_]{20,}"),
+)
+_BEARER_PATTERN = re.compile(r"(?i)bearer\s+[A-Za-z0-9._-]+")
+_MARKDOWN_IMAGE_PATTERN = re.compile(r"!\[[^\]]*\]\([^)]*\)")
+_MARKDOWN_LINK_PATTERN = re.compile(r"\[([^\]]*)\]\([^)]*\)")
+_HTML_TAG_PATTERN = re.compile(r"<[^>]+>")
+
+
+def _redact_tokens(text: str) -> str:
+    for pattern in _TOKEN_PATTERNS:
+        text = pattern.sub("[REDACTED_TOKEN]", text)
+    return _BEARER_PATTERN.sub("bearer [REDACTED]", text)
+
+
+def _sanitize_markdown_table_cell(value: str) -> str:
+    """Render dynamic summary values as safe single-line Markdown table cells."""
+    text = _redact_tokens((value or "").strip())
+    text = _CONTROL_CHAR_PATTERN.sub("", text)
+    text = re.sub(r"[\r\n]+", " ", text)
+    text = _MARKDOWN_IMAGE_PATTERN.sub("[image]", text)
+    text = _MARKDOWN_LINK_PATTERN.sub(r"\1", text)
+    text = _HTML_TAG_PATTERN.sub("", text)
+    text = text.replace("\\", "\\\\")
+    text = text.replace("|", "\\|")
+    text = text.replace("`", "'")
+    return text.strip()
+
+
 def _sanitize_summary_text(value: str) -> str:
-    text = (value or "").strip()
-    text = re.sub(r"(?i)(gh[pousr]_[A-Za-z0-9_]{20,})", "[REDACTED_TOKEN]", text)
-    text = re.sub(r"(?i)bearer\s+[A-Za-z0-9._-]+", "bearer [REDACTED]", text)
-    return text
+    return _sanitize_markdown_table_cell(value)
+
+
+def _infer_ecosystem_from_head_branch(head_branch: str) -> str:
+    if not head_branch.startswith("dependabot/"):
+        return ""
+    segment = head_branch.removeprefix("dependabot/").split("/", 1)[0]
+    return {
+        "pip": "pip",
+        "github_actions": "github-actions",
+        "docker": "docker",
+        "docker_compose": "docker-compose",
+    }.get(segment, "")
+
+
+def _fill_versions_from_metadata(
+    dependabot_meta: Mapping[str, str],
+    *,
+    current_version: str,
+    target_version: str,
+) -> tuple[str, str]:
+    target = target_version or str(dependabot_meta.get("dependency-version") or "")
+    current = current_version
+    if not current and target:
+        current = target
+    return current, target
 
 
 def _parse_updated_dependencies(commit_messages: Sequence[str]) -> dict[str, str]:
@@ -589,10 +647,25 @@ def _build_facts_for_pull(
     target_version = str(patch_facts.get("target_version") or "")
     range_change = bool(patch_facts.get("range_change"))
 
-    metadata_complete = diff_verified
+    if not ecosystem:
+        ecosystem = _infer_ecosystem_from_head_branch(head_branch)
+    changed_files_tuple = tuple(patch_facts.get("changed_files") or ())
+    if not ecosystem and any(
+        path.startswith(".github/workflows/") for path in changed_files_tuple
+    ):
+        ecosystem = "github-actions"
+
     if dependabot_meta:
         if not package_name:
             package_name = dependabot_meta.get("dependency-name", "")
+        current_version, target_version = _fill_versions_from_metadata(
+            dependabot_meta,
+            current_version=current_version,
+            target_version=target_version,
+        )
+
+    metadata_complete = diff_verified
+    if dependabot_meta:
         if (
             diff_verified
             and package_name.lower()
@@ -705,8 +778,8 @@ def render_job_summary(
     lines = [
         "## Dependabot Autopilot Report",
         "",
-        f"- Mode: `{execution_mode}`",
-        f"- Repository: `{_sanitize_summary_text(repo)}`",
+        f"- Mode: `{_sanitize_markdown_table_cell(execution_mode)}`",
+        f"- Repository: `{_sanitize_markdown_table_cell(repo)}`",
         "- merge_authorized: `false` (report-only phase)",
         "",
     ]
@@ -717,7 +790,7 @@ def render_job_summary(
                 "### Global API Error",
                 "",
                 "- status: `API_ERROR`",
-                f"- detail: `{_sanitize_summary_text(outcome.global_error)}`",
+                f"- detail: `{_sanitize_markdown_table_cell(outcome.global_error)}`",
                 "",
                 "No Dependabot queue classification was produced.",
             ]
@@ -741,12 +814,12 @@ def render_job_summary(
             + " | ".join(
                 [
                     f"#{row.pr_number}",
-                    f"`{row.classification}`",
-                    f"`{row.action}`",
+                    f"`{_sanitize_markdown_table_cell(row.classification)}`",
+                    f"`{_sanitize_markdown_table_cell(row.action)}`",
                     "`false`",
-                    f"`{_sanitize_summary_text(reasons)}`",
-                    f"`{_sanitize_summary_text(row.package_name or 'unknown')}`",
-                    f"`{_sanitize_summary_text(row.ecosystem or 'unknown')}`",
+                    f"`{_sanitize_markdown_table_cell(reasons)}`",
+                    f"`{_sanitize_markdown_table_cell(row.package_name or 'unknown')}`",
+                    f"`{_sanitize_markdown_table_cell(row.ecosystem or 'unknown')}`",
                 ]
             )
             + " |"

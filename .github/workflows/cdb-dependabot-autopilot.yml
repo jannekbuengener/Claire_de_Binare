@@ -47,7 +47,7 @@ jobs:
         shell: bash
         run: |
           set -euo pipefail
-          python -m pip install --disable-pip-version-check pyyaml
+          python -m pip install --disable-pip-version-check --no-deps PyYAML==6.0.3
 
       - name: Run Dependabot report-only broker
         id: broker

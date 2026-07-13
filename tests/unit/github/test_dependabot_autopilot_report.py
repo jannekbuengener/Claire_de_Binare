@@ -431,7 +431,7 @@ def test_minor_update_holds() -> None:
     assert classifier.REASON_UPDATE_TYPE in row.reason_codes
 
 
-def test_pagination_merges_multiple_pull_pages() -> None:
+def test_multiple_open_dependabot_pulls_sorted_by_number() -> None:
     transport = report.InMemoryGhTransport(
         {
             f"repos/{REPO}/pulls": [_pull_stub(4048), _pull_stub(4049)],
@@ -457,6 +457,207 @@ def test_pagination_merges_multiple_pull_pages() -> None:
     outcome = report.run_report(transport, REPO, ALLOWLIST_PATH)
 
     assert [row.pr_number for row in outcome.rows] == [4048, 4049]
+
+
+def test_merge_paginated_payload_merges_two_pull_array_pages() -> None:
+    merged = report._merge_paginated_payload([[{"number": 4048}], [{"number": 4049}]])
+    assert merged == [{"number": 4048}, {"number": 4049}]
+
+
+def test_merge_paginated_payload_merges_two_check_runs_object_pages() -> None:
+    merged = report._merge_paginated_payload(
+        [
+            {"check_runs": [{"name": "policy-gate"}]},
+            {"check_runs": [{"name": "ci (Unit/Integration + Lint gesammelt)"}]},
+        ]
+    )
+    assert merged == [
+        {"name": "policy-gate"},
+        {"name": "ci (Unit/Integration + Lint gesammelt)"},
+    ]
+
+
+def test_subprocess_transport_uses_get_and_paginate_without_shell(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    captured: dict[str, Any] = {}
+
+    def fake_run(args, **kwargs):  # type: ignore[no-untyped-def]
+        captured["args"] = args
+        captured["shell"] = kwargs.get("shell")
+        return subprocess.CompletedProcess(args, 0, stdout="[]", stderr="")
+
+    monkeypatch.setattr(report.subprocess, "run", fake_run)
+    transport = report.SubprocessGhTransport(REPO)
+    transport.get_json(f"repos/{REPO}/pulls")
+
+    assert "--method" in captured["args"]
+    assert "GET" in captured["args"]
+    assert "--paginate" in captured["args"]
+    assert captured["shell"] is not True
+
+
+def test_malformed_second_paginated_json_page_raises(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    def fake_run(args, **kwargs):  # type: ignore[no-untyped-def]
+        return subprocess.CompletedProcess(
+            args, 0, stdout='[{"number": 4049}]\n{broken', stderr=""
+        )
+
+    monkeypatch.setattr(report.subprocess, "run", fake_run)
+    transport = report.SubprocessGhTransport(REPO)
+    with pytest.raises(report.GitHubApiError, match="malformed gh api paginated JSON"):
+        transport.get_json(f"repos/{REPO}/pulls")
+
+
+def _actions_commit_message() -> str:
+    return (
+        "deps(actions): bump actions/stale\n\n"
+        "updated-dependencies:\n"
+        "- dependency-name: actions/stale\n"
+        "  dependency-version: 10.4.0\n"
+        "  dependency-type: direct:production\n"
+        "  update-type: version-update:semver-patch\n"
+    )
+
+
+def test_markdown_injection_neutralized_in_rendered_summary() -> None:
+    evil_package = "actions/stale|bad`![](https://evil.example/pwn.png)"
+    row = report.PullReportRow(
+        pr_number=4049,
+        head_branch="dependabot/github_actions/actions-stale-10.4.0",
+        package_name=evil_package,
+        ecosystem="github-actions",
+        classification="HOLD",
+        action="HOLD",
+        merge_authorized=False,
+        reason_codes=(classifier.REASON_ACTIONS,),
+        human_summary="hold",
+    )
+    outcome = report.ReportOutcome((row,), None, 0)
+    summary = report.render_job_summary(
+        outcome, execution_mode="report_only", repo=REPO
+    )
+    assert "![](https://evil.example" not in summary
+    assert "![" not in summary
+    assert "| #4049 |" in summary
+    assert "actions/stale" in summary
+
+
+def test_actions_update_hold_integration_summary_is_safe() -> None:
+    outcome = _run(
+        _build_transport(
+            files=_files_stub(
+                patch="-    uses: actions/stale@v10.3.0\n+    uses: actions/stale@v10.4.0\n",
+                filename=".github/workflows/stale.yml",
+            ),
+            detail=_detail_stub(
+                head_ref="dependabot/github_actions/actions-stale-10.4.0"
+            ),
+            commits=[
+                {
+                    "authors": [{"login": "dependabot[bot]"}],
+                    "commit": {"message": _actions_commit_message()},
+                }
+            ],
+            pulls=[
+                _pull_stub(
+                    4049, head_ref="dependabot/github_actions/actions-stale-10.4.0"
+                )
+            ],
+        )
+    )
+
+    row = outcome.rows[0]
+    assert row.classification == "HOLD"
+    assert classifier.REASON_ACTIONS in row.reason_codes
+    summary = report.render_job_summary(
+        outcome, execution_mode="report_only", repo=REPO
+    )
+    assert "actions/stale" in summary
+    assert "![" not in summary
+
+
+def test_human_dependabot_head_with_markdown_injection_holds() -> None:
+    outcome = _run(
+        _build_transport(
+            pulls=[
+                _pull_stub(
+                    4049,
+                    author="jannekbuengener",
+                    head_ref="dependabot/github_actions/actions-stale-10.4.0",
+                )
+            ],
+            detail=_detail_stub(
+                author="jannekbuengener",
+                head_ref="dependabot/github_actions/actions-stale-10.4.0",
+            ),
+            commits=[
+                {
+                    "authors": [{"login": "jannekbuengener"}],
+                    "commit": {"message": _actions_commit_message()},
+                }
+            ],
+            files=_files_stub(
+                patch="-    uses: actions/stale@v10.3.0\n+    uses: actions/stale@v10.4.0\n",
+                filename=".github/workflows/stale.yml",
+            ),
+        )
+    )
+
+    row = outcome.rows[0]
+    assert row.classification == "HOLD"
+    assert classifier.REASON_AUTHOR in row.reason_codes
+    summary = report.render_job_summary(
+        outcome, execution_mode="report_only", repo=REPO
+    )
+    assert "![" not in summary
+
+
+def test_control_characters_neutralized_in_summary_cell() -> None:
+    cell = report._sanitize_markdown_table_cell("ruff\nevil\r|injection")
+    assert "\n" not in cell
+    assert "\r" not in cell
+    assert "|" not in cell.replace("\\|", "")
+
+
+def test_token_redaction_ghp_and_github_pat_in_summary() -> None:
+    for token in (
+        "ghp_abcdefghijklmnopqrstuvwxyz1234567890ABCDEF",
+        "github_pat_11AAAAbbbbccccddddEEEEffffGGGG",
+    ):
+        outcome = report.ReportOutcome((), global_error=token, exit_code=1)
+        summary = report.render_job_summary(
+            outcome, execution_mode="report_only", repo=REPO
+        )
+        assert token not in summary
+        assert "[REDACTED_TOKEN]" in summary
+
+
+def test_normal_package_names_remain_readable_in_summary() -> None:
+    outcome = _run(_build_transport())
+    summary = report.render_job_summary(
+        outcome, execution_mode="report_only", repo=REPO
+    )
+    assert "`ruff`" in summary
+    assert "`pip`" in summary
+
+    actions_outcome = _run(
+        _build_transport(
+            files=_files_stub(
+                patch="-    uses: actions/stale@v10.3.0\n+    uses: actions/stale@v10.4.0\n",
+                filename=".github/workflows/stale.yml",
+            ),
+            detail=_detail_stub(
+                head_ref="dependabot/github_actions/actions-stale-10.4.0"
+            ),
+        )
+    )
+    actions_summary = report.render_job_summary(
+        actions_outcome, execution_mode="report_only", repo=REPO
+    )
+    assert "actions/stale" in actions_summary
 
 
 def test_summary_is_deterministic_and_secrets_free() -> None:
