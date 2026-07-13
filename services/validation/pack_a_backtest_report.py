@@ -5,6 +5,7 @@ from __future__ import annotations
 from typing import Any
 
 from core.replay.pack_a_breakout_common import ORDER_SIZE
+from core.replay.regime_stats import build_regime_stats_from_replay
 from core.utils.clock import utcnow
 from core.utils.uuid_gen import generate_uuid
 
@@ -83,6 +84,12 @@ def build_pack_a_full_report(
     snapshot.setdefault("warmup_candles", warmup)
     snapshot.setdefault("order_size", ORDER_SIZE)
 
+    regime_stats = build_regime_stats_from_replay(
+        candles,
+        trades,
+        warmup=warmup,
+    )
+
     return {
         "schema_version": "strategy_validation_report.v1",
         "strategy_id": strategy_id,
@@ -133,6 +140,7 @@ def build_pack_a_full_report(
             "status": "NOT_RANKING_READY",
             "ranking_ready": False,
         },
+        "regime_stats": regime_stats,
     }
 
 
