@@ -16,6 +16,11 @@
 !services/validation/momentum_backtest_runner.py
 !services/validation/donchian_breakout_backtest_runner.py
 !services/validation/breakout_trend_filter_backtest_runner.py
+!services/validation/breakout_volatility_filter_backtest_runner.py
+!services/validation/volatility_breakout_backtest_runner.py
+!services/validation/bollinger_squeeze_breakout_backtest_runner.py
+!services/validation/atr_expansion_backtest_runner.py
+!services/validation/pack_a_backtest_report.py
 !cdb_agent_sdk/tests/**/*.py
 !cdb_agent_sdk/tests/**/*.js
 debug_*.py

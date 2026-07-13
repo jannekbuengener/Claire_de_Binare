@@ -73,7 +73,7 @@ BATCH_A_STRATEGY_REGISTRY: dict[str, BatchAStrategyRecord] = {
     "breakout_volatility_filter_v1": BatchAStrategyRecord(
         strategy_id="breakout_volatility_filter_v1",
         implementation_mode=ImplementationMode.EXTEND,
-        implementation_status=ImplementationStatus.IMPLEMENTATION_PENDING,
+        implementation_status=ImplementationStatus.IMPLEMENTED,
         later_slice="2b",
         adapter_id=None,
         runner_module=(
@@ -97,7 +97,7 @@ BATCH_A_STRATEGY_REGISTRY: dict[str, BatchAStrategyRecord] = {
     "volatility_breakout_v1": BatchAStrategyRecord(
         strategy_id="volatility_breakout_v1",
         implementation_mode=ImplementationMode.NEW,
-        implementation_status=ImplementationStatus.IMPLEMENTATION_PENDING,
+        implementation_status=ImplementationStatus.IMPLEMENTED,
         later_slice="2b",
         adapter_id=None,
         runner_module="services.validation.volatility_breakout_backtest_runner",
@@ -183,7 +183,7 @@ BATCH_A_STRATEGY_REGISTRY: dict[str, BatchAStrategyRecord] = {
     "bollinger_squeeze_breakout_v1": BatchAStrategyRecord(
         strategy_id="bollinger_squeeze_breakout_v1",
         implementation_mode=ImplementationMode.NEW,
-        implementation_status=ImplementationStatus.IMPLEMENTATION_PENDING,
+        implementation_status=ImplementationStatus.IMPLEMENTED,
         later_slice="2b",
         adapter_id=None,
         runner_module=(
@@ -246,7 +246,7 @@ BATCH_A_STRATEGY_REGISTRY: dict[str, BatchAStrategyRecord] = {
     "atr_expansion_v1": BatchAStrategyRecord(
         strategy_id="atr_expansion_v1",
         implementation_mode=ImplementationMode.NEW,
-        implementation_status=ImplementationStatus.IMPLEMENTATION_PENDING,
+        implementation_status=ImplementationStatus.IMPLEMENTED,
         later_slice="2b",
         adapter_id=None,
         runner_module="services.validation.atr_expansion_backtest_runner",
