@@ -1,6 +1,6 @@
 {
   "schema_version": "arvp_candidate_evidence_bundle.v1",
-  "bundle_hash": "60ab9973f898c5819d5f3cb56767ef22f124078416fc9fe1aaff530e5e9f0d80",
+  "bundle_hash": "e4e4b79ad1b0f6d3d6fc3d9f6d16d9c52109357f12bfbbd27072f5051991ab7d",
   "packet_count": 2,
   "source_record_count": 6,
   "candidates": [
@@ -10,12 +10,12 @@
   "packets": [
     {
       "strategy_id": "donchian_breakout_v1",
-      "content_hash": "01e82b7b19bd64bd596084734cd2dab379fc0e9817106ebd3b987ba12fb27162",
+      "content_hash": "3f728fe08dce3c21d3ad34a71f5ad045975eaf95a083818e5f9edf9ca3f227cd",
       "rankability_status": "NOT_RANKABLE"
     },
     {
       "strategy_id": "primary_breakout_v1",
-      "content_hash": "d345626ab5adff01c9e121e1555b10b8aa649a94ae00a2a13e0bbafe124d9de8",
+      "content_hash": "5bc652387e5e007ae400bb88bcc5f9e668759d34f2d84242c019b528cb395eaa",
       "rankability_status": "NOT_RANKABLE"
     }
   ]
