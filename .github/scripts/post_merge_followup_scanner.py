@@ -288,6 +288,20 @@ def unique_sorted(values: list[str]) -> list[str]:
     return sorted(set(values))
 
 
+def normalize_repo_path(path: str) -> str:
+    normalized = path.replace("\\", "/")
+    while normalized.startswith("./"):
+        normalized = normalized[2:]
+    return normalized
+
+
+def is_services_or_core_readme(path: str) -> bool:
+    normalized = normalize_repo_path(path)
+    if not (normalized.startswith("services/") or normalized.startswith("core/")):
+        return False
+    return normalized.rsplit("/", 1)[-1] == "README.md"
+
+
 def strip_image_digest(image_ref: str) -> str:
     return re.sub(r"@sha256:[0-9a-f]{64}$", "", image_ref.strip(), flags=re.IGNORECASE)
 
@@ -418,15 +432,22 @@ def detect_findings(pr: dict[str, Any], diff_text: str) -> list[Finding]:
             "infrastructure/compose/COMPOSE_LAYERS.md",
         }
     ]
-    digest_only_service_runtime_change = service_runtime_changes_are_digest_only(
-        service_runtime_files,
+    architecture_structural_files = [
+        path
+        for path in service_runtime_files
+        if not is_services_or_core_readme(path)
+    ]
+    architecture_digest_only_change = service_runtime_changes_are_digest_only(
+        architecture_structural_files,
         changed_lines=changed_lines,
     )
     if (
-        service_runtime_files
-        and not digest_only_service_runtime_change
+        architecture_structural_files
+        and not architecture_digest_only_change
         and not touched(active_files, ARCHITECTURE_DOCS)
     ):
+        # Keep the full service/runtime file list for fingerprint dedupe compatibility
+        # on mixed README + structural PRs (re-runs must not create duplicate issues).
         trigger_files = shortlist(service_runtime_files)
         affected_candidates = trigger_files + ARCHITECTURE_DOCS
         finding_input = f"""
