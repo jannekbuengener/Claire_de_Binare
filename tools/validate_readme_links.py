@@ -14,7 +14,7 @@ Exit codes:
     0 - all active surface link checks PASS
     1 - one or more validation failures
 
-Issues: #3994 (README discovery), #3995 (explicit canon entry points)
+Issues: #3994 (README discovery), #3995 (explicit canon entry points), #4037 (glossary + active markdown)
 """
 
 from __future__ import annotations

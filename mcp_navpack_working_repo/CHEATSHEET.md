@@ -4,7 +4,8 @@
 
 - Read `README.md` first for the repo-wide picture and the current live-readiness framing.
 - Jump to `docs/index.md` if you want the shortest local navigation page instead of the long root overview.
-- **New developer visual start:** `docs/onboarding/DEVELOPER_VISUAL_START_HERE.md` — Mermaid flow, examples, templates.
+- **New developer visual start:** [`docs/onboarding/DEVELOPER_VISUAL_START_HERE.md`](../docs/onboarding/DEVELOPER_VISUAL_START_HERE.md) — Mermaid flow, examples, templates.
+- **CDB terminology:** [`docs/onboarding/cdb_glossary.md`](../docs/onboarding/cdb_glossary.md) — LR, SSOT, eventflow and agent terms.
 - **Developer setup:** `DEVELOPER_ONBOARDING.md` plus `infrastructure/compose/README.md` for local setup and stack bring-up.
 - **Repo Brain / Context Intelligence:**
   - Full onboarding: `docs/onboarding/repo_brain_context_intelligence.md`

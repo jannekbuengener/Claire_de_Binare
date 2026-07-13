@@ -181,3 +181,37 @@ def test_shared_check_markdown_links_broken(tmp_path: Path) -> None:
     _make_file(tmp_path, "README.md", "[x](nope.md)")
     errors = check_markdown_links(tmp_path, "README.md", "[x](nope.md)", False)
     assert len(errors) == 1
+
+
+def test_extract_relative_links_ignores_fenced_code_blocks() -> None:
+    content = """
+[nav](good.md)
+
+```markdown
+[ignored](missing-in-codeblock.md)
+```
+"""
+    assert extract_relative_links(content) == ["good.md"]
+
+
+def test_check_markdown_links_nested_depth(tmp_path: Path) -> None:
+    _make_file(tmp_path, "docs/onboarding/parent.md", "[glossary](cdb_glossary.md)")
+    _make_file(tmp_path, "docs/onboarding/cdb_glossary.md")
+    errors = check_markdown_links(
+        tmp_path,
+        "docs/onboarding/parent.md",
+        "[glossary](cdb_glossary.md)",
+        False,
+    )
+    assert errors == []
+
+
+def test_check_markdown_links_with_fragment(tmp_path: Path) -> None:
+    _make_file(tmp_path, "docs/onboarding/cdb_glossary.md", "[lr](#lr)")
+    errors = check_markdown_links(
+        tmp_path,
+        "docs/onboarding/cdb_glossary.md",
+        "[lr](#lr)",
+        False,
+    )
+    assert errors == []
