@@ -206,7 +206,7 @@ BATCH_A_STRATEGY_REGISTRY: dict[str, BatchAStrategyRecord] = {
     "roc_breakout_confirm_v1": BatchAStrategyRecord(
         strategy_id="roc_breakout_confirm_v1",
         implementation_mode=ImplementationMode.NEW,
-        implementation_status=ImplementationStatus.IMPLEMENTATION_PENDING,
+        implementation_status=ImplementationStatus.IMPLEMENTED,
         later_slice="2d",
         adapter_id=None,
         runner_module="services.validation.roc_breakout_confirm_backtest_runner",

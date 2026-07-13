@@ -38,7 +38,7 @@ All parameters are frozen from #4030. No optimization or post-hoc changes.
 | `ema_trend_follow_v1` | implementation_pending | 2c |
 | `ma_crossover_v1` | implementation_pending | 2c |
 | `opening_range_breakout_v1` | implementation_pending | 2c |
-| `roc_breakout_confirm_v1` | implementation_pending | 2d |
+| `roc_breakout_confirm_v1` | **implemented** | 2d |
 | `range_mean_reversion_v1` | **implemented** (reuse) | 2d |
 | `momentum_capture_v1` | **implemented** (reuse) | 2d |
 
@@ -83,10 +83,9 @@ does not compute regime labels.
 
 ## Implementation-pending semantics
 
-`core/replay/batch_a_strategy_registry.py` lists all ten locked IDs.
 Only `range_mean_reversion_v1` and `momentum_capture_v1` are marked
-`implemented` with adapter IDs. Pending IDs must not enter executable replay
-dispatch until their slice lands.
+`implemented` with adapter IDs. All ten Batch-A runners are now executable via
+`strategy_replay_runner` dispatch (slice 2d).
 
 ## Non-goals (slice 2a)
 

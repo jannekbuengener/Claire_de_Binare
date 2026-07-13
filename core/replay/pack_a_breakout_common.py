@@ -22,6 +22,7 @@ ATR_EXPANSION_STRATEGY_ID = "atr_expansion_v1"
 EMA_TREND_FOLLOW_STRATEGY_ID = "ema_trend_follow_v1"
 MA_CROSSOVER_STRATEGY_ID = "ma_crossover_v1"
 OPENING_RANGE_BREAKOUT_STRATEGY_ID = "opening_range_breakout_v1"
+ROC_BREAKOUT_CONFIRM_STRATEGY_ID = "roc_breakout_confirm_v1"
 PACK_A_SYMBOL = PRIMARY_BREAKOUT_SYMBOL
 
 ENTRY_CHANNEL_BARS = 20
@@ -58,6 +59,10 @@ OR_END_UTC = "01:00"
 TRADE_END_UTC = "20:00"
 ORB_MIN_MINUTES_BETWEEN_ENTRIES = 1440
 ORB_WARMUP_BARS = 60
+ROC_PERIOD = 12
+ROC_ENTRY_THRESHOLD = 0.005
+ROC_EXIT_THRESHOLD = 0.0
+ROC_MIN_MINUTES_BETWEEN_ENTRIES = 30
 
 ORDER_SIZE = 1.0
 ORDER_BOOK_DEPTH_MULT = 10_000.0
@@ -313,6 +318,37 @@ def ma_crossover_warmup_candles(config: MaCrossoverConfig | None = None) -> int:
     return active.slow_sma_period
 
 
+@dataclass(frozen=True, slots=True)
+class RocBreakoutConfirmConfig:
+    breakout_lookback: int = BREAKOUT_LOOKBACK
+    exit_lookback: int = EXIT_LOOKBACK
+    roc_period: int = ROC_PERIOD
+    roc_entry_threshold: float = ROC_ENTRY_THRESHOLD
+    roc_exit_threshold: float = ROC_EXIT_THRESHOLD
+    min_minutes_between_entries: int = ROC_MIN_MINUTES_BETWEEN_ENTRIES
+    trade_side_mode: str = "long_only"
+
+    def validate(self) -> None:
+        if self.breakout_lookback <= 0:
+            raise PackABreakoutError("breakout_lookback must be > 0")
+        if self.exit_lookback <= 0:
+            raise PackABreakoutError("exit_lookback must be > 0")
+        if self.roc_period <= 0:
+            raise PackABreakoutError("roc_period must be > 0")
+        if self.min_minutes_between_entries < 0:
+            raise PackABreakoutError("min_minutes_between_entries must be >= 0")
+        if self.trade_side_mode != "long_only":
+            raise PackABreakoutError("trade_side_mode must be long_only")
+
+
+def roc_breakout_confirm_warmup_candles(
+    config: RocBreakoutConfirmConfig | None = None,
+) -> int:
+    active = config or RocBreakoutConfirmConfig()
+    active.validate()
+    return max(active.breakout_lookback, active.exit_lookback, active.roc_period)
+
+
 def opening_range_breakout_warmup_candles(
     config: OpeningRangeBreakoutConfig | None = None,
 ) -> int:
@@ -413,6 +449,22 @@ def compute_lowest_low(
     for index in range(len(lows)):
         if index >= lookback:
             result[index] = min(lows[index - lookback : index])
+    return result
+
+
+def compute_roc_series(
+    closes: Sequence[float],
+    period: int,
+) -> list[float | None]:
+    """Rate of change on close: (close[i] - close[i-period]) / close[i-period]."""
+    if period <= 0:
+        raise PackABreakoutError("period must be > 0")
+    result: list[float | None] = [None] * len(closes)
+    for index in range(period, len(closes)):
+        prior_close = closes[index - period]
+        if prior_close <= 0:
+            continue
+        result[index] = (closes[index] - prior_close) / prior_close
     return result
 
 

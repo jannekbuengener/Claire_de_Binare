@@ -11,6 +11,7 @@ from core.replay.batch_a_strategy_registry import (
     ALREADY_TESTED_STRATEGY_IDS,
     BATCH_A_STRATEGY_REGISTRY,
     ImplementationStatus,
+    assert_batch_a_executable,
     batch_a_strategy_ids,
     executable_batch_a_strategy_ids,
     pending_batch_a_strategy_ids,
@@ -82,21 +83,12 @@ def test_registry_matches_manifest_strategy_ids(manifest: dict) -> None:
     assert set(batch_a_strategy_ids()) == manifest_ids
 
 
-def test_slice_2c_runners_executable() -> None:
-    assert executable_batch_a_strategy_ids() == frozenset(
-        {
-            "range_mean_reversion_v1",
-            "momentum_capture_v1",
-            "breakout_volatility_filter_v1",
-            "volatility_breakout_v1",
-            "bollinger_squeeze_breakout_v1",
-            "atr_expansion_v1",
-            "ema_trend_follow_v1",
-            "ma_crossover_v1",
-            "opening_range_breakout_v1",
-        }
-    )
-    assert pending_batch_a_strategy_ids() == frozenset({"roc_breakout_confirm_v1"})
+def test_all_ten_runners_executable() -> None:
+    assert len(executable_batch_a_strategy_ids()) == 10
+    assert pending_batch_a_strategy_ids() == frozenset()
+    for strategy_id in batch_a_strategy_ids():
+        record = assert_batch_a_executable(strategy_id)
+        assert record.runner_module is not None
 
 
 def test_pending_candidates_not_executable() -> None:
