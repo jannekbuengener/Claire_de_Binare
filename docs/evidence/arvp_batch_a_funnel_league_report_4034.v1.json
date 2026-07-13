@@ -1,0 +1,184 @@
+{
+  "campaign_id": "batch_a_stage_a_d0a4e72d_20260713",
+  "candidate_count": 10,
+  "candidate_rows": [
+    {
+      "candidate_id": "atr_expansion_v1",
+      "exclusion_reasons": [
+        "stage_a_status=INSUFFICIENT_EVIDENCE",
+        "stage_a_survivor_count=0",
+        "paired_evaluable_share=0.0",
+        "candles_live_candles_total_mismatch (metric extraction)",
+        "official_ranking_withheld_by_funnel_gate"
+      ],
+      "official_rank": null,
+      "rankability_status": "NOT_RANKABLE",
+      "stage_a_status": "INSUFFICIENT_EVIDENCE",
+      "strategy_id": "atr_expansion_v1",
+      "total_score": null
+    },
+    {
+      "candidate_id": "bollinger_squeeze_breakout_v1",
+      "exclusion_reasons": [
+        "stage_a_status=INSUFFICIENT_EVIDENCE",
+        "stage_a_survivor_count=0",
+        "paired_evaluable_share=0.0",
+        "candles_live_candles_total_mismatch (metric extraction)",
+        "official_ranking_withheld_by_funnel_gate"
+      ],
+      "official_rank": null,
+      "rankability_status": "NOT_RANKABLE",
+      "stage_a_status": "INSUFFICIENT_EVIDENCE",
+      "strategy_id": "bollinger_squeeze_breakout_v1",
+      "total_score": null
+    },
+    {
+      "candidate_id": "breakout_volatility_filter_v1",
+      "exclusion_reasons": [
+        "stage_a_status=INSUFFICIENT_EVIDENCE",
+        "stage_a_survivor_count=0",
+        "paired_evaluable_share=0.0",
+        "candles_live_candles_total_mismatch (metric extraction)",
+        "official_ranking_withheld_by_funnel_gate"
+      ],
+      "official_rank": null,
+      "rankability_status": "NOT_RANKABLE",
+      "stage_a_status": "INSUFFICIENT_EVIDENCE",
+      "strategy_id": "breakout_volatility_filter_v1",
+      "total_score": null
+    },
+    {
+      "candidate_id": "ema_trend_follow_v1",
+      "exclusion_reasons": [
+        "stage_a_status=INSUFFICIENT_EVIDENCE",
+        "stage_a_survivor_count=0",
+        "paired_evaluable_share=0.0",
+        "candles_live_candles_total_mismatch (metric extraction)",
+        "official_ranking_withheld_by_funnel_gate"
+      ],
+      "official_rank": null,
+      "rankability_status": "NOT_RANKABLE",
+      "stage_a_status": "INSUFFICIENT_EVIDENCE",
+      "strategy_id": "ema_trend_follow_v1",
+      "total_score": null
+    },
+    {
+      "candidate_id": "ma_crossover_v1",
+      "exclusion_reasons": [
+        "stage_a_status=INSUFFICIENT_EVIDENCE",
+        "stage_a_survivor_count=0",
+        "paired_evaluable_share=0.0",
+        "candles_live_candles_total_mismatch (metric extraction)",
+        "official_ranking_withheld_by_funnel_gate"
+      ],
+      "official_rank": null,
+      "rankability_status": "NOT_RANKABLE",
+      "stage_a_status": "INSUFFICIENT_EVIDENCE",
+      "strategy_id": "ma_crossover_v1",
+      "total_score": null
+    },
+    {
+      "candidate_id": "momentum_capture_v1",
+      "exclusion_reasons": [
+        "stage_a_status=INSUFFICIENT_EVIDENCE",
+        "stage_a_survivor_count=0",
+        "paired_evaluable_share=0.0",
+        "candles_live_candles_total_mismatch (metric extraction)",
+        "official_ranking_withheld_by_funnel_gate"
+      ],
+      "official_rank": null,
+      "rankability_status": "NOT_RANKABLE",
+      "stage_a_status": "INSUFFICIENT_EVIDENCE",
+      "strategy_id": "momentum_capture_v1",
+      "total_score": null
+    },
+    {
+      "candidate_id": "opening_range_breakout_v1",
+      "exclusion_reasons": [
+        "stage_a_status=INSUFFICIENT_EVIDENCE",
+        "stage_a_survivor_count=0",
+        "paired_evaluable_share=0.0",
+        "candles_live_candles_total_mismatch (metric extraction)",
+        "official_ranking_withheld_by_funnel_gate"
+      ],
+      "official_rank": null,
+      "rankability_status": "NOT_RANKABLE",
+      "stage_a_status": "INSUFFICIENT_EVIDENCE",
+      "strategy_id": "opening_range_breakout_v1",
+      "total_score": null
+    },
+    {
+      "candidate_id": "range_mean_reversion_v1",
+      "exclusion_reasons": [
+        "stage_a_status=INSUFFICIENT_EVIDENCE",
+        "stage_a_survivor_count=0",
+        "paired_evaluable_share=0.0",
+        "candles_live_candles_total_mismatch (metric extraction)",
+        "official_ranking_withheld_by_funnel_gate"
+      ],
+      "official_rank": null,
+      "rankability_status": "NOT_RANKABLE",
+      "stage_a_status": "INSUFFICIENT_EVIDENCE",
+      "strategy_id": "range_mean_reversion_v1",
+      "total_score": null
+    },
+    {
+      "candidate_id": "roc_breakout_confirm_v1",
+      "exclusion_reasons": [
+        "stage_a_status=INSUFFICIENT_EVIDENCE",
+        "stage_a_survivor_count=0",
+        "paired_evaluable_share=0.0",
+        "candles_live_candles_total_mismatch (metric extraction)",
+        "official_ranking_withheld_by_funnel_gate"
+      ],
+      "official_rank": null,
+      "rankability_status": "NOT_RANKABLE",
+      "stage_a_status": "INSUFFICIENT_EVIDENCE",
+      "strategy_id": "roc_breakout_confirm_v1",
+      "total_score": null
+    },
+    {
+      "candidate_id": "volatility_breakout_v1",
+      "exclusion_reasons": [
+        "stage_a_status=INSUFFICIENT_EVIDENCE",
+        "stage_a_survivor_count=0",
+        "paired_evaluable_share=0.0",
+        "candles_live_candles_total_mismatch (metric extraction)",
+        "official_ranking_withheld_by_funnel_gate"
+      ],
+      "official_rank": null,
+      "rankability_status": "NOT_RANKABLE",
+      "stage_a_status": "INSUFFICIENT_EVIDENCE",
+      "strategy_id": "volatility_breakout_v1",
+      "total_score": null
+    }
+  ],
+  "evidence_class": "historical_cross_venue_research",
+  "funnel_verdict": "HISTORICAL_FUNNEL_NO_SURVIVORS",
+  "limitations": [
+    "Funnel exit: HISTORICAL_FUNNEL_NO_SURVIVORS \u2014 zero STAGE_A_SURVIVOR after A1 gate scoring.",
+    "League CLI (profitability_league_table_report) not applied: metrics bundle schema drift (regime_stats field) blocks PEP assembly on main @ 044ad3c4.",
+    "Primary rankability blocker: candles_live_candles_total_mismatch on 726/780 scenario records.",
+    "official_ranking=[]; descriptive rows are not promotion input.",
+    "LR remains NO-GO."
+  ],
+  "not_rankable_count": 10,
+  "official_ranking": [],
+  "officially_ranked_count": 0,
+  "paper_reference_status": "not_run",
+  "partial_evidence_count": 0,
+  "promotion_status": "NOT_AUTHORIZED",
+  "ranking_ready": false,
+  "report_content_hash": "7402da3c1b3345b40aeab2c5e9b786dfc66136eb9281fb52f269eff6c61be867",
+  "report_id": "pltr-batch-a-funnel-4034-no-survivors",
+  "same_venue_status": "not_run",
+  "schema_version": "arvp_batch_a_funnel_league_closeout.v1",
+  "source_content_hash": "3ee5c429cc8d7df499e9870f1253f350f235ebe2a6974dbfcddbb1a7f8c60958",
+  "stage_a_evidence_ref": "docs/evidence/arvp_batch_a_stage_a_campaign_4032.md",
+  "stage_a_insufficient_count": 10,
+  "stage_a_rejected_count": 0,
+  "stage_a_survivor_count": 0,
+  "survivor_summary_ref": "docs/evidence/arvp_batch_a_stage_a_survivor_summary_4032.v1.json",
+  "table_status": "PARTIAL",
+  "winner": null
+}
