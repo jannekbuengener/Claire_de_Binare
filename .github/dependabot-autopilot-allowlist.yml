@@ -1,0 +1,19 @@
+schema_version: 1
+default_mode: report_only
+
+defaults:
+  unknown_package: HOLD
+  unknown_ecosystem: HOLD
+  additional_file: HOLD
+  github_actions: HOLD
+  docker: HOLD
+  runtime_dependency: HOLD
+
+entries:
+  pip:
+    ruff:
+      dependency_type: direct:development
+      allowed_update_types:
+        - version-update:semver-patch
+      allowed_files:
+        - requirements-dev.txt
