@@ -137,6 +137,7 @@ def _commits_stub(
     *,
     authors: tuple[str, ...] = ("dependabot[bot]",),
     include_dependabot_message: bool = True,
+    rest_author_schema: bool = False,
 ) -> list[dict]:
     commits: list[dict] = []
     for index, login in enumerate(authors):
@@ -145,12 +146,14 @@ def _commits_stub(
             if include_dependabot_message and index == 0
             else "merge main"
         )
-        commits.append(
-            {
-                "authors": [{"login": login}],
-                "commit": {"message": message},
-            }
-        )
+        payload: dict = {
+            "commit": {"message": message},
+        }
+        if rest_author_schema:
+            payload["author"] = {"login": login}
+        else:
+            payload["authors"] = [{"login": login}]
+        commits.append(payload)
     return commits
 
 
@@ -227,6 +230,18 @@ def test_ruff_patch_report_only_is_eligible_not_merge_authorized() -> None:
     assert row.merge_authorized is False
     assert classifier.REASON_ELIGIBLE in row.reason_codes
     assert classifier.REASON_REPORT_ONLY in row.reason_codes
+
+
+def test_rest_api_commit_author_schema_eligible() -> None:
+    outcome = _run(
+        _build_transport(
+            commits=_commits_stub(rest_author_schema=True),
+        )
+    )
+
+    row = outcome.rows[0]
+    assert row.classification == "ELIGIBLE"
+    assert classifier.REASON_ELIGIBLE in row.reason_codes
 
 
 def test_non_dependabot_author_holds() -> None:

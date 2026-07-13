@@ -439,6 +439,28 @@ def _normalize_check_runs(check_runs: Sequence[Mapping[str, Any]]) -> list[Any]:
     return facts
 
 
+def _extract_commit_author_logins(commit: Mapping[str, Any]) -> list[str]:
+    """Return GitHub login(s) for a pull commit payload.
+
+    Live REST ``pulls/{n}/commits`` exposes a singular ``author.login``; tests
+    may also supply a plural ``authors`` list.
+    """
+    logins: list[str] = []
+    author = commit.get("author")
+    if isinstance(author, Mapping):
+        login = str(author.get("login") or "").strip()
+        if login:
+            logins.append(login)
+    if logins:
+        return logins
+    for author_entry in commit.get("authors") or []:
+        if isinstance(author_entry, Mapping):
+            login = str(author_entry.get("login") or "").strip()
+            if login:
+                logins.append(login)
+    return logins
+
+
 def _compare_branch_current(
     transport: GitHubReadTransport, repo: str, base_sha: str, head_sha: str
 ) -> tuple[bool, bool]:
@@ -531,9 +553,7 @@ def _build_facts_for_pull(
         commit_obj = commit.get("commit") or {}
         if isinstance(commit_obj, Mapping):
             commit_messages.append(str(commit_obj.get("message") or ""))
-        for author_entry in commit.get("authors") or []:
-            if isinstance(author_entry, Mapping):
-                commit_authors.append(str(author_entry.get("login") or ""))
+        commit_authors.extend(_extract_commit_author_logins(commit))
 
     file_items = files if isinstance(files, list) else []
     patch_facts = _merge_patch_facts(file_items)
