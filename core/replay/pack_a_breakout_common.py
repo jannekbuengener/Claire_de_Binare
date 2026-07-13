@@ -76,7 +76,7 @@ class BreakoutTrendFilterConfig(DonchianBreakoutConfig):
     trend_ema_period_5m: int = TREND_EMA_PERIOD_5M
 
     def validate(self) -> None:
-        super().validate()
+        DonchianBreakoutConfig.validate(self)
         if self.trend_ema_period_5m <= 0:
             raise PackABreakoutError("trend_ema_period_5m must be > 0")
 
@@ -88,7 +88,7 @@ class BreakoutVolatilityFilterConfig(DonchianBreakoutConfig):
     vol_ceiling: float = VOL_CEILING
 
     def validate(self) -> None:
-        super().validate()
+        DonchianBreakoutConfig.validate(self)
         if self.atr_period <= 0:
             raise PackABreakoutError("atr_period must be > 0")
         if self.vol_floor < 0:
