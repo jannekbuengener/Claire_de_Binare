@@ -1,4 +1,4 @@
-# README link validation policy (#3994)
+# README link validation policy (#3994, extended #4037)
 #
 # Discovery: git ls-files '**/README.md' (automatic, fail-closed for new files)
 # This fixture holds only classification rules and documented exceptions — not
@@ -6,6 +6,7 @@
 
 version: 1
 issue: 3994
+follow_up_issue: 4037
 
 # Unmatched README paths use this class and are validated (fail-closed).
 default_classification: active
@@ -34,6 +35,11 @@ explicit_active_surfaces:
     - docs/runbooks/CONTROL_REGISTER.md
     - docs/meta/WORKING_REPO_CANON.md
     - knowledge/CDB_KNOWLEDGE_HUB.md
+    - docs/index.md
+    - DEVELOPER_ONBOARDING.md
+    - docs/onboarding/cdb_glossary.md
+    - docs/onboarding/DEVELOPER_VISUAL_START_HERE.md
+    - docs/onboarding/repo_brain_context_intelligence.md
 
 # Explicit per-path overrides (use sparingly).
 documented_exceptions: []

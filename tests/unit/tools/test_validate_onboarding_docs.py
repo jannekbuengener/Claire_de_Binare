@@ -265,6 +265,15 @@ def test_validate_all_real_surfaces() -> None:
     assert errors == [], f"Real-surface validation failed:\n" + "\n".join(errors)
 
 
+def test_glossary_in_active_onboarding_surfaces() -> None:
+    assert "docs/onboarding/cdb_glossary.md" in validator.ACTIVE_ONBOARDING_SURFACES
+
+
+def test_glossary_reachable_from_root_readme() -> None:
+    readme = (validator.REPO_ROOT / "README.md").read_text(encoding="utf-8")
+    assert "docs/onboarding/cdb_glossary.md" in readme
+
+
 # --- main exit codes ---
 
 

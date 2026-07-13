@@ -2,9 +2,9 @@
 
 Used by:
 - tools.validate_onboarding_docs (#3233)
-- tools.validate_readme_links (#3994)
+- tools.validate_readme_links (#3994, #4037)
 
-Issue: #3994
+Issues: #3994, #4037
 """
 
 from __future__ import annotations
@@ -14,6 +14,12 @@ import sys
 from pathlib import Path
 
 MARKDOWN_LINK_RE = re.compile(r"\[([^\]]+)\]\(([^)]+)\)")
+FENCED_CODE_BLOCK_RE = re.compile(r"```.*?```", re.DOTALL)
+
+
+def strip_fenced_code_blocks(content: str) -> str:
+    """Remove fenced code blocks before navigation link extraction."""
+    return FENCED_CODE_BLOCK_RE.sub("", content)
 
 
 def is_external_url(link: str) -> bool:
@@ -38,7 +44,7 @@ def resolve_relative_link(source_file: Path, link: str) -> Path:
 
 def extract_relative_links(content: str) -> list[str]:
     links: list[str] = []
-    for match in MARKDOWN_LINK_RE.finditer(content):
+    for match in MARKDOWN_LINK_RE.finditer(strip_fenced_code_blocks(content)):
         link = match.group(2).strip()
         if not is_external_url(link) and not is_pure_anchor(link):
             links.append(link)
