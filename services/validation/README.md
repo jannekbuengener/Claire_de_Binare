@@ -18,8 +18,21 @@ Offline-/Batch-Validierung: Replay, Backtest, Paper-Runtime-Stimulus, ARVP-Score
 | `paper_runtime_stimulus_runner.py` | Paper-Stimulus |
 | `gate_evaluator.py` | Gate-Auswertung |
 | `arvp_regime_scorecard_runner.py` | ARVP-Scorecard |
-| `profitability_evidence_packet_assembler.py` | Evidence Packet Assembler — deterministic offline CLI that builds `profitability_evidence_packet.v1` JSON + Markdown from explicit validated input artifact paths |
-| `profitability_league_scorer.py` | Offline **Strategy League scorer v1** — fail-closed; turns the Formula v1 rules (#3682) into an executable scorer that reads `profitability_evidence_packet.v1` and emits a schema-validated `profitability_league_table_report.v1`. Decision support only. |
+| `profitability_evidence_packet_assembler.py` | Manual-path Evidence Packet Assembler — builds `profitability_evidence_packet.v1` from explicit validated artifact paths |
+| `arvp_candidate_evidence_assembler.py` | ARVP Candidate Evidence Assembler — aggregates `arvp_strategy_metrics.v1` into deterministic PEP bundles (one PEP per candidate); `ranking_ready=false` |
+| `profitability_league_scorer.py` | Offline **Strategy League scorer v1** — Formula v1 scoring from PEP(s) to `profitability_league_table_report.v1` |
+| `profitability_league_table_report_assembler.py` | Governance-safe league table report assembler — ARVP rankability gates, no forced winner; uses scorer internally |
+
+## ARVP vacation evidence pipeline (offline)
+
+Research-only chain (no runtime service, no productive DB writes):
+
+1. Vacation batch runner — [`tools/arvp_vacation/coordinator.py`](../../tools/arvp_vacation/coordinator.py)
+2. Strategy metric extraction — [`tools/arvp_vacation/strategy_metric_extraction.py`](../../tools/arvp_vacation/strategy_metric_extraction.py) → `arvp_strategy_metrics.v1`
+3. Candidate evidence assembly — `arvp_candidate_evidence_assembler.py` → `profitability_evidence_packet.v1`
+4. League table report assembly — `profitability_league_table_report_assembler.py` → `profitability_league_table_report.v1`
+
+Operator CLIs live under [`tools/arvp_vacation/`](../../tools/arvp_vacation/README.md). LR remains **NO-GO**.
 
 ## Usage
 
@@ -27,7 +40,7 @@ Offline-/Batch-Validierung: Replay, Backtest, Paper-Runtime-Stimulus, ARVP-Score
 # Typisch über pytest oder dedizierte Scripts/Make-Targets
 pytest -q tests/unit/validation/
 
-# Evidence Packet Assembler (offline, deterministisch)
+# Manual-path Evidence Packet Assembler (offline, deterministisch)
 python -m services.validation.profitability_evidence_packet_assembler \
     --candidate-contract path/to/candidate.json \
     --data-quality-report path/to/dq.json \
@@ -46,8 +59,34 @@ python -m services.validation.profitability_league_scorer \
     --pep path/to/evidence_packet_a.json \
     --pep path/to/evidence_packet_b.json \
     --report-id pltr-my-league-run-1 \
-    --out-json out/league_report.json   # omit --out-json to print to stdout
+    --out-json out/league_report.json
+
+# ARVP candidate evidence assembly (metrics bundle or queue state)
+python -m tools.arvp_vacation.candidate_evidence_assembly \
+    --metrics-bundle path/to/metrics_bundle.json
+
+python -m tools.arvp_vacation.candidate_evidence_assembly \
+    --queue-state path/to/queue_state.json \
+    --hash-only
+
+# Governance-safe league table report (from assembled bundle dir)
+python -m tools.arvp_vacation.league_table_report \
+    --assemble-from-queue-state path/to/queue_state.json \
+    --report-id pltr-arvp-historical-batch \
+    --hash-only
 ```
+
+### Scorer vs governance report assembler
+
+| | `profitability_league_scorer.py` | `profitability_league_table_report_assembler.py` |
+|---|---|---|
+| Role | Formula v1 scoring engine / standalone CLI | Governance-safe multi-candidate report builder |
+| Input | One or more PEP files | PEP bundle directory, metrics bundle, or queue state |
+| Output | `profitability_league_table_report.v1` | Extended governance report with rankability gates |
+| Official ranking | Applies hard gates; may emit sentinel scores | Enforces ARVP rankability; may leave `winner=null`, `official_ranking=[]` |
+| Operator entry | `python -m services.validation.profitability_league_scorer` | `python -m tools.arvp_vacation.league_table_report` |
+
+Neither component authorizes strategy promotion, live trading, or capital allocation. LR remains **NO-GO**.
 
 ### Offline Strategy League scorer v1
 
@@ -68,5 +107,10 @@ python -m services.validation.profitability_league_scorer \
 
 - `services/validation/pipeline.py`
 - `tests/unit/validation/`
+- `tests/unit/arvp/`
+- [`tools/arvp_vacation/README.md`](../../tools/arvp_vacation/README.md)
+- [`docs/contracts/profitability_evidence_packet.v1.schema.json`](../../docs/contracts/profitability_evidence_packet.v1.schema.json)
+- [`docs/contracts/profitability_league_table_report.v1.schema.json`](../../docs/contracts/profitability_league_table_report.v1.schema.json)
+- [`docs/contracts/arvp_strategy_metrics.v1.schema.json`](../../docs/contracts/arvp_strategy_metrics.v1.schema.json)
 - `knowledge/contracts/PRIMARY_BREAKOUT_V1_VALIDATION.md`
 - [`docs/evidence/SHADOW_SOAK_RUN_INDEX.md`](../../docs/evidence/SHADOW_SOAK_RUN_INDEX.md) (via [`docs/index.md`](../../docs/index.md))
