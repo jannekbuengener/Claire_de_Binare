@@ -1,0 +1,26 @@
+{
+  "schema_version": "dataset_spec.v2",
+  "dataset_id": "binance_1m_month_2021_01",
+  "window_id": "binance_1m_month_2021_01",
+  "symbol": "BTCUSDT",
+  "venue": "binance",
+  "source": "file",
+    "file_path": "tests/fixtures/market_data/binance_window_bank/binance_1m_month_2021_01/candles.jsonl",
+  "start_ts_ms": 1609459200000,
+  "end_ts_ms": 1609477140000,
+  "timeframe": "1m",
+  "purpose": "development",
+  "overlap_class": "monthly",
+  "regime_enriched": true,
+  "regime_distribution": {
+    "1": {
+      "count": 240
+    },
+    "2": {
+      "count": 60
+    }
+  },
+  "evidence_class": "historical_cross_venue_research",
+  "ranking_ready": false,
+  "lr_status": "NO-GO"
+}

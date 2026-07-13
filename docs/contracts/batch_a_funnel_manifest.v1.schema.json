@@ -1,0 +1,237 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://claire-de-binare/docs/contracts/batch_a_funnel_manifest.v1.schema.json",
+  "title": "Batch-A Established Strategy Funnel Manifest v1",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "schema_version",
+    "batch_id",
+    "source_issue",
+    "parent_control_issue",
+    "candidate_lock_source",
+    "lr_status",
+    "ranking_ready",
+    "evidence_class",
+    "development_selection",
+    "candidates",
+    "data_requirements",
+    "safety_boundaries",
+    "limitations"
+  ],
+  "properties": {
+    "schema_version": {
+      "const": "batch_a_funnel_manifest.v1"
+    },
+    "batch_id": {
+      "type": "string",
+      "pattern": "^batch-a-[a-z0-9_-]{4,64}$"
+    },
+    "source_issue": {
+      "type": "string",
+      "pattern": "^#4030$"
+    },
+    "parent_control_issue": {
+      "type": "string",
+      "pattern": "^#4029$"
+    },
+    "candidate_lock_source": {
+      "type": "string",
+      "minLength": 1
+    },
+    "lr_status": {
+      "const": "NO-GO"
+    },
+    "ranking_ready": {
+      "const": false
+    },
+    "evidence_class": {
+      "const": "historical_cross_venue_research"
+    },
+    "development_selection": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "schema_version",
+        "venue",
+        "symbol",
+        "timeframe",
+        "purpose",
+        "overlap_class",
+        "window_count",
+        "selection_sha256",
+        "window_ids",
+        "excluded_overlap_classes",
+        "excluded_purposes"
+      ],
+      "properties": {
+        "schema_version": {
+          "const": "batch_a_development_selection.v1"
+        },
+        "venue": {
+          "type": "string"
+        },
+        "symbol": {
+          "const": "BTCUSDT"
+        },
+        "timeframe": {
+          "const": "1m"
+        },
+        "purpose": {
+          "const": "development"
+        },
+        "overlap_class": {
+          "const": "monthly"
+        },
+        "window_count": {
+          "const": 39
+        },
+        "selection_sha256": {
+          "type": "string",
+          "pattern": "^[a-f0-9]{64}$"
+        },
+        "window_ids": {
+          "type": "array",
+          "minItems": 39,
+          "maxItems": 39,
+          "items": {
+            "type": "string",
+            "pattern": "^binance_1m_month_[0-9]{4}_[0-9]{2}$"
+          }
+        },
+        "excluded_overlap_classes": {
+          "type": "array",
+          "items": {
+            "enum": ["quarterly", "yearly"]
+          }
+        },
+        "excluded_purposes": {
+          "type": "array",
+          "items": {
+            "enum": ["validation", "out_of_sample", "stress"]
+          }
+        }
+      }
+    },
+    "candidates": {
+      "type": "array",
+      "minItems": 10,
+      "maxItems": 10,
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "strategy_id",
+          "implementation_mode",
+          "implementation_status",
+          "later_slice",
+          "frozen_parameters",
+          "parameter_source",
+          "direction",
+          "data_fields",
+          "evidence_class"
+        ],
+        "properties": {
+          "strategy_id": {
+            "type": "string",
+            "minLength": 1
+          },
+          "implementation_mode": {
+            "type": "string",
+            "enum": [
+              "EXTEND",
+              "NEW",
+              "REUSE_RESCREEN_CROSS_VENUE_WITH_PRIOR_NEGATIVE_EVIDENCE"
+            ]
+          },
+          "implementation_status": {
+            "type": "string",
+            "enum": ["implemented", "implementation_pending"]
+          },
+          "later_slice": {
+            "type": "string",
+            "pattern": "^2[b-d]$"
+          },
+          "adapter_id": {
+            "type": ["string", "null"]
+          },
+          "runner_module": {
+            "type": ["string", "null"]
+          },
+          "contract_ref": {
+            "type": ["string", "null"]
+          },
+          "parameter_source": {
+            "type": "string"
+          },
+          "frozen_parameters": {
+            "type": "object"
+          },
+          "warmup_bars": {
+            "type": ["integer", "null"],
+            "minimum": 0
+          },
+          "direction": {
+            "type": "string"
+          },
+          "data_fields": {
+            "type": "array",
+            "minItems": 1,
+            "items": {
+              "type": "string"
+            }
+          },
+          "evidence_class": {
+            "type": "string"
+          }
+        }
+      }
+    },
+    "data_requirements": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "venue",
+        "symbol",
+        "timeframe",
+        "window_bank_root",
+        "dataset_adapter_module",
+        "read_only"
+      ],
+      "properties": {
+        "venue": {
+          "type": "string"
+        },
+        "symbol": {
+          "type": "string"
+        },
+        "timeframe": {
+          "type": "string"
+        },
+        "window_bank_root": {
+          "type": "string"
+        },
+        "dataset_adapter_module": {
+          "type": "string"
+        },
+        "read_only": {
+          "const": true
+        }
+      }
+    },
+    "safety_boundaries": {
+      "type": "array",
+      "minItems": 1,
+      "items": {
+        "type": "string"
+      }
+    },
+    "limitations": {
+      "type": "array",
+      "minItems": 1,
+      "items": {
+        "type": "string"
+      }
+    }
+  }
+}
