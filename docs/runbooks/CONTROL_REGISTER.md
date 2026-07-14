@@ -1,6 +1,6 @@
 # Control Register
 
-**Letzte Aktualisierung:** 2026-07-13 (Nav-/Issue-Link-Reconcile #3995)
+**Letzte Aktualisierung:** 2026-07-14 (Reconcile-Batch #4041/#4043/#4045/#4053/#4057/#4060/#4066/#4084/#4086)
 **SSOT Live-Readiness:** [`docs/live-readiness/LR-AUDIT-STATUS-2026-03-05.md`](../live-readiness/LR-AUDIT-STATUS-2026-03-05.md)
 **Verdict:** NO-GO
 **Control-Board Stage:** `trade-capable` (ratifiziert 2026-04-08 via Issue [#1492](https://github.com/jannekbuengener/Claire_de_Binare/issues/1492))
@@ -131,6 +131,8 @@ Kontext-Issue-Nummern sind historische Anker (alle CLOSED) — nicht als offene 
 
 ## Workflow-Control-Notizen
 
+- Dependabot Autopilot (PRs #4062, #4067): Der fail-closed Klassifikator liest normalisierte Fakten gegen die versionierte Phase-1-Allowlist. Der Broker ist **report-only**; `ELIGIBLE` autorisiert keinen Merge, `merge_authorized=false`, keine GitHub-Mutation und keine Runtime-/LR-Ableitung. Phase-1-Kill-Switch/Merge-Ausführung bleibt außerhalb dieses Control-Stands.
+- `security-scan.yml` / Prometheus (PR #4083, gemergt 2026-07-14, Commit `2081d41d`): Scan-cleared Pin `prom/prometheus:v3.13.0@sha256:c6b27ea…` → `v3.13.1@sha256:3c42b892…` in Security-Matrix, Shared Base, RED und v3-Overlay synchron nachgezogen. `CVE-2026-39822` ist im validierten Kandidaten nicht mehr vorhanden; Postgres/Grafana bleiben upstream-abhaengig und unveraendert. Keine Alert-Dismissals, kein Runtime-Deploy, LR **NO-GO**.
 - `security-scan.yml`: Trivy-SARIF-Uploads muessen explizit stabile Kategorien verwenden (`trivy-base-*`, `trivy-custom-*`), damit Digest-/Tag-Bumps keine neuen Code-Scanning-Baselines aufspalten. Security-Triage und Dismiss-Cluster bleiben im `docs/security/TRIAGE_RUNBOOK.md` verankert.
 - `security-scan.yml` (PR #1768): Redis-Digest-Refresh — `redis:7.4.8-alpine`-Digest in `trivy-scan-base`- und `scan-base-images`-Matrix aktualisiert (digest-only, semantischer Tag unveraendert). Trivy-SARIF-Kategorie `trivy-base-redis` bleibt stabil; kein neues Security-Triage-Item.
 - `security-scan.yml` (PR #2302): Postgres-Digest-Refresh — `postgres:15.17-alpine`-Digest in `trivy-scan-base`- und `scan-base-images`-Matrix aktualisiert (digest-only, semantischer Tag unveraendert). Trivy-SARIF-Kategorie `trivy-base-postgres` bleibt stabil; kein neues Security-Triage-Item.
