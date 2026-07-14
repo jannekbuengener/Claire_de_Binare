@@ -5,7 +5,7 @@
   "block_creations": false,
   "enforce_admins": true,
   "lock_branch": false,
-  "required_conversation_resolution": true,
+  "required_conversation_resolution": false,
   "required_linear_history": true,
   "required_pull_request_reviews": {
     "dismiss_stale_reviews": true,
