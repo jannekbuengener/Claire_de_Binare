@@ -4,26 +4,6 @@ This document records governance interventions on branch protection rules for au
 
 ---
 
-## 2026-07-14 - Reconcile Conversation-Resolution Live State (Issue #4060; no settings mutation)
-
-**Context:** Live API verification reports `required_conversation_resolution.enabled=false`. The merge-policy runbook still documented `true` and therefore misclassified unresolved review threads as a technical branch-protection blocker.
-
-**Action Taken:** Documentation-only reconciliation. No branch-protection endpoint was mutated.
-
-**Verification:**
-
-```bash
-gh api repos/jannekbuengener/Claire_de_Binare/branches/main/protection \\
-  --jq '.required_conversation_resolution.enabled'
-# false
-```
-
-**Current State:** Required contexts remain `ci (Unit/Integration + Lint gesammelt)` and `policy-gate`; strict status checks, linear history and admin enforcement remain enabled. Conversation resolution is disabled. Unresolved review threads remain advisory review evidence unless another live rule requires them.
-
-**Decision:** Runbooks follow the live GitHub API state. Re-enabling conversation resolution requires a separate governance decision and is not part of #4060.
-
----
-
 ## 2026-04-12T11:35:24Z - Disable Repo Auto-Merge (Issue #1661, Option A)
 
 **Context:** Issue #1661 mandated Option A: disable GitHub Auto-Merge repo-wide to remove
