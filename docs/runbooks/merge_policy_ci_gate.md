@@ -22,7 +22,7 @@ Merge-method guidance for proof/slice PRs is documented in
 - Governance decision: the PR gate wins, not the larger workflow. `ci.yaml` is not merge-relevant until explicitly consolidated into the PR contract.
 - **Security fix (#3405):** `ci.yml` and `policy-gate.yml` run on `ubuntu-latest` (GitHub-hosted), not on self-hosted runners. This prevents untrusted fork-PR code from executing on the privileged self-hosted runner. The self-hosted runner with `merge-gate` label is no longer required for merge checks.
 - Live branch protection review settings: `required_approving_review_count=0`, `require_code_owner_reviews=false`, `dismiss_stale_reviews=true`
-- Live branch protection safety settings also include `required_linear_history=true`, `required_conversation_resolution=true`, `enforce_admins=true`
+- Live branch protection safety settings include `required_linear_history=true` and `enforce_admins=true`; `required_conversation_resolution=false` is the current live API state (#2837, reconciled via #4060)
 - Repo-level auto-merge setting: `allow_auto_merge=false` (Option A, issue #1661)
 
 ## Review Signal vs Merge Rights
@@ -42,9 +42,10 @@ Use this order whenever a PR looks blocked even though PR CI is mostly green.
    - `ci (Unit/Integration + Lint gesammelt)`
    - `policy-gate`
 2. Verify the live branch-protection safety gates next. In the current setup, a PR can still be blocked by:
-   - `required_conversation_resolution=true`
    - `required_status_checks.strict=true` (head branch not up to date with `main`)
    - `required_linear_history=true`
+   - `enforce_admins=true`
+   `required_conversation_resolution.enabled=false` is not a branch-protection merge blocker; unresolved review threads remain advisory review signal unless another live rule requires them.
 3. Only after steps 1 and 2 classify any other red checks. A red non-required check is not automatically a merge blocker.
 
 Recommended operator path:
@@ -55,7 +56,7 @@ gh pr view <number> --json mergeStateStatus,statusCheckRollup,reviewDecision
 gh api graphql -f query='query { repository(owner:"jannekbuengener", name:"Claire_de_Binare") { pullRequest(number: <number>) { reviewThreads(first: 100) { nodes { isResolved isOutdated path } } } } }'
 ```
 
-If required contexts are green but the PR is still blocked, inspect unresolved, non-outdated review threads first. See
+If required contexts are green but the PR is still blocked, inspect strict-branch freshness and the live merge-state reason first. Review unresolved, non-outdated threads as advisory review signal; do not misclassify them as a branch-protection blocker while `required_conversation_resolution.enabled=false`. See
 [resolve_review_threads_via_graphql.md](resolve_review_threads_via_graphql.md)
 for the deterministic thread-resolution path.
 
@@ -252,7 +253,7 @@ Expected output (key fields):
 | `dismiss_stale_reviews` | `true` |
 | `required_linear_history.enabled` | `true` |
 | `enforce_admins.enabled` | `true` |
-| `required_conversation_resolution.enabled` | `true` |
+| `required_conversation_resolution.enabled` | `false` |
 | `allow_force_pushes.enabled` | `false` |
 | `allow_deletions.enabled` | `false` |
 
@@ -319,6 +320,8 @@ gh api repos/jannekbuengener/Claire_de_Binare/branches/main/protection/required_
 3. Remove the test from the quarantine table in `no_human_review_policy.md`
 
 ## References
+
+- #4060 live-state reconciliation: `required_conversation_resolution.enabled=false`; no branch-protection mutation
 
 - #1065 Sentinel Phase A contract behavior
 - #1067 Canonical PR gate decision (`ci.yml` as merge contract)
