@@ -1,0 +1,172 @@
+{
+  "schema_version": "batch_b_funnel_manifest.v1",
+  "batch_id": "batch_b_established_strategy_funnel_v1",
+  "source_issue": "#4069",
+  "parent_control_issue": "#1900",
+  "predecessor_funnel": "#4029",
+  "readiness_source": "docs/evidence/arvp_batch_b_readiness_4065.md",
+  "lock_evidence": "docs/evidence/arvp_batch_b_readiness_lock_4069.md",
+  "lock_status": "BATCH_B_LOCKED",
+  "lock_scope": "candidate_identity_hypothesis_and_dedupe_boundaries_only",
+  "execution_authorized": false,
+  "implementation_authorized": false,
+  "lr_status": "NO-GO",
+  "ranking_ready": false,
+  "evidence_class": "historical_cross_venue_research",
+  "development_selection": {
+    "source_ref": "docs/contracts/batch_a_funnel_manifest.v1.json#/development_selection",
+    "venue": "binance",
+    "symbol": "BTCUSDT",
+    "timeframe": "1m",
+    "purpose": "development",
+    "overlap_class": "monthly",
+    "window_count": 39,
+    "selection_sha256": "3e9ed68736b51fecb299d228c856be80a597cb1dc72fcba595453b856b58bd52"
+  },
+  "stage_a_plan": {
+    "status": "planned_not_authorized",
+    "scenarios": [
+      "baseline",
+      "pessimistic_execution"
+    ],
+    "candidate_count": 5,
+    "window_count": 39,
+    "scenario_count": 2,
+    "planned_scenario_runs": 390
+  },
+  "candidates": [
+    {
+      "strategy_id": "hh_hl_continuation_v1",
+      "longlist_rank": 7,
+      "family": "trend_following",
+      "implementation_mode": "NEW",
+      "implementation_status": "spec_required",
+      "runner_module": null,
+      "hypothesis_boundary": "Enter continuation only from confirmed rising swing-high and swing-low structure; invalidate on structural higher-low failure.",
+      "dedupe_boundary": "Price-structure continuation, not moving-average trend following and not channel breakout.",
+      "required_data": [
+        "open",
+        "high",
+        "low",
+        "close"
+      ],
+      "lookahead_guard": "Swing points must be confirmed using data available at the decision timestamp; no future-bar relabeling."
+    },
+    {
+      "strategy_id": "rsi_momentum_v1",
+      "longlist_rank": 26,
+      "family": "momentum",
+      "implementation_mode": "NEW",
+      "implementation_status": "spec_required",
+      "runner_module": null,
+      "hypothesis_boundary": "Use RSI as a continuation/burst threshold, never as an oversold mean-reversion entry.",
+      "dedupe_boundary": "No price-channel breakout and no ATR-sized directional-candle trigger; distinct from roc_breakout_confirm_v1 and momentum_capture_v1.",
+      "required_data": [
+        "open",
+        "high",
+        "low",
+        "close"
+      ],
+      "lookahead_guard": "RSI must use closed candles only."
+    },
+    {
+      "strategy_id": "high_vol_avoidance_v1",
+      "longlist_rank": 10,
+      "family": "volatility_filter",
+      "implementation_mode": "NEW",
+      "implementation_status": "spec_required",
+      "runner_module": null,
+      "hypothesis_boundary": "Filter-only overlay that blocks entries during chaotic high volatility; it does not generate an alpha entry.",
+      "dedupe_boundary": "Measures activity compression and avoided friction, not volatility breakout or ATR expansion alpha.",
+      "required_data": [
+        "open",
+        "high",
+        "low",
+        "close"
+      ],
+      "lookahead_guard": "Volatility state must be computed from closed candles only."
+    },
+    {
+      "strategy_id": "range_bound_reversion_v1",
+      "longlist_rank": 19,
+      "family": "mean_reversion",
+      "implementation_mode": "NEW",
+      "implementation_status": "spec_required",
+      "runner_module": null,
+      "hypothesis_boundary": "Fade confirmed structural range edges and exit at the range midpoint or structural invalidation.",
+      "dedupe_boundary": "Support/resistance geometry only; no rolling z-score and no Bollinger-band normalized-distance trigger.",
+      "required_data": [
+        "open",
+        "high",
+        "low",
+        "close"
+      ],
+      "lookahead_guard": "Range edges must be confirmed without future bars and frozen for each decision."
+    },
+    {
+      "strategy_id": "mtf_1m_entry_5m_trend_v1",
+      "longlist_rank": 5,
+      "family": "multi_timeframe",
+      "implementation_mode": "NEW",
+      "implementation_status": "spec_required",
+      "runner_module": null,
+      "hypothesis_boundary": "A direction from the last completed derived 5m bar gates a separately specified 1m entry trigger.",
+      "dedupe_boundary": "Exactly one 5m bias layer plus 1m trigger; no 15m hierarchy and no generic htf_bias_ltf_trigger_v1.",
+      "required_data": [
+        "open",
+        "high",
+        "low",
+        "close",
+        "timestamp_ms"
+      ],
+      "lookahead_guard": "At a 1m decision timestamp, only fully closed 5m aggregates may be consumed."
+    }
+  ],
+  "dedupe_resolutions": [
+    {
+      "strategy_id": "bollinger_mean_reversion_v1",
+      "decision": "EXCLUDED_NEAR_DUPLICATE",
+      "compared_against": "range_mean_reversion_v1",
+      "rationale": "Bollinger normalized distance is materially equivalent to rolling mean/standard-deviation z-score logic already screened in Batch A."
+    },
+    {
+      "strategy_id": "htf_bias_ltf_trigger_v1",
+      "decision": "DEFERRED_OVERLAPPING_MTF",
+      "compared_against": "mtf_1m_entry_5m_trend_v1",
+      "rationale": "The lower-complexity rank-5 1m+5m candidate occupies the MTF lane; 5m/15m hierarchy is deferred until it can justify incremental information."
+    }
+  ],
+  "hard_exclusions": {
+    "batch_a_strategy_ids": [
+      "breakout_volatility_filter_v1",
+      "volatility_breakout_v1",
+      "ema_trend_follow_v1",
+      "ma_crossover_v1",
+      "range_mean_reversion_v1",
+      "bollinger_squeeze_breakout_v1",
+      "roc_breakout_confirm_v1",
+      "opening_range_breakout_v1",
+      "atr_expansion_v1",
+      "momentum_capture_v1"
+    ],
+    "campaign_3990_strategy_ids": [
+      "donchian_breakout_v1",
+      "breakout_trend_filter_v1",
+      "primary_breakout_v1"
+    ],
+    "deferred_domains": [
+      "multi_symbol",
+      "spread_liquidity_filter",
+      "regime_switch",
+      "strategy_gearbox"
+    ]
+  },
+  "safety_boundaries": [
+    "LR NO-GO — no live capital, paper promotion, or strategy promotion",
+    "Candidate lock does not authorize implementation or campaign execution",
+    "ranking_ready=false",
+    "Binance historical cross-venue research only; not MEXC same-venue confirmation",
+    "No parameter optimization in the readiness-lock slice"
+  ],
+  "next_gate": "BATCH_B_IMPLEMENTATION_DUAL_GO"
+}
