@@ -6,6 +6,11 @@
 
 ---
 
+## Reconcile 2026-07-14
+
+- Batch-A offline replay inventory reconciled against PRs #4039, #4042, #4044, #4052 and #4056: ten executable strategies, read-only Binance adapter, shared runner helpers and compact `regime_stats.v1` are now catalogued. This is offline research infrastructure, not a BLUE/RED service and not a promotion or Live-Go signal.
+- Prometheus RED monitoring pin reconciled to `v3.13.1` with the scan-cleared digest from PR #4083. Topology and ports are unchanged; LR remains **NO-GO**.
+
 ## Status-Definitionen
 
 | Status | Bedeutung |
@@ -82,7 +87,10 @@ Hinweis: Der Config-Default fuer `SIGNAL_PORT` liegt in `services/signal/config.
 | **Dataset Spec** | `core/replay/dataset_spec.py` | **AKTIV** (PR #1856) | Immutable request spec für historische Replay-Datasets (ARVP §4.2). Frozen fields: `source` (file\|db), `file_path` (file mode), `db_dataset_window` (db mode: START_TS_MS:END_TS_MS). Fingerprint via canonical_hash. Fail-closed validation: mutually exclusive source fields. |
 | **Dataset Provider** | `core/replay/dataset_provider.py` | **AKTIV** (PR #1856, PR #1891) | FileBackedDatasetProvider (JSON/JSONL) + DBBackedDatasetProvider (candles_1m Postgres). Operator-facing API: `--dataset-source file\|db`, `--input-candles FILE` (file mode), `--db-dataset-window START_TS_MS:END_TS_MS` (db mode). Beide validieren Ordering, 1m-Takt, erforderliche Felder (ts_ms, high, low, close). ARVP §4.2 data-shape layer (regime_id/window boundary enforcement gehört zum Bridge/Runner). |
 | **Historical Bridge** | `core/replay/historical_bridge.py` | **AKTIV** (PR #3081) | File-backed historical input adapter for `primary_breakout_v1`; supports configurable `price_policy` parameter for replay-vs-live signal evaluation |
-| **Pack-A Breakout Common** | `core/replay/pack_a_breakout_common.py` | **AKTIV** (PR #3782) | Shared offline helpers for Pack-A wave-1 breakout variants: Donchian channel math, closed-bar-only 5m trend gate, candle validation. Frozen spec parameters per #3748; validation/shape-replay only, no runtime. |
+| **Pack-A Breakout Common** | `core/replay/pack_a_breakout_common.py` | **AKTIV** (PRs #3782, #4042, #4044, #4052) | Shared deterministic indicators, lookbacks, crossover/session helpers and frozen configs for the Batch-A runner family; offline validation only, no runtime. |
+| **Batch-A Strategy Registry** | `core/replay/batch_a_strategy_registry.py` | **AKTIV** (PRs #4039, #4042, #4044, #4052) | Frozen metadata and executable-state registry for all ten Batch-A strategies. |
+| **Binance Window-Bank Adapter** | `core/replay/binance_window_bank_adapter.py` | **AKTIV** (PR #4039) | Read-only OHLCV/regime loader for historical cross-venue research windows; no runtime or promotion semantics. |
+| **Compact Regime Stats** | `core/replay/regime_stats.py` | **AKTIV** (PR #4056) | Per-bar aggregation into `regime_stats.v1`, emitted by Pack-A reports and scenario metrics without a persisted step trace. |
 | **Replay Scheduler** | `core/replay/scheduler.py` | **AKTIV** (PR #1859) | Event-time replay scheduler mit deterministischen Speed-Profilen, Warmup/Live-Split und fail-closed Boundary-Validation |
 | **Shadow Comparison** | `core/replay/shadow_compare.py` | **AKTIV** (PR #1914) | Deterministic, offline comparison of replay output windows against explicit paper-trading reference windows (no DB/Redis). Pure function; fail-closed on misalignment. Decimal-quantized rate values (no-float rule). Deterministic fingerprinting via canonical_hash. |
 | **Replay vs Paper Compare** | `core/replay/replay_vs_paper_compare.py` | **AKTIV** (PR #1914) | Glue layer: consumes replay_report.v1 (report.json) + arvp_paper_reference_window.v1 (paper reference); produces shadow_comparison.json + shadow_comparison_summary.md. Deterministic; explicit reject data handling; fail-closed on missing inputs. |
@@ -131,7 +139,7 @@ Hinweis: Der Config-Default fuer `SIGNAL_PORT` liegt in `services/signal/config.
 
 | Service | Container | Image | Port | Status | Funktion |
 |---------|-----------|-------|------|--------|----------|
-| **Prometheus** | cdb_prometheus | prom/prometheus:v3.13.0@sha256:c6b27ea434f8389bfe233fbc7be381cf50587c286e871bc842008f5a1b1908a7 | 19090→9090 | **AKTIV** | Metrics Collection |
+| **Prometheus** | cdb_prometheus | prom/prometheus:v3.13.1@sha256:3c42b892cf723fa54d2f262c37a0e1f80aa8c8ddb1da7b9b0df9455a35a7f893 | 19090→9090 | **AKTIV** | Metrics Collection |
 | **Grafana** | cdb_grafana | grafana/grafana:13.0.3-ubuntu@sha256:7c1acd41225a05af53fa2af32a044a2a96cdef2540f2c415ee5b1e98fae99084 | 3000 | **AKTIV** | Dashboards |
 | **Postgres Exporter** | cdb_postgres_exporter | prometheuscommunity/postgres-exporter | 9187 | **AKTIV** | PG Metrics; DSN-Wiring ueber `postgres_password` Secret + `PGPASSWORD`, `DATA_SOURCE_NAME` wird zur Laufzeit aus `POSTGRES_USER`/`POSTGRES_DB` und Host/Port zusammengesetzt |
 | **Redis Exporter** | cdb_redis_exporter | bitnami/redis-exporter | 9121 | **AKTIV** | Redis Metrics |
