@@ -30,7 +30,7 @@ Expected classification buckets:
 |---|---|
 | `active` | Default — all paths not matching a skip prefix |
 | `archive_snapshot` | `docs/archive/`, `knowledge/archive/` |
-| `fixture_testdata` | `tests/fixtures/`, `artifacts/`, `reports/p5_canary/` |
+| `fixture_testdata` | `tests/fixtures/`, `artifacts/`, `docs/evidence/reports/p5_canary/` |
 
 New untracked-class README paths default to `active` (fail-closed validation).
 

@@ -17,7 +17,11 @@ CONTROL_PLANE_REGISTER_JSON = (
     REPO_ROOT / ".github" / "control-plane" / "generated" / "workflow-register.json"
 )
 REQUIRED_CHECKS_BASELINE = (
-    REPO_ROOT / "reports" / "REQUIRED_CHECK_CONTEXTS_BASELINE_main.json"
+    REPO_ROOT
+    / "docs"
+    / "evidence"
+    / "reports"
+    / "REQUIRED_CHECK_CONTEXTS_BASELINE_main.json"
 )
 
 WRITE_PERMISSION_SCOPES = frozenset(
@@ -233,7 +237,9 @@ def scan_workflow_inventory(
 ) -> WorkflowInventoryScan:
     disk = tuple(list_workflow_yaml_files(workflows_dir))
     register = tuple(parse_register_table_workflows(register_md_path))
-    control_plane = tuple(parse_control_plane_register_workflows(control_plane_json_path))
+    control_plane = tuple(
+        parse_control_plane_register_workflows(control_plane_json_path)
+    )
 
     disk_set = set(disk)
     register_set = set(register)
@@ -355,7 +361,11 @@ ISSUES_LABELED_CASCADE_FILES = frozenset(
 )
 
 MILESTONE_DISPATCH_CASCADE = (
-    ("auto-milestone-label-dispatch.yml", "auto_milestone_issue_label", "auto-milestone.yml"),
+    (
+        "auto-milestone-label-dispatch.yml",
+        "auto_milestone_issue_label",
+        "auto-milestone.yml",
+    ),
 )
 
 PROJECT_API_MARKERS = (
@@ -415,7 +425,9 @@ P1_SCHEDULED_WORKFLOW_FILES = frozenset(
 )
 
 CONTROL_PLANE_COLLECTION_DIR = REPO_ROOT / ".github" / "control-plane" / "src"
-CONTROL_PLANE_VALIDATOR = REPO_ROOT / ".github" / "scripts" / "control_plane_validate.py"
+CONTROL_PLANE_VALIDATOR = (
+    REPO_ROOT / ".github" / "scripts" / "control_plane_validate.py"
+)
 
 MANIFEST_STATUS_VALUES = frozenset(
     {
@@ -576,7 +588,9 @@ def build_p1_schedule_map() -> dict[str, ScheduleEntry]:
     return entries
 
 
-def find_cron_collisions(schedule_map: dict[str, ScheduleEntry]) -> dict[str, tuple[str, ...]]:
+def find_cron_collisions(
+    schedule_map: dict[str, ScheduleEntry],
+) -> dict[str, tuple[str, ...]]:
     collisions: dict[str, list[str]] = {}
     for filename, entry in schedule_map.items():
         for cron in entry.crons:
@@ -610,7 +624,9 @@ def build_security_boundary_row(workflow_path: Path) -> SecurityWorkflowBoundary
     )
 
 
-def list_manifest_unit_dirs(collection_dir: Path = CONTROL_PLANE_COLLECTION_DIR) -> list[Path]:
+def list_manifest_unit_dirs(
+    collection_dir: Path = CONTROL_PLANE_COLLECTION_DIR,
+) -> list[Path]:
     if not collection_dir.exists():
         return []
     return sorted(
@@ -637,7 +653,9 @@ def manifest_triggers_match_yaml(manifest: dict[str, Any], workflow_path: Path) 
     return declared == actual
 
 
-def manifest_permissions_match_yaml(manifest: dict[str, Any], workflow_path: Path) -> bool:
+def manifest_permissions_match_yaml(
+    manifest: dict[str, Any], workflow_path: Path
+) -> bool:
     declared = (manifest.get("workflow") or {}).get("permissions") or {}
     if not isinstance(declared, dict):
         return False
@@ -660,7 +678,9 @@ def control_plane_missing_unit_findings() -> tuple[str, ...]:
         "cdb-daily-delta-triage.yml",
         "cdb-post-merge-followup-scanner.yml",
     }
-    missing = sorted(name for name in expected_catalog if name in disk and name not in cataloged)
+    missing = sorted(
+        name for name in expected_catalog if name in disk and name not in cataloged
+    )
     return tuple(missing)
 
 
@@ -749,9 +769,7 @@ def parse_markdown_workflow_filenames(markdown_path: Path) -> set[str]:
 def parse_graph_workflow_inventory_references(graph_path: Path) -> set[str]:
     text = graph_path.read_text(encoding="utf-8")
     refs: set[str] = set()
-    refs.update(
-        re.findall(r"^\| `([^`]+\.(?:yml|yaml))` \|", text, flags=re.MULTILINE)
-    )
+    refs.update(re.findall(r"^\| `([^`]+\.(?:yml|yaml))` \|", text, flags=re.MULTILINE))
     refs.update(re.findall(r"\[[^\]]*?([a-zA-Z0-9_.-]+\.(?:yml|yaml))", text))
     for match in re.findall(r"\.github/workflows/([^\s`]+)", text):
         refs.add(match.rsplit("/", 1)[-1])
@@ -789,7 +807,9 @@ def scan_workflow_docs_drift(
     register_table = parse_register_table_workflows(register_md_path)
     register_header = parse_register_total_count_claim(register_md_path)
     runbook_claim = parse_runbook_workflow_count_claim(runbook_md_path)
-    entrypoint_claim = parse_control_plane_yaml_count_claim(control_plane_entrypoint_path)
+    entrypoint_claim = parse_control_plane_yaml_count_claim(
+        control_plane_entrypoint_path
+    )
     graph_refs = sorted(
         name
         for name in parse_graph_workflow_inventory_references(graph_md_path)
@@ -877,7 +897,9 @@ def classify_workflow_operational_status(
     if filename in PARKED_WORKFLOW_FILES:
         return "parked"
     workflow_path = workflows_dir / filename
-    if workflow_path.is_file() and reusable_workflow_is_workflow_call_only(workflow_path):
+    if workflow_path.is_file() and reusable_workflow_is_workflow_call_only(
+        workflow_path
+    ):
         return "reusable"
     status_map = parse_register_status_map(register_md_path)
     register_status = status_map.get(filename, "")
@@ -901,7 +923,10 @@ def classify_workflow_risk(
         return "high"
     automatic = set(row.triggers).intersection(AUTOMATIC_TRIGGERS)
     if row.write_permissions and automatic:
-        if filename in LABEL_CASCADE_WORKFLOW_FILES or filename in ISSUES_LABELED_CASCADE_FILES:
+        if (
+            filename in LABEL_CASCADE_WORKFLOW_FILES
+            or filename in ISSUES_LABELED_CASCADE_FILES
+        ):
             return "high"
         return "medium"
     if schedule_entry.has_schedule and row.write_permissions:
@@ -931,7 +956,9 @@ def build_agent_workflow_map_entry(
         "name": str(workflow.get("name") or filename),
         "purpose": str(workflow.get("name") or filename),
         "triggers": list(row.triggers),
-        "permissions": list(row.write_permissions) if row.write_permissions else ["read-only"],
+        "permissions": (
+            list(row.write_permissions) if row.write_permissions else ["read-only"]
+        ),
         "writes_github": bool(row.write_permissions),
         "has_schedule": schedule_entry.has_schedule,
         "status": classify_workflow_operational_status(

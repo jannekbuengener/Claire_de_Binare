@@ -70,7 +70,7 @@ rules, and a concrete operator path. Gaps are specific and actionable.
 |---|---|---|---|
 | **A — Agent / repo** | Agent or CI | Doc review; compose/manifest name inventory; `git ls-files`; PR diff pattern scan; cite `gitleaks` posture | Read SSOT secret files; `cat`/`Get-Content` of credentials; venue API; publish values |
 | **B — Operator local** | Human operator | `Test-Path` per secret **name**; attest `PRESENT`/`ABSENT`; venue dashboard permission review | Paste keys, IPs, account IDs, or emails into repo/GitHub |
-| **C — Operator evidence commit** | Operator + scoped docs commit | Redacted pack under `reports/lr050/secrets_readiness/YYYY-MM-DD/` | Any tier-A forbidden action in evidence artifacts |
+| **C — Operator evidence commit** | Operator + scoped docs commit | Redacted pack under `docs/evidence/reports/lr050/secrets_readiness/YYYY-MM-DD/` | Any tier-A forbidden action in evidence artifacts |
 
 **Fail-closed:** If a check requires tier B but only tier A was performed → gate
 **INCONCLUSIVE**, not PASS.
@@ -154,7 +154,7 @@ aggregate **PASS** with committed evidence — **not** preflight doc merge alone
 
 ## Operator Attestation Schema
 
-**Target directory (execution):** `reports/lr050/secrets_readiness/YYYY-MM-DD/`
+**Target directory (execution):** `docs/evidence/reports/lr050/secrets_readiness/YYYY-MM-DD/`
 
 **Files:**
 
@@ -235,7 +235,7 @@ IP addresses, API key material, account IDs, or email addresses in JSON values.
 
 Consolidated from [`LR-050-SECRETS-READINESS.md`](./LR-050-SECRETS-READINESS.md) §9,
 [`.github/workflows/docs-hub-guard.yml`](../../.github/workflows/docs-hub-guard.yml), and
-[`reports/lr050/runtime_dry_run/2026-06-04/redaction_report.md`](../../reports/lr050/runtime_dry_run/2026-06-04/redaction_report.md).
+[`docs/evidence/reports/lr050/runtime_dry_run/2026-06-04/redaction_report.md`](../evidence/reports/lr050/runtime_dry_run/2026-06-04/redaction_report.md).
 
 | Field | In repo evidence? |
 |---|---|
@@ -300,7 +300,7 @@ $names = @(
 
 ### Step 4 — Commit evidence + #2983 comment
 
-- Post summary on #2983 linking `reports/lr050/secrets_readiness/YYYY-MM-DD/`.
+- Post summary on #2983 linking `docs/evidence/reports/lr050/secrets_readiness/YYYY-MM-DD/`.
 - Close #2983 only when aggregate gate **PASS** and acceptance criteria met.
 
 ---

@@ -55,7 +55,7 @@ no live stack, no `E2E_RUN=1` guard. Runs in CI as part of
 | order_id | `MOCK_41250577` |
 | quantity filled | `0.004048248100393314 BTC` |
 | stream.fills delta | +1 (10017 → 10018) |
-| Evidence file | `evidence-run/lr020_tier2_evidence.json` |
+| Evidence file | `docs/evidence/runtime-runs/lr020_tier2_evidence.json` |
 | Script | `scripts/lr020_tier2_evidence_capture.py --inject-via signals --timeout 30` |
 
 ### Pipeline path verified
@@ -151,7 +151,7 @@ Full paper-trading pipeline confirmed end-to-end.
 
 ### What remains unverified as a formal precondition
 
-The following preconditions required by `governance/p5_canary_readiness.yaml` were
+The following preconditions required by `config/live-readiness/p5_canary_readiness.yaml` were
 **not performed as explicit pre-run checks** and are **not captured in the evidence
 artifact**:
 

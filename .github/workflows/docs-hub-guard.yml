@@ -89,9 +89,9 @@ jobs:
           files=(
             README.md
             AGENTS.md
-            mcp_navpack_working_repo/ENTRYPOINTS.yaml
-            mcp_navpack_working_repo/CHEATSHEET.md
-            mcp_navpack_working_repo/DOCS_HUB.pointer.md
+            docs/navigation/mcp-navpack/ENTRYPOINTS.yaml
+            docs/navigation/mcp-navpack/CHEATSHEET.md
+            docs/navigation/mcp-navpack/DOCS_HUB.pointer.md
           )
           hits="$(grep -nE '\.\./Claire_de_Binare_Docs|D:\\Dev\\Workspaces\\Repos\\Claire_de_Binare_Docs|canonical agent registry lives in the separate Docs Hub repo|Working Repo relies on the Docs Hub canonical registry' "${files[@]}" || true)"
           if [ -n "$hits" ]; then

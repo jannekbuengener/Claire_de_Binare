@@ -31,8 +31,8 @@ Deep-audited mandatory surfaces:
 - `docs/surrealdb/README.md`
 - `knowledge/content/ONBOARDING_QUICK_START.md`
 - `knowledge/content/ONBOARDING_LINKS.md`
-- `mcp_navpack_working_repo/ENTRYPOINTS.yaml`
-- `mcp_navpack_working_repo/CHEATSHEET.md`
+- `docs/navigation/mcp-navpack/ENTRYPOINTS.yaml`
+- `docs/navigation/mcp-navpack/CHEATSHEET.md`
 - `Makefile`
 - `tools/surrealdb/context_onboarding_doctor.py`
 - `tests/unit/surrealdb/test_context_onboarding_doctor.py`
@@ -42,7 +42,7 @@ Adjacent discovery surfaces read for routing context:
 - `AGENTS.md`
 - `agents/AGENTS.md`
 - `agents/OPEN_CODE_AGENTS.md`
-- `mcp_navpack_working_repo/README.md`
+- `docs/navigation/mcp-navpack/README.md`
 - `docs/runbooks/README.md`
 - `docs/live-readiness/README.md`
 - `docs/meta/WORKING_REPO_CANON.md`
@@ -81,8 +81,8 @@ Relevant GitHub-live signals:
 
 - `#3226` already defines the child-issue chain `#3227`-`#3233` in a live comment.
 - `#1445` contains prior post-merge discovery-surface-drift signals for this exact area:
-  - comment `4633271121`: drift observation against `README.md`, `services/README.md`, `mcp_navpack_working_repo/ENTRYPOINTS.yaml`, `mcp_navpack_working_repo/CHEATSHEET.md`
-  - comment `4633810579`: drift observation against `docs/index.md`, `docs/runbooks/README.md`, `mcp_navpack_working_repo/ENTRYPOINTS.yaml`, `mcp_navpack_working_repo/CHEATSHEET.md`
+  - comment `4633271121`: drift observation against `README.md`, `services/README.md`, `docs/navigation/mcp-navpack/ENTRYPOINTS.yaml`, `docs/navigation/mcp-navpack/CHEATSHEET.md`
+  - comment `4633810579`: drift observation against `docs/index.md`, `docs/runbooks/README.md`, `docs/navigation/mcp-navpack/ENTRYPOINTS.yaml`, `docs/navigation/mcp-navpack/CHEATSHEET.md`
 
 ## Bootloader Evidence
 
@@ -169,9 +169,9 @@ limitations:
 | `docs/surrealdb/README.md` | `active` | Context / SurrealDB doc index | Good operator index, but it hides the developer preflight path: no mention of `make context-doctor` or `context_onboarding_doctor.py` (`docs/surrealdb/README.md:5-45`) | `#3231`, `#3232` |
 | `knowledge/content/ONBOARDING_QUICK_START.md` | `duplicate` | legacy onboarding pack in live tree | Duplicate onboarding surface with active-tree placement, but it routes to multiple missing or non-canonical docs (`knowledge/content/ONBOARDING_QUICK_START.md:13-31`, `knowledge/content/ONBOARDING_QUICK_START.md:73-90`, `knowledge/content/ONBOARDING_QUICK_START.md:129-135`) | `#3229` |
 | `knowledge/content/ONBOARDING_LINKS.md` | `duplicate` | legacy consolidated links pack | Duplicate surface with many broken or stale paths (`docs/CONTRACTS.md`, `docs/TEST_HARNESS_V1.md`, `docs/PATCHSET_PLAN_345.md`, `docs/services/`, `docs/architecture/`, `docs/workflows/`, `docs/services/WS_SERVICE_RUNBOOK.md`) (`knowledge/content/ONBOARDING_LINKS.md:24-35`, `knowledge/content/ONBOARDING_LINKS.md:71-95`, `knowledge/content/ONBOARDING_LINKS.md:120-127`, `knowledge/content/ONBOARDING_LINKS.md:143-183`) | `#3229`, `#3230` |
-| `mcp_navpack_working_repo/README.md` | `active` | navpack summary | Useful meta-surface, but still routes step 3 to stale `DEVELOPER_ONBOARDING.md` and does not surface the bootloader-first developer chain (`mcp_navpack_working_repo/README.md:13-24`) | `#3230`, `#3231` |
-| `mcp_navpack_working_repo/ENTRYPOINTS.yaml` | `stale` | machine-readable read order | Active surface, but expected signal for compose still says `base/dev fragments`, and the minimal bundle omits `docs/surrealdb/README.md`, `tools/README.md`, `tests/README.md`, and any doctor surface (`mcp_navpack_working_repo/ENTRYPOINTS.yaml:24-26`, `mcp_navpack_working_repo/ENTRYPOINTS.yaml:71-83`) | `#3230`, `#3231`, `#3232` |
-| `mcp_navpack_working_repo/CHEATSHEET.md` | `stale` | human nav quickref | Routes developers straight into stale `DEVELOPER_ONBOARDING.md` and still lacks any `context-doctor` / Repo Brain preflight pointer (`mcp_navpack_working_repo/CHEATSHEET.md:5-10`, `mcp_navpack_working_repo/CHEATSHEET.md:25-49`) | `#3230`, `#3231`, `#3232` |
+| `docs/navigation/mcp-navpack/README.md` | `active` | navpack summary | Useful meta-surface, but still routes step 3 to stale `DEVELOPER_ONBOARDING.md` and does not surface the bootloader-first developer chain (`docs/navigation/mcp-navpack/README.md:13-24`) | `#3230`, `#3231` |
+| `docs/navigation/mcp-navpack/ENTRYPOINTS.yaml` | `stale` | machine-readable read order | Active surface, but expected signal for compose still says `base/dev fragments`, and the minimal bundle omits `docs/surrealdb/README.md`, `tools/README.md`, `tests/README.md`, and any doctor surface (`docs/navigation/mcp-navpack/ENTRYPOINTS.yaml:24-26`, `docs/navigation/mcp-navpack/ENTRYPOINTS.yaml:71-83`) | `#3230`, `#3231`, `#3232` |
+| `docs/navigation/mcp-navpack/CHEATSHEET.md` | `stale` | human nav quickref | Routes developers straight into stale `DEVELOPER_ONBOARDING.md` and still lacks any `context-doctor` / Repo Brain preflight pointer (`docs/navigation/mcp-navpack/CHEATSHEET.md:5-10`, `docs/navigation/mcp-navpack/CHEATSHEET.md:25-49`) | `#3230`, `#3231`, `#3232` |
 | `Makefile` | `active` | command surface | Canonical place where `context-doctor` is already exposed (`Makefile:111`, `Makefile:400-402`); strong active tooling evidence | `#3232` only if help text or neighboring targets need onboarding refinement |
 | `tools/surrealdb/context_onboarding_doctor.py` | `active` | read-only onboarding preflight | Healthy supporting tool: no secret output, LR `NO-GO` note preserved, next-action prioritization is conservative (`tools/surrealdb/context_onboarding_doctor.py:66-72`, `tools/surrealdb/context_onboarding_doctor.py:312-344`, `tools/surrealdb/context_onboarding_doctor.py:448-478`, `tools/surrealdb/context_onboarding_doctor.py:541-554`) | `#3232` |
 | `tests/unit/surrealdb/test_context_onboarding_doctor.py` | `active` | safety regression for doctor | Good evidence that the doctor redacts secrets and stays fail-closed (`tests/unit/surrealdb/test_context_onboarding_doctor.py:292-338`) | `#3232` |
@@ -255,7 +255,7 @@ High-confidence missing-path or stale-path examples:
 | `knowledge/content/ONBOARDING_QUICK_START.md` | `docs/security/SECRET_LEAK_RESPONSE.md` | missing |
 | `DEVELOPER_ONBOARDING.md` | `PROJECT_STATUS.md` as service overview | historical snapshot, not current SSOT |
 | `.github/README.md` | workflow-count claims | stale detail, paths themselves resolve |
-| `mcp_navpack_working_repo/ENTRYPOINTS.yaml` | compose expected signal says `base/dev` | stale expectation against current compose canon |
+| `docs/navigation/mcp-navpack/ENTRYPOINTS.yaml` | compose expected signal says `base/dev` | stale expectation against current compose canon |
 
 ## Recommended Execution Order For #3228-#3233
 
@@ -282,8 +282,8 @@ Dependency rationale:
 |---|---|
 | `#3228` | `README.md` |
 | `#3229` | `DEVELOPER_ONBOARDING.md`, `CONTRIBUTING.md`, `knowledge/content/ONBOARDING_QUICK_START.md`, `knowledge/content/ONBOARDING_LINKS.md` |
-| `#3230` | `docs/index.md`, `.github/README.md`, `services/README.md`, `tests/README.md`, `tools/README.md`, `infrastructure/compose/README.md`, `docs/surrealdb/README.md`, `mcp_navpack_working_repo/README.md`, `mcp_navpack_working_repo/ENTRYPOINTS.yaml`, `mcp_navpack_working_repo/CHEATSHEET.md` |
-| `#3231` | `README.md`, `docs/index.md`, `DEVELOPER_ONBOARDING.md`, `tools/README.md`, `docs/surrealdb/README.md`, `mcp_navpack_working_repo/ENTRYPOINTS.yaml`, `mcp_navpack_working_repo/CHEATSHEET.md` |
+| `#3230` | `docs/index.md`, `.github/README.md`, `services/README.md`, `tests/README.md`, `tools/README.md`, `infrastructure/compose/README.md`, `docs/surrealdb/README.md`, `docs/navigation/mcp-navpack/README.md`, `docs/navigation/mcp-navpack/ENTRYPOINTS.yaml`, `docs/navigation/mcp-navpack/CHEATSHEET.md` |
+| `#3231` | `README.md`, `docs/index.md`, `DEVELOPER_ONBOARDING.md`, `tools/README.md`, `docs/surrealdb/README.md`, `docs/navigation/mcp-navpack/ENTRYPOINTS.yaml`, `docs/navigation/mcp-navpack/CHEATSHEET.md` |
 | `#3232` | `Makefile`, `tools/surrealdb/context_onboarding_doctor.py`, `tests/unit/surrealdb/test_context_onboarding_doctor.py`, plus supporting discoverability pointers in `tools/README.md` and `docs/surrealdb/README.md` |
 | `#3233` | CI / validator surfaces that enforce the repaired active graph; likely new or updated validation scripts/tests/workflows rather than direct content fixes in this audit issue |
 

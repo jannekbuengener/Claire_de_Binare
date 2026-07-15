@@ -245,8 +245,9 @@ artifacts/local-dev-hygiene/
 /market_data.__incoming_*/
 /data-relocation/
 
-# Decision Contract audit records (generated at runtime + by tests)
-reports/decision_contract/
+# Generated reports and evidence runs (local/CI artifacts, not repository canon)
+/artifacts/reports/
+/artifacts/evidence-runs/
 
 # Local nested repo — mock exchange dependency candidate (github.com/didac-crst/mockexchange)
 # Intentionally kept local; must not be staged as gitlink or committed as submodule (#1645)

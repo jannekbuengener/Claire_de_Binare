@@ -28,7 +28,7 @@ RUNTIME-GO #3792 ARVP fresh natural-paper observation — hypothesis HYP-NP-DONC
 
 ## 2. Campaign manifest
 
-`manifests/campaign_3792_donchian_np_01.yaml`
+`config/arvp/campaign_3792_donchian_np_01.yaml`
 
 | Field | Value |
 |-------|-------|
@@ -40,7 +40,7 @@ RUNTIME-GO #3792 ARVP fresh natural-paper observation — hypothesis HYP-NP-DONC
 | campaign_status | `timeout_no_chain` |
 | verdict_enum | `TIMEOUT_NO_CHAIN` |
 
-Signal override: `manifests/runtime_3792_signal_compose_override.yml`
+Signal override: `config/arvp/runtime_3792_signal_compose_override.yml`
 
 ---
 

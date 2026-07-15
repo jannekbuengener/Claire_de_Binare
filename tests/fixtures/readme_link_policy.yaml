@@ -22,7 +22,7 @@ classification_rules:
     path_prefixes:
       - tests/fixtures/
       - artifacts/
-      - reports/p5_canary/
+      - docs/evidence/reports/p5_canary/
 
 # Non-README canon entry points — same offline link rules as active READMEs (#3995).
 # Discovery is explicit (not git ls-files); paths must stay tracked in git.

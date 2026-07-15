@@ -55,13 +55,13 @@ ACTIVE_ONBOARDING_SURFACES: list[str] = [
     "docs/onboarding/templates/agent_prompt_template.md",
     "docs/onboarding/templates/evidence_doc_template.md",
     "docs/onboarding/templates/pr_body_template.md",
-    "mcp_navpack_working_repo/ENTRYPOINTS.yaml",
-    "mcp_navpack_working_repo/CHEATSHEET.md",
+    "docs/navigation/mcp-navpack/ENTRYPOINTS.yaml",
+    "docs/navigation/mcp-navpack/CHEATSHEET.md",
 ]
 
 NAVPACK_SURFACES: list[str] = [
-    "mcp_navpack_working_repo/ENTRYPOINTS.yaml",
-    "mcp_navpack_working_repo/CHEATSHEET.md",
+    "docs/navigation/mcp-navpack/ENTRYPOINTS.yaml",
+    "docs/navigation/mcp-navpack/CHEATSHEET.md",
 ]
 
 YAML_PATH_RE = re.compile(r'^\s*path:\s*"([^"]+)"')

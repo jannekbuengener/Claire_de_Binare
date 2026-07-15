@@ -12,15 +12,14 @@ from dataclasses import asdict, dataclass
 from pathlib import Path
 from typing import Any
 
-
 CONTROL_ISSUE_NUMBER = 1445
 ARCHITECTURE_DOCS = [
     "knowledge/ARCHITECTURE_MAP.md",
     "knowledge/governance/SERVICE_CATALOG.md",
 ]
 DISCOVERY_SURFACES = [
-    "mcp_navpack_working_repo/ENTRYPOINTS.yaml",
-    "mcp_navpack_working_repo/CHEATSHEET.md",
+    "docs/navigation/mcp-navpack/ENTRYPOINTS.yaml",
+    "docs/navigation/mcp-navpack/CHEATSHEET.md",
 ]
 RUNBOOK_SURFACES = [
     "docs/runbooks/CONTROL_REGISTER.md",
@@ -48,7 +47,9 @@ RUNTIME_REBUILD_DOCKERFILES = [
     "tools/paper_trading/Dockerfile",
     "infrastructure/compose/Dockerfile.test",
 ]
-RUNTIME_REBUILD_TRIGGER_FILES = RUNTIME_REBUILD_COMPOSE_FILES + RUNTIME_REBUILD_DOCKERFILES
+RUNTIME_REBUILD_TRIGGER_FILES = (
+    RUNTIME_REBUILD_COMPOSE_FILES + RUNTIME_REBUILD_DOCKERFILES
+)
 RUNTIME_REBUILD_CI_LAB_FILES = {
     "infrastructure/compose/Dockerfile.test",
     "infrastructure/compose/test.yml",
@@ -82,7 +83,9 @@ CANON_PATTERNS = [
     ),
     (
         "legacy secrets path",
-        re.compile(r"(~[/\\]Documents[/\\]\.secrets[/\\]cdb|SECRETS_PATH=.*\.secrets[/\\]cdb)"),
+        re.compile(
+            r"(~[/\\]Documents[/\\]\.secrets[/\\]cdb|SECRETS_PATH=.*\.secrets[/\\]cdb)"
+        ),
     ),
 ]
 
@@ -220,7 +223,7 @@ def is_archived_or_historical(path: str) -> bool:
     prefixes = (
         "docs/archive/",
         "knowledge/logs/",
-        "reports/",
+        "docs/evidence/reports/",
     )
     return path.startswith(prefixes)
 
@@ -352,7 +355,8 @@ def service_runtime_changes_are_digest_only(
     changed_lines: dict[str, list[tuple[str, str]]],
 ) -> bool:
     return bool(service_runtime_files) and all(
-        is_digest_only_image_change(changed_lines.get(path, [])) for path in service_runtime_files
+        is_digest_only_image_change(changed_lines.get(path, []))
+        for path in service_runtime_files
     )
 
 
@@ -433,9 +437,7 @@ def detect_findings(pr: dict[str, Any], diff_text: str) -> list[Finding]:
         }
     ]
     architecture_structural_files = [
-        path
-        for path in service_runtime_files
-        if not is_services_or_core_readme(path)
+        path for path in service_runtime_files if not is_services_or_core_readme(path)
     ]
     architecture_digest_only_change = service_runtime_changes_are_digest_only(
         architecture_structural_files,
@@ -474,8 +476,12 @@ PR #{pr_number} ({pr_title}) changed service/runtime surfaces {", ".join(trigger
     )
     if runtime_rebuild_files and not runtime_rebuild_change_is_digest_only:
         trigger_files = shortlist(runtime_rebuild_files)
-        has_compose_trigger = any(path in RUNTIME_REBUILD_COMPOSE_FILES for path in runtime_rebuild_files)
-        services = runtime_services_for_trigger_files(runtime_rebuild_files, changed_lines)
+        has_compose_trigger = any(
+            path in RUNTIME_REBUILD_COMPOSE_FILES for path in runtime_rebuild_files
+        )
+        services = runtime_services_for_trigger_files(
+            runtime_rebuild_files, changed_lines
+        )
         service_note = ", ".join(services) if services else "unknown from changed lines"
         if has_compose_trigger:
             service_note = "unknown / inspect compose file"
@@ -512,9 +518,15 @@ Manual operator hints only, not executed by this workflow. Replace <service> wit
         for path in active_files
         if path.startswith(".github/workflows/")
         or path.startswith(".github/scripts/")
-        or path in {"infrastructure/monitoring/alerts.yml", "infrastructure/monitoring/prometheus.yml"}
+        or path
+        in {
+            "infrastructure/monitoring/alerts.yml",
+            "infrastructure/monitoring/prometheus.yml",
+        }
     ]
-    support_followup_touched = touched(active_files, RUNBOOK_SURFACES + EVIDENCE_SURFACES) or touched_prefix(
+    support_followup_touched = touched(
+        active_files, RUNBOOK_SURFACES + EVIDENCE_SURFACES
+    ) or touched_prefix(
         active_files, ("docs/runbooks/", "docs/operations/", "docs/ci/")
     )
     if control_runtime_files and not support_followup_touched:
@@ -543,13 +555,19 @@ PR #{pr_number} ({pr_title}) changed workflow/control surfaces {", ".join(trigge
         if path.startswith(".github/workflows/")
         or path.startswith("docs/runbooks/")
         or path in ARCHITECTURE_DOCS
-        or path in {"README.md", "docs/index.md", "services/README.md", "infrastructure/compose/README.md"}
+        or path
+        in {
+            "README.md",
+            "docs/index.md",
+            "services/README.md",
+            "infrastructure/compose/README.md",
+        }
     ]
     if discovery_trigger_files and not touched(active_files, DISCOVERY_SURFACES):
         trigger_files = shortlist(discovery_trigger_files)
         affected_candidates = trigger_files + DISCOVERY_SURFACES
         finding_input = f"""
-PR #{pr_number} ({pr_title}) changed front-door or operator-facing surfaces {", ".join(trigger_files)}, but did not touch mcp_navpack_working_repo/ENTRYPOINTS.yaml or mcp_navpack_working_repo/CHEATSHEET.md. Evidence is repo-backed from merged PR diff {pr_url}. Affected artifacts are {", ".join(affected_candidates)}. This may leave discovery surfaces stale, but the need for a repo change is not proven from the diff alone.
+PR #{pr_number} ({pr_title}) changed front-door or operator-facing surfaces {", ".join(trigger_files)}, but did not touch docs/navigation/mcp-navpack/ENTRYPOINTS.yaml or docs/navigation/mcp-navpack/CHEATSHEET.md. Evidence is repo-backed from merged PR diff {pr_url}. Affected artifacts are {", ".join(affected_candidates)}. This may leave discovery surfaces stale, but the need for a repo change is not proven from the diff alone.
         """
         findings.append(
             build_finding(
@@ -621,13 +639,19 @@ def classify_finding(
             "gh models run returned empty response — models API unavailable or quota exceeded"
         )
     payload = json.loads(extract_json_payload(raw))
-    if payload.get("classification") not in {"report_only", "follow_up_issue", "unclear"}:
+    if payload.get("classification") not in {
+        "report_only",
+        "follow_up_issue",
+        "unclear",
+    }:
         raise RuntimeError("classifier returned invalid classification")
     confidence = payload.get("confidence")
     if not isinstance(confidence, (int, float)) or not 0 <= confidence <= 1:
         raise RuntimeError("classifier returned invalid confidence")
     affected = payload.get("affected_artifacts")
-    if not isinstance(affected, list) or not all(isinstance(item, str) and item for item in affected):
+    if not isinstance(affected, list) or not all(
+        isinstance(item, str) and item for item in affected
+    ):
         raise RuntimeError("classifier returned invalid affected_artifacts")
     normalized_affected: list[str] = []
     for item in affected:
@@ -643,7 +667,9 @@ def classify_finding(
 
 def extract_json_payload(raw: str) -> str:
     stripped = raw.strip()
-    fence_match = re.fullmatch(r"```(?:json)?\s*(?P<payload>.*?)\s*```", stripped, re.DOTALL)
+    fence_match = re.fullmatch(
+        r"```(?:json)?\s*(?P<payload>.*?)\s*```", stripped, re.DOTALL
+    )
     if fence_match:
         return fence_match.group("payload").strip()
     return stripped
@@ -710,7 +736,11 @@ def ensure_issue(
     existing = find_existing_issue(repo, marker)
     if existing is not None:
         return {
-            "action": "existing_open" if existing.get("state") == "open" else "existing_closed",
+            "action": (
+                "existing_open"
+                if existing.get("state") == "open"
+                else "existing_closed"
+            ),
             "number": existing.get("number"),
             "url": existing.get("html_url"),
         }
@@ -721,7 +751,9 @@ def ensure_issue(
         else "classifier follow-up issue"
     )
     effective_classification = (
-        "follow_up_issue" if finding.force_follow_up_issue else classification["classification"]
+        "follow_up_issue"
+        if finding.force_follow_up_issue
+        else classification["classification"]
     )
     guardrails_block = ""
     if finding.force_follow_up_issue:
@@ -818,7 +850,9 @@ def upsert_control_comment(
     body_json = json.dumps({"body": body})
 
     comments = load_issue_comments(repo, CONTROL_ISSUE_NUMBER)
-    existing = next((comment for comment in comments if marker in (comment.get("body") or "")), None)
+    existing = next(
+        (comment for comment in comments if marker in (comment.get("body") or "")), None
+    )
     if existing is None:
         response = gh_api_json(
             [
@@ -920,7 +954,9 @@ def build_summary(result: dict[str, Any]) -> str:
     return "\n".join(lines).rstrip() + "\n"
 
 
-def write_outputs(result_file: Path, summary_file: Path, result: dict[str, Any]) -> None:
+def write_outputs(
+    result_file: Path, summary_file: Path, result: dict[str, Any]
+) -> None:
     result_file.parent.mkdir(parents=True, exist_ok=True)
     summary_file.parent.mkdir(parents=True, exist_ok=True)
     result_file.write_text(json.dumps(result, indent=2) + "\n", encoding="utf-8")
@@ -928,9 +964,13 @@ def write_outputs(result_file: Path, summary_file: Path, result: dict[str, Any])
 
 
 def parse_args() -> argparse.Namespace:
-    parser = argparse.ArgumentParser(description="Scan merged PRs for small post-merge follow-up drift")
+    parser = argparse.ArgumentParser(
+        description="Scan merged PRs for small post-merge follow-up drift"
+    )
     parser.add_argument("--repo", required=True, help="GitHub repo in owner/name form")
-    parser.add_argument("--pr-number", required=True, type=int, help="Merged PR number to inspect")
+    parser.add_argument(
+        "--pr-number", required=True, type=int, help="Merged PR number to inspect"
+    )
     parser.add_argument("--prompt-file", required=True, type=Path)
     parser.add_argument("--result-file", required=True, type=Path)
     parser.add_argument("--summary-file", required=True, type=Path)
@@ -956,7 +996,9 @@ def main() -> int:
         ],
     )
     if not pr.get("mergedAt"):
-        raise RuntimeError(f"PR #{args.pr_number} is not merged; scanner is merged-PR only")
+        raise RuntimeError(
+            f"PR #{args.pr_number} is not merged; scanner is merged-PR only"
+        )
 
     diff_text = run_gh_repo(args.repo, ["pr", "diff", str(args.pr_number)])
     candidates = detect_findings(pr, diff_text)
@@ -991,7 +1033,10 @@ def main() -> int:
         item = asdict(finding)
         item["classification"] = classification
         if args.publish_mode == "publish":
-            if finding.force_follow_up_issue or classification["classification"] == "follow_up_issue":
+            if (
+                finding.force_follow_up_issue
+                or classification["classification"] == "follow_up_issue"
+            ):
                 item["publication"] = ensure_issue(
                     repo=args.repo,
                     pr=pr,

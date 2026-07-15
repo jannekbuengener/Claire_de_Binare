@@ -61,7 +61,7 @@ logger=ngalert.scheduler rule_uid=cdb_error_rate_high
 - SMTP rate limiting risk (Gmail: 500/day limit)
 
 **Evidence:**
-- `reports/shadow_mode/EMAIL_ALERTING_STATUS.md` shows 3 active rules
+- `docs/evidence/reports/shadow_mode/EMAIL_ALERTING_STATUS.md` shows 3 active rules
 - `cdb_orders_rejected` (severity: info) fires every 5min when orders rejected
 - `cdb_error_rate_high` (severity: warning) fires when >5% rejection rate
 
@@ -295,8 +295,8 @@ logger=ngalert.scheduler rule_uid=cdb_error_rate_high
 - `docs/operations/ALERTING_FIX_SUMMARY.md` - This file
 
 ### Existing Evidence
-- `reports/shadow_mode/EMAIL_ALERTING_STATUS.md` - SMTP config verification
-- `reports/shadow_mode/email_alerting_evidence.md` - Alert rules + contact points
+- `docs/evidence/reports/shadow_mode/EMAIL_ALERTING_STATUS.md` - SMTP config verification
+- `docs/evidence/reports/shadow_mode/email_alerting_evidence.md` - Alert rules + contact points
 
 ### Configuration Files
 - `infrastructure/compose/base.yml:82-88` - SMTP environment variables

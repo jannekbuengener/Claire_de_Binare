@@ -2,7 +2,7 @@
 
 **Purpose:** Generate executive summary for Shadow Mode (last 24h UTC) with status, KPIs, alerts, incidents, and actions.
 
-**Output:** `reports/shadow_mode/DAILY_DIGEST_<YYYY-MM-DD>.md` (max 1 page)
+**Output:** `artifacts/reports/shadow_mode/DAILY_DIGEST_<YYYY-MM-DD>.md` (max 1 page)
 
 **Boundary:** Shadow/offline evidence only — **kein** LR-Go, **kein** Live-Kapital, **kein** Echtgeld-Signal (`docs/live-readiness/LR-AUDIT-STATUS-2026-03-05.md`).
 
@@ -205,24 +205,25 @@ expr: |
 
 ### Digest Archive
 
-**Digests stored in:** `reports/shadow_mode/DAILY_DIGEST_*.md`
+**Newly generated digests:** `artifacts/reports/shadow_mode/DAILY_DIGEST_*.md`
 
-**Retention:** Indefinite (git-tracked)
+**Retention:** Local/CI artifact by default. Promote only reviewed, redacted evidence to
+`docs/evidence/reports/shadow_mode/` in an explicit documentation change.
 
 **Query historical status:**
 ```bash
 # Find all RED status days
-grep -r "Status: RED" reports/shadow_mode/DAILY_DIGEST_*.md
+grep -r "Status: RED" artifacts/reports/shadow_mode/DAILY_DIGEST_*.md
 
 # Count digest files
-ls -1 reports/shadow_mode/DAILY_DIGEST_*.md | wc -l
+ls -1 artifacts/reports/shadow_mode/DAILY_DIGEST_*.md | wc -l
 ```
 
 ---
 
 ## Example Digest
 
-**File:** `reports/shadow_mode/DAILY_DIGEST_2026-01-19.md`
+**File:** `docs/evidence/reports/shadow_mode/DAILY_DIGEST_2026-01-19.md`
 
 ```markdown
 # Shadow Mode Daily Digest - 2026-01-19
@@ -266,16 +267,16 @@ ls -1 reports/shadow_mode/DAILY_DIGEST_*.md | wc -l
 python infrastructure/scripts/generate_shadow_digest.py --date 2026-01-19
 
 # Verify output
-cat reports/shadow_mode/DAILY_DIGEST_2026-01-19.md
+cat artifacts/reports/shadow_mode/DAILY_DIGEST_2026-01-19.md
 ```
 
 ---
 
 ## Related Documentation
 
-- [TradePipelineStalled Alert](../infrastructure/monitoring/alerts.yml#L243)
-- [Daily Digest Policy](../reports/shadow_mode/ALERTING_DIGEST_POLICY.md)
-- [PRE_INCIDENT_EVAL Report](../reports/shadow_mode/PRE_INCIDENT_EVAL_until_2026-01-17T21_17_02Z.md)
+- [TradePipelineStalled Alert](../monitoring/alerts.yml)
+- [Daily Digest Policy](../../docs/evidence/reports/shadow_mode/ALERTING_DIGEST_POLICY.md)
+- [PRE_INCIDENT_EVAL Report](../../docs/evidence/reports/shadow_mode/PRE_INCIDENT_EVAL_until_2026-01-17T21_17_02Z.md)
 
 ---
 

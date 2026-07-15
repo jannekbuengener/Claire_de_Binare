@@ -76,7 +76,7 @@ Shadow Mode may proceed under unchanged invariants.
 
 ## Evidence Artifacts (Planned)
 
-**Location:** `reports/shadow_mode/SOAK_TEST_LR007_<DATE>.md`
+**Generated location:** `artifacts/reports/shadow_mode/SOAK_TEST_LR007_<DATE>.md`
 
 **Required Content:**
 1. Daily uptime snapshots (Docker `ps` + health status)
@@ -153,7 +153,7 @@ Shadow Mode may proceed under unchanged invariants.
 ## Next Steps
 
 1. **Set up automated evidence collection** (Docker logs, Prometheus metrics)
-2. **Create daily digest template** (`reports/shadow_mode/DAILY_DIGEST_<DATE>.md`)
+2. **Create daily digest template** (`artifacts/reports/shadow_mode/DAILY_DIGEST_<DATE>.md`)
 3. **Monitor for HARD FAIL triggers** (especially stream gaps, kill switch)
 4. **Status review at conclusion** (cumulative at Hour 72)
 

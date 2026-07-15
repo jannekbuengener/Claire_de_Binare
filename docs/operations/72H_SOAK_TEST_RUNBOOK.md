@@ -9,7 +9,7 @@ container restarts. This gate must pass before any live deployment.
 
 This runbook produces raw 72h soak run artifacts under
 `artifacts/soak_test_*`. It does not define or create the normative committed
-P5 core artifact contract under `reports/p5_canary/<YYYY-MM-DD>/`, and it does
+P5 core artifact contract under `docs/evidence/reports/p5_canary/<YYYY-MM-DD>/`, and it does
 not produce a P5 start authorization by itself.
 
 Terminology used here follows current governance:
@@ -196,7 +196,7 @@ cat artifacts/soak_test_YYYYMMDD_HHMMSS/lr040_soak_gate_eval.json
 ```
 
 **Committed P5 reference path (separate, outside this runbook):**
-- `reports/p5_canary/<YYYY-MM-DD>/lr040/lr040_soak_gate_eval.json`
+- `docs/evidence/reports/p5_canary/<YYYY-MM-DD>/lr040/lr040_soak_gate_eval.json`
 
 **Verdict interpretation (no P5 release decision):**
 - PASS: `lr040_soak_gate_eval.json` verdict is `PASS`

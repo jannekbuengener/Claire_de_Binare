@@ -299,8 +299,8 @@ pwsh -File agents/templates/onboarding_mcp_setup.ps1
 | `docs/onboarding/examples/repo_brain_first_use.md` | First-use example |
 | `docs/onboarding/DEVELOPER_VISUAL_START_HERE.md` | Visual developer start |
 | `DEVELOPER_ONBOARDING.md` | Full developer setup guide |
-| `mcp_navpack_working_repo/ENTRYPOINTS.yaml` | Machine-readable read order |
-| `mcp_navpack_working_repo/CHEATSHEET.md` | Quick nav reference |
+| `docs/navigation/mcp-navpack/ENTRYPOINTS.yaml` | Machine-readable read order |
+| `docs/navigation/mcp-navpack/CHEATSHEET.md` | Quick nav reference |
 | `agents/templates/README.md` | Agent MCP template index |
 | `tools/surrealdb/context_onboarding_doctor.py` | Read-only preflight script |
 | `Makefile` (`make context-doctor`) | Preflight target |

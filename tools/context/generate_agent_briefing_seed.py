@@ -59,8 +59,9 @@ CANON_READ_ORDER: list[str] = [
 
 EVIDENCE_PATH_PREFIXES: list[str] = [
     "docs/evidence/",
-    "reports/",
     "docs/live-readiness/",
+    "artifacts/evidence-runs/",
+    "artifacts/reports/",
 ]
 
 STOP_CONDITIONS_BASE: list[str] = [

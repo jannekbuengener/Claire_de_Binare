@@ -21,10 +21,12 @@ Expected output:
 
 - Branch Protection Drift Guard:
   - Script: `scripts/governance/check_branch_protection_drift.py`
-  - Baseline/outputs: `reports/BRANCH_PROTECTION_*main.*`
+  - Baseline: `docs/evidence/reports/BRANCH_PROTECTION_BASELINE_main.json`
+  - Outputs: `artifacts/reports/governance/BRANCH_PROTECTION_*main.*`
 - Required-Check Context Drift Guard:
   - Script: `scripts/governance/check_required_check_contexts.py`
-  - Baseline/outputs: `reports/REQUIRED_CHECK_CONTEXTS_*main.*`
+  - Baseline: `docs/evidence/reports/REQUIRED_CHECK_CONTEXTS_BASELINE_main.json`
+  - Outputs: `artifacts/reports/governance/REQUIRED_CHECK_CONTEXTS_*main.*`
 
 ## D) Interpreting Results (Deterministic)
 

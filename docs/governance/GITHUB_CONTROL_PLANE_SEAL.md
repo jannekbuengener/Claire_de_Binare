@@ -28,6 +28,7 @@ These paths are in scope:
 | `.github/prompts/` | Prompt YAMLs backing operational workflows |
 | `.github/scripts/` | Python/Shell scripts backing workflows |
 | `.github/commands/` | TOML command stubs (Gemini family) |
+| `.github/governance/` | Machine-readable gates consumed directly by workflows |
 | `.github/control-plane/` | Manifest-driven collection layer (introduced #1644) |
 | `.github/CODEOWNERS` | Ownership declaration |
 | `.github/pull_request_template.md` | PR checklist |

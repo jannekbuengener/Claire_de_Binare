@@ -70,7 +70,7 @@ Ohne Delivery-Gate sind Agenten in **Analysis Mode**:
 ### 3.2 Delivery Mode (human-only Gate)
 Delivery ist nur erlaubt, wenn gesetzt:
 
-- `knowledge/governance/DELIVERY_APPROVED.yaml`
+- `.github/governance/DELIVERY_APPROVED.yaml`
   - `delivery.approved: true`
 
 **Regel:** Kein Agent darf das Gate setzen oder verändern.

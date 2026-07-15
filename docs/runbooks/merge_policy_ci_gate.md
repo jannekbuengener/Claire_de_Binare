@@ -227,13 +227,13 @@ Expected output:
 ### Branch Protection (main)
 
 Apply via GitHub UI (Settings > Branches > main) or CLI. The saved live-state
-payload in `reports/BRANCH_PROTECTION_APPLY_PAYLOAD_main.json` is the canonical
+payload in `docs/evidence/reports/BRANCH_PROTECTION_APPLY_PAYLOAD_main.json` is the canonical
 repo snapshot for manual re-apply. Its `required_conversation_resolution=false` value is
 reconciled with the live API state in #4060:
 
 ```bash
 gh api --method PUT repos/jannekbuengener/Claire_de_Binare/branches/main/protection \
-  --input reports/BRANCH_PROTECTION_APPLY_PAYLOAD_main.json
+  --input docs/evidence/reports/BRANCH_PROTECTION_APPLY_PAYLOAD_main.json
 ```
 
 ### Verify Settings

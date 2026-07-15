@@ -48,7 +48,7 @@ Out of scope:
 |---|---|
 | 1 | **LR-050 operator-receipt proof runs through Grafana SMTP Test Notification** to the operator human inbox. |
 | 2 | **Alertmanager internal webhook routing** (`default-receiver`, `critical-receiver`, `high-priority-receiver`, `trading-halt-receiver` → `cdb_signal:8005/alerts/*`) **does not** count as operator receipt. |
-| 3 | **LR-030 synthetic Alertmanager API proof** (`reports/lr030/.../synthetic_alert_proof_summary.json`) **does not** count as LR-050 operator receipt. |
+| 3 | **LR-030 synthetic Alertmanager API proof** (`docs/evidence/reports/lr030/.../synthetic_alert_proof_summary.json`) **does not** count as LR-050 operator receipt. |
 | 4 | **Real secret values** are verified **only locally by the operator** under `SECRETS_PATH`; agents must not read, echo, or commit SMTP credentials or `ALERT_EMAIL_TO`. |
 | 5 | **Prometheus → Alertmanager** remains the documented path for infrastructure alert **rules**; it is **not** the canonical LR-050 **operator paging** proof channel for #2981. |
 
@@ -100,7 +100,7 @@ Cross-ref [#2983](https://github.com/jannekbuengener/Claire_de_Binare/issues/298
 
 ## Evidence Format
 
-**Directory:** `reports/lr050/receiver_proof/YYYY-MM-DD/`
+**Directory:** `docs/evidence/reports/lr050/receiver_proof/YYYY-MM-DD/`
 
 | File | Required? | Content |
 |---|---|---|
@@ -158,7 +158,7 @@ Replace forbidden fields with `[REDACTED_OPERATOR_CHANNEL]` or `[REDACTED_SECRET
 | 3 | **Redacted operator attestation** — human receipt confirmed, no PII |
 | 4 | **Test method** — `grafana_test_notification` documented |
 | 5 | **No Live-Go** — manifest and attestation state LR **NO-GO**; no live-capital authorization |
-| 6 | **Evidence on `main`** — under `reports/lr050/receiver_proof/YYYY-MM-DD/` |
+| 6 | **Evidence on `main`** — under `docs/evidence/reports/lr050/receiver_proof/YYYY-MM-DD/` |
 
 Until all six are satisfied, #2981 remains **OPEN**.
 
@@ -186,7 +186,7 @@ Until all six are satisfied, #2981 remains **OPEN**.
 
 ### LR-030 synthetic Alertmanager proof
 
-`reports/lr030/2026-05-17/synthetic_alert_proof_summary.json` — AM API direct post to
+`docs/evidence/reports/lr030/2026-05-17/synthetic_alert_proof_summary.json` — AM API direct post to
 `default-receiver` — shadow/soak scope only; **not** LR-050 canary operator proof.
 
 ---

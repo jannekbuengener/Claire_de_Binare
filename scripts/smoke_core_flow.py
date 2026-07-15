@@ -18,7 +18,7 @@ from urllib.request import urlopen
 import psycopg2
 import redis
 
-REPORT_PATH = Path("reports/CORE_FLOW_E2E_SMOKE.md")
+REPORT_PATH = Path("artifacts/reports/CORE_FLOW_E2E_SMOKE.md")
 RISK_HEALTH_URL = "http://localhost:8002/health"
 EXECUTION_HEALTH_URL = "http://localhost:8003/health"
 ALLOCATION_STREAM = "stream.allocation_decisions"

@@ -19,13 +19,21 @@ from pathlib import Path
 DEFAULT_REPO = "jannekbuengener/Claire_de_Binare"
 DEFAULT_BRANCH = "main"
 DEFAULT_BP_SCRIPT = Path("scripts/governance/check_branch_protection_drift.py")
-DEFAULT_BP_BASELINE = Path("reports/BRANCH_PROTECTION_BASELINE_main.json")
-DEFAULT_BP_REPORT = Path("reports/BRANCH_PROTECTION_DRIFT_REPORT_main.md")
-DEFAULT_BP_APPLY_PAYLOAD = Path("reports/BRANCH_PROTECTION_APPLY_PAYLOAD_main.json")
+DEFAULT_BP_BASELINE = Path("docs/evidence/reports/BRANCH_PROTECTION_BASELINE_main.json")
+DEFAULT_BP_REPORT = Path(
+    "artifacts/reports/governance/BRANCH_PROTECTION_DRIFT_REPORT_main.md"
+)
+DEFAULT_BP_APPLY_PAYLOAD = Path(
+    "artifacts/reports/governance/BRANCH_PROTECTION_APPLY_PAYLOAD_main.json"
+)
 DEFAULT_RC_SCRIPT = Path("scripts/governance/check_required_check_contexts.py")
-DEFAULT_RC_BASELINE = Path("reports/REQUIRED_CHECK_CONTEXTS_BASELINE_main.json")
+DEFAULT_RC_BASELINE = Path(
+    "docs/evidence/reports/REQUIRED_CHECK_CONTEXTS_BASELINE_main.json"
+)
 DEFAULT_WORKFLOWS_DIR = Path(".github/workflows")
-DEFAULT_RC_REPORT = Path("reports/REQUIRED_CHECK_CONTEXTS_DRIFT_REPORT_main.md")
+DEFAULT_RC_REPORT = Path(
+    "artifacts/reports/governance/REQUIRED_CHECK_CONTEXTS_DRIFT_REPORT_main.md"
+)
 
 
 def parse_args() -> argparse.Namespace:

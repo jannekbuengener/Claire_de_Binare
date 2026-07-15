@@ -64,7 +64,11 @@ def compute_drift(git_docs: dict[str, str], snapshot: dict[str, str]) -> DriftRe
     added = sorted([path for path in git_docs if path not in snapshot])
     removed = sorted([path for path in snapshot if path not in git_docs])
     changed = sorted(
-        [path for path in git_docs if path in snapshot and git_docs[path] != snapshot[path]]
+        [
+            path
+            for path in git_docs
+            if path in snapshot and git_docs[path] != snapshot[path]
+        ]
     )
     return DriftResult(added=added, changed=changed, removed=removed)
 
@@ -76,7 +80,9 @@ def _format_list(paths: Iterable[str], hashes: dict[str, str]) -> str:
     return "\n".join(lines) if lines else "- None"
 
 
-def render_report(result: DriftResult, git_docs: dict[str, str], snapshot: dict[str, str]) -> str:
+def render_report(
+    result: DriftResult, git_docs: dict[str, str], snapshot: dict[str, str]
+) -> str:
     return "\n".join(
         [
             "# SurrealDB Drift Report",
@@ -103,9 +109,17 @@ def render_report(result: DriftResult, git_docs: dict[str, str], snapshot: dict[
 
 def main() -> int:
     parser = argparse.ArgumentParser(description="Generate SurrealDB drift report.")
-    parser.add_argument("--docs-root", type=Path, default=Path("docs"), help="Docs root path")
-    parser.add_argument("--snapshot", type=Path, required=True, help="SurrealDB snapshot JSON")
-    parser.add_argument("--output", type=Path, default=Path("reports/surrealdb-drift-report.md"))
+    parser.add_argument(
+        "--docs-root", type=Path, default=Path("docs"), help="Docs root path"
+    )
+    parser.add_argument(
+        "--snapshot", type=Path, required=True, help="SurrealDB snapshot JSON"
+    )
+    parser.add_argument(
+        "--output",
+        type=Path,
+        default=Path("artifacts/reports/surrealdb-drift-report.md"),
+    )
     args = parser.parse_args()
 
     git_docs = _iter_docs(args.docs_root)

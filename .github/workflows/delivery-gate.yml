@@ -1,5 +1,5 @@
 # Delivery Gate CI Check
-# Enforces governance/DELIVERY_APPROVED.yaml before merging PRs
+# Enforces .github/governance/DELIVERY_APPROVED.yaml before merging PRs
 # Constitution §4.2: Only humans may approve delivery
 
 name: Delivery Gate
@@ -35,7 +35,7 @@ jobs:
           echo "Checking PR labels: $LABELS"
 
           # Exception labels that bypass the gate
-          EXCEPTION_LABELS=$(yq -r '.exceptions.labels[]' governance/DELIVERY_APPROVED.yaml 2>/dev/null || echo "")
+          EXCEPTION_LABELS=$(yq -r '.exceptions.labels[]' .github/governance/DELIVERY_APPROVED.yaml 2>/dev/null || echo "")
 
           for label in $(echo "$EXCEPTION_LABELS" | tr '\n' ' '); do
             if echo "$LABELS" | grep -qi "$label"; then
@@ -50,7 +50,7 @@ jobs:
       - name: Check Delivery Gate
         if: steps.exceptions.outputs.bypassed != 'true'
         run: |
-          GATE_FILE="governance/DELIVERY_APPROVED.yaml"
+          GATE_FILE=".github/governance/DELIVERY_APPROVED.yaml"
 
           if [ ! -f "$GATE_FILE" ]; then
             echo "⚠️ Delivery gate file not found: $GATE_FILE"
@@ -76,7 +76,7 @@ jobs:
             echo "❌ Delivery gate is CLOSED"
             echo ""
             echo "To unblock:"
-            echo "1. Update governance/DELIVERY_APPROVED.yaml"
+            echo "1. Update .github/governance/DELIVERY_APPROVED.yaml"
             echo "2. Set delivery.approved: true"
             echo "3. Add your name to approved_by"
             exit 1

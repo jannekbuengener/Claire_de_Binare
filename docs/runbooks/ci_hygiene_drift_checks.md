@@ -6,7 +6,8 @@ Detect governance drift early without changing repository settings.
 
 - Read-only only: detect, report, and review.
 - No auto-apply to branch protection or required check contracts.
-- Outputs are deterministic reports under `reports/`.
+- Versioned baselines live under `docs/evidence/reports/`.
+- Generated reports and manual apply payloads go to `artifacts/reports/governance/`.
 
 ## What Is Checked
 
@@ -17,8 +18,8 @@ Sources:
 
 - `scripts/governance/check_branch_protection_drift.py`
 - `scripts/governance/check_required_check_contexts.py`
-- `reports/BRANCH_PROTECTION_BASELINE_main.json`
-- `reports/REQUIRED_CHECK_CONTEXTS_BASELINE_main.json`
+- `docs/evidence/reports/BRANCH_PROTECTION_BASELINE_main.json`
+- `docs/evidence/reports/REQUIRED_CHECK_CONTEXTS_BASELINE_main.json`
 
 ## One-Command Execution
 
@@ -31,7 +32,7 @@ python scripts/governance/run_ci_drift_checks.py --repo jannekbuengener/Claire_d
 Offline/fallback mode (no live branch-protection API read):
 
 ```bash
-python scripts/governance/run_ci_drift_checks.py --repo jannekbuengener/Claire_de_Binare --branch main --branch-protection-current-json reports/BRANCH_PROTECTION_BASELINE_main.json
+python scripts/governance/run_ci_drift_checks.py --repo jannekbuengener/Claire_de_Binare --branch main --branch-protection-current-json docs/evidence/reports/BRANCH_PROTECTION_BASELINE_main.json
 ```
 
 Wrapper exit codes:
@@ -51,14 +52,14 @@ python scripts/governance/check_branch_protection_drift.py --repo jannekbuengene
 Required contexts drift:
 
 ```bash
-python scripts/governance/check_required_check_contexts.py --baseline reports/REQUIRED_CHECK_CONTEXTS_BASELINE_main.json --workflows-dir .github/workflows
+python scripts/governance/check_required_check_contexts.py --baseline docs/evidence/reports/REQUIRED_CHECK_CONTEXTS_BASELINE_main.json --workflows-dir .github/workflows
 ```
 
 ## Report Outputs
 
-- `reports/BRANCH_PROTECTION_DRIFT_REPORT_main.md`
-- `reports/BRANCH_PROTECTION_APPLY_PAYLOAD_main.json`
-- `reports/REQUIRED_CHECK_CONTEXTS_DRIFT_REPORT_main.md`
+- `artifacts/reports/governance/BRANCH_PROTECTION_DRIFT_REPORT_main.md`
+- `artifacts/reports/governance/BRANCH_PROTECTION_APPLY_PAYLOAD_main.json`
+- `artifacts/reports/governance/REQUIRED_CHECK_CONTEXTS_DRIFT_REPORT_main.md`
 
 Hashes and normalized diffs are part of the reports for audit traceability.
 

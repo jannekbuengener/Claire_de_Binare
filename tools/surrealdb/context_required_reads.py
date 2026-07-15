@@ -81,7 +81,7 @@ DOMAIN_READS: dict[str, list[dict[str, str]]] = {
             "source_ref": "agents/AGENTS.md read order",
         },
         {
-            "path": "knowledge/governance/DELIVERY_APPROVED.yaml",
+            "path": ".github/governance/DELIVERY_APPROVED.yaml",
             "reason": "Human-controlled delivery gate — agents must not modify",
             "source_ref": "AGENTS.md",
         },
@@ -171,13 +171,27 @@ DOMAIN_READS: dict[str, list[dict[str, str]]] = {
 
 DOMAIN_KEYWORD_MAP: dict[str, list[str]] = {
     "governance": [
-        "governance", "govern", "policy", "constitution", "agent policy",
-        "invariant", "delivery approved",
+        "governance",
+        "govern",
+        "policy",
+        "constitution",
+        "agent policy",
+        "invariant",
+        "delivery approved",
     ],
     "surrealdb": [
-        "surrealdb", "surreal", "context intelligence", "cis",
-        "context package", "context bridge", "context tool", "context",
-        "briefing", "required reads", "stop condition", "impact radar",
+        "surrealdb",
+        "surreal",
+        "context intelligence",
+        "cis",
+        "context package",
+        "context bridge",
+        "context tool",
+        "context",
+        "briefing",
+        "required reads",
+        "stop condition",
+        "impact radar",
         "validation plan",
     ],
     "knowledge": ["knowledge", "decision", "handoff", "audit"],
@@ -196,7 +210,7 @@ WRITE_MODE_READS: list[dict[str, str]] = [
         "source_ref": "AGENTS.md",
     },
     {
-        "path": "knowledge/governance/DELIVERY_APPROVED.yaml",
+        "path": ".github/governance/DELIVERY_APPROVED.yaml",
         "reason": "Write operation — verify human-controlled delivery gate status",
         "source_ref": "AGENTS.md",
     },
@@ -207,17 +221,21 @@ WRITE_MODE_READS: list[dict[str, str]] = [
     },
 ]
 
-VALID_OPERATION_MODES = frozenset({
-    "read_only",
-    "dry_run",
-    "write (code/docs)",
-    "write (config/infra)",
-    "write (DB/migration)",
-    "write (MCP live)",
-})
+VALID_OPERATION_MODES = frozenset(
+    {
+        "read_only",
+        "dry_run",
+        "write (code/docs)",
+        "write (config/infra)",
+        "write (DB/migration)",
+        "write (MCP live)",
+    }
+)
 
 
-def _is_path_safe(path_str: str, repo_root: Path = REPO_ROOT) -> tuple[bool, Optional[str]]:
+def _is_path_safe(
+    path_str: str, repo_root: Path = REPO_ROOT
+) -> tuple[bool, Optional[str]]:
     """Check if a repo-relative path is safe to resolve.
 
     Returns (is_safe, warning_message_or_None).
@@ -265,7 +283,9 @@ def _is_path_safe(path_str: str, repo_root: Path = REPO_ROOT) -> tuple[bool, Opt
     return True, None
 
 
-def _check_availability(path_str: str, repo_root: Path = REPO_ROOT) -> tuple[bool, Optional[str]]:
+def _check_availability(
+    path_str: str, repo_root: Path = REPO_ROOT
+) -> tuple[bool, Optional[str]]:
     """Check if a repo-relative path exists and is a file.
 
     Returns (available, warning_or_None).
@@ -380,10 +400,18 @@ def resolve_required_reads(
     root = repo_root if repo_root is not None else REPO_ROOT
 
     task_scope = task_scope.strip() if isinstance(task_scope, str) else ""
-    paths = [p.strip() for p in (target_paths or []) if isinstance(p, str) and p.strip()]
-    symbols = [s.strip() for s in (target_symbols or []) if isinstance(s, str) and s.strip()]
-    concepts = [c.strip() for c in (target_concepts or []) if isinstance(c, str) and c.strip()]
-    issue = target_issue.strip() if target_issue and isinstance(target_issue, str) else None
+    paths = [
+        p.strip() for p in (target_paths or []) if isinstance(p, str) and p.strip()
+    ]
+    symbols = [
+        s.strip() for s in (target_symbols or []) if isinstance(s, str) and s.strip()
+    ]
+    concepts = [
+        c.strip() for c in (target_concepts or []) if isinstance(c, str) and c.strip()
+    ]
+    issue = (
+        target_issue.strip() if target_issue and isinstance(target_issue, str) else None
+    )
 
     reads: list[dict[str, Any]] = []
 

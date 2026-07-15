@@ -13,22 +13,31 @@ active supporting canon required to operate them.
 
 - `core/` shared domain logic and utilities
 - `services/` runnable service modules
-- `infrastructure/` compose, monitoring, database, and deployment scaffolding
+- `infrastructure/` active compose, monitoring, database, TLS, and deployment surfaces
+- `config/` repository, ARVP campaign, and readiness configuration
 - `tests/` verification suites
 - `tools/` and `scripts/` automation and governance tooling
 - `agents/`, `knowledge/`, `docs/` active local documentation surfaces
+- `artifacts/` generated local/CI outputs; reviewed evidence lives under `docs/evidence/`
 
 ## Hard Rules
 
 - no external docs repo is required for normal navigation
 - keep long-form docs out of root unless they are deliberate entrypoints
 - keep archive material under explicit archive paths
+- do not recreate retired root paths such as `reports/`, `manifests/`, `k8s/`, or
+  `mcp_navpack_working_repo/`
+- keep executable infrastructure in `infrastructure/`; Knowledge records decisions
+  but does not host deployable manifests
 - update local docs when behavior, operations, or governance meaning changes
 
 ## Validation
 
-- `tools/enforce-root-baseline.ps1` checks entrypoint drift
+- `python -m tools.validate_root_layout` checks the tracked root allowlist
+- `tools/enforce-root-baseline.ps1` wraps root and entrypoint drift checks
 - local policy and schema guards validate critical governance contracts
+
+See `docs/meta/ROOT_INFORMATION_ARCHITECTURE.md` for the complete decision matrix.
 
 ## Legacy Note
 

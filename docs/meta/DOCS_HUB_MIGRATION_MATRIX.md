@@ -72,7 +72,7 @@ paths; historical or broken material is kept only as local archive/quarantine.
 | `tools/enforce-root-baseline.README.md` | obsolete duplicate | `tools/enforce-root-baseline.README.md` | discard | Working-repo version already replaced the split-repo rule set. |
 | `_archive/` | historical | `docs/archive/docs_hub_snapshot/_archive/` | archive | Old canon and snapshots must remain accessible, but only locally. |
 | `_legacy_quarantine/` | historical | `docs/archive/docs_hub_snapshot/_legacy_quarantine/` | archive | Keep as quarantine provenance, not active input. |
-| `mcp_navpack_docs_hub*` | historical | `docs/archive/docs_hub_snapshot/mcp_navpack_docs_hub*/` | archive | Captures the old navigation model; productive nav now lives in `mcp_navpack_working_repo/`. |
+| `mcp_navpack_docs_hub*` | historical | `docs/archive/docs_hub_snapshot/mcp_navpack_docs_hub*/` | archive | Captures the old navigation model; productive nav now lives in `docs/navigation/mcp-navpack/`. |
 | `verlosung/` | historical | `docs/archive/docs_hub_snapshot/verlosung/` | archive | Experimental or one-off migration artifacts. |
 | `.git/`, `.worktrees/`, `.local/`, `.cdb_local/` | non-product code state | none | exclude | Repository internals or machine-local state, not migration content. |
 

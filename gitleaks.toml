@@ -56,8 +56,9 @@ paths = [
     # Anchored to repo root (^) so production paths like services/reports/... are NOT excluded.
     # Soak/backtest/governance artefacts — not production code
     '''^artifacts/.*''',
-    # Generated MD/JSON reports — no real secrets, only operational data
-    '''^reports/.*''',
+    # Committed historical evidence — no real secrets, only redacted operational data
+    '''^docs/evidence/reports/.*''',
+    '''^docs/evidence/runtime-runs/.*''',
     # Paper-trading and service logs
     '''^logs/.*''',
     # Temporary work directories
@@ -72,10 +73,9 @@ paths = [
     # Governance workpack scratch directories
     '''^governance_[^/]+_work/.*''',
     # Evidence and emoji run artefacts
-    '''^evidence-run/.*''',
     '''^emoji-report/.*''',
     # MCP navpack and copilot briefing content
-    '''^mcp_navpack_working_repo/.*''',
+    '''^docs/navigation/mcp-navpack/.*''',
     '''^copilot_briefing/.*''',
     # Codex worktree
     '''^\.codex/.*''',

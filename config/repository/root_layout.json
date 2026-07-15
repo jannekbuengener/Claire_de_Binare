@@ -1,0 +1,134 @@
+{
+  "schema_version": "root-layout.v1",
+  "approved_directories": [
+    ".claude",
+    ".codex",
+    ".cursor",
+    ".gemini",
+    ".github",
+    ".opencode",
+    ".vscode",
+    "agents",
+    "artifacts",
+    "config",
+    "core",
+    "docs",
+    "infrastructure",
+    "knowledge",
+    "scripts",
+    "services",
+    "tests",
+    "third_party",
+    "tools"
+  ],
+  "approved_files": [
+    ".dockerignore",
+    ".env.docker.live",
+    ".env.example",
+    ".env.live_data",
+    ".env.memory.example",
+    ".gitattributes",
+    ".gitignore",
+    ".gitlab-ci.yml",
+    ".gitleaksignore",
+    ".pre-commit-config.yaml",
+    ".secretsignore",
+    ".trivyignore",
+    "AGENTS.md",
+    "CDB_CONSTITUTION.md",
+    "CDB_GOVERNANCE.md",
+    "CLAUDE.md",
+    "CODE_OF_CONDUCT.md",
+    "CONTRIBUTING.md",
+    "CURRENT_STATUS.md",
+    "DEVELOPER_ONBOARDING.md",
+    "GEMINI.md",
+    "LEGACY_FILES.md",
+    "LICENSE",
+    "Makefile",
+    "PROJECT_STATUS.md",
+    "README.md",
+    "claire-de-binare.mcp.json",
+    "gitleaks.toml",
+    "opencode.jsonc",
+    "pyproject.toml",
+    "pytest.ini",
+    "requirements-dev.txt",
+    "requirements-mcp.txt",
+    "requirements.txt"
+  ],
+  "required_directories": [
+    ".github",
+    "agents",
+    "artifacts",
+    "config",
+    "core",
+    "docs",
+    "infrastructure",
+    "knowledge",
+    "scripts",
+    "services",
+    "tests",
+    "tools"
+  ],
+  "required_files": [
+    "AGENTS.md",
+    "CONTRIBUTING.md",
+    "Makefile",
+    "README.md",
+    "pyproject.toml"
+  ],
+  "required_paths": [
+    ".github/governance/DELIVERY_APPROVED.yaml",
+    "config/arvp/README.md",
+    "config/live-readiness/p5_canary_readiness.yaml",
+    "docs/index.md",
+    "docs/meta/ROOT_INFORMATION_ARCHITECTURE.md",
+    "docs/meta/WORKING_REPO_CANON.md",
+    "docs/navigation/mcp-navpack/ENTRYPOINTS.yaml",
+    "docs/navigation/mcp-navpack/CHEATSHEET.md",
+    "knowledge/governance/SECRETS_POLICY.md"
+  ],
+  "retired_root_entries": [
+    {
+      "path": "config",
+      "kind": "file",
+      "disposition": "DELETE: obsolete extensionless Emoji configuration; canonical file is .github/emoji-config.yaml"
+    },
+    {
+      "path": "evidence-run",
+      "kind": "directory",
+      "disposition": "MOVE: committed evidence to docs/evidence/runtime-runs; generated evidence to artifacts/evidence-runs"
+    },
+    {
+      "path": "examples",
+      "kind": "directory",
+      "disposition": "MOVE: contract examples to docs/contracts/examples"
+    },
+    {
+      "path": "governance",
+      "kind": "directory",
+      "disposition": "SPLIT: machine gates to .github/governance, readiness config to config/live-readiness, policy to knowledge/governance"
+    },
+    {
+      "path": "k8s",
+      "kind": "directory",
+      "disposition": "DELETE: unapproved placeholder scaffold; Docker Compose remains canonical"
+    },
+    {
+      "path": "manifests",
+      "kind": "directory",
+      "disposition": "MOVE: ARVP configuration to config/arvp"
+    },
+    {
+      "path": "mcp_navpack_working_repo",
+      "kind": "directory",
+      "disposition": "MOVE: navigation pack to docs/navigation/mcp-navpack"
+    },
+    {
+      "path": "reports",
+      "kind": "directory",
+      "disposition": "SPLIT: committed reports to docs/evidence/reports; generated reports to artifacts/reports"
+    }
+  ]
+}

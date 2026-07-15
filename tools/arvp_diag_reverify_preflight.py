@@ -29,10 +29,10 @@ from tools.arvp_parallel_lane_compose_contract import (
     manifest_campaign_id,
 )
 
-REVERIFY_PB1_MANIFEST = "manifests/campaign_diag_reverify_pb1.yaml"
-REVERIFY_DONCHIAN_MANIFEST = "manifests/campaign_diag_reverify_donchian.yaml"
+REVERIFY_PB1_MANIFEST = "config/arvp/campaign_diag_reverify_pb1.yaml"
+REVERIFY_DONCHIAN_MANIFEST = "config/arvp/campaign_diag_reverify_donchian.yaml"
 REVERIFY_SIGNAL_COMPOSE_OVERRIDE = (
-    "manifests/runtime_np_diag_reverify_signal_compose_override.yml"
+    "config/arvp/runtime_np_diag_reverify_signal_compose_override.yml"
 )
 
 EXPECTED_REVERIFY_SOURCE_SHA = "251faf59d94f50bd77972c06b3a7cf23d6ecf401"
@@ -83,7 +83,9 @@ def validate_reverify_manifest_pair(
     for manifest in (pb1_manifest, donchian_manifest):
         bot_id = manifest.get("bot_id")
         if bot_id in FORBIDDEN_3967_BOT_IDS:
-            raise ValueError(f"re-verify manifest must not reuse #3967 bot_id: {bot_id}")
+            raise ValueError(
+                f"re-verify manifest must not reuse #3967 bot_id: {bot_id}"
+            )
         campaign_id = manifest.get("campaign_id")
         if campaign_id in FORBIDDEN_3967_CAMPAIGN_PREFIXES:
             raise ValueError(
@@ -141,7 +143,10 @@ def validate_reverify_compose_alignment(
             raise ValueError(f"host env {host_key} must be non-empty")
 
         cdb_source_sha = environment.get("CDB_SOURCE_SHA")
-        if not isinstance(cdb_source_sha, str) or "CDB_SOURCE_SHA" not in cdb_source_sha:
+        if (
+            not isinstance(cdb_source_sha, str)
+            or "CDB_SOURCE_SHA" not in cdb_source_sha
+        ):
             raise ValueError(f"{service_name} must declare CDB_SOURCE_SHA substitution")
 
         build = service.get("build")

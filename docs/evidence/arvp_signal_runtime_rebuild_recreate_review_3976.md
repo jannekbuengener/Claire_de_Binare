@@ -34,7 +34,7 @@ PR #3974 added `ARG/ENV CDB_SOURCE_SHA` to `services/signal/Dockerfile`. Without
    ```powershell
    docker compose `
      -f infrastructure/compose/compose.red.yml `
-     -f manifests/runtime_np_diag_reverify_signal_compose_override.yml `
+     -f config/arvp/runtime_np_diag_reverify_signal_compose_override.yml `
      build --build-arg CDB_SOURCE_SHA=$env:CDB_SOURCE_SHA cdb_signal_pb1 cdb_signal_donchian
    ```
 4. Recreate containers (only after explicit RUNTIME-GO):

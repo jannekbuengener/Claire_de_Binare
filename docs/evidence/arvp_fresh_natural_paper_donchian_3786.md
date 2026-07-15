@@ -107,7 +107,7 @@ GitHub evidence: [#3786 comment](https://github.com/jannekbuengener/Claire_de_Bi
 
 ## 5. Campaign-Manifest
 
-Committed: `manifests/campaign_3786_donchian_np_01.yaml`
+Committed: `config/arvp/campaign_3786_donchian_np_01.yaml`
 
 | Field | Value |
 |-------|-------|
@@ -193,7 +193,7 @@ Readonly baseline (`cdb_readonly`): 34,256 `correlation_ledger` rows; event mix 
 
 ## 11. Geänderte Dateien
 
-- `manifests/campaign_3786_donchian_np_01.yaml` (new)
+- `config/arvp/campaign_3786_donchian_np_01.yaml` (new)
 - `artifacts/campaigns/arvp_3786_natural_paper_donchian_20260706_1054/evidence_log.jsonl` (new)
 - `docs/evidence/arvp_fresh_natural_paper_donchian_3786.md` (this file)
 

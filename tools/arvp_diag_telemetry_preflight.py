@@ -24,10 +24,10 @@ from tools.arvp_parallel_lane_compose_contract import (
     manifest_campaign_id,
 )
 
-DIAG_PB1_MANIFEST = "manifests/campaign_diag_telemetry_pb1.yaml"
-DIAG_DONCHIAN_MANIFEST = "manifests/campaign_diag_telemetry_donchian.yaml"
+DIAG_PB1_MANIFEST = "config/arvp/campaign_diag_telemetry_pb1.yaml"
+DIAG_DONCHIAN_MANIFEST = "config/arvp/campaign_diag_telemetry_donchian.yaml"
 DIAG_SIGNAL_COMPOSE_OVERRIDE = (
-    "manifests/runtime_np_diag_telemetry_signal_compose_override.yml"
+    "config/arvp/runtime_np_diag_telemetry_signal_compose_override.yml"
 )
 
 EXPECTED_DIAG_BOT_IDS = {
@@ -148,10 +148,7 @@ def build_runtime_freshness_guard(root: Path) -> dict[str, Any]:
 
 
 def format_powershell_exports(host_env: dict[str, str]) -> str:
-    lines = [
-        f'$env:{key} = "{value}"'
-        for key, value in sorted(host_env.items())
-    ]
+    lines = [f'$env:{key} = "{value}"' for key, value in sorted(host_env.items())]
     return "\n".join(lines)
 
 

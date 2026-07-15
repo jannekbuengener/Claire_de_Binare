@@ -110,7 +110,7 @@ if (-not $SkipSmokeTest) {
         python $smokeScript
 
         if ($LASTEXITCODE -ne 0) {
-            Write-Host "  [WARNING] Smoke test FAILED - check reports/CORE_FLOW_E2E_SMOKE.md" -ForegroundColor Red
+            Write-Host "  [WARNING] Smoke test FAILED - check artifacts/reports/CORE_FLOW_E2E_SMOKE.md" -ForegroundColor Red
             Write-Host "  BLUE stack is running but core flow is not verified" -ForegroundColor Yellow
         } else {
             Write-Host "  [OK] Smoke test PASSED" -ForegroundColor Green

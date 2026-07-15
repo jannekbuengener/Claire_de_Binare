@@ -107,13 +107,13 @@ Die root-level `docker-compose.yml` existiert nicht mehr im Working Repo.
 1. **Runtime:** `compose.blue.yml` + `compose.red.yml` (oder `make docker-up`)
 2. **CI-Lab:** `base.yml` + `test.yml` (isolierter Test-Overlay)
 
-## Kubernetes-Readiness
+## Kubernetes status
 
-Diese Fragmente sind K8s-ready:
-- Stateless Services (kein lokaler State)
-- ENV-only Config (kein Hardcoding)
-- Health-Endpoints (/health, /ready)
-- Service Isolation (eigenständig deploybar)
+Kubernetes is parked and has no active deploy surface. Some service properties
+(environment-based configuration, health endpoints and service isolation) may
+help a future evaluation, but they do not establish manifest parity or
+Kubernetes readiness. See
+[`knowledge/decisions/K8S_BUDGET_DECISION.md`](../../knowledge/decisions/K8S_BUDGET_DECISION.md).
 
 ## Nächste Schritte
 
@@ -127,4 +127,3 @@ topology, and assert stack-lifecycle script fail-closed semantics.
 
 These tests do **not** start Docker or prove runtime health — see
 `tests/unit/infra/README.md`.
-- [ ] K8s-Manifeste aus Fragmenten generieren (via Kompose)

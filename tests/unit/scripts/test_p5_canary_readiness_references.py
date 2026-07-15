@@ -8,7 +8,7 @@ from pathlib import Path
 import yaml
 
 REPO_ROOT = Path(__file__).resolve().parents[3]
-POLICY_PATH = REPO_ROOT / "governance" / "p5_canary_readiness.yaml"
+POLICY_PATH = REPO_ROOT / "config" / "live-readiness" / "p5_canary_readiness.yaml"
 
 # The generic audit-status document that is NOT control-specific evidence.
 AUDIT_STATUS_STEM = "LR-AUDIT-STATUS"

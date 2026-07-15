@@ -29,8 +29,8 @@ Zweck: kleiner fail-closed V1-Scanner fuer repo-backed Nachzugarbeit nach gemerg
      - `docs/live-readiness/LR-AUDIT-STATUS-2026-03-05.md`
 3. `discovery_surface_drift`
    - operator-/front-door-nahe Aenderungen ohne Nachzug in:
-     - `mcp_navpack_working_repo/ENTRYPOINTS.yaml`
-     - `mcp_navpack_working_repo/CHEATSHEET.md`
+     - `docs/navigation/mcp-navpack/ENTRYPOINTS.yaml`
+     - `docs/navigation/mcp-navpack/CHEATSHEET.md`
 4. `canon_terminology_drift`
    - offensichtliche Re-Introduktion bekannter Canon-Verstoesse in aktiven Diffs
 5. `docker_runtime_rebuild_followup_required`

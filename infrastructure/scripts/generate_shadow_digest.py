@@ -35,8 +35,12 @@ def run_command(cmd: List[str], check: bool = True) -> Tuple[str, int]:
 def prometheus_query(query: str) -> Optional[float]:
     """Query Prometheus instant API and return scalar value."""
     cmd = [
-        "docker", "exec", "cdb_prometheus",
-        "wget", "-qO-", f"http://localhost:9090/api/v1/query?query={query}"
+        "docker",
+        "exec",
+        "cdb_prometheus",
+        "wget",
+        "-qO-",
+        f"http://localhost:9090/api/v1/query?query={query}",
     ]
     output, code = run_command(cmd, check=False)
     if code != 0:
@@ -47,7 +51,9 @@ def prometheus_query(query: str) -> Optional[float]:
         if data["status"] == "success" and data["data"]["result"]:
             return float(data["data"]["result"][0]["value"][1])
     except (json.JSONDecodeError, KeyError, IndexError, ValueError):
-        logging.getLogger(__name__).debug("Prometheus query result parse failed, returning None", exc_info=True)
+        logging.getLogger(__name__).debug(
+            "Prometheus query result parse failed, returning None", exc_info=True
+        )
     return None
 
 
@@ -69,9 +75,7 @@ def get_24h_metrics() -> Dict[str, float]:
     # Calculate approval rate
     total_orders = metrics["approvals_total"] + metrics["blocked_total"]
     metrics["approval_rate"] = (
-        (metrics["approvals_total"] / total_orders * 100)
-        if total_orders > 0
-        else 0.0
+        (metrics["approvals_total"] / total_orders * 100) if total_orders > 0 else 0.0
     )
 
     return metrics
@@ -80,8 +84,12 @@ def get_24h_metrics() -> Dict[str, float]:
 def get_active_alerts() -> List[Dict]:
     """Get active alerts from Prometheus."""
     cmd = [
-        "docker", "exec", "cdb_prometheus",
-        "wget", "-qO-", "http://localhost:9090/api/v1/alerts"
+        "docker",
+        "exec",
+        "cdb_prometheus",
+        "wget",
+        "-qO-",
+        "http://localhost:9090/api/v1/alerts",
     ]
     output, code = run_command(cmd, check=False)
     if code != 0:
@@ -92,7 +100,9 @@ def get_active_alerts() -> List[Dict]:
         if data["status"] == "success":
             return data["data"]["alerts"]
     except (json.JSONDecodeError, KeyError):
-        logging.getLogger(__name__).debug("Prometheus alerts parse failed, returning empty list", exc_info=True)
+        logging.getLogger(__name__).debug(
+            "Prometheus alerts parse failed, returning empty list", exc_info=True
+        )
     return []
 
 
@@ -126,8 +136,12 @@ def summarize_alerts(alerts: List[Dict]) -> List[Dict]:
 def get_git_changes() -> List[str]:
     """Get git commits from last 24h."""
     cmd = [
-        "git", "log", "--since=24.hours", "--oneline", "--no-merges",
-        "--format=%h %s"
+        "git",
+        "log",
+        "--since=24.hours",
+        "--oneline",
+        "--no-merges",
+        "--format=%h %s",
     ]
     output, code = run_command(cmd, check=False)
     if code != 0:
@@ -138,7 +152,11 @@ def get_git_changes() -> List[str]:
 def determine_status(metrics: Dict[str, float], alerts: List[Dict]) -> Tuple[str, str]:
     """Determine status ampel (GREEN/YELLOW/RED) and reason."""
     # Check for critical alerts
-    critical_alerts = [a for a in alerts if a["labels"].get("severity") == "critical" and a["state"] == "firing"]
+    critical_alerts = [
+        a
+        for a in alerts
+        if a["labels"].get("severity") == "critical" and a["state"] == "firing"
+    ]
     if critical_alerts:
         return "RED", f"{len(critical_alerts)} critical alert(s) firing"
 
@@ -151,7 +169,12 @@ def determine_status(metrics: Dict[str, float], alerts: List[Dict]) -> Tuple[str
         return "YELLOW", "Pipeline stalled: signals flowing but no trades"
 
     # Check for warning alerts
-    warning_alerts = [a for a in alerts if a["labels"].get("severity") == "warning" and a["state"] in ["pending", "firing"]]
+    warning_alerts = [
+        a
+        for a in alerts
+        if a["labels"].get("severity") == "warning"
+        and a["state"] in ["pending", "firing"]
+    ]
     if len(warning_alerts) > 3:
         return "YELLOW", f"{len(warning_alerts)} warning alerts active"
 
@@ -162,7 +185,9 @@ def determine_status(metrics: Dict[str, float], alerts: List[Dict]) -> Tuple[str
     return "YELLOW", "Degraded operation: low activity or approval rate"
 
 
-def generate_digest(date_str: str, metrics: Dict[str, float], alerts: List[Dict], git_changes: List[str]) -> str:
+def generate_digest(
+    date_str: str, metrics: Dict[str, float], alerts: List[Dict], git_changes: List[str]
+) -> str:
     """Generate markdown digest."""
     status, reason = determine_status(metrics, alerts)
     alert_summary = summarize_alerts(alerts)
@@ -170,7 +195,9 @@ def generate_digest(date_str: str, metrics: Dict[str, float], alerts: List[Dict]
     # Format alert summary
     alert_lines = []
     for alert in alert_summary:
-        alert_lines.append(f"   - {alert['name']}: {alert['count']} (severity: {alert['severity']})")
+        alert_lines.append(
+            f"   - {alert['name']}: {alert['count']} (severity: {alert['severity']})"
+        )
     alert_text = "\n".join(alert_lines) if alert_lines else "   - No active alerts"
 
     # Format git changes
@@ -193,7 +220,9 @@ def generate_digest(date_str: str, metrics: Dict[str, float], alerts: List[Dict]
     if metrics["approval_rate"] < 10:
         actions_needed.append("**WARNING:** Investigate low approval rate (< 10%)")
     if metrics["signals_total"] > 100 and metrics["trades_filled"] == 0:
-        actions_needed.append("**WARNING:** Fix pipeline stall (signals flowing, zero trades)")
+        actions_needed.append(
+            "**WARNING:** Fix pipeline stall (signals flowing, zero trades)"
+        )
     if not actions_needed:
         actions_needed.append("Continue monitoring")
     actions_text = "\n".join([f"   - {a}" for a in actions_needed[:3]])
@@ -201,7 +230,7 @@ def generate_digest(date_str: str, metrics: Dict[str, float], alerts: List[Dict]
     # Generate markdown
     markdown = f"""# Shadow Mode Daily Digest - {date_str}
 
-**Report Generated:** {datetime.now(timezone.utc).strftime('%Y-%m-%d %H:%M:%S UTC')}
+**Report Generated:** {datetime.now(timezone.utc).strftime("%Y-%m-%d %H:%M:%S UTC")}
 
 ---
 
@@ -214,15 +243,15 @@ def generate_digest(date_str: str, metrics: Dict[str, float], alerts: List[Dict]
 ## KPIs (Last 24h)
 
 ### Signal Flow
-- **Signals Received:** {int(metrics['signals_total'])}
-- **Orders Approved:** {int(metrics['approvals_total'])}
-- **Orders Blocked:** {int(metrics['blocked_total'])}
-- **Approval Rate:** {metrics['approval_rate']:.1f}%
+- **Signals Received:** {int(metrics["signals_total"])}
+- **Orders Approved:** {int(metrics["approvals_total"])}
+- **Orders Blocked:** {int(metrics["blocked_total"])}
+- **Approval Rate:** {metrics["approval_rate"]:.1f}%
 
 ### Execution
-- **Trades Filled:** {int(metrics['trades_filled'])}
-- **Trades Rejected:** {int(metrics['trades_rejected'])}
-- **Fill Rate:** {(metrics['trades_filled'] / max(1, metrics['approvals_total']) * 100):.1f}%
+- **Trades Filled:** {int(metrics["trades_filled"])}
+- **Trades Rejected:** {int(metrics["trades_rejected"])}
+- **Fill Rate:** {(metrics["trades_filled"] / max(1, metrics["approvals_total"]) * 100):.1f}%
 
 ---
 
@@ -276,7 +305,14 @@ git log --since=24.hours --oneline --no-merges
 def send_email(digest_path: Path) -> bool:
     """Send digest via email (optional)."""
     # Check if email command exists
-    cmd_check = ["docker", "ps", "--filter", "name=cdb_grafana", "--format", "{{.Names}}"]
+    cmd_check = [
+        "docker",
+        "ps",
+        "--filter",
+        "name=cdb_grafana",
+        "--format",
+        "{{.Names}}",
+    ]
     output, code = run_command(cmd_check, check=False)
     if code != 0 or "cdb_grafana" not in output:
         print("Email sending not available (Grafana not running)")
@@ -292,13 +328,9 @@ def main():
         "--date",
         type=str,
         default=datetime.now(timezone.utc).strftime("%Y-%m-%d"),
-        help="Date for digest (YYYY-MM-DD, default: today UTC)"
+        help="Date for digest (YYYY-MM-DD, default: today UTC)",
     )
-    parser.add_argument(
-        "--email",
-        action="store_true",
-        help="Send digest via email"
-    )
+    parser.add_argument("--email", action="store_true", help="Send digest via email")
     args = parser.parse_args()
 
     # Validate date format
@@ -325,7 +357,7 @@ def main():
     digest_content = generate_digest(args.date, metrics, alerts, git_changes)
 
     # Write to file
-    output_dir = Path("reports/shadow_mode")
+    output_dir = Path("artifacts/reports/shadow_mode")
     output_dir.mkdir(parents=True, exist_ok=True)
     output_path = output_dir / f"DAILY_DIGEST_{args.date}.md"
 

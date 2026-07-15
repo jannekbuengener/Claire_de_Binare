@@ -95,8 +95,8 @@ capital pool + regime constraints.
 
 | Prerequisite | Status | Evidence |
 |--------------|--------|----------|
-| #3909 parallel compose | DONE | `manifests/runtime_np_parallel_signal_compose_override.yml` |
-| #3910 Donchian allocation | DONE | `manifests/runtime_np_parallel_allocation_compose_override.yml` |
+| #3909 parallel compose | DONE | `config/arvp/runtime_np_parallel_signal_compose_override.yml` |
+| #3910 Donchian allocation | DONE | `config/arvp/runtime_np_parallel_allocation_compose_override.yml` |
 | #3911 ledger isolation | DONE | PR #3941 @ `0f273b15` |
 | #3913 gearbox contracts | DONE | `docs/design/arvp_gearbox_design_contracts_3913.md` |
 | #3893 scheduling | DONE | CLOSED `TIMEOUT_NO_CHAIN`; stack baseline restored |

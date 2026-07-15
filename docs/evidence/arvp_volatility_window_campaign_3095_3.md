@@ -44,7 +44,7 @@
 
 ### Live Data (2026-06-11T13:03 UTC)
 
-**Start criteria documented in manifest:** `manifests/campaign_3.yaml`
+**Start criteria documented in manifest:** `config/arvp/campaign_3.yaml`
 **Start criteria policy:** `docs/evidence/arvp_volatility_window_start_policy_3103.md`
 
 | # | Criterion | Threshold | Actual | Met? | Source |
@@ -84,7 +84,7 @@ HIGH_VOL_CHAOTIC (regime_id=2) is in `blocked_regimes` per the decision contract
 
 | Rule | Status | Evidence |
 |------|--------|----------|
-| Campaign-ID documented before start | ✅ | `manifests/campaign_3.yaml` |
+| Campaign-ID documented before start | ✅ | `config/arvp/campaign_3.yaml` |
 | Start criteria documented before start | ✅ | P2 1.103%, P3 HIGH_VOL_CHAOTIC |
 | Planned duration documented before start | ✅ | max 8h, until ~21:03 UTC |
 | Failed campaigns counted, not discarded | ✅ | Campaign #3 counts as Slot #3 failure |
@@ -94,7 +94,7 @@ HIGH_VOL_CHAOTIC (regime_id=2) is in `blocked_regimes` per the decision contract
 | No retroactive justification | ✅ | All criteria documented before campaign start |
 | Safety flags verified at start | ✅ | MOCK=true, DRY=true, TESTNET=true, REAL_BALANCE=false |
 | #3103 limitation documented | ✅ | See § #3103 Compliance |
-| Manifest committed before start | ✅ | `manifests/campaign_3.yaml` in `main` |
+| Manifest committed before start | ✅ | `config/arvp/campaign_3.yaml` in `main` |
 
 ---
 
@@ -285,7 +285,7 @@ This campaign **is not**:
 - `docs/evidence/arvp_volatility_window_campaign_3095_2r.md` — Campaign #2R evidence (Slot #2)
 - `docs/evidence/arvp_volatility_window_campaign_3095_3.md` — Campaign #3 evidence (this document)
 - `docs/evidence/arvp_volatility_window_start_policy_3103.md` — Start criteria policy
-- `manifests/campaign_3.yaml` — Campaign #3 start manifest
+- `config/arvp/campaign_3.yaml` — Campaign #3 start manifest
 - `artifacts/campaigns/arvp_3095_vol_window_3_20260611_1301/` — Campaign output directory
 - `docs/runbooks/CONTROL_REGISTER.md` — Board stage, LR NO-GO
 - `docs/live-readiness/LR-AUDIT-STATUS-2026-03-05.md` — LR verdict NO-GO

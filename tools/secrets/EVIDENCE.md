@@ -253,7 +253,8 @@ docker compose -f infrastructure/compose/compose.red.yml up -d
    - Rule: generic-api-key
    - Type: Test fixture (not real secret)
 
-2-5. `reports/shadow_mode/ALERTING_DIGEST_EVIDENCE.md` (Lines 48, 61, 238, 357)
+2-5. Former path `reports/shadow_mode/ALERTING_DIGEST_EVIDENCE.md`, now
+   `docs/evidence/reports/shadow_mode/ALERTING_DIGEST_EVIDENCE.md` (Lines 48, 61, 238, 357)
    - Pattern: `curl -u admin:[REDACTED]`
    - Rule: curl-auth-user
    - Type: Documentation examples (not real credentials)

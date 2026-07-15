@@ -18,7 +18,7 @@ records_or_results:
   - 16/16 vacation MVP tests PASS
 repo_crosscheck:
   - tools/arvp_vacation/
-  - manifests/vacation/vacation_autopilot_mvp.yaml
+  - config/arvp/vacation/vacation_autopilot_mvp.yaml
 limitations:
   - Drill uses injectable subprocess/disk probes; no destructive host/docker/db fault injection
   - Production replay jobs not executed in this evidence slice
@@ -44,7 +44,7 @@ limitations:
 Command:
 
 ```powershell
-python -m tools.arvp_vacation.coordinator --manifest manifests/vacation/vacation_autopilot_mvp.yaml --preflight-only
+python -m tools.arvp_vacation.coordinator --manifest config/arvp/vacation/vacation_autopilot_mvp.yaml --preflight-only
 ```
 
 Expected datasets (no window_007 duplicate of strict_3091):

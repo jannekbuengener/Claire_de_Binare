@@ -27,24 +27,27 @@ if (-not $WorkingRepoPath) {
 
 $requiredDirectories = @(
     'agents',
+    'artifacts',
+    'config',
+    'core',
     'docs',
-    'governance',
-    'knowledge',
-    'mcp_navpack_working_repo',
-    'services',
     'infrastructure',
+    'knowledge',
+    'scripts',
+    'services',
     'tests',
-    'tools',
-    'scripts'
+    'tools'
 )
 
 $requiredFiles = @(
     'README.md',
     'AGENTS.md',
+    'config/repository/root_layout.json',
     'docs/index.md',
+    'docs/meta/ROOT_INFORMATION_ARCHITECTURE.md',
     'docs/meta/WORKING_REPO_CANON.md',
-    'mcp_navpack_working_repo/ENTRYPOINTS.yaml',
-    'mcp_navpack_working_repo/CHEATSHEET.md'
+    'docs/navigation/mcp-navpack/ENTRYPOINTS.yaml',
+    'docs/navigation/mcp-navpack/CHEATSHEET.md'
 )
 
 $legacyPathPatterns = @(
@@ -57,9 +60,9 @@ $legacyPathPatterns = @(
 $legacyScanFiles = @(
     'README.md',
     'AGENTS.md',
-    'mcp_navpack_working_repo/ENTRYPOINTS.yaml',
-    'mcp_navpack_working_repo/CHEATSHEET.md',
-    'mcp_navpack_working_repo/DOCS_HUB.pointer.md'
+    'docs/navigation/mcp-navpack/ENTRYPOINTS.yaml',
+    'docs/navigation/mcp-navpack/CHEATSHEET.md',
+    'docs/navigation/mcp-navpack/DOCS_HUB.pointer.md'
 )
 
 Write-Host "Checking consolidated Working Repo baseline..." -ForegroundColor Cyan
@@ -93,6 +96,35 @@ try {
         }
     }
 
+    $pythonCommand = Get-Command python -ErrorAction SilentlyContinue
+    $pythonArguments = @()
+    if (-not $pythonCommand) {
+        $pythonCommand = Get-Command python3 -ErrorAction SilentlyContinue
+    }
+    if (-not $pythonCommand) {
+        $pythonCommand = Get-Command py -ErrorAction SilentlyContinue
+        if ($pythonCommand) {
+            $pythonArguments += '-3'
+        }
+    }
+
+    if (-not $pythonCommand) {
+        $violations.Add([PSCustomObject]@{
+            Type = 'Missing validator runtime'
+            Path = 'python'
+            Detail = 'Python is required to validate config/repository/root_layout.json.'
+        })
+    } else {
+        $layoutOutput = & $pythonCommand.Source @pythonArguments -m tools.validate_root_layout --repo-root $WorkingRepoPath 2>&1
+        if ($LASTEXITCODE -ne 0) {
+            $violations.Add([PSCustomObject]@{
+                Type = 'Root layout violation'
+                Path = 'config/repository/root_layout.json'
+                Detail = ($layoutOutput | Out-String).Trim()
+            })
+        }
+    }
+
     foreach ($relativePath in $legacyScanFiles) {
         if (-not (Test-Path $relativePath -PathType Leaf)) {
             continue
@@ -122,7 +154,7 @@ try {
         Write-Host "   $($violation.Detail)" -ForegroundColor Yellow
     }
     Write-Host ""
-    Write-Host "Fix by restoring local canon paths and removing external Docs-Hub defaults from key entrypoints." -ForegroundColor Cyan
+    Write-Host "Fix the root-layout contract or restore local canon paths before committing." -ForegroundColor Cyan
 
     if ($DryRun) {
         Write-Host "Dry run only; no changes were made." -ForegroundColor Gray

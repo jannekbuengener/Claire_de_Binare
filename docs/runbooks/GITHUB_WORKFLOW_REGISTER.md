@@ -275,7 +275,7 @@ Policy gates, governance checks, AI routing, and smart insights.
 | File | Status | Trigger(s) | Purpose | Scripts | Key Outputs | FP | HT |
 |---|---|---|---|---|---|---|---|
 | `policy-gate.yml` | aktiv | PR | Gate PR based on docs-only vs code-change classification | — | PR status check; `docs-only` or `code` path | **C** | Required check pattern; blocks merge |
-| `governance-audit.yml` | manual-only | dispatch | Full governance audit: checks repo config, label compliance, runbook currency | — | Governance audit report | O | Operator: on governance review cycle |
+| `governance-audit.yml` | manual-only | dispatch | Full governance audit: checks repo config, label compliance, runbook currency | — | Generated reports under `artifacts/reports/governance/` | O | Operator: on governance review cycle |
 | `ai-review-router.yml` | aktiv | sched, dispatch | Route AI review tasks to appropriate AI backend | — | AI review dispatch | O | On AI routing config changes |
 | `smart-insights.yml` | aktiv | sched, dispatch | AI-driven insights generation: creates actionable issues | — | AI-generated insight issues | O | Review output issues |
 

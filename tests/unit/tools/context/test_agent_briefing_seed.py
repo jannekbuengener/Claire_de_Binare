@@ -448,14 +448,14 @@ def test_stop_conditions_include_base(
 def test_evidence_paths_extraction() -> None:
     paths = [
         "docs/evidence/LR-012.md",
-        "reports/p5_canary/manifest.json",
+        "docs/evidence/reports/p5_canary/manifest.json",
         "docs/live-readiness/LR-AUDIT-STATUS-2026-03-05.md",
         "AGENTS.md",
         "tools/context/schemas/context_package.schema.json",
     ]
     evidence = extract_evidence_paths(paths)
     assert "docs/evidence/LR-012.md" in evidence
-    assert "reports/p5_canary/manifest.json" in evidence
+    assert "docs/evidence/reports/p5_canary/manifest.json" in evidence
     assert "docs/live-readiness/LR-AUDIT-STATUS-2026-03-05.md" in evidence
     assert "AGENTS.md" not in evidence
     assert "tools/context/schemas/context_package.schema.json" not in evidence

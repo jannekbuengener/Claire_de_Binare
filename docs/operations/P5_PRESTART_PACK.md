@@ -5,15 +5,15 @@
 - Last updated: `2026-04-05`
 
 This document is a **template** and **governance anchor** for the P5 canary prestart evidence lock.
-It does **not** authorize a canary start. A committed instance exists under `reports/p5_canary/2026-04-04/`, but `LR-050` remains fail-closed / `NO-GO` for live capital.
+It does **not** authorize a canary start. A committed instance exists under `docs/evidence/reports/p5_canary/2026-04-04/`, but `LR-050` remains fail-closed / `NO-GO` for live capital.
 
-It backs the following compensating controls defined in `governance/p5_canary_readiness.yaml`:
+It backs the following compensating controls defined in `config/live-readiness/p5_canary_readiness.yaml`:
 - `prestart_evidence_lock`
 - `canonical_runtime_mode_precheck`
 - `decision_record_before_start`
 - `no_code_or_config_change_after_prestart_lock`
 
-Normative rule from `governance/p5_canary_readiness.yaml` for the current P5 / shadow-prereq path:
+Normative rule from `config/live-readiness/p5_canary_readiness.yaml` for the current P5 / shadow-prereq path:
 - canonical runtime-mode field = `execution_status.mode`
 - required value = `mock`
 - `shadow` = probe / intent / evidence semantics only
@@ -31,9 +31,9 @@ Current repo-backed state:
 
 | Blocker | Required | Current State |
 |---------|----------|---------------|
-| LR-040 72h Soak PASS | YES | PASS evidenced at `reports/p5_canary/2026-04-04/lr040/lr040_soak_gate_eval.json` |
-| Committed P5 prestart pack | YES | Present at `reports/p5_canary/2026-04-04/` |
-| Lean shadow continuity proof | Required for proof continuity, not live approval | Present at `reports/p5_canary/2026-04-04/lean_shadow_evidence_handoff.yaml` |
+| LR-040 72h Soak PASS | YES | PASS evidenced at `docs/evidence/reports/p5_canary/2026-04-04/lr040/lr040_soak_gate_eval.json` |
+| Committed P5 prestart pack | YES | Present at `docs/evidence/reports/p5_canary/2026-04-04/` |
+| Lean shadow continuity proof | Required for proof continuity, not live approval | Present at `docs/evidence/reports/p5_canary/2026-04-04/lean_shadow_evidence_handoff.yaml` |
 | LR-050 live canary approval | YES | NOT GRANTED / fail-closed |
 
 The existence of the committed pack does not authorize, enable, or imply approval for a live canary start.
@@ -83,7 +83,7 @@ risk_status:
   captured_utc: <YYYY-MM-DDTHH:MM:SSZ>
   response: <full JSON response>
 
-artifact_path: reports/p5_canary/<YYYY-MM-DD>/
+artifact_path: docs/evidence/reports/p5_canary/<YYYY-MM-DD>/
 operator: <name>
 ```
 
@@ -92,7 +92,7 @@ operator: <name>
 Committed P5 core artifacts are rooted at:
 
 ```text
-reports/p5_canary/<YYYY-MM-DD>/
+docs/evidence/reports/p5_canary/<YYYY-MM-DD>/
 ```
 
 Required committed files:
@@ -169,7 +169,7 @@ decision_utc: <YYYY-MM-DDTHH:MM:SSZ>
 operator: <name>
 lr040_pass_run_id: <GitHub Actions Run ID>
 lr040_pass_commit: <SHA>
-canary_artifact_path: reports/p5_canary/<YYYY-MM-DD>/
+canary_artifact_path: docs/evidence/reports/p5_canary/<YYYY-MM-DD>/
 status: GO | NO-GO
 rationale: >
   <Freitext — warum GO oder NO-GO. Bei NO-GO: welcher Blocker verbleibt.>
@@ -228,11 +228,11 @@ curl -s http://127.0.0.1:8002/kill-switch
 
 ## 7. Related Documents
 
-- `governance/p5_canary_readiness.yaml` — policy that requires this document
+- `config/live-readiness/p5_canary_readiness.yaml` — policy that requires this document
 - `docs/operations/P5_CANARY_EXECUTION_CHECKLIST.md` — governance mapping (§9 references this pack)
 - `docs/operations/KILL_SWITCH_OPERATOR_CHECKLIST.md` — detailed kill-switch precheck procedure
 - `docs/evidence/LR-040.md` — 72h soak gate (blocker)
 - `docs/operations/72H_SOAK_TEST_RUNBOOK.md` — soak test procedure
-- `reports/p5_canary/2026-04-04/prestart_evidence_lock.yaml` — committed prestart example
-- `reports/p5_canary/2026-04-04/decision_record.yaml` — committed prestart decision
-- `reports/p5_canary/2026-04-04/lean_shadow_evidence_handoff.yaml` — committed continuity proof after prestart
+- `docs/evidence/reports/p5_canary/2026-04-04/prestart_evidence_lock.yaml` — committed prestart example
+- `docs/evidence/reports/p5_canary/2026-04-04/decision_record.yaml` — committed prestart decision
+- `docs/evidence/reports/p5_canary/2026-04-04/lean_shadow_evidence_handoff.yaml` — committed continuity proof after prestart

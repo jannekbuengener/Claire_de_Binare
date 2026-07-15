@@ -75,7 +75,7 @@ services:
       REDIS_HOST: cdb_redis
       MARKET_PORT: "8009"
       # cdb_market owns market_state:{symbol} after cutover (Issue #1201).
-      # Evidence: reports/dual_write_evidence_2026-03-18_v2.json (PASS 2026-03-18)
+      # Evidence: docs/evidence/reports/dual_write_evidence_2026-03-18_v2.json (PASS 2026-03-18)
       MARKET_STATE_KEY_PREFIX: "market_state"
     entrypoint: ["sh", "-c", "export REDIS_PASSWORD=$(cat /run/secrets/redis_password) && exec python -m services.market.service"]
     ports:

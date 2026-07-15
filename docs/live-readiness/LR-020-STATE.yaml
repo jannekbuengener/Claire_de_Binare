@@ -23,4 +23,4 @@ tier_2_note: >
   stream.fills delta=+1 (10017→10018). All 4 checks PASS.
   Blocker resolved: TRACE_CONTRACT_V1_ENABLED=1 in both Risk and Execution
   (dev.yml fix + image rebuild + Decimal-based quantity normalisation fix).
-  Evidence: evidence-run/lr020_tier2_evidence.json
+  Evidence: docs/evidence/runtime-runs/lr020_tier2_evidence.json

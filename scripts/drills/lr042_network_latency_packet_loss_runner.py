@@ -16,7 +16,7 @@ from pathlib import Path
 from typing import Any, Optional
 
 REPO_ROOT = Path(__file__).resolve().parents[2]
-DEFAULT_OUTPUT_DIR = Path("reports/drills/lr042")
+DEFAULT_OUTPUT_DIR = Path("artifacts/reports/drills/lr042")
 DEFAULT_SCENARIOS = ("latency_only", "packet_loss_only")
 
 DRILL_ID = "LR-042"
@@ -453,8 +453,12 @@ def _wait_for_recovery(
     start = time.monotonic()
     while time.monotonic() - start < timeout_seconds:
         netem_is_cleared = not _netem_active(target_container, target_interface)
-        risk_ok, _risk_ms, _risk_err = _probe_http("http://localhost:8002/status", timeout=3.0)
-        exec_ok, _exec_ms, _exec_err = _probe_http("http://localhost:8003/status", timeout=3.0)
+        risk_ok, _risk_ms, _risk_err = _probe_http(
+            "http://localhost:8002/status", timeout=3.0
+        )
+        exec_ok, _exec_ms, _exec_err = _probe_http(
+            "http://localhost:8003/status", timeout=3.0
+        )
         if netem_is_cleared and risk_ok and exec_ok:
             return time.monotonic() - start
         time.sleep(1)

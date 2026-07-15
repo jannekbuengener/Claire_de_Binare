@@ -43,7 +43,7 @@ MEXC WebSocket (cdb_ws)
 ## Artifacts
 
 ```text
-manifests/vacation/vacation_data_capture_14d.yaml
+config/arvp/vacation/vacation_data_capture_14d.yaml
 scripts/arvp_vacation_data_capture.ps1
 artifacts/arvp_vacation/data_capture/<campaign_id>/
   campaign_state.json

@@ -24,7 +24,7 @@
 
 ### Post-gate navigation (2026-07-04)
 
-This document remains the **2026-06-04 planning-wave reconcile** for child SSOTs #2526–#2534. Since then, LR-050 **execution gate issues** #2977–#2984 delivered operator/runtime evidence (2026-07-03); see `reports/lr050/` and [`LR-050-BLOCKER-REFRESH-MATRIX-2026-07-03.md`](./LR-050-BLOCKER-REFRESH-MATRIX-2026-07-03.md). Live navigation SSOT: [#2985](https://github.com/jannekbuengener/Claire_de_Binare/issues/2985).
+This document remains the **2026-06-04 planning-wave reconcile** for child SSOTs #2526–#2534. Since then, LR-050 **execution gate issues** #2977–#2984 delivered operator/runtime evidence (2026-07-03); see `docs/evidence/reports/lr050/` and [`LR-050-BLOCKER-REFRESH-MATRIX-2026-07-03.md`](./LR-050-BLOCKER-REFRESH-MATRIX-2026-07-03.md). Live navigation SSOT: [#2985](https://github.com/jannekbuengener/Claire_de_Binare/issues/2985).
 
 **Verdict unchanged:** LR-050 **NO-GO**. Issue/PR closure and gate evidence do **not** authorize live capital. Canary parameters remain `TBD_BLOCKER_BEFORE_LIVE` in [`LR-050-RISK-LIMITS.md`](./LR-050-RISK-LIMITS.md) / [`LR-050-CANARY-PLAN.md`](./LR-050-CANARY-PLAN.md). Exact Human Approval not on record. §3 blocker table below is a **historical snapshot** at reconcile time; do not read closed GitHub issues alone as live-capital clearance.
 
@@ -97,7 +97,7 @@ These conclusions cite existing repo SSOTs and execution configuration. They do 
 | Mainnet / live-capital path | Requires explicit `MOCK_TRADING=false`, `MEXC_TESTNET=false`, `DRY_RUN=false`, `CONFIRM_LIVE_TRADING=true`, plus exact Human Approval per [`LR-050-HUMAN-APPROVAL.md`](./LR-050-HUMAN-APPROVAL.md) ([`services/execution/service.py`](../../services/execution/service.py)) |
 | `MEXC_TESTNET=true` | **Not enough as non-send proof** — orders may still be sent on testnet when dry-run/mock guards are off |
 | Issue/PR merge | **No auto-live** — documentation merge never grants live-capital GO |
-| P5 prestart Human Gate (2026-04-04) | Prestart/shadow only — **not** live-capital canary ([`reports/p5_canary/2026-04-04/decision_record.yaml`](../../reports/p5_canary/2026-04-04/decision_record.yaml)) |
+| P5 prestart Human Gate (2026-04-04) | Prestart/shadow only — **not** live-capital canary ([`docs/evidence/reports/p5_canary/2026-04-04/decision_record.yaml`](../evidence/reports/p5_canary/2026-04-04/decision_record.yaml)) |
 
 ---
 

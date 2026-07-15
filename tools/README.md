@@ -26,6 +26,7 @@ Important:
 | `.\tools\cdb.ps1 runtime smoke` | `infrastructure/scripts/smoke_test.ps1` |
 | `.\tools\cdb.ps1 onboarding doctor` | `tools/onboarding_doctor.py` — read-only developer setup preflight; `--format json` and `--report PATH` supported |
 | `.\tools\cdb.ps1 onboarding tour` | `tools/onboarding_tour.py` |
+| `make root-layout-guard` | `tools/validate_root_layout.py` — validates tracked root entries against `config/repository/root_layout.json` |
 | `make onboarding-docs-guard` | `tools/validate_onboarding_docs.py` — validiert aktive Onboarding-Dokumente: Links, Einstiegspunkte, Secret-Leaks (#3233) |
 
 Non-interactive form:

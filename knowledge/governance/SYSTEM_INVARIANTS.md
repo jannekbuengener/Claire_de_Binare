@@ -114,7 +114,7 @@ This is not a redesign proposal, implementation guide, or "nice to have" require
 
 ### INV-005: Trade Placement Human Gate
 
-**Statement:** Delivery gate (`governance/DELIVERY_APPROVED.yaml`) MUST be approved by a human before merges to main. Only humans may modify this file (Constitution §4.2).
+**Statement:** Delivery gate (`.github/governance/DELIVERY_APPROVED.yaml`) MUST be approved by a human before merges to main. Only humans may modify this file (Constitution §4.2).
 
 **Rationale:** Humans retain ultimate control over code reaching production. Prevents autonomous agent drift into unsafe states.
 
@@ -124,7 +124,7 @@ This is not a redesign proposal, implementation guide, or "nice to have" require
 - Exception: Labels `docs-only`, `ci-only`, `emergency` bypass gate
 
 **References:**
-- Working Repo: `governance/DELIVERY_APPROVED.yaml` (approved: true/false)
+- Working Repo: `.github/governance/DELIVERY_APPROVED.yaml` (approved: true/false)
 - Working Repo: `.github/workflows/delivery-gate.yml`
 - Working Repo: `docs/live-readiness/META-001-GOVERNANCE_FOUNDATION.md` §3 Delivery Gates
 

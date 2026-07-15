@@ -40,7 +40,7 @@ Posted on #3912 @ `2026-07-09T13:27:00Z` (comment after prep PR #3942 merge @ `8
 | `cdb_signal_donchian` health :8016 | PASS — `donchian_breakout_v1` / `np-donchian-parallel-01` |
 | Canonical `cdb_signal` | **stopped** during parallel window |
 
-**Execute note:** `manifests/runtime_np_parallel_signal_compose_override.yml` build `context`
+**Execute note:** `config/arvp/runtime_np_parallel_signal_compose_override.yml` build `context`
 required `../..` (not `..`) when compose base file is `infrastructure/compose/` — local fix
 applied at execute time; follow-up PR recommended.
 

@@ -4,7 +4,7 @@ Status Class: **DESIGN_ONLY** — feasibility assessed; **no runtime execution c
 Issue: [#3894](https://github.com/jannekbuengener/Claire_de_Binare/issues/3894)
 Parent: [#1900](https://github.com/jannekbuengener/Claire_de_Binare/issues/1900)
 Related (out of scope, stays open): [#3893](https://github.com/jannekbuengener/Claire_de_Binare/issues/3893) (24h Donchian single-strategy observation)
-Prior art: [#3792](https://github.com/jannekbuengener/Claire_de_Binare/issues/3792) (closed, `TIMEOUT_NO_CHAIN`), `manifests/runtime_3792_signal_compose_override.yml`
+Prior art: [#3792](https://github.com/jannekbuengener/Claire_de_Binare/issues/3792) (closed, `TIMEOUT_NO_CHAIN`), `config/arvp/runtime_3792_signal_compose_override.yml`
 Live-Readiness: **NO-GO**
 Echtgeld: **not authorized**
 
@@ -28,7 +28,7 @@ tools_or_queries:
   - MCP: cdb_context_briefing (briefing_id d653b883047c503f; operator_trust_level LOW; no enrichment records)
   - read: AGENTS.md, agents/AGENTS.md (Read Order)
   - read: infrastructure/compose/compose.red.yml, compose.blue.yml
-  - read: manifests/runtime_3792_signal_compose_override.yml
+  - read: config/arvp/runtime_3792_signal_compose_override.yml
   - read: services/signal/config.py, services/signal/service.py
   - read: services/risk/config.py, services/risk/service.py
   - read: services/allocation/config.py, compose.blue.yml ALLOCATION_RULES_JSON
@@ -55,7 +55,7 @@ repo_crosscheck:
   - compose.blue.yml:186 (ALLOCATION_RULES_JSON)
   - services/signal/service.py:234-235,341,375 (runtime: PB1 + Donchian only)
   - services/validation/strategy_replay_runner.py:628+ (replay dispatch for 5 strategies)
-  - manifests/runtime_3792_signal_compose_override.yml (single-strategy swap pattern)
+  - config/arvp/runtime_3792_signal_compose_override.yml (single-strategy swap pattern)
 
 impact_on_plan:
   - Parallel multi-strategy natural-paper is architecturally plausible but not safe today without compose/ID/allocation/ledger isolation work
@@ -122,7 +122,7 @@ Context Brain preflight attempted (`cdb_context_briefing`); no usable DB records
 
 - **One** `cdb_signal` service in `infrastructure/compose/compose.red.yml` with fixed `container_name: cdb_signal` and host port `8005`.
 - Strategy selection is **env-swap**, not multi-instance: `SIGNAL_STRATEGY_ID` (default `primary_breakout_v1`), `SIGNAL_BOT_ID` (default empty).
-- Prior campaign pattern: `manifests/runtime_3792_signal_compose_override.yml` swaps a **single** running instance to `donchian_breakout_v1` — proves single-strategy override works; does **not** prove parallel instances.
+- Prior campaign pattern: `config/arvp/runtime_3792_signal_compose_override.yml` swaps a **single** running instance to `donchian_breakout_v1` — proves single-strategy override works; does **not** prove parallel instances.
 
 ### 5.2 Messaging / streams (shared bus)
 
@@ -255,7 +255,7 @@ See §5.7 table. Only **two** strategies are runtime-capable today. Parallel nat
 | ID | Severity | Gap | Follow-up recommendation |
 |----|----------|-----|--------------------------|
 | G1 | **BLOCKER** | Single `cdb_signal` in canonical compose | Compose multi-instance profile for parallel signal services |
-| G2 | **BLOCKER** | `donchian_breakout_v1` missing from `ALLOCATION_RULES_JSON` | **Resolved #3910** — conservative regime map in `compose.blue.yml`; campaign override `manifests/runtime_np_parallel_allocation_compose_override.yml` |
+| G2 | **BLOCKER** | `donchian_breakout_v1` missing from `ALLOCATION_RULES_JSON` | **Resolved #3910** — conservative regime map in `compose.blue.yml`; campaign override `config/arvp/runtime_np_parallel_allocation_compose_override.yml` |
 | G3 | **HIGH** | Shared Redis `signals` topic — no publisher isolation | Topic/stream env overrides per signal instance OR risk subscription filter |
 | G4 | **HIGH** | `SIGNAL_BOT_ID` defaults empty | Enforce non-empty bot_id in compose profile + validation guard |
 | G5 | **HIGH** | No runtime test for ledger/evidence cross-strategy contamination | Contract test + mixed-fixture guard |
@@ -308,7 +308,7 @@ Design claims are repo-backed only (no runtime/DB verification in this slice).
 
 - `infrastructure/compose/compose.red.yml`
 - `infrastructure/compose/compose.blue.yml` (`ALLOCATION_RULES_JSON`)
-- `manifests/runtime_3792_signal_compose_override.yml`
+- `config/arvp/runtime_3792_signal_compose_override.yml`
 - `services/signal/config.py`, `services/signal/service.py`
 - `services/risk/service.py` (`_allocation_allowed`, exposure checks)
 - `services/validation/paper_reference_window_runner.py`

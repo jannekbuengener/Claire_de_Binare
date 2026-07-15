@@ -8,7 +8,7 @@
 # Sweep scope is derived from the #1450 batch (commit 39c5d864):
 #   knowledge/logs/sessions/   — session evidence logs (20 of 40 files)
 #   docs/runbooks/evidence/    — runbook drill evidence (3 files)
-#   reports/                   — reports and canary output (2 files)
+#   docs/evidence/reports/      — committed reports and canary evidence (2 files)
 #   docs/operations/           — operational verification docs (1 file)
 #
 # This script does NOT introduce any .gitignore entries and does NOT flag
@@ -23,7 +23,7 @@ set -euo pipefail
 SWEEP_PATHS=(
   "knowledge/logs/sessions"
   "docs/runbooks/evidence"
-  "reports"
+  "docs/evidence/reports"
   "docs/operations"
 )
 

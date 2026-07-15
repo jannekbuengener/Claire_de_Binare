@@ -42,8 +42,7 @@ def test_ci_yml_publishes_canonical_required_ci_context() -> None:
     required_name = "ci (Unit/Integration + Lint gesammelt)"
     assert required_name in mapping
     sources = {
-        Path(str(entry["workflow_file"])).as_posix()
-        for entry in mapping[required_name]
+        Path(str(entry["workflow_file"])).as_posix() for entry in mapping[required_name]
     }
     assert any(path.endswith("/.github/workflows/ci.yml") for path in sources)
     assert not any(path.endswith("/.github/workflows/ci.yaml") for path in sources)
@@ -53,8 +52,7 @@ def test_policy_gate_publishes_required_context() -> None:
     mapping, _ = derive_context_mapping(helpers.WORKFLOWS_DIR)
     assert "policy-gate" in mapping
     sources = {
-        Path(str(entry["workflow_file"])).as_posix()
-        for entry in mapping["policy-gate"]
+        Path(str(entry["workflow_file"])).as_posix() for entry in mapping["policy-gate"]
     }
     assert any(path.endswith("/.github/workflows/policy-gate.yml") for path in sources)
 
@@ -87,14 +85,18 @@ def test_docs_guards_are_non_required_optional_checks() -> None:
         ]
         assert guard_contexts, f"expected derived context for {filename}"
         overlap = set(guard_contexts).intersection(helpers.REQUIRED_CHECK_CONTEXTS)
-        assert overlap == set(), (
-            f"{filename} must not masquerade as required check; overlap={overlap}"
-        )
+        assert (
+            overlap == set()
+        ), f"{filename} must not masquerade as required check; overlap={overlap}"
 
 
 def test_drift_report_artifact_exists_and_documents_baseline_hash() -> None:
     report_path = (
-        helpers.REPO_ROOT / "reports" / "REQUIRED_CHECK_CONTEXTS_DRIFT_REPORT_main.md"
+        helpers.REPO_ROOT
+        / "docs"
+        / "evidence"
+        / "reports"
+        / "REQUIRED_CHECK_CONTEXTS_DRIFT_REPORT_main.md"
     )
     assert report_path.is_file()
     text = report_path.read_text(encoding="utf-8")

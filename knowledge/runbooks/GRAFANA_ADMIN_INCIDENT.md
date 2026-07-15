@@ -193,7 +193,7 @@ curl -u admin:<old-password> http://localhost:3000/api/health
 ## References
 
 - **Secret Rotation Policy:** `knowledge/governance/SECRET_ROTATION_POLICY.md`
-- **General Secrets Policy:** `governance/SECRETS_POLICY.md`
+- **General Secrets Policy:** `knowledge/governance/SECRETS_POLICY.md`
 - **Grafana Official Docs:** https://grafana.com/docs/grafana/latest/administration/user-management/
 
 ---

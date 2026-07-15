@@ -16,10 +16,16 @@ ANOMALY_SCHEMA_VERSION = "v1"
 
 TASK_LABEL = "task"
 TYPE_LABELS = {"type:bug", "type:feature", "type:refactor"}
-SCOPE_LABELS = {"scope:core", "scope:infra", "scope:ci", "scope:data", "scope:monitoring"}
+SCOPE_LABELS = {
+    "scope:core",
+    "scope:infra",
+    "scope:ci",
+    "scope:data",
+    "scope:monitoring",
+}
 RELEVANT_EVENT_LABELS = {TASK_LABEL, *TYPE_LABELS, *SCOPE_LABELS}
 
-HISTORICAL_PREFIXES = ("docs/archive/", "knowledge/logs/", "reports/")
+HISTORICAL_PREFIXES = ("docs/archive/", "knowledge/logs/", "docs/evidence/reports/")
 SKIP_DIRS = {
     ".git",
     ".auto-claude",
@@ -472,7 +478,9 @@ def iter_repo_files(repo_root: Path) -> list[str]:
         dirs[:] = [
             directory
             for directory in dirs
-            if not should_skip_dir(f"{rel_root}/{directory}" if rel_root != "." else directory)
+            if not should_skip_dir(
+                f"{rel_root}/{directory}" if rel_root != "." else directory
+            )
         ]
         for filename in filenames:
             rel_path = (
@@ -498,7 +506,9 @@ def qualify_issue(labels: list[str]) -> tuple[bool, list[str]]:
         matched_rules.extend(matched_types)
         matched_rules.extend(matched_scopes)
 
-    qualified = TASK_LABEL in label_set or (bool(matched_types) and bool(matched_scopes))
+    qualified = TASK_LABEL in label_set or (
+        bool(matched_types) and bool(matched_scopes)
+    )
     return qualified, matched_rules
 
 
@@ -537,14 +547,18 @@ def add_candidate(
         entry["matched_keywords"] = sorted(combined)
 
 
-def score_path_match(path: str, keywords: list[str], title_terms: set[str]) -> tuple[float, set[str]]:
+def score_path_match(
+    path: str, keywords: list[str], title_terms: set[str]
+) -> tuple[float, set[str]]:
     lowered_path = path.lower()
     tokens = path_tokens(path)
     exact_matches = {keyword for keyword in keywords if keyword in tokens}
     substring_matches = {
         keyword
         for keyword in keywords
-        if keyword not in exact_matches and len(keyword) >= 5 and keyword in lowered_path
+        if keyword not in exact_matches
+        and len(keyword) >= 5
+        and keyword in lowered_path
     }
     matched = exact_matches | substring_matches
     if not matched:
@@ -679,7 +693,13 @@ def prefilter_candidates(
         candidates.values(),
         key=lambda item: (-(item["path_score"] + item["catalog_score"]), item["path"]),
     )
-    return ranked_stage_a[:STAGE_A_MAX], ambiguities, valid_explicit, weak_explicit, missing_explicit
+    return (
+        ranked_stage_a[:STAGE_A_MAX],
+        ambiguities,
+        valid_explicit,
+        weak_explicit,
+        missing_explicit,
+    )
 
 
 def rank_candidates(
@@ -699,24 +719,36 @@ def rank_candidates(
         matched_keywords = set(candidate["matched_keywords"])
         if snippet:
             lowered_snippet = snippet.lower()
-            content_hits = {keyword for keyword in keywords if keyword in lowered_snippet}
+            content_hits = {
+                keyword for keyword in keywords if keyword in lowered_snippet
+            }
             matched_keywords.update(content_hits)
             content_score = float(len(content_hits) * 1.5)
 
         spec = candidate["spec"]
-        total_score = candidate["path_score"] + candidate["catalog_score"] + content_score
+        total_score = (
+            candidate["path_score"] + candidate["catalog_score"] + content_score
+        )
         if candidate["explicit"]:
             total_score += 8.0
         if candidate["neighbor"]:
             total_score += 1.0
         if spec is not None:
             total_score += 1.5
-            if any(rule.startswith("scope:ci") for rule in matched_rules) and path.startswith(".github/"):
+            if any(
+                rule.startswith("scope:ci") for rule in matched_rules
+            ) and path.startswith(".github/"):
                 total_score += 1.0
             total_score += float(len(set(spec.keywords) & title_terms) * 0.75)
-        if path.startswith(".github/workflows/") and {"receipt", "comment", "dedupe"} & matched_keywords:
+        if (
+            path.startswith(".github/workflows/")
+            and {"receipt", "comment", "dedupe"} & matched_keywords
+        ):
             total_score += 1.0
-        if path.startswith(".github/scripts/") and {"ranking", "handoff", "schema", "fingerprint"} & matched_keywords:
+        if (
+            path.startswith(".github/scripts/")
+            and {"ranking", "handoff", "schema", "fingerprint"} & matched_keywords
+        ):
             total_score += 1.0
 
         ranked.append(
@@ -777,7 +809,9 @@ def build_source_reason(candidate: dict[str, Any]) -> str:
     return "Active repo path survived bounded prefilter and shortlist ranking."
 
 
-def build_source_entry(candidate: dict[str, Any], *, role: str, priority: int) -> dict[str, Any]:
+def build_source_entry(
+    candidate: dict[str, Any], *, role: str, priority: int
+) -> dict[str, Any]:
     spec: SurfaceSpec | None = candidate["spec"]
     entry = {
         "path": candidate["path"],
@@ -807,12 +841,16 @@ def classify_handoff(
         "implementation_targets": [],
     }
     flattened: list[dict[str, Any]] = []
-    issue_specific_present = any(candidate["issue_specific"] for candidate in ranked_candidates)
+    issue_specific_present = any(
+        candidate["issue_specific"] for candidate in ranked_candidates
+    )
 
     for candidate in ranked_candidates:
         spec: SurfaceSpec | None = candidate["spec"]
         role = "background"
-        if candidate["explicit"] or (candidate["issue_specific"] and candidate["score"] >= 9.0):
+        if candidate["explicit"] or (
+            candidate["issue_specific"] and candidate["score"] >= 9.0
+        ):
             role = "must_read"
         elif candidate["issue_specific"] and candidate["implementation_target"]:
             role = "must_read"
@@ -823,9 +861,19 @@ def classify_handoff(
         elif candidate["score"] >= 6.5:
             role = "supporting"
 
-        if issue_specific_present and spec is not None and spec.generic_fallback and role == "must_read":
+        if (
+            issue_specific_present
+            and spec is not None
+            and spec.generic_fallback
+            and role == "must_read"
+        ):
             role = "supporting"
-        if issue_specific_present and spec is not None and spec.generic_fallback and role == "supporting":
+        if (
+            issue_specific_present
+            and spec is not None
+            and spec.generic_fallback
+            and role == "supporting"
+        ):
             role = "background"
 
         target_list = handoff[role]
@@ -850,14 +898,20 @@ def classify_handoff(
             {
                 "path": candidate["path"],
                 "reason": build_source_reason(candidate),
-                "change_hint": spec.change_hint if spec is not None and spec.change_hint else "Likely edit surface based on the bounded issue-scoped ranking.",
+                "change_hint": (
+                    spec.change_hint
+                    if spec is not None and spec.change_hint
+                    else "Likely edit surface based on the bounded issue-scoped ranking."
+                ),
             }
         )
 
     return handoff, flattened
 
 
-def detect_sensitive_context(labels: list[str], title: str, body: str) -> tuple[bool, list[str]]:
+def detect_sensitive_context(
+    labels: list[str], title: str, body: str
+) -> tuple[bool, list[str]]:
     reasons: list[str] = []
     lowered_labels = [label.lower() for label in labels]
     for label in lowered_labels:
@@ -902,8 +956,13 @@ def build_anomaly(
     minimum_evidence_met = bool(evidence and affected_artifacts)
     if sensitive_context:
         escalation_hint = "report_only"
-        policy_reason = "Sensitive/private context detected; public auto-issue emission is blocked."
-    elif strength == "strong" and anomaly_type in {"broken_reference", "missing_expected_source"}:
+        policy_reason = (
+            "Sensitive/private context detected; public auto-issue emission is blocked."
+        )
+    elif strength == "strong" and anomaly_type in {
+        "broken_reference",
+        "missing_expected_source",
+    }:
         escalation_hint = "follow_up_candidate"
         policy_reason = "Strong typed anomaly with concrete, repo-backed evidence."
     elif strength == "weak":
@@ -967,10 +1026,14 @@ def detect_anomalies(
         )
 
     source_paths = {source["path"] for source in sources}
-    text_has_workflow_signal = ".github/workflows/" in body or ".github/workflows/" in title or re.search(
-        r"\bworkflow(s)?\b",
-        f"{title}\n{body}",
-        flags=re.IGNORECASE,
+    text_has_workflow_signal = (
+        ".github/workflows/" in body
+        or ".github/workflows/" in title
+        or re.search(
+            r"\bworkflow(s)?\b",
+            f"{title}\n{body}",
+            flags=re.IGNORECASE,
+        )
     )
     has_runbook_signal = bool(source_paths & WORKFLOW_DOC_SURFACES)
     if text_has_workflow_signal and not has_runbook_signal:
@@ -990,8 +1053,12 @@ def detect_anomalies(
             )
         )
 
-    explicit_workflows = [path for path in valid_explicit if path.startswith(".github/workflows/")]
-    explicit_workflow_docs = [path for path in valid_explicit if path in WORKFLOW_DOC_SURFACES]
+    explicit_workflows = [
+        path for path in valid_explicit if path.startswith(".github/workflows/")
+    ]
+    explicit_workflow_docs = [
+        path for path in valid_explicit if path in WORKFLOW_DOC_SURFACES
+    ]
     if explicit_workflows and explicit_workflow_docs and has_drift_signal(title, body):
         findings.append(
             build_anomaly(
@@ -1003,13 +1070,17 @@ def detect_anomalies(
                     f"workflow_refs:{', '.join(sorted(explicit_workflows))}",
                     f"doc_refs:{', '.join(sorted(explicit_workflow_docs))}",
                 ],
-                affected_artifacts=sorted(set(explicit_workflows + explicit_workflow_docs)),
+                affected_artifacts=sorted(
+                    set(explicit_workflows + explicit_workflow_docs)
+                ),
                 sensitive_context=sensitive_context,
                 sensitive_reasons=sensitive_reasons,
             )
         )
 
-    explicit_arch_docs = [path for path in valid_explicit if path in ARCHITECTURE_SURFACES]
+    explicit_arch_docs = [
+        path for path in valid_explicit if path in ARCHITECTURE_SURFACES
+    ]
     if explicit_arch_docs and has_drift_signal(title, body):
         findings.append(
             build_anomaly(
@@ -1047,10 +1118,14 @@ def determine_curation_status(
     weak_explicit: list[str],
 ) -> tuple[str, float, str, bool]:
     strong_issue_targets = [
-        item for item in handoff["must_read"] if item["path"] not in GENERIC_FALLBACK_SURFACES
+        item
+        for item in handoff["must_read"]
+        if item["path"] not in GENERIC_FALLBACK_SURFACES
     ]
     strong_supporting = [
-        item for item in handoff["supporting"] if item["path"] not in GENERIC_FALLBACK_SURFACES
+        item
+        for item in handoff["supporting"]
+        if item["path"] not in GENERIC_FALLBACK_SURFACES
     ]
 
     if weak_explicit and not strong_issue_targets:
@@ -1093,14 +1168,20 @@ def build_constraints(
     text = f"{title}\n{body}".lower()
     constraints: list[dict[str, str]] = []
 
-    if any(keyword in text for keyword in ("bounded", "cheap", "budget", "token", "small-model")):
+    if any(
+        keyword in text
+        for keyword in ("bounded", "cheap", "budget", "token", "small-model")
+    ):
         constraints.append(
             {
                 "summary": "Keep the lane cheap and bounded; only shortlist-backed sources should drive the handoff.",
                 "why": "The issue explicitly calls for bounded pre-curation instead of broad late search.",
             }
         )
-    if any(keyword in text for keyword in ("fail-closed", "fail_closed", "ambigu")) or state == "fail_closed":
+    if (
+        any(keyword in text for keyword in ("fail-closed", "fail_closed", "ambigu"))
+        or state == "fail_closed"
+    ):
         constraints.append(
             {
                 "summary": "Fail closed when the shortlist is ambiguous or too generic.",
@@ -1148,7 +1229,9 @@ def build_watchouts(
     return watchouts[:MAX_WATCHOUTS]
 
 
-def issue_fingerprint(title: str, body: str, labels: list[str], matched_rules: list[str]) -> str:
+def issue_fingerprint(
+    title: str, body: str, labels: list[str], matched_rules: list[str]
+) -> str:
     fingerprint_seed = "|".join(
         [
             normalize_text(title).lower(),
@@ -1202,7 +1285,11 @@ def build_receipt(
     artifact_ref: str,
     artifact_name: str,
 ) -> dict[str, Any]:
-    status = {"ready": "curation ready", "partial": "partial", "fail_closed": "fail_closed"}[state]
+    status = {
+        "ready": "curation ready",
+        "partial": "partial",
+        "fail_closed": "fail_closed",
+    }[state]
     marker = f"<!-- {RECEIPT_MARKER_PREFIX}:{fingerprint} -->"
     body_lines = [
         marker,
@@ -1234,7 +1321,9 @@ def coerce_issue_number(raw_issue_number: Any) -> int | None:
     return None
 
 
-def curate_issue_payload(payload: dict[str, Any], *, repo_root: Path) -> dict[str, Any] | None:
+def curate_issue_payload(
+    payload: dict[str, Any], *, repo_root: Path
+) -> dict[str, Any] | None:
     labels = issue_labels(payload)
     qualified, matched_rules = qualify_issue(labels)
     if not qualified:
@@ -1245,11 +1334,13 @@ def curate_issue_payload(payload: dict[str, Any], *, repo_root: Path) -> dict[st
     body = str(issue.get("body") or "")
     issue_number = coerce_issue_number(issue.get("number"))
 
-    stage_a, ambiguities, valid_explicit, weak_explicit, missing_explicit = prefilter_candidates(
-        repo_root=repo_root,
-        title=title,
-        body=body,
-        labels=labels,
+    stage_a, ambiguities, valid_explicit, weak_explicit, missing_explicit = (
+        prefilter_candidates(
+            repo_root=repo_root,
+            title=title,
+            body=body,
+            labels=labels,
+        )
     )
     keywords = issue_keywords(title, body, labels)
     title_terms = title_keywords(title)
@@ -1360,11 +1451,15 @@ def write_artifact_for_event(
 
     artifact["issue"]["number"] = issue_number
     artifact["receipt"]["artifact_name"] = f"backlog-curation-issue-{issue_number}"
-    artifact["receipt"]["artifact_ref"] = f"artifacts/backlog-curation/issue-{issue_number}.json"
-    artifact["receipt"]["body"] = artifact["receipt"]["body"].replace(
-        "issue-unknown.json", f"issue-{issue_number}.json"
-    ).replace(
-        "backlog-curation-issue-unknown", f"backlog-curation-issue-{issue_number}"
+    artifact["receipt"][
+        "artifact_ref"
+    ] = f"artifacts/backlog-curation/issue-{issue_number}.json"
+    artifact["receipt"]["body"] = (
+        artifact["receipt"]["body"]
+        .replace("issue-unknown.json", f"issue-{issue_number}.json")
+        .replace(
+            "backlog-curation-issue-unknown", f"backlog-curation-issue-{issue_number}"
+        )
     )
 
     artifact_dir.mkdir(parents=True, exist_ok=True)
@@ -1374,7 +1469,9 @@ def write_artifact_for_event(
 
 
 def parse_args() -> argparse.Namespace:
-    parser = argparse.ArgumentParser(description="Build backlog-curation artifact from an issues.labeled payload.")
+    parser = argparse.ArgumentParser(
+        description="Build backlog-curation artifact from an issues.labeled payload."
+    )
     parser.add_argument("--event-path", required=True, type=Path)
     parser.add_argument("--repo-root", required=True, type=Path)
     parser.add_argument("--artifact-dir", required=True, type=Path)

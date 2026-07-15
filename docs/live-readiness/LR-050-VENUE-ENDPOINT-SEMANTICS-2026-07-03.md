@@ -91,7 +91,7 @@ Answer, with repo evidence cross-checked against **official public MEXC document
 
 - `MOCK_TRADING=true` → `mock_builtin` adapter; no live MEXC adapter factory with credentials.
 - `DRY_RUN=true` → `LiveExecutor(dry_run=True)` with `client=None`; `execute_order` returns a `DRY_RUN_*` result without calling `place_market_order` / `place_limit_order`.
-- Runtime confirmation: [`reports/lr050/dry_run_proof/2026-07-03/manifest.json`](../../reports/lr050/dry_run_proof/2026-07-03/manifest.json) — `result: PASS`, `dry_run: true`, `mock_trading: true`, `mock_builtin_adapter: true`, `no_venue_client_init: true`, `no_place_order_logs: true` (repo head `a90037fb`, merged PR [#3713](https://github.com/jannekbuengener/Claire_de_Binare/pull/3713), #2978).
+- Runtime confirmation: [`docs/evidence/reports/lr050/dry_run_proof/2026-07-03/manifest.json`](../evidence/reports/lr050/dry_run_proof/2026-07-03/manifest.json) — `result: PASS`, `dry_run: true`, `mock_trading: true`, `mock_builtin_adapter: true`, `no_venue_client_init: true`, `no_place_order_logs: true` (repo head `a90037fb`, merged PR [#3713](https://github.com/jannekbuengener/Claire_de_Binare/pull/3713), #2978).
 
 **They do not prove:**
 
@@ -173,7 +173,7 @@ unchanged.
 - `DRY_RUN=true`, **and**
 - `MOCK_TRADING=true` (or a confirmed `mock_builtin` adapter selection),
 - i.e. the mock executor / `mock_builtin` path,
-- runtime-evidenced by #2978 ([`reports/lr050/dry_run_proof/2026-07-03/`](../../reports/lr050/dry_run_proof/2026-07-03/manifest.json), PR [#3713](https://github.com/jannekbuengener/Claire_de_Binare/pull/3713)),
+- runtime-evidenced by #2978 ([`docs/evidence/reports/lr050/dry_run_proof/2026-07-03/`](../evidence/reports/lr050/dry_run_proof/2026-07-03/manifest.json), PR [#3713](https://github.com/jannekbuengener/Claire_de_Binare/pull/3713)),
 - with **no** real order paths exercised.
 
 `TRADING_MODE=staged` is likewise **not** dry-run and not authoritative on the execution path (logged only).
@@ -241,7 +241,7 @@ No LR-wide release is implied. This document does not authorize live capital.
 Repo (at `origin/main` `c5eb52a7` post-#3720 / #3725):
 
 - [`core/clients/mexc.py`](../../core/clients/mexc.py), [`services/execution/config.py`](../../services/execution/config.py), [`services/execution/service.py`](../../services/execution/service.py), [`services/risk/balance_fetcher.py`](../../services/risk/balance_fetcher.py), [`services/ws/mexc_v3_client.py`](../../services/ws/mexc_v3_client.py), [`core/config/trading_mode.py`](../../core/config/trading_mode.py)
-- [`reports/lr050/dry_run_proof/2026-07-03/manifest.json`](../../reports/lr050/dry_run_proof/2026-07-03/manifest.json)
+- [`docs/evidence/reports/lr050/dry_run_proof/2026-07-03/manifest.json`](../evidence/reports/lr050/dry_run_proof/2026-07-03/manifest.json)
 - [`LR-050-VENUE-AUDIT.md`](./LR-050-VENUE-AUDIT.md), [`LR-050-DRY-RUN-PROOF.md`](./LR-050-DRY-RUN-PROOF.md), [`LR-050-FINAL-RECONCILE.md`](./LR-050-FINAL-RECONCILE.md), [`LR-050-BLOCKER-REFRESH-MATRIX-2026-07-03.md`](./LR-050-BLOCKER-REFRESH-MATRIX-2026-07-03.md)
 
 Official MEXC public documentation (read-only, no credentials):

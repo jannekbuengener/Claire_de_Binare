@@ -19,7 +19,7 @@
 | Board stage `trade-capable` | **Not** live-capital authorization (orthogonal to LR) |
 | P5 prestart Human Gate (2026-04-04) | P5 shadow/prestart only — **not** live-capital canary |
 
-Prestart anchor (does **not** grant live-capital GO): [`reports/p5_canary/2026-04-04/decision_record.yaml`](../../reports/p5_canary/2026-04-04/decision_record.yaml).
+Prestart anchor (does **not** grant live-capital GO): [`docs/evidence/reports/p5_canary/2026-04-04/decision_record.yaml`](../evidence/reports/p5_canary/2026-04-04/decision_record.yaml).
 
 ---
 

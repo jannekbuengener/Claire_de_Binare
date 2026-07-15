@@ -1,24 +1,19 @@
 # enforce-root-baseline.ps1
 
-Purpose: validate the consolidated Working Repo baseline after retiring the split Docs-Hub default.
+Purpose: validate the canonical Working Repo entrypoints and tracked root layout.
 
 ## What It Checks
 
-- Required local canon directories exist:
-  - `agents/` — canonical agent registry
-  - `docs/` — navigation, runbooks, archive
-  - `governance/` — operational governance files (DELIVERY_APPROVED.yaml, SECRETS_POLICY.md etc.); tracked at root; not listed in `docs/meta/WORKING_REPO_CANON.md` canon matrix but validated here as a required presence
-  - `knowledge/` — canonical knowledge hub
-  - `mcp_navpack_working_repo/` — active navigation pack
+- Required local canon directories and entrypoints exist.
+- `python -m tools.validate_root_layout` accepts only the tracked root entries
+  declared in `config/repository/root_layout.json`.
+- Retired root paths such as `reports/`, `manifests/`, `k8s/`, and
+  `mcp_navpack_working_repo/` fail closed if reintroduced.
+- Key navigation files do not use the retired external Docs Hub as their default.
 
 Note: `docs/meta/WORKING_REPO_CANON.md` is the canonical authority for the active path matrix.
-This script checks structural presence; the canon document defines what is authoritative.
-- Required local entrypoints exist:
-  - `README.md`
-  - `AGENTS.md`
-  - `docs/index.md`
-  - `docs/meta/WORKING_REPO_CANON.md`
-- Key navigation files do not still point to a retired external docs source as the default path.
+The PowerShell script wraps the cross-platform Python guard and retains the
+legacy split-reference checks.
 
 ## Usage
 
@@ -30,7 +25,7 @@ This script checks structural presence; the canon document defines what is autho
 ## Exit Codes
 
 - `0` = baseline valid
-- `1` = missing local canon paths or stale split-repo references detected
+- `1` = root, canon-path, or stale split-repo violation detected
 
 ## Rationale
 
@@ -40,4 +35,5 @@ The baseline now protects the opposite invariant:
 - active canon lives in this working repo
 - local `docs/archive/docs_hub_snapshot/` is the only retained legacy archive
 
-See `docs/meta/WORKING_REPO_CANON.md` for the canonical path matrix.
+See `docs/meta/ROOT_INFORMATION_ARCHITECTURE.md` for the root decision matrix and
+`docs/meta/WORKING_REPO_CANON.md` for the canonical path matrix.
