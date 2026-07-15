@@ -61,7 +61,13 @@ jobs:
             echo "Keine Änderungen in den überwachten Ordnern; Secret-Scan übersprungen."
             exit 0
           fi
-          hits="$(git grep -nEI '(api[_-]?key|secret|token|private[_-]?key|BEGIN (RSA|OPENSSH) PRIVATE KEY|xox[baprs]-|ghp_[A-Za-z0-9]{20,}|AKIA[0-9A-Z]{16})' -- "${scan_files[@]}" || true)"
+          # This lightweight guard is intentionally limited to credential-shaped
+          # signatures. Generic words such as "secret", "token", and "api_key"
+          # are normal vocabulary in security documentation and caused every
+          # moved document to be treated as a leak. The dedicated gitleaks
+          # workflows remain the canonical full-content and history scanners.
+          credential_pattern='(BEGIN (RSA|OPENSSH|EC|DSA) PRIVATE KEY|xox[baprs]-[A-Za-z0-9-]{10,}|gh[pousr]_[A-Za-z0-9]{20,}|github_pat_[A-Za-z0-9_]{20,}|AKIA[0-9A-Z]{16})'
+          hits="$(git grep -nEI "$credential_pattern" -- "${scan_files[@]}" || true)"
           if [ -n "$hits" ]; then
             echo "Potential secret-like strings found in geänderten Dateien (review required):"
             echo "$hits"
