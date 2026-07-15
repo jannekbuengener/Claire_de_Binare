@@ -76,14 +76,21 @@ jobs:
             exit 1
           fi
 
-      - name: Enforce consolidated top-level folders
+      - name: Enforce canonical documentation and governance folders
         shell: bash
         run: |
           set -euo pipefail
-          echo "Checking consolidated top-level folders..."
-          for d in agents governance knowledge docs; do
+          echo "Checking canonical documentation and governance folders..."
+          required_dirs=(
+            agents
+            docs
+            knowledge
+            knowledge/governance
+            .github/governance
+          )
+          for d in "${required_dirs[@]}"; do
             if [ ! -d "$d" ]; then
-              echo "Missing required top-level folder: $d"
+              echo "Missing required canonical folder: $d"
               exit 1
             fi
           done
