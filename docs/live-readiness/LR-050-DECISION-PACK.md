@@ -19,7 +19,7 @@
 | Secrets in this document | **None** |
 | Orders / runtime mutation via this document | **None** |
 
-Human Gate **GRANTED 2026-04-04** applies to the **P5 prestart / shadow-stability pack only**, not to live-capital canary. Repo anchor: [`reports/p5_canary/2026-04-04/decision_record.yaml`](../../reports/p5_canary/2026-04-04/decision_record.yaml), Issue [#1445](https://github.com/jannekbuengener/Claire_de_Binare/issues/1445).
+Human Gate **GRANTED 2026-04-04** applies to the **P5 prestart / shadow-stability pack only**, not to live-capital canary. Repo anchor: [`docs/evidence/reports/p5_canary/2026-04-04/decision_record.yaml`](../evidence/reports/p5_canary/2026-04-04/decision_record.yaml), Issue [#1445](https://github.com/jannekbuengener/Claire_de_Binare/issues/1445).
 
 ---
 
@@ -33,7 +33,7 @@ Human Gate **GRANTED 2026-04-04** applies to the **P5 prestart / shadow-stabilit
 | **SSOT** | [`LR-AUDIT-STATUS-2026-03-05.md`](./LR-AUDIT-STATUS-2026-03-05.md) |
 | **Phase mirror** | [`GO_NO_GO.md`](./GO_NO_GO.md) — P5 row `NO-GO` |
 
-**Interpretation:** P0–P4 prerequisites are `DONE`. Committed P5 prestart artifacts under `reports/p5_canary/2026-04-04/` (`manifest.json`, `prestart_evidence_lock.yaml`, `decision_record.yaml`, `lean_shadow_evidence_handoff.yaml`) are **prestart-only** evidence. They do **not** clear `LR-050` and do **not** authorize live capital.
+**Interpretation:** P0–P4 prerequisites are `DONE`. Committed P5 prestart artifacts under `docs/evidence/reports/p5_canary/2026-04-04/` (`manifest.json`, `prestart_evidence_lock.yaml`, `decision_record.yaml`, `lean_shadow_evidence_handoff.yaml`) are **prestart-only** evidence. They do **not** clear `LR-050` and do **not** authorize live capital.
 
 ---
 
@@ -46,11 +46,11 @@ Phasenstatus gemäß [`LR-AUDIT-STATUS-2026-03-05.md`](./LR-AUDIT-STATUS-2026-03
 | P0 `LR-001`–`LR-003` | DONE | [`LR-001-EVIDENCE.md`](./LR-001-EVIDENCE.md), [`LR-002-EVIDENCE.md`](./LR-002-EVIDENCE.md), [`LR-003-EVIDENCE.md`](./LR-003-EVIDENCE.md) |
 | P1 `LR-012` (scope-narrowed) | DONE | PR #1107, [`docs/evidence/LR-012.md`](../evidence/LR-012.md), [`LR-012-STATE.yaml`](./LR-012-STATE.yaml) |
 | P2 `LR-020`, `LR-021` | DONE | [`LR-020-STATE.yaml`](./LR-020-STATE.yaml), LR-021 closed |
-| P3 `LR-030` | DONE | [`docs/evidence/LR-030.md`](../evidence/LR-030.md), [`LR-030-STATE.yaml`](./LR-030-STATE.yaml), `reports/lr030/2026-05-17/` |
+| P3 `LR-030` | DONE | [`docs/evidence/LR-030.md`](../evidence/LR-030.md), [`LR-030-STATE.yaml`](./LR-030-STATE.yaml), `docs/evidence/reports/lr030/2026-05-17/` |
 | P3 `LR-031` | PASS-evidenced | [`docs/evidence/LR-031.md`](../evidence/LR-031.md) |
 | P3 soak run | PASS | [#2440](https://github.com/jannekbuengener/Claire_de_Binare/issues/2440) **CLOSED** — >24h shadow/soak (`lr030-shadow-soak-20260516_204415`) |
-| P4 `LR-040`–`LR-042` | DONE / PASS | `reports/p5_canary/2026-04-04/lr040/lr040_soak_gate_eval.json`, [`docs/evidence/LR-041.md`](../evidence/LR-041.md), [`docs/evidence/LR-042.md`](../evidence/LR-042.md) |
-| P5 prestart pack | Committed GO (prestart only) | `reports/p5_canary/2026-04-04/` — **does not** clear `LR-050` |
+| P4 `LR-040`–`LR-042` | DONE / PASS | `docs/evidence/reports/p5_canary/2026-04-04/lr040/lr040_soak_gate_eval.json`, [`docs/evidence/LR-041.md`](../evidence/LR-041.md), [`docs/evidence/LR-042.md`](../evidence/LR-042.md) |
+| P5 prestart pack | Committed GO (prestart only) | `docs/evidence/reports/p5_canary/2026-04-04/` — **does not** clear `LR-050` |
 
 Control map (detail): [`docs/operations/P5_CANARY_EXECUTION_CHECKLIST.md`](../operations/P5_CANARY_EXECUTION_CHECKLIST.md).
 
@@ -130,7 +130,7 @@ Procedure shape (not verdict): [`knowledge/operating_rules/LIVE_TRADING_RUNBOOK.
 |-------|-----------|
 | **Kill-switch / stop SSOT** | [LR-050-KILL-SWITCH-RUNBOOK.md](./LR-050-KILL-SWITCH-RUNBOOK.md) ([#2529](https://github.com/jannekbuengener/Claire_de_Binare/issues/2529)) |
 | Kill-switch operator checklist | [`docs/operations/KILL_SWITCH_OPERATOR_CHECKLIST.md`](../operations/KILL_SWITCH_OPERATOR_CHECKLIST.md) |
-| P5 governance baseline | [`governance/p5_canary_readiness.yaml`](../../governance/p5_canary_readiness.yaml) |
+| P5 governance baseline | [`config/live-readiness/p5_canary_readiness.yaml`](../../config/live-readiness/p5_canary_readiness.yaml) |
 | Kill-switch verification in soak gate | `infrastructure/scripts/soak_gate_eval.py` — `kill_switch_precheck_inactive` (see runbook §9 precheck gap) |
 
 **Rollback (fail-closed default):**
@@ -148,7 +148,7 @@ Procedure shape (not verdict): [`knowledge/operating_rules/LIVE_TRADING_RUNBOOK.
 |-------|-----------|
 | Canary alert matrix / abort vs investigate | [LR-050-OBSERVABILITY-GATES.md](./LR-050-OBSERVABILITY-GATES.md) ([#2531](https://github.com/jannekbuengener/Claire_de_Binare/issues/2531)) |
 | P5 control map (alert-related controls) | [`P5_CANARY_EXECUTION_CHECKLIST.md`](../operations/P5_CANARY_EXECUTION_CHECKLIST.md) |
-| Prestart endpoint captures (historical) | `reports/p5_canary/2026-04-04/endpoints/` |
+| Prestart endpoint captures (historical) | `docs/evidence/reports/p5_canary/2026-04-04/endpoints/` |
 
 **Gate:** No live-capital approval without documented Alertmanager/Prometheus readiness, receiver proof, and stop rules ([LR-050-OBSERVABILITY-GATES.md](./LR-050-OBSERVABILITY-GATES.md), [LR-050-KILL-SWITCH-RUNBOOK.md](./LR-050-KILL-SWITCH-RUNBOOK.md)).
 

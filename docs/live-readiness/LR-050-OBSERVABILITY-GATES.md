@@ -112,7 +112,7 @@ Crosslink: credential names → [`LR-050-SECRETS-READINESS.md`](./LR-050-SECRETS
 
 ### 4.4 Receiver proof requirement (definition)
 
-A valid **LR-050 operator receipt proof** MUST document (in a future evidence file under `reports/` or `docs/evidence/`, not in this PR):
+A valid **LR-050 operator receipt proof** MUST document (in a future evidence file under `docs/evidence/reports/` or `docs/evidence/`, not in this PR):
 
 1. **UTC timestamp** of test or real incident notification.
 2. **Alertname** and **severity** (or Grafana rule title if explicitly in canary plan).
@@ -122,7 +122,7 @@ A valid **LR-050 operator receipt proof** MUST document (in a future evidence fi
 
 Until such an artifact exists on `main`, all rows with `receiver proof required: yes` remain **`blocker_before_live`**.
 
-Historical shadow digest material under `reports/shadow_mode/` is **not** LR-050 live-capital canary proof.
+Historical shadow digest material under `docs/evidence/reports/shadow_mode/` is **not** LR-050 live-capital canary proof.
 
 ---
 
@@ -279,7 +279,7 @@ Those require **separate Runtime-GO** after Human Approval path is clear.
 1. **Dual notification stack:** Grafana vs Alertmanager operator path not canonically chosen for LR-050 canary.
 2. **Internal webhooks:** Receivers deliver to in-cluster ingest; operator paging not repo-proven.
 3. **File Kill Switch vs CB alert:** `CircuitBreakerTriggered` does not cover `risk_kill_switch_active` / file state.
-4. **Historical shadow alerting evidence** (`reports/shadow_mode/`) — informative only, not LR-050 canary proof.
+4. **Historical shadow alerting evidence** (`docs/evidence/reports/shadow_mode/`) — informative only, not LR-050 canary proof.
 5. **Canary numeric thresholds** for reject spike, fills, latency — TBD in #2532.
 
 ---

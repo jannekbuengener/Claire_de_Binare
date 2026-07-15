@@ -27,7 +27,7 @@ agent window needs to stay open.
 │  Start-Process -WindowStyle Hidden            │
 │                                               │
 │  python tools/arvp_campaign_supervisor.py     │
-│    --manifest manifests/campaign_N.yaml       │
+│    --manifest config/arvp/campaign_N.yaml       │
 │    --poll-seconds 900                         │
 │    --output-jsonl evidence_log.jsonl          │
 │    --status-md status.md                      │

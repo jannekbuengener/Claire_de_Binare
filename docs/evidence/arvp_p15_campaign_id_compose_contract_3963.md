@@ -18,7 +18,7 @@ parallel compose did not wire distinct campaign IDs into `cdb_signal_pb1` and
 | Item | Change |
 |------|--------|
 | P1.5-1 | `tools/arvp_parallel_lane_compose_contract.py` maps campaign manifest `campaign_id` → host env → container `CDB_CAMPAIGN_ID` per lane |
-| P1.5-2 | `manifests/runtime_np_parallel_signal_compose_override.yml` sets lane-specific substitution: `${CDB_CAMPAIGN_ID_PB1:-}` / `${CDB_CAMPAIGN_ID_DONCHIAN:-}` |
+| P1.5-2 | `config/arvp/runtime_np_parallel_signal_compose_override.yml` sets lane-specific substitution: `${CDB_CAMPAIGN_ID_PB1:-}` / `${CDB_CAMPAIGN_ID_DONCHIAN:-}` |
 | P1.5-3 | Contract tests in `tests/unit/arvp/test_arvp_p15_campaign_id_compose_contract.py` |
 
 ## Execute contract (future parallel runs)

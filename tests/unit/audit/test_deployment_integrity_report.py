@@ -30,7 +30,7 @@ def _deployment_row() -> dict:
     return {
         "pr_id": "911",
         "commit_sha": "a" * 40,
-        "yaml_evidence_path": "governance/DELIVERY_APPROVED.yaml",
+        "yaml_evidence_path": ".github/governance/DELIVERY_APPROVED.yaml",
         "created_at": "2026-03-01T12:10:00Z",
     }
 

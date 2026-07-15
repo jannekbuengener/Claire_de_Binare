@@ -75,7 +75,7 @@ Ein Verstoss gegen diese Regeln bedeutet **Systembruch**.
 
 ### INV-040: Delivery Gate
 **Regel:** Kein Live-Deployment ohne explizites Gate.
-**Datei:** `governance/DELIVERY_APPROVED.yaml`.
+**Datei:** `.github/governance/DELIVERY_APPROVED.yaml`.
 **Pruefung:** CI-Workflow `delivery-gate.yml`.
 
 ### INV-041: Container Naming

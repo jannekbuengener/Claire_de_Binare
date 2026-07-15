@@ -13,7 +13,7 @@ relations:
     - knowledge/governance/CDB_REPO_STRUCTURE.md
     - knowledge/governance/CDB_RL_SAFETY_POLICY.md
     - knowledge/governance/CDB_TRESOR_POLICY.md
-    - knowledge/governance/DELIVERY_APPROVED.yaml
+    - .github/governance/DELIVERY_APPROVED.yaml
   status: canonical
   tags: [constitution, governance, core_principles]
 ---
@@ -109,7 +109,7 @@ Kein Dokument, kein Agent und kein Tool darf diese Rangordnung umgehen.
 
 Delivery Mode ist **nur** zulässig, wenn das explizite Gate gesetzt ist:
 
-- `knowledge/governance/DELIVERY_APPROVED.yaml`  
+- `.github/governance/DELIVERY_APPROVED.yaml`
   - `delivery.approved: true` bedeutet: Delivery Mode erlaubt  
   - `false` oder Datei fehlt bedeutet: Analysis Mode (Default)
 

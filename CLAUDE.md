@@ -200,7 +200,7 @@ Coverage target: 80% on `core/` and `services/` (enforced by `make test-coverage
 - `knowledge/governance/SYSTEM_INVARIANTS.md` — invariants that must never be violated
 - `docs/live-readiness/` — LR-STATE.yaml files + evidence per phase (P0–P5)
 - `knowledge/logs/sessions/` — session evidence logs
-- `mcp_navpack_working_repo/` — MCP navigation presets (ENTRYPOINTS.yaml, CHEATSHEET.md)
+- `docs/navigation/mcp-navpack/` — MCP navigation presets (ENTRYPOINTS.yaml, CHEATSHEET.md)
 
 ### Service Conventions
 

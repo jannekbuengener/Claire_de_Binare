@@ -27,8 +27,8 @@ def load_schema() -> dict:
 
 
 def load_example(filename: str) -> dict:
-    """Load example JSON from examples/ directory."""
-    example_path = PROJECT_ROOT / "examples" / filename
+    """Load example JSON from the canonical contract examples directory."""
+    example_path = PROJECT_ROOT / "docs" / "contracts" / "examples" / filename
     with open(example_path, "r", encoding="utf-8") as f:
         return json.load(f)
 

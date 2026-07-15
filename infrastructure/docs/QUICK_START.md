@@ -222,7 +222,7 @@ docker compose -f infrastructure\compose\compose.blue.yml up -d --build
 Core flow operational: Signal -> Risk -> Execution -> DB
 ```
 
-**Report Location:** `reports/CORE_FLOW_E2E_SMOKE.md`
+**Generated Report:** `artifacts/reports/CORE_FLOW_E2E_SMOKE.md`
 
 ---
 

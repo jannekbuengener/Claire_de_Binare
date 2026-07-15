@@ -26,6 +26,8 @@ sondern ein Pointer auf die bestehenden Docs, Runbooks und Source Trees.
 
 - [docs/meta/WORKING_REPO_CANON.md](meta/WORKING_REPO_CANON.md)
   - Lokale Canon-Matrix und Archivstatus des stillgelegten Altbestands.
+- [docs/meta/ROOT_INFORMATION_ARCHITECTURE.md](meta/ROOT_INFORMATION_ARCHITECTURE.md)
+  - Freigegebene Root-Struktur, Verschiebe-/Löschentscheidungen und Output-Regeln.
 - [docs/runbooks/merge_policy_ci_gate.md](runbooks/merge_policy_ci_gate.md)
   - Branch protection, merge-relevante Check-Namen, PR-Gate Contract.
 - [docs/runbooks/project_board_automation.md](runbooks/project_board_automation.md)
@@ -70,8 +72,8 @@ sondern ein Pointer auf die bestehenden Docs, Runbooks und Source Trees.
 - [`docs/surrealdb/README.md`](surrealdb/README.md) — Context-/MCP-Docs-Index und lokaler Context-Runtime-Einstieg
 - `make onboarding-doctor` — Read-only Preflight für Developer-Onboarding-Prüfung
 - `make context-doctor` — Read-only Preflight für lokale Context-Tooling-Prüfung
-- [`mcp_navpack_working_repo/ENTRYPOINTS.yaml`](../mcp_navpack_working_repo/ENTRYPOINTS.yaml) — maschinenlesbare Read-Order (navpack)
-- [`mcp_navpack_working_repo/CHEATSHEET.md`](../mcp_navpack_working_repo/CHEATSHEET.md) — schnelle menschliche Nav-Quickref
+- [`docs/navigation/mcp-navpack/ENTRYPOINTS.yaml`](navigation/mcp-navpack/ENTRYPOINTS.yaml) — maschinenlesbare Read-Order (navpack)
+- [`docs/navigation/mcp-navpack/CHEATSHEET.md`](navigation/mcp-navpack/CHEATSHEET.md) — schnelle menschliche Nav-Quickref
 
 ## Tooling / Tests / Services
 

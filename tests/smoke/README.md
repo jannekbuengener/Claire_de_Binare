@@ -23,6 +23,6 @@ pytest -q -k "not test_mcp_time_server_runtime"   # CI-äquivalent
 
 ## Related
 
-- [`mcp_navpack_working_repo/ENTRYPOINTS.yaml`](../../mcp_navpack_working_repo/ENTRYPOINTS.yaml) — MCP smoke contract
+- [`docs/navigation/mcp-navpack/ENTRYPOINTS.yaml`](../../docs/navigation/mcp-navpack/ENTRYPOINTS.yaml) — MCP smoke contract
 - [`tools/validate_mcp_config.py`](../../tools/validate_mcp_config.py)
 - [`tests/README.md`](../README.md)

@@ -14,7 +14,7 @@ param(
     [switch]$Status,
     [switch]$Stop,
     [switch]$Resume,
-    [string]$ManifestPath = "manifests/vacation/vacation_data_capture_14d.yaml",
+    [string]$ManifestPath = "config/arvp/vacation/vacation_data_capture_14d.yaml",
     [string]$GoPhrase = "",
     [string]$RepoRoot = "",
     [switch]$Json

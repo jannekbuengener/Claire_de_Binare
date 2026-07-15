@@ -16,7 +16,7 @@ This roadmap defines a sequential, evidence-gated path from **ARVP product-compl
 
 ARVP exists as a *paper-phase multiplier* — it accelerates evidence generation by replaying historical market data through the real strategy/execution path, comparing against actual paper behavior, and surfacing simulator drift. The original single-window pilot limitation is no longer the only truth: Phase A remains blocked on the natural-paper gate, while the bounded controlled-lab follow-up lane `#3172-#3184` delivered multi-regime attribution and ended with **PARK primary_breakout_v1**. That controlled-lab lane does not clear Product-Complete.
 
-Live-Go (LR-050) is currently **NO-GO**. LR-050 execution gate issues #2977–#2984 **CLOSED** with evidence (2026-07-03); see [#2985](https://github.com/jannekbuengener/Claire_de_Binare/issues/2985) and `reports/lr050/`. Canary caps remain **`TBD_BLOCKER_BEFORE_LIVE`** in SSOT docs (#2976 closed without caps delivery). Phase A (ARVP product-complete) remains the sequencing prerequisite for honest canary-parameter decisions; calibrated replay-vs-paper evidence at multi-window scale is still insufficient.
+Live-Go (LR-050) is currently **NO-GO**. LR-050 execution gate issues #2977–#2984 **CLOSED** with evidence (2026-07-03); see [#2985](https://github.com/jannekbuengener/Claire_de_Binare/issues/2985) and `docs/evidence/reports/lr050/`. Canary caps remain **`TBD_BLOCKER_BEFORE_LIVE`** in SSOT docs (#2976 closed without caps delivery). Phase A (ARVP product-complete) remains the sequencing prerequisite for honest canary-parameter decisions; calibrated replay-vs-paper evidence at multi-window scale is still insufficient.
 
 This roadmap sequences work into five phases (A–E), each with explicit gates. ARVP product-complete (Phase A) is the prerequisite for all subsequent phases. No phase authorizes live trades, real-money exposure, or automatic runtime activation.
 
@@ -42,9 +42,9 @@ This roadmap sequences work into five phases (A–E), each with explicit gates. 
 | `primary_breakout_v1` status | **PARKED** | `arvp_exit_regime_decay_diagnosis_3183.md` |
 | ARVP execution realism | **`#1905` CLOSED/PARKED**; no unpark from this lane | GitHub live `#1905`, `#2970` decision |
 | Next active research lane | **#3742** — read-only natural-paper window bank for `regime_segments` | #1900 reconcile 2026-07-05 |
-| LR-050 execution gates | #2977–#2984 **CLOSED** (2026-07-03 evidence); canary **residual** `TBD_BLOCKER_BEFORE_LIVE`; LR verdict **NO-GO** | #2985, `reports/lr050/`, `LR-050-FINAL-RECONCILE.md` post-gate banner |
+| LR-050 execution gates | #2977–#2984 **CLOSED** (2026-07-03 evidence); canary **residual** `TBD_BLOCKER_BEFORE_LIVE`; LR verdict **NO-GO** | #2985, `docs/evidence/reports/lr050/`, `LR-050-FINAL-RECONCILE.md` post-gate banner |
 | P0–P4 | All **DONE** | `LR-AUDIT-STATUS-2026-03-05.md` §B |
-| P5 prestart pack | **Committed** (does not authorize live capital) | `reports/p5_canary/2026-04-04/` |
+| P5 prestart pack | **Committed** (does not authorize live capital) | `docs/evidence/reports/p5_canary/2026-04-04/` |
 
 ---
 
@@ -59,7 +59,7 @@ These items are complete, evidenced, and do not need rework:
 | P2 (E2E Paper Trading, Replay Framework) | LR-020/021 DONE | Complete |
 | P3 (Shadow Mode >24h, Metrics Comparison) | LR-030/031 DONE, soak evidence committed | Complete |
 | P4 (72h Soak, DB Failure, Network Chaos) | LR-040/041/042 PASS | Complete |
-| P5 prestart pack | Committed under `reports/p5_canary/2026-04-04/` | Documentation only — does not clear LR-050 |
+| P5 prestart pack | Committed under `docs/evidence/reports/p5_canary/2026-04-04/` | Documentation only — does not clear LR-050 |
 | ARVP foundation (#1801–#1806) | PR #1808 merged | Complete |
 | ARVP MUST (#1840–#1845) | Merged, exercised by operator entry point | Complete |
 | Paper Reference Contract (#1901) | PR #1914 merged, `arvp_paper_reference_contract.md` canonical | Complete |
@@ -245,7 +245,7 @@ These workstreams are sequenced AFTER ARVP product-complete. They cannot be hone
 
 **Goal:** Execute a non-destructive dry-run evidence pack per `LR-050-DRY-RUN-PROOF.md`.
 
-**Current state:** #2978 **CLOSED** — evidence `reports/lr050/dry_run_proof/2026-07-03/` PASS (PR #3713). LR **NO-GO** unchanged.
+**Current state:** #2978 **CLOSED** — evidence `docs/evidence/reports/lr050/dry_run_proof/2026-07-03/` PASS (PR #3713). LR **NO-GO** unchanged.
 
 **Issue anchor:** #2978 (CLOSED), #2533 (planning SSOT)
 
@@ -253,7 +253,7 @@ These workstreams are sequenced AFTER ARVP product-complete. They cannot be hone
 
 **Goal:** Prove that Alertmanager/receiver actually delivers notifications.
 
-**Current state:** #2981 **CLOSED** — evidence `reports/lr050/receiver_proof/2026-07-03/` PASS (PR #3712). LR **NO-GO** unchanged.
+**Current state:** #2981 **CLOSED** — evidence `docs/evidence/reports/lr050/receiver_proof/2026-07-03/` PASS (PR #3712). LR **NO-GO** unchanged.
 
 **Issue anchor:** #2981 (CLOSED), #2531 (planning SSOT)
 
@@ -261,7 +261,7 @@ These workstreams are sequenced AFTER ARVP product-complete. They cannot be hone
 
 **Goal:** Prove that permission scope, IP allowlist, account binding are ready (without values in repo).
 
-**Current state:** #2983 **CLOSED** — evidence `reports/lr050/secrets_readiness/2026-07-03/` PASS (PR #3717+#3722). LR **NO-GO** unchanged.
+**Current state:** #2983 **CLOSED** — evidence `docs/evidence/reports/lr050/secrets_readiness/2026-07-03/` PASS (PR #3717+#3722). LR **NO-GO** unchanged.
 
 **Issue anchor:** #2983 (CLOSED), #2530 (planning SSOT)
 
@@ -269,7 +269,7 @@ These workstreams are sequenced AFTER ARVP product-complete. They cannot be hone
 
 **Goal:** Prove kill-switch and rollback under canary-like conditions.
 
-**Current state:** #2984 **CLOSED** — evidence `reports/lr050/kill_switch_drill/2026-07-03/` PASS (PR #3714). LR **NO-GO** unchanged.
+**Current state:** #2984 **CLOSED** — evidence `docs/evidence/reports/lr050/kill_switch_drill/2026-07-03/` PASS (PR #3714). LR **NO-GO** unchanged.
 
 **Issue anchor:** #2984 (CLOSED), #2529 (planning SSOT)
 

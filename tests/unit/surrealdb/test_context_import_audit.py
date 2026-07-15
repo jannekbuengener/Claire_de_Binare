@@ -25,12 +25,8 @@ from tools.surrealdb.context_importer import (
     reconcile_import_plan,
 )
 
-
 FIXTURE_ROOT = (
-    Path(__file__).resolve().parents[2]
-    / "fixtures"
-    / "surrealdb"
-    / "context_importer"
+    Path(__file__).resolve().parents[2] / "fixtures" / "surrealdb" / "context_importer"
 )
 EXPECTED_JSONL = (
     "repo_artifacts.jsonl",
@@ -139,7 +135,9 @@ def test_build_dry_run_audit_report_is_deterministic(tmp_path: Path) -> None:
 
 
 @pytest.mark.unit
-def test_dry_run_cli_writes_json_and_markdown_audit(tmp_path: Path, monkeypatch) -> None:
+def test_dry_run_cli_writes_json_and_markdown_audit(
+    tmp_path: Path, monkeypatch
+) -> None:
     input_dir = _copy_valid_fixture(tmp_path)
     monkeypatch.chdir(tmp_path)
 
@@ -293,7 +291,7 @@ def test_audit_output_path_must_remain_whitelisted(tmp_path: Path, capsys) -> No
             "--input-dir",
             str(input_dir),
             "--audit-output",
-            "reports/audit.json",
+            "docs/evidence/reports/audit.json",
         ]
     )
 
@@ -406,18 +404,16 @@ def test_apply_audit_clock_does_not_affect_tombstone_at(
         (tmp_path / "artifacts" / "apply" / "report.json").read_text(encoding="utf-8")
     )
     tombstones = [
-        result
-        for result in apply_payload["results"]
-        if result["op"] == "tombstone"
+        result for result in apply_payload["results"] if result["op"] == "tombstone"
     ]
     assert tombstones, "expected at least one applied tombstone result"
     for result in tombstones:
         assert result["status"] == "applied"
         ts = result["tombstoned_at"]
         assert ts is not None
-        assert ts != backdated_audit_at, (
-            "audit clock must not propagate into applied tombstone payload"
-        )
+        assert (
+            ts != backdated_audit_at
+        ), "audit clock must not propagate into applied tombstone payload"
         # Must still be a parseable ISO8601 UTC timestamp (microseconds optional).
         assert ts.endswith("Z"), ts
         parsed = datetime.fromisoformat(ts.replace("Z", "+00:00"))
@@ -464,7 +460,9 @@ def test_audit_output_with_md_suffix_keeps_json_artifact_distinct(
     json_path = tmp_path / "artifacts" / "audit" / "context-import.md"
     md_path = tmp_path / "artifacts" / "audit" / "context-import.md.md"
     assert json_path.exists(), "JSON audit artifact missing"
-    assert md_path.exists(), "Markdown audit artifact missing or collapsed onto JSON path"
+    assert (
+        md_path.exists()
+    ), "Markdown audit artifact missing or collapsed onto JSON path"
     # JSON artifact must be machine-readable JSON, not Markdown.
     payload = json.loads(json_path.read_text(encoding="utf-8"))
     assert payload["mode"] == "dry-run"

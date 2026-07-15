@@ -236,6 +236,7 @@ pip install pre-commit
 pre-commit install
 pre-commit install --hook-type commit-msg
 pre-commit run --all-files
+make root-layout-guard
 ```
 
 Note: Ruff and Black gates in CI are the primary enforcement. Pre-commit is
@@ -252,12 +253,19 @@ Claire_de_Binare/
 ├── core/               # Shared modules (clients, config, domain, utils)
 ├── services/           # Microservices (execution, risk, market, etc.)
 ├── infrastructure/     # IaC (compose, tls, database, monitoring)
+├── config/             # Repository, ARVP, and readiness configuration
+├── artifacts/          # Generated local/CI output
 ├── tests/              # Unit, integration, E2E tests
 ├── tools/              # PowerShell helpers, diagnostics
+├── scripts/            # Repo-wide automation and operator scripts
+├── agents/             # Canonical agent registry and role guidance
 ├── knowledge/          # Governance, policy, knowledge hub
 ├── docs/               # Runbooks, evidence, navigation
 └── .github/            # CI/CD workflows, templates
 ```
+
+The complete root allowlist and placement rules are documented in
+[`docs/meta/ROOT_INFORMATION_ARCHITECTURE.md`](docs/meta/ROOT_INFORMATION_ARCHITECTURE.md).
 
 ### Key Principles
 

@@ -11,7 +11,7 @@ param(
     [switch]$Start,
     [switch]$Stop,
     [switch]$Status,
-    [string]$ManifestPath = "manifests/vacation/vacation_autopilot_mvp.yaml",
+    [string]$ManifestPath = "config/arvp/vacation/vacation_autopilot_mvp.yaml",
     [string]$CampaignId = "arvp_vacation_mvp_20260713",
     [string]$RepoRoot = ""
 )

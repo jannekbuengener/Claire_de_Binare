@@ -24,9 +24,13 @@ except ImportError:  # pragma: no cover
     ZoneInfo = None  # type: ignore[assignment]
 
 
-DEFAULT_BASELINE = Path("reports/REQUIRED_CHECK_CONTEXTS_BASELINE_main.json")
+DEFAULT_BASELINE = Path(
+    "docs/evidence/reports/REQUIRED_CHECK_CONTEXTS_BASELINE_main.json"
+)
 DEFAULT_WORKFLOWS_DIR = Path(".github/workflows")
-DEFAULT_REPORT = Path("reports/REQUIRED_CHECK_CONTEXTS_DRIFT_REPORT_main.md")
+DEFAULT_REPORT = Path(
+    "artifacts/reports/governance/REQUIRED_CHECK_CONTEXTS_DRIFT_REPORT_main.md"
+)
 
 
 def parse_args() -> argparse.Namespace:
@@ -67,11 +71,7 @@ def load_baseline(path: Path) -> dict[str, Any]:
         raise ValueError("Baseline field 'contexts' must be a list")
 
     cleaned_contexts = sorted(
-        {
-            ctx.strip()
-            for ctx in contexts
-            if isinstance(ctx, str) and ctx.strip()
-        }
+        {ctx.strip() for ctx in contexts if isinstance(ctx, str) and ctx.strip()}
     )
     data["contexts"] = cleaned_contexts
     return data
@@ -85,7 +85,9 @@ def _workflow_files(workflows_dir: Path) -> list[Path]:
     return sorted(files, key=lambda p: p.as_posix())
 
 
-def derive_context_mapping(workflows_dir: Path) -> tuple[dict[str, list[dict[str, Any]]], list[str]]:
+def derive_context_mapping(
+    workflows_dir: Path,
+) -> tuple[dict[str, list[dict[str, Any]]], list[str]]:
     mapping: dict[str, list[dict[str, Any]]] = {}
     parse_errors: list[str] = []
 
@@ -186,13 +188,19 @@ def write_report(
     berlin_ts, utc_ts = now_timestamps()
 
     required_lines = (
-        "\n".join(f"- `{ctx}`" for ctx in required_contexts) if required_contexts else "- none"
+        "\n".join(f"- `{ctx}`" for ctx in required_contexts)
+        if required_contexts
+        else "- none"
     )
     missing_lines = (
-        "\n".join(f"- `{ctx}`" for ctx in missing_contexts) if missing_contexts else "- none"
+        "\n".join(f"- `{ctx}`" for ctx in missing_contexts)
+        if missing_contexts
+        else "- none"
     )
     extra_lines = (
-        "\n".join(f"- `{ctx}`" for ctx in extra_contexts) if extra_contexts else "- none"
+        "\n".join(f"- `{ctx}`" for ctx in extra_contexts)
+        if extra_contexts
+        else "- none"
     )
     parse_error_lines = (
         "\n".join(f"- `{err}`" for err in parse_errors) if parse_errors else "- none"
@@ -286,7 +294,9 @@ def main() -> int:
     derived_contexts = sorted(mapping.keys())
 
     missing_contexts = sorted([ctx for ctx in required_contexts if ctx not in mapping])
-    extra_contexts = sorted([ctx for ctx in derived_contexts if ctx not in required_contexts])
+    extra_contexts = sorted(
+        [ctx for ctx in derived_contexts if ctx not in required_contexts]
+    )
 
     baseline_hash = canonical_hash({"contexts": required_contexts})
     current_hash = canonical_hash({"contexts": derived_contexts, "mapping": mapping})

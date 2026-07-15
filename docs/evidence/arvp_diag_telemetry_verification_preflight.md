@@ -1,6 +1,6 @@
 # ARVP Diagnostic Telemetry Verification — Preflight (#3965)
 
-Status Class: **PREFLIGHT_READY** — manifests/docs/tooling only; **no runtime executed**
+Status Class: **PREFLIGHT_READY** — config/arvp/docs/tooling only; **no runtime executed**
 Issue: [#3965](https://github.com/jannekbuengener/Claire_de_Binare/issues/3965)
 Hypothesis: `HYP-ARVP-DIAG-TELEMETRY-01`
 Prerequisites: [#3956](https://github.com/jannekbuengener/Claire_de_Binare/pull/3956), [#3961](https://github.com/jannekbuengener/Claire_de_Binare/pull/3961), [#3964](https://github.com/jannekbuengener/Claire_de_Binare/pull/3964)
@@ -54,13 +54,13 @@ After RUNTIME-GO on #3965, a **2h** parallel natural-paper diagnostic run (PB1 +
 
 | Lane | Manifest | `campaign_id` | `bot_id` | `strategy_id` |
 |------|----------|---------------|----------|---------------|
-| PB1 | `manifests/campaign_diag_telemetry_pb1.yaml` | `arvp_diag_p15_pb1_20260710t1100z` | `np-pb1-diag-01` | `primary_breakout_v1` |
-| Donchian | `manifests/campaign_diag_telemetry_donchian.yaml` | `arvp_diag_p15_donchian_20260710t1100z` | `np-donchian-diag-01` | `donchian_breakout_v1` |
+| PB1 | `config/arvp/campaign_diag_telemetry_pb1.yaml` | `arvp_diag_p15_pb1_20260710t1100z` | `np-pb1-diag-01` | `primary_breakout_v1` |
+| Donchian | `config/arvp/campaign_diag_telemetry_donchian.yaml` | `arvp_diag_p15_donchian_20260710t1100z` | `np-donchian-diag-01` | `donchian_breakout_v1` |
 
 Distinct from #3912 (`np-pb1-parallel-01`, `np-donchian-parallel-01`, `arvp_3912_*` IDs).
 
-Compose override: `manifests/runtime_np_diag_telemetry_signal_compose_override.yml`
-Allocation override: `manifests/runtime_np_parallel_allocation_compose_override.yml` (unchanged)
+Compose override: `config/arvp/runtime_np_diag_telemetry_signal_compose_override.yml`
+Allocation override: `config/arvp/runtime_np_parallel_allocation_compose_override.yml` (unchanged)
 
 ---
 
@@ -100,8 +100,8 @@ $env:CDB_CAMPAIGN_ID_DONCHIAN = "arvp_diag_p15_donchian_20260710t1100z"
 docker compose `
   -f infrastructure/compose/compose.blue.yml `
   -f infrastructure/compose/compose.red.yml `
-  -f manifests/runtime_np_diag_telemetry_signal_compose_override.yml `
-  -f manifests/runtime_np_parallel_allocation_compose_override.yml `
+  -f config/arvp/runtime_np_diag_telemetry_signal_compose_override.yml `
+  -f config/arvp/runtime_np_parallel_allocation_compose_override.yml `
   config
 ```
 

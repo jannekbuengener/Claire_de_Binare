@@ -297,7 +297,7 @@ After PR merge and separate GO GITHUB LIVE:
 - No Live-Readiness-Go (LR remains `NO-GO`)
 - No Echtgeld-Go, no real trading, no live capital
 - No changes to `services/risk/`, `services/execution/`, `core/safety/`
-- No changes to `governance/DELIVERY_APPROVED.yaml`
+- No changes to `.github/governance/DELIVERY_APPROVED.yaml`
 - No new issues created in this wave
 - No auto-action on any readiness signal
 - No DB writes, no SurrealDB SDK calls

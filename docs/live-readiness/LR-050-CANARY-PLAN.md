@@ -230,7 +230,7 @@ Numeric thresholds for fills, reject spike, and latency remain `TBD_BLOCKER_BEFO
 | This plan | `LR-050-CANARY-PLAN.md` (#2532) |
 | Decision pack | [LR-050-DECISION-PACK.md](./LR-050-DECISION-PACK.md) |
 | Venue, risk, kill-switch, secrets, observability, human approval SSOTs | #2527–#2531, #2534 |
-| Dry-run evidence bundle | #2533 (path under `reports/` or `docs/evidence/` — TBD by #2533) |
+| Dry-run evidence bundle | #2533 (path under `docs/evidence/reports/` or `docs/evidence/` — TBD by #2533) |
 | Operator receiver proof | Future redacted attestation per Observability §4.4 |
 | Optional state files | `GO_NO_GO.md`, `LR-050-STATE.yaml` — **only** within #2535 scope |
 

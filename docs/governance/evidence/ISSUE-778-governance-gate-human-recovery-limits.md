@@ -42,7 +42,10 @@ The following is implemented and testable in the repository today:
 - PR: https://github.com/jannekbuengener/Claire_de_Binare/pull/921
 
 ### Local drill artifacts (non-canonical)
-The workspace contains local drill outputs under `reports/drills/lr003/` (`lr003_summary.json`, `lr003_report.md`). These are **untracked and not committed** — they are not canonical repo evidence and must not be cited as proof of gate passage. They serve as local supporting material only.
+Local drill outputs belong under `artifacts/reports/drills/lr003/`
+(`lr003_summary.json`, `lr003_report.md`). They are **untracked and not
+committed**—they are not canonical repo evidence and must not be cited as proof
+of gate passage. They serve as local supporting material only.
 
 ## Open evidence gaps
 
@@ -74,7 +77,7 @@ These gaps are the reason the gate verdict remains **OPEN/PARTIAL**.
 pytest -q tests/unit/scripts/test_lr003_kill_switch_limit_controls_runner.py
 pytest -q tests/unit/risk/test_contract_enforcement.py
 pytest -q tests/unit/services/test_execution_shadow_gate.py
-python scripts/drills/lr003_kill_switch_limit_controls_runner.py --output-dir reports/drills/lr003
+python scripts/drills/lr003_kill_switch_limit_controls_runner.py --output-dir artifacts/reports/drills/lr003
 ```
 
 ## Gate closure conditions

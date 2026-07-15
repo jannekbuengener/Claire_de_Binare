@@ -104,7 +104,7 @@ Kontext-Issue-Nummern sind historische Anker (alle CLOSED) — nicht als offene 
 ## Governance-Anker
 
 - **Human Gate GRANTED:** 2026-04-04
-  Artefakt: `reports/p5_canary/2026-04-04/decision_record.yaml`
+  Artefakt: `docs/evidence/reports/p5_canary/2026-04-04/decision_record.yaml`
   Gilt für: P5 prestart only — kein Echtgeld-Trading ohne erneuten expliziten Gate
 
 ---

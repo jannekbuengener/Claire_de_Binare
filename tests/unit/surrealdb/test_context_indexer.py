@@ -146,7 +146,7 @@ def test_apply_writes_requires_explicit_output() -> None:
     "output",
     [
         Path("tmp/context-indexer/result.json"),
-        Path("reports/context-indexer/result.json"),
+        Path("docs/evidence/reports/context-indexer/result.json"),
         Path("../artifacts/result.json"),
         Path("C:/temp/context-indexer/result.json"),
     ],

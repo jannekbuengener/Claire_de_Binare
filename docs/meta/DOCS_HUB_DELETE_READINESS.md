@@ -18,7 +18,7 @@ that the old docs repo can be deleted without harming current or future work.
 - local navigation, runbooks, templates, and archive structure under `docs/`
 - GitHub community and issue-template artifacts under `.github/`
 - local-first resolver and guard updates in `tools/`, `scripts/`,
-  `infrastructure/scripts/`, and `mcp_navpack_working_repo/`
+  `infrastructure/scripts/`, and `docs/navigation/mcp-navpack/`
 
 Physical migration summary:
 

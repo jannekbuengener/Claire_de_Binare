@@ -3213,7 +3213,7 @@ class TestContextRequiredReadsHandler:
         delivery_entries = [
             r
             for r in result["resolved_reads"]
-            if r["path"] == "knowledge/governance/DELIVERY_APPROVED.yaml"
+            if r["path"] == ".github/governance/DELIVERY_APPROVED.yaml"
             and r["priority"] == "must_read"
         ]
         assert (

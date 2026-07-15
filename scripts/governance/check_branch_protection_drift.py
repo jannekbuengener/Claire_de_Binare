@@ -29,9 +29,13 @@ except ImportError:  # pragma: no cover
 
 DEFAULT_REPO = "jannekbuengener/Claire_de_Binare"
 DEFAULT_BRANCH = "main"
-DEFAULT_BASELINE = Path("reports/BRANCH_PROTECTION_BASELINE_main.json")
-DEFAULT_REPORT = Path("reports/BRANCH_PROTECTION_DRIFT_REPORT_main.md")
-DEFAULT_APPLY_PAYLOAD = Path("reports/BRANCH_PROTECTION_APPLY_PAYLOAD_main.json")
+DEFAULT_BASELINE = Path("docs/evidence/reports/BRANCH_PROTECTION_BASELINE_main.json")
+DEFAULT_REPORT = Path(
+    "artifacts/reports/governance/BRANCH_PROTECTION_DRIFT_REPORT_main.md"
+)
+DEFAULT_APPLY_PAYLOAD = Path(
+    "artifacts/reports/governance/BRANCH_PROTECTION_APPLY_PAYLOAD_main.json"
+)
 
 # There are no volatile fields currently removed from comparison.
 VOLATILE_PATHS: set[str] = set()
@@ -56,8 +60,12 @@ def parse_args() -> argparse.Namespace:
     parser = argparse.ArgumentParser(
         description="Read-only branch protection drift check against a versioned baseline."
     )
-    parser.add_argument("--repo", default=DEFAULT_REPO, help="owner/repo, default CDB repo")
-    parser.add_argument("--branch", default=DEFAULT_BRANCH, help="branch name, default main")
+    parser.add_argument(
+        "--repo", default=DEFAULT_REPO, help="owner/repo, default CDB repo"
+    )
+    parser.add_argument(
+        "--branch", default=DEFAULT_BRANCH, help="branch name, default main"
+    )
     parser.add_argument(
         "--baseline",
         default=str(DEFAULT_BASELINE),
@@ -235,15 +243,21 @@ def map_required_pull_request_reviews(data: Any) -> Any:
 
     mapped: dict[str, Any] = {
         "dismiss_stale_reviews": bool(data.get("dismiss_stale_reviews", False)),
-        "require_code_owner_reviews": bool(data.get("require_code_owner_reviews", False)),
-        "require_last_push_approval": bool(data.get("require_last_push_approval", False)),
+        "require_code_owner_reviews": bool(
+            data.get("require_code_owner_reviews", False)
+        ),
+        "require_last_push_approval": bool(
+            data.get("require_last_push_approval", False)
+        ),
         "required_approving_review_count": int(
             data.get("required_approving_review_count", 0)
         ),
     }
 
     if "dismissal_restrictions" in data:
-        mapped["dismissal_restrictions"] = map_allowances(data.get("dismissal_restrictions"))
+        mapped["dismissal_restrictions"] = map_allowances(
+            data.get("dismissal_restrictions")
+        )
     if "bypass_pull_request_allowances" in data:
         mapped["bypass_pull_request_allowances"] = map_allowances(
             data.get("bypass_pull_request_allowances")
@@ -262,7 +276,9 @@ def build_apply_payload(state: Any) -> dict[str, Any]:
         raise ValueError("branch protection state must be a JSON object")
 
     return {
-        "required_status_checks": map_required_status_checks(state.get("required_status_checks")),
+        "required_status_checks": map_required_status_checks(
+            state.get("required_status_checks")
+        ),
         "enforce_admins": enabled_flag(state.get("enforce_admins")),
         "required_pull_request_reviews": map_required_pull_request_reviews(
             state.get("required_pull_request_reviews")
@@ -356,7 +372,7 @@ State: **{drift_state}**
 ## Manual Apply Commands (maintainer only, never auto-executed)
 
 ```bash
-gh api repos/{repo}/branches/{branch}/protection > reports/BRANCH_PROTECTION_CURRENT_main.json
+gh api repos/{repo}/branches/{branch}/protection > artifacts/reports/governance/BRANCH_PROTECTION_CURRENT_main.json
 gh api --method PUT repos/{repo}/branches/{branch}/protection --input {apply_payload_path.as_posix()}
 {required_signatures_cmd}
 ```
@@ -384,7 +400,10 @@ def main() -> int:
     if args.current_json:
         current_path = Path(args.current_json)
         if not current_path.exists():
-            print(f"ERROR: current JSON file does not exist: {current_path}", file=sys.stderr)
+            print(
+                f"ERROR: current JSON file does not exist: {current_path}",
+                file=sys.stderr,
+            )
             return 1
         current_raw, current_data = load_json(current_path)
         current_source = current_path.as_posix()

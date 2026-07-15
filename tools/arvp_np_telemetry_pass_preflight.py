@@ -28,10 +28,10 @@ from tools.arvp_parallel_lane_compose_contract import (
     manifest_campaign_id,
 )
 
-NP_PB1_MANIFEST = "manifests/campaign_np_telemetry_pass_pb1.yaml"
-NP_DONCHIAN_MANIFEST = "manifests/campaign_np_telemetry_pass_donchian.yaml"
+NP_PB1_MANIFEST = "config/arvp/campaign_np_telemetry_pass_pb1.yaml"
+NP_DONCHIAN_MANIFEST = "config/arvp/campaign_np_telemetry_pass_donchian.yaml"
 NP_SIGNAL_COMPOSE_OVERRIDE = (
-    "manifests/runtime_np_telemetry_pass_signal_compose_override.yml"
+    "config/arvp/runtime_np_telemetry_pass_signal_compose_override.yml"
 )
 
 EXPECTED_SOURCE_SHA = "c4ba7428e605cca09b1d3e2c9469a431ac475554"
@@ -154,7 +154,10 @@ def validate_np_compose_alignment(
             raise ValueError(f"host env {host_key} must be non-empty")
 
         cdb_source_sha = environment.get("CDB_SOURCE_SHA")
-        if not isinstance(cdb_source_sha, str) or "CDB_SOURCE_SHA" not in cdb_source_sha:
+        if (
+            not isinstance(cdb_source_sha, str)
+            or "CDB_SOURCE_SHA" not in cdb_source_sha
+        ):
             raise ValueError(f"{service_name} must declare CDB_SOURCE_SHA substitution")
 
         build = service.get("build")
@@ -212,7 +215,7 @@ def build_np_preflight_report(root: Path | None = None) -> dict[str, Any]:
         },
         "compose_override": NP_SIGNAL_COMPOSE_OVERRIDE,
         "allocation_compose_override": (
-            "manifests/runtime_np_parallel_allocation_compose_override.yml"
+            "config/arvp/runtime_np_parallel_allocation_compose_override.yml"
         ),
         "campaign_ids": {
             CAMPAIGN_ID_HOST_ENV_PB1: host_env[CAMPAIGN_ID_HOST_ENV_PB1],

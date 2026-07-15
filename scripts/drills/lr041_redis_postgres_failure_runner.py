@@ -16,7 +16,7 @@ from pathlib import Path
 from typing import Any, Optional
 
 REPO_ROOT = Path(__file__).resolve().parents[2]
-DEFAULT_OUTPUT_DIR = Path("reports/drills/lr041")
+DEFAULT_OUTPUT_DIR = Path("artifacts/reports/drills/lr041")
 DEFAULT_SCENARIOS = ("redis_restart", "postgres_restart")
 
 DRILL_ID = "LR-041"
@@ -258,13 +258,17 @@ def _collect_snapshot() -> dict[str, Any]:
             _http_get_text("http://localhost:8003/metrics")
         )
     except (urllib.error.URLError, TimeoutError):
-        logging.getLogger(__name__).debug("Execution service metrics not reachable (ignored)")
+        logging.getLogger(__name__).debug(
+            "Execution service metrics not reachable (ignored)"
+        )
     try:
         risk_metrics = _parse_prometheus_text(
             _http_get_text("http://localhost:8002/metrics")
         )
     except (urllib.error.URLError, TimeoutError):
-        logging.getLogger(__name__).debug("Risk service metrics not reachable (ignored)")
+        logging.getLogger(__name__).debug(
+            "Risk service metrics not reachable (ignored)"
+        )
 
     return {
         "captured_at_utc": _utc_now(),
@@ -336,8 +340,12 @@ def _wait_for_service_recovery(
     """Poll until both risk and execution health endpoints respond. Returns elapsed seconds or -1."""
     start = time.monotonic()
     while time.monotonic() - start < timeout_seconds:
-        risk_ok, _risk_ms, _risk_err = _probe_http("http://localhost:8002/status", timeout=3.0)
-        exec_ok, _exec_ms, _exec_err = _probe_http("http://localhost:8003/status", timeout=3.0)
+        risk_ok, _risk_ms, _risk_err = _probe_http(
+            "http://localhost:8002/status", timeout=3.0
+        )
+        exec_ok, _exec_ms, _exec_err = _probe_http(
+            "http://localhost:8003/status", timeout=3.0
+        )
         if risk_ok and exec_ok:
             return time.monotonic() - start
         time.sleep(1)
@@ -677,7 +685,9 @@ def run_lr041_drill(
             )
 
     scenario_statuses = [row["status"] for row in scenario_results]
-    overall = "FAIL" if ("FAIL" in scenario_statuses or not all(checks.values())) else "PASS"
+    overall = (
+        "FAIL" if ("FAIL" in scenario_statuses or not all(checks.values())) else "PASS"
+    )
 
     summary_payload: dict[str, Any] = {
         "drill_id": DRILL_ID,

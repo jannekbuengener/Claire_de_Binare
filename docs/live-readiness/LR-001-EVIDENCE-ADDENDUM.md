@@ -43,7 +43,7 @@ gh api repos/jannekbuengener/Claire_de_Binare/branches/main/protection/required_
   --jq '{strict, contexts}'
 ```
 
-**Cross-reference:** `reports/REQUIRED_CHECK_CONTEXTS_BASELINE_main.json` (captured 2026-02-19T20:46:22+01:00) shows the same single context. The live API state on 2026-02-22 is consistent with the 2026-02-19 snapshot.
+**Cross-reference:** `docs/evidence/reports/REQUIRED_CHECK_CONTEXTS_BASELINE_main.json` (captured 2026-02-19T20:46:22+01:00) shows the same single context. The live API state on 2026-02-22 is consistent with the 2026-02-19 snapshot.
 
 ---
 
@@ -74,7 +74,7 @@ gh api repos/jannekbuengener/Claire_de_Binare/branches/main/protection/required_
 
 ### 3.3 When Did the Change Occur?
 
-The exact date of removal is not determined in this analysis. The LR-001 evidence records 8 contexts as of 2026-02-03. The baseline snapshot (`reports/REQUIRED_CHECK_CONTEXTS_BASELINE_main.json`) records 1 context as of 2026-02-19. The change occurred within that window.
+The exact date of removal is not determined in this analysis. The LR-001 evidence records 8 contexts as of 2026-02-03. The baseline snapshot (`docs/evidence/reports/REQUIRED_CHECK_CONTEXTS_BASELINE_main.json`) records 1 context as of 2026-02-19. The change occurred within that window.
 
 ---
 
@@ -184,7 +184,7 @@ These controls detect issues after merge to main or on schedule. They do not pre
 
 ### 7.1 Was the 8-to-1 Reduction Deliberate?
 
-Unknown from repo evidence alone. The audit report `reports/CI_REQUIRED_CHECKS_AUDIT_2026-02-19.md` documents the current state and describes a promotion plan for Trivy and E2E Happy Path back to required status. The report does not state whether the reduction was an intentional governance decision or a side effect of workflow refactoring.
+Unknown from repo evidence alone. The audit report `docs/evidence/reports/CI_REQUIRED_CHECKS_AUDIT_2026-02-19.md` documents the current state and describes a promotion plan for Trivy and E2E Happy Path back to required status. The report does not state whether the reduction was an intentional governance decision or a side effect of workflow refactoring.
 
 ### 7.2 Is 1 Required Check Sufficient?
 
@@ -194,7 +194,7 @@ Whether 1 check is sufficient depends on the project's risk tolerance. This adde
 
 ### 7.3 What Is the Status of the Promotion Plan?
 
-`reports/CI_REQUIRED_CHECKS_AUDIT_2026-02-19.md` (Section "Step 4") defines promotion criteria for Trivy and E2E Happy Path:
+`docs/evidence/reports/CI_REQUIRED_CHECKS_AUDIT_2026-02-19.md` (Section "Step 4") defines promotion criteria for Trivy and E2E Happy Path:
 
 - Trivy: Main-Streak 1 (gate requires 10). PR-Streak 0 (gate requires 3). Status: not promotion-ready.
 - E2E Happy Path: Main-Streak 6 (gate requires 10). PR-Streak 6 (gate requires 3). Status: approaching but not met.
@@ -226,7 +226,7 @@ Re-attestation means documenting the new scope as the attested state. Options (f
 
 **(B)** Restore some or all of the 7 removed checks to required status (requires workflow trigger changes to add `pull_request:` back, plus branch protection API update). Then re-attest with the restored count.
 
-**(C)** Follow the existing promotion plan in `reports/CI_REQUIRED_CHECKS_AUDIT_2026-02-19.md`. Wait for Trivy and E2E Happy Path to meet promotion gates, then promote and re-attest with the expanded set.
+**(C)** Follow the existing promotion plan in `docs/evidence/reports/CI_REQUIRED_CHECKS_AUDIT_2026-02-19.md`. Wait for Trivy and E2E Happy Path to meet promotion gates, then promote and re-attest with the expanded set.
 
 This addendum does not choose between these options. That is a governance decision.
 

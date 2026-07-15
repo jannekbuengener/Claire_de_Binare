@@ -118,5 +118,5 @@ gh secret delete SECRET_NAME --repo jannekbuengener/Claire_de_Binare
 ## Referenzen
 
 - [Docker Secrets Blueprint Session](../logs/sessions/2025-12-29-docker-secrets-blueprint.md)
-- [E2E Workflow](.github/workflows/e2e-tests.yml)
-- [Secrets Policy](governance/SECRETS_POLICY.md)
+- [E2E Workflow](../../.github/workflows/e2e-tests.yml)
+- [Secrets Policy](../governance/SECRETS_POLICY.md)

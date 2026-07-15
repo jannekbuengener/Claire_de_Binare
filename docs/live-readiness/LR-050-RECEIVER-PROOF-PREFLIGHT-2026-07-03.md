@@ -98,7 +98,7 @@ read or commit these values.
 | Delivery mechanism | Webhooks → `cdb_signal:8005/alerts/*` | **Not** operator proof |
 | External email/SMS | Commented placeholders | **Not configured** |
 | Runtime in RED | Not in `compose.red.yml` | **Gap** — overlay or stack change needed |
-| Historical proof | LR-030 synthetic AM API post (`reports/lr030/.../synthetic_alert_proof_summary.json`) | **Not** LR-050 operator receipt (internal route only) |
+| Historical proof | LR-030 synthetic AM API post (`docs/evidence/reports/lr030/.../synthetic_alert_proof_summary.json`) | **Not** LR-050 operator receipt (internal route only) |
 
 ### B. Grafana Unified Alerting path (recommended for #2981 slice)
 
@@ -196,7 +196,7 @@ is on `main` and acceptance criteria met.
 
 ## Evidence Format (target)
 
-**Directory:** `reports/lr050/receiver_proof/YYYY-MM-DD/`
+**Directory:** `docs/evidence/reports/lr050/receiver_proof/YYYY-MM-DD/`
 
 **Files:**
 

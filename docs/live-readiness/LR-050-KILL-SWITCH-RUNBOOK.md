@@ -62,7 +62,7 @@
 | [`docs/operations/KILL_SWITCH_OPERATOR_CHECKLIST.md`](../operations/KILL_SWITCH_OPERATOR_CHECKLIST.md) | Operator HTTP toggle flows (`:8002`); **does not** prove end-to-end order stop alone |
 | [#2531](https://github.com/jannekbuengener/Claire_de_Binare/issues/2531) | Alert-triggered halt / abort vs investigate matrix |
 | [#2533](https://github.com/jannekbuengener/Claire_de_Binare/issues/2533) | Live-path dry-run proof without order placement |
-| [`governance/p5_canary_readiness.yaml`](../../governance/p5_canary_readiness.yaml) | P5 governance abort when observability unevaluable |
+| [`config/live-readiness/p5_canary_readiness.yaml`](../../config/live-readiness/p5_canary_readiness.yaml) | P5 governance abort when observability unevaluable |
 
 ---
 

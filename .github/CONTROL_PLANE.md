@@ -36,6 +36,7 @@ This folder and its docs make it navigable.
   prompts/           1 active prompt: cdb-control-followup.prompt.yml
   scripts/           9 scripts backing operational workflows
   commands/          4 Gemini command stubs (toml)
+  governance/        Machine-readable gates consumed directly by workflows
   control-plane/     Manifest-driven collection layer (introduced #1644)
     README.md        Collection layer overview
     schema/          Manifest schema spec
@@ -50,6 +51,9 @@ This folder and its docs make it navigable.
   MILESTONES.md      Milestone documentation
   emoji-config.yaml  Emoji filter/bot configuration
 ```
+
+Policy prose remains under `knowledge/governance/`. The delivery workflow reads
+`.github/governance/DELIVERY_APPROVED.yaml`; that file remains human-controlled.
 
 ---
 

@@ -1,116 +1,60 @@
-# K8s Budget Decision (Issue #293)
+# Kubernetes Budget Decision
 
-## Status: 🟡 PENDING
+Status: PARKED / NO ACTIVE IMPLEMENTATION
 
-Entscheidung über Kubernetes-Migration steht aus bis Gate-Kriterien erfüllt.
+Decision anchor: GitHub issue #293 (closed 2025-12-28)
 
-## Executive Summary
+Reconciled: 2026-07-15
 
-| Aspekt | Status |
-|--------|--------|
-| E2E Test Coverage | 🟡 In Progress |
-| Critical CVEs | 🟡 Some Open |
-| Rollback Runbook | ✅ Done |
-| Budget Approval | ⏳ Pending |
+## Decision
 
-## Decision Criteria
+Docker Compose remains the canonical deployment/runtime surface under
+`infrastructure/compose/`. Kubernetes is not approved, budgeted, or used by an
+active workflow, test, or deployment path.
 
-### Go/No-Go Checklist
+The former root `k8s/` directory was removed during the root information-
+architecture cleanup because it was only an incomplete placeholder:
 
-| Kriterium | Erforderlich | Aktuell | Status |
-|-----------|--------------|---------|--------|
-| E2E Pass Rate | ≥95% | TBD | 🟡 |
-| Critical CVEs | 0 | TBD | 🟡 |
-| Rollback Runbook | Vorhanden | ✅ | ✅ |
-| Compose Docs | Vollständig | ✅ | ✅ |
-| Team Capacity | Verfügbar | TBD | 🟡 |
-| Budget | Genehmigt | Pending | ⏳ |
+- placeholder registry image (`your-registry/...`),
+- signal-service port `8001`, inconsistent with the canonical runtime port,
+- no production overlays, secrets integration, health contract, CI validation,
+  rollout, or rollback path,
+- no active source, workflow, or test consumer.
 
-### Gate-Abhängigkeiten
+Keeping that scaffold implied a deployment capability that did not exist and
+contradicted the original decision to add Kubernetes assets only after a GO.
 
-```
-A-05 (E2E Critical Path) ──┐
-A-06 (Risk Guards)      ──┼── Gate: K8s Go/No-Go
-B-01 (Postgres CVE)     ──┤
-B-02 (Redis CVE)        ──┘
-```
+## Rationale
 
-## Cost-Benefit Analyse
+| Consideration | Current assessment |
+|---|---|
+| Workload topology | Compose satisfies the current single-host BLUE/RED model |
+| Scaling need | No approved multi-region or cluster autoscaling requirement |
+| Operational cost | Cluster, Helm/Kustomize, secrets, observability, CI/CD and rollback overhead is not justified |
+| Safety | A partial scaffold is more misleading than having no deploy surface |
+| Team capacity / budget | No current Kubernetes budget or implementation allocation |
 
-### Kosten (K8s Migration)
+## Re-evaluation triggers
 
-| Kategorie | Einmalig | Monatlich |
-|-----------|----------|-----------|
-| Cluster Setup | 8-16h | - |
-| Helm/Kustomize | 16-24h | - |
-| CI/CD Anpassung | 8-16h | - |
-| Managed K8s (AKS/EKS/GKE) | - | ~$100-300 |
-| Team Training | 8-16h | - |
-| **Total** | **40-72h** | **$100-300** |
+Re-evaluate only when at least one concrete requirement exists, for example:
 
-### Benefits (K8s)
+- approved multi-host or multi-region deployment,
+- measured load that cannot be handled by the Compose topology,
+- explicit availability/SLO requirements needing orchestration,
+- approved budget and named operational ownership.
 
-| Benefit | Wert |
-|---------|------|
-| Auto-Scaling | Nur bei Traffic-Peaks relevant |
-| Self-Healing | Docker Compose hat restart:always |
-| Multi-Region | Nicht geplant (Single Server OK) |
-| Rolling Updates | Bereits via Compose möglich |
+Re-evaluation requires a new scoped issue, an architecture/security review, and
+explicit Human-GO. If approved, executable assets belong under
+`infrastructure/k8s/`—not at repository root and not under `knowledge/`.
 
-### Empfehlung
+## Minimum acceptance criteria for any future implementation
 
-**NO-GO für 2025-Q1**
+- images and registries are real, pinned, and supply-chain checked,
+- service ports, health checks and dependencies match the canonical topology,
+- secrets are externalized and never committed,
+- dev/prod overlays and resource limits are defined,
+- CI validates rendered manifests,
+- deployment, observability, rollback and disaster-recovery runbooks exist,
+- Compose-to-Kubernetes parity is demonstrated before any cutover.
 
-Begründung:
-1. Docker Compose erfüllt aktuelle Anforderungen
-2. Single-Server-Deployment ausreichend
-3. K8s-Overhead rechtfertigt nicht den Nutzen
-4. Team-Kapazität für E2E-Stabilisierung benötigt
-
-### Re-Evaluation
-
-K8s erneut evaluieren wenn:
-- Multi-Region Deployment benötigt
-- Auto-Scaling erforderlich (hohe Last)
-- >5 Trading-Pairs gleichzeitig
-
-## K8s Scaffold (Vorbereitet)
-
-Falls GO-Entscheidung:
-
-```
-k8s/
-├── README.md           # Diese Datei
-├── kustomize/          # Kustomize-basiert (empfohlen)
-│   ├── base/
-│   │   ├── kustomization.yaml
-│   │   └── namespace.yaml
-│   └── overlays/
-│       ├── dev/
-│       └── prod/
-└── helm/               # Alternative: Helm Charts
-    └── claire/
-        ├── Chart.yaml
-        ├── values.yaml
-        └── templates/
-```
-
-## Appendix
-
-### Managed K8s Optionen
-
-| Provider | Service | Kosten/Monat |
-|----------|---------|--------------|
-| Azure | AKS | ~$100 (Free Control Plane) |
-| AWS | EKS | ~$150 ($0.10/h Control Plane) |
-| GCP | GKE | ~$100 (Free Autopilot Tier) |
-| DigitalOcean | DOKS | ~$60 |
-
-### Timeline (falls GO)
-
-| Phase | Dauer | Inhalt |
-|-------|-------|--------|
-| 1 | 2 Wochen | Helm/Kustomize Setup |
-| 2 | 2 Wochen | CI/CD Integration |
-| 3 | 1 Woche | Testing + Rollback |
-| 4 | 1 Woche | Production Cutover |
+This parked decision grants no Live-Go, deployment GO, or real-money authority.

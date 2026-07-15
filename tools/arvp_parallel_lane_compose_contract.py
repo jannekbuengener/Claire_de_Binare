@@ -11,15 +11,15 @@ import yaml
 from core.replay.correlation_ledger_attribution import CDB_CAMPAIGN_ID_ENV
 
 PARALLEL_SIGNAL_COMPOSE_OVERRIDE = (
-    "manifests/runtime_np_parallel_signal_compose_override.yml"
+    "config/arvp/runtime_np_parallel_signal_compose_override.yml"
 )
 
 # Host-level substitution keys set at RUNTIME-GO from rewritten campaign manifests.
 CAMPAIGN_ID_HOST_ENV_PB1 = "CDB_CAMPAIGN_ID_PB1"
 CAMPAIGN_ID_HOST_ENV_DONCHIAN = "CDB_CAMPAIGN_ID_DONCHIAN"
 
-PB1_MANIFEST_PATH = "manifests/campaign_3912_np_parallel_pb1.yaml"
-DONCHIAN_MANIFEST_PATH = "manifests/campaign_3912_np_parallel_donchian.yaml"
+PB1_MANIFEST_PATH = "config/arvp/campaign_3912_np_parallel_pb1.yaml"
+DONCHIAN_MANIFEST_PATH = "config/arvp/campaign_3912_np_parallel_donchian.yaml"
 
 CAMPAIGN_ID_TEMPLATE_SUFFIX = "_TEMPLATE"
 RUNTIME_GO_PLACEHOLDER = "RUNTIME_GO_SET"
@@ -118,10 +118,7 @@ def build_parallel_compose_host_env(
     host_env: dict[str, str] = {}
     host_env.update(build_host_env_from_manifest(pb1_manifest))
     host_env.update(build_host_env_from_manifest(donchian_manifest))
-    if (
-        host_env[CAMPAIGN_ID_HOST_ENV_PB1]
-        == host_env[CAMPAIGN_ID_HOST_ENV_DONCHIAN]
-    ):
+    if host_env[CAMPAIGN_ID_HOST_ENV_PB1] == host_env[CAMPAIGN_ID_HOST_ENV_DONCHIAN]:
         raise ValueError("parallel lane campaign_id values must be distinct")
     return host_env
 
@@ -166,7 +163,11 @@ def validate_parallel_manifest_pair(
 def load_parallel_signal_compose_override(
     repo_root: str | Path | None = None,
 ) -> dict[str, Any]:
-    root = Path(repo_root) if repo_root is not None else Path(__file__).resolve().parents[1]
+    root = (
+        Path(repo_root)
+        if repo_root is not None
+        else Path(__file__).resolve().parents[1]
+    )
     path = root / PARALLEL_SIGNAL_COMPOSE_OVERRIDE
     raw = yaml.safe_load(path.read_text(encoding="utf-8"))
     if not isinstance(raw, dict):

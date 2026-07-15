@@ -24,7 +24,7 @@ Jeder neue Alert wird in **eine** der vier Klassen eingeordnet:
 | Klasse | Kriterium | Aktion |
 |--------|-----------|--------|
 | **Echter Fix** | Vulnerability in produktivem Code/Dependency; CVE hat Fix verfügbar | Fix-Issue erstellen, PR erstellen |
-| **Historischer Noise** | Alert aus non-produktivem Pfad (artifacts/, logs/, reports/, tmp/, governance_work/); oder aus Commit-History ohne aktiven Code | Dismiss mit Cluster-Kommentar (siehe §4) |
+| **Historischer Noise** | Alert aus non-produktivem Pfad (artifacts/, logs/, docs/evidence/reports/, tmp/, governance_work/); oder aus Commit-History ohne aktiven Code | Dismiss mit Cluster-Kommentar (siehe §4) |
 | **False Positive** | Pattern-Match ohne tatsächliches Risiko (Platzhalter, Test-Fixture, Env-Var-Referenz) | Dismiss + allowlist/ignore-Eintrag ergänzen |
 | **Needs Review** | Unklare Quelle, unklares Risiko, kein Fix verfügbar | Tracking-Issue erstellen, Severity dokumentieren |
 
@@ -56,7 +56,7 @@ Reviewed: <YYYY-MM-DD> | Issue: #<NUMMER>
 ### Cluster: non-prod-path
 ```
 Cluster: non-prod-path
-Rationale: Finding in non-produktivem Verzeichnis (artifacts/, logs/, reports/, governance_work/, tmp/).
+Rationale: Finding in non-produktivem Verzeichnis (artifacts/, logs/, docs/evidence/reports/, governance_work/, tmp/).
 Kein Produktiv-Code betroffen; keine exploitierbare Angriffsfläche.
 Scope: artifacts/ | Reviewed: YYYY-MM-DD | Issue: #1651
 ```

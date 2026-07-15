@@ -25,10 +25,10 @@
 ```
 
 ### Cause
-The governance file `governance/DELIVERY_APPROVED.yaml` has `approved: false`.
+The governance file `.github/governance/DELIVERY_APPROVED.yaml` has `approved: false`.
 
 ### Fix
-1. Edit `governance/DELIVERY_APPROVED.yaml`:
+1. Edit `.github/governance/DELIVERY_APPROVED.yaml`:
    ```yaml
    delivery:
      approved: true

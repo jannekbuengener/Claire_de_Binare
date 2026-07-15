@@ -106,7 +106,7 @@ gh api repos/jannekbuengener/Claire_de_Binare/branches/main/protection --jq '.re
 | **gitleaks (Secrets-Alarm)** | gitleaks.yml | HARD BLOCK | Credential/API key detected in code |
 | **trivy (kritische CVEs/Supply-Chain)** | trivy.yml | HARD BLOCK | Container image CVE above allowlist |
 | **Check Core Duplicates** | core-guard.yml | HARD BLOCK | Duplicate `core/` directories detected |
-| **Check Delivery Gate** | delivery-gate.yml | HARD BLOCK | `governance/DELIVERY_APPROVED.yaml` approval missing |
+| **Check Delivery Gate** | delivery-gate.yml | HARD BLOCK | `.github/governance/DELIVERY_APPROVED.yaml` approval missing |
 | **guard** | docs-hub-guard.yml | HARD BLOCK | Docs Hub consistency violation |
 | **E2E Happy Path** | e2e-tests.yml or multi-job workflow | HARD BLOCK | E2E pipeline failure (Redis, Postgres, Docker Compose) |
 

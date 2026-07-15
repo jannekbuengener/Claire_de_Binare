@@ -37,13 +37,13 @@ records_found: none
 
 | Gate | Status | Evidence |
 |------|--------|----------|
-| #3909 parallel compose | PASS | `manifests/runtime_np_parallel_signal_compose_override.yml` |
-| #3910 Donchian allocation | PASS | `manifests/runtime_np_parallel_allocation_compose_override.yml` |
+| #3909 parallel compose | PASS | `config/arvp/runtime_np_parallel_signal_compose_override.yml` |
+| #3910 Donchian allocation | PASS | `config/arvp/runtime_np_parallel_allocation_compose_override.yml` |
 | #3911 ledger isolation | PASS | PR #3941 @ `0f273b15` |
 | #3913 gearbox contracts | PASS | `docs/design/arvp_gearbox_design_contracts_3913.md` |
 | Gearbox alignment review | PASS | `docs/evidence/arvp_parallel_pilot_gearbox_alignment_3912.md` |
 | #3893 scheduling / stack | PASS | #3893 CLOSED; `cdb_signal` → `primary_breakout_v1` baseline |
-| Campaign manifests | PASS | `manifests/campaign_3912_np_parallel_pb1.yaml`, `..._donchian.yaml` |
+| Campaign manifests | PASS | `config/arvp/campaign_3912_np_parallel_pb1.yaml`, `..._donchian.yaml` |
 | RUNTIME-GO on #3912 | **PENDING** | Human gate |
 
 ---
@@ -56,8 +56,8 @@ pytest -q tests/unit/arvp/test_arvp_np_parallel_signal_compose_contract_3909.py
 pytest -q tests/unit/arvp/test_arvp_gearbox_design_contracts_3913.py
 docker compose -f infrastructure/compose/compose.blue.yml
   -f infrastructure/compose/compose.red.yml
-  -f manifests/runtime_np_parallel_signal_compose_override.yml
-  -f manifests/runtime_np_parallel_allocation_compose_override.yml config
+  -f config/arvp/runtime_np_parallel_signal_compose_override.yml
+  -f config/arvp/runtime_np_parallel_allocation_compose_override.yml config
 ```
 
 ---

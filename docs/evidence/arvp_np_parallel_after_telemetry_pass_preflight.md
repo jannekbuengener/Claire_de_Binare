@@ -40,8 +40,8 @@ records_found: none
 | #3977 telemetry re-verify | PASS | `PASS_TELEMETRY_REVERIFIED`; `docs/evidence/arvp_diag_telemetry_reverify_run.md` |
 | #3971 collision-safe signal IDs | PASS | merged @ `251faf59` |
 | #3911 ledger isolation | PASS | PR #3941 @ `0f273b15` |
-| Fresh campaign manifests | PASS | `manifests/campaign_np_telemetry_pass_pb1.yaml`, `..._donchian.yaml` |
-| Compose lane wiring | PASS | `manifests/runtime_np_telemetry_pass_signal_compose_override.yml` |
+| Fresh campaign manifests | PASS | `config/arvp/campaign_np_telemetry_pass_pb1.yaml`, `..._donchian.yaml` |
+| Compose lane wiring | PASS | `config/arvp/runtime_np_telemetry_pass_signal_compose_override.yml` |
 | `CDB_SOURCE_SHA` pinned | PASS | `441fb9d6d0731f2111142899a1b8be828a4a046a` (`origin/main` @ #3979) |
 | RUNTIME-GO on #3980 | **PENDING** | Human gate |
 
@@ -104,8 +104,8 @@ ruff check core services tools tests
 python -m tools.arvp_np_telemetry_pass_preflight --json
 docker compose -f infrastructure/compose/compose.blue.yml
   -f infrastructure/compose/compose.red.yml
-  -f manifests/runtime_np_telemetry_pass_signal_compose_override.yml
-  -f manifests/runtime_np_parallel_allocation_compose_override.yml config
+  -f config/arvp/runtime_np_telemetry_pass_signal_compose_override.yml
+  -f config/arvp/runtime_np_parallel_allocation_compose_override.yml config
 ```
 
 Note: `infrastructure/compose/docker-compose.yml` is not present in this repo;

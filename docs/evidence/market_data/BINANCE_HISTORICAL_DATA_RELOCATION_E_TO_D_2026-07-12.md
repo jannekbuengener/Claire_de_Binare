@@ -33,7 +33,7 @@ The #3990 Binance BTCUSDT 1m corpus was relocated from external volume **Backup 
 | robocopy staging | exit 1 (success), 1,403 files, 0 errors |
 | SHA256 source vs staging (pre-transform) | **PASS** (0 missing/extra/mismatched) |
 | Offline reconcile (source + staging) | **PASS** |
-| Manifest transform (staging only) | 1 intentional delta: `manifests/binance_btcusdt_1m_full_import.json` |
+| Manifest transform (staging only) | 1 intentional delta: `config/arvp/binance_btcusdt_1m_full_import.json` |
 | SHA256 post-transform | exactly 1 mismatched file (manifest only) |
 | Junction cutover | **PASS**, 0 tracked artifact drift |
 | Smoke replay 2026-06 | **PASS** |

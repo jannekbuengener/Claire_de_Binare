@@ -14,7 +14,7 @@ No paper runtime, no Docker start, no live-go.
 ```powershell
 cd D:\Dev\Workspaces\Repos\Claire_de_Binare
 git rev-parse HEAD
-python -m tools.arvp_vacation.coordinator --manifest manifests/vacation/vacation_autopilot_mvp.yaml --preflight-only
+python -m tools.arvp_vacation.coordinator --manifest config/arvp/vacation/vacation_autopilot_mvp.yaml --preflight-only
 ```
 
 Resolve `source_sha` in the manifest before departure (replace `RUNTIME_RESOLVE` with current `main` SHA).
@@ -23,7 +23,7 @@ Resolve `source_sha` in the manifest before departure (replace `RUNTIME_RESOLVE`
 
 ```powershell
 python -m tools.arvp_vacation.coordinator `
-  --manifest manifests/vacation/vacation_autopilot_mvp.yaml `
+  --manifest config/arvp/vacation/vacation_autopilot_mvp.yaml `
   --run-until-complete
 ```
 
@@ -31,7 +31,7 @@ python -m tools.arvp_vacation.coordinator `
 
 ```powershell
 .\scripts\arvp_vacation_background_runner.ps1 -Start `
-  -ManifestPath manifests/vacation/vacation_autopilot_mvp.yaml
+  -ManifestPath config/arvp/vacation/vacation_autopilot_mvp.yaml
 ```
 
 ## Status / stop
@@ -45,7 +45,7 @@ python -m tools.arvp_vacation.coordinator `
 
 ```powershell
 python -m tools.arvp_vacation.coordinator `
-  --manifest manifests/vacation/vacation_autopilot_mvp.yaml `
+  --manifest config/arvp/vacation/vacation_autopilot_mvp.yaml `
   --run-until-complete `
   --resume
 ```

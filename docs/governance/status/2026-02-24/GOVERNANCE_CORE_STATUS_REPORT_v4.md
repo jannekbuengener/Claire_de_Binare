@@ -91,7 +91,7 @@
 - Evidence (top 6):
   - PR: https://github.com/jannekbuengener/Claire_de_Binare/pull/604
   - Doc: https://github.com/jannekbuengener/Claire_de_Binare/blob/main/docs/archive/governance-audit-2026-01-15.md
-  - Doc: https://github.com/jannekbuengener/Claire_de_Binare/blob/main/governance/WEEKLY_REVIEW_PROCESS.md
+  - Doc: https://github.com/jannekbuengener/Claire_de_Binare/blob/main/docs/archive/governance/WEEKLY_REVIEW_PROCESS_2026-01-15.md
   - Run: https://github.com/jannekbuengener/Claire_de_Binare/actions/runs/21046983398/job/60523768065
   - Run: https://github.com/jannekbuengener/Claire_de_Binare/actions/runs/21046983398/job/60523768261
   - https://claude.com/claude-code

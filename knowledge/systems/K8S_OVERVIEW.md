@@ -1,52 +1,14 @@
-# Kubernetes Scaffold
+# Kubernetes Overview
 
-**Status: 🟡 PENDING - Awaiting Go/No-Go Decision**
+Status: PARKED — no active Kubernetes deploy surface
 
-Siehe [K8s Budget Decision](../docs/decisions/K8S_BUDGET_DECISION.md) für Details.
+Claire de Binare currently uses Docker Compose as its canonical runtime and
+deployment model. The old root `k8s/` placeholder was removed on 2026-07-15
+because it had no active consumers and did not constitute a deployable system.
 
-## Struktur (falls GO)
+Authoritative decision and re-evaluation criteria:
+[`knowledge/decisions/K8S_BUDGET_DECISION.md`](../decisions/K8S_BUDGET_DECISION.md).
 
-```
-k8s/
-├── README.md
-├── kustomize/
-│   ├── base/
-│   │   ├── kustomization.yaml
-│   │   ├── namespace.yaml
-│   │   ├── redis/
-│   │   ├── postgres/
-│   │   └── services/
-│   └── overlays/
-│       ├── dev/
-│       └── prod/
-└── helm/  (Alternative)
-```
-
-## Kustomize vs Helm
-
-| Aspekt | Kustomize | Helm |
-|--------|-----------|------|
-| Komplexität | Niedriger | Höher |
-| Templating | Patches | Go Templates |
-| Learning Curve | Flach | Steil |
-| Community | Kubernetes-Native | Größer |
-
-**Empfehlung**: Kustomize (einfacher, keine zusätzliche Tooling-Dependency)
-
-## Go/No-Go Checklist
-
-Vor K8s-Migration müssen erfüllt sein:
-
-- [ ] E2E Pass Rate ≥95%
-- [ ] 0 Critical CVEs
-- [ ] Rollback Runbook getestet
-- [ ] Compose Architecture dokumentiert
-- [ ] Budget genehmigt
-- [ ] Team Capacity verfügbar
-
-## Nächste Schritte (falls GO)
-
-1. `kustomize/base/` mit Namespace + ConfigMaps
-2. Service-Manifeste aus Compose konvertieren
-3. Secrets Management (Sealed Secrets / External Secrets)
-4. CI/CD Pipeline anpassen
+If Kubernetes is approved in the future, executable manifests belong under
+`infrastructure/k8s/` after a new scoped issue and explicit Human-GO. This page is
+documentation only and grants no runtime or Live-Go authorization.

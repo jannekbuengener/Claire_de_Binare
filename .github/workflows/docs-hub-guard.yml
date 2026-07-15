@@ -61,7 +61,13 @@ jobs:
             echo "Keine Änderungen in den überwachten Ordnern; Secret-Scan übersprungen."
             exit 0
           fi
-          hits="$(git grep -nEI '(api[_-]?key|secret|token|private[_-]?key|BEGIN (RSA|OPENSSH) PRIVATE KEY|xox[baprs]-|ghp_[A-Za-z0-9]{20,}|AKIA[0-9A-Z]{16})' -- "${scan_files[@]}" || true)"
+          # This lightweight guard is intentionally limited to credential-shaped
+          # signatures. Generic words such as "secret", "token", and "api_key"
+          # are normal vocabulary in security documentation and caused every
+          # moved document to be treated as a leak. The dedicated gitleaks
+          # workflows remain the canonical full-content and history scanners.
+          credential_pattern='(BEGIN (RSA|OPENSSH|EC|DSA) PRIVATE KEY|xox[baprs]-[A-Za-z0-9-]{10,}|gh[pousr]_[A-Za-z0-9]{20,}|github_pat_[A-Za-z0-9_]{20,}|AKIA[0-9A-Z]{16})'
+          hits="$(git grep -nEI "$credential_pattern" -- "${scan_files[@]}" || true)"
           if [ -n "$hits" ]; then
             echo "Potential secret-like strings found in geänderten Dateien (review required):"
             echo "$hits"
@@ -70,14 +76,21 @@ jobs:
             exit 1
           fi
 
-      - name: Enforce consolidated top-level folders
+      - name: Enforce canonical documentation and governance folders
         shell: bash
         run: |
           set -euo pipefail
-          echo "Checking consolidated top-level folders..."
-          for d in agents governance knowledge docs; do
+          echo "Checking canonical documentation and governance folders..."
+          required_dirs=(
+            agents
+            docs
+            knowledge
+            knowledge/governance
+            .github/governance
+          )
+          for d in "${required_dirs[@]}"; do
             if [ ! -d "$d" ]; then
-              echo "Missing required top-level folder: $d"
+              echo "Missing required canonical folder: $d"
               exit 1
             fi
           done
@@ -89,9 +102,9 @@ jobs:
           files=(
             README.md
             AGENTS.md
-            mcp_navpack_working_repo/ENTRYPOINTS.yaml
-            mcp_navpack_working_repo/CHEATSHEET.md
-            mcp_navpack_working_repo/DOCS_HUB.pointer.md
+            docs/navigation/mcp-navpack/ENTRYPOINTS.yaml
+            docs/navigation/mcp-navpack/CHEATSHEET.md
+            docs/navigation/mcp-navpack/DOCS_HUB.pointer.md
           )
           hits="$(grep -nE '\.\./Claire_de_Binare_Docs|D:\\Dev\\Workspaces\\Repos\\Claire_de_Binare_Docs|canonical agent registry lives in the separate Docs Hub repo|Working Repo relies on the Docs Hub canonical registry' "${files[@]}" || true)"
           if [ -n "$hits" ]; then

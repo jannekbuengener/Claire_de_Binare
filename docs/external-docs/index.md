@@ -120,7 +120,7 @@
 
 | Name | Offizielle Docs | CDB-Nutzung | Priorität | Lookup-Trigger |
 |------|----------------|-------------|-----------|----------------|
-| Kubernetes | https://kubernetes.io/docs/ | k8s/ existiert, Canon ist Docker Compose | parked | `k8s/` |
+| Kubernetes | https://kubernetes.io/docs/ | Keine aktive Deploy-Fläche; Docker Compose ist Canon | parked | `knowledge/decisions/K8S_BUDGET_DECISION.md` |
 | Binance API | https://developers.binance.com/docs | Nur bei aktivem Exchange-Scope | parked | Exchange-Erweiterung |
 | FastAPI | https://fastapi.tiangolo.com/ | Aktuell kein Hauptpfad (Services nutzen Flask) | parked | Service-Neubau |
 | SQLAlchemy | https://docs.sqlalchemy.org/ | Nur bei ORM-/DB-Abstraktions-Scope | parked | DB-Refactoring |

@@ -21,11 +21,11 @@ Status: canonical
 Rule: no live deployment without explicit user gate.
 
 Canonical file (CI-enforced):
-- `governance/DELIVERY_APPROVED.yaml`
+- `.github/governance/DELIVERY_APPROVED.yaml`
 
-The active CI workflow (`delivery-gate.yml`) reads `governance/DELIVERY_APPROVED.yaml`
-at the repo root. A duplicate exists at `knowledge/governance/DELIVERY_APPROVED.yaml`
-and is not CI-active; see #1311 for cleanup.
+The active CI workflow (`delivery-gate.yml`) reads
+`.github/governance/DELIVERY_APPROVED.yaml`. The former non-CI duplicate under
+`knowledge/governance/` was removed; policy documentation remains there.
 
 ## 3. Agent Behavior
 

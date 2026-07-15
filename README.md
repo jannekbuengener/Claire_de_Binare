@@ -96,8 +96,11 @@ LR bleibt **NO-GO** — SSOT: [`docs/live-readiness/LR-AUDIT-STATUS-2026-03-05.m
 - `core/` - gemeinsame Domain-/Contract-Logik
 - `services/` - laufende Runtime-Services (Signal/Risk/Execution/etc.)
 - `infrastructure/compose/` - Compose-Canon (`compose.blue.yml` + `compose.red.yml`)
+- `config/arvp/` - ARVP-Kampagnen und Compose-Overrides
+- `.github/governance/` - direkt von GitHub Actions gelesene Governance-Gates
 - `docs/runbooks/` - operative Runbooks inkl. Control Register
 - `docs/live-readiness/` - LR-Audit- und Gate-Artefakte
+- `docs/evidence/` - geprüfte, versionierte Nachweise; neue Ausgaben entstehen unter `artifacts/`
 - `knowledge/` - aktive Knowledge-/Governance-Flaeche
 - `tools/` - PowerShell Front Doors und Ops-Helfer
 - `tests/` - Unit/Integration/E2E/Replay/Chaos
@@ -144,9 +147,10 @@ docker compose -f infrastructure/compose/base.yml -f infrastructure/compose/test
 
 ## Navigation
 
-- [`mcp_navpack_working_repo/ENTRYPOINTS.yaml`](mcp_navpack_working_repo/ENTRYPOINTS.yaml)
-- [`mcp_navpack_working_repo/CHEATSHEET.md`](mcp_navpack_working_repo/CHEATSHEET.md)
+- [`docs/navigation/mcp-navpack/ENTRYPOINTS.yaml`](docs/navigation/mcp-navpack/ENTRYPOINTS.yaml)
+- [`docs/navigation/mcp-navpack/CHEATSHEET.md`](docs/navigation/mcp-navpack/CHEATSHEET.md)
 - [`docs/meta/WORKING_REPO_CANON.md`](docs/meta/WORKING_REPO_CANON.md)
+- [`docs/meta/ROOT_INFORMATION_ARCHITECTURE.md`](docs/meta/ROOT_INFORMATION_ARCHITECTURE.md)
 
 ## Boundary
 

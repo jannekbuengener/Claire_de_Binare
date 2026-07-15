@@ -475,7 +475,9 @@ def build_decision_contract_audit_record(bundle: Mapping[str, Any]) -> dict[str,
 
 
 def write_decision_contract_audit_record(
-    bundle: Mapping[str, Any], *, output_dir: str | Path = "reports/decision_contract"
+    bundle: Mapping[str, Any],
+    *,
+    output_dir: str | Path = "artifacts/reports/decision_contract",
 ) -> Path:
     """Write canonical audit JSON for one decision bundle.
 

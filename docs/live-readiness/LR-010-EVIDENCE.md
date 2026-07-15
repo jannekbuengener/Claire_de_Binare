@@ -79,4 +79,4 @@ Alle LR-010-Testanker liegen im `tests/unit/risk/` und `tests/unit/verlosung/` P
 
 ## Go/No-Go Relevanz
 
-LR-010 bleibt ein Hard Gate in `governance/p5_canary_readiness.yaml`, weil ein Defekt in der Core-Risk-Logik Canary-Schutzmechanismen direkt unterlaufen kann. Deterministische Unit-Tests sind der erste Verifikations-Layer vor Integration, Soak und operativer Freigabe.
+LR-010 bleibt ein Hard Gate in `config/live-readiness/p5_canary_readiness.yaml`, weil ein Defekt in der Core-Risk-Logik Canary-Schutzmechanismen direkt unterlaufen kann. Deterministische Unit-Tests sind der erste Verifikations-Layer vor Integration, Soak und operativer Freigabe.

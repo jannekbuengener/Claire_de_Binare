@@ -71,30 +71,30 @@ Claire de Binare ist ein **event-getriebenes Krypto-Trading-System** mit:
 
 Hinweis: `services/signal/config.py` hat `SIGNAL_PORT`-Default `8001`; der kanonische Runtime-Port ist `8005`, weil `infrastructure/compose/compose.red.yml` fuer `cdb_signal` `SIGNAL_PORT=8005` setzt.
 
-### Campaign Runtime Overlays (`manifests/`) — nicht kanonischer Default
+### Campaign Runtime Overlays (`config/arvp/`) — nicht kanonischer Default
 
 Campaign-scoped Compose-Overlays fuer begrenzte ARVP natural-paper Beobachtungen. LR bleibt **NO-GO**; Manifest-Praesenz allein autorisiert kein Live/Echtgeld. Separate **RUNTIME-GO** erforderlich vor `docker compose up`.
 
 | Overlay | Compose-Datei | Zweck |
 |---------|---------------|-------|
-| Parallel 2-strategy signal | `manifests/runtime_np_parallel_signal_compose_override.yml` | `cdb_signal_pb1` (`primary_breakout_v1`, Port `8015`) + `cdb_signal_donchian` (`donchian_breakout_v1`, Port `8016`); kanonischer `cdb_signal` auf Profil `single-signal-default` (PR #3918 / #3909) |
-| Parallel allocation caps | `manifests/runtime_np_parallel_allocation_compose_override.yml` | Gleiche `ALLOCATION_RULES_JSON`-Semantik wie kanonisches BLUE (`donchian_breakout_v1` half-cap; PR #3910 / #3915) |
-| Diagnostic telemetry | `manifests/runtime_np_diag_telemetry_signal_compose_override.yml` | 2h diagnostic PB1+Donchian; lane-scoped `CDB_CAMPAIGN_ID` via `CDB_CAMPAIGN_ID_PB1` / `CDB_CAMPAIGN_ID_DONCHIAN` (PR #3963 / #3964) |
-| Diagnostic re-verify | `manifests/runtime_np_diag_reverify_signal_compose_override.yml` | Post-#3971 re-verify; erfordert rebuilt signal images + `CDB_SOURCE_SHA` proof vor Observation (PR #3974) |
-| Telemetry-pass natural-paper | `manifests/runtime_np_telemetry_pass_signal_compose_override.yml` | 4h PB1+Donchian nach `PASS_TELEMETRY_REVERIFIED`; `CDB_SOURCE_SHA` + lane `CDB_CAMPAIGN_ID` (PR #3979 / #3982) |
+| Parallel 2-strategy signal | `config/arvp/runtime_np_parallel_signal_compose_override.yml` | `cdb_signal_pb1` (`primary_breakout_v1`, Port `8015`) + `cdb_signal_donchian` (`donchian_breakout_v1`, Port `8016`); kanonischer `cdb_signal` auf Profil `single-signal-default` (PR #3918 / #3909) |
+| Parallel allocation caps | `config/arvp/runtime_np_parallel_allocation_compose_override.yml` | Gleiche `ALLOCATION_RULES_JSON`-Semantik wie kanonisches BLUE (`donchian_breakout_v1` half-cap; PR #3910 / #3915) |
+| Diagnostic telemetry | `config/arvp/runtime_np_diag_telemetry_signal_compose_override.yml` | 2h diagnostic PB1+Donchian; lane-scoped `CDB_CAMPAIGN_ID` via `CDB_CAMPAIGN_ID_PB1` / `CDB_CAMPAIGN_ID_DONCHIAN` (PR #3963 / #3964) |
+| Diagnostic re-verify | `config/arvp/runtime_np_diag_reverify_signal_compose_override.yml` | Post-#3971 re-verify; erfordert rebuilt signal images + `CDB_SOURCE_SHA` proof vor Observation (PR #3974) |
+| Telemetry-pass natural-paper | `config/arvp/runtime_np_telemetry_pass_signal_compose_override.yml` | 4h PB1+Donchian nach `PASS_TELEMETRY_REVERIFIED`; `CDB_SOURCE_SHA` + lane `CDB_CAMPAIGN_ID` (PR #3979 / #3982) |
 
 Statische Validierung (kein `up` ohne RUNTIME-GO):
 
 ```powershell
 docker compose `
   -f infrastructure/compose/compose.red.yml `
-  -f manifests/runtime_np_parallel_signal_compose_override.yml `
+  -f config/arvp/runtime_np_parallel_signal_compose_override.yml `
   config
 ```
 
 Risk-Seite: beide parallelen Signal-Instanzen publizieren auf **shared** Redis-Topic `signals` und Stream `stream.signals`; `cdb_risk` routet per Payload `strategy_id` / `bot_id`. Ledger-/Evidence-Isolation: **#3911**. Parallel-Pilot **#3912** bleibt NOT READY.
 
-Siehe `manifests/README.md` und `services/signal/README.md`.
+Siehe `config/arvp/README.md` und `services/signal/README.md`.
 
 ### Logging Overlay (logging.yml) — separates Overlay, nicht Teil des Standard-BLUE/RED-Starts
 
@@ -233,7 +233,7 @@ cdb_reports           Up (healthy)
 | **Correlation Ledger Attribution** | `core/replay/correlation_ledger_attribution.py` | Campaign/lane attribution helpers: `resolve_campaign_id()` (`CDB_CAMPAIGN_ID`), `build_signal_ledger_payload()`, `build_decision_ledger_payload()`, `aggregate_lane_campaign_evidence()`, `blocks_by_reason` aggregation. Runtime telemetry support; no promotion semantics. | **AKTIV** (PR #3961) |
 | **Correlation Ledger Insert** | `core/replay/correlation_ledger_insert.py` | Insert-result classification (`INSERTED`/`CONFLICT`/`SKIPPED`/`ERROR`), false-zero risk evaluation, Prometheus counter parsing. Surfaces silent `ON CONFLICT DO NOTHING` suppressions. | **AKTIV** (PR #3971) |
 
-**ARVP Vacation Evidence Pipeline (offline, research-only):** Vacation batch runner (`tools/arvp_vacation/coordinator.py`) → strategy metric extraction (`tools/arvp_vacation/strategy_metric_extraction.py`, contract `arvp_strategy_metrics.v1`) → candidate evidence assembly (`services/validation/arvp_candidate_evidence_assembler.py`, contract `profitability_evidence_packet.v1`) → governance league table report assembly (`services/validation/profitability_league_table_report_assembler.py`, contract `profitability_league_table_report.v1`). Python libraries and operator CLIs only — no always-on BLUE/RED service, no productive persistence, no trading execution, no strategy/live/Echtgeld authorization; LR remains **NO-GO**. Evidence: [`docs/evidence/arvp_3990_strategy_metric_extraction.md`](../../docs/evidence/arvp_3990_strategy_metric_extraction.md), [`docs/evidence/arvp_3990_candidate_evidence_assembly.md`](../../docs/evidence/arvp_3990_candidate_evidence_assembly.md), [`docs/evidence/arvp_3990_strategy_league_table.md`](../../docs/evidence/arvp_3990_strategy_league_table.md).
+**ARVP Vacation Evidence Pipeline (offline, research-only):** Vacation batch runner (`tools/arvp_vacation/coordinator.py`) → strategy metric extraction (`tools/arvp_vacation/strategy_metric_extraction.py`, contract `arvp_strategy_metrics.v1`) → candidate evidence assembly (`services/validation/arvp_candidate_evidence_assembler.py`, contract `profitability_evidence_packet.v1`) → governance league table report assembly (`services/validation/profitability_league_table_report_assembler.py`, contract `profitability_league_table_report.v1`). Python libraries and operator CLIs only — no always-on BLUE/RED service, no productive persistence, no trading execution, no strategy/live/Echtgeld authorization; LR remains **NO-GO**. Evidence: [`docs/evidence/arvp_3990_strategy_metric_extraction.md`](../docs/evidence/arvp_3990_strategy_metric_extraction.md), [`docs/evidence/arvp_3990_candidate_evidence_assembly.md`](../docs/evidence/arvp_3990_candidate_evidence_assembly.md), [`docs/evidence/arvp_3990_strategy_league_table.md`](../docs/evidence/arvp_3990_strategy_league_table.md).
 
 ---
 

@@ -244,7 +244,7 @@ docker compose -f infrastructure/compose/compose.red.yml up -d
 
 - **Tool README:** `tools/secrets/README.md`
 - **Grafana Incident Runbook:** `knowledge/runbooks/GRAFANA_ADMIN_INCIDENT.md`
-- **General Secrets Policy:** `governance/SECRETS_POLICY.md`
+- **General Secrets Policy:** `knowledge/governance/SECRETS_POLICY.md`
 - **Manifest:** `tools/secrets/secrets.manifest.json`
 
 ---

@@ -161,7 +161,7 @@ docker compose -f infrastructure/compose/compose.red.yml up -d
 3. Verify:
    - Redis: `stream.order_results` contains order
    - Postgres: `orders` + `trades` tables have rows
-4. Generate report: `reports/CORE_FLOW_E2E_SMOKE.md`
+4. Generate report: `artifacts/reports/CORE_FLOW_E2E_SMOKE.md`
 
 **Usage:**
 ```powershell

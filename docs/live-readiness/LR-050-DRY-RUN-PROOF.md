@@ -250,7 +250,7 @@ Per [LR-050-OBSERVABILITY-GATES.md](./LR-050-OBSERVABILITY-GATES.md):
 1. Explicit Runtime-GO from operator.
 2. Confirm `DRY_RUN=true` and `MOCK_TRADING=true` (or equivalent non-send path).
 3. Inject test order; capture logs + `order_results` / stream without MEXC HTTP.
-4. Attach redacted evidence under `reports/` or issue comment — **no** secret values.
+4. Attach redacted evidence under `docs/evidence/reports/` or issue comment — **no** secret values.
 
 Until then: **runtime dry-run evidence remains `blocker_before_live`** for [#2535](https://github.com/jannekbuengener/Claire_de_Binare/issues/2535).
 

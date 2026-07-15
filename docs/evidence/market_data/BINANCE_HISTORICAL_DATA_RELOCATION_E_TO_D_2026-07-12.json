@@ -36,7 +36,7 @@
   },
   "manifest_transformation": {
     "performed": true,
-    "relative_path": "manifests/binance_btcusdt_1m_full_import.json",
+    "relative_path": "config/arvp/binance_btcusdt_1m_full_import.json",
     "old_sha256": "d80feda1fbedee702a27d60b97691f4ba8c76e9901f0239f7eb4131f848c1be5",
     "new_sha256": "f3ed12dc320bd7fd933aa70c7e088be8762799fc7c374ae32ea5d686b01983b3",
     "post_transform_mismatched_files": 1

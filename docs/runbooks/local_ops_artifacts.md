@@ -44,11 +44,9 @@ with explicit intent.
 - Generated logs, rendered compose files, runtime bundles, and local reports
   are local-only by default.
 - Typical examples are `logs/`, `*.log`, `..cdb_local.compose_rendered.yml`,
-  `reports/decision_contract/`, and ad-hoc root reports such as
+  `artifacts/reports/decision_contract/`, and ad-hoc root reports such as
   `P1_RUNTIME_DOD_REPORT.md`.
-- Root scratch directories such as `temp/`, `tmp/`, and `artifacts/` are
-  operationally local today even when some ignore behavior still comes from
-  developer-local excludes.
+- Generated output uses `artifacts/`; `temp/` and `tmp/` remain local scratch.
 
 ## Repo Source And Canonical Paths
 
@@ -72,8 +70,8 @@ with explicit intent.
 - Some obvious local-only artifacts are still ignored via `.git/info/exclude`
   or nested tool-generated `.gitignore` files instead of the repo-root
   `.gitignore`.
-- Current examples include `/artifacts/`, `/tmp/`, `/temp/`,
-  `/CODEX_RUN_REPORT.md`, and tool-generated cache markers under
+- Current examples include `/tmp/`, `/temp/`, `/CODEX_RUN_REPORT.md`, and
+  tool-generated cache markers under
   `.pytest_cache/` and `.ruff_cache/`.
 - Treat those paths as local-only for now, but prefer repo-visible policy for
   stable shared conventions when a later cleanup can do so safely.

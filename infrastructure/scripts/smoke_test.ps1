@@ -89,12 +89,12 @@ if ($LASTEXITCODE -eq 0) {
     Write-Host "[PASS] SMOKE TEST PASSED" -ForegroundColor Green
     Write-Host "============================================================" -ForegroundColor Cyan
     Write-Host "Core flow operational: Signal -> Risk -> Execution -> DB`n" -ForegroundColor Green
-    Write-Host "Report: reports/CORE_FLOW_E2E_SMOKE.md`n" -ForegroundColor Gray
+    Write-Host "Report: artifacts/reports/CORE_FLOW_E2E_SMOKE.md`n" -ForegroundColor Gray
 } else {
     Write-Host "`n============================================================" -ForegroundColor Cyan
     Write-Host "[FAIL] SMOKE TEST FAILED" -ForegroundColor Red
     Write-Host "============================================================" -ForegroundColor Cyan
-    Write-Host "Check report for details: reports/CORE_FLOW_E2E_SMOKE.md`n" -ForegroundColor Yellow
+    Write-Host "Check report for details: artifacts/reports/CORE_FLOW_E2E_SMOKE.md`n" -ForegroundColor Yellow
 
     Write-Host "Common Fixes:" -ForegroundColor White
     Write-Host "  1. Check service health: docker compose -f infrastructure/compose/compose.blue.yml ps" -ForegroundColor Gray

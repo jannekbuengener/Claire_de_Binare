@@ -14,9 +14,9 @@ pytestmark = [pytest.mark.unit, pytest.mark.contract]
 REPO_ROOT = Path(__file__).resolve().parents[3]
 COMPOSE_RED = REPO_ROOT / "infrastructure" / "compose" / "compose.red.yml"
 SIGNAL_OVERRIDE = (
-    REPO_ROOT / "manifests" / "runtime_np_parallel_signal_compose_override.yml"
+    REPO_ROOT / "config" / "arvp" / "runtime_np_parallel_signal_compose_override.yml"
 )
-MANIFESTS_README = REPO_ROOT / "manifests" / "README.md"
+ARVP_CONFIG_README = REPO_ROOT / "config" / "arvp" / "README.md"
 SIGNAL_README = REPO_ROOT / "services" / "signal" / "README.md"
 
 PARALLEL_SERVICES = ("cdb_signal_pb1", "cdb_signal_donchian")
@@ -136,8 +136,8 @@ def test_override_documents_risk_side_filter_contract() -> None:
     assert "#3911" in header
 
 
-def test_manifests_readme_documents_campaign_scope_and_no_runtime_go() -> None:
-    text = MANIFESTS_README.read_text(encoding="utf-8").lower()
+def test_arvp_config_readme_documents_campaign_scope_and_no_runtime_go() -> None:
+    text = ARVP_CONFIG_README.read_text(encoding="utf-8").lower()
     assert "runtime_np_parallel_signal_compose_override.yml" in text
     assert "no-go" in text
     assert "#3912" in text
@@ -153,8 +153,8 @@ def test_signal_readme_links_parallel_override() -> None:
 def test_pilot_issue_3912_is_not_freed_by_compose_delivery() -> None:
     """#3909 delivers infra only; #3912 still requires #3911 + RUNTIME-GO."""
     header = SIGNAL_OVERRIDE.read_text(encoding="utf-8")
-    manifests_readme = MANIFESTS_README.read_text(encoding="utf-8")
-    joined = f"{header}\n{manifests_readme}".lower()
+    config_readme = ARVP_CONFIG_README.read_text(encoding="utf-8")
+    joined = f"{header}\n{config_readme}".lower()
     assert "#3911" in joined
     assert "not ready" in joined
 

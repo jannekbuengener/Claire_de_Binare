@@ -48,7 +48,9 @@ from pathlib import Path
 import redis
 
 SCHEMA_VERSION = "1.2"
-_ACCEPTED_EXECUTION_MODE = "mock"  # canonical non-live mode per services/execution/service.py
+_ACCEPTED_EXECUTION_MODE = (
+    "mock"  # canonical non-live mode per services/execution/service.py
+)
 STREAM_KEY = "stream.fills"
 ORDERS_CHANNEL = "orders"
 SIGNALS_CHANNEL = "signals"
@@ -555,8 +557,8 @@ def main() -> None:
     )
     parser.add_argument(
         "--output",
-        default="evidence-run/lr020_tier2_evidence.json",
-        help="Output path for evidence JSON (default: evidence-run/lr020_tier2_evidence.json)",
+        default="artifacts/evidence-runs/lr020_tier2_evidence.json",
+        help="Output path for evidence JSON (default: artifacts/evidence-runs/lr020_tier2_evidence.json)",
     )
     args = parser.parse_args()
 
@@ -641,8 +643,11 @@ def main() -> None:
             print(f"market price from Redis: close_now={market_price}")
         probe_bot_id = f"lr020-probe-{probe_id}"
         signal_payload = _build_signal(
-            signal_id, strategy_id, bot_id=probe_bot_id,
-            account_state=account_state, price=market_price
+            signal_id,
+            strategy_id,
+            bot_id=probe_bot_id,
+            account_state=account_state,
+            price=market_price,
         )
         order_payload = None
         inject_channel = SIGNALS_CHANNEL

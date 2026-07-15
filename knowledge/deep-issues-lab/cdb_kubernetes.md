@@ -1,5 +1,9 @@
 # cdb\_kubernetes
 
+> Historical concept document. It does not describe the current topology or an
+> approved deployment path. Kubernetes is parked; see
+> [`knowledge/decisions/K8S_BUDGET_DECISION.md`](../decisions/K8S_BUDGET_DECISION.md).
+
 # Integration via Docker Desktop for Claire de Binare
 
 ## Introduction
@@ -541,4 +545,3 @@ We have successfully prepared and validated the integration of the Claire de Bin
 By completing this Kubernetes integration, Claire de Binare’s deployment is more robust and aligned with modern infrastructure management, while still operating locally and autonomously (no dependency on cloud services, in line with the project’s manifesto). The system remains transparent and controllable, and now the *orchestration* itself is also transparent (since Kubernetes YAML is declarative and checkable into version control, complementing the project’s emphasis on clarity and auditability).
 
 Kubernetes Claire de Binare  – happy trading and monitoring\! 🚀
-

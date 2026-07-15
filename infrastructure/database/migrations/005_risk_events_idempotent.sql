@@ -1,7 +1,7 @@
 -- Migration 005: Add idempotency to risk_events
 -- Date: 2026-02-15
 -- Reason: Phase 8B - Deterministic persistence with replay-safe PK
--- Historical note: Phase 8B review artifact (reports/HISTORICAL_P8B_BRIEF.md); obsolete external advisor reference removed. Active gate: explicit Jannek Human-GO + repo evidence.
+-- Historical note: Phase 8B review artifact (docs/evidence/reports/HISTORICAL_P8B_BRIEF.md); obsolete external advisor reference removed. Active gate: explicit Jannek Human-GO + repo evidence.
 
 -- Add idempotency columns
 ALTER TABLE risk_events ADD COLUMN IF NOT EXISTS decision_pk VARCHAR(36);

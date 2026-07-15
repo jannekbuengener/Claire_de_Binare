@@ -11,6 +11,13 @@ repos:
         name: 🔐 Detect secrets with Gitleaks
   - repo: local
     hooks:
+      - id: root-layout-guard
+        name: Validate tracked repository root layout
+        entry: python -m tools.validate_root_layout
+        language: system
+        pass_filenames: false
+        always_run: true
+
       - id: emoji-filter
         name: 🚫 Emoji Filter
         entry: python .github/scripts/advanced-emoji-filter.py

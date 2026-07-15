@@ -1,6 +1,6 @@
 # ARVP Diagnostic Telemetry Re-Verify — Preflight (#3973)
 
-Status Class: **PREFLIGHT_READY** — manifests/docs/tooling only; **no runtime executed**
+Status Class: **PREFLIGHT_READY** — config/arvp/docs/tooling only; **no runtime executed**
 Issue: [#3973](https://github.com/jannekbuengener/Claire_de_Binare/issues/3973)
 Hypothesis: `HYP-ARVP-DIAG-TELEMETRY-REVERIFY-01`
 Prerequisites: [#3971](https://github.com/jannekbuengener/Claire_de_Binare/pull/3971) @ `251faf59d94f50bd77972c06b3a7cf23d6ecf401`
@@ -44,12 +44,12 @@ collided with pre-#3956 historical ledger rows (likely **stale signal containers
 
 | Lane | Manifest | `campaign_id` | `bot_id` | `strategy_id` |
 |------|----------|---------------|----------|---------------|
-| PB1 | `manifests/campaign_diag_reverify_pb1.yaml` | `arvp_diag_p0r_pb1_20260710t1600z` | `np-pb1-reverify-01` | `primary_breakout_v1` |
-| Donchian | `manifests/campaign_diag_reverify_donchian.yaml` | `arvp_diag_p0r_donchian_20260710t1600z` | `np-donchian-reverify-01` | `donchian_breakout_v1` |
+| PB1 | `config/arvp/campaign_diag_reverify_pb1.yaml` | `arvp_diag_p0r_pb1_20260710t1600z` | `np-pb1-reverify-01` | `primary_breakout_v1` |
+| Donchian | `config/arvp/campaign_diag_reverify_donchian.yaml` | `arvp_diag_p0r_donchian_20260710t1600z` | `np-donchian-reverify-01` | `donchian_breakout_v1` |
 
 **Not reused:** #3967 IDs (`arvp_diag_p15_*`, `np-*-diag-01`).
 
-Compose override: `manifests/runtime_np_diag_reverify_signal_compose_override.yml`
+Compose override: `config/arvp/runtime_np_diag_reverify_signal_compose_override.yml`
 
 ---
 
@@ -78,7 +78,7 @@ Preflight tool: `python -m tools.arvp_diag_reverify_preflight --json`
 
 ```powershell
 docker compose -f infrastructure/compose/compose.red.yml `
-  -f manifests/runtime_np_diag_reverify_signal_compose_override.yml `
+  -f config/arvp/runtime_np_diag_reverify_signal_compose_override.yml `
   build --no-cache cdb_signal_pb1 cdb_signal_donchian
 ```
 

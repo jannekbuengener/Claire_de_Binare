@@ -358,7 +358,7 @@ curl -X POST http://localhost:3000/api/v1/provisioning/alert-rules \
 - **Contact Point:** `email-main` (UID: dfabzv9fdgmpse)
 - **SMTP Config:** `infrastructure/compose/base.yml:82-88`
 - **Secrets Path:** `~/Documents/.secrets/.cdb/SMTP_*`
-- **Evidence Docs:** `reports/shadow_mode/EMAIL_ALERTING_STATUS.md`
+- **Evidence Docs:** `docs/evidence/reports/shadow_mode/EMAIL_ALERTING_STATUS.md`
 
 ---
 

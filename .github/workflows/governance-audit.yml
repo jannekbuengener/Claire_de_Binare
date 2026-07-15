@@ -52,9 +52,9 @@ jobs:
           }
 
           fetch_from_ref "scripts/governance/check_branch_protection_drift.py" "governance/branch-protection-drift-guard"
-          fetch_from_ref "reports/BRANCH_PROTECTION_BASELINE_main.json" "governance/branch-protection-drift-guard"
+          fetch_from_ref "docs/evidence/reports/BRANCH_PROTECTION_BASELINE_main.json" "governance/branch-protection-drift-guard"
           fetch_from_ref "scripts/governance/check_required_check_contexts.py" "governance/required-check-context-drift-guard"
-          fetch_from_ref "reports/REQUIRED_CHECK_CONTEXTS_BASELINE_main.json" "governance/required-check-context-drift-guard"
+          fetch_from_ref "docs/evidence/reports/REQUIRED_CHECK_CONTEXTS_BASELINE_main.json" "governance/required-check-context-drift-guard"
 
       - name: Detect optional admin token
         id: admin_token
@@ -83,7 +83,7 @@ jobs:
             bp_code=$?
           else
             bp_mode="BASELINE FALLBACK (no admin token)"
-            python scripts/governance/check_branch_protection_drift.py --current-json reports/BRANCH_PROTECTION_BASELINE_main.json
+            python scripts/governance/check_branch_protection_drift.py --current-json docs/evidence/reports/BRANCH_PROTECTION_BASELINE_main.json
             bp_code=$?
           fi
 
@@ -142,6 +142,6 @@ jobs:
         with:
           name: governance-audit-reports
           path: |
-            reports/BRANCH_PROTECTION_*main.*
-            reports/REQUIRED_CHECK_CONTEXTS_*main.*
+            artifacts/reports/governance/BRANCH_PROTECTION_*main.*
+            artifacts/reports/governance/REQUIRED_CHECK_CONTEXTS_*main.*
           if-no-files-found: warn

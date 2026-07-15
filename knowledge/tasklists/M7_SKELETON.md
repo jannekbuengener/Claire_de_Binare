@@ -374,7 +374,7 @@
 - **Acceptance Criteria:**
   - Report includes: daily P&L, cumulative P&L, win rate, # trades
   - Generated at 00:05 UTC daily
-  - Saved to `reports/daily/YYYY-MM-DD_pnl.md`
+  - Saved to `artifacts/reports/daily/YYYY-MM-DD_pnl.md`
   - Optional: Email or Slack notification
 - **Dependencies:** C5
 - **Estimated Effort:** 1 session
@@ -384,7 +384,7 @@
 - **Acceptance Criteria:**
   - CSV columns: timestamp, symbol, side, qty, price, fee, realized_pnl
   - Command: `make export-trades START=2025-12-01 END=2025-12-31`
-  - Output: `reports/trades_YYYY-MM-DD_to_YYYY-MM-DD.csv`
+  - Output: `artifacts/reports/trades_YYYY-MM-DD_to_YYYY-MM-DD.csv`
   - Supports filtering by symbol, strategy_id
 - **Dependencies:** C5
 - **Estimated Effort:** 1 session

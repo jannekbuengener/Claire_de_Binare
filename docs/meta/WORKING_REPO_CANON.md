@@ -20,10 +20,20 @@ Das alte Docs-Hub-Material ist nur noch:
 | Agent registry | `agents/AGENTS.md` |
 | Cursor subagents (helper roles) | `.cursor/agents/` + `_CDB_SUBAGENT_CONTRACT.md` |
 | Governance / policy | `knowledge/governance/` |
+| GitHub-consumed governance gates | `.github/governance/` |
+| Repository / campaign / readiness config | `config/` |
 | Knowledge hub | `knowledge/` |
 | GitHub templates / community docs | `.github/` |
+| Navigation pack | `docs/navigation/mcp-navpack/` |
 | Navigation / runbooks / archive | `docs/` |
+| Reviewed, versioned evidence | `docs/evidence/` |
+| Generated reports and run output | `artifacts/` |
+| Runtime / deployment infrastructure | `infrastructure/` |
 | Root entrypoints | `README.md`, `AGENTS.md`, `CDB_CONSTITUTION.md`, `CDB_GOVERNANCE.md`, `CURRENT_STATUS.md`, `PROJECT_STATUS.md` |
+
+The approved root layout and the 2026-07-15 cleanup decisions are defined in
+[`ROOT_INFORMATION_ARCHITECTURE.md`](ROOT_INFORMATION_ARCHITECTURE.md). The
+machine-readable allowlist is `config/repository/root_layout.json`.
 
 ## Status SSOT Rule
 
@@ -68,6 +78,12 @@ einzigen generischen "Current Status"-Datei gebuendelt.
 ## Repo Rules
 
 - Navigation, guards and scripts must prefer local repo paths.
+- New tracked root entries require an explicit information-architecture decision
+  and an update to `config/repository/root_layout.json`.
+- Generators write to `artifacts/`; reviewed evidence is promoted explicitly to
+  `docs/evidence/` instead of being generated directly into documentation.
+- Executable infrastructure remains under `infrastructure/`, not `docs/` or
+  `knowledge/`.
 - References to the retired external docs repo are legacy-only and must not be the default path.
 - Pointer files may exist at root for discoverability, but they must resolve internally.
 - Status-bearing docs must declare whether they are `operational`, `working-repo`, `historical snapshot`, or `scoped evidence` whenever ambiguity is plausible.

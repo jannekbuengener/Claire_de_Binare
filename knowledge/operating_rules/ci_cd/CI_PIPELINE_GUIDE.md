@@ -115,7 +115,7 @@ E2E_RUN: 1
 - All PRs to `main`
 
 **Mechanism:**
-- Checks `governance/DELIVERY_APPROVED.yaml`
+- Checks `.github/governance/DELIVERY_APPROVED.yaml`
 - Requires `delivery.approved: true` for merge
 - Exception labels bypass the gate
 

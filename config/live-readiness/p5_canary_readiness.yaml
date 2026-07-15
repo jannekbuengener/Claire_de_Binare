@@ -1,0 +1,148 @@
+version: 3
+control_id: LR-050
+description: >
+  P5 canary readiness baseline. This policy is a governance gate only and does
+  not auto-enable live trading.
+operating_model: single_maintainer
+
+checklist_document: docs/operations/P5_CANARY_EXECUTION_CHECKLIST.md
+
+runtime_mode_contract:
+  canonical_field: execution_status.mode
+  required_value_current_path: mock
+  current_path_scope: p5_prestart_and_shadow_prereq
+  term_semantics:
+    mock: canonical runtime-mode value for the current P5/shadow-prereq path
+    shadow: reserved for probe, intent, and evidence semantics; not a canonical runtime-mode value
+    full: soak or collection profile label; not a runtime-mode value
+    lean: soak or collection profile label; not a runtime-mode value
+
+committed_p5_artifact_contract:
+  root: docs/evidence/reports/p5_canary/<YYYY-MM-DD>/
+  required_files:
+    - manifest.json
+    - prestart_evidence_lock.yaml
+    - decision_record.yaml
+    - endpoints/execution_status.json
+    - endpoints/risk_status.json
+    - endpoints/kill_switch_status.json
+    - lr040/lr040_soak_gate_eval.json
+  optional_shadow_prereq_evidence:
+    - shadow_prereq/manifest.json
+    - shadow_prereq/package_manifest.json
+
+required_controls:
+  - id: LR-001
+    status: IMPLEMENTED
+    evidence_path: docs/live-readiness/LR-001-EVIDENCE.md
+    allowed_statuses: [IMPLEMENTED, PASS]
+    hard_gate: true
+  - id: LR-003
+    status: IMPLEMENTED
+    evidence_path: docs/live-readiness/LR-003-EVIDENCE.md
+    allowed_statuses: [IMPLEMENTED, PASS]
+    hard_gate: true
+  - id: LR-010
+    status: PASS
+    evidence_path: docs/live-readiness/LR-010-EVIDENCE.md
+    evidence_note: >
+      PASS confirmed 2026-03-19. CI run 23295248170, commit e164abe474c6,
+      branch main, job ci (Unit/Integration + Lint gesammelt): success.
+      Test anchors in tests/unit/risk/ and tests/unit/verlosung/ cover
+      circuit-breaker thresholds, approve/reject paths, position sizing,
+      stop-loss generation, and edge cases.
+    allowed_statuses: [IMPLEMENTED, PASS]
+    hard_gate: true
+  - id: LR-020
+    status: IMPLEMENTED
+    evidence_path: docs/live-readiness/LR-020-EVIDENCE.md
+    evidence_note: >
+      Tier-1 mocked integration test passing in CI (3 tests).
+      Tier-2 live-stack paper-trading run completed 2026-03-17:
+      Signal→Risk (DECISION_ALLOW)→Execution→order_result.status=FILLED.
+      stream.fills delta=+1. All 4 checks PASS.
+      Evidence: docs/evidence/runtime-runs/lr020_tier2_evidence.json
+    allowed_statuses: [IMPLEMENTED, PASS]
+    hard_gate: true
+  - id: LR-030
+    status: IMPLEMENTED
+    evidence_path: docs/evidence/LR-030.md
+    verification_script: infrastructure/scripts/soak_gate_eval.py
+    allowed_statuses: [IMPLEMENTED, PASS]
+    hard_gate: true
+  - id: LR-031
+    status: IMPLEMENTED
+    evidence_path: docs/evidence/LR-031.md
+    evidence_note: >
+      Comparison layer implemented and calibrated. Baseline thresholds
+      set from lean dry run 23142835184 (2026-03-16). Comparison verdict
+      PASS achieved; canonical evidence package built successfully.
+    allowed_statuses: [IMPLEMENTED, PASS]
+    hard_gate: true
+  - id: LR-040
+    status: IMPLEMENTED
+    evidence_path: docs/evidence/LR-040.md
+    verification_script: infrastructure/scripts/lr040_soak_gate_eval.py
+    allowed_statuses: [IMPLEMENTED, PASS]
+    hard_gate: true
+  - id: LR-041
+    status: IMPLEMENTED
+    evidence_path: docs/evidence/LR-041.md
+    evidence_note: >
+      Deterministic Redis/Postgres restart recovery drill implemented and
+      documented. Local drill evidence met recovery thresholds, preserved
+      shadow runtime mode, and observed zero execution. PASS requires
+      CI-backed artifact persistence; IMPLEMENTED is justified by the
+      merged runner, chaos test, and successful local drill run.
+    allowed_statuses: [IMPLEMENTED, PASS]
+    hard_gate: true
+  - id: LR-042
+    status: IMPLEMENTED
+    evidence_path: docs/evidence/LR-042.md
+    allowed_statuses: [IMPLEMENTED, PASS]
+    hard_gate: true
+
+required_artifacts:
+  - docs/operations/P5_PRESTART_PACK.md
+  - docs/operations/KILL_SWITCH_OPERATOR_CHECKLIST.md
+  - scripts/governance/check_branch_protection_drift.py
+  - scripts/lr003_contract_drift_guard.py
+  - tests/resilience/test_fault_injection.py
+  - scripts/drills/lr042_network_latency_packet_loss_runner.py
+  - infrastructure/scripts/soak_gate_eval.py
+  - infrastructure/scripts/lr040_soak_gate_eval.py
+  - infrastructure/scripts/build_shadow_evidence_package.py
+  - infrastructure/scripts/generate_evidence_index.py
+
+abort_conditions:
+  - kill_switch_active_or_unevaluable
+  - runtime_mode_ambiguous_or_unresolved
+  - out_of_scope_execution_observed
+  - lr031_or_lr040_hard_fail
+  - dependency_instability_beyond_recovery_window
+
+compensating_controls:
+  - prestart_evidence_lock
+  - canonical_runtime_mode_precheck
+  - kill_switch_precheck
+  - decision_record_before_start
+  - no_code_or_config_change_after_prestart_lock
+  - optional_cooldown_before_go
+  - post_run_verdict_evidence_completeness
+
+signoff_roles:
+  - operator_primary
+  - risk_owner_or_operator_primary
+
+p5_scope:
+  max_symbols: 1
+  max_active_orders: 1
+  max_order_count_total: 3
+  max_total_notional_usdt: "50"
+  max_window_minutes: 15
+  require_dual_signoff: false
+  require_kill_switch_precheck: true
+  require_prestart_evidence_lock: true
+  require_canonical_runtime_mode_precheck: true
+  require_decision_record_before_start: true
+  require_no_code_or_config_change_after_prestart_lock: true

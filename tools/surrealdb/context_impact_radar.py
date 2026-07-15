@@ -86,8 +86,9 @@ _DECISION_DIRS: tuple[str, ...] = (
 _EVIDENCE_DIRS: tuple[str, ...] = (
     "docs/evidence/",
     "docs/live-readiness/",
-    "reports/",
     "docs/runbooks/evidence/",
+    "artifacts/evidence-runs/",
+    "artifacts/reports/",
 )
 
 _MEMORY_DIRS: tuple[str, ...] = (
@@ -97,6 +98,7 @@ _MEMORY_DIRS: tuple[str, ...] = (
 
 
 # ── Input / Output types ────────────────────────────────────────────────────
+
 
 @dataclass(frozen=True)
 class ImpactRadarInput:
@@ -131,12 +133,8 @@ class ImpactReport:
     graph_paths: tuple[tuple[str, ...], ...]
     gate_risks: tuple[str, ...]
     confidence: str
-    required_validation: dict[str, Any] = field(
-        hash=False, compare=False
-    )
-    stop_conditions: tuple[dict[str, Any], ...] = field(
-        hash=False, compare=False
-    )
+    required_validation: dict[str, Any] = field(hash=False, compare=False)
+    stop_conditions: tuple[dict[str, Any], ...] = field(hash=False, compare=False)
     schema_version: str = SCHEMA_VERSION
 
     def to_payload(self) -> dict[str, Any]:
@@ -152,9 +150,7 @@ class ImpactReport:
             "affected_docs": list(self.affected_docs),
             "affected_decisions": list(self.affected_decisions),
             "affected_evidence": list(self.affected_evidence),
-            "affected_memory_refs_read_only": list(
-                self.affected_memory_refs_read_only
-            ),
+            "affected_memory_refs_read_only": list(self.affected_memory_refs_read_only),
             "graph_paths": [list(p) for p in self.graph_paths],
             "gate_risks": list(self.gate_risks),
             "confidence": self.confidence,
@@ -164,6 +160,7 @@ class ImpactReport:
 
 
 # ── Helpers ─────────────────────────────────────────────────────────────────
+
 
 def _stable_id(*parts: str) -> str:
     """Produce a deterministic, short ID from ordered parts."""
@@ -237,9 +234,7 @@ def _detect_scope_growth_signals(
     if not propagated:
         return ()
 
-    target_roots = {
-        tp.split("/", 1)[0] for tp in target_paths if tp and "/" in tp
-    }
+    target_roots = {tp.split("/", 1)[0] for tp in target_paths if tp and "/" in tp}
     signals: list[str] = []
     for path in propagated:
         root = path.split("/", 1)[0] if "/" in path else path
@@ -310,9 +305,7 @@ def _build_stop_conditions(
         )
 
     if impact_type == "HARD" and is_write:
-        raw_conditions.append(
-            "S7: hard-impact change touches runtime/code surface"
-        )
+        raw_conditions.append("S7: hard-impact change touches runtime/code surface")
 
     if "governance_touched" in gate_risks and is_write:
         raw_conditions.append("H1: governance paths touched — write requires Human-GO")
@@ -321,14 +314,10 @@ def _build_stop_conditions(
         raw_conditions.append("SECRETS_RISK: secrets/tresor paths in scope")
 
     if "risk_surface_touched" in gate_risks:
-        raw_conditions.append(
-            "S7: risk service surface touched"
-        )
+        raw_conditions.append("S7: risk service surface touched")
 
     if "execution_surface_touched" in gate_risks:
-        raw_conditions.append(
-            "S7: execution surface touched"
-        )
+        raw_conditions.append("S7: execution surface touched")
 
     if "lr_surface_touched" in gate_risks:
         raw_conditions.append(
@@ -346,6 +335,7 @@ def _build_stop_conditions(
 
 # ── Core computation ────────────────────────────────────────────────────────
 
+
 def _collect_affected_paths(
     target_paths: tuple[str, ...],
     edges: tuple[dict[str, Any], ...],
@@ -357,7 +347,7 @@ def _collect_affected_paths(
 
     # Direct matches: artifacts whose source_path matches a target
     for art in artifacts:
-        source = (art.get("source_path") or art.get("path") or "")
+        source = art.get("source_path") or art.get("path") or ""
         for tp in target_paths:
             if _path_matches(tp, source):
                 affected.add(source)
@@ -412,9 +402,7 @@ def compute_impact(input_data: ImpactRadarInput) -> ImpactReport:
     target_refs = tuple(refs)
 
     # --- Collect affected paths ---
-    affected_paths = _collect_affected_paths(
-        target_paths, edges, symbols, artifacts
-    )
+    affected_paths = _collect_affected_paths(target_paths, edges, symbols, artifacts)
     all_paths = tuple(sorted(target_paths) + sorted(affected_paths))
 
     # --- Impact level ---
@@ -427,7 +415,7 @@ def compute_impact(input_data: ImpactRadarInput) -> ImpactReport:
     affected_artifacts_out: list[dict[str, Any]] = []
     seen_artifacts: set[str] = set()
     for art in artifacts:
-        source = (art.get("source_path") or art.get("path") or "")
+        source = art.get("source_path") or art.get("path") or ""
         if source in seen_artifacts:
             continue
         if source in affected_paths or any(
@@ -492,7 +480,7 @@ def compute_impact(input_data: ImpactRadarInput) -> ImpactReport:
     affected_docs_out: list[dict[str, Any]] = []
     seen_docs: set[str] = set()
     for art in artifacts:
-        source = (art.get("source_path") or art.get("path") or "")
+        source = art.get("source_path") or art.get("path") or ""
         atype = art.get("artifact_type", "")
         if source in seen_docs:
             continue
@@ -518,7 +506,7 @@ def compute_impact(input_data: ImpactRadarInput) -> ImpactReport:
     affected_decisions_out: tuple[str, ...] = ()
     dec_refs: list[str] = []
     for art in artifacts:
-        source = (art.get("source_path") or art.get("path") or "")
+        source = art.get("source_path") or art.get("path") or ""
         for dd in _DECISION_DIRS:
             if source.startswith(dd) and (
                 source in affected_paths
@@ -530,7 +518,7 @@ def compute_impact(input_data: ImpactRadarInput) -> ImpactReport:
     # --- Affected evidence ---
     ev_refs: list[str] = []
     for art in artifacts:
-        source = (art.get("source_path") or art.get("path") or "")
+        source = art.get("source_path") or art.get("path") or ""
         for ed in _EVIDENCE_DIRS:
             if source.startswith(ed) and (
                 source in affected_paths
@@ -542,7 +530,7 @@ def compute_impact(input_data: ImpactRadarInput) -> ImpactReport:
     # --- Affected memory refs ---
     mem_refs: list[str] = []
     for art in artifacts:
-        source = (art.get("source_path") or art.get("path") or "")
+        source = art.get("source_path") or art.get("path") or ""
         for md in _MEMORY_DIRS:
             if source.startswith(md) and (
                 source in affected_paths
@@ -572,9 +560,7 @@ def compute_impact(input_data: ImpactRadarInput) -> ImpactReport:
     confidence = _derived_confidence(edges, symbols, artifacts)
 
     # --- Required validation ---
-    docs_to_review: list[str] = [
-        d["path"] for d in affected_docs_out[:5]
-    ]
+    docs_to_review: list[str] = [d["path"] for d in affected_docs_out[:5]]
     suggested_tests: list[str] = [
         t["test_name"] or f"tests for {t['source_path']}"
         for t in affected_tests_out[:10]
@@ -585,13 +571,9 @@ def compute_impact(input_data: ImpactRadarInput) -> ImpactReport:
     if affected_tests_out:
         test_paths = sorted({t["source_path"] for t in affected_tests_out})[:3]
         if test_paths:
-            commands_to_consider.append(
-                f"pytest -v {' '.join(test_paths)}"
-            )
+            commands_to_consider.append(f"pytest -v {' '.join(test_paths)}")
     if any(p.startswith("services/") for p in all_paths):
-        commands_to_consider.append(
-            "mypy core/ services/"
-        )
+        commands_to_consider.append("mypy core/ services/")
 
     manual_review_needed = (
         impact_level in ("blocking", "high")
@@ -609,9 +591,7 @@ def compute_impact(input_data: ImpactRadarInput) -> ImpactReport:
             "Secrets surface touched — verify no credential exposure"
         )
 
-    scope_growth_signals = _detect_scope_growth_signals(
-        target_paths, affected_paths
-    )
+    scope_growth_signals = _detect_scope_growth_signals(target_paths, affected_paths)
     missing_child_issue_signals = _detect_missing_child_issue_signals(
         input_data.target_issue, target_paths, operation_mode
     )

@@ -12,7 +12,7 @@ relations:
     - knowledge/governance/CDB_RL_SAFETY_POLICY.md
     - knowledge/governance/CDB_TRESOR_POLICY.md
     - knowledge/governance/CDB_PSM_POLICY.md
-    - knowledge/governance/DELIVERY_APPROVED.yaml
+    - .github/governance/DELIVERY_APPROVED.yaml
     - knowledge/CDB_KNOWLEDGE_HUB.md
   status: canonical
   tags: [policy_stack, governance, safety]

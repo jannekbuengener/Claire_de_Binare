@@ -32,7 +32,7 @@ repo_crosscheck:
   - CURRENT_STATUS.md:164-165 (before cleanup)
   - CURRENT_STATUS.md:164-165 (after cleanup)
   - All decision records with obsolete advisor references - already neutral/historical
-  - All reports/HISTORICAL_*.md files - already have historical banners
+  - All docs/evidence/reports/HISTORICAL_*.md files - already have historical banners
   - All docs/evidence/ files mentioning obsolete advisor - already marked historical
   - Archive files in docs/archive/ and knowledge/archive/ - explicitly archive
 impact_on_plan:
@@ -42,7 +42,7 @@ impact_on_plan:
 limitations:
   - Stale preflight comment on #3221 cannot be edited via gh cli; already superseded by gate policy correction comment
   - Archive files (docs/archive/, knowledge/archive/, knowledge/logs/sessions/) contain historical obsolete advisor references that are clearly labeled as archive/historical
-  - reports/HISTORICAL_*.md files are clearly labeled as orphaned/historical with banners
+  - docs/evidence/reports/HISTORICAL_*.md files are clearly labeled as orphaned/historical with banners
   - Decision records reference obsolete advisor as parenthetical historical notes
 ```
 
