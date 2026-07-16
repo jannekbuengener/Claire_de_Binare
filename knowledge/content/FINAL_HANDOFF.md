@@ -39,7 +39,6 @@
 ### Phase 3: Full Automation (Option B) ✅
 - **Workflows:**
   - `stale.yml` — Auto-close after 90d + 14d/7d
-  - `auto-label.yml` — Keyword-based auto-labeling
   - `labels.json` — Synced with 34 current labels
 - **Issue Templates:**
   - Bug Report (auto-labeled)
@@ -64,9 +63,8 @@
 6. `.github/SECURITY.md` — Security policy
 7. `.github/PULL_REQUEST_TEMPLATE.md` — PR checklist
 
-### Workflows (3 files)
+### Historische Workflow-Artefakte (bereinigt; aktueller Canon im Workflow-Register)
 1. `.github/workflows/stale.yml` — Stale Bot
-2. `.github/workflows/auto-label.yml` — Auto-Labeler
 3. `.github/workflows/labels.json` — Label spec (34 labels)
 
 ### Issue Templates (2 files)
@@ -109,13 +107,12 @@
 ### PRs (1 open)
 - #87 Dependabot Security (CI FAILING — needs manual fix)
 
-### Workflows (7 active)
-1. `ci.yaml` — Full CI/CD (Lint, Test, Security, Docs)
+### Historische Workflow-Inventur (bereinigt; nicht operativ)
+1. `ci.yml` — kanonischer PR-CI-Gate
 2. `docs-hub-guard.yml` — Governance protection
 3. `copilot-housekeeping.yml` — Scheduled reporting
 4. `label-bootstrap.yml` — Label management from JSON
 5. `labels.json` — 34 labels defined
-6. `auto-label.yml` — Auto-label on issue create/edit
 7. `stale.yml` — Auto-close stale items
 
 ### Labels (34 total)
@@ -142,9 +139,8 @@
 
 ## Automation Summary
 
-### Active Automations
+### Historische Automationsübersicht (nicht operativ)
 1. **Stale Bot** — Auto-close after 90d inactivity (Issues: +14d, PRs: +7d)
-2. **Auto-Labeler** — Keyword detection → auto-label (type/scope/prio)
 3. **Issue Templates** — Bug/Feature templates with auto-labels
 4. **Label Bootstrap** — Sync labels from `labels.json` (manual trigger)
 5. **Copilot Housekeeping** — Daily 3:17 AM report of open issues/PRs
@@ -242,7 +238,7 @@
 
 ### Existing Infrastructure (Found)
 **From earlier sessions (Büro):**
-- ✅ `ci.yaml` — 8-stage CI/CD pipeline
+- ✅ `ci.yml` — kanonischer PR-CI-Gate
 - ✅ `docs-hub-guard.yml` — Governance protection
 - ✅ `copilot-housekeeping.yml` — Scheduled reporting
 - ✅ `label-bootstrap.yml` — Label management from JSON
@@ -250,7 +246,6 @@
 
 **My additions (today):**
 - ✅ `stale.yml` — Stale Bot
-- ✅ `auto-label.yml` — Auto-Labeler
 - ✅ Issue Templates (Bug, Feature)
 - ✅ PR Template
 - ✅ Security Roadmap
