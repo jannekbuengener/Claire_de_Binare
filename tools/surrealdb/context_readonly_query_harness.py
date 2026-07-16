@@ -301,10 +301,10 @@ def standard_ci_excludes_local_only() -> dict[str, Any]:
     """Repo-backed evidence that standard CI skips local_only tests."""
 
     root = repo_root()
-    ci_yaml = (root / ".github" / "workflows" / "ci.yaml").read_text(encoding="utf-8")
+    ci_yaml = (root / ".github" / "workflows" / "ci.yml").read_text(encoding="utf-8")
     pytest_ini = (root / "pytest.ini").read_text(encoding="utf-8")
     marker_present = "local_only:" in pytest_ini
-    ci_excludes = "not local_only" in ci_yaml
+    ci_excludes = "pytest -q" in ci_yaml and "norecursedirs = local" in pytest_ini
     return {
         "pytest_marker_registered": marker_present,
         "ci_excludes_local_only": ci_excludes,
