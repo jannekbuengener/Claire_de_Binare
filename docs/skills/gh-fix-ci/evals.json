@@ -87,7 +87,7 @@
         "1 not triggered",
         "E2E Happy Path"
       ],
-      "note": "PR #807 has docs-only changes, so E2E Happy Path (from ci.yaml with paths-ignore: docs/**) is not triggered"
+      "note": "PR #807 has docs-only changes; E2E Happy Path is an optional non-required workflow and may be absent"
     },
     {
       "name": "polling_wait_mode",
