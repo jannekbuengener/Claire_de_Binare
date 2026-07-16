@@ -699,7 +699,7 @@ LR-004 is considered **DONE** when:
 
 - **LR-003 Evidence:** `docs/live-readiness/LR-003-EVIDENCE.md` (pattern reference)
 - **LR-003 Fingerprint:** `docs/live-readiness/LR-003-FINGERPRINT.json` (precedent for Git-native state)
-- **CI Workflow:** `.github/workflows/ci.yaml` (integration point)
+- **CI Workflow:** `.github/workflows/ci.yml` (integration point)
 - **Project Status:** `PROJECT_STATUS.md` (context for LR tasks)
 - **Governance:** `knowledge/governance/CDB_GOVERNANCE.md` (authority hierarchy)
 

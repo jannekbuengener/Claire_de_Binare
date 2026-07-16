@@ -1,24 +1,17 @@
 {
   "schema_version": "1",
-  "coverage": "partial",
-  "catalog_scope": "agent-facing-workflow-map-p2",
+  "coverage": "complete",
+  "catalog_scope": "workflow-inventory",
   "limitations": [
-    "Register markdown table is partial vs disk (known unregistered workflows).",
-    "Control-plane generated register is partial by design (catalog_scope=sprint1).",
-    "Runbook/graph numeric claims may lag register header updates; surfaced not auto-fixed.",
+    "Control-plane generated unit register is partial by design.",
     "Graph workflow references are relationship-focused, not a full inventory.",
-    "Graph parser ignores issue-template and root-config backtick references.",
-    "Agent workflow map does not claim exhaustive register or control-plane parity."
+    "Graph parser ignores issue-template and root-config backtick references."
   ],
   "required_check_contexts": [
     "ci (Unit/Integration + Lint gesammelt)",
     "policy-gate"
   ],
-  "unregistered_on_disk": [
-    "cdb-context-refresh-report.yml",
-    "security-alert-readout.yml",
-    "surrealdb-memory-proof.yml"
-  ],
+  "unregistered_on_disk": [],
   "risky_schedule_collisions": {
     "0 6 * * 0": [
       "e2e-tests.yml",
@@ -39,20 +32,14 @@
       "sync-labels.yml",
       "triage_guard.yml"
     ],
-    "gemini_workflow_call_chain": [
-      "gemini-dispatch.yml",
-      "gemini-invoke.yml",
-      "gemini-review.yml",
-      "gemini-triage.yml"
-    ],
     "workflow_run_downstream": [
       "weekly_digest_failure_alert.yml",
       "auto-milestone-pr-apply.yml"
     ]
   },
-  "entry_count": 70,
-  "disk_workflow_count": 70,
-  "register_table_count": 67,
+  "entry_count": 57,
+  "disk_workflow_count": 57,
+  "register_table_count": 57,
   "entries": [
     {
       "file": "add_to_project.yml",
@@ -88,23 +75,6 @@
       "required_check_producer": false,
       "registered_in_markdown_register": true,
       "risk": "medium"
-    },
-    {
-      "file": "auto-label.yml",
-      "name": "Auto Label Issues",
-      "purpose": "Auto Label Issues",
-      "triggers": [
-        "workflow_dispatch"
-      ],
-      "permissions": [
-        "read-only"
-      ],
-      "writes_github": false,
-      "has_schedule": false,
-      "status": "parked",
-      "required_check_producer": false,
-      "registered_in_markdown_register": true,
-      "risk": "low"
     },
     {
       "file": "auto-milestone-label-dispatch.yml",
@@ -195,23 +165,6 @@
       "risk": "low"
     },
     {
-      "file": "bulk-issue-labeling.yml",
-      "name": "Bulk Issue Labeling - All Issues",
-      "purpose": "Bulk Issue Labeling - All Issues",
-      "triggers": [
-        "workflow_dispatch"
-      ],
-      "permissions": [
-        "issues:write"
-      ],
-      "writes_github": true,
-      "has_schedule": false,
-      "status": "frozen",
-      "required_check_producer": false,
-      "registered_in_markdown_register": true,
-      "risk": "medium"
-    },
-    {
       "file": "cdb-backlog-anomaly-escalation.yml",
       "name": "CDB Backlog Anomaly Escalation",
       "purpose": "CDB Backlog Anomaly Escalation",
@@ -261,7 +214,7 @@
       "has_schedule": true,
       "status": "active",
       "required_check_producer": false,
-      "registered_in_markdown_register": false,
+      "registered_in_markdown_register": true,
       "risk": "low"
     },
     {
@@ -354,23 +307,6 @@
       "risk": "medium"
     },
     {
-      "file": "ci.yaml",
-      "name": "CI/CD Pipeline",
-      "purpose": "CI/CD Pipeline",
-      "triggers": [
-        "workflow_dispatch"
-      ],
-      "permissions": [
-        "read-only"
-      ],
-      "writes_github": false,
-      "has_schedule": false,
-      "status": "frozen",
-      "required_check_producer": false,
-      "registered_in_markdown_register": true,
-      "risk": "low"
-    },
-    {
       "file": "ci.yml",
       "name": "ci",
       "purpose": "ci",
@@ -409,23 +345,6 @@
       "risk": "low"
     },
     {
-      "file": "comprehensive-issue-labeling.yml",
-      "name": "Comprehensive Issue Auto-Labeling",
-      "purpose": "Comprehensive Issue Auto-Labeling",
-      "triggers": [
-        "workflow_dispatch"
-      ],
-      "permissions": [
-        "read-only"
-      ],
-      "writes_github": false,
-      "has_schedule": false,
-      "status": "parked",
-      "required_check_producer": false,
-      "registered_in_markdown_register": true,
-      "risk": "low"
-    },
-    {
       "file": "contracts.yml",
       "name": "Contract Validation",
       "purpose": "Contract Validation",
@@ -440,40 +359,6 @@
       "writes_github": false,
       "has_schedule": true,
       "status": "active",
-      "required_check_producer": false,
-      "registered_in_markdown_register": true,
-      "risk": "low"
-    },
-    {
-      "file": "control-board-routing-label-dispatch.yml",
-      "name": "Control Board Routing Label Dispatch",
-      "purpose": "Control Board Routing Label Dispatch",
-      "triggers": [
-        "workflow_dispatch"
-      ],
-      "permissions": [
-        "read-only"
-      ],
-      "writes_github": false,
-      "has_schedule": false,
-      "status": "parked",
-      "required_check_producer": false,
-      "registered_in_markdown_register": true,
-      "risk": "low"
-    },
-    {
-      "file": "control_board_auto_routing.yml",
-      "name": "Control Board Auto Routing",
-      "purpose": "Control Board Auto Routing",
-      "triggers": [
-        "workflow_dispatch"
-      ],
-      "permissions": [
-        "read-only"
-      ],
-      "writes_github": false,
-      "has_schedule": false,
-      "status": "parked",
       "required_check_producer": false,
       "registered_in_markdown_register": true,
       "risk": "low"
@@ -683,8 +568,8 @@
     },
     {
       "file": "emoji-bot.yml",
-      "name": "\ud83e\udd16 Emoji Fix Bot",
-      "purpose": "\ud83e\udd16 Emoji Fix Bot",
+      "name": "🤖 Emoji Fix Bot",
+      "purpose": "🤖 Emoji Fix Bot",
       "triggers": [
         "issue_comment",
         "workflow_dispatch"
@@ -702,8 +587,8 @@
     },
     {
       "file": "emoji-filter.yml",
-      "name": "\ud83d\udeab Advanced Emoji Filter",
-      "purpose": "\ud83d\udeab Advanced Emoji Filter",
+      "name": "🚫 Advanced Emoji Filter",
+      "purpose": "🚫 Advanced Emoji Filter",
       "triggers": [
         "workflow_dispatch"
       ],
@@ -714,99 +599,6 @@
       "writes_github": true,
       "has_schedule": false,
       "status": "manual_only",
-      "required_check_producer": false,
-      "registered_in_markdown_register": true,
-      "risk": "medium"
-    },
-    {
-      "file": "gemini-dispatch.yml",
-      "name": "Gemini Dispatch",
-      "purpose": "Gemini Dispatch",
-      "triggers": [
-        "workflow_dispatch"
-      ],
-      "permissions": [
-        "read-only"
-      ],
-      "writes_github": false,
-      "has_schedule": false,
-      "status": "manual_only",
-      "required_check_producer": false,
-      "registered_in_markdown_register": true,
-      "risk": "low"
-    },
-    {
-      "file": "gemini-invoke.yml",
-      "name": "\u25b6\ufe0f Gemini Invoke",
-      "purpose": "\u25b6\ufe0f Gemini Invoke",
-      "triggers": [
-        "workflow_call"
-      ],
-      "permissions": [
-        "id-token:write",
-        "issues:write",
-        "pull-requests:write"
-      ],
-      "writes_github": true,
-      "has_schedule": false,
-      "status": "reusable",
-      "required_check_producer": false,
-      "registered_in_markdown_register": true,
-      "risk": "medium"
-    },
-    {
-      "file": "gemini-review.yml",
-      "name": "\ud83d\udd0e Gemini Review",
-      "purpose": "\ud83d\udd0e Gemini Review",
-      "triggers": [
-        "workflow_call"
-      ],
-      "permissions": [
-        "id-token:write",
-        "issues:write",
-        "pull-requests:write"
-      ],
-      "writes_github": true,
-      "has_schedule": false,
-      "status": "reusable",
-      "required_check_producer": false,
-      "registered_in_markdown_register": true,
-      "risk": "medium"
-    },
-    {
-      "file": "gemini-scheduled-triage.yml",
-      "name": "\ud83d\udccb Gemini Scheduled Issue Triage",
-      "purpose": "\ud83d\udccb Gemini Scheduled Issue Triage",
-      "triggers": [
-        "workflow_dispatch"
-      ],
-      "permissions": [
-        "id-token:write",
-        "issues:write",
-        "pull-requests:write"
-      ],
-      "writes_github": true,
-      "has_schedule": false,
-      "status": "parked",
-      "required_check_producer": false,
-      "registered_in_markdown_register": true,
-      "risk": "medium"
-    },
-    {
-      "file": "gemini-triage.yml",
-      "name": "\ud83d\udd00 Gemini Triage",
-      "purpose": "\ud83d\udd00 Gemini Triage",
-      "triggers": [
-        "workflow_call"
-      ],
-      "permissions": [
-        "id-token:write",
-        "issues:write",
-        "pull-requests:write"
-      ],
-      "writes_github": true,
-      "has_schedule": false,
-      "status": "reusable",
       "required_check_producer": false,
       "registered_in_markdown_register": true,
       "risk": "medium"
@@ -843,23 +635,6 @@
       "writes_github": false,
       "has_schedule": false,
       "status": "manual_only",
-      "required_check_producer": false,
-      "registered_in_markdown_register": true,
-      "risk": "low"
-    },
-    {
-      "file": "issue-governance.yml",
-      "name": "Issue Governance (Milestones)",
-      "purpose": "Issue Governance (Milestones)",
-      "triggers": [
-        "workflow_dispatch"
-      ],
-      "permissions": [
-        "read-only"
-      ],
-      "writes_github": false,
-      "has_schedule": false,
-      "status": "parked",
       "required_check_producer": false,
       "registered_in_markdown_register": true,
       "risk": "low"
@@ -916,23 +691,6 @@
       "required_check_producer": false,
       "registered_in_markdown_register": true,
       "risk": "low"
-    },
-    {
-      "file": "milestone-assignment.yml",
-      "name": "Milestone Assignment & Epic Labeling",
-      "purpose": "Milestone Assignment & Epic Labeling",
-      "triggers": [
-        "workflow_dispatch"
-      ],
-      "permissions": [
-        "issues:write"
-      ],
-      "writes_github": true,
-      "has_schedule": false,
-      "status": "frozen",
-      "required_check_producer": false,
-      "registered_in_markdown_register": true,
-      "risk": "medium"
     },
     {
       "file": "milestone_stage_label_sync.yml",
@@ -1123,7 +881,7 @@
       "has_schedule": true,
       "status": "active",
       "required_check_producer": false,
-      "registered_in_markdown_register": false,
+      "registered_in_markdown_register": true,
       "risk": "medium"
     },
     {
@@ -1214,13 +972,13 @@
       "has_schedule": false,
       "status": "manual_only",
       "required_check_producer": false,
-      "registered_in_markdown_register": false,
+      "registered_in_markdown_register": true,
       "risk": "low"
     },
     {
       "file": "sync-labels.yml",
-      "name": "\ud83c\udff7\ufe0f Sync Repository Labels",
-      "purpose": "\ud83c\udff7\ufe0f Sync Repository Labels",
+      "name": "🏷️ Sync Repository Labels",
+      "purpose": "🏷️ Sync Repository Labels",
       "triggers": [
         "push",
         "workflow_dispatch"

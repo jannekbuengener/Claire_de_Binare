@@ -27,10 +27,10 @@ Local-only integration surface for read-only Context Intelligence queries agains
 
 ### Standard CI
 
-`.github/workflows/ci.yaml` runs:
+`.github/workflows/ci.yml` runs the standard test suite:
 
 ```bash
-pytest -v -m "not e2e and not local_only" ...
+pytest -q -k "not test_mcp_time_server_runtime"
 ```
 
 `local_only` tests are excluded from required CI.

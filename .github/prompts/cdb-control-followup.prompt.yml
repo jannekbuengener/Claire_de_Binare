@@ -93,11 +93,11 @@ testData:
       small follow-up to update the workflow trigger note and
       CONTROL_REGISTER.md together."}
   - input: >
-      docs/runbooks/CONTROL_REGISTER.md lists gemini-scheduled-triage.yml as
-      planned, and .github/workflows/gemini-scheduled-triage.yml uses schedule:.
+      docs/runbooks/CONTROL_REGISTER.md lists project_reconcile_daily.yml as
+      active, and .github/workflows/project_reconcile_daily.yml uses schedule:.
       The two sources match and there is no drift.
     expected: >
-      {"classification":"report_only","confidence":0.86,"affected_artifacts":["docs/runbooks/CONTROL_REGISTER.md",".github/workflows/gemini-scheduled-triage.yml"],"suggested_next_step":"Record
+      {"classification":"report_only","confidence":0.86,"affected_artifacts":["docs/runbooks/CONTROL_REGISTER.md",".github/workflows/project_reconcile_daily.yml"],"suggested_next_step":"Record
       the observation in the control thread; no repo change is needed."}
   - input: >
       docs/runbooks/CONTROL_REGISTER.md says the board stage is trade-capable,

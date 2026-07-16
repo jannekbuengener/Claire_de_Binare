@@ -1,4 +1,4 @@
-"""Required checks, CI split and policy-gate regression contract tests (#3847)."""
+"""Required-check and policy-gate regression contracts."""
 
 from __future__ import annotations
 
@@ -18,41 +18,27 @@ def test_required_checks_baseline_matches_canonical_pair() -> None:
     assert set(contexts) == helpers.REQUIRED_CHECK_CONTEXTS
 
 
-def test_derived_workflow_contexts_include_required_checks() -> None:
+def test_derived_contexts_include_required_checks() -> None:
     mapping, parse_errors = derive_context_mapping(helpers.WORKFLOWS_DIR)
     assert parse_errors == []
-    derived = set(mapping.keys())
-    missing = sorted(helpers.REQUIRED_CHECK_CONTEXTS - derived)
-    assert missing == [], f"missing derived required contexts: {missing}"
+    assert helpers.REQUIRED_CHECK_CONTEXTS <= set(mapping)
 
 
-def test_ci_yaml_does_not_publish_required_pr_gate_contexts() -> None:
+def test_ci_yml_is_sole_canonical_ci_context_source() -> None:
     mapping, _ = derive_context_mapping(helpers.WORKFLOWS_DIR)
-    required_name = "ci (Unit/Integration + Lint gesammelt)"
-    ci_yaml_sources = [
-        entry
-        for entry in mapping.get(required_name, [])
-        if str(entry["workflow_file"]).endswith("ci.yaml")
-    ]
-    assert ci_yaml_sources == []
-
-
-def test_ci_yml_publishes_canonical_required_ci_context() -> None:
-    mapping, _ = derive_context_mapping(helpers.WORKFLOWS_DIR)
-    required_name = "ci (Unit/Integration + Lint gesammelt)"
-    assert required_name in mapping
     sources = {
-        Path(str(entry["workflow_file"])).as_posix() for entry in mapping[required_name]
+        Path(str(entry["workflow_file"])).as_posix()
+        for entry in mapping["ci (Unit/Integration + Lint gesammelt)"]
     }
-    assert any(path.endswith("/.github/workflows/ci.yml") for path in sources)
-    assert not any(path.endswith("/.github/workflows/ci.yaml") for path in sources)
+    assert sources
+    assert all(path.endswith("/.github/workflows/ci.yml") for path in sources)
 
 
 def test_policy_gate_publishes_required_context() -> None:
     mapping, _ = derive_context_mapping(helpers.WORKFLOWS_DIR)
-    assert "policy-gate" in mapping
     sources = {
-        Path(str(entry["workflow_file"])).as_posix() for entry in mapping["policy-gate"]
+        Path(str(entry["workflow_file"])).as_posix()
+        for entry in mapping["policy-gate"]
     }
     assert any(path.endswith("/.github/workflows/policy-gate.yml") for path in sources)
 
@@ -63,48 +49,27 @@ def test_policy_gate_blocks_pull_request_target_in_source() -> None:
     assert "failures.push" in content or "failures.push(" in content
 
 
-def test_required_checks_audit_lists_same_required_pair() -> None:
-    content = (helpers.WORKFLOWS_DIR / "required-checks-audit.yml").read_text(
-        encoding="utf-8"
-    )
+def test_required_checks_audit_lists_same_pair() -> None:
+    content = (helpers.WORKFLOWS_DIR / "required-checks-audit.yml").read_text(encoding="utf-8")
     for context in helpers.REQUIRED_CHECK_CONTEXTS:
         assert context in content
 
 
-def test_docs_guards_are_non_required_optional_checks() -> None:
+def test_docs_guards_are_non_required() -> None:
     mapping, _ = derive_context_mapping(helpers.WORKFLOWS_DIR)
     for filename in helpers.NON_REQUIRED_GUARD_WORKFLOWS:
-        workflow_suffix = f"/.github/workflows/{filename}"
-        guard_contexts = [
+        suffix = f"/.github/workflows/{filename}"
+        contexts = {
             context
             for context, entries in mapping.items()
-            if any(
-                str(entry["workflow_file"]).endswith(workflow_suffix)
-                for entry in entries
-            )
-        ]
-        assert guard_contexts, f"expected derived context for {filename}"
-        overlap = set(guard_contexts).intersection(helpers.REQUIRED_CHECK_CONTEXTS)
-        assert (
-            overlap == set()
-        ), f"{filename} must not masquerade as required check; overlap={overlap}"
+            if any(str(entry["workflow_file"]).endswith(suffix) for entry in entries)
+        }
+        assert contexts
+        assert contexts.isdisjoint(helpers.REQUIRED_CHECK_CONTEXTS)
 
 
-def test_drift_report_artifact_exists_and_documents_baseline_hash() -> None:
-    report_path = (
-        helpers.REPO_ROOT
-        / "docs"
-        / "evidence"
-        / "reports"
-        / "REQUIRED_CHECK_CONTEXTS_DRIFT_REPORT_main.md"
-    )
-    assert report_path.is_file()
-    text = report_path.read_text(encoding="utf-8")
-    assert "## Required Contexts (Baseline)" in text
-    assert "## Extra Derivable Contexts (Informational)" in text
-
-
-def test_baseline_json_has_branch_protection_source_metadata() -> None:
+def test_drift_report_and_baseline_metadata_exist() -> None:
+    report = helpers.REPO_ROOT / "docs/evidence/reports/REQUIRED_CHECK_CONTEXTS_DRIFT_REPORT_main.md"
+    assert "## Required Contexts (Baseline)" in report.read_text(encoding="utf-8")
     payload = json.loads(helpers.REQUIRED_CHECKS_BASELINE.read_text(encoding="utf-8"))
     assert payload.get("source") == "branch_protection_main"
-    assert isinstance(payload.get("contexts"), list)

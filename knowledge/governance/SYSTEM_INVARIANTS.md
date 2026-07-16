@@ -254,7 +254,7 @@ This is not a redesign proposal, implementation guide, or "nice to have" require
 - Specification: Working Repo `docs/live-readiness/LR-004-SPEC.md` §1 Purpose
 - Manifest: Working Repo `docs/live-readiness/LR-TASKS.yaml` (canonical task list)
 - Guard: Working Repo `scripts/lr004_completion_guard.py` validates STATE files against manifest
-- CI: Working Repo `.github/workflows/ci.yaml` runs validation on every PR/push
+- CI: Working Repo `.github/workflows/ci.yml` runs validation on every PR/push
 
 **References:**
 - Working Repo: `docs/live-readiness/LR-004-SPEC.md` §3 Task Manifest

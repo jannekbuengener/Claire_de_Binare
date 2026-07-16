@@ -48,18 +48,9 @@ AUTOMATIC_TRIGGERS = frozenset(
     }
 )
 
-PARKED_WORKFLOW_FILES = frozenset(
-    {
-        "control_board_auto_routing.yml",
-        "control-board-routing-label-dispatch.yml",
-        "auto-label.yml",
-        "comprehensive-issue-labeling.yml",
-        "issue-governance.yml",
-        "gemini-scheduled-triage.yml",
-    }
-)
+PARKED_WORKFLOW_FILES: frozenset[str] = frozenset()
 
-FROZEN_LEGACY_WORKFLOW_FILES = frozenset({"ci.yaml"})
+FROZEN_LEGACY_WORKFLOW_FILES: frozenset[str] = frozenset()
 
 ACTIVE_CANONICAL_CI_WORKFLOW = "ci.yml"
 
@@ -79,13 +70,7 @@ NON_REQUIRED_GUARD_WORKFLOWS = frozenset(
 
 # Repo-true explicit findings: workflows on disk not listed in the markdown register.
 # Tests surface these as findings; register correction is a separate follow-up.
-KNOWN_UNREGISTERED_WORKFLOWS = frozenset(
-    {
-        "cdb-context-refresh-report.yml",
-        "security-alert-readout.yml",
-        "surrealdb-memory-proof.yml",
-    }
-)
+KNOWN_UNREGISTERED_WORKFLOWS: frozenset[str] = frozenset()
 
 
 @dataclass(frozen=True)
@@ -376,27 +361,15 @@ PROJECT_API_MARKERS = (
     "ensure_project_membership.py",
 )
 
-REUSABLE_GEMINI_WORKFLOW_FILES = frozenset(
-    {
-        "gemini-invoke.yml",
-        "gemini-review.yml",
-        "gemini-triage.yml",
-    }
-)
+REUSABLE_GEMINI_WORKFLOW_FILES: frozenset[str] = frozenset()
 
 REACHABLE_AGENT_AI_WORKFLOW_FILES = frozenset(
     {
-        "gemini-dispatch.yml",
         "opencode.yml",
         "copilot-setup-steps.yml",
         "copilot-housekeeping.yml",
         "ai-review-router.yml",
     }
-)
-
-GEMINI_DISPATCH_PLACEHOLDER_MARKERS = (
-    "gemini-dispatch placeholder",
-    'echo "gemini-dispatch placeholder"',
 )
 
 SECURITY_WORKFLOW_FILES = frozenset(
@@ -697,12 +670,6 @@ REQUIRED_CHECK_PRODUCER_FILES = frozenset({"ci.yml", "policy-gate.yml"})
 
 RISKY_CASCADE_FAMILIES: dict[str, tuple[str, ...]] = {
     "label_event_cascade": tuple(sorted(LABEL_CASCADE_WORKFLOW_FILES)),
-    "gemini_workflow_call_chain": (
-        "gemini-dispatch.yml",
-        "gemini-invoke.yml",
-        "gemini-review.yml",
-        "gemini-triage.yml",
-    ),
     "workflow_run_downstream": (
         "weekly_digest_failure_alert.yml",
         "auto-milestone-pr-apply.yml",
@@ -710,36 +677,22 @@ RISKY_CASCADE_FAMILIES: dict[str, tuple[str, ...]] = {
 }
 
 P2_DOCS_DRIFT_LIMITATIONS: tuple[str, ...] = (
-    "Register markdown table is partial vs disk (known unregistered workflows).",
-    "Control-plane generated register is partial by design (catalog_scope=sprint1).",
-    "Runbook/graph numeric claims may lag register header updates; surfaced not auto-fixed.",
+    "Control-plane generated unit register is partial by design.",
     "Graph workflow references are relationship-focused, not a full inventory.",
     "Graph parser ignores issue-template and root-config backtick references.",
-    "Agent workflow map does not claim exhaustive register or control-plane parity.",
 )
 
 GRAPH_NON_WORKFLOW_REFERENCE_FILES = frozenset(
     {
         "cdb-control-followup.prompt.yml",
+        ".github/prompts/cdb-control-followup.prompt.yml",
+        "labels.json",
         "dependabot.yml",
         "emoji-config.yaml",
     }
 )
 
-KNOWN_DOCS_COUNT_DRIFTS: dict[str, tuple[int, str]] = {
-    "runbook_workflow_count": (
-        66,
-        "GITHUB_CONTROL_PLANE_RUNBOOK.md claims 66 workflow definitions; disk has more.",
-    ),
-    "control_plane_entrypoint_count": (
-        65,
-        ".github/CONTROL_PLANE.md claims 65 YAML workflow definitions; disk has more.",
-    ),
-    "graph_register_count_reference": (
-        65,
-        "GITHUB_CONTROL_PLANE_GRAPH.md cross-link still references a 65-workflow register.",
-    ),
-}
+KNOWN_DOCS_COUNT_DRIFTS: dict[str, tuple[int, str]] = {}
 
 
 @dataclass(frozen=True)
@@ -778,19 +731,19 @@ def parse_graph_workflow_inventory_references(graph_path: Path) -> set[str]:
 
 def parse_runbook_workflow_count_claim(runbook_path: Path) -> int | None:
     text = runbook_path.read_text(encoding="utf-8")
-    match = re.search(r"(\d+)\s+workflow definitions", text, flags=re.IGNORECASE)
+    match = re.search(r"(\d+)\s+(?:workflow definitions|Workflow-Dateien)", text, flags=re.IGNORECASE)
     return int(match.group(1)) if match else None
 
 
 def parse_control_plane_yaml_count_claim(entrypoint_path: Path) -> int | None:
     text = entrypoint_path.read_text(encoding="utf-8")
-    match = re.search(r"(\d+)\s+YAML workflow definitions", text, flags=re.IGNORECASE)
+    match = re.search(r"(\d+)\s+(?:YAML workflow definitions|YAML-Dateien)", text, flags=re.IGNORECASE)
     return int(match.group(1)) if match else None
 
 
 def parse_register_total_count_claim(register_path: Path) -> int | None:
     text = register_path.read_text(encoding="utf-8")
-    match = re.search(r"\*\*Total workflow definitions:\*\* (\d+)", text)
+    match = re.search(r"\*\*(?:Total workflow definitions|Workflow-Dateien):\*\*\s*(\d+)", text)
     return int(match.group(1)) if match else None
 
 
@@ -999,8 +952,8 @@ def build_agent_workflow_map(
     collisions = build_full_schedule_collision_map(workflows_dir)
     return {
         "schema_version": "1",
-        "coverage": "partial",
-        "catalog_scope": "agent-facing-workflow-map-p2",
+        "coverage": "complete",
+        "catalog_scope": "workflow-inventory",
         "limitations": list(P2_DOCS_DRIFT_LIMITATIONS),
         "required_check_contexts": sorted(REQUIRED_CHECK_CONTEXTS),
         "unregistered_on_disk": unregistered,

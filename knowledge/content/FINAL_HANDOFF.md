@@ -1,3 +1,5 @@
+> **Historischer Snapshot:** Dieses Handoff dokumentiert frühere Repository-Zustände. Workflow-Namen und Bestandszahlen in diesem Dokument sind keine aktuelle Betriebsanweisung. Der aktuelle Stand steht in `docs/runbooks/GITHUB_WORKFLOW_REGISTER.md` und `.github/CONTROL_PLANE.md`.
+
 # Final Handoff — CDB_GITHUB_MANAGER (Historical — 2025-12-16)
 
 > **Note:** Historical snapshot from the split-repo era. References to "Docs Hub"

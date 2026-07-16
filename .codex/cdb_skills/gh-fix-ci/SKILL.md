@@ -89,14 +89,12 @@ Based on branch protection rules for `main`:
 6. **Check Delivery Gate** - Enforces `DELIVERY_APPROVED.yaml` gate
 7. **guard** - Docs Hub consistency check
 8. **E2E Happy Path** - Full integration test (Redis, Postgres, Docker Compose)
-   - **Note:** Conditional check - only runs when `ci.yaml` is triggered (paths-ignore: `docs/**`, `**/*.md`)
-   - PRs with only docs changes will show "not triggered" instead of SUCCESS/FAILURE
 
 ### Conditional Checks
 
 Some required checks may not be present on every PR due to workflow path filters:
 
-- **E2E Happy Path**: Skipped on docs-only PRs (ci.yaml has `paths-ignore: ["**/*.md", "docs/**"]`)
+- **E2E Happy Path**: Ergänzender E2E-Workflow; kein branch-protected Required Check.
 - The script reports these as "not triggered" rather than failures
 - Output format: `[OK] All required checks passed (7/7 present, 1 not triggered)`
 
