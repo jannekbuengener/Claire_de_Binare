@@ -3,11 +3,9 @@
   "coverage": "complete",
   "catalog_scope": "workflow-inventory",
   "limitations": [
-    "Control-plane generated register is partial by design (catalog_scope=sprint1).",
-    "Runbook/graph numeric claims may lag register header updates; surfaced not auto-fixed.",
+    "Control-plane generated unit register is partial by design.",
     "Graph workflow references are relationship-focused, not a full inventory.",
-    "Graph parser ignores issue-template and root-config backtick references.",
-    "Agent workflow map does not claim exhaustive register or control-plane parity."
+    "Graph parser ignores issue-template and root-config backtick references."
   ],
   "required_check_contexts": [
     "ci (Unit/Integration + Lint gesammelt)",
