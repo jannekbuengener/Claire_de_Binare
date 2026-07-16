@@ -1,53 +1,33 @@
 # CI Index
 
-Kurzer Einstieg fuer Workflows, Trigger, Failure Modes und den merge-relevanten
-CI-Contract.
+## Kanonischer PR-Merge-Vertrag
 
-## Canonical PR Gate
+| Workflow | Check-Kontext | Trigger |
+|---|---|---|
+| [`ci.yml`](../../.github/workflows/ci.yml) | `ci (Unit/Integration + Lint gesammelt)` | `pull_request`, gefilterter `push` |
+| [`policy-gate.yml`](../../.github/workflows/policy-gate.yml) | `policy-gate` | `pull_request` |
 
-- Workflow: [`.github/workflows/ci.yml`](../../.github/workflows/ci.yml)
-- Merge-relevante Check-Namen auf PRs:
-  - `ci (Unit/Integration + Lint gesammelt)`
-  - `policy-gate`
-- Canon-Runbook: [docs/runbooks/merge_policy_ci_gate.md](../runbooks/merge_policy_ci_gate.md)
+Die frühere parallele Legacy-Pipeline wurde entfernt. Es gibt nur noch einen
+kanonischen CI-Pfad; Diagnose, Branch Protection und Dokumentation müssen sich
+auf die beiden Check-Kontexte oben beziehen.
 
-Wichtig: `ci.yml` ist der PR-Gate-Workflow. Die groessere Push-/Dispatch-Pipeline
-[`ci.yaml`](../../.github/workflows/ci.yaml) ist **intentionally frozen** (2026-04-07)
-und nicht merge-relevant. Tool-Version-Drift ist akzeptabel.
+## Ergänzende Prüfungen
 
-## Workflow-Familien
+| Bereich | Workflows |
+|---|---|
+| Verträge/Kompatibilität | `contracts.yml`, `python-compat.yml` |
+| E2E | `e2e.yml`, `e2e-tests.yml`, `e2e-happy-path.yaml` |
+| Security | `gitleaks.yml`, `trivy.yml`, `security-scan.yml`, `codeql-python.yml` |
+| Guards | `docs-hub-guard.yml`, `docs-conflict-guard.yml`, `core-guard.yml` |
+| Audit | `required-checks-audit.yml`, `governance-audit.yml` |
 
-| Bereich | Primaere Dateien | Trigger | Einstieg |
-|-------|-------|-------|-------|
-| PR Gate | [ci.yml](../../.github/workflows/ci.yml), [policy-gate.yml](../../.github/workflows/policy-gate.yml) | `pull_request`, `push` | [merge_policy_ci_gate.md](../runbooks/merge_policy_ci_gate.md) |
-| Main / Dispatch Pipeline | [ci.yaml](../../.github/workflows/ci.yaml) | `push`, `workflow_dispatch` | [merge_policy_ci_gate.md](../runbooks/merge_policy_ci_gate.md) |
-| Board / Milestone Automation | [add_to_project.yml](../../.github/workflows/add_to_project.yml), [project_status_sync.yml](../../.github/workflows/project_status_sync.yml), [auto-milestone.yml](../../.github/workflows/auto-milestone.yml) | `issues`, `pull_request`, `repository_dispatch` | [project_board_automation.md](../runbooks/project_board_automation.md) |
-| Board-as-Code | [control_board_upsert.yml](../../.github/workflows/control_board_upsert.yml), [control_board_auto_routing.yml](../../.github/workflows/control_board_auto_routing.yml) (geparkt #2772) | `workflow_dispatch` (control_board_auto_routing geparkt, nur Dispatch-Stub); `control_board_upsert`: `workflow_dispatch`, `schedule` | [control_board_board_as_code.md](../runbooks/control_board_board_as_code.md) |
-| Soak / Heavy Evidence | [shadow-soak-evidence.yml](../../.github/workflows/shadow-soak-evidence.yml) | `schedule`, `workflow_dispatch` | [SHADOW_SOAK_RUN_INDEX.md](../evidence/SHADOW_SOAK_RUN_INDEX.md) |
-| Audit / Exception Semantics | [required-checks-audit.yml](../../.github/workflows/required-checks-audit.yml) | `workflow_dispatch` | [README.md](README.md), [ACTION_REQUIRED_RUNBOOK.md](ACTION_REQUIRED_RUNBOOK.md) |
+Diese Prüfungen können Fehler oder Findings liefern, sind aber keine
+Ersatzquelle für die beiden branch-protected Check-Kontexte.
 
-## workflow_run Kanten
+## Einstieg bei Fehlern
 
-- `Auto Milestone PR Intent` -> `Auto Milestone PR Apply`
-- `Weekly Project Digest` -> `Weekly Digest Failure Alert`
-
-Die aktuelle Dependency-Map und die Rename-Regel stehen in
-[docs/ci/README.md](README.md).
-
-## Haeufige Failure Modes
-
-- Required Check rot oder Branch Protection blockiert:
-  - [docs/runbooks/merge_policy_ci_gate.md](../runbooks/merge_policy_ci_gate.md)
-- PR-CI gruen, aber PR trotzdem blocked oder ein externer Check ist rot:
-  - [docs/runbooks/merge_policy_ci_gate.md](../runbooks/merge_policy_ci_gate.md)
-  - [docs/runbooks/resolve_review_threads_via_graphql.md](../runbooks/resolve_review_threads_via_graphql.md)
-- Project-v2 / Token / Scope Fehler:
-  - [docs/runbooks/project_board_automation.md](../runbooks/project_board_automation.md)
-- `workflow_run`-Rename-Drift:
-  - [docs/ci/README.md](README.md)
-- MCP/Worktree Usability Drift:
-  - [docs/runbooks/mcp_worktree_hygiene.md](../runbooks/mcp_worktree_hygiene.md)
-- CI/Governance Drift (read-only):
-  - [docs/runbooks/ci_hygiene_drift_checks.md](../runbooks/ci_hygiene_drift_checks.md)
-- Gruen mit Ausnahmepfad statt echtem E2E-Pass:
-  - [docs/ci/README.md](README.md)
+1. Betroffenen Check-Kontext und Commit-SHA bestimmen.
+2. Job- und Step-Logs des konkreten Runs lesen.
+3. [Merge-Policy-Runbook](../runbooks/merge_policy_ci_gate.md) anwenden.
+4. Bei Inventar- oder Trigger-Drift das
+   [Workflow-Register](../runbooks/GITHUB_WORKFLOW_REGISTER.md) prüfen.
