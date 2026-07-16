@@ -3,6 +3,7 @@
 **Repo:** Claire de Binare  
 **Stand:** 2026-07-16  
 **Workflow-Dateien:** 57  
+**Entfernungs-Scope:** 13 Workflow-Dateien plus 5 exklusive Support-Dateien  
 **Daten-Datei im Workflow-Ordner:** `labels.json` (kein Workflow)
 
 Dieses Register bildet den aktuellen Bestand unter `.github/workflows/` ab. Die am
