@@ -8,7 +8,6 @@ This directory contains MCP configuration templates for each agent surface.
 |------|---------|------|--------|
 | `../opencode.jsonc` (repo root) | OpenCode | repo-tracked config | Active |
 | `claude_mcp.json.template` | Claude / Cloud Code | template (needs manual copy) | Needs manual install |
-| `gemini_mcp_config.yml.template` | Gemini workflow | inline config snippet (needs manual embed) | Needs manual install |
 | `codex_mcp_config.md` | Codex | reference only (no separate MCP surface) | Via host agent |
 | `codex_config.example.toml` | Codex | template (copy to `.codex/config.toml`) | Needs manual install |
 | `onboarding_mcp_setup.ps1` | Onboarding / any agent | validation script | Run from repo root |
