@@ -133,7 +133,6 @@ Repo presence is not MCP availability. Each surface must be verified independent
 | **Codex** | ✓ verified | via host agent (OpenCode or Claude) | ⚠️ blocked (env: pydantic-core mismatch) | ✓ bridge verified | ✓ bridge verified | reference in agents/templates/codex_mcp_config.md |
 | **OpenCode** | ✓ verified | ✓ host-active verified | ✓ host-active verified | ✓ bridge verified | ✓ bridge verified | repo-tracked config (`opencode.jsonc`) + host-active; cdb_context server connected in OpenCode UI |
 | **Claude / Cloud Code** | ✓ verified | template in `agents/templates/claude_mcp.json.template` | needs host-specific test | needs host-specific test | needs host-specific test | template exists; needs host-specific copy to user-level `.mcp.json` |
-| **Gemini** | ✓ verified | template in `agents/templates/gemini_mcp_config.yml.template` | needs host-specific test | needs host-specific test | needs host-specific test | template exists; needs host-specific embed in workflow YAML |
 | **Onboarding / new agent** | ✓ verified | setup script in `agents/templates/onboarding_mcp_setup.ps1` | ⚠️ blocked (env: pydantic-core mismatch) | ✓ bridge verified | ✓ bridge verified | setup script validates L1/L3/L4/L5; L2 requires manual host config |
 
 **Status key:**
@@ -189,7 +188,6 @@ Linux/macOS: use `.venv/bin/python` instead of `.venv/Scripts/python.exe`.
 |---------|------|------|----------|
 | OpenCode | `opencode.jsonc` | repo-tracked config (auto-loaded) | repo root |
 | Claude / Cloud Code | `claude_mcp.json.template` | template (copy to user-level `.mcp.json`) | `agents/templates/` |
-| Gemini | `gemini_mcp_config.yml.template` | template (embed in workflow YAML) | `agents/templates/` |
 | Codex | `codex_mcp_config.md` | reference (no separate MCP surface) | `agents/templates/` |
 | Any surface | `onboarding_mcp_setup.ps1` | validation script (run from repo root) | `agents/templates/` |
 
