@@ -685,6 +685,8 @@ P2_DOCS_DRIFT_LIMITATIONS: tuple[str, ...] = (
 GRAPH_NON_WORKFLOW_REFERENCE_FILES = frozenset(
     {
         "cdb-control-followup.prompt.yml",
+        ".github/prompts/cdb-control-followup.prompt.yml",
+        "labels.json",
         "dependabot.yml",
         "emoji-config.yaml",
     }
