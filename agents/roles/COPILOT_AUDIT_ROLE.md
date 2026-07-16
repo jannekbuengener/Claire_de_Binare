@@ -23,7 +23,7 @@ Read first:
 
 - `agents/AGENTS.md`
 - `knowledge/governance/CDB_REPO_STRUCTURE.md`
-- `docs/meta/WORKING_REPO_CANON.md`
+- `docs/meta/REPOSITORY_CANON.md`
 
 ## Context
 
@@ -33,7 +33,7 @@ former external docs repo is historical archive only.
 ## Tasks
 
 1. Audit repository hygiene, navigation, and governance consistency in the
-   working repo.
+   Claire de Binare repository.
 2. Create issues for real, unresolved structure or policy violations.
 3. Distinguish between active canon problems and historical archive material.
 4. Avoid duplicate issues when the same drift is already tracked.

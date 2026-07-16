@@ -557,7 +557,7 @@ All work committed to branch: `reset/from-codex-green`
 
 ### Security Improvements Identified
 
-From analysis of files originally in `Claire_de_Binare_Docs/_legacy_quarantine/files1_Tier1` (retired pre-consolidation source, December 2024):
+From analysis of files originally in `historical_documentation_source/_legacy_quarantine/files1_Tier1` (retired pre-consolidation source, December 2024):
 
 1. **Non-Root Users** (HIGH Priority)
    - Legacy Dockerfiles use service-specific non-root users

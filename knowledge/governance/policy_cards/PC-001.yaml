@@ -3,7 +3,7 @@ title: Delivery Gate required for code/infra/policy mutation
 scope: governance
 rule:
   type: ONLY_IF
-  statement: Mutationen an Working Repo Code/Infra oder Canon-Policies sind nur erlaubt,
+  statement: Mutationen an Claire de Binare repository Code/Infra oder Canon-Policies sind nur erlaubt,
     wenn DELIVERY_APPROVED.yaml delivery.approved=true ist.
   conditions:
   - delivery_gate=true

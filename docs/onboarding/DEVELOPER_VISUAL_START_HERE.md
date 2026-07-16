@@ -7,7 +7,7 @@ Scope: Developer onboarding, examples, templates, and visual docs only
 ## What Is CDB?
 
 Claire de Binare (CDB) is a deterministic, governance-first trading-system repo.
-The working repo is the active canon for code, docs, governance, agent bootloader,
+The Claire de Binare repository is the active canon for code, docs, governance, agent bootloader,
 and Context Intelligence navigation. The active development posture stays
 shadow/paper-first: `trade-capable` is Board context, not Live-Go.
 

@@ -2,8 +2,8 @@
 
 # Final Handoff — CDB_GITHUB_MANAGER (Historical — 2025-12-16)
 
-> **Note:** Historical snapshot from the split-repo era. References to "Docs Hub"
-> and "Docs Hub Guard" reflect the repo topology as of 2025-12-16. The Docs Hub
+> **Note:** Historical snapshot from the split-repo era. References to "historical documentation material"
+> and "Repository Canon Guard" reflect the repo topology as of 2025-12-16. The historical documentation material
 > repository was retired in #1140.
 
 **Date:** 2025-12-16
@@ -109,7 +109,7 @@
 
 ### Historische Workflow-Inventur (bereinigt; nicht operativ)
 1. `ci.yml` — kanonischer PR-CI-Gate
-2. `docs-hub-guard.yml` — Governance protection
+2. `repository-canon-guard.yml` — Governance protection
 3. `copilot-housekeeping.yml` — Scheduled reporting
 4. `label-bootstrap.yml` — Label management from JSON
 5. `labels.json` — 34 labels defined
@@ -150,7 +150,7 @@
 - **Status:** ✅ Active (runs on PR + push to main)
 
 ### Governance Guards
-- **Docs Hub Guard:** Blocks runtime artifacts, scans secrets, enforces canonical structure
+- **Repository Canon Guard:** Blocks runtime artifacts, scans secrets, enforces canonical structure
 
 ---
 
@@ -214,7 +214,7 @@
 
 ### For Audit & Review (Gemini)
 - **Label system changes** documented (13 deleted, 11 created, 34 total)
-- **Governance compliance** maintained (no Canon writes, Working Repo only)
+- **Governance compliance** maintained (no Canon writes, Claire de Binare repository only)
 - **Issue Templates** enforce Must/Should/Nice priority model
 - **Security Roadmap** aligned with CDB_CONSTITUTION.md principles
 
@@ -239,7 +239,7 @@
 ### Existing Infrastructure (Found)
 **From earlier sessions (Büro):**
 - ✅ `ci.yml` — kanonischer PR-CI-Gate
-- ✅ `docs-hub-guard.yml` — Governance protection
+- ✅ `repository-canon-guard.yml` — Governance protection
 - ✅ `copilot-housekeeping.yml` — Scheduled reporting
 - ✅ `label-bootstrap.yml` — Label management from JSON
 - ✅ `labels.json` — Label spec (now synced to 34 labels)

@@ -204,11 +204,11 @@ Single-Writer-Regel verstoßen würde, gilt:
 - `knowledge/CDB_KNOWLEDGE_HUB.md`
 - `knowledge/**`
 - `knowledge/logs/**`
-- `.cdb_agent_workspace/**` (lokal, gitignored, Working Repo)
+- `.cdb_agent_workspace/**` (lokal, gitignored, Claire de Binare repository)
 
 ### Verbotene persistente Writes
 - `knowledge/governance/**`
-- Working-Repo-Code (`/core`, `/services`, `/infrastructure`, `/tests`)
+- Claire de Binare repository-Code (`/core`, `/services`, `/infrastructure`, `/tests`)
 - Tresor-Zone (`CDB_TRESOR_POLICY.md`)
 
 ---
@@ -219,7 +219,7 @@ Single-Writer-Regel verstoßen würde, gilt:
 - Ablage unter `knowledge/logs/**`
 - Bevorzugt: strukturierte Berichte, Zusammenfassungen
 
-### Runtime / Debug Logs (Working Repo)
+### Runtime / Debug Logs (Claire de Binare repository)
 - ausschließlich lokal
 - gitignored
 - niemals committen

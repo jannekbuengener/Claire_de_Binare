@@ -25,7 +25,7 @@ Establish a verified, fail-closed starting state before any repo work begins.
 ## Inputs
 
 - Session goal, issue number, or user request.
-- Working repo at `D:\Dev\Workspaces\Repos\Claire_de_Binare`.
+- Claire de Binare repository at `D:\Dev\Workspaces\Repos\Claire_de_Binare`.
 - Access to git CLI and GitHub CLI (`gh`).
 
 ## Workflow

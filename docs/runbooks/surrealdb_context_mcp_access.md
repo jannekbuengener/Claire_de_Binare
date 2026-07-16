@@ -244,7 +244,7 @@ Evidence distinction:
 - **Registry-only / bridge-only**: tool is registered, handler resolves, no DB rows required.
 - **DB-backed evidence**: explicit `adapter_config_path` + local config + local secrets + actual local rows returned from SurrealDB.
 
-**Cross-repo root inventory** (#2853) — deterministische Tabelle für Working-Repo und
+**Cross-repo root inventory** (#2853) — deterministische Tabelle für Claire de Binare repository und
 konfigurierte Sibling-/Extern-Roots (lokal vs. GitHub getrennt; kein Clone):
 
 ```bash

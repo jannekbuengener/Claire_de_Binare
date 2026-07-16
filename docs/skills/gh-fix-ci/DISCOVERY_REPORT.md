@@ -35,7 +35,7 @@ Claire de Binare operates a **sophisticated, multi-layered CI/CD governance syst
 | **gitleaks.yml** | Gitleaks Secret Scan | pull_request (main), push (main), schedule (weekly) | gitleaks, full-scan | ubuntu-latest | ~14s |
 | **core-guard.yml** | Core Guard | pull_request (main) | Check Core Duplicates | ubuntu-latest | ~6s |
 | **delivery-gate.yml** | Delivery Gate | pull_request (main, labeled/unlabeled) | Check Delivery Gate | ubuntu-latest | ~6s |
-| **docs-hub-guard.yml** | Docs Hub Guard | pull_request (main) | guard | ubuntu-latest | ~5s |
+| **repository-canon-guard.yml** | Repository Canon Guard | pull_request (main) | guard | ubuntu-latest | ~5s |
 | **e2e-tests.yml** | E2E Tests - Paper Trading | pull_request (paths: services/, tests/e2e/, infra/) | e2e-paper-trading | ubuntu-latest | ~20s (stub mode), 15min timeout |
 | **trivy.yml** | trivy | pull_request (main), push (main), schedule (weekly) | trivy-image | ubuntu-latest | ~10s (with cache) |
 | **contracts.yml** | Contract Validation | pull_request (main, paths: docs/contracts/, tests/unit/contracts/) | validate-contracts | ubuntu-latest | ~28s |
@@ -107,7 +107,7 @@ gh api repos/jannekbuengener/Claire_de_Binare/branches/main/protection --jq '.re
 | **trivy (kritische CVEs/Supply-Chain)** | trivy.yml | HARD BLOCK | Container image CVE above allowlist |
 | **Check Core Duplicates** | core-guard.yml | HARD BLOCK | Duplicate `core/` directories detected |
 | **Check Delivery Gate** | delivery-gate.yml | HARD BLOCK | `.github/governance/DELIVERY_APPROVED.yaml` approval missing |
-| **guard** | docs-hub-guard.yml | HARD BLOCK | Docs Hub consistency violation |
+| **guard** | repository-canon-guard.yml | HARD BLOCK | repository canon consistency violation |
 | **E2E Happy Path** | e2e-tests.yml or multi-job workflow | HARD BLOCK | E2E pipeline failure (Redis, Postgres, Docker Compose) |
 
 ### 2.3 External Checks (Non-Blocking)

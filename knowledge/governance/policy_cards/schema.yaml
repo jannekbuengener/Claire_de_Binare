@@ -12,7 +12,7 @@ required_fields:
 fields:
   id: {type: string, pattern: '^PC-[0-9]{3}$'}
   title: {type: string}
-  scope: {type: string, allowed: [github_ops, governance, knowledge, working_repo, security]}
+  scope: {type: string, allowed: [github_ops, governance, knowledge, claire_de_binare_repository, security]}
   rule:
     type: object
     required_fields: [type, statement]

@@ -1,11 +1,11 @@
 # AGENTS
 
 Status: Canonical
-Scope: Working Repo
+Scope: Claire de Binare repository
 
-Diese Datei ist die kanonische Agenten-Registry fuer das Working Repo `Claire_de_Binare`.
-Sie ersetzt die alte Split-Repo-Annahme, nach der Agenten- und Governance-Doku standardmaessig
-in einem separaten externen Doku-Repo gesucht wurde.
+Diese Datei ist die kanonische Agenten-Registry fuer das Claire de Binare
+repository `Claire_de_Binare`. Code, Infrastruktur und Dokumentation werden
+ausschliesslich in diesem Repository gepflegt.
 
 ## Read Order
 
@@ -14,7 +14,7 @@ in einem separaten externen Doku-Repo gesucht wurde.
 3. `knowledge/governance/CDB_AGENT_POLICY.md`
 4. `knowledge/governance/SYSTEM_INVARIANTS.md`
 5. `knowledge/CDB_KNOWLEDGE_HUB.md`
-6. `docs/meta/WORKING_REPO_CANON.md`
+6. `docs/meta/REPOSITORY_CANON.md`
 7. `CURRENT_STATUS.md`
 8. `docs/live-readiness/LR-AUDIT-STATUS-2026-03-05.md`
 9. `docs/runbooks/CONTROL_REGISTER.md`
@@ -93,18 +93,17 @@ versionierte Root-Flächen für `.claude/`, `.codex/`, `.cursor/`, `.gemini/`, `
 
 ## Current Project Reality
 
-- Working Repo bleibt der produktive Canon fuer Agenten-, Governance-, Knowledge- und Navigationsdoku.
+- `Claire_de_Binare` ist die einzige kanonische Quelle.
 - Aktuelle Board-Stage ist `trade-capable` (ratifiziert 2026-04-08 via Issue `#1492`).
 - Diese Board-Stage ist orthogonal zum LR-System; `LR-050` bleibt `NO-GO` und autorisiert kein Live-Kapital.
 
 ## Operating Rules
 
 - `AGENTS.md` im Repo-Root ist nur ein Pointer auf diese Datei.
-- Agenten und Tools sollen standardmaessig lokale Pfade im Working Repo verwenden.
+- Agenten und Tools muessen Pfade innerhalb von `Claire_de_Binare` verwenden.
 - Stage-/Board-Aussagen und LR-Go/No-Go-Aussagen muessen strikt getrennt bleiben.
 - Eine Board-Stage darf nie als implizite Live-Freigabe oder Strategie-Validierung interpretiert werden.
-- Das lokale Archiv `docs/archive/docs_hub_snapshot/` ist nur noch ein optionaler historischer Rueckgriff.
-- Externe Docs-Repo-Pfade sind kein produktiver Default mehr.
+- Das lokale Archiv `docs/archive/` enthaelt historische Einzelartefakte und ist kein zweiter Canon.
 
 ## Context Brain Preflight Gate
 
@@ -276,8 +275,6 @@ Higher wins; fail-closed when lower layers conflict:
   keinem Trust oder keinen Records) löst `HOLD_BOOTLOADER_EVIDENCE_MISCLASSIFIED` aus. Der Workflow
   muss bis zur Korrektur blockiert bleiben.
 
-## Legacy Note
+## Repository Canon
 
-Die fruehere Docs-Hub-Struktur bleibt als Archiv referenzierbar, ist aber nicht mehr
-die autoritative Quelle fuer laufende Arbeit in diesem Repo. Die aktuelle Canon-Matrix
-steht in `docs/meta/WORKING_REPO_CANON.md`.
+Die verbindliche Canon-Matrix steht in `docs/meta/REPOSITORY_CANON.md`.

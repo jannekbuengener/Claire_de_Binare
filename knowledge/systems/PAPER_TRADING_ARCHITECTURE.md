@@ -1,7 +1,7 @@
 # PAPER_TRADING_ARCHITECTURE
 
 Date: 2025-12-19
-Scope: Paper trading implementation analysis (Working Repo)
+Scope: Paper trading implementation analysis (Claire de Binare repository)
 Source: services/execution, services/risk
 
 ## Summary

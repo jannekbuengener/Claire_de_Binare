@@ -96,7 +96,7 @@ Mirror (non-approving): Decision Pack [§5](./LR-050-DECISION-PACK.md#5-canary-p
 | Rule | Detail |
 |------|--------|
 | Inventory SSOT | [`LR-050-VENUE-AUDIT.md`](./LR-050-VENUE-AUDIT.md) — full path/mode matrix lives there |
-| Repo-found candidate | **MEXC** — sole integrated execution venue in working repo |
+| Repo-found candidate | **MEXC** — sole integrated execution venue in Claire de Binare repository |
 | Live-ready | **No** — while [#2533](https://github.com/jannekbuengener/Claire_de_Binare/issues/2533) and [#2535](https://github.com/jannekbuengener/Claire_de_Binare/issues/2535) remain OPEN |
 | Canary venue approval | **not approved** — candidate path only; confirm/reject MEXC in operator review after #2533/#2535 |
 | Withdrawal/transfer/admin API | **forbidden** per Secrets + Venue policy |

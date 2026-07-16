@@ -11,7 +11,7 @@ Scope: PostgreSQL RBAC and hardening tasks (M8 Phase 3)
 
 ## Implementation notes
 - Requires updates in infrastructure configuration and compose/secrets.
-- Needs Working Repo changes.
+- Needs Claire de Binare repository changes.
 
 ## Verification
 - Role permissions verified

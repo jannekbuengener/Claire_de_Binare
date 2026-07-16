@@ -70,7 +70,7 @@ oder konventionierten Präfixen).
 
 | Feld | Typ | Zweck |
 |---|---|---|
-| `source_path` | `string` | Relativer Pfad im Working Repo |
+| `source_path` | `string` | Relativer Pfad im Claire de Binare repository |
 | `source_url` | `string` | URL (z. B. GitHub Raw, Blob) |
 | `source_commit` | `string` | Git Commit SHA (kurz oder lang) |
 | `source_hash` | `string` | Content Hash (SHA-256 oder SHA-1) |
@@ -90,7 +90,7 @@ Enforcement erfolgt in Producer-/Validator-Logik in späteren Wellen.
 
 ### 4.1 `repo_artifact`
 
-**Zweck**: Versionierte Dateien oder Artefakte im Working Repo.
+**Zweck**: Versionierte Dateien oder Artefakte im Claire de Binare repository.
 
 **Schlüsselfelder**:
 
@@ -362,12 +362,12 @@ PERMISSIONS kodiert. Enforcement erfolgt durch Producer-/Validator-Logik und die
 
 | Collection | Canonical Source | SurrealDB Role | Writer | Reader |
 |---|---|---|---|---|
-| `repo_artifact` | Git (Working Repo) | `mirror_read_only` | Context Indexer | Agents, CDB-MCP |
-| `code_symbol` | Git (Working Repo) | `mirror_read_only` | Context Indexer | Agents, CDB-MCP |
-| `doc_page` | Git (Working Repo) | `mirror_read_only` | Context Indexer | Agents, CDB-MCP |
-| `doc_section` | Git (Working Repo) | `mirror_read_only` | Context Indexer | Agents, CDB-MCP |
-| `doc_chunk` | Git (Working Repo) | `mirror_read_only` | Context Indexer | Agents, CDB-MCP |
-| `concept` | Git (Working Repo) | `mirror_read_only` | Context Indexer | Agents, CDB-MCP |
+| `repo_artifact` | Git (Claire de Binare repository) | `mirror_read_only` | Context Indexer | Agents, CDB-MCP |
+| `code_symbol` | Git (Claire de Binare repository) | `mirror_read_only` | Context Indexer | Agents, CDB-MCP |
+| `doc_page` | Git (Claire de Binare repository) | `mirror_read_only` | Context Indexer | Agents, CDB-MCP |
+| `doc_section` | Git (Claire de Binare repository) | `mirror_read_only` | Context Indexer | Agents, CDB-MCP |
+| `doc_chunk` | Git (Claire de Binare repository) | `mirror_read_only` | Context Indexer | Agents, CDB-MCP |
+| `concept` | Git (Claire de Binare repository) | `mirror_read_only` | Context Indexer | Agents, CDB-MCP |
 | `decision_event` | Git (Ledger) | `append_only_mirror` | Agents via Ledger | Agents, Audit |
 | `evidence_ref` | Git (Ledger) + Indexer | `primary_scoped` | Context Indexer | Agents, CDB-MCP, Audit |
 | `agent_memory` | SurrealDB | `primary_scoped` | Agent (scoped) | Agent (scoped) |

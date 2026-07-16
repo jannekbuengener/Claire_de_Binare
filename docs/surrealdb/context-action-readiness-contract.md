@@ -12,7 +12,7 @@
 
 ## 1. Issue / Scope
 
-This document defines the **Agent Action Readiness** contract for the SurrealDB Context Intelligence System (CIS). It specifies the status model, required inputs, required checks, output contract, agent guidance, stop rules, and Human-GO rules that must be evaluated before any agent begins work in the working repo.
+This document defines the **Agent Action Readiness** contract for the SurrealDB Context Intelligence System (CIS). It specifies the status model, required inputs, required checks, output contract, agent guidance, stop rules, and Human-GO rules that must be evaluated before any agent begins work in the Claire de Binare repository.
 
 Target issue: [#2021](https://github.com/jannekbuengener/Claire_de_Binare/issues/2021) — "Define agent action readiness checks".
 

@@ -1,12 +1,12 @@
-# Logs Concept Analysis: logs/ vs. Docs Hub logs/
+# Logs Concept Analysis: logs/ vs. historical documentation material logs/
 
 **Date:** 2025-12-27
 **Purpose:** Decision basis for conceptual separation between runtime logs and knowledge artifacts
 **Scope:** Read-only analysis (no decision made)
 **Related Issue:** #124
-**Status:** **Superseded** (2026-03-29) — Docs Hub consolidated into working repo; split-repo topology no longer exists.
+**Status:** **Superseded** (2026-03-29) — historical documentation material consolidated into Claire de Binare repository; split-repo topology no longer exists.
 
-> **Post-Consolidation Note:** The `Claire_de_Binare_Docs` repository was retired. All content now lives in the `Claire_de_Binare` monorepo. The two-repo topology described below reflects the state at analysis time (2025-12-27). The analysis models (A/B/C) are historical — the consolidation effectively implemented Model B. Knowledge artifacts now live under `knowledge/logs/` in the working repo.
+> **Post-Consolidation Note:** The `historical_documentation_source` repository was retired. All content now lives in the `Claire_de_Binare` monorepo. The two-repo topology described below reflects the state at analysis time (2025-12-27). The analysis models (A/B/C) are historical — the consolidation effectively implemented Model B. Knowledge artifacts now live under `knowledge/logs/` in the Claire de Binare repository.
 
 ---
 
@@ -14,8 +14,8 @@
 
 **State at time of analysis (2025-12-27):**
 - **Two** distinct `logs/` directories existed across repositories
-- **Working Repo** `logs/`: Runtime operational logs (4.3 MB, 10+ active log files)
-- **Docs Hub** `logs/`: Knowledge artifacts (archived reports, session notes)
+- **Claire de Binare repository** `logs/`: Runtime operational logs (4.3 MB, 10+ active log files)
+- **historical documentation material** `logs/`: Knowledge artifacts (archived reports, session notes)
 - **Overlap:** Both contained paper trading logs, creating ambiguity
 
 **Key Finding:** Conceptual separation existed but was **not enforced** or **documented**
@@ -30,7 +30,7 @@
 
 ## Survey: Current Usage
 
-### Working Repo: logs/
+### Claire de Binare repository: logs/
 
 **Location:** `Claire_de_Binare/logs/`
 **Total Size:** ~4.3 MB (10 files + subdirectories)
@@ -73,9 +73,9 @@ logs/
 
 ---
 
-### Docs Hub: logs/
+### historical documentation material: logs/
 
-**Location:** `Claire_de_Binare_Docs/logs/`
+**Location:** `historical_documentation_source/logs/`
 **Total Size:** ~6.5 KB (3 files + subdirectories)
 
 **Directory Structure:**
@@ -116,7 +116,7 @@ logs/
 
 ## Comparison Table
 
-| Aspect | Working Repo logs/ | Docs Hub logs/ |
+| Aspect | Claire de Binare repository logs/ | historical documentation material logs/ |
 |--------|-------------------|----------------|
 | **Purpose** | Operational runtime logs | Knowledge artifacts / historical records |
 | **Canon Status** | Non-canonical (ephemeral) | Canonical (permanent) |
@@ -138,19 +138,19 @@ logs/
 ### Identified Overlaps
 
 1. **Paper Trading Logs**
-   - **Working Repo:** `paper_trading_20251219.log` to `paper_trading_20251227.log` (5 files, 4.3 MB)
-   - **Docs Hub:** `paper_trading_20251213.log` (1 file, ~2 KB)
-   - **Question:** Should archived paper trading logs move to Docs Hub?
+   - **Claire de Binare repository:** `paper_trading_20251219.log` to `paper_trading_20251227.log` (5 files, 4.3 MB)
+   - **historical documentation material:** `paper_trading_20251213.log` (1 file, ~2 KB)
+   - **Question:** Should archived paper trading logs move to historical documentation material?
 
 2. **System Check Logs**
-   - **Working Repo:** Not currently present (but likely generated)
-   - **Docs Hub:** `systemcheck_20251214_212322.log`
+   - **Claire de Binare repository:** Not currently present (but likely generated)
+   - **historical documentation material:** `systemcheck_20251214_212322.log`
    - **Question:** Where should future system checks be logged?
 
 3. **Agent Run Reports**
-   - **Working Repo:** `agent_runs/` (JSON + Markdown reports)
-   - **Docs Hub:** No current storage (but session notes exist)
-   - **Question:** Should agent runs be archived to Docs Hub after completion?
+   - **Claire de Binare repository:** `agent_runs/` (JSON + Markdown reports)
+   - **historical documentation material:** No current storage (but session notes exist)
+   - **Question:** Should agent runs be archived to historical documentation material after completion?
 
 ---
 
@@ -161,13 +161,13 @@ logs/
 **Principle:** Strict separation based on lifecycle (ephemeral vs. canonical)
 
 **Rules:**
-- **Working Repo `logs/`:** Runtime logs only (continuous writes, auto-rotated, never committed)
-- **Docs Hub `logs/`:** Knowledge artifacts only (curated reports, archived logs, versioned)
-- **Migration:** Operational logs older than 14 days automatically archived to Docs Hub (selected, not all)
+- **Claire de Binare repository `logs/`:** Runtime logs only (continuous writes, auto-rotated, never committed)
+- **historical documentation material `logs/`:** Knowledge artifacts only (curated reports, archived logs, versioned)
+- **Migration:** Operational logs older than 14 days automatically archived to historical documentation material (selected, not all)
 
 **Directory Structure:**
 
-**Working Repo:**
+**Claire de Binare repository:**
 ```
 logs/
 ├── services/              # Service logs (auto-rotated)
@@ -179,7 +179,7 @@ logs/
 └── .rotation_policy.yml   # Retention rules (14 days default)
 ```
 
-**Docs Hub:**
+**historical documentation material:**
 ```
 logs/
 ├── archived_logs/         # Selected operational logs (historical value)
@@ -196,7 +196,7 @@ logs/
 **Advantages:**
 - ✅ Clear mental model (runtime vs. knowledge)
 - ✅ No confusion about where to write
-- ✅ Disk space managed (working repo stays small)
+- ✅ Disk space managed (Claire de Binare repository stays small)
 - ✅ Git history focused on knowledge (not noise)
 - ✅ Automated archival possible (cron job or agent)
 
@@ -204,27 +204,27 @@ logs/
 - ⚠️ Archival automation required (adds complexity)
 - ⚠️ Selection criteria needed (what logs are worth archiving?)
 - ⚠️ Breaking change (existing logs need migration)
-- ⚠️ Two places to search for logs (recent = working repo, old = Docs Hub)
+- ⚠️ Two places to search for logs (recent = Claire de Binare repository, old = historical documentation material)
 
 **Impact on Agents:**
-- Agents write runtime logs to **Working Repo `logs/`**
-- Agents write reports/summaries to **Docs Hub `logs/`**
-- Archive agent runs weekly archival job (selects noteworthy logs for Docs Hub)
+- Agents write runtime logs to **Claire de Binare repository `logs/`**
+- Agents write reports/summaries to **historical documentation material `logs/`**
+- Archive agent runs weekly archival job (selects noteworthy logs for historical documentation material)
 
 ---
 
 ### Model B: Consolidation (Single Location)
 
-**Principle:** All logs (runtime + knowledge) in one location (Working Repo)
+**Principle:** All logs (runtime + knowledge) in one location (Claire de Binare repository)
 
 **Rules:**
-- **Working Repo `logs/`:** All logs (runtime + knowledge artifacts)
-- **Docs Hub `logs/`:** Deprecated (moved to Working Repo)
+- **Claire de Binare repository `logs/`:** All logs (runtime + knowledge artifacts)
+- **historical documentation material `logs/`:** Deprecated (moved to Claire de Binare repository)
 - **Retention:** Explicit `.gitignore` rules for ephemeral logs, track knowledge artifacts
 
 **Directory Structure:**
 
-**Working Repo:**
+**Claire de Binare repository:**
 ```
 logs/
 ├── runtime/               # Ephemeral logs (.gitignore'd)
@@ -249,12 +249,12 @@ logs/
 - ⚠️ Git repo size grows (knowledge artifacts tracked)
 - ⚠️ Disk cleanup harder (must distinguish runtime vs. knowledge in same tree)
 - ⚠️ `.gitignore` complexity (track knowledge/, ignore runtime/)
-- ⚠️ Violates "Working Repo = code only" principle (adds knowledge artifacts)
+- ⚠️ Violates "Claire de Binare repository = code only" principle (adds knowledge artifacts)
 
 **Impact on Agents:**
-- Agents write to **Working Repo `logs/runtime/`** (ephemeral)
-- Agents write to **Working Repo `logs/knowledge/`** (canonical)
-- Simpler (one location), but Working Repo becomes heavier
+- Agents write to **Claire de Binare repository `logs/runtime/`** (ephemeral)
+- Agents write to **Claire de Binare repository `logs/knowledge/`** (canonical)
+- Simpler (one location), but Claire de Binare repository becomes heavier
 
 ---
 
@@ -263,14 +263,14 @@ logs/
 **Principle:** Keep current structure, document rules clearly
 
 **Rules:**
-- **Working Repo `logs/`:** Runtime logs (documented, `.gitignore`'d)
-- **Docs Hub `logs/`:** Knowledge artifacts (documented, versioned)
-- **Documentation:** Add README.md to Working Repo `logs/` explaining separation
+- **Claire de Binare repository `logs/`:** Runtime logs (documented, `.gitignore`'d)
+- **historical documentation material `logs/`:** Knowledge artifacts (documented, versioned)
+- **Documentation:** Add README.md to Claire de Binare repository `logs/` explaining separation
 - **Policy:** Explicit rules for what goes where (documented in both READMEs)
 
 **Directory Structure:**
 
-**Working Repo:**
+**Claire de Binare repository:**
 ```
 logs/
 ├── README.md              # NEW: Purpose, audience, retention policy
@@ -280,10 +280,10 @@ logs/
 └── paper_trading_YYYYMMDD.log
 ```
 
-**Docs Hub:**
+**historical documentation material:**
 ```
 logs/
-├── README.md              # UPDATED: Clarify relationship to Working Repo logs/
+├── README.md              # UPDATED: Clarify relationship to Claire de Binare repository logs/
 ├── daily_reports/
 ├── weekly_reports/
 └── sessions/
@@ -302,7 +302,7 @@ logs/
 - ⚠️ Ambiguity persists (where do archived logs go?)
 
 **Impact on Agents:**
-- Agents follow documented rules (Working Repo = runtime, Docs Hub = knowledge)
+- Agents follow documented rules (Claire de Binare repository = runtime, historical documentation material = knowledge)
 - Requires agent prompt updates (reference README.md for guidance)
 - Risk: Agents may violate rules if not explicitly enforced
 
@@ -326,10 +326,10 @@ logs/
 
 ## Open Questions (for Decision-Maker)
 
-1. **Retention Policy:** How long should operational logs be kept in Working Repo before archival/deletion?
+1. **Retention Policy:** How long should operational logs be kept in Claire de Binare repository before archival/deletion?
    - Suggested: 14 days (configurable)
 
-2. **Archive Selection:** Which logs are worth archiving to Docs Hub?
+2. **Archive Selection:** Which logs are worth archiving to historical documentation material?
    - Suggested: Incidents, paper trading results, compliance audit logs
 
 3. **Automation:** Should archival be automated or manual?
@@ -340,10 +340,10 @@ logs/
    - Model A & B require migration
    - Model C preserves current structure
 
-5. **Git Repo Size:** Should knowledge artifacts be tracked in Working Repo or Docs Hub?
-   - Model A: Docs Hub (separate concern)
-   - Model B: Working Repo (single location)
-   - Model C: Docs Hub (current state)
+5. **Git Repo Size:** Should knowledge artifacts be tracked in Claire de Binare repository or historical documentation material?
+   - Model A: historical documentation material (separate concern)
+   - Model B: Claire de Binare repository (single location)
+   - Model C: historical documentation material (current state)
 
 ---
 
@@ -369,22 +369,22 @@ logs/
 ## Next Steps (Decision-Dependent)
 
 **If Model A selected:**
-1. Create `.rotation_policy.yml` in Working Repo `logs/`
+1. Create `.rotation_policy.yml` in Claire de Binare repository `logs/`
 2. Implement archival agent (weekly cron job)
-3. Migrate existing logs to Docs Hub (select noteworthy logs)
+3. Migrate existing logs to historical documentation material (select noteworthy logs)
 4. Update agent prompts (runtime vs. knowledge rules)
 5. Document in both README.md files
 
 **If Model B selected:**
-1. Create `logs/runtime/` and `logs/knowledge/` in Working Repo
+1. Create `logs/runtime/` and `logs/knowledge/` in Claire de Binare repository
 2. Update `.gitignore` (ignore runtime/, track knowledge/)
-3. Move Docs Hub logs/ to Working Repo logs/knowledge/
+3. Move historical documentation material logs/ to Claire de Binare repository logs/knowledge/
 4. Update agent prompts (single location, clear subdirectory rules)
-5. Document in Working Repo logs/README.md
+5. Document in Claire de Binare repository logs/README.md
 
 **If Model C selected:**
-1. Create `logs/README.md` in Working Repo
-2. Update `logs/README.md` in Docs Hub (clarify relationship)
+1. Create `logs/README.md` in Claire de Binare repository
+2. Update `logs/README.md` in historical documentation material (clarify relationship)
 3. Update agent prompts (reference README for guidance)
 4. Document explicit rules (where to write what)
 
@@ -395,11 +395,11 @@ logs/
 **Tools Used:**
 - `ls -la` for directory structure survey
 - `find` for file type inventory
-- Manual review of README.md (Docs Hub logs/)
+- Manual review of README.md (historical documentation material logs/)
 
 **Files Reviewed:**
-- Working Repo `logs/`: 10 files + 4 subdirectories
-- Docs Hub `logs/`: 3 files + 6 subdirectories
+- Claire de Binare repository `logs/`: 10 files + 4 subdirectories
+- historical documentation material `logs/`: 3 files + 6 subdirectories
 
 **Time Spent:** 30 minutes
 
@@ -407,8 +407,8 @@ logs/
 
 ## Related Documentation
 
-- Docs Hub `logs/README.md`: Purpose statement (knowledge artifacts)
-- `.gitignore` (Working Repo): Logs exclusion pattern
+- historical documentation material `logs/README.md`: Purpose statement (knowledge artifacts)
+- `.gitignore` (Claire de Binare repository): Logs exclusion pattern
 
 ---
 

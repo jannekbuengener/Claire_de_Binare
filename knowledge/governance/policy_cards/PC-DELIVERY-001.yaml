@@ -12,11 +12,11 @@ scope:
   - /tests
   agents: all
 triggers:
-- attempt_to_modify_working_repo_code_or_infra
+- attempt_to_modify_claire_de_binare_repository_code_or_infra
 rules:
 - level: MUST
   text: Agent MUST verify DELIVERY_APPROVED.yaml delivery.approved:true before any
-    mutation in Working Repo.
+    mutation in Claire de Binare repository.
 - level: MUST
   text: 'If gate is false/missing: agent MUST stay in Analysis Mode and provide a
     proposal only.'

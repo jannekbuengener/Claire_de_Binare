@@ -10,7 +10,7 @@ Status:
   - DO NOT USE for normal stack operations; canonical runtime is BLUE+RED via `tools\cdb.ps1 runtime up`
 
 How:
-  - points to the working repo root
+  - points to the Claire de Binare repository root
   - attempts to call scripts/stack_up.ps1 and scripts/stack_down.ps1 (legacy paths, no longer present)
   - returns the compose invocation output into the evidence pack
 

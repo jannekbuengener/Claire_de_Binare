@@ -51,7 +51,7 @@ choosing forward validation depth for a planned change (use
 - A confirmed symptom description, or an existing partially-filled Debug-Record.
 - Optional artefacts: error text, `run_id`, `report.json` /
   `shadow_comparison.json`, failing check log, diff, affected paths.
-- Working repo checkout (read-only analysis; this skill does not mutate runtime).
+- Claire de Binare repository checkout (read-only analysis; this skill does not mutate runtime).
 
 ## Delegation (reuse, do not rebuild)
 

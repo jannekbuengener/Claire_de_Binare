@@ -6,8 +6,7 @@ knowledge lived in a separate external docs repo.
 That model is retired. For current planning and canon use:
 
 - `knowledge/ACTIVE_ROADMAP.md`
-- `docs/meta/WORKING_REPO_CANON.md`
-- `docs/meta/DOCS_HUB_DELETE_READINESS.md`
+- `docs/meta/REPOSITORY_CANON.md`
 
-The original roadmap text is preserved in the local archive snapshot for
-historical audit provenance.
+Earlier revisions remain available through Git history for historical audit
+provenance.

@@ -19,7 +19,7 @@ Andere Actions sind ergänzende Prüf- oder Automationspfade.
 - `contracts.yml` und `python-compat.yml`: Verträge und Laufzeitkompatibilität
 - `e2e.yml`, `e2e-tests.yml`, `e2e-happy-path.yaml`: E2E-Surfaces
 - `gitleaks.yml`, `trivy.yml`, `security-scan.yml`, `codeql-python.yml`: Security
-- `docs-hub-guard.yml`, `docs-conflict-guard.yml`, `core-guard.yml`: Guards
+- `repository-canon-guard.yml`, `docs-conflict-guard.yml`, `core-guard.yml`: Guards
 - `required-checks-audit.yml`: manueller Branch-Protection-Abgleich
 
 ## Diagnose

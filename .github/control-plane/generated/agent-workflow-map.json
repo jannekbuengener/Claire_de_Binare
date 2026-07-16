@@ -493,25 +493,6 @@
       "risk": "low"
     },
     {
-      "file": "docs-hub-guard.yml",
-      "name": "Docs Hub Guard",
-      "purpose": "Docs Hub Guard",
-      "triggers": [
-        "pull_request",
-        "push",
-        "workflow_dispatch"
-      ],
-      "permissions": [
-        "read-only"
-      ],
-      "writes_github": false,
-      "has_schedule": false,
-      "status": "active",
-      "required_check_producer": false,
-      "registered_in_markdown_register": true,
-      "risk": "low"
-    },
-    {
       "file": "e2e-happy-path.yaml",
       "name": "E2E Happy Path",
       "purpose": "E2E Happy Path",
@@ -826,6 +807,25 @@
       ],
       "writes_github": false,
       "has_schedule": true,
+      "status": "active",
+      "required_check_producer": false,
+      "registered_in_markdown_register": true,
+      "risk": "low"
+    },
+    {
+      "file": "repository-canon-guard.yml",
+      "name": "Repository Canon Guard",
+      "purpose": "Repository Canon Guard",
+      "triggers": [
+        "pull_request",
+        "push",
+        "workflow_dispatch"
+      ],
+      "permissions": [
+        "read-only"
+      ],
+      "writes_github": false,
+      "has_schedule": false,
       "status": "active",
       "required_check_producer": false,
       "registered_in_markdown_register": true,

@@ -22,13 +22,13 @@ def _mini_config(
         else ["claire-de-binare.mcp.json"]
     )
     return {
-        "schema_version": "1.0",
+        "schema_version": "2.0",
         "issue_refs": ["#2853"],
         "defaults": {"workspaces_repos_dir_env": "CDB_WORKSPACES_REPOS_TEST"},
         "entries": [
             {
-                "key": "working",
-                "display_name": "working",
+                "key": "canonical",
+                "display_name": "canonical",
                 "required": True,
                 "local": {"kind": "repo_root"},
                 "github": {
@@ -41,21 +41,21 @@ def _mini_config(
                 "display_name": "db",
                 "required": True,
                 "local": {"relative_path": "tools/surrealdb"},
-                "github": {"kind": "same_as_working"},
+                "github": {"kind": "same_as_canonical"},
             },
             {
                 "key": "mcp",
                 "display_name": "mcp",
                 "required": True,
                 "local": {"relative_path": "tools/mcp"},
-                "github": {"kind": "same_as_working"},
+                "github": {"kind": "same_as_canonical"},
             },
             {
                 "key": "config",
                 "display_name": "config",
                 "required": True,
                 "local": {"relative_paths": config_paths},
-                "github": {"kind": "same_as_working"},
+                "github": {"kind": "same_as_canonical"},
             },
             {
                 "key": "optional_external",
@@ -97,7 +97,7 @@ def test_build_inventory_all_required_ok(
 
     assert len(report.rows) == 5
     keys = {row.key for row in report.rows}
-    assert keys == {"working", "db", "mcp", "config", "optional_external"}
+    assert keys == {"canonical", "db", "mcp", "config", "optional_external"}
     for row in report.rows:
         if row.required:
             assert row.local_status == "OK"
@@ -171,7 +171,7 @@ def test_canonical_config_loads_from_repo() -> None:
     cfg = inventory.load_inventory_config()
     keys = [entry["key"] for entry in cfg["entries"]]
     assert keys == [
-        "working",
+        "canonical",
         "db",
         "mcp",
         "config",
@@ -186,7 +186,7 @@ def test_compute_exit_code() -> None:
         schema_version="1.0",
         timestamp="t",
         issue_refs=[],
-        working_repo_root="/w",
+        claire_de_binare_repository_root="/w",
         workspaces_repos_dir="/p",
         config_path="/c",
         roots_verdict="pass",
@@ -196,7 +196,7 @@ def test_compute_exit_code() -> None:
         schema_version="1.0",
         timestamp="t",
         issue_refs=[],
-        working_repo_root="/w",
+        claire_de_binare_repository_root="/w",
         workspaces_repos_dir="/p",
         config_path="/c",
         roots_verdict="fail",

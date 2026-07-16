@@ -339,7 +339,7 @@ widerspruechliche Canon-/Ledger-/GitHub-Signale sichtbar macht.
 
 | Kategorie | Beschreibung | Default Severity |
 |-----------|-------------|-----------------|
-| `canon_pointer_drift` | Canon-Pointer-Dateien (AGENTS.md, WORKING_REPO_CANON) geaendert | medium |
+| `canon_pointer_drift` | Canon-Pointer-Dateien (AGENTS.md, REPOSITORY_CANON) geaendert | medium |
 | `ledger_vs_github_drift` | Offene Context-/Drift-Issues im Widerspruch zum Ledger | medium |
 | `lr_status_ambiguity` | LR-Status weicht von NO-GO ab | high |
 | `stale_architecture_docs` | Architecture-/Knowledge-Hub-Dateien geaendert | medium |

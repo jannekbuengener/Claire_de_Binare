@@ -129,7 +129,7 @@ lists infra secrets only — exchange file rotation remains operator-manual unti
 | S1 | Local SSOT directory exists | Operator | Doc ref [`SECRETS_POLICY.md`](../../knowledge/governance/SECRETS_POLICY.md) | `Test-Path` on SSOT dir — attest `PRESENT`/`ABSENT` only; path as `[REDACTED_LOCAL_SSOT]` in evidence | `PRESENT` | `ABSENT` | Not run |
 | S2 | Required stack secret files by **name** | Operator | Cross-check compose tables above | Per-name `Test-Path`; table name → `PRESENT`/`ABSENT` | All required for intended stack scope `PRESENT` | Any required `ABSENT` | Partial |
 | S3 | `SECRETS_PATH` env set for stack ops | Operator | Compose requires `:?SECRETS_PATH` | Operator attests `SET`/`UNSET` — no path dump if sensitive | `SET` | `UNSET` | Unknown |
-| S4 | No secret **values** in repo / PR artifacts | Agent | `git ls-files` excludes external SSOT; PR diff scan per [`docs-hub-guard.yml`](../../.github/workflows/docs-hub-guard.yml) patterns; CI `gitleaks` posture | N/A | No unmitigated value-like hits in changed files | Value leak in artifact | Scan skipped |
+| S4 | No secret **values** in repo / PR artifacts | Agent | `git ls-files` excludes external SSOT; PR diff scan per [`repository-canon-guard.yml`](../../.github/workflows/repository-canon-guard.yml) patterns; CI `gitleaks` posture | N/A | No unmitigated value-like hits in changed files | Value leak in artifact | Scan skipped |
 | S5 | Forbidden permissions off (withdrawal / transfer / admin) | Operator | Policy [`LR-050-SECRETS-READINESS.md`](./LR-050-SECRETS-READINESS.md) §6 | Venue dashboard — attest each `disabled`/`enabled` (must be **disabled**) | All forbidden **disabled** | Any forbidden **enabled** | Not reviewed |
 | S6 | Trading permission scope minimal | Operator | Policy §6 | Attest class: `read_only` / `trade_limited` / `excessive` — no key material | Matches intended canary scope (#2976) | `excessive` or withdrawal-capable | Not reviewed |
 | S7 | IP allowlist / egress binding | Operator | No repo SSOT for egress IP ([`LR-050-VENUE-AUDIT.md`](./LR-050-VENUE-AUDIT.md) §5.2) | Attest `configured` / `not_configured` / `not_required`; optional integer `entry_count` only — **no IP literals** | Policy satisfied | Required but missing | Unknown |
@@ -234,7 +234,7 @@ IP addresses, API key material, account IDs, or email addresses in JSON values.
 ## Redaction Rules (mandatory)
 
 Consolidated from [`LR-050-SECRETS-READINESS.md`](./LR-050-SECRETS-READINESS.md) §9,
-[`.github/workflows/docs-hub-guard.yml`](../../.github/workflows/docs-hub-guard.yml), and
+[`.github/workflows/repository-canon-guard.yml`](../../.github/workflows/repository-canon-guard.yml), and
 [`docs/evidence/reports/lr050/runtime_dry_run/2026-06-04/redaction_report.md`](../evidence/reports/lr050/runtime_dry_run/2026-06-04/redaction_report.md).
 
 | Field | In repo evidence? |
@@ -296,7 +296,7 @@ $names = @(
 ### Step 3 — Agent/repo tier-A (optional companion PR)
 
 - Redaction review on evidence pack before merge.
-- `git diff --check`; docs-hub-guard-style pattern scan on new files only.
+- `git diff --check`; repository-canon-guard-style pattern scan on new files only.
 
 ### Step 4 — Commit evidence + #2983 comment
 

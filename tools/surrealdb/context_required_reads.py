@@ -112,8 +112,8 @@ DOMAIN_READS: dict[str, list[dict[str, str]]] = {
     ],
     "docs": [
         {
-            "path": "docs/meta/WORKING_REPO_CANON.md",
-            "reason": "Working repo canon matrix and status SSOT rule",
+            "path": "docs/meta/REPOSITORY_CANON.md",
+            "reason": "Claire de Binare repository canon matrix and status SSOT rule",
             "source_ref": "agents/AGENTS.md read order",
         },
     ],

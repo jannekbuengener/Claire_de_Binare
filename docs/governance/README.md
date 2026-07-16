@@ -21,15 +21,15 @@ This directory contains governance artifacts for the Claire de Binare (CDB) trad
 
 **Change Policy**:
 - Any change to system invariants requires:
-  1. Update to the canonical document in this working repo
+  1. Update to the canonical document in this Claire de Binare repository
   2. Updated references and enforcement mechanisms
   3. Passing all contract tests and drift guards
   4. Human approval via PR review
 
 **Local Canon Rule**:
 - `SYSTEM_INVARIANTS.md` lives in `knowledge/governance/`
-- Enforcement mechanisms live in the same working repo (tests, schemas, CI, guards)
-- Legacy Docs-Hub references are archival only and not the default maintenance path
+- Enforcement mechanisms live in the same Claire de Binare repository (tests, schemas, CI, guards)
+- Legacy historical documentation material references are archival only and not the default maintenance path
 
 ---
 

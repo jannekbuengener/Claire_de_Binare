@@ -98,7 +98,7 @@ Ein Verstoss gegen diese Regeln bedeutet **Systembruch**.
 **Pruefung:** Bei Konflikt: STOP und User fragen.
 
 ### INV-051: Canon Location
-**Regel:** Produktiver Canon liegt im Working Repo.
+**Regel:** Produktiver Canon liegt im Claire de Binare repository.
 **Pfad:** `knowledge/`, `docs/`, `agents/`, `.github/` im Repo `Claire_de_Binare`.
 **Pruefung:** Keine Default-Navigation oder Resolver duerfen ein externes Docs Repo als Pflicht voraussetzen.
 

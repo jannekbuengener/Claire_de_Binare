@@ -12,7 +12,7 @@ The CDB Strategic Idea Lab is a public collection of strategy, architecture, pro
 
 - A **public reference point** for CDB's future-state architecture documents, published as GitHub Gists
 - A **discussion space** where ideas, criticism, suggestions, and further elaboration are welcome
-- A **bridge** between the active working repo (canon, code, evidence, governance) and external strategic thinking
+- A **bridge** between the active Claire de Binare repository (canon, code, evidence, governance) and external strategic thinking
 - A **collection of curated documents** covering profitability scaling, validation platforms, context intelligence, cloud operations, client products, and future-domain exploration
 
 ## What This Is Not
@@ -21,7 +21,7 @@ The CDB Strategic Idea Lab is a public collection of strategy, architecture, pro
 - **Not** a specification — no implementation-ready contracts or API definitions
 - **Not** an authority — no document in this lab overrides repo canon, issues, PRs, governance, or live-readiness status
 - **Not** a Live-Go, Echtgeld-Go, Runtime-Go, DB-Go, or any operations or capital authorisation
-- **Not** a replacement for the active repository — the working repo remains the single source of truth for everything that runs
+- **Not** a replacement for the active repository — the Claire de Binare repository remains the single source of truth for everything that runs
 
 ## Public Gist Index
 

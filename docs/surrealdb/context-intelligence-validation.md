@@ -8,7 +8,7 @@
 
 ## 1. Zweck
 
-Dieses Dokument dient als statische Guardrail-Checkliste für alle Context Intelligence Artefakte im Working Repo.
+Dieses Dokument dient als statische Guardrail-Checkliste für alle Context Intelligence Artefakte im Claire de Binare repository.
 Agenten MÜSSEN dieses Dokument vor Änderungen an Context-Intelligence-Dokumenten, Schema-Drafts oder Ontologien lesen.
 
 ---

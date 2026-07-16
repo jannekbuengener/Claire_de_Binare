@@ -16,7 +16,7 @@ pytestmark = pytest.mark.unit
 
 @pytest.fixture
 def certify_repo_root() -> Path:
-    """Working-repo root with cross-repo inventory config (#2853)."""
+    """Claire de Binare repository root with cross-repo inventory config (#2853)."""
     return certify._repo_root()
 
 

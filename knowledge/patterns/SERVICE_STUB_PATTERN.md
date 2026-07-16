@@ -1,6 +1,6 @@
 # Service Stub Pattern
 
-**Extracted from**: Working Repo AUTONOMOUS_WORK_COMPLETE_2025-12-24.md
+**Extracted from**: Claire de Binare repository AUTONOMOUS_WORK_COMPLETE_2025-12-24.md
 **Purpose**: Template for creating minimal service stubs
 
 ## Pattern Overview
@@ -117,4 +117,4 @@ pydantic==2.5.2
 ---
 
 **Last Updated**: 2025-12-27
-**Source**: Migration from Working Repo (Issue #143)
+**Source**: Migration from Claire de Binare repository (Issue #143)

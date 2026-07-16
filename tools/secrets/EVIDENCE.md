@@ -322,7 +322,7 @@ This approach:
 **Deployment Status:**
 - ✅ PR #711: Secret rotator v1.1 (MERGED)
 - ✅ PR #712: `apply -ExportAfter` (MERGED)
-- ✅ PR #59 (Docs Hub): Policy + Runbook (MERGED)
+- ✅ PR #59 (historical documentation material): Policy + Runbook (MERGED)
 
 ---
 

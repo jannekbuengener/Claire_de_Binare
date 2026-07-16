@@ -44,7 +44,7 @@ CANON_READ_ORDER: list[str] = [
     "AGENTS.md",
     "agents/AGENTS.md",
     "agents/roles/CODEX.md",
-    "docs/meta/WORKING_REPO_CANON.md",
+    "docs/meta/REPOSITORY_CANON.md",
     "knowledge/governance/CDB_CONSTITUTION.md",
     "knowledge/governance/CDB_GOVERNANCE.md",
     "knowledge/governance/CDB_AGENT_POLICY.md",

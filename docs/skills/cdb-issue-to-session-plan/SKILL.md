@@ -21,7 +21,7 @@ Use this after `cdb-control-intake` when the next concrete unit of work is one s
 ## Inputs
 
 - A concrete GitHub issue number, URL, or issue thread.
-- Working repo at `D:\Dev\Workspaces\Repos\Claire_de_Binare`.
+- Claire de Binare repository at `D:\Dev\Workspaces\Repos\Claire_de_Binare`.
 - Access to GitHub Issue `#1445`, its comments, and current open issues/PRs.
 
 ## Workflow

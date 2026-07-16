@@ -26,7 +26,7 @@ Check known drift vectors against the current canon and return a bounded reconci
 ## Inputs
 
 - A drift-check request, drift suspicion, or maintenance pass over canon surfaces.
-- Working repo at `D:\Dev\Workspaces\Repos\Claire_de_Binare`.
+- Claire de Binare repository at `D:\Dev\Workspaces\Repos\Claire_de_Binare`.
 - Access to `docs/runbooks/CONTROL_REGISTER.md` and the repo surfaces it points to.
 
 ## Required Drift Areas

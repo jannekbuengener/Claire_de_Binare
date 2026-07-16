@@ -57,7 +57,7 @@ CANON_PATHS: set[str] = {
     "knowledge/governance/CDB_AGENT_POLICY.md",
     "knowledge/governance/SYSTEM_INVARIANTS.md",
     "knowledge/CDB_KNOWLEDGE_HUB.md",
-    "docs/meta/WORKING_REPO_CANON.md",
+    "docs/meta/REPOSITORY_CANON.md",
 }
 
 

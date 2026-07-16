@@ -4,7 +4,7 @@
 
 **Superseded** (2026-03-29)
 
-> **Post-Consolidation Note:** The `Claire_de_Binare_Docs` repository was retired and consolidated into the `Claire_de_Binare` working repo (monorepo). The split-repo model described below is historical context only. The working repo now holds code, infrastructure, governance, and documentation. See the current repo structure in `CLAUDE.md` and `knowledge/SYSTEM.CONTEXT.md`.
+> **Post-Consolidation Note:** The `historical_documentation_source` repository was retired and consolidated into the `Claire_de_Binare` Claire de Binare repository (monorepo). The split-repo model described below is historical context only. The Claire de Binare repository now holds code, infrastructure, governance, and documentation. See the current repo structure in `CLAUDE.md` and `knowledge/SYSTEM.CONTEXT.md`.
 
 ## Kontext
 
@@ -19,7 +19,7 @@ Folgende Faktoren beeinflussen diese Entscheidung:
 
 ## Entscheidung
 
-Das `Claire_de_Binare_Docs` Repository wird als **reines Dokumentations- und Governance-Repository** definiert. Es darf ausschließlich folgende Inhalte enthalten:
+Das `historical_documentation_source` Repository wird als **reines Dokumentations- und Governance-Repository** definiert. Es darf ausschließlich folgende Inhalte enthalten:
 
 1. **Markdown-Dateien (.md)** für:
    - Governance-Dokumente

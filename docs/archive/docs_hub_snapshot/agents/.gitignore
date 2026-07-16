@@ -1,6 +1,0 @@
-_local/
-**/cache/
-**/*.log
-**/.secrets/
-.cdb_local/
-agents/

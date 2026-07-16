@@ -101,7 +101,7 @@ Vertrag: `docs/surrealdb/local-context-runtime-contract.md`
 
 ## Migration von Legacy
 
-Die root-level `docker-compose.yml` existiert nicht mehr im Working Repo.
+Die root-level `docker-compose.yml` existiert nicht mehr im Claire de Binare repository.
 
 **Kanonische Pfade:**
 1. **Runtime:** `compose.blue.yml` + `compose.red.yml` (oder `make docker-up`)

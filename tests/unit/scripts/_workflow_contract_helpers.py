@@ -63,7 +63,7 @@ REQUIRED_CHECK_CONTEXTS = frozenset(
 
 NON_REQUIRED_GUARD_WORKFLOWS = frozenset(
     {
-        "docs-hub-guard.yml",
+        "repository-canon-guard.yml",
         "docs-conflict-guard.yml",
     }
 )

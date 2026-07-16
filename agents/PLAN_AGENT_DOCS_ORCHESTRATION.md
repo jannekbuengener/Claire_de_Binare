@@ -7,7 +7,7 @@ Use these local paths instead:
 
 - `agents/AGENTS.md`
 - `knowledge/ARCHITECTURE_COCKPIT.md`
-- `docs/meta/WORKING_REPO_CANON.md`
+- `docs/meta/REPOSITORY_CANON.md`
 
 The original split-repo planning text remains available in the local archive
 snapshot.

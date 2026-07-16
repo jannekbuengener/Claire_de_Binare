@@ -1,9 +1,9 @@
 # AGENTS
 
 Status: Root Pointer + Session Compass
-Scope: Working Repo
+Scope: Claire de Binare repository
 
-Diese Datei ist der Root-Pointer fuer die lokale Agenten-Registry im Working Repo
+Diese Datei ist der Root-Pointer fuer die lokale Agenten-Registry im Claire de Binare repository
 und der schnelle Einstiegsanker fuer kanonische Dateien und aktuellen Projektstatus.
 
 Kanonische Agenten-Registry:
@@ -13,7 +13,7 @@ Verknuepfte Rolle:
 [`agents/roles/CODEX.md`](agents/roles/CODEX.md)
 
 Wichtige kanonische Dateien:
-- [`docs/meta/WORKING_REPO_CANON.md`](docs/meta/WORKING_REPO_CANON.md)
+- [`docs/meta/REPOSITORY_CANON.md`](docs/meta/REPOSITORY_CANON.md)
 - [`knowledge/governance/CDB_CONSTITUTION.md`](knowledge/governance/CDB_CONSTITUTION.md)
 - [`knowledge/governance/CDB_GOVERNANCE.md`](knowledge/governance/CDB_GOVERNANCE.md)
 - [`knowledge/governance/CDB_AGENT_POLICY.md`](knowledge/governance/CDB_AGENT_POLICY.md)
@@ -28,7 +28,7 @@ Wichtige kanonische Dateien:
 - [`docs/onboarding/AGENT_ROOT_SURFACE_MATRIX.md`](docs/onboarding/AGENT_ROOT_SURFACE_MATRIX.md)
 
 Aktueller Projektstand:
-- Working Repo ist der produktive Canon fuer Agenten-, Governance-, Knowledge- und Navigationsdoku.
+- Das Claire de Binare repository ist die einzige kanonische Quelle fuer Code, Infrastruktur und Dokumentation.
 - Repo-/Engineering-Status steht in [`CURRENT_STATUS.md`](CURRENT_STATUS.md); offene PRs, letzte Main-Merges und Arbeitsstatus dort einsehen.
 - Operatives Live-Readiness-Verdikt laut [`docs/live-readiness/LR-AUDIT-STATUS-2026-03-05.md`](docs/live-readiness/LR-AUDIT-STATUS-2026-03-05.md): `NO-GO`; reale Trades bleiben durch Human Gate blockiert.
 - Board-/Stage-Status laut [`docs/runbooks/CONTROL_REGISTER.md`](docs/runbooks/CONTROL_REGISTER.md): `stage:trade-capable` (ratifiziert 2026-04-08 via Issue `#1492`); dieses Stage-System ist orthogonal zum LR-System und autorisiert weder Live-Kapital noch Strategie-Freigabe.
@@ -42,8 +42,8 @@ Status-Regel:
 - Historische Statusdateien nur als Rueckgriff verwenden und nicht als SSOT behandeln.
 
 Hinweis:
-- Das Working Repo ist der produktive Standardpfad fuer Agenten-, Governance- und Navigationsdoku.
-- Das lokale Archiv unter `docs/archive/docs_hub_snapshot/` ist nur noch historischer Rueckgriff und nicht mehr Canon.
+- Alle kanonischen Pfade liegen innerhalb von `Claire_de_Binare`.
+- `docs/archive/` enthaelt nur historische Einzelartefakte und ist kein zweiter Canon.
 
 Quick Intent Router:
 - If the user says `/onboarding`, `onboarding`, `onboarding durchführen`, `mach onboarding`, `fresh agent onboarding`, or equivalent, run: `python -m tools.onboarding_orchestrator`

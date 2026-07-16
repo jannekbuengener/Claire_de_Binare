@@ -25,7 +25,7 @@ des maschinenlesbaren Vertrags in
 | `governance/` | Mischung aus CI-Gate, Readiness-Konfiguration, Policy-Duplikat und historischem Prozess | Aufteilen | `.github/governance/`, `config/live-readiness/`, `knowledge/governance/`, `docs/archive/governance/` |
 | `k8s/` | Unvollständiges Platzhalter-Skelett, Placeholder-Image, veralteter Port, keine aktive Deployment-/CI-Nutzung; Issue #293 geschlossen | Löschen | Entscheidungsstand in `knowledge/decisions/K8S_BUDGET_DECISION.md` |
 | `manifests/` | Aktive ARVP-Kampagnen- und Compose-Override-Konfiguration | Verschieben | `config/arvp/` |
-| `mcp_navpack_working_repo/` | Aktive Navigationshilfe, kein eigener Produktbereich | Verschieben | `docs/navigation/mcp-navpack/` |
+| `mcp_navpack_claire_de_binare_repository/` | Aktive Navigationshilfe, kein eigener Produktbereich | Verschieben | `docs/navigation/mcp-navpack/` |
 | `reports/` | Versionierte historische Reports und Evidence | Verschieben | `docs/evidence/reports/`; neue Reports nach `artifacts/reports/` |
 
 ## Bewusst im Root verbleibende Verzeichnisse

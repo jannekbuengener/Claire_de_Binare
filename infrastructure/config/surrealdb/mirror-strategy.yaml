@@ -1,8 +1,8 @@
 version: 1
 mode: async_mirror
 primary_sources:
-  governance_docs: git_docs_hub
-  policies: git_docs_hub
+  governance_docs: git_claire_de_binare
+  policies: git_claire_de_binare
   ledger_events: git_ledger
 mirror_targets:
   surrealdb:

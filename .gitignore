@@ -89,7 +89,7 @@ logs
 !knowledge/logs/**
 *.log
 !docs/runbooks/evidence/**/*.log
-# Replay-generated audit logs (Docs Hub Guard; see .github/workflows/docs-hub-guard.yml)
+# Replay-generated audit logs (Repository Canon Guard; see .github/workflows/repository-canon-guard.yml)
 artifacts/**/audit.log
 npm-debug.log*
 yarn-debug.log*
@@ -160,9 +160,8 @@ coverage/
 # Dependencies  
 node_modules/
 
-# Other projects in workspace (separate repos)
+# Local workspace checkouts
 Claire_de_Binare/
-Claire_de_Binare_Docs/
 .cdb_local/
 
 # AI tooling local state

@@ -4,7 +4,7 @@
 
 ## Link-Konvention
 - **Lokale Doku**: relative Links innerhalb dieses Repos.
-- **Working Repo Code**: GitHub-Link mit Branch-Placeholder:  
+- **Claire de Binare repository Code**: GitHub-Link mit Branch-Placeholder:
   `https://github.com/jannekbuengener/Claire_de_Binare/blob/{{BRANCH}}/<path>`
 
 ## Kanonische Architektur-Docs
@@ -31,7 +31,7 @@ graph LR
 ---
 
 ## ⚙️ Kernkomponenten: Design ↔️ Code ↔️ Contracts
-| Komponente | Zweck | Contracts (Topics/Streams/DB) | Design (Docs) | Code (Working Repo) |
+| Komponente | Zweck | Contracts (Topics/Streams/DB) | Design (Docs) | Code (Claire de Binare repository) |
 | :--- | :--- | :--- | :--- | :--- |
 | **`cdb_core`** | Shared Modelle/Events | `Signal`, `Order`, `OrderResult` | [Design](./deep-issues-lab/cdb_core.md) | [Code](https://github.com/jannekbuengener/Claire_de_Binare/blob/{{BRANCH}}/core/domain/models.py) |
 | **`cdb_signal`** | Signal-Erzeugung | Publishes: `signals` | [Design](./deep-issues-lab/cdb_signal%20(legacy).md) | [Code](https://github.com/jannekbuengener/Claire_de_Binare/blob/{{BRANCH}}/services/signal/service.py) |

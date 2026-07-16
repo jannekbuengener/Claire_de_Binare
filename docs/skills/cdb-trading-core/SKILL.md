@@ -7,14 +7,14 @@ Drift Policy: Surface-Adapter duerfen nur mit dokumentierter Begruendung abweich
 -->
 ---
 name: cdb-trading-core
-description: 'Trading-system development for Claire de Binare in the current working repo. Use when Codex needs cross-cutting work over strategy logic, backtesting, market-data flow, Risk Service integration, shadow or paper evidence, or performance reporting. Respect the current canon: the working repo is authoritative, `trade-capable` does not imply LR-GO, and no action may place live orders or use live credentials.'
+description: 'Trading-system development for Claire de Binare in the current Claire de Binare repository. Use when Codex needs cross-cutting work over strategy logic, backtesting, market-data flow, Risk Service integration, shadow or paper evidence, or performance reporting. Respect the current canon: the Claire de Binare repository is authoritative, `trade-capable` does not imply LR-GO, and no action may place live orders or use live credentials.'
 disable-model-invocation: true
 ---
 
 # Claire de Binare Trading
 
 ## Canon first
-- Use the working repo as canon; do not use the retired external docs repo.
+- Use the Claire de Binare repository as canon; do not use the retired external docs repo.
 - Separate status classes:
   - `CURRENT_STATUS.md` for repo and engineering state
   - `docs/live-readiness/LR-AUDIT-STATUS-2026-03-05.md` for live-readiness verdict

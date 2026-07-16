@@ -1,6 +1,6 @@
 # Operative Runbooks (`docs/runbooks/`)
 
-Index für operator- und agent-nahe Runbooks im Working Repo. **Kein** Live-Readiness-SSOT.
+Index für operator- und agent-nahe Runbooks im Claire de Binare repository. **Kein** Live-Readiness-SSOT.
 
 ## Cockpit (zuerst lesen)
 
@@ -66,6 +66,6 @@ Stage `trade-capable` autorisiert kein Live-Trading.
 
 ## Related
 
-- [`../index.md`](../index.md) — Docs-Hub
+- [`../index.md`](../index.md) — historical documentation material
 - [`../../knowledge/runbooks/README.md`](../../knowledge/runbooks/README.md) — Knowledge-Runbooks (operating rules)
 - [`../../.github/CONTROL_PLANE.md`](../../.github/CONTROL_PLANE.md) — Control plane entry

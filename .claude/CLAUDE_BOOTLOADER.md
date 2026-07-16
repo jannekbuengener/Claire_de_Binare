@@ -9,7 +9,7 @@ This file exists only to ensure automatic workspace loading.
 This bootloader is the first file to be loaded in every session.
 
 READ ORDER:
-1) Session Entry Point (Working Repo):
+1) Session Entry Point (Claire de Binare repository):
    D:\Dev\Workspaces\Repos\Claire_de_Binare\AGENTS.md
    Follow all pointers defined there to canonical documentation.
 

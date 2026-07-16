@@ -84,7 +84,7 @@ independent of the Governance Mirror:
 
 ### Rollback / Rebuild (conceptual, not applied by #1979)
 
-CIS is a mirror of Git data. All primary data lives in the Working Repo Canon;
+CIS is a mirror of Git data. All primary data lives in the Claire de Binare repository Canon;
 SurrealDB is a read-only mirror. The namespace/database is defined as a target
 contract only — no bootstrap, no Apply, no runtime change.
 

@@ -1,5 +1,5 @@
 # LEGACY_FILES.md
 
-> **Historical redirect stub.** The former Docs Hub repository is retired (#1140).
-> A read-only snapshot exists at `docs/archive/docs_hub_snapshot/knowledge/migrations/LEGACY_FILES.md`.
+> **Historical redirect stub.** The former documentation source is retired (#1140).
+> Earlier revisions remain available through the Git history.
 > Active legacy-file tracking is no longer maintained at this path.

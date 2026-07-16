@@ -2,7 +2,7 @@
 
 Dieses Dokument ist **Legacy** und wird nicht mehr als Canon interpretiert.
 
-**Quelle des Canon:** `knowledge/governance/README.md` (Working Repo)
+**Quelle des Canon:** `knowledge/governance/README.md` (Claire de Binare repository)
 
 Regel:
 - Änderungen nur am Canon-Dokument.

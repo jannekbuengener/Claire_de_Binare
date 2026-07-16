@@ -84,7 +84,7 @@
     "config/live-readiness/p5_canary_readiness.yaml",
     "docs/index.md",
     "docs/meta/ROOT_INFORMATION_ARCHITECTURE.md",
-    "docs/meta/WORKING_REPO_CANON.md",
+    "docs/meta/REPOSITORY_CANON.md",
     "docs/navigation/mcp-navpack/ENTRYPOINTS.yaml",
     "docs/navigation/mcp-navpack/CHEATSHEET.md",
     "knowledge/governance/SECRETS_POLICY.md"
@@ -121,7 +121,7 @@
       "disposition": "MOVE: ARVP configuration to config/arvp"
     },
     {
-      "path": "mcp_navpack_working_repo",
+      "path": "mcp_navpack_claire_de_binare_repository",
       "kind": "directory",
       "disposition": "MOVE: navigation pack to docs/navigation/mcp-navpack"
     },

@@ -36,7 +36,7 @@ Must:
 - keep issue and evidence hygiene current
 
 Must not:
-- reactivate external docs-hub defaults
+- reactivate external repository-canon defaults
 - change governance without approval
 - commit secrets
 - bypass delivery or safety gates

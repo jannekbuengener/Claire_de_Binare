@@ -1,6 +1,6 @@
 # Future Services Integration Pattern
 
-**Extracted from**: Working Repo root FUTURE_SERVICES.md (Dec 2025)
+**Extracted from**: Claire de Binare repository root FUTURE_SERVICES.md (Dec 2025)
 **Purpose**: Template for integrating new services into the stack
 
 ## Service Integration Checklist
@@ -78,4 +78,4 @@
 ---
 
 **Last Updated**: 2025-12-27
-**Source**: Migration from Working Repo (Issue #143)
+**Source**: Migration from Claire de Binare repository (Issue #143)

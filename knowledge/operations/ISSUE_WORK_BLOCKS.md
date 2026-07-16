@@ -172,7 +172,7 @@
 
 **Issues:**
 - **#165** (M1 CRITICAL): Critical Canonical Policy Violations - Agent Files in Wrong Repository
-- **#166** (M1 HIGH): Systematic Canonical Policy Violations Throughout Working Repository
+- **#166** (M1 HIGH): Systematic Canonical Policy Violations Throughout the Claire de Binare repository
 - **#167** (M1 HIGH): Missing Agent Roles Directory Structure - Canonical Location Incomplete
 
 **Warum zusammen?**

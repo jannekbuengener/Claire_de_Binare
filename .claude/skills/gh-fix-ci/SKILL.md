@@ -87,7 +87,7 @@ Based on branch protection rules for `main`:
 4. **trivy (kritische CVEs/Supply-Chain)** - Container CVE scan
 5. **Check Core Duplicates** - Prevents duplicate `core/` directories
 6. **Check Delivery Gate** - Enforces `DELIVERY_APPROVED.yaml` gate
-7. **guard** - Docs Hub consistency check
+7. **guard** - repository canon consistency check
 8. **E2E Happy Path** - Full integration test (Redis, Postgres, Docker Compose)
 
 ### Conditional Checks
@@ -276,7 +276,7 @@ Remediation:
 2. **Type Checking:** mypy
 3. **Unit/Integration Tests:** pytest (Python 3.11, 3.12 matrix)
 4. **Security Scans:** gitleaks (credentials), trivy (CVE), pip-audit (dependencies)
-5. **Governance Gates:** Delivery Gate, Core Guard, Docs Hub Guard
+5. **Governance Gates:** Delivery Gate, Core Guard, Repository Canon Guard
 6. **E2E Integration:** Paper Trading pipeline (Redis, Postgres, Docker Compose)
 
 **Total Workflows:** 41 in `.github/workflows/`

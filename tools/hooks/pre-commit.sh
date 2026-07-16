@@ -3,7 +3,7 @@
 
 set -e
 
-echo "Checking consolidated Working Repo baseline..."
+echo "Checking consolidated Claire de Binare repository baseline..."
 
 if command -v pwsh >/dev/null 2>&1; then
     pwsh -File "tools/enforce-root-baseline.ps1"

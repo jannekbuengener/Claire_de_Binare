@@ -18,11 +18,11 @@ Define which data categories the CDB Context Brain operates on, who owns them, w
 
 | # | Category | Owner | Source of Truth | SurrealDB Role | Persist Allowed |
 |---|----------|-------|----------------|----------------|-----------------|
-| 1 | `repo_file` | context_indexer | Git (working repo) | `mirror_read_only` | Yes (hash-verified) |
+| 1 | `repo_file` | context_indexer | Git (Claire de Binare repository) | `mirror_read_only` | Yes (hash-verified) |
 | 2 | `github_issue` | jannek | GitHub live | `cache` | Yes (TTL-bound) |
 | 3 | `github_pr` | jannek | GitHub live | `cache` | Yes (TTL-bound) |
-| 4 | `context_tool` | context_indexer | Git (working repo) | `none` | **No** (repo-only) |
-| 5 | `mcp_boundary` | context_indexer | Git (working repo) | `none` | **No** (repo-only) |
+| 4 | `context_tool` | context_indexer | Git (Claire de Binare repository) | `none` | **No** (repo-only) |
+| 5 | `mcp_boundary` | context_indexer | Git (Claire de Binare repository) | `none` | **No** (repo-only) |
 | 6 | `evidence` | context_indexer | Git + SurrealDB | `primary_scoped` | Yes (append-only) |
 | 7 | `claim` | context_indexer | Git + SurrealDB | `primary_scoped` | Yes (append-only) |
 | 8 | `decision` | agents_via_ledger | Git ledger | `append_only_mirror` | Yes (append-only) |

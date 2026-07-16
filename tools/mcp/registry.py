@@ -290,7 +290,7 @@ TOOLS_V0 = [
                 },
                 "repo_root": {
                     "type": "string",
-                    "description": "Optional absolute path to the working repo root. Canon file checks use this (or bridge module root), not host cwd alone.",
+                    "description": "Optional absolute path to the Claire de Binare repository root. Canon file checks use this (or bridge module root), not host cwd alone.",
                 },
                 "evidence_refs": {
                     "type": "array",

@@ -2,7 +2,7 @@
 
 ## Overview
 
-Analysis of legacy files originally sourced from the now-retired `Claire_de_Binare_Docs` repository's `_legacy_quarantine/files1_Tier1` directory (pre-consolidation, December 2024). That repository and path no longer exist as active working locations.
+Analysis of legacy files originally sourced from the now-retired `historical_documentation_source` repository's `_legacy_quarantine/files1_Tier1` directory (pre-consolidation, December 2024). That repository and path no longer exist as active working locations.
 
 **Purpose**: Extract valuable configurations, identify improvements, document findings.
 

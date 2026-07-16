@@ -5,7 +5,7 @@
 **Status Type**: Service Implementation Audit (historical snapshot from 2026-01-15)
 **Authority**: Historical service implementation audit only; not the current live-readiness verdict and not the current repo/main/test status.
 **Operational Canon**: `docs/live-readiness/LR-AUDIT-STATUS-2026-03-05.md`
-**Working Repo Canon**: `CURRENT_STATUS.md`
+**Claire de Binare repository Canon**: `CURRENT_STATUS.md`
 **Related Issue**: #148
 **Auditor**: Claude Code (autonomous)
 
