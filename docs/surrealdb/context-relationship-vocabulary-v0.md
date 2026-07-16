@@ -57,7 +57,7 @@ reference types defined below (Section 4.2).
 
 | Type | Description |
 |---|---|
-| `repo_artifact` | Versioned file in the working repo |
+| `repo_artifact` | Versioned file in the Claire de Binare repository |
 | `code_symbol` | Class, function, type, or constant |
 | `doc_page` | Markdown document |
 | `doc_section` | Heading-scoped section within a doc_page |

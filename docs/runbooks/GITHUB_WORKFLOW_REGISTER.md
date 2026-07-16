@@ -58,7 +58,7 @@ Workflows liefern ergänzende Prüfungen, Reports oder Automatisierung.
 | `delivery-gate.yml` | aktiv | schedule, workflow_dispatch | read-only | low |
 | `docker-publish.yml` | aktiv | push, workflow_dispatch | read-only | low |
 | `docs-conflict-guard.yml` | aktiv | pull_request, push, workflow_dispatch | read-only | low |
-| `docs-hub-guard.yml` | aktiv | pull_request, push, workflow_dispatch | read-only | low |
+| `repository-canon-guard.yml` | aktiv | pull_request, push, workflow_dispatch | read-only | low |
 | `e2e-happy-path.yaml` | aktiv | schedule, workflow_dispatch | read-only | low |
 | `e2e-tests.yml` | aktiv | schedule, workflow_dispatch | issues:write | medium |
 | `e2e.yml` | aktiv | push, schedule, workflow_dispatch | read-only | low |

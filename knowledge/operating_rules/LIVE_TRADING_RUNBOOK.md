@@ -4,7 +4,7 @@ Status: Canonical operating runbook path
 Scope: Live-trading cutover and rollback procedure
 Operational verdict SSOT: `docs/live-readiness/LR-AUDIT-STATUS-2026-03-05.md`
 
-This file is the canonical working-repo path for the live-trading operator runbook.
+This file is the canonical repository path for the live-trading operator runbook.
 It documents procedure and checklist shape only; the repo-wide Echtgeld Go/No-Go
 verdict remains owned by the live-readiness audit status.
 

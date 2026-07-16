@@ -40,7 +40,7 @@ jobs:
 
           $files = $files |
             Where-Object {
-              $_.FullName -notmatch '[\\/](docs\\archive\\docs_hub_snapshot|mcp_navpack_docs_hub[^\\/]*|\.git)([\\/]|$)'
+              $_.FullName -notmatch '[\\/](docs\\archive|\.git)([\\/]|$)'
             } |
             Sort-Object FullName -Unique
 

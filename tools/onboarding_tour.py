@@ -43,7 +43,7 @@ ROLE_LABELS: dict[str | None, str] = {
 
 PURPOSE = (
     "Claire de Binare is a deterministic, governance-first trading-system repo. "
-    "The working repo is the active canon for code, docs, governance, and "
+    "The Claire de Binare repository is the active canon for code, docs, governance, and "
     "onboarding navigation."
 )
 

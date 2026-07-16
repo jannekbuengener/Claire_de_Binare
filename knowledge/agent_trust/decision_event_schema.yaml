@@ -19,7 +19,7 @@ fields:
   agent_id: {type: string}
   provider: {type: string}
   action_type: {type: string}
-  scope: {type: string, allowed: [governance, knowledge, working_repo, github_ops]}
+  scope: {type: string, allowed: [governance, knowledge, claire_de_binare_repository, github_ops]}
   policy_refs: {type: array, items: string}
   evidence: {type: array, items: string}
   reversibility: {type: string, allowed: [reversible, partially_reversible, irreversible]}

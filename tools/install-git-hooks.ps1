@@ -1,6 +1,6 @@
 <#
 .SYNOPSIS
-Install Git hooks for Working Repo baseline enforcement.
+Install Git hooks for Claire de Binare repository baseline enforcement.
 
 .DESCRIPTION
 Sets up pre-commit hook to enforce the consolidated repo baseline.
@@ -26,7 +26,7 @@ Write-Host "🔧 Installing Git hooks for consolidated baseline enforcement..." 
 
 # Check if .git directory exists
 if (-not (Test-Path ".git")) {
-    throw "Not in a Git repository root. Run from Working Repo root directory."
+    throw "Not in a Git repository root. Run from Claire de Binare repository root directory."
 }
 
 # Check if hooks directory exists
@@ -47,10 +47,10 @@ if (Test-Path $preCommitHook -and -not $Force) {
 # Create pre-commit hook content
 $hookContent = @'
 #!/bin/sh
-# Pre-commit hook: consolidated Working Repo baseline enforcement
+# Pre-commit hook: consolidated Claire de Binare repository baseline enforcement
 # Prevents commits that reintroduce split-repo defaults in key entrypoints
 
-echo "Checking consolidated Working Repo baseline..."
+echo "Checking consolidated Claire de Binare repository baseline..."
 
 # Run the PowerShell baseline enforcement script
 if command -v pwsh >/dev/null 2>&1; then
@@ -71,19 +71,19 @@ if [ $baseline_result -ne 0 ]; then
     echo ""
     echo "📋 Common violations:"
     echo "   • Missing local canon dirs such as agents/, docs/, or knowledge/"
-    echo "   • Missing key entrypoints such as docs/meta/WORKING_REPO_CANON.md"
+    echo "   • Missing key entrypoints such as docs/meta/REPOSITORY_CANON.md"
     echo "   • Stale references to the retired external docs repo in navigation or guards"
     echo ""
-    echo "🎯 Working Repo Rule: LOCAL CANON"
+    echo "🎯 Claire de Binare repository Rule: LOCAL CANON"
     echo "   ✅ Active docs live in this repo"
     echo "   ✅ Root pointers must resolve internally"
-    echo "   ❌ External Docs-Hub paths are legacy-only"
+    echo "   ❌ External historical documentation material paths are legacy-only"
     echo ""
     echo "📚 Migration Guide:"
-    echo "   • Canon matrix → docs/meta/WORKING_REPO_CANON.md"
+    echo "   • Canon matrix → docs/meta/REPOSITORY_CANON.md"
     echo "   • Agent registry → agents/AGENTS.md"
     echo "   • Governance canon → knowledge/governance/"
-    echo "   • Archive-only legacy docs → docs/archive/docs_hub_snapshot/"
+    echo "   • Archive-only legacy docs → docs/archive/"
     echo ""
     echo "🔧 To fix:"
     echo "   1. Restore local canon files and directories"

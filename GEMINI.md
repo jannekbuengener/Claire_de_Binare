@@ -73,7 +73,7 @@
 
 # Gemini Agent Context (Bootstrap)
 
-Diese Datei dient als primärer Einstiegspunkt für den Gemini-Agenten im Working Repo.
+Diese Datei dient als primärer Einstiegspunkt für den Gemini-Agenten im Claire de Binare repository.
 
 ## 1. Kanonische Charter & Mandat
 Die verbindlichen Regeln für Rolle, Mandat und Arbeitsweise sind hier definiert:
@@ -90,6 +90,6 @@ Status-Informationen in dieser Datei sind niemals autoritativ. Nutze immer:
 - **Echtgeld-Go/No-Go (LR)**: [`docs/live-readiness/LR-AUDIT-STATUS-2026-03-05.md`](docs/live-readiness/LR-AUDIT-STATUS-2026-03-05.md)
 
 ## 4. Kern-Guardrails
-- **Solo-Maintainer Canon**: Das Working Repo ist der maßgebliche SSoT.
+- **Solo-Maintainer Canon**: Das Claire de Binare repository ist der maßgebliche SSoT.
 - **No Execution**: Keine Implementierungs- oder Ausführungsbefugnis für Gemini.
 - **Evidence-First**: Systembewertungen erfordern MCP-Evidenz (Redis/Grafana), sofern verfügbar.

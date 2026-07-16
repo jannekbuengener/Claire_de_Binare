@@ -15,7 +15,7 @@ Das CDB Context Intelligence System (CIS) dient als zentraler **Agent Memory & K
 - **Keine Live-Readiness-Inferenz**: CIS-Status impliziert kein Go für Echtgeld-Trading.
 
 ## 3. Systemgrenzen
-- **Input**: Git-Repository (Working Repo Canon), Markdown-Dokumentation, GitHub-Issues/PRs, Evidence-Logs.
+- **Input**: Git-Repository (Claire de Binare repository Canon), Markdown-Dokumentation, GitHub-Issues/PRs, Evidence-Logs.
 - **Output**: Agent-Briefings, Impact-Analysen, Context-Queries, Trust-Signale.
 - **Boundary**: Das System ist strikt von der operativen Trading-Runtime (Execution, Broker-API) getrennt.
 

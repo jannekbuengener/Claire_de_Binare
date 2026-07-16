@@ -93,7 +93,7 @@ Canonical Read Order resolved per `agents/AGENTS.md`:
 3. `knowledge/governance/CDB_AGENT_POLICY.md`
 4. `knowledge/governance/SYSTEM_INVARIANTS.md`
 5. `knowledge/CDB_KNOWLEDGE_HUB.md`
-6. `docs/meta/WORKING_REPO_CANON.md`
+6. `docs/meta/REPOSITORY_CANON.md`
 7. `CURRENT_STATUS.md`
 8. `docs/live-readiness/LR-AUDIT-STATUS-2026-03-05.md`
 9. `docs/runbooks/CONTROL_REGISTER.md`

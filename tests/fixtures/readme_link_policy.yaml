@@ -33,7 +33,7 @@ explicit_active_surfaces:
   paths:
     - CURRENT_STATUS.md
     - docs/runbooks/CONTROL_REGISTER.md
-    - docs/meta/WORKING_REPO_CANON.md
+    - docs/meta/REPOSITORY_CANON.md
     - knowledge/CDB_KNOWLEDGE_HUB.md
     - docs/index.md
     - DEVELOPER_ONBOARDING.md

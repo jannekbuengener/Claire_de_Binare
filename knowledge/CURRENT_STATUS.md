@@ -4,7 +4,7 @@
 **Snapshot Scope:** Legacy knowledge-hub working snapshot
 **Last Updated:** 2026-01-10 18:30 CET
 **Authority:** Historical context only. This file is not the current live-readiness verdict and not the current repo/main/test status.
-**Current Canonical Sources:** `docs/live-readiness/LR-AUDIT-STATUS-2026-03-05.md` (operational live readiness), `CURRENT_STATUS.md` (working repo / engineering status)
+**Current Canonical Sources:** `docs/live-readiness/LR-AUDIT-STATUS-2026-03-05.md` (operational live readiness), `CURRENT_STATUS.md` (Claire de Binare repository / engineering status)
 **Branch:** main
 **Latest Commit:** 94488ca
 **Session:** Risk Position Sizing Fix + Order Observability
@@ -21,7 +21,7 @@ MEXC WebSocket → cdb_ws (protobuf decode) → Redis (pub/sub) → cdb_signal
 
 **Pre-Flight Check (2025-12-29 16:00):**
 - ✅ Docker Stack: 10/10 Services healthy (44min uptime)
-- ⚠️ GitHub Actions: Recent runs failing (CI/CD Pipeline, Docs Hub Guard)
+- ⚠️ GitHub Actions: Recent runs failing (CI/CD Pipeline, Repository Canon Guard)
 - ✅ Issues #99, #100, #156: Verified OPEN
 
 ---
@@ -468,7 +468,7 @@ CDB ist **"Over-governed, Under-enforced"** → Governance existiert nur als Dok
 **Recent Runs:** 10/10 Workflows mit `action_required`
 - CI/CD Pipeline
 - Delivery Gate
-- Docs Hub Guard
+- Repository Canon Guard
 - Branch Policy
 - Gitleaks
 

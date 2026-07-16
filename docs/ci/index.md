@@ -18,7 +18,7 @@ auf die beiden Check-Kontexte oben beziehen.
 | Verträge/Kompatibilität | `contracts.yml`, `python-compat.yml` |
 | E2E | `e2e.yml`, `e2e-tests.yml`, `e2e-happy-path.yaml` |
 | Security | `gitleaks.yml`, `trivy.yml`, `security-scan.yml`, `codeql-python.yml` |
-| Guards | `docs-hub-guard.yml`, `docs-conflict-guard.yml`, `core-guard.yml` |
+| Guards | `repository-canon-guard.yml`, `docs-conflict-guard.yml`, `core-guard.yml` |
 | Audit | `required-checks-audit.yml`, `governance-audit.yml` |
 
 Diese Prüfungen können Fehler oder Findings liefern, sind aber keine

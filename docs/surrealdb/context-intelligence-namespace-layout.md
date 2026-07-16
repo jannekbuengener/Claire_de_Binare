@@ -66,7 +66,7 @@ CDB Context Intelligence System (CIS) in SurrealDB. Es ist ein Target Layout Con
 | **Namespace** | `governance` | `cdb` |
 | **Database** | `governance_mirror` | `context_intelligence` |
 | **SurrealDB Role** (ownership.yaml) | `mirror_read_only`, `append_only_mirror` | `mirror_read_only` |
-| **Canonical Source** | Git (docs, ledger) | Git (Working Repo Canon) |
+| **Canonical Source** | Git (docs, ledger) | Git (Claire de Binare repository Canon) |
 | **Writers** | Docs owners, agents via ledger | Context indexer |
 | **Readers** | Governance queries, audit analytics | Agents, CDB-MCP |
 | **Setup Artefakt** | `infrastructure/surrealdb/setup.surql` | `infrastructure/surrealdb/context_intelligence_v0.surql` (read-only draft) |
@@ -164,7 +164,7 @@ einem Git-Artefakt stammt. Records ohne `source_hash` sind Drift (vgl.
 
 | Feld | Typ | Semantik |
 |------|-----|---------|
-| `source_path` | `string` | Pfad im Git Working Repo |
+| `source_path` | `string` | Pfad im Git Claire de Binare repository |
 | `source_commit` | `string` | Git Commit SHA |
 | `source_url` | `string` | Optional: GitHub URL zum Artefakt |
 

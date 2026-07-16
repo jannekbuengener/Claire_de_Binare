@@ -49,7 +49,7 @@ GEMINI
 
 CODEX
 -----
-- Code-Implementierung im Working Repo
+- Code-Implementierung im Claire de Binare repository
 - Keine Docker-, Infra- oder Stack-Arbeit
 
 COPILOT

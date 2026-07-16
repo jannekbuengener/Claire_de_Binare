@@ -110,10 +110,10 @@ def test_build_why_decision_superseded_explanation() -> None:
         explanation_type="why_decision_superseded",
         summary="Alte Decision durch neuen Canon ersetzt.",
         reasons=(
-            "Neuer Canon in WORKING_REPO_CANON.md definiert.",
-            "Alte Docs-Hub-Struktur nicht mehr autoritativ.",
+            "Neuer Canon in REPOSITORY_CANON.md definiert.",
+            "Alte historical documentation material-Struktur nicht mehr autoritativ.",
         ),
-        evidence_refs=("docs/meta/WORKING_REPO_CANON.md",),
+        evidence_refs=("docs/meta/REPOSITORY_CANON.md",),
         required_next_step="Alte Referenzen auf neue Canon-Pfade aktualisieren.",
     )
     result = build_self_explanation(inp)

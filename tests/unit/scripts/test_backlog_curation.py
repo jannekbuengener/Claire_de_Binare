@@ -127,7 +127,7 @@ def test_historical_only_references_fail_closed_and_are_excluded() -> None:
         event_label="task",
         labels=["task"],
         body=(
-            "See `docs/archive/docs_hub_snapshot/knowledge/ARCHITECTURE_MAP.md` and "
+            "See `docs/archive/knowledge/ARCHITECTURE_MAP.md` and "
             "`knowledge/logs/sessions/2026-04-17-issue-1645-wave4-minibatch-g2.md`."
         ),
     )
@@ -138,7 +138,7 @@ def test_historical_only_references_fail_closed_and_are_excluded() -> None:
     assert artifact["curation_status"]["state"] == "fail_closed"
     assert artifact["ambiguities"]
     assert all(
-        "docs/archive/docs_hub_snapshot/knowledge/ARCHITECTURE_MAP.md" != item["path"]
+        "docs/archive/knowledge/ARCHITECTURE_MAP.md" != item["path"]
         for item in artifact["sources"]
     )
 

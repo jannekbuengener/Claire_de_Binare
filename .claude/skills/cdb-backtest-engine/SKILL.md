@@ -7,14 +7,14 @@ Drift Policy: Surface-Adapter duerfen nur mit dokumentierter Begruendung abweich
 -->
 ---
 name: cdb-backtest-engine
-description: Deterministic CDB backtesting and strategy evaluation in the working repo. Use when Codex needs to run or update offline backtests, parameter sweeps, walk-forward tests, baseline comparisons, or PR-ready evidence packs. Treat the local working repo as canon, not the retired external docs repo; never infer live readiness from Board stage; no live keys, no live or testnet execution.
+description: Deterministic CDB backtesting and strategy evaluation in the Claire de Binare repository. Use when Codex needs to run or update offline backtests, parameter sweeps, walk-forward tests, baseline comparisons, or PR-ready evidence packs. Treat the local Claire de Binare repository as canon, not the retired external docs repo; never infer live readiness from Board stage; no live keys, no live or testnet execution.
 disable-model-invocation: true
 ---
 
 # Backtest Engine
 
 ## Canon first
-- Use local working-repo paths only.
+- Use local repository paths only.
 - Read `CURRENT_STATUS.md` for repo and engineering context.
 - Read `docs/live-readiness/LR-AUDIT-STATUS-2026-03-05.md` for Echtgeld guardrails and current `NO-GO`.
 - Read `docs/runbooks/CONTROL_REGISTER.md` for Board stage, but never treat `trade-capable` as live authorization.

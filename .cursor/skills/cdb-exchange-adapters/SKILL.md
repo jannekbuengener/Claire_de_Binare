@@ -7,14 +7,14 @@ Drift Policy: Surface-Adapter duerfen nur mit dokumentierter Begruendung abweich
 -->
 ---
 name: cdb-exchange-adapters
-description: CDB exchange-adapter work in the current working repo. Use when Codex needs to implement or harden REST or websocket adapters, order or market-data normalization, rate-limit handling, reconnect logic, or idempotent exchange boundaries. Prefer current repo realities and active integrations; treat MEXC as the default exchange only when the repo context proves it, and keep all work in paper or testnet-safe scope.
+description: CDB exchange-adapter work in the current Claire de Binare repository. Use when Codex needs to implement or harden REST or websocket adapters, order or market-data normalization, rate-limit handling, reconnect logic, or idempotent exchange boundaries. Prefer current repo realities and active integrations; treat MEXC as the default exchange only when the repo context proves it, and keep all work in paper or testnet-safe scope.
 disable-model-invocation: true
 ---
 
 # Exchange Adapters
 
 ## Canon first
-- Use the working repo as canon. Do not reference the retired external docs repo.
+- Use the Claire de Binare repository as canon. Do not reference the retired external docs repo.
 - Read `CURRENT_STATUS.md` and local adapter code before assuming the active exchange scope.
 - Stage `trade-capable` is not a license for live endpoints or live keys.
 

@@ -147,7 +147,7 @@ def test_benchmark_repro_empty_reads_ok_when_canon_on_module_root(
 ) -> None:
     """MCP-style empty required_reads must not block when canon exists at repo root."""
     if not all((repo_root / rel).is_file() for rel in READINESS_MINIMUM_READS):
-        pytest.skip("full working repo canon not present in this checkout")
+        pytest.skip("full Claire de Binare repository canon not present in this checkout")
     original = os.getcwd()
     try:
         os.chdir(repo_root)

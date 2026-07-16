@@ -2,7 +2,7 @@
 
 Date: 2025-12-19
 Scope: Implementation plan for PR-07 (paper trading service refactor)
-Repo: Claire_de_Binare (Working Repo)
+Repo: Claire_de_Binare (Claire de Binare repository)
 
 ## Current state (observed)
 - services/execution/mock_executor.py: basic mock execution (latency, slippage, success rate)

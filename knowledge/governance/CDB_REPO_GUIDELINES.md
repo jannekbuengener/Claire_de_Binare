@@ -7,11 +7,11 @@ relations:
     - knowledge/governance/CDB_AGENT_POLICY.md
   downstream: []
   status: canonical
-  tags: [repository, guidelines, working_repo, consolidated]
+  tags: [repository, guidelines, claire_de_binare_repository, consolidated]
 ---
 # CDB_REPO_GUIDELINES
 
-Working-repo guidelines for the consolidated repository.
+Claire de Binare repository guidelines for the consolidated repository.
 
 ## 1. Structure
 
@@ -55,7 +55,7 @@ Each PR should make the code path, docs path, and verification story line up:
 
 ## 6. Open Marker Lifecycle
 
-This rule applies to active working-repo paths such as `core/`, `services/`,
+This rule applies to active repository paths such as `core/`, `services/`,
 `infrastructure/`, `scripts/`, `tests/`, `knowledge/`, `docs/`, `.github/`, and
 `agents/`. Archive and snapshot trees such as `knowledge/archive/**` and
 `docs/archive/**` are evidence-only and are not the default cleanup target.

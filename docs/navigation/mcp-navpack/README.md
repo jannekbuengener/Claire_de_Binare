@@ -1,4 +1,4 @@
-# MCP Navpack (Working Repo)
+# MCP Navpack (Claire de Binare repository)
 
 Kompakte Navigations- und Evidence-Hilfe für Agents/MCP — ergänzt, ersetzt nicht `README.md` oder `agents/AGENTS.md`.
 

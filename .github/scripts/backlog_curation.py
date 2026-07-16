@@ -320,7 +320,7 @@ SURFACE_SPECS = (
     SurfaceSpec(
         path="CURRENT_STATUS.md",
         default_role="background",
-        reason="Fallback repo-status context when broader working-repo state matters.",
+        reason="Fallback repo-status context when broader repository state matters.",
         section_hint="repo / engineering status",
         keywords=("status", "current", "repo", "engineering"),
         generic_fallback=True,

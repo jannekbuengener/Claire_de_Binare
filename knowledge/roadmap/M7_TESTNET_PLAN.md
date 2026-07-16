@@ -380,7 +380,7 @@
 ## References
 
 - Epic #91: https://github.com/jannekbuengener/Claire_de_Binare/issues/91
-- MILESTONES.md: `.github/MILESTONES.md` (Working Repo)
+- MILESTONES.md: `.github/MILESTONES.md` (Claire de Binare repository)
 - M8_SECURITY_PLAN.md: `knowledge/roadmap/M8_SECURITY_PLAN.md`
 - M9_RELEASE_PLAN.md: `knowledge/roadmap/M9_RELEASE_PLAN.md`
 - PAPER_TRADING_TEST_REQUIREMENTS.md: `docs/testing/PAPER_TRADING_TEST_REQUIREMENTS.md` (if exists)

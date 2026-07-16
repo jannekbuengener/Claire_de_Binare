@@ -142,7 +142,7 @@ KNOWLEDGE_SKILL_MAP_ANCHORS: tuple[str, ...] = (
     "SKILL_SURFACE_REGISTRY",
     "AGENT_ROOT_SURFACE_MATRIX",
     "onboarding_orchestrator",
-    "WORKING_REPO_CANON",
+    "REPOSITORY_CANON",
     "CDB_KNOWLEDGE_HUB",
 )
 
@@ -151,11 +151,11 @@ ACTIVE_CANON_PATHS: tuple[str, ...] = (
     "docs/skills/SKILL_SURFACE_REGISTRY.md",
     "docs/onboarding/AGENT_ROOT_SURFACE_MATRIX.md",
     "knowledge/CDB_KNOWLEDGE_HUB.md",
-    "docs/meta/WORKING_REPO_CANON.md",
+    "docs/meta/REPOSITORY_CANON.md",
 )
 
 ARCHIVE_ONLY_PATHS: tuple[str, ...] = (
-    "docs/archive/docs_hub_snapshot/",
+    "docs/archive/",
 )
 
 HISTORICAL_SNAPSHOT_PATHS: tuple[str, ...] = (

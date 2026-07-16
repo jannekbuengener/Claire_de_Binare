@@ -2,7 +2,7 @@
 
 Date: 2025-12-19
 Scope: Database schema plan for paper trading
-Repo: Claire_de_Binare (Working Repo)
+Repo: Claire_de_Binare (Claire de Binare repository)
 
 ## Proposed tables
 - paper_orders

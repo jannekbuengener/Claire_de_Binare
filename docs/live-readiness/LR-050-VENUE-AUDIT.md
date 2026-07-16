@@ -27,7 +27,7 @@
 
 ### In scope
 
-- Inventory of broker/exchange/crypto venue surfaces found in the working repo (code, compose references, config names, contracts).
+- Inventory of broker/exchange/crypto venue surfaces found in the Claire de Binare repository (code, compose references, config names, contracts).
 - Separation of mock / paper / sandbox / testnet / live (and `unknown` where not provable from repo).
 - Connector-type classification: REST, WebSocket, SDK, CCXT, custom client.
 - Secret/permission **requirements** (names only; read-only vs trading; forbidden withdrawal/transfer/admin).

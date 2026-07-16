@@ -82,7 +82,7 @@ LR bleibt **NO-GO** — SSOT: [`docs/live-readiness/LR-AUDIT-STATUS-2026-03-05.m
 2. [GitHub Issue #1445](https://github.com/jannekbuengener/Claire_de_Binare/issues/1445) (inkl. neuestem Wochenkommentar)
 3. [`CURRENT_STATUS.md`](CURRENT_STATUS.md)
 4. [`docs/live-readiness/LR-AUDIT-STATUS-2026-03-05.md`](docs/live-readiness/LR-AUDIT-STATUS-2026-03-05.md)
-5. [`docs/meta/WORKING_REPO_CANON.md`](docs/meta/WORKING_REPO_CANON.md)
+5. [`docs/meta/REPOSITORY_CANON.md`](docs/meta/REPOSITORY_CANON.md)
 6. [`agents/AGENTS.md`](agents/AGENTS.md)
 7. [`docs/index.md`](docs/index.md)
 8. [`DEVELOPER_ONBOARDING.md`](DEVELOPER_ONBOARDING.md)
@@ -149,7 +149,7 @@ docker compose -f infrastructure/compose/base.yml -f infrastructure/compose/test
 
 - [`docs/navigation/mcp-navpack/ENTRYPOINTS.yaml`](docs/navigation/mcp-navpack/ENTRYPOINTS.yaml)
 - [`docs/navigation/mcp-navpack/CHEATSHEET.md`](docs/navigation/mcp-navpack/CHEATSHEET.md)
-- [`docs/meta/WORKING_REPO_CANON.md`](docs/meta/WORKING_REPO_CANON.md)
+- [`docs/meta/REPOSITORY_CANON.md`](docs/meta/REPOSITORY_CANON.md)
 - [`docs/meta/ROOT_INFORMATION_ARCHITECTURE.md`](docs/meta/ROOT_INFORMATION_ARCHITECTURE.md)
 
 ## Boundary

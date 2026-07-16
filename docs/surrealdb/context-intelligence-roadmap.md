@@ -16,7 +16,7 @@ Dieses Dokument dient als kanonische Orientierung für den Rollout des CDB Surre
 
 ## 3. Verhältnis zu #1976, #2034 und #2035
 - **Epic #1976**: Definierte das Gesamtbild und die 20 Roadmap-Blöcke.
-- **Wave-7 Landing #2034**: Der aktuelle operative Slice, um CIS ins Working Repo zu bringen.
+- **Wave-7 Landing #2034**: Der aktuelle operative Slice, um CIS ins Claire de Binare repository zu bringen.
 - **Architektur #2035**: Definierte die Systemgrenzen und Komponenten.
 - **Roadmap #2036 (Dieses Dokument)**: Schließt die Lücke zwischen Vision und Issue-Tracking.
 

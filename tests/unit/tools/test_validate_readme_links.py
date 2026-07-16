@@ -41,7 +41,7 @@ def test_classify_readme_archive_prefix() -> None:
     }
     assert (
         readme_validator.classify_readme(
-            "docs/archive/docs_hub_snapshot/README.md", policy
+            "docs/archive/README.md", policy
         )
         == "archive_snapshot"
     )

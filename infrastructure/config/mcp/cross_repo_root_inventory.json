@@ -1,5 +1,5 @@
 {
-  "schema_version": "1.0",
+  "schema_version": "2.0",
   "issue_refs": ["#2853", "#2847"],
   "discovery_notes": [
     "Read-only filesystem discovery; no git clone or private-repo fetch.",
@@ -11,8 +11,8 @@
   },
   "entries": [
     {
-      "key": "working",
-      "display_name": "Claire de Binare (working repo)",
+      "key": "canonical",
+      "display_name": "Claire de Binare (canonical repository)",
       "required": true,
       "local": { "kind": "repo_root" },
       "github": {
@@ -25,14 +25,14 @@
       "display_name": "SurrealDB / context tooling",
       "required": true,
       "local": { "relative_path": "tools/surrealdb" },
-      "github": { "kind": "same_as_working" }
+      "github": { "kind": "same_as_canonical" }
     },
     {
       "key": "mcp",
       "display_name": "MCP bridge and registry",
       "required": true,
       "local": { "relative_path": "tools/mcp" },
-      "github": { "kind": "same_as_working" }
+      "github": { "kind": "same_as_canonical" }
     },
     {
       "key": "config",
@@ -41,7 +41,7 @@
       "local": {
         "relative_paths": ["claire-de-binare.mcp.json", "pyproject.toml"]
       },
-      "github": { "kind": "same_as_working" }
+      "github": { "kind": "same_as_canonical" }
     },
     {
       "key": "traumtaenzer",

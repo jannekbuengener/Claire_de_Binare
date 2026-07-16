@@ -1,12 +1,12 @@
 # Meta Documentation (`docs/meta/`)
 
-Working-Repo-Canon, Status-SSOT-Regeln und Navigations-Meta — nicht operative Live-Wahrheit.
+Claire de Binare repository-Canon, Status-SSOT-Regeln und Navigations-Meta — nicht operative Live-Wahrheit.
 
 ## Canonical files
 
 | File | Purpose |
 |---|---|
-| [`WORKING_REPO_CANON.md`](WORKING_REPO_CANON.md) | Canon matrix, archive rules, status usage |
+| [`REPOSITORY_CANON.md`](REPOSITORY_CANON.md) | Canon matrix, archive rules, status usage |
 | [`ROOT_INFORMATION_ARCHITECTURE.md`](ROOT_INFORMATION_ARCHITECTURE.md) | Approved root layout, move/delete decisions, output boundaries |
 | Other meta docs in this directory | Scoped governance/navigation supplements |
 

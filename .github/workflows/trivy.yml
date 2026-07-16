@@ -100,7 +100,7 @@ jobs:
           # Non-productive paths excluded to reduce SARIF noise (#1650).
           # Single-line, no spaces — avoids YAML folded-scalar whitespace ambiguity.
           # Only stable permanent directories; brittle run-id/date names removed.
-          skip-dirs: ".worktrees_backup,.codex,artifacts,reports,logs,tmp,tmp_artifacts,evidence-run,emoji-report,mcp_navpack_working_repo,copilot_briefing,third_party,knowledge,docs,examples"
+          skip-dirs: ".worktrees_backup,.codex,artifacts,reports,logs,tmp,tmp_artifacts,evidence-run,emoji-report,mcp_navpack_claire_de_binare_repository,copilot_briefing,third_party,knowledge,docs,examples"
           format: "json"
           output: "trivy-results.json"
           severity: "CRITICAL,HIGH"
@@ -159,7 +159,7 @@ jobs:
           # Non-productive paths excluded to reduce SARIF noise (#1650).
           # Single-line, no spaces — avoids YAML folded-scalar whitespace ambiguity.
           # Only stable permanent directories; brittle run-id/date names removed.
-          skip-dirs: ".worktrees_backup,.codex,artifacts,reports,logs,tmp,tmp_artifacts,evidence-run,emoji-report,mcp_navpack_working_repo,copilot_briefing,third_party,knowledge,docs,examples"
+          skip-dirs: ".worktrees_backup,.codex,artifacts,reports,logs,tmp,tmp_artifacts,evidence-run,emoji-report,mcp_navpack_claire_de_binare_repository,copilot_briefing,third_party,knowledge,docs,examples"
           format: "sarif"
           output: "trivy-results.sarif"
           severity: "CRITICAL,HIGH"

@@ -28,7 +28,7 @@ pytestmark = [pytest.mark.unit, pytest.mark.contract]
 REPO_ROOT = Path(__file__).resolve().parents[3]
 
 AGENT_ROOT_SURFACE_MATRIX = REPO_ROOT / "docs" / "onboarding" / "AGENT_ROOT_SURFACE_MATRIX.md"
-WORKING_REPO_CANON = REPO_ROOT / "docs" / "meta" / "WORKING_REPO_CANON.md"
+REPOSITORY_CANON = REPO_ROOT / "docs" / "meta" / "REPOSITORY_CANON.md"
 KNOWLEDGE_HUB = REPO_ROOT / "knowledge" / "CDB_KNOWLEDGE_HUB.md"
 AGENTS_REGISTRY = REPO_ROOT / "agents" / "AGENTS.md"
 AGENTS_ROOT = REPO_ROOT / "AGENTS.md"
@@ -104,9 +104,9 @@ def test_agents_root_routes_onboarding_intent_to_orchestrator() -> None:
 # ---------------------------------------------------------------------------
 
 
-def test_working_repo_canon_separates_knowledge_and_docs_domains() -> None:
-    """WORKING_REPO_CANON maps governance/knowledge vs docs/navigation (#3871)."""
-    text = WORKING_REPO_CANON.read_text(encoding="utf-8")
+def test_claire_de_binare_repository_canon_separates_knowledge_and_docs_domains() -> None:
+    """REPOSITORY_CANON maps governance/knowledge vs docs/navigation (#3871)."""
+    text = REPOSITORY_CANON.read_text(encoding="utf-8")
     assert "knowledge/governance/" in text
     assert "knowledge/" in text
     assert "docs/" in text
@@ -125,7 +125,7 @@ def test_agents_registry_read_order_includes_knowledge_and_docs_canon() -> None:
     """Bootloader Read Order spans governance knowledge and docs meta canon."""
     text = AGENTS_REGISTRY.read_text(encoding="utf-8")
     assert "knowledge/governance/" in text
-    assert "docs/meta/WORKING_REPO_CANON.md" in text
+    assert "docs/meta/REPOSITORY_CANON.md" in text
 
 
 # ---------------------------------------------------------------------------
@@ -139,22 +139,23 @@ def test_active_canon_paths_exist(relative_path: str) -> None:
 
 
 def test_agents_root_declares_archive_not_productive_canon() -> None:
-    """docs/archive/docs_hub_snapshot is historical only, not active canon."""
+    """docs/archive is historical only, not active canon."""
     text = AGENTS_ROOT.read_text(encoding="utf-8")
-    assert "docs/archive/docs_hub_snapshot/" in text
-    assert "nicht mehr Canon" in text or "not more Canon" in text or "historischer" in text
+    assert "docs/archive/" in text
+    assert "kein zweiter Canon" in text
 
 
-def test_working_repo_canon_marks_legacy_archive_read_only() -> None:
-    """WORKING_REPO_CANON: old docs hub is legacy archive, not productive canon."""
-    text = WORKING_REPO_CANON.read_text(encoding="utf-8")
-    assert "Legacy-Archiv" in text or "legacy" in text.lower()
-    assert "kein produktiver Canon" in text or "not" in text.lower()
+def test_claire_de_binare_repository_canon_marks_archive_noncanonical() -> None:
+    """REPOSITORY_CANON keeps historical evidence outside the productive canon."""
+    text = REPOSITORY_CANON.read_text(encoding="utf-8")
+    normalized = " ".join(text.split())
+    assert "Historische Einzelartefakte" in text
+    assert "keine alternative Repository- oder Dokumentationsquelle" in normalized
 
 
-def test_historical_snapshots_labeled_in_working_repo_canon() -> None:
+def test_historical_snapshots_labeled_in_claire_de_binare_repository_canon() -> None:
     """PROJECT_STATUS / knowledge/CURRENT_STATUS are historical, not SSOT."""
-    text = WORKING_REPO_CANON.read_text(encoding="utf-8")
+    text = REPOSITORY_CANON.read_text(encoding="utf-8")
     for snap in HISTORICAL_SNAPSHOT_PATHS:
         assert snap in text, f"canon matrix must classify snapshot: {snap}"
 

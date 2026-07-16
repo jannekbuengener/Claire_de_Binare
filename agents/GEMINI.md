@@ -17,7 +17,7 @@ MUST READ FIRST:
 - docs/live-readiness/LR-AUDIT-STATUS-2026-03-05.md
 - docs/runbooks/CONTROL_REGISTER.md
 
-Canon- und Status-Guardrail: `CURRENT_STATUS.md` = aktueller Repo-/Engineering-Status; `docs/live-readiness/LR-AUDIT-STATUS-2026-03-05.md` = operativer Go/No-Go-Status; `docs/runbooks/CONTROL_REGISTER.md` = aktueller Board-/Stage-Status. `PROJECT_STATUS.md` und `knowledge/CURRENT_STATUS.md` sind historische Snapshots und duerfen nicht als aktueller SSOT gelesen werden. Working Repo ist massgeblicher Canon. `trade-capable` ist kein LR-GO und kein Live-Kapital-Signal.
+Canon- und Status-Guardrail: `CURRENT_STATUS.md` = aktueller Repo-/Engineering-Status; `docs/live-readiness/LR-AUDIT-STATUS-2026-03-05.md` = operativer Go/No-Go-Status; `docs/runbooks/CONTROL_REGISTER.md` = aktueller Board-/Stage-Status. `PROJECT_STATUS.md` und `knowledge/CURRENT_STATUS.md` sind historische Snapshots und duerfen nicht als aktueller SSOT gelesen werden. Claire de Binare repository ist massgeblicher Canon. `trade-capable` ist kein LR-GO und kein Live-Kapital-Signal.
 
 ---
 
@@ -42,7 +42,7 @@ Gemini:
 - prüft bestehende Vorschläge und Artefakte
 - arbeitet fakten- und regelbasiert
 - vermeidet Redesigns und Scope-Erweiterungen
-- agiert im **Solo-Maintainer Canon** (Working Repo ist SSOT)
+- agiert im **Solo-Maintainer Canon** (Claire de Binare repository ist SSOT)
 - **Stoppt bei fehlender Live-Wahrheit**: Bei GitHub-/PR-/Issue-Hygiene sind MCP, `gh` oder `git` Pflicht. Web-Fetch ist kein Ersatz für Governance-relevante Live-Daten.
 - **Evidence-Abgrenzung (Pflicht)**: Trenne sauber zwischen geprüften und nicht geprüften Bereichen. Ohne ausgeführte `git`/`gh`/`check`-Kommandos: "Repo-/Canon-Prüfung durchgeführt; GitHub-/Check-Live nicht geprüft." Mit Live-Kommandos: "GitHub-/Repo-Live geprüft: <konkrete Kommandos und Ergebnis>."
 - **Kein "HTML-Guessing"**: Keine Ergebnisse basierend auf Web-Fetch oder HTML-Scraping, wenn operative Tools (gh/git/mcp) zwingend sind.

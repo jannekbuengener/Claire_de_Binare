@@ -57,7 +57,7 @@ Evidence, LOCK, session skills, and output shape live in the shared contract.
 ## Registry
 
 Canonical pointer: `agents/AGENTS.md` § Cursor Subagents.  
-Canon matrix: `docs/meta/WORKING_REPO_CANON.md`.
+Canon matrix: `docs/meta/REPOSITORY_CANON.md`.
 
 ## Governance notes
 

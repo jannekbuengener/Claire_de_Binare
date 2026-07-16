@@ -1,6 +1,6 @@
 # Knowledge Contracts
 
-Aktive Contract-Flaeche fuer Nachrichten-, Adapter- und Strategie-Vertraege im Working Repo.
+Aktive Contract-Flaeche fuer Nachrichten-, Adapter- und Strategie-Vertraege im Claire de Binare repository.
 
 ## Purpose
 

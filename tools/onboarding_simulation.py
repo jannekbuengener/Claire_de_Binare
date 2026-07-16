@@ -246,7 +246,7 @@ def _build_guided_rehearsal(role: str) -> list[str]:
         "",
         "--- Repo / Canon / Onboarding-Status ---",
         "  - AGENTS.md und agents/AGENTS.md vorhanden und lesbar.",
-        "  - Working Repo ist produktiver Canon.",
+        "  - Claire de Binare repository ist produktiver Canon.",
         "  - Board-Stage: trade-capable (ratifiziert via #1492).",
         "  - LR-Status: NO-GO (SSOT: docs/live-readiness/LR-AUDIT-STATUS-2026-03-05.md).",
         "  - CURRENT_STATUS.md ist Engineering-Ledger, nicht Live-Wahrheit.",

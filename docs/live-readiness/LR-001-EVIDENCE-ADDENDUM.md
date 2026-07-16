@@ -155,7 +155,7 @@ The following checks were previously required for merge. They are no longer list
 | `trivy (kritische CVEs/Supply-Chain)` | `trivy.yml` | `push` + `schedule` + `dispatch` | no `pull_request`; `exit-code: "0"` |
 | `Check Core Duplicates` | `core-guard.yml` | `push [main]` + `schedule` + `dispatch` | no `pull_request`; `continue-on-error: true` |
 | `Check Delivery Gate` | `delivery-gate.yml` | `workflow_dispatch` + `schedule` | no `pull_request` trigger |
-| `guard` | `docs-hub-guard.yml` | `push ["main"]` + `schedule` + `dispatch` | no `pull_request` trigger |
+| `guard` | `repository-canon-guard.yml` | `push ["main"]` + `schedule` + `dispatch` | no `pull_request` trigger |
 | `E2E Happy Path` | `e2e-happy-path.yaml` | `push [main]` + `schedule` + `dispatch` | no `pull_request` trigger |
 
 ---
@@ -171,7 +171,7 @@ The following controls still operate but are not merge-blocking:
 | Container vulnerability scan | `trivy.yml` | push to main + schedule | reporting only (`exit-code: "0"`) |
 | Core duplicates guard | `core-guard.yml` | push to main + weekly schedule | advisory (`continue-on-error: true`) |
 | Delivery gate | `delivery-gate.yml` | daily schedule + manual | post-merge detection |
-| Docs hub guard | `docs-hub-guard.yml` | push to main + weekly schedule | post-merge detection |
+| repository documentation guard | `repository-canon-guard.yml` | push to main + weekly schedule | post-merge detection |
 | E2E Happy Path | `e2e-happy-path.yaml` | push to main + weekly schedule | post-merge detection |
 | Governance audit | `governance-audit.yml` | weekly schedule | reporting only |
 | Required checks audit sentinel | `required-checks-audit.yml` | manual | on-demand audit |
@@ -188,7 +188,7 @@ Unknown from repo evidence alone. The audit report `docs/evidence/reports/CI_REQ
 
 ### 7.2 Is 1 Required Check Sufficient?
 
-The remaining check covers: MCP validation, ruff lint, black formatting, and all pytest-collected tests (unit, integration, contract). It does not cover: secret scanning, vulnerability scanning, branch naming, delivery gate, E2E tests, core duplicates guard, docs hub guard.
+The remaining check covers: MCP validation, ruff lint, black formatting, and all pytest-collected tests (unit, integration, contract). It does not cover: secret scanning, vulnerability scanning, branch naming, delivery gate, E2E tests, core duplicates guard, repository documentation guard.
 
 Whether 1 check is sufficient depends on the project's risk tolerance. This addendum does not make that judgment.
 

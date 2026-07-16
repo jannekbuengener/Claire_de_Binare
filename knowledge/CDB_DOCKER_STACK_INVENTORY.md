@@ -1,6 +1,6 @@
 # Claire de Binare Docker Stack Inventory
 
-**Status:** Canonical runtime pointer for the working repo.
+**Status:** Canonical runtime pointer for the Claire de Binare repository.
 
 ## Canonical runtime
 
@@ -39,7 +39,7 @@ docker compose -f infrastructure/compose/compose.red.yml down
 
 - This document intentionally uses repo-relative paths only. Host-specific URI links are not canonical.
 - Local secret directories, `.env` files, and host log paths are environment-specific and must be resolved at runtime, not hard-coded as inventory canon.
-- The retired root-level legacy compose entry point is not part of the current working repo and must not be treated as an active runtime entry point.
+- The retired root-level legacy compose entry point is not part of the current Claire de Binare repository and must not be treated as an active runtime entry point.
 - `tools/paper_trading/Dockerfile` exists in the current repo and is not a missing artifact.
 
 ## Legacy snapshot boundary

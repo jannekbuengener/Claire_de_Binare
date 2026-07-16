@@ -74,7 +74,7 @@ These items are complete, evidenced, and do not need rework:
 
 | Item | Why Stale | Correct Reading |
 |------|-----------|-----------------|
-| `CURRENT_STATUS.md` | Working repo ledger, not live truth | Per `AGENTS.md`: "Ledger, nicht Live-Wahrheit" |
+| `CURRENT_STATUS.md` | Claire de Binare repository ledger, not live truth | Per `AGENTS.md`: "Ledger, nicht Live-Wahrheit" |
 | `PROJECT_STATUS.md` | Historical snapshot | Per `AGENTS.md`: "nicht der aktuelle Gesamtstatus" |
 | `knowledge/CURRENT_STATUS.md` | Historical snapshot | Same |
 | P5 prestart GO status (`decision_record.yaml`) | Prestart-only artifact, explicitly does not authorize live capital | `LR-050-FINAL-RECONCILE.md` §4 |

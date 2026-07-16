@@ -1,6 +1,6 @@
 # Metrics Matrix
 
-Repo-backed SSOT for Prometheus-scraped metrics in the working repo.
+Repo-backed SSOT for Prometheus-scraped metrics in the Claire de Binare repository.
 
 Scope of this file:
 - inventory and canon only

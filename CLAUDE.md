@@ -222,7 +222,7 @@ Logging is configured via `LOG_LEVEL` env var (or `logging_config.json` if prese
 
 ### Agent SDK (retired)
 
-The standalone `cdb_agent_sdk/` package was removed from the working repo in PR #2994. Use the repo-local skill packs under `.codex/cdb_skills/` and `.opencode/skills/` instead. Historical notes remain in `knowledge/systems/SDK_OVERVIEW.md` (marked retired).
+The standalone `cdb_agent_sdk/` package was removed from the Claire de Binare repository in PR #2994. Use the repo-local skill packs under `.codex/cdb_skills/` and `.opencode/skills/` instead. Historical notes remain in `knowledge/systems/SDK_OVERVIEW.md` (marked retired).
 
 ### MINGW64 / Git Bash (Windows)
 

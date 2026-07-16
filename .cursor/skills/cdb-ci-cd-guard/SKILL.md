@@ -7,14 +7,14 @@ Drift Policy: Surface-Adapter duerfen nur mit dokumentierter Begruendung abweich
 -->
 ---
 name: cdb-ci-cd-guard
-description: CDB CI/CD governance audit and hardening for the working repo. Use when GitHub Actions, rulesets, required checks, secret guards, or fake-green behavior need to be verified or fixed. Derive protected refs, required checks, and enforcement behavior from current repo evidence and GitHub state instead of assuming old branch patterns or legacy docs-hub paths.
+description: CDB CI/CD governance audit and hardening for the Claire de Binare repository. Use when GitHub Actions, rulesets, required checks, secret guards, or fake-green behavior need to be verified or fixed. Derive protected refs, required checks, and enforcement behavior from current repo evidence and GitHub state instead of assuming old branch patterns or legacy repository-canon paths.
 disable-model-invocation: true
 ---
 
 # CI/CD Guard
 
 ## Canon first
-- Use the working repo as the only default source.
+- Use the Claire de Binare repository as the only default source.
 - Start control-first:
   1. GitHub control issue `#1445`
   2. newest weekly comment on `#1445`

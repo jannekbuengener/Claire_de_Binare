@@ -40,12 +40,8 @@ def main():
     code_columns_raw = match.group(1)
     code_columns = [col.strip() for col in code_columns_raw.split(",")]
 
-    # 2. Find spec file (prefer local canon, allow local archive snapshot as fallback)
-    docs_archive = root_dir / "docs" / "archive" / "docs_hub_snapshot"
-    spec_paths = [
-        root_dir / "docs" / "governance" / "risk_events.schema.yaml",
-        docs_archive / "knowledge" / "governance" / "risk_events.schema.yaml",
-    ]
+    # 2. Find the canonical repository-local spec file.
+    spec_paths = [root_dir / "docs" / "governance" / "risk_events.schema.yaml"]
 
     spec_file = None
     for path in spec_paths:
@@ -55,7 +51,7 @@ def main():
 
     if not spec_file:
         violations.append(
-            "MISSING: risk_events.schema.yaml not found in local canon or local archive snapshot"
+            "MISSING: docs/governance/risk_events.schema.yaml not found"
         )
         print_violations(violations)
         sys.exit(1)

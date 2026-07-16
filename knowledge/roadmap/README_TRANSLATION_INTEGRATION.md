@@ -9,7 +9,7 @@ Diese Datei beschreibte einmal eine geplante GitHub-Actions-Integration mit:
 - `.github/workflows/translate-issues.yml`
 - `scripts/translate.js`
 
-**Beide Artefakte existieren im Working Repo nicht.** Es gibt keinen aktiven Translation-Workflow auf `main`.
+**Beide Artefakte existieren im Claire de Binare repository nicht.** Es gibt keinen aktiven Translation-Workflow auf `main`.
 
 ## Operator guidance
 

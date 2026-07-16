@@ -1,10 +1,10 @@
 <#
 .SYNOPSIS
-Enforce the consolidated Working Repo baseline.
+Enforce the consolidated Claire de Binare repository baseline.
 
 .DESCRIPTION
-Validates that the Working Repo exposes the required local documentation canon
-and that key entrypoints no longer use the external Docs Hub as the default path.
+Validates that the Claire de Binare repository exposes the required local documentation canon
+and that key entrypoints no longer use the external historical documentation material as the default path.
 
 .EXAMPLE
 .\tools\enforce-root-baseline.ps1
@@ -14,15 +14,15 @@ and that key entrypoints no longer use the external Docs Hub as the default path
 #>
 [CmdletBinding()]
 param(
-    [string]$WorkingRepoPath,
+    [string]$RepositoryPath,
     [switch]$DryRun
 )
 
 Set-StrictMode -Version Latest
 $ErrorActionPreference = 'Stop'
 
-if (-not $WorkingRepoPath) {
-    $WorkingRepoPath = (Resolve-Path (Join-Path $PSScriptRoot '..')).Path
+if (-not $RepositoryPath) {
+    $RepositoryPath = (Resolve-Path (Join-Path $PSScriptRoot '..')).Path
 }
 
 $requiredDirectories = @(
@@ -45,16 +45,16 @@ $requiredFiles = @(
     'config/repository/root_layout.json',
     'docs/index.md',
     'docs/meta/ROOT_INFORMATION_ARCHITECTURE.md',
-    'docs/meta/WORKING_REPO_CANON.md',
+    'docs/meta/REPOSITORY_CANON.md',
     'docs/navigation/mcp-navpack/ENTRYPOINTS.yaml',
     'docs/navigation/mcp-navpack/CHEATSHEET.md'
 )
 
 $legacyPathPatterns = @(
-    '\.\./Claire_de_Binare_Docs',
-    '[A-Za-z]:\\.*Claire_de_Binare_Docs',
-    'canonical agent registry lives in the separate Docs Hub repo',
-    'Working Repo relies on the Docs Hub canonical registry'
+    '\.\./historical_documentation_source',
+    '[A-Za-z]:\\.*historical_documentation_source',
+    'canonical agent registry lives in the separate historical documentation material repo',
+    'Claire de Binare repository relies on the historical documentation material canonical registry'
 )
 
 $legacyScanFiles = @(
@@ -62,17 +62,17 @@ $legacyScanFiles = @(
     'AGENTS.md',
     'docs/navigation/mcp-navpack/ENTRYPOINTS.yaml',
     'docs/navigation/mcp-navpack/CHEATSHEET.md',
-    'docs/navigation/mcp-navpack/DOCS_HUB.pointer.md'
+    'docs/navigation/mcp-navpack/REPO.map.json'
 )
 
-Write-Host "Checking consolidated Working Repo baseline..." -ForegroundColor Cyan
-Write-Host "Working Repo: $WorkingRepoPath" -ForegroundColor Gray
+Write-Host "Checking consolidated Claire de Binare repository baseline..." -ForegroundColor Cyan
+Write-Host "Claire de Binare repository: $RepositoryPath" -ForegroundColor Gray
 
-if (-not (Test-Path $WorkingRepoPath)) {
-    throw "Working repo path not found: $WorkingRepoPath"
+if (-not (Test-Path $RepositoryPath)) {
+    throw "Claire de Binare repository path not found: $RepositoryPath"
 }
 
-Push-Location $WorkingRepoPath
+Push-Location $RepositoryPath
 try {
     $violations = [System.Collections.Generic.List[object]]::new()
 
@@ -115,7 +115,7 @@ try {
             Detail = 'Python is required to validate config/repository/root_layout.json.'
         })
     } else {
-        $layoutOutput = & $pythonCommand.Source @pythonArguments -m tools.validate_root_layout --repo-root $WorkingRepoPath 2>&1
+        $layoutOutput = & $pythonCommand.Source @pythonArguments -m tools.validate_root_layout --repo-root $RepositoryPath 2>&1
         if ($LASTEXITCODE -ne 0) {
             $violations.Add([PSCustomObject]@{
                 Type = 'Root layout violation'

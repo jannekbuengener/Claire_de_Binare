@@ -208,7 +208,7 @@ Fail-closed: if a required credential cannot be loaded without exposing it in a 
 
 ### 9.1 Patterns that must never appear in logs / issues / PRs / artifacts
 
-Non-exhaustive (aligned with [`.github/workflows/docs-hub-guard.yml`](../../.github/workflows/docs-hub-guard.yml) and gitleaks posture):
+Non-exhaustive (aligned with [`.github/workflows/repository-canon-guard.yml`](../../.github/workflows/repository-canon-guard.yml) and gitleaks posture):
 
 - `api_key`, `api_secret`, `secret`, `token`, `password`, `private_key`
 - PEM blocks: `BEGIN RSA PRIVATE KEY`, `BEGIN OPENSSH PRIVATE KEY`
@@ -232,7 +232,7 @@ Non-exhaustive (aligned with [`.github/workflows/docs-hub-guard.yml`](../../.git
 - Any credential value in git history, PR, issue, log, artifact, or agent output.
 - Screenshots showing exchange API settings with visible keys.
 - CI logs printing env vars that hold secrets (workflows must use masked secrets).
-- False positives in docs-hub-guard still require human review — fail-closed for merge if unmitigated.
+- False positives in repository-canon-guard still require human review — fail-closed for merge if unmitigated.
 
 ---
 
@@ -260,7 +260,7 @@ Non-exhaustive (aligned with [`.github/workflows/docs-hub-guard.yml`](../../.git
 | Exchange keys in rotation manifest | `tools/secrets/secrets.manifest.json` | TBD_BLOCKER_BEFORE_LIVE | Manifest lists infra only today | no | no | manifest gap | Manual rotation until aligned |
 | GitHub secrets = CI derivative | `cdb_secrets_ssot.md`; sync script | ready | Dry-run `sync_cdb_secrets.ps1 -DryRun` (metadata) | no | yes (separate GO) | none | Never author canary keys only in GHA |
 | CI ephemeral secrets dir | `e2e-tests.yml` `.ci-secrets` | ready | Workflow review | no | yes (CI only) | none | Not operator canary SSOT |
-| Redaction in changed docs | `docs-hub-guard.yml` patterns | ready | PR CI / manual rg on diff | no | no | none | Pattern hit → fix or justify |
+| Redaction in changed docs | `repository-canon-guard.yml` patterns | ready | PR CI / manual rg on diff | no | no | none | Pattern hit → fix or justify |
 | Alert/SMTP credential names | `GITHUB_SECRETS_SETUP.md`; e2e workflows | ready | Name inventory; receiver proof → #2531 | no | yes (#2531) | #2531 OPEN | No live GO without alert path |
 | Auth path dry-run (no value output) | #2533 | TBD_BLOCKER_BEFORE_LIVE | Dry-run evidence issue | no | yes (#2533) | #2533 OPEN | Auth proof must not log keys |
 | Post-halt key rotation | This §8 + kill-switch §7 | ready | Operator checklist + incident template | no | yes | post-incident | Resume without rotate → forbidden |

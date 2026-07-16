@@ -23,17 +23,15 @@ D:\Dev\Workspaces\Repos\
     └── .github/
 ```
 
-## Optional Local Archive
+## Local Archive
 
-Historical Docs-Hub material may exist only as local archive content inside the
-working repo:
+Historical evidence may exist under:
 
 ```text
-Claire_de_Binare/docs/archive/docs_hub_snapshot/
+Claire_de_Binare/docs/archive/
 ```
 
-That archive is for provenance and historical lookup only. It is not a second
-source of truth.
+The archive is for provenance only and is not a second source of truth.
 
 ## What Lives Where
 
@@ -47,7 +45,6 @@ source of truth.
 
 ## Rules
 
-- do not rely on an external docs repo as a sibling dependency
-- keep productive docs in local working-repo paths
+- keep all productive docs in `Claire_de_Binare`
 - keep historical imports under local archive paths
 - keep secrets and machine-local state outside git-tracked canon

@@ -40,7 +40,7 @@ und ist das erste Beispiel, fuer das diese Registry jetzt greift.
 
 Begruendung:
 
-- `docs/` liegt versioniert im Repo und folgt der Docs-Hub-Governance.
+- `docs/` liegt versioniert im Repo und folgt der repository governance.
 - `docs/skills/` enthaelt bereits erweiterte Skill-Dokumente
   (`gh-fix-ci/` mit `META.yaml`, `evals.json`, `DISCOVERY_REPORT.md`).
 - `docs/` ist docs-only und nicht an einen Agent-Runtime-Loader gebunden,

@@ -77,7 +77,7 @@ BRAIN_APPLY_BLOCKING_CLAIM_PATTERNS: list[str] = [
 ]
 
 CANON_POINTER_PATHS: list[str] = [
-    "docs/meta/WORKING_REPO_CANON.md",
+    "docs/meta/REPOSITORY_CANON.md",
     "AGENTS.md",
     "agents/AGENTS.md",
 ]

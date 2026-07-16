@@ -76,7 +76,7 @@ LR-Verdict (nur als read pointer, nicht als abgeleitetes Go).
 **Empfohlene TTL**: Mittel bis lang (Tage bis Wochen). Aktualisierung wenn Source-Hash-Mismatch
 erkannt wird.
 
-**Beispiel**: "Das Working Repo ist kanonischer Pfad für Agenten-Doku."
+**Beispiel**: "Das Claire de Binare repository ist kanonischer Pfad für Agenten-Doku."
 
 ---
 

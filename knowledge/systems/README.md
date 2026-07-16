@@ -6,7 +6,7 @@
 
 ## Overview
 
-Index für produktionsnahe Systemdokumentation im Working Repo. Dieses Verzeichnis ist **kein** Status-SSOT.
+Index für produktionsnahe Systemdokumentation im Claire de Binare repository. Dieses Verzeichnis ist **kein** Status-SSOT.
 
 ## Contents
 
@@ -15,7 +15,7 @@ Index für produktionsnahe Systemdokumentation im Working Repo. Dieses Verzeichn
 | [`STACK_LIFECYCLE.md`](STACK_LIFECYCLE.md) | BLUE+RED stack lifecycle, startup/shutdown canon |
 | [`PAPER_TRADING_ARCHITECTURE.md`](PAPER_TRADING_ARCHITECTURE.md) | Paper-trading runner and shadow path |
 | [`TRADING_MODES.md`](TRADING_MODES.md) | Trading mode matrix (mock/shadow/paper) |
-| [`WORKING_REPO_STRUCTURE.md`](WORKING_REPO_STRUCTURE.md) | Repo layout and navigation |
+| [`REPOSITORY_STRUCTURE.md`](REPOSITORY_STRUCTURE.md) | Repo layout and navigation |
 | [`K8S_OVERVIEW.md`](K8S_OVERVIEW.md) | Kubernetes scaffold overview (pending GO) |
 | [`SDK_OVERVIEW.md`](SDK_OVERVIEW.md) | **Historical** — `cdb_agent_sdk/` removed from repo; see `.codex/cdb_skills/` |
 

@@ -79,7 +79,7 @@ read_order:
   - id: "14"
     path: "AGENTS.md"
     intent: "Clarify agent-doc ownership boundaries"
-    expected_signal: "Root pointer resolves to local agents/AGENTS.md in this working repo"
+    expected_signal: "Root pointer resolves to local agents/AGENTS.md in this Claire de Binare repository"
   - id: "15"
     path: "tools/onboarding_doctor.py"
     intent: "Run one-command developer onboarding preflight"

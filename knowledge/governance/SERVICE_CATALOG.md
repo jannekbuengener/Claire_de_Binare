@@ -24,7 +24,7 @@
 
 ---
 
-## Navigation READMEs (Working Repo)
+## Navigation READMEs (Claire de Binare repository)
 
 Docs-only operator indices from PRs #2999, #3001, #3003. Ersetzen keine kanonische Funktionsbeschreibung in den Tabellen unten.
 

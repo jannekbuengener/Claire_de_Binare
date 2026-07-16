@@ -201,7 +201,7 @@ gh run list --branch main --limit 5
 5. **Clean commits**: Conventional Commits Format + Co-Authored-By Footer
 
 **Referenzen**:
-- `CURRENT_STATUS.md` - Working repo / engineering status
+- `CURRENT_STATUS.md` - Claire de Binare repository / engineering status
 - `docs/live-readiness/LR-AUDIT-STATUS-2026-03-05.md` - Operativer Live-Readiness / Go-No-Go-Status
 - `knowledge/CURRENT_STATUS.md` - Historischer Knowledge-Snapshot
 - `D:\Dev\Workspaces\Repos\Claire_de_Binare\agents\AGENTS.md` - Governance Rules

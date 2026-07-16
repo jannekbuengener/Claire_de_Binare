@@ -5,7 +5,7 @@ Context Brain default posture (read-only, conditional): [`knowledge/decisions/CD
 ## MUST READ FIRST
 Claude **muss** zu Beginn jeder Session folgende Dateien lesen:
 - agents/AGENTS.md
-- docs/meta/WORKING_REPO_CANON.md
+- docs/meta/REPOSITORY_CANON.md
 - knowledge/SYSTEM.CONTEXT.md
 - CURRENT_STATUS.md
 - docs/live-readiness/LR-AUDIT-STATUS-2026-03-05.md
@@ -277,7 +277,7 @@ docker buildx version
 ---
 
 ## 9. Repository-Grenzen
-Working Repository:
+Claire de Binare repository:
 - Code
 - Config
 - Tests

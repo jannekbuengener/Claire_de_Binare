@@ -1,11 +1,11 @@
 # EXPANDED_ECOSYSTEM_ROADMAP
 
 Status: local roadmap hub
-Scope: roadmap entrypoint after Docs-Hub consolidation
+Scope: roadmap entrypoint after repository consolidation
 
 ## Canonical Inputs
 
-- `CURRENT_STATUS.md` for the current working repo / engineering status line
+- `CURRENT_STATUS.md` for the current Claire de Binare repository / engineering status line
 - `docs/live-readiness/LR-AUDIT-STATUS-2026-03-05.md` for the current operational Go/No-Go line
 - `knowledge/CURRENT_STATUS.md` for historical status context only
 - `knowledge/ACTIVE_ROADMAP.md` for active priorities
@@ -17,7 +17,7 @@ Scope: roadmap entrypoint after Docs-Hub consolidation
 ## Current Direction
 
 The roadmap is no longer split across a separate docs repository. Strategic and
-operational planning now lives directly in this working repo so that runtime
+operational planning now lives directly in this Claire de Binare repository so that runtime
 changes, evidence, and planning can be reviewed together.
 
 ## Reading Order
@@ -33,5 +33,5 @@ changes, evidence, and planning can be reviewed together.
 ## Legacy Note
 
 Earlier versions of this file were only pointer stubs. That split is retired.
-Historical Docs-Hub-only roadmap material, if needed, is preserved under
-`docs/archive/docs_hub_snapshot/knowledge/roadmap/`.
+Earlier roadmap material remains available through the Git history. It is not a
+second active documentation source.

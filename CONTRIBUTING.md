@@ -47,7 +47,7 @@ make readme-links-guard      # active README.md + explicit canon entry points (#
 make onboarding-docs-guard   # onboarding front-door surfaces (#3233)
 ```
 
-See also [`docs/meta/WORKING_REPO_CANON.md`](docs/meta/WORKING_REPO_CANON.md)
+See also [`docs/meta/REPOSITORY_CANON.md`](docs/meta/REPOSITORY_CANON.md)
 (README vs. `docs/index.md` navigation rule).
 
 ### Local Setup

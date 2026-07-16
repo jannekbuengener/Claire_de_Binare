@@ -1,6 +1,6 @@
 {
   "notes": [
-    "Canonical governance, agent, knowledge, and navigation documentation now lives in this working repo; the legacy Docs Hub content survives only as docs/archive/docs_hub_snapshot/.",
+    "Canonical governance, agent, knowledge, and navigation documentation now lives in this Claire de Binare repository; the legacy historical documentation material content survives only as docs/archive/.",
     "Folders matching mcp_navpack* were excluded from scanning to avoid self-reference.",
     "Large or binary artifacts were encountered in root zip bundles and .worktrees evidence archives; they were not indexed as navigation entrypoints.",
     "The repo root also contains many historical governance and evidence work directories; prefer the roots below before ad hoc reports or archive material."
@@ -141,7 +141,7 @@
         },
         {
           "path": "docs/index.md",
-          "why": "Shortest working-repo docs landing page."
+          "why": "Shortest repository docs landing page."
         },
         {
           "path": "docs/live-readiness/README.md",
@@ -169,7 +169,7 @@
         },
         {
           "path": "docs/meta/README.md",
-          "why": "Working-repo meta and canon pointers."
+          "why": "Claire de Binare repository meta and canon pointers."
         }
       ],
       "path": "docs",
@@ -201,7 +201,7 @@
         },
         {
           "name": "index.md",
-          "purpose_guess": "Working-repo docs landing page.",
+          "purpose_guess": "Claire de Binare repository docs landing page.",
           "type": "file"
         },
         {
@@ -390,7 +390,7 @@
           "why": "Local setup and bring-up guide."
         },
         {
-          "path": "DOCS_MOVED_TO_DOCS_HUB.md",
+          "path": "DOCS_MOVED_TO_CANONICAL_DOCS.md",
           "why": "Explicit docs-separation pointer."
         },
         {
@@ -411,7 +411,7 @@
         },
         {
           "path": "docs/index.md",
-          "why": "Working-repo docs landing page."
+          "why": "Claire de Binare repository docs landing page."
         },
         {
           "path": "infrastructure/compose/README.md",
@@ -453,7 +453,7 @@
           "type": "file"
         },
         {
-          "name": "DOCS_MOVED_TO_DOCS_HUB.md",
+          "name": "DOCS_MOVED_TO_CANONICAL_DOCS.md",
           "purpose_guess": "Pointer clarifying the docs split.",
           "type": "file"
         },
@@ -484,7 +484,7 @@
         },
         {
           "name": "docs",
-          "purpose_guess": "Working-repo navigation and operational docs.",
+          "purpose_guess": "Claire de Binare repository navigation and operational docs.",
           "type": "dir"
         },
         {

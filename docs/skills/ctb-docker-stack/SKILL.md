@@ -7,7 +7,7 @@ Drift Policy: Surface-Adapter duerfen nur mit dokumentierter Begruendung abweich
 -->
 ---
 name: ctb-ops-stack-skillpack
-description: Ops skillpack for the current CDB stack. Use when Codex needs command-first PowerShell guidance for Docker, compose, DR, rollback, incident response, or stack inspection in the working repo. Use canonical BLUE+RED runtime paths, respect `SECRETS_PATH`, and require explicit user approval before any mutating Docker or compose action.
+description: Ops skillpack for the current CDB stack. Use when Codex needs command-first PowerShell guidance for Docker, compose, DR, rollback, incident response, or stack inspection in the Claire de Binare repository. Use canonical BLUE+RED runtime paths, respect `SECRETS_PATH`, and require explicit user approval before any mutating Docker or compose action.
 disable-model-invocation: true
 ---
 
@@ -19,7 +19,7 @@ disable-model-invocation: true
 - Treat these as the same OpenCode skill surface; do not rename the folder or the skill in this patch.
 
 ## Canon first
-- Working repo only.
+- Claire de Binare repository only.
 - Start control-first:
   1. GitHub control issue `#1445`
   2. newest weekly comment on `#1445`

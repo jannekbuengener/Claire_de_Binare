@@ -45,7 +45,7 @@ The scenario tests agent behavior, not just file existence.
 ## Ausgangslage
 
 The fresh agent receives a small onboarding/repo task and no trusted prior
-memory. It must discover the active canon from the working repo and GitHub live
+memory. It must discover the active canon from the Claire de Binare repository and GitHub live
 state.
 
 The active truth order for this scenario is:

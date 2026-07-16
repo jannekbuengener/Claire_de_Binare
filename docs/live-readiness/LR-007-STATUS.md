@@ -124,13 +124,13 @@ Shadow Mode may proceed under unchanged invariants.
 - **Evidence:** E2E check now runs for ALL PRs, deterministic docs-only detection via file paths
 
 ### PR #814: Governance Documentation Bridge (historical)
-- **Purpose:** Originally linked Working Repo to the then-active external DocsHub for SYSTEM_INVARIANTS.md
+- **Purpose:** Originally linked Claire de Binare repository to the then-active external repository documentation for SYSTEM_INVARIANTS.md
 - **Merge SHA:** `b10e7bc`
 - **Merged At:** 2026-02-09T18:09:37Z
 - **Merged By:** jannekbuengener
-- **Outcome:** Governance pointer created; the external DocsHub was later retired (#1140) and canon moved to this working repo
+- **Outcome:** Governance pointer created; the external repository documentation was later retired (#1140) and canon moved to this Claire de Binare repository
 - **Evidence:** `docs/governance/README.md` created with cross-repo reference pattern (now superseded by local canon)
-- **Impact:** System invariants (INV-001 through INV-020) are now maintained locally in this working repo
+- **Impact:** System invariants (INV-001 through INV-020) are now maintained locally in this Claire de Binare repository
 
 **Significance for LR-007:**
 - ✅ CI/CD improvements maintain deterministic behavior (INV-002)

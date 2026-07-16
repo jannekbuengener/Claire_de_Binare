@@ -23,7 +23,7 @@ CANONICAL_REGISTRY_READ_ORDER: tuple[str, ...] = (
     "knowledge/governance/CDB_AGENT_POLICY.md",
     "knowledge/governance/SYSTEM_INVARIANTS.md",
     "knowledge/CDB_KNOWLEDGE_HUB.md",
-    "docs/meta/WORKING_REPO_CANON.md",
+    "docs/meta/REPOSITORY_CANON.md",
     "CURRENT_STATUS.md",
     "docs/live-readiness/LR-AUDIT-STATUS-2026-03-05.md",
     "docs/runbooks/CONTROL_REGISTER.md",

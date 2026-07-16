@@ -79,7 +79,7 @@ Historical note:
 The `@pytest.mark.skip` in `tests/performance/verlosung/test_analytics_performance.py:312` was
 removed in a subsequent commit within this PR. Root cause: the bug referenced in the skip reason
 was already fixed in `3903e98` (Dec 2025); the path `backoffice/scripts/` never existed in the
-working repo. The skip was stale Verlosung-migration ballast, not a real open blocker.
+Claire de Binare repository. The skip was stale Verlosung-migration ballast, not a real open blocker.
 `scripts/todo_lifecycle_audit.sh` confirms 0 violations (Rule 4: OK).
 
 ### Archive-candidate TODOs (deliberately not touched)

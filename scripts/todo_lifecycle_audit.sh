@@ -27,7 +27,6 @@ ACTIVE_PATHS=(
 EXCLUDE_DIRS=(
   "knowledge/archive"
   "docs/archive"
-  "docs/archive/docs_hub_snapshot"
   ".git"
   "__pycache__"
   "node_modules"

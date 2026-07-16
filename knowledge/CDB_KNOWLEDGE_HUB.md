@@ -28,7 +28,7 @@ Gültig bis: explizites Update
 **Systemstatus:** stabile Infrastruktur-Baseline erreicht
 
 ### Kernergebnisse
-- Das Working Repo traegt den aktiven lokalen Dokumentations-Canon
+- Das Claire de Binare repository traegt den aktiven lokalen Dokumentations-Canon
 - Agenten-, Governance- und Knowledge-Pfade sind lokal aufloesbar
 - PR-Block 01–06 vollständig umgesetzt und gepusht
 - GitLab CI aktiv (CI-Guard, Write-Zone-Checks)
@@ -83,7 +83,7 @@ Er ist der Ort für:
 
 ## 2. Repo-Topologie (kanonisch)
 
-### 2.1 Working Repo – `Claire_de_Binare`
+### 2.1 Claire de Binare repository – `Claire_de_Binare`
 **Zweck:** Ausfuehrung, Runtime, Build, Governance, Knowledge, Agenten-Navigation
 
 Kanonische Bereiche:
@@ -93,7 +93,7 @@ Kanonische Bereiche:
 - `docs/`
 - `.github/`
 
-### 2.2 Legacy Archive – `docs/archive/docs_hub_snapshot/`
+### 2.2 Legacy Archive – `docs/archive/`
 **Zweck:** Historischer Vergleich, Recovery von Alt-Artefakten, Audit-Provenienz
 
 Regel:
@@ -135,13 +135,13 @@ Aktive Entscheidungen
 
 2025-12-15 – Repo-Topologie final
 
-Working Repo = aktiver lokaler Canon
+Claire de Binare repository = aktiver lokaler Canon
 
-Referenzen: CDB_REPO_STRUCTURE.md, WORKING_REPO_INDEX.md
+Referenzen: CDB_REPO_STRUCTURE.md, CLAIRE_DE_BINARE_REPOSITORY_INDEX.md
 
 2025-12-15 – Agents sind kanonisch
 
-Ort: /agents im Working Repo
+Ort: /agents im Claire de Binare repository
 
 2025-12-15 – SHARED.WORKING.MEMORY ist nicht-kanonisch
 
@@ -170,7 +170,7 @@ cdb-secrets-sync.ps1
 
 Alle Agent-Definitionen außerhalb der Repositories
 
-.claude/agents/ aus Working Repo entfernt (20 Dateien)
+.claude/agents/ aus Claire de Binare repository entfernt (20 Dateien)
 
 Externe Location: C:\Users\janne\Documents\GitHub\Workspaces\agents
 

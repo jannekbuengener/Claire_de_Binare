@@ -35,7 +35,7 @@ Ein Agent MUSS dieses Dokument lesen, bevor er:
 SSOT-Regel:
 
 - **GitHub Issues/PRs** sind die Live-Wahrheit fuer Status.
-- **Working Repo** ist Canon fuer Dateien.
+- **Claire de Binare repository** ist Canon fuer Dateien.
 - `CURRENT_STATUS.md` ist Ledger, nicht Live-Status.
 - `docs/runbooks/CONTROL_REGISTER.md` ist Board-/Stage-SSOT.
 - `docs/live-readiness/LR-AUDIT-STATUS-2026-03-05.md` ist LR-Go/No-Go-SSOT.

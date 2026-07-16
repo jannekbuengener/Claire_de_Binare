@@ -4,7 +4,7 @@
 --
 -- Notes:
 --   - No secrets/values stored (refs/fingerprints only)
---   - Canonical authority remains YAML in Docs Hub
+--   - Canonical authority remains versioned YAML in Claire_de_Binare
 --   - Append-only readiness (no upserts)
 
 CREATE TABLE core_secrets_metadata (

@@ -1,6 +1,6 @@
 # Start Here
 
-Kurzer Navigationsindex fuer das Working Repo. Diese Seite ist kein Canon fuer Inhalte,
+Kurzer Navigationsindex fuer das Claire de Binare repository. Diese Seite ist kein Canon fuer Inhalte,
 sondern ein Pointer auf die bestehenden Docs, Runbooks und Source Trees.
 
 ## Nach Aufgabe
@@ -24,7 +24,7 @@ sondern ein Pointer auf die bestehenden Docs, Runbooks und Source Trees.
 
 ## Kern-Pointer
 
-- [docs/meta/WORKING_REPO_CANON.md](meta/WORKING_REPO_CANON.md)
+- [docs/meta/REPOSITORY_CANON.md](meta/REPOSITORY_CANON.md)
   - Lokale Canon-Matrix und Archivstatus des stillgelegten Altbestands.
 - [docs/meta/ROOT_INFORMATION_ARCHITECTURE.md](meta/ROOT_INFORMATION_ARCHITECTURE.md)
   - Freigegebene Root-Struktur, Verschiebe-/Löschentscheidungen und Output-Regeln.

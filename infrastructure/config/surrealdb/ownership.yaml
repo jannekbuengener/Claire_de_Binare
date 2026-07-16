@@ -9,7 +9,7 @@ domains:
       - trading_pipeline
     notes: "Orders, positions, risk, fills stay in Postgres only."
   governance_docs:
-    canonical: git_docs_hub
+    canonical: git_claire_de_binare
     surrealdb: mirror_read_only
     writers:
       - docs_owners
@@ -41,7 +41,7 @@ domains:
       - ops_dashboards
     notes: "Metrics stay in Prometheus/Grafana."
   context_intelligence:
-    canonical: git_working_repo
+    canonical: git_claire_de_binare
     surrealdb: mirror_read_only
     writers:
       - context_indexer
@@ -50,7 +50,7 @@ domains:
       - cdb_mcp
     notes: "Umbrella domain for CIS. Metadata, knowledge graph edges, computed knowledge. Derives from repo + docs + governance mirrors. No orders. No positions. No fills. No risk-state-runtime data. No secrets. No live-/echtgeld-go authorisation. Hash-backed references only."
   repo_knowledge:
-    canonical: git_working_repo
+    canonical: git_claire_de_binare
     surrealdb: mirror_read_only
     writers:
       - context_indexer
@@ -59,14 +59,14 @@ domains:
       - cdb_mcp
     notes: "Static code symbols, interfaces, types, dependency edges from core/services. Source-hash per artifact required. Conditional ingestion only (no runtime state, no generated artifacts). No trading state. No secrets."
   doc_knowledge:
-    canonical: git_working_repo
+    canonical: git_claire_de_binare
     surrealdb: mirror_read_only
     writers:
       - context_indexer
     readers:
       - agents
       - cdb_mcp
-    notes: "Markdown docs, governance, runbooks, agents from docs/knowledge/agents. Source-hash per chunk required. Stale document references (hash mismatch vs. current working repo) are drift. No trading state. No secrets."
+    notes: "Markdown docs, governance, runbooks, agents from docs/knowledge/agents. Source-hash per chunk required. Stale document references (hash mismatch vs. current Claire de Binare repository) are drift. No trading state. No secrets."
   agent_memory:
     canonical: surrealdb
     surrealdb: primary_scoped
@@ -107,7 +107,7 @@ drift_rules:
   - id: missing_evidence_ref
     description: "Claims in evidence_fabric and decision_context entries MUST reference ledger source + event_id. Evidence fabric nodes without provenance reference are drift."
   - id: stale_doc_reference
-    description: "Doc references in doc_knowledge MUST match current working-repo Git hash. Stale references (hash mismatch) are drift."
+    description: "Doc references in doc_knowledge MUST match current repository Git hash. Stale references (hash mismatch) are drift."
   - id: trading_state_leak
     description: "Any trading-state record (orders, positions, fills, balances, risk-state) in ANY SurrealDB domain is invalid. Extends trading_state_in_surrealdb to all domains including context_intelligence, repo_knowledge, doc_knowledge, agent_memory, evidence_fabric, decision_context, shared_memory."
   - id: unscoped_memory

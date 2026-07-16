@@ -15,9 +15,9 @@ Claire de Binare ist ein **event-getriebenes Krypto-Trading-System** mit:
 - Docker Compose fuer Orchestrierung
 - Paper Trading als Default-Modus (Live Trading erfordert explizites Gate)
 
-**Operatives Inventar:** `governance/SERVICE_CATALOG.md` (Working Repo)
+**Operatives Inventar:** `governance/SERVICE_CATALOG.md` (Claire de Binare repository)
 
-**Operator READMEs (Working Repo, docs-only navigation):** [`../services/README.md`](../services/README.md), [`../core/README.md`](../core/README.md), [`../infrastructure/database/README.md`](../infrastructure/database/README.md), [`../tools/paper_trading/README.md`](../tools/paper_trading/README.md). Vollstaendige README-Index-Tabelle: `governance/SERVICE_CATALOG.md` § Navigation READMEs.
+**Operator READMEs (Claire de Binare repository, docs-only navigation):** [`../services/README.md`](../services/README.md), [`../core/README.md`](../core/README.md), [`../infrastructure/database/README.md`](../infrastructure/database/README.md), [`../tools/paper_trading/README.md`](../tools/paper_trading/README.md). Vollstaendige README-Index-Tabelle: `governance/SERVICE_CATALOG.md` § Navigation READMEs.
 
 ---
 

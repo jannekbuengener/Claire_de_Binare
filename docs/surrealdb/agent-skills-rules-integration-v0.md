@@ -99,7 +99,7 @@ flowchart LR
 Regeln:
 - **Kein automatisches Live-Update** ohne Human-GO.
 - **Source-Manifest** (dieses Dokument) enthält Commit-Hashes zum Drift-Vergleich.
-- **Kein Vendor/Clone** der offiziellen Skills ins Working Repo.
+- **Kein Vendor/Clone** der offiziellen Skills ins Claire de Binare repository.
 - **Änderungen an offiziellen Skills**: separat im Issue #3425 tracken.
 
 ## Safety Boundaries

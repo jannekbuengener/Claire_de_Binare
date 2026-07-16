@@ -7,7 +7,7 @@ relations:
     - knowledge/governance/CDB_GOVERNANCE.md
   downstream:
     - knowledge/CDB_KNOWLEDGE_HUB.md
-    - docs/meta/WORKING_REPO_CANON.md
+    - docs/meta/REPOSITORY_CANON.md
   status: canonical
   tags: [repo, structure, canonical, consolidated]
 ---
@@ -19,8 +19,7 @@ Status: canonical
 ## 1. Goal
 
 Define the binding structure of the consolidated `Claire_de_Binare` repository.
-Runtime assets and canonical docs now live together in one repo to avoid
-split-brain and broken navigation.
+Runtime assets and canonical docs live together to avoid split-brain and broken navigation.
 
 ## 2. Active Repository Model
 
@@ -29,9 +28,7 @@ There is one productive repository:
 - `Claire_de_Binare` for code, infrastructure, tests, agents, governance,
   knowledge, navigation docs, templates, and evidence
 
-The former external docs repository is retired as a productive source.
-Historical material may survive only as local archive content inside this
-repository.
+Historical material may survive only as local archive content inside this repository.
 
 ## 3. Active Top-Level Zones
 
@@ -46,9 +43,9 @@ repository.
 
 ## 4. Archive Rule
 
-Historical Docs-Hub material belongs under local archive paths such as:
+Historical evidence belongs under local archive paths such as:
 
-- `docs/archive/docs_hub_snapshot/`
+- `docs/archive/`
 - `docs/archive/github/`
 
 Archive content is not canonical by default and must not be used as the
@@ -56,7 +53,7 @@ standard navigation path.
 
 ## 5. Working Constraints
 
-- no active default path may require an external docs repository
-- do not reintroduce a second canonical repo
+- no active path may require another repository
+- do not introduce a second canonical repository
 - when merging duplicates, prefer local active paths and archive the rest
 - keep root entrypoints concise; long-form material belongs in `knowledge/` or `docs/`

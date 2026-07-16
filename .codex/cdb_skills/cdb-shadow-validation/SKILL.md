@@ -25,7 +25,7 @@ Use this after planning narrows to a concrete change or before `cdb-session-clos
 ## Inputs
 
 - A concrete change, diff, PR, issue, commit, or scoped work description.
-- Working repo at `D:\Dev\Workspaces\Repos\Claire_de_Binare`.
+- Claire de Binare repository at `D:\Dev\Workspaces\Repos\Claire_de_Binare`.
 - Access to `docs/runbooks/CONTROL_REGISTER.md`, `CURRENT_STATUS.md`, and `docs/live-readiness/LR-AUDIT-STATUS-2026-03-05.md`.
 
 ## Required Outcomes

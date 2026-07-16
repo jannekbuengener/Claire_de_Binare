@@ -118,7 +118,7 @@ From live-invocation and certification harnesses (see
 
 ## 6. Root and target visibility ([#2853](https://github.com/jannekbuengener/Claire_de_Binare/issues/2853))
 
-Local working repo root and GitHub **target** repo are **separate** concepts:
+Local Claire de Binare repository root and GitHub **target** repo are **separate** concepts:
 
 | Concept | SSOT |
 | --- | --- |

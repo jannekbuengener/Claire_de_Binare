@@ -17,7 +17,7 @@ This document defines non-negotiable system contracts that govern CDB's determin
 This is not a redesign proposal, implementation guide, or "nice to have" requirements list. Changes to invariants require updating both this document and their enforcement mechanisms. No invariant appears here without concrete references.
 
 **Canonical References:**
-- Source-of-truth enforcement (tests, code, CI, schemas): this working repo
+- Source-of-truth enforcement (tests, code, CI, schemas): this Claire de Binare repository
 - Governance specs (LR-004-SPEC, META-001, LR-006-EVIDENCE): `docs/live-readiness/`
 - This document: `knowledge/governance/`
 
@@ -50,12 +50,12 @@ This is not a redesign proposal, implementation guide, or "nice to have" require
 **Enforcement:**
 - Test: `tests/contract/test_decision_contract.py::test_decision_allow` (baseline ALLOW requires all checks)
 - Code: `services/risk/service.py::decide_trade()` returns `DECISION_BLOCK` by default
-- Spec: Working Repo `core/contracts/decision_contract_v1.py` definiert Decision Contract v1 Interface
+- Spec: Claire de Binare repository `core/contracts/decision_contract_v1.py` definiert Decision Contract v1 Interface
 
 **References:**
-- Working Repo: `tests/contract/test_decision_contract.py` (16 deterministic tests)
-- Working Repo: `core/contracts/decision_contract_v1.py` (Decision Contract v1 Interface)
-- Working Repo: `services/risk/service.py::decide_trade()`
+- Claire de Binare repository: `tests/contract/test_decision_contract.py` (16 deterministic tests)
+- Claire de Binare repository: `core/contracts/decision_contract_v1.py` (Decision Contract v1 Interface)
+- Claire de Binare repository: `services/risk/service.py::decide_trade()`
 
 ---
 
@@ -66,13 +66,13 @@ This is not a redesign proposal, implementation guide, or "nice to have" require
 **Rationale:** Risk controls are the critical safety layer. Execution without risk validation violates fail-closed principle.
 
 **Enforcement:**
-- Architecture: Working Repo `services/risk/README.md` §Topics / Streams (signals → Risk → orders → Execution)
-- Healthcheck: Working Repo `infrastructure/compose/healthchecks-strict.yml` (Execution depends_on Risk service_healthy)
-- Docker: Working Repo `infrastructure/compose/base.yml` defines service dependencies
+- Architecture: Claire de Binare repository `services/risk/README.md` §Topics / Streams (signals → Risk → orders → Execution)
+- Healthcheck: Claire de Binare repository `infrastructure/compose/healthchecks-strict.yml` (Execution depends_on Risk service_healthy)
+- Docker: Claire de Binare repository `infrastructure/compose/base.yml` defines service dependencies
 
 **References:**
-- Working Repo: `infrastructure/compose/healthchecks-strict.yml::cdb_execution.depends_on`
-- Working Repo: `infrastructure/compose/base.yml`
+- Claire de Binare repository: `infrastructure/compose/healthchecks-strict.yml::cdb_execution.depends_on`
+- Claire de Binare repository: `infrastructure/compose/base.yml`
 
 ---
 
@@ -85,11 +85,11 @@ This is not a redesign proposal, implementation guide, or "nice to have" require
 **Enforcement:**
 - Test: `test_decision_first_fail_panic_wins`, `test_decision_first_fail_stale_wins_over_regime`
 - Test: `test_decision_first_fail_regime_wins_over_signal`, `test_decision_first_fail_drawdown_wins_over_exposure`
-- Code: Working Repo `services/risk/service.py::decide_trade()` implements fixed check sequence
+- Code: Claire de Binare repository `services/risk/service.py::decide_trade()` implements fixed check sequence
 
 **References:**
-- Working Repo: `tests/contract/test_decision_contract.py::test_decision_first_fail_*` (4 ordering tests)
-- Working Repo: `services/risk/service.py::decide_trade()`
+- Claire de Binare repository: `tests/contract/test_decision_contract.py::test_decision_first_fail_*` (4 ordering tests)
+- Claire de Binare repository: `services/risk/service.py::decide_trade()`
 
 ---
 
@@ -101,14 +101,14 @@ This is not a redesign proposal, implementation guide, or "nice to have" require
 
 **Enforcement:**
 - Test: 8 RC_* tests (`test_decision_rc_001_regime_block`, `test_decision_rc_002_panic_*`, `test_decision_rc_003_stale`, `test_decision_rc_004_data_silence`, `test_decision_rc_010_signal_thresholds`, `test_decision_rc_020_daily_drawdown`, `test_decision_rc_021_exposure`, `test_decision_rc_022_slippage`)
-- Schema: Working Repo `docs/live-readiness/LR-004-SPEC.md` §5 defines RC_B taxonomy
-- Guard: Working Repo `scripts/lr004_completion_guard.py` validates blocked_reason_code against taxonomy
+- Schema: Claire de Binare repository `docs/live-readiness/LR-004-SPEC.md` §5 defines RC_B taxonomy
+- Guard: Claire de Binare repository `scripts/lr004_completion_guard.py` validates blocked_reason_code against taxonomy
 
 **References:**
-- Working Repo: `tests/contract/test_decision_contract.py` (8 RC_* tests)
-- Working Repo: `services/risk/reason_codes.py` (8 RC constants)
-- Working Repo: `docs/live-readiness/LR-004-SPEC.md` §5.2 Taxonomy Table
-- Working Repo: `scripts/lr004_completion_guard.py::validate_blocked_reason_code()`
+- Claire de Binare repository: `tests/contract/test_decision_contract.py` (8 RC_* tests)
+- Claire de Binare repository: `services/risk/reason_codes.py` (8 RC constants)
+- Claire de Binare repository: `docs/live-readiness/LR-004-SPEC.md` §5.2 Taxonomy Table
+- Claire de Binare repository: `scripts/lr004_completion_guard.py::validate_blocked_reason_code()`
 
 ---
 
@@ -119,14 +119,14 @@ This is not a redesign proposal, implementation guide, or "nice to have" require
 **Rationale:** Humans retain ultimate control over code reaching production. Prevents autonomous agent drift into unsafe states.
 
 **Enforcement:**
-- CI: Working Repo `.github/workflows/delivery-gate.yml` blocks PRs if `delivery.approved != true`
+- CI: Claire de Binare repository `.github/workflows/delivery-gate.yml` blocks PRs if `delivery.approved != true`
 - Guard: Workflow fails with exit code 1 if not approved
 - Exception: Labels `docs-only`, `ci-only`, `emergency` bypass gate
 
 **References:**
-- Working Repo: `.github/governance/DELIVERY_APPROVED.yaml` (approved: true/false)
-- Working Repo: `.github/workflows/delivery-gate.yml`
-- Working Repo: `docs/live-readiness/META-001-GOVERNANCE_FOUNDATION.md` §3 Delivery Gates
+- Claire de Binare repository: `.github/governance/DELIVERY_APPROVED.yaml` (approved: true/false)
+- Claire de Binare repository: `.github/workflows/delivery-gate.yml`
+- Claire de Binare repository: `docs/live-readiness/META-001-GOVERNANCE_FOUNDATION.md` §3 Delivery Gates
 
 ---
 
@@ -137,14 +137,14 @@ This is not a redesign proposal, implementation guide, or "nice to have" require
 **Rationale:** Prevents untested strategies from accessing real capital. Requires proof of operational correctness.
 
 **Enforcement:**
-- Code: Working Repo `services/risk/live_trading_gate.py::check_authorization()` validates test completion
-- Code: Working Repo `services/validation/gate_evaluator.py::evaluate()` checks thresholds (min_orders=1 default via `VALIDATION_MIN_ORDERS`, min_fill_rate=0.45, min_qty_sum=0.0 via `VALIDATION_MIN_QTY_SUM`)
-- Spec: Working Repo `docs/live-readiness/LR-007-SPEC.md` defines validation requirements
+- Code: Claire de Binare repository `services/risk/live_trading_gate.py::check_authorization()` validates test completion
+- Code: Claire de Binare repository `services/validation/gate_evaluator.py::evaluate()` checks thresholds (min_orders=1 default via `VALIDATION_MIN_ORDERS`, min_fill_rate=0.45, min_qty_sum=0.0 via `VALIDATION_MIN_QTY_SUM`)
+- Spec: Claire de Binare repository `docs/live-readiness/LR-007-SPEC.md` defines validation requirements
 
 **References:**
-- Working Repo: `services/risk/live_trading_gate.py::check_authorization()`
-- Working Repo: `services/validation/gate_evaluator.py::GateThresholds`
-- Working Repo: `docs/live-readiness/LR-007-SPEC.md`
+- Claire de Binare repository: `services/risk/live_trading_gate.py::check_authorization()`
+- Claire de Binare repository: `services/validation/gate_evaluator.py::GateThresholds`
+- Claire de Binare repository: `docs/live-readiness/LR-007-SPEC.md`
 
 ---
 
@@ -161,15 +161,15 @@ This is not a redesign proposal, implementation guide, or "nice to have" require
 **Rationale:** Breaking contract changes risk inter-service communication failures. Fingerprint guard makes drift visible and intentional.
 
 **Enforcement:**
-- Guard: Working Repo `scripts/lr003_contract_drift_guard.py --check` computes SHA256, compares to fingerprint
-- CI: Working Repo `.github/workflows/contracts.yml` runs guard, blocks on exit code 1
-- Fingerprint: Working Repo `docs/live-readiness/LR-003-FINGERPRINT.json` stores combined SHA256
+- Guard: Claire de Binare repository `scripts/lr003_contract_drift_guard.py --check` computes SHA256, compares to fingerprint
+- CI: Claire de Binare repository `.github/workflows/contracts.yml` runs guard, blocks on exit code 1
+- Fingerprint: Claire de Binare repository `docs/live-readiness/LR-003-FINGERPRINT.json` stores combined SHA256
 
 **References:**
-- Working Repo: `scripts/lr003_contract_drift_guard.py::check_drift()`
-- Working Repo: `docs/live-readiness/LR-003-FINGERPRINT.json`
-- Working Repo: `docs/live-readiness/LR-003-EVIDENCE.md`
-- Working Repo: `.github/workflows/contracts.yml`
+- Claire de Binare repository: `scripts/lr003_contract_drift_guard.py::check_drift()`
+- Claire de Binare repository: `docs/live-readiness/LR-003-FINGERPRINT.json`
+- Claire de Binare repository: `docs/live-readiness/LR-003-EVIDENCE.md`
+- Claire de Binare repository: `.github/workflows/contracts.yml`
 
 ---
 
@@ -180,15 +180,15 @@ This is not a redesign proposal, implementation guide, or "nice to have" require
 **Rationale:** Prevents schema drift via undocumented fields. Forces explicit schema versioning for new fields.
 
 **Enforcement:**
-- Schema: Working Repo `docs/contracts/market_data.schema.json::additionalProperties: false`
-- Schema: Working Repo `docs/contracts/signal.schema.json::additionalProperties: false`
-- Test: Working Repo `tests/contract/test_decision_contract.py` validates contract compliance
-- CI: Working Repo `.github/workflows/contracts.yml` validates schemas
+- Schema: Claire de Binare repository `docs/contracts/market_data.schema.json::additionalProperties: false`
+- Schema: Claire de Binare repository `docs/contracts/signal.schema.json::additionalProperties: false`
+- Test: Claire de Binare repository `tests/contract/test_decision_contract.py` validates contract compliance
+- CI: Claire de Binare repository `.github/workflows/contracts.yml` validates schemas
 
 **References:**
-- Working Repo: `docs/contracts/market_data.schema.json` line 6
-- Working Repo: `docs/contracts/signal.schema.json` line 6
-- Working Repo: `.github/workflows/contracts.yml`
+- Claire de Binare repository: `docs/contracts/market_data.schema.json` line 6
+- Claire de Binare repository: `docs/contracts/signal.schema.json` line 6
+- Claire de Binare repository: `.github/workflows/contracts.yml`
 
 ---
 
@@ -199,13 +199,13 @@ This is not a redesign proposal, implementation guide, or "nice to have" require
 **Rationale:** Enables runtime schema negotiation and backward compatibility detection.
 
 **Enforcement:**
-- Schema: Working Repo `docs/contracts/market_data.schema.json::schema_version: {const: "v1.0"}`
-- Schema: Working Repo `docs/contracts/signal.schema.json::schema_version: {const: "v1.0"}`
-- CI: Working Repo `.github/workflows/contracts.yml` validates schema syntax
+- Schema: Claire de Binare repository `docs/contracts/market_data.schema.json::schema_version: {const: "v1.0"}`
+- Schema: Claire de Binare repository `docs/contracts/signal.schema.json::schema_version: {const: "v1.0"}`
+- CI: Claire de Binare repository `.github/workflows/contracts.yml` validates schema syntax
 
 **References:**
-- Working Repo: `docs/contracts/market_data.schema.json::properties.schema_version` line 17
-- Working Repo: `docs/contracts/signal.schema.json::properties.schema_version`
+- Claire de Binare repository: `docs/contracts/market_data.schema.json::properties.schema_version` line 17
+- Claire de Binare repository: `docs/contracts/signal.schema.json::properties.schema_version`
 
 ---
 
@@ -216,14 +216,14 @@ This is not a redesign proposal, implementation guide, or "nice to have" require
 **Rationale:** Traces are stored in Git. Inline secrets create leak risk. Config hashes preserve replay-verifiability without exposing sensitive data.
 
 **Enforcement:**
-- Specification: Working Repo `docs/live-readiness/LR-006-EVIDENCE.md` AC14 "No Tresor-Zone References"
+- Specification: Claire de Binare repository `docs/live-readiness/LR-006-EVIDENCE.md` AC14 "No Tresor-Zone References"
 - Example: LR-006-EVIDENCE.md Example 1 uses `config_hash: "sha256:..."` instead of inline config
-- Policy: Working Repo `docs/live-readiness/META-001-GOVERNANCE_FOUNDATION.md` §4 No-Secrets-Guarantee
+- Policy: Claire de Binare repository `docs/live-readiness/META-001-GOVERNANCE_FOUNDATION.md` §4 No-Secrets-Guarantee
 
 **References:**
-- Working Repo: `docs/live-readiness/LR-006-EVIDENCE.md` §AC14 line 307
-- Working Repo: `docs/live-readiness/LR-006-EVIDENCE.md` Example 1 line 46 (config_hash usage)
-- Working Repo: `docs/live-readiness/META-001-GOVERNANCE_FOUNDATION.md` §4 Capabilities line 68
+- Claire de Binare repository: `docs/live-readiness/LR-006-EVIDENCE.md` §AC14 line 307
+- Claire de Binare repository: `docs/live-readiness/LR-006-EVIDENCE.md` Example 1 line 46 (config_hash usage)
+- Claire de Binare repository: `docs/live-readiness/META-001-GOVERNANCE_FOUNDATION.md` §4 Capabilities line 68
 
 ---
 
@@ -234,13 +234,13 @@ This is not a redesign proposal, implementation guide, or "nice to have" require
 **Rationale:** Machine-readable references enable automated replay verification. No ambiguous "see file X" references.
 
 **Enforcement:**
-- Specification: Working Repo `docs/live-readiness/LR-006-EVIDENCE.md` §AC8-AC9
+- Specification: Claire de Binare repository `docs/live-readiness/LR-006-EVIDENCE.md` §AC8-AC9
 - Example: All three traces in LR-006-EVIDENCE.md use strict format
-- Policy: Working Repo `docs/live-readiness/META-001-GOVERNANCE_FOUNDATION.md` §4 Artefakt-Referenzen
+- Policy: Claire de Binare repository `docs/live-readiness/META-001-GOVERNANCE_FOUNDATION.md` §4 Artefakt-Referenzen
 
 **References:**
-- Working Repo: `docs/live-readiness/LR-006-EVIDENCE.md` Examples 1-3 (evidence field format)
-- Working Repo: `docs/live-readiness/META-001-GOVERNANCE_FOUNDATION.md` §4 line 66
+- Claire de Binare repository: `docs/live-readiness/LR-006-EVIDENCE.md` Examples 1-3 (evidence field format)
+- Claire de Binare repository: `docs/live-readiness/META-001-GOVERNANCE_FOUNDATION.md` §4 line 66
 
 ---
 
@@ -251,16 +251,16 @@ This is not a redesign proposal, implementation guide, or "nice to have" require
 **Rationale:** GitHub API is external dependency with rate limits, authentication, and UI inconsistencies. Git-native state is deterministic and audit-capable via `git log`.
 
 **Enforcement:**
-- Specification: Working Repo `docs/live-readiness/LR-004-SPEC.md` §1 Purpose
-- Manifest: Working Repo `docs/live-readiness/LR-TASKS.yaml` (canonical task list)
-- Guard: Working Repo `scripts/lr004_completion_guard.py` validates STATE files against manifest
-- CI: Working Repo `.github/workflows/ci.yml` runs validation on every PR/push
+- Specification: Claire de Binare repository `docs/live-readiness/LR-004-SPEC.md` §1 Purpose
+- Manifest: Claire de Binare repository `docs/live-readiness/LR-TASKS.yaml` (canonical task list)
+- Guard: Claire de Binare repository `scripts/lr004_completion_guard.py` validates STATE files against manifest
+- CI: Claire de Binare repository `.github/workflows/ci.yml` runs validation on every PR/push
 
 **References:**
-- Working Repo: `docs/live-readiness/LR-004-SPEC.md` §3 Task Manifest
-- Working Repo: `docs/live-readiness/LR-TASKS.yaml`
-- Working Repo: `scripts/lr004_completion_guard.py::validate_state_files()`
-- Working Repo: `docs/live-readiness/META-001-GOVERNANCE_FOUNDATION.md` §2 line 17
+- Claire de Binare repository: `docs/live-readiness/LR-004-SPEC.md` §3 Task Manifest
+- Claire de Binare repository: `docs/live-readiness/LR-TASKS.yaml`
+- Claire de Binare repository: `scripts/lr004_completion_guard.py::validate_state_files()`
+- Claire de Binare repository: `docs/live-readiness/META-001-GOVERNANCE_FOUNDATION.md` §2 line 17
 
 ---
 
@@ -271,14 +271,14 @@ This is not a redesign proposal, implementation guide, or "nice to have" require
 **Rationale:** Binary terminal states eliminate ambiguity. Tasks are either complete (evidence file + criteria met) or blocked (reason code + resolution needed).
 
 **Enforcement:**
-- Schema: Working Repo `docs/live-readiness/LR-004-SPEC.md` §4.4 (status enum: DONE | BLOCKED)
-- Guard: Working Repo `scripts/lr004_completion_guard.py` Rule V009 validates enum
-- Policy: Working Repo `docs/live-readiness/META-001-GOVERNANCE_FOUNDATION.md` §4 Terminal States Only
+- Schema: Claire de Binare repository `docs/live-readiness/LR-004-SPEC.md` §4.4 (status enum: DONE | BLOCKED)
+- Guard: Claire de Binare repository `scripts/lr004_completion_guard.py` Rule V009 validates enum
+- Policy: Claire de Binare repository `docs/live-readiness/META-001-GOVERNANCE_FOUNDATION.md` §4 Terminal States Only
 
 **References:**
-- Working Repo: `docs/live-readiness/LR-004-SPEC.md` §4.4 Field Specifications line 150
-- Working Repo: `scripts/lr004_completion_guard.py::validate_status_enum()`
-- Working Repo: `docs/live-readiness/META-001-GOVERNANCE_FOUNDATION.md` §4
+- Claire de Binare repository: `docs/live-readiness/LR-004-SPEC.md` §4.4 Field Specifications line 150
+- Claire de Binare repository: `scripts/lr004_completion_guard.py::validate_status_enum()`
+- Claire de Binare repository: `docs/live-readiness/META-001-GOVERNANCE_FOUNDATION.md` §4
 
 ---
 
@@ -289,14 +289,14 @@ This is not a redesign proposal, implementation guide, or "nice to have" require
 **Rationale:** Prevents invalid states like "DONE but still blocked" or "BLOCKED but has completion_timestamp". Atomic state transitions only.
 
 **Enforcement:**
-- Schema: Working Repo `docs/live-readiness/LR-004-SPEC.md` §4.2-4.3 (conditional requirements)
-- Guard: Working Repo `scripts/lr004_completion_guard.py` Rules V010-V011 (DONE/BLOCKED completeness)
-- Specification: Working Repo `docs/live-readiness/LR-004-SPEC.md` §7.2-7.3 State Transition Rules
+- Schema: Claire de Binare repository `docs/live-readiness/LR-004-SPEC.md` §4.2-4.3 (conditional requirements)
+- Guard: Claire de Binare repository `scripts/lr004_completion_guard.py` Rules V010-V011 (DONE/BLOCKED completeness)
+- Specification: Claire de Binare repository `docs/live-readiness/LR-004-SPEC.md` §7.2-7.3 State Transition Rules
 
 **References:**
-- Working Repo: `docs/live-readiness/LR-004-SPEC.md` §4.4 Conditional Requirements line 160
-- Working Repo: `scripts/lr004_completion_guard.py::validate_done_state()`, `validate_blocked_state()`
-- Working Repo: `docs/live-readiness/LR-004-SPEC.md` §7.2-7.3
+- Claire de Binare repository: `docs/live-readiness/LR-004-SPEC.md` §4.4 Conditional Requirements line 160
+- Claire de Binare repository: `scripts/lr004_completion_guard.py::validate_done_state()`, `validate_blocked_state()`
+- Claire de Binare repository: `docs/live-readiness/LR-004-SPEC.md` §7.2-7.3
 
 ---
 
@@ -307,13 +307,13 @@ This is not a redesign proposal, implementation guide, or "nice to have" require
 **Rationale:** Execution without risk validation violates fail-closed principle. Health ordering ensures correct startup sequence.
 
 **Enforcement:**
-- Docker: Working Repo `infrastructure/compose/healthchecks-strict.yml::cdb_execution.depends_on.cdb_risk.condition: service_healthy`
+- Docker: Claire de Binare repository `infrastructure/compose/healthchecks-strict.yml::cdb_execution.depends_on.cdb_risk.condition: service_healthy`
 - Healthcheck: Risk service validates Redis/Postgres connectivity before reporting healthy
-- Base: Working Repo `infrastructure/compose/base.yml` defines base service structure
+- Base: Claire de Binare repository `infrastructure/compose/base.yml` defines base service structure
 
 **References:**
-- Working Repo: `infrastructure/compose/healthchecks-strict.yml::cdb_execution.depends_on`
-- Working Repo: `infrastructure/compose/base.yml`
+- Claire de Binare repository: `infrastructure/compose/healthchecks-strict.yml::cdb_execution.depends_on`
+- Claire de Binare repository: `infrastructure/compose/base.yml`
 
 ---
 
@@ -324,13 +324,13 @@ This is not a redesign proposal, implementation guide, or "nice to have" require
 **Rationale:** DB layer enforcement prevents invalid data from entering persistence layer. Fail-closed at runtime.
 
 **Enforcement:**
-- Schema: Working Repo `infrastructure/database/schema.sql` (CHECK constraints on all tables)
+- Schema: Claire de Binare repository `infrastructure/database/schema.sql` (CHECK constraints on all tables)
 - Runtime: PostgreSQL rejects INSERT/UPDATE violating constraints
 - Examples: Lines 26-34 (signals), 77-78 (orders)
 
 **References:**
-- Working Repo: `infrastructure/database/schema.sql` lines 26-34 (signals table constraints)
-- Working Repo: `infrastructure/database/schema.sql` lines 77-78 (orders table constraints)
+- Claire de Binare repository: `infrastructure/database/schema.sql` lines 26-34 (signals table constraints)
+- Claire de Binare repository: `infrastructure/database/schema.sql` lines 77-78 (orders table constraints)
 
 ---
 
@@ -341,14 +341,14 @@ This is not a redesign proposal, implementation guide, or "nice to have" require
 **Rationale:** Enables structured analysis of blockers. Taxonomy enforces consistency across tasks and agents.
 
 **Enforcement:**
-- Schema: Working Repo `docs/live-readiness/LR-004-SPEC.md` §5.2 defines 15 RC_B codes
-- Guard: Working Repo `scripts/lr004_completion_guard.py` Rule V013 validates against hardcoded taxonomy
-- Specification: Working Repo `docs/live-readiness/LR-004-SPEC.md` §5.4 Selection Guidelines
+- Schema: Claire de Binare repository `docs/live-readiness/LR-004-SPEC.md` §5.2 defines 15 RC_B codes
+- Guard: Claire de Binare repository `scripts/lr004_completion_guard.py` Rule V013 validates against hardcoded taxonomy
+- Specification: Claire de Binare repository `docs/live-readiness/LR-004-SPEC.md` §5.4 Selection Guidelines
 
 **References:**
-- Working Repo: `docs/live-readiness/LR-004-SPEC.md` §5.2 Taxonomy Table lines 177-195
-- Working Repo: `scripts/lr004_completion_guard.py::VALID_REASON_CODES`
-- Working Repo: `docs/live-readiness/LR-004-SPEC.md` §5.4
+- Claire de Binare repository: `docs/live-readiness/LR-004-SPEC.md` §5.2 Taxonomy Table lines 177-195
+- Claire de Binare repository: `scripts/lr004_completion_guard.py::VALID_REASON_CODES`
+- Claire de Binare repository: `docs/live-readiness/LR-004-SPEC.md` §5.4
 
 ---
 
@@ -359,14 +359,14 @@ This is not a redesign proposal, implementation guide, or "nice to have" require
 **Rationale:** Historical record of all tasks. Prevents "hiding" incomplete work by deleting manifest entries.
 
 **Enforcement:**
-- Specification: Working Repo `docs/live-readiness/LR-004-SPEC.md` §3.4 Manifest Rules (Immutability + Append-Only)
-- Guard: Working Repo `scripts/lr004_completion_guard.py` Rule V002 detects duplicate task_ids
+- Specification: Claire de Binare repository `docs/live-readiness/LR-004-SPEC.md` §3.4 Manifest Rules (Immutability + Append-Only)
+- Guard: Claire de Binare repository `scripts/lr004_completion_guard.py` Rule V002 detects duplicate task_ids
 - Policy: PR review required for manifest changes
 
 **References:**
-- Working Repo: `docs/live-readiness/LR-004-SPEC.md` §3.4 Manifest Rules lines 74-80
-- Working Repo: `scripts/lr004_completion_guard.py::validate_manifest()`
-- Working Repo: `docs/live-readiness/LR-TASKS.yaml`
+- Claire de Binare repository: `docs/live-readiness/LR-004-SPEC.md` §3.4 Manifest Rules lines 74-80
+- Claire de Binare repository: `scripts/lr004_completion_guard.py::validate_manifest()`
+- Claire de Binare repository: `docs/live-readiness/LR-TASKS.yaml`
 
 ---
 
@@ -377,14 +377,14 @@ This is not a redesign proposal, implementation guide, or "nice to have" require
 **Rationale:** Enables post-mortem analysis, audit compliance, and incident explainability without access to running system.
 
 **Enforcement:**
-- Specification: Working Repo `docs/live-readiness/LR-006-EVIDENCE.md` (Example 1 includes full replay walkthrough)
+- Specification: Claire de Binare repository `docs/live-readiness/LR-006-EVIDENCE.md` (Example 1 includes full replay walkthrough)
 - Walkthrough: Lines 83-147 demonstrate manual replay verification
-- Policy: Working Repo `docs/live-readiness/META-001-GOVERNANCE_FOUNDATION.md` §4 Replay-Fähige Decisions
+- Policy: Claire de Binare repository `docs/live-readiness/META-001-GOVERNANCE_FOUNDATION.md` §4 Replay-Fähige Decisions
 
 **References:**
-- Working Repo: `docs/live-readiness/LR-006-EVIDENCE.md` §Replay Verification Walkthrough lines 83-147
-- Working Repo: `docs/live-readiness/META-001-GOVERNANCE_FOUNDATION.md` §4 line 63
-- Working Repo: `docs/live-readiness/LR-006-EVIDENCE.md` §AC4
+- Claire de Binare repository: `docs/live-readiness/LR-006-EVIDENCE.md` §Replay Verification Walkthrough lines 83-147
+- Claire de Binare repository: `docs/live-readiness/META-001-GOVERNANCE_FOUNDATION.md` §4 line 63
+- Claire de Binare repository: `docs/live-readiness/LR-006-EVIDENCE.md` §AC4
 
 ---
 
@@ -395,12 +395,12 @@ This is not a redesign proposal, implementation guide, or "nice to have" require
 **Rationale:** Deterministic thresholds (pct_change, volume) are replay-verifiable. Confidence scores introduce probabilistic non-determinism.
 
 **Enforcement:**
-- Code: Working Repo `services/risk/service.py::decide_trade()` does not reference confidence field
-- Model: Working Repo `services/signal/models.py` defines confidence as optional informational field
+- Code: Claire de Binare repository `services/risk/service.py::decide_trade()` does not reference confidence field
+- Model: Claire de Binare repository `services/signal/models.py` defines confidence as optional informational field
 
 **References:**
-- Working Repo: `services/risk/service.py::decide_trade()`
-- Working Repo: `services/signal/models.py` (Signal dataclass)
+- Claire de Binare repository: `services/risk/service.py::decide_trade()`
+- Claire de Binare repository: `services/signal/models.py` (Signal dataclass)
 
 ---
 
@@ -429,7 +429,7 @@ This is not a redesign proposal, implementation guide, or "nice to have" require
 | INV-019: Deterministic Replay-Verifiability | `docs/live-readiness/LR-006-EVIDENCE.md` Example 1 walkthrough |
 | INV-020: No Confidence-Based Gating | `services/risk/service.py::decide_trade()` (confidence nicht referenziert) |
 
-**Note:** All paths in Canonical Map refer to Working Repo (`Claire_de_Binare`) unless explicitly prefixed.
+**Note:** All paths in Canonical Map refer to Claire de Binare repository (`Claire_de_Binare`) unless explicitly prefixed.
 
 ---
 
@@ -441,7 +441,7 @@ This is not a redesign proposal, implementation guide, or "nice to have" require
 
 2. **Enforcement Verification:** All enforcement mechanisms (tests, CI gates, guards, constraints) must pass after change. No drift allowed.
 
-3. **LR-003 Fingerprint Implications:** If invariant change touches protected files (`market_data.schema.json`, `signal.schema.json`, `reason_codes.py`, `test_decision_contract.py`), LR-003 fingerprint MUST be regenerated via Working Repo `scripts/lr003_contract_drift_guard.py --generate`.
+3. **LR-003 Fingerprint Implications:** If invariant change touches protected files (`market_data.schema.json`, `signal.schema.json`, `reason_codes.py`, `test_decision_contract.py`), LR-003 fingerprint MUST be regenerated via Claire de Binare repository `scripts/lr003_contract_drift_guard.py --generate`.
 
 4. **Proof of Enforcement:** Change PR must include evidence that:
    - Tests still pass (or new tests added if invariant strengthened)

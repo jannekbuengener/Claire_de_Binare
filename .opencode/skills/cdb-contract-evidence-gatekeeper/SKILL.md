@@ -198,7 +198,7 @@ If a field exists somewhere but producer, owner, unit, or meaning is unclear:
 - Solo-maintainer reality applies; do not invent teams, reviewers, or escalation chains
 - evidence beats storytelling
 - non-blocking residuals must remain explicit instead of disappearing into comments
-- the working repo is canon
+- the Claire de Binare repository is canon
 - historical docs are not active proof unless explicitly relevant
 
 ## Tooling posture

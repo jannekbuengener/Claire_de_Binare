@@ -1,8 +1,0 @@
-{
-  "title": "Discussion: Name",
-  "labels": [
-    "discussion-pipeline",
-    "preset:deep"
-  ],
-  "body": "# name.md\n\n### Gemini\n\n# Agent Skipped\n\nReason: Missing GOOGLE_API_KEY. Proceeded in availability-only mode.\n\n### Copilot\n\n# Agent Skipped\n\nReason: Missing OPENAI_API_KEY. Proceeded in availability-only mode.\n\n### Claude\n\n# Agent Skipped\n\nReason: Missing ANTHROPIC_API_KEY. Proceeded in availability-only mode.\n\nQuality: ACCEPTABLE_NO_DISAGREEMENTS\nDisagreements: 0\nEcho Score: 0.58\nThread: discussions\\threads\\THREAD_1765982298\n"
-}

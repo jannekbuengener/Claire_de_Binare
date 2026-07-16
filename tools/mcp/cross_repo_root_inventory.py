@@ -63,7 +63,7 @@ def load_inventory_config(
 
 
 def resolve_workspaces_repos_dir(
-    working_repo_root: Path,
+    claire_de_binare_repository_root: Path,
     config: dict[str, Any],
 ) -> Path:
     defaults = config.get("defaults") or {}
@@ -74,13 +74,13 @@ def resolve_workspaces_repos_dir(
             candidate = Path(override.strip()).expanduser()
             if candidate.is_dir():
                 return candidate.resolve()
-    return working_repo_root.resolve().parent
+    return claire_de_binare_repository_root.resolve().parent
 
 
-def _display_path(path: Path, working_repo_root: Path) -> str:
+def _display_path(path: Path, claire_de_binare_repository_root: Path) -> str:
     resolved = path.resolve()
     try:
-        return str(resolved.relative_to(working_repo_root.resolve()))
+        return str(resolved.relative_to(claire_de_binare_repository_root.resolve()))
     except ValueError:
         return str(resolved)
 
@@ -146,15 +146,15 @@ def _gh_repo_visible(owner: str, repo: str) -> tuple[GithubTargetStatus, list[st
 def _resolve_github_slug(
     entry: dict[str, Any],
     *,
-    working_slug: tuple[str | None, str | None],
+    canonical_slug: tuple[str | None, str | None],
 ) -> tuple[str | None, str | None, list[str]]:
     github = entry.get("github")
     if not isinstance(github, dict):
         return None, None, []
     kind = github.get("kind")
-    if kind == "same_as_working":
-        owner, repo = working_slug
-        return owner, repo, ["github target inherits working repo slug"]
+    if kind == "same_as_canonical":
+        owner, repo = canonical_slug
+        return owner, repo, ["github target inherits Claire de Binare repository slug"]
     owner = github.get("owner")
     repo = github.get("repo")
     if isinstance(owner, str) and isinstance(repo, str) and owner and repo:
@@ -165,7 +165,7 @@ def _resolve_github_slug(
 def _evaluate_local(
     entry: dict[str, Any],
     *,
-    working_repo_root: Path,
+    claire_de_binare_repository_root: Path,
     workspaces_repos_dir: Path,
 ) -> tuple[Path | None, LocalStatus, list[str]]:
     limitations: list[str] = []
@@ -175,16 +175,16 @@ def _evaluate_local(
 
     kind = local.get("kind")
     if kind == "repo_root":
-        path = working_repo_root.resolve()
+        path = claire_de_binare_repository_root.resolve()
         markers = [path / ".git", path / "AGENTS.md"]
         if all(marker.exists() for marker in markers):
             return path, "OK", limitations
         missing = [m.name for m in markers if not m.exists()]
-        return path, "LIMITED", [f"missing working repo markers: {missing}"]
+        return path, "LIMITED", [f"missing Claire de Binare repository markers: {missing}"]
 
     rel = local.get("relative_path")
     if isinstance(rel, str) and rel.strip():
-        path = (working_repo_root / rel.strip()).resolve()
+        path = (claire_de_binare_repository_root / rel.strip()).resolve()
         if path.is_dir():
             return path, "OK", limitations
         return path, "MISSING", [f"directory not found: {rel.strip()}"]
@@ -196,7 +196,7 @@ def _evaluate_local(
         for item in rel_paths:
             if not isinstance(item, str) or not item.strip():
                 continue
-            candidate = (working_repo_root / item.strip()).resolve()
+            candidate = (claire_de_binare_repository_root / item.strip()).resolve()
             if first is None:
                 first = candidate
             if not candidate.is_file():
@@ -288,7 +288,7 @@ class RootInventoryReport:
     schema_version: str
     timestamp: str
     issue_refs: list[str]
-    working_repo_root: str
+    claire_de_binare_repository_root: str
     workspaces_repos_dir: str
     config_path: str
     rows: list[RootInventoryRow] = field(default_factory=list)
@@ -302,7 +302,7 @@ class RootInventoryReport:
             "schema_version": self.schema_version,
             "timestamp": self.timestamp,
             "issue_refs": list(self.issue_refs),
-            "working_repo_root": self.working_repo_root,
+            "claire_de_binare_repository_root": self.claire_de_binare_repository_root,
             "workspaces_repos_dir": self.workspaces_repos_dir,
             "config_path": self.config_path,
             "rows": [row.to_dict() for row in self.rows],
@@ -316,21 +316,21 @@ class RootInventoryReport:
 
 
 def build_inventory(
-    working_repo_root: Path | None = None,
+    claire_de_binare_repository_root: Path | None = None,
     *,
     check_github: bool = True,
     config: dict[str, Any] | None = None,
 ) -> RootInventoryReport:
     """Build the cross-repo root inventory from canonical config."""
-    root = _repo_root() if working_repo_root is None else working_repo_root.resolve()
+    root = _repo_root() if claire_de_binare_repository_root is None else claire_de_binare_repository_root.resolve()
     cfg = load_inventory_config(root) if config is None else config
     workspaces_dir = resolve_workspaces_repos_dir(root, cfg)
     entries = cfg.get("entries")
     if not isinstance(entries, list):
         raise ValueError("inventory config entries must be a list")
 
-    working_owner, working_repo, _ = _git_remote_slug(root)
-    working_slug = (working_owner, working_repo)
+    canonical_owner, claire_de_binare_repository, _ = _git_remote_slug(root)
+    canonical_slug = (canonical_owner, claire_de_binare_repository)
 
     rows: list[RootInventoryRow] = []
     summary: dict[str, int] = {"OK": 0, "MISSING": 0, "LIMITED": 0}
@@ -348,11 +348,11 @@ def build_inventory(
 
         local_path, local_status, local_notes = _evaluate_local(
             raw,
-            working_repo_root=root,
+            claire_de_binare_repository_root=root,
             workspaces_repos_dir=workspaces_dir,
         )
         owner, repo, slug_notes = _resolve_github_slug(
-            raw, working_slug=working_slug
+            raw, canonical_slug=canonical_slug
         )
         gh_status, gh_notes = _evaluate_github_target(
             raw,
@@ -419,7 +419,7 @@ def build_inventory(
             for item in (cfg.get("issue_refs") or [ISSUE_REF, PARENT_ISSUE_REF])
             if isinstance(item, str)
         ],
-        working_repo_root=str(root),
+        claire_de_binare_repository_root=str(root),
         workspaces_repos_dir=str(workspaces_dir),
         config_path=str((root / CONFIG_REL).as_posix()),
         rows=rows,
@@ -440,7 +440,7 @@ def format_report_markdown(report: RootInventoryReport) -> str:
         "",
         f"- **timestamp:** {report.timestamp}",
         f"- **roots_verdict:** {report.roots_verdict}",
-        f"- **working_repo_root:** `{report.working_repo_root}`",
+        f"- **claire_de_binare_repository_root:** `{report.claire_de_binare_repository_root}`",
         f"- **workspaces_repos_dir:** `{report.workspaces_repos_dir}`",
         f"- **config:** `{report.config_path}`",
         "",
@@ -483,7 +483,7 @@ def format_report(report: RootInventoryReport, fmt: OutputFormat) -> str:
         return format_report_markdown(report)
     lines = [
         f"roots_verdict={report.roots_verdict}",
-        f"working_repo_root={report.working_repo_root}",
+        f"claire_de_binare_repository_root={report.claire_de_binare_repository_root}",
         f"workspaces_repos_dir={report.workspaces_repos_dir}",
         "",
     ]
@@ -508,7 +508,7 @@ def main(argv: list[str] | None = None) -> int:
         "--repo-root",
         type=Path,
         default=None,
-        help="Override working repo root (default: package parent)",
+        help="Override Claire de Binare repository root (default: package parent)",
     )
     parser.add_argument(
         "--no-github-check",

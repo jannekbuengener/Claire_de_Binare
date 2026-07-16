@@ -14,7 +14,7 @@ disable-model-invocation: true
 # Risk Governance
 
 ## Canon first
-- Use the working repo and current `Risk Service` / `cdb_risk` terminology.
+- Use the Claire de Binare repository and current `Risk Service` / `cdb_risk` terminology.
 - Read `CURRENT_STATUS.md` for recent risk and runtime changes.
 - Read `docs/live-readiness/LR-AUDIT-STATUS-2026-03-05.md` before making any claim about live readiness.
 - Never interpret `trade-capable` as permission to resume or enable live trading.

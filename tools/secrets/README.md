@@ -156,5 +156,5 @@ Run commands in order:
 - **Grafana Admin Incident Runbook (MANUAL rotation)**
   `knowledge/runbooks/GRAFANA_ADMIN_INCIDENT.md`
 
-**Note:** The former Docs Hub repository is retired. All active governance
-and runbook content lives in this working repo.
+**Note:** The former documentation source is retired. All active governance
+and runbook content lives in this Claire de Binare repository.
