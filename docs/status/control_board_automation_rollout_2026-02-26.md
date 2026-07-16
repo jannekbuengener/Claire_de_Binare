@@ -1,8 +1,10 @@
 # Control Board Automation Rollout Status (2026-02-26)
 
+> **Aktueller Status:** Dieses Dokument beschreibt den Rollout-Stand vom 2026-02-26 und ist keine aktuelle Workflow-Inventarliste. Aktueller Canon: `docs/runbooks/GITHUB_WORKFLOW_REGISTER.md`.
+
 ## Kontext
 - PR #947 ist gemerged; Merge-Commit: `8905b749455af6875b71a5f4ccebd1a68a67de5e`.
-- Die Workflows `control_board_auto_routing.yml` und `control_board_upsert.yml` sind aktiv.
+- Zum damaligen Stand waren `control_board_auto_routing.yml` und `control_board_upsert.yml` aktiv. Der Router wurde am 2026-07-16 entfernt; `control_board_upsert.yml` bleibt der aktive Upsert-Pfad.
 - Die Repo-Variable `CDB_CONTROL_BOARD_AUTOMATION_ENABLED` ist nicht gesetzt; Toggle ist damit effektiv OFF.
 - Tracking: #948 (Rollout Gate: Control Board Automation Smoke-Test (toggle-gated))
 

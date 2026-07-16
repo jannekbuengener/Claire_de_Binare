@@ -264,7 +264,6 @@ Template files for agent MCP surfaces are in `agents/templates/`:
 |------|---------|---------|
 | `onboarding_mcp_setup.ps1` | Any agent | Validates 5-level MCP capability (read-only) |
 | `claude_mcp.json.template` | Claude / Cloud Code | MCP config template |
-| `gemini_mcp_config.yml.template` | Gemini workflow | Inline config snippet |
 | `codex_mcp_config.md` | Codex | Reference only |
 | `codex_config.example.toml` | Codex | Template config |
 
