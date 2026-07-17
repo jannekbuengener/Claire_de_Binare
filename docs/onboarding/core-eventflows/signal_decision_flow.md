@@ -59,8 +59,7 @@ flowchart TD
 ## Source of Truth / Primary Repo Sources
 
 - [`knowledge/ARCHITECTURE_MAP.md`](../../../knowledge/ARCHITECTURE_MAP.md) — Signal lookback semantics, warmup validation
-- [`services/signal/README.md`](../../../services/signal/README.md) — Signal service implementation
-- [`core/strategy/`](../../../core/strategy/) — Strategy implementations
+- [`services/signal/README.md`](../../../services/signal/README.md) — Signal service implementation and strategy entry points
 
 ## Safety Boundaries
 
