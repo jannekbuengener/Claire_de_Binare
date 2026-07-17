@@ -1,66 +1,43 @@
-# AUTOLOAD_MANIFEST.yaml
-# Maschinen-lesbare Definition aller Agent Autoload-Pfade
-# Version: 1.0
-# Datum: 2025-12-28
-#
-# Zweck:
-# - Programmatische Validierung der Autoload-Pfade
-# - Keine Parsing-Fehler durch Markdown
-# - Eindeutige Quelle für Agent-Bootstrapping
+# Canonical machine-readable agent autoload manifest (#4118)
+version: "2.0"
+canonical_onboarding: agents/agent_orga/AGENT_ONBOARDING.md
+registry: agents/AGENTS.md
 
-version: "1.0"
-base_path: "D:\\Dev\\Workspaces\\Repos\\Claire_de_Binare"
-
-# Gemeinsame Dateien für alle Agenten
-# HINWEIS: CDB_CONSTITUTION.md ist PFLICHT für alle Agenten
-# Sie definiert User-Authority und Governance-Hierarchie
 shared:
   must_read:
-    - agents/AGENTS.md
-    - knowledge/governance/CDB_CONSTITUTION.md  # Höchste Governance-Instanz
+    - knowledge/governance/CDB_CONSTITUTION.md
+    - knowledge/governance/CDB_GOVERNANCE.md
+    - knowledge/governance/CDB_AGENT_POLICY.md
+    - knowledge/governance/SYSTEM_INVARIANTS.md
+    - docs/meta/REPOSITORY_CANON.md
+    - CURRENT_STATUS.md
+    - docs/live-readiness/LR-AUDIT-STATUS-2026-03-05.md
+    - docs/runbooks/CONTROL_REGISTER.md
+    - agents/OPEN_CODE_AGENTS.md
+  historical_reference:
     - knowledge/CDB_KNOWLEDGE_HUB.md
-  optional:
-    - knowledge/SHARED.WORKING.MEMORY.md
-    - knowledge/governance/NEXUS.MEMORY.yaml
 
-# User Authority (alle Agenten MÜSSEN dies respektieren)
 user_authority:
-  owner: "Jannek"
-  principle: "KI ist Werkzeug, nicht Betreiber"
-  on_conflict: "STOP & Rückfrage an User"
+  owner: Jannek
+  principle: KI ist Werkzeug, nicht Betreiber
+  on_conflict: STOP_AND_ESCALATE
   user_overrides_all: true
 
-# Agenten-spezifische Autoload-Listen
 agents:
   claude:
     role_file: agents/CLAUDE.md
-    must_read:
-      - knowledge/SYSTEM.CONTEXT.md
-      - knowledge/CURRENT_STATUS.md
-      - knowledge/roadmap/EXPANDED_ECOSYSTEM_ROADMAP.md
-    optional:
-      - agents/HV/HIGH_VOLTAGE_MULTI_AGENT_ENGINE.md  # Für automatische HV-Analysen
-    evidence_path: knowledge/logs/sessions/
-
   codex:
-    role_file: agents/CODEX.md
-    must_read:
-      - knowledge/governance/CDB_AGENT_POLICY.md
-
+    role_file: agents/roles/CODEX.md
   copilot:
     role_file: agents/COPILOT.md
-    must_read:
-      - knowledge/governance/CDB_AGENT_POLICY.md
-
   gemini:
     role_file: agents/GEMINI.md
-    must_read:
-      - knowledge/governance/CDB_AGENT_POLICY.md
-      - knowledge/governance/CDB_GOVERNANCE.md
-      - knowledge/governance/CDB_CONSTITUTION.md
 
-# Validierungs-Regeln
+context_bridge:
+  source: tools.mcp.context_bridge.create_bridge
+  expected_tool_count: 27
+
 validation:
   on_missing_must_read: STOP
-  on_missing_optional: WARN
   on_missing_role_file: STOP
+  on_tool_count_mismatch: STOP
