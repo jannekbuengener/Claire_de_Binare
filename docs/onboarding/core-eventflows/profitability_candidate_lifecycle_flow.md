@@ -8,7 +8,7 @@ Docs-only onboarding artifact. Visual orientation — not authoritative.
 
 - Parent: [#3253 Core-System Eventflow Map Pack](https://github.com/jannekbuengener/Claire_de_Binare/issues/3253)
 - Issue: [#3261 Map Profitability Candidate Lifecycle](https://github.com/jannekbuengener/Claire_de_Binare/issues/3261)
-- Canon: [`CDB_PROFITABILITY_ENGINE_CANON.md`](../../docs/strategy/CDB_PROFITABILITY_ENGINE_CANON.md)
+- Canon: [`CDB_PROFITABILITY_ENGINE_CANON.md`](../../../docs/strategy/CDB_PROFITABILITY_ENGINE_CANON.md)
 
 ## Purpose
 
@@ -84,8 +84,8 @@ flowchart LR
 
 ## Source of Truth / Primary Repo Sources
 
-- [`docs/strategy/CDB_PROFITABILITY_ENGINE_CANON.md`](../../docs/strategy/CDB_PROFITABILITY_ENGINE_CANON.md) — Full lifecycle definition, gate matrix, evidence requirements
-- [`knowledge/ARCHITECTURE_MAP.md`](../../knowledge/ARCHITECTURE_MAP.md) — Replay infrastructure underlying ARVP validation
+- [`docs/strategy/CDB_PROFITABILITY_ENGINE_CANON.md`](../../../docs/strategy/CDB_PROFITABILITY_ENGINE_CANON.md) — Full lifecycle definition, gate matrix, evidence requirements
+- [`knowledge/ARCHITECTURE_MAP.md`](../../../knowledge/ARCHITECTURE_MAP.md) — Replay infrastructure underlying ARVP validation
 
 ## Safety Boundaries
 
@@ -110,6 +110,6 @@ flowchart LR
 
 ## LR NO-GO / Kein Live-Go / Kein Echtgeld-Go
 
-LR remains NO-GO ([`docs/live-readiness/LR-AUDIT-STATUS-2026-03-05.md`](../../docs/live-readiness/LR-AUDIT-STATUS-2026-03-05.md)).
+LR remains NO-GO ([`docs/live-readiness/LR-AUDIT-STATUS-2026-03-05.md`](../../../docs/live-readiness/LR-AUDIT-STATUS-2026-03-05.md)).
 Board stage `trade-capable` is not Live-Go.
 No Echtgeld-Go.
