@@ -47,7 +47,7 @@ The repo-native server entrypoint is:
 python -m tools.mcp.server
 ```
 
-Host-specific configuration is documented by the active adapter surface and the Context-MCP runbook. Do not rely on historical `mcp-config.toml` or `mcp-config.ci.toml` files.
+Host-specific configuration is documented by the active adapter surface and the Context-MCP runbook. Historical standalone MCP config files are not onboarding frontdoors.
 
 Bridge inventory check:
 
@@ -61,7 +61,7 @@ For Context-/MCP-/Memory-/Evidence work, apply the Context Brain Preflight and B
 
 ## Commands
 
-Use only commands that exist in the repository. The onboarding canon does not define `make agent-status`, `make agent-config-ci`, `make agent-config-local`, `make agent-validate`, `make agent-help`, or `make agent-docs`.
+Use only commands that exist in the repository. Historical agent-specific Make targets are not supported onboarding frontdoors.
 
 Supported validation frontdoors:
 
