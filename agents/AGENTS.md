@@ -13,12 +13,15 @@ ausschliesslich in diesem Repository gepflegt.
 2. `knowledge/governance/CDB_GOVERNANCE.md`
 3. `knowledge/governance/CDB_AGENT_POLICY.md`
 4. `knowledge/governance/SYSTEM_INVARIANTS.md`
-5. `knowledge/CDB_KNOWLEDGE_HUB.md`
-6. `docs/meta/REPOSITORY_CANON.md`
-7. `CURRENT_STATUS.md`
-8. `docs/live-readiness/LR-AUDIT-STATUS-2026-03-05.md`
-9. `docs/runbooks/CONTROL_REGISTER.md`
-10. `agents/OPEN_CODE_AGENTS.md` — OpenCode Agent Shared Contract (Brain Evidence Gate fuer OpenCode Agents)
+5. `docs/meta/REPOSITORY_CANON.md`
+6. `CURRENT_STATUS.md`
+7. `docs/live-readiness/LR-AUDIT-STATUS-2026-03-05.md`
+8. `docs/runbooks/CONTROL_REGISTER.md`
+9. `agents/OPEN_CODE_AGENTS.md` — OpenCode Agent Shared Contract (Brain Evidence Gate fuer OpenCode Agents)
+
+`knowledge/CDB_KNOWLEDGE_HUB.md` ist keine Pflichtlektuere mehr. Die Datei ist
+eine historische Referenz fuer Dezember 2025 und darf nicht als aktueller
+Status-, Decision- oder Handoff-Canon verwendet werden.
 
 ## Cursor Subagents
 
@@ -71,7 +74,7 @@ versionierte Root-Flächen für `.claude/`, `.codex/`, `.cursor/`, `.gemini/`, `
 - `knowledge/governance/`
   - Kanonische Governance-, Policy- und Invariant-Dokumente.
 - `knowledge/`
-  - Kanonische Knowledge-Hub- und Decision-Hub-Dokumente.
+  - Aktive Knowledge-Dokumente und historische Referenzflächen; kein pauschaler Status-Canon.
 - `knowledge/testing/`
   - Test-First Processing Contract, Testarten-Atlas, MockExchange-Muster,
     Skill-Valley-Upgrade-Plan. Einstieg: `knowledge/testing/README.md`.
@@ -128,7 +131,7 @@ records_found: <count> | none
 Welcher `repo_fallback_reason` bei welchem tatsächlichen Tool-Zustand korrekt ist:
 
 | Tool-Status | Trust-Level | Records Found | Korrekter `repo_fallback_reason` |
-|---|---|---|---|---|
+|---|---|---|---|
 | `available` | `high` | >=1 | `none` (kein Fallback nötig) |
 | `available` | `none` | 0 | `insufficient_evidence` |
 | `available` | `medium` | 0 | `missing_record` |
