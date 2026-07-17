@@ -1,17 +1,12 @@
 # Legacy Files
 
-**Status:** HISTORICAL INDEX  
-**Updated:** 2026-07-17
+Status: Historical
 
-Diese Seite ist der lokale Einstieg für historische und migrationsbezogene
-Artefakte. Sie ist kein aktiver Operator- oder Governance-Canon.
+This file replaces the broken cross-repo pointer that previously targeted
+`Claire_de_Binare_Docs`.
 
-Aktueller Canon:
+Use this page as the local landing point for legacy and migration-only artifacts:
+- `DOCS_MOVED_TO_DOCS_HUB.md`
+- `ORCHESTRATOR_PACK_144.md`
 
-- [Repository-Canon](../meta/REPOSITORY_CANON.md)
-- [Dokumentationsindex](../index.md)
-- [Knowledge-Übersicht](../../knowledge/README.md)
-
-Historische Inhalte bleiben in den vorhandenen Archiv-, Evidence-, Ledger- und
-Session-Flächen nachvollziehbar. Fehlende frühere Cross-Repo-Pointer wie
-`DOCS_MOVED_TO_DOCS_HUB.md` werden nicht als aktive Ziele weitergeführt.
+Active canon lives in `docs/meta/WORKING_REPO_CANON.md`.
