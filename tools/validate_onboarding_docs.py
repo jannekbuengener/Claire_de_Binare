@@ -59,6 +59,20 @@ ACTIVE_ONBOARDING_SURFACES: list[str] = [
     "docs/navigation/mcp-navpack/CHEATSHEET.md",
 ]
 
+CORE_EVENTFLOW_DIR = "docs/onboarding/core-eventflows"
+
+
+def discover_core_eventflow_surfaces(root: Path) -> list[str]:
+    """Return every Markdown page in the core-eventflow onboarding pack."""
+    pack_dir = root / CORE_EVENTFLOW_DIR
+    if not pack_dir.is_dir():
+        return []
+    return [
+        path.relative_to(root).as_posix()
+        for path in sorted(pack_dir.glob("*.md"))
+    ]
+
+
 NAVPACK_SURFACES: list[str] = [
     "docs/navigation/mcp-navpack/ENTRYPOINTS.yaml",
     "docs/navigation/mcp-navpack/CHEATSHEET.md",
@@ -199,8 +213,13 @@ def validate_surface(root: Path, rel_path: str, verbose: bool) -> list[str]:
 def validate_all(root: Path | None = None, verbose: bool = False) -> list[str]:
     r = root or REPO_ROOT
     all_errors: list[str] = []
+    surfaces = list(ACTIVE_ONBOARDING_SURFACES)
 
-    for surface in ACTIVE_ONBOARDING_SURFACES:
+    for surface in discover_core_eventflow_surfaces(r):
+        if surface not in surfaces:
+            surfaces.append(surface)
+
+    for surface in surfaces:
         if verbose:
             print(f"Validating: {surface}", file=sys.stderr)
         errors = validate_surface(r, surface, verbose)
