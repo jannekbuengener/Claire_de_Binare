@@ -1,12 +1,12 @@
-# README link validation policy (#3994, extended #4037)
+# README link validation policy (#3994, extended #4037 and #4124)
 #
 # Discovery: git ls-files '**/README.md' (automatic, fail-closed for new files)
-# This fixture holds only classification rules and documented exceptions — not
-# a manual inventory of every README path.
+# This fixture holds only classification rules, explicit active non-README
+# surfaces, and documented exceptions.
 
 version: 1
 issue: 3994
-follow_up_issue: 4037
+follow_up_issue: 4124
 
 # Unmatched README paths use this class and are validated (fail-closed).
 default_classification: active
@@ -24,12 +24,12 @@ classification_rules:
       - artifacts/
       - docs/evidence/reports/p5_canary/
 
-# Non-README canon entry points — same offline link rules as active READMEs (#3995).
-# Discovery is explicit (not git ls-files); paths must stay tracked in git.
+# Non-README canon entry points — same offline link rules as active READMEs.
+# Discovery is explicit; every path must stay tracked in git.
 explicit_active_surfaces:
   description: >-
-    Tier-A navigation/status surfaces outside README.md trees; validated by the
-    same engine as active READMEs (tools/validate_readme_links.py).
+    Active navigation, status, operational, strategy, environment, test, and
+    metric surfaces outside README.md trees; validated by the same link engine.
   paths:
     - CURRENT_STATUS.md
     - docs/runbooks/CONTROL_REGISTER.md
@@ -40,6 +40,10 @@ explicit_active_surfaces:
     - docs/onboarding/cdb_glossary.md
     - docs/onboarding/DEVELOPER_VISUAL_START_HERE.md
     - docs/onboarding/repo_brain_context_intelligence.md
+    - docs/strategy/CDB_STRATEGIC_IDEA_LAB.md
+    - docs/env/index.md
+    - infrastructure/compose/TEST_OVERLAY_README.md
+    - infrastructure/monitoring/METRICS_MATRIX.md
 
 # Explicit per-path overrides (use sparingly).
 documented_exceptions: []
