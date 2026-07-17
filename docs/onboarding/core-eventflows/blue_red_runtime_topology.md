@@ -68,8 +68,8 @@ flowchart TD
 
 ## Source of Truth / Primary Repo Sources
 
-- [`knowledge/ARCHITECTURE_MAP.md`](../../knowledge/ARCHITECTURE_MAP.md) — Full service map with ports and compose references
-- [`infrastructure/compose/README.md`](../../infrastructure/compose/README.md) — Compose file documentation
+- [`knowledge/ARCHITECTURE_MAP.md`](../../../knowledge/ARCHITECTURE_MAP.md) — Full service map with ports and compose references
+- [`infrastructure/compose/README.md`](../../../infrastructure/compose/README.md) — Compose file documentation
 
 ## Safety Boundaries
 
@@ -93,6 +93,6 @@ flowchart TD
 
 ## LR NO-GO / Kein Live-Go / Kein Echtgeld-Go
 
-LR remains NO-GO ([`docs/live-readiness/LR-AUDIT-STATUS-2026-03-05.md`](../../docs/live-readiness/LR-AUDIT-STATUS-2026-03-05.md)).
+LR remains NO-GO ([`docs/live-readiness/LR-AUDIT-STATUS-2026-03-05.md`](../../../docs/live-readiness/LR-AUDIT-STATUS-2026-03-05.md)).
 Board stage `trade-capable` is not Live-Go.
 No Echtgeld-Go.

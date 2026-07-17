@@ -72,8 +72,8 @@ flowchart LR
 
 ## Source of Truth / Primary Repo Sources
 
-- [`knowledge/ARCHITECTURE_MAP.md`](../../knowledge/ARCHITECTURE_MAP.md) — Service map, Redis channels, dataflows
-- [`services/README.md`](../../services/README.md) — Redis transport semantics, service index
+- [`knowledge/ARCHITECTURE_MAP.md`](../../../knowledge/ARCHITECTURE_MAP.md) — Service map, Redis channels, dataflows
+- [`services/README.md`](../../../services/README.md) — Redis transport semantics, service index
 
 ## Safety Boundaries
 
@@ -83,9 +83,9 @@ flowchart LR
 
 ## Non-Goals
 
-- Not a deployment guide (see [`infrastructure/compose/README.md`](../../infrastructure/compose/README.md))
-- Not a service implementation reference (see individual service READMEs under [`services/`](../../services/))
-- Not a governance document (see [`knowledge/governance/`](../../knowledge/governance/))
+- Not a deployment guide (see [`infrastructure/compose/README.md`](../../../infrastructure/compose/README.md))
+- Not a service implementation reference (see individual service READMEs under [`services/`](../../../services/))
+- Not a governance document (see [`knowledge/governance/`](../../../knowledge/governance/))
 
 ## Common Failure Modes / Onboarding Traps
 
@@ -97,6 +97,6 @@ flowchart LR
 
 ## LR NO-GO / Kein Live-Go / Kein Echtgeld-Go
 
-LR remains NO-GO ([`docs/live-readiness/LR-AUDIT-STATUS-2026-03-05.md`](../../docs/live-readiness/LR-AUDIT-STATUS-2026-03-05.md)).
+LR remains NO-GO ([`docs/live-readiness/LR-AUDIT-STATUS-2026-03-05.md`](../../../docs/live-readiness/LR-AUDIT-STATUS-2026-03-05.md)).
 Board stage `trade-capable` is not Live-Go.
 No Echtgeld-Go.
