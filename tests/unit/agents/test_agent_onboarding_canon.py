@@ -40,12 +40,10 @@ def test_agents_readme_routes_to_single_onboarding_canon() -> None:
     assert CANON.is_file()
 
 
-def test_active_onboarding_does_not_present_obsolete_make_targets_as_commands() -> None:
+def test_active_onboarding_omits_obsolete_make_targets() -> None:
     text = CANON.read_text(encoding="utf-8")
     for target in OBSOLETE_MAKE_TARGETS:
-        assert f"make {target}" not in "\n".join(
-            line for line in text.splitlines() if not line.startswith("Use only")
-        )
+        assert target not in text
 
 
 def test_autoload_manifest_paths_and_bridge_inventory_are_current() -> None:
