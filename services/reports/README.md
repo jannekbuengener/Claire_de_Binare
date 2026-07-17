@@ -89,6 +89,6 @@ The Compose command is configuration rendering only. It does not start container
 
 - [RED Compose definition](../../infrastructure/compose/compose.red.yml)
 - [Service index](../README.md)
-- [Architecture map](../../ARCHITECTURE_MAP.md)
+- [Architecture map](../../knowledge/ARCHITECTURE_MAP.md)
 - [Service catalog](../../knowledge/governance/SERVICE_CATALOG.md)
 - [Superseded implementation plan](../../docs/operations/ORDERS_SUMMARY_FUTURE.md)
