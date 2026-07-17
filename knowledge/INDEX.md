@@ -1,50 +1,18 @@
-# Knowledge Directory - Canonical Documentation Index
+# Knowledge Index — Navigation Pointer
 
-**knowledge/ ist kanonisch für Docs** – docs/ existiert nicht mehr (PR #39) – aktive Referenzen gefixt (PR #40)
+**Status:** CURRENT POINTER  
+**Updated:** 2026-07-17
 
----
+`knowledge/` enthält Architekturwissen, Governance, historische Records und
+fachliche Referenzen. Der aktive Bereich `docs/` existiert ebenfalls und ist
+Teil desselben kanonischen Repositorys.
 
-## Übersicht
+Verwende diese Einstiege:
 
-Dieses Verzeichnis ist die **Single Source of Truth** für alle Systemdokumentation im Claire de Binare Projekt.
+- [Knowledge-Übersicht](README.md)
+- [Repository-Canon](../docs/meta/REPOSITORY_CANON.md)
+- [Dokumentationsindex](../docs/index.md)
+- [Aktuelle Architekturkarte](ARCHITECTURE_MAP.md)
 
-## Struktur
-
-```
-knowledge/
-├── README.md                           # Wissensbasis-Übersicht
-├── INDEX.md                            # Dieser Index
-├── systems/                            # Systemdokumentation
-├── operating_rules/                    # Betriebsregeln und Runbooks
-├── playbooks/                          # Standardisierte Ablaufpläne
-├── runbooks/                           # Operationale Runbooks
-├── templates/                          # Dokumentvorlagen
-├── contracts/                          # API- und Datenverträge
-├── analysis/                           # Analysen und Berichte
-├── planning/                           # Planung und Roadmaps
-├── discussions/                        # Diskussionen und Proposals
-├── logs/                               # Session Logs und Reports
-├── migrations/                         # Migrations-Dokumentation
-├── governance/                         # Governance-Regeln
-├── agent_trust/                        # Agent Trust Ledger
-└── archive/                            # Archivierte Inhalte
-
-```
-
-## Runbooks
-
-- [CDB Control Board Runbook](/knowledge/runbooks/CDB_CONTROL_BOARD_RUNBOOK.md)
-
-## Wichtige Hinweise
-
-- **Pfadänderung**: Die alte `docs/` Struktur wurde vollständig in `knowledge/` konsolidiert (siehe PR #39)
-- **Referenzen**: Alle aktiven Referenzen wurden aktualisiert (siehe PR #40)
-- **Archiv**: Historische Dokumente bleiben unverändert für Nachvollziehbarkeit
-
-## Templates
-
-Siehe `knowledge/templates/` für standardisierte Vorlagen.
-
-## Maintenance
-
-Letzte Konsolidierung: 2026-01-18 (PRs #39, #40)
+Diese Datei ist bewusst nur ein Navigationspointer. Sie definiert keine zweite
+Single Source of Truth und keine eigene Verzeichnishierarchie.

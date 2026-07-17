@@ -1,13 +1,17 @@
 # Legacy Note: PLAN_AGENT_DOCS_ORCHESTRATION
 
-This file documented the old plan for building the standalone external docs repo
-structure. That plan is no longer active.
+**Status:** HISTORICAL / SUPERSEDED
 
-Use these local paths instead:
+Diese Datei dokumentierte den früheren Plan für ein separates externes
+Dokumentations-Repository. Dieser Plan ist nicht mehr aktiv.
+
+Aktuelle Einstiege:
 
 - `agents/AGENTS.md`
-- `knowledge/ARCHITECTURE_COCKPIT.md`
+- `knowledge/README.md`
+- `knowledge/ARCHITECTURE_MAP.md`
 - `docs/meta/REPOSITORY_CANON.md`
 
-The original split-repo planning text remains available in the local archive
-snapshot.
+`knowledge/ARCHITECTURE_COCKPIT.md` ist nur noch ein historischer Pointer und
+keine operative Arbeits-Startseite. Die frühere Split-Repo-Planung bleibt über
+die Git-Historie und vorhandene Archiv-/Session-Flächen nachvollziehbar.
