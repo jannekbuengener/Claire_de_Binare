@@ -58,9 +58,9 @@ flowchart TD
 
 ## Source of Truth / Primary Repo Sources
 
-- [`knowledge/ARCHITECTURE_MAP.md`](../../knowledge/ARCHITECTURE_MAP.md) — Signal lookback semantics, warmup validation
-- [`services/signal/README.md`](../../services/signal/README.md) — Signal service implementation
-- [`core/strategy/`](../../core/strategy/) — Strategy implementations
+- [`knowledge/ARCHITECTURE_MAP.md`](../../../knowledge/ARCHITECTURE_MAP.md) — Signal lookback semantics, warmup validation
+- [`services/signal/README.md`](../../../services/signal/README.md) — Signal service implementation
+- [`core/strategy/`](../../../core/strategy/) — Strategy implementations
 
 ## Safety Boundaries
 
@@ -84,6 +84,6 @@ flowchart TD
 
 ## LR NO-GO / Kein Live-Go / Kein Echtgeld-Go
 
-LR remains NO-GO ([`docs/live-readiness/LR-AUDIT-STATUS-2026-03-05.md`](../../docs/live-readiness/LR-AUDIT-STATUS-2026-03-05.md)).
+LR remains NO-GO ([`docs/live-readiness/LR-AUDIT-STATUS-2026-03-05.md`](../../../docs/live-readiness/LR-AUDIT-STATUS-2026-03-05.md)).
 Board stage `trade-capable` is not Live-Go.
 No Echtgeld-Go.
