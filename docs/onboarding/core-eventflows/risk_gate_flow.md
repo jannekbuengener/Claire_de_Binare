@@ -67,9 +67,9 @@ flowchart TD
 
 ## Source of Truth / Primary Repo Sources
 
-- [`services/risk/README.md`](../../services/risk/README.md) — Risk service documentation
-- [`knowledge/governance/CDB_AGENT_POLICY.md`](../../knowledge/governance/CDB_AGENT_POLICY.md) — Agent policy on risk gate compliance
-- [`knowledge/ARCHITECTURE_MAP.md`](../../knowledge/ARCHITECTURE_MAP.md) — Risk events, blocked_decisions persistence
+- [`services/risk/README.md`](../../../services/risk/README.md) — Risk service documentation
+- [`knowledge/governance/CDB_AGENT_POLICY.md`](../../../knowledge/governance/CDB_AGENT_POLICY.md) — Agent policy on risk gate compliance
+- [`knowledge/ARCHITECTURE_MAP.md`](../../../knowledge/ARCHITECTURE_MAP.md) — Risk events, blocked_decisions persistence
 
 ## Safety Boundaries
 
@@ -93,6 +93,6 @@ flowchart TD
 
 ## LR NO-GO / Kein Live-Go / Kein Echtgeld-Go
 
-LR remains NO-GO ([`docs/live-readiness/LR-AUDIT-STATUS-2026-03-05.md`](../../docs/live-readiness/LR-AUDIT-STATUS-2026-03-05.md)).
+LR remains NO-GO ([`docs/live-readiness/LR-AUDIT-STATUS-2026-03-05.md`](../../../docs/live-readiness/LR-AUDIT-STATUS-2026-03-05.md)).
 Board stage `trade-capable` is not Live-Go.
 No Echtgeld-Go.

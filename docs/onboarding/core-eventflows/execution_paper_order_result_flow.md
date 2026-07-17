@@ -74,9 +74,9 @@ flowchart TB
 
 ## Source of Truth / Primary Repo Sources
 
-- [`services/execution/README.md`](../../services/execution/README.md) — Execution service documentation
-- [`tools/paper_trading/README.md`](../../tools/paper_trading/README.md) — Paper runner documentation
-- [`knowledge/ARCHITECTURE_MAP.md`](../../knowledge/ARCHITECTURE_MAP.md) — Channel map, invariants
+- [`services/execution/README.md`](../../../services/execution/README.md) — Execution service documentation
+- [`tools/paper_trading/README.md`](../../../tools/paper_trading/README.md) — Paper runner documentation
+- [`knowledge/ARCHITECTURE_MAP.md`](../../../knowledge/ARCHITECTURE_MAP.md) — Channel map, invariants
 
 ## Safety Boundaries
 
@@ -101,6 +101,6 @@ flowchart TB
 
 ## LR NO-GO / Kein Live-Go / Kein Echtgeld-Go
 
-LR remains NO-GO ([`docs/live-readiness/LR-AUDIT-STATUS-2026-03-05.md`](../../docs/live-readiness/LR-AUDIT-STATUS-2026-03-05.md)).
+LR remains NO-GO ([`docs/live-readiness/LR-AUDIT-STATUS-2026-03-05.md`](../../../docs/live-readiness/LR-AUDIT-STATUS-2026-03-05.md)).
 Board stage `trade-capable` is not Live-Go.
 No Echtgeld-Go.

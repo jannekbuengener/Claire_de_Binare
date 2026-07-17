@@ -74,9 +74,9 @@ flowchart TB
 
 ## Source of Truth / Primary Repo Sources
 
-- [`knowledge/ARCHITECTURE_MAP.md`](../../knowledge/ARCHITECTURE_MAP.md) — Core replay infrastructure, DatasetSpec, DatasetProvider, ARVP gate, comparison tools
-- [`core/replay/`](../../core/replay/) — Replay contracts, deterministic loop, envelopes, scheduler, comparison, calibration
-- [`services/validation/`](../../services/validation/) — CLI runners for replay, comparison, calibration, scorecards
+- [`knowledge/ARCHITECTURE_MAP.md`](../../../knowledge/ARCHITECTURE_MAP.md) — Core replay infrastructure, DatasetSpec, DatasetProvider, ARVP gate, comparison tools
+- [`core/replay/`](../../../core/replay/) — Replay contracts, deterministic loop, envelopes, scheduler, comparison, calibration
+- [`services/validation/`](../../../services/validation/) — CLI runners for replay, comparison, calibration, scorecards
 
 ## Safety Boundaries
 
@@ -101,6 +101,6 @@ flowchart TB
 
 ## LR NO-GO / Kein Live-Go / Kein Echtgeld-Go
 
-LR remains NO-GO ([`docs/live-readiness/LR-AUDIT-STATUS-2026-03-05.md`](../../docs/live-readiness/LR-AUDIT-STATUS-2026-03-05.md)).
+LR remains NO-GO ([`docs/live-readiness/LR-AUDIT-STATUS-2026-03-05.md`](../../../docs/live-readiness/LR-AUDIT-STATUS-2026-03-05.md)).
 Board stage `trade-capable` is not Live-Go.
 No Echtgeld-Go.
