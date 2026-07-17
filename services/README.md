@@ -17,6 +17,7 @@ Stateless runtime services for the BLUE+RED stack. Persistent state lives in Pos
 | [market/](market/) | BLUE | [README](market/README.md) |
 | Paper runner (`tools/paper_trading/`) | BLUE | [README](../tools/paper_trading/README.md) |
 | [regime/](regime/) | BLUE | [README](regime/README.md) |
+| [reports/](reports/) | RED | [README](reports/README.md) |
 | [risk/](risk/) | BLUE | [README](risk/README.md) |
 | [signal/](signal/) | RED | [README](signal/README.md) |
 | [validation/](validation/) | offline lib | [README](validation/README.md) |
