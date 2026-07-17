@@ -1,13 +1,10 @@
-# Legacy Note: PLAN_AGENT_DOCS_ORCHESTRATION
+# Agent Docs Orchestration Plan
 
-This file documented the old plan for building the standalone external docs repo
-structure. That plan is no longer active.
+**Status:** HISTORICAL / POINTER ONLY
 
-Use these local paths instead:
+Use the current onboarding and registry contracts:
 
-- `agents/AGENTS.md`
-- `knowledge/ARCHITECTURE_COCKPIT.md`
-- `docs/meta/REPOSITORY_CANON.md`
+- [AGENT_ONBOARDING.md](AGENT_ONBOARDING.md)
+- [`agents/AGENTS.md`](../AGENTS.md)
 
-The original split-repo planning text remains available in the local archive
-snapshot.
+This file contains no active orchestration procedure.
