@@ -64,9 +64,9 @@ flowchart LR
 
 ## Source of Truth / Primary Repo Sources
 
-- [`knowledge/ARCHITECTURE_MAP.md`](../../knowledge/ARCHITECTURE_MAP.md) — PostgreSQL schema artefacts, correlation_ledger, blocked_decisions
-- [`services/db_writer/README.md`](../../services/db_writer/README.md) — DB Writer service documentation
-- [`infrastructure/database/migrations/`](../../infrastructure/database/migrations/) — Migration files for correlation_ledger (006_correlation_phase8c.sql) and risk_events (005_risk_events_idempotent.sql)
+- [`knowledge/ARCHITECTURE_MAP.md`](../../../knowledge/ARCHITECTURE_MAP.md) — PostgreSQL schema artefacts, correlation_ledger, blocked_decisions
+- [`services/db_writer/README.md`](../../../services/db_writer/README.md) — DB Writer service documentation
+- [`infrastructure/database/migrations/`](../../../infrastructure/database/migrations/) — Migration files for correlation_ledger (006_correlation_phase8c.sql) and risk_events (005_risk_events_idempotent.sql)
 
 ## Safety Boundaries
 
@@ -90,6 +90,6 @@ flowchart LR
 
 ## LR NO-GO / Kein Live-Go / Kein Echtgeld-Go
 
-LR remains NO-GO ([`docs/live-readiness/LR-AUDIT-STATUS-2026-03-05.md`](../../docs/live-readiness/LR-AUDIT-STATUS-2026-03-05.md)).
+LR remains NO-GO ([`docs/live-readiness/LR-AUDIT-STATUS-2026-03-05.md`](../../../docs/live-readiness/LR-AUDIT-STATUS-2026-03-05.md)).
 Board stage `trade-capable` is not Live-Go.
 No Echtgeld-Go.
