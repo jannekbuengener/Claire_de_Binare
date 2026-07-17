@@ -109,7 +109,7 @@ Rules:
 - **No DB-Go.** No document in this lab authorises database writes, migrations, or schema changes.
 - **No Risk-/Execution-/Allocation-Go.** No document in this lab overrides risk limits, execution gates, or allocation policies.
 - **Repo canon wins.** The active Claire de Binare repository, its issues, PRs, required checks, governance documents, and live-readiness SSOT override every document in this lab.
-- **CDB governance applies.** All rules from the [CDB Constitution](../knowledge/governance/CDB_CONSTITUTION.md), [CDB Governance](../knowledge/governance/CDB_GOVERNANCE.md), and [CDB Agent Policy](../knowledge/governance/CDB_AGENT_POLICY.md) apply to any activity that moves from lab discussion into repo work.
+- **CDB governance applies.** All rules from the [CDB Constitution](../../knowledge/governance/CDB_CONSTITUTION.md), [CDB Governance](../../knowledge/governance/CDB_GOVERNANCE.md), and [CDB Agent Policy](../../knowledge/governance/CDB_AGENT_POLICY.md) apply to any activity that moves from lab discussion into repo work.
 - **Board stage `trade-capable` is orthogonal.** The Board stage does not imply live-readiness, and lab documents do not change Board stage.
 
 ## Status
