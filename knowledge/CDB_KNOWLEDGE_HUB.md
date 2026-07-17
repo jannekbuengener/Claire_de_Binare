@@ -1,251 +1,108 @@
 ---
 relations:
-  role: knowledge_base
+  role: historical_reference
   domain: knowledge
-  upstream:
-    - knowledge/governance/CDB_CONSTITUTION.md
-    - knowledge/governance/CDB_GOVERNANCE.md
-    - knowledge/governance/CDB_AGENT_POLICY.md
-    - knowledge/governance/NEXUS.MEMORY.yaml
-    - knowledge/governance/CDB_REPO_STRUCTURE.md
-  downstream:
-    - agents/
+  status: historical
+  mandatory_read: false
+  superseded_by:
+    - docs/meta/REPOSITORY_CANON.md
+    - CURRENT_STATUS.md
+    - docs/live-readiness/LR-AUDIT-STATUS-2026-03-05.md
+    - docs/runbooks/CONTROL_REGISTER.md
 ---
-# CDB_KNOWLEDGE_HUB
-**Shared Decisions & Agent Handoffs**
+# CDB Knowledge Hub
 
-Version: 1.1  
-Status: Canonical (non-governance)
+**Status:** HISTORICAL / REFERENCE ONLY  
+**Mandatory read:** No  
+**Historical baseline:** December 2025  
+**Reclassified:** 2026-07-17 via issue #4117
 
----
+## Practical meaning
 
-## EXECUTIVE SNAPSHOT (read-only)
+This file preserves the former shared decision and agent-handoff hub from the
+December 2025 repository phase. It is retained for audit provenance and
+historical comparison.
 
-Stand: 2025-12-15  
-Gültig bis: explizites Update
+It is **not** a current status source, governance source, task tracker, runtime
+canon, agent registry, or live handoff queue.
 
-**Projekt:** Claire de Binare (CDB)  
-**Systemstatus:** stabile Infrastruktur-Baseline erreicht
+## Current authoritative entry points
 
-### Kernergebnisse
-- Das Claire de Binare repository traegt den aktiven lokalen Dokumentations-Canon
-- Agenten-, Governance- und Knowledge-Pfade sind lokal aufloesbar
-- PR-Block 01–06 vollständig umgesetzt und gepusht
-- GitLab CI aktiv (CI-Guard, Write-Zone-Checks)
-- Unit-Test-Baseline vorhanden
-- Modulare Compose-Architektur (base / dev / prod)
-- Determinismus-Hooks für Replay vorbereitet
+Use these files instead:
 
-> Dieser Snapshot ist **kein Live-Status**.  
-> Er ist ein komprimierter Zustandsanker für neue Sessions und Agenten.
+- [Repository canon](../docs/meta/REPOSITORY_CANON.md)
+- [Current repository and engineering status](../CURRENT_STATUS.md)
+- [Live-readiness verdict](../docs/live-readiness/LR-AUDIT-STATUS-2026-03-05.md)
+- [Board and control status](../docs/runbooks/CONTROL_REGISTER.md)
+- [Governance](governance/CDB_GOVERNANCE.md)
+- [Agent policy](governance/CDB_AGENT_POLICY.md)
+- [Canonical agent registry](../agents/AGENTS.md)
+- [Agent root surface matrix](../docs/onboarding/AGENT_ROOT_SURFACE_MATRIX.md)
 
----
+These sources win whenever they conflict with historical content described
+below.
 
-## 0. Zweck & Einordnung
+## Historical boundary
 
-Der **CDB_KNOWLEDGE_HUB** ist der **zentrale, versionierte Entscheidungs- und Übergabe-Hub**
-für alle KI-gestützten Sessions im Projekt *Claire de Binare*.
+The following statements are historical and must not be read as present-day
+runtime or repository truth:
 
-Er ist ausdrücklich **nicht**:
-- Governance
-- System-Memory
-- Session-Log
-- Task-Tracker
-- technische Dokumentation
+- GitLab CI as an active secondary path
+- the old `base / dev / prod` Compose model as current runtime canon
+- December 2025 test and infrastructure baselines
+- multi-person Claude/Gemini/Codex write-role assignments
+- external-only agent definitions
+- December 2025 handoff and delivery queues
 
-Er ist der Ort für:
-- bestätigte Entscheidungen
-- agentenübergreifende Handoffs
-- verdichtete Session-Ergebnisse
+The active repository uses the current repo-backed Canon, BLUE/RED runtime
+surfaces, GitHub workflows, and versioned agent-root adapters documented by the
+entry points above.
 
----
+## Historical handoffs
 
-## 1. Ground Rules (verbindlich)
+| Historical handoff | Original state | Current classification |
+|---|---|---|
+| Codex → Claude: P1 developer tools | DONE, 2025-12-14 | HISTORICAL COMPLETE |
+| Claude → Services: `get_secret()` migration | OPEN, December 2025 | CLOSED / HISTORICAL — no active tracking evidence |
+| Gemini → Claude: governance review | OPEN, December 2025 | CLOSED / HISTORICAL — no active tracking evidence |
 
-### Schreibrechte
-- Claude: ✅ (als Session Lead)
-- Gemini: ✅ (Reviews / Handoffs)
-- Copilot / Codex: ❌
-- User: ✅ jederzeit
+No item in this table is an active assignment. Current work must be represented
+by a live GitHub issue, pull request, or current status/control surface.
 
-### Inhaltliche Regeln
-- Keine Secrets
-- Kein Roh-Code
-- Keine vollständigen Logs
-- Immer Referenzen auf Artefakte (Pfad, Commit, MR)
+## Historical decisions
 
-### Verhältnis zu Memory
-- Dieser Hub ist **kein Memory**
-- Kein automatischer Übergang nach `NEXUS.MEMORY`
-- Memory-Kandidaten müssen explizit markiert und freigegeben werden
+### Repository-local canon — retained principle
 
----
+The repository-local Canon principle remains valid only through the current
+[repository canon](../docs/meta/REPOSITORY_CANON.md), not through the old wording
+in this file.
 
-## 2. Repo-Topologie (kanonisch)
+### External-only agents — superseded
 
-### 2.1 Claire de Binare repository – `Claire_de_Binare`
-**Zweck:** Ausfuehrung, Runtime, Build, Governance, Knowledge, Agenten-Navigation
+**Original decision:** 2025-12-19, agent definitions outside the repository.  
+**Current state:** SUPERSEDED.
 
-Kanonische Bereiche:
-- `core/`, `services/`, `infrastructure/`, `tools/`, `scripts/`, `tests/`
-- `agents/`
-- `knowledge/`
-- `docs/`
-- `.github/`
+The repository now contains versioned agent surfaces under `.claude/`,
+`.codex/`, `.cursor/`, `.gemini/`, `.opencode/`, `.vscode/`, and `agents/`.
+Their current roles and authority boundaries are defined by
+[AGENTS.md](../AGENTS.md), [agents/AGENTS.md](../agents/AGENTS.md), the
+[agent policy](governance/CDB_AGENT_POLICY.md), and the
+[root surface matrix](../docs/onboarding/AGENT_ROOT_SURFACE_MATRIX.md).
 
-### 2.2 Legacy Archive – `docs/archive/`
-**Zweck:** Historischer Vergleich, Recovery von Alt-Artefakten, Audit-Provenienz
+### December 2025 roadmap and delivery plans — historical
 
-Regel:
-- kein produktiver Default
-- keine Standardnavigation dorthin
-- nur nutzen, wenn lokale Canon-Dateien fehlen oder historische Vergleiche noetig sind
+M7–M9 roadmap refinements, PR-01 through PR-06, session summaries, delegation
+notes, and the former Claude tasklist are historical records. They do not create
+current work, approval, or operational authority.
 
----
+The complete pre-reclassification text remains available through Git history up
+to commit `191b926a1a5543a094bcd2bc1a74c67b25229eb9`.
 
-## 3. Agent Handoffs
+## Maintenance rule
 
-Übergaben zwischen Agenten / Sessions
+This file is append-only for historical clarification. Do not add live status,
+new handoffs, current decisions, runtime instructions, or governance rules here.
 
-Konvention:
-
-OPEN
-
-INPROGRESS
-
-DONE (mit Referenz)
-
-Aktuelle Handoffs
-
-[DONE] Codex → Claude: P1-Developer-Tools geliefert (2025-12-14)
-
-[OPEN] Claude → Services: get_secret()-Migration (P2)
-
-[OPEN] Gemini → Claude: Governance-Review Rückmeldung ausstehend
-
-4. Decision Log (kanonisch)
-
-Regel:
-
-Entscheidungen gelten bis explizit revidiert
-
-Kein implizites Überschreiben
-
-Aktive Entscheidungen
-
-2025-12-15 – Repo-Topologie final
-
-Claire de Binare repository = aktiver lokaler Canon
-
-Referenzen: CDB_REPO_STRUCTURE.md, CLAIRE_DE_BINARE_REPOSITORY_INDEX.md
-
-2025-12-15 – Agents sind kanonisch
-
-Ort: /agents im Claire de Binare repository
-
-2025-12-15 – SHARED.WORKING.MEMORY ist nicht-kanonisch
-
-Zweck: Denken, kein Wissen
-
-2025-12-14 – P1 Developer-Tools produktionsreif
-
-cdb-stack-doctor.ps1
-
-cdb-service-logs.ps1
-
-cdb-secrets-sync.ps1
-
-2025-12-27 – M7-M9 Roadmap Refinement Complete (Issue #107) — **HISTORICAL**
-
-> **Context:** Historical milestone plans from Dec 2025 assuming a multi-person
-> team with dedicated security lead and external pentest budget. These do not
-> reflect the current solo-maintainer operating model and are not operative
-> guidance. Details in `knowledge/roadmap/M7_TESTNET_PLAN.md`,
-> `M8_SECURITY_PLAN.md`, `M9_RELEASE_PLAN.md`. Current operative status:
-> `CURRENT_STATUS.md` and `docs/live-readiness/`.
->
-> Referenz: GitHub Issue #107
-
-2025-12-19 – Agent Roles bleiben extern (external-only policy)
-
-Alle Agent-Definitionen außerhalb der Repositories
-
-.claude/agents/ aus Claire de Binare repository entfernt (20 Dateien)
-
-Externe Location: C:\Users\janne\Documents\GitHub\Workspaces\agents
-
-Referenz: GitHub Issue #133, Commit 8a417ee
-
-5. Session Summaries (verdichtet)
-
-2025-12-18/19 – Governance Hygiene Enforcement (COMPLETE)
-
-Ziel: Systematische Governance Compliance via Multi-Agent Koordination
-
-Ergebnis: 6 Issues abgeschlossen (#132 Meta, #133 .claude/agents/, #134 CODEOWNERS, #8 tasklists/, #9 .txt Migration, #10 PROMPT_CODEX.txt)
-
-Handoff: Issue #11 (MEGA-ISSUE) aufbrechen in Subtasks
-
-Status: Konsolidiert auf lokalen Canon; Legacy-Archiv optional
-
-Referenz: GitHub jannekbuengener/Claire_de_Binare #132 (Meta-Issue geschlossen)
-
-2025-12-13A – T1-Migration
-
-Ziel: Altstruktur entfernen
-
-Ergebnis: t1/ vollständig bereinigt
-
-Handoff: Technische Validierung offen
-
-2025-12-12A – Docker-Architektur (historical advisor reference; siehe #2689)
-
-Modulare Compose-Strategie bestätigt
-
-PostgreSQL / Redis / Monitoring spezifiziert
-
-2025-12-12B – Gemini-Migrationsreview
-
-Status: APPROVED WITH CONDITIONS
-
-Kritisch: Git-History-Validierung erforderlich
-
-6. Session Notes Archive (Detail)
-
-Vollständige technische Details, Analysen, Risiken
-Kein Status, keine Entscheidungen
-
-(Sessions 2025-12-12A / 12B / 13B / 14A unverändert übernommen)
-
-7. Claude Tasklist – Delivery Plan (CDB) — **HISTORICAL (Dec 2025)**
-
-> **Context:** This delivery plan was the initial bootstrap sequence. All items
-> were completed and merged. Retained for audit trail, not as active tasklist.
-
-PR-01 — CI-Guard (MUST) — ✅ merged
-PR-02 — Safe Deletes (MUST) — ✅ merged
-PR-03 — Makefile Fix (MUST) — ✅ merged
-PR-04 — Unit-Test Skeletons (SHOULD) — ✅ merged
-PR-05 — Compose Base/Dev Split (SHOULD) — ✅ merged
-PR-06 — Replay-Enabler (SHOULD) — ✅ merged
-
-8. Delegation (Kurzreferenz)
-
-Die vollständige Delegationsanweisung liegt unter:
-
-knowledge/operating_rules/CLAUDE_DELEGATION_POLICY.md
-
-
-Dieser Hub enthält keine operativen Delegationsdetails mehr.
-
-9. Abschluss
-
-Dieser Hub ist:
-
-Entscheidungsanker
-
-Übergabepunkt
-
-Session-Verdichtung
-
-Er ist kein Live-Status, kein Memory, keine Governance.
+A current claim belongs in its existing authoritative surface. A current task
+belongs in GitHub. A historical correction may be added only with a dated source
+reference.
