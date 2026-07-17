@@ -47,7 +47,7 @@ The repo-native server entrypoint is:
 python -m tools.mcp.server
 ```
 
-Host-specific configuration is documented by the active adapter surface and the Context-MCP runbook. Historical standalone MCP config files are not onboarding frontdoors.
+Host-specific configuration is documented by the active adapter surface and the Context-MCP runbook. Historical standalone MCP config files are not onboarding entrypoints.
 
 Bridge inventory check:
 
@@ -61,9 +61,9 @@ For Context-/MCP-/Memory-/Evidence work, apply the Context Brain Preflight and B
 
 ## Commands
 
-Use only commands that exist in the repository. Historical agent-specific Make targets are not supported onboarding frontdoors.
+Use only commands that exist in the repository. Historical agent-specific Make targets are not supported onboarding entrypoints.
 
-Supported validation frontdoors:
+Supported validation entrypoints:
 
 ```bash
 python -m tools.validate_onboarding_docs
