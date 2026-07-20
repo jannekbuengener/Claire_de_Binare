@@ -1,0 +1,249 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://example.invalid/cdb/parameter-control-policy.schema.json",
+  "title": "Claire de Binare Parameter Control Policy",
+  "type": "object",
+  "required": [
+    "schema_version",
+    "document_id",
+    "source",
+    "default_policy",
+    "decision_enum",
+    "global_invariants",
+    "workflow_gates",
+    "parameters"
+  ],
+  "properties": {
+    "schema_version": {
+      "const": "cdb.parameter_control_policy.v1"
+    },
+    "document_id": {
+      "type": "string",
+      "minLength": 1
+    },
+    "status": {
+      "enum": [
+        "draft",
+        "candidate",
+        "canonical",
+        "superseded"
+      ]
+    },
+    "source": {
+      "type": "object",
+      "required": [
+        "repository",
+        "branch",
+        "commit",
+        "analysis_artifact"
+      ],
+      "properties": {
+        "repository": {
+          "type": "string"
+        },
+        "branch": {
+          "type": "string"
+        },
+        "commit": {
+          "type": "string",
+          "pattern": "^[0-9a-f]{40}$"
+        },
+        "analysis_artifact": {
+          "type": "string"
+        },
+        "meta_issue": {
+          "type": "integer",
+          "minimum": 1
+        }
+      },
+      "additionalProperties": true
+    },
+    "default_policy": {
+      "type": "object",
+      "required": [
+        "unknown_parameter",
+        "missing_evidence",
+        "live_context"
+      ],
+      "properties": {
+        "unknown_parameter": {
+          "const": "deny"
+        },
+        "missing_evidence": {
+          "const": "deny"
+        },
+        "live_context": {
+          "const": "deny"
+        }
+      },
+      "additionalProperties": true
+    },
+    "decision_enum": {
+      "type": "array",
+      "items": {
+        "enum": [
+          "ALLOW_REPLAY_RESEARCH",
+          "ALLOW_PAPER_OPERATION",
+          "ALLOW_RUNTIME_OPERATION",
+          "CONDITIONAL_AFTER_EVIDENCE",
+          "CORRECTNESS_FIX_ONLY",
+          "FROZEN_UNTIL_CONTRACT",
+          "FORBIDDEN_OPTIMIZATION",
+          "NON_TUNABLE_INVARIANT",
+          "NO_EFFECT_OR_DEAD"
+        ]
+      },
+      "uniqueItems": true,
+      "minItems": 1
+    },
+    "global_invariants": {
+      "type": "array",
+      "items": {
+        "type": "string"
+      },
+      "minItems": 1
+    },
+    "workflow_gates": {
+      "type": "object",
+      "required": [
+        "before_any_change",
+        "before_replay_campaign",
+        "before_paper_change",
+        "before_runtime_change"
+      ],
+      "additionalProperties": {
+        "type": "array",
+        "items": {
+          "type": "string"
+        }
+      }
+    },
+    "parameters": {
+      "type": "array",
+      "minItems": 1,
+      "items": {
+        "type": "object",
+        "required": [
+          "id",
+          "name",
+          "system_area",
+          "main_class",
+          "decision",
+          "may_change",
+          "allowed_contexts",
+          "forbidden_contexts",
+          "source_paths",
+          "reason",
+          "required_evidence"
+        ],
+        "properties": {
+          "id": {
+            "type": "string",
+            "pattern": "^CDB-[0-9]{3}$"
+          },
+          "name": {
+            "type": "string",
+            "minLength": 1
+          },
+          "system_area": {
+            "type": "string",
+            "minLength": 1
+          },
+          "main_class": {
+            "enum": [
+              "STRATEGY_OPTIMIZATION",
+              "VALIDATION_OPTIMIZATION",
+              "EXECUTION_ASSUMPTION",
+              "REGIME_CONTROL",
+              "DATA_QUALITY_CONTROL",
+              "RUNTIME_OPERATION",
+              "OBSERVABILITY_ALERT",
+              "RISK_SAFETY_LIMIT",
+              "LIVE_GOVERNANCE_GATE",
+              "HARD_INVARIANT",
+              "UNCLEAR_OR_IMPLICIT"
+            ]
+          },
+          "decision": {
+            "enum": [
+              "ALLOW_REPLAY_RESEARCH",
+              "ALLOW_PAPER_OPERATION",
+              "ALLOW_RUNTIME_OPERATION",
+              "CONDITIONAL_AFTER_EVIDENCE",
+              "CORRECTNESS_FIX_ONLY",
+              "FROZEN_UNTIL_CONTRACT",
+              "FORBIDDEN_OPTIMIZATION",
+              "NON_TUNABLE_INVARIANT",
+              "NO_EFFECT_OR_DEAD"
+            ]
+          },
+          "may_change": {
+            "type": "boolean"
+          },
+          "allowed_contexts": {
+            "type": "array",
+            "items": {
+              "enum": [
+                "replay",
+                "paper",
+                "runtime",
+                "live",
+                "docs",
+                "tests"
+              ]
+            }
+          },
+          "forbidden_contexts": {
+            "type": "array",
+            "items": {
+              "enum": [
+                "replay",
+                "paper",
+                "runtime",
+                "live",
+                "docs",
+                "tests"
+              ]
+            }
+          },
+          "blocked_by_issues": {
+            "type": "array",
+            "items": {
+              "type": "integer",
+              "minimum": 1
+            }
+          },
+          "source_paths": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            },
+            "minItems": 1
+          },
+          "reason": {
+            "type": "string",
+            "minLength": 1
+          },
+          "required_evidence": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            },
+            "minItems": 1
+          },
+          "change_requirements": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          },
+          "notes": {
+            "type": "string"
+          }
+        },
+        "additionalProperties": false
+      }
+    }
+  },
+  "additionalProperties": false
+}
