@@ -1,6 +1,6 @@
 {
   "$schema": "https://json-schema.org/draft/2020-12/schema",
-  "$id": "https://example.invalid/cdb/parameter-control-policy.schema.json",
+  "$id": "urn:cdb:schema:parameter-control-policy:v1",
   "title": "Claire de Binare Parameter Control Policy",
   "type": "object",
   "required": [
@@ -11,15 +11,15 @@
     "decision_enum",
     "global_invariants",
     "workflow_gates",
-    "parameters"
+    "rule_fields",
+    "rules"
   ],
   "properties": {
     "schema_version": {
       "const": "cdb.parameter_control_policy.v1"
     },
     "document_id": {
-      "type": "string",
-      "minLength": 1
+      "const": "CDB-PARAMETER-CONTROL-POLICY"
     },
     "status": {
       "enum": [
@@ -79,22 +79,17 @@
       "additionalProperties": true
     },
     "decision_enum": {
-      "type": "array",
-      "items": {
-        "enum": [
-          "ALLOW_REPLAY_RESEARCH",
-          "ALLOW_PAPER_OPERATION",
-          "ALLOW_RUNTIME_OPERATION",
-          "CONDITIONAL_AFTER_EVIDENCE",
-          "CORRECTNESS_FIX_ONLY",
-          "FROZEN_UNTIL_CONTRACT",
-          "FORBIDDEN_OPTIMIZATION",
-          "NON_TUNABLE_INVARIANT",
-          "NO_EFFECT_OR_DEAD"
-        ]
-      },
-      "uniqueItems": true,
-      "minItems": 1
+      "const": [
+        "ALLOW_REPLAY_RESEARCH",
+        "ALLOW_PAPER_OPERATION",
+        "ALLOW_RUNTIME_OPERATION",
+        "CONDITIONAL_AFTER_EVIDENCE",
+        "CORRECTNESS_FIX_ONLY",
+        "FROZEN_UNTIL_CONTRACT",
+        "FORBIDDEN_OPTIMIZATION",
+        "NON_TUNABLE_INVARIANT",
+        "NO_EFFECT_OR_DEAD"
+      ]
     },
     "global_invariants": {
       "type": "array",
@@ -118,38 +113,43 @@
         }
       }
     },
-    "parameters": {
+    "rule_fields": {
+      "const": [
+        "id",
+        "name",
+        "system_area",
+        "main_class",
+        "decision",
+        "may_change",
+        "allowed_contexts",
+        "forbidden_contexts",
+        "blocked_by_issues",
+        "source_paths",
+        "reason",
+        "required_evidence",
+        "change_requirements",
+        "notes"
+      ]
+    },
+    "rules": {
       "type": "array",
       "minItems": 1,
       "items": {
-        "type": "object",
-        "required": [
-          "id",
-          "name",
-          "system_area",
-          "main_class",
-          "decision",
-          "may_change",
-          "allowed_contexts",
-          "forbidden_contexts",
-          "source_paths",
-          "reason",
-          "required_evidence"
-        ],
-        "properties": {
-          "id": {
+        "type": "array",
+        "prefixItems": [
+          {
             "type": "string",
             "pattern": "^CDB-[0-9]{3}$"
           },
-          "name": {
+          {
             "type": "string",
             "minLength": 1
           },
-          "system_area": {
+          {
             "type": "string",
             "minLength": 1
           },
-          "main_class": {
+          {
             "enum": [
               "STRATEGY_OPTIMIZATION",
               "VALIDATION_OPTIMIZATION",
@@ -164,7 +164,7 @@
               "UNCLEAR_OR_IMPLICIT"
             ]
           },
-          "decision": {
+          {
             "enum": [
               "ALLOW_REPLAY_RESEARCH",
               "ALLOW_PAPER_OPERATION",
@@ -177,10 +177,10 @@
               "NO_EFFECT_OR_DEAD"
             ]
           },
-          "may_change": {
+          {
             "type": "boolean"
           },
-          "allowed_contexts": {
+          {
             "type": "array",
             "items": {
               "enum": [
@@ -193,7 +193,7 @@
               ]
             }
           },
-          "forbidden_contexts": {
+          {
             "type": "array",
             "items": {
               "enum": [
@@ -206,42 +206,43 @@
               ]
             }
           },
-          "blocked_by_issues": {
+          {
             "type": "array",
             "items": {
               "type": "integer",
               "minimum": 1
             }
           },
-          "source_paths": {
+          {
             "type": "array",
             "items": {
               "type": "string"
             },
             "minItems": 1
           },
-          "reason": {
+          {
             "type": "string",
             "minLength": 1
           },
-          "required_evidence": {
+          {
             "type": "array",
             "items": {
               "type": "string"
             },
             "minItems": 1
           },
-          "change_requirements": {
+          {
             "type": "array",
             "items": {
               "type": "string"
             }
           },
-          "notes": {
+          {
             "type": "string"
           }
-        },
-        "additionalProperties": false
+        ],
+        "minItems": 14,
+        "maxItems": 14
       }
     }
   },
