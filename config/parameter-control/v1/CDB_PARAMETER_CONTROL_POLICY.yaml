@@ -1,0 +1,27 @@
+schema_version: cdb.parameter_control_policy.reference.v1
+document_id: CDB-PARAMETER-CONTROL-POLICY
+status: candidate
+canonical:
+  path: config/parameter-control/v1/CDB_PARAMETER_CONTROL_POLICY.json
+  format: json
+  json_is_yaml_1_2_compatible: true
+  sha256: d03c8d0e35d00e169ed8b86bccadd2033be69abb03430ef898072a4900521ee9
+schema:
+  path: config/parameter-control/v1/CDB_PARAMETER_CONTROL_POLICY.schema.json
+source:
+  repository: jannekbuengener/Claire_de_Binare
+  branch: main
+  commit: 224cfd49398b329b315781372658fab1fbf15362
+  analysis_artifact: Claire_de_Binare_Parameteranalyse_main_224cfd4.docx
+  meta_issue: 4147
+  implementation_issue: 4148
+policy:
+  default: deny
+  unknown_parameter: deny
+  missing_evidence: deny
+  live_context: deny
+  rule_count: 56
+  stage_a_b_oos_stress_gates: frozen
+  risk_and_live_boundaries: frozen
+usage:
+  instruction: Parse and validate the canonical JSON file against the linked JSON Schema. This YAML file is a stable discovery pointer and intentionally does not duplicate the policy body.
