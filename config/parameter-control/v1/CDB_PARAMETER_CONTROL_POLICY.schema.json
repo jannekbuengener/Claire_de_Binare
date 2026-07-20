@@ -1,22 +1,28 @@
 {
   "$schema": "https://json-schema.org/draft/2020-12/schema",
-  "$id": "urn:cdb:schema:parameter-control-policy:v1",
-  "title": "Claire de Binare Parameter Control Policy",
+  "$id": "urn:cdb:schema:parameter-control-policy:compact:v1",
+  "title": "Claire de Binare Compact Parameter Control Policy",
   "type": "object",
   "required": [
     "schema_version",
     "document_id",
+    "status",
     "source",
     "default_policy",
-    "decision_enum",
-    "global_invariants",
-    "workflow_gates",
+    "context_codes",
     "rule_fields",
-    "rules"
+    "classes",
+    "decisions",
+    "names",
+    "paths",
+    "evidence",
+    "rules",
+    "global_invariants",
+    "workflow_gates"
   ],
   "properties": {
     "schema_version": {
-      "const": "cdb.parameter_control_policy.v1"
+      "const": "cdb.parameter_control_policy.compact.v1"
     },
     "document_id": {
       "const": "CDB-PARAMETER-CONTROL-POLICY"
@@ -35,7 +41,8 @@
         "repository",
         "branch",
         "commit",
-        "analysis_artifact"
+        "analysis_artifact",
+        "meta_issue"
       ],
       "properties": {
         "repository": {
@@ -56,14 +63,17 @@
           "minimum": 1
         }
       },
-      "additionalProperties": true
+      "additionalProperties": false
     },
     "default_policy": {
       "type": "object",
       "required": [
         "unknown_parameter",
         "missing_evidence",
-        "live_context"
+        "live_context",
+        "principle",
+        "stage_a_b_oos_stress_gates",
+        "risk_and_live_boundaries"
       ],
       "properties": {
         "unknown_parameter": {
@@ -74,29 +84,164 @@
         },
         "live_context": {
           "const": "deny"
+        },
+        "principle": {
+          "type": "string"
+        },
+        "stage_a_b_oos_stress_gates": {
+          "const": "frozen"
+        },
+        "risk_and_live_boundaries": {
+          "const": "frozen"
         }
       },
-      "additionalProperties": true
+      "additionalProperties": false
     },
-    "decision_enum": {
+    "context_codes": {
+      "const": {
+        "r": "replay",
+        "p": "paper",
+        "u": "runtime",
+        "l": "live",
+        "d": "docs",
+        "t": "tests"
+      }
+    },
+    "rule_fields": {
       "const": [
-        "ALLOW_REPLAY_RESEARCH",
-        "ALLOW_PAPER_OPERATION",
-        "ALLOW_RUNTIME_OPERATION",
-        "CONDITIONAL_AFTER_EVIDENCE",
-        "CORRECTNESS_FIX_ONLY",
-        "FROZEN_UNTIL_CONTRACT",
-        "FORBIDDEN_OPTIMIZATION",
-        "NON_TUNABLE_INVARIANT",
-        "NO_EFFECT_OR_DEAD"
+        "id",
+        "name_ref",
+        "class_ref",
+        "decision_ref",
+        "may_change",
+        "allowed_context_codes",
+        "forbidden_context_codes",
+        "blocked_by_issues",
+        "path_refs",
+        "evidence_refs"
       ]
+    },
+    "classes": {
+      "type": "array",
+      "minItems": 1,
+      "uniqueItems": true,
+      "items": {
+        "type": "string"
+      }
+    },
+    "decisions": {
+      "type": "array",
+      "minItems": 1,
+      "uniqueItems": true,
+      "items": {
+        "enum": [
+          "CONDITIONAL_AFTER_EVIDENCE",
+          "ALLOW_REPLAY_RESEARCH",
+          "FROZEN_UNTIL_CONTRACT",
+          "CORRECTNESS_FIX_ONLY",
+          "NO_EFFECT_OR_DEAD",
+          "FORBIDDEN_OPTIMIZATION",
+          "ALLOW_PAPER_OPERATION",
+          "ALLOW_RUNTIME_OPERATION",
+          "NON_TUNABLE_INVARIANT"
+        ]
+      }
+    },
+    "names": {
+      "type": "array",
+      "minItems": 56,
+      "uniqueItems": true,
+      "items": {
+        "type": "string"
+      }
+    },
+    "paths": {
+      "type": "array",
+      "minItems": 1,
+      "uniqueItems": true,
+      "items": {
+        "type": "string"
+      }
+    },
+    "evidence": {
+      "type": "array",
+      "minItems": 1,
+      "uniqueItems": true,
+      "items": {
+        "type": "string"
+      }
+    },
+    "rules": {
+      "type": "array",
+      "minItems": 56,
+      "maxItems": 56,
+      "items": {
+        "type": "array",
+        "prefixItems": [
+          {
+            "type": "string",
+            "pattern": "^CDB-[0-9]{3}$"
+          },
+          {
+            "type": "integer",
+            "minimum": 0
+          },
+          {
+            "type": "integer",
+            "minimum": 0
+          },
+          {
+            "type": "integer",
+            "minimum": 0
+          },
+          {
+            "enum": [
+              0,
+              1
+            ]
+          },
+          {
+            "type": "string",
+            "pattern": "^[rpuldt]*$"
+          },
+          {
+            "type": "string",
+            "pattern": "^[rpuldt]*$"
+          },
+          {
+            "type": "array",
+            "items": {
+              "type": "integer",
+              "minimum": 1
+            }
+          },
+          {
+            "type": "array",
+            "minItems": 1,
+            "items": {
+              "type": "integer",
+              "minimum": 0
+            }
+          },
+          {
+            "type": "array",
+            "minItems": 1,
+            "items": {
+              "type": "integer",
+              "minimum": 0
+            }
+          }
+        ],
+        "minItems": 10,
+        "maxItems": 10
+      }
     },
     "global_invariants": {
       "type": "array",
+      "minItems": 1,
       "items": {
         "type": "string"
-      },
-      "minItems": 1
+      }
     },
     "workflow_gates": {
       "type": "object",
@@ -108,141 +253,10 @@
       ],
       "additionalProperties": {
         "type": "array",
+        "minItems": 1,
         "items": {
           "type": "string"
         }
-      }
-    },
-    "rule_fields": {
-      "const": [
-        "id",
-        "name",
-        "system_area",
-        "main_class",
-        "decision",
-        "may_change",
-        "allowed_contexts",
-        "forbidden_contexts",
-        "blocked_by_issues",
-        "source_paths",
-        "reason",
-        "required_evidence",
-        "change_requirements",
-        "notes"
-      ]
-    },
-    "rules": {
-      "type": "array",
-      "minItems": 1,
-      "items": {
-        "type": "array",
-        "prefixItems": [
-          {
-            "type": "string",
-            "pattern": "^CDB-[0-9]{3}$"
-          },
-          {
-            "type": "string",
-            "minLength": 1
-          },
-          {
-            "type": "string",
-            "minLength": 1
-          },
-          {
-            "enum": [
-              "STRATEGY_OPTIMIZATION",
-              "VALIDATION_OPTIMIZATION",
-              "EXECUTION_ASSUMPTION",
-              "REGIME_CONTROL",
-              "DATA_QUALITY_CONTROL",
-              "RUNTIME_OPERATION",
-              "OBSERVABILITY_ALERT",
-              "RISK_SAFETY_LIMIT",
-              "LIVE_GOVERNANCE_GATE",
-              "HARD_INVARIANT",
-              "UNCLEAR_OR_IMPLICIT"
-            ]
-          },
-          {
-            "enum": [
-              "ALLOW_REPLAY_RESEARCH",
-              "ALLOW_PAPER_OPERATION",
-              "ALLOW_RUNTIME_OPERATION",
-              "CONDITIONAL_AFTER_EVIDENCE",
-              "CORRECTNESS_FIX_ONLY",
-              "FROZEN_UNTIL_CONTRACT",
-              "FORBIDDEN_OPTIMIZATION",
-              "NON_TUNABLE_INVARIANT",
-              "NO_EFFECT_OR_DEAD"
-            ]
-          },
-          {
-            "type": "boolean"
-          },
-          {
-            "type": "array",
-            "items": {
-              "enum": [
-                "replay",
-                "paper",
-                "runtime",
-                "live",
-                "docs",
-                "tests"
-              ]
-            }
-          },
-          {
-            "type": "array",
-            "items": {
-              "enum": [
-                "replay",
-                "paper",
-                "runtime",
-                "live",
-                "docs",
-                "tests"
-              ]
-            }
-          },
-          {
-            "type": "array",
-            "items": {
-              "type": "integer",
-              "minimum": 1
-            }
-          },
-          {
-            "type": "array",
-            "items": {
-              "type": "string"
-            },
-            "minItems": 1
-          },
-          {
-            "type": "string",
-            "minLength": 1
-          },
-          {
-            "type": "array",
-            "items": {
-              "type": "string"
-            },
-            "minItems": 1
-          },
-          {
-            "type": "array",
-            "items": {
-              "type": "string"
-            }
-          },
-          {
-            "type": "string"
-          }
-        ],
-        "minItems": 14,
-        "maxItems": 14
       }
     }
   },
