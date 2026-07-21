@@ -11,7 +11,7 @@
 3. Select the adapter or role surface needed for the current host.
 4. Validate referenced paths before using an agent or Context-MCP capability.
 
-`knowledge/CDB_KNOWLEDGE_HUB.md` is historical/reference only and is not part of onboarding or autoload.
+The shared autoload chain excludes `knowledge/CDB_KNOWLEDGE_HUB.md`. Role files may reference it only as a historical/reference source; it is never current status, governance, or handoff truth.
 
 ## Canonical surfaces
 
@@ -69,8 +69,10 @@ Supported validation entrypoints:
 python -m tools.validate_onboarding_docs
 python -m tools.validate_readme_links
 python -m tools.validate_root_layout
-pytest -q tests/unit/agents
+pytest -q tests/unit/agents/test_agent_onboarding_canon.py
 ```
+
+The broader `tests/unit/agents` suite additionally requires the MCP dependencies from `requirements-mcp.txt`.
 
 Host-specific setup scripts may exist under the relevant adapter or `agents/templates/`; verify the path before execution.
 
