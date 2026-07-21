@@ -38,6 +38,7 @@ ACTIVE_ONBOARDING_SURFACES: list[str] = [
     "DEVELOPER_ONBOARDING.md",
     "docs/index.md",
     "CONTRIBUTING.md",
+    "agents/agent_orga/AGENT_ONBOARDING.md",
     "services/README.md",
     "tests/README.md",
     "tools/README.md",
