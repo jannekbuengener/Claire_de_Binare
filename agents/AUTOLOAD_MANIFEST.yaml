@@ -27,7 +27,7 @@ agents:
   claude:
     role_file: agents/CLAUDE.md
   codex:
-    role_file: agents/roles/CODEX.md
+    role_file: agents/CODEX.md
   copilot:
     role_file: agents/COPILOT.md
   gemini:
