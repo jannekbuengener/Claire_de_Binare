@@ -100,3 +100,13 @@ Do not run auto-apply from CI.
 - Do not change required contexts contract implicitly.
 - Do not enable `pull_request_target` for governance drift checks.
 - Keep automation read-only and deterministic.
+
+## Local Docker CI Phase 1
+
+The local governance stage (`make ci-local` / `pwsh -File ci/scripts/run_all.ps1`)
+wraps `python scripts/governance/run_ci_drift_checks.py` among other checks.
+
+- Local evidence is advisory only and is **not** a GitHub Required Check.
+- Drift checks remain read-only; no auto-apply to Branch Protection.
+- See [`ci/README.md`](../../ci/README.md) and
+  [merge_policy_ci_gate.md](merge_policy_ci_gate.md) § Local Docker CI Phase 1.

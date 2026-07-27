@@ -1,0 +1,101 @@
+"""Stage context shared by local CI stage runners."""
+
+from __future__ import annotations
+
+from dataclasses import dataclass
+from pathlib import Path
+
+from ci.lib.evidence import StageResult, utc_now
+from ci.lib.gitinfo import GitInfo
+from ci.lib.process import run_command
+
+
+@dataclass
+class StageContext:
+    repo_root: Path
+    run_dir: Path
+    run_id: str
+    git: GitInfo
+    profile: str
+    resources: dict
+
+    @property
+    def logs_dir(self) -> Path:
+        path = self.run_dir / "logs"
+        path.mkdir(parents=True, exist_ok=True)
+        return path
+
+    @property
+    def reports_dir(self) -> Path:
+        path = self.run_dir / "reports"
+        path.mkdir(parents=True, exist_ok=True)
+        return path
+
+
+def _status_from_exit(code: int) -> str:
+    return "PASS" if code == 0 else "FAIL"
+
+
+def run_commands_as_stage(
+    ctx: StageContext,
+    *,
+    name: str,
+    commands: list[list[str]],
+    required: bool = True,
+) -> StageResult:
+    started = utc_now()
+    log_path = ctx.logs_dir / f"{name}.log"
+    # Reset log then append each command via sequential runs into temp then merge
+    summaries: list[str] = []
+    exit_code = 0
+    combined_parts: list[str] = []
+    t0 = utc_now()
+    import time
+
+    wall_start = time.perf_counter()
+    for command in commands:
+        part_log = ctx.logs_dir / f"{name}.{len(summaries)}.log"
+        result = run_command(command, cwd=ctx.repo_root, log_path=part_log)
+        summaries.append(" ".join(command))
+        combined_parts.append(part_log.read_text(encoding="utf-8"))
+        if result.exit_code != 0:
+            exit_code = result.exit_code
+            break
+    duration = round(time.perf_counter() - wall_start, 3)
+    log_path.write_text("\n".join(combined_parts), encoding="utf-8")
+    ended = utc_now()
+    return StageResult(
+        name=name,
+        status=_status_from_exit(exit_code),  # type: ignore[arg-type]
+        exit_code=exit_code,
+        started_at_utc=started if started else t0,
+        ended_at_utc=ended,
+        duration_seconds=duration,
+        command_summary=summaries,
+        log_path=str(log_path.relative_to(ctx.run_dir).as_posix()),
+        artifacts=[],
+        skip_reason=None,
+        required=required,
+    )
+
+
+def skipped_stage(
+    *,
+    name: str,
+    reason: str,
+    required: bool,
+) -> StageResult:
+    now = utc_now()
+    return StageResult(
+        name=name,
+        status="SKIPPED",
+        exit_code=0,
+        started_at_utc=now,
+        ended_at_utc=now,
+        duration_seconds=0.0,
+        command_summary=[],
+        log_path="",
+        artifacts=[],
+        skip_reason=reason,
+        required=required,
+    )

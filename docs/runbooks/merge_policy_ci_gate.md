@@ -42,3 +42,30 @@ prüfen, erzeugt selbst aber keinen merge-relevanten Ersatzcheck.
 Änderungen an Check-Namen, Triggern oder Branch Protection müssen gemeinsam in
 `docs/ci/index.md`, diesem Runbook, dem Workflow-Register und den
 Required-Check-Contract-Tests aktualisiert werden.
+
+## Local Docker CI Phase 1 (advisory only)
+
+Seit Phase 1 existiert eine lokale Docker-CI-Schicht unter `ci/`
+(siehe [`ci/README.md`](../../ci/README.md)).
+
+Verbindliche Regeln:
+
+- Lokale Evidence (`ci/artifacts/<run_id>/manifest.json`) ist **kein** Ersatz für
+  die Required Checks `ci (Unit/Integration + Lint gesammelt)` oder `policy-gate`.
+- Branch Protection bleibt in Phase 1 unverändert.
+- GitHub-Workflows bleiben in Phase 1 funktional unverändert.
+- Dirty worktree ⇒ lokale Evidence `BLOCKED` und darf nicht als Merge-Evidence
+  gelten.
+- `policy-gate` bleibt GitHub-API-gebunden; der lokale Governance-Stage enthält
+  nur einen Mirror-Hinweis ohne Paritätsanspruch.
+- Lokales CodeQL/SARIF ersetzt nicht den GitHub Security-Tab.
+
+Live Branch-Protection-Hinweis (reverify with `gh api`):
+`required_conversation_resolution` war zum Audit-Zeitpunkt der Local-CI-Phase-1
+Planung auf `false` gesetzt — Live-API schlägt ältere Runbook-Snapshots.
+
+Windows front door:
+
+```powershell
+pwsh -File ci/scripts/run_all.ps1 -Profile fast
+```

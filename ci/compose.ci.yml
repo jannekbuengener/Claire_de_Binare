@@ -1,0 +1,25 @@
+# Local CI helper compose — optional containerized runner.
+# Default heavy integration still uses infrastructure/compose/base.yml + test.yml
+# with project name cdb_ci_${run_id}. Do not start BLUE/RED here.
+name: cdb_local_ci
+
+services:
+  ci_runner:
+    build:
+      context: ..
+      dockerfile: ci/Dockerfile
+    image: cdb-local-ci:phase1
+    working_dir: /workspace
+    mem_limit: 4g
+    cpus: 4.0
+    volumes:
+      - ..:/workspace
+      - cdb_ci_pip_cache:/root/.cache/pip
+    environment:
+      - PYTHONPATH=/workspace
+    # Host Docker socket intentionally NOT mounted by default (no DinD surprise).
+    command: ["python", "ci/scripts/run.py", "--profile", "fast"]
+
+volumes:
+  cdb_ci_pip_cache:
+    name: cdb_ci_pip_cache

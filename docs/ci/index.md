@@ -1,5 +1,14 @@
 # CI Index
 
+## Local Docker CI (Phase 1)
+
+- Entry: [`ci/README.md`](../../ci/README.md)
+- Front door (Windows): `pwsh -File ci/scripts/run_all.ps1`
+- Make: `make ci-local` / `ci-local-stage` / `ci-local-report` / `ci-local-clean`
+- Local evidence under `ci/artifacts/<run_id>/` is **not** a GitHub Required Check.
+- Branch Protection and GitHub workflows remain unchanged in Phase 1.
+- See [merge_policy_ci_gate.md](../runbooks/merge_policy_ci_gate.md) § Local Docker CI Phase 1.
+
 ## Kanonischer PR-Merge-Vertrag
 
 | Workflow | Check-Kontext | Trigger |
