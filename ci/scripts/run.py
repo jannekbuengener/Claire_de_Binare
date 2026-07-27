@@ -132,13 +132,18 @@ def run_ci(
     profiles = profiles_from_config(stages_cfg)
 
     if profile not in profiles:
-        raise SystemExit(f"Unknown profile {profile!r}; expected one of {sorted(profiles)}")
+        raise SystemExit(
+            f"Unknown profile {profile!r}; expected one of {sorted(profiles)}"
+        )
 
     git = collect_git_info(repo_root)
     artifacts_root = repo_root / "ci" / "artifacts"
     artifacts_root.mkdir(parents=True, exist_ok=True)
 
-    rid = run_id or f"{utc_now().replace(':', '').replace('-', '')}_{uuid.uuid4().hex[:8]}"
+    rid = (
+        run_id
+        or f"{utc_now().replace(':', '').replace('-', '')}_{uuid.uuid4().hex[:8]}"
+    )
     run_dir = assert_run_id_available(artifacts_root, rid)
     run_dir.mkdir(parents=True, exist_ok=False)
     (run_dir / "logs").mkdir()

@@ -4,8 +4,8 @@ from __future__ import annotations
 
 import json
 
-from ci.stages._common import StageContext, run_commands_as_stage
 from ci.lib.evidence import StageResult
+from ci.stages._common import StageContext, python_executable, run_commands_as_stage
 
 
 def run(ctx: StageContext) -> StageResult:
@@ -22,22 +22,21 @@ def run(ctx: StageContext) -> StageResult:
     note_path = ctx.reports_dir / "policy-gate-local-mirror.json"
     note_path.write_text(json.dumps(note, indent=2) + "\n", encoding="utf-8")
 
+    py = python_executable()
     result = run_commands_as_stage(
         ctx,
         name="governance",
         commands=[
             # Same validator as `make mcp-config-validate` / ci.yml MCP Validation.
             [
-                "python",
+                py,
                 "tools/validate_mcp_config.py",
                 "tests/fixtures/mcp_smoke_config.json",
             ],
             ["make", "surreal-validate"],
-            ["python", "scripts/governance/run_ci_drift_checks.py"],
+            [py, "scripts/governance/run_ci_drift_checks.py"],
         ],
         required=True,
     )
-    result.artifacts.append(
-        str(note_path.relative_to(ctx.run_dir).as_posix())
-    )
+    result.artifacts.append(str(note_path.relative_to(ctx.run_dir).as_posix()))
     return result

@@ -31,7 +31,13 @@ def run_command(
     env: Mapping[str, str] | None = None,
     timeout: int | None = None,
 ) -> CommandResult:
-    merged = None if env is None else {**os.environ, **dict(env)}
+    # Fail-closed UTF-8 on Windows consoles (emoji in existing scripts).
+    base_env = {
+        **os.environ,
+        "PYTHONIOENCODING": "utf-8",
+        "PYTHONUTF8": "1",
+    }
+    merged = base_env if env is None else {**base_env, **dict(env)}
     log_path.parent.mkdir(parents=True, exist_ok=True)
     started = time.perf_counter()
     with log_path.open("w", encoding="utf-8") as handle:

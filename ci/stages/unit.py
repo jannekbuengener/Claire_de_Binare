@@ -2,15 +2,25 @@
 
 from __future__ import annotations
 
-from ci.stages._common import StageContext, run_commands_as_stage
 from ci.lib.evidence import StageResult
+from ci.stages._common import StageContext, python_executable, run_commands_as_stage
 
 
 def run(ctx: StageContext) -> StageResult:
-    # Keep command identical to .github/workflows/ci.yml Tests step.
+    # Keep expression identical to .github/workflows/ci.yml Tests step;
+    # invoke via the orchestrator interpreter (-m pytest) for local venv parity.
     return run_commands_as_stage(
         ctx,
         name="unit",
-        commands=[["pytest", "-q", "-k", "not test_mcp_time_server_runtime"]],
+        commands=[
+            [
+                python_executable(),
+                "-m",
+                "pytest",
+                "-q",
+                "-k",
+                "not test_mcp_time_server_runtime",
+            ]
+        ],
         required=True,
     )

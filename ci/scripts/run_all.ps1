@@ -19,6 +19,14 @@ $ErrorActionPreference = "Stop"
 $RepoRoot = Resolve-Path (Join-Path $PSScriptRoot "..\..")
 Set-Location $RepoRoot
 
+$VenvPython = Join-Path $RepoRoot ".venv\Scripts\python.exe"
+if (Test-Path $VenvPython) {
+    $PythonExe = $VenvPython
+}
+else {
+    $PythonExe = "python"
+}
+
 $pyArgs = @("ci/scripts/run.py")
 if ($Report) {
     $pyArgs += "--report"
@@ -32,6 +40,6 @@ else {
     if ($RunId) { $pyArgs += @("--run-id", $RunId) }
 }
 
-Write-Host "CDB local CI → python $($pyArgs -join ' ')"
-& python @pyArgs
+Write-Host "CDB local CI → $PythonExe $($pyArgs -join ' ')"
+& $PythonExe @pyArgs
 exit $LASTEXITCODE

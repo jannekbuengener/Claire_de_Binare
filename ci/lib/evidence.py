@@ -39,8 +39,11 @@ class EvidenceError(ValueError):
 
 
 def utc_now() -> str:
-    return datetime.now(timezone.utc).replace(microsecond=0).isoformat().replace(
-        "+00:00", "Z"
+    return (
+        datetime.now(timezone.utc)
+        .replace(microsecond=0)
+        .isoformat()
+        .replace("+00:00", "Z")
     )
 
 
@@ -57,9 +60,12 @@ def sha256_bytes(data: bytes) -> str:
 
 
 def canonical_json_bytes(payload: dict[str, Any]) -> bytes:
-    return json.dumps(payload, sort_keys=True, indent=2, ensure_ascii=False).encode(
-        "utf-8"
-    ) + b"\n"
+    return (
+        json.dumps(payload, sort_keys=True, indent=2, ensure_ascii=False).encode(
+            "utf-8"
+        )
+        + b"\n"
+    )
 
 
 def aggregate_overall_status(
@@ -123,9 +129,7 @@ def compose_project_name(run_id: str) -> str:
 def assert_safe_cleanup_project(project: str) -> None:
     """Rule: cleanup must only target cdb_ci_* projects."""
     if not project.startswith("cdb_ci_"):
-        raise EvidenceError(
-            f"Refusing cleanup for non-cdb_ci project: {project!r}"
-        )
+        raise EvidenceError(f"Refusing cleanup for non-cdb_ci project: {project!r}")
 
 
 def validate_repo_name(repo_name: str) -> None:
@@ -234,7 +238,10 @@ def load_and_validate_manifest(
             raise EvidenceError("Foreign repository evidence rejected")
     if expected_commit_sha is not None:
         assert_commit_matches_head(str(manifest.get("commit_sha")), expected_commit_sha)
-    if manifest.get("dirty_worktree") is True and manifest.get("overall_status") != "BLOCKED":
+    if (
+        manifest.get("dirty_worktree") is True
+        and manifest.get("overall_status") != "BLOCKED"
+    ):
         raise EvidenceError("Dirty worktree evidence must be overall BLOCKED")
     return manifest
 

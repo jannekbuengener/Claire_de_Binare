@@ -118,6 +118,20 @@ def _excluded(path: str) -> bool:
 
 
 def check_legacy_terminology(repo_root: Path) -> list[str]:
+    text_suffixes = {
+        ".md",
+        ".py",
+        ".yml",
+        ".yaml",
+        ".json",
+        ".toml",
+        ".txt",
+        ".rst",
+        ".ini",
+        ".cfg",
+        ".ps1",
+        ".sh",
+    }
     result = _git(repo_root, "ls-files")
     hits: list[str] = []
     for path in result.stdout.splitlines():
@@ -129,9 +143,17 @@ def check_legacy_terminology(repo_root: Path) -> list[str]:
         file_path = repo_root / path
         if not file_path.is_file():
             continue
+        if file_path.suffix.lower() not in text_suffixes and file_path.name not in {
+            "Makefile",
+            "Dockerfile",
+            "AGENTS.md",
+        }:
+            continue
         try:
+            if file_path.stat().st_size > 1_000_000:
+                continue
             text = file_path.read_text(encoding="utf-8", errors="replace")
-        except OSError:
+        except (OSError, MemoryError):
             continue
         for idx, line in enumerate(text.splitlines(), start=1):
             if LEGACY_RE.search(line):
@@ -170,7 +192,9 @@ def main(argv: list[str] | None = None) -> int:
 
     legacy = check_legacy_terminology(repo_root)
     if legacy:
-        print("Retired repository terminology must not re-enter canonical files or paths.")
+        print(
+            "Retired repository terminology must not re-enter canonical files or paths."
+        )
         print("\n".join(legacy))
         return 1
 

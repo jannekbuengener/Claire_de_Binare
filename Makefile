@@ -783,20 +783,23 @@ security-scan:
 
 .PHONY: ci-local ci-local-stage ci-local-clean ci-local-report
 
+# Prefer repo venv when present (Windows Scripts/ or Unix bin/).
+CI_PYTHON := $(firstword $(wildcard .venv/Scripts/python.exe) $(wildcard .venv/bin/python) $(PYTHON))
+
 ci-local:
 	@echo "=== Local CI (profile=$(or $(PROFILE),fast)) ==="
-	@$(PYTHON) ci/scripts/run.py --profile $(or $(PROFILE),fast)
+	@$(CI_PYTHON) ci/scripts/run.py --profile $(or $(PROFILE),fast)
 
 ci-local-stage:
 	@test -n "$(STAGE)" || (echo "Usage: make ci-local-stage STAGE=<name>"; exit 2)
 	@echo "=== Local CI stage=$(STAGE) ==="
-	@$(PYTHON) ci/scripts/run.py --stage $(STAGE) --profile $(or $(PROFILE),fast)
+	@$(CI_PYTHON) ci/scripts/run.py --stage $(STAGE) --profile $(or $(PROFILE),fast)
 
 ci-local-clean:
 	@test -n "$(RUN_ID)" || (echo "Usage: make ci-local-clean RUN_ID=<run_id>"; exit 2)
 	@echo "=== Local CI cleanup run_id=$(RUN_ID) ==="
-	@$(PYTHON) ci/scripts/run.py --cleanup $(RUN_ID)
+	@$(CI_PYTHON) ci/scripts/run.py --cleanup $(RUN_ID)
 
 ci-local-report:
 	@echo "=== Local CI latest evidence report ==="
-	@$(PYTHON) ci/scripts/run.py --report
+	@$(CI_PYTHON) ci/scripts/run.py --report

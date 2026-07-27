@@ -2,12 +2,19 @@
 
 from __future__ import annotations
 
+import sys
+import time
 from dataclasses import dataclass
 from pathlib import Path
+from typing import Any
 
 from ci.lib.evidence import StageResult, utc_now
-from ci.lib.gitinfo import GitInfo
 from ci.lib.process import run_command
+
+
+def python_executable() -> str:
+    """Interpreter that launched the orchestrator (prefer repo .venv via front door)."""
+    return sys.executable
 
 
 @dataclass
@@ -15,7 +22,7 @@ class StageContext:
     repo_root: Path
     run_dir: Path
     run_id: str
-    git: GitInfo
+    git: Any
     profile: str
     resources: dict
 
@@ -45,13 +52,9 @@ def run_commands_as_stage(
 ) -> StageResult:
     started = utc_now()
     log_path = ctx.logs_dir / f"{name}.log"
-    # Reset log then append each command via sequential runs into temp then merge
     summaries: list[str] = []
     exit_code = 0
     combined_parts: list[str] = []
-    t0 = utc_now()
-    import time
-
     wall_start = time.perf_counter()
     for command in commands:
         part_log = ctx.logs_dir / f"{name}.{len(summaries)}.log"
@@ -68,7 +71,7 @@ def run_commands_as_stage(
         name=name,
         status=_status_from_exit(exit_code),  # type: ignore[arg-type]
         exit_code=exit_code,
-        started_at_utc=started if started else t0,
+        started_at_utc=started,
         ended_at_utc=ended,
         duration_seconds=duration,
         command_summary=summaries,
