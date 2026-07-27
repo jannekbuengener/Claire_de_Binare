@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import base64
 import json
 import os
 import subprocess
@@ -17,6 +18,7 @@ from ci.publisher.redaction import redact_mapping, redact_text
 
 GITHUB_API = "https://api.github.com"
 DEFAULT_TIMEOUT_SECONDS = 30
+PR_FILES_PER_PAGE = 100
 
 
 @dataclass(frozen=True)
@@ -196,7 +198,7 @@ class GitHubStatusClient:
                 f"Ambiguous commit verification HTTP {response.status_code}"
             )
 
-    def get_pull_request_head_sha(self, pr_number: int) -> str:
+    def get_pull_request(self, pr_number: int) -> dict[str, Any]:
         path = f"/repos/{self.owner}/{self.repo}/pulls/{pr_number}"
         response = self._request("GET", path)
         if response.status_code == 404:
@@ -207,11 +209,75 @@ class GitHubStatusClient:
             raise GitHubApiError(
                 f"Ambiguous PR read HTTP {response.status_code}: {response.body}"
             )
-        head = response.body.get("head") or {}
+        return response.body
+
+    def get_pull_request_head_sha(self, pr_number: int) -> str:
+        pr = self.get_pull_request(pr_number)
+        head = pr.get("head") or {}
         sha = head.get("sha")
         if not sha:
             raise GitHubApiError("PR head SHA missing from GitHub response")
         return str(sha)
+
+    def list_pull_request_files(self, pr_number: int) -> list[dict[str, Any]]:
+        """List PR files, paginating with ``per_page=100`` when needed."""
+        collected: list[dict[str, Any]] = []
+        page = 1
+        while True:
+            path = (
+                f"/repos/{self.owner}/{self.repo}/pulls/{pr_number}/files"
+                f"?per_page={PR_FILES_PER_PAGE}&page={page}"
+            )
+            response = self._request("GET", path)
+            if response.status_code == 404:
+                raise GitHubApiError(f"Pull request #{pr_number} not found")
+            if response.status_code in {401, 403}:
+                raise AuthenticationError(
+                    "Insufficient permissions to list pull request files"
+                )
+            if response.status_code >= 400:
+                raise GitHubApiError(
+                    f"Ambiguous PR files read HTTP {response.status_code}: "
+                    f"{response.body}"
+                )
+            if not isinstance(response.body, list):
+                raise GitHubApiError("Ambiguous PR files payload")
+            batch = [item for item in response.body if isinstance(item, dict)]
+            collected.extend(batch)
+            if len(batch) < PR_FILES_PER_PAGE:
+                break
+            page += 1
+        return collected
+
+    def get_repo_file_content(self, path: str, ref: str) -> str:
+        """Return decoded UTF-8 file content at ``ref`` (PR head SHA)."""
+        encoded_path = "/".join(quote(part) for part in path.split("/"))
+        api_path = (
+            f"/repos/{self.owner}/{self.repo}/contents/{encoded_path}"
+            f"?ref={quote(ref)}"
+        )
+        response = self._request("GET", api_path)
+        if response.status_code == 404:
+            raise GitHubApiError(f"File not found at {path}@{ref}")
+        if response.status_code in {401, 403}:
+            raise AuthenticationError(f"Insufficient permissions to read file {path}")
+        if response.status_code >= 400 or not isinstance(response.body, dict):
+            raise GitHubApiError(
+                f"Ambiguous file content read HTTP {response.status_code}: "
+                f"{response.body}"
+            )
+        if "content" not in response.body:
+            raise GitHubApiError(f"Unable to inspect workflow file: {path}")
+        encoding = str(response.body.get("encoding") or "base64")
+        raw = str(response.body.get("content") or "")
+        if encoding != "base64":
+            raise GitHubApiError(f"Unsupported content encoding for {path}: {encoding}")
+        try:
+            return base64.b64decode(raw).decode("utf-8")
+        except (ValueError, UnicodeDecodeError) as exc:
+            raise GitHubApiError(
+                f"Unable to decode file content for {path}: {exc}"
+            ) from exc
 
     def create_commit_status(
         self, payload: StatusPayload, *, dry_run: bool = False

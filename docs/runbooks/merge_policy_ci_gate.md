@@ -73,14 +73,19 @@ pwsh -File ci/scripts/run_all.ps1 -Profile fast
 ## Local CI Status Publisher (Phase 3a, advisory)
 
 Nach strikter Validierung der lokalen Evidence darf ein Publisher einen
-**nicht-required** GitHub Commit Status für den exakten Commit setzen.
+GitHub Commit Status für den exakten Commit setzen (interim: Commit Status /
+PAT — noch kein GitHub-App Check Run).
 
 - Dokumentation: [`docs/ci/local-status-publisher.md`](../ci/local-status-publisher.md)
 - Context-Namen: `cdb-local-ci` / Preview `cdb-local-ci-preview`
-- Branch Protection bleibt unverändert; der Status ist in dieser Phase **kein**
-  Required Check.
-- Kein Fake-Green: dirty, stale, SHA-Mismatch, Hash-Mismatch, required SKIPPED
-  und Anti-Replay-Verletzungen blockieren Publish.
+- Branch Protection bleibt in dieser Phase unverändert (kein BP-Mutation in
+  Publisher-PRs). **Nach** der BP-Migration ist der required Context
+  `cdb-local-ci`; Publish erzwingt dann `--pr-number > 0` und den lokalen
+  Policy-Gate-Mirror (`tools/ci/policy_gate_local.py`, Parität zu
+  `.github/workflows/policy-gate.yml`).
+- Kein Fake-Green: dirty (inkl. Live-Worktree vor Write), stale, SHA-Mismatch,
+  Hash-Mismatch, required SKIPPED, Anti-Replay, fehlende PR-Nummer für
+  `cdb-local-ci` und Policy-Gate-Fails blockieren Publish.
 - Billing-/Actions-Probleme schwächen die Evidence-Anforderungen nicht.
 
 ```powershell

@@ -6,7 +6,7 @@ import argparse
 import json
 import sys
 from pathlib import Path
-from typing import Sequence
+from typing import Any, Sequence
 
 from ci.lib.evidence import DEFAULT_FRESHNESS_HOURS, utc_now
 from ci.lib.gitinfo import EXPECTED_REPOSITORY, collect_git_info
@@ -27,6 +27,7 @@ from ci.publisher.ledger import (
     load_ledger,
 )
 from ci.publisher.redaction import redact_mapping, redact_text
+from tools.ci.policy_gate_local import evaluate_policy_gate
 
 SUCCESS_EXIT = 0
 FAILURE_EXIT = 1
@@ -77,7 +78,10 @@ def _add_common_args(parser: argparse.ArgumentParser) -> None:
         "--pr-number",
         type=int,
         default=0,
-        help="Optional PR number; head SHA must match commit SHA",
+        help=(
+            "PR number; required (>0) when --status-context is "
+            f"{DEFAULT_STATUS_CONTEXT}; optional for preview"
+        ),
     )
     parser.add_argument(
         "--target-url",
@@ -112,6 +116,84 @@ def _resolve_commit_sha(args: argparse.Namespace, repo_root: Path) -> str:
     if args.commit_sha:
         return args.commit_sha.strip()
     return collect_git_info(repo_root).commit_sha
+
+
+def _require_pr_for_required_context(args: argparse.Namespace) -> None:
+    """Fail closed when publishing the required-path context without a PR."""
+    if args.status_context == DEFAULT_STATUS_CONTEXT and int(args.pr_number or 0) <= 0:
+        raise PublisherError(
+            f"--pr-number > 0 is required when --status-context is "
+            f"{DEFAULT_STATUS_CONTEXT} (local policy-gate mirror at publish time)"
+        )
+
+
+def _pr_labels(pr: dict[str, Any]) -> list[str]:
+    labels: list[str] = []
+    for entry in pr.get("labels") or []:
+        if isinstance(entry, dict) and entry.get("name"):
+            labels.append(str(entry["name"]))
+        elif isinstance(entry, str):
+            labels.append(entry)
+    return labels
+
+
+def _is_workflow_path(path: str) -> bool:
+    return path.startswith(".github/workflows/") and (
+        path.endswith(".yml") or path.endswith(".yaml")
+    )
+
+
+def enforce_policy_gate_for_pr(
+    client: GitHubStatusClient,
+    *,
+    pr_number: int,
+    commit_sha: str,
+) -> dict[str, Any]:
+    """Verify PR head SHA and run the local policy-gate mirror. Fail closed."""
+    pr = client.get_pull_request(pr_number)
+    head = (pr.get("head") or {}).get("sha")
+    if not head:
+        raise PublisherError(f"PR #{pr_number} head SHA missing from GitHub response")
+    if str(head).lower() != commit_sha.lower():
+        raise PublisherError(
+            f"PR #{pr_number} head SHA {head} does not match commit_sha {commit_sha}"
+        )
+
+    files = client.list_pull_request_files(pr_number)
+    workflow_contents: dict[str, str] = {}
+    for entry in files:
+        filename = str(entry.get("filename") or "")
+        status = str(entry.get("status") or "modified")
+        if _is_workflow_path(filename) and status != "removed":
+            workflow_contents[filename] = client.get_repo_file_content(
+                filename, commit_sha
+            )
+
+    policy = evaluate_policy_gate(
+        title=str(pr.get("title") or ""),
+        labels=_pr_labels(pr),
+        files=files,
+        workflow_contents=workflow_contents,
+    )
+    if not policy.ok:
+        raise PublisherError(
+            "policy-gate local mirror failed: " + " | ".join(policy.failures)
+        )
+    return {
+        "category": policy.category,
+        "category_source": policy.category_source,
+        "passes": list(policy.passes),
+        "failures": list(policy.failures),
+        "ok": True,
+    }
+
+
+def _assert_clean_live_worktree(repo_root: Path) -> None:
+    info = collect_git_info(repo_root)
+    if info.dirty_worktree:
+        raise PublisherError(
+            "Live worktree is dirty; refusing publish of commit status"
+        )
 
 
 def cmd_validate(args: argparse.Namespace) -> int:
@@ -156,6 +238,20 @@ def cmd_validate(args: argparse.Namespace) -> int:
 
 
 def cmd_dry_run(args: argparse.Namespace) -> int:
+    try:
+        _require_pr_for_required_context(args)
+    except PublisherError as exc:
+        print(f"REJECT: {redact_text(str(exc))}", file=sys.stderr)
+        _print_json(
+            {
+                "command": "dry-run",
+                "ok": False,
+                "reason": str(exc),
+                "write_attempted": False,
+            }
+        )
+        return FAILURE_EXIT
+
     repo_root, evidence_dir, ledger_path = _resolve_paths(args)
     commit_sha = _resolve_commit_sha(args, repo_root)
     result = validate_evidence_for_publish(
@@ -169,6 +265,7 @@ def cmd_dry_run(args: argparse.Namespace) -> int:
     )
     write_attempted = False
     github_body = None
+    policy_result: dict[str, Any] | None = None
     if result.ok:
         try:
             ledger = load_ledger(ledger_path)
@@ -189,21 +286,47 @@ def cmd_dry_run(args: argparse.Namespace) -> int:
         if result.intended_payload is None:
             print("REJECT: no intended payload", file=sys.stderr)
             return FAILURE_EXIT
+        if int(args.pr_number or 0) > 0:
+            try:
+                token = resolve_token()
+                owner, repo = result.repository.split("/", 1)
+                client = GitHubStatusClient(token=token, owner=owner, repo=repo)
+                policy_result = enforce_policy_gate_for_pr(
+                    client, pr_number=int(args.pr_number), commit_sha=commit_sha
+                )
+            except (
+                AuthenticationError,
+                GitHubApiError,
+                LedgerError,
+                PublisherError,
+            ) as exc:
+                print(f"REJECT: {redact_text(str(exc))}", file=sys.stderr)
+                _print_json(
+                    {
+                        "command": "dry-run",
+                        "ok": False,
+                        "reason": redact_text(str(exc)),
+                        "write_attempted": False,
+                        "policy_gate": None,
+                    }
+                )
+                return FAILURE_EXIT
         # Dry-run client never writes.
         client = GitHubStatusClient(token="dry-run-token")
         github_body = client.create_commit_status(result.intended_payload, dry_run=True)
         write_attempted = any(not c.get("dry_run") for c in client.write_calls)
-    _print_json(
-        {
-            "command": "dry-run",
-            "ok": result.ok,
-            "reason": result.reason,
-            "validation": result.to_dict(),
-            "github_payload": github_body,
-            "write_attempted": write_attempted,
-            "network_write": False,
-        }
-    )
+    payload: dict[str, Any] = {
+        "command": "dry-run",
+        "ok": result.ok,
+        "reason": result.reason,
+        "validation": result.to_dict(),
+        "github_payload": github_body,
+        "write_attempted": write_attempted,
+        "network_write": False,
+    }
+    if policy_result is not None:
+        payload["policy_gate"] = policy_result
+    _print_json(payload)
     if not result.ok:
         print(
             f"REJECT: {redact_text(result.reason or 'validation failed')}",
@@ -214,6 +337,13 @@ def cmd_dry_run(args: argparse.Namespace) -> int:
 
 
 def cmd_publish(args: argparse.Namespace) -> int:
+    try:
+        _require_pr_for_required_context(args)
+    except PublisherError as exc:
+        print(f"REJECT: {redact_text(str(exc))}", file=sys.stderr)
+        _print_json({"command": "publish", "ok": False, "reason": str(exc)})
+        return FAILURE_EXIT
+
     repo_root, evidence_dir, ledger_path = _resolve_paths(args)
     commit_sha = _resolve_commit_sha(args, repo_root)
     result = validate_evidence_for_publish(
@@ -238,19 +368,26 @@ def cmd_publish(args: argparse.Namespace) -> int:
         owner, repo = result.repository.split("/", 1)
         client = GitHubStatusClient(token=token, owner=owner, repo=repo)
         client.assert_commit_exists(commit_sha)
-        if args.pr_number:
-            head = client.get_pull_request_head_sha(args.pr_number)
+        policy_result: dict[str, Any] | None = None
+        if int(args.pr_number or 0) > 0:
+            policy_result = enforce_policy_gate_for_pr(
+                client, pr_number=int(args.pr_number), commit_sha=commit_sha
+            )
+        ledger = load_ledger(ledger_path)
+        assert_run_id_not_reused(
+            ledger, run_id=result.run_id, commit_sha=result.commit_sha
+        )
+        # Live dirty worktree re-check immediately before write.
+        _assert_clean_live_worktree(repo_root)
+        # Final verification immediately before write.
+        client.assert_commit_exists(commit_sha)
+        if int(args.pr_number or 0) > 0:
+            head = client.get_pull_request_head_sha(int(args.pr_number))
             if head.lower() != commit_sha.lower():
                 raise PublisherError(
                     f"PR #{args.pr_number} head SHA {head} does not match "
                     f"commit_sha {commit_sha}"
                 )
-        ledger = load_ledger(ledger_path)
-        assert_run_id_not_reused(
-            ledger, run_id=result.run_id, commit_sha=result.commit_sha
-        )
-        # Final verification immediately before write.
-        client.assert_commit_exists(commit_sha)
         api_result = client.create_commit_status(result.intended_payload, dry_run=False)
         status_id = api_result.get("id")
         append_entry(
@@ -277,18 +414,19 @@ def cmd_publish(args: argparse.Namespace) -> int:
         )
         return FAILURE_EXIT
 
-    _print_json(
-        {
-            "command": "publish",
-            "ok": True,
-            "sha": commit_sha,
-            "context": args.status_context,
-            "state": result.intended_payload.state,
-            "run_id": result.run_id,
-            "github": redact_mapping(api_result),
-            "optional_skipped": result.optional_skipped,
-        }
-    )
+    out: dict[str, Any] = {
+        "command": "publish",
+        "ok": True,
+        "sha": commit_sha,
+        "context": args.status_context,
+        "state": result.intended_payload.state,
+        "run_id": result.run_id,
+        "github": redact_mapping(api_result),
+        "optional_skipped": result.optional_skipped,
+    }
+    if policy_result is not None:
+        out["policy_gate"] = policy_result
+    _print_json(out)
     return SUCCESS_EXIT
 
 
@@ -336,7 +474,7 @@ def build_parser() -> argparse.ArgumentParser:
         prog="python -m ci.publisher",
         description=(
             "Validate local Docker CI evidence and publish a commit-bound "
-            "GitHub Commit Status (not a Required Check)."
+            "GitHub Commit Status (not a Required Check / not a Check Run App)."
         ),
     )
     sub = parser.add_subparsers(dest="command", required=True)
