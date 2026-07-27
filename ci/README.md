@@ -6,6 +6,9 @@ Lokale, Docker-fähige CI-Ausführungsschicht für Claire_de_Binare.
 
 - **Phase 1:** Scaffold + Evidence-Contract. GitHub-Workflows und Branch Protection
   bleiben **unverändert**.
+- **Phase 3a:** Optionaler Status-Publisher (`ci/publisher/`) kann nach strikter
+  Evidence-Validation einen **nicht-required** Commit Status setzen.
+  Siehe [docs/ci/local-status-publisher.md](../docs/ci/local-status-publisher.md).
 - Lokale Evidence ist **kein** GitHub Required Check und darf Merges nicht
   autorisieren.
 - `policy-gate` bleibt GitHub-gebunden (lokaler Mirror ohne Paritätsanspruch).
@@ -34,6 +37,17 @@ make ci-local PROFILE=heavy
 make ci-local-stage STAGE=lint
 make ci-local-report
 make ci-local-clean RUN_ID=<run_id>
+make ci-local-publish-dry-run EVIDENCE_DIR=ci/artifacts/<run_id>
+make ci-local-publish EVIDENCE_DIR=ci/artifacts/<run_id> STATUS_CONTEXT=cdb-local-ci-preview
+make ci-local-publish-inspect COMMIT_SHA=<sha>
+```
+
+Status publisher (Windows):
+
+```powershell
+pwsh -File ci/scripts/publish_status.ps1 -Command dry-run -EvidenceDir ci/artifacts/<run_id>
+pwsh -File ci/scripts/publish_status.ps1 -Command publish -EvidenceDir ci/artifacts/<run_id> `
+  -StatusContext cdb-local-ci-preview
 ```
 
 ## Profiles
@@ -90,6 +104,7 @@ for ci_image/test_runner/postgres/redis, compose project template
 | CodeQL | optional local SARIF | Security-tab authoritative |
 | Branch Protection | unchanged | live SSOT |
 | Local evidence | advisory artifacts | **not** Required Check |
+| Status publisher (Phase 3a) | Commit Status after validation | non-required preview/context only |
 
 ## Architecture
 
@@ -98,7 +113,11 @@ pwsh/make/bash → ci/scripts/run.py → ci/stages/* → ci/artifacts/<run_id>/
                  ↑
          ci/config/stages.yaml + resources.yaml
          ci/Dockerfile (Python 3.12; matches ci.yml, not Dockerfile.test 3.14)
+
+optional:
+pwsh/make → ci.publisher → GitHub Commit Status (exact SHA; fail-closed)
 ```
 
 See also: [docs/ci/index.md](../docs/ci/index.md),
+[docs/ci/local-status-publisher.md](../docs/ci/local-status-publisher.md),
 [docs/runbooks/merge_policy_ci_gate.md](../docs/runbooks/merge_policy_ci_gate.md).

@@ -9,6 +9,14 @@
 - Branch Protection and GitHub workflows remain unchanged in Phase 1.
 - See [merge_policy_ci_gate.md](../runbooks/merge_policy_ci_gate.md) § Local Docker CI Phase 1.
 
+## Local status publisher (Phase 3a)
+
+- Doc: [`local-status-publisher.md`](local-status-publisher.md)
+- Entry: `python -m ci.publisher` / `pwsh -File ci/scripts/publish_status.ps1`
+- Make: `ci-local-publish-dry-run` / `ci-local-publish` / `ci-local-publish-inspect`
+- Publishes a **non-required** Commit Status only after fail-closed evidence validation.
+- Preferred preview context: `cdb-local-ci-preview`. Branch Protection unchanged.
+
 ## Kanonischer PR-Merge-Vertrag
 
 | Workflow | Check-Kontext | Trigger |

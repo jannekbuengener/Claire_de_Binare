@@ -69,3 +69,20 @@ Windows front door:
 ```powershell
 pwsh -File ci/scripts/run_all.ps1 -Profile fast
 ```
+
+## Local CI Status Publisher (Phase 3a, advisory)
+
+Nach strikter Validierung der lokalen Evidence darf ein Publisher einen
+**nicht-required** GitHub Commit Status für den exakten Commit setzen.
+
+- Dokumentation: [`docs/ci/local-status-publisher.md`](../ci/local-status-publisher.md)
+- Context-Namen: `cdb-local-ci` / Preview `cdb-local-ci-preview`
+- Branch Protection bleibt unverändert; der Status ist in dieser Phase **kein**
+  Required Check.
+- Kein Fake-Green: dirty, stale, SHA-Mismatch, Hash-Mismatch, required SKIPPED
+  und Anti-Replay-Verletzungen blockieren Publish.
+- Billing-/Actions-Probleme schwächen die Evidence-Anforderungen nicht.
+
+```powershell
+pwsh -File ci/scripts/publish_status.ps1 -Command dry-run -EvidenceDir ci/artifacts/<run_id>
+```
