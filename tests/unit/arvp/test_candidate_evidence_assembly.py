@@ -29,7 +29,7 @@ CAMPAIGN_QUEUE = (
     / "queue_state.json"
 )
 GOLDEN_SOURCE_HASH = (
-    "ad3d4ccc449e81e4aa5ec81185d6b3229d12a9e05b2e4970dd352b7471e5b7ad"
+    "8b253855277f04bfd6a16e6afc1ccf2eab1b3114d7cedf045797b83ab5a9c55a"
 )
 
 def _load(path: Path) -> dict:

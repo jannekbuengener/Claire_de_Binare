@@ -100,10 +100,20 @@ def test_v2_never_verifies_missing_evidence_implicitly() -> None:
 
 @pytest.mark.unit
 def test_v2_decision_chain_hash_is_deterministic_and_excludes_as_of() -> None:
+    from datetime import datetime, timedelta
+
+    from core.utils.clock import FixedClock, SystemClock, set_default_clock
+
     fixture = _load_fixture()
     req = DecisionReplayRequest(mode="replay_by_decision_id", decision_id="dec-002", limit=50)
-    first = build_decision_replay_v2(fixture["decisions"], req)
-    second = build_decision_replay_v2(fixture["decisions"], req)
+    t0 = datetime(2026, 5, 2, 12, 0, 0)
+    set_default_clock(FixedClock(t0))
+    try:
+        first = build_decision_replay_v2(fixture["decisions"], req)
+        set_default_clock(FixedClock(t0 + timedelta(microseconds=1)))
+        second = build_decision_replay_v2(fixture["decisions"], req)
+    finally:
+        set_default_clock(SystemClock())
     assert first["decision_chain_hash"] == second["decision_chain_hash"]
     assert first["current_status"]["as_of"] != second["current_status"]["as_of"]
 
