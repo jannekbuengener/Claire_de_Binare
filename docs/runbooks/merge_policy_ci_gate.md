@@ -2,40 +2,45 @@
 
 ## Verbindlicher Vertrag
 
-Für Pull Requests auf `main` gelten genau zwei merge-relevante Check-Kontexte:
+Für Pull Requests auf `main` gilt genau ein merge-relevanter Required Context
+(Branch Protection, live via `gh api`):
 
-| Workflow | Check |
-|---|---|
-| `.github/workflows/ci.yml` | `ci (Unit/Integration + Lint gesammelt)` |
-| `.github/workflows/policy-gate.yml` | `policy-gate` |
+| Quelle | Context | Typ |
+|---|---|---|
+| Local CI Status Publisher | `cdb-local-ci` | Commit Status (`app_id` null) |
 
-Die frühere parallele Legacy-CI wurde am 2026-07-16 entfernt. Es gibt keinen
-zweiten Push-/Dispatch-CI-SSOT mehr.
+Die früheren Required Checks `ci (Unit/Integration + Lint gesammelt)` und
+`policy-gate` sind **nicht mehr** branch-protection-required (Migration #4169).
+`ci.yml` und `policy-gate.yml` bleiben als Workflow-Inhalt / Safety-Gates
+nützlich, ersetzen aber den Required Context nicht.
 
 ## Merge-Gates
 
-Vor einem Merge müssen beide Checks erfolgreich und dem aktuellen PR-Head-SHA
-zugeordnet sein. Alte grüne Runs, lokale Tests oder andere Actions ersetzen
-diese Check-Kontexte nicht.
+Vor einem Merge muss `cdb-local-ci` für den aktuellen PR-Head-SHA erfolgreich
+gesetzt sein (Publisher nach validierter lokaler Evidence + Policy-Mirror).
+Alte grüne GitHub-Actions-Runs, lokale Tests ohne Publish oder andere Actions
+ersetzen diesen Context nicht.
 
 Der on-demand Workflow `required-checks-audit.yml` kann die Konfiguration
 prüfen, erzeugt selbst aber keinen merge-relevanten Ersatzcheck.
 
 ## Sicherheitsmodell
 
-- PR-Code läuft für die kanonischen Checks auf GitHub-hosted Runnern.
 - Untrusted Fork-Code darf nicht auf privilegierten self-hosted Runnern laufen.
-- `pull_request_target` darf keinen untrusted Checkout ausführen.
+- `pull_request_target` darf keinen untrusted Checkout ausführen
+  (`policy-gate.yml` prüft das weiterhin).
 - Code-Owner- und Review-Signale bleiben wichtig, auch wenn die aktuelle Branch
   Protection keine Mindestzahl genehmigender Reviews erzwingt.
+- Required-path Publish (`cdb-local-ci`) erzwingt `--pr-number > 0` und den
+  lokalen Policy-Gate-Mirror (`tools/ci/policy_gate_local.py`).
 
 ## Diagnose
 
 1. PR-Head-SHA ermitteln.
-2. Check-Runs für exakt diesen SHA prüfen.
-3. Fehlenden Check von einem fehlgeschlagenen Check unterscheiden.
-4. Workflow-Trigger und Path-Filter direkt in der YAML kontrollieren.
-5. Erst nach grünen aktuellen Checks mergen.
+2. Commit Status `cdb-local-ci` für exakt diesen SHA prüfen.
+3. Fehlenden Status von einem fehlgeschlagenen Status unterscheiden.
+4. Publisher-Evidence und Policy-Mirror-Fail prüfen.
+5. Erst nach grünem aktuellem `cdb-local-ci` mergen.
 
 ## Dokumentationspflicht
 
@@ -43,29 +48,28 @@ prüfen, erzeugt selbst aber keinen merge-relevanten Ersatzcheck.
 `docs/ci/index.md`, diesem Runbook, dem Workflow-Register und den
 Required-Check-Contract-Tests aktualisiert werden.
 
-## Local Docker CI Phase 1 (advisory only)
+## Local Docker CI + Status Publisher
 
-Seit Phase 1 existiert eine lokale Docker-CI-Schicht unter `ci/`
-(siehe [`ci/README.md`](../../ci/README.md)).
+Lokale Docker-CI unter `ci/` (siehe [`ci/README.md`](../../ci/README.md)) und
+Publisher (siehe [`docs/ci/local-status-publisher.md`](../ci/local-status-publisher.md)):
 
-Verbindliche Regeln:
-
-- Lokale Evidence (`ci/artifacts/<run_id>/manifest.json`) ist **kein** Ersatz für
-  die Required Checks `ci (Unit/Integration + Lint gesammelt)` oder `policy-gate`.
-- Branch Protection bleibt in Phase 1 unverändert.
-- GitHub-Workflows bleiben in Phase 1 funktional unverändert.
-- Dirty worktree ⇒ lokale Evidence `BLOCKED` und darf nicht als Merge-Evidence
-  gelten.
-- `policy-gate` bleibt GitHub-API-gebunden; der lokale Governance-Stage enthält
-  nur einen Mirror-Hinweis ohne Paritätsanspruch.
+- Lokale Evidence allein autorisiert keinen Merge; erst der published
+  Commit Status `cdb-local-ci` ist der Required Context.
+- Branch Protection required contexts: `["cdb-local-ci"]` (Commit Status).
+- Dirty worktree ⇒ lokale Evidence `BLOCKED` und kein Publish.
+- Publish-Pfad erzwingt Policy-Gate-Mirror (Parität zu
+  `.github/workflows/policy-gate.yml`).
+- Kein Fake-Green: dirty, stale, SHA-Mismatch, Hash-Mismatch, required SKIPPED,
+  Anti-Replay, fehlende PR-Nummer oder Policy-Gate-Fails blockieren Publish.
 - Lokales CodeQL/SARIF ersetzt nicht den GitHub Security-Tab.
 
 Live Branch-Protection-Hinweis (reverify with `gh api`):
-`required_conversation_resolution` war zum Audit-Zeitpunkt der Local-CI-Phase-1
-Planung auf `false` gesetzt — Live-API schlägt ältere Runbook-Snapshots.
+`required_status_checks.contexts == ["cdb-local-ci"]`, `checks[].app_id == null`.
 
 Windows front door:
 
 ```powershell
 pwsh -File ci/scripts/run_all.ps1 -Profile fast
+pwsh -File ci/scripts/publish_status.ps1 -Command publish `
+  -EvidenceDir ci/artifacts/<run_id> -StatusContext cdb-local-ci -PrNumber <n>
 ```

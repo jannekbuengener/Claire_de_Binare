@@ -12,13 +12,8 @@ from pathlib import Path
 
 EXTENSIONS = {".md", ".yaml", ".yml", ".json"}
 SCAN_ROOTS = ("agents", "knowledge", "docs", ".github")
-EXCLUDE_RE = re.compile(
-    # Path excludes for archived snapshot dirs (string split avoids retired
-    # terminology literals in this source file).
-    r"(^|[/\\])(docs[/\\]archive[/\\]docs[_]"
-    r"hub_snapshot|mcp_navpack_docs[_]"
-    r"hub[^/\\]*|\.git)([/\\]|$)"
-)
+# Match docs-conflict-guard.yml: exclude entire docs/archive/ and .git.
+EXCLUDE_RE = re.compile(r"(^|[/\\])(docs[/\\]archive|\.git)([/\\]|$)")
 PATTERNS = (
     re.compile(r"^\s*<<<<<<<.*$"),
     re.compile(r"^\s*=======$"),

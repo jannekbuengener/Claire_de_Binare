@@ -4,11 +4,15 @@ Lokale, Docker-fähige CI-Ausführungsschicht für Claire_de_Binare.
 
 ## Status / Grenzen
 
-- **Phase 1:** Scaffold + Evidence-Contract. GitHub-Workflows und Branch Protection
-  bleiben **unverändert**.
-- Lokale Evidence ist **kein** GitHub Required Check und darf Merges nicht
-  autorisieren.
-- `policy-gate` bleibt GitHub-gebunden (lokaler Mirror ohne Paritätsanspruch).
+- **Phase 1:** Scaffold + Evidence-Contract unter `ci/`.
+- **Phase 3a + BP #4169:** Nach strikter Evidence-Validation setzt der
+  Status-Publisher (`ci/publisher/`) den Required Commit Status `cdb-local-ci`
+  (interim PAT / Commit Status, noch kein GitHub-App Check Run).
+  Siehe [docs/ci/local-status-publisher.md](../docs/ci/local-status-publisher.md).
+- Lokale Evidence allein autorisiert keinen Merge; der published Status
+  `cdb-local-ci` ist der live Required Context.
+- `policy-gate.yml` bleibt als Workflow-Safety-Gate; der lokale Mirror
+  (`tools/ci/policy_gate_local.py`) ist Publish-Pflicht für `cdb-local-ci`.
 - Lokales CodeQL/SARIF ersetzt **nicht** den GitHub Security-Tab.
 - LR bleibt **NO-GO**. Kein BLUE/RED als Default-CI. Kein GHCR-Push.
 
@@ -34,6 +38,17 @@ make ci-local PROFILE=heavy
 make ci-local-stage STAGE=lint
 make ci-local-report
 make ci-local-clean RUN_ID=<run_id>
+make ci-local-publish-dry-run EVIDENCE_DIR=ci/artifacts/<run_id>
+make ci-local-publish EVIDENCE_DIR=ci/artifacts/<run_id> STATUS_CONTEXT=cdb-local-ci-preview
+make ci-local-publish-inspect COMMIT_SHA=<sha>
+```
+
+Status publisher (Windows):
+
+```powershell
+pwsh -File ci/scripts/publish_status.ps1 -Command dry-run -EvidenceDir ci/artifacts/<run_id>
+pwsh -File ci/scripts/publish_status.ps1 -Command publish -EvidenceDir ci/artifacts/<run_id> `
+  -StatusContext cdb-local-ci-preview
 ```
 
 ## Profiles
@@ -82,14 +97,15 @@ for ci_image/test_runner/postgres/redis, compose project template
 
 ## Local vs GitHub parity
 
-| Surface | Local Phase 1 | GitHub |
-|---------|---------------|--------|
-| Required `ci.yml` commands | high (wrapped) | merge Required Check |
-| `policy-gate` | mirror note only | Required Check |
+| Surface | Local | GitHub |
+|---------|-------|--------|
+| Required `ci.yml` commands | high (wrapped in local stages) | advisory workflow (not BP-required) |
+| `policy-gate` | local mirror enforced at publish | workflow safety (not BP-required) |
 | Docs Conflict / Hub | extracted tools modules | workflows still inline |
 | CodeQL | optional local SARIF | Security-tab authoritative |
-| Branch Protection | unchanged | live SSOT |
-| Local evidence | advisory artifacts | **not** Required Check |
+| Branch Protection | — | required: `cdb-local-ci` (Commit Status) |
+| Local evidence | advisory artifacts until publish | — |
+| Status publisher (Phase 3a) | Commit Status after validation | required context `cdb-local-ci` |
 
 ## Architecture
 
@@ -98,7 +114,11 @@ pwsh/make/bash → ci/scripts/run.py → ci/stages/* → ci/artifacts/<run_id>/
                  ↑
          ci/config/stages.yaml + resources.yaml
          ci/Dockerfile (Python 3.12; matches ci.yml, not Dockerfile.test 3.14)
+
+optional:
+pwsh/make → ci.publisher → GitHub Commit Status (exact SHA; fail-closed)
 ```
 
 See also: [docs/ci/index.md](../docs/ci/index.md),
+[docs/ci/local-status-publisher.md](../docs/ci/local-status-publisher.md),
 [docs/runbooks/merge_policy_ci_gate.md](../docs/runbooks/merge_policy_ci_gate.md).

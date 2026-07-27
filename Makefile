@@ -781,10 +781,15 @@ security-scan:
 # Preferred Windows front door: pwsh -File ci/scripts/run_all.ps1
 # ============================================================================
 
-.PHONY: ci-local ci-local-stage ci-local-clean ci-local-report
+.PHONY: ci-local ci-local-stage ci-local-clean ci-local-report \
+	ci-local-publish-dry-run ci-local-publish ci-local-publish-inspect
 
 # Prefer repo venv when present (Windows Scripts/ or Unix bin/).
 CI_PYTHON := $(firstword $(wildcard .venv/Scripts/python.exe) $(wildcard .venv/bin/python) $(PYTHON))
+
+# Publisher defaults (Phase 3a Commit Status — not a Required Check).
+STATUS_CONTEXT ?= cdb-local-ci
+FRESHNESS_HOURS ?= 24
 
 ci-local:
 	@echo "=== Local CI (profile=$(or $(PROFILE),fast)) ==="
@@ -803,3 +808,30 @@ ci-local-clean:
 ci-local-report:
 	@echo "=== Local CI latest evidence report ==="
 	@$(CI_PYTHON) ci/scripts/run.py --report
+
+ci-local-publish-dry-run:
+	@test -n "$(EVIDENCE_DIR)" || (echo "Usage: make ci-local-publish-dry-run EVIDENCE_DIR=ci/artifacts/<run_id> [COMMIT_SHA=...]"; exit 2)
+	@echo "=== Local CI status publisher dry-run ==="
+	@$(CI_PYTHON) -m ci.publisher dry-run \
+		--evidence-dir "$(EVIDENCE_DIR)" \
+		$(if $(COMMIT_SHA),--commit-sha "$(COMMIT_SHA)",) \
+		$(if $(PR_NUMBER),--pr-number "$(PR_NUMBER)",) \
+		--status-context "$(STATUS_CONTEXT)" \
+		--freshness-hours "$(FRESHNESS_HOURS)"
+
+ci-local-publish:
+	@test -n "$(EVIDENCE_DIR)" || (echo "Usage: make ci-local-publish EVIDENCE_DIR=ci/artifacts/<run_id> [COMMIT_SHA=...]"; exit 2)
+	@echo "=== Local CI status publisher publish ==="
+	@$(CI_PYTHON) -m ci.publisher publish \
+		--evidence-dir "$(EVIDENCE_DIR)" \
+		$(if $(COMMIT_SHA),--commit-sha "$(COMMIT_SHA)",) \
+		$(if $(PR_NUMBER),--pr-number "$(PR_NUMBER)",) \
+		--status-context "$(STATUS_CONTEXT)" \
+		--freshness-hours "$(FRESHNESS_HOURS)"
+
+ci-local-publish-inspect:
+	@echo "=== Local CI status publisher inspect ==="
+	@$(CI_PYTHON) -m ci.publisher inspect \
+		--evidence-dir "$(or $(EVIDENCE_DIR),.)" \
+		$(if $(COMMIT_SHA),--commit-sha "$(COMMIT_SHA)",) \
+		--status-context "$(STATUS_CONTEXT)"

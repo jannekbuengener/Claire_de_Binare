@@ -140,7 +140,7 @@ def validate_repo_name(repo_name: str) -> None:
 
 
 def assert_commit_matches_head(manifest_sha: str, head_sha: str) -> None:
-    if manifest_sha != head_sha:
+    if (manifest_sha or "").lower() != (head_sha or "").lower():
         raise EvidenceError(
             f"Evidence commit_sha {manifest_sha} does not match HEAD {head_sha}"
         )
@@ -254,3 +254,131 @@ def hash_artifacts(paths: list[Path], *, relative_to: Path) -> dict[str, str]:
         rel = path.relative_to(relative_to).as_posix()
         hashes[rel] = sha256_file(path)
     return hashes
+
+
+DEFAULT_REQUIRED_STAGES = ("lint", "unit", "docs", "governance")
+DEFAULT_FRESHNESS_HOURS = 24
+
+
+def _parse_utc(timestamp: str) -> datetime:
+    raw = (timestamp or "").strip()
+    if not raw:
+        raise EvidenceError("Missing evidence timestamp")
+    if raw.endswith("Z"):
+        raw = raw[:-1] + "+00:00"
+    try:
+        parsed = datetime.fromisoformat(raw)
+    except ValueError as exc:
+        raise EvidenceError(f"Invalid evidence timestamp: {timestamp!r}") from exc
+    if parsed.tzinfo is None:
+        parsed = parsed.replace(tzinfo=timezone.utc)
+    return parsed.astimezone(timezone.utc)
+
+
+def verify_artifact_hashes(run_dir: Path, manifest: dict[str, Any]) -> None:
+    """Recompute listed artifact hashes; fail closed on any mismatch or missing file."""
+    listed = manifest.get("artifact_hashes")
+    if not isinstance(listed, dict) or not listed:
+        raise EvidenceError("manifest.artifact_hashes missing or empty")
+    for rel, expected in listed.items():
+        path = run_dir / str(rel)
+        if not path.is_file():
+            raise EvidenceError(f"Listed artifact missing: {rel}")
+        actual = sha256_file(path)
+        if actual != expected:
+            raise EvidenceError(f"Artifact hash mismatch for {rel}")
+
+
+def assert_evidence_fresh(
+    manifest: dict[str, Any],
+    *,
+    max_age_hours: float = DEFAULT_FRESHNESS_HOURS,
+    now: datetime | None = None,
+) -> None:
+    """Reject evidence older than the freshness window (based on ended_at_utc)."""
+    if max_age_hours <= 0:
+        raise EvidenceError("Freshness window must be positive")
+    ended = _parse_utc(str(manifest.get("ended_at_utc", "")))
+    current = now or datetime.now(timezone.utc)
+    age_seconds = (current - ended).total_seconds()
+    if age_seconds < 0:
+        raise EvidenceError("Evidence ended_at_utc is in the future")
+    max_age_seconds = max_age_hours * 3600.0
+    if age_seconds > max_age_seconds:
+        raise EvidenceError(
+            f"Stale evidence rejected: age {age_seconds:.0f}s exceeds "
+            f"{max_age_hours}h window"
+        )
+
+
+def optional_skipped_stages(manifest: dict[str, Any]) -> list[dict[str, str]]:
+    """Return optional SKIPPED stages with their skip_reason (must be disclosed)."""
+    disclosed: list[dict[str, str]] = []
+    for stage in manifest.get("stages") or []:
+        if not isinstance(stage, dict):
+            continue
+        if stage.get("status") != "SKIPPED":
+            continue
+        if stage.get("required", True):
+            continue
+        reason = stage.get("skip_reason") or ""
+        disclosed.append(
+            {
+                "name": str(stage.get("name", "")),
+                "skip_reason": str(reason),
+            }
+        )
+    return disclosed
+
+
+def assert_publishable(
+    manifest: dict[str, Any],
+    *,
+    required_stages: Iterable[str] = DEFAULT_REQUIRED_STAGES,
+) -> None:
+    """Fail closed unless evidence is clean, PASS, and required stages passed.
+
+    Does not itself verify hashes, freshness, or SHA binding — callers must
+    compose those checks. Optional SKIPPED stages are allowed only with reason
+    and are returned via :func:`optional_skipped_stages` for disclosure.
+    """
+    if manifest.get("dirty_worktree") is True:
+        raise EvidenceError("Dirty worktree evidence cannot be published")
+    if manifest.get("overall_status") != "PASS":
+        raise EvidenceError(
+            f"Evidence overall_status is {manifest.get('overall_status')!r}, not PASS"
+        )
+    stages = manifest.get("stages") or []
+    by_name: dict[str, dict[str, Any]] = {}
+    for stage in stages:
+        if not isinstance(stage, dict):
+            raise EvidenceError("Invalid stage entry in manifest")
+        name = str(stage.get("name", ""))
+        by_name[name] = stage
+        if stage.get("required", True) and stage.get("status") == "SKIPPED":
+            raise EvidenceError(f"Required stage {name!r} is SKIPPED")
+        if stage.get("required", True) and stage.get("status") != "PASS":
+            raise EvidenceError(
+                f"Required stage {name!r} status is {stage.get('status')!r}, not PASS"
+            )
+        if stage.get("status") == "SKIPPED" and not stage.get("skip_reason"):
+            raise EvidenceError(f"Optional stage {name!r} SKIPPED without skip_reason")
+    for required in required_stages:
+        stage = by_name.get(required)
+        if stage is None:
+            raise EvidenceError(f"Required stage {required!r} missing from evidence")
+        if stage.get("status") != "PASS":
+            raise EvidenceError(
+                f"Required stage {required!r} status is {stage.get('status')!r}, not PASS"
+            )
+
+
+def manifest_digest(run_dir: Path) -> str:
+    """Return the digest recorded in manifest.sha256 (fail closed if missing)."""
+    sha_path = run_dir / "manifest.sha256"
+    if not sha_path.is_file():
+        raise EvidenceError(f"Missing manifest.sha256 in {run_dir}")
+    line = sha_path.read_text(encoding="utf-8").strip()
+    if not line:
+        raise EvidenceError("Empty manifest.sha256")
+    return line.split()[0]

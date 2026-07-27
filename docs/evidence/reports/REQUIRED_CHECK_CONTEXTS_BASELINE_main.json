@@ -1,9 +1,8 @@
 {
-  "timestamp_berlin": "2026-02-19T20:46:22+01:00",
-  "timestamp_utc": "2026-02-19T19:46:22Z",
-  "contexts": [
-    "ci (Unit/Integration + Lint gesammelt)",
-    "policy-gate"
-  ],
-  "source": "branch_protection_main"
+  "timestamp_berlin": "2026-07-27T22:32:00+02:00",
+  "timestamp_utc": "2026-07-27T20:32:00Z",
+  "contexts": ["cdb-local-ci"],
+  "commit_status_contexts": ["cdb-local-ci"],
+  "source": "branch_protection_main",
+  "note": "Migrated #4169; cdb-local-ci is interim Commit Status, not a workflow job."
 }

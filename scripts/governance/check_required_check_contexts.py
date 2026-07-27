@@ -55,6 +55,14 @@ def parse_args() -> argparse.Namespace:
     return parser.parse_args()
 
 
+def _clean_context_list(raw: Any, *, field_name: str) -> list[str]:
+    if raw is None:
+        raw = []
+    if not isinstance(raw, list):
+        raise ValueError(f"Baseline field '{field_name}' must be a list")
+    return sorted({ctx.strip() for ctx in raw if isinstance(ctx, str) and ctx.strip()})
+
+
 def load_baseline(path: Path) -> dict[str, Any]:
     if not path.exists():
         raise FileNotFoundError(f"Baseline file not found: {path}")
@@ -64,16 +72,24 @@ def load_baseline(path: Path) -> dict[str, Any]:
     if not isinstance(data, dict):
         raise ValueError(f"Baseline must be a JSON object: {path}")
 
-    contexts = data.get("contexts", [])
-    if contexts is None:
-        contexts = []
-    if not isinstance(contexts, list):
-        raise ValueError("Baseline field 'contexts' must be a list")
-
-    cleaned_contexts = sorted(
-        {ctx.strip() for ctx in contexts if isinstance(ctx, str) and ctx.strip()}
+    cleaned_contexts = _clean_context_list(
+        data.get("contexts", []), field_name="contexts"
     )
     data["contexts"] = cleaned_contexts
+
+    # Optional: Commit Status / external contexts (not workflow job names).
+    # Accept either key; normalize onto commit_status_contexts.
+    if "commit_status_contexts" in data:
+        external_raw = data.get("commit_status_contexts")
+        external_field = "commit_status_contexts"
+    elif "external_contexts" in data:
+        external_raw = data.get("external_contexts")
+        external_field = "external_contexts"
+    else:
+        external_raw = []
+        external_field = "commit_status_contexts"
+    cleaned_external = _clean_context_list(external_raw, field_name=external_field)
+    data["commit_status_contexts"] = cleaned_external
     return data
 
 
@@ -182,14 +198,21 @@ def write_report(
     derived_contexts: list[str],
     missing_contexts: list[str],
     extra_contexts: list[str],
+    commit_status_contexts: list[str],
     mapping: dict[str, list[dict[str, Any]]],
     parse_errors: list[str],
 ) -> None:
     berlin_ts, utc_ts = now_timestamps()
+    commit_status_set = set(commit_status_contexts)
 
     required_lines = (
         "\n".join(f"- `{ctx}`" for ctx in required_contexts)
         if required_contexts
+        else "- none"
+    )
+    commit_status_lines = (
+        "\n".join(f"- `{ctx}`" for ctx in commit_status_contexts)
+        if commit_status_contexts
         else "- none"
     )
     missing_lines = (
@@ -213,9 +236,14 @@ def write_report(
     for context in required_contexts:
         providers = mapping.get(context, [])
         if not providers:
-            table_lines.append(
-                f"| `{_escape_cell(context)}` | missing | n/a | n/a | n/a | n/a |"
-            )
+            if context in commit_status_set:
+                table_lines.append(
+                    f"| `{_escape_cell(context)}` | external/commit-status | n/a | n/a | n/a | n/a |"
+                )
+            else:
+                table_lines.append(
+                    f"| `{_escape_cell(context)}` | missing | n/a | n/a | n/a | n/a |"
+                )
             continue
         for provider in providers:
             status = "present (implicit)" if provider["implicit"] else "present"
@@ -231,11 +259,26 @@ def write_report(
             )
 
     drift_state = "DRIFT DETECTED" if missing_contexts else "NO DRIFT"
-    what_to_do = (
-        "Do NOT rename `job.name` for required contexts; revert the rename or update branch protection manually."
-        if missing_contexts
-        else "Required contexts are currently derivable from workflow job names. Keep job-name stability for required contexts."
-    )
+    if missing_contexts:
+        what_to_do = (
+            "Do NOT rename `job.name` for required contexts; revert the rename "
+            "or update branch protection manually. Commit-status / external "
+            "contexts listed in the baseline are exempt from workflow mapping."
+        )
+    elif commit_status_contexts and not any(
+        ctx in mapping for ctx in required_contexts if ctx not in commit_status_set
+    ):
+        what_to_do = (
+            "Required contexts are covered by Commit Status / external contexts "
+            "and/or workflow job names. Keep publisher and branch-protection "
+            "names aligned for commit-status contexts."
+        )
+    else:
+        what_to_do = (
+            "Required contexts are currently derivable from workflow job names "
+            "or declared as commit-status/external. Keep job-name stability for "
+            "workflow-backed required contexts."
+        )
 
     report = f"""# Required Check Contexts Drift Report (main)
 
@@ -256,6 +299,10 @@ State: **{drift_state}**
 ## Required Contexts (Baseline)
 
 {required_lines}
+
+## Commit Status / External Contexts (not workflow jobs)
+
+{commit_status_lines}
 
 ## Missing Required Contexts
 
@@ -289,16 +336,31 @@ def main() -> int:
 
     baseline = load_baseline(baseline_path)
     required_contexts = baseline["contexts"]
+    commit_status_contexts = baseline.get("commit_status_contexts") or []
+    commit_status_set = set(commit_status_contexts)
 
     mapping, parse_errors = derive_context_mapping(workflows_dir)
     derived_contexts = sorted(mapping.keys())
 
-    missing_contexts = sorted([ctx for ctx in required_contexts if ctx not in mapping])
+    # Commit-status / external contexts are required via Branch Protection but
+    # are not workflow job names — do not treat them as Missing.
+    missing_contexts = sorted(
+        [
+            ctx
+            for ctx in required_contexts
+            if ctx not in mapping and ctx not in commit_status_set
+        ]
+    )
     extra_contexts = sorted(
         [ctx for ctx in derived_contexts if ctx not in required_contexts]
     )
 
-    baseline_hash = canonical_hash({"contexts": required_contexts})
+    baseline_hash = canonical_hash(
+        {
+            "contexts": required_contexts,
+            "commit_status_contexts": commit_status_contexts,
+        }
+    )
     current_hash = canonical_hash({"contexts": derived_contexts, "mapping": mapping})
 
     write_report(
@@ -310,6 +372,7 @@ def main() -> int:
         derived_contexts=derived_contexts,
         missing_contexts=missing_contexts,
         extra_contexts=extra_contexts,
+        commit_status_contexts=commit_status_contexts,
         mapping=mapping,
         parse_errors=parse_errors,
     )

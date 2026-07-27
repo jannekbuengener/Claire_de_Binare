@@ -110,3 +110,10 @@ wraps `python scripts/governance/run_ci_drift_checks.py` among other checks.
 - Drift checks remain read-only; no auto-apply to Branch Protection.
 - See [`ci/README.md`](../../ci/README.md) and
   [merge_policy_ci_gate.md](merge_policy_ci_gate.md) § Local Docker CI Phase 1.
+
+## Local status publisher (Phase 3a)
+
+The optional publisher (`python -m ci.publisher`) may attach a **non-required**
+Commit Status after fail-closed evidence validation. It must not change Branch
+Protection, required contexts, or drift baselines. See
+[`docs/ci/local-status-publisher.md`](../ci/local-status-publisher.md).
