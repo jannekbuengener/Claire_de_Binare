@@ -38,9 +38,7 @@ CAMPAIGN_QUEUE = (
     / "arvp_binance_historical_3990_2bb32b68_20260712T111944Z"
     / "queue_state.json"
 )
-GOLDEN_CONTENT_HASH = (
-    "8b253855277f04bfd6a16e6afc1ccf2eab1b3114d7cedf045797b83ab5a9c55a"
-)
+GOLDEN_CONTENT_HASH = "8b253855277f04bfd6a16e6afc1ccf2eab1b3114d7cedf045797b83ab5a9c55a"
 
 
 def _load(path: Path) -> dict:
@@ -71,7 +69,10 @@ def test_slice_fixture_extracts_two_canonical_jobs_and_excludes_superseded() -> 
     assert bundle["canonical_job_selection"]["excluded_superseded_job_count"] == 1
     assert bundle["record_count"] == 6
     job_ids = {record["job_id"] for record in bundle["records"]}
-    assert "vac-donchian-breakout-v1-binance_1m_stress_max_drawdown-scenarios" not in job_ids
+    assert (
+        "vac-donchian-breakout-v1-binance_1m_stress_max_drawdown-scenarios"
+        not in job_ids
+    )
 
 
 def test_zero_trade_job_is_not_rankable() -> None:
@@ -80,11 +81,15 @@ def test_zero_trade_job_is_not_rankable() -> None:
     zero_trade = [
         record
         for record in records
-        if record["job_id"] == "vac-primary-breakout-v1-binance_1m_month_2017_11-scenarios"
+        if record["job_id"]
+        == "vac-primary-breakout-v1-binance_1m_month_2017_11-scenarios"
     ]
     assert len(zero_trade) == 3
     assert all(record["rankable"] is False for record in zero_trade)
-    assert all("zero_closed_trades_total" in record["not_rankable_reasons"] for record in zero_trade)
+    assert all(
+        "zero_closed_trades_total" in record["not_rankable_reasons"]
+        for record in zero_trade
+    )
 
 
 def test_missing_trade_field_is_missing_not_zero() -> None:
@@ -168,9 +173,7 @@ def test_candles_total_preserves_producer_input_total() -> None:
 
 
 def test_legacy_resolve_candles_total_still_flags_mismatch() -> None:
-    candles, flags = resolve_candles_total(
-        {"candles_live": 100, "candles_total": 120}
-    )
+    candles, flags = resolve_candles_total({"candles_live": 100, "candles_total": 120})
     assert candles == 100
     assert "candles_live_candles_total_mismatch" in flags
 
@@ -199,9 +202,9 @@ def test_warmup_trim_without_provenance_is_not_rankable() -> None:
 def test_profit_factor_infinity_is_canonical() -> None:
     queue = _load(FIXTURES / "extraction_queue_slice.v1.json")
     queue = copy.deepcopy(queue)
-    queue["jobs"][0]["scenario_metrics"]["baseline"]["metrics"]["profit_factor"] = (
-        math.inf
-    )
+    queue["jobs"][0]["scenario_metrics"]["baseline"]["metrics"][
+        "profit_factor"
+    ] = math.inf
     records, _ = extract_campaign_metrics(queue, repo_root=REPO_ROOT)
     baseline = next(
         record
@@ -214,9 +217,9 @@ def test_profit_factor_infinity_is_canonical() -> None:
 
 def test_nan_profit_factor_fails_closed() -> None:
     queue = copy.deepcopy(_load(FIXTURES / "extraction_queue_slice.v1.json"))
-    queue["jobs"][0]["scenario_metrics"]["baseline"]["metrics"]["profit_factor"] = (
-        math.nan
-    )
+    queue["jobs"][0]["scenario_metrics"]["baseline"]["metrics"][
+        "profit_factor"
+    ] = math.nan
     with pytest.raises(StrategyMetricExtractionError, match="non-finite"):
         extract_campaign_metrics(queue, repo_root=REPO_ROOT)
 
@@ -233,7 +236,9 @@ def test_input_job_order_does_not_change_hash() -> None:
     reversed_queue = copy.deepcopy(queue)
     reversed_queue["jobs"] = list(reversed(reversed_queue["jobs"]))
     first = build_extraction_bundle(queue, repo_root=REPO_ROOT)["content_hash"]
-    second = build_extraction_bundle(reversed_queue, repo_root=REPO_ROOT)["content_hash"]
+    second = build_extraction_bundle(reversed_queue, repo_root=REPO_ROOT)[
+        "content_hash"
+    ]
     assert first == second
 
 
@@ -252,7 +257,9 @@ def test_campaign_queue_canonical_counts_when_present() -> None:
     queue = _load(CAMPAIGN_QUEUE)
     bundle = build_extraction_bundle(queue, repo_root=REPO_ROOT)
     assert bundle["canonical_job_selection"]["queue_record_count"] == QUEUE_RECORD_COUNT
-    assert bundle["canonical_job_selection"]["canonical_job_count"] == CANONICAL_JOB_COUNT
+    assert (
+        bundle["canonical_job_selection"]["canonical_job_count"] == CANONICAL_JOB_COUNT
+    )
     assert (
         bundle["canonical_job_selection"]["excluded_superseded_job_count"]
         == SUPERSEDED_JOB_COUNT

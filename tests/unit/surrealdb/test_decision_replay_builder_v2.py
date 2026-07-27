@@ -14,7 +14,6 @@ from tools.surrealdb.decision_replay_builder import (
     build_decision_replay_v2,
 )
 
-
 FIXTURE_PATH = Path("tests/fixtures/surrealdb/decision_replay/replay_v1.json")
 
 
@@ -25,7 +24,9 @@ def _load_fixture() -> dict:
 @pytest.mark.unit
 def test_v2_preserves_v1_core_fields_without_evidence_inputs() -> None:
     fixture = _load_fixture()
-    req = DecisionReplayRequest(mode="replay_by_decision_id", decision_id="dec-002", limit=50)
+    req = DecisionReplayRequest(
+        mode="replay_by_decision_id", decision_id="dec-002", limit=50
+    )
     v1 = build_decision_replay_v1(
         fixture["decisions"],
         req,
@@ -61,7 +62,9 @@ def test_v2_preserves_v1_core_fields_without_evidence_inputs() -> None:
 @pytest.mark.unit
 def test_v2_resolves_evidence_from_records() -> None:
     fixture = _load_fixture()
-    req = DecisionReplayRequest(mode="replay_by_decision_id", decision_id="dec-002", limit=50)
+    req = DecisionReplayRequest(
+        mode="replay_by_decision_id", decision_id="dec-002", limit=50
+    )
     records = [
         {
             "evidence_id": "ev-002",
@@ -87,7 +90,9 @@ def test_v2_resolves_evidence_from_records() -> None:
 @pytest.mark.unit
 def test_v2_never_verifies_missing_evidence_implicitly() -> None:
     fixture = _load_fixture()
-    req = DecisionReplayRequest(mode="replay_by_decision_id", decision_id="dec-002", limit=50)
+    req = DecisionReplayRequest(
+        mode="replay_by_decision_id", decision_id="dec-002", limit=50
+    )
     result = build_decision_replay_v2(
         fixture["decisions"],
         req,
@@ -105,7 +110,9 @@ def test_v2_decision_chain_hash_is_deterministic_and_excludes_as_of() -> None:
     from core.utils.clock import FixedClock, SystemClock, set_default_clock
 
     fixture = _load_fixture()
-    req = DecisionReplayRequest(mode="replay_by_decision_id", decision_id="dec-002", limit=50)
+    req = DecisionReplayRequest(
+        mode="replay_by_decision_id", decision_id="dec-002", limit=50
+    )
     t0 = datetime(2026, 5, 2, 12, 0, 0)
     set_default_clock(FixedClock(t0))
     try:
@@ -121,7 +128,9 @@ def test_v2_decision_chain_hash_is_deterministic_and_excludes_as_of() -> None:
 @pytest.mark.unit
 def test_v2_redacts_sensitive_fields_in_resolved_evidence() -> None:
     fixture = _load_fixture()
-    req = DecisionReplayRequest(mode="replay_by_decision_id", decision_id="dec-002", limit=50)
+    req = DecisionReplayRequest(
+        mode="replay_by_decision_id", decision_id="dec-002", limit=50
+    )
     records = [
         {
             "evidence_id": "ev-002",
@@ -149,7 +158,9 @@ def test_v2_redacts_sensitive_fields_in_resolved_evidence() -> None:
 @pytest.mark.unit
 def test_v2_human_go_visible_but_non_authorizing() -> None:
     fixture = _load_fixture()
-    req = DecisionReplayRequest(mode="replay_by_decision_id", decision_id="dec-002", limit=50)
+    req = DecisionReplayRequest(
+        mode="replay_by_decision_id", decision_id="dec-002", limit=50
+    )
     result = build_decision_replay_v2(fixture["decisions"], req)
     assert result["decision_summary"]["human_go"]["present"] is True
     semantics = result["approval_semantics"]
@@ -163,7 +174,9 @@ def test_v2_human_go_visible_but_non_authorizing() -> None:
 @pytest.mark.unit
 def test_v2_hash_reflects_enriched_evidence_resolution_state() -> None:
     fixture = _load_fixture()
-    req = DecisionReplayRequest(mode="replay_by_decision_id", decision_id="dec-002", limit=50)
+    req = DecisionReplayRequest(
+        mode="replay_by_decision_id", decision_id="dec-002", limit=50
+    )
     refs_only = build_decision_replay_v2(fixture["decisions"], req)
     with_record = build_decision_replay_v2(
         fixture["decisions"],
@@ -184,7 +197,9 @@ def test_v2_hash_reflects_enriched_evidence_resolution_state() -> None:
 @pytest.mark.unit
 def test_v2_refs_only_status_when_no_resolution_inputs() -> None:
     fixture = _load_fixture()
-    req = DecisionReplayRequest(mode="replay_by_decision_id", decision_id="dec-002", limit=50)
+    req = DecisionReplayRequest(
+        mode="replay_by_decision_id", decision_id="dec-002", limit=50
+    )
     result = build_decision_replay_v2(fixture["decisions"], req)
     assert result["evidence_resolution_status"] == "refs_only"
     assert "evidence_resolution_inputs_not_provided" in result["evidence_warnings"]

@@ -1,4 +1,5 @@
 """Streaming SHA256 manifests for market_data relocation (#4004)."""
+
 # ruff: noqa: E402
 
 from __future__ import annotations
@@ -18,7 +19,12 @@ REPO_ROOT = Path(__file__).resolve().parents[2]
 if str(REPO_ROOT) not in sys.path:
     sys.path.insert(0, str(REPO_ROOT))
 
-from tools.market_data.historical_common import HistoricalProbeError, sha256_file, utc_now_iso, write_json
+from tools.market_data.historical_common import (
+    HistoricalProbeError,
+    sha256_file,
+    utc_now_iso,
+    write_json,
+)
 
 CHUNK_SIZE = 1024 * 1024
 
@@ -84,7 +90,9 @@ def iter_hash_entries(root: Path) -> Iterator[HashEntry]:
                 stat_result = file_path.stat()
             except OSError as exc:
                 raise RelocateHashError(f"access error: {file_path}") from exc
-            last_write = datetime.fromtimestamp(stat_result.st_mtime, tz=UTC).isoformat()
+            last_write = datetime.fromtimestamp(
+                stat_result.st_mtime, tz=UTC
+            ).isoformat()
             try:
                 file_sha256 = sha256_file(file_path)
             except OSError as exc:
@@ -167,7 +175,11 @@ def compare_manifests(
         d_entry = dest_map[rel]
         if s_entry.sha256 != d_entry.sha256:
             mismatched.append(
-                {"relative_path": rel, "source_sha256": s_entry.sha256, "dest_sha256": d_entry.sha256}
+                {
+                    "relative_path": rel,
+                    "source_sha256": s_entry.sha256,
+                    "dest_sha256": d_entry.sha256,
+                }
             )
         elif s_entry.size_bytes != d_entry.size_bytes:
             metadata_mismatched.append(
