@@ -36,6 +36,7 @@ des maschinenlesbaren Vertrags in
 | `infrastructure/` | Aktive Compose-, Datenbank-, Monitoring-, TLS- und Deployment-Oberfläche; kein Dokumentenablageordner |
 | `tests/` | Repo-weite Verifikation |
 | `tools/`, `scripts/` | Repo-weite Automatisierung und Operator-Werkzeuge |
+| `ci/` | Lokale Docker-CI Phase-1 Ausführungsschicht und Evidence (`ci/artifacts/`) |
 | `config/` | Bereichsübergreifende, versionierte Konfiguration ohne eigenen Runtime-Owner |
 | `docs/`, `knowledge/`, `agents/` | Dokumentation, Canon/Entscheidungen und Agentensteuerung |
 | `artifacts/` | Kanonische Zieloberfläche für erzeugte, standardmäßig nicht versionierte Ausgaben |

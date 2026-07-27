@@ -67,10 +67,9 @@ def discover_core_eventflow_surfaces(root: Path) -> list[str]:
     pack_dir = root / CORE_EVENTFLOW_DIR
     if not pack_dir.is_dir():
         return []
-    return [
-        path.relative_to(root).as_posix()
-        for path in sorted(pack_dir.glob("*.md"))
-    ]
+    # Sort by filename string (case-sensitive) so Windows Path order matches Linux CI.
+    ordered = sorted(pack_dir.glob("*.md"), key=lambda path: path.name)
+    return [path.relative_to(root).as_posix() for path in ordered]
 
 
 NAVPACK_SURFACES: list[str] = [

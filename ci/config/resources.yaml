@@ -1,0 +1,29 @@
+# Resource profile for local Docker CI on a 16 GB Windows host.
+schema_version: "cdb-local-ci-resources/v1"
+
+max_parallel_stages:
+  light: 2
+  heavy: 1
+
+pytest_workers: 2
+
+compose:
+  project_name_template: "cdb_ci_${run_id}"
+  publish_ports_by_default: false
+  files:
+    - infrastructure/compose/base.yml
+    - infrastructure/compose/test.yml
+
+memory_limits:
+  ci_image: "4g"
+  test_runner: "3g"
+  postgres_test: "1g"
+  redis_test: "512m"
+
+cpu:
+  heavy_stage_max_cores: 4
+
+cache:
+  pip_cache_cap: "2g"
+  docker_build_cache_cleanup_supported: true
+  cleanup_must_not_delete_unrelated_images_or_volumes: true

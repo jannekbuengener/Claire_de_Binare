@@ -68,6 +68,9 @@ def test_guardrails_no_forbidden_calls():
         # Exclude experimental tools from strict guardrails
         if rel.startswith("tools/experiments/"):
             continue
+        # Gitignored vendor/test-pack trees are host-local and not production code.
+        if rel.startswith("tools/test_pack/"):
+            continue
         if rel in allowed:
             continue
         content = path.read_text(encoding="utf-8")

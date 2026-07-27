@@ -1,4 +1,5 @@
 """Streaming SHA256 manifests for market_data relocation (#4004)."""
+
 # ruff: noqa: E402
 
 from __future__ import annotations
@@ -18,7 +19,12 @@ REPO_ROOT = Path(__file__).resolve().parents[2]
 if str(REPO_ROOT) not in sys.path:
     sys.path.insert(0, str(REPO_ROOT))
 
-from tools.market_data.historical_common import HistoricalProbeError, sha256_file, utc_now_iso, write_json
+from tools.market_data.historical_common import (
+    HistoricalProbeError,
+    sha256_file,
+    utc_now_iso,
+    write_json,
+)
 
 CHUNK_SIZE = 1024 * 1024
 
@@ -50,6 +56,15 @@ def _is_reparse_point(path: Path) -> bool:
         return path.is_symlink()
 
 
+def _ensure_traversable(path: Path) -> None:
+    """Reject reparse points; map access failures to RelocateHashError (#4166)."""
+    try:
+        if _is_reparse_point(path):
+            raise RelocateHashError(f"reparse point encountered: {path}")
+    except OSError as exc:
+        raise RelocateHashError(f"access error: {path}") from exc
+
+
 def _normalize_relative(root: Path, file_path: Path) -> str:
     rel = file_path.relative_to(root).as_posix()
     return rel
@@ -61,24 +76,23 @@ def iter_hash_entries(root: Path) -> Iterator[HashEntry]:
         raise RelocateHashError(f"root is not a directory: {root}")
     for dirpath, dirnames, filenames in os.walk(root, topdown=True):
         current = Path(dirpath)
-        if _is_reparse_point(current):
-            raise RelocateHashError(f"reparse point encountered: {current}")
+        _ensure_traversable(current)
         pruned: list[str] = []
         for name in dirnames:
             child = current / name
-            if _is_reparse_point(child):
-                raise RelocateHashError(f"reparse point encountered: {child}")
+            _ensure_traversable(child)
             pruned.append(name)
         dirnames[:] = pruned
         for name in sorted(filenames):
             file_path = current / name
-            if _is_reparse_point(file_path):
-                raise RelocateHashError(f"reparse point encountered: {file_path}")
+            _ensure_traversable(file_path)
             try:
                 stat_result = file_path.stat()
             except OSError as exc:
                 raise RelocateHashError(f"access error: {file_path}") from exc
-            last_write = datetime.fromtimestamp(stat_result.st_mtime, tz=UTC).isoformat()
+            last_write = datetime.fromtimestamp(
+                stat_result.st_mtime, tz=UTC
+            ).isoformat()
             try:
                 file_sha256 = sha256_file(file_path)
             except OSError as exc:
@@ -161,7 +175,11 @@ def compare_manifests(
         d_entry = dest_map[rel]
         if s_entry.sha256 != d_entry.sha256:
             mismatched.append(
-                {"relative_path": rel, "source_sha256": s_entry.sha256, "dest_sha256": d_entry.sha256}
+                {
+                    "relative_path": rel,
+                    "source_sha256": s_entry.sha256,
+                    "dest_sha256": d_entry.sha256,
+                }
             )
         elif s_entry.size_bytes != d_entry.size_bytes:
             metadata_mismatched.append(

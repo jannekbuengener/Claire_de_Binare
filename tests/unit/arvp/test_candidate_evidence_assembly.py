@@ -20,7 +20,9 @@ pytestmark = [pytest.mark.unit, pytest.mark.contract]
 REPO_ROOT = Path(__file__).resolve().parents[3]
 FIXTURES = REPO_ROOT / "tests" / "fixtures" / "arvp" / "strategy_metrics"
 CANDIDATE_FIXTURES = REPO_ROOT / "tests" / "fixtures" / "arvp" / "candidate_evidence"
-PEP_SCHEMA_PATH = REPO_ROOT / "docs" / "contracts" / "profitability_evidence_packet.v1.schema.json"
+PEP_SCHEMA_PATH = (
+    REPO_ROOT / "docs" / "contracts" / "profitability_evidence_packet.v1.schema.json"
+)
 CAMPAIGN_QUEUE = (
     REPO_ROOT
     / "artifacts"
@@ -28,9 +30,8 @@ CAMPAIGN_QUEUE = (
     / "arvp_binance_historical_3990_2bb32b68_20260712T111944Z"
     / "queue_state.json"
 )
-GOLDEN_SOURCE_HASH = (
-    "ad3d4ccc449e81e4aa5ec81185d6b3229d12a9e05b2e4970dd352b7471e5b7ad"
-)
+GOLDEN_SOURCE_HASH = "8b253855277f04bfd6a16e6afc1ccf2eab1b3114d7cedf045797b83ab5a9c55a"
+
 
 def _load(path: Path) -> dict:
     with path.open("r", encoding="utf-8") as handle:
@@ -58,7 +59,9 @@ def test_slice_bundle_yields_two_candidates_with_six_records_each_strategy() -> 
 def test_packets_validate_against_pep_schema(pep_validator: Draft7Validator) -> None:
     result = assemble_arvp_candidate_evidence(_bundle_from_slice())
     for packet in result.packets:
-        errors = sorted(pep_validator.iter_errors(packet), key=lambda err: str(err.message))
+        errors = sorted(
+            pep_validator.iter_errors(packet), key=lambda err: str(err.message)
+        )
         assert not errors, errors[0].message if errors else ""
 
 

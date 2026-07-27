@@ -5,6 +5,18 @@ Action: Treat as warning requiring follow-up.
 On protected/nightly: an Issue is auto-created.
 Only GREEN without EXCEPTION = real E2E validated.
 
+## Local Docker CI Phase 1
+
+Canonical docs: [`ci/README.md`](../../ci/README.md).
+
+- Local Docker CI wraps existing Make/Python/script commands and writes
+  commit-bound evidence under `ci/artifacts/<run_id>/`.
+- Local evidence is **not** a GitHub Required Check and must not be treated as
+  merge authority.
+- GitHub workflows and Branch Protection remain unchanged in Phase 1.
+- `policy-gate` and CodeQL Security-tab coverage remain GitHub-native.
+- Preferred Windows command: `pwsh -File ci/scripts/run_all.ps1`
+
 ## workflow_run Dependency Map
 
 Audit date: `2026-03-03` (last full map review; re-verify on workflow `name:` renames)

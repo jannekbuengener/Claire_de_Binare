@@ -1,0 +1,51 @@
+# Local CI stage definitions — wrap existing repo commands; do not invent parallel CI.
+schema_version: "cdb-local-ci-stages/v1"
+
+profiles:
+  fast:
+    - lint
+    - unit
+    - docs
+    - governance
+  heavy:
+    - lint
+    - unit
+    - docs
+    - governance
+    - integration
+    - security
+    - containers
+
+stages:
+  lint:
+    required: true
+    profile: light
+    description: "ruff + black (changed files), matching ci.yml"
+  unit:
+    required: true
+    profile: light
+    description: "pytest -q -k 'not test_mcp_time_server_runtime' (ci.yml SSOT)"
+  docs:
+    required: true
+    profile: light
+    description: "onboarding + README guards + extracted Docs Conflict/Hub guards"
+  governance:
+    required: true
+    profile: light
+    description: "mcp-config-validate, surreal-validate, CI drift checks; policy-gate mirror only"
+  integration:
+    required: false
+    profile: heavy
+    description: "431B compose lab (base.yml + test.yml); not BLUE/RED"
+  security:
+    required: false
+    profile: heavy
+    description: "make security-scan + opt-in trivy/pip-audit/CodeQL; no silent PASS"
+  containers:
+    required: false
+    profile: heavy
+    description: "Scoped test image build only; no GHCR push"
+  report:
+    required: true
+    profile: always
+    description: "Aggregate evidence fail-closed"

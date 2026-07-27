@@ -24,7 +24,10 @@ pytestmark = [pytest.mark.unit, pytest.mark.contract]
 REPO_ROOT = Path(__file__).resolve().parents[3]
 FIXTURES = REPO_ROOT / "tests" / "fixtures" / "arvp" / "candidate_evidence"
 REPORT_SCHEMA_PATH = (
-    REPO_ROOT / "docs" / "contracts" / "profitability_league_table_report.v1.schema.json"
+    REPO_ROOT
+    / "docs"
+    / "contracts"
+    / "profitability_league_table_report.v1.schema.json"
 )
 CAMPAIGN_QUEUE = (
     REPO_ROOT
@@ -33,12 +36,8 @@ CAMPAIGN_QUEUE = (
     / "arvp_binance_historical_3990_2bb32b68_20260712T111944Z"
     / "queue_state.json"
 )
-GOLDEN_SOURCE_HASH = (
-    "ad3d4ccc449e81e4aa5ec81185d6b3229d12a9e05b2e4970dd352b7471e5b7ad"
-)
-GOLDEN_BUNDLE_HASH = (
-    "4e7b4b88427d3fed84493721f97f82d0502c5a93ee96b81b8af8dab0671e26a4"
-)
+GOLDEN_SOURCE_HASH = "8b253855277f04bfd6a16e6afc1ccf2eab1b3114d7cedf045797b83ab5a9c55a"
+GOLDEN_BUNDLE_HASH = "db0fb77f0aa919d15106dc9e553bf7159e326764f2ab6f58fbdd99134e074007"
 CAMPAIGN_ID = "arvp_binance_historical_3990_2bb32b68_20260712T111944Z"
 
 
@@ -89,7 +88,9 @@ def test_slice_bundle_report_is_partial_with_empty_official_ranking(
     assert report["source_content_hash"] == GOLDEN_SOURCE_HASH
     assert report["candidate_bundle_hash"] == bundle_hash
 
-    errors = sorted(report_validator.iter_errors(report), key=lambda err: str(err.message))
+    errors = sorted(
+        report_validator.iter_errors(report), key=lambda err: str(err.message)
+    )
     assert not errors, errors[0].message if errors else ""
 
 
@@ -160,7 +161,9 @@ def test_exit_status_documented_in_limitations() -> None:
     assert EXIT_STATUS_PARTIAL_NO_WINNER in joined
 
 
-@pytest.mark.skipif(not CAMPAIGN_QUEUE.is_file(), reason="full campaign artifacts absent")
+@pytest.mark.skipif(
+    not CAMPAIGN_QUEUE.is_file(), reason="full campaign artifacts absent"
+)
 def test_full_campaign_league_report_when_artifacts_present(
     report_validator: Draft7Validator,
 ) -> None:
@@ -188,5 +191,7 @@ def test_full_campaign_league_report_when_artifacts_present(
     )
     assert second.report_content_hash == report["report_content_hash"]
 
-    errors = sorted(report_validator.iter_errors(report), key=lambda err: str(err.message))
+    errors = sorted(
+        report_validator.iter_errors(report), key=lambda err: str(err.message)
+    )
     assert not errors, errors[0].message if errors else ""

@@ -775,3 +775,31 @@ security-scan:
 	fi
 	@ruff check .
 	@bandit -r core/ services/
+
+# ============================================================================
+# Local Docker CI Phase 1 (not a GitHub Required Check)
+# Preferred Windows front door: pwsh -File ci/scripts/run_all.ps1
+# ============================================================================
+
+.PHONY: ci-local ci-local-stage ci-local-clean ci-local-report
+
+# Prefer repo venv when present (Windows Scripts/ or Unix bin/).
+CI_PYTHON := $(firstword $(wildcard .venv/Scripts/python.exe) $(wildcard .venv/bin/python) $(PYTHON))
+
+ci-local:
+	@echo "=== Local CI (profile=$(or $(PROFILE),fast)) ==="
+	@$(CI_PYTHON) ci/scripts/run.py --profile $(or $(PROFILE),fast)
+
+ci-local-stage:
+	@test -n "$(STAGE)" || (echo "Usage: make ci-local-stage STAGE=<name>"; exit 2)
+	@echo "=== Local CI stage=$(STAGE) ==="
+	@$(CI_PYTHON) ci/scripts/run.py --stage $(STAGE) --profile $(or $(PROFILE),fast)
+
+ci-local-clean:
+	@test -n "$(RUN_ID)" || (echo "Usage: make ci-local-clean RUN_ID=<run_id>"; exit 2)
+	@echo "=== Local CI cleanup run_id=$(RUN_ID) ==="
+	@$(CI_PYTHON) ci/scripts/run.py --cleanup $(RUN_ID)
+
+ci-local-report:
+	@echo "=== Local CI latest evidence report ==="
+	@$(CI_PYTHON) ci/scripts/run.py --report
