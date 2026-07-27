@@ -56,6 +56,9 @@ def run(ctx: StageContext) -> StageResult:
     note_path.write_text(json.dumps(note, indent=2) + "\n", encoding="utf-8")
 
     py = python_executable()
+    (ctx.repo_root / "artifacts" / "reports" / "governance").mkdir(
+        parents=True, exist_ok=True
+    )
     try:
         surreal_cmds = _surreal_commands(ctx.repo_root)
     except RuntimeError as exc:
