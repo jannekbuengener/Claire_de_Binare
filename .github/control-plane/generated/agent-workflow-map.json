@@ -1,27 +1,1043 @@
 {
-  "schema_version": "1",
-  "coverage": "complete",
   "catalog_scope": "workflow-inventory",
+  "coverage": "complete",
+  "disk_workflow_count": 57,
+  "entries": [
+    {
+      "file": "add_to_project.yml",
+      "has_schedule": false,
+      "name": "Add issues and PRs to CDB Control Board",
+      "permissions": [
+        "read-only"
+      ],
+      "purpose": "Add issues and PRs to CDB Control Board",
+      "registered_in_markdown_register": true,
+      "required_check_producer": false,
+      "risk": "low",
+      "status": "active",
+      "triggers": [
+        "issues"
+      ],
+      "writes_github": false
+    },
+    {
+      "file": "ai-review-router.yml",
+      "has_schedule": true,
+      "name": "AI Review Router",
+      "permissions": [
+        "pull-requests:write"
+      ],
+      "purpose": "AI Review Router",
+      "registered_in_markdown_register": true,
+      "required_check_producer": false,
+      "risk": "medium",
+      "status": "active",
+      "triggers": [
+        "schedule",
+        "workflow_dispatch"
+      ],
+      "writes_github": true
+    },
+    {
+      "file": "auto-milestone-label-dispatch.yml",
+      "has_schedule": false,
+      "name": "Auto Milestone Label Dispatch",
+      "permissions": [
+        "contents:write"
+      ],
+      "purpose": "Auto Milestone Label Dispatch",
+      "registered_in_markdown_register": true,
+      "required_check_producer": false,
+      "risk": "high",
+      "status": "active",
+      "triggers": [
+        "issues"
+      ],
+      "writes_github": true
+    },
+    {
+      "file": "auto-milestone-pr-apply.yml",
+      "has_schedule": false,
+      "name": "Auto Milestone PR Apply",
+      "permissions": [
+        "issues:write"
+      ],
+      "purpose": "Auto Milestone PR Apply",
+      "registered_in_markdown_register": true,
+      "required_check_producer": false,
+      "risk": "medium",
+      "status": "active",
+      "triggers": [
+        "workflow_run"
+      ],
+      "writes_github": true
+    },
+    {
+      "file": "auto-milestone-pr-intent.yml",
+      "has_schedule": false,
+      "name": "Auto Milestone PR Intent",
+      "permissions": [
+        "read-only"
+      ],
+      "purpose": "Auto Milestone PR Intent",
+      "registered_in_markdown_register": true,
+      "required_check_producer": false,
+      "risk": "low",
+      "status": "active",
+      "triggers": [
+        "pull_request"
+      ],
+      "writes_github": false
+    },
+    {
+      "file": "auto-milestone.yml",
+      "has_schedule": false,
+      "name": "Auto Milestone",
+      "permissions": [
+        "issues:write"
+      ],
+      "purpose": "Auto Milestone",
+      "registered_in_markdown_register": true,
+      "required_check_producer": false,
+      "risk": "high",
+      "status": "active",
+      "triggers": [
+        "issues",
+        "repository_dispatch",
+        "workflow_dispatch"
+      ],
+      "writes_github": true
+    },
+    {
+      "file": "branch-policy.yml",
+      "has_schedule": true,
+      "name": "Branch Policy Enforcement",
+      "permissions": [
+        "read-only"
+      ],
+      "purpose": "Branch Policy Enforcement",
+      "registered_in_markdown_register": true,
+      "required_check_producer": false,
+      "risk": "low",
+      "status": "active",
+      "triggers": [
+        "schedule",
+        "workflow_dispatch"
+      ],
+      "writes_github": false
+    },
+    {
+      "file": "cdb-backlog-anomaly-escalation.yml",
+      "has_schedule": false,
+      "name": "CDB Backlog Anomaly Escalation",
+      "permissions": [
+        "issues:write"
+      ],
+      "purpose": "CDB Backlog Anomaly Escalation",
+      "registered_in_markdown_register": true,
+      "required_check_producer": false,
+      "risk": "medium",
+      "status": "active",
+      "triggers": [
+        "workflow_dispatch",
+        "workflow_run"
+      ],
+      "writes_github": true
+    },
+    {
+      "file": "cdb-backlog-curation.yml",
+      "has_schedule": false,
+      "name": "CDB Backlog Curation",
+      "permissions": [
+        "issues:write"
+      ],
+      "purpose": "CDB Backlog Curation",
+      "registered_in_markdown_register": true,
+      "required_check_producer": false,
+      "risk": "medium",
+      "status": "active",
+      "triggers": [
+        "issues"
+      ],
+      "writes_github": true
+    },
+    {
+      "file": "cdb-context-refresh-report.yml",
+      "has_schedule": true,
+      "name": "CDB Context Refresh Report",
+      "permissions": [
+        "read-only"
+      ],
+      "purpose": "CDB Context Refresh Report",
+      "registered_in_markdown_register": true,
+      "required_check_producer": false,
+      "risk": "low",
+      "status": "active",
+      "triggers": [
+        "schedule",
+        "workflow_dispatch"
+      ],
+      "writes_github": false
+    },
+    {
+      "file": "cdb-control-followup-classifier.yml",
+      "has_schedule": false,
+      "name": "CDB Control Follow-up Classifier",
+      "permissions": [
+        "issues:write"
+      ],
+      "purpose": "CDB Control Follow-up Classifier",
+      "registered_in_markdown_register": true,
+      "required_check_producer": false,
+      "risk": "medium",
+      "status": "manual_only",
+      "triggers": [
+        "workflow_dispatch"
+      ],
+      "writes_github": true
+    },
+    {
+      "file": "cdb-daily-delta-triage.yml",
+      "has_schedule": true,
+      "name": "CDB Daily Delta Triage",
+      "permissions": [
+        "issues:write"
+      ],
+      "purpose": "CDB Daily Delta Triage",
+      "registered_in_markdown_register": true,
+      "required_check_producer": false,
+      "risk": "medium",
+      "status": "active",
+      "triggers": [
+        "schedule",
+        "workflow_dispatch"
+      ],
+      "writes_github": true
+    },
+    {
+      "file": "cdb-dependabot-autopilot.yml",
+      "has_schedule": true,
+      "name": "CDB Dependabot Autopilot",
+      "permissions": [
+        "read-only"
+      ],
+      "purpose": "CDB Dependabot Autopilot",
+      "registered_in_markdown_register": true,
+      "required_check_producer": false,
+      "risk": "low",
+      "status": "active",
+      "triggers": [
+        "schedule",
+        "workflow_dispatch"
+      ],
+      "writes_github": false
+    },
+    {
+      "file": "cdb-post-merge-followup-scanner.yml",
+      "has_schedule": false,
+      "name": "CDB Post-Merge Follow-up Scanner",
+      "permissions": [
+        "issues:write"
+      ],
+      "purpose": "CDB Post-Merge Follow-up Scanner",
+      "registered_in_markdown_register": true,
+      "required_check_producer": false,
+      "risk": "medium",
+      "status": "active",
+      "triggers": [
+        "pull_request",
+        "workflow_dispatch"
+      ],
+      "writes_github": true
+    },
+    {
+      "file": "cdb-weekly-control-hygiene-classifier.yml",
+      "has_schedule": true,
+      "name": "CDB Weekly Control Hygiene Classifier",
+      "permissions": [
+        "issues:write"
+      ],
+      "purpose": "CDB Weekly Control Hygiene Classifier",
+      "registered_in_markdown_register": true,
+      "required_check_producer": false,
+      "risk": "medium",
+      "status": "active",
+      "triggers": [
+        "schedule",
+        "workflow_dispatch"
+      ],
+      "writes_github": true
+    },
+    {
+      "file": "ci.yml",
+      "has_schedule": false,
+      "name": "ci",
+      "permissions": [
+        "read-only"
+      ],
+      "purpose": "ci",
+      "registered_in_markdown_register": true,
+      "required_check_producer": false,
+      "risk": "low",
+      "status": "active",
+      "triggers": [
+        "pull_request",
+        "push"
+      ],
+      "writes_github": false
+    },
+    {
+      "file": "codeql-python.yml",
+      "has_schedule": true,
+      "name": "CodeQL Python",
+      "permissions": [
+        "read-only"
+      ],
+      "purpose": "CodeQL Python",
+      "registered_in_markdown_register": true,
+      "required_check_producer": false,
+      "risk": "low",
+      "status": "active",
+      "triggers": [
+        "pull_request",
+        "push",
+        "schedule",
+        "workflow_dispatch"
+      ],
+      "writes_github": false
+    },
+    {
+      "file": "contracts.yml",
+      "has_schedule": true,
+      "name": "Contract Validation",
+      "permissions": [
+        "read-only"
+      ],
+      "purpose": "Contract Validation",
+      "registered_in_markdown_register": true,
+      "required_check_producer": false,
+      "risk": "low",
+      "status": "active",
+      "triggers": [
+        "push",
+        "schedule",
+        "workflow_dispatch"
+      ],
+      "writes_github": false
+    },
+    {
+      "file": "control_board_upsert.yml",
+      "has_schedule": true,
+      "name": "Control Board Upsert",
+      "permissions": [
+        "read-only"
+      ],
+      "purpose": "Control Board Upsert",
+      "registered_in_markdown_register": true,
+      "required_check_producer": false,
+      "risk": "low",
+      "status": "active",
+      "triggers": [
+        "schedule",
+        "workflow_dispatch"
+      ],
+      "writes_github": false
+    },
+    {
+      "file": "copilot-housekeeping.yml",
+      "has_schedule": true,
+      "name": "Copilot Housekeeping",
+      "permissions": [
+        "issues:write",
+        "pull-requests:write"
+      ],
+      "purpose": "Copilot Housekeeping",
+      "registered_in_markdown_register": true,
+      "required_check_producer": false,
+      "risk": "medium",
+      "status": "active",
+      "triggers": [
+        "schedule",
+        "workflow_dispatch"
+      ],
+      "writes_github": true
+    },
+    {
+      "file": "copilot-setup-steps.yml",
+      "has_schedule": false,
+      "name": "Copilot Setup Steps",
+      "permissions": [
+        "read-only"
+      ],
+      "purpose": "Copilot Setup Steps",
+      "registered_in_markdown_register": true,
+      "required_check_producer": false,
+      "risk": "low",
+      "status": "active",
+      "triggers": [
+        "push",
+        "workflow_dispatch"
+      ],
+      "writes_github": false
+    },
+    {
+      "file": "core-guard.yml",
+      "has_schedule": true,
+      "name": "Core Guard",
+      "permissions": [
+        "read-only"
+      ],
+      "purpose": "Core Guard",
+      "registered_in_markdown_register": true,
+      "required_check_producer": false,
+      "risk": "low",
+      "status": "active",
+      "triggers": [
+        "push",
+        "schedule",
+        "workflow_dispatch"
+      ],
+      "writes_github": false
+    },
+    {
+      "file": "delivery-gate.yml",
+      "has_schedule": true,
+      "name": "Delivery Gate",
+      "permissions": [
+        "read-only"
+      ],
+      "purpose": "Delivery Gate",
+      "registered_in_markdown_register": true,
+      "required_check_producer": false,
+      "risk": "low",
+      "status": "active",
+      "triggers": [
+        "schedule",
+        "workflow_dispatch"
+      ],
+      "writes_github": false
+    },
+    {
+      "file": "docker-publish.yml",
+      "has_schedule": false,
+      "name": "Build & Push Containers (GHCR)",
+      "permissions": [
+        "read-only"
+      ],
+      "purpose": "Build & Push Containers (GHCR)",
+      "registered_in_markdown_register": true,
+      "required_check_producer": false,
+      "risk": "low",
+      "status": "active",
+      "triggers": [
+        "push",
+        "workflow_dispatch"
+      ],
+      "writes_github": false
+    },
+    {
+      "file": "docs-conflict-guard.yml",
+      "has_schedule": false,
+      "name": "Docs Conflict Guard",
+      "permissions": [
+        "read-only"
+      ],
+      "purpose": "Docs Conflict Guard",
+      "registered_in_markdown_register": true,
+      "required_check_producer": false,
+      "risk": "low",
+      "status": "active",
+      "triggers": [
+        "pull_request",
+        "push",
+        "workflow_dispatch"
+      ],
+      "writes_github": false
+    },
+    {
+      "file": "e2e-happy-path.yaml",
+      "has_schedule": true,
+      "name": "E2E Happy Path",
+      "permissions": [
+        "read-only"
+      ],
+      "purpose": "E2E Happy Path",
+      "registered_in_markdown_register": true,
+      "required_check_producer": false,
+      "risk": "low",
+      "status": "active",
+      "triggers": [
+        "schedule",
+        "workflow_dispatch"
+      ],
+      "writes_github": false
+    },
+    {
+      "file": "e2e-tests.yml",
+      "has_schedule": true,
+      "name": "E2E Tests - Paper Trading",
+      "permissions": [
+        "issues:write"
+      ],
+      "purpose": "E2E Tests - Paper Trading",
+      "registered_in_markdown_register": true,
+      "required_check_producer": false,
+      "risk": "medium",
+      "status": "active",
+      "triggers": [
+        "schedule",
+        "workflow_dispatch"
+      ],
+      "writes_github": true
+    },
+    {
+      "file": "e2e.yml",
+      "has_schedule": true,
+      "name": "E2E Tests",
+      "permissions": [
+        "read-only"
+      ],
+      "purpose": "E2E Tests",
+      "registered_in_markdown_register": true,
+      "required_check_producer": false,
+      "risk": "low",
+      "status": "active",
+      "triggers": [
+        "push",
+        "schedule",
+        "workflow_dispatch"
+      ],
+      "writes_github": false
+    },
+    {
+      "file": "emoji-bot.yml",
+      "has_schedule": false,
+      "name": "\ud83e\udd16 Emoji Fix Bot",
+      "permissions": [
+        "contents:write",
+        "issues:write"
+      ],
+      "purpose": "\ud83e\udd16 Emoji Fix Bot",
+      "registered_in_markdown_register": true,
+      "required_check_producer": false,
+      "risk": "medium",
+      "status": "active",
+      "triggers": [
+        "issue_comment",
+        "workflow_dispatch"
+      ],
+      "writes_github": true
+    },
+    {
+      "file": "emoji-filter.yml",
+      "has_schedule": false,
+      "name": "\ud83d\udeab Advanced Emoji Filter",
+      "permissions": [
+        "contents:write",
+        "issues:write"
+      ],
+      "purpose": "\ud83d\udeab Advanced Emoji Filter",
+      "registered_in_markdown_register": true,
+      "required_check_producer": false,
+      "risk": "medium",
+      "status": "manual_only",
+      "triggers": [
+        "workflow_dispatch"
+      ],
+      "writes_github": true
+    },
+    {
+      "file": "gitleaks.yml",
+      "has_schedule": true,
+      "name": "Gitleaks Secret Scan",
+      "permissions": [
+        "read-only"
+      ],
+      "purpose": "Gitleaks Secret Scan",
+      "registered_in_markdown_register": true,
+      "required_check_producer": false,
+      "risk": "low",
+      "status": "active",
+      "triggers": [
+        "push",
+        "schedule",
+        "workflow_dispatch"
+      ],
+      "writes_github": false
+    },
+    {
+      "file": "governance-audit.yml",
+      "has_schedule": false,
+      "name": "Governance Audit",
+      "permissions": [
+        "read-only"
+      ],
+      "purpose": "Governance Audit",
+      "registered_in_markdown_register": true,
+      "required_check_producer": false,
+      "risk": "low",
+      "status": "manual_only",
+      "triggers": [
+        "workflow_dispatch"
+      ],
+      "writes_github": false
+    },
+    {
+      "file": "label-bootstrap.yml",
+      "has_schedule": false,
+      "name": "Label Bootstrap (Copilot)",
+      "permissions": [
+        "issues:write",
+        "pull-requests:write"
+      ],
+      "purpose": "Label Bootstrap (Copilot)",
+      "registered_in_markdown_register": true,
+      "required_check_producer": false,
+      "risk": "medium",
+      "status": "manual_only",
+      "triggers": [
+        "workflow_dispatch"
+      ],
+      "writes_github": true
+    },
+    {
+      "file": "lr021_replay_smoke.yml",
+      "has_schedule": true,
+      "name": "lr021-replay-smoke",
+      "permissions": [
+        "read-only"
+      ],
+      "purpose": "lr021-replay-smoke",
+      "registered_in_markdown_register": true,
+      "required_check_producer": false,
+      "risk": "low",
+      "status": "active",
+      "triggers": [
+        "schedule",
+        "workflow_dispatch"
+      ],
+      "writes_github": false
+    },
+    {
+      "file": "mcp_runtime.yml",
+      "has_schedule": false,
+      "name": "mcp-runtime",
+      "permissions": [
+        "read-only"
+      ],
+      "purpose": "mcp-runtime",
+      "registered_in_markdown_register": true,
+      "required_check_producer": false,
+      "risk": "low",
+      "status": "manual_only",
+      "triggers": [
+        "workflow_dispatch"
+      ],
+      "writes_github": false
+    },
+    {
+      "file": "milestone_stage_label_sync.yml",
+      "has_schedule": false,
+      "name": "Sync Stage Labels From Milestone",
+      "permissions": [
+        "read-only"
+      ],
+      "purpose": "Sync Stage Labels From Milestone",
+      "registered_in_markdown_register": true,
+      "required_check_producer": false,
+      "risk": "low",
+      "status": "active",
+      "triggers": [
+        "issues"
+      ],
+      "writes_github": false
+    },
+    {
+      "file": "opencode.yml",
+      "has_schedule": false,
+      "name": "opencode",
+      "permissions": [
+        "id-token:write"
+      ],
+      "purpose": "opencode",
+      "registered_in_markdown_register": true,
+      "required_check_producer": false,
+      "risk": "medium",
+      "status": "active",
+      "triggers": [
+        "issue_comment",
+        "pull_request_review_comment"
+      ],
+      "writes_github": true
+    },
+    {
+      "file": "performance-monitor.yml",
+      "has_schedule": false,
+      "name": "Performance Monitor",
+      "permissions": [
+        "read-only"
+      ],
+      "purpose": "Performance Monitor",
+      "registered_in_markdown_register": true,
+      "required_check_producer": false,
+      "risk": "low",
+      "status": "manual_only",
+      "triggers": [
+        "workflow_dispatch"
+      ],
+      "writes_github": false
+    },
+    {
+      "file": "policy-gate.yml",
+      "has_schedule": false,
+      "name": "Policy Gate",
+      "permissions": [
+        "read-only"
+      ],
+      "purpose": "Policy Gate",
+      "registered_in_markdown_register": true,
+      "required_check_producer": false,
+      "risk": "low",
+      "status": "active",
+      "triggers": [
+        "pull_request"
+      ],
+      "writes_github": false
+    },
+    {
+      "file": "project_reconcile_daily.yml",
+      "has_schedule": true,
+      "name": "Reconcile CDB Control Board (Daily)",
+      "permissions": [
+        "read-only"
+      ],
+      "purpose": "Reconcile CDB Control Board (Daily)",
+      "registered_in_markdown_register": true,
+      "required_check_producer": false,
+      "risk": "low",
+      "status": "active",
+      "triggers": [
+        "schedule",
+        "workflow_dispatch"
+      ],
+      "writes_github": false
+    },
+    {
+      "file": "project_status_label_map.yml",
+      "has_schedule": false,
+      "name": "Sync CDB Control Board Status (Label Map)",
+      "permissions": [
+        "read-only"
+      ],
+      "purpose": "Sync CDB Control Board Status (Label Map)",
+      "registered_in_markdown_register": true,
+      "required_check_producer": false,
+      "risk": "low",
+      "status": "active",
+      "triggers": [
+        "issues"
+      ],
+      "writes_github": false
+    },
+    {
+      "file": "project_status_sync.yml",
+      "has_schedule": false,
+      "name": "Sync CDB Control Board Status",
+      "permissions": [
+        "read-only"
+      ],
+      "purpose": "Sync CDB Control Board Status",
+      "registered_in_markdown_register": true,
+      "required_check_producer": false,
+      "risk": "low",
+      "status": "active",
+      "triggers": [
+        "issues"
+      ],
+      "writes_github": false
+    },
+    {
+      "file": "python-compat.yml",
+      "has_schedule": true,
+      "name": "python-compat",
+      "permissions": [
+        "read-only"
+      ],
+      "purpose": "python-compat",
+      "registered_in_markdown_register": true,
+      "required_check_producer": false,
+      "risk": "low",
+      "status": "active",
+      "triggers": [
+        "schedule",
+        "workflow_dispatch"
+      ],
+      "writes_github": false
+    },
+    {
+      "file": "repository-canon-guard.yml",
+      "has_schedule": false,
+      "name": "Repository Canon Guard",
+      "permissions": [
+        "read-only"
+      ],
+      "purpose": "Repository Canon Guard",
+      "registered_in_markdown_register": true,
+      "required_check_producer": false,
+      "risk": "low",
+      "status": "active",
+      "triggers": [
+        "pull_request",
+        "push",
+        "workflow_dispatch"
+      ],
+      "writes_github": false
+    },
+    {
+      "file": "required-checks-audit.yml",
+      "has_schedule": false,
+      "name": "required-checks-audit (Sentinel)",
+      "permissions": [
+        "read-only"
+      ],
+      "purpose": "required-checks-audit (Sentinel)",
+      "registered_in_markdown_register": true,
+      "required_check_producer": false,
+      "risk": "low",
+      "status": "manual_only",
+      "triggers": [
+        "workflow_dispatch"
+      ],
+      "writes_github": false
+    },
+    {
+      "file": "root-session-hygiene-warning.yml",
+      "has_schedule": false,
+      "name": "Root Session Hygiene Warning",
+      "permissions": [
+        "read-only"
+      ],
+      "purpose": "Root Session Hygiene Warning",
+      "registered_in_markdown_register": true,
+      "required_check_producer": false,
+      "risk": "low",
+      "status": "manual_only",
+      "triggers": [
+        "workflow_dispatch"
+      ],
+      "writes_github": false
+    },
+    {
+      "file": "security-alert-readout.yml",
+      "has_schedule": true,
+      "name": "Security Alert Readout",
+      "permissions": [
+        "issues:write",
+        "pull-requests:write"
+      ],
+      "purpose": "Security Alert Readout",
+      "registered_in_markdown_register": true,
+      "required_check_producer": false,
+      "risk": "medium",
+      "status": "active",
+      "triggers": [
+        "schedule",
+        "workflow_dispatch"
+      ],
+      "writes_github": true
+    },
+    {
+      "file": "security-scan.yml",
+      "has_schedule": true,
+      "name": "Security Scan",
+      "permissions": [
+        "read-only"
+      ],
+      "purpose": "Security Scan",
+      "registered_in_markdown_register": true,
+      "required_check_producer": false,
+      "risk": "low",
+      "status": "active",
+      "triggers": [
+        "push",
+        "schedule",
+        "workflow_dispatch"
+      ],
+      "writes_github": false
+    },
+    {
+      "file": "shadow-soak-evidence.yml",
+      "has_schedule": true,
+      "name": "Shadow + Soak Evidence",
+      "permissions": [
+        "read-only"
+      ],
+      "purpose": "Shadow + Soak Evidence",
+      "registered_in_markdown_register": true,
+      "required_check_producer": false,
+      "risk": "low",
+      "status": "active",
+      "triggers": [
+        "schedule",
+        "workflow_dispatch"
+      ],
+      "writes_github": false
+    },
+    {
+      "file": "smart-insights.yml",
+      "has_schedule": true,
+      "name": "Smart Insights & Continuous Improvement",
+      "permissions": [
+        "read-only"
+      ],
+      "purpose": "Smart Insights & Continuous Improvement",
+      "registered_in_markdown_register": true,
+      "required_check_producer": false,
+      "risk": "low",
+      "status": "active",
+      "triggers": [
+        "schedule",
+        "workflow_dispatch"
+      ],
+      "writes_github": false
+    },
+    {
+      "file": "stale.yml",
+      "has_schedule": true,
+      "name": "Close stale issues and PRs",
+      "permissions": [
+        "issues:write",
+        "pull-requests:write"
+      ],
+      "purpose": "Close stale issues and PRs",
+      "registered_in_markdown_register": true,
+      "required_check_producer": false,
+      "risk": "medium",
+      "status": "active",
+      "triggers": [
+        "schedule",
+        "workflow_dispatch"
+      ],
+      "writes_github": true
+    },
+    {
+      "file": "surrealdb-memory-proof.yml",
+      "has_schedule": false,
+      "name": "Optional SurrealDB Memory Proof",
+      "permissions": [
+        "read-only"
+      ],
+      "purpose": "Optional SurrealDB Memory Proof",
+      "registered_in_markdown_register": true,
+      "required_check_producer": false,
+      "risk": "low",
+      "status": "manual_only",
+      "triggers": [
+        "workflow_dispatch"
+      ],
+      "writes_github": false
+    },
+    {
+      "file": "sync-labels.yml",
+      "has_schedule": false,
+      "name": "\ud83c\udff7\ufe0f Sync Repository Labels",
+      "permissions": [
+        "issues:write"
+      ],
+      "purpose": "\ud83c\udff7\ufe0f Sync Repository Labels",
+      "registered_in_markdown_register": true,
+      "required_check_producer": false,
+      "risk": "high",
+      "status": "active",
+      "triggers": [
+        "push",
+        "workflow_dispatch"
+      ],
+      "writes_github": true
+    },
+    {
+      "file": "triage_guard.yml",
+      "has_schedule": false,
+      "name": "Triage Guard (Missing Milestone)",
+      "permissions": [
+        "read-only"
+      ],
+      "purpose": "Triage Guard (Missing Milestone)",
+      "registered_in_markdown_register": true,
+      "required_check_producer": false,
+      "risk": "low",
+      "status": "active",
+      "triggers": [
+        "issues"
+      ],
+      "writes_github": false
+    },
+    {
+      "file": "trivy.yml",
+      "has_schedule": true,
+      "name": "trivy",
+      "permissions": [
+        "read-only"
+      ],
+      "purpose": "trivy",
+      "registered_in_markdown_register": true,
+      "required_check_producer": false,
+      "risk": "low",
+      "status": "active",
+      "triggers": [
+        "push",
+        "schedule",
+        "workflow_dispatch"
+      ],
+      "writes_github": false
+    },
+    {
+      "file": "weekly_digest.yml",
+      "has_schedule": true,
+      "name": "Weekly Project Digest",
+      "permissions": [
+        "read-only"
+      ],
+      "purpose": "Weekly Project Digest",
+      "registered_in_markdown_register": true,
+      "required_check_producer": false,
+      "risk": "low",
+      "status": "active",
+      "triggers": [
+        "schedule",
+        "workflow_dispatch"
+      ],
+      "writes_github": false
+    },
+    {
+      "file": "weekly_digest_failure_alert.yml",
+      "has_schedule": false,
+      "name": "Weekly Digest Failure Alert",
+      "permissions": [
+        "issues:write"
+      ],
+      "purpose": "Weekly Digest Failure Alert",
+      "registered_in_markdown_register": true,
+      "required_check_producer": false,
+      "risk": "medium",
+      "status": "active",
+      "triggers": [
+        "workflow_dispatch",
+        "workflow_run"
+      ],
+      "writes_github": true
+    }
+  ],
+  "entry_count": 57,
   "limitations": [
     "Control-plane generated unit register is partial by design.",
     "Graph workflow references are relationship-focused, not a full inventory.",
     "Graph parser ignores issue-template and root-config backtick references."
   ],
+  "register_table_count": 57,
   "required_check_contexts": [
-    "ci (Unit/Integration + Lint gesammelt)",
-    "policy-gate"
+    "cdb-local-ci"
   ],
-  "unregistered_on_disk": [],
-  "risky_schedule_collisions": {
-    "0 6 * * 0": [
-      "e2e-tests.yml",
-      "trivy.yml"
-    ],
-    "0 8 * * 1": [
-      "cdb-context-refresh-report.yml",
-      "weekly_digest.yml"
-    ]
-  },
   "risky_cascade_families": {
     "label_event_cascade": [
       "add_to_project.yml",
@@ -37,1033 +1053,16 @@
       "auto-milestone-pr-apply.yml"
     ]
   },
-  "entry_count": 57,
-  "disk_workflow_count": 57,
-  "register_table_count": 57,
-  "entries": [
-    {
-      "file": "add_to_project.yml",
-      "name": "Add issues and PRs to CDB Control Board",
-      "purpose": "Add issues and PRs to CDB Control Board",
-      "triggers": [
-        "issues"
-      ],
-      "permissions": [
-        "read-only"
-      ],
-      "writes_github": false,
-      "has_schedule": false,
-      "status": "active",
-      "required_check_producer": false,
-      "registered_in_markdown_register": true,
-      "risk": "low"
-    },
-    {
-      "file": "ai-review-router.yml",
-      "name": "AI Review Router",
-      "purpose": "AI Review Router",
-      "triggers": [
-        "schedule",
-        "workflow_dispatch"
-      ],
-      "permissions": [
-        "pull-requests:write"
-      ],
-      "writes_github": true,
-      "has_schedule": true,
-      "status": "active",
-      "required_check_producer": false,
-      "registered_in_markdown_register": true,
-      "risk": "medium"
-    },
-    {
-      "file": "auto-milestone-label-dispatch.yml",
-      "name": "Auto Milestone Label Dispatch",
-      "purpose": "Auto Milestone Label Dispatch",
-      "triggers": [
-        "issues"
-      ],
-      "permissions": [
-        "contents:write"
-      ],
-      "writes_github": true,
-      "has_schedule": false,
-      "status": "active",
-      "required_check_producer": false,
-      "registered_in_markdown_register": true,
-      "risk": "high"
-    },
-    {
-      "file": "auto-milestone-pr-apply.yml",
-      "name": "Auto Milestone PR Apply",
-      "purpose": "Auto Milestone PR Apply",
-      "triggers": [
-        "workflow_run"
-      ],
-      "permissions": [
-        "issues:write"
-      ],
-      "writes_github": true,
-      "has_schedule": false,
-      "status": "active",
-      "required_check_producer": false,
-      "registered_in_markdown_register": true,
-      "risk": "medium"
-    },
-    {
-      "file": "auto-milestone-pr-intent.yml",
-      "name": "Auto Milestone PR Intent",
-      "purpose": "Auto Milestone PR Intent",
-      "triggers": [
-        "pull_request"
-      ],
-      "permissions": [
-        "read-only"
-      ],
-      "writes_github": false,
-      "has_schedule": false,
-      "status": "active",
-      "required_check_producer": false,
-      "registered_in_markdown_register": true,
-      "risk": "low"
-    },
-    {
-      "file": "auto-milestone.yml",
-      "name": "Auto Milestone",
-      "purpose": "Auto Milestone",
-      "triggers": [
-        "issues",
-        "repository_dispatch",
-        "workflow_dispatch"
-      ],
-      "permissions": [
-        "issues:write"
-      ],
-      "writes_github": true,
-      "has_schedule": false,
-      "status": "active",
-      "required_check_producer": false,
-      "registered_in_markdown_register": true,
-      "risk": "high"
-    },
-    {
-      "file": "branch-policy.yml",
-      "name": "Branch Policy Enforcement",
-      "purpose": "Branch Policy Enforcement",
-      "triggers": [
-        "schedule",
-        "workflow_dispatch"
-      ],
-      "permissions": [
-        "read-only"
-      ],
-      "writes_github": false,
-      "has_schedule": true,
-      "status": "active",
-      "required_check_producer": false,
-      "registered_in_markdown_register": true,
-      "risk": "low"
-    },
-    {
-      "file": "cdb-backlog-anomaly-escalation.yml",
-      "name": "CDB Backlog Anomaly Escalation",
-      "purpose": "CDB Backlog Anomaly Escalation",
-      "triggers": [
-        "workflow_dispatch",
-        "workflow_run"
-      ],
-      "permissions": [
-        "issues:write"
-      ],
-      "writes_github": true,
-      "has_schedule": false,
-      "status": "active",
-      "required_check_producer": false,
-      "registered_in_markdown_register": true,
-      "risk": "medium"
-    },
-    {
-      "file": "cdb-backlog-curation.yml",
-      "name": "CDB Backlog Curation",
-      "purpose": "CDB Backlog Curation",
-      "triggers": [
-        "issues"
-      ],
-      "permissions": [
-        "issues:write"
-      ],
-      "writes_github": true,
-      "has_schedule": false,
-      "status": "active",
-      "required_check_producer": false,
-      "registered_in_markdown_register": true,
-      "risk": "medium"
-    },
-    {
-      "file": "cdb-context-refresh-report.yml",
-      "name": "CDB Context Refresh Report",
-      "purpose": "CDB Context Refresh Report",
-      "triggers": [
-        "schedule",
-        "workflow_dispatch"
-      ],
-      "permissions": [
-        "read-only"
-      ],
-      "writes_github": false,
-      "has_schedule": true,
-      "status": "active",
-      "required_check_producer": false,
-      "registered_in_markdown_register": true,
-      "risk": "low"
-    },
-    {
-      "file": "cdb-control-followup-classifier.yml",
-      "name": "CDB Control Follow-up Classifier",
-      "purpose": "CDB Control Follow-up Classifier",
-      "triggers": [
-        "workflow_dispatch"
-      ],
-      "permissions": [
-        "issues:write"
-      ],
-      "writes_github": true,
-      "has_schedule": false,
-      "status": "manual_only",
-      "required_check_producer": false,
-      "registered_in_markdown_register": true,
-      "risk": "medium"
-    },
-    {
-      "file": "cdb-daily-delta-triage.yml",
-      "name": "CDB Daily Delta Triage",
-      "purpose": "CDB Daily Delta Triage",
-      "triggers": [
-        "schedule",
-        "workflow_dispatch"
-      ],
-      "permissions": [
-        "issues:write"
-      ],
-      "writes_github": true,
-      "has_schedule": true,
-      "status": "active",
-      "required_check_producer": false,
-      "registered_in_markdown_register": true,
-      "risk": "medium"
-    },
-    {
-      "file": "cdb-dependabot-autopilot.yml",
-      "name": "CDB Dependabot Autopilot",
-      "purpose": "CDB Dependabot Autopilot",
-      "triggers": [
-        "schedule",
-        "workflow_dispatch"
-      ],
-      "permissions": [
-        "read-only"
-      ],
-      "writes_github": false,
-      "has_schedule": true,
-      "status": "active",
-      "required_check_producer": false,
-      "registered_in_markdown_register": true,
-      "risk": "low"
-    },
-    {
-      "file": "cdb-post-merge-followup-scanner.yml",
-      "name": "CDB Post-Merge Follow-up Scanner",
-      "purpose": "CDB Post-Merge Follow-up Scanner",
-      "triggers": [
-        "pull_request",
-        "workflow_dispatch"
-      ],
-      "permissions": [
-        "issues:write"
-      ],
-      "writes_github": true,
-      "has_schedule": false,
-      "status": "active",
-      "required_check_producer": false,
-      "registered_in_markdown_register": true,
-      "risk": "medium"
-    },
-    {
-      "file": "cdb-weekly-control-hygiene-classifier.yml",
-      "name": "CDB Weekly Control Hygiene Classifier",
-      "purpose": "CDB Weekly Control Hygiene Classifier",
-      "triggers": [
-        "schedule",
-        "workflow_dispatch"
-      ],
-      "permissions": [
-        "issues:write"
-      ],
-      "writes_github": true,
-      "has_schedule": true,
-      "status": "active",
-      "required_check_producer": false,
-      "registered_in_markdown_register": true,
-      "risk": "medium"
-    },
-    {
-      "file": "ci.yml",
-      "name": "ci",
-      "purpose": "ci",
-      "triggers": [
-        "pull_request",
-        "push"
-      ],
-      "permissions": [
-        "read-only"
-      ],
-      "writes_github": false,
-      "has_schedule": false,
-      "status": "active",
-      "required_check_producer": true,
-      "registered_in_markdown_register": true,
-      "risk": "low"
-    },
-    {
-      "file": "codeql-python.yml",
-      "name": "CodeQL Python",
-      "purpose": "CodeQL Python",
-      "triggers": [
-        "pull_request",
-        "push",
-        "schedule",
-        "workflow_dispatch"
-      ],
-      "permissions": [
-        "read-only"
-      ],
-      "writes_github": false,
-      "has_schedule": true,
-      "status": "active",
-      "required_check_producer": false,
-      "registered_in_markdown_register": true,
-      "risk": "low"
-    },
-    {
-      "file": "contracts.yml",
-      "name": "Contract Validation",
-      "purpose": "Contract Validation",
-      "triggers": [
-        "push",
-        "schedule",
-        "workflow_dispatch"
-      ],
-      "permissions": [
-        "read-only"
-      ],
-      "writes_github": false,
-      "has_schedule": true,
-      "status": "active",
-      "required_check_producer": false,
-      "registered_in_markdown_register": true,
-      "risk": "low"
-    },
-    {
-      "file": "control_board_upsert.yml",
-      "name": "Control Board Upsert",
-      "purpose": "Control Board Upsert",
-      "triggers": [
-        "schedule",
-        "workflow_dispatch"
-      ],
-      "permissions": [
-        "read-only"
-      ],
-      "writes_github": false,
-      "has_schedule": true,
-      "status": "active",
-      "required_check_producer": false,
-      "registered_in_markdown_register": true,
-      "risk": "low"
-    },
-    {
-      "file": "copilot-housekeeping.yml",
-      "name": "Copilot Housekeeping",
-      "purpose": "Copilot Housekeeping",
-      "triggers": [
-        "schedule",
-        "workflow_dispatch"
-      ],
-      "permissions": [
-        "issues:write",
-        "pull-requests:write"
-      ],
-      "writes_github": true,
-      "has_schedule": true,
-      "status": "active",
-      "required_check_producer": false,
-      "registered_in_markdown_register": true,
-      "risk": "medium"
-    },
-    {
-      "file": "copilot-setup-steps.yml",
-      "name": "Copilot Setup Steps",
-      "purpose": "Copilot Setup Steps",
-      "triggers": [
-        "push",
-        "workflow_dispatch"
-      ],
-      "permissions": [
-        "read-only"
-      ],
-      "writes_github": false,
-      "has_schedule": false,
-      "status": "active",
-      "required_check_producer": false,
-      "registered_in_markdown_register": true,
-      "risk": "low"
-    },
-    {
-      "file": "core-guard.yml",
-      "name": "Core Guard",
-      "purpose": "Core Guard",
-      "triggers": [
-        "push",
-        "schedule",
-        "workflow_dispatch"
-      ],
-      "permissions": [
-        "read-only"
-      ],
-      "writes_github": false,
-      "has_schedule": true,
-      "status": "active",
-      "required_check_producer": false,
-      "registered_in_markdown_register": true,
-      "risk": "low"
-    },
-    {
-      "file": "delivery-gate.yml",
-      "name": "Delivery Gate",
-      "purpose": "Delivery Gate",
-      "triggers": [
-        "schedule",
-        "workflow_dispatch"
-      ],
-      "permissions": [
-        "read-only"
-      ],
-      "writes_github": false,
-      "has_schedule": true,
-      "status": "active",
-      "required_check_producer": false,
-      "registered_in_markdown_register": true,
-      "risk": "low"
-    },
-    {
-      "file": "docker-publish.yml",
-      "name": "Build & Push Containers (GHCR)",
-      "purpose": "Build & Push Containers (GHCR)",
-      "triggers": [
-        "push",
-        "workflow_dispatch"
-      ],
-      "permissions": [
-        "read-only"
-      ],
-      "writes_github": false,
-      "has_schedule": false,
-      "status": "active",
-      "required_check_producer": false,
-      "registered_in_markdown_register": true,
-      "risk": "low"
-    },
-    {
-      "file": "docs-conflict-guard.yml",
-      "name": "Docs Conflict Guard",
-      "purpose": "Docs Conflict Guard",
-      "triggers": [
-        "pull_request",
-        "push",
-        "workflow_dispatch"
-      ],
-      "permissions": [
-        "read-only"
-      ],
-      "writes_github": false,
-      "has_schedule": false,
-      "status": "active",
-      "required_check_producer": false,
-      "registered_in_markdown_register": true,
-      "risk": "low"
-    },
-    {
-      "file": "e2e-happy-path.yaml",
-      "name": "E2E Happy Path",
-      "purpose": "E2E Happy Path",
-      "triggers": [
-        "schedule",
-        "workflow_dispatch"
-      ],
-      "permissions": [
-        "read-only"
-      ],
-      "writes_github": false,
-      "has_schedule": true,
-      "status": "active",
-      "required_check_producer": false,
-      "registered_in_markdown_register": true,
-      "risk": "low"
-    },
-    {
-      "file": "e2e-tests.yml",
-      "name": "E2E Tests - Paper Trading",
-      "purpose": "E2E Tests - Paper Trading",
-      "triggers": [
-        "schedule",
-        "workflow_dispatch"
-      ],
-      "permissions": [
-        "issues:write"
-      ],
-      "writes_github": true,
-      "has_schedule": true,
-      "status": "active",
-      "required_check_producer": false,
-      "registered_in_markdown_register": true,
-      "risk": "medium"
-    },
-    {
-      "file": "e2e.yml",
-      "name": "E2E Tests",
-      "purpose": "E2E Tests",
-      "triggers": [
-        "push",
-        "schedule",
-        "workflow_dispatch"
-      ],
-      "permissions": [
-        "read-only"
-      ],
-      "writes_github": false,
-      "has_schedule": true,
-      "status": "active",
-      "required_check_producer": false,
-      "registered_in_markdown_register": true,
-      "risk": "low"
-    },
-    {
-      "file": "emoji-bot.yml",
-      "name": "🤖 Emoji Fix Bot",
-      "purpose": "🤖 Emoji Fix Bot",
-      "triggers": [
-        "issue_comment",
-        "workflow_dispatch"
-      ],
-      "permissions": [
-        "contents:write",
-        "issues:write"
-      ],
-      "writes_github": true,
-      "has_schedule": false,
-      "status": "active",
-      "required_check_producer": false,
-      "registered_in_markdown_register": true,
-      "risk": "medium"
-    },
-    {
-      "file": "emoji-filter.yml",
-      "name": "🚫 Advanced Emoji Filter",
-      "purpose": "🚫 Advanced Emoji Filter",
-      "triggers": [
-        "workflow_dispatch"
-      ],
-      "permissions": [
-        "contents:write",
-        "issues:write"
-      ],
-      "writes_github": true,
-      "has_schedule": false,
-      "status": "manual_only",
-      "required_check_producer": false,
-      "registered_in_markdown_register": true,
-      "risk": "medium"
-    },
-    {
-      "file": "gitleaks.yml",
-      "name": "Gitleaks Secret Scan",
-      "purpose": "Gitleaks Secret Scan",
-      "triggers": [
-        "push",
-        "schedule",
-        "workflow_dispatch"
-      ],
-      "permissions": [
-        "read-only"
-      ],
-      "writes_github": false,
-      "has_schedule": true,
-      "status": "active",
-      "required_check_producer": false,
-      "registered_in_markdown_register": true,
-      "risk": "low"
-    },
-    {
-      "file": "governance-audit.yml",
-      "name": "Governance Audit",
-      "purpose": "Governance Audit",
-      "triggers": [
-        "workflow_dispatch"
-      ],
-      "permissions": [
-        "read-only"
-      ],
-      "writes_github": false,
-      "has_schedule": false,
-      "status": "manual_only",
-      "required_check_producer": false,
-      "registered_in_markdown_register": true,
-      "risk": "low"
-    },
-    {
-      "file": "label-bootstrap.yml",
-      "name": "Label Bootstrap (Copilot)",
-      "purpose": "Label Bootstrap (Copilot)",
-      "triggers": [
-        "workflow_dispatch"
-      ],
-      "permissions": [
-        "issues:write",
-        "pull-requests:write"
-      ],
-      "writes_github": true,
-      "has_schedule": false,
-      "status": "manual_only",
-      "required_check_producer": false,
-      "registered_in_markdown_register": true,
-      "risk": "medium"
-    },
-    {
-      "file": "lr021_replay_smoke.yml",
-      "name": "lr021-replay-smoke",
-      "purpose": "lr021-replay-smoke",
-      "triggers": [
-        "schedule",
-        "workflow_dispatch"
-      ],
-      "permissions": [
-        "read-only"
-      ],
-      "writes_github": false,
-      "has_schedule": true,
-      "status": "active",
-      "required_check_producer": false,
-      "registered_in_markdown_register": true,
-      "risk": "low"
-    },
-    {
-      "file": "mcp_runtime.yml",
-      "name": "mcp-runtime",
-      "purpose": "mcp-runtime",
-      "triggers": [
-        "workflow_dispatch"
-      ],
-      "permissions": [
-        "read-only"
-      ],
-      "writes_github": false,
-      "has_schedule": false,
-      "status": "manual_only",
-      "required_check_producer": false,
-      "registered_in_markdown_register": true,
-      "risk": "low"
-    },
-    {
-      "file": "milestone_stage_label_sync.yml",
-      "name": "Sync Stage Labels From Milestone",
-      "purpose": "Sync Stage Labels From Milestone",
-      "triggers": [
-        "issues"
-      ],
-      "permissions": [
-        "read-only"
-      ],
-      "writes_github": false,
-      "has_schedule": false,
-      "status": "active",
-      "required_check_producer": false,
-      "registered_in_markdown_register": true,
-      "risk": "low"
-    },
-    {
-      "file": "opencode.yml",
-      "name": "opencode",
-      "purpose": "opencode",
-      "triggers": [
-        "issue_comment",
-        "pull_request_review_comment"
-      ],
-      "permissions": [
-        "id-token:write"
-      ],
-      "writes_github": true,
-      "has_schedule": false,
-      "status": "active",
-      "required_check_producer": false,
-      "registered_in_markdown_register": true,
-      "risk": "medium"
-    },
-    {
-      "file": "performance-monitor.yml",
-      "name": "Performance Monitor",
-      "purpose": "Performance Monitor",
-      "triggers": [
-        "workflow_dispatch"
-      ],
-      "permissions": [
-        "read-only"
-      ],
-      "writes_github": false,
-      "has_schedule": false,
-      "status": "manual_only",
-      "required_check_producer": false,
-      "registered_in_markdown_register": true,
-      "risk": "low"
-    },
-    {
-      "file": "policy-gate.yml",
-      "name": "Policy Gate",
-      "purpose": "Policy Gate",
-      "triggers": [
-        "pull_request"
-      ],
-      "permissions": [
-        "read-only"
-      ],
-      "writes_github": false,
-      "has_schedule": false,
-      "status": "active",
-      "required_check_producer": true,
-      "registered_in_markdown_register": true,
-      "risk": "low"
-    },
-    {
-      "file": "project_reconcile_daily.yml",
-      "name": "Reconcile CDB Control Board (Daily)",
-      "purpose": "Reconcile CDB Control Board (Daily)",
-      "triggers": [
-        "schedule",
-        "workflow_dispatch"
-      ],
-      "permissions": [
-        "read-only"
-      ],
-      "writes_github": false,
-      "has_schedule": true,
-      "status": "active",
-      "required_check_producer": false,
-      "registered_in_markdown_register": true,
-      "risk": "low"
-    },
-    {
-      "file": "project_status_label_map.yml",
-      "name": "Sync CDB Control Board Status (Label Map)",
-      "purpose": "Sync CDB Control Board Status (Label Map)",
-      "triggers": [
-        "issues"
-      ],
-      "permissions": [
-        "read-only"
-      ],
-      "writes_github": false,
-      "has_schedule": false,
-      "status": "active",
-      "required_check_producer": false,
-      "registered_in_markdown_register": true,
-      "risk": "low"
-    },
-    {
-      "file": "project_status_sync.yml",
-      "name": "Sync CDB Control Board Status",
-      "purpose": "Sync CDB Control Board Status",
-      "triggers": [
-        "issues"
-      ],
-      "permissions": [
-        "read-only"
-      ],
-      "writes_github": false,
-      "has_schedule": false,
-      "status": "active",
-      "required_check_producer": false,
-      "registered_in_markdown_register": true,
-      "risk": "low"
-    },
-    {
-      "file": "python-compat.yml",
-      "name": "python-compat",
-      "purpose": "python-compat",
-      "triggers": [
-        "schedule",
-        "workflow_dispatch"
-      ],
-      "permissions": [
-        "read-only"
-      ],
-      "writes_github": false,
-      "has_schedule": true,
-      "status": "active",
-      "required_check_producer": false,
-      "registered_in_markdown_register": true,
-      "risk": "low"
-    },
-    {
-      "file": "repository-canon-guard.yml",
-      "name": "Repository Canon Guard",
-      "purpose": "Repository Canon Guard",
-      "triggers": [
-        "pull_request",
-        "push",
-        "workflow_dispatch"
-      ],
-      "permissions": [
-        "read-only"
-      ],
-      "writes_github": false,
-      "has_schedule": false,
-      "status": "active",
-      "required_check_producer": false,
-      "registered_in_markdown_register": true,
-      "risk": "low"
-    },
-    {
-      "file": "required-checks-audit.yml",
-      "name": "required-checks-audit (Sentinel)",
-      "purpose": "required-checks-audit (Sentinel)",
-      "triggers": [
-        "workflow_dispatch"
-      ],
-      "permissions": [
-        "read-only"
-      ],
-      "writes_github": false,
-      "has_schedule": false,
-      "status": "manual_only",
-      "required_check_producer": false,
-      "registered_in_markdown_register": true,
-      "risk": "low"
-    },
-    {
-      "file": "root-session-hygiene-warning.yml",
-      "name": "Root Session Hygiene Warning",
-      "purpose": "Root Session Hygiene Warning",
-      "triggers": [
-        "workflow_dispatch"
-      ],
-      "permissions": [
-        "read-only"
-      ],
-      "writes_github": false,
-      "has_schedule": false,
-      "status": "manual_only",
-      "required_check_producer": false,
-      "registered_in_markdown_register": true,
-      "risk": "low"
-    },
-    {
-      "file": "security-alert-readout.yml",
-      "name": "Security Alert Readout",
-      "purpose": "Security Alert Readout",
-      "triggers": [
-        "schedule",
-        "workflow_dispatch"
-      ],
-      "permissions": [
-        "issues:write",
-        "pull-requests:write"
-      ],
-      "writes_github": true,
-      "has_schedule": true,
-      "status": "active",
-      "required_check_producer": false,
-      "registered_in_markdown_register": true,
-      "risk": "medium"
-    },
-    {
-      "file": "security-scan.yml",
-      "name": "Security Scan",
-      "purpose": "Security Scan",
-      "triggers": [
-        "push",
-        "schedule",
-        "workflow_dispatch"
-      ],
-      "permissions": [
-        "read-only"
-      ],
-      "writes_github": false,
-      "has_schedule": true,
-      "status": "active",
-      "required_check_producer": false,
-      "registered_in_markdown_register": true,
-      "risk": "low"
-    },
-    {
-      "file": "shadow-soak-evidence.yml",
-      "name": "Shadow + Soak Evidence",
-      "purpose": "Shadow + Soak Evidence",
-      "triggers": [
-        "schedule",
-        "workflow_dispatch"
-      ],
-      "permissions": [
-        "read-only"
-      ],
-      "writes_github": false,
-      "has_schedule": true,
-      "status": "active",
-      "required_check_producer": false,
-      "registered_in_markdown_register": true,
-      "risk": "low"
-    },
-    {
-      "file": "smart-insights.yml",
-      "name": "Smart Insights & Continuous Improvement",
-      "purpose": "Smart Insights & Continuous Improvement",
-      "triggers": [
-        "schedule",
-        "workflow_dispatch"
-      ],
-      "permissions": [
-        "read-only"
-      ],
-      "writes_github": false,
-      "has_schedule": true,
-      "status": "active",
-      "required_check_producer": false,
-      "registered_in_markdown_register": true,
-      "risk": "low"
-    },
-    {
-      "file": "stale.yml",
-      "name": "Close stale issues and PRs",
-      "purpose": "Close stale issues and PRs",
-      "triggers": [
-        "schedule",
-        "workflow_dispatch"
-      ],
-      "permissions": [
-        "issues:write",
-        "pull-requests:write"
-      ],
-      "writes_github": true,
-      "has_schedule": true,
-      "status": "active",
-      "required_check_producer": false,
-      "registered_in_markdown_register": true,
-      "risk": "medium"
-    },
-    {
-      "file": "surrealdb-memory-proof.yml",
-      "name": "Optional SurrealDB Memory Proof",
-      "purpose": "Optional SurrealDB Memory Proof",
-      "triggers": [
-        "workflow_dispatch"
-      ],
-      "permissions": [
-        "read-only"
-      ],
-      "writes_github": false,
-      "has_schedule": false,
-      "status": "manual_only",
-      "required_check_producer": false,
-      "registered_in_markdown_register": true,
-      "risk": "low"
-    },
-    {
-      "file": "sync-labels.yml",
-      "name": "🏷️ Sync Repository Labels",
-      "purpose": "🏷️ Sync Repository Labels",
-      "triggers": [
-        "push",
-        "workflow_dispatch"
-      ],
-      "permissions": [
-        "issues:write"
-      ],
-      "writes_github": true,
-      "has_schedule": false,
-      "status": "active",
-      "required_check_producer": false,
-      "registered_in_markdown_register": true,
-      "risk": "high"
-    },
-    {
-      "file": "triage_guard.yml",
-      "name": "Triage Guard (Missing Milestone)",
-      "purpose": "Triage Guard (Missing Milestone)",
-      "triggers": [
-        "issues"
-      ],
-      "permissions": [
-        "read-only"
-      ],
-      "writes_github": false,
-      "has_schedule": false,
-      "status": "active",
-      "required_check_producer": false,
-      "registered_in_markdown_register": true,
-      "risk": "low"
-    },
-    {
-      "file": "trivy.yml",
-      "name": "trivy",
-      "purpose": "trivy",
-      "triggers": [
-        "push",
-        "schedule",
-        "workflow_dispatch"
-      ],
-      "permissions": [
-        "read-only"
-      ],
-      "writes_github": false,
-      "has_schedule": true,
-      "status": "active",
-      "required_check_producer": false,
-      "registered_in_markdown_register": true,
-      "risk": "low"
-    },
-    {
-      "file": "weekly_digest.yml",
-      "name": "Weekly Project Digest",
-      "purpose": "Weekly Project Digest",
-      "triggers": [
-        "schedule",
-        "workflow_dispatch"
-      ],
-      "permissions": [
-        "read-only"
-      ],
-      "writes_github": false,
-      "has_schedule": true,
-      "status": "active",
-      "required_check_producer": false,
-      "registered_in_markdown_register": true,
-      "risk": "low"
-    },
-    {
-      "file": "weekly_digest_failure_alert.yml",
-      "name": "Weekly Digest Failure Alert",
-      "purpose": "Weekly Digest Failure Alert",
-      "triggers": [
-        "workflow_dispatch",
-        "workflow_run"
-      ],
-      "permissions": [
-        "issues:write"
-      ],
-      "writes_github": true,
-      "has_schedule": false,
-      "status": "active",
-      "required_check_producer": false,
-      "registered_in_markdown_register": true,
-      "risk": "medium"
-    }
-  ]
+  "risky_schedule_collisions": {
+    "0 6 * * 0": [
+      "e2e-tests.yml",
+      "trivy.yml"
+    ],
+    "0 8 * * 1": [
+      "cdb-context-refresh-report.yml",
+      "weekly_digest.yml"
+    ]
+  },
+  "schema_version": "1",
+  "unregistered_on_disk": []
 }
