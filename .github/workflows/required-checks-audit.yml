@@ -34,8 +34,7 @@ jobs:
           summary_file="${GITHUB_STEP_SUMMARY:-}"
 
           required_checks=(
-            "policy-gate"
-            "ci (Unit/Integration + Lint gesammelt)"
+            "cdb-local-ci"
           )
 
           echo "Sentinel mode: audit-only"

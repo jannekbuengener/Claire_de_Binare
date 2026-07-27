@@ -19,10 +19,10 @@ local Docker CI (ci/scripts/run.py)
 GitHub remains the PR / status / merge platform. Rechenintensive CI bleibt lokal.
 
 **Interim trust model:** Phase 3a publishes a **Commit Status** (PAT / `gh`),
-**not** a GitHub App Check Run. After Branch-Protection migration the intended
-required context is `cdb-local-ci`; until BP changes, treat that context as the
-required-check **path** (mandatory PR + policy mirror) but do not assume live BP
-already requires it. This PR does not mutate Branch Protection.
+**not** a GitHub App Check Run. Live Branch Protection (#4169) requires
+`cdb-local-ci` as that Commit Status context. Required-path publish enforces
+mandatory PR + local policy mirror. Preview context `cdb-local-ci-preview`
+remains non-required for smoke tests.
 
 ## Why local green is not automatically trusted
 
@@ -158,28 +158,26 @@ PR head SHA from GitHub and rejects dry-run/publish if it differs from
 `--commit-sha` / evidence SHA. Publish re-checks the head immediately before the
 status write.
 
-## Branch Protection unchanged (this PR)
+## Branch Protection (live, #4169)
 
-This PR does **not**:
+Live required status checks on `main` are:
 
-- change Branch Protection or rulesets
-- disable or thin GitHub workflows
-- merge any PR
+- context: `cdb-local-ci`
+- type: Commit Status (`app_id` null)
 
-Live required checks remain whatever Branch Protection currently lists (today:
-`ci (Unit/Integration + Lint gesammelt)` + `policy-gate`) until a separate,
-explicit BP migration.
+This docs/PR slice does **not** mutate Branch Protection via API; baselines and
+governance guards track the live state. GitHub-hosted `ci.yml` /
+`policy-gate.yml` remain available as workflow content but are **not**
+BP-required.
 
-After that migration, the required context is expected to be `cdb-local-ci` with
-the local policy mirror enforced at publish time (see
-[`docs/runbooks/merge_policy_ci_gate.md`](../runbooks/merge_policy_ci_gate.md)).
+Use `cdb-local-ci-preview` for optional smoke publishes without the mandatory
+PR constraint of the required path.
 
-## Future migration
+## Future hardening
 
-After publisher parity + security review, a follow-up evaluates making
-`cdb-local-ci` required and only then retiring GitHub-hosted heavy CI.
-Until BP migration, use `cdb-local-ci-preview` for live smoke tests without the
-mandatory PR constraint.
+After publisher parity + security review, evaluate GitHub-App Check Runs and
+retiring or thinning GitHub-hosted heavy CI. Until then, `cdb-local-ci` remains
+the interim Commit Status required context.
 
 ## Rollback / revocation
 

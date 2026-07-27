@@ -1,13 +1,13 @@
 # Required Check Contexts Drift Report (main)
 
-Timestamp (Europe/Berlin): `2026-03-15T22:16:47+01:00`  
-Timestamp (UTC): `2026-03-15T21:16:47Z`  
+Timestamp (Europe/Berlin): `2026-07-27T22:36:01+02:00`  
+Timestamp (UTC): `2026-07-27T20:36:01Z`  
 State: **NO DRIFT**
 
 ## Hashes (SHA256)
 
-- Baseline SHA256: `2b4034e1465a850f3e2a21cb3899cb76d23858adead3f2b8ab77db9647295dae`
-- Current-derived SHA256: `defd4111d7b2093b9fd0b06cf236bc556e8221b0d6e4fcc4c8683066d95179dc`
+- Baseline SHA256: `cb3d540d7c614797bf17ea0a5af536c484e260649b0279d6788a6963d9057453`
+- Current-derived SHA256: `76106943c0d48a1baf6481137d69719dec9ae5d4e1ad23b0216774db54bdde5b`
 
 ## Inputs
 
@@ -16,8 +16,11 @@ State: **NO DRIFT**
 
 ## Required Contexts (Baseline)
 
-- `ci (Unit/Integration + Lint gesammelt)`
-- `policy-gate`
+- `cdb-local-ci`
+
+## Commit Status / External Contexts (not workflow jobs)
+
+- `cdb-local-ci`
 
 ## Missing Required Contexts
 
@@ -25,76 +28,65 @@ State: **NO DRIFT**
 
 ## Extra Derivable Contexts (Informational)
 
-- `Build Summary`
+- `Analyze Python`
 - `Check Core Duplicates`
 - `Check Delivery Gate`
 - `Check Docs For Merge Conflict Markers`
-- `Container Scan (Trivy)`
-- `Contract Drift Guard`
-- `Contract Tests`
-- `Core Duplicates Guard`
-- `Correlation Event Coverage Guard`
-- `Dependency Audit (pip-audit)`
-- `Documentation Checks`
+- `Dependabot report-only broker`
 - `E2E Happy Path`
 - `E2E Smoke Test (market_data → signal)`
-- `Format Check (Black)`
 - `Full Repository Scan`
-- `LR-004: Completion State Validation`
-- `LR-021 Replay Smoke (fixture → hashes)`
-- `Linting (Ruff)`
-- `MCP Runtime Smoke`
+- `LR-021 Replay Smoke (offline shadow bundle)`
+- `MCP Runtime Smoke (optional, manual-only)`
+- `Optional SurrealDB Memory Proof`
 - `Python compatibility matrix (informational)`
 - `Scan Base Images (Redis, Postgres)`
 - `Scan Custom Python Services`
-- `Secret Scanning (Gitleaks)`
-- `Security Audit (Bandit)`
 - `Security Scan Summary`
 - `Sync Labels from labels.json`
-- `Tests (Python ${{ matrix.python-version }})`
 - `Trivy - Base Images`
 - `Trivy - Custom Services`
-- `Type Checking (mypy)`
 - `Validate Message Contracts`
 - `add-to-project`
 - `ai/review`
 - `apply-pr-milestone`
 - `assign-single`
-- `auto-label`
 - `backfill`
 - `build`
-- `bulk-label`
 - `capture-intent`
-- `claude`
-- `claude-review`
+- `ci (Unit/Integration + Lint gesammelt)`
+- `classify`
+- `comment-epic`
+- `context-refresh`
 - `copilot-setup-steps`
-- `dispatch-control-board-routing`
+- `curate`
+- `daily-delta`
 - `dispatch-milestone-label`
 - `e2e-paper-trading`
 - `enforce-pr-template`
+- `escalate`
 - `gitleaks (Secrets-Alarm)`
 - `governance-audit`
 - `guard`
 - `housekeeping`
-- `invoke`
-- `label`
+- `issue-automation`
 - `labels`
-- `milestone-assignment`
-- `milestone-autofix`
-- `noop`
 - `opencode`
 - `performance-check`
+- `persist-via-pr`
+- `policy-gate`
 - `reconcile-project-board`
 - `required-checks-audit (Sentinel)`
-- `review`
-- `route-control-board`
+- `root-session-hygiene-warning`
+- `scan`
+- `security-readout`
 - `shadow-soak-evidence`
 - `smart-insights`
 - `stale`
+- `surrealdb-validate`
 - `sync-project-status`
 - `sync-project-status-label-map`
 - `sync-stage-labels`
-- `triage`
 - `triage-guard`
 - `trivy (kritische CVEs/Supply-Chain)`
 - `upsert-control-board`
@@ -102,6 +94,7 @@ State: **NO DRIFT**
 - `validate-feature-workflow`
 - `weekly-digest`
 - `weekly-digest-failure-alert`
+- `weekly-hygiene`
 - `❓ Bot Help`
 - `💬 PR Comment`
 - `📢 Notifications`
@@ -114,8 +107,7 @@ State: **NO DRIFT**
 
 | context | status | workflow_file | job_id | job_name | workflow_name |
 |---|---|---|---|---|---|
-| `ci (Unit/Integration + Lint gesammelt)` | present | `.github/workflows/ci.yml` | `ci` | `ci (Unit/Integration + Lint gesammelt)` | `ci` |
-| `policy-gate` | present | `.github/workflows/policy-gate.yml` | `policy-gate` | `policy-gate` | `Policy Gate` |
+| `cdb-local-ci` | external/commit-status | n/a | n/a | n/a | n/a |
 
 ## Parse Errors
 
@@ -123,4 +115,4 @@ State: **NO DRIFT**
 
 ## What To Do
 
-- Required contexts are currently derivable from workflow job names. Keep job-name stability for required contexts.
+- Required contexts are covered by Commit Status / external contexts and/or workflow job names. Keep publisher and branch-protection names aligned for commit-status contexts.

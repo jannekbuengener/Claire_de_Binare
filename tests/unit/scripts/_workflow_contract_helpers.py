@@ -54,12 +54,7 @@ FROZEN_LEGACY_WORKFLOW_FILES: frozenset[str] = frozenset()
 
 ACTIVE_CANONICAL_CI_WORKFLOW = "ci.yml"
 
-REQUIRED_CHECK_CONTEXTS = frozenset(
-    {
-        "ci (Unit/Integration + Lint gesammelt)",
-        "policy-gate",
-    }
-)
+REQUIRED_CHECK_CONTEXTS = frozenset({"cdb-local-ci"})
 
 NON_REQUIRED_GUARD_WORKFLOWS = frozenset(
     {
@@ -321,6 +316,17 @@ def load_required_checks_baseline(path: Path) -> list[str]:
             for ctx in contexts
             if isinstance(ctx, str) and str(ctx).strip()
         }
+    )
+
+
+def load_commit_status_contexts(path: Path) -> list[str]:
+    payload = json.loads(path.read_text(encoding="utf-8"))
+    if "commit_status_contexts" in payload:
+        raw = payload.get("commit_status_contexts") or []
+    else:
+        raw = payload.get("external_contexts") or []
+    return sorted(
+        {str(ctx).strip() for ctx in raw if isinstance(ctx, str) and str(ctx).strip()}
     )
 
 
@@ -666,7 +672,8 @@ AGENT_WORKFLOW_MAP_JSON = (
     REPO_ROOT / ".github" / "control-plane" / "generated" / "agent-workflow-map.json"
 )
 
-REQUIRED_CHECK_PRODUCER_FILES = frozenset({"ci.yml", "policy-gate.yml"})
+# Interim #4169: required context is Commit Status `cdb-local-ci`, not a workflow job.
+REQUIRED_CHECK_PRODUCER_FILES: frozenset[str] = frozenset()
 
 RISKY_CASCADE_FAMILIES: dict[str, tuple[str, ...]] = {
     "label_event_cascade": tuple(sorted(LABEL_CASCADE_WORKFLOW_FILES)),
@@ -731,19 +738,25 @@ def parse_graph_workflow_inventory_references(graph_path: Path) -> set[str]:
 
 def parse_runbook_workflow_count_claim(runbook_path: Path) -> int | None:
     text = runbook_path.read_text(encoding="utf-8")
-    match = re.search(r"(\d+)\s+(?:workflow definitions|Workflow-Dateien)", text, flags=re.IGNORECASE)
+    match = re.search(
+        r"(\d+)\s+(?:workflow definitions|Workflow-Dateien)", text, flags=re.IGNORECASE
+    )
     return int(match.group(1)) if match else None
 
 
 def parse_control_plane_yaml_count_claim(entrypoint_path: Path) -> int | None:
     text = entrypoint_path.read_text(encoding="utf-8")
-    match = re.search(r"(\d+)\s+(?:YAML workflow definitions|YAML-Dateien)", text, flags=re.IGNORECASE)
+    match = re.search(
+        r"(\d+)\s+(?:YAML workflow definitions|YAML-Dateien)", text, flags=re.IGNORECASE
+    )
     return int(match.group(1)) if match else None
 
 
 def parse_register_total_count_claim(register_path: Path) -> int | None:
     text = register_path.read_text(encoding="utf-8")
-    match = re.search(r"\*\*(?:Total workflow definitions|Workflow-Dateien):\*\*\s*(\d+)", text)
+    match = re.search(
+        r"\*\*(?:Total workflow definitions|Workflow-Dateien):\*\*\s*(\d+)", text
+    )
     return int(match.group(1)) if match else None
 
 

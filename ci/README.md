@@ -4,14 +4,15 @@ Lokale, Docker-fähige CI-Ausführungsschicht für Claire_de_Binare.
 
 ## Status / Grenzen
 
-- **Phase 1:** Scaffold + Evidence-Contract. GitHub-Workflows und Branch Protection
-  bleiben **unverändert**.
-- **Phase 3a:** Optionaler Status-Publisher (`ci/publisher/`) kann nach strikter
-  Evidence-Validation einen **nicht-required** Commit Status setzen.
+- **Phase 1:** Scaffold + Evidence-Contract unter `ci/`.
+- **Phase 3a + BP #4169:** Nach strikter Evidence-Validation setzt der
+  Status-Publisher (`ci/publisher/`) den Required Commit Status `cdb-local-ci`
+  (interim PAT / Commit Status, noch kein GitHub-App Check Run).
   Siehe [docs/ci/local-status-publisher.md](../docs/ci/local-status-publisher.md).
-- Lokale Evidence ist **kein** GitHub Required Check und darf Merges nicht
-  autorisieren.
-- `policy-gate` bleibt GitHub-gebunden (lokaler Mirror ohne Paritätsanspruch).
+- Lokale Evidence allein autorisiert keinen Merge; der published Status
+  `cdb-local-ci` ist der live Required Context.
+- `policy-gate.yml` bleibt als Workflow-Safety-Gate; der lokale Mirror
+  (`tools/ci/policy_gate_local.py`) ist Publish-Pflicht für `cdb-local-ci`.
 - Lokales CodeQL/SARIF ersetzt **nicht** den GitHub Security-Tab.
 - LR bleibt **NO-GO**. Kein BLUE/RED als Default-CI. Kein GHCR-Push.
 
@@ -96,15 +97,15 @@ for ci_image/test_runner/postgres/redis, compose project template
 
 ## Local vs GitHub parity
 
-| Surface | Local Phase 1 | GitHub |
-|---------|---------------|--------|
-| Required `ci.yml` commands | high (wrapped) | merge Required Check |
-| `policy-gate` | mirror note only | Required Check |
+| Surface | Local | GitHub |
+|---------|-------|--------|
+| Required `ci.yml` commands | high (wrapped in local stages) | advisory workflow (not BP-required) |
+| `policy-gate` | local mirror enforced at publish | workflow safety (not BP-required) |
 | Docs Conflict / Hub | extracted tools modules | workflows still inline |
 | CodeQL | optional local SARIF | Security-tab authoritative |
-| Branch Protection | unchanged | live SSOT |
-| Local evidence | advisory artifacts | **not** Required Check |
-| Status publisher (Phase 3a) | Commit Status after validation | non-required preview/context only |
+| Branch Protection | — | required: `cdb-local-ci` (Commit Status) |
+| Local evidence | advisory artifacts until publish | — |
+| Status publisher (Phase 3a) | Commit Status after validation | required context `cdb-local-ci` |
 
 ## Architecture
 
