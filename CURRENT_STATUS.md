@@ -10,7 +10,7 @@
 
 ## Repo / Engineering Status (2026-07-28)
 
-- **#4118 Agent-Onboarding consolidation**: **IN_DELIVERY** — PR #4132 rebased onto current tip after #4166/#4168. Single content entrypoint `agents/agent_orga/AGENT_ONBOARDING.md`; discovery via `agents/README.md`; duplicate Quickstart/Setup/Manifest/Orchestration paths reduced to pointers; `agents/AUTOLOAD_MANIFEST.yaml` sole machine-readable autoload entry (Knowledge Hub historical_reference only); contract coverage in `tests/unit/agents/test_agent_onboarding_canon.py`. Docs/manifest/unit-contract only; no runtime/MCP/write-path/LR change. Required merge gate: trusted published commit status from Phase-3a publisher. LR **NO-GO** unchanged.
+- **#4118 Agent-Onboarding consolidation**: **BLOCKED_AUTH_SCOPE** — PR #4132 rebased onto current tip after #4166/#4168 @ `fa3c1e72`. Single content entrypoint `agents/agent_orga/AGENT_ONBOARDING.md`; discovery via `agents/README.md`; duplicate paths reduced to pointers; `agents/AUTOLOAD_MANIFEST.yaml` sole autoload entry; contract coverage in `tests/unit/agents/test_agent_onboarding_canon.py`. Targeted validators + unit contract PASS. Local fast profile PASS (`run_id=pr4132_fa3c1e72_20260728T094718Z`, lint/unit/docs/governance PASS, dirty=false). Publish of required commit status rejected: integration token lacks Commit statuses: Write. No Fake-Green. Merge held. Refs #4170 (App hardening; out of scope). LR **NO-GO** unchanged.
 
 ## Repo / Engineering Status (2026-07-13)
 
