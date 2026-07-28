@@ -1,17 +1,14 @@
-# Legacy Note: PLAN_AGENT_DOCS_ORCHESTRATION
+# Agent Docs Orchestration Plan
 
-**Status:** HISTORICAL / SUPERSEDED
+**Status:** HISTORICAL / POINTER ONLY
 
-Diese Datei dokumentierte den früheren Plan für ein separates externes
-Dokumentations-Repository. Dieser Plan ist nicht mehr aktiv.
+The former split-repository and fixed-agent orchestration plan is superseded.
 
-Aktuelle Einstiege:
+Current entrypoints:
 
-- `agents/AGENTS.md`
-- `knowledge/README.md`
-- `knowledge/ARCHITECTURE_MAP.md`
-- `docs/meta/REPOSITORY_CANON.md`
+- [`agents/agent_orga/AGENT_ONBOARDING.md`](agent_orga/AGENT_ONBOARDING.md)
+- [`agents/AGENTS.md`](AGENTS.md)
+- [`docs/meta/REPOSITORY_CANON.md`](../docs/meta/REPOSITORY_CANON.md)
 
-`knowledge/ARCHITECTURE_COCKPIT.md` ist nur noch ein historischer Pointer und
-keine operative Arbeits-Startseite. Die frühere Split-Repo-Planung bleibt über
-die Git-Historie und vorhandene Archiv-/Session-Flächen nachvollziehbar.
+The historical plan remains available through Git history. This file defines no
+current workflow or authority.
