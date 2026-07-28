@@ -3,10 +3,14 @@
 **Status Class**: Claire de Binare repository / Engineering Status
 **Authority**: Current repo/main/test/dependency snapshot; not the canonical live-readiness or Echtgeld Go/No-Go source.
 **Operational Canon**: `docs/live-readiness/LR-AUDIT-STATUS-2026-03-05.md`
-**Last Updated**: 2026-07-13
+**Last Updated**: 2026-07-28
 **GitHub Boundary**: The live commit and PR state is tracked in GitHub (UI/API or `gh`); this file is a curated repo/engineering ledger, not a live mirror.
 
 ---
+
+## Repo / Engineering Status (2026-07-28)
+
+- **#4118 Agent-Onboarding consolidation**: **IN_DELIVERY** — PR #4132 rebased onto current tip after #4166/#4168. Single content entrypoint `agents/agent_orga/AGENT_ONBOARDING.md`; discovery via `agents/README.md`; duplicate Quickstart/Setup/Manifest/Orchestration paths reduced to pointers; `agents/AUTOLOAD_MANIFEST.yaml` sole machine-readable autoload entry (Knowledge Hub historical_reference only); contract coverage in `tests/unit/agents/test_agent_onboarding_canon.py`. Docs/manifest/unit-contract only; no runtime/MCP/write-path/LR change. Required merge gate: trusted published commit status from Phase-3a publisher. LR **NO-GO** unchanged.
 
 ## Repo / Engineering Status (2026-07-13)
 
