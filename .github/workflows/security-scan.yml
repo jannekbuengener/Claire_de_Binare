@@ -94,7 +94,7 @@ jobs:
           path: trivy-*.json
 
       - name: Upload SARIF to GitHub Security
-        uses: github/codeql-action/upload-sarif@99df26d4f13ea111d4ec1a7dddef6063f76b97e9 # v3
+        uses: github/codeql-action/upload-sarif@e4fba868fa4b1b91e1fdab776edc8cfbe6e9fb81 # v3
         if: always()
         with:
           sarif_file: 'trivy-${{ env.TRIVY_SAFE_IMAGE }}.sarif'
@@ -117,7 +117,7 @@ jobs:
       fail-fast: false
 
     steps:
-      - uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0 # v7.0.0
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
 
       - name: Compute Trivy allowlist (Debian tracker)
         run: |
@@ -231,7 +231,7 @@ jobs:
           path: trivy-*.json
 
       - name: Upload SARIF to GitHub Security
-        uses: github/codeql-action/upload-sarif@99df26d4f13ea111d4ec1a7dddef6063f76b97e9 # v3
+        uses: github/codeql-action/upload-sarif@e4fba868fa4b1b91e1fdab776edc8cfbe6e9fb81 # v3
         if: always() && steps.build_custom_image.outcome == 'success'
         with:
           sarif_file: 'trivy-cdb_${{ matrix.service }}.sarif'
@@ -295,7 +295,7 @@ jobs:
       fail-fast: false
 
     steps:
-      - uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0 # v7.0.0
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
 
       - name: Build Service Image
         id: build_custom_image
@@ -334,7 +334,7 @@ jobs:
     if: always()
 
     steps:
-      - uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0 # v7.0.0
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
 
       - name: Compute Trivy allowlist (Debian tracker)
         run: |
