@@ -275,3 +275,6 @@ class RiskState:
     # PR #617: Pre-Approval Exposure Reservation (Race Condition Fix)
     pending_exposure_usdt: float = 0.0
     pending_reservations: dict[str, float] = field(default_factory=dict)
+    # Issue #4152: per-symbol pending signed quantity for projected position checks
+    pending_position_qty: dict[str, float] = field(default_factory=dict)
+    pending_qty_reservations: dict[str, tuple[str, float]] = field(default_factory=dict)

@@ -8,10 +8,19 @@ from unittest.mock import MagicMock
 import pytest
 
 from core.utils.seed import Seed, SeedManager
+from core.safety.kill_switch import KillSwitch
 from services.execution import mock_executor as execution_mock_executor, service
 from services.execution.mock_executor import MockExecutor
 from services.execution.models import OrderStatus
 from services.risk.models import Order as RiskOrder
+
+
+@pytest.fixture(autouse=True)
+def _explicit_inactive_kill_switch(tmp_path, monkeypatch):
+    """Integration path needs verified inactive KS after #4152 fail-closed missing-file semantics."""
+    state_file = tmp_path / "integration_ks_inactive.state"
+    KillSwitch(str(state_file))
+    monkeypatch.setenv("CDB_KILL_SWITCH_STATE_FILE", str(state_file))
 
 
 class DummyRedisClient:

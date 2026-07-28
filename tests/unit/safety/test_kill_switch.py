@@ -260,8 +260,8 @@ class TestErrorHandling:
         # Should default to ACTIVE for safety
         assert ks.is_active() is True
 
-    def test_empty_state_file_defaults_to_inactive(self, tmp_path):
-        """Test empty state file defaults to INACTIVE"""
+    def test_empty_state_file_defaults_to_active(self, tmp_path):
+        """Test empty state file defaults to ACTIVE (fail-closed, #4152)."""
         state_file = tmp_path / "empty.state"
 
         # Create empty file
@@ -269,8 +269,8 @@ class TestErrorHandling:
 
         ks = KillSwitch(state_file=str(state_file))
 
-        # Empty file should default to INACTIVE
-        assert ks.is_active() is False
+        # Empty file must never be treated as permissive inactive
+        assert ks.is_active() is True
 
 
 class TestRealWorldScenarios:

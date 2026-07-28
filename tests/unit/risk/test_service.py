@@ -10,6 +10,7 @@ import importlib
 from pathlib import Path
 from unittest.mock import patch, MagicMock
 from core.domain.models import Signal
+from core.safety.kill_switch import KillSwitch
 
 # Ensure repo root is on sys.path for package imports
 repo_root = Path(__file__).resolve().parents[3]
@@ -24,6 +25,14 @@ risk_config = importlib.import_module("services.risk.config")
 RiskManager = risk_service.RiskManager
 RiskConfig = risk_config.RiskConfig
 AllocationState = risk_service.AllocationState
+
+
+@pytest.fixture(autouse=True)
+def _explicit_inactive_kill_switch(tmp_path, monkeypatch):
+    """Provide verified inactive KS state so missing-file fail-closed does not block unit paths."""
+    state_file = tmp_path / "unit_ks_inactive.state"
+    KillSwitch(str(state_file))
+    monkeypatch.setenv("CDB_KILL_SWITCH_STATE_FILE", str(state_file))
 
 
 @pytest.mark.unit
@@ -511,6 +520,7 @@ def test_process_signal_attaches_compact_order_metadata(mock_redis, mock_postgre
 
     with patch.object(risk_service, "config", test_config):
         manager = RiskManager()
+        manager.config = test_config
         manager.allocation_state["paper"] = AllocationState(
             allocation_pct=0.5,
             cooldown_until=None,
@@ -528,6 +538,12 @@ def test_process_signal_attaches_compact_order_metadata(mock_redis, mock_postgre
         original_pending_reservations = (
             risk_service.risk_state.pending_reservations.copy()
         )
+        original_pending_position_qty = dict(
+            getattr(risk_service.risk_state, "pending_position_qty", {})
+        )
+        original_pending_qty_reservations = dict(
+            getattr(risk_service.risk_state, "pending_qty_reservations", {})
+        )
         original_risk_off = risk_service.risk_off_active
 
         try:
@@ -537,6 +553,8 @@ def test_process_signal_attaches_compact_order_metadata(mock_redis, mock_postgre
             risk_service.risk_state.pending_exposure_usdt = 0.0
             risk_service.risk_state.pending_orders = 0
             risk_service.risk_state.pending_reservations = {}
+            risk_service.risk_state.pending_position_qty = {}
+            risk_service.risk_state.pending_qty_reservations = {}
             risk_service.risk_off_active = False
 
             signal = Signal(
@@ -624,4 +642,8 @@ def test_process_signal_attaches_compact_order_metadata(mock_redis, mock_postgre
             risk_service.risk_state.pending_exposure_usdt = original_pending_exposure
             risk_service.risk_state.pending_orders = original_pending_orders
             risk_service.risk_state.pending_reservations = original_pending_reservations
+            risk_service.risk_state.pending_position_qty = original_pending_position_qty
+            risk_service.risk_state.pending_qty_reservations = (
+                original_pending_qty_reservations
+            )
             risk_service.risk_off_active = original_risk_off

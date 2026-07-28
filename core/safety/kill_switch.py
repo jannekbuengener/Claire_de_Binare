@@ -98,10 +98,10 @@ class KillSwitch:
 
             if not lines:
                 return {
-                    "state": KillSwitchState.INACTIVE.value,
-                    "reason": None,
+                    "state": KillSwitchState.ACTIVE.value,
+                    "reason": KillSwitchReason.SYSTEM_ERROR.value,
                     "message": "Empty state file",
-                    "activated_at": None,
+                    "activated_at": utcnow().isoformat(),
                 }
 
             state_dict = {}
@@ -111,6 +111,15 @@ class KillSwitch:
                     continue
                 key, value = line.split("=", 1)
                 state_dict[key.strip()] = value.strip()
+
+            # Missing or unparseable state key → fail-closed ACTIVE
+            if "state" not in state_dict:
+                return {
+                    "state": KillSwitchState.ACTIVE.value,
+                    "reason": KillSwitchReason.SYSTEM_ERROR.value,
+                    "message": "Corrupt state file: missing state key",
+                    "activated_at": utcnow().isoformat(),
+                }
 
             return state_dict
 
@@ -179,7 +188,13 @@ class KillSwitch:
         """
         state_dict = self._read_state()
         state_value = state_dict.get("state", KillSwitchState.ACTIVE.value)
-        return state_value == KillSwitchState.ACTIVE.value
+        if state_value == KillSwitchState.ACTIVE.value:
+            return True
+        if state_value == KillSwitchState.INACTIVE.value:
+            return False
+        # Unknown token → fail-closed ACTIVE
+        logger.error("Unknown kill-switch state value %r; treating as ACTIVE", state_value)
+        return True
 
     def get_state(self) -> Tuple[KillSwitchState, Optional[str], str, Optional[str]]:
         """
@@ -196,12 +211,19 @@ class KillSwitch:
         """
         state_dict = self._read_state()
 
-        state_value = state_dict.get("state", KillSwitchState.INACTIVE.value)
-        state = (
-            KillSwitchState.ACTIVE
-            if state_value == "active"
-            else KillSwitchState.INACTIVE
-        )
+        state_value = state_dict.get("state", KillSwitchState.ACTIVE.value)
+        if state_value == KillSwitchState.ACTIVE.value:
+            state = KillSwitchState.ACTIVE
+        elif state_value == KillSwitchState.INACTIVE.value:
+            state = KillSwitchState.INACTIVE
+        else:
+            # Unknown / invalid state token → fail-closed ACTIVE
+            return (
+                KillSwitchState.ACTIVE,
+                KillSwitchReason.SYSTEM_ERROR.value,
+                f"Unknown kill-switch state value: {state_value}",
+                utcnow().isoformat(),
+            )
 
         reason_value = state_dict.get("reason")
         reason = reason_value if reason_value and reason_value != "none" else None
@@ -325,7 +347,13 @@ def get_kill_switch_details(
     """
     resolved_state_file = resolve_kill_switch_state_file(state_file)
     if not create_if_missing and not resolved_state_file.exists():
-        return False, None, "State file missing", None
+        # Fail-closed: missing state is never treated as inactive/permissive.
+        return (
+            True,
+            KillSwitchReason.SYSTEM_ERROR.value,
+            "State file missing",
+            utcnow().isoformat(),
+        )
     kill_switch = KillSwitch(str(resolved_state_file))
     state, reason, message, activated_at = kill_switch.get_state()
     return state == KillSwitchState.ACTIVE, reason, message, activated_at
