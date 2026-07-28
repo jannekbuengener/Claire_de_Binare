@@ -11,6 +11,7 @@ Fingerprints:
   - canonical_json_sha256 (YAML pointer): SHA-256 over the full canonical JSON
     file bytes as stored on disk.
 """
+
 from __future__ import annotations
 
 import argparse
@@ -27,11 +28,19 @@ except ImportError:  # pragma: no cover
     jsonschema = None  # type: ignore
 
 ROOT = Path(__file__).resolve().parents[1]
-POLICY_PATH = ROOT / "config" / "parameter-control" / "v1" / "CDB_PARAMETER_CONTROL_POLICY.json"
-SCHEMA_PATH = (
-    ROOT / "config" / "parameter-control" / "v1" / "CDB_PARAMETER_CONTROL_POLICY.schema.json"
+POLICY_PATH = (
+    ROOT / "config" / "parameter-control" / "v1" / "CDB_PARAMETER_CONTROL_POLICY.json"
 )
-YAML_PATH = ROOT / "config" / "parameter-control" / "v1" / "CDB_PARAMETER_CONTROL_POLICY.yaml"
+SCHEMA_PATH = (
+    ROOT
+    / "config"
+    / "parameter-control"
+    / "v1"
+    / "CDB_PARAMETER_CONTROL_POLICY.schema.json"
+)
+YAML_PATH = (
+    ROOT / "config" / "parameter-control" / "v1" / "CDB_PARAMETER_CONTROL_POLICY.yaml"
+)
 
 CHANGE_AUTHORITIES = {
     "RESEARCH_ALLOWED",
@@ -110,7 +119,9 @@ def walk_unresolved(obj: Any) -> int:
     return 0
 
 
-def validate(policy_path: Path = POLICY_PATH, schema_path: Path = SCHEMA_PATH) -> list[str]:
+def validate(
+    policy_path: Path = POLICY_PATH, schema_path: Path = SCHEMA_PATH
+) -> list[str]:
     errors: list[str] = []
     if not policy_path.is_file():
         return [f"missing policy: {policy_path}"]
@@ -134,7 +145,9 @@ def validate(policy_path: Path = POLICY_PATH, schema_path: Path = SCHEMA_PATH) -
         except jsonschema.ValidationError as exc:  # type: ignore[attr-defined]
             errors.append(f"schema validation failed: {exc.message}")
     else:
-        errors.append("jsonschema package not installed; structural schema check skipped")
+        errors.append(
+            "jsonschema package not installed; structural schema check skipped"
+        )
 
     if doc.get("schema_version") != "cdb.parameter_control_policy.register.v1":
         errors.append("unexpected schema_version")
@@ -209,9 +222,7 @@ def validate(policy_path: Path = POLICY_PATH, schema_path: Path = SCHEMA_PATH) -
                 errors.append(f"{pid}: alias {alias!r} collides with an exact_name")
             prev = alias_owners.get(alias)
             if prev and prev != pid:
-                errors.append(
-                    f"alias collision {alias!r} between {prev} and {pid}"
-                )
+                errors.append(f"alias collision {alias!r} between {prev} and {pid}")
             alias_owners[alias] = pid
 
     computed_fp = compute_register_fingerprint(doc)
@@ -248,11 +259,7 @@ def validate(policy_path: Path = POLICY_PATH, schema_path: Path = SCHEMA_PATH) -
         errors.append(f"missing YAML pointer: {YAML_PATH}")
 
     # Safety posture smoke: at least one MUST_NOT_OPTIMIZE / GOVERNANCE_ONLY
-    authorities = {
-        r.get("change_authority")
-        for r in rules
-        if isinstance(r, dict)
-    }
+    authorities = {r.get("change_authority") for r in rules if isinstance(r, dict)}
     if "MUST_NOT_OPTIMIZE" not in authorities:
         errors.append("expected at least one MUST_NOT_OPTIMIZE rule")
     if "GOVERNANCE_ONLY" not in authorities and "MUST_NOT_OPTIMIZE" not in authorities:

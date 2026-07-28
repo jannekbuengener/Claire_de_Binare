@@ -12,11 +12,19 @@ from tools.validate_parameter_control_policy import (
 )
 
 ROOT = Path(__file__).resolve().parents[3]
-POLICY = ROOT / "config" / "parameter-control" / "v1" / "CDB_PARAMETER_CONTROL_POLICY.json"
-SCHEMA = (
-    ROOT / "config" / "parameter-control" / "v1" / "CDB_PARAMETER_CONTROL_POLICY.schema.json"
+POLICY = (
+    ROOT / "config" / "parameter-control" / "v1" / "CDB_PARAMETER_CONTROL_POLICY.json"
 )
-YAML = ROOT / "config" / "parameter-control" / "v1" / "CDB_PARAMETER_CONTROL_POLICY.yaml"
+SCHEMA = (
+    ROOT
+    / "config"
+    / "parameter-control"
+    / "v1"
+    / "CDB_PARAMETER_CONTROL_POLICY.schema.json"
+)
+YAML = (
+    ROOT / "config" / "parameter-control" / "v1" / "CDB_PARAMETER_CONTROL_POLICY.yaml"
+)
 
 REQUIRED_FIELDS = (
     "parameter_id",
