@@ -1,0 +1,306 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "cdb.parameter_control_policy.register.v1",
+  "title": "CDB Parameter Control Policy Register v1",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "schema_version",
+    "document_id",
+    "status",
+    "source",
+    "default_policy",
+    "context_codes",
+    "enums",
+    "rule_count",
+    "unresolved_count",
+    "register_fingerprint",
+    "rules",
+    "global_invariants",
+    "workflow_gates"
+  ],
+  "properties": {
+    "schema_version": {
+      "const": "cdb.parameter_control_policy.register.v1"
+    },
+    "document_id": {
+      "const": "CDB-PARAMETER-CONTROL-POLICY"
+    },
+    "status": {
+      "type": "string",
+      "enum": ["draft", "candidate", "canonical", "superseded"]
+    },
+    "source": {
+      "type": "object",
+      "required": [
+        "repository",
+        "analysis_commit",
+        "analysis_artifact",
+        "meta_issue",
+        "implementation_issue"
+      ],
+      "additionalProperties": true
+    },
+    "default_policy": {
+      "type": "object",
+      "additionalProperties": true
+    },
+    "context_codes": {
+      "type": "object",
+      "required": ["r", "p", "u", "l", "d", "t"],
+      "properties": {
+        "r": { "const": "replay" },
+        "p": { "const": "paper" },
+        "u": { "const": "runtime" },
+        "l": { "const": "live" },
+        "d": { "const": "docs" },
+        "t": { "const": "tests" }
+      },
+      "additionalProperties": false
+    },
+    "enums": {
+      "type": "object",
+      "required": [
+        "change_authority",
+        "lifecycle_status",
+        "main_class",
+        "technical_adjustability"
+      ],
+      "additionalProperties": true
+    },
+    "rule_count": {
+      "type": "integer",
+      "const": 56
+    },
+    "unresolved_count": {
+      "type": "integer",
+      "minimum": 0
+    },
+    "register_fingerprint": {
+      "type": "string",
+      "pattern": "^[a-f0-9]{64}$"
+    },
+    "rules": {
+      "type": "array",
+      "minItems": 56,
+      "maxItems": 56,
+      "items": { "$ref": "#/$defs/rule" }
+    },
+    "global_invariants": {
+      "type": "array",
+      "items": { "type": "string" }
+    },
+    "workflow_gates": {
+      "type": "object",
+      "additionalProperties": true
+    },
+    "path_remediation": {
+      "type": "array",
+      "items": { "type": "object" }
+    },
+    "notes": {
+      "type": "array",
+      "items": { "type": "string" }
+    }
+  },
+  "$defs": {
+    "unresolved": {
+      "type": "object",
+      "required": ["resolution_status", "reason", "required_follow_up"],
+      "properties": {
+        "resolution_status": { "const": "unresolved" },
+        "reason": { "type": "string", "minLength": 1 },
+        "required_follow_up": { "const": true }
+      },
+      "additionalProperties": true
+    },
+    "not_applicable": {
+      "type": "object",
+      "required": ["resolution_status", "reason"],
+      "properties": {
+        "resolution_status": { "const": "not_applicable" },
+        "reason": { "type": "string", "minLength": 1 }
+      },
+      "additionalProperties": true
+    },
+    "owner": {
+      "oneOf": [
+        {
+          "type": "object",
+          "required": ["id", "derivation", "evidence"],
+          "properties": {
+            "id": {
+              "type": "string",
+              "pattern": "^(service|domain):[a-z0-9_./-]+$"
+            },
+            "derivation": { "type": "string", "minLength": 1 },
+            "evidence": {
+              "type": "array",
+              "minItems": 1,
+              "items": { "type": "string", "minLength": 1 }
+            }
+          },
+          "additionalProperties": false
+        },
+        { "$ref": "#/$defs/unresolved" }
+      ]
+    },
+    "rule": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "parameter_id",
+        "exact_name",
+        "aliases",
+        "system_area",
+        "owner",
+        "repository_paths",
+        "consumers",
+        "effective_default",
+        "override_precedence",
+        "unit",
+        "allowed_range",
+        "main_class",
+        "technical_adjustability",
+        "change_authority",
+        "context_validity",
+        "safety_classification",
+        "snapshot_and_provenance_requirement",
+        "test_and_evidence_requirement",
+        "lifecycle_status"
+      ],
+      "properties": {
+        "parameter_id": {
+          "type": "string",
+          "pattern": "^CDB-[0-9]{3}$"
+        },
+        "exact_name": { "type": "string", "minLength": 1 },
+        "aliases": {
+          "type": "array",
+          "items": { "type": "string", "minLength": 1 }
+        },
+        "system_area": { "type": "string", "minLength": 1 },
+        "owner": { "$ref": "#/$defs/owner" },
+        "repository_paths": {
+          "oneOf": [
+            {
+              "type": "array",
+              "minItems": 1,
+              "items": { "type": "string", "minLength": 1 }
+            },
+            { "$ref": "#/$defs/unresolved" }
+          ]
+        },
+        "consumers": {
+          "type": "array",
+          "items": { "type": "string", "minLength": 1 }
+        },
+        "effective_default": {
+          "oneOf": [
+            { "type": "object" },
+            { "type": "string" },
+            { "$ref": "#/$defs/unresolved" }
+          ]
+        },
+        "override_precedence": {
+          "oneOf": [
+            {
+              "type": "array",
+              "minItems": 1,
+              "items": { "type": "string", "minLength": 1 }
+            },
+            { "$ref": "#/$defs/unresolved" }
+          ]
+        },
+        "unit": {
+          "oneOf": [
+            { "type": "string", "minLength": 1 },
+            { "$ref": "#/$defs/not_applicable" },
+            { "$ref": "#/$defs/unresolved" }
+          ]
+        },
+        "allowed_range": {
+          "oneOf": [
+            { "type": "string", "minLength": 1 },
+            { "type": "object" },
+            { "$ref": "#/$defs/not_applicable" },
+            { "$ref": "#/$defs/unresolved" }
+          ]
+        },
+        "main_class": { "type": "string", "minLength": 1 },
+        "technical_adjustability": { "type": "string", "minLength": 1 },
+        "change_authority": {
+          "type": "string",
+          "enum": [
+            "RESEARCH_ALLOWED",
+            "CONDITIONAL_AFTER_EVIDENCE",
+            "FROZEN_UNTIL_CONTRACT",
+            "GOVERNANCE_ONLY",
+            "MUST_NOT_OPTIMIZE",
+            "FORBIDDEN"
+          ]
+        },
+        "context_validity": {
+          "type": "object",
+          "required": ["allowed", "forbidden"],
+          "properties": {
+            "allowed": {
+              "type": "array",
+              "items": {
+                "type": "string",
+                "enum": ["replay", "paper", "runtime", "live", "docs", "tests"]
+              }
+            },
+            "forbidden": {
+              "type": "array",
+              "items": {
+                "type": "string",
+                "enum": ["replay", "paper", "runtime", "live", "docs", "tests"]
+              }
+            },
+            "allowed_codes": { "type": "string" },
+            "forbidden_codes": { "type": "string" },
+            "resolution_note": { "type": "string" }
+          },
+          "additionalProperties": false
+        },
+        "safety_classification": { "type": "string", "minLength": 1 },
+        "snapshot_and_provenance_requirement": {
+          "type": "object",
+          "required": ["required", "reason"],
+          "properties": {
+            "required": { "type": "boolean" },
+            "reason": { "type": "string", "minLength": 1 }
+          },
+          "additionalProperties": true
+        },
+        "test_and_evidence_requirement": {
+          "type": "object",
+          "required": ["must_not_change_without_evidence"],
+          "properties": {
+            "tests_present_in_analysis": { "type": "string" },
+            "required_evidence": { "type": "string" },
+            "documentation_present_in_analysis": { "type": "string" },
+            "must_not_change_without_evidence": { "type": "boolean" }
+          },
+          "additionalProperties": true
+        },
+        "lifecycle_status": {
+          "type": "string",
+          "enum": [
+            "active",
+            "implicit",
+            "duplicated",
+            "dead",
+            "documented-only",
+            "invariant"
+          ]
+        },
+        "analysis": {
+          "type": "object",
+          "additionalProperties": true
+        }
+      }
+    }
+  }
+}

@@ -8,6 +8,9 @@
 services/risk/reason_codes.py text eol=lf
 tests/contract/test_decision_contract.py text eol=lf
 docs/contracts/*.json text eol=lf
+config/parameter-control/v1/*.json text eol=lf
+config/parameter-control/v1/*.yaml text eol=lf
+config/parameter-control/v1/*.md text eol=lf
 
 # Shell scripts should use LF
 *.sh text eol=lf

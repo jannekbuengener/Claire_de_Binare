@@ -1,0 +1,5305 @@
+{
+  "schema_version": "cdb.parameter_control_policy.register.v1",
+  "document_id": "CDB-PARAMETER-CONTROL-POLICY",
+  "status": "canonical",
+  "source": {
+    "repository": "jannekbuengener/Claire_de_Binare",
+    "branch": "main",
+    "analysis_commit": "224cfd49398b329b315781372658fab1fbf15362",
+    "analysis_artifact": "Claire_de_Binare_Parameteranalyse_main_224cfd4.docx",
+    "analysis_artifact_sha256": "429e57c44856a081a8e317cab6acb11279d152568369b9dd8eed89c3ee99f35c",
+    "register_extract": "CDB_Parameteranalyse_224cfd4_Register_Extrakt.json",
+    "register_extract_sha256": "6047a63fdeff645d3c8df541a92dbaa2c1b35f98b60465a7002d0d758fc399ae",
+    "register_extract_schema": "cdb.parameter_analysis.register_extract.v1",
+    "meta_issue": 4147,
+    "implementation_issue": 4148,
+    "verification_base": "origin/main"
+  },
+  "default_policy": {
+    "unknown_parameter": "deny",
+    "missing_evidence": "deny",
+    "live_context": "deny",
+    "principle": "default-deny; explicit allow only",
+    "stage_a_b_oos_stress_gates": "frozen",
+    "risk_and_live_boundaries": "frozen"
+  },
+  "context_codes": {
+    "r": "replay",
+    "p": "paper",
+    "u": "runtime",
+    "l": "live",
+    "d": "docs",
+    "t": "tests"
+  },
+  "enums": {
+    "change_authority": [
+      "RESEARCH_ALLOWED",
+      "CONDITIONAL_AFTER_EVIDENCE",
+      "FROZEN_UNTIL_CONTRACT",
+      "GOVERNANCE_ONLY",
+      "MUST_NOT_OPTIMIZE",
+      "FORBIDDEN"
+    ],
+    "lifecycle_status": [
+      "active",
+      "implicit",
+      "duplicated",
+      "dead",
+      "documented-only",
+      "invariant"
+    ],
+    "main_class": [
+      "STRATEGY_OPTIMIZATION",
+      "DATA_QUALITY_CONTROL",
+      "REGIME_CONTROL",
+      "UNCLEAR_OR_IMPLICIT",
+      "VALIDATION_OPTIMIZATION",
+      "EXECUTION_ASSUMPTION",
+      "RUNTIME_OPERATION",
+      "RISK_SAFETY_LIMIT",
+      "LIVE_GOVERNANCE_GATE",
+      "HARD_INVARIANT",
+      "OBSERVABILITY_ALERT"
+    ],
+    "technical_adjustability": [
+      "OPERATOR_FACING",
+      "CONFIG_ONLY",
+      "CODE_HARDCODED",
+      "DEAD_OR_UNUSED",
+      "IMPLICIT",
+      "DERIVED",
+      "NON_TUNABLE"
+    ]
+  },
+  "rule_count": 56,
+  "unresolved_count": 0,
+  "register_fingerprint": "fdb449b05418d4a13813f7cf06c491f2160de8e96ce3d61480cc6ba55c02afa1",
+  "rules": [
+    {
+      "parameter_id": "CDB-001",
+      "exact_name": "Strategie- und Adapterwahl",
+      "aliases": [
+        "SIGNAL_STRATEGY_ID",
+        "SIGNAL_ADAPTER_ID"
+      ],
+      "system_area": "Signal",
+      "owner": {
+        "id": "service:signal",
+        "derivation": "system_area=Signal; SERVICE_CATALOG/path ownership convention",
+        "evidence": [
+          "services/signal/config.py",
+          "services/signal/service.py",
+          "core/contracts/external_adapter_registry.py"
+        ]
+      },
+      "repository_paths": [
+        "services/signal/config.py",
+        "services/signal/service.py",
+        "core/contracts/external_adapter_registry.py"
+      ],
+      "consumers": [
+        "Risk-Signalvertrag",
+        "Allocation-Regeln"
+      ],
+      "effective_default": {
+        "value": "primary_breakout_v1; momentum_builtin",
+        "source_commit": "224cfd49398b329b315781372658fab1fbf15362",
+        "verification": "historical_extract; paths re-verified on origin/main",
+        "main_path_status": "paths_resolved"
+      },
+      "override_precedence": [
+        "code_default",
+        "env",
+        "compose"
+      ],
+      "unit": {
+        "resolution_status": "not_applicable",
+        "reason": "No single unit applies to this multi-symbol control surface"
+      },
+      "allowed_range": "PB1, Donchian oder generischer Pfad; Adapter nur momentum_builtin",
+      "main_class": "STRATEGY_OPTIMIZATION",
+      "technical_adjustability": "OPERATOR_FACING",
+      "change_authority": "CONDITIONAL_AFTER_EVIDENCE",
+      "context_validity": {
+        "allowed": [
+          "replay",
+          "tests",
+          "docs"
+        ],
+        "forbidden": [
+          "paper",
+          "runtime",
+          "live"
+        ],
+        "allowed_codes": "rtd",
+        "forbidden_codes": "pul"
+      },
+      "safety_classification": "high",
+      "snapshot_and_provenance_requirement": {
+        "required": true,
+        "reason": "Replay-Paritaet und vollstaendiger Config-Snapshot"
+      },
+      "test_and_evidence_requirement": {
+        "tests_present_in_analysis": "Ja",
+        "required_evidence": "Replay-Paritaet und vollstaendiger Config-Snapshot",
+        "documentation_present_in_analysis": "Ja",
+        "must_not_change_without_evidence": true
+      },
+      "lifecycle_status": "active",
+      "analysis": {
+        "source_commit": "224cfd49398b329b315781372658fab1fbf15362",
+        "effect": "Waehlt die Strategieimplementierung. momentum_builtin ist nur der statische Adapter-Wrapper und keine Momentum-Strategiewahl.",
+        "finding": "aktiv; Adaptername ist leicht missverstaendlich",
+        "dependencies": [
+          "Risk-Signalvertrag",
+          "Allocation-Regeln"
+        ],
+        "change_risk": "hoch",
+        "suitability": "mittel",
+        "compact_decision": "CONDITIONAL_AFTER_EVIDENCE",
+        "blocked_by_issues": [
+          4148
+        ],
+        "evidence_notes": [
+          "vollständiger Config-Snapshot",
+          "Replay-Parität",
+          "Signal-Risk-Contract-Test"
+        ],
+        "name_drift": null,
+        "may_change_compact": true
+      }
+    },
+    {
+      "parameter_id": "CDB-002",
+      "exact_name": "PB1 Entry-/Exit-Lookback",
+      "aliases": [
+        "entry_lookback_minutes",
+        "exit_lookback_minutes"
+      ],
+      "system_area": "PB1",
+      "owner": {
+        "id": "service:signal",
+        "derivation": "system_area=PB1; SERVICE_CATALOG/path ownership convention",
+        "evidence": [
+          "core/contracts/primary_breakout_v1_config.py",
+          "services/signal/config.py",
+          "services/signal/service.py"
+        ]
+      },
+      "repository_paths": [
+        "core/contracts/primary_breakout_v1_config.py",
+        "services/signal/config.py",
+        "services/signal/service.py"
+      ],
+      "consumers": [
+        "Trade Count",
+        "Holding Period",
+        "Fees"
+      ],
+      "effective_default": {
+        "value": "240 / 120 Minuten",
+        "source_commit": "224cfd49398b329b315781372658fab1fbf15362",
+        "verification": "historical_extract; paths re-verified on origin/main",
+        "main_path_status": "paths_resolved"
+      },
+      "override_precedence": [
+        "code_default",
+        "env"
+      ],
+      "unit": "minutes",
+      "allowed_range": "jeweils >0",
+      "main_class": "STRATEGY_OPTIMIZATION",
+      "technical_adjustability": "OPERATOR_FACING",
+      "change_authority": "RESEARCH_ALLOWED",
+      "context_validity": {
+        "allowed": [
+          "replay",
+          "tests",
+          "docs"
+        ],
+        "forbidden": [
+          "paper",
+          "runtime",
+          "live"
+        ],
+        "allowed_codes": "rtd",
+        "forbidden_codes": "pul"
+      },
+      "safety_classification": "medium",
+      "snapshot_and_provenance_requirement": {
+        "required": true,
+        "reason": "identische Replay-Fenster und Kostenannahmen"
+      },
+      "test_and_evidence_requirement": {
+        "tests_present_in_analysis": "Ja",
+        "required_evidence": "identische Replay-Fenster und Kostenannahmen",
+        "documentation_present_in_analysis": "Ja",
+        "must_not_change_without_evidence": true
+      },
+      "lifecycle_status": "active",
+      "analysis": {
+        "source_commit": "224cfd49398b329b315781372658fab1fbf15362",
+        "effect": "Bestimmt Breakout-Historie, Exit-Historie und Mindest-Warmup.",
+        "finding": "aktiv",
+        "dependencies": [
+          "Trade Count",
+          "Holding Period",
+          "Fees"
+        ],
+        "change_risk": "mittel",
+        "suitability": "hoch",
+        "compact_decision": "ALLOW_REPLAY_RESEARCH",
+        "blocked_by_issues": [
+          4148,
+          4151,
+          4153
+        ],
+        "evidence_notes": [
+          "identische Development-Fenster",
+          "unveränderte Gates",
+          "identische Kostenannahmen",
+          "Config-Snapshot"
+        ],
+        "name_drift": null,
+        "may_change_compact": true
+      }
+    },
+    {
+      "parameter_id": "CDB-003",
+      "exact_name": "PB1 Breakout-Buffer und Cooldown",
+      "aliases": [
+        "SIGNAL_BREAKOUT_BUFFER",
+        "SIGNAL_MIN_MINUTES_BETWEEN_ENTRIES"
+      ],
+      "system_area": "PB1/Signal",
+      "owner": {
+        "id": "service:signal",
+        "derivation": "system_area=PB1/Signal; SERVICE_CATALOG/path ownership convention",
+        "evidence": [
+          "core/contracts/primary_breakout_v1_config.py",
+          "services/signal/config.py",
+          "services/signal/service.py"
+        ]
+      },
+      "repository_paths": [
+        "core/contracts/primary_breakout_v1_config.py",
+        "services/signal/config.py",
+        "services/signal/service.py"
+      ],
+      "consumers": [
+        "Trade Count",
+        "Turnover",
+        "Fees",
+        "Drawdown"
+      ],
+      "effective_default": {
+        "value": "0.0005; 60 Minuten",
+        "source_commit": "224cfd49398b329b315781372658fab1fbf15362",
+        "verification": "historical_extract; paths re-verified on origin/main",
+        "main_path_status": "paths_resolved"
+      },
+      "override_precedence": [
+        "code_default",
+        "env",
+        "compose"
+      ],
+      "unit": "minutes",
+      "allowed_range": "Buffer >=0; Runtime-Cooldown >=0; kanonische Config >0",
+      "main_class": "STRATEGY_OPTIMIZATION",
+      "technical_adjustability": "OPERATOR_FACING",
+      "change_authority": "RESEARCH_ALLOWED",
+      "context_validity": {
+        "allowed": [
+          "replay",
+          "tests",
+          "docs"
+        ],
+        "forbidden": [
+          "paper",
+          "runtime",
+          "live"
+        ],
+        "allowed_codes": "rtd",
+        "forbidden_codes": "pul"
+      },
+      "safety_classification": "medium",
+      "snapshot_and_provenance_requirement": {
+        "required": true,
+        "reason": "Boundary-Test fuer 0 und kostenbelastete Replays"
+      },
+      "test_and_evidence_requirement": {
+        "tests_present_in_analysis": "Ja",
+        "required_evidence": "Boundary-Test fuer 0 und kostenbelastete Replays",
+        "documentation_present_in_analysis": "Cooldown-Dokumentation widerspruechlich",
+        "must_not_change_without_evidence": true
+      },
+      "lifecycle_status": "active",
+      "analysis": {
+        "source_commit": "224cfd49398b329b315781372658fab1fbf15362",
+        "effect": "Verschiebt die Entry-Grenze und unterdrueckt erneute Entries bis Ablauf des Cooldowns.",
+        "finding": "aktiv; unterschiedliche Cooldown-Validierung",
+        "dependencies": [
+          "Trade Count",
+          "Turnover",
+          "Fees",
+          "Drawdown"
+        ],
+        "change_risk": "mittel",
+        "suitability": "hoch",
+        "compact_decision": "ALLOW_REPLAY_RESEARCH",
+        "blocked_by_issues": [
+          4148,
+          4150,
+          4151,
+          4153
+        ],
+        "evidence_notes": [
+          "Boundary-Tests",
+          "identische Development-Fenster",
+          "Kostenaufschlüsselung",
+          "Config-Snapshot"
+        ],
+        "name_drift": null,
+        "may_change_compact": true
+      }
+    },
+    {
+      "parameter_id": "CDB-004",
+      "exact_name": "PB1 Symbol und Trade-Side",
+      "aliases": [
+        "SIGNAL_SYMBOL",
+        "SIGNAL_TRADE_SIDE_MODE"
+      ],
+      "system_area": "PB1/Donchian",
+      "owner": {
+        "id": "service:signal",
+        "derivation": "system_area=PB1/Donchian; SERVICE_CATALOG/path ownership convention",
+        "evidence": [
+          "core/contracts/primary_breakout_v1_config.py",
+          "services/signal/config.py"
+        ]
+      },
+      "repository_paths": [
+        "core/contracts/primary_breakout_v1_config.py",
+        "services/signal/config.py"
+      ],
+      "consumers": [
+        "Dataset- und Risk-Vertraege"
+      ],
+      "effective_default": {
+        "value": "BTCUSDT; long_only",
+        "source_commit": "224cfd49398b329b315781372658fab1fbf15362",
+        "verification": "historical_extract; paths re-verified on origin/main",
+        "main_path_status": "paths_resolved"
+      },
+      "override_precedence": [
+        "code_default",
+        "env"
+      ],
+      "unit": {
+        "resolution_status": "not_applicable",
+        "reason": "No single unit applies to this multi-symbol control surface"
+      },
+      "allowed_range": "exakt diese Werte auf kanonischen Pfaden",
+      "main_class": "STRATEGY_OPTIMIZATION",
+      "technical_adjustability": "CONFIG_ONLY",
+      "change_authority": "FROZEN_UNTIL_CONTRACT",
+      "context_validity": {
+        "allowed": [
+          "docs",
+          "tests"
+        ],
+        "forbidden": [
+          "replay",
+          "paper",
+          "runtime",
+          "live"
+        ],
+        "allowed_codes": "dt",
+        "forbidden_codes": "rpul"
+      },
+      "safety_classification": "high",
+      "snapshot_and_provenance_requirement": {
+        "required": true,
+        "reason": "neuer Strategie- und Dataset-Vertrag"
+      },
+      "test_and_evidence_requirement": {
+        "tests_present_in_analysis": "Ja",
+        "required_evidence": "neuer Strategie- und Dataset-Vertrag",
+        "documentation_present_in_analysis": "Ja",
+        "must_not_change_without_evidence": true
+      },
+      "lifecycle_status": "active",
+      "analysis": {
+        "source_commit": "224cfd49398b329b315781372658fab1fbf15362",
+        "effect": "Sperrt andere Symbole und Short-Signale auf den kanonischen Pfaden.",
+        "finding": "aktiv; praktisch frozen",
+        "dependencies": [
+          "Dataset- und Risk-Vertraege"
+        ],
+        "change_risk": "hoch",
+        "suitability": "niedrig",
+        "compact_decision": "FROZEN_UNTIL_CONTRACT",
+        "blocked_by_issues": [
+          4148
+        ],
+        "evidence_notes": [
+          "neuer Strategie- und Dataset-Vertrag",
+          "Risk-Contract",
+          "separate OOS-Definition"
+        ],
+        "name_drift": null,
+        "may_change_compact": false
+      }
+    },
+    {
+      "parameter_id": "CDB-005",
+      "exact_name": "Signal Market-State-Freshness",
+      "aliases": [
+        "SIGNAL_MARKET_STATE_STALENESS_S"
+      ],
+      "system_area": "Signal",
+      "owner": {
+        "id": "service:signal",
+        "derivation": "system_area=Signal; SERVICE_CATALOG/path ownership convention",
+        "evidence": [
+          "services/signal/config.py",
+          "services/signal/service.py"
+        ]
+      },
+      "repository_paths": [
+        "services/signal/config.py",
+        "services/signal/service.py"
+      ],
+      "consumers": [
+        "Regime-Heartbeat 60 s",
+        "Market-State-TTL 120 s"
+      ],
+      "effective_default": {
+        "value": "30 s",
+        "source_commit": "224cfd49398b329b315781372658fab1fbf15362",
+        "verification": "historical_extract; paths re-verified on origin/main",
+        "main_path_status": "paths_resolved"
+      },
+      "override_precedence": [
+        "code_default",
+        "env"
+      ],
+      "unit": "seconds",
+      "allowed_range": ">0",
+      "main_class": "DATA_QUALITY_CONTROL",
+      "technical_adjustability": "OPERATOR_FACING",
+      "change_authority": "CONDITIONAL_AFTER_EVIDENCE",
+      "context_validity": {
+        "allowed": [
+          "tests",
+          "docs"
+        ],
+        "forbidden": [
+          "replay",
+          "paper",
+          "runtime",
+          "live"
+        ],
+        "allowed_codes": "td",
+        "forbidden_codes": "rpul"
+      },
+      "safety_classification": "correctness_sensitive",
+      "snapshot_and_provenance_requirement": {
+        "required": true,
+        "reason": "deterministische Zeitketten- und Staleness-Tests"
+      },
+      "test_and_evidence_requirement": {
+        "tests_present_in_analysis": "Ja",
+        "required_evidence": "deterministische Zeitketten- und Staleness-Tests",
+        "documentation_present_in_analysis": "teilweise",
+        "must_not_change_without_evidence": true
+      },
+      "lifecycle_status": "active",
+      "analysis": {
+        "source_commit": "224cfd49398b329b315781372658fab1fbf15362",
+        "effect": "Verhindert PB1-Entries bei altem Market State.",
+        "finding": "aktiv; Default kleiner als Regime-Heartbeat",
+        "dependencies": [
+          "Regime-Heartbeat 60 s",
+          "Market-State-TTL 120 s"
+        ],
+        "change_risk": "hoch",
+        "suitability": "niedrig",
+        "compact_decision": "CONDITIONAL_AFTER_EVIDENCE",
+        "blocked_by_issues": [
+          4149
+        ],
+        "evidence_notes": [
+          "deterministische Event-Timeline",
+          "Staleness-Boundary-Tests",
+          "Heartbeat-/TTL-Matrix"
+        ],
+        "name_drift": null,
+        "may_change_compact": true
+      }
+    },
+    {
+      "parameter_id": "CDB-006",
+      "exact_name": "PB1 erlaubtes Regime und Block-Flags",
+      "aliases": [
+        "_process_primary_breakout_v1"
+      ],
+      "system_area": "PB1",
+      "owner": {
+        "id": "service:signal",
+        "derivation": "system_area=PB1; SERVICE_CATALOG/path ownership convention",
+        "evidence": [
+          "services/signal/service.py"
+        ]
+      },
+      "repository_paths": [
+        "services/signal/service.py"
+      ],
+      "consumers": [
+        "Regime-Service",
+        "Allocation",
+        "Risk"
+      ],
+      "effective_default": {
+        "value": "nur TREND; keine aktiven Block-Flags",
+        "source_commit": "224cfd49398b329b315781372658fab1fbf15362",
+        "verification": "historical_extract; paths re-verified on origin/main",
+        "main_path_status": "paths_resolved"
+      },
+      "override_precedence": [
+        "code_constant"
+      ],
+      "unit": {
+        "resolution_status": "not_applicable",
+        "reason": "No single unit applies to this multi-symbol control surface"
+      },
+      "allowed_range": "fest",
+      "main_class": "REGIME_CONTROL",
+      "technical_adjustability": "CODE_HARDCODED",
+      "change_authority": "RESEARCH_ALLOWED",
+      "context_validity": {
+        "allowed": [
+          "replay",
+          "tests",
+          "docs"
+        ],
+        "forbidden": [
+          "paper",
+          "runtime",
+          "live"
+        ],
+        "allowed_codes": "rtd",
+        "forbidden_codes": "pul"
+      },
+      "safety_classification": "high",
+      "snapshot_and_provenance_requirement": {
+        "required": true,
+        "reason": "Replay nach Regime und Gate Reason"
+      },
+      "test_and_evidence_requirement": {
+        "tests_present_in_analysis": "Ja",
+        "required_evidence": "Replay nach Regime und Gate Reason",
+        "documentation_present_in_analysis": "Ja",
+        "must_not_change_without_evidence": true
+      },
+      "lifecycle_status": "active",
+      "analysis": {
+        "source_commit": "224cfd49398b329b315781372658fab1fbf15362",
+        "effect": "RANGE, HIGH_VOL_CHAOTIC, UNKNOWN und Block-Flags verhindern Entry; Exit bleibt moeglich.",
+        "finding": "aktiv",
+        "dependencies": [
+          "Regime-Service",
+          "Allocation",
+          "Risk"
+        ],
+        "change_risk": "hoch",
+        "suitability": "hoch",
+        "compact_decision": "ALLOW_REPLAY_RESEARCH",
+        "blocked_by_issues": [
+          4149,
+          4153
+        ],
+        "evidence_notes": [
+          "Regime-Confusion-Matrix",
+          "Gate-Reason-Auswertung",
+          "unveränderte Risk-Grenzen"
+        ],
+        "name_drift": null,
+        "may_change_compact": true
+      }
+    },
+    {
+      "parameter_id": "CDB-007",
+      "exact_name": "Generischer Momentum-Threshold und Mindestvolumen",
+      "aliases": [
+        "SIGNAL_THRESHOLD_PCT",
+        "SIGNAL_MIN_VOLUME"
+      ],
+      "system_area": "Signal",
+      "owner": {
+        "id": "service:signal",
+        "derivation": "system_area=Signal; SERVICE_CATALOG/path ownership convention",
+        "evidence": [
+          "services/signal/config.py",
+          "services/signal/service.py",
+          "infrastructure/compose/dev.yml"
+        ]
+      },
+      "repository_paths": [
+        "services/signal/config.py",
+        "services/signal/service.py",
+        "infrastructure/compose/dev.yml"
+      ],
+      "consumers": [
+        "Risk-Signal-Gate"
+      ],
+      "effective_default": {
+        "value": "Code 3.0/100000; Compose 0.005/0",
+        "source_commit": "224cfd49398b329b315781372658fab1fbf15362",
+        "verification": "historical_extract; paths re-verified on origin/main",
+        "main_path_status": "paths_resolved"
+      },
+      "override_precedence": [
+        "code_default",
+        "env",
+        "compose"
+      ],
+      "unit": "ratio_or_percent",
+      "allowed_range": "Threshold >0; Volume ohne validierten Bereich",
+      "main_class": "STRATEGY_OPTIMIZATION",
+      "technical_adjustability": "OPERATOR_FACING",
+      "change_authority": "FROZEN_UNTIL_CONTRACT",
+      "context_validity": {
+        "allowed": [
+          "docs",
+          "tests"
+        ],
+        "forbidden": [
+          "replay",
+          "paper",
+          "runtime",
+          "live"
+        ],
+        "allowed_codes": "dt",
+        "forbidden_codes": "rpul"
+      },
+      "safety_classification": "high",
+      "snapshot_and_provenance_requirement": {
+        "required": true,
+        "reason": "fachlich korrekte Zeitaggregation und Mapping"
+      },
+      "test_and_evidence_requirement": {
+        "tests_present_in_analysis": "Ja",
+        "required_evidence": "fachlich korrekte Zeitaggregation und Mapping",
+        "documentation_present_in_analysis": "widerspruechlich",
+        "must_not_change_without_evidence": true
+      },
+      "lifecycle_status": "active",
+      "analysis": {
+        "source_commit": "224cfd49398b329b315781372658fab1fbf15362",
+        "effect": "Prueft Preisveraenderung und Tick-Quantity im generischen Signalpfad.",
+        "finding": "auf PB1 inaktiv",
+        "dependencies": [
+          "Risk-Signal-Gate"
+        ],
+        "change_risk": "hoch",
+        "suitability": "mittel",
+        "compact_decision": "FROZEN_UNTIL_CONTRACT",
+        "blocked_by_issues": [
+          4149
+        ],
+        "evidence_notes": [
+          "korrekte Zeitaggregation",
+          "einheitliche Einheiten",
+          "Signal-Risk-Contract"
+        ],
+        "name_drift": null,
+        "may_change_compact": false
+      }
+    },
+    {
+      "parameter_id": "CDB-008",
+      "exact_name": "Generischer Signal-Lookback",
+      "aliases": [
+        "SIGNAL_LOOKBACK_MIN",
+        "PriceBuffer(max_history=1)"
+      ],
+      "system_area": "Signal",
+      "owner": {
+        "id": "service:signal",
+        "derivation": "system_area=Signal; SERVICE_CATALOG/path ownership convention",
+        "evidence": [
+          "services/signal/config.py",
+          "services/signal/price_buffer.py",
+          "services/signal/service.py"
+        ]
+      },
+      "repository_paths": [
+        "services/signal/config.py",
+        "services/signal/price_buffer.py",
+        "services/signal/service.py"
+      ],
+      "consumers": [
+        "Risk fordert pct_change_15m >=3.0"
+      ],
+      "effective_default": {
+        "value": "15 Minuten; tatsaechlich ein vorheriger Tick",
+        "source_commit": "224cfd49398b329b315781372658fab1fbf15362",
+        "verification": "historical_extract; paths re-verified on origin/main",
+        "main_path_status": "paths_resolved"
+      },
+      "override_precedence": [
+        "code_default",
+        "env"
+      ],
+      "unit": "minutes",
+      "allowed_range": "Config >0; tatsaechliche Historie fest 1",
+      "main_class": "UNCLEAR_OR_IMPLICIT",
+      "technical_adjustability": "DEAD_OR_UNUSED",
+      "change_authority": "MUST_NOT_OPTIMIZE",
+      "context_validity": {
+        "allowed": [
+          "tests",
+          "docs"
+        ],
+        "forbidden": [
+          "replay",
+          "paper",
+          "runtime",
+          "live"
+        ],
+        "allowed_codes": "td",
+        "forbidden_codes": "rpul"
+      },
+      "safety_classification": "safety_critical",
+      "snapshot_and_provenance_requirement": {
+        "required": true,
+        "reason": "Zeitsemantik und Contract-Test"
+      },
+      "test_and_evidence_requirement": {
+        "tests_present_in_analysis": "Buffer-Tests, kein 15-Minuten-Contract",
+        "required_evidence": "Zeitsemantik und Contract-Test",
+        "documentation_present_in_analysis": "irrefuehrend",
+        "must_not_change_without_evidence": true
+      },
+      "lifecycle_status": "dead",
+      "analysis": {
+        "source_commit": "224cfd49398b329b315781372658fab1fbf15362",
+        "effect": "lookback_minutes beeinflusst die Berechnung nicht; pct_change_15m ist Tick-zu-Tick.",
+        "finding": "definierter Wert ohne Wirkung",
+        "dependencies": [
+          "Risk fordert pct_change_15m >=3.0"
+        ],
+        "change_risk": "kritisch",
+        "suitability": "keine",
+        "compact_decision": "CORRECTNESS_FIX_ONLY",
+        "blocked_by_issues": [
+          4149
+        ],
+        "evidence_notes": [
+          "Zeitsemantik-Test",
+          "Contract-Test",
+          "Konsumentenabgleich"
+        ],
+        "name_drift": null,
+        "may_change_compact": true
+      }
+    },
+    {
+      "parameter_id": "CDB-009",
+      "exact_name": "Donchian Entry-/Exit-Kanaele",
+      "aliases": [
+        "ENTRY_CHANNEL_BARS",
+        "EXIT_CHANNEL_BARS"
+      ],
+      "system_area": "Signal/Replay",
+      "owner": {
+        "id": "service:signal",
+        "derivation": "system_area=Signal/Replay; SERVICE_CATALOG/path ownership convention",
+        "evidence": [
+          "core/replay/pack_a_breakout_common.py",
+          "services/signal/config.py"
+        ]
+      },
+      "repository_paths": [
+        "core/replay/pack_a_breakout_common.py",
+        "services/signal/config.py"
+      ],
+      "consumers": [
+        "Warmup",
+        "Trade Count",
+        "Cooldown"
+      ],
+      "effective_default": {
+        "value": "20 / 10 Bars",
+        "source_commit": "224cfd49398b329b315781372658fab1fbf15362",
+        "verification": "historical_extract; paths re-verified on origin/main",
+        "main_path_status": "paths_resolved"
+      },
+      "override_precedence": [
+        "code_default",
+        "env"
+      ],
+      "unit": "bars",
+      "allowed_range": "jeweils >0",
+      "main_class": "STRATEGY_OPTIMIZATION",
+      "technical_adjustability": "OPERATOR_FACING",
+      "change_authority": "RESEARCH_ALLOWED",
+      "context_validity": {
+        "allowed": [
+          "replay",
+          "tests",
+          "docs"
+        ],
+        "forbidden": [
+          "paper",
+          "runtime",
+          "live"
+        ],
+        "allowed_codes": "rtd",
+        "forbidden_codes": "pul"
+      },
+      "safety_classification": "medium",
+      "snapshot_and_provenance_requirement": {
+        "required": true,
+        "reason": "Replay mit identischer Bar-Semantik"
+      },
+      "test_and_evidence_requirement": {
+        "tests_present_in_analysis": "Ja",
+        "required_evidence": "Replay mit identischer Bar-Semantik",
+        "documentation_present_in_analysis": "Ja",
+        "must_not_change_without_evidence": true
+      },
+      "lifecycle_status": "active",
+      "analysis": {
+        "source_commit": "224cfd49398b329b315781372658fab1fbf15362",
+        "effect": "Bestimmt strikten High-/Low-Breakout.",
+        "finding": "aktiv",
+        "dependencies": [
+          "Warmup",
+          "Trade Count",
+          "Cooldown"
+        ],
+        "change_risk": "mittel",
+        "suitability": "hoch",
+        "compact_decision": "ALLOW_REPLAY_RESEARCH",
+        "blocked_by_issues": [
+          4148,
+          4151,
+          4153
+        ],
+        "evidence_notes": [
+          "identische Bar-Semantik",
+          "unveränderte Gates",
+          "Config-Snapshot"
+        ],
+        "name_drift": {
+          "extract": "Donchian Entry-/Exit-Kanaele",
+          "compact_policy": "Donchian Entry-/Exit-Kanäle"
+        },
+        "may_change_compact": true
+      }
+    },
+    {
+      "parameter_id": "CDB-010",
+      "exact_name": "Batch-A-Strategieparameter",
+      "aliases": [
+        "10 Candidate-Configs"
+      ],
+      "system_area": "Replay",
+      "owner": {
+        "id": "domain:replay",
+        "derivation": "system_area=Replay; SERVICE_CATALOG/path ownership convention",
+        "evidence": [
+          "core/replay/batch_a_strategy_registry.py",
+          "core/replay/pack_a_breakout_common.py"
+        ]
+      },
+      "repository_paths": [
+        "core/replay/batch_a_strategy_registry.py",
+        "core/replay/pack_a_breakout_common.py"
+      ],
+      "consumers": [
+        "Stage A/B",
+        "Execution Costs"
+      ],
+      "effective_default": {
+        "value": "u.a. EMA/SMA 20/50; RMR Z=2/20; Bollinger 20/2; ROC 12/.005; OR 00-01 UTC; Momentum Hold 240",
+        "source_commit": "224cfd49398b329b315781372658fab1fbf15362",
+        "verification": "historical_extract; paths re-verified on origin/main",
+        "main_path_status": "paths_resolved"
+      },
+      "override_precedence": [
+        "code_constant"
+      ],
+      "unit": {
+        "resolution_status": "not_applicable",
+        "reason": "No single unit applies to this multi-symbol control surface"
+      },
+      "allowed_range": "je Dataclass, teilweise nur >0",
+      "main_class": "STRATEGY_OPTIMIZATION",
+      "technical_adjustability": "CODE_HARDCODED",
+      "change_authority": "RESEARCH_ALLOWED",
+      "context_validity": {
+        "allowed": [
+          "replay",
+          "tests",
+          "docs"
+        ],
+        "forbidden": [
+          "paper",
+          "runtime",
+          "live"
+        ],
+        "allowed_codes": "rtd",
+        "forbidden_codes": "pul"
+      },
+      "safety_classification": "medium",
+      "snapshot_and_provenance_requirement": {
+        "required": true,
+        "reason": "kontrolliertes Grid bei unveraenderten Gates"
+      },
+      "test_and_evidence_requirement": {
+        "tests_present_in_analysis": "umfangreiche Strategy-Tests",
+        "required_evidence": "kontrolliertes Grid bei unveraenderten Gates",
+        "documentation_present_in_analysis": "Manifest teilweise veraltet",
+        "must_not_change_without_evidence": true
+      },
+      "lifecycle_status": "active",
+      "analysis": {
+        "source_commit": "224cfd49398b329b315781372658fab1fbf15362",
+        "effect": "Definiert Entry, Exit, Warmup, Cooldown und Sizing fuer alle Batch-A-Kandidaten.",
+        "finding": "aktiv; Code zeigt alle zehn als implementiert",
+        "dependencies": [
+          "Stage A/B",
+          "Execution Costs"
+        ],
+        "change_risk": "mittel",
+        "suitability": "hoch",
+        "compact_decision": "ALLOW_REPLAY_RESEARCH",
+        "blocked_by_issues": [
+          4148,
+          4151,
+          4153
+        ],
+        "evidence_notes": [
+          "vordefinierter Parameterraum",
+          "unveränderte Stage-A-Gates",
+          "vollständiger Config-Snapshot"
+        ],
+        "name_drift": null,
+        "may_change_compact": true
+      }
+    },
+    {
+      "parameter_id": "CDB-011",
+      "exact_name": "Legacy Market Classifier",
+      "aliases": [
+        "trend_threshold",
+        "volatility_threshold",
+        "Lookbacks",
+        "min_confidence"
+      ],
+      "system_area": "Signal",
+      "owner": {
+        "id": "service:signal",
+        "derivation": "system_area=Signal; SERVICE_CATALOG/path ownership convention",
+        "evidence": [
+          "services/signal/market_classifier.py"
+        ]
+      },
+      "repository_paths": [
+        "services/signal/market_classifier.py"
+      ],
+      "consumers": [
+        "Signal-Invariante gegen Confidence-Gating"
+      ],
+      "effective_default": {
+        "value": "0.02; 0.015; 20/50/100; 0.6 plus Hardcodes",
+        "source_commit": "224cfd49398b329b315781372658fab1fbf15362",
+        "verification": "historical_extract; paths re-verified on origin/main",
+        "main_path_status": "paths_resolved"
+      },
+      "override_precedence": [
+        "constructor",
+        "code_constant"
+      ],
+      "unit": {
+        "resolution_status": "not_applicable",
+        "reason": "No single unit applies to this multi-symbol control surface"
+      },
+      "allowed_range": "teilweise unvalidiert",
+      "main_class": "REGIME_CONTROL",
+      "technical_adjustability": "DEAD_OR_UNUSED",
+      "change_authority": "FORBIDDEN",
+      "context_validity": {
+        "allowed": [
+          "docs",
+          "tests"
+        ],
+        "forbidden": [
+          "replay",
+          "paper",
+          "runtime",
+          "live"
+        ],
+        "allowed_codes": "dt",
+        "forbidden_codes": "rpul"
+      },
+      "safety_classification": "safety_critical",
+      "snapshot_and_provenance_requirement": {
+        "required": false,
+        "reason": "Wiring-Evidence"
+      },
+      "test_and_evidence_requirement": {
+        "tests_present_in_analysis": "nur isolierte Tests",
+        "required_evidence": "Wiring-Evidence",
+        "documentation_present_in_analysis": "gering",
+        "must_not_change_without_evidence": true
+      },
+      "lifecycle_status": "dead",
+      "analysis": {
+        "source_commit": "224cfd49398b329b315781372658fab1fbf15362",
+        "effect": "Koennte Phase und Confidence filtern, besitzt aber keinen Produktionskonsumenten.",
+        "finding": "tot; Confidence-Gate waere governance-sensitiv",
+        "dependencies": [
+          "Signal-Invariante gegen Confidence-Gating"
+        ],
+        "change_risk": "hoch",
+        "suitability": "keine",
+        "compact_decision": "NO_EFFECT_OR_DEAD",
+        "blocked_by_issues": [
+          4148
+        ],
+        "evidence_notes": [
+          "Wiring-Evidence",
+          "Dead-Code-Entscheidung"
+        ],
+        "name_drift": null,
+        "may_change_compact": false
+      }
+    },
+    {
+      "parameter_id": "CDB-012",
+      "exact_name": "Regime ADX-/ATR-Perioden und ADX-Grenzen",
+      "aliases": [
+        "REGIME_ADX_PERIOD",
+        "REGIME_ATR_PERIOD",
+        "REGIME_ADX_TREND_THRESHOLD",
+        "REGIME_ADX_RANGE_THRESHOLD"
+      ],
+      "system_area": "Regime",
+      "owner": {
+        "id": "service:regime",
+        "derivation": "system_area=Regime; SERVICE_CATALOG/path ownership convention",
+        "evidence": [
+          "services/regime/config.py",
+          "services/regime/service.py",
+          "infrastructure/compose/compose.blue.yml"
+        ]
+      },
+      "repository_paths": [
+        "services/regime/config.py",
+        "services/regime/service.py",
+        "infrastructure/compose/compose.blue.yml"
+      ],
+      "consumers": [
+        "Signal- und Allocation-Gates"
+      ],
+      "effective_default": {
+        "value": "14; 14; 25; 20",
+        "source_commit": "224cfd49398b329b315781372658fab1fbf15362",
+        "verification": "historical_extract; paths re-verified on origin/main",
+        "main_path_status": "paths_resolved"
+      },
+      "override_precedence": [
+        "code_default",
+        "env",
+        "compose"
+      ],
+      "unit": {
+        "resolution_status": "not_applicable",
+        "reason": "No single unit applies to this multi-symbol control surface"
+      },
+      "allowed_range": "Perioden >0; Trend > Range",
+      "main_class": "REGIME_CONTROL",
+      "technical_adjustability": "OPERATOR_FACING",
+      "change_authority": "RESEARCH_ALLOWED",
+      "context_validity": {
+        "allowed": [
+          "replay",
+          "tests",
+          "docs"
+        ],
+        "forbidden": [
+          "paper",
+          "runtime",
+          "live"
+        ],
+        "allowed_codes": "rtd",
+        "forbidden_codes": "pul"
+      },
+      "safety_classification": "high",
+      "snapshot_and_provenance_requirement": {
+        "required": true,
+        "reason": "Regime-Confusion-Matrix und Stabilitaet"
+      },
+      "test_and_evidence_requirement": {
+        "tests_present_in_analysis": "Ja",
+        "required_evidence": "Regime-Confusion-Matrix und Stabilitaet",
+        "documentation_present_in_analysis": "Ja",
+        "must_not_change_without_evidence": true
+      },
+      "lifecycle_status": "active",
+      "analysis": {
+        "source_commit": "224cfd49398b329b315781372658fab1fbf15362",
+        "effect": "ADX >=25 ergibt TREND; <=20 ergibt RANGE; Zwischenzone haelt den Zustand.",
+        "finding": "aktiv",
+        "dependencies": [
+          "Signal- und Allocation-Gates"
+        ],
+        "change_risk": "hoch",
+        "suitability": "hoch",
+        "compact_decision": "ALLOW_REPLAY_RESEARCH",
+        "blocked_by_issues": [
+          4149,
+          4153
+        ],
+        "evidence_notes": [
+          "Regime-Confusion-Matrix",
+          "Wechselrate",
+          "Signalverteilung je Regime"
+        ],
+        "name_drift": null,
+        "may_change_compact": true
+      }
+    },
+    {
+      "parameter_id": "CDB-013",
+      "exact_name": "High-Volatility-ATR-Grenze",
+      "aliases": [
+        "REGIME_ATR_HIGH_VOL_THRESHOLD"
+      ],
+      "system_area": "Regime",
+      "owner": {
+        "id": "service:regime",
+        "derivation": "system_area=Regime; SERVICE_CATALOG/path ownership convention",
+        "evidence": [
+          "services/regime/config.py",
+          "services/regime/service.py",
+          "infrastructure/compose/compose.blue.yml"
+        ]
+      },
+      "repository_paths": [
+        "services/regime/config.py",
+        "services/regime/service.py",
+        "infrastructure/compose/compose.blue.yml",
+        "infrastructure/compose/compose.red.yml",
+        ".env.example"
+      ],
+      "consumers": [
+        "Signalzahl",
+        "Risk Blocks",
+        "Allocation"
+      ],
+      "effective_default": {
+        "value": "Compose 2.0; .env.example 0.03; kein Code-Default",
+        "source_commit": "224cfd49398b329b315781372658fab1fbf15362",
+        "verification": "historical_extract; paths re-verified on origin/main",
+        "main_path_status": "paths_resolved"
+      },
+      "override_precedence": [
+        "code_default",
+        "env"
+      ],
+      "unit": {
+        "resolution_status": "not_applicable",
+        "reason": "No single unit applies to this multi-symbol control surface"
+      },
+      "allowed_range": "nicht validiert",
+      "main_class": "REGIME_CONTROL",
+      "technical_adjustability": "OPERATOR_FACING",
+      "change_authority": "RESEARCH_ALLOWED",
+      "context_validity": {
+        "allowed": [
+          "tests",
+          "docs",
+          "replay"
+        ],
+        "forbidden": [
+          "paper",
+          "runtime",
+          "live"
+        ],
+        "allowed_codes": "tdr",
+        "forbidden_codes": "pul"
+      },
+      "safety_classification": "high",
+      "snapshot_and_provenance_requirement": {
+        "required": true,
+        "reason": "Replay auf Dev-Fenstern; Skalen-/Perzentilkalibrierung"
+      },
+      "test_and_evidence_requirement": {
+        "tests_present_in_analysis": "Kalibrierungs-Evidence vorhanden",
+        "required_evidence": "Replay auf Dev-Fenstern; Skalen-/Perzentilkalibrierung",
+        "documentation_present_in_analysis": "widerspruechlich",
+        "must_not_change_without_evidence": true
+      },
+      "lifecycle_status": "active",
+      "analysis": {
+        "source_commit": "224cfd49398b329b315781372658fab1fbf15362",
+        "effect": "Absolute ATR-Pruefung laeuft vor ADX und erzeugt HIGH_VOL_CHAOTIC.",
+        "finding": "aktiv; nachweislich fehlskaliert",
+        "dependencies": [
+          "Signalzahl",
+          "Risk Blocks",
+          "Allocation"
+        ],
+        "change_risk": "hoch",
+        "suitability": "sehr hoch",
+        "compact_decision": "CORRECTNESS_FIX_ONLY",
+        "blocked_by_issues": [
+          4149
+        ],
+        "evidence_notes": [
+          "Skalenanalyse",
+          "Regime-Verteilung vor/nach Fix",
+          "OOS unberührt"
+        ],
+        "name_drift": null,
+        "may_change_compact": true
+      }
+    },
+    {
+      "parameter_id": "CDB-014",
+      "exact_name": "Regime-Bestaetigung und Heartbeat",
+      "aliases": [
+        "REGIME_CONFIRMATION_BARS",
+        "REGIME_HEARTBEAT_INTERVAL_S"
+      ],
+      "system_area": "Regime",
+      "owner": {
+        "id": "service:regime",
+        "derivation": "system_area=Regime; SERVICE_CATALOG/path ownership convention",
+        "evidence": [
+          "services/regime/config.py",
+          "services/regime/service.py"
+        ]
+      },
+      "repository_paths": [
+        "services/regime/config.py",
+        "services/regime/service.py"
+      ],
+      "consumers": [
+        "Signal-Staleness 30 s",
+        "Candle/Market-Staleness 300 s"
+      ],
+      "effective_default": {
+        "value": "3 Bars; 60 s",
+        "source_commit": "224cfd49398b329b315781372658fab1fbf15362",
+        "verification": "historical_extract; paths re-verified on origin/main",
+        "main_path_status": "paths_resolved"
+      },
+      "override_precedence": [
+        "code_default",
+        "env"
+      ],
+      "unit": "bars",
+      "allowed_range": "Bars >0; Heartbeat unvalidiert",
+      "main_class": "REGIME_CONTROL",
+      "technical_adjustability": "OPERATOR_FACING",
+      "change_authority": "CONDITIONAL_AFTER_EVIDENCE",
+      "context_validity": {
+        "allowed": [
+          "replay",
+          "tests",
+          "docs"
+        ],
+        "forbidden": [
+          "paper",
+          "runtime",
+          "live"
+        ],
+        "allowed_codes": "rtd",
+        "forbidden_codes": "pul"
+      },
+      "safety_classification": "high",
+      "snapshot_and_provenance_requirement": {
+        "required": true,
+        "reason": "Wechselrate, Signal-Lag und simulierte Zeitketten"
+      },
+      "test_and_evidence_requirement": {
+        "tests_present_in_analysis": "teilweise",
+        "required_evidence": "Wechselrate, Signal-Lag und simulierte Zeitketten",
+        "documentation_present_in_analysis": "Ja",
+        "must_not_change_without_evidence": true
+      },
+      "lifecycle_status": "active",
+      "analysis": {
+        "source_commit": "224cfd49398b329b315781372658fab1fbf15362",
+        "effect": "Wechsel erst nach drei gleichen Kandidaten; unveraendertes Regime wird alle 60 s re-emittiert.",
+        "finding": "aktiv; Heartbeat kann fuer PB1 zu langsam sein",
+        "dependencies": [
+          "Signal-Staleness 30 s",
+          "Candle/Market-Staleness 300 s"
+        ],
+        "change_risk": "hoch",
+        "suitability": "mittel",
+        "compact_decision": "CONDITIONAL_AFTER_EVIDENCE",
+        "blocked_by_issues": [
+          4149,
+          4153
+        ],
+        "evidence_notes": [
+          "Wechselrate",
+          "Signal-Lag",
+          "deterministische Zeitkette"
+        ],
+        "name_drift": {
+          "extract": "Regime-Bestaetigung und Heartbeat",
+          "compact_policy": "Regime-Bestätigung und Heartbeat"
+        },
+        "may_change_compact": true
+      }
+    },
+    {
+      "parameter_id": "CDB-015",
+      "exact_name": "Allgemeiner Validation Gate Evaluator",
+      "aliases": [
+        "MIN_ORDERS",
+        "MIN_FILL_RATE",
+        "MIN_QUANTITY"
+      ],
+      "system_area": "Validation",
+      "owner": {
+        "id": "domain:validation",
+        "derivation": "system_area=Validation; SERVICE_CATALOG/path ownership convention",
+        "evidence": [
+          "services/validation/gate_evaluator.py"
+        ]
+      },
+      "repository_paths": [
+        "services/validation/gate_evaluator.py"
+      ],
+      "consumers": [
+        "Evidence/Reports"
+      ],
+      "effective_default": {
+        "value": "1; 0.45; 0",
+        "source_commit": "224cfd49398b329b315781372658fab1fbf15362",
+        "verification": "historical_extract; paths re-verified on origin/main",
+        "main_path_status": "paths_resolved"
+      },
+      "override_precedence": [
+        "code_default",
+        "env"
+      ],
+      "unit": {
+        "resolution_status": "not_applicable",
+        "reason": "No single unit applies to this multi-symbol control surface"
+      },
+      "allowed_range": "Orders >=0; Rate sinnvoll [0,1], nicht vollstaendig validiert",
+      "main_class": "VALIDATION_OPTIMIZATION",
+      "technical_adjustability": "OPERATOR_FACING",
+      "change_authority": "RESEARCH_ALLOWED",
+      "context_validity": {
+        "allowed": [
+          "replay",
+          "tests",
+          "docs"
+        ],
+        "forbidden": [
+          "paper",
+          "runtime",
+          "live"
+        ],
+        "allowed_codes": "rtd",
+        "forbidden_codes": "pul"
+      },
+      "safety_classification": "correctness_sensitive",
+      "snapshot_and_provenance_requirement": {
+        "required": true,
+        "reason": "historische Fehlklassifikationen"
+      },
+      "test_and_evidence_requirement": {
+        "tests_present_in_analysis": "Ja",
+        "required_evidence": "historische Fehlklassifikationen",
+        "documentation_present_in_analysis": "teilweise",
+        "must_not_change_without_evidence": true
+      },
+      "lifecycle_status": "active",
+      "analysis": {
+        "source_commit": "224cfd49398b329b315781372658fab1fbf15362",
+        "effect": "Basis-Pass/Fail; Risk-Level low erst ab Fill Rate 0.6.",
+        "finding": "aktiv",
+        "dependencies": [
+          "Evidence/Reports"
+        ],
+        "change_risk": "mittel",
+        "suitability": "mittel",
+        "compact_decision": "CONDITIONAL_AFTER_EVIDENCE",
+        "blocked_by_issues": [
+          4148
+        ],
+        "evidence_notes": [
+          "False-positive/negative-Analyse",
+          "unveränderte Holdouts"
+        ],
+        "name_drift": null,
+        "may_change_compact": true
+      }
+    },
+    {
+      "parameter_id": "CDB-016",
+      "exact_name": "Stage-A Rankability und Sample Coverage",
+      "aliases": [
+        "39 Fenster",
+        "Rankable Share",
+        "Closed Trades",
+        "Paired Share"
+      ],
+      "system_area": "ARVP",
+      "owner": {
+        "id": "domain:validation",
+        "derivation": "system_area=ARVP; SERVICE_CATALOG/path ownership convention",
+        "evidence": [
+          "docs/contracts/batch_a_stage_a_gate_contract.v1.json"
+        ]
+      },
+      "repository_paths": [
+        "docs/contracts/batch_a_stage_a_gate_contract.v1.json"
+      ],
+      "consumers": [
+        "DQ",
+        "Warmup",
+        "Scenario Pairs"
+      ],
+      "effective_default": {
+        "value": "0.5; 10; 0.5; pessimistisch 0.5",
+        "source_commit": "224cfd49398b329b315781372658fab1fbf15362",
+        "verification": "historical_extract; paths re-verified on origin/main",
+        "main_path_status": "paths_resolved"
+      },
+      "override_precedence": [
+        "versioned_contract_json"
+      ],
+      "unit": {
+        "resolution_status": "not_applicable",
+        "reason": "No single unit applies to this multi-symbol control surface"
+      },
+      "allowed_range": "Shares [0,1]; Trades >=0",
+      "main_class": "VALIDATION_OPTIMIZATION",
+      "technical_adjustability": "CONFIG_ONLY",
+      "change_authority": "FROZEN_UNTIL_CONTRACT",
+      "context_validity": {
+        "allowed": [
+          "docs",
+          "tests"
+        ],
+        "forbidden": [
+          "replay",
+          "paper",
+          "runtime",
+          "live"
+        ],
+        "allowed_codes": "dt",
+        "forbidden_codes": "rpul"
+      },
+      "safety_classification": "correctness_sensitive",
+      "snapshot_and_provenance_requirement": {
+        "required": true,
+        "reason": "False-negative-Studie"
+      },
+      "test_and_evidence_requirement": {
+        "tests_present_in_analysis": "Contract-/Runner-Tests",
+        "required_evidence": "False-negative-Studie",
+        "documentation_present_in_analysis": "Ja",
+        "must_not_change_without_evidence": true
+      },
+      "lifecycle_status": "active",
+      "analysis": {
+        "source_commit": "224cfd49398b329b315781372658fab1fbf15362",
+        "effect": "Entfernt unrankable und kleine Kandidaten vor Wirtschaftsgates.",
+        "finding": "aktiv",
+        "dependencies": [
+          "DQ",
+          "Warmup",
+          "Scenario Pairs"
+        ],
+        "change_risk": "hoch",
+        "suitability": "niedrig bis mittel",
+        "compact_decision": "FROZEN_UNTIL_CONTRACT",
+        "blocked_by_issues": [
+          4151
+        ],
+        "evidence_notes": [
+          "False-negative-Studie",
+          "Data-Quality-Provenance"
+        ],
+        "name_drift": null,
+        "may_change_compact": false
+      }
+    },
+    {
+      "parameter_id": "CDB-017",
+      "exact_name": "Stage-A Wirtschaftsgates",
+      "aliases": [
+        "Median Net PnL",
+        "Expectancy",
+        "Profit Factor",
+        "Positive Share",
+        "Drawdown-R"
+      ],
+      "system_area": "ARVP",
+      "owner": {
+        "id": "domain:validation",
+        "derivation": "system_area=ARVP; SERVICE_CATALOG/path ownership convention",
+        "evidence": [
+          "docs/contracts/batch_a_stage_a_gate_contract.v1.json"
+        ]
+      },
+      "repository_paths": [
+        "docs/contracts/batch_a_stage_a_gate_contract.v1.json"
+      ],
+      "consumers": [
+        "Fees",
+        "Slippage",
+        "Trade Count"
+      ],
+      "effective_default": {
+        "value": ">0; >0; PF >=1.05; Share 0.4; DD-R <=0.5",
+        "source_commit": "224cfd49398b329b315781372658fab1fbf15362",
+        "verification": "historical_extract; paths re-verified on origin/main",
+        "main_path_status": "paths_resolved"
+      },
+      "override_precedence": [
+        "versioned_contract_json"
+      ],
+      "unit": {
+        "resolution_status": "not_applicable",
+        "reason": "No single unit applies to this multi-symbol control surface"
+      },
+      "allowed_range": "vertraglich definiert",
+      "main_class": "VALIDATION_OPTIMIZATION",
+      "technical_adjustability": "CONFIG_ONLY",
+      "change_authority": "MUST_NOT_OPTIMIZE",
+      "context_validity": {
+        "allowed": [
+          "docs",
+          "tests"
+        ],
+        "forbidden": [
+          "replay",
+          "paper",
+          "runtime",
+          "live"
+        ],
+        "allowed_codes": "dt",
+        "forbidden_codes": "rpul"
+      },
+      "safety_classification": "safety_critical",
+      "snapshot_and_provenance_requirement": {
+        "required": true,
+        "reason": "Kostenkalibrierung und unangetasteter Holdout"
+      },
+      "test_and_evidence_requirement": {
+        "tests_present_in_analysis": "Ja",
+        "required_evidence": "Kostenkalibrierung und unangetasteter Holdout",
+        "documentation_present_in_analysis": "Ja",
+        "must_not_change_without_evidence": true
+      },
+      "lifecycle_status": "active",
+      "analysis": {
+        "source_commit": "224cfd49398b329b315781372658fab1fbf15362",
+        "effect": "Entscheidet das wirtschaftliche Ueberleben in Stage A.",
+        "finding": "aktiv; aktueller Hauptblocker",
+        "dependencies": [
+          "Fees",
+          "Slippage",
+          "Trade Count"
+        ],
+        "change_risk": "hoch",
+        "suitability": "niedrig vor besserer Evidence",
+        "compact_decision": "FORBIDDEN_OPTIMIZATION",
+        "blocked_by_issues": [],
+        "evidence_notes": [
+          "Kostenkalibrierung",
+          "unangetasteter Holdout",
+          "separates Governance-Issue"
+        ],
+        "name_drift": null,
+        "may_change_compact": false
+      }
+    },
+    {
+      "parameter_id": "CDB-018",
+      "exact_name": "Stage-B Confirmation",
+      "aliases": [
+        "35 Validation-, 22 OOS-, 5 Stress-Fenster"
+      ],
+      "system_area": "ARVP",
+      "owner": {
+        "id": "domain:validation",
+        "derivation": "system_area=ARVP; SERVICE_CATALOG/path ownership convention",
+        "evidence": [
+          "docs/contracts/batch_a_stage_b_confirmation_contract.v1.json"
+        ]
+      },
+      "repository_paths": [
+        "docs/contracts/batch_a_stage_b_confirmation_contract.v1.json"
+      ],
+      "consumers": [
+        "Stage-A-Survivors"
+      ],
+      "effective_default": {
+        "value": "Val/OOS Rankability 0.5, PnL >0, Share 0.35; Stress 0.6 und PnL >0",
+        "source_commit": "224cfd49398b329b315781372658fab1fbf15362",
+        "verification": "historical_extract; paths re-verified on origin/main",
+        "main_path_status": "paths_resolved"
+      },
+      "override_precedence": [
+        "versioned_contract_json"
+      ],
+      "unit": {
+        "resolution_status": "not_applicable",
+        "reason": "No single unit applies to this multi-symbol control surface"
+      },
+      "allowed_range": "vertraglich",
+      "main_class": "VALIDATION_OPTIMIZATION",
+      "technical_adjustability": "CONFIG_ONLY",
+      "change_authority": "MUST_NOT_OPTIMIZE",
+      "context_validity": {
+        "allowed": [
+          "docs",
+          "tests"
+        ],
+        "forbidden": [
+          "replay",
+          "paper",
+          "runtime",
+          "live"
+        ],
+        "allowed_codes": "dt",
+        "forbidden_codes": "rpul"
+      },
+      "safety_classification": "safety_critical",
+      "snapshot_and_provenance_requirement": {
+        "required": true,
+        "reason": "unangetasteter OOS-/Stress-Holdout"
+      },
+      "test_and_evidence_requirement": {
+        "tests_present_in_analysis": "Ja",
+        "required_evidence": "unangetasteter OOS-/Stress-Holdout",
+        "documentation_present_in_analysis": "Ja",
+        "must_not_change_without_evidence": true
+      },
+      "lifecycle_status": "active",
+      "analysis": {
+        "source_commit": "224cfd49398b329b315781372658fab1fbf15362",
+        "effect": "Unabhaengige Confirmation; alle Pflichtgruppen muessen bestehen.",
+        "finding": "aktiv",
+        "dependencies": [
+          "Stage-A-Survivors"
+        ],
+        "change_risk": "hoch",
+        "suitability": "keine fruehe Optimierung",
+        "compact_decision": "FORBIDDEN_OPTIMIZATION",
+        "blocked_by_issues": [],
+        "evidence_notes": [
+          "unangetasteter OOS-/Stress-Holdout"
+        ],
+        "name_drift": null,
+        "may_change_compact": false
+      }
+    },
+    {
+      "parameter_id": "CDB-019",
+      "exact_name": "League Hard Gates",
+      "aliases": [
+        "Trades",
+        "Szenarien",
+        "DQ",
+        "Drift",
+        "Regime",
+        "Recommendation"
+      ],
+      "system_area": "Ranking",
+      "owner": {
+        "id": "domain:validation",
+        "derivation": "system_area=Ranking; SERVICE_CATALOG/path ownership convention",
+        "evidence": [
+          "services/validation/profitability_league_scorer.py"
+        ]
+      },
+      "repository_paths": [
+        "services/validation/profitability_league_scorer.py"
+      ],
+      "consumers": [
+        "Candidate Evidence Assembler"
+      ],
+      "effective_default": {
+        "value": "Trades >=10; Szenarien >=3; DQ nicht BLOCKED; Drift nutzbar",
+        "source_commit": "224cfd49398b329b315781372658fab1fbf15362",
+        "verification": "historical_extract; paths re-verified on origin/main",
+        "main_path_status": "paths_resolved"
+      },
+      "override_precedence": [
+        "code_constant"
+      ],
+      "unit": "bars",
+      "allowed_range": "fest",
+      "main_class": "VALIDATION_OPTIMIZATION",
+      "technical_adjustability": "CODE_HARDCODED",
+      "change_authority": "FROZEN_UNTIL_CONTRACT",
+      "context_validity": {
+        "allowed": [
+          "docs",
+          "tests"
+        ],
+        "forbidden": [
+          "replay",
+          "paper",
+          "runtime",
+          "live"
+        ],
+        "allowed_codes": "dt",
+        "forbidden_codes": "rpul"
+      },
+      "safety_classification": "correctness_sensitive",
+      "snapshot_and_provenance_requirement": {
+        "required": true,
+        "reason": "Promotion Precision/Recall"
+      },
+      "test_and_evidence_requirement": {
+        "tests_present_in_analysis": "Ja",
+        "required_evidence": "Promotion Precision/Recall",
+        "documentation_present_in_analysis": "Ja",
+        "must_not_change_without_evidence": true
+      },
+      "lifecycle_status": "active",
+      "analysis": {
+        "source_commit": "224cfd49398b329b315781372658fab1fbf15362",
+        "effect": "Schliesst Kandidaten vor dem numerischen Score aus.",
+        "finding": "aktiv",
+        "dependencies": [
+          "Candidate Evidence Assembler"
+        ],
+        "change_risk": "hoch",
+        "suitability": "niedrig",
+        "compact_decision": "FROZEN_UNTIL_CONTRACT",
+        "blocked_by_issues": [
+          4150,
+          4151
+        ],
+        "evidence_notes": [
+          "Promotion Precision/Recall",
+          "Candidate-Evidence-Parität"
+        ],
+        "name_drift": null,
+        "may_change_compact": false
+      }
+    },
+    {
+      "parameter_id": "CDB-020",
+      "exact_name": "League Score und Ranking",
+      "aliases": [
+        "Gewichte",
+        "Caps",
+        "Penalties",
+        "Tiebreak"
+      ],
+      "system_area": "Ranking",
+      "owner": {
+        "id": "domain:validation",
+        "derivation": "system_area=Ranking; SERVICE_CATALOG/path ownership convention",
+        "evidence": [
+          "services/validation/profitability_league_scorer.py"
+        ]
+      },
+      "repository_paths": [
+        "services/validation/profitability_league_scorer.py"
+      ],
+      "consumers": [
+        "Paper Drift",
+        "Evidence",
+        "Drawdown"
+      ],
+      "effective_default": {
+        "value": "25/20/15/15/15/10; Safety-Caps 25/10/30; PARK nur bei Net PnL >0 rankable",
+        "source_commit": "224cfd49398b329b315781372658fab1fbf15362",
+        "verification": "historical_extract; paths re-verified on origin/main",
+        "main_path_status": "paths_resolved"
+      },
+      "override_precedence": [
+        "code_constant"
+      ],
+      "unit": "score_points",
+      "allowed_range": "Score 0-100",
+      "main_class": "VALIDATION_OPTIMIZATION",
+      "technical_adjustability": "CODE_HARDCODED",
+      "change_authority": "RESEARCH_ALLOWED",
+      "context_validity": {
+        "allowed": [
+          "replay",
+          "tests",
+          "docs"
+        ],
+        "forbidden": [
+          "paper",
+          "runtime",
+          "live"
+        ],
+        "allowed_codes": "rtd",
+        "forbidden_codes": "pul"
+      },
+      "safety_classification": "correctness_sensitive",
+      "snapshot_and_provenance_requirement": {
+        "required": true,
+        "reason": "abgeleitete Score-Sensitivitaet"
+      },
+      "test_and_evidence_requirement": {
+        "tests_present_in_analysis": "Ja",
+        "required_evidence": "abgeleitete Score-Sensitivitaet",
+        "documentation_present_in_analysis": "Ja",
+        "must_not_change_without_evidence": true
+      },
+      "lifecycle_status": "active",
+      "analysis": {
+        "source_commit": "224cfd49398b329b315781372658fab1fbf15362",
+        "effect": "Bestimmt Rangfolge und Promotion-Faehigkeit.",
+        "finding": "aktiv",
+        "dependencies": [
+          "Paper Drift",
+          "Evidence",
+          "Drawdown"
+        ],
+        "change_risk": "mittel",
+        "suitability": "mittel",
+        "compact_decision": "CONDITIONAL_AFTER_EVIDENCE",
+        "blocked_by_issues": [
+          4150,
+          4151
+        ],
+        "evidence_notes": [
+          "Score-Sensitivität",
+          "Gross-to-Net-Parität",
+          "keine Gate-Änderung"
+        ],
+        "name_drift": null,
+        "may_change_compact": true
+      }
+    },
+    {
+      "parameter_id": "CDB-021",
+      "exact_name": "Kanonische Scenario Packs",
+      "aliases": [
+        "pessimistic",
+        "delayed",
+        "low_liquidity",
+        "feed_gap"
+      ],
+      "system_area": "Replay",
+      "owner": {
+        "id": "domain:replay",
+        "derivation": "system_area=Replay; SERVICE_CATALOG/path ownership convention",
+        "evidence": [
+          "core/replay/scenario_packs.py"
+        ]
+      },
+      "repository_paths": [
+        "core/replay/scenario_packs.py"
+      ],
+      "consumers": [
+        "Simulator",
+        "Stage A/B"
+      ],
+      "effective_default": {
+        "value": "30 bps; Fill 0.7; Delay 1 Bar; Depth Factor 0.3; Gap 2 Bars",
+        "source_commit": "224cfd49398b329b315781372658fab1fbf15362",
+        "verification": "historical_extract; paths re-verified on origin/main",
+        "main_path_status": "paths_resolved"
+      },
+      "override_precedence": [
+        "code_constant"
+      ],
+      "unit": "basis_points",
+      "allowed_range": "durch Harness",
+      "main_class": "EXECUTION_ASSUMPTION",
+      "technical_adjustability": "CODE_HARDCODED",
+      "change_authority": "RESEARCH_ALLOWED",
+      "context_validity": {
+        "allowed": [
+          "replay",
+          "tests",
+          "docs"
+        ],
+        "forbidden": [
+          "paper",
+          "runtime",
+          "live"
+        ],
+        "allowed_codes": "rtd",
+        "forbidden_codes": "pul"
+      },
+      "safety_classification": "medium",
+      "snapshot_and_provenance_requirement": {
+        "required": true,
+        "reason": "Realismus-Kalibrierung"
+      },
+      "test_and_evidence_requirement": {
+        "tests_present_in_analysis": "Ja",
+        "required_evidence": "Realismus-Kalibrierung",
+        "documentation_present_in_analysis": "Ja",
+        "must_not_change_without_evidence": true
+      },
+      "lifecycle_status": "active",
+      "analysis": {
+        "source_commit": "224cfd49398b329b315781372658fab1fbf15362",
+        "effect": "Erzeugt deterministische Stressvarianten.",
+        "finding": "aktiv",
+        "dependencies": [
+          "Simulator",
+          "Stage A/B"
+        ],
+        "change_risk": "mittel",
+        "suitability": "hoch",
+        "compact_decision": "ALLOW_REPLAY_RESEARCH",
+        "blocked_by_issues": [
+          4150,
+          4153
+        ],
+        "evidence_notes": [
+          "Scenario-Contract-Test",
+          "Realismus-Kalibrierung",
+          "Config-Snapshot"
+        ],
+        "name_drift": null,
+        "may_change_compact": true
+      }
+    },
+    {
+      "parameter_id": "CDB-022",
+      "exact_name": "Scenario-zu-Simulator-Mapping",
+      "aliases": [
+        "fill_rate -> FILL_THRESHOLD",
+        "fill_depth_factor -> DEPTH_IMPACT_FACTOR"
+      ],
+      "system_area": "Replay",
+      "owner": {
+        "id": "domain:replay",
+        "derivation": "system_area=Replay; SERVICE_CATALOG/path ownership convention",
+        "evidence": [
+          "services/validation/strategy_replay_runner.py"
+        ]
+      },
+      "repository_paths": [
+        "services/validation/strategy_replay_runner.py"
+      ],
+      "consumers": [
+        "Scenario Packs",
+        "Simulator"
+      ],
+      "effective_default": {
+        "value": "0.7; 0.3 im Szenario",
+        "source_commit": "224cfd49398b329b315781372658fab1fbf15362",
+        "verification": "historical_extract; paths re-verified on origin/main",
+        "main_path_status": "paths_resolved"
+      },
+      "override_precedence": [
+        "code_constant"
+      ],
+      "unit": {
+        "resolution_status": "not_applicable",
+        "reason": "Control is categorical/contractual/governance, not a single numeric unit"
+      },
+      "allowed_range": "NICHT_VERIFIZIERT",
+      "main_class": "UNCLEAR_OR_IMPLICIT",
+      "technical_adjustability": "IMPLICIT",
+      "change_authority": "MUST_NOT_OPTIMIZE",
+      "context_validity": {
+        "allowed": [
+          "tests",
+          "docs"
+        ],
+        "forbidden": [
+          "replay",
+          "paper",
+          "runtime",
+          "live"
+        ],
+        "allowed_codes": "td",
+        "forbidden_codes": "rpul"
+      },
+      "safety_classification": "safety_critical",
+      "snapshot_and_provenance_requirement": {
+        "required": true,
+        "reason": "modellbasierter Contract-Test"
+      },
+      "test_and_evidence_requirement": {
+        "tests_present_in_analysis": "Mapping-Tests, Semantik unzureichend",
+        "required_evidence": "modellbasierter Contract-Test",
+        "documentation_present_in_analysis": "widerspruechlich",
+        "must_not_change_without_evidence": true
+      },
+      "lifecycle_status": "implicit",
+      "analysis": {
+        "source_commit": "224cfd49398b329b315781372658fab1fbf15362",
+        "effect": "Steuert nutzbare Tiefe bzw. Slippage-Koeffizient, nicht probabilistische Fill Rate oder echte Depth Reduction.",
+        "finding": "aktiv, aber falsch benannt",
+        "dependencies": [
+          "Scenario Packs",
+          "Simulator"
+        ],
+        "change_risk": "hoch",
+        "suitability": "keine bis geklaert",
+        "compact_decision": "CORRECTNESS_FIX_ONLY",
+        "blocked_by_issues": [
+          4150
+        ],
+        "evidence_notes": [
+          "modellbasierter Contract-Test",
+          "Wirkpfad-Nachweis"
+        ],
+        "name_drift": null,
+        "may_change_compact": true
+      }
+    },
+    {
+      "parameter_id": "CDB-023",
+      "exact_name": "Walk-forward-Fenster",
+      "aliases": [
+        "Rollen",
+        "Start/Ende",
+        "Walk-forward Warmup"
+      ],
+      "system_area": "Replay",
+      "owner": {
+        "id": "domain:replay",
+        "derivation": "system_area=Replay; SERVICE_CATALOG/path ownership convention",
+        "evidence": [
+          "core/replay/walk_forward.py"
+        ]
+      },
+      "repository_paths": [
+        "core/replay/walk_forward.py"
+      ],
+      "consumers": [
+        "Dataset Provider"
+      ],
+      "effective_default": {
+        "value": "NICHT_VERIFIZIERT; caller-supplied",
+        "source_commit": "224cfd49398b329b315781372658fab1fbf15362",
+        "verification": "historical_extract; paths re-verified on origin/main",
+        "main_path_status": "paths_resolved"
+      },
+      "override_precedence": [
+        "caller_api"
+      ],
+      "unit": {
+        "resolution_status": "not_applicable",
+        "reason": "No single unit applies to this multi-symbol control surface"
+      },
+      "allowed_range": "geordnet; nicht ueberlappend; Warmup >=0; Luecken erlaubt",
+      "main_class": "VALIDATION_OPTIMIZATION",
+      "technical_adjustability": "CONFIG_ONLY",
+      "change_authority": "RESEARCH_ALLOWED",
+      "context_validity": {
+        "allowed": [
+          "replay",
+          "tests",
+          "docs"
+        ],
+        "forbidden": [
+          "paper",
+          "runtime",
+          "live"
+        ],
+        "allowed_codes": "rtd",
+        "forbidden_codes": "pul"
+      },
+      "safety_classification": "correctness_sensitive",
+      "snapshot_and_provenance_requirement": {
+        "required": true,
+        "reason": "kanonischer Fenstermanifest"
+      },
+      "test_and_evidence_requirement": {
+        "tests_present_in_analysis": "Unit-Tests",
+        "required_evidence": "kanonischer Fenstermanifest",
+        "documentation_present_in_analysis": "Ja",
+        "must_not_change_without_evidence": true
+      },
+      "lifecycle_status": "active",
+      "analysis": {
+        "source_commit": "224cfd49398b329b315781372658fab1fbf15362",
+        "effect": "Orchestriert Train, Calibrate und Validate.",
+        "finding": "implementiert, nicht in ARVP-Runner verdrahtet",
+        "dependencies": [
+          "Dataset Provider"
+        ],
+        "change_risk": "niedrig",
+        "suitability": "hoch",
+        "compact_decision": "CONDITIONAL_AFTER_EVIDENCE",
+        "blocked_by_issues": [
+          4151
+        ],
+        "evidence_notes": [
+          "kanonisches Fenstermanifest",
+          "Runner-Integration",
+          "Leakage-Guard"
+        ],
+        "name_drift": null,
+        "may_change_compact": true
+      }
+    },
+    {
+      "parameter_id": "CDB-024",
+      "exact_name": "Block-Bootstrap",
+      "aliases": [
+        "sample_count",
+        "sample_block_count",
+        "seed",
+        "KPI-Auswahl"
+      ],
+      "system_area": "Replay",
+      "owner": {
+        "id": "domain:replay",
+        "derivation": "system_area=Replay; SERVICE_CATALOG/path ownership convention",
+        "evidence": [
+          "core/replay/resampling.py"
+        ]
+      },
+      "repository_paths": [
+        "core/replay/resampling.py"
+      ],
+      "consumers": [
+        "Replay-Provenance"
+      ],
+      "effective_default": {
+        "value": "NICHT_VERIFIZIERT",
+        "source_commit": "224cfd49398b329b315781372658fab1fbf15362",
+        "verification": "historical_extract; paths re-verified on origin/main",
+        "main_path_status": "paths_resolved"
+      },
+      "override_precedence": [
+        "caller_api"
+      ],
+      "unit": {
+        "resolution_status": "not_applicable",
+        "reason": "No single unit applies to this multi-symbol control surface"
+      },
+      "allowed_range": "positive Counts; Seed >=0; feste KPI-Menge",
+      "main_class": "VALIDATION_OPTIMIZATION",
+      "technical_adjustability": "CONFIG_ONLY",
+      "change_authority": "RESEARCH_ALLOWED",
+      "context_validity": {
+        "allowed": [
+          "replay",
+          "tests",
+          "docs"
+        ],
+        "forbidden": [
+          "paper",
+          "runtime",
+          "live"
+        ],
+        "allowed_codes": "rtd",
+        "forbidden_codes": "pul"
+      },
+      "safety_classification": "correctness_sensitive",
+      "snapshot_and_provenance_requirement": {
+        "required": true,
+        "reason": "Integration in kanonische Reports"
+      },
+      "test_and_evidence_requirement": {
+        "tests_present_in_analysis": "Unit-Tests",
+        "required_evidence": "Integration in kanonische Reports",
+        "documentation_present_in_analysis": "Ja",
+        "must_not_change_without_evidence": true
+      },
+      "lifecycle_status": "active",
+      "analysis": {
+        "source_commit": "224cfd49398b329b315781372658fab1fbf15362",
+        "effect": "Liefert deterministische empirische KPI-Baender.",
+        "finding": "implementiert, nicht verdrahtet",
+        "dependencies": [
+          "Replay-Provenance"
+        ],
+        "change_risk": "niedrig",
+        "suitability": "hoch",
+        "compact_decision": "CONDITIONAL_AFTER_EVIDENCE",
+        "blocked_by_issues": [
+          4151
+        ],
+        "evidence_notes": [
+          "Report-Integration",
+          "Seed-Provenance",
+          "KPI-Band-Tests"
+        ],
+        "name_drift": null,
+        "may_change_compact": true
+      }
+    },
+    {
+      "parameter_id": "CDB-025",
+      "exact_name": "Counterfactual Perturbations",
+      "aliases": [
+        "Slippage",
+        "Delay",
+        "Fill-Reduction",
+        "Feed-Gap"
+      ],
+      "system_area": "Replay",
+      "owner": {
+        "id": "domain:replay",
+        "derivation": "system_area=Replay; SERVICE_CATALOG/path ownership convention",
+        "evidence": [
+          "core/replay/counterfactual.py"
+        ]
+      },
+      "repository_paths": [
+        "core/replay/counterfactual.py"
+      ],
+      "consumers": [
+        "keine echte Execution-Simulation"
+      ],
+      "effective_default": {
+        "value": "kein Default",
+        "source_commit": "224cfd49398b329b315781372658fab1fbf15362",
+        "verification": "historical_extract; paths re-verified on origin/main",
+        "main_path_status": "paths_resolved"
+      },
+      "override_precedence": [
+        "caller_api"
+      ],
+      "unit": "basis_points",
+      "allowed_range": "Slippage 0-10000 bps; Delay 1-1000; Fill [0,1]; Gap 1-10000",
+      "main_class": "VALIDATION_OPTIMIZATION",
+      "technical_adjustability": "CONFIG_ONLY",
+      "change_authority": "RESEARCH_ALLOWED",
+      "context_validity": {
+        "allowed": [
+          "replay",
+          "tests",
+          "docs"
+        ],
+        "forbidden": [
+          "paper",
+          "runtime",
+          "live"
+        ],
+        "allowed_codes": "rtd",
+        "forbidden_codes": "pul"
+      },
+      "safety_classification": "correctness_sensitive",
+      "snapshot_and_provenance_requirement": {
+        "required": true,
+        "reason": "empirische Begruendung der Heuristiken"
+      },
+      "test_and_evidence_requirement": {
+        "tests_present_in_analysis": "Unit-Tests",
+        "required_evidence": "empirische Begruendung der Heuristiken",
+        "documentation_present_in_analysis": "Ja",
+        "must_not_change_without_evidence": true
+      },
+      "lifecycle_status": "active",
+      "analysis": {
+        "source_commit": "224cfd49398b329b315781372658fab1fbf15362",
+        "effect": "Heuristisch 1% Signalverlust je Delay-Bar, 0.5% je Gap-Bar und proportionaler Fill-Verlust.",
+        "finding": "isoliert, nicht verdrahtet",
+        "dependencies": [
+          "keine echte Execution-Simulation"
+        ],
+        "change_risk": "mittel",
+        "suitability": "niedrig bis mittel",
+        "compact_decision": "CONDITIONAL_AFTER_EVIDENCE",
+        "blocked_by_issues": [
+          4150
+        ],
+        "evidence_notes": [
+          "empirische Begründung",
+          "Runner-Integration",
+          "Heuristik-Sensitivität"
+        ],
+        "name_drift": null,
+        "may_change_compact": true
+      }
+    },
+    {
+      "parameter_id": "CDB-026",
+      "exact_name": "Replay Speed",
+      "aliases": [
+        "instant",
+        "1x",
+        "2x",
+        "5x",
+        "10x"
+      ],
+      "system_area": "Replay",
+      "owner": {
+        "id": "domain:replay",
+        "derivation": "system_area=Replay; SERVICE_CATALOG/path ownership convention",
+        "evidence": [
+          "core/replay/scheduler.py",
+          "services/validation/strategy_replay_runner.py"
+        ]
+      },
+      "repository_paths": [
+        "core/replay/scheduler.py",
+        "services/validation/strategy_replay_runner.py"
+      ],
+      "consumers": [
+        "Reports"
+      ],
+      "effective_default": {
+        "value": "instant",
+        "source_commit": "224cfd49398b329b315781372658fab1fbf15362",
+        "verification": "historical_extract; paths re-verified on origin/main",
+        "main_path_status": "paths_resolved"
+      },
+      "override_precedence": [
+        "cli"
+      ],
+      "unit": {
+        "resolution_status": "not_applicable",
+        "reason": "No single unit applies to this multi-symbol control surface"
+      },
+      "allowed_range": "feste Enum",
+      "main_class": "RUNTIME_OPERATION",
+      "technical_adjustability": "OPERATOR_FACING",
+      "change_authority": "FORBIDDEN",
+      "context_validity": {
+        "allowed": [
+          "docs",
+          "tests"
+        ],
+        "forbidden": [
+          "replay",
+          "paper",
+          "runtime",
+          "live"
+        ],
+        "allowed_codes": "dt",
+        "forbidden_codes": "rpul"
+      },
+      "safety_classification": "safety_critical",
+      "snapshot_and_provenance_requirement": {
+        "required": true,
+        "reason": "keine"
+      },
+      "test_and_evidence_requirement": {
+        "tests_present_in_analysis": "Ja",
+        "required_evidence": "keine",
+        "documentation_present_in_analysis": "teilweise",
+        "must_not_change_without_evidence": true
+      },
+      "lifecycle_status": "active",
+      "analysis": {
+        "source_commit": "224cfd49398b329b315781372658fab1fbf15362",
+        "effect": "Aendert nur simulierte Elapsed-Metadaten; keine Wall-Clock-Pacing oder Strategieentscheidung.",
+        "finding": "aktiv, ergebnisneutral",
+        "dependencies": [
+          "Reports"
+        ],
+        "change_risk": "niedrig",
+        "suitability": "keine Performance-Optimierung",
+        "compact_decision": "NO_EFFECT_OR_DEAD",
+        "blocked_by_issues": [],
+        "evidence_notes": [
+          "keine"
+        ],
+        "name_drift": null,
+        "may_change_compact": false
+      }
+    },
+    {
+      "parameter_id": "CDB-027",
+      "exact_name": "Maker-/Taker-Fee",
+      "aliases": [
+        "MAKER_FEE",
+        "TAKER_FEE"
+      ],
+      "system_area": "Replay",
+      "owner": {
+        "id": "domain:replay",
+        "derivation": "system_area=Replay; SERVICE_CATALOG/path ownership convention",
+        "evidence": [
+          "services/execution/simulator.py"
+        ]
+      },
+      "repository_paths": [
+        "services/execution/simulator.py"
+      ],
+      "consumers": [
+        "Trade Count",
+        "Holding",
+        "Stage-A-Gates"
+      ],
+      "effective_default": {
+        "value": "0.0002; 0.0006",
+        "source_commit": "224cfd49398b329b315781372658fab1fbf15362",
+        "verification": "historical_extract; paths re-verified on origin/main",
+        "main_path_status": "paths_resolved"
+      },
+      "override_precedence": [
+        "config_dict"
+      ],
+      "unit": {
+        "resolution_status": "not_applicable",
+        "reason": "No single unit applies to this multi-symbol control surface"
+      },
+      "allowed_range": "nicht validiert",
+      "main_class": "EXECUTION_ASSUMPTION",
+      "technical_adjustability": "CONFIG_ONLY",
+      "change_authority": "RESEARCH_ALLOWED",
+      "context_validity": {
+        "allowed": [
+          "replay",
+          "tests",
+          "docs"
+        ],
+        "forbidden": [
+          "paper",
+          "runtime",
+          "live"
+        ],
+        "allowed_codes": "rtd",
+        "forbidden_codes": "pul"
+      },
+      "safety_classification": "high",
+      "snapshot_and_provenance_requirement": {
+        "required": true,
+        "reason": "zeitpunktbezogene Venue-Evidence"
+      },
+      "test_and_evidence_requirement": {
+        "tests_present_in_analysis": "Unit-Tests",
+        "required_evidence": "zeitpunktbezogene Venue-Evidence",
+        "documentation_present_in_analysis": "Kommentar MEXC 2024",
+        "must_not_change_without_evidence": true
+      },
+      "lifecycle_status": "active",
+      "analysis": {
+        "source_commit": "224cfd49398b329b315781372658fab1fbf15362",
+        "effect": "Reduziert PnL je Fill.",
+        "finding": "aktiv",
+        "dependencies": [
+          "Trade Count",
+          "Holding",
+          "Stage-A-Gates"
+        ],
+        "change_risk": "hoch",
+        "suitability": "hoch",
+        "compact_decision": "ALLOW_REPLAY_RESEARCH",
+        "blocked_by_issues": [
+          4150,
+          4153
+        ],
+        "evidence_notes": [
+          "Venue-Fee-Evidence",
+          "Gross-to-Net-Reconciliation",
+          "Config-Snapshot"
+        ],
+        "name_drift": null,
+        "may_change_compact": true
+      }
+    },
+    {
+      "parameter_id": "CDB-028",
+      "exact_name": "Slippage- und Partial-Fill-Modell",
+      "aliases": [
+        "BASE_SLIPPAGE_BPS",
+        "DEPTH_IMPACT_FACTOR",
+        "VOL_SLIPPAGE_MULTIPLIER",
+        "FILL_THRESHOLD"
+      ],
+      "system_area": "Replay",
+      "owner": {
+        "id": "domain:replay",
+        "derivation": "system_area=Replay; SERVICE_CATALOG/path ownership convention",
+        "evidence": [
+          "services/execution/simulator.py"
+        ]
+      },
+      "repository_paths": [
+        "services/execution/simulator.py"
+      ],
+      "consumers": [
+        "synthetische Depth",
+        "Scenario Mapping"
+      ],
+      "effective_default": {
+        "value": "5; 0.10; 2.0; 0.80",
+        "source_commit": "224cfd49398b329b315781372658fab1fbf15362",
+        "verification": "historical_extract; paths re-verified on origin/main",
+        "main_path_status": "paths_resolved"
+      },
+      "override_precedence": [
+        "config_dict"
+      ],
+      "unit": "basis_points",
+      "allowed_range": "nicht validiert; Fill sinnvoll [0,1]",
+      "main_class": "EXECUTION_ASSUMPTION",
+      "technical_adjustability": "CONFIG_ONLY",
+      "change_authority": "RESEARCH_ALLOWED",
+      "context_validity": {
+        "allowed": [
+          "replay",
+          "tests",
+          "docs"
+        ],
+        "forbidden": [
+          "paper",
+          "runtime",
+          "live"
+        ],
+        "allowed_codes": "rtd",
+        "forbidden_codes": "pul"
+      },
+      "safety_classification": "high",
+      "snapshot_and_provenance_requirement": {
+        "required": true,
+        "reason": "Fill-/Quote- und Orderbook-Kalibrierung"
+      },
+      "test_and_evidence_requirement": {
+        "tests_present_in_analysis": "Unit-Tests",
+        "required_evidence": "Fill-/Quote- und Orderbook-Kalibrierung",
+        "documentation_present_in_analysis": "Ja",
+        "must_not_change_without_evidence": true
+      },
+      "lifecycle_status": "active",
+      "analysis": {
+        "source_commit": "224cfd49398b329b315781372658fab1fbf15362",
+        "effect": "Base + Size/Depth + Volatilitaet; nur nutzbarer Depth-Anteil wird gefuellt.",
+        "finding": "aktiv",
+        "dependencies": [
+          "synthetische Depth",
+          "Scenario Mapping"
+        ],
+        "change_risk": "hoch",
+        "suitability": "hoch",
+        "compact_decision": "ALLOW_REPLAY_RESEARCH",
+        "blocked_by_issues": [
+          4150,
+          4153
+        ],
+        "evidence_notes": [
+          "Fill-/Quote-Kalibrierung",
+          "Orderbook-Evidence",
+          "Gross-to-Net-Reconciliation"
+        ],
+        "name_drift": null,
+        "may_change_compact": true
+      }
+    },
+    {
+      "parameter_id": "CDB-029",
+      "exact_name": "Replay-Ordergroesse und synthetische Book Depth",
+      "aliases": [
+        "ORDER_SIZE",
+        "ORDER_BOOK_DEPTH_MULT"
+      ],
+      "system_area": "Replay",
+      "owner": {
+        "id": "domain:replay",
+        "derivation": "system_area=Replay; SERVICE_CATALOG/path ownership convention",
+        "evidence": [
+          "core/replay/pack_a_breakout_common.py",
+          "services/validation/strategy_replay_runner.py"
+        ]
+      },
+      "repository_paths": [
+        "core/replay/pack_a_breakout_common.py",
+        "services/validation/strategy_replay_runner.py"
+      ],
+      "consumers": [
+        "alle Batch-A-Kandidaten"
+      ],
+      "effective_default": {
+        "value": "1 BTC; 10000",
+        "source_commit": "224cfd49398b329b315781372658fab1fbf15362",
+        "verification": "historical_extract; paths re-verified on origin/main",
+        "main_path_status": "paths_resolved"
+      },
+      "override_precedence": [
+        "code_constant"
+      ],
+      "unit": {
+        "resolution_status": "not_applicable",
+        "reason": "No single unit applies to this multi-symbol control surface"
+      },
+      "allowed_range": "fest",
+      "main_class": "EXECUTION_ASSUMPTION",
+      "technical_adjustability": "CODE_HARDCODED",
+      "change_authority": "RESEARCH_ALLOWED",
+      "context_validity": {
+        "allowed": [
+          "replay",
+          "tests",
+          "docs"
+        ],
+        "forbidden": [
+          "paper",
+          "runtime",
+          "live"
+        ],
+        "allowed_codes": "rtd",
+        "forbidden_codes": "pul"
+      },
+      "safety_classification": "high",
+      "snapshot_and_provenance_requirement": {
+        "required": true,
+        "reason": "echte Depth-/Notional-Verteilung"
+      },
+      "test_and_evidence_requirement": {
+        "tests_present_in_analysis": "teilweise",
+        "required_evidence": "echte Depth-/Notional-Verteilung",
+        "documentation_present_in_analysis": "unzureichend",
+        "must_not_change_without_evidence": true
+      },
+      "lifecycle_status": "active",
+      "analysis": {
+        "source_commit": "224cfd49398b329b315781372658fab1fbf15362",
+        "effect": "Depth=max(volume*price*10000, price); praegt Fill und Slippage aller Batch-A-Runs.",
+        "finding": "aktive starke Modellannahme",
+        "dependencies": [
+          "alle Batch-A-Kandidaten"
+        ],
+        "change_risk": "hoch",
+        "suitability": "sehr hoch",
+        "compact_decision": "CONDITIONAL_AFTER_EVIDENCE",
+        "blocked_by_issues": [
+          4150,
+          4153
+        ],
+        "evidence_notes": [
+          "Depth-/Notional-Verteilung",
+          "Slippage-Sensitivität",
+          "Config-Snapshot"
+        ],
+        "name_drift": {
+          "extract": "Replay-Ordergroesse und synthetische Book Depth",
+          "compact_policy": "Replay-Ordergröße und synthetische Book Depth"
+        },
+        "may_change_compact": true
+      }
+    },
+    {
+      "parameter_id": "CDB-030",
+      "exact_name": "Spread- und Slippage-Cost-Evidence",
+      "aliases": [
+        "spread_cost",
+        "slippage_cost",
+        "slippage_availability"
+      ],
+      "system_area": "Validation",
+      "owner": {
+        "id": "domain:validation",
+        "derivation": "system_area=Validation; SERVICE_CATALOG/path ownership convention",
+        "evidence": [
+          "services/validation/arvp_candidate_evidence_assembler.py"
+        ]
+      },
+      "repository_paths": [
+        "services/validation/arvp_candidate_evidence_assembler.py"
+      ],
+      "consumers": [
+        "League Execution Realism"
+      ],
+      "effective_default": {
+        "value": "0; 0; not_available",
+        "source_commit": "224cfd49398b329b315781372658fab1fbf15362",
+        "verification": "historical_extract; paths re-verified on origin/main",
+        "main_path_status": "paths_resolved"
+      },
+      "override_precedence": [
+        "code_constant"
+      ],
+      "unit": {
+        "resolution_status": "not_applicable",
+        "reason": "Control is categorical/contractual/governance, not a single numeric unit"
+      },
+      "allowed_range": "fest",
+      "main_class": "EXECUTION_ASSUMPTION",
+      "technical_adjustability": "IMPLICIT",
+      "change_authority": "MUST_NOT_OPTIMIZE",
+      "context_validity": {
+        "allowed": [
+          "tests",
+          "docs"
+        ],
+        "forbidden": [
+          "replay",
+          "paper",
+          "runtime",
+          "live"
+        ],
+        "allowed_codes": "td",
+        "forbidden_codes": "rpul"
+      },
+      "safety_classification": "safety_critical",
+      "snapshot_and_provenance_requirement": {
+        "required": true,
+        "reason": "Gross-to-Net-Kosten-Reconciliation"
+      },
+      "test_and_evidence_requirement": {
+        "tests_present_in_analysis": "Tests spiegeln Vertrag",
+        "required_evidence": "Gross-to-Net-Kosten-Reconciliation",
+        "documentation_present_in_analysis": "unzureichend",
+        "must_not_change_without_evidence": true
+      },
+      "lifecycle_status": "implicit",
+      "analysis": {
+        "source_commit": "224cfd49398b329b315781372658fab1fbf15362",
+        "effect": "Evidence zerlegt Simulator-Slippage nicht und modelliert keinen Spread.",
+        "finding": "aktive Evidence-Luecke",
+        "dependencies": [
+          "League Execution Realism"
+        ],
+        "change_risk": "hoch",
+        "suitability": "keine bis behoben",
+        "compact_decision": "CORRECTNESS_FIX_ONLY",
+        "blocked_by_issues": [
+          4150
+        ],
+        "evidence_notes": [
+          "Gross-to-Net-Reconciliation",
+          "Contract-Test"
+        ],
+        "name_drift": null,
+        "may_change_compact": true
+      }
+    },
+    {
+      "parameter_id": "CDB-031",
+      "exact_name": "Mock-Execution",
+      "aliases": [
+        "success_rate",
+        "latency",
+        "base_slippage_pct",
+        "price base"
+      ],
+      "system_area": "Paper/Runtime",
+      "owner": {
+        "id": "domain:paper",
+        "derivation": "system_area=Paper/Runtime; SERVICE_CATALOG/path ownership convention",
+        "evidence": [
+          "services/execution/mock_executor.py"
+        ]
+      },
+      "repository_paths": [
+        "services/execution/mock_executor.py"
+      ],
+      "consumers": [
+        "Paper-v-Replay-Drift"
+      ],
+      "effective_default": {
+        "value": "0.95; 50-200 ms; 0.02%; BTC 50000; Slip-Cap 0.1%",
+        "source_commit": "224cfd49398b329b315781372658fab1fbf15362",
+        "verification": "historical_extract; paths re-verified on origin/main",
+        "main_path_status": "paths_resolved"
+      },
+      "override_precedence": [
+        "constructor",
+        "code_constant"
+      ],
+      "unit": "ratio_or_percent",
+      "allowed_range": "nur Success logisch [0,1]",
+      "main_class": "EXECUTION_ASSUMPTION",
+      "technical_adjustability": "CONFIG_ONLY",
+      "change_authority": "CONDITIONAL_AFTER_EVIDENCE",
+      "context_validity": {
+        "allowed": [
+          "paper",
+          "tests",
+          "docs"
+        ],
+        "forbidden": [
+          "runtime",
+          "live"
+        ],
+        "allowed_codes": "ptd",
+        "forbidden_codes": "ul"
+      },
+      "safety_classification": "high",
+      "snapshot_and_provenance_requirement": {
+        "required": true,
+        "reason": "Seed- und Distribution-Snapshot"
+      },
+      "test_and_evidence_requirement": {
+        "tests_present_in_analysis": "Unit-Tests",
+        "required_evidence": "Seed- und Distribution-Snapshot",
+        "documentation_present_in_analysis": "teilweise",
+        "must_not_change_without_evidence": true
+      },
+      "lifecycle_status": "active",
+      "analysis": {
+        "source_commit": "224cfd49398b329b315781372658fab1fbf15362",
+        "effect": "Zufaelliger Fill/Reject, Sleep-Latenz und synthetischer Preis.",
+        "finding": "aktiv; nicht oekonomisch aequivalent zum Replay",
+        "dependencies": [
+          "Paper-v-Replay-Drift"
+        ],
+        "change_risk": "hoch",
+        "suitability": "mittel",
+        "compact_decision": "ALLOW_PAPER_OPERATION",
+        "blocked_by_issues": [
+          4150
+        ],
+        "evidence_notes": [
+          "Seed-Snapshot",
+          "Distributionsnachweis",
+          "Replay-vs-Paper-Vergleich"
+        ],
+        "name_drift": null,
+        "may_change_compact": true
+      }
+    },
+    {
+      "parameter_id": "CDB-032",
+      "exact_name": "Funding und Limit-Order-Modell",
+      "aliases": [
+        "FUNDING_RATE",
+        "calculate_funding_fees",
+        "simulate_limit_order"
+      ],
+      "system_area": "Replay",
+      "owner": {
+        "id": "domain:replay",
+        "derivation": "system_area=Replay; SERVICE_CATALOG/path ownership convention",
+        "evidence": [
+          "services/execution/simulator.py"
+        ]
+      },
+      "repository_paths": [
+        "services/execution/simulator.py"
+      ],
+      "consumers": [
+        "PnL"
+      ],
+      "effective_default": {
+        "value": "0.0001/8h; GTC; Maker-Fill bei marktgaengiger Limit Price",
+        "source_commit": "224cfd49398b329b315781372658fab1fbf15362",
+        "verification": "historical_extract; paths re-verified on origin/main",
+        "main_path_status": "paths_resolved"
+      },
+      "override_precedence": [
+        "code_constant"
+      ],
+      "unit": {
+        "resolution_status": "not_applicable",
+        "reason": "No single unit applies to this multi-symbol control surface"
+      },
+      "allowed_range": "nicht validiert",
+      "main_class": "EXECUTION_ASSUMPTION",
+      "technical_adjustability": "DEAD_OR_UNUSED",
+      "change_authority": "FORBIDDEN",
+      "context_validity": {
+        "allowed": [
+          "tests",
+          "docs"
+        ],
+        "forbidden": [
+          "replay",
+          "paper",
+          "runtime",
+          "live"
+        ],
+        "allowed_codes": "td",
+        "forbidden_codes": "rpul"
+      },
+      "safety_classification": "safety_critical",
+      "snapshot_and_provenance_requirement": {
+        "required": false,
+        "reason": "Runner-Integration und Venue-Daten"
+      },
+      "test_and_evidence_requirement": {
+        "tests_present_in_analysis": "nur Unit-Tests",
+        "required_evidence": "Runner-Integration und Venue-Daten",
+        "documentation_present_in_analysis": "teilweise",
+        "must_not_change_without_evidence": true
+      },
+      "lifecycle_status": "dead",
+      "analysis": {
+        "source_commit": "224cfd49398b329b315781372658fab1fbf15362",
+        "effect": "Funding wird im normalen Replay nicht konsumiert; Limit-Fill ist stark vereinfacht.",
+        "finding": "Funding ungenutzt",
+        "dependencies": [
+          "PnL"
+        ],
+        "change_risk": "mittel",
+        "suitability": "niedrig",
+        "compact_decision": "CORRECTNESS_FIX_ONLY",
+        "blocked_by_issues": [
+          4150
+        ],
+        "evidence_notes": [
+          "Runner-Integration",
+          "Venue-Daten",
+          "Dead-Code-Entscheidung"
+        ],
+        "name_drift": null,
+        "may_change_compact": true
+      }
+    },
+    {
+      "parameter_id": "CDB-033",
+      "exact_name": "Execution Retry und Timeout",
+      "aliases": [
+        "MAX_RETRIES",
+        "RETRY_DELAY_SECONDS",
+        "ORDER_TIMEOUT_SECONDS"
+      ],
+      "system_area": "Execution",
+      "owner": {
+        "id": "service:execution",
+        "derivation": "system_area=Execution; SERVICE_CATALOG/path ownership convention",
+        "evidence": [
+          "services/execution/config.py",
+          "services/execution/service.py"
+        ]
+      },
+      "repository_paths": [
+        "services/execution/config.py",
+        "services/execution/service.py"
+      ],
+      "consumers": [
+        "Startup"
+      ],
+      "effective_default": {
+        "value": "3; 2 s; 10 s",
+        "source_commit": "224cfd49398b329b315781372658fab1fbf15362",
+        "verification": "historical_extract; paths re-verified on origin/main",
+        "main_path_status": "paths_resolved"
+      },
+      "override_precedence": [
+        "code_constant"
+      ],
+      "unit": "seconds",
+      "allowed_range": "nicht validiert",
+      "main_class": "RUNTIME_OPERATION",
+      "technical_adjustability": "DEAD_OR_UNUSED",
+      "change_authority": "FORBIDDEN",
+      "context_validity": {
+        "allowed": [
+          "tests",
+          "docs"
+        ],
+        "forbidden": [
+          "replay",
+          "paper",
+          "runtime",
+          "live"
+        ],
+        "allowed_codes": "td",
+        "forbidden_codes": "rpul"
+      },
+      "safety_classification": "safety_critical",
+      "snapshot_and_provenance_requirement": {
+        "required": false,
+        "reason": "Failure-Injection"
+      },
+      "test_and_evidence_requirement": {
+        "tests_present_in_analysis": "teilweise",
+        "required_evidence": "Failure-Injection",
+        "documentation_present_in_analysis": "gering",
+        "must_not_change_without_evidence": true
+      },
+      "lifecycle_status": "dead",
+      "analysis": {
+        "source_commit": "224cfd49398b329b315781372658fab1fbf15362",
+        "effect": "Init-Helper nutzt 3 und 2 s; Timeout wird nicht konsumiert.",
+        "finding": "Timeout und MAX_RETRIES nicht wirksam als Config",
+        "dependencies": [
+          "Startup"
+        ],
+        "change_risk": "mittel",
+        "suitability": "niedrig",
+        "compact_decision": "CORRECTNESS_FIX_ONLY",
+        "blocked_by_issues": [
+          4148
+        ],
+        "evidence_notes": [
+          "Failure-Injection",
+          "Timeout-Contract",
+          "Retry-Backoff-Test"
+        ],
+        "name_drift": null,
+        "may_change_compact": true
+      }
+    },
+    {
+      "parameter_id": "CDB-034",
+      "exact_name": "Positions- und Exposure-Limits",
+      "aliases": [
+        "MAX_POSITION_PCT",
+        "MAX_TOTAL_EXPOSURE_PCT",
+        "legacy MAX_EXPOSURE_PCT"
+      ],
+      "system_area": "Risk",
+      "owner": {
+        "id": "service:risk",
+        "derivation": "system_area=Risk; SERVICE_CATALOG/path ownership convention",
+        "evidence": [
+          "services/risk/config.py",
+          "services/risk/service.py"
+        ]
+      },
+      "repository_paths": [
+        "services/risk/config.py",
+        "services/risk/service.py"
+      ],
+      "consumers": [
+        "Balance",
+        "Allocation",
+        "Ordergroesse"
+      ],
+      "effective_default": {
+        "value": "0.10; 0.30",
+        "source_commit": "224cfd49398b329b315781372658fab1fbf15362",
+        "verification": "historical_extract; paths re-verified on origin/main",
+        "main_path_status": "paths_resolved"
+      },
+      "override_precedence": [
+        "code_default",
+        "env"
+      ],
+      "unit": "ratio_or_percent",
+      "allowed_range": "(0,1] validiert",
+      "main_class": "RISK_SAFETY_LIMIT",
+      "technical_adjustability": "OPERATOR_FACING",
+      "change_authority": "MUST_NOT_OPTIMIZE",
+      "context_validity": {
+        "allowed": [
+          "tests",
+          "docs"
+        ],
+        "forbidden": [
+          "replay",
+          "paper",
+          "runtime",
+          "live"
+        ],
+        "allowed_codes": "td",
+        "forbidden_codes": "rpul"
+      },
+      "safety_classification": "safety_critical",
+      "snapshot_and_provenance_requirement": {
+        "required": true,
+        "reason": "Safety-Test und formale Freigabe"
+      },
+      "test_and_evidence_requirement": {
+        "tests_present_in_analysis": "Ja",
+        "required_evidence": "Safety-Test und formale Freigabe",
+        "documentation_present_in_analysis": "Ja",
+        "must_not_change_without_evidence": true
+      },
+      "lifecycle_status": "active",
+      "analysis": {
+        "source_commit": "224cfd49398b329b315781372658fab1fbf15362",
+        "effect": "Begrenzt Symbol- und Portfolio-Notional.",
+        "finding": "aktiv",
+        "dependencies": [
+          "Balance",
+          "Allocation",
+          "Ordergroesse"
+        ],
+        "change_risk": "kritisch",
+        "suitability": "keine",
+        "compact_decision": "FORBIDDEN_OPTIMIZATION",
+        "blocked_by_issues": [
+          4152
+        ],
+        "evidence_notes": [
+          "Safety-Test",
+          "formale Freigabe",
+          "projected-position-Nachweis"
+        ],
+        "name_drift": null,
+        "may_change_compact": false
+      }
+    },
+    {
+      "parameter_id": "CDB-035",
+      "exact_name": "Daily Drawdown",
+      "aliases": [
+        "MAX_DAILY_DRAWDOWN_PCT",
+        "daily_drawdown_pct_max"
+      ],
+      "system_area": "Risk",
+      "owner": {
+        "id": "service:risk",
+        "derivation": "system_area=Risk; SERVICE_CATALOG/path ownership convention",
+        "evidence": [
+          "services/risk/config.py",
+          "services/risk/service.py"
+        ]
+      },
+      "repository_paths": [
+        "services/risk/config.py",
+        "services/risk/service.py"
+      ],
+      "consumers": [
+        "PnL State",
+        "Auto-Unwind"
+      ],
+      "effective_default": {
+        "value": "0.05; zusaetzlich 5.0 Prozentpunkte",
+        "source_commit": "224cfd49398b329b315781372658fab1fbf15362",
+        "verification": "historical_extract; paths re-verified on origin/main",
+        "main_path_status": "paths_resolved"
+      },
+      "override_precedence": [
+        "code_hardcode",
+        "env"
+      ],
+      "unit": "percentage_points",
+      "allowed_range": "Config-Wert nicht validiert",
+      "main_class": "RISK_SAFETY_LIMIT",
+      "technical_adjustability": "OPERATOR_FACING",
+      "change_authority": "MUST_NOT_OPTIMIZE",
+      "context_validity": {
+        "allowed": [
+          "tests",
+          "docs"
+        ],
+        "forbidden": [
+          "replay",
+          "paper",
+          "runtime",
+          "live"
+        ],
+        "allowed_codes": "td",
+        "forbidden_codes": "rpul"
+      },
+      "safety_classification": "safety_critical",
+      "snapshot_and_provenance_requirement": {
+        "required": true,
+        "reason": "Kill-/Unwind-Drill"
+      },
+      "test_and_evidence_requirement": {
+        "tests_present_in_analysis": "Ja",
+        "required_evidence": "Kill-/Unwind-Drill",
+        "documentation_present_in_analysis": "doppelte Einheiten",
+        "must_not_change_without_evidence": true
+      },
+      "lifecycle_status": "duplicated",
+      "analysis": {
+        "source_commit": "224cfd49398b329b315781372658fab1fbf15362",
+        "effect": "Loest Circuit Break und Risk Block aus.",
+        "finding": "aktiv; doppelt definiert",
+        "dependencies": [
+          "PnL State",
+          "Auto-Unwind"
+        ],
+        "change_risk": "kritisch",
+        "suitability": "keine",
+        "compact_decision": "FORBIDDEN_OPTIMIZATION",
+        "blocked_by_issues": [
+          4152
+        ],
+        "evidence_notes": [
+          "Kill-/Unwind-Drill",
+          "Einheiten-Reconciliation"
+        ],
+        "name_drift": null,
+        "may_change_compact": false
+      }
+    },
+    {
+      "parameter_id": "CDB-036",
+      "exact_name": "Stop Loss",
+      "aliases": [
+        "STOP_LOSS_PCT"
+      ],
+      "system_area": "Risk/Execution",
+      "owner": {
+        "id": "service:risk",
+        "derivation": "system_area=Risk/Execution; SERVICE_CATALOG/path ownership convention",
+        "evidence": [
+          "services/risk/config.py",
+          "services/risk/service.py",
+          "services/execution/service.py"
+        ]
+      },
+      "repository_paths": [
+        "services/risk/config.py",
+        "services/risk/service.py",
+        "services/execution/service.py",
+        "services/execution/config.py"
+      ],
+      "consumers": [
+        "Execution"
+      ],
+      "effective_default": {
+        "value": "0.02",
+        "source_commit": "224cfd49398b329b315781372658fab1fbf15362",
+        "verification": "historical_extract; paths re-verified on origin/main",
+        "main_path_status": "paths_resolved"
+      },
+      "override_precedence": [
+        "code_default",
+        "env"
+      ],
+      "unit": "ratio_or_percent",
+      "allowed_range": "nicht validiert",
+      "main_class": "RISK_SAFETY_LIMIT",
+      "technical_adjustability": "DEAD_OR_UNUSED",
+      "change_authority": "MUST_NOT_OPTIMIZE",
+      "context_validity": {
+        "allowed": [
+          "tests",
+          "docs"
+        ],
+        "forbidden": [
+          "replay",
+          "paper",
+          "runtime",
+          "live"
+        ],
+        "allowed_codes": "td",
+        "forbidden_codes": "rpul"
+      },
+      "safety_classification": "safety_critical",
+      "snapshot_and_provenance_requirement": {
+        "required": true,
+        "reason": "End-to-End-Stop-Proof"
+      },
+      "test_and_evidence_requirement": {
+        "tests_present_in_analysis": "einzelne Serialisierungstests",
+        "required_evidence": "End-to-End-Stop-Proof",
+        "documentation_present_in_analysis": "irrefuehrend",
+        "must_not_change_without_evidence": true
+      },
+      "lifecycle_status": "dead",
+      "analysis": {
+        "source_commit": "224cfd49398b329b315781372658fab1fbf15362",
+        "effect": "Wird am Order-Artefakt mitgefuehrt; kein automatischer Stop-Order-Konsument verifiziert.",
+        "finding": "nominell vorhanden, Schutzwirkung nicht belegt",
+        "dependencies": [
+          "Execution"
+        ],
+        "change_risk": "kritisch",
+        "suitability": "keine",
+        "compact_decision": "CORRECTNESS_FIX_ONLY",
+        "blocked_by_issues": [
+          4152
+        ],
+        "evidence_notes": [
+          "End-to-End-Stop-Proof",
+          "Failure-Injection"
+        ],
+        "name_drift": null,
+        "may_change_compact": true
+      }
+    },
+    {
+      "parameter_id": "CDB-037",
+      "exact_name": "Hardcodierte Risk-Decision-Grenzen",
+      "aliases": [
+        "DECISION_THRESHOLDS"
+      ],
+      "system_area": "Risk",
+      "owner": {
+        "id": "service:risk",
+        "derivation": "system_area=Risk; SERVICE_CATALOG/path ownership convention",
+        "evidence": [
+          "services/risk/service.py"
+        ]
+      },
+      "repository_paths": [
+        "services/risk/service.py"
+      ],
+      "consumers": [
+        "Market/Account Health"
+      ],
+      "effective_default": {
+        "value": "Return1m -2; Return5m -5; abs 5m 10; DD 5; Exposure 50; Slippage 1; Regime 0/1 erlaubt",
+        "source_commit": "224cfd49398b329b315781372658fab1fbf15362",
+        "verification": "historical_extract; paths re-verified on origin/main",
+        "main_path_status": "paths_resolved"
+      },
+      "override_precedence": [
+        "code_constant"
+      ],
+      "unit": "percentage_points",
+      "allowed_range": "fest; Prozentpunkte",
+      "main_class": "RISK_SAFETY_LIMIT",
+      "technical_adjustability": "CODE_HARDCODED",
+      "change_authority": "MUST_NOT_OPTIMIZE",
+      "context_validity": {
+        "allowed": [
+          "tests",
+          "docs"
+        ],
+        "forbidden": [
+          "replay",
+          "paper",
+          "runtime",
+          "live"
+        ],
+        "allowed_codes": "td",
+        "forbidden_codes": "rpul"
+      },
+      "safety_classification": "safety_critical",
+      "snapshot_and_provenance_requirement": {
+        "required": true,
+        "reason": "Safety-Evidence"
+      },
+      "test_and_evidence_requirement": {
+        "tests_present_in_analysis": "umfangreiche Tests",
+        "required_evidence": "Safety-Evidence",
+        "documentation_present_in_analysis": "teilweise",
+        "must_not_change_without_evidence": true
+      },
+      "lifecycle_status": "active",
+      "analysis": {
+        "source_commit": "224cfd49398b329b315781372658fab1fbf15362",
+        "effect": "Blockiert Anomalien, Verluste, Exposure, Slippage und Regime.",
+        "finding": "aktiv; Exposure widerspricht Config 0.30",
+        "dependencies": [
+          "Market/Account Health"
+        ],
+        "change_risk": "kritisch",
+        "suitability": "keine",
+        "compact_decision": "FORBIDDEN_OPTIMIZATION",
+        "blocked_by_issues": [
+          4152
+        ],
+        "evidence_notes": [
+          "Safety-Evidence",
+          "Einheiten- und Config-Reconciliation"
+        ],
+        "name_drift": null,
+        "may_change_compact": false
+      }
+    },
+    {
+      "parameter_id": "CDB-038",
+      "exact_name": "Risk Freshness und Data Silence",
+      "aliases": [
+        "staleness_s_max",
+        "data_silence_s_max"
+      ],
+      "system_area": "Risk",
+      "owner": {
+        "id": "service:risk",
+        "derivation": "system_area=Risk; SERVICE_CATALOG/path ownership convention",
+        "evidence": [
+          "services/risk/service.py"
+        ]
+      },
+      "repository_paths": [
+        "services/risk/service.py"
+      ],
+      "consumers": [
+        "alle Upstream-Services"
+      ],
+      "effective_default": {
+        "value": "5 s; 30 s",
+        "source_commit": "224cfd49398b329b315781372658fab1fbf15362",
+        "verification": "historical_extract; paths re-verified on origin/main",
+        "main_path_status": "paths_resolved"
+      },
+      "override_precedence": [
+        "code_constant"
+      ],
+      "unit": "seconds",
+      "allowed_range": "fest",
+      "main_class": "DATA_QUALITY_CONTROL",
+      "technical_adjustability": "CODE_HARDCODED",
+      "change_authority": "CONDITIONAL_AFTER_EVIDENCE",
+      "context_validity": {
+        "allowed": [
+          "tests",
+          "docs"
+        ],
+        "forbidden": [
+          "replay",
+          "paper",
+          "runtime",
+          "live"
+        ],
+        "allowed_codes": "td",
+        "forbidden_codes": "rpul"
+      },
+      "safety_classification": "correctness_sensitive",
+      "snapshot_and_provenance_requirement": {
+        "required": true,
+        "reason": "unabhaengige Source-Age-Tests"
+      },
+      "test_and_evidence_requirement": {
+        "tests_present_in_analysis": "Ja",
+        "required_evidence": "unabhaengige Source-Age-Tests",
+        "documentation_present_in_analysis": "teilweise",
+        "must_not_change_without_evidence": true
+      },
+      "lifecycle_status": "active",
+      "analysis": {
+        "source_commit": "224cfd49398b329b315781372658fab1fbf15362",
+        "effect": "BLOCK bei altem Gesamtsnapshot oder letztem Tick.",
+        "finding": "verwendet neuesten statt aeltesten Source-Timestamp",
+        "dependencies": [
+          "alle Upstream-Services"
+        ],
+        "change_risk": "hoch",
+        "suitability": "niedrig",
+        "compact_decision": "CORRECTNESS_FIX_ONLY",
+        "blocked_by_issues": [
+          4152
+        ],
+        "evidence_notes": [
+          "unabhängige Source-Age-Tests",
+          "Failure-Injection"
+        ],
+        "name_drift": null,
+        "may_change_compact": true
+      }
+    },
+    {
+      "parameter_id": "CDB-039",
+      "exact_name": "Risk Signal Gate",
+      "aliases": [
+        "signal_pct_change_15m_min",
+        "signal_volume_15m_min"
+      ],
+      "system_area": "Risk",
+      "owner": {
+        "id": "service:risk",
+        "derivation": "system_area=Risk; SERVICE_CATALOG/path ownership convention",
+        "evidence": [
+          "services/risk/service.py"
+        ]
+      },
+      "repository_paths": [
+        "services/risk/service.py"
+      ],
+      "consumers": [
+        "generischer Tick-Lookback"
+      ],
+      "effective_default": {
+        "value": "3.0; 0.165",
+        "source_commit": "224cfd49398b329b315781372658fab1fbf15362",
+        "verification": "historical_extract; paths re-verified on origin/main",
+        "main_path_status": "paths_resolved"
+      },
+      "override_precedence": [
+        "code_constant"
+      ],
+      "unit": "ratio_or_percent",
+      "allowed_range": "fest",
+      "main_class": "RISK_SAFETY_LIMIT",
+      "technical_adjustability": "CODE_HARDCODED",
+      "change_authority": "MUST_NOT_OPTIMIZE",
+      "context_validity": {
+        "allowed": [
+          "tests",
+          "docs"
+        ],
+        "forbidden": [
+          "replay",
+          "paper",
+          "runtime",
+          "live"
+        ],
+        "allowed_codes": "td",
+        "forbidden_codes": "rpul"
+      },
+      "safety_classification": "safety_critical",
+      "snapshot_and_provenance_requirement": {
+        "required": true,
+        "reason": "Contract-Paritaet"
+      },
+      "test_and_evidence_requirement": {
+        "tests_present_in_analysis": "Ja",
+        "required_evidence": "Contract-Paritaet",
+        "documentation_present_in_analysis": "Kommentar nennt P90",
+        "must_not_change_without_evidence": true
+      },
+      "lifecycle_status": "active",
+      "analysis": {
+        "source_commit": "224cfd49398b329b315781372658fab1fbf15362",
+        "effect": "Blockiert ein Signal trotz vorgelagerter Strategiefreigabe.",
+        "finding": "aktiv; Einheit und Zeitsemantik konfliktbehaftet",
+        "dependencies": [
+          "generischer Tick-Lookback"
+        ],
+        "change_risk": "hoch",
+        "suitability": "keine normale Optimierung",
+        "compact_decision": "FROZEN_UNTIL_CONTRACT",
+        "blocked_by_issues": [
+          4149,
+          4152
+        ],
+        "evidence_notes": [
+          "Signal-Risk-Contract",
+          "korrekte 15m-Semantik"
+        ],
+        "name_drift": null,
+        "may_change_compact": false
+      }
+    },
+    {
+      "parameter_id": "CDB-040",
+      "exact_name": "Paper Evidence Probe",
+      "aliases": [
+        "PAPER_EVIDENCE_PROBE_MODE plus MOCK_TRADING"
+      ],
+      "system_area": "Risk",
+      "owner": {
+        "id": "service:risk",
+        "derivation": "system_area=Risk; SERVICE_CATALOG/path ownership convention",
+        "evidence": [
+          "services/risk/service.py",
+          "core/config/feature_flags.py"
+        ]
+      },
+      "repository_paths": [
+        "services/risk/service.py",
+        "core/config/feature_flags.py"
+      ],
+      "consumers": [
+        "Risk Evidence"
+      ],
+      "effective_default": {
+        "value": "aus",
+        "source_commit": "224cfd49398b329b315781372658fab1fbf15362",
+        "verification": "historical_extract; paths re-verified on origin/main",
+        "main_path_status": "paths_resolved"
+      },
+      "override_precedence": [
+        "code_default",
+        "env"
+      ],
+      "unit": {
+        "resolution_status": "not_applicable",
+        "reason": "Boolean/flag control"
+      },
+      "allowed_range": "Bool",
+      "main_class": "RISK_SAFETY_LIMIT",
+      "technical_adjustability": "OPERATOR_FACING",
+      "change_authority": "MUST_NOT_OPTIMIZE",
+      "context_validity": {
+        "allowed": [
+          "tests",
+          "docs"
+        ],
+        "forbidden": [
+          "replay",
+          "paper",
+          "runtime",
+          "live"
+        ],
+        "allowed_codes": "td",
+        "forbidden_codes": "rpul"
+      },
+      "safety_classification": "safety_critical",
+      "snapshot_and_provenance_requirement": {
+        "required": true,
+        "reason": "isolierter Paper-Nachweis"
+      },
+      "test_and_evidence_requirement": {
+        "tests_present_in_analysis": "Ja",
+        "required_evidence": "isolierter Paper-Nachweis",
+        "documentation_present_in_analysis": "Ja",
+        "must_not_change_without_evidence": true
+      },
+      "lifecycle_status": "active",
+      "analysis": {
+        "source_commit": "224cfd49398b329b315781372658fab1fbf15362",
+        "effect": "Umgeht im Mock-Paper-Pfad Regime-, Signal- und fehlende Account-Gates.",
+        "finding": "aktiv, bewusst scope-begrenzt",
+        "dependencies": [
+          "Risk Evidence"
+        ],
+        "change_risk": "hoch",
+        "suitability": "keine Performance-Optimierung",
+        "compact_decision": "FORBIDDEN_OPTIMIZATION",
+        "blocked_by_issues": [
+          4152
+        ],
+        "evidence_notes": [
+          "isolierter Paper-Nachweis",
+          "explizite Scope-Grenze"
+        ],
+        "name_drift": null,
+        "may_change_compact": false
+      }
+    },
+    {
+      "parameter_id": "CDB-041",
+      "exact_name": "Regime-Allokationsregeln und Stabilitaet",
+      "aliases": [
+        "ALLOCATION_RULES_JSON",
+        "ALLOCATION_REGIME_MIN_STABLE_SECONDS"
+      ],
+      "system_area": "Allocation",
+      "owner": {
+        "id": "service:allocation",
+        "derivation": "system_area=Allocation; SERVICE_CATALOG/path ownership convention",
+        "evidence": [
+          "services/allocation/config.py",
+          "services/allocation/service.py",
+          "infrastructure/compose/compose.blue.yml"
+        ]
+      },
+      "repository_paths": [
+        "services/allocation/config.py",
+        "services/allocation/service.py",
+        "infrastructure/compose/compose.blue.yml",
+        "infrastructure/compose/compose.red.yml"
+      ],
+      "consumers": [
+        "Risk Order Sizing"
+      ],
+      "effective_default": {
+        "value": "60 s; PB1 TREND 0.3, RANGE 0.1, HVC 0.02, UNKNOWN 0",
+        "source_commit": "224cfd49398b329b315781372658fab1fbf15362",
+        "verification": "historical_extract; paths re-verified on origin/main",
+        "main_path_status": "paths_resolved"
+      },
+      "override_precedence": [
+        "versioned_contract_json"
+      ],
+      "unit": "seconds",
+      "allowed_range": "Rules nicht ausreichend validiert",
+      "main_class": "RISK_SAFETY_LIMIT",
+      "technical_adjustability": "OPERATOR_FACING",
+      "change_authority": "MUST_NOT_OPTIMIZE",
+      "context_validity": {
+        "allowed": [
+          "tests",
+          "docs"
+        ],
+        "forbidden": [
+          "replay",
+          "paper",
+          "runtime",
+          "live"
+        ],
+        "allowed_codes": "td",
+        "forbidden_codes": "rpul"
+      },
+      "safety_classification": "safety_critical",
+      "snapshot_and_provenance_requirement": {
+        "required": true,
+        "reason": "Portfolio- und Korrelationsevidence"
+      },
+      "test_and_evidence_requirement": {
+        "tests_present_in_analysis": "Ja",
+        "required_evidence": "Portfolio- und Korrelationsevidence",
+        "documentation_present_in_analysis": "Ja",
+        "must_not_change_without_evidence": true
+      },
+      "lifecycle_status": "active",
+      "analysis": {
+        "source_commit": "224cfd49398b329b315781372658fab1fbf15362",
+        "effect": "Bestimmt Kapital-Sleeve pro Strategie und Regime.",
+        "finding": "aktiv",
+        "dependencies": [
+          "Risk Order Sizing"
+        ],
+        "change_risk": "kritisch",
+        "suitability": "keine normale Optimierung",
+        "compact_decision": "FORBIDDEN_OPTIMIZATION",
+        "blocked_by_issues": [
+          4152
+        ],
+        "evidence_notes": [
+          "Portfolio-Replay",
+          "Korrelationsevidence",
+          "Risk-Freigabe"
+        ],
+        "name_drift": {
+          "extract": "Regime-Allokationsregeln und Stabilitaet",
+          "compact_policy": "Regime-Allokationsregeln und Stabilität"
+        },
+        "may_change_compact": false
+      }
+    },
+    {
+      "parameter_id": "CDB-042",
+      "exact_name": "Allocation Performance Gate",
+      "aliases": [
+        "ema_alpha",
+        "lookback_trades",
+        "lookback_days",
+        "cooldown_seconds"
+      ],
+      "system_area": "Allocation",
+      "owner": {
+        "id": "service:allocation",
+        "derivation": "system_area=Allocation; SERVICE_CATALOG/path ownership convention",
+        "evidence": [
+          "services/allocation/config.py",
+          "services/allocation/service.py"
+        ]
+      },
+      "repository_paths": [
+        "services/allocation/config.py",
+        "services/allocation/service.py"
+      ],
+      "consumers": [
+        "Fills",
+        "Regime Rules"
+      ],
+      "effective_default": {
+        "value": "0.3; 30; 7; 72 h",
+        "source_commit": "224cfd49398b329b315781372658fab1fbf15362",
+        "verification": "historical_extract; paths re-verified on origin/main",
+        "main_path_status": "paths_resolved"
+      },
+      "override_precedence": [
+        "code_constant"
+      ],
+      "unit": "seconds",
+      "allowed_range": "kein zentraler Bereich",
+      "main_class": "RISK_SAFETY_LIMIT",
+      "technical_adjustability": "CODE_HARDCODED",
+      "change_authority": "MUST_NOT_OPTIMIZE",
+      "context_validity": {
+        "allowed": [
+          "tests",
+          "docs"
+        ],
+        "forbidden": [
+          "replay",
+          "paper",
+          "runtime",
+          "live"
+        ],
+        "allowed_codes": "td",
+        "forbidden_codes": "rpul"
+      },
+      "safety_classification": "safety_critical",
+      "snapshot_and_provenance_requirement": {
+        "required": true,
+        "reason": "Portfolio- und False-Block-Analyse"
+      },
+      "test_and_evidence_requirement": {
+        "tests_present_in_analysis": "Ja",
+        "required_evidence": "Portfolio- und False-Block-Analyse",
+        "documentation_present_in_analysis": "teilweise",
+        "must_not_change_without_evidence": true
+      },
+      "lifecycle_status": "active",
+      "analysis": {
+        "source_commit": "224cfd49398b329b315781372658fab1fbf15362",
+        "effect": ">2%-Allokation erst bei 30 Trades ueber mindestens 7 Tage und Score ueber Median; Nullsetzung startet Cooldown.",
+        "finding": "aktiv",
+        "dependencies": [
+          "Fills",
+          "Regime Rules"
+        ],
+        "change_risk": "hoch",
+        "suitability": "niedrig",
+        "compact_decision": "FROZEN_UNTIL_CONTRACT",
+        "blocked_by_issues": [
+          4152
+        ],
+        "evidence_notes": [
+          "Portfolio-Replay",
+          "False-Block-Analyse"
+        ],
+        "name_drift": null,
+        "may_change_compact": false
+      }
+    },
+    {
+      "parameter_id": "CDB-043",
+      "exact_name": "Early-Live-Allokation",
+      "aliases": [
+        "EARLY_LIVE_MAX_ALLOC",
+        "literal 0.02"
+      ],
+      "system_area": "Risk/Allocation",
+      "owner": {
+        "id": "service:risk",
+        "derivation": "system_area=Risk/Allocation; SERVICE_CATALOG/path ownership convention",
+        "evidence": [
+          "services/risk/config.py",
+          "services/allocation/service.py"
+        ]
+      },
+      "repository_paths": [
+        "services/risk/config.py",
+        "services/allocation/service.py"
+      ],
+      "consumers": [
+        "Allocation Rules"
+      ],
+      "effective_default": {
+        "value": "0.02 an beiden Stellen",
+        "source_commit": "224cfd49398b329b315781372658fab1fbf15362",
+        "verification": "historical_extract; paths re-verified on origin/main",
+        "main_path_status": "paths_resolved"
+      },
+      "override_precedence": [
+        "code_hardcode",
+        "env"
+      ],
+      "unit": {
+        "resolution_status": "not_applicable",
+        "reason": "No single unit applies to this multi-symbol control surface"
+      },
+      "allowed_range": "Risk Config nicht validiert",
+      "main_class": "RISK_SAFETY_LIMIT",
+      "technical_adjustability": "CODE_HARDCODED",
+      "change_authority": "MUST_NOT_OPTIMIZE",
+      "context_validity": {
+        "allowed": [
+          "tests",
+          "docs"
+        ],
+        "forbidden": [
+          "replay",
+          "paper",
+          "runtime",
+          "live"
+        ],
+        "allowed_codes": "td",
+        "forbidden_codes": "rpul"
+      },
+      "safety_classification": "safety_critical",
+      "snapshot_and_provenance_requirement": {
+        "required": true,
+        "reason": "Safety-Reconciliation"
+      },
+      "test_and_evidence_requirement": {
+        "tests_present_in_analysis": "teilweise",
+        "required_evidence": "Safety-Reconciliation",
+        "documentation_present_in_analysis": "unklar",
+        "must_not_change_without_evidence": true
+      },
+      "lifecycle_status": "duplicated",
+      "analysis": {
+        "source_commit": "224cfd49398b329b315781372658fab1fbf15362",
+        "effect": "Allocation erlaubt ohne Performance-Reife bis einschliesslich 2%; Risk-Wert steuert diese Stelle nicht.",
+        "finding": "doppelt und nicht gemeinsam verdrahtet",
+        "dependencies": [
+          "Allocation Rules"
+        ],
+        "change_risk": "kritisch",
+        "suitability": "keine",
+        "compact_decision": "CORRECTNESS_FIX_ONLY",
+        "blocked_by_issues": [
+          4152
+        ],
+        "evidence_notes": [
+          "Safety-Reconciliation",
+          "Single-Source-of-Truth-Test"
+        ],
+        "name_drift": null,
+        "may_change_compact": true
+      }
+    },
+    {
+      "parameter_id": "CDB-044",
+      "exact_name": "Balance und abgeleitete Ordergroesse",
+      "aliases": [
+        "USE_LIVE_BALANCE",
+        "USE_REAL_BALANCE",
+        "TEST_BALANCE",
+        "Order Sizing"
+      ],
+      "system_area": "Risk",
+      "owner": {
+        "id": "service:risk",
+        "derivation": "system_area=Risk; SERVICE_CATALOG/path ownership convention",
+        "evidence": [
+          "services/risk/config.py",
+          "services/risk/service.py"
+        ]
+      },
+      "repository_paths": [
+        "services/risk/config.py",
+        "services/risk/service.py"
+      ],
+      "consumers": [
+        "Allocation",
+        "Preis",
+        "Quantity"
+      ],
+      "effective_default": {
+        "value": "false; false; 10000",
+        "source_commit": "224cfd49398b329b315781372658fab1fbf15362",
+        "verification": "historical_extract; paths re-verified on origin/main",
+        "main_path_status": "paths_resolved"
+      },
+      "override_precedence": [
+        "code_default",
+        "env"
+      ],
+      "unit": {
+        "resolution_status": "not_applicable",
+        "reason": "Boolean/flag control"
+      },
+      "allowed_range": "Balance ohne validierten Bereich",
+      "main_class": "RISK_SAFETY_LIMIT",
+      "technical_adjustability": "DERIVED",
+      "change_authority": "MUST_NOT_OPTIMIZE",
+      "context_validity": {
+        "allowed": [
+          "tests",
+          "docs"
+        ],
+        "forbidden": [
+          "replay",
+          "paper",
+          "runtime",
+          "live"
+        ],
+        "allowed_codes": "td",
+        "forbidden_codes": "rpul"
+      },
+      "safety_classification": "safety_critical",
+      "snapshot_and_provenance_requirement": {
+        "required": true,
+        "reason": "Sizing-Invariant- und Boundary-Tests"
+      },
+      "test_and_evidence_requirement": {
+        "tests_present_in_analysis": "Ja",
+        "required_evidence": "Sizing-Invariant- und Boundary-Tests",
+        "documentation_present_in_analysis": "unzureichend",
+        "must_not_change_without_evidence": true
+      },
+      "lifecycle_status": "active",
+      "analysis": {
+        "source_commit": "224cfd49398b329b315781372658fab1fbf15362",
+        "effect": "Max Notional = balance * max_position_pct * allocation_pct; 0.3 Allocation ergibt bei 0.10 Position 3% Balance.",
+        "finding": "aktiv",
+        "dependencies": [
+          "Allocation",
+          "Preis",
+          "Quantity"
+        ],
+        "change_risk": "kritisch",
+        "suitability": "keine",
+        "compact_decision": "FORBIDDEN_OPTIMIZATION",
+        "blocked_by_issues": [
+          4152
+        ],
+        "evidence_notes": [
+          "Sizing-Invariant",
+          "Boundary-Tests",
+          "formale Freigabe"
+        ],
+        "name_drift": {
+          "extract": "Balance und abgeleitete Ordergroesse",
+          "compact_policy": "Balance und abgeleitete Ordergröße"
+        },
+        "may_change_compact": false
+      }
+    },
+    {
+      "parameter_id": "CDB-045",
+      "exact_name": "Persistenter Kill Switch",
+      "aliases": [
+        "State File",
+        "get_kill_switch_details(false)"
+      ],
+      "system_area": "Safety",
+      "owner": {
+        "id": "service:risk",
+        "derivation": "system_area=Safety; SERVICE_CATALOG/path ownership convention",
+        "evidence": [
+          "core/safety/kill_switch.py",
+          "services/risk/service.py",
+          "services/execution/service.py"
+        ]
+      },
+      "repository_paths": [
+        "core/safety/kill_switch.py",
+        "services/risk/service.py",
+        "services/execution/service.py"
+      ],
+      "consumers": [
+        "Dateisystem",
+        "Metrics"
+      ],
+      "effective_default": {
+        "value": "fehlende Datei wird als inaktiv behandelt",
+        "source_commit": "224cfd49398b329b315781372658fab1fbf15362",
+        "verification": "historical_extract; paths re-verified on origin/main",
+        "main_path_status": "paths_resolved"
+      },
+      "override_precedence": [
+        "code_default",
+        "env"
+      ],
+      "unit": {
+        "resolution_status": "not_applicable",
+        "reason": "Boolean/flag control"
+      },
+      "allowed_range": "aktiv/inaktiv; Lesefehler aktiv",
+      "main_class": "RISK_SAFETY_LIMIT",
+      "technical_adjustability": "OPERATOR_FACING",
+      "change_authority": "MUST_NOT_OPTIMIZE",
+      "context_validity": {
+        "allowed": [
+          "tests",
+          "docs"
+        ],
+        "forbidden": [
+          "replay",
+          "paper",
+          "runtime",
+          "live"
+        ],
+        "allowed_codes": "td",
+        "forbidden_codes": "rpul"
+      },
+      "safety_classification": "safety_critical",
+      "snapshot_and_provenance_requirement": {
+        "required": true,
+        "reason": "Missing-/Corrupt-State-Drill"
+      },
+      "test_and_evidence_requirement": {
+        "tests_present_in_analysis": "Ja",
+        "required_evidence": "Missing-/Corrupt-State-Drill",
+        "documentation_present_in_analysis": "Governance fordert fail-closed",
+        "must_not_change_without_evidence": true
+      },
+      "lifecycle_status": "active",
+      "analysis": {
+        "source_commit": "224cfd49398b329b315781372658fab1fbf15362",
+        "effect": "Blockiert Risk und Execution bei aktivem State.",
+        "finding": "aktiv; fehlende Datei ist fail-open",
+        "dependencies": [
+          "Dateisystem",
+          "Metrics"
+        ],
+        "change_risk": "kritisch",
+        "suitability": "keine",
+        "compact_decision": "CORRECTNESS_FIX_ONLY",
+        "blocked_by_issues": [
+          4152
+        ],
+        "evidence_notes": [
+          "Missing-/Corrupt-State-Drill",
+          "Risk-Execution-Blocknachweis"
+        ],
+        "name_drift": null,
+        "may_change_compact": true
+      }
+    },
+    {
+      "parameter_id": "CDB-046",
+      "exact_name": "Alternative Circuit- und Live-Gate-Klassen",
+      "aliases": [
+        "Error/DD/Loss/Frequency",
+        "72h",
+        "Result Age",
+        "Limited/Full Caps"
+      ],
+      "system_area": "Risk/Live",
+      "owner": {
+        "id": "service:risk",
+        "derivation": "system_area=Risk/Live; SERVICE_CATALOG/path ownership convention",
+        "evidence": [
+          "services/risk/circuit_breakers.py",
+          "services/risk/live_trading_gate.py"
+        ]
+      },
+      "repository_paths": [
+        "services/risk/circuit_breakers.py",
+        "services/risk/live_trading_gate.py"
+      ],
+      "consumers": [
+        "Monitoring",
+        "LR-Dokumente"
+      ],
+      "effective_default": {
+        "value": "CB 0.1/0.15/0.05/60; Live Gate 72h, 30d, 5%/$10k, 10%/$100k",
+        "source_commit": "224cfd49398b329b315781372658fab1fbf15362",
+        "verification": "historical_extract; paths re-verified on origin/main",
+        "main_path_status": "paths_resolved"
+      },
+      "override_precedence": [
+        "code_constant"
+      ],
+      "unit": {
+        "resolution_status": "not_applicable",
+        "reason": "Control is categorical/contractual/governance, not a single numeric unit"
+      },
+      "allowed_range": "teilweise fest",
+      "main_class": "LIVE_GOVERNANCE_GATE",
+      "technical_adjustability": "DEAD_OR_UNUSED",
+      "change_authority": "FORBIDDEN",
+      "context_validity": {
+        "allowed": [
+          "docs",
+          "tests"
+        ],
+        "forbidden": [
+          "replay",
+          "paper",
+          "runtime",
+          "live"
+        ],
+        "allowed_codes": "dt",
+        "forbidden_codes": "rpul"
+      },
+      "safety_classification": "safety_critical",
+      "snapshot_and_provenance_requirement": {
+        "required": false,
+        "reason": "Wiring-Evidence"
+      },
+      "test_and_evidence_requirement": {
+        "tests_present_in_analysis": "isolierte Tests",
+        "required_evidence": "Wiring-Evidence",
+        "documentation_present_in_analysis": "teils historisch",
+        "must_not_change_without_evidence": true
+      },
+      "lifecycle_status": "dead",
+      "analysis": {
+        "source_commit": "224cfd49398b329b315781372658fab1fbf15362",
+        "effect": "Wuerden Safety und Live Readiness steuern, besitzen aber keine Produktionsverdrahtung.",
+        "finding": "definiert, aber nicht wirksam",
+        "dependencies": [
+          "Monitoring",
+          "LR-Dokumente"
+        ],
+        "change_risk": "kritisch",
+        "suitability": "keine",
+        "compact_decision": "NO_EFFECT_OR_DEAD",
+        "blocked_by_issues": [
+          4152
+        ],
+        "evidence_notes": [
+          "Wiring-Evidence",
+          "Dead-Code-Entscheidung"
+        ],
+        "name_drift": null,
+        "may_change_compact": false
+      }
+    },
+    {
+      "parameter_id": "CDB-047",
+      "exact_name": "Aktive Execution-Modi und Live-Bestaetigung",
+      "aliases": [
+        "MOCK_TRADING",
+        "DRY_RUN",
+        "MEXC_TESTNET",
+        "CONFIRM_LIVE_TRADING",
+        "legacy TRADING_MODE"
+      ],
+      "system_area": "Execution",
+      "owner": {
+        "id": "service:execution",
+        "derivation": "system_area=Execution; SERVICE_CATALOG/path ownership convention",
+        "evidence": [
+          "services/execution/config.py",
+          "services/execution/service.py",
+          "core/config/trading_mode.py"
+        ]
+      },
+      "repository_paths": [
+        "services/execution/config.py",
+        "services/execution/service.py",
+        "core/config/trading_mode.py"
+      ],
+      "consumers": [
+        "Secrets",
+        "Venue Client"
+      ],
+      "effective_default": {
+        "value": "true; true; true; unset; PAPER",
+        "source_commit": "224cfd49398b329b315781372658fab1fbf15362",
+        "verification": "historical_extract; paths re-verified on origin/main",
+        "main_path_status": "paths_resolved"
+      },
+      "override_precedence": [
+        "code_default",
+        "env"
+      ],
+      "unit": {
+        "resolution_status": "not_applicable",
+        "reason": "Boolean/flag control"
+      },
+      "allowed_range": "Bool/Enum",
+      "main_class": "LIVE_GOVERNANCE_GATE",
+      "technical_adjustability": "OPERATOR_FACING",
+      "change_authority": "GOVERNANCE_ONLY",
+      "context_validity": {
+        "allowed": [
+          "tests",
+          "docs"
+        ],
+        "forbidden": [
+          "replay",
+          "paper",
+          "runtime",
+          "live"
+        ],
+        "allowed_codes": "td",
+        "forbidden_codes": "rpul"
+      },
+      "safety_classification": "safety_critical",
+      "snapshot_and_provenance_requirement": {
+        "required": true,
+        "reason": "Human GO plus Runtime-Proof"
+      },
+      "test_and_evidence_requirement": {
+        "tests_present_in_analysis": "Ja",
+        "required_evidence": "Human GO plus Runtime-Proof",
+        "documentation_present_in_analysis": "aktuelle LR-Doku eindeutig",
+        "must_not_change_without_evidence": true
+      },
+      "lifecycle_status": "active",
+      "analysis": {
+        "source_commit": "224cfd49398b329b315781372658fab1fbf15362",
+        "effect": "Bestimmt Mock, No-Send und MEXC-Pfad; Testnet-Flag umgeht Confirmation, ist aber keine Sandbox-Garantie.",
+        "finding": "aktiv; legacy Mode nur Log-Kontext",
+        "dependencies": [
+          "Secrets",
+          "Venue Client"
+        ],
+        "change_risk": "kritisch",
+        "suitability": "keine",
+        "compact_decision": "FORBIDDEN_OPTIMIZATION",
+        "blocked_by_issues": [],
+        "evidence_notes": [
+          "Human-GO",
+          "Runtime-Proof",
+          "LR-SSOT-Freigabe"
+        ],
+        "name_drift": {
+          "extract": "Aktive Execution-Modi und Live-Bestaetigung",
+          "compact_policy": "Aktive Execution-Modi und Live-Bestätigung"
+        },
+        "may_change_compact": false
+      }
+    },
+    {
+      "parameter_id": "CDB-048",
+      "exact_name": "Risk-State-Bootstrap und projected Position",
+      "aliases": [
+        "bootstrap_state_from_db",
+        "Positionsgate"
+      ],
+      "system_area": "Risk",
+      "owner": {
+        "id": "service:risk",
+        "derivation": "system_area=Risk; SERVICE_CATALOG/path ownership convention",
+        "evidence": [
+          "services/risk/service.py"
+        ]
+      },
+      "repository_paths": [
+        "services/risk/service.py"
+      ],
+      "consumers": [
+        "Positions-/Exposure-State",
+        "Order Sizing"
+      ],
+      "effective_default": {
+        "value": "Fehler -> leere State-Fortsetzung; kein projected Einzelpositionscheck",
+        "source_commit": "224cfd49398b329b315781372658fab1fbf15362",
+        "verification": "historical_extract; paths re-verified on origin/main",
+        "main_path_status": "paths_resolved"
+      },
+      "override_precedence": [
+        "code_constant"
+      ],
+      "unit": {
+        "resolution_status": "not_applicable",
+        "reason": "Control is categorical/contractual/governance, not a single numeric unit"
+      },
+      "allowed_range": "fest",
+      "main_class": "HARD_INVARIANT",
+      "technical_adjustability": "IMPLICIT",
+      "change_authority": "MUST_NOT_OPTIMIZE",
+      "context_validity": {
+        "allowed": [
+          "tests",
+          "docs"
+        ],
+        "forbidden": [
+          "replay",
+          "paper",
+          "runtime",
+          "live"
+        ],
+        "allowed_codes": "td",
+        "forbidden_codes": "rpul"
+      },
+      "safety_classification": "safety_critical",
+      "snapshot_and_provenance_requirement": {
+        "required": true,
+        "reason": "Failure-Injection und Property-Tests"
+      },
+      "test_and_evidence_requirement": {
+        "tests_present_in_analysis": "lueckenhaft",
+        "required_evidence": "Failure-Injection und Property-Tests",
+        "documentation_present_in_analysis": "widerspricht fail-closed",
+        "must_not_change_without_evidence": true
+      },
+      "lifecycle_status": "implicit",
+      "analysis": {
+        "source_commit": "224cfd49398b329b315781372658fab1fbf15362",
+        "effect": "Generischer Exception-Handler kann State-Mismatch schlucken; neue Order kann Symbol-Cap in einem Schritt ueberschreiten.",
+        "finding": "zwei sicherheitskritische Kontrollluecken",
+        "dependencies": [
+          "Positions-/Exposure-State",
+          "Order Sizing"
+        ],
+        "change_risk": "kritisch",
+        "suitability": "keine",
+        "compact_decision": "CORRECTNESS_FIX_ONLY",
+        "blocked_by_issues": [
+          4152
+        ],
+        "evidence_notes": [
+          "Failure-Injection",
+          "Property-Tests",
+          "projected-position-Nachweis"
+        ],
+        "name_drift": null,
+        "may_change_compact": true
+      }
+    },
+    {
+      "parameter_id": "CDB-049",
+      "exact_name": "Dataset-Scope, Zeitraum, Warmup und Cadence",
+      "aliases": [
+        "Symbol",
+        "Timeframe",
+        "Dataset Start/End",
+        "Dataset Warmup",
+        "60s cadence"
+      ],
+      "system_area": "Replay",
+      "owner": {
+        "id": "domain:replay",
+        "derivation": "system_area=Replay; SERVICE_CATALOG/path ownership convention",
+        "evidence": [
+          "core/replay/dataset_spec.py",
+          "core/replay/dataset_provider.py"
+        ]
+      },
+      "repository_paths": [
+        "core/replay/dataset_spec.py",
+        "core/replay/dataset_provider.py"
+      ],
+      "consumers": [
+        "Strategie-Warmup",
+        "Scheduler"
+      ],
+      "effective_default": {
+        "value": "nur BTCUSDT/1m; Warmup caller-supplied; exakt 60 s",
+        "source_commit": "224cfd49398b329b315781372658fab1fbf15362",
+        "verification": "historical_extract; paths re-verified on origin/main",
+        "main_path_status": "paths_resolved"
+      },
+      "override_precedence": [
+        "caller_api"
+      ],
+      "unit": "seconds",
+      "allowed_range": "Start <= Ende; DB strenger; Warmup >=0; strikt monoton",
+      "main_class": "DATA_QUALITY_CONTROL",
+      "technical_adjustability": "OPERATOR_FACING",
+      "change_authority": "RESEARCH_ALLOWED",
+      "context_validity": {
+        "allowed": [
+          "replay",
+          "tests",
+          "docs"
+        ],
+        "forbidden": [
+          "paper",
+          "runtime",
+          "live"
+        ],
+        "allowed_codes": "rtd",
+        "forbidden_codes": "pul"
+      },
+      "safety_classification": "correctness_sensitive",
+      "snapshot_and_provenance_requirement": {
+        "required": true,
+        "reason": "Window-Manifest und File-v-DB-Paritaet"
+      },
+      "test_and_evidence_requirement": {
+        "tests_present_in_analysis": "Ja",
+        "required_evidence": "Window-Manifest und File-v-DB-Paritaet",
+        "documentation_present_in_analysis": "Ja/teilweise",
+        "must_not_change_without_evidence": true
+      },
+      "lifecycle_status": "active",
+      "analysis": {
+        "source_commit": "224cfd49398b329b315781372658fab1fbf15362",
+        "effect": "Begrenzt und validiert Replay-Dataset; File Provider prueft angeforderten Zeitraum nicht selbst.",
+        "finding": "aktiv plus File-Window-Luecke",
+        "dependencies": [
+          "Strategie-Warmup",
+          "Scheduler"
+        ],
+        "change_risk": "hoch",
+        "suitability": "mittel",
+        "compact_decision": "CONDITIONAL_AFTER_EVIDENCE",
+        "blocked_by_issues": [
+          4151,
+          4153
+        ],
+        "evidence_notes": [
+          "Window-Manifest",
+          "File-/DB-Parität",
+          "Content-Fingerprint"
+        ],
+        "name_drift": null,
+        "may_change_compact": true
+      }
+    },
+    {
+      "parameter_id": "CDB-050",
+      "exact_name": "Dataset-Fingerprint und historischer DQ-Verdict",
+      "aliases": [
+        "Request-Fingerprint",
+        "hash_stable",
+        "Missing/Duplicate/Future/OHLC"
+      ],
+      "system_area": "Import/Replay",
+      "owner": {
+        "id": "domain:replay",
+        "derivation": "system_area=Import/Replay; SERVICE_CATALOG/path ownership convention",
+        "evidence": [
+          "core/replay/dataset_spec.py",
+          "tools/market_data/historical_common.py"
+        ]
+      },
+      "repository_paths": [
+        "core/replay/dataset_spec.py",
+        "tools/market_data/historical_common.py"
+      ],
+      "consumers": [
+        "Provenance",
+        "Rankability",
+        "Window Bank"
+      ],
+      "effective_default": {
+        "value": "Hash der Anfrage; STRICT_COMPLETE nur ohne Kernfehler",
+        "source_commit": "224cfd49398b329b315781372658fab1fbf15362",
+        "verification": "historical_extract; paths re-verified on origin/main",
+        "main_path_status": "paths_resolved"
+      },
+      "override_precedence": [
+        "code_constant"
+      ],
+      "unit": {
+        "resolution_status": "not_applicable",
+        "reason": "Control is categorical/contractual/governance, not a single numeric unit"
+      },
+      "allowed_range": "fest",
+      "main_class": "DATA_QUALITY_CONTROL",
+      "technical_adjustability": "IMPLICIT",
+      "change_authority": "RESEARCH_ALLOWED",
+      "context_validity": {
+        "allowed": [
+          "tests",
+          "docs"
+        ],
+        "forbidden": [
+          "replay",
+          "paper",
+          "runtime",
+          "live"
+        ],
+        "allowed_codes": "td",
+        "forbidden_codes": "rpul"
+      },
+      "safety_classification": "correctness_sensitive",
+      "snapshot_and_provenance_requirement": {
+        "required": true,
+        "reason": "Content-Hash-Reconciliation"
+      },
+      "test_and_evidence_requirement": {
+        "tests_present_in_analysis": "teilweise",
+        "required_evidence": "Content-Hash-Reconciliation",
+        "documentation_present_in_analysis": "unzureichend",
+        "must_not_change_without_evidence": true
+      },
+      "lifecycle_status": "implicit",
+      "analysis": {
+        "source_commit": "224cfd49398b329b315781372658fab1fbf15362",
+        "effect": "Request-Hash kann trotz veraenderter Datei gleich bleiben; hash_stable beeinflusst den DQ-Verdict nicht.",
+        "finding": "Kontrollluecke",
+        "dependencies": [
+          "Provenance",
+          "Rankability",
+          "Window Bank"
+        ],
+        "change_risk": "hoch",
+        "suitability": "keine direkte Optimierung",
+        "compact_decision": "CORRECTNESS_FIX_ONLY",
+        "blocked_by_issues": [
+          4151
+        ],
+        "evidence_notes": [
+          "Content-Hash-Reconciliation",
+          "DQ-Bindung an tatsächliche Daten"
+        ],
+        "name_drift": null,
+        "may_change_compact": true
+      }
+    },
+    {
+      "parameter_id": "CDB-051",
+      "exact_name": "Runtime Candles, Market State und fehlendes Regime",
+      "aliases": [
+        "60s Window",
+        "sechs Candles",
+        "TTL 30/120/300s",
+        "COALESCE(regime_id,0)"
+      ],
+      "system_area": "Runtime/Replay",
+      "owner": {
+        "id": "domain:replay",
+        "derivation": "system_area=Runtime/Replay; SERVICE_CATALOG/path ownership convention",
+        "evidence": [
+          "services/candles/service.py",
+          "services/candles/config.py",
+          "services/market/service.py"
+        ]
+      },
+      "repository_paths": [
+        "services/candles/service.py",
+        "services/candles/config.py",
+        "services/market/service.py",
+        "core/replay/dataset_provider.py"
+      ],
+      "consumers": [
+        "Signal",
+        "Regime",
+        "Risk"
+      ],
+      "effective_default": {
+        "value": "wie genannt",
+        "source_commit": "224cfd49398b329b315781372658fab1fbf15362",
+        "verification": "historical_extract; paths re-verified on origin/main",
+        "main_path_status": "paths_resolved"
+      },
+      "override_precedence": [
+        "code_default",
+        "env"
+      ],
+      "unit": "seconds",
+      "allowed_range": "nicht zentral validiert",
+      "main_class": "DATA_QUALITY_CONTROL",
+      "technical_adjustability": "IMPLICIT",
+      "change_authority": "CONDITIONAL_AFTER_EVIDENCE",
+      "context_validity": {
+        "allowed": [
+          "tests",
+          "docs"
+        ],
+        "forbidden": [
+          "replay",
+          "paper",
+          "runtime",
+          "live"
+        ],
+        "allowed_codes": "td",
+        "forbidden_codes": "rpul"
+      },
+      "safety_classification": "correctness_sensitive",
+      "snapshot_and_provenance_requirement": {
+        "required": true,
+        "reason": "Out-of-order-, Gap- und Replay-v-Runtime-Tests"
+      },
+      "test_and_evidence_requirement": {
+        "tests_present_in_analysis": "teilweise",
+        "required_evidence": "Out-of-order-, Gap- und Replay-v-Runtime-Tests",
+        "documentation_present_in_analysis": "lueckenhaft",
+        "must_not_change_without_evidence": true
+      },
+      "lifecycle_status": "implicit",
+      "analysis": {
+        "source_commit": "224cfd49398b329b315781372658fab1fbf15362",
+        "effect": "Out-of-order Tick kann OHLC aendern; fehlende Minuten werden nicht erzeugt; Replay ersetzt Missing Regime durch TREND.",
+        "finding": "Runtime permissiver; Regime-Fallback divergiert",
+        "dependencies": [
+          "Signal",
+          "Regime",
+          "Risk"
+        ],
+        "change_risk": "hoch",
+        "suitability": "keine",
+        "compact_decision": "CORRECTNESS_FIX_ONLY",
+        "blocked_by_issues": [
+          4149,
+          4151
+        ],
+        "evidence_notes": [
+          "Out-of-order-Tests",
+          "Gap-Tests",
+          "Replay-vs-Runtime-Parität"
+        ],
+        "name_drift": null,
+        "may_change_compact": true
+      }
+    },
+    {
+      "parameter_id": "CDB-052",
+      "exact_name": "Rankability und Warmup-Provenance",
+      "aliases": [
+        "STRICT_COMPLETE",
+        "Warmup Status/Params"
+      ],
+      "system_area": "ARVP",
+      "owner": {
+        "id": "domain:validation",
+        "derivation": "system_area=ARVP; SERVICE_CATALOG/path ownership convention",
+        "evidence": [
+          "tools/arvp_vacation/candle_rankability.py",
+          "tests/unit/arvp/test_candle_rankability.py",
+          "tools/market_data/binance_window_bank.py"
+        ]
+      },
+      "repository_paths": [
+        "tools/arvp_vacation/candle_rankability.py",
+        "tests/unit/arvp/test_candle_rankability.py",
+        "tools/market_data/binance_window_bank.py",
+        "core/replay/binance_window_bank_adapter.py"
+      ],
+      "consumers": [
+        "Stage A/B"
+      ],
+      "effective_default": {
+        "value": "fail-closed bei Missing/Mismatch; Manifest-Fallback vorhanden",
+        "source_commit": "224cfd49398b329b315781372658fab1fbf15362",
+        "verification": "historical_extract; paths re-verified on origin/main",
+        "main_path_status": "paths_resolved"
+      },
+      "override_precedence": [
+        "code_constant"
+      ],
+      "unit": {
+        "resolution_status": "not_applicable",
+        "reason": "No single unit applies to this multi-symbol control surface"
+      },
+      "allowed_range": "fest",
+      "main_class": "DATA_QUALITY_CONTROL",
+      "technical_adjustability": "CONFIG_ONLY",
+      "change_authority": "FROZEN_UNTIL_CONTRACT",
+      "context_validity": {
+        "allowed": [
+          "docs",
+          "tests"
+        ],
+        "forbidden": [
+          "replay",
+          "paper",
+          "runtime",
+          "live"
+        ],
+        "allowed_codes": "dt",
+        "forbidden_codes": "rpul"
+      },
+      "safety_classification": "correctness_sensitive",
+      "snapshot_and_provenance_requirement": {
+        "required": true,
+        "reason": "stale-manifest negative tests"
+      },
+      "test_and_evidence_requirement": {
+        "tests_present_in_analysis": "Ja",
+        "required_evidence": "stale-manifest negative tests",
+        "documentation_present_in_analysis": "Ja",
+        "must_not_change_without_evidence": true
+      },
+      "lifecycle_status": "active",
+      "analysis": {
+        "source_commit": "224cfd49398b329b315781372658fab1fbf15362",
+        "effect": "Entscheidet, ob ein Fenster gerankt werden darf.",
+        "finding": "aktiv",
+        "dependencies": [
+          "Stage A/B"
+        ],
+        "change_risk": "mittel",
+        "suitability": "niedrig",
+        "compact_decision": "FROZEN_UNTIL_CONTRACT",
+        "blocked_by_issues": [
+          4151
+        ],
+        "evidence_notes": [
+          "stale-manifest negative tests",
+          "Warmup-Provenance",
+          "Content-Fingerprint"
+        ],
+        "name_drift": null,
+        "may_change_compact": false
+      }
+    },
+    {
+      "parameter_id": "CDB-053",
+      "exact_name": "WebSocket, Redis Streams und Retention",
+      "aliases": [
+        "WS_PING_INTERVAL",
+        "WS_RECONNECT_MAX",
+        "XREAD",
+        "maxlen",
+        "Redis maxmemory"
+      ],
+      "system_area": "Betrieb",
+      "owner": {
+        "id": "domain:runtime",
+        "derivation": "system_area=Betrieb; SERVICE_CATALOG/path ownership convention",
+        "evidence": [
+          "services/ws/service.py",
+          "infrastructure/compose/compose.blue.yml",
+          "infrastructure/compose/compose.red.yml"
+        ]
+      },
+      "repository_paths": [
+        "services/ws/service.py",
+        "infrastructure/compose/compose.blue.yml",
+        "infrastructure/compose/compose.red.yml"
+      ],
+      "consumers": [
+        "Feed Freshness",
+        "alle Services"
+      ],
+      "effective_default": {
+        "value": "20s; Backoff-Cap 10s; XREAD 1s/count10; Streams 10k/100k; 256MB allkeys-lru; AOF an",
+        "source_commit": "224cfd49398b329b315781372658fab1fbf15362",
+        "verification": "historical_extract; paths re-verified on origin/main",
+        "main_path_status": "paths_resolved"
+      },
+      "override_precedence": [
+        "code_default",
+        "env",
+        "compose"
+      ],
+      "unit": "seconds",
+      "allowed_range": "ueberwiegend unvalidiert",
+      "main_class": "RUNTIME_OPERATION",
+      "technical_adjustability": "OPERATOR_FACING",
+      "change_authority": "CONDITIONAL_AFTER_EVIDENCE",
+      "context_validity": {
+        "allowed": [
+          "runtime",
+          "tests",
+          "docs"
+        ],
+        "forbidden": [
+          "live"
+        ],
+        "allowed_codes": "utd",
+        "forbidden_codes": "l"
+      },
+      "safety_classification": "high",
+      "snapshot_and_provenance_requirement": {
+        "required": true,
+        "reason": "Disconnect-, Backpressure- und Memory-Pressure-Soak"
+      },
+      "test_and_evidence_requirement": {
+        "tests_present_in_analysis": "teilweise",
+        "required_evidence": "Disconnect-, Backpressure- und Memory-Pressure-Soak",
+        "documentation_present_in_analysis": "verteilt",
+        "must_not_change_without_evidence": true
+      },
+      "lifecycle_status": "active",
+      "analysis": {
+        "source_commit": "224cfd49398b329b315781372658fab1fbf15362",
+        "effect": "Bestimmt Reconnect, Backlog, Trimming und Eviction; WS-Backoff wird nach Erfolg nicht auf 1 zurueckgesetzt.",
+        "finding": "aktiv, nicht zentralisiert",
+        "dependencies": [
+          "Feed Freshness",
+          "alle Services"
+        ],
+        "change_risk": "hoch",
+        "suitability": "niedrig",
+        "compact_decision": "ALLOW_RUNTIME_OPERATION",
+        "blocked_by_issues": [
+          4148
+        ],
+        "evidence_notes": [
+          "Disconnect-Soak",
+          "Backpressure-Test",
+          "Memory-Pressure-Test",
+          "Rollback-Plan"
+        ],
+        "name_drift": null,
+        "may_change_compact": true
+      }
+    },
+    {
+      "parameter_id": "CDB-054",
+      "exact_name": "Paper-, Report-, Health- und Feature-Flag-Betrieb",
+      "aliases": [
+        "Capital",
+        "Snapshot",
+        "Dauer",
+        "Reportzeit",
+        "Health",
+        "Feature Rollout"
+      ],
+      "system_area": "Paper/Reporting",
+      "owner": {
+        "id": "domain:paper",
+        "derivation": "system_area=Paper/Reporting; SERVICE_CATALOG/path ownership convention",
+        "evidence": [
+          "tools/paper_trading/service.py",
+          "services/execution/paper_trading.py",
+          "infrastructure/compose/compose.blue.yml"
+        ]
+      },
+      "repository_paths": [
+        "tools/paper_trading/service.py",
+        "services/execution/paper_trading.py",
+        "infrastructure/compose/compose.blue.yml",
+        "infrastructure/compose/compose.red.yml",
+        "core/config/feature_flags.py"
+      ],
+      "consumers": [
+        "League Paper Reference",
+        "Monitoring"
+      ],
+      "effective_default": {
+        "value": "100000; 3600s; 14d; 08:00 UTC/24h; typ. 30s/5s/3; Feature-Datei fehlt",
+        "source_commit": "224cfd49398b329b315781372658fab1fbf15362",
+        "verification": "historical_extract; paths re-verified on origin/main",
+        "main_path_status": "paths_resolved"
+      },
+      "override_precedence": [
+        "code_default",
+        "cli",
+        "env",
+        "compose"
+      ],
+      "unit": "seconds",
+      "allowed_range": "nicht einheitlich validiert",
+      "main_class": "RUNTIME_OPERATION",
+      "technical_adjustability": "OPERATOR_FACING",
+      "change_authority": "CONDITIONAL_AFTER_EVIDENCE",
+      "context_validity": {
+        "allowed": [
+          "paper",
+          "tests",
+          "docs"
+        ],
+        "forbidden": [
+          "runtime",
+          "live"
+        ],
+        "allowed_codes": "ptd",
+        "forbidden_codes": "ul"
+      },
+      "safety_classification": "medium",
+      "snapshot_and_provenance_requirement": {
+        "required": true,
+        "reason": "Snapshot-/Replay-Paritaet und Startup-Timing"
+      },
+      "test_and_evidence_requirement": {
+        "tests_present_in_analysis": "teilweise",
+        "required_evidence": "Snapshot-/Replay-Paritaet und Startup-Timing",
+        "documentation_present_in_analysis": "verteilt",
+        "must_not_change_without_evidence": true
+      },
+      "lifecycle_status": "active",
+      "analysis": {
+        "source_commit": "224cfd49398b329b315781372658fab1fbf15362",
+        "effect": "Bestimmt Paper-Evidence, Reportumfang und Container-Health; Feature Flags haben keinen Produktkonsumenten.",
+        "finding": "aktive Betriebswerte plus tote Feature-Flag-Flaeche",
+        "dependencies": [
+          "League Paper Reference",
+          "Monitoring"
+        ],
+        "change_risk": "mittel",
+        "suitability": "mittel",
+        "compact_decision": "ALLOW_PAPER_OPERATION",
+        "blocked_by_issues": [
+          4148
+        ],
+        "evidence_notes": [
+          "Startup-Timing",
+          "Snapshot-/Replay-Parität",
+          "Feature-Konsumenten-Nachweis"
+        ],
+        "name_drift": null,
+        "may_change_compact": true
+      }
+    },
+    {
+      "parameter_id": "CDB-055",
+      "exact_name": "Monitoring- und Alerting-Grenzen",
+      "aliases": [
+        "ServiceDown",
+        "CPU/RAM",
+        "Restart",
+        "No Orders",
+        "Stalled",
+        "Reject Rate",
+        "Routing"
+      ],
+      "system_area": "Monitoring",
+      "owner": {
+        "id": "domain:monitoring",
+        "derivation": "system_area=Monitoring; SERVICE_CATALOG/path ownership convention",
+        "evidence": [
+          "infrastructure/monitoring/alerts.yml",
+          "infrastructure/monitoring/prometheus.yml",
+          "infrastructure/monitoring/alertmanager.yml"
+        ]
+      },
+      "repository_paths": [
+        "infrastructure/monitoring/alerts.yml",
+        "infrastructure/monitoring/prometheus.yml",
+        "infrastructure/monitoring/alertmanager.yml",
+        "infrastructure/monitoring/grafana/provisioning/alerting/circuit_breaker.yml",
+        "infrastructure/monitoring/grafana/provisioning/alerting/high_error_rate.yml",
+        "infrastructure/monitoring/grafana/provisioning/alerting/orders_rejected.yml"
+      ],
+      "consumers": [
+        "Prometheus",
+        "Alertmanager",
+        "Operator Receipt"
+      ],
+      "effective_default": {
+        "value": "Down 1m/2m; CPU >0.8/10m; RAM >0.85/10m; Restarts >3/h; keine Orders 1h; Reject >5%/5m; Scrape 15s",
+        "source_commit": "224cfd49398b329b315781372658fab1fbf15362",
+        "verification": "historical_extract; paths re-verified on origin/main",
+        "main_path_status": "paths_resolved"
+      },
+      "override_precedence": [
+        "yaml_config"
+      ],
+      "unit": {
+        "resolution_status": "not_applicable",
+        "reason": "Alerting/YAML surface, not a single numeric unit"
+      },
+      "allowed_range": "PromQL/YAML",
+      "main_class": "OBSERVABILITY_ALERT",
+      "technical_adjustability": "CONFIG_ONLY",
+      "change_authority": "CONDITIONAL_AFTER_EVIDENCE",
+      "context_validity": {
+        "allowed": [
+          "runtime",
+          "tests",
+          "docs"
+        ],
+        "forbidden": [
+          "live"
+        ],
+        "allowed_codes": "utd",
+        "forbidden_codes": "l"
+      },
+      "safety_classification": "high",
+      "snapshot_and_provenance_requirement": {
+        "required": true,
+        "reason": "Alert-Fire bis Operator Receipt"
+      },
+      "test_and_evidence_requirement": {
+        "tests_present_in_analysis": "teilweise",
+        "required_evidence": "Alert-Fire bis Operator Receipt",
+        "documentation_present_in_analysis": "LR-Doku meldet fehlenden Proof",
+        "must_not_change_without_evidence": true
+      },
+      "lifecycle_status": "active",
+      "analysis": {
+        "source_commit": "224cfd49398b329b315781372658fab1fbf15362",
+        "effect": "Erzeugt operative Alerts, aber keine Trading-Entscheidung. Market, Regime, Allocation und Paper fehlen im Scrape; /alerts-Webhooks fehlen im Signal Service.",
+        "finding": "aktive Scrape- und Receiver-Luecke",
+        "dependencies": [
+          "Prometheus",
+          "Alertmanager",
+          "Operator Receipt"
+        ],
+        "change_risk": "hoch",
+        "suitability": "keine Strategieoptimierung",
+        "compact_decision": "ALLOW_RUNTIME_OPERATION",
+        "blocked_by_issues": [
+          4148
+        ],
+        "evidence_notes": [
+          "Alert-Fire-bis-Operator-Receipt",
+          "Scrape-Coverage",
+          "Rollback-Plan"
+        ],
+        "name_drift": null,
+        "may_change_compact": true
+      }
+    },
+    {
+      "parameter_id": "CDB-056",
+      "exact_name": "Risk-first, Fail-closed, Human GO, Determinismus und Secrets",
+      "aliases": [
+        "Systeminvarianten"
+      ],
+      "system_area": "Governance",
+      "owner": {
+        "id": "domain:governance",
+        "derivation": "system_area=Governance; SERVICE_CATALOG/path ownership convention",
+        "evidence": [
+          "knowledge/governance/SYSTEM_INVARIANTS.md",
+          "docs/live-readiness/LR-AUDIT-STATUS-2026-03-05.md",
+          "core/secrets.py"
+        ]
+      },
+      "repository_paths": [
+        "knowledge/governance/SYSTEM_INVARIANTS.md",
+        "docs/live-readiness/LR-AUDIT-STATUS-2026-03-05.md",
+        "core/secrets.py"
+      ],
+      "consumers": [
+        "gesamter Trading- und Validation-Flow"
+      ],
+      "effective_default": {
+        "value": "verpflichtend",
+        "source_commit": "224cfd49398b329b315781372658fab1fbf15362",
+        "verification": "historical_extract; paths re-verified on origin/main",
+        "main_path_status": "paths_resolved"
+      },
+      "override_precedence": [
+        "code_constant"
+      ],
+      "unit": "bars",
+      "allowed_range": "nicht veraenderbar",
+      "main_class": "HARD_INVARIANT",
+      "technical_adjustability": "NON_TUNABLE",
+      "change_authority": "MUST_NOT_OPTIMIZE",
+      "context_validity": {
+        "allowed": [
+          "docs",
+          "tests"
+        ],
+        "forbidden": [
+          "replay",
+          "paper",
+          "runtime",
+          "live"
+        ],
+        "allowed_codes": "dt",
+        "forbidden_codes": "rpul"
+      },
+      "safety_classification": "safety_critical",
+      "snapshot_and_provenance_requirement": {
+        "required": true,
+        "reason": "Architektur-, Negative-, Determinismus- und Security-Tests"
+      },
+      "test_and_evidence_requirement": {
+        "tests_present_in_analysis": "breit, nicht vollstaendig",
+        "required_evidence": "Architektur-, Negative-, Determinismus- und Security-Tests",
+        "documentation_present_in_analysis": "kanonisch",
+        "must_not_change_without_evidence": true
+      },
+      "lifecycle_status": "invariant",
+      "analysis": {
+        "source_commit": "224cfd49398b329b315781372658fab1fbf15362",
+        "effect": "Execution nur nach Risk; Missing Evidence nicht positiv ersetzen; kein Echtgeld ohne Human GO; deterministische und secret-sichere Evidence.",
+        "finding": "harte Invarianten; aktueller Live-Stand NO-GO",
+        "dependencies": [
+          "gesamter Trading- und Validation-Flow"
+        ],
+        "change_risk": "kritisch",
+        "suitability": "keine",
+        "compact_decision": "NON_TUNABLE_INVARIANT",
+        "blocked_by_issues": [],
+        "evidence_notes": [
+          "Architekturtests",
+          "Negative Tests",
+          "Determinismus- und Security-Tests"
+        ],
+        "name_drift": null,
+        "may_change_compact": false
+      }
+    }
+  ],
+  "global_invariants": [
+    "Risk-before-Execution bleibt verpflichtend.",
+    "Live- und Echtgeldaktionen benötigen LR-SSOT-Freigabe plus expliziten Human-GO.",
+    "Stage-A-, Stage-B-, OOS- und Stress-Gates dürfen nicht zur Erzeugung von Survivors gelockert werden.",
+    "Risk-, Exposure-, Drawdown-, Kill-, Secret- und Governance-Grenzen sind keine Performance-Hebel.",
+    "Fehlende Evidence wird als BLOCKED behandelt.",
+    "Jeder zulässige Experimentlauf benötigt Dataset-Fingerprint und vollständigen Effective-Config-Snapshot.",
+    "OOS- und Stress-Daten dürfen nicht zur Parameterwahl verwendet werden.",
+    "Secrets dürfen nicht in Snapshots, Reports, Issues, Logs oder Artefakten erscheinen."
+  ],
+  "workflow_gates": {
+    "before_any_change": [
+      "Parameter-ID im Register vorhanden.",
+      "Entscheidung erlaubt den gewünschten Kontext.",
+      "Benötigte Evidence liegt vor.",
+      "Issue-Scope und Owner sind benannt.",
+      "Keine verbotene Grenze wird berührt."
+    ],
+    "before_replay_campaign": [
+      "#4148 geschlossen oder Register kanonisch verfügbar.",
+      "#4149 Regime-/Signal-Semantik korrekt.",
+      "#4150 Execution-Economics-Vertrag korrekt.",
+      "#4151 Dataset-/Config-Provenance korrekt.",
+      "39 Development-Fenster fest.",
+      "Stage-A/B/OOS/Stress/Risk/Live-Grenzen frozen.",
+      "Holdout-Zugriff technisch gesperrt."
+    ],
+    "before_paper_change": [
+      "Expliziter Paper-Scope.",
+      "Kein Live- oder Venue-Send-Risiko.",
+      "Seed/Distribution/Config-Snapshot vorhanden.",
+      "Rollback- und Abbruchkriterien definiert."
+    ],
+    "before_runtime_change": [
+      "Eigenes Ops-Issue.",
+      "Failure-Injection oder Soak-Plan.",
+      "Rollback-Plan.",
+      "Keine Live-Gate- oder Echtgeldwirkung.",
+      "Monitoring und Operator-Receipt vorhanden."
+    ]
+  },
+  "path_remediation": [
+    {
+      "historical_path": "infrastructure/compose",
+      "mapped_to": [
+        "infrastructure/compose/compose.blue.yml",
+        "infrastructure/compose/compose.red.yml"
+      ],
+      "reason": "historical extract label or stale path; remapped against origin/main",
+      "parameter_id": "CDB-013"
+    },
+    {
+      "historical_path": "services/execution",
+      "mapped_to": [
+        "services/execution/service.py",
+        "services/execution/config.py"
+      ],
+      "reason": "historical extract label or stale path; remapped against origin/main",
+      "parameter_id": "CDB-036"
+    },
+    {
+      "historical_path": "services/risk/feature_flags.py",
+      "mapped_to": [
+        "services/risk/service.py",
+        "core/config/feature_flags.py"
+      ],
+      "reason": "historical extract label or stale path; remapped against origin/main",
+      "parameter_id": "CDB-040"
+    },
+    {
+      "historical_path": "infrastructure/compose",
+      "mapped_to": [
+        "infrastructure/compose/compose.blue.yml",
+        "infrastructure/compose/compose.red.yml"
+      ],
+      "reason": "historical extract label or stale path; remapped against origin/main",
+      "parameter_id": "CDB-041"
+    },
+    {
+      "historical_path": "services/candles",
+      "mapped_to": [
+        "services/candles/service.py",
+        "services/candles/config.py"
+      ],
+      "reason": "historical extract label or stale path; remapped against origin/main",
+      "parameter_id": "CDB-051"
+    },
+    {
+      "historical_path": "services/validation/candle_rankability.py",
+      "mapped_to": [
+        "tools/arvp_vacation/candle_rankability.py",
+        "tests/unit/arvp/test_candle_rankability.py"
+      ],
+      "reason": "historical extract label or stale path; remapped against origin/main",
+      "parameter_id": "CDB-052"
+    },
+    {
+      "historical_path": "Window-Bank-Tools",
+      "mapped_to": [
+        "tools/market_data/binance_window_bank.py",
+        "core/replay/binance_window_bank_adapter.py"
+      ],
+      "reason": "historical extract label or stale path; remapped against origin/main",
+      "parameter_id": "CDB-052"
+    },
+    {
+      "historical_path": "services/ws",
+      "mapped_to": [
+        "services/ws/service.py",
+        "services/ws/config.py"
+      ],
+      "reason": "historical extract label or stale path; remapped against origin/main",
+      "parameter_id": "CDB-053"
+    },
+    {
+      "historical_path": "Service-Konfigurationen",
+      "mapped_to": [
+        "infrastructure/compose/compose.blue.yml",
+        "infrastructure/compose/compose.red.yml"
+      ],
+      "reason": "historical extract label or stale path; remapped against origin/main",
+      "parameter_id": "CDB-053"
+    },
+    {
+      "historical_path": "infrastructure/compose",
+      "mapped_to": [
+        "infrastructure/compose/compose.blue.yml",
+        "infrastructure/compose/compose.red.yml"
+      ],
+      "reason": "historical extract label or stale path; remapped against origin/main",
+      "parameter_id": "CDB-053"
+    },
+    {
+      "historical_path": "Paper Runner",
+      "mapped_to": [
+        "tools/paper_trading/service.py",
+        "services/execution/paper_trading.py"
+      ],
+      "reason": "historical extract label or stale path; remapped against origin/main",
+      "parameter_id": "CDB-054"
+    },
+    {
+      "historical_path": "Reporting-Tools",
+      "mapped_to": [
+        "tools/paper_trading/service.py"
+      ],
+      "reason": "historical extract label or stale path; remapped against origin/main",
+      "parameter_id": "CDB-054"
+    },
+    {
+      "historical_path": "infrastructure/compose",
+      "mapped_to": [
+        "infrastructure/compose/compose.blue.yml",
+        "infrastructure/compose/compose.red.yml"
+      ],
+      "reason": "historical extract label or stale path; remapped against origin/main",
+      "parameter_id": "CDB-054"
+    },
+    {
+      "historical_path": "prometheus.yml",
+      "mapped_to": [
+        "infrastructure/monitoring/prometheus.yml"
+      ],
+      "reason": "historical extract label or stale path; remapped against origin/main",
+      "parameter_id": "CDB-055"
+    },
+    {
+      "historical_path": "alertmanager.yml",
+      "mapped_to": [
+        "infrastructure/monitoring/alertmanager.yml"
+      ],
+      "reason": "historical extract label or stale path; remapped against origin/main",
+      "parameter_id": "CDB-055"
+    },
+    {
+      "historical_path": "Grafana Rules",
+      "mapped_to": [
+        "infrastructure/monitoring/grafana/provisioning/alerting/circuit_breaker.yml",
+        "infrastructure/monitoring/grafana/provisioning/alerting/high_error_rate.yml",
+        "infrastructure/monitoring/grafana/provisioning/alerting/orders_rejected.yml"
+      ],
+      "reason": "historical extract label or stale path; remapped against origin/main",
+      "parameter_id": "CDB-055"
+    },
+    {
+      "historical_path": "docs/live-readiness",
+      "mapped_to": [
+        "docs/live-readiness/LR-AUDIT-STATUS-2026-03-05.md"
+      ],
+      "reason": "historical extract label or stale path; remapped against origin/main",
+      "parameter_id": "CDB-056"
+    }
+  ],
+  "notes": [
+    "Historical extract values are starting evidence; repository_paths were re-verified against origin/main.",
+    "Stale or label-only paths were remapped via path_remediation; no silent drops.",
+    "This register does not authorize runtime, paper, or live configuration generation or parameter optimization.",
+    "Machine-learning and reinforcement-learning surfaces are out of scope and must not be introduced."
+  ]
+}
