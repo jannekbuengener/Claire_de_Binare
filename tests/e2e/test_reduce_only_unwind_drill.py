@@ -339,16 +339,43 @@ def test_r9_restart_after_partial_does_not_reapply_fill(boundary: Database) -> N
 
 
 def test_r10_unknown_position_blocks_adapter(boundary: Database) -> None:
-    before = Decimal("0")
-    result, executor = _run(
-        boundary,
-        scenario="R10_UNKNOWN_POSITION",
-        position_before=before,
-        side="SELL",
-        requested=Decimal("1"),
-        adapter_status=OrderStatus.FILLED.value,
-        adapter_fill=Decimal("1"),
+    _seed_position(boundary, side="corrupt", quantity=Decimal("1"))
+    executor = ScriptedMockExecutor(
+        status=OrderStatus.FILLED.value,
+        filled_quantity=Decimal("1"),
     )
+    service.executor = executor
+    result = service.process_order(
+        _order_payload(
+            scenario="R10_UNKNOWN_POSITION",
+            side="SELL",
+            quantity=Decimal("1"),
+        )
+    )
+
+    with boundary.get_connection() as conn:
+        with conn.cursor() as cur:
+            cur.execute("""
+                SELECT side, size
+                FROM positions
+                WHERE symbol = 'BTCUSDT' AND closed_at IS NULL
+                """)
+            persisted = cur.fetchone()
+
+    assert result is not None
     assert result.status == OrderStatus.REJECTED.value
     assert executor.calls == []
-    assert result.reduce_only_contract["reason_code"] == "REDUCE_ONLY_NO_POSITION"
+    assert persisted == ("corrupt", Decimal("1.00000000"))
+    assert result.reduce_only_contract["reason_code"] == "REDUCE_ONLY_POSITION_UNKNOWN"
+    SCENARIOS["R10_UNKNOWN_POSITION"] = {
+        "status": "PASS",
+        "before_position": "UNKNOWN",
+        "requested_exit_quantity": "1",
+        "submitted_exit_quantity": "0",
+        "filled_quantity": "0.0",
+        "after_position": "UNKNOWN",
+        "position_increase_observed": False,
+        "side_flip_observed": False,
+        "adapter_result": "NOT_CALLED",
+        "reason_code": result.reduce_only_contract["reason_code"],
+    }
