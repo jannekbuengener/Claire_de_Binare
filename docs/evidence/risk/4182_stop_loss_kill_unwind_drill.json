@@ -1,0 +1,71 @@
+{
+  "schema_version": "1.0",
+  "proof_type": "issue_4182_kill_unwind_drill",
+  "run_id": "4182_aab4cb27_20260729T114634Z",
+  "timestamp_utc": "2026-07-29T11:47:47.4398463Z",
+  "commit_sha": "aab4cb270b0ced190b50898e8e0f809c5ce6934d",
+  "project_name": "cdb_4182_aab4cb27",
+  "verdict": "PASS_FAIL_CLOSED_UNAVAILABLE",
+  "stop_loss_protection_status": "UNAVAILABLE",
+  "stop_loss_protection_claim": "FAIL_CLOSED_UNAVAILABLE",
+  "lr_verdict": "NO-GO",
+  "live_go": false,
+  "echtgeld_go": false,
+  "dirty_worktree": false,
+  "safe_mode": {
+    "dry_run": true,
+    "mock_trading": true,
+    "use_real_balance": false,
+    "blue_red_activated": false,
+    "productive_exchange_credentials_mounted": false
+  },
+  "scenarios": {
+    "D1": "PASS",
+    "D2": "PASS",
+    "D3": "PASS",
+    "D4": "PASS",
+    "D5": "PASS",
+    "D6": "UNWIND_NOT_PROVEN",
+    "D7": "PASS_FAIL_CLOSED_UNAVAILABLE",
+    "D8": "EXIT_REJECTED_UNWIND_NOT_PROVEN"
+  },
+  "reason_codes": [
+    "KILL_SWITCH_ACTIVE",
+    "KILL_SWITCH_UNEVALUABLE",
+    "STOP_LOSS_PROTECTION_UNAVAILABLE",
+    "UNWIND_NOT_PROVEN",
+    "EXIT_REJECTED_UNWIND_NOT_PROVEN"
+  ],
+  "position_evidence": {
+    "D6_before": 0.01,
+    "D6_after": 0.01,
+    "D8_before": 0.01,
+    "D8_after": 0.01,
+    "position_increase_observed": false
+  },
+  "compose_sha256": {
+    "infrastructure/compose/base.yml": "659a878e260c397a88a489e10aa09aa7133fca6d549236b1355bef7e7b59d602",
+    "infrastructure/compose/test.yml": "b3c46020d4e8a75de895d6b3e7af5a154572cc039620432bfcf52ef39cf22082",
+    "infrastructure/compose/issue-4182-kill-unwind.yml": "281b626a02891e26d3b78483227285238b169f13367f89819ff381788c7510e1"
+  },
+  "container_image_ids": {
+    "redis": "sha256:9d317178eceac8454a2284a9e6df2466b93c745529947f0cd42a0fa9609d7005",
+    "postgres": "sha256:ecafd34249b5c248f3cb6ebe339584ee6448b36fad3f0a827ae5e8efbae6afda",
+    "execution": "sha256:97fe034caeaaa11ba35209b59cbd3ed6477e3edbde5a2009de2493778e4a74b9",
+    "risk": "sha256:06c3894eed647d04d168febc8f80ec7c5a8e9fec7ca88b04cdd98cb72042173c"
+  },
+  "artifact_sha256": {
+    "compose.resolved.json": "2716a89443c2b0137f9071ecd75bb9629281a44b4a52c9eb65b8a43c9a626809",
+    "d1-d4-d6-d8.log": "a5596cf5bbc73d37452b2b42c819440fab782010c287b50f50efebbe12841e40",
+    "d1-d4-d6-d8.xml": "e3cd8ba11e128bea24c9bd9d7219a60adf610cd4d2bf2ffe7c8e45045012b909",
+    "d5.log": "a0457c51209862ef40753cc41cd3e7acd72c9bb0510e1848985267c3e68dba2b",
+    "d5.xml": "f365a21af5c003cf8b82d4ea5ad61745fc450a33b6bc836178baf1b6f404da23"
+  },
+  "cleanup": {
+    "pass": true,
+    "containers_remaining": 0,
+    "volumes_remaining": 0,
+    "networks_remaining": 0
+  },
+  "run_error": null
+}
