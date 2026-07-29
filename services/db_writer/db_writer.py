@@ -630,7 +630,10 @@ class DatabaseWriter:
                 INSERT INTO trades
                 (symbol, side, price, size, status, execution_price, slippage_bps, fees, realized_pnl, timestamp, exchange, metadata)
                 VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s)
-                ON CONFLICT DO NOTHING
+                ON CONFLICT ((metadata->>'order_id'))
+                WHERE metadata->'reduce_only'->>'position_update_owner'
+                    = 'execution_reduce_only_v1'
+                DO NOTHING
                 RETURNING id
             """,
                 (

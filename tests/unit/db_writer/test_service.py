@@ -538,6 +538,9 @@ def test_duplicate_reduce_only_trade_is_not_inserted_twice(database_writer_cls):
     )
 
     assert cursor.execute.call_count == 2
+    insert_sql = cursor.execute.call_args_list[1].args[0]
+    assert "ON CONFLICT ((metadata->>'order_id'))" in insert_sql
+    assert "position_update_owner" in insert_sql
     writer.update_position_from_trade.assert_not_called()
 
 
