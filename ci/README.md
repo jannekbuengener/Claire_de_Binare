@@ -63,7 +63,7 @@ pwsh -File ci/scripts/publish_status.ps1 -Command publish -EvidenceDir ci/artifa
 | Stage | Wrapped commands |
 |-------|------------------|
 | lint | `ruff check .`; `black --config pyproject.toml --check` on changed `*.py` vs `origin/main` |
-| unit | `pytest -q -k "not test_mcp_time_server_runtime"` (exact `ci.yml` SSOT) |
+| unit | `pytest -q -k "not test_mcp_time_server_runtime"` (SSOT; thin `ci.yml` delegates here) |
 | docs | `python -m tools.validate_onboarding_docs`; `python -m tools.validate_readme_links`; `python -m tools.ci.docs_conflict_guard`; `python -m tools.ci.repository_canon_guard` |
 | governance | MCP fixture validate; `make surreal-validate`; `scripts/governance/run_ci_drift_checks.py` |
 | integration | 431B `base.yml` + `test.yml`, project `cdb_ci_<run_id>`, no host ports by default |
@@ -99,13 +99,32 @@ for ci_image/test_runner/postgres/redis, compose project template
 
 | Surface | Local | GitHub |
 |---------|-------|--------|
-| Required `ci.yml` commands | high (wrapped in local stages) | advisory workflow (not BP-required) |
-| `policy-gate` | local mirror enforced at publish | workflow safety (not BP-required) |
-| Docs Conflict / Hub | extracted tools modules | workflows still inline |
+| Fast validation | `ci/scripts/run.py --profile fast` | `.github/workflows/ci.yml` thin wrapper → same orchestrator |
+| Job `ci (Unit/Integration + Lint gesammelt)` | stages lint/unit/docs/governance (+ report) | advisory check-run name (not BP-required) |
+| `policy-gate` | local mirror at publish only; **no full parity** | GitHub-native `policy-gate.yml` (PR API) |
+| `surrealdb-validate` job | covered inside governance stage | path-filtered GitHub-native remainder in `ci.yml` |
+| Docs Conflict / Canon | docs stage modules | also separate advisory workflows |
 | CodeQL | optional local SARIF | Security-tab authoritative |
 | Branch Protection | — | required: `cdb-local-ci` (Commit Status) |
 | Local evidence | advisory artifacts until publish | — |
 | Status publisher (Phase 3a) | Commit Status after validation | required context `cdb-local-ci` |
+
+### Workflow → Stage mapping (`ci.yml` job `ci`)
+
+| Wrapper responsibility | Canonical surface |
+|------------------------|-------------------|
+| Checkout + fetch `origin/main` | GitHub Actions only |
+| Python 3.12 + pip install | GitHub Actions only (`run.py` installs nothing) |
+| Surreal CLI on `PATH` | enables governance without Docker |
+| `python ci/scripts/run.py --profile fast` | lint → unit → docs → governance → report |
+
+GitHub-native remainder (not replaced by local orchestrator):
+
+- `surrealdb-validate` job in `ci.yml` (path-filtered early SurrealQL syntax check)
+- `.github/workflows/policy-gate.yml` (full PR/label/permission evaluation)
+
+Do **not** treat the job name `ci (Unit/Integration + Lint gesammelt)` as the live
+required context. Live required context is Commit Status `cdb-local-ci`.
 
 ## Architecture
 
@@ -113,7 +132,10 @@ for ci_image/test_runner/postgres/redis, compose project template
 pwsh/make/bash → ci/scripts/run.py → ci/stages/* → ci/artifacts/<run_id>/
                  ↑
          ci/config/stages.yaml + resources.yaml
-         ci/Dockerfile (Python 3.12; matches ci.yml, not Dockerfile.test 3.14)
+         ci/Dockerfile (Python 3.12; matches thin ci.yml wrapper)
+
+GitHub Actions (ci.yml job ci):
+  checkout/setup/pip/surreal → python ci/scripts/run.py --profile fast
 
 optional:
 pwsh/make → ci.publisher → GitHub Commit Status (exact SHA; fail-closed)

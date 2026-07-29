@@ -302,9 +302,17 @@ def standard_ci_excludes_local_only() -> dict[str, Any]:
 
     root = repo_root()
     ci_yaml = (root / ".github" / "workflows" / "ci.yml").read_text(encoding="utf-8")
+    unit_stage = (root / "ci" / "stages" / "unit.py").read_text(encoding="utf-8")
     pytest_ini = (root / "pytest.ini").read_text(encoding="utf-8")
     marker_present = "local_only:" in pytest_ini
-    ci_excludes = "pytest -q" in ci_yaml and "norecursedirs = local" in pytest_ini
+    # #4163: thin ci.yml delegates to run.py; unit stage owns the pytest filter.
+    delegates = "ci/scripts/run.py" in ci_yaml and "--profile fast" in ci_yaml
+    unit_filter = "pytest" in unit_stage and "not test_mcp_time_server_runtime" in unit_stage
+    ci_excludes = (
+        delegates
+        and unit_filter
+        and "norecursedirs = local" in pytest_ini
+    )
     return {
         "pytest_marker_registered": marker_present,
         "ci_excludes_local_only": ci_excludes,

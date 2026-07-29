@@ -20,6 +20,7 @@ REPO_ROOT = Path(__file__).resolve().parents[3]
 EXAMPLE_CONFIG = REPO_ROOT / "infrastructure/config/surrealdb/context_query.local.example.yaml"
 LOCAL_TEST_FILE = REPO_ROOT / "tests/local/surrealdb/test_context_readonly_query_harness.py"
 CI_YAML = REPO_ROOT / ".github/workflows/ci.yml"
+UNIT_STAGE = REPO_ROOT / "ci/stages/unit.py"
 PYTEST_INI = REPO_ROOT / "pytest.ini"
 
 
@@ -41,7 +42,13 @@ def test_standard_ci_excludes_local_only() -> None:
     assert evidence["pytest_marker_registered"] is True
     assert evidence["ci_excludes_local_only"] is True
     assert evidence["ok"] is True
-    assert "pytest -q" in CI_YAML.read_text(encoding="utf-8")
+    # #4163: ci.yml delegates to local orchestrator; unit stage owns pytest filter.
+    ci_text = CI_YAML.read_text(encoding="utf-8")
+    assert "ci/scripts/run.py" in ci_text
+    assert "--profile fast" in ci_text
+    unit_text = UNIT_STAGE.read_text(encoding="utf-8")
+    assert "pytest" in unit_text
+    assert "not test_mcp_time_server_runtime" in unit_text
     assert "norecursedirs = local" in PYTEST_INI.read_text(encoding="utf-8")
     assert "local_only:" in PYTEST_INI.read_text(encoding="utf-8")
 

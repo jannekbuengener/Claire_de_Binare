@@ -1,4 +1,4 @@
-"""Unit stage — exact ci.yml pytest command (SSOT for required gate)."""
+"""Unit stage — canonical pytest filter for local CI and thin ci.yml wrapper."""
 
 from __future__ import annotations
 
@@ -7,8 +7,8 @@ from ci.stages._common import StageContext, python_executable, run_commands_as_s
 
 
 def run(ctx: StageContext) -> StageResult:
-    # Keep expression identical to .github/workflows/ci.yml Tests step;
-    # invoke via the orchestrator interpreter (-m pytest) for local venv parity.
+    # SSOT filter for the fast profile / GitHub ci.yml thin wrapper (#4163).
+    # Invoke via the orchestrator interpreter (-m pytest) for local venv parity.
     return run_commands_as_stage(
         ctx,
         name="unit",
