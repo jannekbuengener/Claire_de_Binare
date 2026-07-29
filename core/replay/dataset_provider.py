@@ -270,7 +270,7 @@ class DBBackedDatasetProvider:
             cursor = self._db_conn.cursor()
             cursor.execute(
                 """
-                SELECT ts_ms, open, high, low, close, volume, trade_count, COALESCE(regime_id, 0)
+                SELECT ts_ms, open, high, low, close, volume, trade_count, regime_id
                 FROM candles_1m
                 WHERE symbol = %s
                   AND ts_ms >= %s

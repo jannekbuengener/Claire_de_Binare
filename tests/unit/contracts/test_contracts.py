@@ -155,7 +155,9 @@ class TestSignalContract:
         assert "Percentage-point" in pct_change_description
         assert "3.0 means 3%." in pct_change_description
         assert "Percentage-point" in pct_change_15m_description
-        assert "3.0 means 3%." in pct_change_15m_description
+        assert "3.0 means 3%" in pct_change_15m_description
+        assert "SIGNAL_LOOKBACK_MIN" in pct_change_15m_description
+        assert "event time" in pct_change_15m_description
 
     def test_schema_no_additional_properties(self, schema):
         """additionalProperties muss false sein (strict contract)"""

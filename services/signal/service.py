@@ -219,9 +219,8 @@ class SignalEngine:
         self.redis_client: Optional[redis.Redis] = None
         self.pubsub: Optional[redis.client.PubSub] = None
         self.running = False
-        self.price_buffer = (
-            PriceBuffer()
-        )  # Stateful pct_change calculation (Issue #345)
+        # Tick pct_change (#345) + event-time lookback for pct_change_15m (#4149)
+        self.price_buffer = PriceBuffer(lookback_minutes=self.config.lookback_minutes)
         self._pg_conn: Optional[psycopg2.extensions.connection] = None  # Phase 8C
         self._high_history: dict[str, list[tuple[int, float]]] = defaultdict(list)
         self._low_history: dict[str, list[tuple[int, float]]] = defaultdict(list)
@@ -281,13 +280,39 @@ class SignalEngine:
             "timestamp": market_data.timestamp,
         }
 
+    def _observe_market_price(
+        self, market_data: MarketData, now_ms: int | None = None
+    ) -> int:
+        """Record event-time price for SIGNAL_LOOKBACK_MIN pct_change_15m."""
+        ts_ms = int(now_ms if now_ms is not None else market_data.timestamp)
+        price = float(
+            market_data.close if market_data.close is not None else market_data.price
+        )
+        self.price_buffer.observe(market_data.symbol, price, ts_ms)
+        return ts_ms
+
+    def _resolve_pct_change_15m(
+        self, market_data: MarketData, now_ms: int
+    ) -> float | None:
+        """True event-time lookback pct change; None when history is insufficient."""
+        price = float(
+            market_data.close if market_data.close is not None else market_data.price
+        )
+        return self.price_buffer.pct_change_lookback(
+            market_data.symbol,
+            current_price=price,
+            now_ms=now_ms,
+            lookback_minutes=self.config.lookback_minutes,
+        )
+
     def _signal_from_candidate(
         self,
         candidate: StrategySignalCandidate,
         market_data: MarketData,
         market_event: dict | None = None,
     ) -> Signal:
-        now_ms = int(time.time() * 1000)
+        now_ms = int(market_data.timestamp or int(time.time() * 1000))
+        self._observe_market_price(market_data, now_ms)
         config_snapshot = _build_runtime_config_snapshot(self.config)
         config_hash = _build_config_hash(config_snapshot)
         signal_id_name = None
@@ -323,7 +348,7 @@ class SignalEngine:
                 if candidate.pct_change is not None
                 else market_data.pct_change
             ),
-            pct_change_15m=market_data.pct_change,
+            pct_change_15m=self._resolve_pct_change_15m(market_data, now_ms),
             volume_15m=market_data.volume,
             strategy_id=candidate.strategy_id,
             bot_id=self.config.bot_id,
@@ -663,6 +688,7 @@ class SignalEngine:
         high_now = float(market_data.high or close_now)
         low_now = float(market_data.low or close_now)
         now_ms = int(market_data.timestamp or int(time.time() * 1000))
+        self._observe_market_price(market_data, now_ms)
 
         upper_level, lower_level = self._donchian_channel_levels(symbol)
 
@@ -693,7 +719,7 @@ class SignalEngine:
                 ts_ms=now_ms,
                 price=close_now,
                 pct_change=market_data.pct_change,
-                pct_change_15m=market_data.pct_change,
+                pct_change_15m=self._resolve_pct_change_15m(market_data, now_ms),
                 volume_15m=market_data.volume,
                 strategy_id=self.config.strategy_id,
                 bot_id=self.config.bot_id,
@@ -735,7 +761,7 @@ class SignalEngine:
                 ts_ms=now_ms,
                 price=close_now,
                 pct_change=market_data.pct_change,
-                pct_change_15m=market_data.pct_change,
+                pct_change_15m=self._resolve_pct_change_15m(market_data, now_ms),
                 volume_15m=market_data.volume,
                 strategy_id=self.config.strategy_id,
                 bot_id=self.config.bot_id,
@@ -775,6 +801,7 @@ class SignalEngine:
         high_now = float(market_data.high or close_now)
         low_now = float(market_data.low or close_now)
         now_ms = int(market_data.timestamp or int(time.time() * 1000))
+        self._observe_market_price(market_data, now_ms)
 
         # Time-based windowing
         entry_lookback_ms = self.config.entry_lookback_minutes * 60_000
@@ -861,7 +888,7 @@ class SignalEngine:
                 ts_ms=now_ms,
                 price=close_now,
                 pct_change=market_data.pct_change,
-                pct_change_15m=market_data.pct_change,
+                pct_change_15m=self._resolve_pct_change_15m(market_data, now_ms),
                 volume_15m=market_data.volume,
                 strategy_id=self.config.strategy_id,
                 bot_id=self.config.bot_id,
@@ -906,7 +933,7 @@ class SignalEngine:
                     ts_ms=now_ms,
                     price=close_now,
                     pct_change=market_data.pct_change,
-                    pct_change_15m=market_data.pct_change,
+                    pct_change_15m=self._resolve_pct_change_15m(market_data, now_ms),
                     volume_15m=market_data.volume,
                     strategy_id=self.config.strategy_id,
                     bot_id=self.config.bot_id,
@@ -948,6 +975,7 @@ class SignalEngine:
 
         try:
             market_data = MarketData.from_dict(data)
+            self._observe_market_price(market_data)
 
             # Calculate pct_change if missing (raw trade data from cdb_ws)
             # Issue #345: Stateful calculation using price history buffer
