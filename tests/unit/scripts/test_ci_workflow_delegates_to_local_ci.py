@@ -53,7 +53,9 @@ def test_ci_workflow_identity_stable() -> None:
     assert permissions.get("contents") == "read"
     concurrency = payload.get("concurrency") or {}
     assert concurrency.get("cancel-in-progress") is True
-    assert "${{ github.workflow }}-${{ github.ref }}" in str(concurrency.get("group", ""))
+    assert "${{ github.workflow }}-${{ github.ref }}" in str(
+        concurrency.get("group", "")
+    )
     jobs = payload.get("jobs") or {}
     assert "ci" in jobs
     assert jobs["ci"].get("name") == CANONICAL_JOB_NAME
@@ -64,7 +66,9 @@ def test_ci_job_delegates_to_local_orchestrator_fast_profile() -> None:
     run_text = _joined_run_scripts(steps)
     assert ORCHESTRATOR in run_text
     assert "--profile fast" in run_text
-    assert re.search(rf"python\s+{re.escape(ORCHESTRATOR)}\s+--profile\s+fast", run_text)
+    assert re.search(
+        rf"python\s+{re.escape(ORCHESTRATOR)}\s+--profile\s+fast", run_text
+    )
 
 
 def test_ci_job_has_no_drift_command_copies() -> None:

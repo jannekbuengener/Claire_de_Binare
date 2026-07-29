@@ -17,8 +17,12 @@ from tools.surrealdb.context_query import WriteDeniedError, classify_statement
 pytestmark = [pytest.mark.unit, pytest.mark.contract]
 
 REPO_ROOT = Path(__file__).resolve().parents[3]
-EXAMPLE_CONFIG = REPO_ROOT / "infrastructure/config/surrealdb/context_query.local.example.yaml"
-LOCAL_TEST_FILE = REPO_ROOT / "tests/local/surrealdb/test_context_readonly_query_harness.py"
+EXAMPLE_CONFIG = (
+    REPO_ROOT / "infrastructure/config/surrealdb/context_query.local.example.yaml"
+)
+LOCAL_TEST_FILE = (
+    REPO_ROOT / "tests/local/surrealdb/test_context_readonly_query_harness.py"
+)
 CI_YAML = REPO_ROOT / ".github/workflows/ci.yml"
 UNIT_STAGE = REPO_ROOT / "ci/stages/unit.py"
 PYTEST_INI = REPO_ROOT / "pytest.ini"
@@ -101,11 +105,15 @@ def test_db_backed_posture_requires_records_and_source() -> None:
     assert posture["brain_source"] == "surrealdb-local"
 
 
-def test_preflight_fail_closed_without_env_flag(monkeypatch: pytest.MonkeyPatch) -> None:
+def test_preflight_fail_closed_without_env_flag(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
     monkeypatch.delenv(harness.ENV_REAL_SURREALDB_READONLY_QUERY, raising=False)
     result = harness.check_readonly_query_preconditions(confirm=False)
     assert result["ok"] is False
-    assert any(harness.ENV_REAL_SURREALDB_READONLY_QUERY in err for err in result["errors"])
+    assert any(
+        harness.ENV_REAL_SURREALDB_READONLY_QUERY in err for err in result["errors"]
+    )
 
 
 def test_preflight_ok_with_confirm_when_health_and_config_ok(
@@ -170,7 +178,9 @@ def test_mem_mode_returns_fixture_rows() -> None:
         "mem",
         mem_rows=[{"artifact_id": "repo_artifact:abc", "source_path": "core/x.py"}],
     )
-    result = harness.run_readonly_probe(adapter, query="SELECT * FROM repo_artifact LIMIT 1")
+    result = harness.run_readonly_probe(
+        adapter, query="SELECT * FROM repo_artifact LIMIT 1"
+    )
     assert result["row_count"] == 1
 
 
@@ -205,7 +215,10 @@ def test_live_mode_unreachable_soft_returns_empty_with_repo_fallback_posture(
 
     mock_opener = MagicMock()
     mock_opener.open.side_effect = urllib.error.URLError("connection refused")
-    with patch("tools.surrealdb.context_query.urllib.request.build_opener", return_value=mock_opener):
+    with patch(
+        "tools.surrealdb.context_query.urllib.request.build_opener",
+        return_value=mock_opener,
+    ):
         rows = adapter.execute(harness.HARNESS_PROBE_QUERY)
     assert rows == []
     posture = harness.classify_db_evidence_posture(
