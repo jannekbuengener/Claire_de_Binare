@@ -71,7 +71,12 @@ from core.safety.kill_switch import (
     KillSwitch,
     KillSwitchReason,
 )
-from core.safety.stop_loss_protection import stop_loss_metadata_note
+from core.safety.stop_loss_protection import (
+    STOP_LOSS_PROTECTION_BLOCK_REASON,
+    STOP_LOSS_PROTECTION_STATUS,
+    stop_loss_metadata_note,
+    stop_loss_protection_is_available,
+)
 from core.domain.models import Signal
 
 try:
@@ -1654,6 +1659,38 @@ class RiskManager:
     ) -> Optional[Order]:
         """Prüft Signal gegen alle Risk-Layers"""
         payload = raw_payload or {}
+
+        metadata = payload.get("metadata")
+        requires_stop_loss_protection = (
+            isinstance(metadata, dict)
+            and metadata.get("requires_stop_loss_protection") is True
+        )
+        if requires_stop_loss_protection and not stop_loss_protection_is_available():
+            block_message = (
+                "Signal requires end-to-end stop-loss protection, but the "
+                f"canonical status is {STOP_LOSS_PROTECTION_STATUS.value}; "
+                "stop_loss_pct remains ARTIFACT_ONLY"
+            )
+            self.send_alert(
+                "CRITICAL",
+                STOP_LOSS_PROTECTION_BLOCK_REASON,
+                block_message,
+                {
+                    "signal_id": signal.signal_id,
+                    "strategy_id": signal.strategy_id,
+                    "symbol": signal.symbol,
+                    "side": signal.side,
+                    "stop_loss_protection_status": (STOP_LOSS_PROTECTION_STATUS.value),
+                },
+            )
+            logger.warning(
+                "Signal blockiert: %s: %s",
+                STOP_LOSS_PROTECTION_BLOCK_REASON,
+                block_message,
+            )
+            stats["orders_blocked"] += 1
+            risk_state.signals_blocked += 1
+            return None
 
         # LR-762: Kill-switch gate (fail-closed, HARDENING FIX 3)
         kill_switch_active, kill_switch_code, kill_switch_context = (

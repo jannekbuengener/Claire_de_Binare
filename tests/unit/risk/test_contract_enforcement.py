@@ -388,6 +388,111 @@ def test_kill_switch_inactive_does_not_block(mock_redis, mock_postgres):
     # The fact that we reach this point means kill-switch was not blocking
 
 
+@pytest.mark.unit
+def test_stop_loss_required_signal_blocks_before_kill_switch(mock_redis, mock_postgres):
+    """Protection-required signals fail closed before any downstream lookup."""
+    test_config = RiskConfig(
+        max_position_pct=0.10,
+        max_total_exposure_pct=0.30,
+        max_daily_drawdown_pct=0.05,
+        stop_loss_pct=0.02,
+    )
+    with patch.object(risk_service, "config", test_config):
+        manager = RiskManager()
+
+    from core.domain.models import Signal
+    from core.safety.stop_loss_protection import (
+        STOP_LOSS_PROTECTION_BLOCK_REASON,
+    )
+
+    signal = Signal(
+        signal_id="sig-stop-loss-required",
+        strategy_id="test-strat",
+        symbol="BTCUSDT",
+        side="BUY",
+        direction="BUY",
+        strength=0.8,
+        timestamp=1700000000.0,
+    )
+
+    with (
+        patch.object(manager, "_kill_switch_gate") as kill_switch_gate,
+        patch.object(manager, "send_alert") as send_alert,
+    ):
+        result = manager.process_signal(
+            signal,
+            raw_payload={
+                "metadata": {
+                    "requires_stop_loss_protection": True,
+                    "stop_loss_protection_status": "ARTIFACT_ONLY",
+                }
+            },
+        )
+
+    assert result is None
+    kill_switch_gate.assert_not_called()
+    send_alert.assert_called_once()
+    assert send_alert.call_args.args[1] == STOP_LOSS_PROTECTION_BLOCK_REASON
+    assert send_alert.call_args.args[3]["stop_loss_protection_status"] == "UNAVAILABLE"
+
+
+@pytest.mark.unit
+@pytest.mark.parametrize(
+    "metadata",
+    [
+        {},
+        {"requires_stop_loss_protection": False},
+        {"requires_stop_loss_protection": "true"},
+        {"stop_loss_protection_status": "ARTIFACT_ONLY"},
+    ],
+)
+def test_stop_loss_gate_requires_explicit_boolean_true(
+    metadata, mock_redis, mock_postgres
+):
+    """Only a strict boolean protection requirement activates the new gate."""
+    test_config = RiskConfig(
+        max_position_pct=0.10,
+        max_total_exposure_pct=0.30,
+        max_daily_drawdown_pct=0.05,
+        stop_loss_pct=0.02,
+    )
+    with patch.object(risk_service, "config", test_config):
+        manager = RiskManager()
+
+    from core.domain.models import Signal
+
+    signal = Signal(
+        signal_id="sig-stop-loss-not-required",
+        strategy_id="test-strat",
+        symbol="BTCUSDT",
+        side="BUY",
+        direction="BUY",
+        strength=0.8,
+        timestamp=1700000000.0,
+    )
+
+    with (
+        patch.object(
+            manager,
+            "_kill_switch_gate",
+            return_value=(
+                True,
+                "KILL_SWITCH_ACTIVE",
+                {"reason": "test", "message": "test", "activated_at": "now"},
+            ),
+        ) as kill_switch_gate,
+        patch.object(manager, "send_alert") as send_alert,
+    ):
+        result = manager.process_signal(
+            signal,
+            raw_payload={"metadata": metadata},
+        )
+
+    assert result is None
+    kill_switch_gate.assert_called_once()
+    assert send_alert.call_args.args[1] == "KILL_SWITCH_ACTIVE"
+
+
 # ─────────────────────────────────────────────────────────────────────
 # Issue #1192: Quantity rounding mode alignment (ROUND_HALF_EVEN)
 # ─────────────────────────────────────────────────────────────────────
@@ -452,6 +557,6 @@ def test_build_contract_computes_daily_drawdown_from_pnl_when_not_in_snapshot():
             account_state_snapshot={"balance_usdt": "1000"},  # no daily_drawdown_pct
         )
 
-    assert result["account_state"]["daily_drawdown_pct"] == "2.5", (
-        f"Expected '2.5', got {result['account_state']['daily_drawdown_pct']!r}"
-    )
+    assert (
+        result["account_state"]["daily_drawdown_pct"] == "2.5"
+    ), f"Expected '2.5', got {result['account_state']['daily_drawdown_pct']!r}"

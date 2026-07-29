@@ -1,0 +1,111 @@
+# Issue #4182 - isolated kill/unwind drill overlay.
+# Use only with base.yml + test.yml and a unique STACK_NAME.
+
+services:
+  cdb_redis:
+    container_name: ${STACK_NAME}_redis
+    volumes:
+      - redis_4182_data:/data
+
+  cdb_postgres:
+    container_name: ${STACK_NAME}_postgres
+    # test.yml contributes a dummy POSTGRES_PASSWORD while base.yml uses
+    # POSTGRES_PASSWORD_FILE. Keep the resolved YAML portable for repo scanners,
+    # but expose only the file-backed dummy secret to the image entrypoint.
+    entrypoint:
+      - sh
+      - -c
+      - unset POSTGRES_PASSWORD; exec docker-entrypoint.sh postgres
+    environment:
+      POSTGRES_DB: claire_de_binare_test
+      POSTGRES_USER: ${POSTGRES_USER:-claire_user}
+      POSTGRES_PASSWORD_FILE: /run/secrets/postgres_password
+    volumes:
+      - postgres_4182_data:/var/lib/postgresql
+      - ../../infrastructure/database/schema.sql:/docker-entrypoint-initdb.d/01-schema.sql:ro
+      - ../../infrastructure/database/migrations/002_orders_price_nullable.sql:/docker-entrypoint-initdb.d/02-migration-002.sql:ro
+      - ../../infrastructure/database/migrations/004_governance_v0.sql:/docker-entrypoint-initdb.d/04-migration-004.sql:ro
+      - ../../infrastructure/database/migrations/011_trade_realized_pnl.sql:/docker-entrypoint-initdb.d/11-migration-011.sql:ro
+
+  cdb_risk_test:
+    container_name: ${STACK_NAME}_risk
+    command:
+      - python
+      - -c
+      - >-
+        import runpy;
+        import core.utils.redis_client as redis_client;
+        original = redis_client.create_redis_client;
+        redis_client.create_redis_client = lambda *args, **kwargs:
+        original(*args, **dict(kwargs, socket_timeout=300.0));
+        runpy.run_module('services.risk.service', run_name='__main__')
+    environment:
+      REDIS_HOST: cdb_redis
+      POSTGRES_HOST: cdb_postgres
+      DRY_RUN: "1"
+      MOCK_TRADING: "true"
+      USE_REAL_BALANCE: "false"
+      PAPER_AUTO_UNWIND: "true"
+      TRACE_CONTRACT_V1_ENABLED: "1"
+      CDB_KILL_SWITCH_STATE_FILE: /app/kill_switch/.cdb_kill_switch.state
+    volumes:
+      - drill_4182_logs:/app/logs
+      - kill_switch_4182_state:/app/kill_switch
+    healthcheck:
+      test: ["CMD-SHELL", "kill -0 1 || exit 1"]
+      interval: 1s
+      timeout: 1s
+      retries: 3
+
+  cdb_execution_test:
+    container_name: ${STACK_NAME}_execution
+    environment:
+      REDIS_HOST: cdb_redis
+      POSTGRES_HOST: cdb_postgres
+      DRY_RUN: "1"
+      MOCK_TRADING: "true"
+      USE_REAL_BALANCE: "false"
+      TRACE_CONTRACT_V1_ENABLED: "1"
+      CDB_KILL_SWITCH_STATE_FILE: /app/kill_switch/.cdb_kill_switch.state
+    volumes:
+      - drill_4182_logs:/app/logs
+      - kill_switch_4182_state:/app/kill_switch
+    healthcheck:
+      test: ["CMD-SHELL", "kill -0 1 || exit 1"]
+      interval: 1s
+      timeout: 1s
+      retries: 3
+
+  cdb_test_runner:
+    container_name: ${STACK_NAME}_runner
+    environment:
+      REDIS_HOST: cdb_redis
+      POSTGRES_HOST: cdb_postgres
+      DRY_RUN: "1"
+      MOCK_TRADING: "true"
+      USE_REAL_BALANCE: "false"
+      PAPER_AUTO_UNWIND: "true"
+      TRACE_CONTRACT_V1_ENABLED: "1"
+      CDB_4182_DRILL: "1"
+      CDB_KILL_SWITCH_STATE_FILE: /app/kill_switch/.cdb_kill_switch.state
+      RISK_BASE_URL: http://cdb_risk_test:8002
+      EXECUTION_BASE_URL: http://cdb_execution_test:8003
+    volumes:
+      - ../../core:/app/core:ro
+      - ../../services:/app/services:ro
+      - ../../tests:/app/tests:ro
+      - ../../tools:/app/tools:ro
+      - ../../infrastructure:/app/infrastructure:ro
+      - drill_4182_logs:/app/logs
+      - kill_switch_4182_state:/app/kill_switch
+      - ${CDB_4182_EVIDENCE_DIR}:/app/evidence
+
+volumes:
+  redis_4182_data:
+  postgres_4182_data:
+  drill_4182_logs:
+  kill_switch_4182_state:
+
+networks:
+  cdb_test_network:
+    name: ${STACK_NAME}_network
