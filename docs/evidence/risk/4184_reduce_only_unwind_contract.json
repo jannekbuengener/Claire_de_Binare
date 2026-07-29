@@ -2,11 +2,11 @@
   "schema_version": "1.0",
   "issue": 4184,
   "proof_type": "reduce_only_unwind_contract",
-  "run_id": "4184_c0d41fe1_20260729T215022Z",
-  "tested_commit_sha": "c0d41fe1513521482764ad415817f84c010182a1",
+  "run_id": "4184_dfb8b040_20260729T231022Z",
+  "tested_commit_sha": "dfb8b040961db70ca106144e552ba7813a58f9dd",
   "branch": "fix/4184-reduce-only-unwind-contract",
   "base_sha": "2a3520794a82e44f7e411372f5fc9800f093bb86",
-  "raw_manifest_sha256": "3949e3fbf532cbeec7c30f70e7e97c498dac804e8c40cba24cc244e5987dfbee",
+  "raw_manifest_sha256": "4b1437090d1b69950f85d2e3c72bc23179ac34e34fd508d54b75067a04527094",
   "contract_version": "execution_reduce_only_v1",
   "position_sign_convention": "long_positive_short_negative",
   "quantity_unit": "base_asset",
@@ -30,7 +30,9 @@
       "side_flip_observed": false,
       "adapter_result": "FILLED",
       "prepare_reason_code": "REDUCE_ONLY_READY",
-      "reason_code": "REDUCE_ONLY_FILLED"
+      "reason_code": "REDUCE_ONLY_FILLED",
+      "serialized_fill_id": "mock-4184-R1_LONG_FULL_EXIT",
+      "serialized_status": "FILLED"
     },
     "R2_SHORT_FULL_EXIT": {
       "status": "PASS",
@@ -43,7 +45,9 @@
       "side_flip_observed": false,
       "adapter_result": "FILLED",
       "prepare_reason_code": "REDUCE_ONLY_READY",
-      "reason_code": "REDUCE_ONLY_FILLED"
+      "reason_code": "REDUCE_ONLY_FILLED",
+      "serialized_fill_id": "mock-4184-R2_SHORT_FULL_EXIT",
+      "serialized_status": "FILLED"
     },
     "R3_LONG_PARTIAL_FILL": {
       "status": "PASS",
@@ -56,7 +60,9 @@
       "side_flip_observed": false,
       "adapter_result": "PARTIALLY_FILLED",
       "prepare_reason_code": "REDUCE_ONLY_READY",
-      "reason_code": "REDUCE_ONLY_PARTIAL_FILL"
+      "reason_code": "REDUCE_ONLY_PARTIAL_FILL",
+      "serialized_fill_id": "mock-4184-R3_LONG_PARTIAL_FILL",
+      "serialized_status": "PARTIALLY_FILLED"
     },
     "R4_SHORT_PARTIAL_FILL": {
       "status": "PASS",
@@ -69,7 +75,9 @@
       "side_flip_observed": false,
       "adapter_result": "PARTIALLY_FILLED",
       "prepare_reason_code": "REDUCE_ONLY_READY",
-      "reason_code": "REDUCE_ONLY_PARTIAL_FILL"
+      "reason_code": "REDUCE_ONLY_PARTIAL_FILL",
+      "serialized_fill_id": "mock-4184-R4_SHORT_PARTIAL_FILL",
+      "serialized_status": "PARTIALLY_FILLED"
     },
     "R5_OVERSIZED_LONG_EXIT": {
       "status": "PASS",
@@ -82,7 +90,9 @@
       "side_flip_observed": false,
       "adapter_result": "FILLED",
       "prepare_reason_code": "REDUCE_ONLY_QUANTITY_CLAMPED",
-      "reason_code": "REDUCE_ONLY_FILLED"
+      "reason_code": "REDUCE_ONLY_FILLED",
+      "serialized_fill_id": "mock-4184-R5_OVERSIZED_LONG_EXIT",
+      "serialized_status": "FILLED"
     },
     "R6_OVERSIZED_SHORT_EXIT": {
       "status": "PASS",
@@ -95,7 +105,9 @@
       "side_flip_observed": false,
       "adapter_result": "FILLED",
       "prepare_reason_code": "REDUCE_ONLY_QUANTITY_CLAMPED",
-      "reason_code": "REDUCE_ONLY_FILLED"
+      "reason_code": "REDUCE_ONLY_FILLED",
+      "serialized_fill_id": "mock-4184-R6_OVERSIZED_SHORT_EXIT",
+      "serialized_status": "FILLED"
     },
     "R7_ADAPTER_REJECTION": {
       "status": "PASS",
@@ -108,7 +120,9 @@
       "side_flip_observed": false,
       "adapter_result": "REJECTED",
       "prepare_reason_code": "REDUCE_ONLY_READY",
-      "reason_code": "REDUCE_ONLY_REJECTED"
+      "reason_code": "REDUCE_ONLY_REJECTED",
+      "serialized_fill_id": null,
+      "serialized_status": "REJECTED"
     },
     "R8_DUPLICATE_RESULT": {
       "status": "PASS",
@@ -121,19 +135,24 @@
       "side_flip_observed": false,
       "adapter_result": "FILLED",
       "prepare_reason_code": "REDUCE_ONLY_READY",
-      "reason_code": "REDUCE_ONLY_DUPLICATE_RESULT"
+      "reason_code": "REDUCE_ONLY_DUPLICATE_RESULT",
+      "serialized_fill_id": "mock-4184-R8_DUPLICATE_RESULT",
+      "serialized_status": "FILLED"
     },
     "R9_RESTART_AFTER_PARTIAL": {
       "status": "PASS",
-      "before_position": "-1",
-      "requested_exit_quantity": "1",
-      "submitted_exit_quantity": "0.25",
-      "filled_quantity": "0",
-      "after_position": "-0.75",
+      "before_position": "-1.00000000",
+      "requested_exit_quantity": "1.00000000",
+      "submitted_exit_quantity": "1.00000000",
+      "filled_quantity": "0.25000000",
+      "after_position": "-0.75000000",
       "position_increase_observed": false,
       "side_flip_observed": false,
-      "adapter_result": "NOT_CALLED_AFTER_PROCESS_RESTART",
-      "reason_code": "REDUCE_ONLY_DUPLICATE_RESULT"
+      "adapter_result": "PARTIALLY_FILLED",
+      "reason_code": "REDUCE_ONLY_DUPLICATE_RESULT",
+      "restart_adapter_result": "NOT_CALLED",
+      "restart_filled_quantity": "0",
+      "restart_reason_code": "REDUCE_ONLY_DUPLICATE_RESULT"
     },
     "R10_UNKNOWN_POSITION": {
       "status": "PASS",
@@ -159,29 +178,30 @@
     "REDUCE_ONLY_REJECTED",
     "REDUCE_ONLY_PARTIAL_FILL",
     "REDUCE_ONLY_DUPLICATE_RESULT",
+    "REDUCE_ONLY_CONCURRENT_CLAIM_BLOCKED",
     "REDUCE_ONLY_POSITION_INCREASE_BLOCKED"
   ],
   "artifact_sha256": {
-    "compose.resolved.redacted.json": "5a8882547ae4b4d61701b5f51671a5e96700cd86cfe26c9acf5d80f2ad2c9443",
-    "r1-r8-r10.log": "eab3abc12c2ea5db31c6316d0bc6d348acb7f49b5c2d8f35444d605d408100e0",
-    "r1-r8-r10.xml": "8d40ebb86f1e3d00df90ee3fcc4cf8f47d816b5d352acc05f1ca7129ffd90513",
-    "r9-setup.log": "8fe154d00be237bd51e75195c749adbc9f1c67d2917532fd937a28f12e53b321",
-    "r9-setup.xml": "8b36dd0bfea0ef62fe98516f272bb05eaa9e915fc0ba485b49716822f37e6b80",
-    "r9.log": "b8d599c54473101f64bef6f8b7a440e13d743eee885601de338febaee688afb6",
-    "r9.xml": "ad961ccae3d43841148d58ba7f6f543b4ec124d0a168bdc099ede3fe0ab9fd24",
-    "scenarios-initial.json": "e20ad47be8e21e526f65f4ce972f24e1923840f5778413a108f4c7bdcff75fef",
-    "scenarios-restart.json": "0b6fde14ddcec3ef678242fe4b3225ea905635874905df44489881a6962a57a3",
-    "scenarios-setup.json": "abd482cf9e9abe73b2431e1dfddc37ad8121fa5e6260ddb9b26e91575c10b43b"
+    "compose.resolved.redacted.json": "e3364fdfdd16dad2ac8bc3536c9a9844ad68de2ac35568d16e08d9b76219e47c",
+    "r1-r8-r10.log": "44de68e208e542458182a5e92afbda0f6f22f998028aab660771094673fc8c41",
+    "r1-r8-r10.xml": "2edce7637373f8fcaa874a5ab53b96133890bba168cc9f12ddad422947264941",
+    "r9-setup.log": "5c879efc7c944ff1605a7e2ab2d39cd7ebea1941954d6acf5e99caa111396c4b",
+    "r9-setup.xml": "968ba9c2d95f42b5765ba86117c0d3032ee2d6c68bff1214e7b4212900d6a9ed",
+    "r9.log": "3f30b64eda559385f56e09ffd3d060951cdd8908d79112bc42d13ce416d9fdcf",
+    "r9.xml": "515a0a1627c7e821faef60f0ef3e5961014608c6a7c378a76a9681dace2ed4ba",
+    "scenarios-initial.json": "394706a0162e9a1349e32360ee147b3b8399ca531642e633620686c9fce33087",
+    "scenarios-restart.json": "5935b9df6b0f0986db4388d0d425577b0dcc07e19d1b72f6a154dd5d9991a7ca",
+    "scenarios-setup.json": "d10028ee66e0e00dd16b926071526133bcd03e5b5fe269fcf014f052d1bc28d3"
   },
   "compose_sha256": {
     "infrastructure/compose/base.yml": "2fc6d30be39bb1c77f87462f00737fb16860103b28db49e0c4f4d2bf037edf81",
     "infrastructure/compose/test.yml": "fc1c6b132efaf1ff878ec34e5d81309c25b033e0ae77320f684f77bb22d18ddf",
-    "infrastructure/compose/issue-4182-kill-unwind.yml": "186742b454f0bb6e034ffee6211b828c27169ec971309a8dffe5273a747adbd7"
+    "infrastructure/compose/issue-4182-kill-unwind.yml": "d7e81225503731b9e18b5865a4e8467f953b690849ffdc8339246eb01157f82f"
   },
   "image_ids": {
     "redis": "sha256:9d317178eceac8454a2284a9e6df2466b93c745529947f0cd42a0fa9609d7005",
     "postgres": "sha256:ecafd34249b5c248f3cb6ebe339584ee6448b36fad3f0a827ae5e8efbae6afda",
-    "execution": "sha256:71cc1de6f0c5bee3447af21c4b16eaedc2eaf305f6b3a9effb2ff245144c8b39"
+    "execution": "sha256:fdbeb1d7235d6cc3aa6b7d1c916b76b3b03600e495b001f0638f393cb354b3f2"
   },
   "cleanup_result": {
     "pass": true,
