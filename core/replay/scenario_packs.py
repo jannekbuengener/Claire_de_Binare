@@ -76,12 +76,13 @@ _PACKS: dict[str, ScenarioSpec] = {
     "pessimistic_execution": _make_spec(
         scenario_id="pessimistic_execution",
         description=(
-            "Pessimistic execution: elevated slippage, reduced fill rate, "
-            "and pessimistic execution posture. Models adverse fill conditions."
+            "Pessimistic execution: elevated slippage, reduced usable depth "
+            "fraction (not a probabilistic fill rate), and pessimistic "
+            "execution posture. Models adverse fill conditions."
         ),
         overrides={
             "execution_slippage_bps": 30,
-            "fill_rate": 0.7,
+            "usable_depth_fraction": 0.7,
             "execution_posture": "pessimistic",
         },
     ),
@@ -100,11 +101,11 @@ _PACKS: dict[str, ScenarioSpec] = {
     "low_liquidity": _make_spec(
         scenario_id="low_liquidity",
         description=(
-            "Low-liquidity: reduced available execution depth and degraded fill "
-            "conditions. Models thin-book or illiquid market conditions."
+            "Low-liquidity: elevated depth-impact coefficient (slippage impact), "
+            "not a smaller book depth. Models thin-book adverse price impact."
         ),
         overrides={
-            "fill_depth_factor": 0.3,
+            "depth_impact_factor": 0.3,
             "execution_posture": "low_liquidity",
         },
     ),

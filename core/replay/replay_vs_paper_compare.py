@@ -26,6 +26,12 @@ from dataclasses import dataclass
 from datetime import datetime, timezone
 from typing import Any, Mapping
 
+from core.replay.canonical_json import canonical_json_dumps
+from core.replay.execution_economics_v1 import (
+    MOCK_PAPER_ECONOMICS_ASSUMPTIONS,
+    compare_economics_components,
+    reconcile_gross_to_net,
+)
 from core.replay.shadow_compare import (
     PaperReferenceWindow,
     ReplayOutputWindow,
@@ -304,10 +310,79 @@ def compare_from_paths(paths: ComparePaths) -> ShadowComparisonResult:
         ) from exc
 
 
+def economics_payload_from_metrics(metrics: Mapping[str, Any]) -> dict[str, Any]:
+    """Build a gross-to-net payload from replay/paper metrics mapping.
+
+    Missing components are marked not_applicable / inactive rather than invented.
+    When ``slippage_cost_quote`` is present, ``gross_pnl_quote`` is treated as
+    fill-price-embedded and reference gross is reconstructed as embedded+slippage.
+    """
+    metrics_map = _require_mapping(metrics, "metrics")
+    embedded = metrics_map.get("gross_pnl_quote", metrics_map.get("gross_pnl", 0))
+    fees = metrics_map.get("fees_total_quote", metrics_map.get("total_fee_cost", 0))
+    maker = metrics_map.get(
+        "maker_fee_cost_quote", metrics_map.get("maker_fee_cost", 0)
+    )
+    taker = metrics_map.get("taker_fee_cost_quote", metrics_map.get("taker_fee_cost"))
+    if taker is None:
+        taker = fees
+    slippage = metrics_map.get("slippage_cost_quote", metrics_map.get("slippage_cost"))
+    if slippage is not None:
+        slippage_status = "active"
+        reference_gross = float(embedded or 0) + float(slippage)
+    else:
+        slippage_status = "not_applicable"
+        reference_gross = float(embedded or 0)
+    return reconcile_gross_to_net(
+        gross_pnl=reference_gross,
+        maker_fee_cost=maker if maker is not None else 0,
+        taker_fee_cost=taker if taker is not None else 0,
+        slippage_cost=0 if slippage is None else slippage,
+        slippage_status=slippage_status,
+        fill_price_embedded_gross=embedded,
+    ).to_dict()
+
+
+def compare_economics_from_reports(
+    replay_report: Mapping[str, Any],
+    paper_economics: Mapping[str, Any] | None = None,
+) -> dict[str, Any]:
+    """Component-wise economics diff for replay-vs-paper research comparison.
+
+    ``paper_economics`` may be a gross-to-net payload or a flat metrics map.
+    When omitted, paper side is treated as mock defaults (fees/spread inactive).
+    """
+    report = _require_mapping(replay_report, "replay_report")
+    metrics = _require_mapping(report.get("metrics"), "replay_report.metrics")
+    replay_econ = economics_payload_from_metrics(metrics)
+    if paper_economics is None:
+        paper_econ = reconcile_gross_to_net(
+            gross_pnl=0,
+            taker_fee_cost=0,
+            slippage_cost=0,
+            slippage_status="not_applicable",
+            reject_impact=0,
+            reject_status="active",
+            latency_or_delay_impact=0,
+            latency_status="active",
+            limitations=(
+                "Paper economics omitted; mock defaults documented only.",
+                "MockExecutor has no fee/spread model; reject/latency are seeded.",
+            ),
+        ).to_dict()
+        paper_econ["mock_paper_assumptions"] = dict(MOCK_PAPER_ECONOMICS_ASSUMPTIONS)
+    elif "components" in paper_economics:
+        paper_econ = dict(paper_economics)
+    else:
+        paper_econ = economics_payload_from_metrics(paper_economics)
+    return compare_economics_components(replay_econ, paper_econ)
+
+
 def write_comparison_bundle(
     *,
     result: ShadowComparisonResult,
     output_dir: pathlib.Path,
+    economics_component_diff: Mapping[str, Any] | None = None,
 ) -> tuple[pathlib.Path, pathlib.Path]:
     """Write comparison JSON + summary MD into output_dir."""
     output_dir.mkdir(parents=True, exist_ok=True)
@@ -315,4 +390,9 @@ def write_comparison_bundle(
     summary = build_comparison_summary(result)
     md_path = output_dir / "shadow_comparison_summary.md"
     md_path.write_text(summary, encoding="utf-8")
+    if economics_component_diff is not None:
+        econ_path = output_dir / "economics_component_diff.json"
+        econ_path.write_text(
+            canonical_json_dumps(dict(economics_component_diff)), encoding="utf-8"
+        )
     return output_dir / "shadow_comparison.json", md_path
