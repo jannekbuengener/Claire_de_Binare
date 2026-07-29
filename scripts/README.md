@@ -9,7 +9,6 @@ Automation, Guards und Evidence-Helfer auf Repo-Root-Ebene. Für Stack/Backup/Se
 | `lr003_contract_drift_guard.py` | Contract drift |
 | `lr004_completion_guard.py` | LR completion guard |
 | `dual_write_evidence_gate.py` | Dual-write evidence |
-| `validate_write_zones.sh` | Write-zone validation |
 | `pre_close_sweep.sh` | Pre-close untracked sweep |
 
 ## Smoke / validation
