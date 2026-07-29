@@ -211,7 +211,6 @@ def build_decision_thresholds(cfg: RiskConfig | None = None) -> dict:
 DECISION_THRESHOLDS = build_decision_thresholds()
 
 
-
 def _get_value(obj: object | None, key: str):
     if obj is None:
         return None
@@ -1002,7 +1001,10 @@ class RiskManager:
                 try:
                     conn.close()
                 except Exception:  # noqa: BLE001
-                    logger.debug("conn.close() raised during retry cleanup (ignored)", exc_info=True)
+                    logger.debug(
+                        "conn.close() raised during retry cleanup (ignored)",
+                        exc_info=True,
+                    )
                 self._pg_conn = None
 
         return False
@@ -1721,7 +1723,9 @@ class RiskManager:
                     effective_at_ms=deterministic_ts_ms,
                 )
             except Exception:
-                logger.debug("build_policy_snapshot raised (guardrail active)", exc_info=True)
+                logger.debug(
+                    "build_policy_snapshot raised (guardrail active)", exc_info=True
+                )
 
         if evidence.get("decision_id"):
             if _envelope_toggle_enabled():
@@ -2504,7 +2508,9 @@ class RiskManager:
         logger.info(f"   Max Position: {self.config.max_position_pct*100}%")
         logger.info(f"   Max Exposure: {self.config.max_total_exposure_pct*100}%")
         logger.info(f"   Max Drawdown: {self.config.max_daily_drawdown_pct*100}%")
-        logger.info(f"   Stop-Loss: {self.config.stop_loss_pct*100}% ({stop_loss_metadata_note()})")
+        logger.info(
+            f"   Stop-Loss: {self.config.stop_loss_pct*100}% ({stop_loss_metadata_note()})"
+        )
 
         if self.pubsub_results and (
             self._order_result_thread is None

@@ -193,7 +193,9 @@ class KillSwitch:
         if state_value == KillSwitchState.INACTIVE.value:
             return False
         # Unknown token → fail-closed ACTIVE
-        logger.error("Unknown kill-switch state value %r; treating as ACTIVE", state_value)
+        logger.error(
+            "Unknown kill-switch state value %r; treating as ACTIVE", state_value
+        )
         return True
 
     def get_state(self) -> Tuple[KillSwitchState, Optional[str], str, Optional[str]]:

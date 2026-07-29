@@ -13,9 +13,14 @@ import services.risk.service as risk_service
 
 
 @pytest.mark.unit
-def test_bootstrap_db_error_does_not_continue_with_empty_state(mock_redis, mock_postgres):
+def test_bootstrap_db_error_does_not_continue_with_empty_state(
+    mock_redis, mock_postgres
+):
     manager = RiskManager()
-    with patch("services.risk.service.psycopg2.connect", side_effect=psycopg2.OperationalError("down")):
+    with patch(
+        "services.risk.service.psycopg2.connect",
+        side_effect=psycopg2.OperationalError("down"),
+    ):
         with pytest.raises(RuntimeError, match="bootstrap"):
             manager.bootstrap_state_from_db()
 
@@ -25,13 +30,17 @@ def test_bootstrap_unexpected_error_does_not_continue_with_empty_state(
     mock_redis, mock_postgres
 ):
     manager = RiskManager()
-    with patch("services.risk.service.psycopg2.connect", side_effect=RuntimeError("boom")):
+    with patch(
+        "services.risk.service.psycopg2.connect", side_effect=RuntimeError("boom")
+    ):
         with pytest.raises(RuntimeError, match="bootstrap|boom"):
             manager.bootstrap_state_from_db()
 
 
 @pytest.mark.unit
-def test_bootstrap_state_mismatch_raises_and_is_not_swallowed(mock_redis, mock_postgres):
+def test_bootstrap_state_mismatch_raises_and_is_not_swallowed(
+    mock_redis, mock_postgres
+):
     manager = RiskManager()
     conn = MagicMock()
     cursor = MagicMock()

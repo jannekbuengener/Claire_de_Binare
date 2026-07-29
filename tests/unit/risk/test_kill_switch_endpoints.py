@@ -89,7 +89,9 @@ class TestKillSwitchEndpoints:
         """POST /kill-switch/deactivate deaktiviert und liefert active=False."""
         # Erst aktivieren
         ks = KillSwitch(state_file)
-        ks.activate(KillSwitchReason.MANUAL, "Setup for deactivate test", operator="test-op")
+        ks.activate(
+            KillSwitchReason.MANUAL, "Setup for deactivate test", operator="test-op"
+        )
 
         response = client.post(
             "/kill-switch/deactivate",
@@ -131,7 +133,9 @@ class TestKillSwitchEndpoints:
         # Activate writes the shared state file
         r = client.post(
             "/kill-switch/activate",
-            data=json.dumps({"operator": "janne", "reason": "manual", "message": "halt"}),
+            data=json.dumps(
+                {"operator": "janne", "reason": "manual", "message": "halt"}
+            ),
             content_type="application/json",
         )
         assert r.status_code == 200

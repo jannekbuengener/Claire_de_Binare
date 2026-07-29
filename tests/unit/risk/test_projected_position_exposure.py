@@ -55,7 +55,9 @@ def test_invalid_quantity_blocks_projected_position_gate(mock_redis, mock_postgr
 
 
 @pytest.mark.unit
-def test_projected_symbol_position_just_below_at_and_above_cap(mock_redis, mock_postgres):
+def test_projected_symbol_position_just_below_at_and_above_cap(
+    mock_redis, mock_postgres
+):
     test_config = RiskConfig(
         max_position_pct=0.10,
         max_total_exposure_pct=1.0,
@@ -113,7 +115,9 @@ def test_projected_position_includes_pending_and_order(mock_redis, mock_postgres
 
 
 @pytest.mark.unit
-def test_increasing_order_size_cannot_reduce_projected_exposure(mock_redis, mock_postgres):
+def test_increasing_order_size_cannot_reduce_projected_exposure(
+    mock_redis, mock_postgres
+):
     manager = RiskManager()
     risk_service.risk_state.total_exposure = 100.0
     risk_service.risk_state.pending_exposure_usdt = 50.0
@@ -125,7 +129,9 @@ def test_increasing_order_size_cannot_reduce_projected_exposure(mock_redis, mock
 
 
 @pytest.mark.unit
-def test_process_signal_blocks_when_projected_symbol_over_cap(mock_redis, mock_postgres):
+def test_process_signal_blocks_when_projected_symbol_over_cap(
+    mock_redis, mock_postgres
+):
     test_config = RiskConfig(
         max_position_pct=0.10,
         max_total_exposure_pct=1.0,
@@ -171,7 +177,9 @@ def test_process_signal_blocks_when_projected_symbol_over_cap(mock_redis, mock_p
                 timestamp=1,
             )
             with (
-                patch.object(risk_service, "decide_trade", return_value=_allow_decide()),
+                patch.object(
+                    risk_service, "decide_trade", return_value=_allow_decide()
+                ),
                 patch.object(manager, "_emit_risk_event", MagicMock()),
             ):
                 order = manager.process_signal(signal)
