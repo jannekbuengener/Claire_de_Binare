@@ -1,10 +1,15 @@
 # Execution Economics Gross-to-Net Contract v1
 
-**Status:** Canonical research contract for #4150  
-**Version:** `execution_economics_gross_to_net.v1`  
-**Code SSOT:** `core/replay/execution_economics_v1.py`  
-**Schema:** `docs/contracts/execution_economics_gross_to_net.v1.schema.json`  
-**Live-Readiness:** NO-GO  
+**Status:** Canonical research contract for #4150
+
+**Version:** `execution_economics_gross_to_net.v1`
+
+**Code SSOT:** `core/replay/execution_economics_v1.py`
+
+**Schema:** `docs/contracts/execution_economics_gross_to_net.v1.schema.json`
+
+**Live-Readiness:** NO-GO
+
 **Runtime impact:** none (no BLUE/RED/Paper/Live start; no `services/execution/**` edits in this slice)
 
 ## Purpose
