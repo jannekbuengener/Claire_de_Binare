@@ -57,9 +57,7 @@ def test_signal_market_state_freshness_boundary(age_s: int, expect_fresh: bool) 
     engine = _engine(staleness_s=30)
     now_ms = 1_700_000_000_000
     state_ts = now_ms - age_s * 1000
-    engine.redis_client.get.return_value = (
-        f'{{"ts_ms": {state_ts}, "regime_id": 0}}'
-    )
+    engine.redis_client.get.return_value = f'{{"ts_ms": {state_ts}, "regime_id": 0}}'
 
     # Seed one-minute breakout history and lookback horizon.
     for i in range(0, 16):

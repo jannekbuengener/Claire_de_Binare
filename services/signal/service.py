@@ -659,20 +659,16 @@ class SignalEngine:
         while len(lows) > max_bars:
             lows.pop(0)
 
-    def _donchian_channel_levels(self, symbol: str) -> tuple[float | None, float | None]:
+    def _donchian_channel_levels(
+        self, symbol: str
+    ) -> tuple[float | None, float | None]:
         highs = [price for _, price in self._high_history[symbol]]
         lows = [price for _, price in self._low_history[symbol]]
         entry_bars = self.config.entry_channel_bars
         exit_bars = self.config.exit_channel_bars
 
-        upper_level = (
-            max(highs[-entry_bars:])
-            if len(highs) >= entry_bars
-            else None
-        )
-        lower_level = (
-            min(lows[-exit_bars:]) if len(lows) >= exit_bars else None
-        )
+        upper_level = max(highs[-entry_bars:]) if len(highs) >= entry_bars else None
+        lower_level = min(lows[-exit_bars:]) if len(lows) >= exit_bars else None
         return upper_level, lower_level
 
     def _process_donchian_breakout_v1(
@@ -810,7 +806,9 @@ class SignalEngine:
         entry_limit = now_ms - entry_lookback_ms
         exit_limit = now_ms - exit_lookback_ms
 
-        prior_high_entries = [e for e in self._high_history[symbol] if e[0] >= entry_limit]
+        prior_high_entries = [
+            e for e in self._high_history[symbol] if e[0] >= entry_limit
+        ]
         prior_low_entries = [e for e in self._low_history[symbol] if e[0] >= exit_limit]
 
         prior_highs = [p for ts, p in prior_high_entries]
@@ -826,16 +824,8 @@ class SignalEngine:
             and (now_ms - min(ts for ts, _ in prior_low_entries)) >= exit_lookback_ms
         )
 
-        highest_high = (
-            max(prior_highs)
-            if prior_highs and entry_warmup_ok
-            else None
-        )
-        lowest_low = (
-            min(prior_lows)
-            if prior_lows and exit_warmup_ok
-            else None
-        )
+        highest_high = max(prior_highs) if prior_highs and entry_warmup_ok else None
+        lowest_low = min(prior_lows) if prior_lows and exit_warmup_ok else None
 
         market_state = self._load_market_state(symbol)
         regime_id = raw_data.get("regime_id", market_state.get("regime_id"))
@@ -854,8 +844,7 @@ class SignalEngine:
 
         has_trend_regime = regime_id in {0, "TREND"} or paper_evidence_probe_enabled()
         entry_blocked = any(
-            _as_bool(raw_data.get(name))
-            or _as_bool(market_state.get(name))
+            _as_bool(raw_data.get(name)) or _as_bool(market_state.get(name))
             for name in (
                 "shutdown_active",
                 "kill_switch_active",

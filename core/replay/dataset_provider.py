@@ -31,7 +31,10 @@ from dataclasses import dataclass
 from pathlib import Path
 from typing import Protocol
 
-from core.replay.dataset_spec import DatasetSpec, DatasetSpecError as DatasetSpecError  # noqa: F401 — re-exported for caller convenience
+from core.replay.dataset_spec import (
+    DatasetSpec,
+    DatasetSpecError as DatasetSpecError,
+)  # noqa: F401 — re-exported for caller convenience
 
 __all__ = ["DatasetSpec", "DatasetSpecError"]
 
@@ -65,7 +68,8 @@ class DatasetResult:
 class DatasetProvider(Protocol):
     """Protocol for all ARVP dataset providers."""
 
-    def load(self, spec: DatasetSpec) -> DatasetResult: pass
+    def load(self, spec: DatasetSpec) -> DatasetResult:
+        pass
 
 
 def _validate_candle_series(candles: list[dict], source_label: str) -> None:
@@ -191,7 +195,9 @@ class FileBackedDatasetProvider:
                     f"Expected JSON array in {file_path}, got {type(data).__name__}."
                 )
             if not data:
-                raise DatasetLoadError(f"Dataset file contains an empty array: {file_path}")
+                raise DatasetLoadError(
+                    f"Dataset file contains an empty array: {file_path}"
+                )
             for idx, item in enumerate(data):
                 if not isinstance(item, dict):
                     raise DatasetLoadError(
@@ -339,4 +345,3 @@ class DBBackedDatasetProvider:
             warmup_count=spec.warmup_candles,
             effective_candle_count=len(candles) - spec.warmup_candles,
         )
-

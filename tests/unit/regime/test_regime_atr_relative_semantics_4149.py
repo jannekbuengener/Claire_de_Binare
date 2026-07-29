@@ -119,7 +119,9 @@ def test_service_emits_atr_over_close_unit_marker() -> None:
     for i in range(20):
         # TR ≈ 0.2 → ATR ≈ 0.2 → ratio 0.002
         candles.append(
-            _candle(close=close, high=close + 0.1, low=close - 0.1, ts=1_700_000_000 + i)
+            _candle(
+                close=close, high=close + 0.1, low=close - 0.1, ts=1_700_000_000 + i
+            )
         )
     for candle in candles:
         service._derive_regime(candle)

@@ -67,7 +67,9 @@ class PriceBuffer:
         Reference = latest observed price with ``ts_ms <= now_ms - lookback``.
         Returns None when no such reference exists (insufficient history).
         """
-        minutes = self._lookback_minutes if lookback_minutes is None else lookback_minutes
+        minutes = (
+            self._lookback_minutes if lookback_minutes is None else lookback_minutes
+        )
         if minutes <= 0:
             return None
         target_ms = int(now_ms) - minutes * 60_000

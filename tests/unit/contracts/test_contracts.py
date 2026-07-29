@@ -83,9 +83,9 @@ class TestMarketDataContract:
         for example in examples:
             payload = example["payload"]
             errors = list(validator.iter_errors(payload))
-            assert len(errors) > 0, (
-                f"Invalid example '{example['description']}' should have failed but passed"
-            )
+            assert (
+                len(errors) > 0
+            ), f"Invalid example '{example['description']}' should have failed but passed"
 
     def test_qty_field_rejected(self, schema):
         """Legacy 'qty' field muss rejected werden (migration zu trade_qty)"""
@@ -96,7 +96,7 @@ class TestMarketDataContract:
             "ts_ms": 1735574400000,
             "price": "50000.50",
             "qty": "1.5",  # LEGACY, sollte fehlschlagen
-            "side": "buy"
+            "side": "buy",
         }
 
         validator = Draft7Validator(schema)
@@ -113,7 +113,7 @@ class TestMarketDataContract:
             "ts_ms": 1735574400000,
             "price": 50000.50,  # NUMBER statt STRING
             "trade_qty": "1.5",
-            "side": "buy"
+            "side": "buy",
         }
 
         validator = Draft7Validator(schema)
@@ -184,9 +184,9 @@ class TestSignalContract:
         for example in examples:
             payload = example["payload"]
             errors = list(validator.iter_errors(payload))
-            assert len(errors) > 0, (
-                f"Invalid example '{example['description']}' should have failed but passed"
-            )
+            assert (
+                len(errors) > 0
+            ), f"Invalid example '{example['description']}' should have failed but passed"
 
     def test_direction_field_rejected(self, schema):
         """Legacy 'direction' field muss rejected werden (migration zu 'side')"""
@@ -196,7 +196,7 @@ class TestSignalContract:
             "strategy_id": "momentum-v2",
             "symbol": "BTCUSDT",
             "direction": "BUY",  # LEGACY, sollte fehlschlagen
-            "timestamp": 1735574400
+            "timestamp": 1735574400,
         }
 
         validator = Draft7Validator(schema)
@@ -212,7 +212,7 @@ class TestSignalContract:
             "strategy_id": "momentum-v2",
             "symbol": "BTCUSDT",
             "side": "buy",  # LOWERCASE (falsch)
-            "timestamp": 1735574400
+            "timestamp": 1735574400,
         }
 
         validator = Draft7Validator(schema)
@@ -227,7 +227,7 @@ class TestSignalContract:
             "strategy_id": "momentum-v2",
             "symbol": "BTCUSDT",
             "side": "BUY",
-            "timestamp": 1735574400.123  # FLOAT statt INTEGER
+            "timestamp": 1735574400.123,  # FLOAT statt INTEGER
         }
 
         validator = Draft7Validator(schema)
@@ -244,7 +244,7 @@ class TestSignalContract:
             "symbol": "BTCUSDT",
             "side": "BUY",
             "timestamp": 1735574400,
-            "strength": 1.5  # > 1.0
+            "strength": 1.5,  # > 1.0
         }
 
         validator = Draft7Validator(schema)
@@ -259,7 +259,7 @@ class TestSignalContract:
             "symbol": "BTCUSDT",
             "side": "BUY",
             "timestamp": 1735574400,
-            "strength": -0.1  # < 0.0
+            "strength": -0.1,  # < 0.0
         }
 
         errors = list(validator.iter_errors(payload_too_low))
@@ -332,6 +332,6 @@ class TestRuntimeMapping:
 
         payload = signal.to_dict()
         errors = list(validator.iter_errors(payload))
-        assert len(errors) == 0, (
-            f"Signal payload failed validation: {errors[0].message if errors else 'unknown error'}"
-        )
+        assert (
+            len(errors) == 0
+        ), f"Signal payload failed validation: {errors[0].message if errors else 'unknown error'}"
