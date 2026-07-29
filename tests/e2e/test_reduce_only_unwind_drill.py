@@ -10,6 +10,7 @@ from unittest.mock import MagicMock
 
 import pytest
 
+from core.contracts.external_adapter_registry import MockExecutionAdapter
 from services.execution import service
 from services.execution.database import Database
 from services.execution.models import ExecutionResult, OrderStatus
@@ -71,6 +72,18 @@ def boundary(monkeypatch: pytest.MonkeyPatch) -> Database:
             cur.execute("DELETE FROM reduce_only_executions")
             cur.execute("DELETE FROM positions")
 
+    _configure_boundary(monkeypatch, database)
+    return database
+
+
+@pytest.fixture
+def restart_boundary(monkeypatch: pytest.MonkeyPatch) -> Database:
+    database = Database()
+    _configure_boundary(monkeypatch, database)
+    return database
+
+
+def _configure_boundary(monkeypatch: pytest.MonkeyPatch, database: Database) -> None:
     monkeypatch.setattr(service, "db", database)
     monkeypatch.setattr(service, "redis_client", MagicMock())
     monkeypatch.setattr(service.config, "MOCK_TRADING", True)
@@ -82,7 +95,6 @@ def boundary(monkeypatch: pytest.MonkeyPatch) -> Database:
         "core.safety.kill_switch.get_kill_switch_details",
         lambda create_if_missing=False: (False, "inactive", None, None),
     )
-    return database
 
 
 def _seed_position(database: Database, *, side: str, quantity: Decimal) -> None:
@@ -144,11 +156,11 @@ def _run(
     adapter_status: str,
     adapter_fill: Decimal,
 ) -> tuple[ExecutionResult, ScriptedMockExecutor]:
-    executor = ScriptedMockExecutor(
+    underlying = ScriptedMockExecutor(
         status=adapter_status,
         filled_quantity=adapter_fill,
     )
-    service.executor = executor
+    service.executor = MockExecutionAdapter(executor=underlying)
     result = service.process_order(
         _order_payload(scenario=scenario, side=side, quantity=requested)
     )
@@ -156,7 +168,7 @@ def _run(
     position_after = _signed_position(database)
     contract = result.reduce_only_contract or {}
     submitted = (
-        Decimal(str(executor.calls[0].quantity)) if executor.calls else Decimal("0")
+        Decimal(str(underlying.calls[0].quantity)) if underlying.calls else Decimal("0")
     )
     SCENARIOS[scenario] = {
         "status": "PASS",
@@ -167,10 +179,11 @@ def _run(
         "after_position": str(position_after),
         "position_increase_observed": abs(position_after) > abs(position_before),
         "side_flip_observed": position_before * position_after < 0,
-        "adapter_result": adapter_status if executor.calls else "NOT_CALLED",
+        "adapter_result": adapter_status if underlying.calls else "NOT_CALLED",
         "reason_code": contract.get("reason_code"),
+        "prepare_reason_code": contract.get("prepare_reason_code"),
     }
-    return result, executor
+    return result, underlying
 
 
 def test_r1_long_full_exit(boundary: Database) -> None:
@@ -291,25 +304,21 @@ def test_r8_duplicate_result_is_not_applied_twice(boundary: Database) -> None:
         adapter_fill=Decimal("0.4"),
     )
     first_after = _signed_position(boundary)
-    service.db = Database()
-    duplicate = service.process_order(
-        _order_payload(
-            scenario="R8_DUPLICATE_RESULT",
-            side="SELL",
-            quantity=Decimal("0.4"),
-        )
+    duplicate = boundary.finalize_reduce_only(
+        order_id="4184-R8_DUPLICATE_RESULT",
+        status=OrderStatus.FILLED.value,
+        filled_quantity=Decimal("0.4"),
+        fill_price=Decimal("50000"),
     )
-    assert duplicate is not None
-    assert duplicate.status == OrderStatus.REJECTED.value
+    assert duplicate["duplicate"] is True
+    assert duplicate["reason_code"] == "REDUCE_ONLY_DUPLICATE_RESULT"
     assert len(executor.calls) == 1
-    assert _signed_position(service.db) == first_after == Decimal("0.6")
-    SCENARIOS["R8_DUPLICATE_RESULT"]["reason_code"] = duplicate.reduce_only_contract[
-        "reason_code"
-    ]
+    assert _signed_position(boundary) == first_after == Decimal("0.6")
+    SCENARIOS["R8_DUPLICATE_RESULT"]["reason_code"] = duplicate["reason_code"]
     assert result.reduce_only is True
 
 
-def test_r9_restart_after_partial_does_not_reapply_fill(boundary: Database) -> None:
+def test_r9_prepare_partial_before_restart(boundary: Database) -> None:
     before = Decimal("-1")
     _seed_position(boundary, side="short", quantity=abs(before))
     _result, executor = _run(
@@ -322,7 +331,19 @@ def test_r9_restart_after_partial_does_not_reapply_fill(boundary: Database) -> N
         adapter_fill=Decimal("0.25"),
     )
     after_partial = _signed_position(boundary)
-    service.db = Database()
+    assert len(executor.calls) == 1
+    assert after_partial == Decimal("-0.75")
+    SCENARIOS["R9_RESTART_AFTER_PARTIAL"]["status"] = "SETUP_PASS"
+
+
+def test_r9_restart_after_partial_does_not_reapply_fill(
+    restart_boundary: Database,
+) -> None:
+    underlying = ScriptedMockExecutor(
+        status=OrderStatus.PARTIALLY_FILLED.value,
+        filled_quantity=Decimal("0.25"),
+    )
+    service.executor = MockExecutionAdapter(executor=underlying)
     duplicate = service.process_order(
         _order_payload(
             scenario="R9_RESTART_AFTER_PARTIAL",
@@ -331,20 +352,29 @@ def test_r9_restart_after_partial_does_not_reapply_fill(boundary: Database) -> N
         )
     )
     assert duplicate is not None
-    assert len(executor.calls) == 1
-    assert _signed_position(service.db) == after_partial == Decimal("-0.75")
-    SCENARIOS["R9_RESTART_AFTER_PARTIAL"]["reason_code"] = (
-        duplicate.reduce_only_contract["reason_code"]
-    )
+    assert underlying.calls == []
+    assert _signed_position(restart_boundary) == Decimal("-0.75")
+    SCENARIOS["R9_RESTART_AFTER_PARTIAL"] = {
+        "status": "PASS",
+        "before_position": "-1",
+        "requested_exit_quantity": "1",
+        "submitted_exit_quantity": "0.25",
+        "filled_quantity": "0",
+        "after_position": "-0.75",
+        "position_increase_observed": False,
+        "side_flip_observed": False,
+        "adapter_result": "NOT_CALLED_AFTER_PROCESS_RESTART",
+        "reason_code": duplicate.reduce_only_contract["reason_code"],
+    }
 
 
 def test_r10_unknown_position_blocks_adapter(boundary: Database) -> None:
     _seed_position(boundary, side="long", quantity=Decimal("NaN"))
-    executor = ScriptedMockExecutor(
+    underlying = ScriptedMockExecutor(
         status=OrderStatus.FILLED.value,
         filled_quantity=Decimal("1"),
     )
-    service.executor = executor
+    service.executor = MockExecutionAdapter(executor=underlying)
     result = service.process_order(
         _order_payload(
             scenario="R10_UNKNOWN_POSITION",
@@ -364,7 +394,7 @@ def test_r10_unknown_position_blocks_adapter(boundary: Database) -> None:
 
     assert result is not None
     assert result.status == OrderStatus.REJECTED.value
-    assert executor.calls == []
+    assert underlying.calls == []
     assert persisted[0] == "long"
     assert Decimal(str(persisted[1])).is_nan()
     assert result.reduce_only_contract["reason_code"] == "REDUCE_ONLY_POSITION_UNKNOWN"
@@ -380,3 +410,184 @@ def test_r10_unknown_position_blocks_adapter(boundary: Database) -> None:
         "adapter_result": "NOT_CALLED",
         "reason_code": result.reduce_only_contract["reason_code"],
     }
+
+
+@pytest.mark.parametrize(
+    ("position_side", "order_side", "fill_price", "expected_pnl"),
+    [
+        ("long", "SELL", Decimal("51000"), Decimal("400")),
+        ("short", "BUY", Decimal("49000"), Decimal("400")),
+    ],
+)
+def test_reduce_only_finalize_updates_price_and_realized_pnl_atomically(
+    boundary: Database,
+    position_side: str,
+    order_side: str,
+    fill_price: Decimal,
+    expected_pnl: Decimal,
+) -> None:
+    _seed_position(boundary, side=position_side, quantity=Decimal("1"))
+    order_id = f"4184-accounting-{position_side}"
+    prepared = boundary.prepare_reduce_only(
+        order_id=order_id,
+        symbol="BTCUSDT",
+        side=order_side,
+        requested_quantity=Decimal("0.4"),
+    )
+    assert prepared["allowed"] is True
+    finalized = boundary.finalize_reduce_only(
+        order_id=order_id,
+        status=OrderStatus.FILLED.value,
+        filled_quantity=Decimal("0.4"),
+        fill_price=fill_price,
+    )
+    with boundary.get_connection() as conn:
+        with conn.cursor() as cur:
+            cur.execute("""
+                SELECT size, current_price, realized_pnl
+                FROM positions
+                WHERE symbol = 'BTCUSDT' AND closed_at IS NULL
+                """)
+            persisted = cur.fetchone()
+    assert persisted == (Decimal("0.60000000"), fill_price, expected_pnl)
+    assert finalized["realized_pnl_delta"] == expected_pnl
+
+
+def test_position_change_between_prepare_and_finalize_blocks_apply(
+    boundary: Database,
+) -> None:
+    _seed_position(boundary, side="long", quantity=Decimal("1"))
+    prepared = boundary.prepare_reduce_only(
+        order_id="4184-interleaving",
+        symbol="BTCUSDT",
+        side="SELL",
+        requested_quantity=Decimal("0.2"),
+    )
+    assert prepared["allowed"] is True
+    with boundary.get_connection() as conn:
+        with conn.cursor() as cur:
+            cur.execute("""
+                UPDATE positions SET size = 0.8
+                WHERE symbol = 'BTCUSDT' AND closed_at IS NULL
+                """)
+    finalized = boundary.finalize_reduce_only(
+        order_id="4184-interleaving",
+        status=OrderStatus.FILLED.value,
+        filled_quantity=Decimal("0.2"),
+        fill_price=Decimal("50000"),
+    )
+    assert finalized["applied"] is False
+    assert finalized["filled_quantity"] == Decimal("0")
+    assert finalized["adapter_reported_filled_quantity"] == Decimal("0.2")
+    assert finalized["reason_code"] == "REDUCE_ONLY_POSITION_INCREASE_BLOCKED"
+    assert _signed_position(boundary) == Decimal("0.8")
+
+
+def test_adapter_overfill_is_failed_and_never_applied(boundary: Database) -> None:
+    _seed_position(boundary, side="long", quantity=Decimal("1"))
+    result, underlying = _run(
+        boundary,
+        scenario="OVERFILL_NEGATIVE_CONTROL",
+        position_before=Decimal("1"),
+        side="SELL",
+        requested=Decimal("1"),
+        adapter_status=OrderStatus.FILLED.value,
+        adapter_fill=Decimal("2"),
+    )
+    SCENARIOS.pop("OVERFILL_NEGATIVE_CONTROL")
+    assert len(underlying.calls) == 1
+    assert result.status == OrderStatus.FAILED.value
+    assert result.filled_quantity == 0
+    assert result.fill_id is None
+    assert _signed_position(boundary) == Decimal("1")
+    with boundary.get_connection() as conn:
+        with conn.cursor() as cur:
+            cur.execute("""
+                SELECT status, reason_code, filled_quantity
+                FROM reduce_only_executions
+                WHERE order_id = '4184-OVERFILL_NEGATIVE_CONTROL'
+                """)
+            persisted = cur.fetchone()
+    assert persisted == (
+        "BLOCKED",
+        "REDUCE_ONLY_POSITION_INCREASE_BLOCKED",
+        Decimal("0E-8"),
+    )
+
+
+def test_missing_accounting_state_blocks_before_adapter(boundary: Database) -> None:
+    with boundary.get_connection() as conn:
+        with conn.cursor() as cur:
+            cur.execute("""
+                INSERT INTO positions (
+                    symbol, side, size, entry_price, current_price,
+                    opened_at, updated_at
+                )
+                VALUES (
+                    'BTCUSDT', 'long', 1, NULL, 50000,
+                    CURRENT_TIMESTAMP, CURRENT_TIMESTAMP
+                )
+                """)
+    underlying = ScriptedMockExecutor(
+        status=OrderStatus.FILLED.value,
+        filled_quantity=Decimal("1"),
+    )
+    service.executor = MockExecutionAdapter(executor=underlying)
+    result = service.process_order(
+        _order_payload(
+            scenario="UNKNOWN_ACCOUNTING",
+            side="SELL",
+            quantity=Decimal("1"),
+        )
+    )
+    assert result is not None
+    assert result.status == OrderStatus.REJECTED.value
+    assert result.reduce_only_contract["reason_code"] == "REDUCE_ONLY_POSITION_UNKNOWN"
+    assert underlying.calls == []
+
+
+def test_ambiguous_open_position_rows_fail_closed(boundary: Database) -> None:
+    constraint_name = None
+    try:
+        with boundary.get_connection() as conn:
+            with conn.cursor() as cur:
+                cur.execute("""
+                    SELECT conname
+                    FROM pg_constraint
+                    WHERE conrelid = 'positions'::regclass
+                      AND contype = 'u'
+                    """)
+                row = cur.fetchone()
+                constraint_name = row[0] if row else None
+                if constraint_name:
+                    cur.execute(
+                        f'ALTER TABLE positions DROP CONSTRAINT "{constraint_name}"'
+                    )
+                cur.execute("""
+                    INSERT INTO positions (
+                        symbol, side, size, entry_price, current_price,
+                        opened_at, updated_at
+                    )
+                    VALUES
+                        ('BTCUSDT', 'long', 1, 50000, 50000,
+                         CURRENT_TIMESTAMP, CURRENT_TIMESTAMP),
+                        ('BTCUSDT', 'long', 1, 50000, 50000,
+                         CURRENT_TIMESTAMP, CURRENT_TIMESTAMP)
+                    """)
+        prepared = boundary.prepare_reduce_only(
+            order_id="4184-ambiguous-position",
+            symbol="BTCUSDT",
+            side="SELL",
+            requested_quantity=Decimal("1"),
+        )
+        assert prepared["allowed"] is False
+        assert prepared["reason_code"] == "REDUCE_ONLY_POSITION_UNKNOWN"
+    finally:
+        with boundary.get_connection() as conn:
+            with conn.cursor() as cur:
+                cur.execute("DELETE FROM positions WHERE symbol = 'BTCUSDT'")
+                if constraint_name:
+                    cur.execute(
+                        f'ALTER TABLE positions ADD CONSTRAINT "{constraint_name}" '
+                        "UNIQUE (symbol)"
+                    )

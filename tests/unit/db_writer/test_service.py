@@ -370,6 +370,7 @@ def test_execution_owned_reduce_only_trade_does_not_reapply_position(
             "metadata": {
                 "reduce_only": {
                     "position_update_owner": "execution_reduce_only_v1",
+                    "realized_pnl_delta": "2.0",
                 }
             },
         }
@@ -377,6 +378,7 @@ def test_execution_owned_reduce_only_trade_does_not_reapply_position(
 
     insert_params = cursor.execute.call_args_list[1][0][1]
     assert insert_params[3] == Decimal("0.4")
+    assert insert_params[8] == Decimal("2.0")
     writer.update_position_from_trade.assert_not_called()
 
 

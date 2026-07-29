@@ -49,6 +49,7 @@ try:
     from .database import Database
     from .reduce_only import (
         REDUCE_ONLY_DUPLICATE_RESULT,
+        REDUCE_ONLY_POSITION_INCREASE_BLOCKED,
         REDUCE_ONLY_POSITION_UNKNOWN,
         REDUCE_ONLY_REJECTED,
     )
@@ -58,6 +59,7 @@ except ImportError:
     from database import Database
     from reduce_only import (
         REDUCE_ONLY_DUPLICATE_RESULT,
+        REDUCE_ONLY_POSITION_INCREASE_BLOCKED,
         REDUCE_ONLY_POSITION_UNKNOWN,
         REDUCE_ONLY_REJECTED,
     )
@@ -263,6 +265,9 @@ def _reduce_only_metadata(preparation: dict, finalization: dict | None = None) -
         "requested_quantity": _text(preparation.get("requested_quantity")),
         "submitted_quantity": _text(preparation.get("submitted_quantity")),
         "filled_quantity": _text(final.get("filled_quantity", Decimal("0"))),
+        "adapter_reported_filled_quantity": _text(
+            final.get("adapter_reported_filled_quantity")
+        ),
         "position_after": _text(
             final.get("position_after", preparation.get("position_after"))
         ),
@@ -270,6 +275,10 @@ def _reduce_only_metadata(preparation: dict, finalization: dict | None = None) -
         "reason_code": final.get(
             "reason_code", preparation.get("reason_code", REDUCE_ONLY_REJECTED)
         ),
+        "prepare_reason_code": preparation.get("reason_code"),
+        "position_before_apply": _text(final.get("position_before_apply")),
+        "realized_pnl_delta": _text(final.get("realized_pnl_delta")),
+        "realized_pnl_after": _text(final.get("realized_pnl_after")),
         "adapter_status": final.get("adapter_status"),
         "duplicate": bool(final.get("duplicate", preparation.get("duplicate", False))),
         "position_increase_observed": bool(
@@ -785,13 +794,29 @@ def process_order(order_data: object):
 
         reduce_only_finalization: dict | None = None
         if reduce_only_preparation is not None:
+            adapter_reported_filled_quantity = Decimal(str(result.filled_quantity))
+            adapter_status = result.status
             try:
                 reduce_only_finalization = db.finalize_reduce_only(
                     order_id=order.order_id,
                     status=result.status,
-                    filled_quantity=Decimal(str(result.filled_quantity)),
+                    filled_quantity=adapter_reported_filled_quantity,
+                    fill_price=(
+                        Decimal(str(result.price)) if result.price is not None else None
+                    ),
                 )
-                reduce_only_finalization["adapter_status"] = result.status
+                reduce_only_finalization["adapter_status"] = adapter_status
+                if (
+                    reduce_only_finalization.get("reason_code")
+                    == REDUCE_ONLY_POSITION_INCREASE_BLOCKED
+                ):
+                    result.status = OrderStatus.FAILED.value
+                    result.filled_quantity = 0.0
+                    result.fill_id = None
+                    result.error_message = (
+                        "Reduce-only result blocked: "
+                        f"{REDUCE_ONLY_POSITION_INCREASE_BLOCKED}"
+                    )
             except Exception as exc:
                 logger.error("Reduce-only finalization failed closed: %s", exc)
                 result.error_message = (
@@ -812,8 +837,14 @@ def process_order(order_data: object):
                         )
                     ),
                     "filled_quantity": Decimal("0"),
+                    "adapter_reported_filled_quantity": (
+                        adapter_reported_filled_quantity
+                    ),
+                    "adapter_status": adapter_status,
                     "reason_code": REDUCE_ONLY_POSITION_UNKNOWN,
                 }
+                result.filled_quantity = 0.0
+                result.fill_id = None
 
         result.metadata = _build_result_metadata(order, result)
         if reduce_only_preparation is not None:

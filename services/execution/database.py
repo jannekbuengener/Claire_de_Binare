@@ -9,7 +9,7 @@ import psycopg2
 from psycopg2.extras import RealDictCursor
 from typing import Optional
 from datetime import datetime
-from decimal import Decimal
+from decimal import Decimal, InvalidOperation
 import time
 from contextlib import contextmanager
 
@@ -22,6 +22,7 @@ try:
     from .reduce_only import (
         REDUCE_ONLY_DUPLICATE_RESULT,
         REDUCE_ONLY_PARTIAL_FILL,
+        REDUCE_ONLY_POSITION_INCREASE_BLOCKED,
         REDUCE_ONLY_POSITION_UNKNOWN,
         apply_reduce_only_result,
         prepare_reduce_only,
@@ -32,6 +33,7 @@ except ImportError:
     from reduce_only import (
         REDUCE_ONLY_DUPLICATE_RESULT,
         REDUCE_ONLY_PARTIAL_FILL,
+        REDUCE_ONLY_POSITION_INCREASE_BLOCKED,
         REDUCE_ONLY_POSITION_UNKNOWN,
         apply_reduce_only_result,
         prepare_reduce_only,
@@ -158,14 +160,34 @@ class Database:
 
                 cur.execute(
                     """
-                    SELECT side, size
+                    SELECT id, side, size, entry_price, realized_pnl
                     FROM positions
                     WHERE symbol = %s AND closed_at IS NULL
                     FOR UPDATE
                     """,
                     (symbol,),
                 )
-                position = self._signed_position(cur.fetchone())
+                position_rows = cur.fetchall()
+                position = (
+                    self._signed_position(position_rows[0])
+                    if len(position_rows) == 1
+                    else (Decimal("0") if not position_rows else None)
+                )
+                if position not in (None, Decimal("0")):
+                    try:
+                        entry_price = Decimal(str(position_rows[0].get("entry_price")))
+                        realized_pnl = Decimal(
+                            str(position_rows[0].get("realized_pnl") or Decimal("0"))
+                        )
+                    except (InvalidOperation, TypeError, ValueError):
+                        position = None
+                    else:
+                        if (
+                            not entry_price.is_finite()
+                            or entry_price <= 0
+                            or not realized_pnl.is_finite()
+                        ):
+                            position = None
 
                 cur.execute(
                     """
@@ -215,6 +237,7 @@ class Database:
         order_id: str,
         status: str,
         filled_quantity: Decimal,
+        fill_price: Decimal | None,
     ) -> dict:
         """Apply a reduce-only adapter result once in the positions transaction."""
 
@@ -239,19 +262,24 @@ class Database:
 
                 cur.execute(
                     """
-                    SELECT side, size
+                    SELECT id, side, size, entry_price, current_price, realized_pnl
                     FROM positions
                     WHERE symbol = %s AND closed_at IS NULL
                     FOR UPDATE
                     """,
                     (contract_row["symbol"],),
                 )
-                current_position = self._signed_position(cur.fetchone())
+                position_rows = cur.fetchall()
+                if len(position_rows) != 1:
+                    raise ValueError(REDUCE_ONLY_POSITION_UNKNOWN)
+                position_row = position_rows[0]
+                current_position = self._signed_position(position_row)
                 if current_position is None:
                     raise ValueError(REDUCE_ONLY_POSITION_UNKNOWN)
 
+                prepared_position = Decimal(str(contract_row["position_before"]))
                 preparation = prepare_reduce_only(
-                    position_before=current_position,
+                    position_before=prepared_position,
                     side=contract_row["side"],
                     requested_quantity=Decimal(str(contract_row["submitted_quantity"])),
                 )
@@ -262,37 +290,81 @@ class Database:
                 )
 
                 normalized_status = str(status).upper()
-                persisted_status = (
-                    "REJECTED"
-                    if normalized_status in {"REJECTED", "FAILED", "CANCELLED", "ERROR"}
-                    else (
-                        "PARTIALLY_FILLED"
-                        if outcome.reason_code == REDUCE_ONLY_PARTIAL_FILL
-                        else "FILLED"
+                if current_position != prepared_position:
+                    applied = False
+                    applied_quantity = Decimal("0")
+                    position_after = current_position
+                    reason_code = REDUCE_ONLY_POSITION_INCREASE_BLOCKED
+                    persisted_status = "BLOCKED"
+                else:
+                    applied = outcome.applied
+                    applied_quantity = outcome.filled_quantity
+                    position_after = outcome.position_after
+                    reason_code = outcome.reason_code
+                    persisted_status = (
+                        "REJECTED"
+                        if normalized_status
+                        in {"REJECTED", "FAILED", "CANCELLED", "ERROR"}
+                        else (
+                            "BLOCKED"
+                            if reason_code == REDUCE_ONLY_POSITION_INCREASE_BLOCKED
+                            else (
+                                "PARTIALLY_FILLED"
+                                if reason_code == REDUCE_ONLY_PARTIAL_FILL
+                                else "FILLED"
+                            )
+                        )
                     )
-                )
 
-                if outcome.applied:
-                    if outcome.position_after == 0:
+                realized_pnl_delta = Decimal("0")
+                realized_pnl_after = Decimal(
+                    str(position_row.get("realized_pnl") or Decimal("0"))
+                )
+                if applied:
+                    try:
+                        execution_price = Decimal(str(fill_price))
+                        entry_price = Decimal(str(position_row["entry_price"]))
+                    except (InvalidOperation, TypeError, ValueError) as exc:
+                        raise ValueError(REDUCE_ONLY_POSITION_UNKNOWN) from exc
+                    if (
+                        not execution_price.is_finite()
+                        or execution_price <= 0
+                        or not entry_price.is_finite()
+                    ):
+                        raise ValueError(REDUCE_ONLY_POSITION_UNKNOWN)
+                    realized_pnl_delta = (
+                        (execution_price - entry_price) * applied_quantity
+                        if current_position > 0
+                        else (entry_price - execution_price) * applied_quantity
+                    )
+                    realized_pnl_after += realized_pnl_delta
+                    if position_after == 0:
                         cur.execute(
                             """
                             UPDATE positions
                             SET size = 0, closed_at = CURRENT_TIMESTAMP,
+                                current_price = %s, realized_pnl = %s,
                                 updated_at = CURRENT_TIMESTAMP
-                            WHERE symbol = %s AND closed_at IS NULL
+                            WHERE id = %s AND closed_at IS NULL
                             """,
-                            (contract_row["symbol"],),
+                            (
+                                execution_price,
+                                realized_pnl_after,
+                                position_row["id"],
+                            ),
                         )
                     else:
                         cur.execute(
                             """
-                            UPDATE positions
-                            SET size = %s, updated_at = CURRENT_TIMESTAMP
-                            WHERE symbol = %s AND closed_at IS NULL
+                            UPDATE positions SET size = %s, current_price = %s,
+                                realized_pnl = %s, updated_at = CURRENT_TIMESTAMP
+                            WHERE id = %s AND closed_at IS NULL
                             """,
                             (
-                                abs(outcome.position_after),
-                                contract_row["symbol"],
+                                abs(position_after),
+                                execution_price,
+                                realized_pnl_after,
+                                position_row["id"],
                             ),
                         )
 
@@ -310,24 +382,25 @@ class Database:
                               filled_quantity, position_after, status, reason_code
                     """,
                     (
-                        outcome.filled_quantity,
-                        outcome.position_after,
+                        applied_quantity,
+                        position_after,
                         persisted_status,
-                        outcome.reason_code,
+                        reason_code,
                         order_id,
                     ),
                 )
                 payload = self._reduce_only_row(cur.fetchone(), duplicate=False)
                 payload.update(
                     {
-                        "applied": outcome.applied,
-                        "remaining_position_quantity": (
-                            outcome.remaining_position_quantity
-                        ),
-                        "position_increase_observed": (
-                            outcome.position_increase_observed
-                        ),
-                        "side_flip_observed": outcome.side_flip_observed,
+                        "applied": applied,
+                        "adapter_reported_filled_quantity": filled_quantity,
+                        "position_before_apply": current_position,
+                        "remaining_position_quantity": abs(position_after),
+                        "position_increase_observed": abs(position_after)
+                        > abs(prepared_position),
+                        "side_flip_observed": prepared_position * position_after < 0,
+                        "realized_pnl_delta": realized_pnl_delta,
+                        "realized_pnl_after": realized_pnl_after,
                     }
                 )
                 return payload

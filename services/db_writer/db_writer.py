@@ -563,9 +563,20 @@ class DatabaseWriter:
 
             cursor = self.db_conn.cursor()
             existing_position = self._fetch_open_position(cursor, data.get("symbol"))
-            realized_pnl = self._calculate_trade_realized_pnl(
-                existing_position, side, execution_price, execution_qty
+            reduce_only_evidence = metadata.get("reduce_only")
+            execution_owned_reduce_only = (
+                data.get("reduce_only") is True
+                and isinstance(reduce_only_evidence, dict)
+                and reduce_only_evidence.get("position_update_owner")
+                == "execution_reduce_only_v1"
             )
+            if execution_owned_reduce_only:
+                pnl_raw = reduce_only_evidence.get("realized_pnl_delta")
+                realized_pnl = Decimal(str(pnl_raw)) if pnl_raw is not None else None
+            else:
+                realized_pnl = self._calculate_trade_realized_pnl(
+                    existing_position, side, execution_price, execution_qty
+                )
             cursor.execute(
                 """
                 INSERT INTO trades
@@ -601,13 +612,6 @@ class DatabaseWriter:
             # Issue #4184: the execution service already applied this guarded
             # reduce-only fill atomically with its persistent claim. Keep the
             # trade row, but never apply the position effect twice.
-            reduce_only_evidence = metadata.get("reduce_only")
-            execution_owned_reduce_only = (
-                data.get("reduce_only") is True
-                and isinstance(reduce_only_evidence, dict)
-                and reduce_only_evidence.get("position_update_owner")
-                == "execution_reduce_only_v1"
-            )
             if not execution_owned_reduce_only:
                 self.update_position_from_trade(
                     data, existing_position=existing_position

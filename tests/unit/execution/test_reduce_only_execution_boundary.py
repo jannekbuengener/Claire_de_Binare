@@ -11,6 +11,7 @@ from services.execution import service
 from services.execution.models import Order
 from services.execution.reduce_only import (
     REDUCE_ONLY_DUPLICATE_RESULT,
+    REDUCE_ONLY_POSITION_INCREASE_BLOCKED,
     REDUCE_ONLY_POSITION_UNKNOWN,
     REDUCE_ONLY_QUANTITY_CLAMPED,
 )
@@ -74,6 +75,57 @@ def test_reduce_only_clamps_before_executor_and_finalizes_position(
     assert result is not None
     assert result.metadata["reduce_only"]["position_before"] == "1"
     assert result.metadata["reduce_only"]["position_after"] == "0"
+    assert (
+        result.metadata["reduce_only"]["prepare_reason_code"]
+        == REDUCE_ONLY_QUANTITY_CLAMPED
+    )
+    assert execution_harness.db.finalize_reduce_only.call_args.kwargs[
+        "fill_price"
+    ] == Decimal("50000.0")
+
+
+def test_blocked_adapter_overfill_is_not_published_as_fill(
+    execution_harness: ExecutionHarness,
+) -> None:
+    execution_harness.db.prepare_reduce_only.return_value = {
+        "allowed": True,
+        "duplicate": False,
+        "position_before": Decimal("1"),
+        "requested_quantity": Decimal("1"),
+        "submitted_quantity": Decimal("1"),
+        "reason_code": "REDUCE_ONLY_READY",
+    }
+    execution_harness.db.finalize_reduce_only.return_value = {
+        "applied": False,
+        "duplicate": False,
+        "filled_quantity": Decimal("0"),
+        "adapter_reported_filled_quantity": Decimal("2"),
+        "position_after": Decimal("1"),
+        "remaining_position_quantity": Decimal("1"),
+        "reason_code": REDUCE_ONLY_POSITION_INCREASE_BLOCKED,
+    }
+    execution_harness.executor.execute_order.return_value = _filled_result(2.0)
+
+    result = service.process_order(
+        valid_order_payload(
+            order_id="reduce-overfill-4184",
+            decision_id="decision-overfill-4184",
+            side="SELL",
+            quantity=1.0,
+            reduce_only=True,
+            run_mode="paper",
+        )
+    )
+
+    assert result is not None
+    assert result.status == "FAILED"
+    assert result.filled_quantity == 0
+    assert result.fill_id is None
+    assert result.metadata["reduce_only"]["adapter_reported_filled_quantity"] == "2"
+    assert (
+        result.metadata["reduce_only"]["reason_code"]
+        == REDUCE_ONLY_POSITION_INCREASE_BLOCKED
+    )
 
 
 def test_unknown_position_blocks_before_executor(

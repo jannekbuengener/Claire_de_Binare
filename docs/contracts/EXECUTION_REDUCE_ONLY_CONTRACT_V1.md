@@ -1,7 +1,7 @@
 # Execution Reduce-only Contract v1
 
-Status: Mock-/Shadow-enforced  
-Contract version: `execution_reduce_only_v1`  
+Status: Mock-/Shadow-enforced
+Contract version: `execution_reduce_only_v1`
 Issue: `#4184`
 
 ## Definition

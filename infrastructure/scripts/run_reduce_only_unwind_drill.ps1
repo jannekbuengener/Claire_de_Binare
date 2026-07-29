@@ -96,8 +96,10 @@ function Wait-ContainerReady {
 }
 
 $initialExit = 1
+$setupExit = 1
 $restartExit = 1
 $cleanupPass = $false
+$runtimeSafeModeVerified = $false
 $containerIds = [ordered]@{}
 $runError = $null
 $remainingContainers = @()
@@ -108,7 +110,11 @@ try {
     $configJson = (Invoke-Compose -Arguments @("config", "--format", "json") -Capture) -join "`n"
     $resolved = $configJson | ConvertFrom-Json
 
-    foreach ($serviceName in @("cdb_execution_test", "cdb_test_runner")) {
+    foreach ($serviceName in @(
+        "cdb_execution_test",
+        "cdb_risk_test",
+        "cdb_test_runner"
+    )) {
         $service = $resolved.services.$serviceName
         if ($null -eq $service) {
             throw "Resolved Compose is missing $serviceName."
@@ -122,25 +128,34 @@ try {
         if ($service.environment.USE_REAL_BALANCE -ne "false") {
             throw "$serviceName does not enforce USE_REAL_BALANCE=false."
         }
+    }
+    foreach ($serviceProperty in $resolved.services.PSObject.Properties) {
         if (
-            $service.PSObject.Properties.Name -contains "ports" -and
-            $service.ports
+            $serviceProperty.Value.PSObject.Properties.Name -contains "ports" -and
+            $serviceProperty.Value.ports
         ) {
-            throw "$serviceName exposes host ports."
+            throw "$($serviceProperty.Name) exposes host ports."
         }
     }
     $resolvedText = $configJson.ToLowerInvariant()
     if ($resolvedText.Contains("compose.blue.yml") -or $resolvedText.Contains("compose.red.yml")) {
         throw "BLUE/RED activation detected."
     }
-    $executionSecrets = @($resolved.services.cdb_execution_test.secrets)
-    if (
-        @(
-            $executionSecrets |
-                Where-Object { $_.source -in @("mexc_api_key", "mexc_api_secret") }
-        ).Count -gt 0
-    ) {
-        throw "Productive exchange credentials detected."
+    foreach ($serviceProperty in $resolved.services.PSObject.Properties) {
+        $serviceSecrets = @()
+        if ($serviceProperty.Value.PSObject.Properties.Name -contains "secrets") {
+            $serviceSecrets = @($serviceProperty.Value.secrets)
+        }
+        if (
+            @(
+                $serviceSecrets |
+                    Where-Object {
+                        $_.source -in @("mexc_api_key", "mexc_api_secret")
+                    }
+            ).Count -gt 0
+        ) {
+            throw "Productive exchange credentials detected."
+        }
     }
     $redactedConfig = $configJson.Replace(
         "cdb-4184-redis-only", "<REDACTED>"
@@ -163,18 +178,38 @@ try {
         Wait-ContainerReady -ContainerName $container
         $containerIds[$container] = (& docker inspect --format "{{.Image}}" $container).Trim()
     }
+    $runtimeFlags = (
+        & docker exec "${ProjectName}_execution" python -c `
+            "from services.execution import config; print(f'{int(config.DRY_RUN)}|{int(config.MOCK_TRADING)}')"
+    ).Trim()
+    if ($LASTEXITCODE -ne 0 -or $runtimeFlags -ne "1|1") {
+        throw "Execution runtime did not load DRY_RUN=1 and MOCK_TRADING=true."
+    }
+    $runtimeSafeModeVerified = $true
 
     $previousErrorActionPreference = $ErrorActionPreference
     $ErrorActionPreference = "Continue"
     $initialOutput = & docker compose -p $ProjectName @composeFiles run --rm cdb_test_runner `
         python -m pytest -q tests/e2e/test_reduce_only_unwind_drill.py `
-        -k "not test_r9_restart_after_partial_does_not_reapply_fill" `
+        -k "not test_r9_prepare_partial_before_restart and not test_r9_restart_after_partial_does_not_reapply_fill" `
         --junitxml=/app/evidence/r1-r8-r10.xml 2>&1
     $initialExit = $LASTEXITCODE
     $ErrorActionPreference = $previousErrorActionPreference
     Set-Content -LiteralPath (Join-Path $evidenceDir "r1-r8-r10.log") -Value $initialOutput
     if (Test-Path (Join-Path $evidenceDir "scenarios.json")) {
         Move-Item -LiteralPath (Join-Path $evidenceDir "scenarios.json") -Destination (Join-Path $evidenceDir "scenarios-initial.json")
+    }
+
+    $ErrorActionPreference = "Continue"
+    $setupOutput = & docker compose -p $ProjectName @composeFiles run --rm cdb_test_runner `
+        python -m pytest -q tests/e2e/test_reduce_only_unwind_drill.py `
+        -k "test_r9_prepare_partial_before_restart" `
+        --junitxml=/app/evidence/r9-setup.xml 2>&1
+    $setupExit = $LASTEXITCODE
+    $ErrorActionPreference = $previousErrorActionPreference
+    Set-Content -LiteralPath (Join-Path $evidenceDir "r9-setup.log") -Value $setupOutput
+    if (Test-Path (Join-Path $evidenceDir "scenarios.json")) {
+        Move-Item -LiteralPath (Join-Path $evidenceDir "scenarios.json") -Destination (Join-Path $evidenceDir "scenarios-setup.json")
     }
 
     Invoke-Compose -Arguments @("restart", "cdb_execution_test")
@@ -227,7 +262,11 @@ finally {
 }
 
 $scenarioResults = [ordered]@{}
-foreach ($scenarioFile in @("scenarios-initial.json", "scenarios-restart.json")) {
+foreach ($scenarioFile in @(
+    "scenarios-initial.json",
+    "scenarios-setup.json",
+    "scenarios-restart.json"
+)) {
     $path = Join-Path $evidenceDir $scenarioFile
     if (Test-Path $path) {
         $parsed = Get-Content -Raw $path | ConvertFrom-Json -AsHashtable
@@ -273,8 +312,10 @@ $sideFlip = @(
 ).Count -gt 0
 $overall = if (
     $initialExit -eq 0 -and
+    $setupExit -eq 0 -and
     $restartExit -eq 0 -and
     $cleanupPass -and
+    $runtimeSafeModeVerified -and
     $allPass -and
     -not $positionIncrease -and
     -not $sideFlip -and
@@ -319,6 +360,7 @@ $manifest = [ordered]@{
         use_real_balance = $false
         blue_red_activated = $false
         productive_credentials = $false
+        execution_runtime_verified = $runtimeSafeModeVerified
     }
     scenario_results = $scenarioResults
     position_increase_observed = $positionIncrease

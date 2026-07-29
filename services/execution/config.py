@@ -10,6 +10,13 @@ from core.secrets import read_secret
 
 load_dotenv()
 
+
+def _env_flag(name: str, default: str) -> bool:
+    """Parse the repo-supported explicit true spellings for safety flags."""
+
+    return os.getenv(name, default).strip().lower() in {"1", "true", "yes", "on"}
+
+
 # Service Info
 SERVICE_NAME = "execution_service"
 SERVICE_VERSION = "0.1.0"
@@ -26,13 +33,11 @@ MEXC_BASE_URL = os.getenv("MEXC_BASE_URL", "https://api.mexc.com")
 # Nominal flag only: MEXC_TESTNET is NOT a no-send proof and selects no real sandbox
 # (no MEXC spot testnet exists). No-send depends on DRY_RUN + MOCK_TRADING
 # (mock_builtin). See LR-050-VENUE-ENDPOINT-SEMANTICS-2026-07-03.md §5.
-MEXC_TESTNET = os.getenv("MEXC_TESTNET", "true").lower() == "true"
+MEXC_TESTNET = _env_flag("MEXC_TESTNET", "true")
 
 # Trading Mode
-MOCK_TRADING = os.getenv("MOCK_TRADING", "true").lower() == "true"
-DRY_RUN = (
-    os.getenv("DRY_RUN", "true").lower() == "true"
-)  # Safety: log orders without executing
+MOCK_TRADING = _env_flag("MOCK_TRADING", "true")
+DRY_RUN = _env_flag("DRY_RUN", "true")  # Safety: log orders without executing
 
 # Redis Configuration
 REDIS_HOST = os.getenv("REDIS_HOST", "redis")

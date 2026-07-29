@@ -13,6 +13,7 @@ can wire them in later without inventing a plugin system.
 
 from __future__ import annotations
 
+from decimal import Decimal, InvalidOperation
 from types import MappingProxyType
 from typing import Any, Callable, Mapping, cast
 
@@ -64,8 +65,9 @@ class BuiltinMomentumStrategyAdapter:
 
     def __init__(
         self,
-        evaluate_fn: Callable[[StrategyAdapterRequest], StrategyAdapterResponse]
-        | None = None,
+        evaluate_fn: (
+            Callable[[StrategyAdapterRequest], StrategyAdapterResponse] | None
+        ) = None,
     ) -> None:
         self._evaluate_fn = evaluate_fn
 
@@ -78,10 +80,7 @@ class BuiltinMomentumStrategyAdapter:
         runtime_context = request.runtime_context
 
         symbol = str(
-            request.symbol
-            or snapshot.get("symbol")
-            or event.get("symbol")
-            or ""
+            request.symbol or snapshot.get("symbol") or event.get("symbol") or ""
         ).upper()
         pct_change = _first_number(snapshot.get("pct_change"), event.get("pct_change"))
         volume = _first_number(
@@ -162,6 +161,29 @@ class MockExecutionAdapter:
         from services.execution.models import Order
 
         order = Order.from_event(dict(request.order))
+        if request.reduce_only:
+            try:
+                position = Decimal(str(request.position_before))
+                maximum = Decimal(str(request.max_executable_quantity))
+                quantity = Decimal(str(order.quantity))
+            except (InvalidOperation, TypeError, ValueError) as exc:
+                raise ValueError("invalid reduce-only adapter quantities") from exc
+            if not (
+                request.reduce_only_contract_version == "execution_reduce_only_v1"
+                and order.reduce_only is True
+                and position.is_finite()
+                and position != 0
+                and maximum.is_finite()
+                and maximum > 0
+                and quantity.is_finite()
+                and quantity > 0
+                and quantity <= maximum
+                and (
+                    (position > 0 and order.side == "SELL")
+                    or (position < 0 and order.side == "BUY")
+                )
+            ):
+                raise ValueError("reduce-only adapter contract rejected")
         result = self._executor.execute_order(order)
         return ExecutionAdapterResponse(
             status=result.status,
@@ -248,13 +270,17 @@ def resolve_strategy_adapter_id(adapter_id: str | None = None) -> StrategyAdapte
 def resolve_execution_adapter_id(
     adapter_id: str | None = None, *, mock_trading: bool
 ) -> ExecutionAdapterId:
-    candidate = (adapter_id or default_execution_adapter_id(mock_trading=mock_trading)).strip()
+    candidate = (
+        adapter_id or default_execution_adapter_id(mock_trading=mock_trading)
+    ).strip()
     if candidate not in _EXECUTION_ADAPTER_REGISTRY:
         raise KeyError(f"Unknown execution adapter id: {candidate}")
     return cast(ExecutionAdapterId, candidate)
 
 
-def build_strategy_adapter(adapter_id: str | None = None, **kwargs: Any) -> StrategyAdapter:
+def build_strategy_adapter(
+    adapter_id: str | None = None, **kwargs: Any
+) -> StrategyAdapter:
     resolved = resolve_strategy_adapter_id(adapter_id)
     factory = _STRATEGY_ADAPTER_REGISTRY[resolved]
     return factory(**kwargs)

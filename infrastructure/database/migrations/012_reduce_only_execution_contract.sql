@@ -38,4 +38,3 @@ CREATE INDEX IF NOT EXISTS idx_reduce_only_executions_symbol_status
 
 COMMENT ON TABLE reduce_only_executions IS
     'Persistent execution-boundary ledger for reduce-only clamp and fill idempotency';
-
