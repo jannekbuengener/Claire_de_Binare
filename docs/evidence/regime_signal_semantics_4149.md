@@ -1,8 +1,8 @@
 # Evidence: Regime/Signal Semantics Correction (#4149)
 
-**Date:** 2026-07-29  
-**Parent:** #4147  
-**Dependency:** #4148 (CLOSED)  
+**Date:** 2026-07-29
+**Parent:** #4147
+**Dependency:** #4148 (CLOSED)
 **Status:** Local validation evidence (Development semantics; not LR-Go)
 
 ## Brain Evidence
