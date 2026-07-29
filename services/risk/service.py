@@ -71,10 +71,11 @@ from core.safety.kill_switch import (
     KillSwitch,
     KillSwitchReason,
 )
+from core.safety.stop_loss_protection import stop_loss_metadata_note
 from core.domain.models import Signal
 
 try:
-    from .config import config
+    from .config import RiskConfig, config
     from .models import Order, Alert, RiskState, OrderResult
     from .reason_codes import (
         RC_001,
@@ -92,7 +93,7 @@ except ImportError:
     repo_root = Path(__file__).resolve().parents[2]
     if str(repo_root) not in sys.path:
         sys.path.insert(0, str(repo_root))
-    from services.risk.config import config
+    from services.risk.config import RiskConfig, config
     from services.risk.models import Order, Alert, RiskState, OrderResult
 
 # Phase 8C: Evidence debt safety valve (default: fail-closed)
@@ -161,23 +162,53 @@ DECISION_ALLOW = "ALLOW"
 DECISION_BLOCK = "BLOCK"
 KILL_SWITCH_BLOCK_REASON_CODE = "KILL_SWITCH_ACTIVE"
 KILL_SWITCH_UNEVALUABLE_REASON_CODE = "KILL_SWITCH_UNEVALUABLE"
+POSITION_PRICE_UNKNOWN_REASON = "POSITION_PRICE_UNKNOWN"
+POSITION_QUANTITY_INVALID_REASON = "POSITION_QUANTITY_INVALID"
+PROJECTED_POSITION_LIMIT_REASON = "PROJECTED_POSITION_LIMIT"
+PROJECTED_EXPOSURE_LIMIT_REASON = "EXPOSURE_LIMIT_PROJECTED"
 
-DECISION_THRESHOLDS = {
-    # Canonical runtime/evidence unit for these fields is percentage points.
-    # Example: 3.0 == 3%, 0.5 == 0.5%.
-    "return_1m_min": -2.0,
-    "return_5m_min": -5.0,
-    "price_change_5m_abs_max": 10.0,
-    "staleness_s_max": 5.0,
-    "data_silence_s_max": 30.0,
-    "signal_pct_change_15m_min": 3.0,
-    "signal_volume_15m_min": 0.165,  # ~10% pass rate (P90 = 0.166)
-    "daily_drawdown_pct_max": 5.0,
-    "total_exposure_pct_max": 50.0,
-    "slippage_pct_max": 1.0,
-    "allowed_regimes": [0, 1],
-    "blocked_regimes": [2, 3],
-}
+
+def risk_config_fraction_to_decision_pct_points(fraction: float) -> float:
+    """Convert RiskConfig decimal fraction to decide_trade percentage points.
+
+    Units (Issue #4152 / CDB-035/CDB-037):
+    - RiskConfig.max_*_pct: decimal fraction of capital (0.30 == 30%)
+    - decide_trade account_state.*_pct fields: percentage points (30.0 == 30%)
+    - Comparison: ``value_pp >= threshold_pp``
+
+    Explicit conversion: percentage_points = fraction * 100.0
+    """
+    return float(fraction) * 100.0
+
+
+def build_decision_thresholds(cfg: RiskConfig | None = None) -> dict:
+    """Build decide_trade thresholds; risk caps derived from canonical RiskConfig."""
+    c = cfg or config
+    return {
+        # Canonical runtime/evidence unit for these fields is percentage points.
+        # Example: 3.0 == 3%, 0.5 == 0.5%.
+        "return_1m_min": -2.0,
+        "return_5m_min": -5.0,
+        "price_change_5m_abs_max": 10.0,
+        "staleness_s_max": 5.0,
+        "data_silence_s_max": 30.0,
+        "signal_pct_change_15m_min": 3.0,
+        "signal_volume_15m_min": 0.165,  # ~10% pass rate (P90 = 0.166)
+        # Derived from RiskConfig fractions → percentage points (no hardcode override).
+        "daily_drawdown_pct_max": risk_config_fraction_to_decision_pct_points(
+            c.max_daily_drawdown_pct
+        ),
+        "total_exposure_pct_max": risk_config_fraction_to_decision_pct_points(
+            c.max_total_exposure_pct
+        ),
+        "slippage_pct_max": 1.0,
+        "allowed_regimes": [0, 1],
+        "blocked_regimes": [2, 3],
+    }
+
+
+# Module-level snapshot derived from canonical RiskConfig at import.
+DECISION_THRESHOLDS = build_decision_thresholds()
 
 
 def _get_value(obj: object | None, key: str):
@@ -246,6 +277,8 @@ def decide_trade(
     decision_id = generate_uuid()
     trace_id = generate_uuid()
     signal_id = _get_value(signal, "signal_id")  # Preserve from Signal service
+    # Risk caps always derived from canonical RiskConfig (fraction → percentage points).
+    thresholds = build_decision_thresholds()
 
     now_ms_value = _parse_int(now_ms)
     symbol = _get_value(signal, "symbol")
@@ -314,7 +347,7 @@ def decide_trade(
         "staleness_s": staleness_s,
         "staleness_sources": staleness_sources,
         "data_silence_s": data_silence_s,
-        "thresholds": DECISION_THRESHOLDS.copy(),
+        "thresholds": copy.deepcopy(thresholds),
         "timestamps_ms": {
             "now_ms": now_ms_value,
             "signal_ts_ms": signal_ts_ms,
@@ -330,20 +363,20 @@ def decide_trade(
     if return_1m is None or return_5m is None or price_change_5m is None:
         return DECISION_BLOCK, RC_002, evidence
     if (
-        return_1m <= DECISION_THRESHOLDS["return_1m_min"]
-        or return_5m <= DECISION_THRESHOLDS["return_5m_min"]
-        or abs(price_change_5m) > DECISION_THRESHOLDS["price_change_5m_abs_max"]
+        return_1m <= thresholds["return_1m_min"]
+        or return_5m <= thresholds["return_5m_min"]
+        or abs(price_change_5m) > thresholds["price_change_5m_abs_max"]
     ):
         return DECISION_BLOCK, RC_002, evidence
 
     # 2) Data Freshness
     if staleness_s is None:
         return DECISION_BLOCK, RC_003, evidence
-    if staleness_s > DECISION_THRESHOLDS["staleness_s_max"]:
+    if staleness_s > thresholds["staleness_s_max"]:
         return DECISION_BLOCK, RC_003, evidence
     if data_silence_s is None:
         return DECISION_BLOCK, RC_004, evidence
-    if data_silence_s > DECISION_THRESHOLDS["data_silence_s_max"]:
+    if data_silence_s > thresholds["data_silence_s_max"]:
         return DECISION_BLOCK, RC_004, evidence
 
     # 3) Regime
@@ -357,8 +390,8 @@ def decide_trade(
     if symbol is None or symbol == "" or pct_change_15m is None or volume_15m is None:
         return DECISION_BLOCK, RC_010, evidence
     if (
-        pct_change_15m < DECISION_THRESHOLDS["signal_pct_change_15m_min"]
-        or volume_15m < DECISION_THRESHOLDS["signal_volume_15m_min"]
+        pct_change_15m < thresholds["signal_pct_change_15m_min"]
+        or volume_15m < thresholds["signal_volume_15m_min"]
     ):
         if not paper_evidence_probe_enabled():
             return DECISION_BLOCK, RC_010, evidence
@@ -369,19 +402,19 @@ def decide_trade(
             daily_drawdown_pct = 0.0
         else:
             return DECISION_BLOCK, RC_020, evidence
-    if daily_drawdown_pct >= DECISION_THRESHOLDS["daily_drawdown_pct_max"]:
+    if daily_drawdown_pct >= thresholds["daily_drawdown_pct_max"]:
         return DECISION_BLOCK, RC_020, evidence
     if total_exposure_pct is None:
         if paper_evidence_probe_enabled():
             total_exposure_pct = 0.0
         else:
             return DECISION_BLOCK, RC_021, evidence
-    if total_exposure_pct >= DECISION_THRESHOLDS["total_exposure_pct_max"]:
+    if total_exposure_pct >= thresholds["total_exposure_pct_max"]:
         return DECISION_BLOCK, RC_021, evidence
     # RC_022: Slippage check - skip ONLY if market_health not available
     # If market_health exists but slippage_pct is invalid → still block
     if slippage_pct is not None:
-        if slippage_pct > DECISION_THRESHOLDS["slippage_pct_max"]:
+        if slippage_pct > thresholds["slippage_pct_max"]:
             return DECISION_BLOCK, RC_022, evidence
 
     return DECISION_ALLOW, None, evidence
@@ -968,7 +1001,10 @@ class RiskManager:
                 try:
                     conn.close()
                 except Exception:  # noqa: BLE001
-                    logger.debug("conn.close() raised during retry cleanup (ignored)", exc_info=True)
+                    logger.debug(
+                        "conn.close() raised during retry cleanup (ignored)",
+                        exc_info=True,
+                    )
                 self._pg_conn = None
 
         return False
@@ -1288,15 +1324,17 @@ class RiskManager:
 
         except psycopg2.Error as e:
             logger.error(f"❌ Failed to bootstrap risk state from DB: {e}")
-            logger.warning(
-                "⚠️ Risk manager starting with EMPTY state (no reconciliation)"
-            )
-            # Continue startup with empty state rather than crashing
+            raise RuntimeError(
+                f"Risk bootstrap failed (DB error); refusing empty permissive state: {e}"
+            ) from e
+        except RuntimeError:
+            # Preserve fail-closed mismatch / explicit bootstrap aborts.
+            raise
         except Exception as e:
             logger.error(f"❌ Unexpected error during risk state bootstrap: {e}")
-            logger.warning(
-                "⚠️ Risk manager starting with EMPTY state (no reconciliation)"
-            )
+            raise RuntimeError(
+                f"Risk bootstrap failed (unexpected); refusing empty permissive state: {e}"
+            ) from e
 
     @staticmethod
     def _parse_timestamp(value) -> int | None:
@@ -1457,6 +1495,10 @@ class RiskManager:
         """
         Prüft das Positions-Limit für ein Symbol.
         Verhindert den Aufbau von Positionen, die das konfigurierte Limit (max_position_pct) überschreiten.
+
+        Note: Full projected (current + pending + proposed) enforcement happens in
+        ``check_projected_position_limit`` after sizing. This early gate still
+        fails closed on unknown price and already-at-cap current notional.
         """
         if self.config.use_real_balance and self.balance_fetcher:
             try:
@@ -1475,9 +1517,11 @@ class RiskManager:
         current_price = signal.price or risk_state.last_prices.get(signal.symbol, 0.0)
 
         if current_price <= 0:
-            # Ohne Preis können wir keine Notional-Prüfung machen.
-            # Da calculate_position_size dies auch prüft, lassen wir es hier durch.
-            return True, "Position OK (Preis unbekannt)"
+            return (
+                False,
+                f"{POSITION_PRICE_UNKNOWN_REASON}: cannot evaluate position notional "
+                f"for {signal.symbol} without a valid price",
+            )
 
         current_notional = abs(current_qty) * current_price
 
@@ -1490,6 +1534,71 @@ class RiskManager:
             )
 
         return True, "Position OK"
+
+    def compute_projected_exposure_usdt(self, quantity: float, price: float) -> float:
+        """Projected portfolio exposure = filled + pending + proposed notional."""
+        return (
+            float(risk_state.total_exposure)
+            + float(risk_state.pending_exposure_usdt)
+            + float(quantity) * float(price)
+        )
+
+    def check_projected_position_limit(
+        self,
+        *,
+        symbol: str,
+        side: str,
+        quantity: float,
+        price: float,
+    ) -> tuple[bool, str]:
+        """Fail-closed projected symbol position check (Issue #4152 / CDB-034/048).
+
+        projected_qty = current_qty + pending_qty + signed(order_qty)
+        projected_notional_usdt = abs(projected_qty) * price
+        Cap unit: USDT notional = balance * max_position_pct (decimal fraction).
+        """
+        if price is None or float(price) <= 0:
+            return (
+                False,
+                f"{POSITION_PRICE_UNKNOWN_REASON}: projected position requires valid price",
+            )
+        try:
+            qty = float(quantity)
+        except (TypeError, ValueError):
+            return False, f"{POSITION_QUANTITY_INVALID_REASON}: quantity not numeric"
+        if not math.isfinite(qty) or qty <= 0:
+            return (
+                False,
+                f"{POSITION_QUANTITY_INVALID_REASON}: quantity must be finite and > 0",
+            )
+
+        if self.config.use_real_balance and self.balance_fetcher:
+            try:
+                current_balance = self.balance_fetcher.get_usdt_balance()
+            except Exception as e:
+                logger.error(f"Fehler beim Abrufen der Balance: {e}")
+                return False, f"Balance-Fehler: {e}"
+        else:
+            current_balance = self.config.test_balance
+
+        max_notional_usdt = current_balance * self.config.max_position_pct
+        current_qty = float(risk_state.positions.get(symbol, 0.0))
+        pending_qty = float(risk_state.pending_position_qty.get(symbol, 0.0))
+        side_u = str(side).upper()
+        delta = qty if side_u == "BUY" else -qty
+        projected_qty = current_qty + pending_qty + delta
+        projected_notional = abs(projected_qty) * float(price)
+
+        # Boundary: block at and above cap (same direction as exposure Layer-2).
+        if projected_notional >= max_notional_usdt:
+            return (
+                False,
+                f"{PROJECTED_POSITION_LIMIT_REASON}: {symbol} projected "
+                f"{projected_notional:.2f} >= {max_notional_usdt:.2f} "
+                f"(current_qty={current_qty}, pending_qty={pending_qty}, "
+                f"order_qty={delta}, price={price})",
+            )
+        return True, "Projected position OK"
 
     def check_exposure_limit(self) -> tuple[bool, str]:
         """Prüft Gesamt-Exposure (filled + pending reserved)"""
@@ -1614,7 +1723,9 @@ class RiskManager:
                     effective_at_ms=deterministic_ts_ms,
                 )
             except Exception:
-                logger.debug("build_policy_snapshot raised (guardrail active)", exc_info=True)
+                logger.debug(
+                    "build_policy_snapshot raised (guardrail active)", exc_info=True
+                )
 
         if evidence.get("decision_id"):
             if _envelope_toggle_enabled():
@@ -1882,10 +1993,9 @@ class RiskManager:
             metadata=_build_order_timing_metadata(evidence),
         )
 
-        # PR #619: HARD EXPOSURE GATE - Block order if projected exposure exceeds limit
-        # This MUST happen AFTER order creation (when we have final qty/price)
-        # but BEFORE reservation and publish to prevent race condition
-        # Skip for reduce-only orders (they close positions, reducing exposure)
+        # PR #619 / #4152: HARD EXPOSURE + PROJECTED POSITION GATES
+        # AFTER order creation (final qty/price) but BEFORE reservation/publish.
+        # Skip for reduce-only orders (they close positions, reducing exposure).
         if not reduce_only:
             from .balance_fetcher import RealBalanceFetcher
 
@@ -1897,23 +2007,21 @@ class RiskManager:
 
             max_exposure_usdt = current_balance * self.config.max_total_exposure_pct
             estimated_notional_usdt = order.quantity * price_used
-            projected_exposure = (
-                risk_state.total_exposure
-                + risk_state.pending_exposure_usdt
-                + estimated_notional_usdt
+            projected_exposure = self.compute_projected_exposure_usdt(
+                order.quantity, price_used
             )
 
-            if projected_exposure > max_exposure_usdt:
+            if projected_exposure >= max_exposure_usdt:
                 logger.warning(
                     f"⛔ HARD EXPOSURE GATE: Order rejected BEFORE publish. "
-                    f"Projected exposure {projected_exposure:.2f} > limit {max_exposure_usdt:.2f} "
+                    f"Projected exposure {projected_exposure:.2f} >= limit {max_exposure_usdt:.2f} "
                     f"(total: {risk_state.total_exposure:.2f}, pending: {risk_state.pending_exposure_usdt:.2f}, "
                     f"new_order: {estimated_notional_usdt:.2f}, client_id: {order.client_id})"
                 )
                 self.send_alert(
                     "WARNING",
-                    "EXPOSURE_LIMIT_PROJECTED",
-                    f"Order blocked: projected exposure {projected_exposure:.2f} > {max_exposure_usdt:.2f}",
+                    PROJECTED_EXPOSURE_LIMIT_REASON,
+                    f"Order blocked: projected exposure {projected_exposure:.2f} >= {max_exposure_usdt:.2f}",
                     {
                         "symbol": signal.symbol,
                         "client_id": order.client_id,
@@ -1930,6 +2038,29 @@ class RiskManager:
                 # Trigger proactive unwind if we have open positions
                 self._trigger_proactive_unwind()
 
+                return None
+
+            ok_pos, pos_reason = self.check_projected_position_limit(
+                symbol=order.symbol,
+                side=order.side,
+                quantity=order.quantity,
+                price=price_used,
+            )
+            if not ok_pos:
+                logger.warning(f"⛔ HARD POSITION GATE: {pos_reason}")
+                self.send_alert(
+                    "WARNING",
+                    PROJECTED_POSITION_LIMIT_REASON,
+                    pos_reason,
+                    {
+                        "symbol": signal.symbol,
+                        "client_id": order.client_id,
+                        "quantity": order.quantity,
+                        "price": price_used,
+                    },
+                )
+                stats["orders_blocked"] += 1
+                risk_state.signals_blocked += 1
                 return None
 
         # LR-762: Deterministic Decision Contract gate (fail-closed).
@@ -1965,10 +2096,22 @@ class RiskManager:
         risk_state.signals_approved += 1
         risk_state.pending_orders += 1
 
-        # PR #617: Reserve exposure for pending order to prevent race condition
+        # PR #617 / #4152: Reserve exposure + symbol qty for pending order
         estimated_notional = order.quantity * price_used
         risk_state.pending_exposure_usdt += estimated_notional
         risk_state.pending_reservations[order.client_id] = estimated_notional
+        signed_qty = (
+            float(order.quantity)
+            if str(order.side).upper() == "BUY"
+            else -float(order.quantity)
+        )
+        risk_state.pending_position_qty[order.symbol] = (
+            float(risk_state.pending_position_qty.get(order.symbol, 0.0)) + signed_qty
+        )
+        risk_state.pending_qty_reservations[order.client_id] = (
+            order.symbol,
+            signed_qty,
+        )
         logger.debug(
             f"Reserved {estimated_notional:.2f} USDT exposure for {order.client_id} "
             f"(total pending: {risk_state.pending_exposure_usdt:.2f})"
@@ -2285,7 +2428,7 @@ class RiskManager:
         if risk_state.pending_orders > 0:
             risk_state.pending_orders -= 1
 
-        # PR #617: Release reserved exposure when order result arrives
+        # PR #617 / #4152: Release reserved exposure + symbol qty when order result arrives
         if result.client_id and result.client_id in risk_state.pending_reservations:
             reserved = risk_state.pending_reservations.pop(result.client_id)
             risk_state.pending_exposure_usdt = max(
@@ -2295,6 +2438,13 @@ class RiskManager:
                 f"Released {reserved:.2f} USDT exposure for {result.client_id} "
                 f"(status={result.status}, total pending: {risk_state.pending_exposure_usdt:.2f})"
             )
+        if result.client_id and result.client_id in risk_state.pending_qty_reservations:
+            sym, signed_qty = risk_state.pending_qty_reservations.pop(result.client_id)
+            risk_state.pending_position_qty[sym] = (
+                float(risk_state.pending_position_qty.get(sym, 0.0)) - signed_qty
+            )
+            if abs(risk_state.pending_position_qty.get(sym, 0.0)) < 1e-12:
+                risk_state.pending_position_qty.pop(sym, None)
 
         if result.status == "FILLED":
             self._update_exposure(result)
@@ -2358,7 +2508,9 @@ class RiskManager:
         logger.info(f"   Max Position: {self.config.max_position_pct*100}%")
         logger.info(f"   Max Exposure: {self.config.max_total_exposure_pct*100}%")
         logger.info(f"   Max Drawdown: {self.config.max_daily_drawdown_pct*100}%")
-        logger.info(f"   Stop-Loss: {self.config.stop_loss_pct*100}%")
+        logger.info(
+            f"   Stop-Loss: {self.config.stop_loss_pct*100}% ({stop_loss_metadata_note()})"
+        )
 
         if self.pubsub_results and (
             self._order_result_thread is None
@@ -2523,7 +2675,7 @@ if _FLASK_AVAILABLE:
         try:
             ks_active = 1 if get_kill_switch_details(create_if_missing=False)[0] else 0
         except Exception:
-            ks_active = 0  # conservative: report inactive on read failure
+            ks_active = 1  # fail-closed: report active on read failure
         body += f"risk_kill_switch_active {ks_active}\n"
         return Response(body, mimetype="text/plain")
 

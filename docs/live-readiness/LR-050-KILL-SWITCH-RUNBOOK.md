@@ -124,7 +124,7 @@ Setting `MOCK_TRADING="false"` without valid Human GO per [`LR-050-HUMAN-APPROVA
 
 | Path | Source | Fail-closed behavior |
 |------|--------|----------------------|
-| File Kill Switch gate | `_kill_switch_gate()` → `get_kill_switch_details(create_if_missing=False)` | Eval error → block (`KILL_SWITCH_UNEVALUABLE`); active → block |
+| File Kill Switch gate | `_kill_switch_gate()` → `get_kill_switch_details(create_if_missing=False)` | Missing/empty/corrupt/unknown/unreadable state → **active** (fail-closed); eval exception → block (`KILL_SWITCH_UNEVALUABLE`); explicit active → block |
 | Drawdown / in-memory Circuit Breaker | `check_drawdown_limit()` → `risk_state.circuit_breaker_active = True` | Daily loss over cap → block signal + CRITICAL alert + `emit_bot_shutdown()` (once) |
 | Exposure / cooldown / risk_off | `check_exposure_limit()`, allocation `cooldown_until`, `risk_off_active` | Over limit or active cooldown → block |
 | Decision contract / `decide_trade()` | `DECISION_THRESHOLDS` in [`services/risk/service.py`](../../services/risk/service.py) | Default **BLOCK** unless explicit ALLOW |
@@ -259,7 +259,7 @@ Defense-in-depth: Risk may block before Execution; Execution re-checks File Kill
 | Alert-triggered halt | [`infrastructure/monitoring/alerts.yml`](../../infrastructure/monitoring/alerts.yml); policy → #2531 | `docs_only` | Alert rules exist; receiver/abort matrix missing | yes (#2531) | `blocker_before_live` before live GO | Unevaluable monitoring → operator halt, stay NO-GO |
 | Unexpected fill rate halt | Policy → #2531 | `docs_only` | No dedicated gate in risk config | yes (#2531) | `blocker_before_live` | Fail-closed until matrix exists |
 | P5 soak precheck `kill_switch_precheck_inactive` | [`infrastructure/scripts/soak_gate_eval.py`](../../infrastructure/scripts/soak_gate_eval.py) reads `risk_state.circuit_breaker`, **not** file KS | `blocker_before_live` | `tests/unit/scripts/test_soak_gate_eval.py` | no | Precheck can pass while file KS active — gap | Misleading PASS if only CB flag checked |
-| Prometheus `risk_kill_switch_active` | `/metrics` gauge; read failure → **0** | `blocker_before_live` | `test_metrics_endpoint` if present | no | Metric fail-open on read error vs order gates fail-closed | Do not rely on metric alone for halt proof |
+| Prometheus `risk_kill_switch_active` | `/metrics` gauge; read failure → **1** (fail-closed, #4152) | `test_health_metrics_contract` | no | Metric aligned with order-gate fail-closed on read error | Prefer gate + state file over metric alone for halt proof |
 
 ---
 
@@ -300,7 +300,7 @@ Defense-in-depth: Risk may block before Execution; Execution re-checks File Kill
 
 1. **`soak_gate_eval.py` precheck gap:** `kill_switch_precheck_inactive` checks in-memory `circuit_breaker`, not `GET /kill-switch` or file state — can diverge from File Kill Switch.
 2. **Drawdown does not activate file Kill Switch:** Automatic file KS reasons exist in enum but are not wired from `check_drawdown_limit()`.
-3. **`risk_kill_switch_active` metric:** Reports `0` on read failure (not fail-closed like order gates).
+3. **`risk_kill_switch_active` metric:** Reports `1` on read failure (fail-closed; aligned with order gates as of #4152).
 4. **`MOCK_TRADING` / `DRY_RUN` safe modes:** Simulated or dry-run FILLED results are not halt proof — distinguish from REJECT gates (§4.3, §6).
 5. **`KILL_SWITCH_OPERATOR_CHECKLIST.md`:** Does not prove end-to-end order-flow stop under live runtime (stated in checklist Limits §83–87).
 6. **Alert / fill-rate abort:** Deferred to [#2531](https://github.com/jannekbuengener/Claire_de_Binare/issues/2531); policy here is fail-closed only.

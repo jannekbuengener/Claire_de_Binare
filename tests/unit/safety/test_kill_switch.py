@@ -260,8 +260,8 @@ class TestErrorHandling:
         # Should default to ACTIVE for safety
         assert ks.is_active() is True
 
-    def test_empty_state_file_defaults_to_inactive(self, tmp_path):
-        """Test empty state file defaults to INACTIVE"""
+    def test_empty_state_file_defaults_to_active(self, tmp_path):
+        """Test empty state file defaults to ACTIVE (fail-closed, #4152)."""
         state_file = tmp_path / "empty.state"
 
         # Create empty file
@@ -269,8 +269,8 @@ class TestErrorHandling:
 
         ks = KillSwitch(state_file=str(state_file))
 
-        # Empty file should default to INACTIVE
-        assert ks.is_active() is False
+        # Empty file must never be treated as permissive inactive
+        assert ks.is_active() is True
 
 
 class TestRealWorldScenarios:
@@ -295,9 +295,7 @@ class TestRealWorldScenarios:
         assert ks2.is_active() is True  # Still active after restart
 
         # 4. Operator investigates and resolves
-        result = ks2.deactivate(
-            "risk_manager", "Issue resolved, risk limits adjusted"
-        )
+        result = ks2.deactivate("risk_manager", "Issue resolved, risk limits adjusted")
         assert result is True
         assert ks2.is_active() is False
 
@@ -336,9 +334,7 @@ class TestLogInjectionSanitization:
         ks = KillSwitch(state_file=str(state_file))
 
         with caplog.at_level(logging.WARNING):
-            ks.activate(
-                KillSwitchReason.MANUAL, "Emergency\rstop"
-            )
+            ks.activate(KillSwitchReason.MANUAL, "Emergency\rstop")
 
         logged_messages = [r.message for r in caplog.records]
         assert not any("\r" in m for m in logged_messages)
@@ -352,9 +348,7 @@ class TestLogInjectionSanitization:
         ks = KillSwitch(state_file=str(state_file))
 
         with caplog.at_level(logging.WARNING):
-            ks.activate(
-                KillSwitchReason.MANUAL, "Emergency\nstop"
-            )
+            ks.activate(KillSwitchReason.MANUAL, "Emergency\nstop")
 
         logged_messages = [r.message for r in caplog.records]
         assert not any("\n" in m for m in logged_messages)
@@ -389,7 +383,10 @@ class TestLogInjectionSanitization:
             ks.deactivate("admin", "OK\x00\x01\x02\x03")
 
         logged_messages = [r.message for r in caplog.records]
-        assert not any("\x00" in m or "\x01" in m or "\x02" in m or "\x03" in m for m in logged_messages)
+        assert not any(
+            "\x00" in m or "\x01" in m or "\x02" in m or "\x03" in m
+            for m in logged_messages
+        )
         assert any("OK" in m for m in logged_messages)
 
     def test_sanitize_multiline_injection(self, tmp_path, caplog):

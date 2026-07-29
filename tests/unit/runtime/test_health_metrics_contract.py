@@ -100,7 +100,12 @@ def test_risk_metrics_include_kill_switch_and_do_not_claim_live_go(
     monkeypatch.setattr(
         risk_mod,
         "get_kill_switch_details",
-        lambda create_if_missing=False: (True, "MANUAL", "test", "2026-01-01T00:00:00Z"),
+        lambda create_if_missing=False: (
+            True,
+            "MANUAL",
+            "test",
+            "2026-01-01T00:00:00Z",
+        ),
     )
     body = risk_mod.app.test_client().get("/metrics").get_data(as_text=True)
     assert "risk_kill_switch_active 1" in body
@@ -113,7 +118,7 @@ def test_risk_metrics_include_kill_switch_and_do_not_claim_live_go(
     not hasattr(risk_svc, "app"),
     reason="Flask unavailable in risk service import surface",
 )
-def test_risk_metrics_kill_switch_read_failure_defaults_to_zero(
+def test_risk_metrics_kill_switch_read_failure_defaults_to_active(
     monkeypatch: pytest.MonkeyPatch,
 ) -> None:
     risk_mod = importlib.import_module("services.risk.service")
@@ -124,10 +129,13 @@ def test_risk_metrics_kill_switch_read_failure_defaults_to_zero(
     monkeypatch.setattr(
         risk_mod,
         "get_kill_switch_details",
-        lambda create_if_missing=False: (_ for _ in ()).throw(OSError("state unreadable")),
+        lambda create_if_missing=False: (_ for _ in ()).throw(
+            OSError("state unreadable")
+        ),
     )
     body = risk_mod.app.test_client().get("/metrics").get_data(as_text=True)
-    assert "risk_kill_switch_active 0" in body
+    # Fail-closed: unreadable kill-switch must report active (1), never permissive 0.
+    assert "risk_kill_switch_active 1" in body
 
 
 @pytest.mark.skipif(

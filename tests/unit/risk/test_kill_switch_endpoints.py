@@ -33,12 +33,14 @@ def client(state_file, monkeypatch):
 class TestKillSwitchEndpoints:
     """Pflicht-Tests für operator-taugliche Kill-Switch HTTP-Endpoints."""
 
-    def test_kill_switch_status_inactive(self, client, state_file):
-        """GET /kill-switch liefert active=False wenn keine State-Datei existiert."""
+    def test_kill_switch_status_missing_file_fail_closed(self, client, state_file):
+        """GET /kill-switch: missing state file is fail-closed active (#4152)."""
         response = client.get("/kill-switch")
         assert response.status_code == 200
         data = response.get_json()
-        assert data["active"] is False
+        assert data["active"] is True
+        assert data["reason"] == KillSwitchReason.SYSTEM_ERROR.value
+        assert "missing" in (data.get("message") or "").lower()
 
     def test_kill_switch_status_active(self, client, state_file):
         """GET /kill-switch liefert active=True samt Metadaten nach Aktivierung."""
@@ -87,7 +89,9 @@ class TestKillSwitchEndpoints:
         """POST /kill-switch/deactivate deaktiviert und liefert active=False."""
         # Erst aktivieren
         ks = KillSwitch(state_file)
-        ks.activate(KillSwitchReason.MANUAL, "Setup for deactivate test", operator="test-op")
+        ks.activate(
+            KillSwitchReason.MANUAL, "Setup for deactivate test", operator="test-op"
+        )
 
         response = client.post(
             "/kill-switch/deactivate",
@@ -122,23 +126,25 @@ class TestKillSwitchEndpoints:
         Kernnachweis für #657: Alle drei Endpoints nutzen CDB_KILL_SWITCH_STATE_FILE
         via resolve_kill_switch_state_file() — kein Path.cwd()-Seiteneffekt.
         """
-        # Vor Aktivierung: inaktiv
+        # Missing file is fail-closed active until an explicit inactive state exists.
         r = client.get("/kill-switch")
-        assert r.get_json()["active"] is False
+        assert r.get_json()["active"] is True
 
-        # Aktivieren
+        # Activate writes the shared state file
         r = client.post(
             "/kill-switch/activate",
-            data=json.dumps({"operator": "janne", "reason": "manual", "message": "halt"}),
+            data=json.dumps(
+                {"operator": "janne", "reason": "manual", "message": "halt"}
+            ),
             content_type="application/json",
         )
         assert r.status_code == 200
 
-        # GET zeigt aktiv — dieselbe Datei
+        # GET shows active — same file
         r = client.get("/kill-switch")
         assert r.get_json()["active"] is True
 
-        # Deaktivieren
+        # Deactivate
         r = client.post(
             "/kill-switch/deactivate",
             data=json.dumps({"operator": "janne", "justification": "done"}),
@@ -147,6 +153,6 @@ class TestKillSwitchEndpoints:
         assert r.status_code == 200
         assert r.get_json()["active"] is False
 
-        # GET zeigt inaktiv — dieselbe Datei
+        # GET shows inactive — same file (explicit inactive after operator action)
         r = client.get("/kill-switch")
         assert r.get_json()["active"] is False
