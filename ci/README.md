@@ -65,7 +65,7 @@ pwsh -File ci/scripts/publish_status.ps1 -Command publish -EvidenceDir ci/artifa
 | lint | `ruff check .`; `black --config pyproject.toml --check` on changed `*.py` vs `origin/main` |
 | unit | `pytest -q -k "not test_mcp_time_server_runtime"` (SSOT; thin `ci.yml` delegates here) |
 | docs | `python -m tools.validate_onboarding_docs`; `python -m tools.validate_readme_links`; `python -m tools.ci.docs_conflict_guard`; `python -m tools.ci.repository_canon_guard` |
-| governance | MCP fixture validate; `make surreal-validate`; `scripts/governance/run_ci_drift_checks.py` |
+| governance | MCP fixture validate; surreal validate; `scripts/governance/run_ci_drift_checks.py` (BP live when readable; offline baseline fallback + disclosure when gh API 403) |
 | integration | 431B `base.yml` + `test.yml`, project `cdb_ci_<run_id>`, no host ports by default |
 | security | gitleaks (if present) + ruff + bandit; opt-in trivy/pip-audit/codeql noted when missing |
 | containers | `docker build -f ci/Dockerfile` only; no push |
