@@ -95,6 +95,17 @@ function Wait-ContainerReady {
     throw "Container did not become ready: $ContainerName"
 }
 
+function Redact-DiagnosticText {
+    param([object[]]$Lines)
+    return (($Lines -join "`n").Replace(
+        "cdb-4184-redis-only", "<REDACTED>"
+    ).Replace(
+        "cdb-4184-postgres-only", "<REDACTED>"
+    ).Replace(
+        $secretRoot, "<TEMP_SECRET_PATH>"
+    ))
+}
+
 $initialExit = 1
 $setupExit = 1
 $restartExit = 1
@@ -229,6 +240,20 @@ try {
 }
 catch {
     $runError = $_.Exception.Message
+    foreach ($diagnosticContainer in @(
+        "${ProjectName}_postgres",
+        "${ProjectName}_execution"
+    )) {
+        $diagnosticOutput = @(& docker logs $diagnosticContainer 2>&1)
+        if ($LASTEXITCODE -eq 0 -and $diagnosticOutput.Count -gt 0) {
+            $diagnosticName = $diagnosticContainer.Replace(
+                "${ProjectName}_", ""
+            )
+            Set-Content -LiteralPath (
+                Join-Path $evidenceDir "$diagnosticName.failure.redacted.log"
+            ) -Value (Redact-DiagnosticText -Lines $diagnosticOutput)
+        }
+    }
 }
 finally {
     try {
@@ -374,6 +399,7 @@ $manifest = [ordered]@{
         "REDUCE_ONLY_REJECTED",
         "REDUCE_ONLY_PARTIAL_FILL",
         "REDUCE_ONLY_DUPLICATE_RESULT",
+        "REDUCE_ONLY_CONCURRENT_CLAIM_BLOCKED",
         "REDUCE_ONLY_POSITION_INCREASE_BLOCKED"
     )
     artifact_sha256 = $artifactHashes

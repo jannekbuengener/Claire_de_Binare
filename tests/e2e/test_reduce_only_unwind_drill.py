@@ -9,6 +9,7 @@ from pathlib import Path
 from unittest.mock import MagicMock
 
 import pytest
+import psycopg2
 
 from core.contracts.external_adapter_registry import MockExecutionAdapter
 from services.execution import service
@@ -71,6 +72,13 @@ def boundary(monkeypatch: pytest.MonkeyPatch) -> Database:
         with conn.cursor() as cur:
             cur.execute("DELETE FROM reduce_only_executions")
             cur.execute("DELETE FROM positions")
+            cur.execute(
+                """
+                DELETE FROM trades
+                WHERE metadata->'reduce_only'->>'position_update_owner'
+                    = 'execution_reduce_only_v1'
+                """
+            )
 
     _configure_boundary(monkeypatch, database)
     return database
@@ -468,6 +476,7 @@ def test_reduce_only_finalize_updates_price_and_realized_pnl_atomically(
                 """)
             persisted = cur.fetchone()
     assert persisted == (Decimal("0.60000000"), fill_price, expected_pnl)
+    assert finalized["fill_price"] == fill_price
     assert finalized["realized_pnl_delta"] == expected_pnl
 
 
@@ -501,7 +510,7 @@ def test_position_change_between_prepare_and_finalize_blocks_apply(
     assert _signed_position(boundary) == Decimal("0.8")
 
 
-def test_concurrent_prepared_claims_fail_closed_after_first_fill(
+def test_concurrent_prepared_claim_is_blocked_before_adapter(
     boundary: Database,
 ) -> None:
     _seed_position(boundary, side="long", quantity=Decimal("1"))
@@ -518,21 +527,15 @@ def test_concurrent_prepared_claims_fail_closed_after_first_fill(
         requested_quantity=Decimal("0.4"),
     )
     assert first["allowed"] is True
-    assert second["allowed"] is True
+    assert second["allowed"] is False
+    assert second["submitted_quantity"] == Decimal("0")
+    assert second["reason_code"] == "REDUCE_ONLY_CONCURRENT_CLAIM_BLOCKED"
     boundary.finalize_reduce_only(
         order_id="4184-concurrent-first",
         status=OrderStatus.FILLED.value,
         filled_quantity=Decimal("0.4"),
         fill_price=Decimal("50000"),
     )
-    blocked = boundary.finalize_reduce_only(
-        order_id="4184-concurrent-second",
-        status=OrderStatus.FILLED.value,
-        filled_quantity=Decimal("0.4"),
-        fill_price=Decimal("50000"),
-    )
-    assert blocked["applied"] is False
-    assert blocked["reason_code"] == "REDUCE_ONLY_POSITION_INCREASE_BLOCKED"
     assert _signed_position(boundary) == Decimal("0.6")
 
 
@@ -597,6 +600,46 @@ def test_missing_accounting_state_blocks_before_adapter(boundary: Database) -> N
     assert result.status == OrderStatus.REJECTED.value
     assert result.reduce_only_contract["reason_code"] == "REDUCE_ONLY_POSITION_UNKNOWN"
     assert underlying.calls == []
+
+
+def test_db_writer_verifies_ledger_pnl_and_deduplicates_trade(
+    boundary: Database,
+) -> None:
+    from services.db_writer.db_writer import DatabaseWriter
+
+    _seed_position(boundary, side="long", quantity=Decimal("1"))
+    result, _underlying = _run(
+        boundary,
+        scenario="DB_WRITER_NEGATIVE_CONTROL",
+        position_before=Decimal("1"),
+        side="SELL",
+        requested=Decimal("0.4"),
+        adapter_status=OrderStatus.FILLED.value,
+        adapter_fill=Decimal("0.4"),
+    )
+    SCENARIOS.pop("DB_WRITER_NEGATIVE_CONTROL")
+    writer = DatabaseWriter()
+    writer.db_conn = psycopg2.connect(boundary.connection_string)
+    writer.db_conn.autocommit = True
+    try:
+        payload = result.to_dict()
+        writer.process_trade_event(payload)
+        writer.process_trade_event(payload)
+        with boundary.get_connection() as conn:
+            with conn.cursor() as cur:
+                cur.execute(
+                    """
+                    SELECT COUNT(*), MIN(realized_pnl)
+                    FROM trades
+                    WHERE metadata->>'order_id'
+                        = '4184-DB_WRITER_NEGATIVE_CONTROL'
+                    """
+                )
+                persisted = cur.fetchone()
+        assert persisted == (1, Decimal("0E-8"))
+        assert _signed_position(boundary) == Decimal("0.6")
+    finally:
+        writer.db_conn.close()
 
 
 def test_ambiguous_open_position_rows_fail_closed(boundary: Database) -> None:

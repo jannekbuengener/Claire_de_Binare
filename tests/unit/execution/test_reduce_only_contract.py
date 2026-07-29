@@ -7,6 +7,7 @@ from decimal import Decimal
 import pytest
 
 from services.execution.reduce_only import (
+    REDUCE_ONLY_CONCURRENT_CLAIM_BLOCKED,
     REDUCE_ONLY_DUPLICATE_RESULT,
     REDUCE_ONLY_INVALID_QUANTITY,
     REDUCE_ONLY_NO_POSITION,
@@ -79,6 +80,19 @@ def test_partial_fill_preserves_side_and_reduces_absolute_position(
     assert outcome.position_after == expected_after
     assert outcome.remaining_position_quantity == Decimal("0.75")
     assert outcome.reason_code == REDUCE_ONLY_PARTIAL_FILL
+
+
+def test_existing_persistent_claim_blocks_second_submission() -> None:
+    preparation = prepare_reduce_only(
+        position_before=Decimal("1"),
+        side="SELL",
+        requested_quantity=Decimal("0.4"),
+        reserved_quantity=Decimal("0.4"),
+    )
+
+    assert preparation.allowed is False
+    assert preparation.submitted_quantity == Decimal("0")
+    assert preparation.reason_code == REDUCE_ONLY_CONCURRENT_CLAIM_BLOCKED
 
 
 @pytest.mark.parametrize(

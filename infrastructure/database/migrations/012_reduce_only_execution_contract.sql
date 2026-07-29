@@ -12,6 +12,8 @@ CREATE TABLE IF NOT EXISTS reduce_only_executions (
     requested_quantity DECIMAL(18, 8) NOT NULL,
     submitted_quantity DECIMAL(18, 8) NOT NULL DEFAULT 0,
     filled_quantity DECIMAL(18, 8) NOT NULL DEFAULT 0,
+    fill_price DECIMAL(18, 8),
+    realized_pnl_delta DECIMAL(18, 8),
     position_after DECIMAL(18, 8),
     status VARCHAR(24) NOT NULL CHECK (
         status IN (
@@ -30,6 +32,9 @@ CREATE TABLE IF NOT EXISTS reduce_only_executions (
     CONSTRAINT reduce_only_filled_non_negative CHECK (filled_quantity >= 0),
     CONSTRAINT reduce_only_filled_lte_submitted CHECK (
         filled_quantity <= submitted_quantity
+    ),
+    CONSTRAINT reduce_only_fill_price_positive CHECK (
+        fill_price IS NULL OR fill_price > 0
     )
 );
 
@@ -38,3 +43,8 @@ CREATE INDEX IF NOT EXISTS idx_reduce_only_executions_symbol_status
 
 COMMENT ON TABLE reduce_only_executions IS
     'Persistent execution-boundary ledger for reduce-only clamp and fill idempotency';
+
+CREATE UNIQUE INDEX IF NOT EXISTS idx_trades_reduce_only_execution_order
+    ON trades ((metadata->>'order_id'))
+    WHERE metadata->'reduce_only'->>'position_update_owner'
+        = 'execution_reduce_only_v1';

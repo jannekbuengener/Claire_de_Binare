@@ -23,6 +23,7 @@ REDUCE_ONLY_SIDE_MISMATCH = "REDUCE_ONLY_SIDE_MISMATCH"
 REDUCE_ONLY_REJECTED = "REDUCE_ONLY_REJECTED"
 REDUCE_ONLY_PARTIAL_FILL = "REDUCE_ONLY_PARTIAL_FILL"
 REDUCE_ONLY_DUPLICATE_RESULT = "REDUCE_ONLY_DUPLICATE_RESULT"
+REDUCE_ONLY_CONCURRENT_CLAIM_BLOCKED = "REDUCE_ONLY_CONCURRENT_CLAIM_BLOCKED"
 REDUCE_ONLY_POSITION_INCREASE_BLOCKED = "REDUCE_ONLY_POSITION_INCREASE_BLOCKED"
 REDUCE_ONLY_FILLED = "REDUCE_ONLY_FILLED"
 REDUCE_ONLY_READY = "REDUCE_ONLY_READY"
@@ -129,6 +130,15 @@ def prepare_reduce_only(
             submitted_quantity=Decimal("0"),
             side=normalized_side,
             reason_code=REDUCE_ONLY_NO_POSITION,
+        )
+    if reserved > 0:
+        return ReduceOnlyPreparation(
+            allowed=False,
+            position_before=position,
+            requested_quantity=requested,
+            submitted_quantity=Decimal("0"),
+            side=normalized_side,
+            reason_code=REDUCE_ONLY_CONCURRENT_CLAIM_BLOCKED,
         )
     if not _side_matches(position, normalized_side):
         return ReduceOnlyPreparation(

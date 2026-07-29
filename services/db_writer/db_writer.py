@@ -593,7 +593,8 @@ class DatabaseWriter:
                     raise ValueError("invalid reduce-only realized PnL")
                 cursor.execute(
                     """
-                    SELECT symbol, side, filled_quantity, status
+                    SELECT symbol, side, filled_quantity, status,
+                           fill_price, realized_pnl_delta
                     FROM reduce_only_executions
                     WHERE order_id = %s
                     """,
@@ -611,6 +612,8 @@ class DatabaseWriter:
                     or str(ledger_row[1]).upper() != side.upper()
                     or Decimal(str(ledger_row[2])) != execution_qty
                     or str(ledger_row[3]).upper() != expected_ledger_status
+                    or Decimal(str(ledger_row[4])) != execution_price
+                    or Decimal(str(ledger_row[5])) != realized_pnl
                 ):
                     raise ValueError("reduce-only ledger evidence mismatch")
                 execution_owned_reduce_only = True
@@ -627,6 +630,7 @@ class DatabaseWriter:
                 INSERT INTO trades
                 (symbol, side, price, size, status, execution_price, slippage_bps, fees, realized_pnl, timestamp, exchange, metadata)
                 VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s)
+                ON CONFLICT DO NOTHING
                 RETURNING id
             """,
                 (
@@ -644,7 +648,14 @@ class DatabaseWriter:
                     json.dumps(metadata),
                 ),
             )
-            trade_id = cursor.fetchone()[0]
+            trade_row = cursor.fetchone()
+            if trade_row is None:
+                logger.info(
+                    "Skipping duplicate reduce-only trade event for order %s",
+                    metadata.get("order_id"),
+                )
+                return
+            trade_id = trade_row[0]
             logger.info(
                 "✅ Trade persisted: ID=%d, %s %s @ %s",
                 trade_id,

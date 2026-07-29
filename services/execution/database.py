@@ -147,7 +147,8 @@ class Database:
                     """
                     SELECT order_id, symbol, side, position_before,
                            requested_quantity, submitted_quantity,
-                           filled_quantity, position_after, status, reason_code
+                           filled_quantity, fill_price, realized_pnl_delta,
+                           position_after, status, reason_code
                     FROM reduce_only_executions
                     WHERE order_id = %s
                     FOR UPDATE
@@ -247,7 +248,8 @@ class Database:
                     """
                     SELECT order_id, symbol, side, position_before,
                            requested_quantity, submitted_quantity,
-                           filled_quantity, position_after, status, reason_code
+                           filled_quantity, fill_price, realized_pnl_delta,
+                           position_after, status, reason_code
                     FROM reduce_only_executions
                     WHERE order_id = %s
                     FOR UPDATE
@@ -372,6 +374,8 @@ class Database:
                     """
                     UPDATE reduce_only_executions
                     SET filled_quantity = %s,
+                        fill_price = %s,
+                        realized_pnl_delta = %s,
                         position_after = %s,
                         status = %s,
                         reason_code = %s,
@@ -379,10 +383,13 @@ class Database:
                     WHERE order_id = %s
                     RETURNING order_id, symbol, side, position_before,
                               requested_quantity, submitted_quantity,
-                              filled_quantity, position_after, status, reason_code
+                              filled_quantity, fill_price, realized_pnl_delta,
+                              position_after, status, reason_code
                     """,
                     (
                         applied_quantity,
+                        execution_price if applied else None,
+                        realized_pnl_delta if applied else None,
                         position_after,
                         persisted_status,
                         reason_code,

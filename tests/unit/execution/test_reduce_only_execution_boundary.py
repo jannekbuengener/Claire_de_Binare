@@ -281,3 +281,64 @@ def test_partial_reduce_only_result_preserves_serialized_status_and_fill_id() ->
 
     assert payload["status"] == "PARTIALLY_FILLED"
     assert payload["fill_id"] == "fill-partial-4184"
+
+
+def test_partial_fill_reaches_correlation_and_envelope_evidence(
+    execution_harness: ExecutionHarness,
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    from core.replay import emitter
+
+    execution_harness.db.prepare_reduce_only.return_value = {
+        "allowed": True,
+        "duplicate": False,
+        "position_before": Decimal("1"),
+        "requested_quantity": Decimal("1"),
+        "submitted_quantity": Decimal("1"),
+        "reason_code": "REDUCE_ONLY_READY",
+    }
+    execution_harness.db.finalize_reduce_only.return_value = {
+        "applied": True,
+        "duplicate": False,
+        "filled_quantity": Decimal("0.25"),
+        "position_after": Decimal("0.75"),
+        "remaining_position_quantity": Decimal("0.75"),
+        "realized_pnl_delta": Decimal("0"),
+        "reason_code": "REDUCE_ONLY_PARTIAL_FILL",
+    }
+    execution_harness.executor.execute_order.return_value = MagicMock(
+        status="PARTIALLY_FILLED",
+        filled_quantity=0.25,
+        fill_id="fill-partial-evidence-4184",
+        order_id="mock-partial-evidence-4184",
+        symbol="BTCUSDT",
+        side="SELL",
+        price=50000.0,
+        error_message=None,
+    )
+    emit_fill = MagicMock()
+    monkeypatch.setattr(emitter, "emit_fill_envelope", emit_fill)
+    monkeypatch.setenv("CDB_ENVELOPE_EMISSION", "1")
+
+    result = service.process_order(
+        valid_order_payload(
+            order_id="partial-evidence-4184",
+            decision_id="decision-partial-evidence-4184",
+            signal_id="signal-partial-evidence-4184",
+            side="SELL",
+            quantity=1.0,
+            reduce_only=True,
+            run_mode="paper",
+        )
+    )
+
+    event_types = [
+        call.kwargs["event_type"]
+        for call in execution_harness.db.persist_correlation_event.call_args_list
+    ]
+    assert result is not None
+    assert result.status == "PARTIALLY_FILLED"
+    assert result.fill_id == "fill-partial-evidence-4184"
+    assert event_types == ["ORDER", "FILL"]
+    emit_fill.assert_called_once()
+    assert emit_fill.call_args.kwargs["status"] == "PARTIALLY_FILLED"

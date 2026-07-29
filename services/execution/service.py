@@ -907,8 +907,8 @@ def process_order(order_data: object):
                         "⚠️ correlation_ledger ORDER write failed (evidence debt)"
                     )
 
-                # Phase 8E: FILL event (only for fully filled orders, same timestamp_ms)
-                if schema_status == "FILLED" and result.fill_id:
+                # Phase 8E: actual full or partial FILL, same timestamp_ms.
+                if schema_status in {"FILLED", "PARTIALLY_FILLED"} and result.fill_id:
                     fill_payload = {
                         "signal_id": order.signal_id,
                         "decision_id": order.decision_id,
@@ -964,7 +964,8 @@ def process_order(order_data: object):
             _lr021_emit = False
         if (
             _lr021_emit
-            and ExecutionResult._schema_status(result.status) == "FILLED"
+            and ExecutionResult._schema_status(result.status)
+            in {"FILLED", "PARTIALLY_FILLED"}
             and getattr(result, "fill_id", None)
         ):
             try:

@@ -351,6 +351,8 @@ def test_execution_owned_reduce_only_trade_does_not_reapply_position(
             "SELL",
             Decimal("0.4"),
             "FILLED",
+            Decimal("105"),
+            Decimal("2.0"),
         ),
         (8,),
     ]
@@ -429,6 +431,8 @@ def test_reduce_only_trade_rejects_ledger_mismatch(database_writer_cls):
         "SELL",
         Decimal("0.5"),
         "FILLED",
+        Decimal("105"),
+        Decimal("2.0"),
     )
     writer.update_position_from_trade = MagicMock()
 
@@ -453,6 +457,87 @@ def test_reduce_only_trade_rejects_ledger_mismatch(database_writer_cls):
     )
 
     assert cursor.execute.call_count == 1
+    writer.update_position_from_trade.assert_not_called()
+
+
+@pytest.mark.unit
+def test_reduce_only_trade_rejects_finite_pnl_ledger_mismatch(database_writer_cls):
+    writer = database_writer_cls()
+    writer.db_conn = MagicMock()
+    cursor = writer.db_conn.cursor.return_value
+    cursor.fetchone.return_value = (
+        "BTCUSDT",
+        "SELL",
+        Decimal("0.4"),
+        "FILLED",
+        Decimal("105"),
+        Decimal("2.0"),
+    )
+    writer.update_position_from_trade = MagicMock()
+
+    writer.process_trade_event(
+        {
+            "symbol": "BTCUSDT",
+            "side": "SELL",
+            "status": "filled",
+            "price": 105.0,
+            "filled_quantity": 0.4,
+            "timestamp": 1700000000,
+            "reduce_only": True,
+            "metadata": {
+                "order_id": "reduce-only-order-4184",
+                "reduce_only": {
+                    "contract_version": "execution_reduce_only_v1",
+                    "position_update_owner": "execution_reduce_only_v1",
+                    "realized_pnl_delta": "999",
+                },
+            },
+        }
+    )
+
+    assert cursor.execute.call_count == 1
+    writer.update_position_from_trade.assert_not_called()
+
+
+@pytest.mark.unit
+def test_duplicate_reduce_only_trade_is_not_inserted_twice(database_writer_cls):
+    writer = database_writer_cls()
+    writer.db_conn = MagicMock()
+    cursor = writer.db_conn.cursor.return_value
+    cursor.fetchone.side_effect = [
+        (
+            "BTCUSDT",
+            "SELL",
+            Decimal("0.4"),
+            "FILLED",
+            Decimal("105"),
+            Decimal("2.0"),
+        ),
+        None,
+    ]
+    writer.update_position_from_trade = MagicMock()
+
+    writer.process_trade_event(
+        {
+            "symbol": "BTCUSDT",
+            "side": "SELL",
+            "status": "filled",
+            "price": 105.0,
+            "filled_quantity": 0.4,
+            "timestamp": 1700000000,
+            "reduce_only": True,
+            "metadata": {
+                "order_id": "reduce-only-order-4184",
+                "reduce_only": {
+                    "contract_version": "execution_reduce_only_v1",
+                    "position_update_owner": "execution_reduce_only_v1",
+                    "realized_pnl_delta": "2.0",
+                },
+            },
+        }
+    )
+
+    assert cursor.execute.call_count == 2
     writer.update_position_from_trade.assert_not_called()
 
 
