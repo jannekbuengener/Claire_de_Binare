@@ -336,3 +336,79 @@ def test_update_position_from_trade_handles_partial_close_decimal_pnl(
     update_params = cursor.execute.call_args_list[1][0][1]
     assert update_params[0] == Decimal("1.5")
     assert update_params[2] == Decimal("5.5")
+
+
+@pytest.mark.unit
+def test_execution_owned_reduce_only_trade_does_not_reapply_position(
+    database_writer_cls,
+):
+    writer = database_writer_cls()
+    writer.db_conn = MagicMock()
+    cursor = writer.db_conn.cursor.return_value
+    cursor.fetchone.side_effect = [
+        (
+            "long",
+            Decimal("0.6"),
+            Decimal("100.0"),
+            Decimal("0.0"),
+            datetime.now(timezone.utc),
+        ),
+        (8,),
+    ]
+    writer.update_position_from_trade = MagicMock()
+
+    writer.process_trade_event(
+        {
+            "symbol": "BTCUSDT",
+            "side": "SELL",
+            "status": "filled",
+            "price": 105.0,
+            "quantity": 1.0,
+            "filled_quantity": 0.4,
+            "timestamp": 1700000000,
+            "reduce_only": True,
+            "metadata": {
+                "reduce_only": {
+                    "position_update_owner": "execution_reduce_only_v1",
+                }
+            },
+        }
+    )
+
+    insert_params = cursor.execute.call_args_list[1][0][1]
+    assert insert_params[3] == Decimal("0.4")
+    writer.update_position_from_trade.assert_not_called()
+
+
+@pytest.mark.unit
+def test_unowned_trade_uses_actual_partial_fill_quantity(database_writer_cls):
+    writer = database_writer_cls()
+    writer.db_conn = MagicMock()
+    cursor = writer.db_conn.cursor.return_value
+    cursor.fetchone.side_effect = [
+        (
+            "long",
+            Decimal("1.0"),
+            Decimal("100.0"),
+            Decimal("0.0"),
+            datetime.now(timezone.utc),
+        ),
+        (9,),
+    ]
+    writer.update_position_from_trade = MagicMock()
+
+    writer.process_trade_event(
+        {
+            "symbol": "BTCUSDT",
+            "side": "SELL",
+            "status": "partial",
+            "price": 105.0,
+            "quantity": 1.0,
+            "filled_quantity": 0.25,
+            "timestamp": 1700000000,
+        }
+    )
+
+    insert_params = cursor.execute.call_args_list[1][0][1]
+    assert insert_params[3] == Decimal("0.25")
+    writer.update_position_from_trade.assert_called_once()
