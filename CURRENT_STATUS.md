@@ -3,12 +3,20 @@
 **Status Class**: Claire de Binare repository / Engineering Status
 **Authority**: Current repo/main/test/dependency snapshot; not the canonical live-readiness or Echtgeld Go/No-Go source.
 **Operational Canon**: `docs/live-readiness/LR-AUDIT-STATUS-2026-03-05.md`
-**Last Updated**: 2026-07-28
+**Last Updated**: 2026-07-29
 **GitHub Boundary**: The live commit and PR state is tracked in GitHub (UI/API or `gh`); this file is a curated repo/engineering ledger, not a live mirror.
 
 ---
 
-## Repo / Engineering Status (2026-07-28)
+## Repo / Engineering Status (2026-07-29)
+
+- **#4184 Reduce-only Unwind Contract (PR #4187)**: expliziter,
+  PostgreSQL-gebundener Mock-/Shadow-Execution-Contract für Long/Short, Full/
+  Partial Fill, Rejection, Duplicate und Restart. Code-Commit-Drill
+  `4184_d89b8333_20260729T210152Z`:
+  `PASS_REDUCE_ONLY_PROVEN_MOCK_SHADOW`, kein Positionsanstieg, kein Side Flip,
+  Cleanup PASS. Produktiver Adapter weiterhin unbewiesen/fail-closed;
+  Stop-Loss Protection `UNAVAILABLE`; LR `NO-GO`.
 
 - **PR-queue clearing PLAN-GO (final)**: **PARTIAL** — Open start queue reduced from 22 → **2**. Merged: [#4171](https://github.com/jannekbuengener/Claire_de_Binare/pull/4171) Actions patch, [#4172](https://github.com/jannekbuengener/Claire_de_Binare/pull/4172) Actions major, [#4173](https://github.com/jannekbuengener/Claire_de_Binare/pull/4173) Python deps, [#4177](https://github.com/jannekbuengener/Claire_de_Binare/pull/4177) python trixie digest D1, [#4178](https://github.com/jannekbuengener/Claire_de_Binare/pull/4178) python bookworm digest D2, [#4179](https://github.com/jannekbuengener/Claire_de_Binare/pull/4179) Redis 8.8.1; tip `main` @ `14b1bc57`. Holds: **#4154** `HOLD_4154_ACCEPTANCE_GAP` (#4148 OPEN); **#4162** Grafana `HOLD_REAL_BLOCKER` (Docker Desktop unable to start; Trivy delta incomplete). Follow-up [#4174](https://github.com/jannekbuengener/Claire_de_Binare/issues/4174). Prior partial ledger entry superseded by this line. LR **NO-GO** unchanged.
 

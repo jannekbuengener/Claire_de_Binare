@@ -1,0 +1,187 @@
+{
+  "schema_version": "1.0",
+  "issue": 4184,
+  "proof_type": "reduce_only_unwind_contract",
+  "run_id": "4184_d89b8333_20260729T210152Z",
+  "tested_commit_sha": "d89b833333310fdda81801472944ac20e006240f",
+  "branch": "fix/4184-reduce-only-unwind-contract",
+  "base_sha": "2a3520794a82e44f7e411372f5fc9800f093bb86",
+  "contract_version": "execution_reduce_only_v1",
+  "position_sign_convention": "long_positive_short_negative",
+  "quantity_unit": "base_asset",
+  "safe_mode_flags": {
+    "dry_run": true,
+    "mock_trading": true,
+    "use_real_balance": false,
+    "blue_red_activated": false,
+    "productive_credentials": false
+  },
+  "scenario_results": {
+    "R1_LONG_FULL_EXIT": {
+      "status": "PASS",
+      "before_position": "1",
+      "requested_exit_quantity": "1",
+      "submitted_exit_quantity": "1.0",
+      "filled_quantity": "1.0",
+      "after_position": "0",
+      "position_increase_observed": false,
+      "side_flip_observed": false,
+      "adapter_result": "FILLED",
+      "reason_code": "REDUCE_ONLY_FILLED"
+    },
+    "R2_SHORT_FULL_EXIT": {
+      "status": "PASS",
+      "before_position": "-1",
+      "requested_exit_quantity": "1",
+      "submitted_exit_quantity": "1.0",
+      "filled_quantity": "1.0",
+      "after_position": "0",
+      "position_increase_observed": false,
+      "side_flip_observed": false,
+      "adapter_result": "FILLED",
+      "reason_code": "REDUCE_ONLY_FILLED"
+    },
+    "R3_LONG_PARTIAL_FILL": {
+      "status": "PASS",
+      "before_position": "1",
+      "requested_exit_quantity": "1",
+      "submitted_exit_quantity": "1.0",
+      "filled_quantity": "0.4",
+      "after_position": "0.60000000",
+      "position_increase_observed": false,
+      "side_flip_observed": false,
+      "adapter_result": "PARTIALLY_FILLED",
+      "reason_code": "REDUCE_ONLY_PARTIAL_FILL"
+    },
+    "R4_SHORT_PARTIAL_FILL": {
+      "status": "PASS",
+      "before_position": "-1",
+      "requested_exit_quantity": "1",
+      "submitted_exit_quantity": "1.0",
+      "filled_quantity": "0.4",
+      "after_position": "-0.60000000",
+      "position_increase_observed": false,
+      "side_flip_observed": false,
+      "adapter_result": "PARTIALLY_FILLED",
+      "reason_code": "REDUCE_ONLY_PARTIAL_FILL"
+    },
+    "R5_OVERSIZED_LONG_EXIT": {
+      "status": "PASS",
+      "before_position": "1",
+      "requested_exit_quantity": "2",
+      "submitted_exit_quantity": "1.0",
+      "filled_quantity": "1.0",
+      "after_position": "0",
+      "position_increase_observed": false,
+      "side_flip_observed": false,
+      "adapter_result": "FILLED",
+      "reason_code": "REDUCE_ONLY_FILLED"
+    },
+    "R6_OVERSIZED_SHORT_EXIT": {
+      "status": "PASS",
+      "before_position": "-1",
+      "requested_exit_quantity": "2",
+      "submitted_exit_quantity": "1.0",
+      "filled_quantity": "1.0",
+      "after_position": "0",
+      "position_increase_observed": false,
+      "side_flip_observed": false,
+      "adapter_result": "FILLED",
+      "reason_code": "REDUCE_ONLY_FILLED"
+    },
+    "R7_ADAPTER_REJECTION": {
+      "status": "PASS",
+      "before_position": "1",
+      "requested_exit_quantity": "1",
+      "submitted_exit_quantity": "1.0",
+      "filled_quantity": "0.0",
+      "after_position": "1.00000000",
+      "position_increase_observed": false,
+      "side_flip_observed": false,
+      "adapter_result": "REJECTED",
+      "reason_code": "REDUCE_ONLY_REJECTED"
+    },
+    "R8_DUPLICATE_RESULT": {
+      "status": "PASS",
+      "before_position": "1",
+      "requested_exit_quantity": "0.4",
+      "submitted_exit_quantity": "0.4",
+      "filled_quantity": "0.4",
+      "after_position": "0.60000000",
+      "position_increase_observed": false,
+      "side_flip_observed": false,
+      "adapter_result": "FILLED",
+      "reason_code": "REDUCE_ONLY_DUPLICATE_RESULT"
+    },
+    "R9_RESTART_AFTER_PARTIAL": {
+      "status": "PASS",
+      "before_position": "-1",
+      "requested_exit_quantity": "1",
+      "submitted_exit_quantity": "1.0",
+      "filled_quantity": "0.25",
+      "after_position": "-0.75000000",
+      "position_increase_observed": false,
+      "side_flip_observed": false,
+      "adapter_result": "PARTIALLY_FILLED",
+      "reason_code": "REDUCE_ONLY_DUPLICATE_RESULT"
+    },
+    "R10_UNKNOWN_POSITION": {
+      "status": "PASS",
+      "before_position": "UNKNOWN",
+      "requested_exit_quantity": "1",
+      "submitted_exit_quantity": "0",
+      "filled_quantity": "0.0",
+      "after_position": "UNKNOWN",
+      "position_increase_observed": false,
+      "side_flip_observed": false,
+      "adapter_result": "NOT_CALLED",
+      "reason_code": "REDUCE_ONLY_POSITION_UNKNOWN"
+    }
+  },
+  "position_increase_observed": false,
+  "side_flip_observed": false,
+  "reason_codes": [
+    "REDUCE_ONLY_POSITION_UNKNOWN",
+    "REDUCE_ONLY_NO_POSITION",
+    "REDUCE_ONLY_INVALID_QUANTITY",
+    "REDUCE_ONLY_QUANTITY_CLAMPED",
+    "REDUCE_ONLY_SIDE_MISMATCH",
+    "REDUCE_ONLY_REJECTED",
+    "REDUCE_ONLY_PARTIAL_FILL",
+    "REDUCE_ONLY_DUPLICATE_RESULT",
+    "REDUCE_ONLY_POSITION_INCREASE_BLOCKED"
+  ],
+  "artifact_sha256": {
+    "compose.resolved.redacted.json": "1a8c60bbc66e77cfbc8d311dcbb8085ebcff9d694addcd7af4b07f1d601e55aa",
+    "r1-r8-r10.log": "e8ce5b37e3b11b325bd43700aee461321d048a3e00b271fec2668d176d9ef73d",
+    "r1-r8-r10.xml": "485f2d5d344eb07cb3951535bcdba4b0eb28534d65a3461304236a09650870c4",
+    "r9.log": "d2aa20e929d0372fa85b0f0da00032f4c69f06cb0018b01af26ab0bb6ea99aa7",
+    "r9.xml": "2f41ef149c71b77dd4acd74e7c0ffc63abe5e29f56f620d99c7bbdc60180310d",
+    "scenarios-initial.json": "2a678e01dfdf59db6cd67cbcaa5936444c239e94aee27aa1e58fa51dc6b8863c",
+    "scenarios-restart.json": "7c3843cc307a51db4be916e5b9b45b88da4c557c8a6f512367e535c7bf62dc8e",
+    "raw_manifest.json": "df925c0b90a7865902d4ed60949365b07f5e51bbfc7ffcde6e35198ee6240b1c"
+  },
+  "compose_sha256": {
+    "infrastructure/compose/base.yml": "2fc6d30be39bb1c77f87462f00737fb16860103b28db49e0c4f4d2bf037edf81",
+    "infrastructure/compose/test.yml": "fc1c6b132efaf1ff878ec34e5d81309c25b033e0ae77320f684f77bb22d18ddf",
+    "infrastructure/compose/issue-4182-kill-unwind.yml": "186742b454f0bb6e034ffee6211b828c27169ec971309a8dffe5273a747adbd7"
+  },
+  "image_ids": {
+    "redis": "sha256:9d317178eceac8454a2284a9e6df2466b93c745529947f0cd42a0fa9609d7005",
+    "postgres": "sha256:ecafd34249b5c248f3cb6ebe339584ee6448b36fad3f0a827ae5e8efbae6afda",
+    "execution": "sha256:1947debea86c51f5e4ad8c3c242c1335c9c2238a47fa8f960a43c0de7e2bf948"
+  },
+  "cleanup_result": {
+    "pass": true,
+    "containers_remaining": 0,
+    "volumes_remaining": 0,
+    "networks_remaining": 0
+  },
+  "limitations": [
+    "Mock/shadow proof only; productive adapter reduce-only support remains unproven.",
+    "Crash after preparation and before finalization remains fail-closed and requires reconciliation.",
+    "Stop-loss protection remains UNAVAILABLE.",
+    "LR remains NO-GO."
+  ],
+  "verdict": "PASS_REDUCE_ONLY_PROVEN_MOCK_SHADOW"
+}

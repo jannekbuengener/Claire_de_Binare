@@ -98,6 +98,23 @@ Each limit row uses one or more tags:
 
 ---
 
+## 4.1 Reduce-only execution boundary (#4184)
+
+Der Mock-/Shadow-Pfad besitzt mit `execution_reduce_only_v1` einen expliziten,
+persistenten Reduce-only-Contract. Long wird nur durch SELL, Short nur durch BUY
+reduziert; übergroße Mengen werden auf den verifizierten offenen Positionsstand
+gekappt. Full Fill, Partial Fill, Rejection, Duplicate und Restart belegen
+`abs(position_after) <= abs(position_before)` ohne Side Flip.
+
+Der produktive MEXC-Adapter besitzt keinen belegten Reduce-only-Contract und
+bleibt dafür fail-closed. Dieser Nachweis ändert den Stop-Loss-Eintrag in §4
+nicht: `STOP_LOSS_PROTECTION_STATUS=UNAVAILABLE` und `ARTIFACT_ONLY` bleiben
+unverändert. Evidence:
+[`4184_reduce_only_unwind_contract.md`](../evidence/risk/4184_reduce_only_unwind_contract.md).
+LR bleibt `NO-GO`.
+
+---
+
 ## 5. Global fail-closed defaults
 
 1. **Default verdict:** `NO-GO` for live-capital until valid Human GO per [`LR-050-HUMAN-APPROVAL.md`](./LR-050-HUMAN-APPROVAL.md) §4.
