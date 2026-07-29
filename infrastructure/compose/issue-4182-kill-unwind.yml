@@ -9,9 +9,10 @@ services:
 
   cdb_postgres:
     container_name: ${STACK_NAME}_postgres
-    environment: !override
+    environment:
       POSTGRES_DB: claire_de_binare_test
       POSTGRES_USER: ${POSTGRES_USER:-claire_user}
+      POSTGRES_PASSWORD:
       POSTGRES_PASSWORD_FILE: /run/secrets/postgres_password
     volumes:
       - postgres_4182_data:/var/lib/postgresql
