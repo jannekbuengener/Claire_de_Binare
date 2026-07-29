@@ -54,7 +54,7 @@ python docs/skills/gh-fix-ci/scripts/inspect_pr_checks.py --pr 807 --lines 200
 
 ## Check Status Handling
 
-Based on [DISCOVERY_REPORT.md](./DISCOVERY_REPORT.md) findings:
+Based on [DISCOVERY_REPORT.md](../../../docs/skills/gh-fix-ci/DISCOVERY_REPORT.md) findings:
 
 ### Polling Behavior (only with `--wait` flag)
 - **Poll Statuses:** `IN_PROGRESS`, `QUEUED`, `PENDING`
@@ -370,7 +370,7 @@ Exit code: 2
 
 ## References
 
-- **Discovery Report:** [DISCOVERY_REPORT.md](./DISCOVERY_REPORT.md)
+- **Discovery Report:** [DISCOVERY_REPORT.md](../../../docs/skills/gh-fix-ci/DISCOVERY_REPORT.md)
 - **CDB Repository:** https://github.com/jannekbuengener/Claire_de_Binare
 - **GitHub CLI Docs:** https://cli.github.com/manual/
 
