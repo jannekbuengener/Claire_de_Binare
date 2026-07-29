@@ -9,10 +9,16 @@ services:
 
   cdb_postgres:
     container_name: ${STACK_NAME}_postgres
+    # test.yml contributes a dummy POSTGRES_PASSWORD while base.yml uses
+    # POSTGRES_PASSWORD_FILE. Keep the resolved YAML portable for repo scanners,
+    # but expose only the file-backed dummy secret to the image entrypoint.
+    entrypoint:
+      - sh
+      - -c
+      - unset POSTGRES_PASSWORD; exec docker-entrypoint.sh postgres
     environment:
       POSTGRES_DB: claire_de_binare_test
       POSTGRES_USER: ${POSTGRES_USER:-claire_user}
-      POSTGRES_PASSWORD:
       POSTGRES_PASSWORD_FILE: /run/secrets/postgres_password
     volumes:
       - postgres_4182_data:/var/lib/postgresql
