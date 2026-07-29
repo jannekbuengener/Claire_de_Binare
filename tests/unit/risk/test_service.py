@@ -352,6 +352,29 @@ def test_proactive_unwind_short_emits_reduce_only_buy(mock_redis, mock_postgres)
 
 
 @pytest.mark.unit
+def test_reactive_auto_unwind_ignores_reduce_only_fill(mock_redis, mock_postgres):
+    manager = RiskManager()
+    manager.config.paper_auto_unwind = True
+    manager.send_order = MagicMock()
+    result = risk_service.OrderResult(
+        order_id="reduce-only-buy-4184",
+        status="FILLED",
+        symbol="BTCUSDT",
+        side="BUY",
+        quantity=1.0,
+        filled_quantity=0.25,
+        timestamp=1,
+        strategy_id="paper",
+        price=50000.0,
+        reduce_only=True,
+    )
+
+    manager._maybe_auto_unwind(result)
+
+    manager.send_order.assert_not_called()
+
+
+@pytest.mark.unit
 def test_proactive_unwind_no_trigger_when_auto_unwind_disabled(
     mock_redis, mock_postgres
 ):

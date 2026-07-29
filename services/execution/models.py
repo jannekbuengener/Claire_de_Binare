@@ -236,7 +236,7 @@ class ExecutionResult:
         if status in {OrderStatus.FAILED.value, OrderStatus.CANCELLED.value}:
             return "ERROR"
         if status == OrderStatus.PARTIALLY_FILLED.value:
-            return "FILLED"
+            return OrderStatus.PARTIALLY_FILLED.value
         if status in {OrderStatus.SUBMITTED.value, OrderStatus.PENDING.value}:
             return "ERROR"
         return status

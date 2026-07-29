@@ -161,6 +161,8 @@ class MockExecutionAdapter:
         from services.execution.models import Order
 
         order = Order.from_event(dict(request.order))
+        if request.reduce_only is not order.reduce_only:
+            raise ValueError("reduce-only adapter flag mismatch")
         if request.reduce_only:
             try:
                 position = Decimal(str(request.position_before))
@@ -175,6 +177,7 @@ class MockExecutionAdapter:
                 and position != 0
                 and maximum.is_finite()
                 and maximum > 0
+                and maximum <= abs(position)
                 and quantity.is_finite()
                 and quantity > 0
                 and quantity <= maximum

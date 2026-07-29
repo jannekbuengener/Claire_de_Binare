@@ -777,7 +777,11 @@ def process_order(order_data: object):
                 fill_id=(
                     getattr(adapter_response, "fill_id", None)
                     or adapter_response.order_id
-                    if adapter_response.status == OrderStatus.FILLED.value
+                    if adapter_response.status
+                    in {
+                        OrderStatus.FILLED.value,
+                        OrderStatus.PARTIALLY_FILLED.value,
+                    }
                     else None
                 ),
             )
@@ -992,9 +996,14 @@ def process_order(order_data: object):
 
         # Update stats (Thread-safe)
         schema_status = ExecutionResult._schema_status(result.status)
-        if schema_status == "FILLED":
+        if schema_status in {"FILLED", "PARTIALLY_FILLED"}:
             increment_stat("orders_filled")
-            logger.info("Order filled: %s at %s", result.order_id, result.price)
+            logger.info(
+                "Order execution result %s: %s at %s",
+                schema_status,
+                result.order_id,
+                result.price,
+            )
         else:
             increment_stat("orders_rejected")
             logger.warning(

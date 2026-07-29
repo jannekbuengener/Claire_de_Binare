@@ -562,18 +562,63 @@ class DatabaseWriter:
                     )
 
             cursor = self.db_conn.cursor()
-            existing_position = self._fetch_open_position(cursor, data.get("symbol"))
             reduce_only_evidence = metadata.get("reduce_only")
-            execution_owned_reduce_only = (
-                data.get("reduce_only") is True
-                and isinstance(reduce_only_evidence, dict)
+            reduce_only_claimed = data.get("reduce_only") is True
+            metadata_owner_claimed = (
+                isinstance(reduce_only_evidence, dict)
                 and reduce_only_evidence.get("position_update_owner")
                 == "execution_reduce_only_v1"
             )
-            if execution_owned_reduce_only:
+            if reduce_only_claimed is not metadata_owner_claimed:
+                raise ValueError("reduce-only event ownership mismatch")
+            execution_owned_reduce_only = False
+            if reduce_only_claimed:
+                if not (
+                    isinstance(reduce_only_evidence, dict)
+                    and reduce_only_evidence.get("contract_version")
+                    == "execution_reduce_only_v1"
+                    and reduce_only_evidence.get("position_update_owner")
+                    == "execution_reduce_only_v1"
+                ):
+                    raise ValueError("unverified reduce-only execution owner")
+                internal_order_id = str(metadata.get("order_id") or "").strip()
+                if not internal_order_id:
+                    raise ValueError("missing reduce-only ledger order_id")
                 pnl_raw = reduce_only_evidence.get("realized_pnl_delta")
-                realized_pnl = Decimal(str(pnl_raw)) if pnl_raw is not None else None
+                try:
+                    realized_pnl = Decimal(str(pnl_raw))
+                except (InvalidOperation, TypeError, ValueError) as exc:
+                    raise ValueError("invalid reduce-only realized PnL") from exc
+                if not realized_pnl.is_finite():
+                    raise ValueError("invalid reduce-only realized PnL")
+                cursor.execute(
+                    """
+                    SELECT symbol, side, filled_quantity, status
+                    FROM reduce_only_executions
+                    WHERE order_id = %s
+                    """,
+                    (internal_order_id,),
+                )
+                ledger_row = cursor.fetchone()
+                expected_ledger_status = (
+                    "PARTIALLY_FILLED"
+                    if status in {"partial", "partially_filled"}
+                    else "FILLED"
+                )
+                if (
+                    ledger_row is None
+                    or str(ledger_row[0]) != str(data.get("symbol"))
+                    or str(ledger_row[1]).upper() != side.upper()
+                    or Decimal(str(ledger_row[2])) != execution_qty
+                    or str(ledger_row[3]).upper() != expected_ledger_status
+                ):
+                    raise ValueError("reduce-only ledger evidence mismatch")
+                execution_owned_reduce_only = True
+                existing_position = None
             else:
+                existing_position = self._fetch_open_position(
+                    cursor, data.get("symbol")
+                )
                 realized_pnl = self._calculate_trade_realized_pnl(
                     existing_position, side, execution_price, execution_qty
                 )

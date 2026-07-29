@@ -2433,6 +2433,8 @@ class RiskManager:
 
         if not self.config.paper_auto_unwind:
             return
+        if result.reduce_only:
+            return
         if result.status != "FILLED":
             return
         if result.side != "BUY":

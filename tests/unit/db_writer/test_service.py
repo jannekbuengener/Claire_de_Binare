@@ -347,11 +347,10 @@ def test_execution_owned_reduce_only_trade_does_not_reapply_position(
     cursor = writer.db_conn.cursor.return_value
     cursor.fetchone.side_effect = [
         (
-            "long",
-            Decimal("0.6"),
-            Decimal("100.0"),
-            Decimal("0.0"),
-            datetime.now(timezone.utc),
+            "BTCUSDT",
+            "SELL",
+            Decimal("0.4"),
+            "FILLED",
         ),
         (8,),
     ]
@@ -368,10 +367,12 @@ def test_execution_owned_reduce_only_trade_does_not_reapply_position(
             "timestamp": 1700000000,
             "reduce_only": True,
             "metadata": {
+                "order_id": "reduce-only-order-4184",
                 "reduce_only": {
+                    "contract_version": "execution_reduce_only_v1",
                     "position_update_owner": "execution_reduce_only_v1",
                     "realized_pnl_delta": "2.0",
-                }
+                },
             },
         }
     )
@@ -379,6 +380,112 @@ def test_execution_owned_reduce_only_trade_does_not_reapply_position(
     insert_params = cursor.execute.call_args_list[1][0][1]
     assert insert_params[3] == Decimal("0.4")
     assert insert_params[8] == Decimal("2.0")
+    writer.update_position_from_trade.assert_not_called()
+
+
+@pytest.mark.unit
+@pytest.mark.parametrize("pnl_value", ["NaN", "Infinity", "forged"])
+def test_reduce_only_trade_rejects_untrusted_or_non_finite_pnl(
+    database_writer_cls,
+    pnl_value,
+):
+    writer = database_writer_cls()
+    writer.db_conn = MagicMock()
+    cursor = writer.db_conn.cursor.return_value
+    writer.update_position_from_trade = MagicMock()
+
+    writer.process_trade_event(
+        {
+            "order_id": "venue-order-4184",
+            "symbol": "BTCUSDT",
+            "side": "SELL",
+            "status": "filled",
+            "price": 105.0,
+            "filled_quantity": 0.4,
+            "timestamp": 1700000000,
+            "reduce_only": True,
+            "metadata": {
+                "order_id": "reduce-only-order-4184",
+                "reduce_only": {
+                    "contract_version": "execution_reduce_only_v1",
+                    "position_update_owner": "execution_reduce_only_v1",
+                    "realized_pnl_delta": pnl_value,
+                },
+            },
+        }
+    )
+
+    cursor.execute.assert_not_called()
+    writer.update_position_from_trade.assert_not_called()
+
+
+@pytest.mark.unit
+def test_reduce_only_trade_rejects_ledger_mismatch(database_writer_cls):
+    writer = database_writer_cls()
+    writer.db_conn = MagicMock()
+    cursor = writer.db_conn.cursor.return_value
+    cursor.fetchone.return_value = (
+        "BTCUSDT",
+        "SELL",
+        Decimal("0.5"),
+        "FILLED",
+    )
+    writer.update_position_from_trade = MagicMock()
+
+    writer.process_trade_event(
+        {
+            "symbol": "BTCUSDT",
+            "side": "SELL",
+            "status": "filled",
+            "price": 105.0,
+            "filled_quantity": 0.4,
+            "timestamp": 1700000000,
+            "reduce_only": True,
+            "metadata": {
+                "order_id": "reduce-only-order-4184",
+                "reduce_only": {
+                    "contract_version": "execution_reduce_only_v1",
+                    "position_update_owner": "execution_reduce_only_v1",
+                    "realized_pnl_delta": "2.0",
+                },
+            },
+        }
+    )
+
+    assert cursor.execute.call_count == 1
+    writer.update_position_from_trade.assert_not_called()
+
+
+@pytest.mark.unit
+def test_reduce_only_metadata_cannot_bypass_with_false_top_level_flag(
+    database_writer_cls,
+):
+    writer = database_writer_cls()
+    writer.db_conn = MagicMock()
+    cursor = writer.db_conn.cursor.return_value
+    writer.update_position_from_trade = MagicMock()
+
+    writer.process_trade_event(
+        {
+            "symbol": "BTCUSDT",
+            "side": "SELL",
+            "status": "filled",
+            "price": 105.0,
+            "filled_quantity": 0.4,
+            "timestamp": 1700000000,
+            "reduce_only": False,
+            "metadata": {
+                "order_id": "reduce-only-order-4184",
+                "reduce_only": {
+                    "contract_version": "execution_reduce_only_v1",
+                    "position_update_owner": "execution_reduce_only_v1",
+                    "realized_pnl_delta": "2.0",
+                },
+            },
+        }
+    )
+
+    cursor.execute.assert_not_called()
     writer.update_position_from_trade.assert_not_called()
 
 

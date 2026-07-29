@@ -9,6 +9,7 @@ import pytest
 
 from services.execution import service
 from services.execution.models import Order
+from services.execution.models import ExecutionResult
 from services.execution.reduce_only import (
     REDUCE_ONLY_DUPLICATE_RESULT,
     REDUCE_ONLY_POSITION_INCREASE_BLOCKED,
@@ -261,3 +262,22 @@ def test_reduce_only_parser_rejects_non_boolean_contract_value() -> None:
                 reduce_only="true",
             )
         )
+
+
+def test_partial_reduce_only_result_preserves_serialized_status_and_fill_id() -> None:
+    result = ExecutionResult(
+        order_id="partial-4184",
+        symbol="BTCUSDT",
+        side="SELL",
+        quantity=1.0,
+        filled_quantity=0.25,
+        status="PARTIALLY_FILLED",
+        price=50000.0,
+        fill_id="fill-partial-4184",
+        reduce_only=True,
+    )
+
+    payload = result.to_dict()
+
+    assert payload["status"] == "PARTIALLY_FILLED"
+    assert payload["fill_id"] == "fill-partial-4184"

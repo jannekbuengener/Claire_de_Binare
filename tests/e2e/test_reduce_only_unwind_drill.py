@@ -167,6 +167,10 @@ def _run(
     assert result is not None
     position_after = _signed_position(database)
     contract = result.reduce_only_contract or {}
+    published = json.loads(service.redis_client.publish.call_args.args[1])
+    if adapter_status == OrderStatus.PARTIALLY_FILLED.value:
+        assert published["status"] == OrderStatus.PARTIALLY_FILLED.value
+        assert published.get("fill_id")
     submitted = (
         Decimal(str(underlying.calls[0].quantity)) if underlying.calls else Decimal("0")
     )
@@ -182,6 +186,8 @@ def _run(
         "adapter_result": adapter_status if underlying.calls else "NOT_CALLED",
         "reason_code": contract.get("reason_code"),
         "prepare_reason_code": contract.get("prepare_reason_code"),
+        "serialized_status": published.get("status"),
+        "serialized_fill_id": published.get("fill_id"),
     }
     return result, underlying
 
@@ -354,17 +360,29 @@ def test_r9_restart_after_partial_does_not_reapply_fill(
     assert duplicate is not None
     assert underlying.calls == []
     assert _signed_position(restart_boundary) == Decimal("-0.75")
+    with restart_boundary.get_connection() as conn:
+        with conn.cursor() as cur:
+            cur.execute("""
+                SELECT position_before, requested_quantity, submitted_quantity,
+                       filled_quantity, position_after, status
+                FROM reduce_only_executions
+                WHERE order_id = '4184-R9_RESTART_AFTER_PARTIAL'
+                """)
+            persisted = cur.fetchone()
     SCENARIOS["R9_RESTART_AFTER_PARTIAL"] = {
         "status": "PASS",
-        "before_position": "-1",
-        "requested_exit_quantity": "1",
-        "submitted_exit_quantity": "0.25",
-        "filled_quantity": "0",
-        "after_position": "-0.75",
+        "before_position": str(persisted[0]),
+        "requested_exit_quantity": str(persisted[1]),
+        "submitted_exit_quantity": str(persisted[2]),
+        "filled_quantity": str(persisted[3]),
+        "after_position": str(persisted[4]),
         "position_increase_observed": False,
         "side_flip_observed": False,
-        "adapter_result": "NOT_CALLED_AFTER_PROCESS_RESTART",
+        "adapter_result": persisted[5],
         "reason_code": duplicate.reduce_only_contract["reason_code"],
+        "restart_adapter_result": "NOT_CALLED",
+        "restart_filled_quantity": "0",
+        "restart_reason_code": duplicate.reduce_only_contract["reason_code"],
     }
 
 
@@ -481,6 +499,41 @@ def test_position_change_between_prepare_and_finalize_blocks_apply(
     assert finalized["adapter_reported_filled_quantity"] == Decimal("0.2")
     assert finalized["reason_code"] == "REDUCE_ONLY_POSITION_INCREASE_BLOCKED"
     assert _signed_position(boundary) == Decimal("0.8")
+
+
+def test_concurrent_prepared_claims_fail_closed_after_first_fill(
+    boundary: Database,
+) -> None:
+    _seed_position(boundary, side="long", quantity=Decimal("1"))
+    first = boundary.prepare_reduce_only(
+        order_id="4184-concurrent-first",
+        symbol="BTCUSDT",
+        side="SELL",
+        requested_quantity=Decimal("0.4"),
+    )
+    second = boundary.prepare_reduce_only(
+        order_id="4184-concurrent-second",
+        symbol="BTCUSDT",
+        side="SELL",
+        requested_quantity=Decimal("0.4"),
+    )
+    assert first["allowed"] is True
+    assert second["allowed"] is True
+    boundary.finalize_reduce_only(
+        order_id="4184-concurrent-first",
+        status=OrderStatus.FILLED.value,
+        filled_quantity=Decimal("0.4"),
+        fill_price=Decimal("50000"),
+    )
+    blocked = boundary.finalize_reduce_only(
+        order_id="4184-concurrent-second",
+        status=OrderStatus.FILLED.value,
+        filled_quantity=Decimal("0.4"),
+        fill_price=Decimal("50000"),
+    )
+    assert blocked["applied"] is False
+    assert blocked["reason_code"] == "REDUCE_ONLY_POSITION_INCREASE_BLOCKED"
+    assert _signed_position(boundary) == Decimal("0.6")
 
 
 def test_adapter_overfill_is_failed_and_never_applied(boundary: Database) -> None:
