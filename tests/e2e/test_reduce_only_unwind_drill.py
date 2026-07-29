@@ -339,7 +339,7 @@ def test_r9_restart_after_partial_does_not_reapply_fill(boundary: Database) -> N
 
 
 def test_r10_unknown_position_blocks_adapter(boundary: Database) -> None:
-    _seed_position(boundary, side="corrupt", quantity=Decimal("1"))
+    _seed_position(boundary, side="long", quantity=Decimal("NaN"))
     executor = ScriptedMockExecutor(
         status=OrderStatus.FILLED.value,
         filled_quantity=Decimal("1"),
@@ -365,7 +365,8 @@ def test_r10_unknown_position_blocks_adapter(boundary: Database) -> None:
     assert result is not None
     assert result.status == OrderStatus.REJECTED.value
     assert executor.calls == []
-    assert persisted == ("corrupt", Decimal("1.00000000"))
+    assert persisted[0] == "long"
+    assert Decimal(str(persisted[1])).is_nan()
     assert result.reduce_only_contract["reason_code"] == "REDUCE_ONLY_POSITION_UNKNOWN"
     SCENARIOS["R10_UNKNOWN_POSITION"] = {
         "status": "PASS",

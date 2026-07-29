@@ -251,7 +251,11 @@ $requiredScenarios = @(
 )
 foreach ($scenario in $requiredScenarios) {
     if (-not $scenarioResults.Contains($scenario)) {
-        $scenarioResults[$scenario] = [ordered]@{ status = "NOT_RUN" }
+        $scenarioResults[$scenario] = [ordered]@{
+            status = "NOT_RUN"
+            position_increase_observed = $false
+            side_flip_observed = $false
+        }
     }
 }
 
