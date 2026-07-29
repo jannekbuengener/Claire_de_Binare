@@ -9,6 +9,7 @@ import psycopg2
 from psycopg2.extras import RealDictCursor
 from typing import Optional
 from datetime import datetime
+from decimal import Decimal
 import time
 from contextlib import contextmanager
 
@@ -18,9 +19,23 @@ from core.utils.trace_toggle import allow_evidence_debt
 try:
     from . import config
     from .models import ExecutionResult, OrderStatus
+    from .reduce_only import (
+        REDUCE_ONLY_DUPLICATE_RESULT,
+        REDUCE_ONLY_PARTIAL_FILL,
+        REDUCE_ONLY_POSITION_UNKNOWN,
+        apply_reduce_only_result,
+        prepare_reduce_only,
+    )
 except ImportError:
     import config
     from models import ExecutionResult, OrderStatus
+    from reduce_only import (
+        REDUCE_ONLY_DUPLICATE_RESULT,
+        REDUCE_ONLY_PARTIAL_FILL,
+        REDUCE_ONLY_POSITION_UNKNOWN,
+        apply_reduce_only_result,
+        prepare_reduce_only,
+    )
 
 logger = logging.getLogger(config.SERVICE_NAME)
 
@@ -79,6 +94,243 @@ class Database:
         """)
         self._orders_has_order_id_column = cur.fetchone() is not None
         return self._orders_has_order_id_column
+
+    @staticmethod
+    def _signed_position(row) -> Decimal | None:
+        """Convert the positions table side+size representation to signed qty."""
+
+        if row is None:
+            return Decimal("0")
+        if isinstance(row, dict):
+            side, size = row.get("side"), row.get("size")
+        else:
+            side, size = row
+        quantity = Decimal(str(size))
+        if not quantity.is_finite() or quantity < 0:
+            return None
+        normalized_side = str(side).lower()
+        if normalized_side == "long":
+            return quantity
+        if normalized_side == "short":
+            return -quantity
+        if normalized_side == "none" and quantity == 0:
+            return Decimal("0")
+        return None
+
+    @staticmethod
+    def _reduce_only_row(row, *, duplicate: bool) -> dict:
+        payload = dict(row)
+        payload["allowed"] = payload.get("status") == "PREPARED" and not duplicate
+        payload["duplicate"] = duplicate
+        if duplicate:
+            payload["reason_code"] = REDUCE_ONLY_DUPLICATE_RESULT
+        return payload
+
+    def prepare_reduce_only(
+        self,
+        *,
+        order_id: str,
+        symbol: str,
+        side: str,
+        requested_quantity: Decimal,
+    ) -> dict:
+        """Persistently validate/reserve a reduce-only order before submission."""
+
+        if not order_id:
+            raise ValueError("reduce-only order_id is required")
+
+        with self.get_connection() as conn:
+            with conn.cursor(cursor_factory=RealDictCursor) as cur:
+                cur.execute(
+                    """
+                    SELECT order_id, symbol, side, position_before,
+                           requested_quantity, submitted_quantity,
+                           filled_quantity, position_after, status, reason_code
+                    FROM reduce_only_executions
+                    WHERE order_id = %s
+                    FOR UPDATE
+                    """,
+                    (order_id,),
+                )
+                existing = cur.fetchone()
+                if existing is not None:
+                    return self._reduce_only_row(existing, duplicate=True)
+
+                cur.execute(
+                    """
+                    SELECT side, size
+                    FROM positions
+                    WHERE symbol = %s AND closed_at IS NULL
+                    FOR UPDATE
+                    """,
+                    (symbol,),
+                )
+                position = self._signed_position(cur.fetchone())
+
+                cur.execute(
+                    """
+                    SELECT COALESCE(SUM(submitted_quantity), 0)
+                    FROM reduce_only_executions
+                    WHERE symbol = %s AND status = 'PREPARED'
+                    """,
+                    (symbol,),
+                )
+                reserved = Decimal(str(cur.fetchone()["coalesce"]))
+                preparation = prepare_reduce_only(
+                    position_before=position,
+                    side=side,
+                    requested_quantity=requested_quantity,
+                    reserved_quantity=reserved,
+                )
+                status = "PREPARED" if preparation.allowed else "BLOCKED"
+                cur.execute(
+                    """
+                    INSERT INTO reduce_only_executions (
+                        order_id, symbol, side, position_before,
+                        requested_quantity, submitted_quantity,
+                        position_after, status, reason_code
+                    )
+                    VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s)
+                    RETURNING order_id, symbol, side, position_before,
+                              requested_quantity, submitted_quantity,
+                              filled_quantity, position_after, status, reason_code
+                    """,
+                    (
+                        order_id,
+                        symbol,
+                        str(side).upper(),
+                        preparation.position_before,
+                        preparation.requested_quantity,
+                        preparation.submitted_quantity,
+                        preparation.position_before,
+                        status,
+                        preparation.reason_code,
+                    ),
+                )
+                return self._reduce_only_row(cur.fetchone(), duplicate=False)
+
+    def finalize_reduce_only(
+        self,
+        *,
+        order_id: str,
+        status: str,
+        filled_quantity: Decimal,
+    ) -> dict:
+        """Apply a reduce-only adapter result once in the positions transaction."""
+
+        with self.get_connection() as conn:
+            with conn.cursor(cursor_factory=RealDictCursor) as cur:
+                cur.execute(
+                    """
+                    SELECT order_id, symbol, side, position_before,
+                           requested_quantity, submitted_quantity,
+                           filled_quantity, position_after, status, reason_code
+                    FROM reduce_only_executions
+                    WHERE order_id = %s
+                    FOR UPDATE
+                    """,
+                    (order_id,),
+                )
+                contract_row = cur.fetchone()
+                if contract_row is None:
+                    raise ValueError(REDUCE_ONLY_POSITION_UNKNOWN)
+                if contract_row["status"] != "PREPARED":
+                    return self._reduce_only_row(contract_row, duplicate=True)
+
+                cur.execute(
+                    """
+                    SELECT side, size
+                    FROM positions
+                    WHERE symbol = %s AND closed_at IS NULL
+                    FOR UPDATE
+                    """,
+                    (contract_row["symbol"],),
+                )
+                current_position = self._signed_position(cur.fetchone())
+                if current_position is None:
+                    raise ValueError(REDUCE_ONLY_POSITION_UNKNOWN)
+
+                preparation = prepare_reduce_only(
+                    position_before=current_position,
+                    side=contract_row["side"],
+                    requested_quantity=Decimal(str(contract_row["submitted_quantity"])),
+                )
+                outcome = apply_reduce_only_result(
+                    preparation,
+                    status=status,
+                    filled_quantity=filled_quantity,
+                )
+
+                normalized_status = str(status).upper()
+                persisted_status = (
+                    "REJECTED"
+                    if normalized_status in {"REJECTED", "FAILED", "CANCELLED", "ERROR"}
+                    else (
+                        "PARTIALLY_FILLED"
+                        if outcome.reason_code == REDUCE_ONLY_PARTIAL_FILL
+                        else "FILLED"
+                    )
+                )
+
+                if outcome.applied:
+                    if outcome.position_after == 0:
+                        cur.execute(
+                            """
+                            UPDATE positions
+                            SET size = 0, closed_at = CURRENT_TIMESTAMP,
+                                updated_at = CURRENT_TIMESTAMP
+                            WHERE symbol = %s AND closed_at IS NULL
+                            """,
+                            (contract_row["symbol"],),
+                        )
+                    else:
+                        cur.execute(
+                            """
+                            UPDATE positions
+                            SET size = %s, updated_at = CURRENT_TIMESTAMP
+                            WHERE symbol = %s AND closed_at IS NULL
+                            """,
+                            (
+                                abs(outcome.position_after),
+                                contract_row["symbol"],
+                            ),
+                        )
+
+                cur.execute(
+                    """
+                    UPDATE reduce_only_executions
+                    SET filled_quantity = %s,
+                        position_after = %s,
+                        status = %s,
+                        reason_code = %s,
+                        updated_at = CURRENT_TIMESTAMP
+                    WHERE order_id = %s
+                    RETURNING order_id, symbol, side, position_before,
+                              requested_quantity, submitted_quantity,
+                              filled_quantity, position_after, status, reason_code
+                    """,
+                    (
+                        outcome.filled_quantity,
+                        outcome.position_after,
+                        persisted_status,
+                        outcome.reason_code,
+                        order_id,
+                    ),
+                )
+                payload = self._reduce_only_row(cur.fetchone(), duplicate=False)
+                payload.update(
+                    {
+                        "applied": outcome.applied,
+                        "remaining_position_quantity": (
+                            outcome.remaining_position_quantity
+                        ),
+                        "position_increase_observed": (
+                            outcome.position_increase_observed
+                        ),
+                        "side_flip_observed": outcome.side_flip_observed,
+                    }
+                )
+                return payload
 
     def persist_correlation_event(
         self,

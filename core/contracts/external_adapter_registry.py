@@ -149,6 +149,7 @@ class MockExecutionAdapter:
     """First-party shim for the current mock execution path."""
 
     adapter_id: ExecutionAdapterId = MOCK_BUILTIN
+    supports_reduce_only = True
 
     def __init__(self, executor=None, **executor_kwargs: Any) -> None:
         if executor is None:
@@ -170,6 +171,7 @@ class MockExecutionAdapter:
             venue_order_id=None,
             error_message=result.error_message,
             raw_venue_payload={"adapter_id": self.adapter_id},
+            reduce_only_acknowledged=request.reduce_only,
         )
 
 
@@ -177,6 +179,8 @@ class MexcExecutionAdapter:
     """First-party shim for the current MEXC-backed execution path."""
 
     adapter_id: ExecutionAdapterId = MEXC_BUILTIN
+    # No venue-native or equivalent reduce-only behavior is proven for this shim.
+    supports_reduce_only = False
 
     def __init__(self, executor=None, **executor_kwargs: Any) -> None:
         if executor is None:
@@ -198,6 +202,7 @@ class MexcExecutionAdapter:
             venue_order_id=result.order_id,
             error_message=result.error_message,
             raw_venue_payload={"adapter_id": self.adapter_id},
+            reduce_only_acknowledged=False,
         )
 
 

@@ -706,10 +706,7 @@ class RiskManager:
                 "quantity": str(order.quantity),
                 "price_ref": str(price_ref),
                 "timestamp_input_ms": int(timestamp_input_ms),
-                "reduce_only": bool(
-                    order.side == "SELL"
-                    and risk_state.positions.get(order.symbol, 0.0) > 0.0
-                ),
+                "reduce_only": bool(order.reduce_only),
             },
             "account_state": {
                 "balance_usdt": str(balance_usdt),
@@ -1986,6 +1983,18 @@ class RiskManager:
             stats["orders_skipped"] += 1
             return None
 
+        if reduce_only:
+            open_quantity = abs(float(risk_state.positions.get(signal.symbol, 0.0)))
+            quantity = min(quantity, open_quantity)
+            if quantity <= 0:
+                logger.warning(
+                    "Signal SKIPPED: %s %s - reduce-only position unavailable",
+                    signal.symbol,
+                    signal.side,
+                )
+                stats["orders_skipped"] += 1
+                return None
+
         # Mark order if Early-Live exception applies
         reason = signal.reason
         if self._is_early_live_exception(signal.strategy_id):
@@ -2028,6 +2037,7 @@ class RiskManager:
             # Issue #748 Slice 2: Policy snapshot (None when toggle OFF)
             policy_snapshot=policy_snapshot,
             metadata=_build_order_timing_metadata(evidence),
+            reduce_only=reduce_only,
         )
 
         # PR #619 / #4152: HARD EXPOSURE + PROJECTED POSITION GATES
@@ -2357,10 +2367,10 @@ class RiskManager:
         if not risk_state.positions:
             return
 
-        # Generate SELL order for each open LONG position
+        # Generate the closing side for either a long or short position.
         for symbol, position_qty in list(risk_state.positions.items()):
-            if position_qty <= 0:
-                continue  # Skip short positions or zero positions
+            if abs(position_qty) <= 1e-12:
+                continue
 
             # Get current price for this symbol
             current_price = risk_state.last_prices.get(symbol, 0.0)
@@ -2372,7 +2382,7 @@ class RiskManager:
 
             order = Order(
                 symbol=symbol,
-                side="SELL",
+                side="SELL" if position_qty > 0 else "BUY",
                 quantity=abs(position_qty),
                 stop_loss_pct=self.config.stop_loss_pct,
                 signal_id=int(time.time()),
@@ -2382,6 +2392,13 @@ class RiskManager:
                 strategy_id="paper",  # Use paper strategy for auto-unwind
                 bot_id=None,
                 price=current_price,
+                order_id=generate_uuid(
+                    name=f"proactive-unwind:{symbol}:{position_qty:.8f}"
+                ),
+                decision_id=generate_uuid(
+                    name=f"proactive-unwind-decision:{symbol}:{position_qty:.8f}"
+                ),
+                reduce_only=True,
             )
 
             logger.warning(
@@ -2437,6 +2454,11 @@ class RiskManager:
             strategy_id=result.strategy_id,
             bot_id=result.bot_id,
             price=result.price,
+            order_id=generate_uuid(name=f"paper-auto-unwind:{result.order_id}"),
+            decision_id=generate_uuid(
+                name=f"paper-auto-unwind-decision:{result.order_id}"
+            ),
+            reduce_only=True,
         )
 
         logger.info(
@@ -2483,9 +2505,10 @@ class RiskManager:
             if abs(risk_state.pending_position_qty.get(sym, 0.0)) < 1e-12:
                 risk_state.pending_position_qty.pop(sym, None)
 
-        if result.status == "FILLED":
+        if result.status in {"FILLED", "PARTIALLY_FILLED"}:
             self._update_exposure(result)
-            self._maybe_auto_unwind(result)
+            if result.status == "FILLED":
+                self._maybe_auto_unwind(result)
         else:
             stats["orders_rejected_execution"] += 1
             self.send_alert(

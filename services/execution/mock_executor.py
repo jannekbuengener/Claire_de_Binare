@@ -24,6 +24,8 @@ except ImportError:
 class MockExecutor:
     """Simulates order execution without real API calls"""
 
+    supports_reduce_only = True
+
     def __init__(
         self,
         success_rate: float = 0.95,

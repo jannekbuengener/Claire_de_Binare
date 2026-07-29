@@ -531,7 +531,12 @@ class DatabaseWriter:
             )
 
             # Validate execution quantity (must be > 0)
-            execution_qty_raw = data.get("quantity") or data.get("size")
+            execution_qty_raw = (
+                data.get("filled_quantity")
+                or data.get("filled_size")
+                or data.get("quantity")
+                or data.get("size")
+            )
             execution_qty = self._get_positive_decimal(
                 execution_qty_raw, "execution_quantity", data
             )
@@ -593,8 +598,20 @@ class DatabaseWriter:
             )
             DB_WRITER_EVENTS_PROCESSED.labels(channel="order_results").inc()
 
-            # Update positions table (source-of-truth for current holdings)
-            self.update_position_from_trade(data, existing_position=existing_position)
+            # Issue #4184: the execution service already applied this guarded
+            # reduce-only fill atomically with its persistent claim. Keep the
+            # trade row, but never apply the position effect twice.
+            reduce_only_evidence = metadata.get("reduce_only")
+            execution_owned_reduce_only = (
+                data.get("reduce_only") is True
+                and isinstance(reduce_only_evidence, dict)
+                and reduce_only_evidence.get("position_update_owner")
+                == "execution_reduce_only_v1"
+            )
+            if not execution_owned_reduce_only:
+                self.update_position_from_trade(
+                    data, existing_position=existing_position
+                )
         except ValueError as e:
             # Validation error - log but don't crash the service
             logger.error(
@@ -636,7 +653,12 @@ class DatabaseWriter:
                 data,
             )
             execution_qty = self._get_positive_decimal(
-                data.get("quantity") or data.get("size"), "execution_quantity", data
+                data.get("filled_quantity")
+                or data.get("filled_size")
+                or data.get("quantity")
+                or data.get("size"),
+                "execution_quantity",
+                data,
             )
             timestamp = self.convert_timestamp(data.get("timestamp"))
 
@@ -847,6 +869,7 @@ class DatabaseWriter:
         else:
             logger.warning(f"Unknown channel: {channel}")
 
+    # fmt: off
     def _persist_candle_entry(self, cursor, row: dict) -> bool:
         """Insert a normalised candle row into ``candles_1m``.
 
@@ -940,6 +963,7 @@ class DatabaseWriter:
                         DB_WRITER_EVENTS_FAILED.labels(channel="candles_1m").inc()
                         # do NOT advance last_id: transient DB error → retry on next XREAD
 
+    # fmt: on
     def run(self):
         """Main event loop"""
         logger.info("Starting DB Writer Service...")
