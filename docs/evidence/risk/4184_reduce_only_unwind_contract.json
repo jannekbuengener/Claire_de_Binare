@@ -2,10 +2,11 @@
   "schema_version": "1.0",
   "issue": 4184,
   "proof_type": "reduce_only_unwind_contract",
-  "run_id": "4184_d89b8333_20260729T210152Z",
-  "tested_commit_sha": "d89b833333310fdda81801472944ac20e006240f",
+  "run_id": "4184_c0d41fe1_20260729T215022Z",
+  "tested_commit_sha": "c0d41fe1513521482764ad415817f84c010182a1",
   "branch": "fix/4184-reduce-only-unwind-contract",
   "base_sha": "2a3520794a82e44f7e411372f5fc9800f093bb86",
+  "raw_manifest_sha256": "3949e3fbf532cbeec7c30f70e7e97c498dac804e8c40cba24cc244e5987dfbee",
   "contract_version": "execution_reduce_only_v1",
   "position_sign_convention": "long_positive_short_negative",
   "quantity_unit": "base_asset",
@@ -14,7 +15,8 @@
     "mock_trading": true,
     "use_real_balance": false,
     "blue_red_activated": false,
-    "productive_credentials": false
+    "productive_credentials": false,
+    "execution_runtime_verified": true
   },
   "scenario_results": {
     "R1_LONG_FULL_EXIT": {
@@ -27,6 +29,7 @@
       "position_increase_observed": false,
       "side_flip_observed": false,
       "adapter_result": "FILLED",
+      "prepare_reason_code": "REDUCE_ONLY_READY",
       "reason_code": "REDUCE_ONLY_FILLED"
     },
     "R2_SHORT_FULL_EXIT": {
@@ -39,6 +42,7 @@
       "position_increase_observed": false,
       "side_flip_observed": false,
       "adapter_result": "FILLED",
+      "prepare_reason_code": "REDUCE_ONLY_READY",
       "reason_code": "REDUCE_ONLY_FILLED"
     },
     "R3_LONG_PARTIAL_FILL": {
@@ -51,6 +55,7 @@
       "position_increase_observed": false,
       "side_flip_observed": false,
       "adapter_result": "PARTIALLY_FILLED",
+      "prepare_reason_code": "REDUCE_ONLY_READY",
       "reason_code": "REDUCE_ONLY_PARTIAL_FILL"
     },
     "R4_SHORT_PARTIAL_FILL": {
@@ -63,6 +68,7 @@
       "position_increase_observed": false,
       "side_flip_observed": false,
       "adapter_result": "PARTIALLY_FILLED",
+      "prepare_reason_code": "REDUCE_ONLY_READY",
       "reason_code": "REDUCE_ONLY_PARTIAL_FILL"
     },
     "R5_OVERSIZED_LONG_EXIT": {
@@ -75,6 +81,7 @@
       "position_increase_observed": false,
       "side_flip_observed": false,
       "adapter_result": "FILLED",
+      "prepare_reason_code": "REDUCE_ONLY_QUANTITY_CLAMPED",
       "reason_code": "REDUCE_ONLY_FILLED"
     },
     "R6_OVERSIZED_SHORT_EXIT": {
@@ -87,6 +94,7 @@
       "position_increase_observed": false,
       "side_flip_observed": false,
       "adapter_result": "FILLED",
+      "prepare_reason_code": "REDUCE_ONLY_QUANTITY_CLAMPED",
       "reason_code": "REDUCE_ONLY_FILLED"
     },
     "R7_ADAPTER_REJECTION": {
@@ -99,6 +107,7 @@
       "position_increase_observed": false,
       "side_flip_observed": false,
       "adapter_result": "REJECTED",
+      "prepare_reason_code": "REDUCE_ONLY_READY",
       "reason_code": "REDUCE_ONLY_REJECTED"
     },
     "R8_DUPLICATE_RESULT": {
@@ -111,18 +120,19 @@
       "position_increase_observed": false,
       "side_flip_observed": false,
       "adapter_result": "FILLED",
+      "prepare_reason_code": "REDUCE_ONLY_READY",
       "reason_code": "REDUCE_ONLY_DUPLICATE_RESULT"
     },
     "R9_RESTART_AFTER_PARTIAL": {
       "status": "PASS",
       "before_position": "-1",
       "requested_exit_quantity": "1",
-      "submitted_exit_quantity": "1.0",
-      "filled_quantity": "0.25",
-      "after_position": "-0.75000000",
+      "submitted_exit_quantity": "0.25",
+      "filled_quantity": "0",
+      "after_position": "-0.75",
       "position_increase_observed": false,
       "side_flip_observed": false,
-      "adapter_result": "PARTIALLY_FILLED",
+      "adapter_result": "NOT_CALLED_AFTER_PROCESS_RESTART",
       "reason_code": "REDUCE_ONLY_DUPLICATE_RESULT"
     },
     "R10_UNKNOWN_POSITION": {
@@ -152,14 +162,16 @@
     "REDUCE_ONLY_POSITION_INCREASE_BLOCKED"
   ],
   "artifact_sha256": {
-    "compose.resolved.redacted.json": "1a8c60bbc66e77cfbc8d311dcbb8085ebcff9d694addcd7af4b07f1d601e55aa",
-    "r1-r8-r10.log": "e8ce5b37e3b11b325bd43700aee461321d048a3e00b271fec2668d176d9ef73d",
-    "r1-r8-r10.xml": "485f2d5d344eb07cb3951535bcdba4b0eb28534d65a3461304236a09650870c4",
-    "r9.log": "d2aa20e929d0372fa85b0f0da00032f4c69f06cb0018b01af26ab0bb6ea99aa7",
-    "r9.xml": "2f41ef149c71b77dd4acd74e7c0ffc63abe5e29f56f620d99c7bbdc60180310d",
-    "scenarios-initial.json": "2a678e01dfdf59db6cd67cbcaa5936444c239e94aee27aa1e58fa51dc6b8863c",
-    "scenarios-restart.json": "7c3843cc307a51db4be916e5b9b45b88da4c557c8a6f512367e535c7bf62dc8e",
-    "raw_manifest.json": "df925c0b90a7865902d4ed60949365b07f5e51bbfc7ffcde6e35198ee6240b1c"
+    "compose.resolved.redacted.json": "5a8882547ae4b4d61701b5f51671a5e96700cd86cfe26c9acf5d80f2ad2c9443",
+    "r1-r8-r10.log": "eab3abc12c2ea5db31c6316d0bc6d348acb7f49b5c2d8f35444d605d408100e0",
+    "r1-r8-r10.xml": "8d40ebb86f1e3d00df90ee3fcc4cf8f47d816b5d352acc05f1ca7129ffd90513",
+    "r9-setup.log": "8fe154d00be237bd51e75195c749adbc9f1c67d2917532fd937a28f12e53b321",
+    "r9-setup.xml": "8b36dd0bfea0ef62fe98516f272bb05eaa9e915fc0ba485b49716822f37e6b80",
+    "r9.log": "b8d599c54473101f64bef6f8b7a440e13d743eee885601de338febaee688afb6",
+    "r9.xml": "ad961ccae3d43841148d58ba7f6f543b4ec124d0a168bdc099ede3fe0ab9fd24",
+    "scenarios-initial.json": "e20ad47be8e21e526f65f4ce972f24e1923840f5778413a108f4c7bdcff75fef",
+    "scenarios-restart.json": "0b6fde14ddcec3ef678242fe4b3225ea905635874905df44489881a6962a57a3",
+    "scenarios-setup.json": "abd482cf9e9abe73b2431e1dfddc37ad8121fa5e6260ddb9b26e91575c10b43b"
   },
   "compose_sha256": {
     "infrastructure/compose/base.yml": "2fc6d30be39bb1c77f87462f00737fb16860103b28db49e0c4f4d2bf037edf81",
@@ -169,7 +181,7 @@
   "image_ids": {
     "redis": "sha256:9d317178eceac8454a2284a9e6df2466b93c745529947f0cd42a0fa9609d7005",
     "postgres": "sha256:ecafd34249b5c248f3cb6ebe339584ee6448b36fad3f0a827ae5e8efbae6afda",
-    "execution": "sha256:1947debea86c51f5e4ad8c3c242c1335c9c2238a47fa8f960a43c0de7e2bf948"
+    "execution": "sha256:71cc1de6f0c5bee3447af21c4b16eaedc2eaf305f6b3a9effb2ff245144c8b39"
   },
   "cleanup_result": {
     "pass": true,
@@ -183,5 +195,6 @@
     "Stop-loss protection remains UNAVAILABLE.",
     "LR remains NO-GO."
   ],
-  "verdict": "PASS_REDUCE_ONLY_PROVEN_MOCK_SHADOW"
+  "verdict": "PASS_REDUCE_ONLY_PROVEN_MOCK_SHADOW",
+  "run_error": null
 }
