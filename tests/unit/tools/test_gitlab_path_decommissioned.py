@@ -40,7 +40,9 @@ def test_root_layout_policy_does_not_allow_gitlab_ci() -> None:
 
 def test_gitlab_ci_at_root_is_unexpected_file() -> None:
     policy = load_policy(POLICY_PATH)
-    directories, files = classify_tracked_paths(["README.md", ".gitlab-ci.yml", "core/app.py"])
+    directories, files = classify_tracked_paths(
+        ["README.md", ".gitlab-ci.yml", "core/app.py"]
+    )
     violations = validate_layout(policy, directories, files)
     summaries = {(item.kind, item.path) for item in violations}
     assert ("unexpected file", ".gitlab-ci.yml") in summaries
@@ -59,16 +61,16 @@ def test_makefile_has_no_gitlab_operator_targets() -> None:
             text,
             flags=re.MULTILINE,
         ), f"Makefile still defines GitLab target {target!r}"
-        assert f"make {target}" not in text, (
-            f"Makefile help still advertises make {target}"
-        )
+        assert (
+            f"make {target}" not in text
+        ), f"Makefile help still advertises make {target}"
 
     phony_lines = [line for line in text.splitlines() if line.startswith(".PHONY:")]
     joined = " ".join(phony_lines)
     for target in ("rollback", "cleanup"):
-        assert re.search(rf"(^|\s){re.escape(target)}(\s|$)", joined) is None, (
-            f".PHONY still lists GitLab target {target!r}"
-        )
+        assert (
+            re.search(rf"(^|\s){re.escape(target)}(\s|$)", joined) is None
+        ), f".PHONY still lists GitLab target {target!r}"
 
 
 def test_makefile_keeps_local_root_layout_guard() -> None:
