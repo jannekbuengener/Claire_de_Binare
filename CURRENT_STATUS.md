@@ -10,7 +10,7 @@
 
 ## Repo / Engineering Status (2026-07-30)
 
-- **PR-Acceptance Skill Family Batch 1**: **DONE_MERGED** — PR [#4211](https://github.com/jannekbuengener/Claire_de_Binare/pull/4211) @ `be969889…` (`cdb-integration-wiring-audit`, `cdb-pr-gap-classifier`, policy+schema). CI foundation [#4212](https://github.com/jannekbuengener/Claire_de_Binare/pull/4212)/#4205 + [#4213](https://github.com/jannekbuengener/Claire_de_Binare/pull/4213)/#4206 on main. Batch 2 (#4209/#4210 Completeness+Conductor) in delivery. #4184/PR #4187 untouched. LR **NO-GO** unchanged.
+- **PR-Acceptance Skill Family**: **DONE_PR_ACCEPTANCE_SKILL_FAMILY_MERGED** — PR [#4211](https://github.com/jannekbuengener/Claire_de_Binare/pull/4211) @ `be969889…` (`cdb-integration-wiring-audit`, `cdb-pr-gap-classifier`, policy+schema). CI foundation [#4212](https://github.com/jannekbuengener/Claire_de_Binare/pull/4212)/#4205 + [#4213](https://github.com/jannekbuengener/Claire_de_Binare/pull/4213)/#4206 on main. Batch2 [#4216](https://github.com/jannekbuengener/Claire_de_Binare/pull/4216) @ d47ee745… delivered Completeness+Conductor; family complete (#4207–#4210 CLOSED). #4184/PR #4187 untouched. LR **NO-GO** unchanged.
 
 ## Repo / Engineering Status (2026-07-28)
 
