@@ -187,9 +187,7 @@ def test_registry_persist_oserror_keeps_in_memory(tmp_path: Path, monkeypatch) -
         raise PermissionError("ledger not writable")
 
     monkeypatch.setattr(Path, "write_text", _boom)
-    reg.register(
-        internal_order_id="o1", symbol="BTCUSDT", status="PENDING", quantity=1
-    )
+    reg.register(internal_order_id="o1", symbol="BTCUSDT", status="PENDING", quantity=1)
     assert reg.count_open() == 1
     assert reg.get("o1") is not None
 
