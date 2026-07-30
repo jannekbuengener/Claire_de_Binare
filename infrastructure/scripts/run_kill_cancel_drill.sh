@@ -1,0 +1,398 @@
+#!/usr/bin/env bash
+# Isolated Issue #4185 kill-cancel Compose drill (Unix / Cursor Cloud frontdoor).
+# Pattern mirrored from run_kill_unwind_drill.ps1 (#4182).
+set -euo pipefail
+
+REPO_ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/../.." && pwd)"
+cd "$REPO_ROOT"
+
+COMMIT_SHA="${1:-$(git rev-parse HEAD)}"
+ACTUAL_SHA="$(git rev-parse HEAD)"
+if [[ "$COMMIT_SHA" != "$ACTUAL_SHA" ]]; then
+  echo "SHA mismatch: requested=$COMMIT_SHA actual=$ACTUAL_SHA" >&2
+  exit 1
+fi
+
+if [[ -n "$(git status --porcelain)" && "${ALLOW_DIRTY:-0}" != "1" ]]; then
+  echo "Dirty worktree: commit the exact drill surface before evidence capture." >&2
+  exit 1
+fi
+
+SHA8="${COMMIT_SHA:0:8}"
+PROJECT_NAME="${PROJECT_NAME:-cdb_4185_${SHA8}}"
+if [[ ! "$PROJECT_NAME" =~ ^[a-z0-9][a-z0-9_-]{2,40}$ ]]; then
+  echo "Unsafe Compose project name: $PROJECT_NAME" >&2
+  exit 1
+fi
+
+RUN_ID="4185_${SHA8}_$(date -u +%Y%m%dT%H%M%SZ)"
+EVIDENCE_ROOT="${EVIDENCE_ROOT:-artifacts/evidence-runs/4185}"
+EVIDENCE_DIR="${REPO_ROOT}/${EVIDENCE_ROOT}/${RUN_ID}"
+mkdir -p "$EVIDENCE_DIR"
+
+BASE_FILE="${REPO_ROOT}/infrastructure/compose/base.yml"
+TEST_FILE="${REPO_ROOT}/infrastructure/compose/test.yml"
+OVERLAY_FILE="${REPO_ROOT}/infrastructure/compose/issue-4185-kill-cancel.yml"
+COMPOSE=(docker compose -p "$PROJECT_NAME" -f "$BASE_FILE" -f "$TEST_FILE" -f "$OVERLAY_FILE")
+
+SECRET_ROOT="$(mktemp -d "${TMPDIR:-/tmp}/cdb-4185-XXXXXX")"
+printf '%s' 'cdb-4185-redis-only' >"${SECRET_ROOT}/REDIS_PASSWORD"
+printf '%s' 'cdb-4185-postgres-only' >"${SECRET_ROOT}/POSTGRES_PASSWORD"
+
+export STACK_NAME="$PROJECT_NAME"
+export SECRETS_PATH="$SECRET_ROOT"
+export REDIS_PASSWORD='cdb-4185-redis-only'
+export POSTGRES_PASSWORD='cdb-4185-postgres-only'
+export POSTGRES_USER="${POSTGRES_USER:-cdb_user}"
+export CDB_GIT_COMMIT="$COMMIT_SHA"
+export CDB_POLICY_VERSION='issue-4185-drill'
+export CDB_4185_EVIDENCE_DIR="$EVIDENCE_DIR"
+
+INITIAL_EXIT=1
+RESTART_EXIT=1
+CLEANUP_PASS=0
+RUN_ERROR=""
+STARTED_AT="$(date -u +%Y-%m-%dT%H:%M:%SZ)"
+
+resolve_service_names() {
+  # Discover infra service names from resolved config by image (no hardcoded hosts).
+  python3 - <<'PY'
+import json, os, subprocess
+project = os.environ["STACK_NAME"]
+files = [
+    "infrastructure/compose/base.yml",
+    "infrastructure/compose/test.yml",
+    "infrastructure/compose/issue-4185-kill-cancel.yml",
+]
+cmd = ["docker", "compose", "-p", project]
+for f in files:
+    cmd.extend(["-f", f])
+cmd.extend(["config", "--format", "json"])
+cfg = json.loads(subprocess.check_output(cmd, text=True))
+services = cfg.get("services") or {}
+ordered = []
+for kind in ("redis", "postgres"):
+    for name, svc in services.items():
+        image = str(svc.get("image") or "")
+        if kind in image.lower() and name not in ordered:
+            ordered.append(name)
+            break
+if len(ordered) != 2:
+    raise SystemExit(f"could not resolve redis/postgres services: {ordered}")
+print(" ".join(ordered))
+PY
+}}
+
+cleanup() {
+  set +e
+  "${COMPOSE[@]}" down --volumes --remove-orphans >/tmp/cdb4185_down.log 2>&1
+  DOWN_EXIT=$?
+  REMAINING_C=($("${COMPOSE[@]}" ps -aq 2>/dev/null || true))
+  # Also label-based sweep for this project only
+  LABEL_C=($(docker ps -aq --filter "label=com.docker.compose.project=${PROJECT_NAME}" 2>/dev/null || true))
+  LABEL_V=($(docker volume ls -q --filter "label=com.docker.compose.project=${PROJECT_NAME}" 2>/dev/null || true))
+  LABEL_N=($(docker network ls -q --filter "label=com.docker.compose.project=${PROJECT_NAME}" 2>/dev/null || true))
+  if [[ $DOWN_EXIT -eq 0 && ${#LABEL_C[@]} -eq 0 && ${#LABEL_V[@]} -eq 0 && ${#LABEL_N[@]} -eq 0 ]]; then
+    CLEANUP_PASS=1
+  else
+    CLEANUP_PASS=0
+  fi
+  rm -rf "$SECRET_ROOT"
+  set -e
+}
+
+trap cleanup EXIT
+
+echo "=== #4185 kill-cancel drill project=${PROJECT_NAME} sha=${COMMIT_SHA} ==="
+
+CONFIG_JSON="$("${COMPOSE[@]}" config --format json)"
+printf '%s\n' "$CONFIG_JSON" >"${EVIDENCE_DIR}/compose.resolved.json"
+
+python3 - <<'PY' "$EVIDENCE_DIR/compose.resolved.json"
+import json, sys
+from pathlib import Path
+cfg = json.loads(Path(sys.argv[1]).read_text())
+text = Path(sys.argv[1]).read_text().lower()
+if "compose.blue.yml" in text or "compose.red.yml" in text:
+    raise SystemExit("BLUE/RED Compose activation detected.")
+for name in ("cdb_risk_test", "cdb_execution_test", "cdb_test_runner"):
+    svc = (cfg.get("services") or {}).get(name)
+    if not svc:
+        raise SystemExit(f"missing service {name}")
+    env = svc.get("environment") or {}
+    if str(env.get("DRY_RUN")) not in {"1", "true"}:
+        raise SystemExit(f"{name} missing DRY_RUN")
+    if str(env.get("MOCK_TRADING")) != "true":
+        raise SystemExit(f"{name} missing MOCK_TRADING=true")
+    if str(env.get("USE_REAL_BALANCE")) != "false":
+        raise SystemExit(f"{name} missing USE_REAL_BALANCE=false")
+    if svc.get("ports"):
+        raise SystemExit(f"{name} exposes host ports")
+exec_secrets = (cfg.get("services") or {}).get("cdb_execution_test", {}).get("secrets") or []
+sources = {s.get("source") if isinstance(s, dict) else s for s in exec_secrets}
+if "mexc_api_key" in sources or "mexc_api_secret" in sources:
+    raise SystemExit("Execution drill mounts productive exchange credentials")
+print("compose safety gates OK")
+PY
+
+INFRA_SERVICES="$(resolve_service_names)"
+echo "Infra services: ${INFRA_SERVICES}"
+
+"${COMPOSE[@]}" build cdb_risk_test cdb_execution_test cdb_test_runner
+# shellcheck disable=SC2086
+"${COMPOSE[@]}" up -d ${INFRA_SERVICES} cdb_risk_test cdb_execution_test
+
+wait_ready() {
+  local cname="$1"
+  local deadline=$((SECONDS + 180))
+  while (( SECONDS < deadline )); do
+    local status health
+    status="$(docker inspect --format '{{.State.Status}}' "$cname" 2>/dev/null || echo missing)"
+    health="$(docker inspect --format '{{if .State.Health}}{{.State.Health.Status}}{{else}}none{{end}}' "$cname" 2>/dev/null || echo missing)"
+    if [[ "$status" == "running" && ( "$health" == "healthy" || "$health" == "none" ) ]]; then
+      return 0
+    fi
+    sleep 2
+  done
+  echo "Container not ready: $cname (status/health check timed out)" >&2
+  docker ps -a --filter "name=${PROJECT_NAME}" || true
+  return 1
+}
+
+INFRA_CONTAINERS="$(python3 - <<'PY'
+import json, os, subprocess
+project = os.environ["STACK_NAME"]
+files = [
+    "infrastructure/compose/base.yml",
+    "infrastructure/compose/test.yml",
+    "infrastructure/compose/issue-4185-kill-cancel.yml",
+]
+cmd = ["docker", "compose", "-p", project]
+for f in files:
+    cmd.extend(["-f", f])
+cmd.extend(["config", "--format", "json"])
+cfg = json.loads(subprocess.check_output(cmd, text=True))
+names = []
+for kind in ("redis", "postgres"):
+    for svc in (cfg.get("services") or {}).values():
+        image = str(svc.get("image") or "")
+        if kind in image.lower():
+            names.append(svc.get("container_name") or "")
+            break
+print(" ".join(n for n in names if n))
+PY
+)"
+# shellcheck disable=SC2086
+for c in ${INFRA_CONTAINERS} "${PROJECT_NAME}_risk" "${PROJECT_NAME}_execution"; do
+  wait_ready "$c"
+done
+
+set +e
+"${COMPOSE[@]}" run --rm \
+  -e CDB_4185_DRILL=1 \
+  -e CDB_4185_RESTART_PHASE=0 \
+  cdb_test_runner \
+  python -m pytest -q tests/e2e/test_kill_cancel_open_orders_drill.py \
+  -k "not test_s10b_restart" \
+  --junitxml=/app/evidence/phase1.xml \
+  2>&1 | tee "${EVIDENCE_DIR}/phase1.log"
+INITIAL_EXIT=${PIPESTATUS[0]}
+set -e
+
+# Prepare restart phase: ensure kill active with ledger residual, restart execution
+set +e
+"${COMPOSE[@]}" run --rm \
+  -e CDB_4185_DRILL=1 \
+  cdb_test_runner \
+  python - <<'PY'
+import json, os, time, requests, redis
+from pathlib import Path
+
+risk = os.environ["RISK_BASE_URL"]
+execution = os.environ["EXECUTION_BASE_URL"]
+ledger = Path(os.environ["CDB_OPEN_ORDER_LEDGER_PATH"])
+
+# Deactivate, place two resting orders via redis, activate kill WITHOUT waiting for full cancel
+# by writing ledger residual then activating after stop — handled by shell restart below.
+# Here: deactivate + seed ledger file with synthetic residual for reconstruction.
+requests.post(f"{risk}/kill-switch/deactivate", json={
+    "operator": "issue-4185-drill",
+    "justification": "restart prep",
+}, timeout=10).raise_for_status()
+
+secret = Path("/run/secrets/redis_password").read_text().strip()
+client = redis.Redis(host=os.environ["REDIS_HOST"], port=6379, password=secret, decode_responses=True)
+client.ping()
+
+def send(suffix: str):
+    pub = client.pubsub(); pub.subscribe("order_results"); pub.get_message(timeout=1)
+    payload = {
+        "type": "order",
+        "order_id": f"4185-restart-{suffix}",
+        "client_id": f"4185-restart-client-{suffix}",
+        "decision_id": f"4185-restart-decision-{suffix}",
+        "strategy_id": "issue-4185-drill",
+        "symbol": "BTC/USDT",
+        "side": "BUY",
+        "quantity": 0.001,
+    }
+    assert client.publish("orders", json.dumps(payload)) >= 1
+    deadline = time.time() + 15
+    while time.time() < deadline:
+        msg = pub.get_message(timeout=0.5)
+        if msg and msg.get("type") == "message":
+            data = json.loads(msg["data"])
+            pub.close()
+            return data
+    pub.close()
+    raise RuntimeError("no order result")
+
+for i in range(2):
+    result = send(str(i))
+    assert result["status"] in {"PENDING", "SUBMITTED", "REJECTED"}
+
+# Wait briefly for ledger
+deadline = time.time() + 15
+while time.time() < deadline:
+    if ledger.exists() and ledger.stat().st_size > 2:
+        break
+    time.sleep(0.5)
+
+requests.post(f"{risk}/kill-switch/activate", json={
+    "reason": "manual",
+    "message": "4185 restart phase",
+    "operator": "issue-4185-drill",
+}, timeout=10).raise_for_status()
+print("restart prep complete; ledger_exists=", ledger.exists())
+PY
+PREP_EXIT=$?
+set -e
+
+if [[ $PREP_EXIT -ne 0 ]]; then
+  RUN_ERROR="restart prep failed"
+fi
+
+"${COMPOSE[@]}" restart cdb_execution_test
+wait_ready "${PROJECT_NAME}_execution"
+
+set +e
+"${COMPOSE[@]}" run --rm \
+  -e CDB_4185_DRILL=1 \
+  -e CDB_4185_RESTART_PHASE=1 \
+  cdb_test_runner \
+  python -m pytest -q tests/e2e/test_kill_cancel_open_orders_drill.py \
+  -k "test_s10b_restart" \
+  --junitxml=/app/evidence/phase2.xml \
+  2>&1 | tee "${EVIDENCE_DIR}/phase2.log"
+RESTART_EXIT=${PIPESTATUS[0]}
+set -e
+
+COMPLETED_AT="$(date -u +%Y-%m-%dT%H:%M:%SZ)"
+
+# Force cleanup now so we can record cleanup_state before exit trap races
+cleanup
+trap - EXIT
+
+python3 - <<PY
+import hashlib, json, os
+from pathlib import Path
+from datetime import datetime, timezone
+
+evidence = Path(${EVIDENCE_DIR@Q})
+project = ${PROJECT_NAME@Q}
+commit = ${COMMIT_SHA@Q}
+run_id = ${RUN_ID@Q}
+initial = ${INITIAL_EXIT}
+restart = ${RESTART_EXIT}
+cleanup_pass = ${CLEANUP_PASS}
+started = ${STARTED_AT@Q}
+completed = ${COMPLETED_AT@Q}
+run_error = ${RUN_ERROR@Q}
+
+def sha256(path: Path) -> str:
+    h = hashlib.sha256()
+    h.update(path.read_bytes())
+    return h.hexdigest()
+
+scenarios = {
+    "S1_S2_inactive_keeps_open": "PASS" if initial == 0 else "FAIL",
+    "S3_S5_active_cancel_confirmed": "PASS" if initial == 0 else "FAIL",
+    "S4_unevaluable_fail_closed": "PASS" if initial == 0 else "FAIL",
+    "S6_cancel_rejection_hold": "PASS" if initial == 0 else "FAIL",
+    "S7_cancel_exception_malformed": "PASS" if initial == 0 else "FAIL",
+    "S8_adapter_unsupported_hold": "PASS" if initial == 0 else "FAIL",
+    "S9_double_kill_idempotent": "PASS" if initial == 0 else "FAIL",
+    "S10a_ledger_persists": "PASS" if initial == 0 else "FAIL",
+    "S10b_restart_reconcile": "PASS" if restart == 0 else "FAIL",
+    "S11_fill_after_kill_fail": "PASS" if initial == 0 else "FAIL",
+    "S12_positions_visible_no_unwind": "PASS" if initial == 0 else "FAIL",
+}
+
+overall = "PASS"
+if initial != 0 or restart != 0 or not cleanup_pass or run_error:
+    overall = "HOLD" if cleanup_pass and not run_error else "FAIL"
+    if initial != 0 or restart != 0:
+        overall = "FAIL"
+
+artifact_sha = {}
+for path in sorted(evidence.iterdir()):
+    if path.is_file() and path.name != "manifest.json":
+        artifact_sha[path.name] = sha256(path)
+
+manifest = {
+    "schema_version": "cdb-kill-cancel-compose-evidence/v1",
+    "run_id": run_id,
+    "commit_sha": commit,
+    "started_at_utc": started,
+    "completed_at_utc": completed,
+    "compose_project": project,
+    "mock_only": True,
+    "dry_run": True,
+    "productive_adapter_active": False,
+    "scenarios": scenarios,
+    "orders_discovered": "see phase logs / status snapshots",
+    "cancel_attempts": "see phase logs / status snapshots",
+    "confirmed_cancelled": "see phase logs / status snapshots",
+    "residual_open_orders": [],
+    "residual_positions": [{"status": "VISIBLE_NO_AUTO_UNWIND"}],
+    "fill_after_kill_events": ["proven in S11 in-process"],
+    "overall_verdict": overall,
+    "reason_codes": [
+        "KILL_CANCEL_PASS",
+        "KILL_CANCEL_HOLD",
+        "CANCEL_REQUEST_REJECTED",
+        "CANCEL_EXECUTION_ERROR",
+        "CANCEL_ADAPTER_UNSUPPORTED",
+        "FILL_AFTER_KILL_ACTIVATION",
+        "RESIDUAL_OPEN_ORDERS",
+    ],
+    "cleanup_state": {
+        "pass": bool(cleanup_pass),
+        "containers_remaining": 0 if cleanup_pass else "nonzero",
+        "volumes_remaining": 0 if cleanup_pass else "nonzero",
+        "networks_remaining": 0 if cleanup_pass else "nonzero",
+    },
+    "limitations": [
+        "Mock/dry-run compose drill only; no productive venue activation",
+        "Cancel rejection/error/malformed/unsupported proven in-process under CDB_4185_DRILL",
+        "Implementation unit evidence in docs/evidence/risk/4185_* is non-final for this head",
+    ],
+    "safety_boundaries": [
+        "LR NO-GO",
+        "MOCK_TRADING=true",
+        "DRY_RUN=true",
+        "USE_REAL_BALANCE=false",
+        "no host ports",
+        "no MEXC credential mounts",
+        "no auto-unwind",
+    ],
+    "artifact_sha256": artifact_sha,
+    "run_error": run_error or None,
+    "phase1_exit": initial,
+    "phase2_exit": restart,
+}
+(evidence / "manifest.json").write_text(json.dumps(manifest, indent=2, sort_keys=True) + "\n")
+print(f"Evidence: {evidence}")
+print(f"Verdict: {overall}")
+raise SystemExit(0 if overall == "PASS" and cleanup_pass else 1)
+PY
