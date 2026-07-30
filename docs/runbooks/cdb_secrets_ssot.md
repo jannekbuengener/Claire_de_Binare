@@ -50,11 +50,21 @@ powershell -File scripts/secrets/sync_cdb_secrets.ps1
 - `ADD_TO_PROJECT_PAT`:
   - Legacy PAT fallback for Projects v2 operations.
 - `CDB_GH_APP_ID`:
-  - GitHub App auth path (optional).
+  - GitHub App auth path (optional). Used by Control-Board / Projects workflows.
+  - For #4170 local-ci Check Runs: expected App ID for publisher readback
+    (non-secret config). Prefer a **dedicated** local-ci App; do not blindly
+    overwrite Control-Board values.
 - `CDB_GH_APP_PRIVATE_KEY`:
-  - GitHub App private key (optional, required with app id).
+  - GitHub App private key (optional, required with app id for minting).
+  - Never commit; store only in external SSOT. Publisher core does not mint
+    tokens from this key (#4170).
 - `CDB_GH_APP_INSTALLATION_ID`:
-  - Optional explicit installation id for app path.
+  - Optional explicit installation id for app path / Check Run expected ID.
+- `CDB_GH_APP_INSTALLATION_TOKEN` (publisher Check Run mode, ephemeral):
+  - Short-lived installation token consumed by
+    `--publisher-backend check-run`. Not minted by the publisher itself.
+  - Never pass as CLI argument; never log. See
+    [`cdb_local_ci_app_check_run_cutover.md`](cdb_local_ci_app_check_run_cutover.md).
 
 ## Workflow Token Path (control board)
 - Workflows resolve auth in this order:

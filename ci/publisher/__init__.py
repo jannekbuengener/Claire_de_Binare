@@ -1,7 +1,7 @@
-"""Trusted local CI status publisher (Phase 3a — Commit Status).
+"""Trusted local CI status publisher (Phase 3a Commit Status + #4170 Check Run backend).
 
-Publishes GitHub commit statuses only after fail-closed validation of local
-Docker CI evidence. Check Runs require a GitHub App and are not used here.
+Default publish path remains Commit Status. Check Runs are available only via
+explicit ``--publisher-backend check-run`` with App installation credentials.
 """
 
 from __future__ import annotations

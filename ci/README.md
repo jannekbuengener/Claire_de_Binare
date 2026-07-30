@@ -7,8 +7,12 @@ Lokale, Docker-fähige CI-Ausführungsschicht für Claire_de_Binare.
 - **Phase 1:** Scaffold + Evidence-Contract unter `ci/`.
 - **Phase 3a + BP #4169:** Nach strikter Evidence-Validation setzt der
   Status-Publisher (`ci/publisher/`) den Required Commit Status `cdb-local-ci`
-  (interim PAT / Commit Status, noch kein GitHub-App Check Run).
+  (interim PAT / Commit Status, `app_id=null`).
   Siehe [docs/ci/local-status-publisher.md](../docs/ci/local-status-publisher.md).
+- **#4170 Phase A:** Explizites Check-Run-Backend
+  (`--publisher-backend check-run`) ist code-ready; Branch Protection und der
+  Default-Pfad bleiben Commit Status bis zum externen Cutover.
+  Siehe [docs/runbooks/cdb_local_ci_app_check_run_cutover.md](../docs/runbooks/cdb_local_ci_app_check_run_cutover.md).
 - Lokale Evidence allein autorisiert keinen Merge; der published Status
   `cdb-local-ci` ist der live Required Context.
 - `policy-gate.yml` bleibt als Workflow-Safety-Gate; der lokale Mirror

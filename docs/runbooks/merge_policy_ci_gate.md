@@ -22,12 +22,20 @@ Für Pull Requests auf `main` gilt genau ein merge-relevanter Required Context
 
 | Quelle | Context | Typ |
 |---|---|---|
-| Local CI Status Publisher | `cdb-local-ci` | Commit Status (`app_id` null) |
+| Local CI Status Publisher | `cdb-local-ci` | Commit Status (`app_id` null) — interim |
 
 Die früheren Required Checks `ci (Unit/Integration + Lint gesammelt)` und
 `policy-gate` sind **nicht mehr** branch-protection-required (Migration #4169).
 `ci.yml` und `policy-gate.yml` bleiben als Workflow-Inhalt / Safety-Gates
 nützlich, ersetzen aber den Required Context nicht.
+
+**Trust gap / #4170:** Commit Status with `app_id=null` is not App-bound; any
+credential with Commit statuses: Write can POST the same context. Phase A of
+#4170 adds an explicit Check Run publisher backend
+(`--publisher-backend check-run`) but does **not** change live Branch
+Protection. Cutover to an App-bound required Check Run is a separate Human-GO
+(see [`cdb_local_ci_app_check_run_cutover.md`](cdb_local_ci_app_check_run_cutover.md)).
+Until that cutover, merge evidence remains the Commit Status path.
 
 Lint/Format (orchestrator stage `lint`, Issue #4206): Black und Ruff kommen
 ausschließlich aus dem Pin in `requirements-dev.txt`. Black läuft als

@@ -203,5 +203,8 @@ def test_check_run_and_commit_status_payloads_are_deterministic():
         target_url="https://example.test/evidence",
     )
     assert a.to_api_body() == b.to_api_body()
-    # Phase 3a documents Commit Status only; Check Run adapter is intentionally absent.
+    # Check Runs are implemented in CheckRunBackend, not on GitHubStatusClient.
     assert not hasattr(GitHubStatusClient, "create_check_run")
+    from ci.publisher.backends import CheckRunBackend
+
+    assert hasattr(CheckRunBackend, "publish")
