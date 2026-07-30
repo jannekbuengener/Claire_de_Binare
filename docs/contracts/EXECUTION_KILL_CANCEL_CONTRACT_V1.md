@@ -94,6 +94,39 @@ Stable codes include: `KILL_CANCEL_PASS`, `KILL_CANCEL_HOLD`,
 `FILL_AFTER_KILL_ACTIVATION`, `RESIDUAL_OPEN_ORDERS`,
 `RESIDUAL_POSITION_UNKNOWN`.
 
+## Compose drill evidence statuses (`cdb-kill-cancel-compose-evidence/v1`)
+
+The isolated Compose drill (`infrastructure/scripts/run_kill_cancel_drill.sh`)
+writes a per-run manifest via `tools/ci/kill_cancel_compose_evidence.py`.
+
+| Status | Meaning |
+|--------|---------|
+| `PASS` | Matched JUnit testcase with no failure/error/skipped |
+| `FAIL` | Matched JUnit testcase with `<failure>` or `<error>` (product fail) |
+| `HOLD` | Matched JUnit testcase was skipped |
+| `NOT_RUN` | Expected JUnit file missing for this run |
+| `MISSING_MAPPING` | JUnit file present but expected testcase name not found |
+| `PARSE_ERROR` | JUnit XML unreadable or malformed |
+| `INCOMPLETE` | Stale JUnit (mtime before `.run_marker`) or overall evidence gap |
+
+Rules:
+
+- Scenario `FAIL` is **only** for a real matched testcase failure/error.
+- Missing/unmapped/unreadable JUnit must **not** be reported as product `FAIL`.
+- `overall_verdict=PASS` requires pytest exits `0`, cleanup pass, and every
+  required scenario `PASS`.
+- Pytest exit `0` plus scenario evidence gaps → `overall_verdict=INCOMPLETE`
+  (honest hold), never a PASS+FAIL contradiction (#4222).
+
+Troubleshooting (Pytest PASS vs scenario-map FAIL):
+
+1. Open `manifest.json` → check `pytest_result`, `scenarios`, `junit_summary`,
+   `scenario_evidence_reason`.
+2. If scenarios are `NOT_RUN`/`MISSING_MAPPING`/`PARSE_ERROR`, treat as evidence
+   pipeline gap — not a kill-cancel product reopen.
+3. Confirm `phase1.xml`/`phase2.xml` exist under the run's evidence dir and
+   names match `SCENARIO_TEST_MAP` in `tools/ci/kill_cancel_compose_evidence.py`.
+
 ## Boundaries
 
 - Mock / dry-run only (`MOCK_TRADING`, `DRY_RUN`).
