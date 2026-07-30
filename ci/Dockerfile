@@ -19,8 +19,9 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
 
 COPY requirements.txt requirements-dev.txt requirements-mcp.txt pyproject.toml ./
 RUN python -m pip install --upgrade pip \
-    && pip install --no-cache-dir -r requirements.txt -r requirements-dev.txt -r requirements-mcp.txt \
-    && pip install --no-cache-dir ruff black
+    && pip install --no-cache-dir -r requirements.txt -r requirements-dev.txt -r requirements-mcp.txt
+# Toolchain SSOT (#4206): black/ruff pins come only from requirements-dev.txt.
+# Do not reinstall unversioned ruff/black after the requirements install.
 
 # Application tree is bind-mounted at runtime for commit-bound evidence.
 CMD ["python", "ci/scripts/run.py", "--profile", "fast"]
