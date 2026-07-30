@@ -201,7 +201,7 @@ set -e
 
 # Prepare restart phase: ensure kill active with ledger residual, restart execution
 set +e
-"${COMPOSE[@]}" run --rm \
+"${COMPOSE[@]}" run --rm -T \
   -e CDB_4185_DRILL=1 \
   cdb_test_runner \
   python - <<'PY'
@@ -276,7 +276,7 @@ fi
 wait_ready "${PROJECT_NAME}_execution"
 
 set +e
-"${COMPOSE[@]}" run --rm \
+"${COMPOSE[@]}" run --rm -T \
   -e CDB_4185_DRILL=1 \
   -e CDB_4185_RESTART_PHASE=1 \
   cdb_test_runner \
