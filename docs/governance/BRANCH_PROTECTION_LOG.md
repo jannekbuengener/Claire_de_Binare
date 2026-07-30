@@ -4,6 +4,50 @@ This document records governance interventions on branch protection rules for au
 
 ---
 
+## 2026-07-30T09:50Z - Disable Force Pushes on `main` (Issue #4196, PR #4201)
+
+**Context:** PR #4193 exposed that live Branch Protection allowed force pushes
+on `main`. Its evidence-only baseline refresh recorded the live value but did
+not authorize that operating mode. Issue #4196 records the explicit decision to
+restore the fail-closed setting.
+
+**Action Taken:**
+- Read the complete live protection state through `gh api`.
+- Derived a complete update payload from that response.
+- Changed only `allow_force_pushes` from `true` to `false`.
+- Applied the payload manually through `gh api`; no workflow auto-apply path was
+  introduced.
+
+**Verification:**
+- A complete post-apply read matched the pre-apply projection for required
+  checks, pull-request reviews, signatures, admin enforcement, linear history,
+  deletions, branch creation, conversation resolution, branch lock, fork sync,
+  and restrictions.
+- The only changed path was
+  `allow_force_pushes.enabled: true -> false`.
+- The live drift check reported `NO DRIFT`.
+- Baseline and live normalized SHA256:
+  `ca793caaf1dc8a3d666749c4eb7d17f97437792d66ce8041f64153ffee103ff2`.
+
+**Final State:**
+
+| Setting | Before | After |
+|---------|--------|-------|
+| `allow_force_pushes` | `true` | `false` |
+| `required_status_checks` | `cdb-local-ci`, strict | unchanged |
+| `enforce_admins` | `true` | unchanged |
+| `required_linear_history` | `true` | unchanged |
+| `allow_deletions` | `false` | unchanged |
+
+**Decision:** Force pushes are not an intentional operating mode for `main`.
+
+**Scope:** Branch Protection governance only. No workflow, runtime, Docker,
+WSL, trading, LR, #4184, or PR #4187 change.
+
+**Approver:** jannekbuengener (repo owner; explicit #4196 instruction)
+
+---
+
 ## 2026-04-12T11:35:24Z - Disable Repo Auto-Merge (Issue #1661, Option A)
 
 **Context:** Issue #1661 mandated Option A: disable GitHub Auto-Merge repo-wide to remove
