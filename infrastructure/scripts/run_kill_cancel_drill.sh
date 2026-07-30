@@ -19,7 +19,7 @@ if [[ -n "$(git status --porcelain)" && "${ALLOW_DIRTY:-0}" != "1" ]]; then
 fi
 
 SHA8="${COMMIT_SHA:0:8}"
-PROJECT_NAME="${PROJECT_NAME:-cdb_4185_${SHA8}}"
+PROJECT_NAME="cdb_4185_${SHA8}"
 if [[ ! "$PROJECT_NAME" =~ ^[a-z0-9][a-z0-9_-]{2,40}$ ]]; then
   echo "Unsafe Compose project name: $PROJECT_NAME" >&2
   exit 1
