@@ -65,7 +65,7 @@ services:
       CDB_4185_DRILL: "1"
       MEXC_TESTNET: "true"
       CDB_MOCK_RESTING_ORDERS: "true"
-      CDB_OPEN_ORDER_LEDGER_PATH: /app/kill_cancel_ledger/open_orders.json
+      CDB_OPEN_ORDER_LEDGER_PATH: /app/logs/kill_cancel_open_orders.json
       CDB_KILL_SWITCH_STATE_FILE: /app/kill_switch/.cdb_kill_switch.state
       RISK_BASE_URL: http://cdb_risk_test:8002
       EXECUTION_BASE_URL: http://cdb_execution_test:8003
@@ -77,13 +77,11 @@ services:
       - ../../infrastructure:/app/infrastructure:ro
       - drill_4185_logs:/app/logs
       - kill_switch_4185_state:/app/kill_switch
-      - kill_cancel_4185_ledger:/app/kill_cancel_ledger
       - ${CDB_4185_EVIDENCE_DIR}:/app/evidence
 
 volumes:
   drill_4185_logs:
   kill_switch_4185_state:
-  kill_cancel_4185_ledger:
 
 networks:
   cdb_test_network:
