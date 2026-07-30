@@ -539,6 +539,8 @@ Pflicht sind targeted Tests, betroffener Lint/Format-Scope, `git diff --check`,
 Commit, Push, PR-Ledger-Update, Issue-Handoff und dokumentierte
 Restunsicherheit. Der Issue bleibt bis zum verifizierten Merge offen.
 
-Nur ein eingefrorener `merge_candidate` wechselt in den separaten
-Merge-Steward-Flow mit Full Fast-CI und `cdb-local-ci` auf exakt dem finalen
-Head.
+Nur nach schema-validem Completeness-Verdikt `MERGE_CANDIDATE` von
+`cdb-pr-completeness-review` und Conductor-Freeze (`cdb-batch-merge-conductor`)
+wechselt der PR in den separaten Merge-Steward-Flow mit Full Fast-CI und
+`cdb-local-ci` auf exakt dem finalen Head. Schließe nur Ledger-Zeilen mit
+`SLICE_DELIVERED`.

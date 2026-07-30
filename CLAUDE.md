@@ -31,6 +31,8 @@ The authoritative role definition for Claude is at `agents/roles/CLAUDE.md`. Rea
 - **Vor** Plan-Finalisierung, Branch-, Worktree- oder PR-Erstellung:
   - `python -m tools.pr_routing route --issue <ISSUE>`
   - Skill: `docs/skills/cdb-pr-router/SKILL.md`
+  - Skill: `docs/skills/cdb-pr-completeness-review/SKILL.md` (before MERGE_CANDIDATE)
+  - Skill: `docs/skills/cdb-batch-merge-conductor/SKILL.md` (freeze/final merge orchestration)
 - **Nach** Implementierung/Validierung/Repo-Arbeit, vor Abschluss:
   - Codex: `.codex/cdb_skills/cdb-session-close/SKILL.md`
   - Cursor: `.cursor/skills/cdb-session-close/SKILL.md`

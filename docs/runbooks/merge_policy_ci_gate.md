@@ -7,10 +7,13 @@ geliefert. Targeted Tests, betroffener Lint/Format-Scope und
 `git diff --check` reichen für den Slice-Handoff; Full Fast-CI,
 `cdb-local-ci`, Merge und Issue-Closure sind dabei `false`.
 
-Erst `steward_state=merge_candidate` friert den PR ein und aktiviert die
-folgenden Merge-Gates. Slice-Evidence darf nie als Final-Head-Evidence
+Transport-`steward_state=merge_candidate` startet die Acceptance-Phase
+`COMPLETENESS_REVIEW` (`cdb-pr-completeness-review`). Nur ein schema-valides
+Completeness-Verdikt `MERGE_CANDIDATE` darf in die Conductor-Phase
+(`cdb-batch-merge-conductor`: Freeze → Main-Integration → Final Validation →
+regulärer Squash-Merge). Slice-Evidence darf nie als Final-Head-Evidence
 wiederverwendet werden. Der finale Nachweis bindet sowohl PR-Head als auch den
-integrierten Base-SHA.
+integrierten Base-SHA. Head-/Base-Drift erzwingt erneute Completeness Review.
 
 ## Verbindlicher Vertrag
 
