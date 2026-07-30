@@ -87,6 +87,10 @@ on stale evidence from before the wave started.
 After a squash merge with `--delete-branch`: do not automatically re-push,
 recreate, or resurrect the deleted remote branch (no anti-repush violation).
 If further work is needed on that topic, open a new branch explicitly.
+Local post-merge cleanup of `[gone]` worktrees/branches follows
+`cdb-session-close` § Safe Post-Merge Cleanup (evidence-based; never blind
+`branch -D` / worktree remove). Success of that hop:
+`DONE_LOCAL_POST_MERGE_CLEANUP`.
 
 ## Status taxonomy
 
@@ -95,6 +99,9 @@ report contract):
 
 - `DONE_MERGED_CLOSED` — merge verified live on `main` (commit present,
   PR closed as merged); only after live verification, never assumed.
+  Does **not** imply local worktree/branch cleanup finished.
+- `DONE_LOCAL_POST_MERGE_CLEANUP` — evidence-based local cleanup complete
+  per `cdb-session-close` § Safe Post-Merge Cleanup.
 - `DONE_PR_OPEN_MERGE_HANDOFF` — PR ready/near-ready, capability gate not
   fully met by this session; honest handoff with concrete next step.
 - `DONE_PR_OPEN` — PR open, not yet merge-eligible (e.g. still under

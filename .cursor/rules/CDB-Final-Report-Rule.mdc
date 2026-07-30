@@ -7,15 +7,25 @@ For CDB work, finish with a compact evidence-based report.
 Use this structure:
 
 Status:
-- One of: `DONE_MERGED_CLOSED` | `DONE_PR_OPEN_MERGE_HANDOFF` | `DONE_PR_OPEN` |
-  `DONE_NO_PR` | `BLOCKED_LOCAL_VALIDATION` | `BLOCKED_REQUIRED_STATUS` |
+- One of: `DONE_MERGED_CLOSED` | `DONE_LOCAL_POST_MERGE_CLEANUP` |
+  `DONE_PR_OPEN_MERGE_HANDOFF` | `DONE_PR_OPEN` | `DONE_NO_PR` |
+  `BLOCKED_LOCAL_VALIDATION` | `BLOCKED_REQUIRED_STATUS` |
   `BLOCKED_AUTH_PUBLISHER` | `HOLD_SCOPE_OR_REVIEW` | `HOLD_MAIN_OR_HEAD_DRIFT` |
+  `HOLD_REMOTE_STATE_DRIFT` | `HOLD_REMOTE_BRANCH_UNEXPECTEDLY_EXISTS` |
+  `HOLD_UNSAVED_LOCAL_CHANGES` | `HOLD_REAL_UNMERGED_CHANGES` |
+  `HOLD_MAIN_NOT_FAST_FORWARDABLE` | `BLOCKED_CLEANUP_EQUIVALENCE_UNCLEAR` |
+  `BLOCKED_WORKTREE_REMOVAL` | `BLOCKED_LOCAL_BRANCH_REMOVAL` |
   `HOLD` | `BLOCKED` | `PARTIAL`
 
 Status rules:
 - `DONE_MERGED_CLOSED` requires live verification that the PR is merged on
   `main` (commit present via `gh api`/`git log`, PR state closed as merged).
   Never report a merged/`DONE_MERGED` status from a queued or assumed merge.
+  It does **not** imply local worktree/branch cleanup finished.
+- `DONE_LOCAL_POST_MERGE_CLEANUP` requires the evidence-based local cleanup
+  contract in `cdb-session-close` § Safe Post-Merge Cleanup (remote verify,
+  clean tree, squash equivalence, worktree/branch removal, main ff-only,
+  anti-repush). Report only after final git verification.
 - `DONE_PR_OPEN_MERGE_HANDOFF` is the honest result when the PR is
   ready/near-ready but this session could not prove the full autonomous-merge
   capability gate (see `CDB-Checks-and-Merge-Rule.mdc`). State the exact
@@ -27,6 +37,9 @@ Status rules:
   the required status itself.
 - `HOLD_MAIN_OR_HEAD_DRIFT` means validated `main` or the PR head changed
   since evidence was produced; revalidate before merging.
+- Cleanup HOLDs/BLOCKs (`HOLD_UNSAVED_LOCAL_CHANGES`,
+  `HOLD_REAL_UNMERGED_CHANGES`, `BLOCKED_CLEANUP_EQUIVALENCE_UNCLEAR`, …)
+  follow `cdb-session-close` § Safe Post-Merge Cleanup.
 
 Scope:
 - <what was approved>

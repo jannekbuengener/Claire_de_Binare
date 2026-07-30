@@ -1,10 +1,3 @@
-<!--
-Canonical Skill Source: docs/skills/cdb-debug-handoff/SKILL.md
-Surface: docs (canonical)
-Sync Status: canonical
-Last Verified: 2026-07-02
-Drift Policy: Surface-Adapter duerfen nur mit dokumentierter Begruendung abweichen.
--->
 ---
 name: cdb-debug-handoff
 description: >
@@ -118,6 +111,10 @@ complete.
 - Handing off a record with empty core fields as if it were complete.
 - Bundling several unrelated debug cases into one handoff.
 - Reading a board stage as an LR verdict, or a red CI check as a runtime outage.
+- Treating unclear branch lineage or unproven squash patch/tree equivalence as
+  safe cleanup — route those cases to `cdb-session-close` § Safe Post-Merge
+  Cleanup with `handoff_state: blocked` / `BLOCKED_CLEANUP_EQUIVALENCE_UNCLEAR`
+  rather than deleting worktrees or using `branch -D`.
 
 ## Standalone value and family fit
 

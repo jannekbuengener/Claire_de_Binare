@@ -68,8 +68,8 @@ Establish a verified, fail-closed starting state before any repo work begins.
    |---|---|
    | Dirty worktree with unknown changes | STOP — identify origin, stash or resolve |
    | Local main behind origin/main | Do not start from stale local main; refresh or use origin/main explicitly |
-   | Gone upstream branch (remote deleted, local present) | Mark stale; do not build on it. If the remote was deleted by a prior squash-merge (`--delete-branch`), do not re-push or recreate it (anti-repush); prune the local ref instead |
-   | Old local worktree from a prior session | Do not read as implicit active progress |
+| Gone upstream branch (remote deleted, local present) | Mark stale; do not build on it. If the remote was deleted by a prior squash-merge (`--delete-branch`), do not re-push or recreate it (anti-repush). Do **not** auto-delete the local branch/worktree here — route cleanup to `cdb-session-close` § Safe Post-Merge Cleanup (or `cdb-drift-reconcile` for lineage classification) with evidence |
+| Old local worktree from a prior session | Do not read as implicit active progress; do not auto-remove; route to `cdb-session-close` cleanup if a merged PR is identified |
    | Branch-local commits presented as merged truth | Verify via `gh pr list --state merged` |
    | Auto-merge enabled on repo during closure-sensitive work | State `Closes #N` vs `Refs #N` explicitly |
 

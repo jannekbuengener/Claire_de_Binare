@@ -38,6 +38,11 @@ disable-model-invocation: true
   `docs/runbooks/merge_policy_ci_gate.md` § Capability-based autonomous
   merge), not agent-type-based. `--admin` is never a valid bypass for a
   missing/red `cdb-local-ci`.
+- CI PASS / green Hosted Actions does **not** authorize blind local post-merge
+  cleanup. After `--delete-branch`, remote absence is expected; local
+  worktree/branch removal remains evidence-based
+  (`cdb-session-close` § Safe Post-Merge Cleanup). Do not equate required-status
+  SUCCESS with safe `worktree remove` / `branch -D`.
 
 ## Workflow
 1. Inventory active workflows and identify gate-bearing jobs.

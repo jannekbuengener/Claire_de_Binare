@@ -42,11 +42,17 @@ Use this skill when working on Claire_de_Binare with OpenCode.
    missing `cdb-local-ci`. If any gate is unproven: report
    `DONE_PR_OPEN_MERGE_HANDOFF` with the exact missing capability; do not
    loop or force.
+10. After a live-verified merge, local post-merge cleanup is
+    evidence-based only (`cdb-session-close` § Safe Post-Merge Cleanup):
+    never discard unsaved changes, never `branch -D` without tree/patch
+    equivalence, never republish a deleted remote head (anti-repush),
+    update local `main` with `ff-only` only.
 
 ## Stop conditions
 
 Stop immediately on missing bootloader, unclear scope, unexpected diff, red
 `cdb-local-ci` (the sole required merge context; Hosted Actions red is
-advisory), a capability gate unproven for merge, scope growth, or any
-live-readiness/echtgeld implication.
+advisory), a capability gate unproven for merge, scope growth, any
+live-readiness/echtgeld implication, or a cleanup request that would
+discard unsaved/unmerged local work.
 
