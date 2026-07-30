@@ -3,11 +3,17 @@
 from __future__ import annotations
 
 import re
+from collections.abc import Mapping
 from dataclasses import dataclass
 from datetime import datetime
 from enum import Enum
 
 from tools.pr_routing.policy import RoutingPolicy
+from tools.pr_routing.reviewability import (
+    ReviewabilityAssessment,
+    assess_reviewability,
+    mapping_content_reader,
+)
 
 MARKER_RE = re.compile(
     r"<!-- cdb-batch-pr:v1\r?\n(?P<body>.*?)\r?\n-->",
@@ -110,6 +116,10 @@ class CandidatePullRequest:
     additions: int
     deletions: int
     merge_mode: str | None = None
+    changed_file_paths: tuple[str, ...] | None = None
+    file_contents: Mapping[str, str] | None = None
+    inventory_complete: bool = True
+    head_ref_oid: str | None = None
 
 
 @dataclass(frozen=True)
@@ -129,6 +139,7 @@ class RoutingResult:
     policy_id: str
     reason_codes: tuple[str, ...]
     candidate_prs_considered: tuple[int, ...]
+    reviewability_evidence: tuple[dict[str, object], ...] = ()
 
 
 @dataclass(frozen=True)
@@ -136,6 +147,7 @@ class MergeTriggerResult:
     triggered: bool
     trigger_ids: tuple[str, ...]
     next_steward_state: str
+    reviewability_evidence: dict[str, object] | None = None
 
 
 def _split_sorted(value: str) -> tuple[str, ...]:
@@ -260,6 +272,32 @@ def _references_issue(body: str, issue_number: int) -> bool:
     }
 
 
+def assess_candidate_reviewability(
+    policy: RoutingPolicy,
+    candidate: CandidatePullRequest,
+    *,
+    limit_source: str = "reviewability",
+) -> ReviewabilityAssessment:
+    """Shared size assessment for router compatibility and merge triggers."""
+    if limit_source == "merge_triggers":
+        limits = policy.merge_triggers
+    else:
+        limits = policy.reviewability
+    reader = None
+    if candidate.file_contents is not None:
+        reader = mapping_content_reader(candidate.file_contents)
+    return assess_reviewability(
+        physical_changed_files=candidate.changed_files,
+        additions=candidate.additions,
+        deletions=candidate.deletions,
+        files_limit=int(limits["changed_files_limit"]),
+        diff_lines_limit=int(limits["diff_lines_limit"]),
+        changed_paths=candidate.changed_file_paths,
+        inventory_complete=candidate.inventory_complete,
+        content_reader=reader,
+    )
+
+
 def _result(
     *,
     policy: RoutingPolicy,
@@ -276,6 +314,7 @@ def _result(
     merge_mode: str = "batch",
     reasons: tuple[str, ...] = (),
     considered: tuple[int, ...] = (),
+    reviewability_evidence: tuple[dict[str, object], ...] = (),
 ) -> RoutingResult:
     return RoutingResult(
         issue_number=issue.number,
@@ -293,6 +332,7 @@ def _result(
         policy_id=policy.policy_id,
         reason_codes=reasons,
         candidate_prs_considered=considered,
+        reviewability_evidence=reviewability_evidence,
     )
 
 
@@ -411,6 +451,7 @@ def route_issue(
 
     compatible: list[tuple[CandidatePullRequest, BatchMetadata]] = []
     incompatibilities: set[str] = set()
+    reviewability_evidence: list[dict[str, object]] = []
     for pr in candidates:
         if "cdb-batch-pr:" not in pr.body:
             continue
@@ -464,10 +505,9 @@ def route_issue(
         ):
             incompatibilities.add("FORBIDDEN_RISK_COMBINATION")
             continue
-        if (
-            pr.changed_files >= policy.reviewability["changed_files_limit"]
-            or pr.additions + pr.deletions >= policy.reviewability["diff_lines_limit"]
-        ):
+        assessment = assess_candidate_reviewability(policy, pr)
+        reviewability_evidence.append({"pr": pr.number, **assessment.to_evidence()})
+        if assessment.exceeds_reviewability:
             incompatibilities.add("REVIEWABILITY_LIMIT_REACHED")
             continue
         if metadata.steward_state != "accepting_slices":
@@ -491,9 +531,11 @@ def route_issue(
                 incompatible=("LOCK_CONFLICT",),
                 reasons=("LOCK_CONFLICT",),
                 considered=considered,
+                reviewability_evidence=tuple(reviewability_evidence),
             )
         compatible.append((pr, metadata))
 
+    evidence = tuple(reviewability_evidence)
     if len(compatible) > 1:
         return _result(
             policy=policy,
@@ -504,6 +546,7 @@ def route_issue(
             incompatible=tuple(sorted(incompatibilities)),
             reasons=("MULTIPLE_COMPATIBLE_PRS",),
             considered=considered,
+            reviewability_evidence=evidence,
         )
     if compatible:
         pr, metadata = compatible[0]
@@ -525,6 +568,7 @@ def route_issue(
             incompatible=tuple(sorted(incompatibilities)),
             lock_state=pr.lock_state.value,
             considered=considered,
+            reviewability_evidence=evidence,
         )
     return _result(
         policy=policy,
@@ -538,6 +582,7 @@ def route_issue(
         incompatible=tuple(sorted(incompatibilities)),
         reasons=("NO_COMPATIBLE_OPEN_PR",),
         considered=considered,
+        reviewability_evidence=evidence,
     )
 
 
@@ -564,11 +609,10 @@ def evaluate_merge_triggers(
     age_seconds = (observed_at - candidate.created_at).total_seconds()
     if age_seconds >= policy.merge_triggers["age_days"] * 86400:
         triggers.append("AGE_LIMIT")
-    if (
-        candidate.changed_files >= policy.merge_triggers["changed_files_limit"]
-        or candidate.additions + candidate.deletions
-        >= policy.merge_triggers["diff_lines_limit"]
-    ):
+    assessment = assess_candidate_reviewability(
+        policy, candidate, limit_source="merge_triggers"
+    )
+    if assessment.exceeds_reviewability:
         triggers.append("SIZE_LIMIT")
     if dependency_blocker:
         triggers.append("DEPENDENCY_BLOCKER")
@@ -580,4 +624,5 @@ def evaluate_merge_triggers(
         triggered=bool(triggers),
         trigger_ids=tuple(triggers),
         next_steward_state="merge_candidate" if triggers else metadata.steward_state,
+        reviewability_evidence=assessment.to_evidence(),
     )
