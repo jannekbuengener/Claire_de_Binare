@@ -1,10 +1,3 @@
-<!--
-Canonical Skill Source: docs/skills/cdb-ci-cd-guard/SKILL.md
-Surface: docs (canonical)
-Sync Status: canonical
-Last Verified: 2026-07-01
-Drift Policy: Surface-Adapter duerfen nur mit dokumentierter Begruendung abweichen.
--->
 ---
 name: cdb-ci-cd-guard
 description: CDB CI/CD governance audit and hardening for the Claire de Binare repository. Use when GitHub Actions, rulesets, required checks, secret guards, or fake-green behavior need to be verified or fixed. Derive protected refs, required checks, and enforcement behavior from current repo evidence and GitHub state instead of assuming old branch patterns or legacy repository-canon paths.
@@ -37,6 +30,14 @@ disable-model-invocation: true
 - No silent stub or mock path on protected refs.
 - Missing critical secrets on protected refs must fail closed.
 - Without explicit approval, default to audit plus fix plan rather than mutation.
+- The sole live merge-relevant required context is `cdb-local-ci` (a Commit
+  Status, not a Check Run). Verify live with `gh api`; do not hardcode a
+  required-checks list from memory. Hosted Actions check-runs are
+  advisory/safety-relevant only (migration #4169).
+- Autonomous squash merge is capability-based (see
+  `docs/runbooks/merge_policy_ci_gate.md` § Capability-based autonomous
+  merge), not agent-type-based. `--admin` is never a valid bypass for a
+  missing/red `cdb-local-ci`.
 
 ## Workflow
 1. Inventory active workflows and identify gate-bearing jobs.

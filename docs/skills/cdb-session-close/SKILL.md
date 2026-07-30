@@ -1,10 +1,3 @@
-<!--
-Canonical Skill Source: docs/skills/cdb-session-close/SKILL.md
-Surface: docs (canonical)
-Sync Status: canonical
-Last Verified: 2026-07-01
-Drift Policy: Surface-Adapter duerfen nur mit dokumentierter Begruendung abweichen.
--->
 ---
 name: cdb-session-close
 description: >
@@ -78,7 +71,12 @@ Close a working session so the repo, git state, and issue thread reflect reality
    - If push is not done, say so explicitly in the rest status.
    - If the issue state should change, describe the correct next state rather than claiming it changed when it did not.
    - If the work is still local-only, make that explicit in the issue-facing close-out instead of implying landed or review-ready state.
-   - If a PR was merged during this session, proceed to step 6. If no PR exists or the PR is still open, skip steps 6–7 and record `pending main-verification` or `n.a.` in the rest status.
+   - If a PR was merged during this session, proceed to step 6. If no PR
+     exists: skip steps 6–7. If the PR is still open because this session
+     could not prove the autonomous-merge capability gate (missing
+     `statuses:write`, unbound evidence, auth/publisher block): record
+     `DONE_PR_OPEN_MERGE_HANDOFF` with the exact missing capability and
+     skip steps 6–7. Do not use `--admin` and do not loop retries.
 6. Verify delivery on `main` — only when a PR was merged in this session:
 
    ```bash
@@ -103,6 +101,10 @@ Close a working session so the repo, git state, and issue thread reflect reality
 
    - If a session worktree is present and unambiguously from this session: `git worktree remove <path>`.
    - If a feature branch is merged and clearly tied to this session: `git branch -d <branch>`.
+   - After squash merge with `--delete-branch`: do **not** re-push or
+     recreate the deleted remote branch (anti-repush). Local `[gone]`
+     tracking refs may remain historical; clean them with `git fetch
+     --prune` / `git branch -d` only when unambiguous.
    - Otherwise: record as `n.a.` or `pending` — no blind deletes.
    - Leftover untracked files (session logs, patches): name each one explicitly and state whether it is committed, discarded, or pending. Do not ignore.
 8. Post-close Control-Plane Follow-up Intake — mandatory after steps 6–7 when applicable, or after any issue-driven session close:

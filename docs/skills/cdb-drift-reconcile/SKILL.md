@@ -1,10 +1,3 @@
-<!--
-Canonical Skill Source: docs/skills/cdb-drift-reconcile/SKILL.md
-Surface: docs (canonical)
-Sync Status: canonical
-Last Verified: 2026-07-01
-Drift Policy: Surface-Adapter duerfen nur mit dokumentierter Begruendung abweichen.
--->
 ---
 name: cdb-drift-reconcile
 description: >
@@ -98,7 +91,9 @@ report `skill surface drift unknown`.
 
 **Follow-up rule:** On `DRIFT_FOUND`, either re-mirror the affected adapters from
 canon within the current scope, or create a deduplicated re-mirror follow-up issue
-and hand off. Never auto-merge without green required checks.
+and hand off. Never auto-merge without live `cdb-local-ci` SUCCESS on the
+exact PR head (SSOT: `docs/runbooks/merge_policy_ci_gate.md`). Autonomous
+merge remains capability-based when those gates are proven.
 
 ## Classification Rules
 
