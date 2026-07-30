@@ -102,6 +102,20 @@ and hand off. Never auto-merge without live `cdb-local-ci` SUCCESS on the
 exact PR head (SSOT: `docs/runbooks/merge_policy_ci_gate.md`). Autonomous
 merge remains capability-based when those gates are proven.
 
+## Post-merge branch / worktree drift
+
+When classifying local/remote branch lineage after a squash merge:
+
+- Treat `[gone]` after `--delete-branch` as normal, not as a push trigger.
+- Detect republished merged heads (same topic branch reappearing remotely
+  after MERGED) as drift; do not recommend `git push -u origin HEAD` to
+  "restore" them.
+- Squash non-ancestor / `git cherry +` is **not** alone proof of unmerged
+  work — require tree/patch equivalence (see `cdb-session-close`
+  § Safe Post-Merge Cleanup).
+- Worktree/branch cleanup routing: hand off to `cdb-session-close`; do not
+  remove foreign worktrees from this skill.
+
 ## Classification Rules
 
 - `belegt` means the repo surface directly contradicts or lags the current canon.
