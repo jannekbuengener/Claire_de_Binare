@@ -19,6 +19,18 @@ REQUIRED_ENTRY_FIELDS = (
     "manifest_sha256",
     "published_at_utc",
 )
+# Optional extension fields (#4170) — must not break existing ledger readers.
+OPTIONAL_ENTRY_FIELDS = (
+    "publisher_backend",
+    "github_object_type",
+    "github_check_run_id",
+    "github_app_id",
+    "github_installation_id",
+    "check_run_name",
+    "head_sha",
+    "external_id",
+    "remote_verification_status",
+)
 
 
 @dataclass(frozen=True)
@@ -31,9 +43,20 @@ class LedgerEntry:
     published_at_utc: str
     github_status_id: int | None = None
     state: str | None = None
+    publisher_backend: str | None = None
+    github_object_type: str | None = None
+    github_check_run_id: int | None = None
+    github_app_id: int | None = None
+    github_installation_id: int | None = None
+    check_run_name: str | None = None
+    head_sha: str | None = None
+    external_id: str | None = None
+    remote_verification_status: str | None = None
 
     def to_dict(self) -> dict[str, Any]:
-        return asdict(self)
+        data = asdict(self)
+        # Drop None optionals to keep legacy entries compact.
+        return {key: value for key, value in data.items() if value is not None}
 
 
 def default_ledger_path(artifacts_root: Path) -> Path:
@@ -118,6 +141,28 @@ def find_exact_publication(
         if all(str(entry.get(key)) == str(value) for key, value in expected.items()):
             return dict(entry)
     return None
+
+
+def find_check_run_publication(
+    ledger: dict[str, Any],
+    *,
+    external_id: str,
+) -> dict[str, Any] | None:
+    """Return a prior Check Run publication for the same external_id."""
+    matches = [
+        dict(entry)
+        for entry in ledger.get("entries") or []
+        if isinstance(entry, dict)
+        and str(entry.get("external_id") or "") == external_id
+    ]
+    if not matches:
+        return None
+    if len(matches) > 1:
+        # Same external_id must be unique; multiple entries are a conflict.
+        raise LedgerError(
+            f"Ledger has {len(matches)} entries for external_id {external_id!r}"
+        )
+    return matches[0]
 
 
 def append_entry(path: Path, entry: LedgerEntry) -> None:

@@ -16,6 +16,9 @@ _TOKEN_RE = re.compile(
     r"|Bearer\s+[A-Za-z0-9\-._~+/]+=*"
     r")\b"
 )
+_PRIVATE_KEY_RE = re.compile(
+    r"-----BEGIN[A-Z ]*PRIVATE KEY-----[\s\S]*?-----END[A-Z ]*PRIVATE KEY-----"
+)
 _AUTH_HEADER_RE = re.compile(
     r"(?i)(authorization\s*[:=]\s*)(['\"]?)([^'\"\s,;]+)(['\"]?)"
 )
@@ -28,6 +31,7 @@ def redact_text(value: str) -> str:
         return value
     redacted = _AUTH_HEADER_RE.sub(r"\1\2[REDACTED]\4", value)
     redacted = _QUERY_TOKEN_RE.sub(r"\1[REDACTED]", redacted)
+    redacted = _PRIVATE_KEY_RE.sub("[REDACTED_PRIVATE_KEY]", redacted)
     redacted = _TOKEN_RE.sub("[REDACTED]", redacted)
     return redacted
 
@@ -44,6 +48,8 @@ def redact_mapping(payload: Any) -> Any:
                 "access_token",
                 "password",
                 "secret",
+                "private_key",
+                "privatekey",
             }:
                 out[key] = "[REDACTED]"
             else:

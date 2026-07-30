@@ -1,6 +1,8 @@
 """GitHub reads plus gh-cli-only Commit Status writes.
 
-Check Runs require a GitHub App and are intentionally separate.
+Check Runs are implemented in ``ci.publisher.backends.CheckRunBackend`` and
+require a GitHub App installation token — this client intentionally has no
+``create_check_run`` method.
 """
 
 from __future__ import annotations
