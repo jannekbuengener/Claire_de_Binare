@@ -107,9 +107,6 @@ make daily-check
 make backup              # Postgres + Redis to F:\Claire_Backups
 make security-scan       # gitleaks + ruff + bandit
 make pre-close           # pre-close sweep (untracked artefacts)
-make rollback MR=<number>  # rollback a merged MR
-make cleanup             # DRY-RUN: clean up merged branches
-make cleanup-live        # LIVE: clean up merged branches
 make mcp-config-validate # validate MCP configuration
 ```
 

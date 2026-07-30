@@ -41,7 +41,7 @@ else
   SECRETS_PATH ?= $(HOME)/Documents/.secrets/.cdb
 endif
 
-.PHONY: help test test-unit test-integration test-e2e test-local test-local-stress test-local-performance test-local-lifecycle test-local-cli test-local-chaos test-local-backup test-full-system test-coverage docker-up docker-down docker-health systemcheck daily-check backup backup-postgres-only restore backup-health paper-trading-start paper-trading-logs paper-trading-stop replay-shadow-run rollback cleanup mcp-config-validate security-scan pre-close root-layout-guard onboarding-doctor context-env-check context-query-config-init context-up context-down context-status context-logs context-restart context-schema-apply context-schema-check context-reset-local context-scan context-import-dry-run context-import-local context-query-smoke context-readonly-query-harness context-smoke context-smoke-db context-graph-vector-proof context-memory-db-proof context-claim-evidence-proof context-memory-rediscovery-proof context-doctor context-certify context-live-invoke context-live-invoke-full audit-trail-t3-bootstrap audit-trail-t3-proof audit-trail-t3-status audit-trail-t3-down surreal-validate
+.PHONY: help test test-unit test-integration test-e2e test-local test-local-stress test-local-performance test-local-lifecycle test-local-cli test-local-chaos test-local-backup test-full-system test-coverage docker-up docker-down docker-health systemcheck daily-check backup backup-postgres-only restore backup-health paper-trading-start paper-trading-logs paper-trading-stop replay-shadow-run mcp-config-validate security-scan pre-close root-layout-guard onboarding-doctor context-env-check context-query-config-init context-up context-down context-status context-logs context-restart context-schema-apply context-schema-check context-reset-local context-scan context-import-dry-run context-import-local context-query-smoke context-readonly-query-harness context-smoke context-smoke-db context-graph-vector-proof context-memory-db-proof context-claim-evidence-proof context-memory-rediscovery-proof context-doctor context-certify context-live-invoke context-live-invoke-full audit-trail-t3-bootstrap audit-trail-t3-proof audit-trail-t3-status audit-trail-t3-down surreal-validate
 
 help:
 	@echo "Claire de Binare - Test Commands"
@@ -83,11 +83,8 @@ help:
 	@echo "Session-Close:"
 	@echo "  make pre-close               - Pre-close sweep: prueft untracked Artefakte in kanonischen Pfaden"
 	@echo ""
-	@echo "Repo-Hygiene & Rollback:"
+	@echo "Repo-Hygiene:"
 	@echo "  make root-layout-guard       - Validate tracked root against canonical allowlist"
-	@echo "  make rollback MR=<number>    - Rollback eines Merge Requests"
-	@echo "  make cleanup                 - Aufräumen merged Branches (DRY-RUN)"
-	@echo "  make cleanup-live            - Aufräumen merged Branches (LIVE)"
 	@echo ""
 	@echo "Context (SurrealDB Local Runtime — kein Trading-Scope):"
 	@echo "  make context-env-check       - Env/Secrets-Guard pruefen (kein Secret-Leak)"
@@ -731,28 +728,6 @@ clean:
 install-dev:
 	@echo "📦 Installiere Development-Dependencies..."
 	pip install -r requirements-dev.txt
-
-# ============================================================================
-# Repo-Hygiene & Rollback (PR-02)
-# ============================================================================
-
-rollback:
-ifndef MR
-	@echo "Error: MR parameter required"
-	@echo "Usage: make rollback MR=<number>"
-	@echo "Example: make rollback MR=88"
-	@exit 1
-endif
-	@echo "🔄 Rolling back MR #$(MR)..."
-	@bash scripts/rollback_pr.sh $(MR)
-
-cleanup:
-	@echo "🧹 Cleanup merged branches (DRY-RUN)..."
-	@DRY_RUN=true bash scripts/cleanup_branches.sh 30
-
-cleanup-live:
-	@echo "⚠️  Cleanup merged branches (LIVE)..."
-	@DRY_RUN=false bash scripts/cleanup_branches.sh 30
 
 # ============================================================================
 # MCP Config Validation
