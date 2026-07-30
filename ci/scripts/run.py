@@ -23,6 +23,7 @@ if str(REPO_ROOT) not in sys.path:
 
 from ci.lib.config import load_yaml, profiles_from_config  # noqa: E402
 from ci.lib.evidence import (  # noqa: E402
+    StageResult,
     assert_run_id_available,
     assert_safe_cleanup_project,
     build_manifest,
@@ -33,6 +34,11 @@ from ci.lib.evidence import (  # noqa: E402
     write_manifest,
 )
 from ci.lib.gitinfo import collect_git_info  # noqa: E402
+from ci.lib.temp_preflight import (  # noqa: E402
+    prepare_ci_temp_root,
+    temp_env_for,
+    write_temp_preflight_report,
+)
 from ci.stages import containers as stage_containers  # noqa: E402
 from ci.stages import docs as stage_docs  # noqa: E402
 from ci.stages import governance as stage_governance  # noqa: E402
@@ -162,13 +168,79 @@ def run_ci(
     selected = [stage] if stage else list(profiles[profile])
     # Always append report aggregation for full/profile runs; for single-stage,
     # still produce a report unless stage==report.
-    stage_results = []
+    stage_results: list[StageResult] = []
     skipped_checks = [
         {
             "check": "policy-gate",
             "skip_reason": "GitHub-native PR API evaluation; local mirror only in Phase 1",
         }
     ]
+
+    # Temp-root preflight before any pytest/unit collection (#4205).
+    print("==> stage temp_preflight")
+    preflight_started = utc_now()
+    preflight = prepare_ci_temp_root(run_dir, rid)
+    preflight_report = run_dir / "reports" / "temp_preflight.json"
+    write_temp_preflight_report(preflight_report, preflight)
+    preflight_ended = utc_now()
+    preflight_stage = StageResult(
+        name="temp_preflight",
+        status="PASS" if preflight.ok else "FAIL",
+        exit_code=0 if preflight.ok else 1,
+        started_at_utc=preflight_started,
+        ended_at_utc=preflight_ended,
+        duration_seconds=0.0,
+        command_summary=[f"prepare_ci_temp_root:{preflight.reason_code}"],
+        log_path="",
+        artifacts=["reports/temp_preflight.json"],
+        skip_reason=None if preflight.ok else preflight.reason_code,
+        required=True,
+    )
+    stage_results.append(preflight_stage)
+    skipped_checks.append(
+        {
+            "check": "temp_root",
+            "skip_reason": f"{preflight.reason_code}:{preflight.redacted_root}",
+        }
+    )
+
+    if not preflight.ok:
+        print(f"temp_preflight FAIL reason_code={preflight.reason_code}")
+        report_result = stage_report.run(ctx, stage_results)
+        stage_results.append(report_result)
+        artifact_paths = sorted(run_dir.rglob("*"))
+        artifact_paths = [p for p in artifact_paths if p.is_file()]
+        artifact_hashes = hash_artifacts(artifact_paths, relative_to=run_dir)
+        ended = utc_now()
+        docker_v, compose_v = _docker_versions()
+        manifest = build_manifest(
+            run_id=rid,
+            commit_sha=git.commit_sha,
+            branch=git.branch,
+            dirty_worktree=git.dirty_worktree,
+            started_at_utc=started,
+            ended_at_utc=ended,
+            host_platform=platform.platform(),
+            tool_versions={
+                "python": platform.python_version(),
+                "ruff": _tool_version(["ruff", "--version"]),
+                "pytest": _tool_version([sys.executable, "-m", "pytest", "--version"]),
+            },
+            docker_version=docker_v,
+            compose_version=compose_v,
+            profile=profile if not stage else f"stage:{stage}",
+            stages=stage_results,
+            skipped_checks=skipped_checks,
+            artifact_hashes=artifact_hashes,
+            repo_name=git.repo_name,
+        )
+        write_manifest(run_dir, manifest)
+        print(f"overall_status={manifest['overall_status']}")
+        print(f"evidence={run_dir}")
+        return 1
+
+    ctx.temp_root = preflight.temp_root
+    ctx.temp_env = temp_env_for(preflight.temp_root)
 
     for name in selected:
         if name == "report":
