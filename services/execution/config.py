@@ -65,5 +65,11 @@ MAX_RETRIES = 3
 RETRY_DELAY_SECONDS = 2
 ORDER_TIMEOUT_SECONDS = 10
 
+# Kill-cancel open-order ledger (#4185). Empty disables disk persistence.
+OPEN_ORDER_LEDGER_PATH = os.getenv("CDB_OPEN_ORDER_LEDGER_PATH", "")
+# Mock resting-order mode for kill-cancel drills (no immediate fill).
+MOCK_RESTING_ORDERS = os.getenv("CDB_MOCK_RESTING_ORDERS", "false").lower() == "true"
+KILL_CANCEL_POLL_SECONDS = float(os.getenv("CDB_KILL_CANCEL_POLL_SECONDS", "1.0"))
+
 # Logging
 LOG_LEVEL = os.getenv("LOG_LEVEL", "INFO")
