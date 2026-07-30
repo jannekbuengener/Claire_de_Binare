@@ -278,6 +278,15 @@ Close a working session so the repo, git state, and issue thread reflect reality
 - Do not mark a session `erledigt` when step 9 found residual work requiring a
   follow-up issue that was not created or linked.
 - Do not silently expand scope to resolve residual findings during close.
+- **Kein sofortiger / kein unmittelbarer `CURRENT_STATUS-only`- oder
+  `ledger-only`-Nachlauf-PR nach Merge** (verboten, Issue `#4218`). Status-
+  oder Ledger-Nachpflege gehört entweder **vor dem Freeze** in den
+  ursprünglichen PR oder später in den nächsten kompatiblen
+  **`docs-governance`**-Batch via `cdb-pr-router`. Unklarheit → fail-closed:
+  dokumentieren und batchen, keinen Einzel-PR öffnen. Enge Ausnahme nur bei
+  nachweislich sicherheitskritisch falschem Claim mit unmittelbarer
+  Runtime-/Risk-/LR-/Echtgeld-Fehlentscheidungsgefahr (begründet, geroutet,
+  Incident-/Governance-Scope — kein gewöhnlicher Status-Tail-PR).
 
 ## Safe Post-Merge Cleanup (canonical)
 

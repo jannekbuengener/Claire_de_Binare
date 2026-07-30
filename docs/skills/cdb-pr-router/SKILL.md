@@ -82,6 +82,10 @@ python -m tools.pr_routing merge-readiness --body-file <BODY_FILE>
 - Never auto-take over a stale lock.
 - Never route new slices to `merge_candidate` or `frozen`.
 - An inventory that reaches the configured PR limit is incomplete and HOLD.
+- Never recommend or create an immediate post-merge `CURRENT_STATUS-only` /
+  `ledger-only`-**Nachlauf-PR**. Status-/Ledger-Nachpflege gehört in den
+  ursprünglichen PR (vor Freeze) oder in einen kompatiblen
+  **`docs-governance`**-Batch (Issue `#4218`).
 
 ## Authority
 

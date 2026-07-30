@@ -113,6 +113,28 @@ Nur ein identisches Paar erlaubt Writes. Einseitige, fremde, beschädigte oder
 stale Locks blockieren. Handoff erfordert paariges `UNLOCK`; stale Locks werden
 nie automatisch übernommen.
 
+## 7.1 Post-Merge: kein CURRENT_STATUS-/Ledger-only Nachlauf-PR
+
+Nach Merge ist ein unmittelbarer `CURRENT_STATUS-only`- oder `ledger-only`
+**Nachlauf-PR** verboten (Issue `#4218`).
+
+Alltagssprache: Merge abschließen, Restpunkt dokumentieren, später sauber
+bündeln — nicht für jede Statuszeile eine neue PR-Kette starten.
+
+**Erlaubt:**
+
+1. Ledger-/Statuszeile **vor dem Freeze** im ursprünglichen PR aufnehmen.
+2. Später in den nächsten kompatiblen **`docs-governance`**-Batch routen
+   (`cdb-pr-router`).
+
+**Fail-closed:** Unklare Sofortnotwendigkeit → kein Einzel-PR; Follow-up
+dokumentieren und batchen.
+
+**Enge Ausnahme:** nachweislich sicherheitskritisch falscher Claim mit
+unmittelbarer Runtime-/Risk-/LR-/Echtgeld-Fehlentscheidungsgefahr; sonst kein
+Sofort-PR. Ausnahme begründet, geroutet, Incident-/Governance-Scope — kein
+gewöhnlicher Status-Tail-PR.
+
 ## 8. Slice-Handoff
 
 Pflicht:
