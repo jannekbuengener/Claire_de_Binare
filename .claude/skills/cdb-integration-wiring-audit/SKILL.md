@@ -18,8 +18,8 @@ disable-model-invocation: true
 Read-only leaf skill of the PR-Acceptance Skill Family v1. Prove whether a
 claimed implementation is actually wired and reachable across ten axes.
 
-Policy: `config/governance/pr-acceptance-policy.v1.yaml` (`cdb-pr-acceptance-v1`)  
-Schema: `docs/contracts/pr_acceptance_skill_family.v1.schema.json`  
+Policy: `config/governance/pr-acceptance-policy.v1.yaml` (`cdb-pr-acceptance-v1`)
+Schema: `docs/contracts/pr_acceptance_skill_family.v1.schema.json`
 Evidence marker: `<!-- cdb-pr-acceptance:v1 -->`
 
 ## Use this skill when
