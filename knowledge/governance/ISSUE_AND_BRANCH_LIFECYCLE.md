@@ -54,6 +54,32 @@ den read-only PR Steward einem kontrollierten Batch-PR zugeordnet werden.
 6. Ein Merge-Trigger friert den PR als `merge_candidate` ein, autorisiert aber
    keinen Merge.
 
+## 4.1 Post-Merge Status-/Ledger-Pflege (kein Nachlauf-PR)
+
+Nach einem Merge ist ein **sofortiger eigener Nachlauf-PR** verboten, wenn sein
+einziger Zweck eine `CURRENT_STATUS-only`- oder `ledger-only`-Nachpflege ist
+(Issue `#4218`).
+
+**Erlaubte Standardpfade:**
+
+1. Status-/Ledger-Anpassung **vor dem Freeze** im ursprünglichen Batch-/Feature-PR.
+2. Spätere Anpassung im nächsten kompatiblen **`docs-governance`**-Batch
+   (über `cdb-pr-router`; kein Sofort-Tail-PR).
+
+**Fail-closed:** Ist unklar, ob eine Korrektur zwingend sofort nötig ist, darf
+kein Einzel-PR entstehen. Der Befund wird als Follow-up dokumentiert und später
+gebündelt.
+
+**Enge Ausnahme (sicherheitskritisch):** Nur wenn ein aktueller Claim
+nachweislich sicherheitskritisch falsch ist und unmittelbar zu falscher
+Runtime-, Risk-, LR- oder Echtgeld-Entscheidung führen könnte, und die Korrektur
+nicht verantwortbar bis zum nächsten Batch warten kann. Dann: Ausnahme explizit
+begründen, `cdb-pr-router` ausführen, dedizierten Governance-/Incident-Scope
+nutzen — keinen gewöhnlichen CURRENT_STATUS-Nachlauf-PR daraus machen.
+
+**Keine Ausnahme:** fehlende Merge-SHA im Ledger, veraltete PR-Zahl/Datumszeile,
+Statuszusammenfassung hinter GitHub-Live-State, kosmetische Nachpflege.
+
 ## 5. Validation und Abschluss
 
 ### Slice-Handoff

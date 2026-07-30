@@ -58,6 +58,15 @@ Always check these areas unless the request explicitly narrows scope further:
    - Do not convert every drift finding into a follow-up issue or workflow change.
    - Keep Board stage separate from LR status at all times.
 
+## Post-Merge Status-/Ledger Drift (Issue #4218)
+
+Stale `CURRENT_STATUS.md` or ledger lines after a merge are **documentation
+drift**, not a reason to open an immediate `CURRENT_STATUS-only` /
+`ledger-only`-**Nachlauf-PR**. Route corrections via freeze-in-original-PR or
+the next compatible **`docs-governance`** batch (`cdb-pr-router`). Fail-closed
+when urgency is unclear. Safety-critical false claims need an explicit
+Incident-/Governance exception — never a routine status-tail PR.
+
 ## Skill Surface Mirror Drift
 
 Since PR #3637 the canonical skill source is `docs/skills/<name>/SKILL.md`.

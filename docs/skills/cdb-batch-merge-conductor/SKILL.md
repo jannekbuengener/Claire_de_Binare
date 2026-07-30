@@ -104,6 +104,9 @@ Missing technical capability maps to `DONE_PR_OPEN_MERGE_HANDOFF`.
 - closing undelivered issues
 - reviving a remote branch after merge
 - inventing `human_merge_authorization` or `BLOCKED_HUMAN_AUTHORITY`
+- opening a post-merge `CURRENT_STATUS-only` / `ledger-only` Nachlauf-PR
+  after squash-merge (Issue `#4218`); ledger/status lines belong **vor dem
+  Freeze** in this PR or later in a `docs-governance` batch
 
 ## Required envelope fields
 
