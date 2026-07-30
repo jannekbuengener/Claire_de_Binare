@@ -8,6 +8,8 @@ Repo-versionierte Session-Skills für Cursor Agents. Jeder Skill lebt in `<name>
 |---|---|
 | [`cdb-session-start`](cdb-session-start/SKILL.md) | Vor Repo-/GitHub-/Implementierungsarbeit |
 | [`cdb-pr-router`](cdb-pr-router/SKILL.md) | Vor Plan-, Branch-, Worktree- oder PR-Erstellung |
+| [`cdb-integration-wiring-audit`](cdb-integration-wiring-audit/SKILL.md) | PR-Acceptance wiring/reachability audit (read-only) |
+| [`cdb-pr-gap-classifier`](cdb-pr-gap-classifier/SKILL.md) | PR-Acceptance residual-work classification (read-only) |
 | [`cdb-session-close`](cdb-session-close/SKILL.md) | Nach Implementierung/Validierung, vor Abschluss |
 
 ## Control / planning
