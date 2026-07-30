@@ -1,9 +1,8 @@
 # Evidence: Kill-Cancel Open Orders (#4185)
 
-**Getesteter Code-Commit:** 
-*(wird nach Commit auf den exakten PR-Head gesetzt)*
+**Getesteter Code-Commit:** `58620baede7208f567fdcd5d1d6e3f322a338e38`
 
-**Run-ID:** 
+**Run-ID:** `4185_g1g2_hold_58620bae`
 
 **Verdict:** `HOLD`
 
@@ -47,8 +46,8 @@ nicht als aktueller Head-Beweis gelesen werden.
 - Open-order truth: OpenOrderRegistry (+ optional JSON ledger)
 - Cancel contract: CancelOrderRequest / CancelOrderResponse / readback
 - Batch verdict **HOLD** bei bestätigtem Cancel ohne Positions-SSOT
-- Unit/Contract: `tests/unit/execution/test_kill_cancel_open_orders.py`
-- Compose-E2E: am finalen Head (siehe PR-Body / compose evidence run_id)
+- Unit/Contract: `tests/unit/execution/test_kill_cancel_open_orders.py` (27 PASS)
+- Compose-E2E: siehe PR-Body (scenarios 1–12 am validierten Tip; Cleanup 0/0/0)
 
 Maschinenlesbares Manifest: `4185_kill_cancel_open_orders.json` (Schema `cdb-kill-cancel-evidence/v1`).
 
