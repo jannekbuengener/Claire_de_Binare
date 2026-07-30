@@ -66,7 +66,7 @@ STATE_FILE = Path(
 LEDGER_PATH = Path(
     os.environ.get(
         "CDB_OPEN_ORDER_LEDGER_PATH",
-        "/tmp/cdb_open_orders.json",
+        "/app/logs/cdb_open_orders.json",
     )
 )
 
@@ -128,6 +128,17 @@ def _set_active(*, reason: str = "manual") -> None:
     )
     assert response.status_code == 200, response.text
     assert response.json()["active"] is True
+
+
+def _clear_open_residuals() -> None:
+    """Cancel any leftover opens via kill, then resume inactive acceptance."""
+    _set_active(reason="manual")
+    _wait_for_kill_cancel(
+        predicate=lambda snap: int(snap.get("residual_open_order_count") or 0) == 0
+        and snap.get("last_verdict") in {"PASS", "PASS_IDLE", "HOLD"},
+        timeout_s=45.0,
+    )
+    _set_inactive()
 
 
 def _wait_for_message(pubsub, *, timeout_s: float = 10.0) -> dict | None:
@@ -202,14 +213,19 @@ def _register_multiple_resting(client: redis.Redis, *, n: int = 3) -> list[dict]
         or 0
     )
     results = []
+    stamp = f"{time.time_ns()}"
     for i in range(n):
-        result = _send_resting_order(client, suffix=f"rest-{i}-{int(time.time())}")
+        expected = before + i + 1
+        result = _send_resting_order(client, suffix=f"rest-{i}-{stamp}")
         assert _is_schema_mapped_resting_open(result), result
+        _wait_for_kill_cancel(
+            predicate=lambda snap, exp=expected: int(
+                snap.get("residual_open_order_count") or 0
+            )
+            >= exp,
+            timeout_s=20.0,
+        )
         results.append(result)
-    _wait_for_kill_cancel(
-        predicate=lambda snap: int(snap.get("residual_open_order_count") or 0)
-        >= before + n
-    )
     return results
 
 
@@ -218,25 +234,24 @@ def _register_multiple_resting(client: redis.Redis, *, n: int = 3) -> list[dict]
 
 def test_s1_s2_inactive_keeps_resting_orders_open(redis_client: redis.Redis) -> None:
     """S1+S2: multiple resting orders registered; kill inactive → no cancels."""
-    _set_inactive()
+    _clear_open_residuals()
     status = _execution_status()
     assert status["mode"] == "mock"
-    before = int(
-        (status.get("kill_cancel") or {}).get("residual_open_order_count") or 0
-    )
     results = _register_multiple_resting(redis_client, n=3)
     assert len(results) == 3
-    kc = _wait_for_kill_cancel(
-        predicate=lambda snap: int(snap.get("residual_open_order_count") or 0)
-        >= before + 3
-    )
-    assert kc.get("last_verdict") in {None, "PASS_IDLE", "PASS"}
-    assert "KILL_CANCEL_PASS" not in (kc.get("last_reason_codes") or [])
+    kc = _execution_status().get("kill_cancel") or {}
+    assert int(kc.get("residual_open_order_count") or 0) >= 3
+    assert kc.get("hold_new_orders") is False
+    assert kc.get("ready_for_new_orders") is True
+    # Inactive kill must not clear resting opens (stale last_reason_codes OK).
+    time.sleep(2.0)
+    kc2 = _execution_status().get("kill_cancel") or {}
+    assert int(kc2.get("residual_open_order_count") or 0) >= 3
 
 
 def test_s3_s5_active_cancels_confirmed(redis_client: redis.Redis) -> None:
     """S3+S5: kill active cancels cancelable opens; readback removes residuals."""
-    _set_inactive()
+    _clear_open_residuals()
     _register_multiple_resting(redis_client, n=2)
     _wait_for_kill_cancel(
         predicate=lambda snap: int(snap.get("residual_open_order_count") or 0) >= 2
@@ -268,7 +283,7 @@ def test_s4_unevaluable_fail_closed(redis_client: redis.Redis) -> None:
 
 def test_s9_double_kill_idempotent(redis_client: redis.Redis) -> None:
     """S9: second kill while already active must not contradict first cancel."""
-    _set_inactive()
+    _clear_open_residuals()
     _register_multiple_resting(redis_client, n=2)
     _wait_for_kill_cancel(
         predicate=lambda snap: int(snap.get("residual_open_order_count") or 0) >= 2
@@ -294,7 +309,7 @@ def test_s9_double_kill_idempotent(redis_client: redis.Redis) -> None:
 
 def test_s10a_ledger_persists_open_orders(redis_client: redis.Redis) -> None:
     """S10a: resting registration persists open-order ledger for restart reconstruction."""
-    _set_inactive()
+    _clear_open_residuals()
     _register_multiple_resting(redis_client, n=2)
     _wait_for_kill_cancel(
         predicate=lambda snap: int(snap.get("residual_open_order_count") or 0) >= 2

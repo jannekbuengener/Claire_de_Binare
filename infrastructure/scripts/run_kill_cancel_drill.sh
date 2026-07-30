@@ -259,17 +259,35 @@ risk = os.environ["RISK_BASE_URL"]
 execution = os.environ["EXECUTION_BASE_URL"]
 ledger = Path(os.environ["CDB_OPEN_ORDER_LEDGER_PATH"])
 
-# Deactivate, place two resting orders via redis, activate kill WITHOUT waiting for full cancel
-# by writing ledger residual then activating after stop — handled by shell restart below.
-# Here: deactivate + seed ledger file with synthetic residual for reconstruction.
-requests.post(f"{risk}/kill-switch/deactivate", json={
-    "operator": "issue-4185-drill",
-    "justification": "restart prep",
-}, timeout=10).raise_for_status()
+# Clear leftovers, deactivate, place resting orders, activate kill, then shell restarts
+# execution so S10b proves restart reconcile under active kill + ledger residual.
+def activate():
+    r = requests.post(f"{risk}/kill-switch/activate", json={
+        "reason": "manual",
+        "message": "4185 restart prep clear",
+        "operator": "issue-4185-drill",
+    }, timeout=10)
+    r.raise_for_status()
+
+def deactivate():
+    r = requests.post(f"{risk}/kill-switch/deactivate", json={
+        "operator": "issue-4185-drill",
+        "justification": "restart prep",
+    }, timeout=10)
+    r.raise_for_status()
+
+activate()
+deadline = time.time() + 45
+while time.time() < deadline:
+    kc = requests.get(f"{execution}/status", timeout=10).json().get("kill_cancel") or {}
+    if int(kc.get("residual_open_order_count") or 0) == 0:
+        break
+    time.sleep(0.5)
+deactivate()
 deadline = time.time() + 20
 while time.time() < deadline:
     kc = requests.get(f"{execution}/status", timeout=10).json().get("kill_cancel") or {}
-    if kc.get("ready_for_new_orders") is True:
+    if kc.get("ready_for_new_orders") is True and kc.get("hold_new_orders") is False:
         break
     time.sleep(0.5)
 else:
