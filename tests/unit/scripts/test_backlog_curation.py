@@ -539,11 +539,29 @@ def test_should_skip_dir_segment_and_existing_skip_contract(
 
 
 def test_platform_path_normalization_for_skip_and_nested_git(tmp_path: Path) -> None:
+    """Separators and nested-.git markers must be decided on real paths."""
     assert backlog_curation.should_skip_dir(".worktrees/foo") is True
-    assert backlog_curation.should_skip_dir(r".worktrees\foo") is True
+    assert backlog_curation.should_skip_dir(".worktrees\\foo") is True
+    assert backlog_curation.should_skip_dir("docs/worktrees-guide") is False
 
-    nested = tmp_path / "vendor" / "nested"
-    nested.mkdir(parents=True)
-    (nested / ".git").mkdir()
-    mixed = Path(str(nested).replace("/", "\\") if "\\" not in str(nested) else nested)
-    assert backlog_curation.is_nested_git_root(tmp_path, mixed) is True
+    nested_dir = tmp_path / "vendor" / "nested-dir"
+    nested_dir.mkdir(parents=True)
+    (nested_dir / ".git").mkdir()
+    assert backlog_curation.is_nested_git_root(tmp_path, nested_dir) is True
+    assert backlog_curation.is_nested_git_root(tmp_path, tmp_path) is False
+
+    nested_file = tmp_path / "vendor" / "nested-file"
+    nested_file.mkdir(parents=True)
+    (nested_file / ".git").write_text(
+        "gitdir: ../.git/worktrees/linked\n", encoding="utf-8"
+    )
+    assert backlog_curation.is_nested_git_root(tmp_path, nested_file) is True
+
+    outside = tmp_path.parent / f"{tmp_path.name}-outside-nested"
+    outside.mkdir(exist_ok=True)
+    (outside / ".git").mkdir(exist_ok=True)
+    try:
+        assert backlog_curation.is_nested_git_root(tmp_path, outside) is True
+    finally:
+        (outside / ".git").rmdir()
+        outside.rmdir()
