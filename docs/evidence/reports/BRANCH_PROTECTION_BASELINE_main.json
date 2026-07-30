@@ -3,7 +3,7 @@
     "enabled": false
   },
   "allow_force_pushes": {
-    "enabled": true
+    "enabled": false
   },
   "allow_fork_syncing": {
     "enabled": false

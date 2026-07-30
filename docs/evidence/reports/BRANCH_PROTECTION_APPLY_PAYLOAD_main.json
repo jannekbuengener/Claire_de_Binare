@@ -16,12 +16,7 @@
   "required_status_checks": {
     "checks": [
       {
-        "app_id": 15368,
-        "context": "ci (Unit/Integration + Lint gesammelt)"
-      },
-      {
-        "app_id": 15368,
-        "context": "policy-gate"
+        "context": "cdb-local-ci"
       }
     ],
     "strict": true
