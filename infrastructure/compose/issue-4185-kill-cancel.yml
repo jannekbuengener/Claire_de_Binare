@@ -41,13 +41,14 @@ services:
       TRACE_CONTRACT_V1_ENABLED: "1"
       MEXC_TESTNET: "true"
       CDB_MOCK_RESTING_ORDERS: "true"
-      # Shared volume path so runner can observe execution ledger persistence.
-      CDB_OPEN_ORDER_LEDGER_PATH: /app/logs/cdb_open_orders.json
+      # Host-bind ledger dir (chmod 777 by drill script) — writable for execuser.
+      CDB_OPEN_ORDER_LEDGER_PATH: /var/cdb/open_orders/cdb_open_orders.json
       CDB_KILL_CANCEL_POLL_SECONDS: "0.5"
       CDB_KILL_SWITCH_STATE_FILE: /app/kill_switch/.cdb_kill_switch.state
     volumes:
       - drill_4185_logs:/app/logs
       - kill_switch_4185_state:/app/kill_switch
+      - ${CDB_4185_EVIDENCE_DIR}/ledger:/var/cdb/open_orders
     healthcheck:
       test: ["CMD-SHELL", "kill -0 1 || exit 1"]
       interval: 1s
@@ -65,7 +66,7 @@ services:
       CDB_4185_DRILL: "1"
       MEXC_TESTNET: "true"
       CDB_MOCK_RESTING_ORDERS: "true"
-      CDB_OPEN_ORDER_LEDGER_PATH: /app/logs/cdb_open_orders.json
+      CDB_OPEN_ORDER_LEDGER_PATH: /var/cdb/open_orders/cdb_open_orders.json
       CDB_KILL_SWITCH_STATE_FILE: /app/kill_switch/.cdb_kill_switch.state
       RISK_BASE_URL: http://cdb_risk_test:8002
       EXECUTION_BASE_URL: http://cdb_execution_test:8003
@@ -78,6 +79,7 @@ services:
       - drill_4185_logs:/app/logs
       - kill_switch_4185_state:/app/kill_switch
       - ${CDB_4185_EVIDENCE_DIR}:/app/evidence
+      - ${CDB_4185_EVIDENCE_DIR}/ledger:/var/cdb/open_orders
 
 volumes:
   drill_4185_logs:

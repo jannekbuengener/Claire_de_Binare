@@ -28,7 +28,9 @@ fi
 RUN_ID="4185_${SHA8}_$(date -u +%Y%m%dT%H%M%SZ)"
 EVIDENCE_ROOT="${EVIDENCE_ROOT:-artifacts/evidence-runs/4185}"
 EVIDENCE_DIR="${REPO_ROOT}/${EVIDENCE_ROOT}/${RUN_ID}"
-mkdir -p "$EVIDENCE_DIR"
+mkdir -p "${EVIDENCE_DIR}/ledger"
+# execuser (uid 1000) must write the shared open-order ledger bind mount.
+chmod 777 "${EVIDENCE_DIR}/ledger"
 
 BASE_FILE="${REPO_ROOT}/infrastructure/compose/base.yml"
 TEST_FILE="${REPO_ROOT}/infrastructure/compose/test.yml"

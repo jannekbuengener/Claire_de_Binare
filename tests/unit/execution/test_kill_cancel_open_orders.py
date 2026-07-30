@@ -177,6 +177,23 @@ def test_registry_restart_reload(tmp_path: Path) -> None:
     assert reg2.get("o1").status == "SUBMITTED"
 
 
+@pytest.mark.unit
+def test_registry_persist_oserror_keeps_in_memory(tmp_path: Path, monkeypatch) -> None:
+    """Ledger IO failure must not drop in-memory open-order truth (#4185)."""
+    path = tmp_path / "locked" / "ledger.json"
+    reg = OpenOrderRegistry(ledger_path=path)
+
+    def _boom(*_args, **_kwargs):
+        raise PermissionError("ledger not writable")
+
+    monkeypatch.setattr(Path, "write_text", _boom)
+    reg.register(
+        internal_order_id="o1", symbol="BTCUSDT", status="PENDING", quantity=1
+    )
+    assert reg.count_open() == 1
+    assert reg.get("o1") is not None
+
+
 # --- Cancellation outcomes ---
 
 

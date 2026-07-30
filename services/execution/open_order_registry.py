@@ -12,6 +12,7 @@ canonical open-order truth. This registry:
 from __future__ import annotations
 
 import json
+import logging
 import os
 import threading
 from copy import deepcopy
@@ -20,6 +21,8 @@ from pathlib import Path
 from typing import Iterable, Mapping
 
 from core.utils.clock import utcnow
+
+logger = logging.getLogger(__name__)
 
 OPEN_STATUSES = frozenset({"PENDING", "SUBMITTED", "PARTIALLY_FILLED"})
 TERMINAL_STATUSES = frozenset({"FILLED", "CANCELLED", "REJECTED"})
@@ -60,7 +63,14 @@ class OpenOrderRegistry:
             Path(ledger_path or env_path) if (ledger_path or env_path) else None
         )
         if self._ledger_path is not None:
-            self._ledger_path.parent.mkdir(parents=True, exist_ok=True)
+            try:
+                self._ledger_path.parent.mkdir(parents=True, exist_ok=True)
+            except OSError as exc:
+                logger.warning(
+                    "open-order ledger parent not writable (%s): %s",
+                    self._ledger_path.parent,
+                    exc,
+                )
             self.load_from_ledger()
 
     @property
@@ -259,5 +269,14 @@ class OpenOrderRegistry:
             "orders": [asdict(r) for r in self._orders.values()],
         }
         tmp = self._ledger_path.with_suffix(self._ledger_path.suffix + ".tmp")
-        tmp.write_text(json.dumps(payload, sort_keys=True, indent=2), encoding="utf-8")
-        tmp.replace(self._ledger_path)
+        try:
+            self._ledger_path.parent.mkdir(parents=True, exist_ok=True)
+            tmp.write_text(
+                json.dumps(payload, sort_keys=True, indent=2), encoding="utf-8"
+            )
+            tmp.replace(self._ledger_path)
+        except OSError as exc:
+            # In-memory registry remains authoritative; do not fail order submit.
+            logger.warning(
+                "open-order ledger persist failed (%s): %s", self._ledger_path, exc
+            )

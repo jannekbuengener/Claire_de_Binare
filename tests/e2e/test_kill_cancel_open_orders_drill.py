@@ -66,7 +66,7 @@ STATE_FILE = Path(
 LEDGER_PATH = Path(
     os.environ.get(
         "CDB_OPEN_ORDER_LEDGER_PATH",
-        "/app/logs/cdb_open_orders.json",
+        "/var/cdb/open_orders/cdb_open_orders.json",
     )
 )
 
