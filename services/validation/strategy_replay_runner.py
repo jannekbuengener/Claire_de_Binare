@@ -76,6 +76,10 @@ from core.replay.binance_window_bank_adapter import (
     load_binance_window_dataset,
 )
 from core.replay.canonical_json import canonical_hash, canonical_json_dumps
+from core.replay.execution_economics_v1 import (
+    ExecutionEconomicsError,
+    resolve_scenario_overrides,
+)
 from core.replay.dataset_provider import (
     DBBackedDatasetProvider,
     DatasetLoadError,
@@ -214,6 +218,7 @@ _BINANCE_WINDOW_DATASET_STRATEGIES: frozenset[str] = frozenset(
     }
 )
 
+
 def _batch_a_runner_dispatch() -> dict[str, Callable[..., dict[str, Any]]]:
     """Resolve Batch-A runners at call time so tests can patch module bindings."""
     return {
@@ -238,15 +243,12 @@ def _batch_a_adapter_ids() -> frozenset[str]:
     return frozenset(adapter_ids)
 
 
-_SUPPORTED_STRATEGY_IDS: frozenset[str] = (
-    frozenset(batch_a_strategy_ids())
-    | frozenset(
-        {
-            PRIMARY_BREAKOUT_STRATEGY_ID,
-            DONCHIAN_BREAKOUT_STRATEGY_ID,
-            BREAKOUT_TREND_FILTER_STRATEGY_ID,
-        }
-    )
+_SUPPORTED_STRATEGY_IDS: frozenset[str] = frozenset(batch_a_strategy_ids()) | frozenset(
+    {
+        PRIMARY_BREAKOUT_STRATEGY_ID,
+        DONCHIAN_BREAKOUT_STRATEGY_ID,
+        BREAKOUT_TREND_FILTER_STRATEGY_ID,
+    }
 )
 _SUPPORTED_SYMBOLS: frozenset[str] = frozenset(
     {
@@ -551,36 +553,8 @@ def _parse_db_dataset_window(db_dataset_window: str) -> tuple[int, int]:
 
 
 # ---------------------------------------------------------------------------
-# Scenario override mapping (fail-closed)
+# Scenario override mapping (fail-closed) — SSOT: execution_economics_v1
 # ---------------------------------------------------------------------------
-# Mapping: scenario override key -> ExecutionSimulator config field
-_SCNARIO_OVERRIDE_KEY_TO_SIMULATOR: dict[str, str] = {
-    "execution_slippage_bps": "BASE_SLIPPAGE_BPS",
-    "fill_rate": "FILL_THRESHOLD",
-    "fill_depth_factor": "DEPTH_IMPACT_FACTOR",
-    "execution_delay_bars": "EXECUTION_DELAY_BARS",
-}
-
-_ALLOWED_SCENARIO_OVERRIDE_KEYS: frozenset[str] = frozenset(
-    {
-        "pack_id",
-        "pack_version",
-        "execution_slippage_bps",
-        "fill_rate",
-        "fill_depth_factor",
-        "execution_delay_bars",
-        "feed_gap_bars",
-        "execution_posture",
-    }
-)
-
-# Overrides die fail-closed rejected werden
-_UNSUPPORTED_SCENARIO_OVERRIDES: frozenset[str] = frozenset(
-    {
-        "feed_gap_seconds",
-        "drop_ticks_on_gap",
-    }
-)
 
 
 @dataclass(frozen=True, slots=True)
@@ -596,43 +570,14 @@ def _apply_scenario_overrides(
     overrides: dict[str, Any],
 ) -> ScenarioResolvedOverrides:
     """Resolve scenario overrides into execution vs replay-data surfaces."""
-    # Check for unsupported overrides first
-    unsupported = set(overrides.keys()) & _UNSUPPORTED_SCENARIO_OVERRIDES
-    if unsupported:
-        raise ReplayRunnerError(
-            f"Scenario override not currently supported: {sorted(unsupported)}. "
-            f"Supported overrides: {sorted(_ALLOWED_SCENARIO_OVERRIDE_KEYS)}. "
-            f"`feed_gap_seconds` is not representable on the strict 1m replay canvas; "
-            f"use explicit bar-level semantics instead."
-        )
-
-    # Check for unknown keys
-    unknown = set(overrides.keys()) - _ALLOWED_SCENARIO_OVERRIDE_KEYS
-    if unknown:
-        raise ReplayRunnerError(
-            f"Scenario overrides contain unknown keys: {sorted(unknown)}. "
-            f"Supported overrides: {sorted(_ALLOWED_SCENARIO_OVERRIDE_KEYS)}"
-        )
-
-    # Build simulator config
-    sim_config: dict[str, Any] = {}
-    replay_data_overrides: dict[str, Any] = {}
-    for override_key, sim_field in _SCNARIO_OVERRIDE_KEY_TO_SIMULATOR.items():
-        if override_key in overrides:
-            value = overrides[override_key]
-            sim_config[sim_field] = value
-
-    if "feed_gap_bars" in overrides:
-        replay_data_overrides["feed_gap_bars"] = overrides["feed_gap_bars"]
-
-    # Pass execution_posture as simulator metadata (dokumentiert, keine numerische Wirkung)
-    posture = overrides.get("execution_posture")
-    if posture:
-        sim_config["_execution_posture"] = posture
-
+    del base_config  # retained for call-site compatibility; mapping is SSOT-driven
+    try:
+        resolved = resolve_scenario_overrides(overrides)
+    except ExecutionEconomicsError as exc:
+        raise ReplayRunnerError(str(exc)) from exc
     return ScenarioResolvedOverrides(
-        simulator_config=sim_config,
-        replay_data_overrides=replay_data_overrides,
+        simulator_config=dict(resolved["simulator_config"]),
+        replay_data_overrides=dict(resolved["replay_data_overrides"]),
     )
 
 
@@ -983,7 +928,18 @@ def _build_momentum_execution_provenance_id(
 
     candles_hash = canonical_hash(
         [
-            {k: c.get(k) for k in ("ts_ms", "open", "high", "low", "close", "volume", "regime_id")}
+            {
+                k: c.get(k)
+                for k in (
+                    "ts_ms",
+                    "open",
+                    "high",
+                    "low",
+                    "close",
+                    "volume",
+                    "regime_id",
+                )
+            }
             for c in candles
         ]
     )
@@ -1847,7 +1803,10 @@ def _resolve_regime_stats_block(
     warmup: int = 0,
 ) -> dict[str, Any]:
     existing = backtest_report.get("regime_stats")
-    if isinstance(existing, dict) and existing.get("schema_version") == "regime_stats.v1":
+    if (
+        isinstance(existing, dict)
+        and existing.get("schema_version") == "regime_stats.v1"
+    ):
         return existing
     if candles is None:
         return build_regime_stats_from_replay([], backtest_report.get("trades") or [])
@@ -2143,7 +2102,9 @@ def _run_scenario_group_path(
         DONCHIAN_BREAKOUT_STRATEGY_ID,
         BREAKOUT_TREND_FILTER_STRATEGY_ID,
     } or _is_batch_a_strategy(config.strategy_id):
-        run_single = _make_pack_a_run_single_fn(candles, config, code_commit, output_dir)
+        run_single = _make_pack_a_run_single_fn(
+            candles, config, code_commit, output_dir
+        )
     else:
         run_single = _make_pb_run_single_fn(candles, config, code_commit, output_dir)
 
