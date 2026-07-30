@@ -1,0 +1,727 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://claire-de-binare.local/contracts/pr_acceptance_skill_family.v1.schema.json",
+  "title": "CDB PR Acceptance Skill Family v1",
+  "description": "Common envelope and specialized result contracts for the four PR-acceptance producers. Evidence comments use marker <!-- cdb-pr-acceptance:v1 -->.",
+  "oneOf": [
+    {
+      "$ref": "#/$defs/WiringAuditEnvelope"
+    },
+    {
+      "$ref": "#/$defs/GapClassifierEnvelope"
+    },
+    {
+      "$ref": "#/$defs/CompletenessReviewEnvelope"
+    },
+    {
+      "$ref": "#/$defs/BatchMergeConductorEnvelope"
+    }
+  ],
+  "$defs": {
+    "GitSha40": {
+      "type": "string",
+      "pattern": "^[a-f0-9]{40}$"
+    },
+    "Subject": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "repository",
+        "pr_number",
+        "head_sha",
+        "base_sha"
+      ],
+      "properties": {
+        "repository": {
+          "type": "string",
+          "minLength": 1
+        },
+        "pr_number": {
+          "type": "integer",
+          "minimum": 1
+        },
+        "head_sha": {
+          "$ref": "#/$defs/GitSha40"
+        },
+        "base_sha": {
+          "$ref": "#/$defs/GitSha40"
+        }
+      }
+    },
+    "Lifecycle": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "state"
+      ],
+      "properties": {
+        "state": {
+          "enum": [
+            "ACCEPTING_SLICES",
+            "SLICE_IN_REVIEW",
+            "COMPLETENESS_REVIEW",
+            "EXTENSION_REQUIRED",
+            "MERGE_CANDIDATE",
+            "FROZEN",
+            "FINAL_VALIDATION",
+            "MERGED",
+            "BLOCKED"
+          ]
+        },
+        "previous_state": {
+          "enum": [
+            "ACCEPTING_SLICES",
+            "SLICE_IN_REVIEW",
+            "COMPLETENESS_REVIEW",
+            "EXTENSION_REQUIRED",
+            "MERGE_CANDIDATE",
+            "FROZEN",
+            "FINAL_VALIDATION",
+            "MERGED",
+            "BLOCKED"
+          ]
+        },
+        "transition_reason": {
+          "type": "string"
+        }
+      }
+    },
+    "Decision": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "verdict"
+      ],
+      "properties": {
+        "verdict": {
+          "type": "string",
+          "minLength": 1
+        },
+        "precedence_applied": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          }
+        },
+        "block_codes": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          }
+        }
+      }
+    },
+    "Finding": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "finding_id",
+        "summary"
+      ],
+      "properties": {
+        "finding_id": {
+          "type": "string",
+          "minLength": 1
+        },
+        "summary": {
+          "type": "string"
+        },
+        "evidence_ids": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          }
+        },
+        "gap_ids": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          }
+        }
+      }
+    },
+    "EvidenceItem": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "evidence_id",
+        "kind",
+        "ref"
+      ],
+      "properties": {
+        "evidence_id": {
+          "type": "string",
+          "minLength": 1
+        },
+        "kind": {
+          "type": "string"
+        },
+        "ref": {
+          "type": "string"
+        },
+        "notes": {
+          "type": "string"
+        }
+      }
+    },
+    "Handoff": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "next_producer",
+        "notes"
+      ],
+      "properties": {
+        "next_producer": {
+          "type": [
+            "string",
+            "null"
+          ],
+          "enum": [
+            "cdb-integration-wiring-audit",
+            "cdb-pr-gap-classifier",
+            "cdb-pr-completeness-review",
+            "cdb-batch-merge-conductor",
+            null
+          ]
+        },
+        "notes": {
+          "type": "string"
+        },
+        "session_status": {
+          "type": "string"
+        }
+      }
+    },
+    "CommonEnvelopeBase": {
+      "type": "object",
+      "required": [
+        "schema_version",
+        "policy_id",
+        "producer",
+        "subject",
+        "observed_at",
+        "run_status",
+        "lifecycle",
+        "decision",
+        "findings",
+        "evidence",
+        "limitations",
+        "handoff",
+        "result"
+      ],
+      "properties": {
+        "schema_version": {
+          "const": "cdb-pr-acceptance-skill-family/v1"
+        },
+        "policy_id": {
+          "const": "cdb-pr-acceptance-v1"
+        },
+        "producer": {
+          "enum": [
+            "cdb-integration-wiring-audit",
+            "cdb-pr-gap-classifier",
+            "cdb-pr-completeness-review",
+            "cdb-batch-merge-conductor"
+          ]
+        },
+        "subject": {
+          "$ref": "#/$defs/Subject"
+        },
+        "observed_at": {
+          "type": "string",
+          "format": "date-time",
+          "description": "RFC3339 timestamp"
+        },
+        "run_status": {
+          "enum": [
+            "COMPLETE",
+            "BLOCKED",
+            "INVALIDATED_BY_DRIFT"
+          ]
+        },
+        "lifecycle": {
+          "$ref": "#/$defs/Lifecycle"
+        },
+        "decision": {
+          "$ref": "#/$defs/Decision"
+        },
+        "findings": {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/Finding"
+          }
+        },
+        "evidence": {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/EvidenceItem"
+          }
+        },
+        "limitations": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          }
+        },
+        "handoff": {
+          "$ref": "#/$defs/Handoff"
+        },
+        "evidence_marker": {
+          "const": "<!-- cdb-pr-acceptance:v1 -->"
+        }
+      }
+    },
+    "WiringAxisRow": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "dimension",
+        "applicability",
+        "state",
+        "evidence_ids",
+        "gap_ids",
+        "affected_claim",
+        "current_pr_fix_required",
+        "reason"
+      ],
+      "properties": {
+        "dimension": {
+          "enum": [
+            "Entry Point",
+            "Registration / Discovery",
+            "Configuration",
+            "Dataflow",
+            "Persistence",
+            "Runtime",
+            "Failure Path",
+            "Observability",
+            "Documentation",
+            "Legacy / Bypass Risk"
+          ]
+        },
+        "applicability": {
+          "enum": [
+            "REQUIRED",
+            "OPTIONAL",
+            "NOT_APPLICABLE"
+          ]
+        },
+        "state": {
+          "enum": [
+            "PASS",
+            "FAIL",
+            "NOT_APPLICABLE",
+            "UNKNOWN"
+          ]
+        },
+        "evidence_ids": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          }
+        },
+        "gap_ids": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          }
+        },
+        "affected_claim": {
+          "type": "string"
+        },
+        "current_pr_fix_required": {
+          "type": "boolean"
+        },
+        "reason": {
+          "type": "string"
+        }
+      },
+      "allOf": [
+        {
+          "if": {
+            "properties": {
+              "state": {
+                "const": "NOT_APPLICABLE"
+              }
+            }
+          },
+          "then": {
+            "properties": {
+              "reason": {
+                "type": "string",
+                "minLength": 1
+              }
+            },
+            "required": [
+              "reason"
+            ]
+          }
+        }
+      ]
+    },
+    "WiringAuditResult": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "axes",
+        "verdict"
+      ],
+      "properties": {
+        "axes": {
+          "type": "array",
+          "minItems": 10,
+          "maxItems": 10,
+          "items": {
+            "$ref": "#/$defs/WiringAxisRow"
+          }
+        },
+        "verdict": {
+          "enum": [
+            "UNREACHABLE_IMPLEMENTATION",
+            "BLOCKED_UNCLEAR_INTEGRATION",
+            "WIRING_REQUIRED_IN_CURRENT_PR",
+            "WIRING_FOLLOWUP_ALLOWED",
+            "WIRED_AND_REACHABLE"
+          ]
+        }
+      }
+    },
+    "GapClassificationRow": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "gap_id",
+        "classification_status",
+        "summary",
+        "affected_claim",
+        "current_pr_fix_required",
+        "separate_issue_required",
+        "suggested_issue_target",
+        "why_not_now",
+        "evidence_ids",
+        "dedupe_result"
+      ],
+      "properties": {
+        "gap_id": {
+          "type": "string",
+          "minLength": 1
+        },
+        "classification_status": {
+          "enum": [
+            "CLASSIFIED",
+            "BLOCKED_INSUFFICIENT_EVIDENCE"
+          ]
+        },
+        "classification": {
+          "type": [
+            "string",
+            "null"
+          ],
+          "enum": [
+            "MUST_FIX_IN_CURRENT_PR",
+            "FOLLOWUP_AFTER_MERGE",
+            "SEPARATE_DEDICATED_PR",
+            "PARKED_NOT_ACTIVE",
+            "NOT_A_REAL_GAP",
+            null
+          ]
+        },
+        "summary": {
+          "type": "string"
+        },
+        "affected_claim": {
+          "type": "string"
+        },
+        "current_pr_fix_required": {
+          "type": "boolean"
+        },
+        "separate_issue_required": {
+          "type": "boolean"
+        },
+        "suggested_issue_target": {
+          "type": [
+            "string",
+            "null"
+          ]
+        },
+        "why_not_now": {
+          "type": "string"
+        },
+        "evidence_ids": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          }
+        },
+        "dedupe_result": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": [
+            "matched_existing",
+            "existing_issue"
+          ],
+          "properties": {
+            "matched_existing": {
+              "type": "boolean"
+            },
+            "existing_issue": {
+              "type": [
+                "integer",
+                "null"
+              ]
+            },
+            "notes": {
+              "type": "string"
+            }
+          }
+        }
+      },
+      "allOf": [
+        {
+          "if": {
+            "properties": {
+              "classification_status": {
+                "const": "BLOCKED_INSUFFICIENT_EVIDENCE"
+              }
+            }
+          },
+          "then": {
+            "properties": {
+              "classification": {
+                "type": "null"
+              }
+            },
+            "required": [
+              "classification"
+            ]
+          }
+        },
+        {
+          "if": {
+            "properties": {
+              "classification_status": {
+                "const": "CLASSIFIED"
+              }
+            }
+          },
+          "then": {
+            "properties": {
+              "classification": {
+                "enum": [
+                  "MUST_FIX_IN_CURRENT_PR",
+                  "FOLLOWUP_AFTER_MERGE",
+                  "SEPARATE_DEDICATED_PR",
+                  "PARKED_NOT_ACTIVE",
+                  "NOT_A_REAL_GAP"
+                ]
+              }
+            },
+            "required": [
+              "classification"
+            ]
+          }
+        }
+      ]
+    },
+    "GapClassifierResult": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "gaps"
+      ],
+      "properties": {
+        "gaps": {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/GapClassificationRow"
+          }
+        }
+      }
+    },
+    "CompletenessDimensionRow": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "dimension",
+        "state",
+        "reason"
+      ],
+      "properties": {
+        "dimension": {
+          "enum": [
+            "Funktionalität",
+            "Wiring / Integration",
+            "Konfiguration",
+            "Persistenz / Zustand",
+            "Runtime / Deployment",
+            "Tests / Validierung",
+            "Dokumentation / Runbooks / Contracts",
+            "Operative Readiness / Observability"
+          ]
+        },
+        "state": {
+          "enum": [
+            "PASS",
+            "FAIL",
+            "NOT_APPLICABLE",
+            "UNKNOWN"
+          ]
+        },
+        "reason": {
+          "type": "string"
+        },
+        "evidence_ids": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          }
+        }
+      }
+    },
+    "CompletenessReviewResult": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "dimensions",
+        "verdict"
+      ],
+      "properties": {
+        "dimensions": {
+          "type": "array",
+          "minItems": 8,
+          "maxItems": 8,
+          "items": {
+            "$ref": "#/$defs/CompletenessDimensionRow"
+          }
+        },
+        "verdict": {
+          "enum": [
+            "MERGE_CANDIDATE",
+            "CURRENT_PR_EXTENSION_REQUIRED",
+            "PR_SPLIT_REQUIRED",
+            "FOLLOWUP_SLICES_REQUIRED",
+            "BLOCKED_MISSING_EVIDENCE",
+            "BLOCKED_SCOPE_AMBIGUITY",
+            "BLOCKED_VALIDATION_GAP",
+            "BLOCKED_UNCLEAR_CLOSURE"
+          ]
+        }
+      }
+    },
+    "BatchMergeConductorResult": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "phase",
+        "block_codes"
+      ],
+      "properties": {
+        "phase": {
+          "enum": [
+            "FREEZE",
+            "MAIN_INTEGRATION",
+            "FINAL_VALIDATION",
+            "MERGE",
+            "HANDOFF_SESSION_CLOSE"
+          ]
+        },
+        "block_codes": {
+          "type": "array",
+          "items": {
+            "enum": [
+              "BLOCKED_SCOPE_OR_REVIEW",
+              "BLOCKED_HEAD_BASE_DRIFT",
+              "BLOCKED_LOCAL_VALIDATION",
+              "BLOCKED_REQUIRED_STATUS",
+              "BLOCKED_AUTH_PUBLISHER",
+              "BLOCKED_MERGE_METHOD",
+              "BLOCKED_ISSUE_CLOSEOUT"
+            ]
+          }
+        },
+        "merge_executed": {
+          "type": "boolean"
+        },
+        "closure_eligible_issues": {
+          "type": "array",
+          "items": {
+            "type": "integer"
+          }
+        }
+      }
+    },
+    "WiringAuditEnvelope": {
+      "allOf": [
+        {
+          "$ref": "#/$defs/CommonEnvelopeBase"
+        },
+        {
+          "type": "object",
+          "properties": {
+            "producer": {
+              "const": "cdb-integration-wiring-audit"
+            },
+            "result": {
+              "$ref": "#/$defs/WiringAuditResult"
+            }
+          }
+        }
+      ]
+    },
+    "GapClassifierEnvelope": {
+      "allOf": [
+        {
+          "$ref": "#/$defs/CommonEnvelopeBase"
+        },
+        {
+          "type": "object",
+          "properties": {
+            "producer": {
+              "const": "cdb-pr-gap-classifier"
+            },
+            "result": {
+              "$ref": "#/$defs/GapClassifierResult"
+            }
+          }
+        }
+      ]
+    },
+    "CompletenessReviewEnvelope": {
+      "allOf": [
+        {
+          "$ref": "#/$defs/CommonEnvelopeBase"
+        },
+        {
+          "type": "object",
+          "properties": {
+            "producer": {
+              "const": "cdb-pr-completeness-review"
+            },
+            "result": {
+              "$ref": "#/$defs/CompletenessReviewResult"
+            }
+          }
+        }
+      ]
+    },
+    "BatchMergeConductorEnvelope": {
+      "allOf": [
+        {
+          "$ref": "#/$defs/CommonEnvelopeBase"
+        },
+        {
+          "type": "object",
+          "properties": {
+            "producer": {
+              "const": "cdb-batch-merge-conductor"
+            },
+            "result": {
+              "$ref": "#/$defs/BatchMergeConductorResult"
+            }
+          }
+        }
+      ]
+    }
+  }
+}
