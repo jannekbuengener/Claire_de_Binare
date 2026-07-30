@@ -24,6 +24,7 @@ from ci.publisher.ledger import (
     append_entry,
     assert_run_id_not_reused,
     default_ledger_path,
+    find_exact_publication,
     load_ledger,
 )
 from ci.publisher.redaction import redact_mapping, redact_text
@@ -43,6 +44,29 @@ def _print_json(payload: object) -> None:
         json.dumps(
             redact_mapping(payload), sort_keys=True, indent=2, ensure_ascii=False
         )
+    )
+
+
+def _latest_context_status(
+    statuses: object, *, context: str
+) -> dict[str, object] | None:
+    if not isinstance(statuses, list):
+        return None
+    matching = [
+        status
+        for status in statuses
+        if isinstance(status, dict) and status.get("context") == context
+    ]
+    if not matching or any(
+        not (status.get("updated_at") or status.get("created_at"))
+        for status in matching
+    ):
+        return None
+    return max(
+        matching,
+        key=lambda status: str(
+            status.get("updated_at") or status.get("created_at") or ""
+        ),
     )
 
 
@@ -388,21 +412,60 @@ def cmd_publish(args: argparse.Namespace) -> int:
                     f"PR #{args.pr_number} head SHA {head} does not match "
                     f"commit_sha {commit_sha}"
                 )
-        api_result = client.create_commit_status(result.intended_payload, dry_run=False)
-        status_id = api_result.get("id")
-        append_entry(
-            ledger_path,
-            LedgerEntry(
-                run_id=result.run_id,
-                commit_sha=result.commit_sha,
-                repository=result.repository,
-                status_context=args.status_context,
-                manifest_sha256=result.manifest_sha256,
-                published_at_utc=utc_now(),
-                github_status_id=int(status_id) if status_id is not None else None,
-                state=result.intended_payload.state,
-            ),
+        prior = find_exact_publication(
+            ledger,
+            run_id=result.run_id,
+            commit_sha=result.commit_sha,
+            repository=result.repository,
+            status_context=args.status_context,
+            manifest_sha256=result.manifest_sha256,
+            state=result.intended_payload.state,
         )
+        idempotent_noop = False
+        if prior is not None:
+            live = client.get_commit_status(commit_sha)
+            latest = _latest_context_status(
+                live.get("statuses"), context=args.status_context
+            )
+            expected_body = result.intended_payload.to_api_body()
+            expected_status_id = prior.get("github_status_id")
+            if latest is not None and all(
+                (
+                    latest.get("state") == expected_body["state"],
+                    latest.get("description") == expected_body["description"],
+                    latest.get("target_url") == expected_body.get("target_url"),
+                    expected_status_id is not None,
+                    str(latest.get("id")) == str(expected_status_id),
+                )
+            ):
+                api_result = {
+                    "id": prior.get("github_status_id"),
+                    "state": result.intended_payload.state,
+                    "context": args.status_context,
+                    "sha": commit_sha,
+                    "idempotent_noop": True,
+                }
+                idempotent_noop = True
+        if not idempotent_noop:
+            api_result = client.create_commit_status(
+                result.intended_payload, dry_run=False
+            )
+            status_id = api_result.get("id")
+            append_entry(
+                ledger_path,
+                LedgerEntry(
+                    run_id=result.run_id,
+                    commit_sha=result.commit_sha,
+                    repository=result.repository,
+                    status_context=args.status_context,
+                    manifest_sha256=result.manifest_sha256,
+                    published_at_utc=utc_now(),
+                    github_status_id=(
+                        int(status_id) if status_id is not None else None
+                    ),
+                    state=result.intended_payload.state,
+                ),
+            )
     except (AuthenticationError, GitHubApiError, LedgerError, PublisherError) as exc:
         print(f"REJECT: {redact_text(str(exc))}", file=sys.stderr)
         _print_json(

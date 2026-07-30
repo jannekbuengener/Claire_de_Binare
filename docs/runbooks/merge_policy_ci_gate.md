@@ -1,5 +1,17 @@
 # Merge Policy and CI Gate
 
+## Delivery slices versus merge candidates
+
+Ein normaler Issue-Slice wird in den durch `cdb-pr-router` bestimmten PR
+geliefert. Targeted Tests, betroffener Lint/Format-Scope und
+`git diff --check` reichen für den Slice-Handoff; Full Fast-CI,
+`cdb-local-ci`, Merge und Issue-Closure sind dabei `false`.
+
+Erst `steward_state=merge_candidate` friert den PR ein und aktiviert die
+folgenden Merge-Gates. Slice-Evidence darf nie als Final-Head-Evidence
+wiederverwendet werden. Der finale Nachweis bindet sowohl PR-Head als auch den
+integrierten Base-SHA.
+
 ## Verbindlicher Vertrag
 
 Für Pull Requests auf `main` gilt genau ein merge-relevanter Required Context
@@ -49,7 +61,8 @@ session (local or cloud) may autonomously run
 `gh pr merge <PR> --squash --delete-branch` once all of the following are
 proven true for the exact PR head SHA:
 
-1. `autonomous_regular_merge_allowed` for this task scope.
+1. PR is a frozen `merge_candidate` and
+   `autonomous_regular_merge_allowed` applies to this task scope.
 2. PR fully in approved scope, not draft, mergeable.
 3. No blocking reviews / unresolved scope or governance blockers.
 4. Full local Fast-CI PASS for the exact PR head.

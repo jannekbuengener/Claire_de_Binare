@@ -95,8 +95,11 @@ make context-doctor
 Before opening an issue, branch, or PR:
 
 1. Search open issues and PRs for duplicates or overlapping scope.
-2. Extend existing work instead of creating parallel governance or doc hubs.
-3. Link related issues in the PR body (`Refs #...`).
+2. Run `python -m tools.pr_routing route --issue <N>` before finalizing the
+   Session-Plan or creating a Branch, Worktree, or PR.
+3. Reuse the uniquely compatible target PR selected by the router.
+4. Create a new Batch-/Dedicated-PR only when the router explicitly decides it.
+5. Link delivered issues through the machine-readable PR ledger and `Closes #N`.
 
 Worktree and branch cleanup of obsolete leftovers is tracked in
 [Issue #4006](https://github.com/jannekbuengener/Claire_de_Binare/issues/4006) —
@@ -104,7 +107,9 @@ do not delete foreign worktrees or branches inside other scopes.
 
 ### Branch Naming
 
-Follow this pattern: `<type>/<issue-number>-<short-description>`
+Branch names follow the router decision. Dedicated branches normally use
+`<type>/<issue-number>-<short-description>`; Batch branches use
+`batch/<lane>-issue-<founding-issue>`.
 
 | Type | Purpose |
 |------|---------|
@@ -149,22 +154,22 @@ docs(onboarding): reconcile zero-context developer setup
 
 ### Pull Requests
 
-1. Create a feature branch from `main`
-2. Make your changes with meaningful commits
-3. Run lint + test: `ruff check . && pytest -q -k "not test_mcp_time_server_runtime"`
-4. Push and create a PR against `main`
-5. **After PR creation, set a `LOCK:` comment on the PR** before any further
-   push, PR, or GitHub mutation. This is a single-writer lock.
-   Format: `LOCK: agent=<agent> issue=<issue> ts=<UTC timestamp> mode=single-writer`
-6. Wait for required checks (CI gate must pass)
-7. Squash-merge when approved and green
+1. Route before creating any work surface.
+2. Acquire the Issue reservation or the existing PR's dual lock.
+3. Make one coherent Issue-Slice with meaningful commits.
+4. Run targeted tests, affected lint/format, and `git diff --check`.
+5. Push to the assigned PR and update its ledger plus the Issue handoff.
+6. Default close status is `DONE_SLICE_ADDED_TO_BATCH_PR`; do not merge or close
+   the Issue.
+7. Only a frozen `merge_candidate` receives Full Fast-CI and exact-SHA
+   `cdb-local-ci` before a normal squash merge.
 
 **PR Title Format:** Same as commit message format.
-**PR Template:** Use the provided template (`.github/pull_request_template.md`).
+**PR Templates:** Dedicated PRs use `.github/pull_request_template.md`; Batch
+PRs use `.github/PULL_REQUEST_TEMPLATE/cdb_batch_pr.md`.
 
-**Important**: An issue-status comment (e.g. "working on this") does **not**
-replace the required PR `LOCK:`. The `LOCK:` must be on the PR itself before
-any mutation.
+**Important:** Batch writes require matching Issue- and PR-Level Locks. A
+one-sided lock is `PARTIAL_LOCK` and blocks.
 
 ### Testing Requirements
 
@@ -205,6 +210,10 @@ Inside the CI gate: `ruff check .`, unit/integration tests, and Black on changed
 Python under `services/` and `tests/`. Coverage >= 80% applies when running
 `make test-coverage` locally; the default CI slice does not enforce coverage on
 every PR.
+
+Normal Issue-Slices use targeted Validation and do not publish
+`cdb-local-ci`. Full Fast-CI and the required Commit Status apply to the exact,
+frozen final merge head.
 
 Classify your PR scope with the policy-gate rules in the merge-policy runbook.
 Do not assume labels without checking the live diff classification.

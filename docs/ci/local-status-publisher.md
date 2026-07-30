@@ -69,6 +69,10 @@ with an explicit `skip_reason`. Skips are disclosed in the status description.
 ## Check Run versus Commit Status
 
 **Phase 3a uses Commit Status** (`POST /repos/{owner}/{repo}/statuses/{sha}`).
+The trusted publisher performs this write exclusively through
+`gh api --method POST ... --input -`; it never places tokens or Authorization
+headers in command arguments, logs, or Evidence. Read-only verification may
+continue through the existing GitHub client.
 
 | Surface | Auth needed | Phase 3a |
 |---------|-------------|----------|

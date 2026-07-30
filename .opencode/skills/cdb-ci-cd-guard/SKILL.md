@@ -72,3 +72,23 @@ This skill audits CI/CD tooling with external documentation dependencies:
 - concrete enforcement gaps, grouped by workflow or ruleset
 - mapping table: workflow -> trigger/ref scope -> secret behavior -> merge effect
 - minimal fix plan, or patchset if explicit approval exists
+
+## Slice Validation
+
+- targeted Tests und relevante Contract-Tests,
+- Lint/Format für betroffene Dateien,
+- `git diff --check`,
+- kein Full Fast-CI als Default,
+- kein `cdb-local-ci` Publish.
+
+## Final Batch Head Validation
+
+- PR ist `merge_candidate` und für neue Slices eingefroren,
+- Full Fast-CI auf dem exakten finalen Head,
+- integrierter Base-SHA ist in der Evidence gebunden,
+- lokaler Policy-Gate-Mirror ist grün,
+- `cdb-local-ci=success` liegt als Commit Status auf exakt diesem Head,
+- Head-/Base-Drift erzwingt vollständige Revalidierung.
+
+Check Runs und Commit Status sind getrennte GitHub-Typen. Ein namensgleicher
+Check Run erfüllt den Required Commit Status nicht.

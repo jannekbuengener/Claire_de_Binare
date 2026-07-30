@@ -48,6 +48,7 @@ Evidence, LOCK, session skills, and output shape live in the shared contract.
 - `cdb-governance-gatekeeper.md`
 - `cdb-implementation-engineer.md`
 - `cdb-market-research-analyst.md`
+- `cdb-pr-steward.md` — read-only PR inventory, routing and merge-trigger evidence
 - `cdb-repository-auditor.md`
 - `cdb-security-triage.md`
 - `cdb-stack-ops-auditor.md`

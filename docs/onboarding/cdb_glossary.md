@@ -387,9 +387,9 @@ LR remains NO-GO. Board stage `trade-capable` is not Live-Go. No Echtgeld-Go.
 - **Primary Source:** [`agents/AGENTS.md`](../../agents/AGENTS.md)
 
 ### PR LOCK
-- **Definition:** A single-writer lock mechanism. The required `LOCK:` comment must be the first PR comment before further push or update.
-- **CDB Context:** Defined in [CDB_AGENT_POLICY.md](../../knowledge/governance/CDB_AGENT_POLICY.md) section 4. Prevents concurrent agent conflicts on the same PR.
-- **Authority Boundary:** Respecting PR LOCK is mandatory. Violation is a policy breach.
+- **Definition:** A paired single-writer lock on Issue and assigned PR. Before a new PR, an Issue reservation uses `batch_pr=pending`; after creation both sides must contain the identical `LOCK:` event.
+- **CDB Context:** Defined in [CDB_AGENT_POLICY.md](../../knowledge/governance/CDB_AGENT_POLICY.md) section 4. A missing, stale, foreign, malformed, or one-sided pair is fail-closed.
+- **Authority Boundary:** `PARTIAL_LOCK` blocks writes. Handoff/release requires matching paired `UNLOCK` events; stale locks are never taken over automatically.
 - **Primary Source:** [`knowledge/governance/CDB_AGENT_POLICY.md`](../../knowledge/governance/CDB_AGENT_POLICY.md)
 
 ### Required Checks

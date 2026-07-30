@@ -2,6 +2,18 @@
 alwaysApply: true
 ---
 
+## PR Router and Batch-Slice precedence
+
+Before Plan finalization, Branch, Worktree or PR creation, run
+`cdb-pr-router`. A normal Session delivers a targeted-tested Slice to the
+assigned PR and ends `DONE_SLICE_ADDED_TO_BATCH_PR` with merge and Issue close
+set to false.
+
+The merge rules below apply only after a Merge Trigger has frozen the PR as
+`merge_candidate`. Full Fast-CI and `cdb-local-ci` are forbidden as
+intermediate-slice evidence. Final evidence binds exact Head and integrated
+Base SHA; either moving invalidates the evidence.
+
 Red, missing, stale, or pending required checks are not a reason to stop and ask Jannek.
 
 The only merge-relevant required context for `main` is `cdb-local-ci` (a Commit
@@ -39,7 +51,8 @@ Autonomous squash merge is capability-based, not agent-type-based. Any
 session — local or cloud — may autonomously squash-merge a PR when ALL of
 the following are proven true:
 
-1. Task allows `autonomous_regular_merge_allowed` for this scope.
+1. PR is a frozen `merge_candidate` and task allows
+   `autonomous_regular_merge_allowed` for this scope.
 2. PR is fully in approved scope, not draft, and mergeable.
 3. No blocking reviews, unresolved scope/governance blockers, or
    `CHANGES_REQUESTED` state.

@@ -2,6 +2,14 @@
 alwaysApply: true
 ---
 
+## Batch-routing boundary
+
+Plan-GO authorizes only the routed Delivery-Slice unless the plan explicitly
+defines a final Merge-Steward phase. It does not authorize a new PR when a
+compatible Batch-PR exists and does not turn a Merge Trigger into merge
+authority. Full Fast-CI, `cdb-local-ci` publish and merge apply only to a frozen
+`merge_candidate` on its exact final Head and integrated Base.
+
 When Jannek approves a plan, that approval covers all explicitly described steps inside that plan scope.
 
 Do not ask for separate micro-approvals such as:

@@ -15,6 +15,7 @@ Spiegelt die Cursor-Skill-Oberfläche unter [`.cursor/skills/README.md`](../../.
 | Skill | Wann |
 |---|---|
 | [`cdb-session-start`](cdb-session-start/SKILL.md) | Vor Repo-/GitHub-/Implementierungsarbeit |
+| [`cdb-pr-router`](cdb-pr-router/SKILL.md) | Read-only Routing vor Plan/Branch/Worktree/PR |
 | [`cdb-session-close`](cdb-session-close/SKILL.md) | Nach Implementierung/Validierung |
 
 ## Control / planning

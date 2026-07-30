@@ -8,7 +8,8 @@ Use this structure:
 
 Status:
 - One of: `DONE_MERGED_CLOSED` | `DONE_LOCAL_POST_MERGE_CLEANUP` |
-  `DONE_PR_OPEN_MERGE_HANDOFF` | `DONE_PR_OPEN` | `DONE_NO_PR` |
+  `DONE_SLICE_ADDED_TO_BATCH_PR` | `DONE_PR_OPEN_MERGE_HANDOFF` |
+  `DONE_PR_OPEN` | `DONE_NO_PR` |
   `BLOCKED_LOCAL_VALIDATION` | `BLOCKED_REQUIRED_STATUS` |
   `BLOCKED_AUTH_PUBLISHER` | `HOLD_SCOPE_OR_REVIEW` | `HOLD_MAIN_OR_HEAD_DRIFT` |
   `HOLD_REMOTE_STATE_DRIFT` | `HOLD_REMOTE_BRANCH_UNEXPECTEDLY_EXISTS` |
@@ -18,6 +19,10 @@ Status:
   `HOLD` | `BLOCKED` | `PARTIAL`
 
 Status rules:
+- `DONE_SLICE_ADDED_TO_BATCH_PR` is the normal Issue-Session result after
+  targeted Validation, Commit/Push, Ledger update and Issue handoff. It means
+  no Full Fast-CI, no `cdb-local-ci` publish, no merge and no Issue close were
+  required for that Slice.
 - `DONE_MERGED_CLOSED` requires live verification that the PR is merged on
   `main` (commit present via `gh api`/`git log`, PR state closed as merged).
   Never report a merged/`DONE_MERGED` status from a queued or assumed merge.

@@ -1,0 +1,115 @@
+{
+  "schema_version": "cdb-pr-routing-policy/v1",
+  "policy_id": "cdb-pr-routing-v1",
+  "base_branch": "main",
+  "candidate_limit": 50,
+  "lanes": {
+    "docs-governance": {
+      "labels": ["docs", "documentation", "governance"],
+      "title_prefixes": ["[DOCS]", "[GOVERNANCE]"],
+      "validation_profile": "docs-governance-v1",
+      "default_merge_mode": "batch"
+    },
+    "agent-skills": {
+      "labels": ["agents", "skills"],
+      "title_prefixes": ["[AGENT]", "[SKILL]"],
+      "validation_profile": "agent-skills-v1",
+      "default_merge_mode": "batch"
+    },
+    "ci-tooling": {
+      "labels": ["ci", "tooling"],
+      "title_prefixes": ["[CI]", "[TOOLING]"],
+      "validation_profile": "ci-tooling-v1",
+      "default_merge_mode": "batch"
+    },
+    "validation-research": {
+      "labels": ["validation", "research", "arvp", "replay"],
+      "title_prefixes": ["[VALIDATION]", "[RESEARCH]", "[ARVP]"],
+      "validation_profile": "validation-research-v1",
+      "default_merge_mode": "batch"
+    },
+    "dependencies": {
+      "labels": ["dependencies"],
+      "title_prefixes": ["[DEPENDENCY]", "[DEPENDENCIES]"],
+      "validation_profile": "dependencies-v1",
+      "default_merge_mode": "batch"
+    },
+    "runtime-risk": {
+      "labels": ["risk", "execution", "runtime"],
+      "title_prefixes": ["[RISK]", "[EXECUTION]", "[RUNTIME]"],
+      "validation_profile": "runtime-risk-v1",
+      "default_merge_mode": "dedicated_or_tightly_scoped"
+    }
+  },
+  "dedicated_rules": {
+    "labels": [
+      "security",
+      "secrets",
+      "database-migration",
+      "live-readiness",
+      "risk",
+      "execution",
+      "runtime"
+    ],
+    "title_prefixes": [
+      "[SECURITY]",
+      "[SECRETS]",
+      "[MIGRATION]",
+      "[LIVE-READINESS]",
+      "[GOVERNANCE][PR-FLOW]",
+      "[RISK]",
+      "[EXECUTION]",
+      "[RUNTIME]"
+    ],
+    "branch_overrides": {
+      "[GOVERNANCE][PR-FLOW]": "governance/pr-steward-batch-routing"
+    }
+  },
+  "compatibility": {
+    "validation_profile_matrix": {
+      "docs-governance-v1": ["docs-governance-v1"],
+      "agent-skills-v1": ["agent-skills-v1"],
+      "ci-tooling-v1": ["ci-tooling-v1"],
+      "validation-research-v1": ["validation-research-v1"],
+      "dependencies-v1": ["dependencies-v1"],
+      "runtime-risk-v1": ["runtime-risk-v1"]
+    },
+    "forbidden_risk_combinations": [
+      ["security", "feature"],
+      ["dependencies", "behavioral-code"],
+      ["database-migration", "unrelated"],
+      ["live-readiness", "maintenance"],
+      ["secrets", "cleanup"],
+      ["paused", "active"]
+    ]
+  },
+  "locks": {
+    "mode": "batch-slice",
+    "require_issue_lock": true,
+    "require_pr_lock": true,
+    "stale_after_hours": 24,
+    "stale_auto_unlock": false
+  },
+  "metadata": {
+    "marker_version": "cdb-batch-pr:v1",
+    "ledger_heading": "CDB Batch Ledger",
+    "ledger_columns": [
+      "Issue",
+      "Status",
+      "Commit",
+      "Targeted Validation",
+      "Risk Class",
+      "Restunsicherheit"
+    ]
+  },
+  "reviewability": {
+    "changed_files_limit": 20,
+    "diff_lines_limit": 1000
+  },
+  "merge_triggers": {
+    "issue_count_limit": 3,
+    "age_days": 5,
+    "changed_files_limit": 20,
+    "diff_lines_limit": 1000
+  }
+}

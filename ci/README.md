@@ -76,6 +76,12 @@ pwsh -File ci/scripts/publish_status.ps1 -Command publish -EvidenceDir ci/artifa
 | containers | `docker build -f ci/Dockerfile` only; no push |
 | report | `reports/check-matrix.json` + fail-closed `manifest.json` |
 
+Auf Windows bleibt `sys.executable -m black` der Default. Falls genau dieser
+Interpreter einen belegten Black-Runtime-Defekt hat, darf der lokale Operator
+`CDB_BLACK_EXECUTABLE` auf eine existierende Black-CLI setzen. Der Runner
+validiert den Pfad fail-closed und protokolliert das konkrete Executable in der
+Stage-Evidence; die Formatprüfung wird nicht übersprungen.
+
 ## Evidence contract
 
 Path: `ci/artifacts/<run_id>/`
@@ -145,6 +151,10 @@ GitHub Actions (ci.yml job ci):
 optional:
 pwsh/make → ci.publisher → GitHub Commit Status (exact SHA; fail-closed)
 ```
+
+GitHub status writes are `gh api` only. Direct Python HTTP writes are forbidden;
+publisher validation, redaction, exact-SHA binding and anti-replay remain
+mandatory.
 
 See also: [docs/ci/index.md](../docs/ci/index.md),
 [docs/ci/local-status-publisher.md](../docs/ci/local-status-publisher.md),

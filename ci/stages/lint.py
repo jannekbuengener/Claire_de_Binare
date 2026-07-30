@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import os
 import subprocess
 from pathlib import Path
 
@@ -35,6 +36,16 @@ def _changed_python_files(repo_root: Path) -> list[str]:
     return [line.strip() for line in result.stdout.splitlines() if line.strip()]
 
 
+def _black_command(python: str) -> list[str]:
+    override = (os.environ.get("CDB_BLACK_EXECUTABLE") or "").strip()
+    if not override:
+        return [python, "-m", "black"]
+    executable = Path(override)
+    if not executable.is_file():
+        raise RuntimeError("CDB_BLACK_EXECUTABLE must name an existing executable file")
+    return [str(executable)]
+
+
 def run(ctx: StageContext) -> StageResult:
     py = python_executable()
     commands: list[list[str]] = [[py, "-m", "ruff", "check", "."]]
@@ -42,9 +53,7 @@ def run(ctx: StageContext) -> StageResult:
     if files:
         commands.append(
             [
-                py,
-                "-m",
-                "black",
+                *_black_command(py),
                 "--config",
                 "pyproject.toml",
                 "--check",

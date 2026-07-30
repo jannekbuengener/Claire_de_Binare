@@ -10,6 +10,19 @@ or references to hidden ChatGPT/internal documents.
 Docs/UI sind Orientierung, keine Autoritaet. LR bleibt NO-GO. No Live-Go. No
 Echtgeld-Go.
 
+## PR Routing (Pflicht)
+
+Vor Plan-Finalisierung, Branch-, Worktree- oder PR-Erstellung:
+
+```powershell
+python -m tools.pr_routing route --issue <issue-number> --agent <agent-id>
+```
+
+Der Prompt muss die Router-Ausgabe mit Ziel-PR/-Branch, Lane, Validation
+Profile, Lock-State und Reason Codes enthalten. `HOLD_*` stoppt alle Writes.
+Der normale Abschluss ist `DONE_SLICE_ADDED_TO_BATCH_PR`; Merge und
+Issue-Closure sind kein Session-Default.
+
 ## Aufgabe
 
 Bearbeite CDB Issue `<issue-number>`:
@@ -120,26 +133,18 @@ rg -n "Live-Go|Echtgeld-Go|LR bleibt NO-GO|Docs/UI sind Orientierung" <target-pa
 
 ## Issue-/PR-Regeln
 
-- Check the target issue and matching open PRs for existing `LOCK:` comments
-  before becoming the writer.
-- Create a branch from current `main` only after the writer surface is clear.
+- Run `cdb-pr-router` before Plan, Branch, Worktree or PR creation.
+- Reuse the uniquely compatible PR; multiple candidates or lock ambiguity mean
+  HOLD.
+- Create a branch only after `CREATE_NEW_BATCH_PR` or `CREATE_DEDICATED_PR`.
 - Commit only intended files.
-- Open a PR with summary, changed files, validation, scope boundary,
-  Safety/LR statement, and issue links.
-- Post the exact `LOCK:` as the first PR comment on the associated PR before
-  further push, PR update, or follow-up GitHub mutation; an issue-only status
-  comment does not satisfy the PR lock requirement.
-- Do not merge while live `cdb-local-ci` is missing/red on the exact PR head,
-  or while scope is unclear. Hosted Actions red due to billing/lock is not
-  automatically a merge blocker.
-- Autonomous squash merge is capability-based (see
-  `docs/runbooks/merge_policy_ci_gate.md`): when the task allows
-  `autonomous_regular_merge_allowed` and all gates are proven, merge with
-  `gh pr merge <PR> --squash --delete-branch` without asking for a separate
-  Merge-GO. Never use `--admin` as a bypass for missing `cdb-local-ci`.
-- If the session lacks `statuses:write` / merge capability: leave the PR open
-  and finish with `DONE_PR_OPEN_MERGE_HANDOFF` (no retry loops).
-- Comment the target issue with the PR link after PR creation.
+- Require matching Issue-/PR-Level Locks before writing a Batch-PR.
+- End a normal Slice with targeted Validation, Ledger update, Issue handoff and
+  `DONE_SLICE_ADDED_TO_BATCH_PR`.
+- Do not publish `cdb-local-ci`, merge or close the Issue for an intermediate
+  Slice.
+- Only a frozen `merge_candidate` enters Full Fast-CI, exact-SHA status and
+  normal squash-merge gates. Never use `--admin` as a bypass.
 - After a live-verified merge (`DONE_MERGED_CLOSED`), comment and close only
   if the merged diff satisfies acceptance. Do not re-push a remote branch
   deleted by `--delete-branch`.
