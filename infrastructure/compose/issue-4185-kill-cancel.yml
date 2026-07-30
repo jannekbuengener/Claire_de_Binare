@@ -1,0 +1,90 @@
+# Issue #4185 - isolated kill-cancel open-orders drill overlay.
+# Use only with base.yml + test.yml and a unique STACK_NAME / compose project.
+# Infra (redis/postgres) inherited from base+test; project name isolates volumes.
+
+services:
+  cdb_risk_test:
+    container_name: ${STACK_NAME}_risk
+    command:
+      - python
+      - -c
+      - >-
+        import runpy;
+        import core.utils.redis_client as redis_client;
+        original = redis_client.create_redis_client;
+        redis_client.create_redis_client = lambda *args, **kwargs:
+        original(*args, **dict(kwargs, socket_timeout=300.0));
+        runpy.run_module('services.risk.service', run_name='__main__')
+    environment:
+      DRY_RUN: "true"
+      MOCK_TRADING: "true"
+      USE_REAL_BALANCE: "false"
+      PAPER_AUTO_UNWIND: "false"
+      TRACE_CONTRACT_V1_ENABLED: "1"
+      MEXC_TESTNET: "true"
+      CDB_KILL_SWITCH_STATE_FILE: /app/kill_switch/.cdb_kill_switch.state
+    volumes:
+      - drill_4185_logs:/app/logs
+      - kill_switch_4185_state:/app/kill_switch
+    healthcheck:
+      test: ["CMD-SHELL", "kill -0 1 || exit 1"]
+      interval: 1s
+      timeout: 1s
+      retries: 3
+
+  cdb_execution_test:
+    container_name: ${STACK_NAME}_execution
+    environment:
+      DRY_RUN: "true"
+      MOCK_TRADING: "true"
+      USE_REAL_BALANCE: "false"
+      TRACE_CONTRACT_V1_ENABLED: "1"
+      MEXC_TESTNET: "true"
+      CDB_MOCK_RESTING_ORDERS: "true"
+      # Host-bind ledger dir (chmod 777 by drill script) — writable for execuser.
+      CDB_OPEN_ORDER_LEDGER_PATH: /var/cdb/open_orders/cdb_open_orders.json
+      CDB_KILL_CANCEL_POLL_SECONDS: "0.5"
+      CDB_KILL_SWITCH_STATE_FILE: /app/kill_switch/.cdb_kill_switch.state
+    volumes:
+      - drill_4185_logs:/app/logs
+      - kill_switch_4185_state:/app/kill_switch
+      - ${CDB_4185_EVIDENCE_DIR}/ledger:/var/cdb/open_orders
+    healthcheck:
+      test: ["CMD-SHELL", "kill -0 1 || exit 1"]
+      interval: 1s
+      timeout: 1s
+      retries: 3
+
+  cdb_test_runner:
+    container_name: ${STACK_NAME}_runner
+    environment:
+      DRY_RUN: "true"
+      MOCK_TRADING: "true"
+      USE_REAL_BALANCE: "false"
+      PAPER_AUTO_UNWIND: "false"
+      TRACE_CONTRACT_V1_ENABLED: "1"
+      CDB_4185_DRILL: "1"
+      MEXC_TESTNET: "true"
+      CDB_MOCK_RESTING_ORDERS: "true"
+      CDB_OPEN_ORDER_LEDGER_PATH: /var/cdb/open_orders/cdb_open_orders.json
+      CDB_KILL_SWITCH_STATE_FILE: /app/kill_switch/.cdb_kill_switch.state
+      RISK_BASE_URL: http://cdb_risk_test:8002
+      EXECUTION_BASE_URL: http://cdb_execution_test:8003
+    volumes:
+      - ../../core:/app/core:ro
+      - ../../services:/app/services:ro
+      - ../../tests:/app/tests:ro
+      - ../../tools:/app/tools:ro
+      - ../../infrastructure:/app/infrastructure:ro
+      - drill_4185_logs:/app/logs
+      - kill_switch_4185_state:/app/kill_switch
+      - ${CDB_4185_EVIDENCE_DIR}:/app/evidence
+      - ${CDB_4185_EVIDENCE_DIR}/ledger:/var/cdb/open_orders
+
+volumes:
+  drill_4185_logs:
+  kill_switch_4185_state:
+
+networks:
+  cdb_test_network:
+    name: ${STACK_NAME}_network
