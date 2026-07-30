@@ -26,6 +26,12 @@ Die früheren Required Checks `ci (Unit/Integration + Lint gesammelt)` und
 `ci.yml` und `policy-gate.yml` bleiben als Workflow-Inhalt / Safety-Gates
 nützlich, ersetzen aber den Required Context nicht.
 
+Lint/Format (orchestrator stage `lint`, Issue #4206): Black und Ruff kommen
+ausschließlich aus dem Pin in `requirements-dev.txt`. Black läuft als
+`python -m black --check` auf dem Changed-File-Satz mit hartem Timeout
+(Default 300s); Timeout und Toolauflösungsfehler sind Stage-`FAIL` mit Reason
+Code, niemals Fake-Green. Details: `ci/README.md` § Black toolchain SSOT.
+
 ## Merge-Gates
 
 Vor einem Merge muss `cdb-local-ci` für den aktuellen PR-Head-SHA erfolgreich

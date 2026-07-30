@@ -6,7 +6,12 @@ from pathlib import Path
 
 import pytest
 
-from ci.stages.lint import _black_command
+from ci.stages.lint import (
+    BLACK_EXECUTABLE_INVALID,
+    BLACK_EXECUTABLE_MISSING,
+    _black_command,
+    redact_path_for_evidence,
+)
 
 pytestmark = [pytest.mark.unit, pytest.mark.contract]
 
@@ -23,8 +28,9 @@ def test_black_command_accepts_existing_explicit_executable(
 ) -> None:
     executable = tmp_path / "black.exe"
     executable.write_bytes(b"test")
-    monkeypatch.setenv("CDB_BLACK_EXECUTABLE", str(executable))
-    assert _black_command("python.exe") == [str(executable)]
+    # Windows-style absolute path with backslashes must remain valid.
+    monkeypatch.setenv("CDB_BLACK_EXECUTABLE", str(executable.resolve()))
+    assert _black_command("python.exe") == [str(executable.resolve())]
 
 
 def test_black_command_rejects_missing_override(
@@ -32,5 +38,37 @@ def test_black_command_rejects_missing_override(
 ) -> None:
     missing = tmp_path / "missing-black.exe"
     monkeypatch.setenv("CDB_BLACK_EXECUTABLE", str(missing))
-    with pytest.raises(RuntimeError, match="existing executable"):
+    with pytest.raises(RuntimeError, match=BLACK_EXECUTABLE_MISSING):
         _black_command("python.exe")
+
+
+def test_black_command_rejects_directory_override(
+    monkeypatch: pytest.MonkeyPatch, tmp_path: Path
+) -> None:
+    monkeypatch.setenv("CDB_BLACK_EXECUTABLE", str(tmp_path))
+    with pytest.raises(RuntimeError, match=BLACK_EXECUTABLE_INVALID):
+        _black_command("python.exe")
+
+
+@pytest.mark.parametrize(
+    "unsafe",
+    [
+        "C:\\tools\\black.exe;calc.exe",
+        "C:\\tools\\black.exe|whoami",
+        "C:\\tools\\black.exe&whoami",
+        "C:\\tools\\$(whoami)\\black.exe",
+        "C:\\tools\\`whoami`\\black.exe",
+    ],
+)
+def test_black_command_rejects_shell_metacharacters(
+    monkeypatch: pytest.MonkeyPatch, unsafe: str
+) -> None:
+    monkeypatch.setenv("CDB_BLACK_EXECUTABLE", unsafe)
+    with pytest.raises(RuntimeError, match=BLACK_EXECUTABLE_INVALID):
+        _black_command("python.exe")
+
+
+def test_redact_path_masks_home() -> None:
+    home = str(Path.home())
+    assert redact_path_for_evidence(f"{home}/tools/black") == "$HOME/tools/black"
+    assert redact_path_for_evidence("/opt/other/black") == "/opt/other/black"

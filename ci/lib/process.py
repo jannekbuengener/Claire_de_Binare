@@ -13,6 +13,10 @@ from dataclasses import dataclass
 from pathlib import Path
 from typing import Mapping, Sequence
 
+# Conventional exit code when a subprocess hits its wall-clock timeout.
+# Matches GNU timeout(1); stages map this to a typed reason_code (never SKIP).
+EXIT_CODE_TIMEOUT = 124
+
 
 @dataclass(frozen=True)
 class CommandResult:
@@ -21,6 +25,8 @@ class CommandResult:
     duration_seconds: float
     stdout: str
     stderr: str
+    timed_out: bool = False
+    reason_code: str | None = None
 
 
 def run_command(
@@ -30,6 +36,7 @@ def run_command(
     log_path: Path,
     env: Mapping[str, str] | None = None,
     timeout: int | None = None,
+    timeout_reason_code: str | None = None,
 ) -> CommandResult:
     # Fail-closed UTF-8 on Windows consoles (emoji in existing scripts).
     base_env = {
@@ -43,16 +50,33 @@ def run_command(
     with log_path.open("w", encoding="utf-8") as handle:
         handle.write(f"$ {' '.join(command)}\n")
         handle.flush()
-        proc = subprocess.run(
-            list(command),
-            cwd=str(cwd),
-            stdout=handle,
-            stderr=subprocess.STDOUT,
-            text=True,
-            env=merged,
-            timeout=timeout,
-            check=False,
-        )
+        try:
+            proc = subprocess.run(
+                list(command),
+                cwd=str(cwd),
+                stdout=handle,
+                stderr=subprocess.STDOUT,
+                text=True,
+                env=merged,
+                timeout=timeout,
+                check=False,
+            )
+        except subprocess.TimeoutExpired:
+            # Never re-raise: callers treat exit_code=124 as FAIL, not SKIP/PASS.
+            reason = timeout_reason_code or "COMMAND_TIMEOUT"
+            handle.write(f"\nTIMEOUT after {timeout}s\n")
+            handle.write(f"reason_code={reason}\n")
+            handle.write(f"exit_code={EXIT_CODE_TIMEOUT}\n")
+            duration = time.perf_counter() - started
+            return CommandResult(
+                command=list(command),
+                exit_code=EXIT_CODE_TIMEOUT,
+                duration_seconds=round(duration, 3),
+                stdout="",
+                stderr="",
+                timed_out=True,
+                reason_code=reason,
+            )
         handle.write(f"\nexit_code={proc.returncode}\n")
     duration = time.perf_counter() - started
     return CommandResult(
@@ -61,4 +85,6 @@ def run_command(
         duration_seconds=round(duration, 3),
         stdout="",
         stderr="",
+        timed_out=False,
+        reason_code=None,
     )

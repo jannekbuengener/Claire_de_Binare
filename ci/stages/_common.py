@@ -6,7 +6,7 @@ import sys
 import time
 from dataclasses import dataclass
 from pathlib import Path
-from typing import Any
+from typing import Any, Mapping
 
 from ci.lib.evidence import StageResult, utc_now
 from ci.lib.process import run_command
@@ -25,6 +25,8 @@ class StageContext:
     git: Any
     profile: str
     resources: dict
+    temp_root: Path | None = None
+    temp_env: dict[str, str] | None = None
 
     @property
     def logs_dir(self) -> Path:
@@ -49,7 +51,14 @@ def run_commands_as_stage(
     name: str,
     commands: list[list[str]],
     required: bool = True,
+    env: Mapping[str, str] | None = None,
+    timeout: int | None = None,
 ) -> StageResult:
+    """Run commands sequentially; first non-zero exit stops the stage as FAIL.
+
+    ``timeout`` applies to each command. On ``subprocess.TimeoutExpired``,
+    ``run_command`` returns exit_code 124 (never SKIP/PASS).
+    """
     started = utc_now()
     log_path = ctx.logs_dir / f"{name}.log"
     summaries: list[str] = []
@@ -58,8 +67,16 @@ def run_commands_as_stage(
     wall_start = time.perf_counter()
     for command in commands:
         part_log = ctx.logs_dir / f"{name}.{len(summaries)}.log"
-        result = run_command(command, cwd=ctx.repo_root, log_path=part_log)
+        result = run_command(
+            command,
+            cwd=ctx.repo_root,
+            log_path=part_log,
+            env=env,
+            timeout=timeout,
+        )
         summaries.append(" ".join(command))
+        if result.timed_out:
+            summaries.append("reason_code=COMMAND_TIMEOUT")
         combined_parts.append(part_log.read_text(encoding="utf-8"))
         if result.exit_code != 0:
             exit_code = result.exit_code

@@ -32,6 +32,7 @@ class StageResult:
     artifacts: list[str] = field(default_factory=list)
     skip_reason: str | None = None
     required: bool = True
+    reason_code: str | None = None
 
 
 class EvidenceError(ValueError):

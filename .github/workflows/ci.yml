@@ -72,7 +72,8 @@ jobs:
           pip install -r requirements.txt
           pip install -r requirements-dev.txt
           pip install -r requirements-mcp.txt
-          pip install ruff black
+          # Toolchain SSOT (#4206): black/ruff pins from requirements-dev.txt only.
+          # Do not reinstall unversioned ruff/black after the requirements install.
 
       - name: Install SurrealDB CLI (pinned v3.1.5)
         run: |

@@ -67,7 +67,7 @@ pwsh -File ci/scripts/publish_status.ps1 -Command publish -EvidenceDir ci/artifa
 
 | Stage | Wrapped commands |
 |-------|------------------|
-| lint | `ruff check .`; `black --config pyproject.toml --check` on changed `*.py` vs `origin/main` |
+| lint | `ruff check .`; `python -m black --config pyproject.toml --check --workers 1` on sorted changed `*.py` vs `origin/main` (timeout-bound) |
 | unit | `pytest -q -k "not test_mcp_time_server_runtime"` (SSOT; thin `ci.yml` delegates here) |
 | docs | `python -m tools.validate_onboarding_docs`; `python -m tools.validate_readme_links`; `python -m tools.ci.docs_conflict_guard`; `python -m tools.ci.repository_canon_guard` |
 | governance | MCP fixture validate; surreal validate; `scripts/governance/run_ci_drift_checks.py` (BP live when readable; offline baseline fallback + disclosure when gh API 403) |
@@ -76,11 +76,19 @@ pwsh -File ci/scripts/publish_status.ps1 -Command publish -EvidenceDir ci/artifa
 | containers | `docker build -f ci/Dockerfile` only; no push |
 | report | `reports/check-matrix.json` + fail-closed `manifest.json` |
 
-Auf Windows bleibt `sys.executable -m black` der Default. Falls genau dieser
-Interpreter einen belegten Black-Runtime-Defekt hat, darf der lokale Operator
-`CDB_BLACK_EXECUTABLE` auf eine existierende Black-CLI setzen. Der Runner
-validiert den Pfad fail-closed und protokolliert das konkrete Executable in der
-Stage-Evidence; die Formatprüfung wird nicht übersprungen.
+### Black toolchain SSOT (#4206)
+
+- **Versionsquelle:** `requirements-dev.txt` (`black==26.5.1`, `ruff==0.16.0`). Keine unversionierte Zweitinstallation in `ci/Dockerfile` oder `.github/workflows/ci.yml`.
+- **Kanonischer Ausführungsweg:** `sys.executable -m black` (CI-Frontdoor-Interpreter), Config aus `pyproject.toml`, nur Changed-Files, `--workers 1`.
+- **Timeout:** Default `300` Sekunden aus `ci/config/resources.yaml` (`black_timeout_seconds`); Override `CDB_BLACK_TIMEOUT_SECONDS` (Cap `900`). Hang → Stage-**FAIL** mit `reason_code=BLACK_TIMEOUT` und Exit 124 — niemals SKIP/PASS. Timeout und Version stehen in der Lint-Evidence.
+- **Reason Codes:** `BLACK_TIMEOUT`, `BLACK_EXECUTABLE_MISSING`, `BLACK_EXECUTABLE_INVALID`, `BLACK_VERSION_MISMATCH`, `BLACK_EXECUTION_FAILED`.
+- **Changed-File-Contract:** deterministisch sortiert; gelöschte Dateien ausgeschlossen; `.codex/**` / `.opencode/**` ausgeschlossen; Git-Fehler fail-closed; leerer Satz explizit geloggt.
+- **Keine globale Python-3.14-Abhängigkeit.**
+
+`CDB_BLACK_EXECUTABLE` bleibt ein strikt validierter Escape Hatch (kein Default):
+existierende reguläre Datei, keine Shell-Argumente, `black --version` muss exakt
+dem Pin aus `requirements-dev.txt` entsprechen. Override-Nutzung wird mit
+`$HOME`-Redaktion in der Evidence ausgewiesen. Abweichungen enden fail-closed.
 
 ## Evidence contract
 
@@ -99,6 +107,16 @@ Bindings:
 - Foreign repo / SHA mismatch / duplicate `run_id` ⇒ reject
 - Any required SKIPPED ⇒ overall `FAIL`
 - Optional SKIPPED requires `skip_reason`
+
+## Temp-root preflight (#4205)
+
+Before unit/pytest stages, the orchestrator probes a run-scoped temp root at
+`ci/artifacts/<run_id>/tmp` (create/read/rename/delete). Failure stops the run
+with a stable reason code (`TEMP_ROOT_*`) and writes
+`reports/temp_preflight.json` (redacted paths only — no user-home absolutes).
+On success, `TEMP`/`TMP`/`TMPDIR` and pytest `--basetemp` / `cache_dir` point
+at that controlled root. No global ACL changes, no foreign-temp cleanup, no
+`.wslconfig` edits.
 
 ## Resources (16 GB host defaults)
 
