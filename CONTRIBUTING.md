@@ -191,10 +191,15 @@ pytest tests/e2e/ -v -m e2e
 Merge contract on `main` (SSOT:
 [`docs/runbooks/merge_policy_ci_gate.md`](docs/runbooks/merge_policy_ci_gate.md)):
 
-| Check | Source |
-|-------|--------|
-| `ci (Unit/Integration + Lint gesammelt)` | `.github/workflows/ci.yml` |
-| `policy-gate` | `.github/workflows/policy-gate.yml` |
+| Check | Source | Type |
+|-------|--------|------|
+| `cdb-local-ci` | Local CI Status Publisher | Commit Status (the only merge-relevant required context) |
+
+`ci (Unit/Integration + Lint gesammelt)` (`.github/workflows/ci.yml`) and
+`policy-gate` (`.github/workflows/policy-gate.yml`) are Hosted GitHub
+Actions content. They remain useful advisory/safety signals (lint, tests,
+scope policy) but are **not** branch-protection-required since migration
+#4169. Verify the live required context with `gh api`, not this table.
 
 Inside the CI gate: `ruff check .`, unit/integration tests, and Black on changed
 Python under `services/` and `tests/`. Coverage >= 80% applies when running

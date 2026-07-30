@@ -22,10 +22,19 @@ and PR #1024.
 
 **Merge gate = required checks + live branch protection settings on `main`.**
 
+SSOT for the required check contract: [`docs/runbooks/merge_policy_ci_gate.md`](../runbooks/merge_policy_ci_gate.md).
+The only merge-relevant required context on `main` is `cdb-local-ci` (a Commit
+Status, exact PR head SHA). `ci (Unit/Integration + Lint gesammelt)` and
+`policy-gate` are Hosted GitHub Actions workflow content that remain useful
+as advisory/safety signals but are **not** branch-protection-required
+(migration #4169).
+
 A PR may merge when:
-1. All required status checks pass (currently: `ci (Unit/Integration + Lint gesammelt)` and `policy-gate`)
-2. All conversation threads are resolved (`required_conversation_resolution: true`)
-3. Live branch protection remains satisfied (`required_approving_review_count=0`, `require_code_owner_reviews=false`, `dismiss_stale_reviews=true`, `required_linear_history=true`)
+1. The required status check passes (`cdb-local-ci`, live via `gh api`)
+2. Hosted Actions advisory checks are green, skipped with explanation, or
+   documented as non-blocking infra (billing/lock ≠ code failure)
+3. Live branch protection remains satisfied — reverify with `gh api`, do not
+   assume this document's field values are current (see table below)
 4. A self-review comment is present (see template below)
 
 AI/Jules review comments are advisory only. They do not grant approval or merge
@@ -74,7 +83,7 @@ PR authors post this as a comment before merge:
 
 | Risk | Mitigation |
 |------|-----------|
-| Bad code merges without review | Required checks on `main`: `ci (Unit/Integration + Lint gesammelt)` and `policy-gate` |
+| Bad code merges without review | Required merge context on `main`: `cdb-local-ci` (Commit Status); Hosted Actions (`ci`, `policy-gate`) remain advisory/safety-relevant |
 | Schema/infra breakage | Runbooks required for infra PRs; enforcement scripts are opt-in operator steps |
 | Silent behavioral regression | Decision contract tests (`tests/contract/`), deterministic gate in conftest.py |
 | Accidental secret exposure | Auxiliary scans (for example `gitleaks`) plus PR hygiene; not a required merge context on `main` |
@@ -98,20 +107,30 @@ are documented here. They do not block merge.
 When a quarantined test is fixed, remove it from this table and add it
 to the required CI check suite.
 
-## Branch Protection Settings (current state)
+## Branch Protection Settings (verify live, do not trust this table alone)
 
-| Setting | Value | Purpose |
+Live lookup (authoritative; reverify before relying on any value below):
+
+```bash
+gh api repos/jannekbuengener/Claire_de_Binare/branches/main/protection
+```
+
+| Setting | Last-known live value | Purpose |
 |---------|-------|---------|
-| `required_status_checks` | `ci (Unit/Integration + Lint gesammelt)`, `policy-gate` | Merge-relevant required contexts on `main` |
+| `required_status_checks.contexts` | `["cdb-local-ci"]` | Sole merge-relevant required context on `main` (Commit Status) |
 | `required_status_checks.strict` | `true` | Branch must be up-to-date |
+| `enforce_admins` | `true` | Admins also bound by checks |
+| `required_conversation_resolution` | `false` | Verify live — do not assume `true` |
+| `allow_force_pushes` | `true` | Verify live — do not assume `false` |
 | `required_approving_review_count` | `0` | No fixed approving-review count |
 | `require_code_owner_reviews` | `false` | Disabled to avoid `.github/CODEOWNERS` self-deadlock in solo-maintainer mode |
 | `dismiss_stale_reviews` | `true` | Prior review state is invalidated after new pushes |
 | `required_linear_history` | `true` | Merge commits are disallowed on `main` |
-| `enforce_admins` | `true` | Admins also bound by checks |
-| `required_conversation_resolution` | `true` | All threads must be resolved |
-| `allow_force_pushes` | `false` | No force-push to main |
 | `allow_deletions` | `false` | Cannot delete main |
+
+All other fields not confirmed by the most recent live `gh api` check must be
+re-verified rather than assumed from this table; treat this table as a
+historical snapshot, not a live source of truth.
 
 ## References
 

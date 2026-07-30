@@ -42,6 +42,64 @@ prüfen, erzeugt selbst aber keinen merge-relevanten Ersatzcheck.
 4. Publisher-Evidence und Policy-Mirror-Fail prüfen.
 5. Erst nach grünem aktuellem `cdb-local-ci` mergen.
 
+## Capability-based Autonomous Merge
+
+Autonomous squash merge is **capability-based, not agent-type-based**. Any
+session (local or cloud) may autonomously run
+`gh pr merge <PR> --squash --delete-branch` once all of the following are
+proven true for the exact PR head SHA:
+
+1. `autonomous_regular_merge_allowed` for this task scope.
+2. PR fully in approved scope, not draft, mergeable.
+3. No blocking reviews / unresolved scope or governance blockers.
+4. Full local Fast-CI PASS for the exact PR head.
+5. Evidence bound to the exact PR head (no stale/other-SHA evidence).
+6. Validated `main` unchanged since validation (no drift since evidence).
+7. `cdb-local-ci` SUCCESS on the exact PR head SHA (live via `gh api`).
+8. The session can perform the regular squash merge itself (has merge
+   permission / `statuses:write`), and can publish `cdb-local-ci` itself if
+   it is still missing and the session holds bound evidence to do so.
+
+`--admin` is **never** a bypass for a missing/red/stale `cdb-local-ci`.
+Fake-green claims and merging an untested head are forbidden.
+
+### Honest handoff when capability is missing
+
+If a session lacks any gate above (no `statuses:write`, no verifiable
+identity, evidence not bound to the exact head, publisher auth blocked):
+leave the PR open, do not use `--admin`, do not loop the same blocked
+attempt, and report `DONE_PR_OPEN_MERGE_HANDOFF` with the exact missing
+capability and the next command for a capable session/human. See
+`.cursor/rules/CDB-Checks-and-Merge-Rule.mdc` for the full status taxonomy
+(`DONE_MERGED_CLOSED`, `DONE_PR_OPEN_MERGE_HANDOFF`, `BLOCKED_REQUIRED_STATUS`,
+`BLOCKED_AUTH_PUBLISHER`, `HOLD_SCOPE_OR_REVIEW`, `HOLD_MAIN_OR_HEAD_DRIFT`).
+
+### Auth token override for the publisher
+
+The publisher (`ci.publisher`, see
+[`local-status-publisher.md`](../ci/local-status-publisher.md)) reads its
+token only from the environment, in this order: `GITHUB_TOKEN`, then
+`GH_TOKEN`, else falling back to `gh auth token`. A fine-grained PAT with
+**Commit statuses: Write** is sufficient; no admin, branch-protection, or
+contents-write scope is required or should be granted for publishing.
+Never pass a token as a CLI argument or commit it to the repo.
+
+### Merge waves
+
+When merging multiple PRs in sequence: after each squash merge, rebase the
+next PR onto the updated `main` and fully revalidate — rerun local Fast-CI
+and confirm `cdb-local-ci` SUCCESS on the new head — before merging the next
+PR in the wave. Do not batch-merge later PRs on evidence collected before
+the wave started; treat `main` movement mid-wave as `HOLD_MAIN_OR_HEAD_DRIFT`
+until revalidated.
+
+### Anti-repush
+
+After `gh pr merge --squash --delete-branch`, do not automatically re-push,
+recreate, or resurrect the deleted remote branch. If follow-up work is
+needed on the same topic, open a new branch explicitly instead of reviving
+the merged/deleted one.
+
 ## Dokumentationspflicht
 
 Änderungen an Check-Namen, Triggern oder Branch Protection müssen gemeinsam in

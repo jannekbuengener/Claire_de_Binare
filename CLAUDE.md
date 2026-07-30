@@ -184,11 +184,13 @@ Coverage target: 80% on `core/` and `services/` (enforced by `make test-coverage
 
 ### CI / Branch Protection
 
-- Required checks: `ci (Unit/Integration + Lint gesammelt)` + `policy-gate`
+- Required merge context (SSOT: `docs/runbooks/merge_policy_ci_gate.md`, verify live via `gh api`): `cdb-local-ci` (Commit Status, exact PR head SHA) — the only branch-protection-required context on `main`.
+- `ci (Unit/Integration + Lint gesammelt)` + `policy-gate` (Hosted Actions) remain advisory/safety-relevant but are not branch-protection-required since migration #4169.
 - `policy-gate` categorizes PRs; core/service PRs need label `allow-core-change` or `manual-approval`
 - `strict: true` — branch must be up-to-date with main before merge
 - Bot review threads (Sourcery, Copilot) must be resolved before merge
 - Runner: `ci.yml` runs on `ubuntu-latest` (GitHub-hosted); self-hosted runners decommissioned from active CI per #3575; historical labels defined in `infrastructure/actions-runner/`
+- Autonomous squash merge is capability-based (see `.cursor/rules/CDB-Checks-and-Merge-Rule.mdc`): allowed once `cdb-local-ci` SUCCESS is proven live on the exact PR head SHA; `--admin` is never a substitute for a missing/red required status.
 
 ### Key Governance Files
 
