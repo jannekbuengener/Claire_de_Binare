@@ -1,8 +1,8 @@
 # Evidence: Kill-Cancel Open Orders (#4185)
 
-**Getesteter Code-Commit:** `58620baede7208f567fdcd5d1d6e3f322a338e38`
+**Getesteter Code-Commit:** 
 
-**Run-ID:** `4185_g1g2_hold_58620bae`
+**Run-ID:** 
 
 **Verdict:** `HOLD`
 
