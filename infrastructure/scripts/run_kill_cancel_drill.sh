@@ -471,12 +471,19 @@ manifest = {
     "cancel_attempts": "see phase logs / status snapshots",
     "confirmed_cancelled": "see phase logs / status snapshots",
     "residual_open_orders": [],
-    "residual_positions": [{"status": "VISIBLE_NO_AUTO_UNWIND"}],
+    "residual_positions": [
+        {
+            "symbol": "*",
+            "status": "UNKNOWN",
+            "quantity": None,
+            "reason_code": "RESIDUAL_POSITION_UNKNOWN",
+        }
+    ],
     "fill_after_kill_events": ["proven in S11 in-process"],
     "overall_verdict": overall,
     "reason_codes": [
-        "KILL_CANCEL_PASS",
         "KILL_CANCEL_HOLD",
+        "RESIDUAL_POSITION_UNKNOWN",
         "CANCEL_REQUEST_REJECTED",
         "CANCEL_EXECUTION_ERROR",
         "CANCEL_ADAPTER_UNSUPPORTED",
@@ -492,7 +499,8 @@ manifest = {
     "limitations": [
         "Mock/dry-run compose drill only; no productive venue activation",
         "Cancel rejection/error/malformed/unsupported proven in-process under CDB_4185_DRILL",
-        "Implementation unit evidence in docs/evidence/risk/4185_* is non-final for this head",
+        "No authoritative position SSOT in #4185 scope — confirmed cancel + UNKNOWN position => HOLD",
+        "Batch KILL_CANCEL_PASS is not claimed for the real execution service path",
     ],
     "safety_boundaries": [
         "LR NO-GO",

@@ -44,30 +44,55 @@ from services.execution.kill_cancel import (
     RC_KILL_CANCEL_PASS,
     RC_OPEN_ORDER_STATUS_UNKNOWN,
     RC_RESIDUAL_OPEN_ORDERS,
+    RC_RESIDUAL_POSITION_UNKNOWN,
 )
 from services.execution.mock_executor import MockExecutor
 from services.execution.models import Order, OrderStatus
 from services.execution.open_order_registry import OpenOrderRegistry
 
 
-def _flat_positions():
+def _authoritative_flat_snapshot():
+    """Explicit test-only flat snapshot with clear provenance (not service default)."""
     return [
         {
-            "symbol": "*",
+            "symbol": "BTCUSDT",
             "status": "NONE",
             "quantity": 0.0,
             "reason_code": "RESIDUAL_POSITION_NONE",
+            "provenance": "test_fixture_authoritative_flat",
         }
     ]
 
 
-def _coordinator(registry, adapter, tmp_path=None):
+def _authoritative_open_snapshot():
+    return [
+        {
+            "symbol": "BTCUSDT",
+            "status": "OPEN",
+            "quantity": 0.01,
+            "reason_code": "RESIDUAL_POSITION_VISIBLE_NO_UNWIND",
+            "provenance": "test_fixture_authoritative_open",
+        }
+    ]
+
+
+def _coordinator(registry, adapter, *, position_resolver=None):
+    """Default: no position truth → UNKNOWN/HOLD (production-honest)."""
     return KillCancelCoordinator(
         registry=registry,
         adapter=adapter,
         commit_sha="deadbeefdeadbeefdeadbeefdeadbeefdeadbeef",
-        position_resolver=_flat_positions,
+        position_resolver=position_resolver,
     )
+
+
+def _assert_confirmed_cancels_hold_unknown(manifest) -> None:
+    assert manifest.overall_verdict == KillCancelBatchVerdict.HOLD.value
+    assert RC_RESIDUAL_POSITION_UNKNOWN in manifest.reason_codes
+    assert RC_KILL_CANCEL_HOLD in manifest.reason_codes
+    assert RC_KILL_CANCEL_PASS not in manifest.reason_codes
+    assert any(p.get("status") == "UNKNOWN" for p in manifest.residual_positions)
+    assert all(p.get("quantity") is None for p in manifest.residual_positions)
 
 
 @pytest.fixture
@@ -196,7 +221,10 @@ def test_registry_persist_oserror_keeps_in_memory(tmp_path: Path, monkeypatch) -
 
 
 @pytest.mark.unit
-def test_cancel_confirmed_pass(resting_adapter, tmp_path: Path) -> None:
+def test_cancel_confirmed_hold_without_position_truth(
+    resting_adapter, tmp_path: Path
+) -> None:
+    """Confirmed cancel is honest; missing position truth keeps batch HOLD (#4185 G1)."""
     reg = OpenOrderRegistry(ledger_path=tmp_path / "l.json")
     resting_adapter._executor.place_resting_order(
         order_id="o1", symbol="BTCUSDT", side="BUY", quantity=1.0, status="PENDING"
@@ -204,10 +232,96 @@ def test_cancel_confirmed_pass(resting_adapter, tmp_path: Path) -> None:
     reg.register(internal_order_id="o1", symbol="BTCUSDT", status="PENDING", quantity=1)
     coord = _coordinator(reg, resting_adapter)
     manifest = coord.reconcile(kill_state="active", kill_reason="manual")
+    _assert_confirmed_cancels_hold_unknown(manifest)
+    assert manifest.orders_confirmed_cancelled == 1
+    assert reg.count_open() == 0
+    assert all(p["cancel_confirmed"] for p in manifest.per_order)
+    assert manifest.commit_sha.endswith("deadbeef") or "deadbeef" in manifest.commit_sha
+
+
+@pytest.mark.unit
+def test_cancel_confirmed_pass_with_authoritative_flat(
+    resting_adapter, tmp_path: Path
+) -> None:
+    """Isolated PASS only with an explicit authoritative flat fixture."""
+    reg = OpenOrderRegistry(ledger_path=tmp_path / "l.json")
+    resting_adapter._executor.place_resting_order(
+        order_id="o1", symbol="BTCUSDT", side="BUY", quantity=1.0, status="PENDING"
+    )
+    reg.register(internal_order_id="o1", symbol="BTCUSDT", status="PENDING", quantity=1)
+    coord = _coordinator(
+        reg, resting_adapter, position_resolver=_authoritative_flat_snapshot
+    )
+    manifest = coord.reconcile(kill_state="active", kill_reason="manual")
     assert manifest.overall_verdict == KillCancelBatchVerdict.PASS.value
     assert RC_KILL_CANCEL_PASS in manifest.reason_codes
+    assert RC_RESIDUAL_POSITION_UNKNOWN not in manifest.reason_codes
     assert reg.count_open() == 0
-    assert manifest.commit_sha.endswith("deadbeef") or "deadbeef" in manifest.commit_sha
+
+
+@pytest.mark.unit
+def test_position_resolver_none_empty_and_raise_hold(
+    resting_adapter, tmp_path: Path
+) -> None:
+    def _raise() -> list:
+        raise RuntimeError("position resolver boom")
+
+    cases = (
+        ("none", None),
+        ("empty", lambda: []),
+        ("raise", _raise),
+    )
+    for name, resolver in cases:
+        reg_i = OpenOrderRegistry(ledger_path=tmp_path / f"l-{name}.json")
+        resting_adapter._executor.place_resting_order(
+            order_id="o1", symbol="BTCUSDT", side="BUY", quantity=1.0, status="PENDING"
+        )
+        reg_i.register(
+            internal_order_id="o1", symbol="BTCUSDT", status="PENDING", quantity=1
+        )
+        manifest = _coordinator(
+            reg_i, resting_adapter, position_resolver=resolver
+        ).reconcile(kill_state="active", kill_reason="manual")
+        _assert_confirmed_cancels_hold_unknown(manifest)
+
+
+@pytest.mark.unit
+def test_service_position_resolver_empty_is_not_flat_zero(tmp_path: Path) -> None:
+    from services.execution import service
+
+    assert service._known_residual_positions == {}
+    assert service._position_resolver() == []
+    reg = OpenOrderRegistry(ledger_path=tmp_path / "svc.json")
+    executor = MockExecutor(
+        resting_orders=True, success_rate=1.0, min_latency_ms=0, max_latency_ms=0
+    )
+    adapter = MockExecutionAdapter(executor=executor)
+    executor.place_resting_order(
+        order_id="o1", symbol="BTCUSDT", side="BUY", quantity=1.0, status="PENDING"
+    )
+    reg.register(internal_order_id="o1", symbol="BTCUSDT", status="PENDING", quantity=1)
+    manifest = KillCancelCoordinator(
+        registry=reg,
+        adapter=adapter,
+        commit_sha="deadbeefdeadbeefdeadbeefdeadbeefdeadbeef",
+        position_resolver=service._position_resolver,
+    ).reconcile(kill_state="active", kill_reason="manual")
+    _assert_confirmed_cancels_hold_unknown(manifest)
+
+
+@pytest.mark.unit
+def test_authoritative_open_snapshot_visible(resting_adapter, tmp_path: Path) -> None:
+    reg = OpenOrderRegistry(ledger_path=tmp_path / "l.json")
+    coord = _coordinator(
+        reg, resting_adapter, position_resolver=_authoritative_open_snapshot
+    )
+    manifest = coord.reconcile(kill_state="active", kill_reason="manual")
+    assert manifest.residual_positions[0]["status"] == "OPEN"
+    assert manifest.residual_positions[0]["quantity"] == 0.01
+    assert (
+        manifest.residual_positions[0]["reason_code"]
+        == "RESIDUAL_POSITION_VISIBLE_NO_UNWIND"
+    )
 
 
 @pytest.mark.unit
@@ -316,7 +430,7 @@ def test_already_terminal_idempotent(resting_adapter, tmp_path: Path) -> None:
     first = coord.reconcile(
         kill_state="active", kill_reason="manual", kill_activated_at_utc="t0"
     )
-    assert first.overall_verdict == KillCancelBatchVerdict.PASS.value
+    _assert_confirmed_cancels_hold_unknown(first)
     # Re-register as if residual appeared; confirmed set should skip duplicate cancel
     resting_adapter._executor.place_resting_order(
         order_id="o1", symbol="BTCUSDT", side="BUY", quantity=1.0
@@ -329,6 +443,7 @@ def test_already_terminal_idempotent(resting_adapter, tmp_path: Path) -> None:
         RC_CANCEL_ALREADY_CONFIRMED in second.reason_codes
         or second.orders_already_terminal >= 1
     )
+    assert second.overall_verdict == KillCancelBatchVerdict.HOLD.value
 
 
 # --- Kill transitions / supervisor ---
@@ -388,8 +503,9 @@ def test_supervisor_deactivation_resumes_order_acceptance(
     supervisor = KillCancelSupervisor(coordinator=coord, get_kill_details=details)
     assert supervisor.run_startup_gate() is not None
     assert supervisor.hold_new_orders is True
-    # Empty book may PASS cancel reconciliation, but hold_new_orders still blocks.
+    # Empty book still HOLD (unknown position); hold_new_orders blocks new orders.
     assert supervisor.status_snapshot()["ready_for_new_orders"] is False
+    assert supervisor.last_verdict == KillCancelBatchVerdict.HOLD.value
 
     state["active"] = False
     state["reason"] = None
@@ -530,7 +646,8 @@ def test_mock_stack_multiple_pending_and_restart(tmp_path: Path) -> None:
             internal_order_id=oid, symbol="BTCUSDT", status="PENDING", quantity=1
         )
     m1 = _coordinator(reg, adapter).reconcile(kill_state="active", kill_reason="manual")
-    assert m1.overall_verdict == KillCancelBatchVerdict.PASS.value
+    _assert_confirmed_cancels_hold_unknown(m1)
+    assert m1.orders_confirmed_cancelled == 3
     # Restart reconstruction
     reg2 = OpenOrderRegistry(ledger_path=ledger)
     assert reg2.count_open() == 0

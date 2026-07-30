@@ -11,6 +11,8 @@ Order-Execution-Service: konsumiert freigegebene Orders vom Risk Service und pub
 - **Kill-Cancel (#4185):** bei Kill active/unevaluable werden offene synthetische Orders
   deterministisch cancelled; neue Orders bleiben blockiert. Fehlgeschlagene Cancels
   bleiben als Restorders sichtbar (HOLD) — kein blindes `open_orders.clear()`.
+  Fehlende autoritative Positions-Evidence → `RESIDUAL_POSITION_UNKNOWN` und Batch-HOLD
+  (kein erfundenes Flat-Zero `NONE`/`0.0`).
 
 ## Kill: block vs cancel
 

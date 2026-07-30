@@ -306,7 +306,10 @@ class KillCancelCoordinator:
                         KillCancelOrderState.STATUS_UNKNOWN.value,
                     }:
                         unknown += 1
-                    reason_codes.append(evidence.reason_code)
+                    # Per-order KILL_CANCEL_PASS is order-local success; do not
+                    # promote it into batch reason_codes unless overall PASS.
+                    if evidence.reason_code != RC_KILL_CANCEL_PASS:
+                        reason_codes.append(evidence.reason_code)
 
             residual_open = [
                 {
@@ -343,11 +346,16 @@ class KillCancelCoordinator:
             elif verdict == KillCancelBatchVerdict.HOLD:
                 reason_codes.append(RC_KILL_CANCEL_HOLD)
 
-            # de-dupe preserve order
+            # de-dupe preserve order; UNKNOWN must never coexist with batch PASS
             deduped: list[str] = []
             for code in reason_codes:
                 if code not in deduped:
                     deduped.append(code)
+            if (
+                RC_RESIDUAL_POSITION_UNKNOWN in deduped
+                and RC_KILL_CANCEL_PASS in deduped
+            ):
+                deduped = [c for c in deduped if c != RC_KILL_CANCEL_PASS]
 
             completed = utcnow().isoformat()
             manifest = KillCancelEvidenceManifest(

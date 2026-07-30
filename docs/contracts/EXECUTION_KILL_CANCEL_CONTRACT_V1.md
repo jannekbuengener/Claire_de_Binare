@@ -72,6 +72,12 @@ Batch verdicts:
 - Residuals remain visible in evidence and `/status`.
 - Positions are reported only; **no automatic unwind** (see #4184 for reduce-only contract; parked).
 - Unknown positions → HOLD. Missing evidence must not invent flat zero.
+- Absence of an authoritative position snapshot (empty resolver result, missing
+  resolver, or resolver error) normalizes to `status=UNKNOWN`,
+  `quantity=null`, `RESIDUAL_POSITION_UNKNOWN` — **never** `NONE`/`0.0`.
+- Batch `KILL_CANCEL_PASS` is forbidden while `RESIDUAL_POSITION_UNKNOWN` is set.
+  Confirmed per-order cancels remain visible via `cancel_confirmed` /
+  `CANCEL_CONFIRMED` even when the batch stays HOLD for unknown positions.
 
 ## Fill after kill
 

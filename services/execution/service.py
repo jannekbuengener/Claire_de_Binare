@@ -148,17 +148,16 @@ def _resolve_commit_sha() -> str:
 
 
 def _position_resolver() -> list:
-    """Known residual positions only — never invent flat exposure from absence."""
+    """Return only authoritatively known residual position snapshots.
+
+    An empty ``_known_residual_positions`` map is **not** flat evidence.
+    Returning ``[]`` lets ``KillCancelCoordinator._resolve_positions`` normalize
+    to ``status=UNKNOWN`` / ``RESIDUAL_POSITION_UNKNOWN`` / batch HOLD.
+    Do not invent ``NONE`` + ``quantity=0.0`` from absence (#4185 G1).
+    """
     with _stats_lock:
         if not _known_residual_positions:
-            return [
-                {
-                    "symbol": "*",
-                    "status": "NONE",
-                    "quantity": 0.0,
-                    "reason_code": "RESIDUAL_POSITION_NONE",
-                }
-            ]
+            return []
         return [
             {
                 "symbol": symbol,

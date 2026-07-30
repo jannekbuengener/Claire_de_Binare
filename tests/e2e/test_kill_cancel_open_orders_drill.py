@@ -39,6 +39,7 @@ from services.execution.kill_cancel import (
     RC_FILL_AFTER_KILL_ACTIVATION,
     RC_KILL_CANCEL_HOLD,
     RC_KILL_CANCEL_PASS,
+    RC_RESIDUAL_POSITION_UNKNOWN,
     RC_OPEN_ORDER_STATUS_UNKNOWN,
     RC_RESIDUAL_OPEN_ORDERS,
 )
@@ -71,13 +72,28 @@ LEDGER_PATH = Path(
 )
 
 
-def _flat_positions() -> list[dict[str, Any]]:
+def _authoritative_open_snapshot() -> list[dict[str, Any]]:
+    """Explicit OPEN residual fixture for S12 visibility (not service default)."""
     return [
         {
             "symbol": "BTCUSDT",
             "status": "OPEN",
             "quantity": 0.01,
             "reason_code": "RESIDUAL_POSITION_VISIBLE_NO_UNWIND",
+            "provenance": "compose_fixture_authoritative_open",
+        }
+    ]
+
+
+def _authoritative_flat_snapshot() -> list[dict[str, Any]]:
+    """Isolated PASS fixture only — must not represent the real execution service."""
+    return [
+        {
+            "symbol": "BTCUSDT",
+            "status": "NONE",
+            "quantity": 0.0,
+            "reason_code": "RESIDUAL_POSITION_NONE",
+            "provenance": "compose_fixture_authoritative_flat",
         }
     ]
 
@@ -276,7 +292,7 @@ def test_s1_s2_inactive_keeps_resting_orders_open(redis_client: redis.Redis) -> 
 
 
 def test_s3_s5_active_cancels_confirmed(redis_client: redis.Redis) -> None:
-    """S3+S5: kill active cancels cancelable opens; readback removes residuals."""
+    """S3+S5: cancels confirmed; batch HOLD because position truth is UNKNOWN."""
     _clear_open_residuals()
     _register_multiple_resting(redis_client, n=2)
     _wait_for_kill_cancel(
@@ -284,9 +300,11 @@ def test_s3_s5_active_cancels_confirmed(redis_client: redis.Redis) -> None:
     )
     _set_active()
     kc = _wait_for_kill_cancel(
-        predicate=lambda snap: snap.get("last_verdict") == "PASS"
+        predicate=lambda snap: snap.get("last_verdict") == "HOLD"
         and int(snap.get("residual_open_order_count") or 0) == 0
-        and RC_KILL_CANCEL_PASS in (snap.get("last_reason_codes") or [])
+        and RC_RESIDUAL_POSITION_UNKNOWN in (snap.get("last_reason_codes") or [])
+        and RC_KILL_CANCEL_HOLD in (snap.get("last_reason_codes") or [])
+        and RC_KILL_CANCEL_PASS not in (snap.get("last_reason_codes") or [])
     )
     assert kc["hold_new_orders"] is True
     # New order acceptance blocked while kill active
@@ -316,20 +334,21 @@ def test_s9_double_kill_idempotent(redis_client: redis.Redis) -> None:
     )
     _set_active()
     first = _wait_for_kill_cancel(
-        predicate=lambda snap: snap.get("last_verdict") == "PASS"
+        predicate=lambda snap: snap.get("last_verdict") == "HOLD"
         and int(snap.get("residual_open_order_count") or 0) == 0
+        and RC_RESIDUAL_POSITION_UNKNOWN in (snap.get("last_reason_codes") or [])
     )
     event_id = first.get("active_kill_event_id")
     _set_active()
     time.sleep(2.0)
     second = _execution_status().get("kill_cancel") or {}
     assert int(second.get("residual_open_order_count") or 0) == 0
-    assert second.get("last_verdict") == "PASS"
+    assert second.get("last_verdict") == "HOLD"
     # Same kill event or still clean residual — no contradictory re-cancel batch
     if event_id and second.get("active_kill_event_id"):
         assert (
             second.get("active_kill_event_id") == event_id
-            or second.get("last_verdict") == "PASS"
+            or second.get("last_verdict") == "HOLD"
         )
 
 
@@ -386,7 +405,7 @@ def test_s12_positions_visible_no_auto_unwind(tmp_path: Path) -> None:
         registry=reg,
         adapter=adapter,
         commit_sha=os.getenv("CDB_GIT_COMMIT", "unknown"),
-        position_resolver=_flat_positions,
+        position_resolver=_authoritative_open_snapshot,
     )
     manifest = coord.reconcile(kill_state="active", kill_reason="manual")
     assert manifest.residual_positions
@@ -395,6 +414,7 @@ def test_s12_positions_visible_no_auto_unwind(tmp_path: Path) -> None:
         manifest.residual_positions[0].get("reason_code")
         == "RESIDUAL_POSITION_VISIBLE_NO_UNWIND"
     )
+    assert "No automatic position close" in manifest.safety_boundaries
 
 
 # --- In-process cancel contract scenarios (mock-only, compose-gated) ---
@@ -415,7 +435,7 @@ def test_s6_cancel_rejection_hold(tmp_path: Path) -> None:
     )
     reg.register(internal_order_id="s6", symbol="BTCUSDT", status="PENDING", quantity=1)
     manifest = KillCancelCoordinator(
-        registry=reg, adapter=adapter, position_resolver=_flat_positions
+        registry=reg, adapter=adapter, position_resolver=None
     ).reconcile(kill_state="active", kill_reason="manual")
     assert manifest.overall_verdict == KillCancelBatchVerdict.HOLD.value
     assert RC_CANCEL_REQUEST_REJECTED in manifest.reason_codes
@@ -447,7 +467,7 @@ def test_s7_cancel_exception_and_malformed_hold(tmp_path: Path) -> None:
             internal_order_id=oid, symbol="BTCUSDT", status="PENDING", quantity=1
         )
         manifest = KillCancelCoordinator(
-            registry=reg, adapter=adapter, position_resolver=_flat_positions
+            registry=reg, adapter=adapter, position_resolver=None
         ).reconcile(kill_state="active", kill_reason="manual")
         assert manifest.overall_verdict != KillCancelBatchVerdict.PASS.value
         assert expected in manifest.reason_codes or reg.count_open() == 1
@@ -460,7 +480,7 @@ def test_s8_adapter_without_cancel_hold(tmp_path: Path) -> None:
     adapter = MexcExecutionAdapter(executor=object())  # type: ignore[arg-type]
     adapter._executor = None
     manifest = KillCancelCoordinator(
-        registry=reg, adapter=adapter, position_resolver=_flat_positions
+        registry=reg, adapter=adapter, position_resolver=None
     ).reconcile(kill_state="active", kill_reason="manual")
     assert manifest.overall_verdict == KillCancelBatchVerdict.HOLD.value
     assert RC_CANCEL_ADAPTER_UNSUPPORTED in manifest.reason_codes
@@ -482,9 +502,7 @@ def test_s11_fill_after_kill_fail(tmp_path: Path) -> None:
     reg.register(
         internal_order_id="s11", symbol="BTCUSDT", status="PENDING", quantity=1
     )
-    coord = KillCancelCoordinator(
-        registry=reg, adapter=adapter, position_resolver=_flat_positions
-    )
+    coord = KillCancelCoordinator(registry=reg, adapter=adapter, position_resolver=None)
     coord.reconcile(
         kill_state="active", kill_reason="manual", kill_activated_at_utc="t0"
     )
@@ -496,7 +514,7 @@ def test_s11_fill_after_kill_fail(tmp_path: Path) -> None:
     )
     reg2 = OpenOrderRegistry(ledger_path=tmp_path / "s11b.json")
     coord2 = KillCancelCoordinator(
-        registry=reg2, adapter=adapter, position_resolver=_flat_positions
+        registry=reg2, adapter=adapter, position_resolver=None
     )
     coord2._active_kill_event_id = "kill_x"
     coord2._fill_after_kill = list(coord._fill_after_kill)
@@ -522,7 +540,7 @@ def test_s9_inprocess_double_reconcile_no_duplicate_cancel(tmp_path: Path) -> No
         internal_order_id="s9i", symbol="BTCUSDT", status="PENDING", quantity=1
     )
     coord = KillCancelCoordinator(
-        registry=reg, adapter=adapter, position_resolver=_flat_positions
+        registry=reg, adapter=adapter, position_resolver=_authoritative_flat_snapshot
     )
     first = coord.reconcile(
         kill_state="active", kill_reason="manual", kill_activated_at_utc="t0"

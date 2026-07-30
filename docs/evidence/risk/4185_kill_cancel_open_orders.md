@@ -1,10 +1,11 @@
 # Evidence: Kill-Cancel Open Orders (#4185)
 
-**Getesteter Code-Commit:** `59e31c606e9819f3efa5fc69e28d599190617759`
+**Getesteter Code-Commit:** `1ccd6a3f4c1c7a3795e28b4d7eaa28bdeb515644`
+*(wird nach Commit auf den exakten PR-Head gesetzt)*
 
-**Run-ID:** `4185_59e31c60_unit`
+**Run-ID:** `4185_g1g2_unit`
 
-**Verdict:** `PASS`
+**Verdict:** `HOLD`
 
 **LR:** `NO-GO` (unverändert)
 
@@ -27,13 +28,27 @@ kein automatisches Positions-Unwind, kein Stop-Loss-Consumer (#4186), kein
 Reduce-only-Redesign (#4184 / PR #4187 geparkt). Board stage trade-capable ist
 nicht Live-Go.
 
+## G1/G2 Korrektur
+
+**Before:** leeres `_known_residual_positions` wurde als `status=NONE`,
+`quantity=0.0`, `RESIDUAL_POSITION_NONE` interpretiert → Batch-`PASS`.
+
+**After:** fehlende autoritative Positions-Evidence → leere Resolver-Liste →
+Coordinator normalisiert auf `UNKNOWN` / `RESIDUAL_POSITION_UNKNOWN` /
+Batch-`HOLD`. Per-order Cancels bleiben `cancel_confirmed=true` /
+`CANCEL_CONFIRMED` sichtbar. Batch-`KILL_CANCEL_PASS` ist mit
+`RESIDUAL_POSITION_UNKNOWN` verboten.
+
+Historische Evidence @ `59e31c60` (PASS + NONE/0.0) ist **superseded** und darf
+nicht als aktueller Head-Beweis gelesen werden.
+
 ## Ergebnis
 
 - Open-order truth: OpenOrderRegistry (+ optional JSON ledger)
 - Cancel contract: CancelOrderRequest / CancelOrderResponse / readback
-- Batch verdict PASS fuer bestaetigbare Cancels; HOLD bei Restorders; FAIL bei Fill-after-Kill
-- Unit/Contract: tests/unit/execution/test_kill_cancel_open_orders.py
-- Compose-E2E: nicht ausgefuehrt (Restunsicherheit; Mock-Integration belegt)
+- Batch verdict **HOLD** bei bestätigtem Cancel ohne Positions-SSOT
+- Unit/Contract: `tests/unit/execution/test_kill_cancel_open_orders.py`
+- Compose-E2E: am finalen Head (siehe PR-Body / compose evidence run_id)
 
 Maschinenlesbares Manifest: `4185_kill_cancel_open_orders.json` (Schema `cdb-kill-cancel-evidence/v1`).
 
@@ -42,3 +57,4 @@ Maschinenlesbares Manifest: `4185_kill_cancel_open_orders.json` (Schema `cdb-kil
 - Keine Secrets im Manifest
 - Kein Merge / keine Issue-Schliessung in dieser Session
 - LR bleibt NO-GO
+- Keine autoritative Position-SSOT im #4185-Scope (Restunsicherheit)
