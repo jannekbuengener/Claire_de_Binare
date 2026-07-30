@@ -63,9 +63,18 @@ discard unsaved/unmerged local work.
 
 - **Delivery Mode:** Router ausführen, Slice in den zugewiesenen PR liefern,
   targeted Validation, Ledger-/Issue-Handoff, kein Merge.
-- **Merge Mode:** nur für `merge_candidate`; Intake einfrieren, Base integrieren,
-  kombinierten Diff reviewen, Full Fast-CI und exact-SHA `cdb-local-ci`.
+- **Acceptance gate (required before Merge Mode):** run
+  `cdb-pr-completeness-review` (eight dimensions; delegates wiring audit,
+  gap classifier, gatekeeper, test-first, shadow-validation, CI guard,
+  drift-reconcile). Only a schema-valid `MERGE_CANDIDATE` verdict may enter
+  Merge Mode. Do not bypass Completeness via a direct merge path.
+- **Merge Mode:** only after Completeness `MERGE_CANDIDATE`; orchestrate via
+  `cdb-batch-merge-conductor` (freeze → main integrate → Full Fast-CI →
+  exact-SHA `cdb-local-ci` → regular squash-merge). No
+  `human_merge_authorization` field; capability gates still required; never
+  `--admin`.
 
 Ein Merge-Trigger ist kein Human-GO und keine Merge-Autorisierung. Head- oder
-Base-Drift invalidiert die Final-Evidence.
+Base-Drift invalidiert die Final-Evidence und erzwingt erneute Completeness
+Review.
 

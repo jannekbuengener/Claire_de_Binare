@@ -33,6 +33,8 @@ ausgeben.
 - Marker, Ledger, Lane, Validation Profile und Lock-State prüfen,
 - genau eine Router-Entscheidung mit stabilen Reason Codes berichten,
 - Merge-Trigger als Freeze-Signal bewerten,
+- vor Merge-Empfehlungen auf `cdb-pr-completeness-review` und danach
+  `cdb-batch-merge-conductor` verweisen (kein Bypass des Completeness-Gates),
 - unvollständige oder widersprüchliche Evidence als HOLD melden.
 
 ## Grenzen
@@ -41,5 +43,6 @@ ausgeben.
 - Keine Commits, Pushes, Labels, Status-Publishes oder Merges.
 - Kein Lock-Erwerb oder Lock-Override.
 - Keine freie Policy-Interpretation außerhalb der Router-Ausgabe.
+- Keine eigene Completeness-/Conductor-Logik; Skills bleiben kanonisch.
 - Session Lead und Human Authority bleiben autoritativ.
 - LR bleibt `NO-GO`.

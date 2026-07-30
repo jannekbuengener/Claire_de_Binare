@@ -3,10 +3,14 @@
 **Status Class**: Claire de Binare repository / Engineering Status
 **Authority**: Current repo/main/test/dependency snapshot; not the canonical live-readiness or Echtgeld Go/No-Go source.
 **Operational Canon**: `docs/live-readiness/LR-AUDIT-STATUS-2026-03-05.md`
-**Last Updated**: 2026-07-28
+**Last Updated**: 2026-07-30
 **GitHub Boundary**: The live commit and PR state is tracked in GitHub (UI/API or `gh`); this file is a curated repo/engineering ledger, not a live mirror.
 
 ---
+
+## Repo / Engineering Status (2026-07-30)
+
+- **PR-Acceptance Skill Family Batch 1**: **DONE_MERGED** — PR [#4211](https://github.com/jannekbuengener/Claire_de_Binare/pull/4211) @ `be969889…` (`cdb-integration-wiring-audit`, `cdb-pr-gap-classifier`, policy+schema). CI foundation [#4212](https://github.com/jannekbuengener/Claire_de_Binare/pull/4212)/#4205 + [#4213](https://github.com/jannekbuengener/Claire_de_Binare/pull/4213)/#4206 on main. Batch 2 (#4209/#4210 Completeness+Conductor) in delivery. #4184/PR #4187 untouched. LR **NO-GO** unchanged.
 
 ## Repo / Engineering Status (2026-07-28)
 

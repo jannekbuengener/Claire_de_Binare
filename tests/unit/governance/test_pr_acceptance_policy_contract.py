@@ -15,6 +15,10 @@ POLICY_PATH = ROOT / "config" / "governance" / "pr-acceptance-policy.v1.yaml"
 SCHEMA_PATH = ROOT / "docs" / "contracts" / "pr_acceptance_skill_family.v1.schema.json"
 WIRING_SKILL = ROOT / "docs" / "skills" / "cdb-integration-wiring-audit" / "SKILL.md"
 GAP_SKILL = ROOT / "docs" / "skills" / "cdb-pr-gap-classifier" / "SKILL.md"
+COMPLETENESS_SKILL = (
+    ROOT / "docs" / "skills" / "cdb-pr-completeness-review" / "SKILL.md"
+)
+CONDUCTOR_SKILL = ROOT / "docs" / "skills" / "cdb-batch-merge-conductor" / "SKILL.md"
 
 SHA_RE = re.compile(r"^[a-f0-9]{40}$")
 LIFECYCLE_STATES = [
@@ -157,6 +161,8 @@ def test_enum_parity_policy_schema_and_skill_text() -> None:
     schema = _schema()
     wiring_text = WIRING_SKILL.read_text(encoding="utf-8")
     gap_text = GAP_SKILL.read_text(encoding="utf-8")
+    completeness_text = COMPLETENESS_SKILL.read_text(encoding="utf-8")
+    conductor_text = CONDUCTOR_SKILL.read_text(encoding="utf-8")
 
     for axis in policy["wiring_axes"]:
         assert axis in wiring_text
@@ -168,6 +174,14 @@ def test_enum_parity_policy_schema_and_skill_text() -> None:
     assert "does not change the fachliche class" in gap_text or (
         "does **not** change the fachliche class" in gap_text
     )
+    for dim in policy["completeness_dimensions"]:
+        assert dim in completeness_text
+    for verdict in policy["completeness_verdicts"]:
+        assert verdict in completeness_text
+    for code in policy["conductor_blockcodes"]:
+        assert code in conductor_text
+    assert "human_merge_authorization" in conductor_text
+    assert "BLOCKED_HUMAN_AUTHORITY" in conductor_text
 
     wiring_enum = schema["$defs"]["WiringAuditResult"]["properties"]["verdict"]["enum"]
     assert wiring_enum == policy["wiring_verdicts"]
@@ -178,6 +192,20 @@ def test_enum_parity_policy_schema_and_skill_text() -> None:
     assert (
         schema["$defs"]["WiringAxisRow"]["properties"]["dimension"]["enum"]
         == policy["wiring_axes"]
+    )
+    assert (
+        schema["$defs"]["CompletenessReviewResult"]["properties"]["verdict"]["enum"]
+        == policy["completeness_verdicts"]
+    )
+    assert (
+        schema["$defs"]["CompletenessDimensionRow"]["properties"]["dimension"]["enum"]
+        == policy["completeness_dimensions"]
+    )
+    assert (
+        schema["$defs"]["BatchMergeConductorResult"]["properties"]["block_codes"][
+            "items"
+        ]["enum"]
+        == policy["conductor_blockcodes"]
     )
 
 
@@ -198,3 +226,6 @@ def test_session_status_mappings_present() -> None:
     assert "DONE_SLICE_ADDED_TO_BATCH_PR" in mappings
     assert "DONE_WIRING_SLICE_ADDED" in mappings
     assert "DONE_GAP_CLASSIFIER_SLICE_ADDED" in mappings
+    assert "DONE_COMPLETENESS_SLICE_ADDED" in mappings
+    assert "DONE_CONDUCTOR_SLICE_ADDED" in mappings
+    assert "DONE_PR_ACCEPTANCE_SKILL_FAMILY_MERGED" in mappings

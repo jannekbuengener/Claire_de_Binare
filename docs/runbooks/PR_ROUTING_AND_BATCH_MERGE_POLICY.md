@@ -144,24 +144,30 @@ status: DONE_SLICE_ADDED_TO_BATCH_PR
 - Security-/Safety-Signal,
 - explizites Operator-GO.
 
-Jeder Trigger friert nur als `merge_candidate` ein. Er autorisiert keinen Merge.
+Jeder Trigger startet Acceptance bei `COMPLETENESS_REVIEW` und setzt Transport
+auf `merge_candidate`. Er autorisiert keinen Merge. Fachliche Freigabe kommt
+nur von `cdb-pr-completeness-review` → `MERGE_CANDIDATE`, danach
+`cdb-batch-merge-conductor`.
 
 ## 10. Finaler Merge-Head
 
-1. PR für neue Slices einfrieren.
-2. Verlinkte Issues, Ledger und Restunsicherheiten prüfen.
-3. Aktuelles `main` integrieren und Base-SHA binden.
-4. Kombinierten Diff reviewen.
-5. Vollständige Fast-CI auf exakt dem finalen Head.
-6. Policy-Gate-Mirror und Publisher-Dry-run.
-7. `cdb-local-ci` via Publisher und `gh api` auf exakt diesem SHA.
-8. Combined Commit Status live prüfen.
-9. Head-/Base-Drift erneut prüfen; Drift invalidiert alle Final-Evidence.
-10. Normaler Squash-Merge ohne Admin-Bypass.
-11. Merge-SHA auf `main` verifizieren und nur vollständig gelieferte Issues
-    schließen.
+1. `cdb-pr-completeness-review` ausführen; nur bei `MERGE_CANDIDATE` weiter.
+2. `cdb-batch-merge-conductor`: PR für neue Slices einfrieren (`FROZEN`).
+3. Verlinkte Issues, Ledger und Restunsicherheiten prüfen.
+4. Aktuelles `main` integrieren und Base-SHA binden; bei Drift Completeness
+   erneut.
+5. Kombinierten Diff reviewen.
+6. Vollständige Fast-CI auf exakt dem finalen Head.
+7. Policy-Gate-Mirror und Publisher-Dry-run.
+8. `cdb-local-ci` via Publisher und `gh api` auf exakt diesem SHA.
+9. Combined Commit Status live prüfen.
+10. Head-/Base-Drift erneut prüfen; Drift invalidiert alle Final-Evidence.
+11. Normaler Squash-Merge ohne Admin-Bypass (`cdb-batch-merge-conductor`).
+12. Merge-SHA auf `main` verifizieren und nur `SLICE_DELIVERED` Issues schließen
+    via `cdb-session-close`.
 
 Keine stale Slice-Evidence, kein Zwischenstands-Publish und kein Fake-Green.
+Kein Bypass des Completeness-Gates.
 
 ## 11. Machine Policy und Validatoren
 

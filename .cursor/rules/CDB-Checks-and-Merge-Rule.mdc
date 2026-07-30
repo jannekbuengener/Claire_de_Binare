@@ -9,10 +9,16 @@ Before Plan finalization, Branch, Worktree or PR creation, run
 assigned PR and ends `DONE_SLICE_ADDED_TO_BATCH_PR` with merge and Issue close
 set to false.
 
-The merge rules below apply only after a Merge Trigger has frozen the PR as
-`merge_candidate`. Full Fast-CI and `cdb-local-ci` are forbidden as
-intermediate-slice evidence. Final evidence binds exact Head and integrated
-Base SHA; either moving invalidates the evidence.
+Before any merge path, run `cdb-pr-completeness-review`. Only a schema-valid
+`MERGE_CANDIDATE` may proceed. Then `cdb-batch-merge-conductor` owns freeze,
+main integration, final validation, `cdb-local-ci` publish, and regular
+squash-merge. Do not bypass Completeness.
+
+The merge rules below apply only after Completeness `MERGE_CANDIDATE` and the
+Conductor has frozen the PR (`steward_state`/`lifecycle` FROZEN). Full Fast-CI
+and `cdb-local-ci` are forbidden as intermediate-slice evidence. Final evidence
+binds exact Head and integrated Base SHA; either moving invalidates the
+evidence and requires a fresh Completeness Review.
 
 Red, missing, stale, or pending required checks are not a reason to stop and ask Jannek.
 

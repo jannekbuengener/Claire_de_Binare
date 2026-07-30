@@ -294,11 +294,11 @@ Diese Issues werden dedupliziert und mit klarem Scope angelegt.
 
 Status nach Surface-Mirror-Slice (#3639), Drift-Guard (#3643), Debug-Skill-
 Familie Slice 4 (`cdb-debug-handoff`), PR Router (#4202) und PR-Acceptance
-Leaf-Primitives (#4207/#4208): **32/32**
-Canon-Dateien; **125/125**
+Orchestrators (#4209/#4210) after Leaf-Primitives (#4207/#4208): **34/34**
+Canon-Dateien; **133/133**
 erwartete Adapter-`SKILL.md` mit `mirrored-from-canon` Header und body-parity zum
 Canon-Body (minus Header). Verifiziert durch
-`tools/validate_skill_surface_mirror.py` (`PASS`, 125 Adapter, 3 dokumentierte
+`tools/validate_skill_surface_mirror.py` (`PASS`, 133 Adapter, 3 dokumentierte
 `cdb-onboarding`-Ausnahmen). `docs/skills/` bleibt SSOT.
 
 | Skill | Canon | opencode | cursor | codex | claude | Body-Drift |
@@ -307,6 +307,8 @@ Canon-Body (minus Header). Verifiziert durch
 | cdb-pr-router | Y | sync | sync | sync | sync | — |
 | cdb-integration-wiring-audit | Y | sync | sync | sync | sync | — |
 | cdb-pr-gap-classifier | Y | sync | sync | sync | sync | — |
+| cdb-pr-completeness-review | Y | sync | sync | sync | sync | — |
+| cdb-batch-merge-conductor | Y | sync | sync | sync | sync | — |
 | cdb-session-close | Y | sync | sync | sync | sync | — |
 | cdb-control-intake | Y | sync | sync | sync | sync | — |
 | cdb-issue-to-session-plan | Y | sync | sync | sync | sync | — |

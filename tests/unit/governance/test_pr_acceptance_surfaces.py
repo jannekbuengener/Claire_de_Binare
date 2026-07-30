@@ -16,6 +16,8 @@ ROOT = Path(__file__).resolve().parents[3]
 SKILLS = (
     "cdb-integration-wiring-audit",
     "cdb-pr-gap-classifier",
+    "cdb-pr-completeness-review",
+    "cdb-batch-merge-conductor",
 )
 
 SURFACES = {
@@ -56,8 +58,8 @@ def test_registry_lists_new_skills_and_counts() -> None:
     registry = _read("docs/skills/SKILL_SURFACE_REGISTRY.md")
     for skill in SKILLS:
         assert skill in registry
-    assert "32" in registry
-    assert "125" in registry
+    assert "34" in registry
+    assert "133" in registry
 
 
 def test_discovery_surfaces_list_skills() -> None:
@@ -68,6 +70,33 @@ def test_discovery_surfaces_list_skills() -> None:
         assert skill in docs_readme
         assert skill in agents
     assert "pr_acceptance_skill_family.v1.schema.json" in contracts
+
+
+def test_entry_points_require_completeness_then_conductor() -> None:
+    operator = _read("docs/skills/cdb-operator/SKILL.md")
+    steward = _read(".cursor/agents/cdb-pr-steward.md")
+    merge_rule = _read(".cursor/rules/CDB-Checks-and-Merge-Rule.mdc")
+    merge_policy = _read("docs/runbooks/merge_policy_ci_gate.md")
+    routing = _read("docs/runbooks/PR_ROUTING_AND_BATCH_MERGE_POLICY.md")
+    contributing = _read("CONTRIBUTING.md")
+    session_close = _read("docs/skills/cdb-session-close/SKILL.md")
+    for text in (
+        operator,
+        steward,
+        merge_rule,
+        merge_policy,
+        routing,
+        contributing,
+        session_close,
+    ):
+        assert "cdb-pr-completeness-review" in text
+        assert "cdb-batch-merge-conductor" in text
+    assert "Never bypass Completeness" in contributing or (
+        "Never bypass Completeness" in operator
+    )
+    assert "Do not bypass Completeness" in operator or (
+        "kein Bypass" in steward.lower() or "Kein Bypass" in routing
+    )
 
 
 @pytest.mark.parametrize(
