@@ -23,8 +23,9 @@ BLACK_NONZERO_EXIT = BLACK_EXECUTION_FAILED
 CHANGED_FILES_ENUMERATION_FAILED = "CHANGED_FILES_ENUMERATION_FAILED"
 
 # Characters / patterns that make an override unsafe as an argv element.
+# Note: backslash is NOT treated as meta — Windows paths use ``\``.
 _BLACK_OVERRIDE_UNSAFE = (";", "|", "&", "$(", "`", "\n", "\r")
-_SHELL_META = re.compile(r"[;&|<>`$]|\\")
+_SHELL_META = re.compile(r"[;&|<>`$]")
 _BLACK_VERSION_RE = re.compile(r"(\d+\.\d+\.\d+)")
 
 _DEFAULT_BLACK_TIMEOUT_SECONDS = 300

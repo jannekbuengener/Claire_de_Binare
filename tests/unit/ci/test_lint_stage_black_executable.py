@@ -28,8 +28,9 @@ def test_black_command_accepts_existing_explicit_executable(
 ) -> None:
     executable = tmp_path / "black.exe"
     executable.write_bytes(b"test")
-    monkeypatch.setenv("CDB_BLACK_EXECUTABLE", str(executable))
-    assert _black_command("python.exe") == [str(executable)]
+    # Windows-style absolute path with backslashes must remain valid.
+    monkeypatch.setenv("CDB_BLACK_EXECUTABLE", str(executable.resolve()))
+    assert _black_command("python.exe") == [str(executable.resolve())]
 
 
 def test_black_command_rejects_missing_override(
