@@ -34,6 +34,7 @@ SKIP_DIRS = {
     ".pytest_cache",
     ".ruff_cache",
     ".venv",
+    ".worktrees",
     "__pycache__",
     "artifacts",
     "node_modules",
@@ -471,17 +472,42 @@ def should_skip_dir(rel_dir: str) -> bool:
     return any(part in SKIP_DIRS or part.startswith(".codex") for part in parts)
 
 
+def is_nested_git_root(repo_root: Path, directory: Path) -> bool:
+    """Return True for nested git repos/worktrees under repo_root (not repo_root).
+
+    Named exclusions (e.g. `.worktrees`) are handled by ``should_skip_dir``.
+    This covers differently named nested roots that carry their own ``.git``
+    file or directory. Paths that resolve outside ``repo_root`` are treated as
+    non-canonical and skipped (symlink escape guard).
+    """
+    try:
+        resolved_root = repo_root.resolve()
+        resolved_dir = directory.resolve()
+    except OSError:
+        return True
+    if resolved_dir == resolved_root:
+        return False
+    try:
+        resolved_dir.relative_to(resolved_root)
+    except ValueError:
+        return True
+    return (directory / ".git").exists()
+
+
 def iter_repo_files(repo_root: Path) -> list[str]:
     files: list[str] = []
-    for root, dirs, filenames in os.walk(repo_root):
+    # followlinks=False (default): do not descend into symlink directories.
+    for root, dirs, filenames in os.walk(repo_root, followlinks=False):
         rel_root = Path(root).relative_to(repo_root).as_posix()
-        dirs[:] = [
-            directory
-            for directory in dirs
-            if not should_skip_dir(
-                f"{rel_root}/{directory}" if rel_root != "." else directory
-            )
-        ]
+        kept: list[str] = []
+        for directory in dirs:
+            rel_dir = f"{rel_root}/{directory}" if rel_root != "." else directory
+            if should_skip_dir(rel_dir):
+                continue
+            if is_nested_git_root(repo_root, Path(root) / directory):
+                continue
+            kept.append(directory)
+        dirs[:] = kept
         for filename in filenames:
             rel_path = (
                 f"{rel_root}/{filename}" if rel_root != "." else filename
