@@ -393,22 +393,22 @@ LR remains NO-GO. Board stage `trade-capable` is not Live-Go. No Echtgeld-Go.
 - **Primary Source:** [`knowledge/governance/CDB_AGENT_POLICY.md`](../../knowledge/governance/CDB_AGENT_POLICY.md)
 
 ### Required Checks
-- **Definition:** GitHub Actions checks that must pass before a PR can merge.
-- **CDB Context:** Includes `ci` (unit/integration tests + lint) and `policy-gate` (governance compliance). `capture-intent` and `submit-pypi` are non-blocking.
-- **Authority Boundary:** Required checks are enforced by branch protection. No merge bypass possible.
-- **Primary Source:** [`.github/CONTROL_PLANE.md`](../../.github/CONTROL_PLANE.md)
+- **Definition:** The branch-protection-enforced status check that must pass before a PR can merge.
+- **CDB Context:** The only merge-relevant required context on `main` is `cdb-local-ci` (a Commit Status published by the local Fast-CI publisher, exact PR head SHA). Hosted GitHub Actions checks (`ci`, `policy-gate`) remain advisory/safety-relevant but are not branch-protection-required since migration #4169. Verify live with `gh api`, not this glossary entry.
+- **Authority Boundary:** Required checks are enforced by branch protection. No merge bypass possible; `--admin` is never a substitute for a missing/red `cdb-local-ci`.
+- **Primary Source:** [`docs/runbooks/merge_policy_ci_gate.md`](../runbooks/merge_policy_ci_gate.md)
 
 ### policy-gate
-- **Definition:** A required check that validates PR compliance with CDB governance policies.
-- **CDB Context:** Runs on every PR. Must pass before merge. Fails if scope violations, forbidden paths, or policy breaches are detected.
-- **Authority Boundary:** policy-gate is a hard gate. A failing policy-gate blocks merge regardless of other checks.
-- **Primary Source:** [`.github/CONTROL_PLANE.md`](../../.github/CONTROL_PLANE.md)
+- **Definition:** A Hosted GitHub Actions workflow that validates PR compliance with CDB governance policies.
+- **CDB Context:** Runs on every PR as advisory/safety signal. Fails if scope violations, forbidden paths, or policy breaches are detected. Since migration #4169 it is not itself the branch-protection-required merge context (`cdb-local-ci` is).
+- **Authority Boundary:** `policy-gate` findings should be treated as a hard local gate before merge, but the live branch-protection required context is `cdb-local-ci`, not `policy-gate` directly.
+- **Primary Source:** [`docs/runbooks/merge_policy_ci_gate.md`](../runbooks/merge_policy_ci_gate.md)
 
 ### CI
 - **Definition:** Continuous Integration. Automated test and validation pipeline running on every PR.
-- **CDB Context:** Runs unit tests, integration tests, lint (ruff), and type checks (mypy). Must be green before merge.
-- **Authority Boundary:** CI is a pre-merge gate. It validates code quality, not operational readiness.
-- **Primary Source:** [`.github/workflows/ci.yml`](../../.github/workflows/ci.yml)
+- **CDB Context:** Local Fast-CI (`ci/`) runs unit tests, integration tests, lint (ruff), and publishes the `cdb-local-ci` Commit Status that is the actual merge gate. Hosted Actions `ci.yml` runs the same class of checks on `ubuntu-latest` as an advisory/safety signal.
+- **Authority Boundary:** `cdb-local-ci` is the pre-merge gate. It validates code quality, not operational readiness.
+- **Primary Source:** [`docs/runbooks/merge_policy_ci_gate.md`](../runbooks/merge_policy_ci_gate.md)
 
 ## Safety boundaries
 

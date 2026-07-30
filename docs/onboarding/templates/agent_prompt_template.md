@@ -129,9 +129,20 @@ rg -n "Live-Go|Echtgeld-Go|LR bleibt NO-GO|Docs/UI sind Orientierung" <target-pa
 - Post the exact `LOCK:` as the first PR comment on the associated PR before
   further push, PR update, or follow-up GitHub mutation; an issue-only status
   comment does not satisfy the PR lock requirement.
-- Do not merge while required checks are red or scope is unclear.
+- Do not merge while live `cdb-local-ci` is missing/red on the exact PR head,
+  or while scope is unclear. Hosted Actions red due to billing/lock is not
+  automatically a merge blocker.
+- Autonomous squash merge is capability-based (see
+  `docs/runbooks/merge_policy_ci_gate.md`): when the task allows
+  `autonomous_regular_merge_allowed` and all gates are proven, merge with
+  `gh pr merge <PR> --squash --delete-branch` without asking for a separate
+  Merge-GO. Never use `--admin` as a bypass for missing `cdb-local-ci`.
+- If the session lacks `statuses:write` / merge capability: leave the PR open
+  and finish with `DONE_PR_OPEN_MERGE_HANDOFF` (no retry loops).
 - Comment the target issue with the PR link after PR creation.
-- After merge, comment and close only if the merged diff satisfies acceptance.
+- After a live-verified merge (`DONE_MERGED_CLOSED`), comment and close only
+  if the merged diff satisfies acceptance. Do not re-push a remote branch
+  deleted by `--delete-branch`.
 
 ## Safety
 

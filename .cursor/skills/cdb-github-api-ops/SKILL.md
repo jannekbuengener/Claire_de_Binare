@@ -2,7 +2,7 @@
 Canonical Skill Source: docs/skills/cdb-github-api-ops/SKILL.md
 Surface: cursor
 Sync Status: mirrored-from-canon
-Last Verified: 2026-07-01
+Last Verified: 2026-07-30
 Drift Policy: Surface-Adapter duerfen nur mit dokumentierter Begruendung abweichen.
 -->
 ---
@@ -159,7 +159,8 @@ collection_errors:
 | Comment on issue/PR | Only if Plan-GO explicitly allows it |
 | Create issue/PR | Only if Plan-GO explicitly allows it |
 | Label/milestone changes | Only if Plan-GO explicitly allows it |
-| Merge/rebase/push | Separate scope, never automatic |
+| Rebase/push | Only if Plan-GO explicitly allows it |
+| Squash merge (`gh pr merge --squash --delete-branch`) | Autonomous only when every capability gate in `docs/runbooks/merge_policy_ci_gate.md` § Capability-based autonomous merge is proven for the exact PR head (task allows autonomous merge, PR in scope/mergeable, no blocking reviews, local Fast-CI PASS bound to head, main unchanged since validation, `cdb-local-ci` SUCCESS on exact head, session can perform the merge). Capability-based, not agent-type-based. `--admin` is never a substitute for missing/red `cdb-local-ci`. If any gate is unproven: report `DONE_PR_OPEN_MERGE_HANDOFF` naming the exact missing capability — do not loop, do not force. |
 | Repo settings/admin | Separate scope, never automatic |
 | Branch protection changes | Separate scope, never automatic |
 
@@ -169,6 +170,10 @@ When a write seems necessary but no approved scope exists:
 2. Report what needs writing and why.
 3. Propose the write as a follow-up with explicit Human-GO.
 4. Do NOT execute the write.
+
+For the merge row specifically: an unproven capability gate is a
+`DONE_PR_OPEN_MERGE_HANDOFF` report, not a STOP-and-ask — the PR stays open
+and the missing capability is named for the next session/human to close.
 
 ## Hard rules
 

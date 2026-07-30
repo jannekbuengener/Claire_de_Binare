@@ -1,10 +1,3 @@
-<!--
-Canonical Skill Source: docs/skills/cdb-issue-to-session-plan/SKILL.md
-Surface: docs (canonical)
-Sync Status: canonical
-Last Verified: 2026-07-01
-Drift Policy: Surface-Adapter duerfen nur mit dokumentierter Begruendung abweichen.
--->
 ---
 name: cdb-issue-to-session-plan
 description: >
@@ -49,6 +42,14 @@ Use this after `cdb-control-intake` when the next concrete unit of work is one s
    - Rank the issue inside the current stage and weekly context.
    - Name guardrails, blockers, and explicit non-goals.
    - Break the work into a short, ordered session plan with concrete next steps.
+   - If the plan ends in a PR, name the expected close state honestly:
+     autonomous squash merge only when the full capability gate in
+     `docs/runbooks/merge_policy_ci_gate.md` § Capability-based autonomous
+     merge is provable for the exact head; otherwise plan for
+     `DONE_PR_OPEN_MERGE_HANDOFF`, not a silent assumption of merge.
+   - If the plan spans multiple sequential PRs on the same base (a merge
+     wave), state that each merge requires a rebase + full revalidation
+     against the just-merged main before the next merge is attempted.
    - Mark all unresolved assumptions as unconfirmed.
 
 ## Interpretation Rules

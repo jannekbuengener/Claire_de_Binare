@@ -32,17 +32,19 @@ DEFAULT_LOG_LINES = 100
 MAX_LOG_LINES = 500
 RETRY_COUNT = 2
 
-# Required checks for main branch
-REQUIRED_CHECKS = [
-    "ci (Unit/Integration + Lint gesammelt)",
-    "validate-branch-name",
-    "gitleaks (Secrets-Alarm)",
-    "trivy (kritische CVEs/Supply-Chain)",
-    "Check Core Duplicates",
-    "Check Delivery Gate",
-    "guard",
-    "E2E Happy Path",
-]
+# The sole live merge-relevant required context on `main` (Commit Status,
+# not a Check Run). SSOT: docs/runbooks/merge_policy_ci_gate.md.
+# Hosted GitHub Actions check-runs remain advisory/safety-relevant only
+# (migration #4169) and are reported separately below.
+REQUIRED_CHECKS = ["cdb-local-ci"]
+
+# Commit Status `state` values (cdb-local-ci) normalized to Check Run-style
+# conclusions so the rest of this script can treat both uniformly.
+_STATUS_STATE_TO_CONCLUSION = {
+    "SUCCESS": "SUCCESS",
+    "FAILURE": "FAILURE",
+    "ERROR": "FAILURE",
+}
 
 # Status handling
 POLL_STATUSES = ["IN_PROGRESS", "QUEUED", "PENDING"]
@@ -53,6 +55,7 @@ SUCCESS_STATUSES = ["SUCCESS", "NEUTRAL"]
 
 class FailureCategory(Enum):
     """Failure categories from DISCOVERY_REPORT.md"""
+
     LINT = "LINT"
     TYPE_CHECK = "TYPE_CHECK"
     TEST = "TEST"
@@ -65,6 +68,7 @@ class FailureCategory(Enum):
 @dataclass
 class FailurePattern:
     """Pattern for categorizing failures"""
+
     category: FailureCategory
     check_names: List[str]
     keywords: List[str]
@@ -77,37 +81,42 @@ FAILURE_PATTERNS = [
         category=FailureCategory.LINT,
         check_names=["ci (Ruff)", "Linting (Ruff)", "Format Check (Black)"],
         keywords=["Ruff found", "Black would reformat", "style violation"],
-        fix_hint="Run: black . && ruff check --fix ."
+        fix_hint="Run: black . && ruff check --fix .",
     ),
     FailurePattern(
         category=FailureCategory.TYPE_CHECK,
         check_names=["Type Checking (mypy)", "ci (mypy)"],
-        keywords=["mypy error", "incompatible type", "missing return", "Duplicate module"],
-        fix_hint="Add type hints or configure mypy excludes"
+        keywords=[
+            "mypy error",
+            "incompatible type",
+            "missing return",
+            "Duplicate module",
+        ],
+        fix_hint="Add type hints or configure mypy excludes",
     ),
     FailurePattern(
         category=FailureCategory.TEST,
         check_names=["Tests (Python", "ci (pytest)"],
         keywords=["FAILED tests/", "AssertionError", "test_"],
-        fix_hint="Run: pytest tests/ -v --tb=short --maxfail=1"
+        fix_hint="Run: pytest tests/ -v --tb=short --maxfail=1",
     ),
     FailurePattern(
         category=FailureCategory.SECURITY,
         check_names=["gitleaks", "trivy", "pip-audit"],
         keywords=["Credential detected", "CVE-", "vulnerability"],
-        fix_hint="Remove credentials, update dependencies, or add CVE to allowlist"
+        fix_hint="Remove credentials, update dependencies, or add CVE to allowlist",
     ),
     FailurePattern(
         category=FailureCategory.GOVERNANCE,
         check_names=["Check Delivery Gate", "Check Core Duplicates"],
         keywords=["DELIVERY_APPROVED", "duplicate core/"],
-        fix_hint="Review governance requirements in knowledge/governance/"
+        fix_hint="Review governance requirements in knowledge/governance/",
     ),
     FailurePattern(
         category=FailureCategory.E2E,
         check_names=["E2E", "e2e-"],
         keywords=["Redis connection", "Postgres", "Docker Compose"],
-        fix_hint="Check if STUB mode expected (PR fork?), verify credentials"
+        fix_hint="Check if STUB mode expected (PR fork?), verify credentials",
     ),
 ]
 
@@ -115,6 +124,7 @@ FAILURE_PATTERNS = [
 @dataclass
 class CheckResult:
     """Result of a single check"""
+
     name: str
     status: str
     conclusion: Optional[str]
@@ -126,6 +136,7 @@ class CheckResult:
 @dataclass
 class FailingCheck:
     """Detailed information about a failing check"""
+
     name: str
     conclusion: str
     url: str
@@ -162,10 +173,10 @@ class PRCheckInspector:
                     cmd,
                     capture_output=True,
                     text=True,
-                    encoding='utf-8',
-                    errors='replace',
+                    encoding="utf-8",
+                    errors="replace",
                     timeout=timeout,
-                    check=True
+                    check=True,
                 )
                 stdout = result.stdout if result.stdout else ""
                 return json.loads(stdout) if stdout.strip() else {}
@@ -173,7 +184,10 @@ class PRCheckInspector:
             except subprocess.TimeoutExpired:
                 if attempt < RETRY_COUNT:
                     if self.verbose:
-                        print(f"[WARN] Timeout, retrying ({attempt+1}/{RETRY_COUNT})...", file=sys.stderr)
+                        print(
+                            f"[WARN] Timeout, retrying ({attempt+1}/{RETRY_COUNT})...",
+                            file=sys.stderr,
+                        )
                     time.sleep(2)
                     continue
                 else:
@@ -181,12 +195,19 @@ class PRCheckInspector:
 
             except subprocess.CalledProcessError as e:
                 # Check for auth failures
-                if "403" in e.stderr or "401" in e.stderr or "authentication" in e.stderr.lower():
+                if (
+                    "403" in e.stderr
+                    or "401" in e.stderr
+                    or "authentication" in e.stderr.lower()
+                ):
                     self._handle_auth_failure(e.stderr)
 
                 if attempt < RETRY_COUNT:
                     if self.verbose:
-                        print(f"[WARN] Command failed, retrying ({attempt+1}/{RETRY_COUNT})...", file=sys.stderr)
+                        print(
+                            f"[WARN] Command failed, retrying ({attempt+1}/{RETRY_COUNT})...",
+                            file=sys.stderr,
+                        )
                     time.sleep(2)
                     continue
                 else:
@@ -209,14 +230,16 @@ class PRCheckInspector:
                 ["gh", "auth", "status"],
                 capture_output=True,
                 text=True,
-                encoding='utf-8',
-                errors='replace',
-                timeout=5
+                encoding="utf-8",
+                errors="replace",
+                timeout=5,
             )
             print("Current auth status:", file=sys.stderr)
             print(result.stderr, file=sys.stderr)
         except Exception:
-            logging.getLogger(__name__).debug("Could not get auth status (ignored)", exc_info=True)
+            logging.getLogger(__name__).debug(
+                "Could not get auth status (ignored)", exc_info=True
+            )
 
         print(file=sys.stderr)
         print("Remediation:", file=sys.stderr)
@@ -232,27 +255,55 @@ class PRCheckInspector:
         sys.exit(exit_code)
 
     def get_pr_checks(self) -> List[CheckResult]:
-        """Get all checks for the PR"""
-        data = self.run_gh_command([
-            "pr", "view", str(self.pr_number),
-            "--repo", self.repo,
-            "--json", "statusCheckRollup"
-        ])
+        """Get all checks for the PR.
+
+        `statusCheckRollup` mixes two GitHub object shapes:
+        - Check Run (Hosted Actions): `name` / `status` / `conclusion`.
+        - Commit Status (`cdb-local-ci`): `context` / `state` (no separate
+          status/conclusion pair). Both are normalized into `CheckResult`
+          here so downstream logic (required-check lookup, categorization)
+          does not need to special-case the required context.
+        """
+        data = self.run_gh_command(
+            [
+                "pr",
+                "view",
+                str(self.pr_number),
+                "--repo",
+                self.repo,
+                "--json",
+                "statusCheckRollup",
+            ]
+        )
 
         checks = []
         for check_data in data.get("statusCheckRollup", []):
-            checks.append(CheckResult(
-                name=check_data.get("name", "Unknown"),
-                status=check_data.get("status", ""),
-                conclusion=check_data.get("conclusion"),
-                details_url=check_data.get("detailsUrl", ""),
-                started_at=check_data.get("startedAt"),
-                completed_at=check_data.get("completedAt")
-            ))
+            name = check_data.get("name") or check_data.get("context") or "Unknown"
+            status = check_data.get("status")
+            conclusion = check_data.get("conclusion")
+            state = check_data.get("state")
+            if state is not None and status is None and conclusion is None:
+                normalized_state = str(state).upper()
+                conclusion = _STATUS_STATE_TO_CONCLUSION.get(normalized_state)
+                status = "COMPLETED" if conclusion else normalized_state
+
+            checks.append(
+                CheckResult(
+                    name=name,
+                    status=status or "",
+                    conclusion=conclusion,
+                    details_url=check_data.get("detailsUrl")
+                    or check_data.get("targetUrl", ""),
+                    started_at=check_data.get("startedAt"),
+                    completed_at=check_data.get("completedAt"),
+                )
+            )
 
         return checks
 
-    def categorize_failure(self, check_name: str, log_snippet: Optional[str]) -> tuple[FailureCategory, str]:
+    def categorize_failure(
+        self, check_name: str, log_snippet: Optional[str]
+    ) -> tuple[FailureCategory, str]:
         """
         Categorize a failing check based on name and log content
 
@@ -267,12 +318,17 @@ class PRCheckInspector:
         # Match by log keywords if snippet available
         if log_snippet:
             for pattern in FAILURE_PATTERNS:
-                if any(keyword.lower() in log_snippet.lower() for keyword in pattern.keywords):
+                if any(
+                    keyword.lower() in log_snippet.lower()
+                    for keyword in pattern.keywords
+                ):
                     return pattern.category, pattern.fix_hint
 
         return FailureCategory.UNKNOWN, "Inspect check logs for details"
 
-    def get_check_logs(self, check: CheckResult, lines: int = DEFAULT_LOG_LINES) -> Optional[str]:
+    def get_check_logs(
+        self, check: CheckResult, lines: int = DEFAULT_LOG_LINES
+    ) -> Optional[str]:
         """
         Retrieve logs for a failing check
 
@@ -301,9 +357,9 @@ class PRCheckInspector:
                 cmd,
                 capture_output=True,
                 text=True,
-                encoding='utf-8',
-                errors='replace',
-                timeout=30
+                encoding="utf-8",
+                errors="replace",
+                timeout=30,
             )
 
             if result.returncode != 0 or not result.stdout:
@@ -313,9 +369,17 @@ class PRCheckInspector:
             log_lines = result.stdout.splitlines()
 
             # Filter for error keywords
-            error_keywords = ["error", "fail", "fatal", "exception", "traceback", "##[error]"]
+            error_keywords = [
+                "error",
+                "fail",
+                "fatal",
+                "exception",
+                "traceback",
+                "##[error]",
+            ]
             filtered_lines = [
-                line for line in log_lines
+                line
+                for line in log_lines
                 if any(keyword in line.lower() for keyword in error_keywords)
             ]
 
@@ -329,7 +393,10 @@ class PRCheckInspector:
 
         except Exception as e:
             if self.verbose:
-                print(f"[WARN] Could not retrieve logs for {check.name}: {e}", file=sys.stderr)
+                print(
+                    f"[WARN] Could not retrieve logs for {check.name}: {e}",
+                    file=sys.stderr,
+                )
             return None
 
     def poll_for_completion(self, max_wait: int = MAX_WAIT_TIME) -> List[CheckResult]:
@@ -347,10 +414,7 @@ class PRCheckInspector:
             checks = self.get_pr_checks()
 
             # Count in-progress checks
-            in_progress = [
-                c for c in checks
-                if c.status in POLL_STATUSES
-            ]
+            in_progress = [c for c in checks if c.status in POLL_STATUSES]
 
             if not in_progress:
                 print("\n✅ All checks complete", file=sys.stderr)
@@ -358,7 +422,11 @@ class PRCheckInspector:
 
             # Show progress
             elapsed = int(time.time() - start_time)
-            print(f"\r⏳ [{elapsed}s] Waiting for {len(in_progress)} check(s) to complete...", end="", file=sys.stderr)
+            print(
+                f"\r⏳ [{elapsed}s] Waiting for {len(in_progress)} check(s) to complete...",
+                end="",
+                file=sys.stderr,
+            )
 
             if iteration % 6 == 0:  # Every minute, show check names
                 print(file=sys.stderr)
@@ -367,10 +435,15 @@ class PRCheckInspector:
 
             time.sleep(POLL_INTERVAL)
 
-        print(f"\n⚠️  Timeout after {max_wait}s with {len(in_progress)} check(s) still in progress", file=sys.stderr)
+        print(
+            f"\n⚠️  Timeout after {max_wait}s with {len(in_progress)} check(s) still in progress",
+            file=sys.stderr,
+        )
         return checks
 
-    def analyze_checks(self, checks: List[CheckResult], log_lines: int = DEFAULT_LOG_LINES) -> tuple[List[FailingCheck], Dict[str, Any]]:
+    def analyze_checks(
+        self, checks: List[CheckResult], log_lines: int = DEFAULT_LOG_LINES
+    ) -> tuple[List[FailingCheck], Dict[str, Any]]:
         """
         Analyze checks and generate failure report
 
@@ -383,14 +456,20 @@ class PRCheckInspector:
         passed = sum(1 for c in checks if c.conclusion in SUCCESS_STATUSES)
         failed = sum(1 for c in checks if c.conclusion in FAILURE_STATUSES)
         in_progress = sum(1 for c in checks if c.status in POLL_STATUSES)
-        skipped = sum(1 for c in checks if c.status in SKIP_STATUSES or c.conclusion in SKIP_STATUSES)
+        skipped = sum(
+            1
+            for c in checks
+            if c.status in SKIP_STATUSES or c.conclusion in SKIP_STATUSES
+        )
 
         # Check required checks
         required_status = {}
         for req_check in REQUIRED_CHECKS:
             matching = [c for c in checks if c.name == req_check]
             if matching:
-                required_status[req_check] = matching[0].conclusion or matching[0].status
+                required_status[req_check] = (
+                    matching[0].conclusion or matching[0].status
+                )
             else:
                 required_status[req_check] = "NOT_FOUND"
 
@@ -405,14 +484,16 @@ class PRCheckInspector:
             # Categorize
             category, fix_hint = self.categorize_failure(check.name, log_snippet)
 
-            failing_checks.append(FailingCheck(
-                name=check.name,
-                conclusion=check.conclusion,
-                url=check.details_url,
-                category=category,
-                log_snippet=log_snippet,
-                fix_hint=fix_hint
-            ))
+            failing_checks.append(
+                FailingCheck(
+                    name=check.name,
+                    conclusion=check.conclusion,
+                    url=check.details_url,
+                    category=category,
+                    log_snippet=log_snippet,
+                    fix_hint=fix_hint,
+                )
+            )
 
         summary = {
             "total": len(checks),
@@ -420,44 +501,75 @@ class PRCheckInspector:
             "failed": failed,
             "in_progress": in_progress,
             "skipped": skipped,
-            "required_checks_status": required_status
+            "required_checks_status": required_status,
         }
 
         return failing_checks, summary
 
 
-def format_human_output(pr_number: int, repo: str, failing_checks: List[FailingCheck], summary: Dict[str, Any]):
+def format_human_output(
+    pr_number: int,
+    repo: str,
+    failing_checks: List[FailingCheck],
+    summary: Dict[str, Any],
+):
     """Format human-readable output"""
     # Use ASCII-safe characters for Windows console compatibility
     check_pass = "[OK]"
     check_fail = "[FAIL]"
 
     print(f"PR #{pr_number}: {repo}")
-    print(f"Status: {summary['passed']} passed, {summary['failed']} failed, {summary['in_progress']} in_progress")
+    print(
+        f"Status: {summary['passed']} passed, {summary['failed']} failed, {summary['in_progress']} in_progress"
+    )
     print()
 
     # Check required checks
     required_failed = [
-        name for name, status in summary["required_checks_status"].items()
+        name
+        for name, status in summary["required_checks_status"].items()
         if status in FAILURE_STATUSES
     ]
 
     if required_failed:
-        print(f"{check_fail} Required checks failed ({len(required_failed)}/{len(REQUIRED_CHECKS)}):")
+        print(
+            f"{check_fail} Required merge context failed/red ({len(required_failed)}/{len(REQUIRED_CHECKS)}): BLOCKED_REQUIRED_STATUS"
+        )
         for name in required_failed:
             print(f"  - {name}")
         print()
-    elif summary["failed"] == 0:
-        # Count checks that are present (not NOT_FOUND) and passed
-        passed_count = len([s for s in summary['required_checks_status'].values() if s in SUCCESS_STATUSES])
-        present_count = len([s for s in summary['required_checks_status'].values() if s != "NOT_FOUND"])
-        not_found = [name for name, s in summary['required_checks_status'].items() if s == "NOT_FOUND"]
+    else:
+        not_found = [
+            name
+            for name, s in summary["required_checks_status"].items()
+            if s == "NOT_FOUND"
+        ]
+        passed_count = len(
+            [
+                s
+                for s in summary["required_checks_status"].values()
+                if s in SUCCESS_STATUSES
+            ]
+        )
 
         if not_found:
-            print(f"{check_pass} All required checks passed ({passed_count}/{present_count} present, {len(not_found)} not triggered)")
-            print(f"   Not triggered: {', '.join(not_found)}")
+            print(
+                f"{check_fail} Required merge context missing on this head SHA: REQUIRED_STATUS_MISSING"
+            )
+            print(f"   Missing: {', '.join(not_found)}")
         else:
-            print(f"{check_pass} All required checks passed ({passed_count}/{len(REQUIRED_CHECKS)})")
+            print(
+                f"{check_pass} Required merge context is SUCCESS: MERGE_READY ({passed_count}/{len(REQUIRED_CHECKS)})"
+            )
+        print()
+
+    hosted_actions_failed = [c for c in failing_checks if c.name not in REQUIRED_CHECKS]
+    if hosted_actions_failed:
+        print(
+            f"[ADVISORY] {len(hosted_actions_failed)} Hosted Actions check(s) red (does not block merge if cdb-local-ci is SUCCESS):"
+        )
+        for check in hosted_actions_failed:
+            print(f"  - {check.name}")
         print()
 
     # Show failing checks
@@ -471,16 +583,25 @@ def format_human_output(pr_number: int, repo: str, failing_checks: List[FailingC
 
             if check.log_snippet:
                 print(f"\n   Error Snippet (last {DEFAULT_LOG_LINES} lines, filtered):")
-                for line in check.log_snippet.splitlines()[:20]:  # Show first 20 lines of snippet
+                for line in check.log_snippet.splitlines()[
+                    :20
+                ]:  # Show first 20 lines of snippet
                     print(f"     {line}")
                 if len(check.log_snippet.splitlines()) > 20:
-                    print(f"     ... ({len(check.log_snippet.splitlines()) - 20} more lines)")
+                    print(
+                        f"     ... ({len(check.log_snippet.splitlines()) - 20} more lines)"
+                    )
 
             print(f"\n   Fix: {check.fix_hint}")
             print()
 
 
-def format_json_output(pr_number: int, repo: str, failing_checks: List[FailingCheck], summary: Dict[str, Any]):
+def format_json_output(
+    pr_number: int,
+    repo: str,
+    failing_checks: List[FailingCheck],
+    summary: Dict[str, Any],
+):
     """Format JSON output"""
     output = {
         "pr_number": pr_number,
@@ -493,10 +614,10 @@ def format_json_output(pr_number: int, repo: str, failing_checks: List[FailingCh
                 "url": check.url,
                 "category": check.category.value,
                 "log_snippet": check.log_snippet,
-                "fix_hint": check.fix_hint
+                "fix_hint": check.fix_hint,
             }
             for check in failing_checks
-        ]
+        ],
     }
     print(json.dumps(output, indent=2))
 
@@ -512,14 +633,23 @@ Examples:
   %(prog)s --pr 807 --wait
   %(prog)s --pr 807 --json
   %(prog)s --pr 807 --check "ci (Unit" --lines 200
-"""
+""",
     )
 
     parser.add_argument("--pr", type=int, required=True, help="Pull Request number")
-    parser.add_argument("--repo", default=DEFAULT_REPO, help=f"Repository (default: {DEFAULT_REPO})")
-    parser.add_argument("--wait", action="store_true", help="Poll for in-progress checks (max 10 min)")
+    parser.add_argument(
+        "--repo", default=DEFAULT_REPO, help=f"Repository (default: {DEFAULT_REPO})"
+    )
+    parser.add_argument(
+        "--wait", action="store_true", help="Poll for in-progress checks (max 10 min)"
+    )
     parser.add_argument("--check", help="Filter by check name (substring match)")
-    parser.add_argument("--lines", type=int, default=DEFAULT_LOG_LINES, help=f"Log lines to show (default: {DEFAULT_LOG_LINES}, max: {MAX_LOG_LINES})")
+    parser.add_argument(
+        "--lines",
+        type=int,
+        default=DEFAULT_LOG_LINES,
+        help=f"Log lines to show (default: {DEFAULT_LOG_LINES}, max: {MAX_LOG_LINES})",
+    )
     parser.add_argument("--json", action="store_true", help="Output as JSON")
     parser.add_argument("--verbose", action="store_true", help="Verbose output")
 

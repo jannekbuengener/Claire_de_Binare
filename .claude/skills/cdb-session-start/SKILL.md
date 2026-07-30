@@ -2,7 +2,7 @@
 Canonical Skill Source: docs/skills/cdb-session-start/SKILL.md
 Surface: claude
 Sync Status: mirrored-from-canon
-Last Verified: 2026-07-01
+Last Verified: 2026-07-30
 Drift Policy: Surface-Adapter duerfen nur mit dokumentierter Begruendung abweichen.
 -->
 ---
@@ -68,7 +68,7 @@ Establish a verified, fail-closed starting state before any repo work begins.
    |---|---|
    | Dirty worktree with unknown changes | STOP — identify origin, stash or resolve |
    | Local main behind origin/main | Do not start from stale local main; refresh or use origin/main explicitly |
-   | Gone upstream branch (remote deleted, local present) | Mark stale; do not build on it |
+   | Gone upstream branch (remote deleted, local present) | Mark stale; do not build on it. If the remote was deleted by a prior squash-merge (`--delete-branch`), do not re-push or recreate it (anti-repush); prune the local ref instead |
    | Old local worktree from a prior session | Do not read as implicit active progress |
    | Branch-local commits presented as merged truth | Verify via `gh pr list --state merged` |
    | Auto-merge enabled on repo during closure-sensitive work | State `Closes #N` vs `Refs #N` explicitly |
@@ -188,6 +188,10 @@ Establish a verified, fail-closed starting state before any repo work begins.
    - Scope stated: what is IN, what is OUT.
    - Closure semantics confirmed: `Closes #N` (full delivery) vs. `Refs #N`
      (partial or scoped delivery).
+   - If the session may end in an autonomous merge, note that capability
+     (not agent type) gates it; see `docs/runbooks/merge_policy_ci_gate.md`
+     § Capability-based autonomous merge. Missing capability at close time
+     is `DONE_PR_OPEN_MERGE_HANDOFF`, not a blocker to starting session work.
 
 ## Fail-Closed Rules
 

@@ -216,48 +216,55 @@ gh pr comment <pr-number> --body "LOCK: agent=<agent-id> issue=#<issue> ts=<ISO8
 All GitHub writes (PR create, comment, merge, issue comment, labels) go through
 `gh` CLI only. No MCP/GitHub API/connector writes.
 
-## Check required checks
+## Check required status (merge gate)
 
-As defined in `docs/onboarding/cdb_glossary.md` and `.github/CONTROL_PLANE.md`:
+SSOT: [`docs/runbooks/merge_policy_ci_gate.md`](../runbooks/merge_policy_ci_gate.md).
+Verify live with `gh api` — do not hardcode elsewhere.
 
-| Check | Required? | What it validates |
-|-------|-----------|-------------------|
-| `ci` | **Yes** | Unit + integration tests, lint (ruff), type checks (mypy) |
-| `policy-gate` | **Yes** | Governance compliance, scope violations, forbidden paths |
+| Context | Required? | What it validates |
+|---------|-----------|-------------------|
+| `cdb-local-ci` | **Yes** (Commit Status, exact PR head) | Local Fast-CI evidence published for this head |
+| Hosted Actions (`ci`, `policy-gate`, …) | Advisory | Safety/diagnostics; billing-red ≠ code failure |
 
-Non-required checks that should be green or skipped:
-- `capture-intent` (non-blocking)
-- `submit-pypi` (non-blocking)
+Publish path (when the session has `statuses:write`):
 
-Wait for both required checks to go green. If either is red: fix the issue
-inside the PR scope, push, and wait again. If the failure is outside your
-scope, comment on the PR and stop.
+```powershell
+pwsh -File ci/scripts/run_all.ps1 -Profile fast
+pwsh -File ci/scripts/publish_status.ps1 -Command publish `
+  -EvidenceDir ci/artifacts/<run_id> -StatusContext cdb-local-ci -PrNumber <n>
+```
 
-## Merge criteria
+If `cdb-local-ci` is missing/red and the session cannot publish: fix inside
+scope if possible, otherwise stop with `DONE_PR_OPEN_MERGE_HANDOFF`.
 
-Before merging, verify:
+## Merge criteria (capability-based)
 
-1. Required checks `ci` and `policy-gate` are green.
-2. No non-required check has a red status caused by this PR's content.
+Autonomous squash merge is allowed when **all** capability gates are proven
+(see merge-policy runbook). Not agent-type-based. Checklist:
+
+1. Live `cdb-local-ci` SUCCESS on the exact PR head SHA.
+2. Full local Fast-CI PASS bound to that head; validated `main` unchanged.
 3. Diff stays inside the approved scope (docs/onboarding + narrow discovery).
-4. No new `LOCK:` from another writer appeared.
-5. No `CHANGES_REQUESTED` review from a blocking reviewer.
-6. PR is not in draft / HOLD / BLOCKED state.
-7. No secrets in the diff.
-8. No LR, Live, or Echtgeld boundary touched.
-9. `CURRENT_STATUS.md` is not treated as live truth in the change.
+4. No new `LOCK:` from another writer; no blocking reviews / `CHANGES_REQUESTED`.
+5. PR is not draft / HOLD / BLOCKED; mergeable.
+6. No secrets in the diff; no LR/Live/Echtgeld boundary touched.
+7. Session can perform regular squash merge (no `--admin` bypass).
 
-Use **squash merge** to keep a clean main history:
+If gates are met and the task allows autonomous merge:
 
 ```bash
 gh pr merge <pr-number> --squash --delete-branch
 ```
 
-After merge, verify the merge SHA:
+If the session lacks publisher/merge capability: leave the PR open and report
+`DONE_PR_OPEN_MERGE_HANDOFF` (do not loop, do not `--admin`).
+
+After a successful merge, verify and **do not re-push** the deleted remote branch:
 
 ```bash
 git fetch origin --prune
 git rev-parse origin/main
+gh pr view <pr-number> --json state,mergedAt,mergeCommit
 ```
 
 ## Close issue / parent comment pattern
@@ -334,8 +341,8 @@ at [`examples/first_issue_to_pr_flow.md`](examples/first_issue_to_pr_flow.md).
 | `main` diverged from `origin/main` | `git fetch origin --prune && git reset --hard origin/main` |
 | Issue already closed | Pick a different open issue. |
 | Matching open PR with active `LOCK:` by another writer | HARD STOP. Wait or ask. |
-| Required check `ci` is red | Fix the issue inside PR scope. Do not expand scope. |
-| Required check `policy-gate` is red | Read the failure output. Fix governance issue or stop. |
+| Required status `cdb-local-ci` missing/red | Run local Fast-CI + publish, or hand off with `DONE_PR_OPEN_MERGE_HANDOFF` if lacking `statuses:write`. |
+| Hosted Actions `ci`/`policy-gate` red | Treat as advisory; fix real code/governance issues; billing-red ≠ code failure. |
 | Diff grows into runtime/Docker/trading/LR/DB scope | Revert the out-of-scope change. Commit only docs. |
 | Secret value appears in diff | Revert immediately. Do not push. |
 | `CURRENT_STATUS.md` treated as live truth in the change | Correct to ledger/ledger wording. |

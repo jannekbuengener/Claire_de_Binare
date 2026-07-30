@@ -15,6 +15,11 @@ Lokale, Docker-fähige CI-Ausführungsschicht für Claire_de_Binare.
   (`tools/ci/policy_gate_local.py`) ist Publish-Pflicht für `cdb-local-ci`.
 - Lokales CodeQL/SARIF ersetzt **nicht** den GitHub Security-Tab.
 - LR bleibt **NO-GO**. Kein BLUE/RED als Default-CI. Kein GHCR-Push.
+- Autonomous merge is capability-based (any session, not agent-type-based):
+  see [`docs/runbooks/merge_policy_ci_gate.md`](../docs/runbooks/merge_policy_ci_gate.md)
+  § Capability-based Autonomous Merge. `cdb-local-ci` SUCCESS on the exact PR
+  head SHA is the required merge context; missing capability → honest
+  `DONE_PR_OPEN_MERGE_HANDOFF`, never `--admin`.
 
 ## Preferred Windows front door
 

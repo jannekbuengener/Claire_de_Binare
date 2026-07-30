@@ -103,6 +103,28 @@ pwsh -File ci/scripts/publish_status.ps1 -Command dry-run -EvidenceDir ci/artifa
   -PrNumber <n>
 ```
 
+## Identity preflight and handoff when `statuses:write` is missing
+
+Before attempting `publish`, a session should preflight its own capability
+rather than discover the failure mid-merge attempt:
+
+1. `gh auth status` — confirm an authenticated identity exists.
+2. Confirm a usable token per the resolution order above
+   (`GITHUB_TOKEN` → `GH_TOKEN` → `gh auth token`).
+3. Attempt `python -m ci.publisher dry-run ...` first; a dry-run failure due
+   to insufficient scope (no Commit-statuses write) surfaces as a clear
+   `REJECT:` without mutating anything.
+
+If the preflight shows the session cannot write the required Commit Status
+(no `statuses:write`-capable token, no authenticated identity, or the token
+owner lacks permission on this repo): do not fall back to `--admin` merge
+and do not loop retries. Report `DONE_PR_OPEN_MERGE_HANDOFF` /
+`BLOCKED_AUTH_PUBLISHER` (see
+[`merge_policy_ci_gate.md`](../runbooks/merge_policy_ci_gate.md) §
+Capability-based Autonomous Merge) with the exact missing capability
+(e.g. "no fine-grained PAT with Commit statuses: Write available in this
+session") and the concrete next command for a capable session/human to run.
+
 ## Commands
 
 ```bash

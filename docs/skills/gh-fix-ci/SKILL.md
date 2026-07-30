@@ -1,13 +1,6 @@
-<!--
-Canonical Skill Source: docs/skills/gh-fix-ci/SKILL.md
-Surface: docs (canonical)
-Sync Status: canonical
-Last Verified: 2026-07-01
-Drift Policy: Surface-Adapter duerfen nur mit dokumentierter Begruendung abweichen.
--->
 # gh-fix-ci - GitHub CI Failure Inspector
 
-**Version:** 1.0.0
+**Version:** 1.1.0
 **Status:** Active
 **Canonical Location:** `docs/skills/gh-fix-ci/`
 
@@ -79,24 +72,63 @@ Based on [DISCOVERY_REPORT.md](../../../docs/skills/gh-fix-ci/DISCOVERY_REPORT.m
 
 ## Required Checks for CDB
 
-Based on branch protection rules for `main`:
+**SSOT:** `docs/runbooks/merge_policy_ci_gate.md`.
+Live branch protection on `main` requires **exactly one** merge-relevant
+context:
 
-1. **ci (Unit/Integration + Lint gesammelt)** - Python tests, Ruff, Black, mypy
-2. **validate-branch-name** - Branch naming policy
-3. **gitleaks (Secrets-Alarm)** - Secret detection
-4. **trivy (kritische CVEs/Supply-Chain)** - Container CVE scan
-5. **Check Core Duplicates** - Prevents duplicate `core/` directories
-6. **Check Delivery Gate** - Enforces `DELIVERY_APPROVED.yaml` gate
-7. **guard** - repository canon consistency check
-8. **E2E Happy Path** - Full integration test (Redis, Postgres, Docker Compose)
+- **`cdb-local-ci`** — a GitHub **Commit Status** (not a Check Run) published
+  by the local Fast-CI status publisher for the exact PR head SHA. Verify
+  live with `gh api`, not from any hardcoded list (including this one).
+
+Since migration #4169, hosted GitHub Actions check-runs — `ci (Unit/Integration + Lint gesammelt)`,
+`validate-branch-name`, `gitleaks (Secrets-Alarm)`, `trivy (kritische CVEs/Supply-Chain)`,
+`Check Core Duplicates`, `Check Delivery Gate`, `guard`, `E2E Happy Path`, and
+similar — are **advisory/safety-relevant only**. They remain useful signal
+(lint, tests, security, governance, E2E) and should be inspected and fixed
+when red, but their status alone does **not** gate merge and does not need
+to be "8/8 present" for merge eligibility.
+
+### Failure classification (used by this skill)
+
+- `MERGE_READY` — `cdb-local-ci` SUCCESS on the exact PR head SHA. PR is
+  merge-eligible regardless of Hosted Actions state (surface Hosted Actions
+  findings as advisory only).
+- `REQUIRED_STATUS_MISSING` — `cdb-local-ci` absent or stale for the exact
+  head SHA. Not merge-eligible; needs a local Fast-CI run + publish, or a
+  capable session to do so.
+- `CODE_FAILURE` — a check (local Fast-CI stage or Hosted Actions job) fails
+  due to an actual code/test/lint/type issue. Fixable in-repo.
+  `--check` name filtering (e.g. `--check "ci (Unit"`) still works for
+  Hosted Actions advisory triage.
+- `HOSTED_ACTIONS_INFRA_BLOCK` — Hosted Actions run is red/blocked due to
+  billing, runner lock, `action_required` approval gate, or similar
+  infrastructure condition unrelated to code correctness. Report distinctly
+  from `CODE_FAILURE`; does not block merge if `cdb-local-ci` is SUCCESS.
+- `AUTH_PUBLISHER_BLOCK` — the session cannot read/verify `cdb-local-ci` or
+  (if attempting to publish) cannot authenticate with sufficient scope. See
+  Auth Preflight below.
 
 ### Conditional Checks
 
-Some required checks may not be present on every PR due to workflow path filters:
+Some Hosted Actions checks may not be present on every PR due to workflow
+path filters:
 
 - **E2E Happy Path**: Ergänzender E2E-Workflow; kein branch-protected Required Check.
-- The script reports these as "not triggered" rather than failures
-- Output format: `[OK] All required checks passed (7/7 present, 1 not triggered)`
+- The script reports these as "not triggered" rather than failures.
+- Output format: `[OK] Hosted Actions advisory checks: 7/7 present, 1 not triggered (cdb-local-ci: SUCCESS)`
+
+### Auth Preflight
+
+Before relying on any check result, verify the identity/token can actually
+read live status:
+
+1. `gh auth status` — confirm an authenticated identity.
+2. `gh api repos/<owner>/<repo>/commits/<head_sha>/status` — confirm
+   `cdb-local-ci` is readable for the exact PR head SHA (billing/lock
+   conditions on Hosted Actions do not affect this read).
+3. If step 2 fails with an auth/permission error, classify as
+   `AUTH_PUBLISHER_BLOCK`, not `REQUIRED_STATUS_MISSING` — these have
+   different remediations (fix auth vs. run+publish local CI).
 
 ---
 
@@ -158,39 +190,42 @@ Failing Checks (2/15):
 
 ### Human-Readable Summary (Default)
 ```
-PR #807: docs(lr): add LR-007 Shadow Mode status tracking
-Branch: docs/lr-007-status-tracking
-Status: 13 passed, 2 in_progress, 0 failed
+PR #807: jannekbuengener/Claire_de_Binare
+Status: 13 passed, 0 failed, 2 in_progress
 
-✅ All required checks passed (8/8)
+[OK] Required merge context is SUCCESS: MERGE_READY (1/1)
 
-Passing Checks:
-- ci (Unit/Integration + Lint gesammelt) ✅
-- validate-branch-name ✅
-- gitleaks (Secrets-Alarm) ✅
-...
+[ADVISORY] 1 Hosted Actions check(s) red (does not block merge if cdb-local-ci is SUCCESS):
+  - trivy (kritische CVEs/Supply-Chain)
+```
 
-In Progress:
-- trivy (kritische CVEs/Supply-Chain) ⏳ (elapsed: 45s)
+Missing/red required context is reported instead as:
+```
+[FAIL] Required merge context missing on this head SHA: REQUIRED_STATUS_MISSING
+   Missing: cdb-local-ci
+```
+or
+```
+[FAIL] Required merge context failed/red (1/1): BLOCKED_REQUIRED_STATUS
+  - cdb-local-ci
 ```
 
 ### JSON Output (with `--json`)
 ```json
 {
   "pr_number": 807,
-  "pr_title": "docs(lr): add LR-007 Shadow Mode status tracking",
-  "branch": "docs/lr-007-status-tracking",
-  "total_checks": 15,
-  "passed": 13,
-  "failed": 0,
-  "in_progress": 2,
-  "skipped": 0,
-  "failing_checks": [],
-  "required_checks_status": {
-    "ci (Unit/Integration + Lint gesammelt)": "SUCCESS",
-    "validate-branch-name": "SUCCESS",
-    ...
-  }
+  "repo": "jannekbuengener/Claire_de_Binare",
+  "summary": {
+    "total": 15,
+    "passed": 13,
+    "failed": 0,
+    "in_progress": 2,
+    "skipped": 0,
+    "required_checks_status": {
+      "cdb-local-ci": "SUCCESS"
+    }
+  },
+  "failing_checks": []
 }
 ```
 
@@ -377,5 +412,5 @@ Exit code: 2
 ---
 
 **Created:** 2026-02-08
-**Last Updated:** 2026-02-08
+**Last Updated:** 2026-07-30
 **Maintainer:** Claude Code (Session Lead)

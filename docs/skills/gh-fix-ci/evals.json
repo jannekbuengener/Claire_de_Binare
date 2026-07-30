@@ -1,6 +1,6 @@
 {
   "skill_name": "gh-fix-ci",
-  "version": "1.0.0",
+  "version": "1.1.0",
   "evals": [
     {
       "name": "no_failing_checks",
@@ -8,10 +8,9 @@
       "command": "python docs/skills/gh-fix-ci/scripts/inspect_pr_checks.py --pr 807 --repo jannekbuengener/Claire_de_Binare",
       "expected_exit_code": 0,
       "expected_output_contains": [
-        "All required checks passed",
-        "✅"
+        "MERGE_READY"
       ],
-      "note": "PR #807 has all checks passing (as of 2026-02-08)"
+      "note": "PR #807 had all checks passing (as of 2026-02-08); required context is now cdb-local-ci (Commit Status) per migration #4169, re-verify against a current PR"
     },
     {
       "name": "failing_check_mypy",
@@ -68,26 +67,25 @@
     },
     {
       "name": "required_checks_validation",
-      "description": "Should validate all 8 required checks for main branch",
+      "description": "Should validate the single live required merge context (cdb-local-ci)",
       "command": "python docs/skills/gh-fix-ci/scripts/inspect_pr_checks.py --pr 807 --repo jannekbuengener/Claire_de_Binare",
       "expected_exit_code": 0,
       "expected_output_contains": [
-        "All required checks passed",
-        "present"
+        "MERGE_READY"
       ],
-      "note": "Validates all required checks from DISCOVERY_REPORT.md Section 2.1. PR #807 is docs-only so E2E Happy Path is not triggered (paths-ignore filter)."
+      "note": "SSOT: docs/runbooks/merge_policy_ci_gate.md. Since migration #4169 only cdb-local-ci (Commit Status) is merge-relevant; the former 8-check list is advisory only."
     },
     {
-      "name": "required_checks_with_not_found",
-      "description": "Should report NOT_FOUND checks separately when path filters skip them",
+      "name": "required_status_missing",
+      "description": "Should report REQUIRED_STATUS_MISSING when cdb-local-ci is absent for the exact head SHA",
       "command": "python docs/skills/gh-fix-ci/scripts/inspect_pr_checks.py --pr 807 --repo jannekbuengener/Claire_de_Binare",
       "expected_exit_code": 0,
       "expected_output_contains": [
-        "7/7 present",
-        "1 not triggered",
-        "E2E Happy Path"
+        "REQUIRED_STATUS_MISSING",
+        "cdb-local-ci"
       ],
-      "note": "PR #807 has docs-only changes; E2E Happy Path is an optional non-required workflow and may be absent"
+      "note": "Applies to any PR head SHA where the local publisher has not yet published cdb-local-ci",
+      "skip_reason": "Requires a live PR without a published cdb-local-ci status at test time"
     },
     {
       "name": "polling_wait_mode",

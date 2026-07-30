@@ -2,7 +2,7 @@
 Canonical Skill Source: docs/skills/cdb-ci-cd-guard/SKILL.md
 Surface: opencode
 Sync Status: mirrored-from-canon
-Last Verified: 2026-07-01
+Last Verified: 2026-07-30
 Drift Policy: Surface-Adapter duerfen nur mit dokumentierter Begruendung abweichen.
 -->
 ---
@@ -37,6 +37,14 @@ disable-model-invocation: true
 - No silent stub or mock path on protected refs.
 - Missing critical secrets on protected refs must fail closed.
 - Without explicit approval, default to audit plus fix plan rather than mutation.
+- The sole live merge-relevant required context is `cdb-local-ci` (a Commit
+  Status, not a Check Run). Verify live with `gh api`; do not hardcode a
+  required-checks list from memory. Hosted Actions check-runs are
+  advisory/safety-relevant only (migration #4169).
+- Autonomous squash merge is capability-based (see
+  `docs/runbooks/merge_policy_ci_gate.md` § Capability-based autonomous
+  merge), not agent-type-based. `--admin` is never a valid bypass for a
+  missing/red `cdb-local-ci`.
 
 ## Workflow
 1. Inventory active workflows and identify gate-bearing jobs.

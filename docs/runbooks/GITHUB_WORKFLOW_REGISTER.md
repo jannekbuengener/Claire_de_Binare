@@ -21,13 +21,24 @@ historischen Evidence- und Session-Unterlagen erwähnt.
 
 ## Merge-relevante Checks
 
-| Workflow | Check |
-|---|---|
-| `ci.yml` | `ci (Unit/Integration + Lint gesammelt)` |
-| `policy-gate.yml` | `policy-gate` |
+SSOT: [`merge_policy_ci_gate.md`](merge_policy_ci_gate.md). Der einzige
+merge-relevante Required Context auf `main` ist `cdb-local-ci` (Commit
+Status, lokaler Publisher), live verifizierbar via `gh api`, nicht aus
+dieser Tabelle.
 
-Nur diese beiden Check-Kontexte sind der kanonische PR-Merge-Vertrag. Andere
-Workflows liefern ergänzende Prüfungen, Reports oder Automatisierung.
+| Quelle | Check-Kontext | Typ |
+|---|---|---|
+| Local CI Status Publisher | `cdb-local-ci` | Commit Status |
+
+| Workflow | Rolle |
+|---|---|
+| `ci.yml` | Hosted Actions, advisory (nicht branch-protection-required) |
+| `policy-gate.yml` | Hosted Actions, advisory (nicht branch-protection-required) |
+
+`ci.yml` und `policy-gate.yml` sind seit Migration #4169 keine
+Branch-Protection-Required-Checks mehr. Andere Workflows liefern
+ergänzende Prüfungen, Reports oder Automatisierung, ersetzen aber ebenfalls
+nicht `cdb-local-ci`.
 
 ## Vollständiges Inventar
 
