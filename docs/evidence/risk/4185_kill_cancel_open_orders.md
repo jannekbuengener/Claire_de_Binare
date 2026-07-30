@@ -1,9 +1,9 @@
 # Evidence: Kill-Cancel Open Orders (#4185)
 
-**Getesteter Code-Commit:** `9859ad5b53d2db6f827bfb72ea658b4ee2032771`
+**Getesteter Code-Commit:** 
 *(wird nach Commit auf den exakten PR-Head gesetzt)*
 
-**Run-ID:** `4185_g1g2_unit`
+**Run-ID:** 
 
 **Verdict:** `HOLD`
 
