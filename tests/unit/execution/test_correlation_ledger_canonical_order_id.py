@@ -201,8 +201,10 @@ def test_execution_service_derives_paper_prefixed_ledger_id_for_mock_exchange_on
 
     assert [c["event_type"] for c in fake_db.calls] == ["ORDER", "FILL"]
     for call in fake_db.calls:
-        assert call["order_id"] == "paper_MOCK_456"
-        assert call["payload"]["order_id"] == "paper_MOCK_456"
+        # #4185 pre-submit assigns an internal id before the mock venue id exists;
+        # ARVP still requires a paper_* canonical ledger id with venue in payload.
+        assert str(call["order_id"]).startswith("paper_")
+        assert call["order_id"] == call["payload"]["order_id"]
         assert call["payload"]["exchange_order_id"] == "MOCK_456"
 
 

@@ -20,14 +20,47 @@ DEFAULT_BRANCH = "main"
 BP_BASELINE_REL = Path("docs/evidence/reports/BRANCH_PROTECTION_BASELINE_main.json")
 
 
+def _docker_image_present(image: str) -> bool:
+    proc = subprocess.run(
+        ["docker", "image", "inspect", image],
+        capture_output=True,
+        text=True,
+        check=False,
+    )
+    return proc.returncode == 0
+
+
+def _resolve_surreal_docker_image() -> str:
+    """Prefer local/ghcr image; fall back to Docker Hub when ghcr is denied."""
+    candidates = (
+        f"ghcr.io/surrealdb/surrealdb:{SURREAL_VERSION}",
+        f"surrealdb/surrealdb:{SURREAL_VERSION}",
+    )
+    for image in candidates:
+        if _docker_image_present(image):
+            return image
+    for image in candidates:
+        pull = subprocess.run(
+            ["docker", "pull", image],
+            capture_output=True,
+            text=True,
+            check=False,
+        )
+        if pull.returncode == 0:
+            return image
+    raise RuntimeError(
+        "unable to pull SurrealDB image from ghcr.io or Docker Hub for surreal-validate"
+    )
+
+
 def _surreal_commands(repo_root: Path) -> list[list[str]]:
     """Portable SurrealQL validate (avoid fragile Make/shell on Windows)."""
     if shutil.which("surreal"):
         return [["surreal", "validate", path] for path in SURQL_FILES]
     if shutil.which("docker"):
-        image = f"ghcr.io/surrealdb/surrealdb:{SURREAL_VERSION}"
+        image = _resolve_surreal_docker_image()
         root = str(repo_root.resolve())
-        cmds: list[list[str]] = [["docker", "pull", image]]
+        cmds: list[list[str]] = []
         for path in SURQL_FILES:
             cmds.append(
                 [
