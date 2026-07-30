@@ -72,6 +72,10 @@ def execution_harness(monkeypatch: pytest.MonkeyPatch) -> _Harness:
     monkeypatch.setattr(service, "bot_shutdown_active", False)
     monkeypatch.setattr(service, "blocked_strategy_ids", set())
     monkeypatch.setattr(service, "blocked_bot_ids", set())
+    monkeypatch.setattr(service, "open_order_registry", None)
+    monkeypatch.setattr(service, "kill_cancel_coordinator", None)
+    monkeypatch.setattr(service, "kill_cancel_supervisor", None)
+    monkeypatch.setattr(service, "open_orders", set())
     monkeypatch.setenv("TRACE_CONTRACT_V1_ENABLED", "0")
 
     # LR-030: Kill-switch default inactive for deterministic tests.
