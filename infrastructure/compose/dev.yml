@@ -189,7 +189,7 @@ services:
       REGIME_ATR_PERIOD: "14"
       REGIME_ADX_TREND_THRESHOLD: "25.0"
       REGIME_ADX_RANGE_THRESHOLD: "20.0"
-      REGIME_ATR_HIGH_VOL_THRESHOLD: "2.0"
+      REGIME_ATR_HIGH_VOL_THRESHOLD: "0.001"
       REGIME_CONFIRMATION_BARS: "3"
     entrypoint: ["sh", "-c", "export REDIS_PASSWORD=$(cat /run/secrets/redis_password) && exec python -u service.py"]
     ports:

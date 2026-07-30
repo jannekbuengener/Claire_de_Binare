@@ -31,7 +31,7 @@
     },
     "pct_change_15m": {
       "type": "number",
-      "description": "Percentage-point signal momentum over the lookback window; 3.0 means 3%."
+      "description": "Percentage-point price change over SIGNAL_LOOKBACK_MIN minutes of event time; 3.0 means 3%. Insufficient history must omit or null the field — never invent a tick-to-tick substitute."
     },
     "volume_15m": {"type": "number"},
     "ts_ms": {"type": "integer"}

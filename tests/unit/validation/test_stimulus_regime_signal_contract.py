@@ -31,13 +31,15 @@ from service import SignalEngine  # noqa: E402
 def _simulate_regime_state_machine(
     candles: list[dict],
     *,
-    atr_high_vol_threshold: float = 2.0,
+    atr_high_vol_threshold: float = 0.001,
     adx_trend_threshold: float = 25.0,
     adx_range_threshold: float = 20.0,
     confirmation_bars: int = 3,
     period: int = 14,
 ) -> tuple[str, str, float]:
-    """Mirror ``RegimeService._derive_regime`` confirmation semantics."""
+    """Mirror ``RegimeService._derive_regime`` confirmation semantics (#4149 atr/close)."""
+    from services.regime.models import classify_raw_regime
+
     bucket: list[Candle] = []
     current = "UNKNOWN"
     candidate: str | None = None
@@ -62,14 +64,15 @@ def _simulate_regime_state_machine(
         if adx is None or atr is None:
             continue
         last_atr = atr
-        if atr >= atr_high_vol_threshold:
-            raw_regime = "HIGH_VOL_CHAOTIC"
-        elif adx >= adx_trend_threshold:
-            raw_regime = "TREND"
-        elif adx <= adx_range_threshold:
-            raw_regime = "RANGE"
-        else:
-            raw_regime = current
+        raw_regime = classify_raw_regime(
+            adx=adx,
+            atr=atr,
+            close=float(candle["close"]),
+            current_regime=current,
+            atr_high_vol_threshold=atr_high_vol_threshold,
+            adx_trend_threshold=adx_trend_threshold,
+            adx_range_threshold=adx_range_threshold,
+        )
         last_raw = raw_regime
         if raw_regime == current:
             candidate = None
@@ -156,19 +159,21 @@ def test_fixture_breakout_keeps_regime_trend_not_high_vol():
 
 @pytest.mark.unit
 def test_legacy_premium_spike_would_classify_high_vol():
-    """Documents the pre-#3015 failure mode: large breakout premium spikes ATR."""
+    """Large OHLC range spikes still trip HIGH_VOL under atr/close semantics (#4149)."""
     spec = load_fixture_spec(DEFAULT_FIXTURE_PATH)
     candles = generate_fixture_candles(spec)
     highest = candles[-2]["close"]
     threshold = highest * (1 + spec.breakout_buffer)
     spike_close = highest * (1 + spec.breakout_close_premium_pct / 100.0)
-    for idx in range(-3, 0):
+    # Widen true range so ATR/close exceeds the relative high-vol threshold.
+    for idx in range(-5, 0):
         candles[idx]["close"] = spike_close
-        candles[idx]["high"] = spike_close
+        candles[idx]["high"] = spike_close * 1.01
+        candles[idx]["low"] = spike_close * 0.99
     current, last_raw, atr = _simulate_regime_state_machine(candles)
     assert last_raw == "HIGH_VOL_CHAOTIC"
     assert current == "HIGH_VOL_CHAOTIC"
-    assert atr >= 2.0
+    assert atr / spike_close >= 0.001
     assert spike_close > threshold
 
 

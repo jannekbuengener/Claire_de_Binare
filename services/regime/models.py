@@ -5,6 +5,37 @@ Market Regime Service - Models and indicators.
 from dataclasses import dataclass
 from typing import Optional
 
+# Unit for REGIME_ATR_HIGH_VOL_THRESHOLD: dimensionless ATR/close ratio.
+ATR_HIGH_VOL_UNIT = "atr_over_close"
+
+
+def classify_raw_regime(
+    *,
+    adx: float,
+    atr: float,
+    close: float,
+    current_regime: str,
+    atr_high_vol_threshold: float,
+    adx_trend_threshold: float,
+    adx_range_threshold: float,
+) -> str:
+    """Classify raw regime label before confirmation hysteresis.
+
+    High-vol uses scale-stable ``atr / close`` against
+    ``atr_high_vol_threshold`` (unit: atr_over_close). ATR is evaluated
+    before ADX. Non-positive close is fail-closed ``UNKNOWN``.
+    """
+    if close <= 0:
+        return "UNKNOWN"
+    atr_over_close = atr / close
+    if atr_over_close >= atr_high_vol_threshold:
+        return "HIGH_VOL_CHAOTIC"
+    if adx >= adx_trend_threshold:
+        return "TREND"
+    if adx <= adx_range_threshold:
+        return "RANGE"
+    return current_regime
+
 
 @dataclass
 class Candle:

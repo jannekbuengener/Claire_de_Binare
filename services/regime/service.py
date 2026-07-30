@@ -20,10 +20,25 @@ from core.utils.redis_payload import sanitize_payload
 
 try:
     from .config import config
-    from .models import Candle, compute_adx, compute_atr
+    from .models import (
+        ATR_HIGH_VOL_UNIT,
+        Candle,
+        classify_raw_regime,
+        compute_adx,
+        compute_atr,
+    )
 except ImportError:
     from config import config
-    from models import Candle, compute_adx, compute_atr
+    from models import (
+        ATR_HIGH_VOL_UNIT,
+        Candle,
+        classify_raw_regime,
+        compute_adx,
+        compute_atr,
+    )
+
+# Re-export for tests / callers
+__all__ = ["ATR_HIGH_VOL_UNIT", "RegimeService"]
 
 logging_config_path = Path(__file__).parent.parent.parent / "logging_config.json"
 if logging_config_path.exists():
@@ -86,6 +101,9 @@ class RegimeService:
     def _emit_regime(
         self, candle: Candle, regime: str, adx: Optional[float], atr: Optional[float]
     ):
+        atr_over_close = ""
+        if atr is not None and candle.close > 0:
+            atr_over_close = f"{(atr / candle.close):.8f}"
         payload = {
             "ts": str(candle.ts),
             "symbol": candle.symbol,
@@ -93,6 +111,8 @@ class RegimeService:
             "regime": regime,
             "adx": "" if adx is None else f"{adx:.6f}",
             "atr": "" if atr is None else f"{atr:.6f}",
+            "atr_over_close": atr_over_close,
+            "atr_high_vol_unit": ATR_HIGH_VOL_UNIT,
             "source_version": self.config.source_version,
             "schema_version": self.config.schema_version,
         }
@@ -117,14 +137,15 @@ class RegimeService:
         atr = compute_atr(list(bucket), self.config.atr_period)
         if adx is None or atr is None:
             return
-        if atr >= self.config.atr_high_vol_threshold:
-            raw_regime = "HIGH_VOL_CHAOTIC"
-        elif adx >= self.config.adx_trend_threshold:
-            raw_regime = "TREND"
-        elif adx <= self.config.adx_range_threshold:
-            raw_regime = "RANGE"
-        else:
-            raw_regime = self.current_regime[key]
+        raw_regime = classify_raw_regime(
+            adx=adx,
+            atr=atr,
+            close=candle.close,
+            current_regime=self.current_regime[key],
+            atr_high_vol_threshold=self.config.atr_high_vol_threshold,
+            adx_trend_threshold=self.config.adx_trend_threshold,
+            adx_range_threshold=self.config.adx_range_threshold,
+        )
 
         if raw_regime == self.current_regime[key]:
             self.candidate_regime[key] = None
