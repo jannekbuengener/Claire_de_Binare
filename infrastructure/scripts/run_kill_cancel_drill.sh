@@ -302,22 +302,37 @@ def send(suffix: str):
     pub.close()
     raise RuntimeError("no order result")
 
+def is_schema_mapped_resting_open(result: dict) -> bool:
+    # EVENT_SCHEMA maps PENDING/SUBMITTED -> ERROR on pub/sub order_results.
+    if result.get("status") in {"PENDING", "SUBMITTED"}:
+        return True
+    return (
+        result.get("status") == "ERROR"
+        and not result.get("error_message")
+        and float(result.get("filled_quantity") or 0.0) == 0.0
+    )
+
 for i in range(2):
     result = send(str(i))
-    assert result["status"] in {"PENDING", "SUBMITTED", "REJECTED"}
+    assert is_schema_mapped_resting_open(result), result
 
-# Wait briefly for ledger
-deadline = time.time() + 15
+# Wait for registry residual + ledger persistence before activating kill.
+deadline = time.time() + 20
 while time.time() < deadline:
-    if ledger.exists() and ledger.stat().st_size > 2:
+    kc = requests.get(f"{execution}/status", timeout=10).json().get("kill_cancel") or {}
+    if int(kc.get("residual_open_order_count") or 0) >= 2 and ledger.exists() and ledger.stat().st_size > 2:
         break
     time.sleep(0.5)
+else:
+    raise RuntimeError(f"restart prep residuals/ledger not ready; last={kc} ledger={ledger.exists()}")
 
-requests.post(f"{risk}/kill-switch/activate", json={
+activate = requests.post(f"{risk}/kill-switch/activate", json={
     "reason": "manual",
     "message": "4185 restart phase",
     "operator": "issue-4185-drill",
-}, timeout=10).raise_for_status()
+}, timeout=10)
+activate.raise_for_status()
+assert activate.json()["active"] is True
 print("restart prep complete; ledger_exists=", ledger.exists())
 PY
 PREP_EXIT=$?
@@ -372,18 +387,34 @@ def sha256(path: Path) -> str:
     h.update(path.read_bytes())
     return h.hexdigest()
 
+def junit_status(path: Path, test_name: str) -> str:
+    if not path.exists():
+        return "FAIL"
+    import xml.etree.ElementTree as ET
+    root = ET.parse(path).getroot()
+    for tc in root.iter("testcase"):
+        if tc.get("name") == test_name:
+            if tc.find("failure") is not None or tc.find("error") is not None:
+                return "FAIL"
+            if tc.find("skipped") is not None:
+                return "HOLD"
+            return "PASS"
+    return "FAIL"
+
+p1 = evidence / "phase1.xml"
+p2 = evidence / "phase2.xml"
 scenarios = {
-    "S1_S2_inactive_keeps_open": "PASS" if initial == 0 else "FAIL",
-    "S3_S5_active_cancel_confirmed": "PASS" if initial == 0 else "FAIL",
-    "S4_unevaluable_fail_closed": "PASS" if initial == 0 else "FAIL",
-    "S6_cancel_rejection_hold": "PASS" if initial == 0 else "FAIL",
-    "S7_cancel_exception_malformed": "PASS" if initial == 0 else "FAIL",
-    "S8_adapter_unsupported_hold": "PASS" if initial == 0 else "FAIL",
-    "S9_double_kill_idempotent": "PASS" if initial == 0 else "FAIL",
-    "S10a_ledger_persists": "PASS" if initial == 0 else "FAIL",
-    "S10b_restart_reconcile": "PASS" if restart == 0 else "FAIL",
-    "S11_fill_after_kill_fail": "PASS" if initial == 0 else "FAIL",
-    "S12_positions_visible_no_unwind": "PASS" if initial == 0 else "FAIL",
+    "S1_S2_inactive_keeps_open": junit_status(p1, "test_s1_s2_inactive_keeps_resting_orders_open"),
+    "S3_S5_active_cancel_confirmed": junit_status(p1, "test_s3_s5_active_cancels_confirmed"),
+    "S4_unevaluable_fail_closed": junit_status(p1, "test_s4_unevaluable_fail_closed"),
+    "S6_cancel_rejection_hold": junit_status(p1, "test_s6_cancel_rejection_hold"),
+    "S7_cancel_exception_malformed": junit_status(p1, "test_s7_cancel_exception_and_malformed_hold"),
+    "S8_adapter_unsupported_hold": junit_status(p1, "test_s8_adapter_without_cancel_hold"),
+    "S9_double_kill_idempotent": junit_status(p1, "test_s9_double_kill_idempotent"),
+    "S10a_ledger_persists": junit_status(p1, "test_s10a_ledger_persists_open_orders"),
+    "S10b_restart_reconcile": junit_status(p2, "test_s10b_restart_reconciles_before_new_orders"),
+    "S11_fill_after_kill_fail": junit_status(p1, "test_s11_fill_after_kill_fail"),
+    "S12_positions_visible_no_unwind": junit_status(p1, "test_s12_positions_visible_no_auto_unwind"),
 }
 
 overall = "PASS"

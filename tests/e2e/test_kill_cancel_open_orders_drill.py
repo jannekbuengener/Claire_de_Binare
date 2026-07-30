@@ -160,6 +160,21 @@ def _wait_for_kill_cancel(
     raise AssertionError(f"kill_cancel condition not met; last={last}")
 
 
+def _is_schema_mapped_resting_open(result: dict) -> bool:
+    """EVENT_SCHEMA only allows FILLED|REJECTED|ERROR on order_results.
+
+    Resting PENDING/SUBMITTED are published as ERROR with no error_message and
+    zero fill. Registry/status remain the authoritative open-order view.
+    """
+    if result.get("status") in {"PENDING", "SUBMITTED"}:
+        return True
+    return (
+        result.get("status") == "ERROR"
+        and not result.get("error_message")
+        and float(result.get("filled_quantity") or 0.0) == 0.0
+    )
+
+
 def _send_resting_order(client: redis.Redis, *, suffix: str) -> dict:
     pubsub = client.pubsub()
     pubsub.subscribe("order_results")
@@ -182,11 +197,19 @@ def _send_resting_order(client: redis.Redis, *, suffix: str) -> dict:
 
 
 def _register_multiple_resting(client: redis.Redis, *, n: int = 3) -> list[dict]:
+    before = int(
+        (_execution_status().get("kill_cancel") or {}).get("residual_open_order_count")
+        or 0
+    )
     results = []
     for i in range(n):
         result = _send_resting_order(client, suffix=f"rest-{i}-{int(time.time())}")
-        assert result["status"] in {"PENDING", "SUBMITTED"}, result
+        assert _is_schema_mapped_resting_open(result), result
         results.append(result)
+    _wait_for_kill_cancel(
+        predicate=lambda snap: int(snap.get("residual_open_order_count") or 0)
+        >= before + n
+    )
     return results
 
 
