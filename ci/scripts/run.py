@@ -179,7 +179,7 @@ def run_ci(
     # Temp-root preflight before any pytest/unit collection (#4205).
     print("==> stage temp_preflight")
     preflight_started = utc_now()
-    preflight = prepare_ci_temp_root(run_dir, rid)
+    preflight = prepare_ci_temp_root(run_dir, rid, repo_root=repo_root)
     preflight_report = run_dir / "reports" / "temp_preflight.json"
     write_temp_preflight_report(preflight_report, preflight)
     preflight_ended = utc_now()
