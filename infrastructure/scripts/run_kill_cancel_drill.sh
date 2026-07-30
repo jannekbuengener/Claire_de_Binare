@@ -81,7 +81,7 @@ if len(ordered) != 2:
     raise SystemExit(f"could not resolve redis/postgres services: {ordered}")
 print(" ".join(ordered))
 PY
-}}
+}
 
 cleanup() {
   set +e
@@ -188,7 +188,7 @@ for c in ${INFRA_CONTAINERS} "${PROJECT_NAME}_risk" "${PROJECT_NAME}_execution";
 done
 
 set +e
-"${COMPOSE[@]}" run --rm \
+"${COMPOSE[@]}" run --rm -T \
   -e CDB_4185_DRILL=1 \
   -e CDB_4185_RESTART_PHASE=0 \
   cdb_test_runner \
@@ -293,21 +293,24 @@ COMPLETED_AT="$(date -u +%Y-%m-%dT%H:%M:%SZ)"
 cleanup
 trap - EXIT
 
-python3 - <<PY
+EVIDENCE_DIR="$EVIDENCE_DIR" PROJECT_NAME="$PROJECT_NAME" COMMIT_SHA="$COMMIT_SHA" \
+RUN_ID="$RUN_ID" INITIAL_EXIT="$INITIAL_EXIT" RESTART_EXIT="$RESTART_EXIT" \
+CLEANUP_PASS="$CLEANUP_PASS" STARTED_AT="$STARTED_AT" COMPLETED_AT="$COMPLETED_AT" \
+RUN_ERROR="$RUN_ERROR" \
+python3 - <<'PY'
 import hashlib, json, os
 from pathlib import Path
-from datetime import datetime, timezone
 
-evidence = Path(${EVIDENCE_DIR@Q})
-project = ${PROJECT_NAME@Q}
-commit = ${COMMIT_SHA@Q}
-run_id = ${RUN_ID@Q}
-initial = ${INITIAL_EXIT}
-restart = ${RESTART_EXIT}
-cleanup_pass = ${CLEANUP_PASS}
-started = ${STARTED_AT@Q}
-completed = ${COMPLETED_AT@Q}
-run_error = ${RUN_ERROR@Q}
+evidence = Path(os.environ["EVIDENCE_DIR"])
+project = os.environ["PROJECT_NAME"]
+commit = os.environ["COMMIT_SHA"]
+run_id = os.environ["RUN_ID"]
+initial = int(os.environ["INITIAL_EXIT"])
+restart = int(os.environ["RESTART_EXIT"])
+cleanup_pass = int(os.environ["CLEANUP_PASS"])
+started = os.environ["STARTED_AT"]
+completed = os.environ["COMPLETED_AT"]
+run_error = os.environ.get("RUN_ERROR") or ""
 
 def sha256(path: Path) -> str:
     h = hashlib.sha256()
