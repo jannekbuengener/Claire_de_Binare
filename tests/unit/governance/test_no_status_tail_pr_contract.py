@@ -81,6 +81,8 @@ def test_docs_ops_and_drift_align_with_no_tail_pr() -> None:
 def test_router_and_conductor_surfaces_mention_policy() -> None:
     router = _read("docs/skills/cdb-pr-router/SKILL.md")
     conductor = _read("docs/skills/cdb-batch-merge-conductor/SKILL.md")
-    assert "CURRENT_STATUS-only" in router or "Nachlauf-PR" in router
-    assert "vor dem Freeze" in conductor or "Freeze" in conductor
-    assert "CURRENT_STATUS" in conductor or "Ledger" in conductor
+    assert "CURRENT_STATUS-only" in router
+    assert "Nachlauf-PR" in router
+    assert "CURRENT_STATUS-only" in conductor
+    assert "Nachlauf-PR" in conductor
+    assert "vor dem Freeze" in conductor
