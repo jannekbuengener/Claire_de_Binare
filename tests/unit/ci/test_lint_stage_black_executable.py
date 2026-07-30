@@ -8,7 +8,9 @@ import pytest
 
 from ci.stages.lint import (
     BLACK_EXECUTABLE_INVALID,
+    BLACK_EXECUTABLE_MISSING,
     _black_command,
+    redact_path_for_evidence,
 )
 
 pytestmark = [pytest.mark.unit, pytest.mark.contract]
@@ -35,7 +37,7 @@ def test_black_command_rejects_missing_override(
 ) -> None:
     missing = tmp_path / "missing-black.exe"
     monkeypatch.setenv("CDB_BLACK_EXECUTABLE", str(missing))
-    with pytest.raises(RuntimeError, match=BLACK_EXECUTABLE_INVALID):
+    with pytest.raises(RuntimeError, match=BLACK_EXECUTABLE_MISSING):
         _black_command("python.exe")
 
 
@@ -63,3 +65,9 @@ def test_black_command_rejects_shell_metacharacters(
     monkeypatch.setenv("CDB_BLACK_EXECUTABLE", unsafe)
     with pytest.raises(RuntimeError, match=BLACK_EXECUTABLE_INVALID):
         _black_command("python.exe")
+
+
+def test_redact_path_masks_home() -> None:
+    home = str(Path.home())
+    assert redact_path_for_evidence(f"{home}/tools/black") == "$HOME/tools/black"
+    assert redact_path_for_evidence("/opt/other/black") == "/opt/other/black"

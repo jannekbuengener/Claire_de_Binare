@@ -13,6 +13,7 @@ from ci.lib.process import EXIT_CODE_TIMEOUT, CommandResult, run_command
 from ci.stages._common import StageContext
 from ci.stages.lint import (
     BLACK_EXECUTABLE_INVALID,
+    BLACK_EXECUTABLE_MISSING,
     BLACK_NONZERO_EXIT,
     BLACK_TIMEOUT,
     run as lint_run,
@@ -60,7 +61,9 @@ def test_run_command_timeout_returns_exit_124_not_raise(
     )
     assert result.timed_out is True
     assert result.exit_code == EXIT_CODE_TIMEOUT
+    assert result.reason_code == "COMMAND_TIMEOUT"
     text = log_path.read_text(encoding="utf-8")
+    assert "TIMEOUT after 1s" in text
     assert "reason_code=COMMAND_TIMEOUT" in text
     assert f"exit_code={EXIT_CODE_TIMEOUT}" in text
     # No credential-shaped leakage from the timeout path.
@@ -78,6 +81,10 @@ def test_lint_black_timeout_fails_with_black_timeout(
         "ci.stages.lint._changed_python_files",
         lambda _root: ["services/example.py"],
     )
+    monkeypatch.setattr(
+        "ci.stages.lint.ensure_black_version",
+        lambda argv, repo_root: "26.5.1",
+    )
 
     calls: list[dict[str, Any]] = []
 
@@ -88,6 +95,7 @@ def test_lint_black_timeout_fails_with_black_timeout(
         log_path: Path,
         env: Any = None,
         timeout: int | None = None,
+        timeout_reason_code: str | None = None,
     ) -> CommandResult:
         log_path.parent.mkdir(parents=True, exist_ok=True)
         log_path.write_text(f"$ {' '.join(command)}\n", encoding="utf-8")
@@ -96,7 +104,8 @@ def test_lint_black_timeout_fails_with_black_timeout(
             return _ok_result(list(command))
         # Simulate Black hang → timeout contract from process layer.
         log_path.write_text(
-            f"$ {' '.join(command)}\n\nreason_code=COMMAND_TIMEOUT\n"
+            f"$ {' '.join(command)}\n\nTIMEOUT after {timeout}s\n"
+            f"reason_code={timeout_reason_code or 'COMMAND_TIMEOUT'}\n"
             f"exit_code={EXIT_CODE_TIMEOUT}\n",
             encoding="utf-8",
         )
@@ -107,6 +116,7 @@ def test_lint_black_timeout_fails_with_black_timeout(
             stdout="",
             stderr="",
             timed_out=True,
+            reason_code=timeout_reason_code or "COMMAND_TIMEOUT",
         )
 
     monkeypatch.setattr("ci.stages.lint.run_command", fake_run_command)
@@ -115,6 +125,7 @@ def test_lint_black_timeout_fails_with_black_timeout(
     assert result.status == "FAIL"
     assert result.exit_code == EXIT_CODE_TIMEOUT
     assert result.skip_reason is None
+    assert result.reason_code == BLACK_TIMEOUT
     assert f"reason_code={BLACK_TIMEOUT}" in result.command_summary
     # Timeout applied only to Black, not ruff.
     assert calls[0]["timeout"] is None
@@ -134,6 +145,10 @@ def test_lint_black_nonzero_exit_fails_with_reason(
         "ci.stages.lint._changed_python_files",
         lambda _root: ["services/example.py"],
     )
+    monkeypatch.setattr(
+        "ci.stages.lint.ensure_black_version",
+        lambda argv, repo_root: "26.5.1",
+    )
 
     def fake_run_command(
         command: list[str],
@@ -142,6 +157,7 @@ def test_lint_black_nonzero_exit_fails_with_reason(
         log_path: Path,
         env: Any = None,
         timeout: int | None = None,
+        timeout_reason_code: str | None = None,
     ) -> CommandResult:
         log_path.parent.mkdir(parents=True, exist_ok=True)
         log_path.write_text(f"$ {' '.join(command)}\nexit_code=1\n", encoding="utf-8")
@@ -161,6 +177,7 @@ def test_lint_black_nonzero_exit_fails_with_reason(
     assert result.status == "FAIL"
     assert result.exit_code == 1
     assert result.skip_reason is None
+    assert result.reason_code == BLACK_NONZERO_EXIT
     assert f"reason_code={BLACK_NONZERO_EXIT}" in result.command_summary
 
 
@@ -181,6 +198,7 @@ def test_lint_invalid_executable_fails_closed(
         log_path: Path,
         env: Any = None,
         timeout: int | None = None,
+        timeout_reason_code: str | None = None,
     ) -> CommandResult:
         log_path.parent.mkdir(parents=True, exist_ok=True)
         log_path.write_text(f"$ {' '.join(command)}\n", encoding="utf-8")
@@ -190,7 +208,8 @@ def test_lint_invalid_executable_fails_closed(
     result = lint_run(ctx)
     assert result.status == "FAIL"
     assert result.skip_reason is None
-    assert f"reason_code={BLACK_EXECUTABLE_INVALID}" in result.command_summary
+    assert result.reason_code == BLACK_EXECUTABLE_MISSING
+    assert f"reason_code={BLACK_EXECUTABLE_MISSING}" in result.command_summary
     # Error text must not leak env secrets / tokens.
     joined = " ".join(result.command_summary) + "\n".join(
         p.read_text(encoding="utf-8") for p in (ctx.logs_dir).glob("*.log")
@@ -210,6 +229,10 @@ def test_lint_identical_changed_set_uses_same_command_shape(
         "ci.stages.lint._changed_python_files",
         lambda _root: list(files),
     )
+    monkeypatch.setattr(
+        "ci.stages.lint.ensure_black_version",
+        lambda argv, repo_root: "26.5.1",
+    )
     captured: list[list[str]] = []
 
     def fake_run_command(
@@ -219,6 +242,7 @@ def test_lint_identical_changed_set_uses_same_command_shape(
         log_path: Path,
         env: Any = None,
         timeout: int | None = None,
+        timeout_reason_code: str | None = None,
     ) -> CommandResult:
         log_path.parent.mkdir(parents=True, exist_ok=True)
         log_path.write_text(f"$ {' '.join(command)}\n", encoding="utf-8")
@@ -236,3 +260,39 @@ def test_lint_identical_changed_set_uses_same_command_shape(
     assert "--workers" in black_cmd
     assert "1" in black_cmd
     assert black_cmd[-2:] == files
+
+
+def test_lint_paths_with_spaces_remain_separate_argv(
+    monkeypatch: pytest.MonkeyPatch, tmp_path: Path
+) -> None:
+    ctx = _ctx(tmp_path)
+    spaced = "dir with spaces/mod.py"
+    monkeypatch.delenv("CDB_BLACK_EXECUTABLE", raising=False)
+    monkeypatch.setattr(
+        "ci.stages.lint._changed_python_files",
+        lambda _root: [spaced],
+    )
+    monkeypatch.setattr(
+        "ci.stages.lint.ensure_black_version",
+        lambda argv, repo_root: "26.5.1",
+    )
+    captured: list[list[str]] = []
+
+    def fake_run_command(
+        command: list[str],
+        *,
+        cwd: Path,
+        log_path: Path,
+        env: Any = None,
+        timeout: int | None = None,
+        timeout_reason_code: str | None = None,
+    ) -> CommandResult:
+        log_path.parent.mkdir(parents=True, exist_ok=True)
+        log_path.write_text("ok\n", encoding="utf-8")
+        captured.append(list(command))
+        return _ok_result(list(command))
+
+    monkeypatch.setattr("ci.stages.lint.run_command", fake_run_command)
+    lint_run(ctx)
+    assert spaced in captured[1]
+    assert captured[1][-1] == spaced

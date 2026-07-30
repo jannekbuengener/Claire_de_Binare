@@ -26,6 +26,7 @@ class CommandResult:
     stdout: str
     stderr: str
     timed_out: bool = False
+    reason_code: str | None = None
 
 
 def run_command(
@@ -35,6 +36,7 @@ def run_command(
     log_path: Path,
     env: Mapping[str, str] | None = None,
     timeout: int | None = None,
+    timeout_reason_code: str | None = None,
 ) -> CommandResult:
     # Fail-closed UTF-8 on Windows consoles (emoji in existing scripts).
     base_env = {
@@ -61,7 +63,9 @@ def run_command(
             )
         except subprocess.TimeoutExpired:
             # Never re-raise: callers treat exit_code=124 as FAIL, not SKIP/PASS.
-            handle.write("\nreason_code=COMMAND_TIMEOUT\n")
+            reason = timeout_reason_code or "COMMAND_TIMEOUT"
+            handle.write(f"\nTIMEOUT after {timeout}s\n")
+            handle.write(f"reason_code={reason}\n")
             handle.write(f"exit_code={EXIT_CODE_TIMEOUT}\n")
             duration = time.perf_counter() - started
             return CommandResult(
@@ -71,6 +75,7 @@ def run_command(
                 stdout="",
                 stderr="",
                 timed_out=True,
+                reason_code=reason,
             )
         handle.write(f"\nexit_code={proc.returncode}\n")
     duration = time.perf_counter() - started
@@ -81,4 +86,5 @@ def run_command(
         stdout="",
         stderr="",
         timed_out=False,
+        reason_code=None,
     )
