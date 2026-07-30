@@ -33,9 +33,7 @@ REQUIRED_ALLOWED_MARKERS = (
     "vor dem Freeze",
     "docs-governance",
 )
-REQUIRED_EXCEPTION_MARKERS = (
-    "sicherheitskritisch",
-)
+REQUIRED_EXCEPTION_MARKERS = ("sicherheitskritisch",)
 
 
 def _read(path: str) -> str:
@@ -59,7 +57,11 @@ def test_session_close_forbids_immediate_status_tail_pr() -> None:
     assert "vor dem Freeze" in text
     assert "docs-governance" in text
     # Must not re-authorize an immediate dedicated status-only PR after merge.
-    assert "kein unmittelbarer" in text.lower() or "kein sofortiger" in text.lower() or "verboten" in text.lower()
+    assert (
+        "kein unmittelbarer" in text.lower()
+        or "kein sofortiger" in text.lower()
+        or "verboten" in text.lower()
+    )
 
 
 def test_pr_routing_runbook_documents_allowed_paths() -> None:
