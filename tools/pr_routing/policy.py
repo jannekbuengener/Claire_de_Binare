@@ -126,6 +126,17 @@ def load_policy(path: Path | str | None = None) -> RoutingPolicy:
 
     metadata = _require_mapping(root.get("metadata"), "metadata")
     triggers = _require_mapping(root.get("merge_triggers"), "merge_triggers")
+    reviewability_raw = _require_mapping(root.get("reviewability"), "reviewability")
+    for section_name, section in (
+        ("reviewability", reviewability_raw),
+        ("merge_triggers", triggers),
+    ):
+        meaning = section.get("changed_files_limit_meaning")
+        if meaning is not None and meaning != "logical_review_units":
+            raise ValueError(
+                f"{section_name}.changed_files_limit_meaning must be "
+                f"'logical_review_units' when present; got {meaning!r}"
+            )
     return RoutingPolicy(
         schema_version=SCHEMA_VERSION,
         policy_id=POLICY_ID,
@@ -153,12 +164,15 @@ def load_policy(path: Path | str | None = None) -> RoutingPolicy:
         ),
         reviewability={
             str(key): int(value)
-            for key, value in _require_mapping(
-                root.get("reviewability"), "reviewability"
-            ).items()
+            for key, value in reviewability_raw.items()
+            if key != "changed_files_limit_meaning"
         },
         marker_version=str(metadata.get("marker_version") or ""),
         ledger_heading=str(metadata.get("ledger_heading") or ""),
         ledger_columns=tuple(str(item) for item in metadata.get("ledger_columns", [])),
-        merge_triggers={str(key): int(value) for key, value in triggers.items()},
+        merge_triggers={
+            str(key): int(value)
+            for key, value in triggers.items()
+            if key != "changed_files_limit_meaning"
+        },
     )

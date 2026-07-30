@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import base64
 import json
 import re
 import subprocess
@@ -10,6 +11,7 @@ from typing import Any, Callable
 
 from tools.pr_routing.engine import CandidatePullRequest, IssueFacts, LockState
 from tools.pr_routing.policy import RoutingPolicy
+from tools.pr_routing.reviewability import classify_skill_path
 
 Runner = Callable[..., subprocess.CompletedProcess[str]]
 
@@ -188,6 +190,94 @@ class GhReadOnlyInventory:
             raise GitHubInventoryError(f"PR #{pr_number} details are malformed")
         return data
 
+    def pull_request_changed_paths(self, pr_number: int) -> list[str]:
+        """Return the complete paginated list of changed file paths for a PR."""
+        try:
+            result = self._runner(
+                [
+                    "gh",
+                    "api",
+                    "--paginate",
+                    f"repos/{self.repository}/pulls/{pr_number}/files",
+                    "--jq",
+                    ".[].filename",
+                ],
+                capture_output=True,
+                text=True,
+                check=False,
+                timeout=self.timeout_seconds,
+            )
+        except (OSError, subprocess.TimeoutExpired) as exc:
+            raise GitHubInventoryError(
+                f"gh PR file inventory failed: {exc}"
+            ) from exc
+        if result.returncode != 0:
+            detail = (result.stderr or "").strip()
+            raise GitHubInventoryError(
+                f"gh PR file inventory returned {result.returncode}: {detail}"
+            )
+        paths = [
+            line.strip().replace("\\", "/")
+            for line in (result.stdout or "").splitlines()
+            if line.strip()
+        ]
+        return paths
+
+    def pull_request_file_text(self, path: str, ref: str) -> str | None:
+        """Fetch a single file body at ``ref``; return None on failure."""
+        try:
+            data = self._json(
+                [
+                    "gh",
+                    "api",
+                    (
+                        f"repos/{self.repository}/contents/"
+                        f"{path}?ref={ref}"
+                    ),
+                ]
+            )
+        except GitHubInventoryError:
+            return None
+        if not isinstance(data, dict):
+            return None
+        encoding = str(data.get("encoding") or "")
+        content = data.get("content")
+        if encoding != "base64" or not isinstance(content, str):
+            return None
+        try:
+            return base64.b64decode(content).decode("utf-8")
+        except (OSError, UnicodeDecodeError, ValueError):
+            return None
+
+    def _reviewability_inventory(
+        self,
+        *,
+        pr_number: int,
+        changed_files: int,
+        head_ref_oid: str,
+        path_threshold: int,
+    ) -> tuple[tuple[str, ...] | None, dict[str, str] | None, bool]:
+        """Load paths/contents once physical count reaches the reviewability gate."""
+        if changed_files < path_threshold:
+            return None, None, True
+        try:
+            paths = tuple(self.pull_request_changed_paths(pr_number))
+        except GitHubInventoryError:
+            return None, None, False
+        if len(paths) != changed_files:
+            return paths, None, False
+        if not head_ref_oid:
+            return paths, None, True
+        contents: dict[str, str] = {}
+        for path in paths:
+            if classify_skill_path(path) is None:
+                continue
+            text = self.pull_request_file_text(path, head_ref_oid)
+            if text is None:
+                continue
+            contents[path] = text
+        return paths, contents or None, True
+
     @staticmethod
     def _reservation_state(
         comments: list[dict[str, Any]], *, issue_number: int, current_agent: str
@@ -314,6 +404,18 @@ class GhReadOnlyInventory:
                 or 0,
                 pr_number=number,
             )
+            changed_files = int(details.get("changedFiles") or 0)
+            head_ref_oid = str(details.get("headRefOid") or "") or None
+            path_threshold = min(
+                int(policy.reviewability["changed_files_limit"]),
+                int(policy.merge_triggers["changed_files_limit"]),
+            )
+            paths, contents, inventory_complete = self._reviewability_inventory(
+                pr_number=number,
+                changed_files=changed_files,
+                head_ref_oid=head_ref_oid or "",
+                path_threshold=path_threshold,
+            )
             candidates.append(
                 CandidatePullRequest(
                     number=number,
@@ -326,10 +428,14 @@ class GhReadOnlyInventory:
                     created_at=datetime.fromisoformat(
                         str(details["createdAt"]).replace("Z", "+00:00")
                     ),
-                    changed_files=int(details.get("changedFiles") or 0),
+                    changed_files=changed_files,
                     additions=int(details.get("additions") or 0),
                     deletions=int(details.get("deletions") or 0),
                     merge_mode=("batch" if "cdb-batch-pr:v1" in body else "dedicated"),
+                    changed_file_paths=paths,
+                    file_contents=contents,
+                    inventory_complete=inventory_complete,
+                    head_ref_oid=head_ref_oid,
                 )
             )
         return candidates

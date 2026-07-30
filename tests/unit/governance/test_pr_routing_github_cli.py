@@ -194,3 +194,52 @@ def test_inventory_at_candidate_limit_is_incomplete() -> None:
     inventory = GhReadOnlyInventory(repository="owner/repo", runner=runner)
     with pytest.raises(GitHubInventoryError, match="pagination is incomplete"):
         inventory.open_pull_requests(policy)
+
+
+def test_pull_request_changed_paths_paginates_all_filenames() -> None:
+    def runner(argv: list[str], **kwargs: Any) -> subprocess.CompletedProcess[str]:
+        assert "--paginate" in argv
+        assert argv[-1] == ".[].filename"
+        return subprocess.CompletedProcess(
+            args=argv,
+            returncode=0,
+            stdout="docs/a.md\n.cursor/skills/x/SKILL.md\n",
+            stderr="",
+        )
+
+    inventory = GhReadOnlyInventory(repository="owner/repo", runner=runner)
+    assert inventory.pull_request_changed_paths(4219) == [
+        "docs/a.md",
+        ".cursor/skills/x/SKILL.md",
+    ]
+
+
+def test_reviewability_inventory_failure_is_incomplete() -> None:
+    def runner(argv: list[str], **kwargs: Any) -> subprocess.CompletedProcess[str]:
+        return subprocess.CompletedProcess(
+            args=argv, returncode=1, stdout="", stderr="boom"
+        )
+
+    inventory = GhReadOnlyInventory(repository="owner/repo", runner=runner)
+    paths, contents, complete = inventory._reviewability_inventory(
+        pr_number=1,
+        changed_files=25,
+        head_ref_oid="abc",
+        path_threshold=20,
+    )
+    assert paths is None
+    assert contents is None
+    assert complete is False
+
+
+def test_reviewability_inventory_under_threshold_skips_paths() -> None:
+    inventory = GhReadOnlyInventory(repository="owner/repo")
+    paths, contents, complete = inventory._reviewability_inventory(
+        pr_number=1,
+        changed_files=5,
+        head_ref_oid="abc",
+        path_threshold=20,
+    )
+    assert paths is None
+    assert contents is None
+    assert complete is True

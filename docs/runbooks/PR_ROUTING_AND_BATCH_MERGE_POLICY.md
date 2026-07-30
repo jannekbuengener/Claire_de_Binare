@@ -134,12 +134,29 @@ close_issue: false
 status: DONE_SLICE_ADDED_TO_BATCH_PR
 ```
 
+## 8a. Reviewability (mirror-aware)
+
+`changed_files_limit` (Default 20) misst **logische Review-Einheiten**, nicht
+roh die GitHub-`changedFiles`-Zahl.
+
+- Eine normale Datei = 1 Einheit.
+- `docs/skills/<skill>/SKILL.md` plus alle erwarteten, paritätsgeprüften
+  Surface-Adapter (`.opencode`, `.cursor`, `.codex`, `.claude`) = 1 Einheit.
+- Parität nutzt dieselbe Mapping-/Normalisierungslogik wie
+  `tools/validate_skill_surface_mirror.py`. Drift, Mirror ohne Canon,
+  unvollständige erwartete Adapter-Sets und fehlendes Datei-Inventar bleiben
+  fail-closed (physische Einzelzählung).
+- Es gibt keine pauschale Ausnahme für Agent-Surface-Verzeichnisse.
+- `diff_lines_limit` (1000) bleibt unverändert auf `additions + deletions`.
+- Router-Kompatibilität und Merge-Trigger `SIZE_LIMIT` teilen dieselbe
+  `ReviewabilityAssessment`.
+
 ## 9. Merge-Trigger
 
 - `BATCH_COMPLETE`
 - mindestens drei gelieferte Issue-Slices,
 - mindestens fünf Kalendertage,
-- mindestens 20 Dateien oder `additions + deletions >= 1000`,
+- mindestens 20 **logische Review-Einheiten** oder `additions + deletions >= 1000`,
 - expliziter Dependency-Blocker,
 - Security-/Safety-Signal,
 - explizites Operator-GO.

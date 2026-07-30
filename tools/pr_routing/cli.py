@@ -96,6 +96,8 @@ def cmd_route(args: argparse.Namespace) -> int:
 
 
 def _candidate_from_json(data: dict[str, Any]) -> CandidatePullRequest:
+    contents = data.get("file_contents")
+    paths = data.get("changed_file_paths")
     return CandidatePullRequest(
         number=int(data["number"]),
         title=str(data.get("title") or ""),
@@ -111,6 +113,18 @@ def _candidate_from_json(data: dict[str, Any]) -> CandidatePullRequest:
         additions=int(data.get("additions") or 0),
         deletions=int(data.get("deletions") or 0),
         merge_mode=str(data.get("merge_mode") or "batch"),
+        changed_file_paths=(
+            tuple(str(item) for item in paths) if isinstance(paths, list) else None
+        ),
+        file_contents=(
+            {str(key): str(value) for key, value in contents.items()}
+            if isinstance(contents, dict)
+            else None
+        ),
+        inventory_complete=bool(data.get("inventory_complete", True)),
+        head_ref_oid=(
+            str(data["head_ref_oid"]) if data.get("head_ref_oid") else None
+        ),
     )
 
 

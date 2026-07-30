@@ -104,12 +104,14 @@
   },
   "reviewability": {
     "changed_files_limit": 20,
+    "changed_files_limit_meaning": "logical_review_units",
     "diff_lines_limit": 1000
   },
   "merge_triggers": {
     "issue_count_limit": 3,
     "age_days": 5,
     "changed_files_limit": 20,
+    "changed_files_limit_meaning": "logical_review_units",
     "diff_lines_limit": 1000
   }
 }
