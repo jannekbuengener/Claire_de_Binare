@@ -1,8 +1,8 @@
 # Evidence: Kill-Cancel Open Orders (#4185)
 
-**Getesteter Code-Commit:** 
+**Getesteter Code-Commit:** `ae28496947e50fbb4f61ce5e420564e27142453d`
 
-**Run-ID:** 
+**Run-ID:** `4185_g1g2_hold_ae284969`
 
 **Verdict:** `HOLD`
 
@@ -47,7 +47,8 @@ nicht als aktueller Head-Beweis gelesen werden.
 - Cancel contract: CancelOrderRequest / CancelOrderResponse / readback
 - Batch verdict **HOLD** bei bestätigtem Cancel ohne Positions-SSOT
 - Unit/Contract: `tests/unit/execution/test_kill_cancel_open_orders.py` (27 PASS)
-- Compose-E2E: siehe PR-Body (scenarios 1–12 am validierten Tip; Cleanup 0/0/0)
+- Compose-E2E: `4185_ae284969_20260730T200358Z` scenarios 1–12 PASS, cleanup 0/0/0
+- Fast-CI: `ci/artifacts/20260730T200153Z_bcaf7d34` overall PASS on tip
 
 Maschinenlesbares Manifest: `4185_kill_cancel_open_orders.json` (Schema `cdb-kill-cancel-evidence/v1`).
 

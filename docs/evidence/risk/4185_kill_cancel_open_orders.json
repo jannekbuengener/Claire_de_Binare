@@ -1,6 +1,6 @@
 {
   "cancel_attempts": 2,
-  "commit_sha": "638ab43aceb48bbd4e4b486623ee23cdddbc236e",
+  "commit_sha": "ae28496947e50fbb4f61ce5e420564e27142453d",
   "fill_after_kill_events": [],
   "kill_activated_at_utc": "2026-07-30T19:50:00.000000",
   "kill_event_id": "kill_g1g2_fix",
@@ -73,7 +73,7 @@
       "symbol": "*"
     }
   ],
-  "run_id": "4185_g1g2_hold_638ab43a",
+  "run_id": "4185_g1g2_hold_ae284969",
   "safety_boundaries": [
     "LR remains NO-GO",
     "No live/echtgeld go",
