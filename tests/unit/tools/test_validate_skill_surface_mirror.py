@@ -80,7 +80,9 @@ def test_strip_header_no_header_is_noop() -> None:
 
 def test_normalize_body_ignores_header_and_line_endings() -> None:
     canon = CANON_HEADER.format(name="x") + "line one\nline two\n"
-    adapter = ADAPTER_HEADER.format(name="x", surface="cursor") + "line one\r\nline two\r\n"
+    adapter = (
+        ADAPTER_HEADER.format(name="x", surface="cursor") + "line one\r\nline two\r\n"
+    )
     assert guard.normalize_body(canon) == guard.normalize_body(adapter)
 
 
@@ -226,7 +228,9 @@ def test_report_has_required_json_fields(tmp_path: Path) -> None:
         assert field in report
 
 
-def test_main_exit_code_pass(tmp_path: Path, capsys: pytest.CaptureFixture[str]) -> None:
+def test_main_exit_code_pass(
+    tmp_path: Path, capsys: pytest.CaptureFixture[str]
+) -> None:
     _make_skill(tmp_path, "cdb-alpha")
     code = guard.main(["--repo-root", str(tmp_path), "--json"])
     assert code == 0
@@ -262,10 +266,11 @@ def test_main_blocked_json_emits_status(
 
 
 def test_real_repo_skill_surfaces_are_in_sync() -> None:
-    """CI gate: real canon skills must match their adapters (Issue #3643).
+    """CI gate: real canon skills must match their adapters (Issues #3643/#4122).
 
     Fails if a canon `docs/skills/<name>/SKILL.md` was changed without
-    re-mirroring the `.opencode`/`.cursor`/`.codex`/`.claude` adapters.
+    re-mirroring the `.opencode`/`.cursor`/`.codex`/`.claude` adapters,
+    or if skill-local linked assets / anchors are broken.
     """
     report = guard.run(guard.REPO_ROOT_DEFAULT)
     assert report["status"] == "PASS", (
@@ -273,3 +278,202 @@ def test_real_repo_skill_surfaces_are_in_sync() -> None:
         f"mismatches={report['mismatches']} missing={report['missing']}"
     )
     assert report["canon_count"] >= 1
+
+
+# --- Issue #4122: local links, assets, anchors ---
+
+
+def _body_with_links(name: str, extra: str) -> str:
+    return f"---\nname: {name}\n---\n\n# {name}\n\n{extra}\n"
+
+
+def test_pass_valid_relative_file_and_external_url(tmp_path: Path) -> None:
+    name = "cdb-link-ok"
+    extra = (
+        "See [ref](references/note.md) and [ext](https://example.com/docs).\n"
+        "Also [mail](mailto:ops@example.com).\n"
+    )
+    _make_skill(tmp_path, name, body=_body_with_links(name, extra))
+    note = "# Note\n\n## Detail Section\n\nbody\n"
+    for surface in ("canon", "opencode", "cursor", "codex", "claude"):
+        skill_dir = (
+            tmp_path / "docs" / "skills" / name
+            if surface == "canon"
+            else _adapter_path(tmp_path, surface, name).parent
+        )
+        _write(skill_dir / "references" / "note.md", note)
+    report = guard.run(tmp_path, skill_filter=name)
+    assert report["status"] == "PASS", report["mismatches"]
+
+
+def test_pass_valid_subdirectory_link(tmp_path: Path) -> None:
+    name = "cdb-dir-ok"
+    extra = "Browse [refs](references/).\n"
+    _make_skill(tmp_path, name, body=_body_with_links(name, extra))
+    for surface in ("canon", "opencode", "cursor", "codex", "claude"):
+        skill_dir = (
+            tmp_path / "docs" / "skills" / name
+            if surface == "canon"
+            else _adapter_path(tmp_path, surface, name).parent
+        )
+        (skill_dir / "references").mkdir(parents=True, exist_ok=True)
+    report = guard.run(tmp_path, skill_filter=name)
+    assert report["status"] == "PASS", report["mismatches"]
+
+
+def test_pass_valid_markdown_anchor(tmp_path: Path) -> None:
+    name = "cdb-anchor-ok"
+    extra = "Jump to [detail](references/note.md#detail-section).\n"
+    _make_skill(tmp_path, name, body=_body_with_links(name, extra))
+    note = "# Note\n\n## Detail Section\n\nbody\n"
+    for surface in ("canon", "opencode", "cursor", "codex", "claude"):
+        skill_dir = (
+            tmp_path / "docs" / "skills" / name
+            if surface == "canon"
+            else _adapter_path(tmp_path, surface, name).parent
+        )
+        _write(skill_dir / "references" / "note.md", note)
+    report = guard.run(tmp_path, skill_filter=name)
+    assert report["status"] == "PASS", report["mismatches"]
+
+
+def test_drift_missing_local_file(tmp_path: Path) -> None:
+    name = "cdb-missing-file"
+    extra = "See [gone](references/missing.md).\n"
+    _make_skill(tmp_path, name, body=_body_with_links(name, extra))
+    report = guard.run(tmp_path, skill_filter=name)
+    assert report["status"] == "DRIFT_FOUND"
+    kinds = {m["kind"] for m in report["mismatches"]}
+    assert "MISSING_LOCAL_TARGET" in kinds or "MISSING_MIRRORED_ASSET" in kinds
+
+
+def test_drift_missing_local_directory(tmp_path: Path) -> None:
+    name = "cdb-missing-dir"
+    extra = "Browse [refs](references/).\n"
+    _make_skill(tmp_path, name, body=_body_with_links(name, extra))
+    report = guard.run(tmp_path, skill_filter=name)
+    assert report["status"] == "DRIFT_FOUND"
+    assert any(m["kind"] == "MISSING_LOCAL_TARGET" for m in report["mismatches"])
+
+
+def test_drift_missing_anchor(tmp_path: Path) -> None:
+    name = "cdb-missing-anchor"
+    extra = "Jump to [x](references/note.md#does-not-exist).\n"
+    _make_skill(tmp_path, name, body=_body_with_links(name, extra))
+    note = "# Note\n\n## Other Heading\n\nbody\n"
+    for surface in ("canon", "opencode", "cursor", "codex", "claude"):
+        skill_dir = (
+            tmp_path / "docs" / "skills" / name
+            if surface == "canon"
+            else _adapter_path(tmp_path, surface, name).parent
+        )
+        _write(skill_dir / "references" / "note.md", note)
+    report = guard.run(tmp_path, skill_filter=name)
+    assert report["status"] == "DRIFT_FOUND"
+    assert any(m["kind"] == "MISSING_ANCHOR" for m in report["mismatches"])
+
+
+def test_drift_invalid_asset_class_canon_only_relative_link(tmp_path: Path) -> None:
+    name = "gh-fix-ci"
+    extra = "See [meta](./META.yaml).\n"
+    _make_skill(tmp_path, name, body=_body_with_links(name, extra))
+    _write(tmp_path / "docs" / "skills" / name / "META.yaml", "meta: true\n")
+    report = guard.run(tmp_path, skill_filter=name)
+    assert report["status"] == "DRIFT_FOUND"
+    assert any(m["kind"] == "INVALID_ASSET_CLASS" for m in report["mismatches"])
+
+
+def test_drift_missing_mirrored_asset_on_adapter(tmp_path: Path) -> None:
+    name = "cdb-asset-gap"
+    extra = "See [ref](references/note.md).\n"
+    _make_skill(tmp_path, name, body=_body_with_links(name, extra))
+    note = "# Note\n\nbody\n"
+    # Canon + three adapters have the asset; claude does not.
+    for surface in ("canon", "opencode", "cursor", "codex"):
+        skill_dir = (
+            tmp_path / "docs" / "skills" / name
+            if surface == "canon"
+            else _adapter_path(tmp_path, surface, name).parent
+        )
+        _write(skill_dir / "references" / "note.md", note)
+    report = guard.run(tmp_path, skill_filter=name)
+    assert report["status"] == "DRIFT_FOUND"
+    assert any(
+        m["kind"] in {"MISSING_MIRRORED_ASSET", "MISSING_LOCAL_TARGET"}
+        and m.get("surface") == "claude"
+        for m in report["mismatches"]
+    )
+
+
+def test_drift_mirrored_asset_content_drift(tmp_path: Path) -> None:
+    name = "cdb-asset-drift"
+    extra = "See [ref](references/note.md).\n"
+    _make_skill(tmp_path, name, body=_body_with_links(name, extra))
+    for surface in ("canon", "opencode", "cursor", "codex", "claude"):
+        skill_dir = (
+            tmp_path / "docs" / "skills" / name
+            if surface == "canon"
+            else _adapter_path(tmp_path, surface, name).parent
+        )
+        content = "# Note\n\ncanon\n" if surface == "canon" else "# Note\n\ndrift\n"
+        _write(skill_dir / "references" / "note.md", content)
+    report = guard.run(tmp_path, skill_filter=name)
+    assert report["status"] == "DRIFT_FOUND"
+    assert any(m["kind"] == "ASSET_CONTENT_DRIFT" for m in report["mismatches"])
+
+
+def test_drift_path_escapes_repo_root(tmp_path: Path) -> None:
+    name = "cdb-escape"
+    extra = "See [outside](../../../../../../etc/passwd).\n"
+    _make_skill(tmp_path, name, body=_body_with_links(name, extra))
+    report = guard.run(tmp_path, skill_filter=name)
+    assert report["status"] == "DRIFT_FOUND"
+    assert any(m["kind"] == "PATH_ESCAPES_REPO_ROOT" for m in report["mismatches"])
+
+
+def test_gh_fix_ci_canon_only_extras_still_pass_without_mirror(tmp_path: Path) -> None:
+    """META/evals/scripts remain canon-only and must not force adapter copies."""
+    _make_skill(tmp_path, "gh-fix-ci")
+    _write(tmp_path / "docs" / "skills" / "gh-fix-ci" / "META.yaml", "meta: true\n")
+    _write(tmp_path / "docs" / "skills" / "gh-fix-ci" / "evals.json", "{}\n")
+    _write(
+        tmp_path / "docs" / "skills" / "gh-fix-ci" / "scripts" / "run.sh",
+        "echo hi\n",
+    )
+    report = guard.run(tmp_path, skill_filter="gh-fix-ci")
+    assert report["status"] == "PASS", report["mismatches"]
+
+
+def test_gh_fix_ci_explicit_canon_path_to_discovery_passes(tmp_path: Path) -> None:
+    """Canon-path link to DISCOVERY_REPORT is allowed; no adapter mirror required."""
+    name = "gh-fix-ci"
+    extra = (
+        "Based on [DISCOVERY_REPORT.md]"
+        "(../../../docs/skills/gh-fix-ci/DISCOVERY_REPORT.md).\n"
+    )
+    _make_skill(tmp_path, name, body=_body_with_links(name, extra))
+    _write(
+        tmp_path / "docs" / "skills" / "gh-fix-ci" / "DISCOVERY_REPORT.md",
+        "# Discovery\n",
+    )
+    report = guard.run(tmp_path, skill_filter=name)
+    assert report["status"] == "PASS", report["mismatches"]
+    assert not any(m["kind"] == "MISSING_MIRRORED_ASSET" for m in report["mismatches"])
+
+
+def test_github_slug_and_duplicate_headings() -> None:
+    md = "# Hello World\n\n## Hello World\n\n## Detail Section\n"
+    anchors = guard.collect_heading_anchors(md)
+    assert "hello-world" in anchors
+    assert "hello-world-1" in anchors
+    assert "detail-section" in anchors
+
+
+def test_invalid_exception_unknown_surface(monkeypatch: pytest.MonkeyPatch) -> None:
+    monkeypatch.setitem(
+        guard.EXCLUDED_ADAPTERS,
+        "cdb-onboarding",
+        {"not-a-surface": "bad"},
+    )
+    mismatches = guard.validate_exclusion_tables()
+    assert any(m["kind"] == "INVALID_EXCEPTION" for m in mismatches)

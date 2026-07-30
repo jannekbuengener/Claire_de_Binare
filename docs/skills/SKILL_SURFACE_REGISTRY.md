@@ -132,11 +132,13 @@ gelistet werden.
   umgestellt werden.
 - Drift-Erkennung gehoert zum `cdb-drift-reconcile`-Workflow.
 
-### 8.1 Skill Surface Mirror Drift Guard (Issue #3643)
+### 8.1 Skill Surface Mirror Drift Guard (Issue #3643, erweitert #4122)
 
 Der Drift-Guard `tools/validate_skill_surface_mirror.py` prueft Canon-Body
-gegen alle erwarteten Adapter (Header ignoriert). Er ist read-only, macht
-keine Datei-, Netzwerk-, GitHub-, DB- oder MCP-Aktionen.
+gegen alle erwarteten Adapter (Header ignoriert), lokale Markdown-Links in
+`SKILL.md`, Markdown-Anchors bei Fragmenten sowie Mirror-Paritaet fuer
+skill-lokale Assets. Er ist read-only, macht keine Datei-, Netzwerk-,
+GitHub-, DB- oder MCP-Aktionen.
 
 ```bash
 python tools/validate_skill_surface_mirror.py          # human report
@@ -148,14 +150,42 @@ python tools/validate_skill_surface_mirror.py --skill <name>
 - Prueft Body-Parity **und** den Pflicht-Header (`mirrored-from-canon` +
   korrekte Canon-Quelle je Adapter, siehe §7); ein Body-Match mit fehlendem
   Header ist Drift.
+- Prueft zusaetzlich (#4122): relative lokale Linkziele (Datei/Verzeichnis),
+  relevante fehlende Markdown-Anchors, Root-Escape ausserhalb des Repos,
+  Mirror-Existenz und Inhaltsparitaet fuer skill-lokale referenzierte Assets.
+- Fehlerklassen u. a.: `MISSING_LOCAL_TARGET`, `MISSING_MIRRORED_ASSET`,
+  `ASSET_CONTENT_DRIFT`, `MISSING_ANCHOR`, `PATH_ESCAPES_REPO_ROOT`,
+  `INVALID_ASSET_CLASS`, `INVALID_EXCEPTION` (mit Datei/Zeile wo sinnvoll).
 - **Pflicht:** Nach jeder Aenderung an `docs/skills/<name>/SKILL.md` den
   Drift-Guard laufen lassen und Adapter nachziehen, bevor die Session als
   vollstaendig abgeschlossen gilt. Bei `DRIFT_FOUND` re-mirror im Scope oder
   dedupliziertes Re-Mirror-Follow-up-Issue anlegen (kein Auto-Merge ohne gruene
   Required Checks).
 - Dokumentierte Ausnahmen (kein Drift): `cdb-onboarding` (codex-only Alias),
-  `gh-fix-ci` Canon-Extras (`META.yaml`/`evals.json`/`scripts/`; nur `SKILL.md`
-  wird verglichen), `.claude/skills/*.skill`, `.gemini/skills/`.
+  `gh-fix-ci` Canon-Extras (`META.yaml`/`evals.json`/`scripts/`),
+  `.claude/skills/*.skill`, `.gemini/skills/`.
+
+### 8.2 Skill Asset Classes (Issue #4122)
+
+Lokale Verweise aus `SKILL.md` werden einer Asset-Klasse zugeordnet:
+
+| Klasse | Regel | Beispiele |
+|---|---|---|
+| `mirrored` | Relativ aus `SKILL.md` verlinkt und unter dem Skill-Verzeichnis aufgeloest → muss auf Canon **und** allen aktiven (nicht excludierten) Adaptern existieren; Inhalt nach Text-Normalisierung identisch | `references/*.md` |
+| `canon_only` | Nur unter `docs/skills/<name>/`; Adapter spiegeln sie nicht; **keine** skill-lokalen relativen `SKILL.md`-Links darauf (stattdessen expliziter Canon-Pfad) | `META.yaml`, `evals.json`, `scripts/`, `DISCOVERY_REPORT.md` |
+| `external` | `https:` / `http:` / `mailto:` — lokal nicht aufgeloest, kein Netzabruf | externe URLs |
+| `excluded` | dokumentierte Surface-Ausnahme mit Reason | `cdb-onboarding` non-codex |
+
+Regeln:
+
+- Canon-first: Assets zuerst unter `docs/skills/<name>/` korrigieren, dann auf
+  Adapter spiegeln (kein abweichender Mirror-Inhalt).
+- Relative Links auf `canon_only`-Pfade sind ungueltig (`INVALID_ASSET_CLASS`),
+  weil Body-Paritaet sonst tote Adapter-Links erzwingt.
+- Links ausserhalb des Skill-Verzeichnisses, aber innerhalb des Repo-Roots,
+  werden nur auf Existenz (und ggf. Anchor) je Quelldatei geprueft — keine
+  Mirror-Pflicht.
+- Leere Platzhalter nur zur Validator-Beruhigung sind verboten.
 
 ## 9. Skill-Neuanlage-Workflow
 
@@ -164,9 +194,12 @@ python tools/validate_skill_surface_mirror.py --skill <name>
    Vertrag: [`SKILL_META_SCHEMA.md`](SKILL_META_SCHEMA.md);
    Starter: [`_templates/META.yaml`](_templates/META.yaml),
    [`_templates/evals.json`](_templates/evals.json).
-   Meta-Artefakte bleiben canon-only (Adapter spiegeln nur `SKILL.md`).
+   Meta-Artefakte und andere `canon_only`-Dateien bleiben im Canon.
+   Relativ aus `SKILL.md` verlinkte skill-lokale Assets (z. B. `references/`)
+   sind `mirrored` und muessen mitgespiegelt werden (Abschnitt 8.2).
 3. Surface-Adapter-Header (Abschnitt 7) in der kanonischen Datei setzen.
-4. Mirror auf alle aktiven Surfaces (Abschnitt 4).
+4. Mirror auf alle aktiven Surfaces (Abschnitt 4): `SKILL.md` plus alle
+   `mirrored` Assets.
 5. `.claude/skills/cdb-<name>.skill` Index anlegen, falls Claude relevant.
 6. Eintrag in `AGENTS.md` Skill-Tabelle (root pointer).
 7. Eintrag in Surface-READMEs der aktiven Surfaces.
@@ -291,7 +324,7 @@ Canon-Body (minus Header). Verifiziert durch
 | cdb-external-docs | Y | sync | sync | sync | sync | — |
 | cdb-ci-cd-guard | Y | sync | sync | sync | sync | — |
 | ctb-docker-stack | Y | sync | sync | sync | sync | — |
-| gh-fix-ci | Y | sync | sync | sync | sync | canon-only: META.yaml, evals.json, scripts/ |
+| gh-fix-ci | Y | sync | sync | sync | sync | canon-only: META.yaml, evals.json, scripts/, DISCOVERY_REPORT.md (Canon-Pfad-Link) |
 | gh-address-comments | Y | sync | sync | sync | sync | — |
 | cdb-github-api-ops | Y | sync | sync | sync | sync | — |
 | surrealql | Y | sync | sync | sync | sync | — |
@@ -303,7 +336,8 @@ Canon-Body (minus Header). Verifiziert durch
 | Skill | Abweichung | Begruendung |
 |---|---|---|
 | `cdb-onboarding` | Nur Codex-Adapter | Duenner Alias auf `onboarding`; andere Surfaces nutzen `onboarding` direkt |
-| `gh-fix-ci` | Zusatzartefakte nur im Canon-Verzeichnis | `META.yaml`, `evals.json`, `scripts/` sind Canon-Erweiterungen; Adapter erhalten nur `SKILL.md` |
+| `gh-fix-ci` | Canon-Extras canon-only | `META.yaml`, `evals.json`, `scripts/`, `DISCOVERY_REPORT.md` bleiben `canon_only`; `SKILL.md` verlinkt den Discovery Report ueber den expliziten Canon-Pfad `../../../docs/skills/gh-fix-ci/DISCOVERY_REPORT.md` (#4122) |
+| `cdb-contract-evidence-gatekeeper` | `references/` gespiegelt | Die drei Reference-Dateien sind `mirrored` Assets und muessen auf Canon und allen aktiven Adaptern liegen (#4122) |
 | `.claude/skills/*.skill` | Nicht gespiegelt | Paket-/Aliasflaeche; out of scope #3639 |
 | `.gemini/skills/` | Nicht gespiegelt | Eingeschraenkter Surface; kein CDB-Domain-Mirror |
 
