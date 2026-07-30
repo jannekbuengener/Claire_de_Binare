@@ -5,7 +5,7 @@
 **PR:** #4223 (draft, ci-tooling batch)
 **Implementation commit:** `8d497c7ba64f0657a037ad931035971df7bf6429`
 **Pre-correction PR head:** `9a22bd252347d96fa0c88801ea86b8f4b3c3b628`
-**Final PR head:** `d7d8a6f831b694d1fc9ffc0f812e52c92a2f01e3`
+**Final PR head:** `13359a7f0bf9e2d073c4328b2d1c0d3a64782505`
 **Branch:** `cloud-cursor/fix-4222-kill-cancel-evidence-f89e`
 
 ## Brain Evidence
