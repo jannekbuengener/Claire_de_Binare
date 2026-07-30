@@ -113,23 +113,33 @@ Safety/LR statement, and issue links. Use
 [`../templates/pr_body_template.md`](../templates/pr_body_template.md) as the
 starting point.
 
-## 6. Wait For Checks And Merge Only If Safe
+## 6. Wait For Required Status And Merge Only If Capable
 
-Before merge:
+Before merge (SSOT: [`docs/runbooks/merge_policy_ci_gate.md`](../../runbooks/merge_policy_ci_gate.md)):
 
-1. Required checks are green.
-2. Diff remains in scope.
+1. Live `cdb-local-ci` SUCCESS on the exact PR head SHA (Commit Status).
+2. Diff remains in scope; local Fast-CI evidence bound to that head.
 3. No new stop condition appeared in comments or checks.
 4. No live, runtime, Docker, trading, DB write, memory write, or LR change was
    introduced.
+5. Session can perform regular squash merge (capability gate). Hosted Actions
+   red due to billing/lock is not automatically a merge blocker.
 
-Use squash merge only when the repo rules and required checks allow it.
+Use squash merge when the capability gate is proven:
+
+```bash
+gh pr merge <pr-number> --squash --delete-branch
+```
+
+If the session lacks publisher/merge rights: leave the PR open and report
+`DONE_PR_OPEN_MERGE_HANDOFF`. Never use `--admin` as a bypass. Do not
+re-push a remote branch deleted after squash merge.
 
 ## 7. Comment And Close
 
-After merge, comment on the target issue with the PR link, commit, validation,
-and scope boundary. Close the issue only when the merged PR satisfies the issue
-acceptance.
+After a **live-verified** merge (`DONE_MERGED_CLOSED`), comment on the target
+issue with the PR link, commit, validation, and scope boundary. Close the
+issue only when the merged PR satisfies the issue acceptance.
 
 If the issue is part of a parent chain, add a short parent status comment with
 the next recommended slice.
