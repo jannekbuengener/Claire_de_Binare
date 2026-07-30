@@ -25,16 +25,18 @@ DEFAULT_ALLOWLIST = REPO_ROOT / ".github" / "dependabot-autopilot-allowlist.yml"
 DEPENDABOT_LOGINS = frozenset({"dependabot[bot]", "app/dependabot"})
 DEPENDABOT_HEAD_PREFIX = "dependabot/"
 
-REQUIRED_CHECK_NAMES = (
-    "ci (Unit/Integration + Lint gesammelt)",
-    "policy-gate",
-)
+REQUIRED_CHECK_NAMES = ("cdb-local-ci",)
+"""Live required merge context per docs/runbooks/merge_policy_ci_gate.md.
+
+`cdb-local-ci` is a Commit Status (not a Check Run) published by the local
+Fast-CI publisher. Hosted GitHub Actions check-runs remain advisory only and
+are not consulted here."""
 
 ALLOWED_GET_ENDPOINT = re.compile(
     r"^repos/[^/]+/[^/]+/"
     r"(?:"
     r"pulls(?:/\d+(?:/(?:files|commits))?)?"
-    r"|commits/[0-9a-f]{40}/check-runs"
+    r"|commits/[0-9a-f]{40}/status"
     r"|compare/[0-9a-f]{40}\.\.\.[0-9a-f]{40}"
     r")$"
 )
@@ -129,11 +131,11 @@ def _merge_paginated_payload(documents: Sequence[Any]) -> Any:
             merged.extend(doc)
         return merged
 
-    if all(isinstance(doc, Mapping) and "check_runs" in doc for doc in documents):
-        merged_runs: list[Any] = []
+    if all(isinstance(doc, Mapping) and "statuses" in doc for doc in documents):
+        merged_statuses: list[Any] = []
         for doc in documents:
-            merged_runs.extend(doc.get("check_runs") or [])
-        return merged_runs
+            merged_statuses.extend(doc.get("statuses") or [])
+        return merged_statuses
 
     return documents[-1]
 
@@ -185,8 +187,8 @@ class SubprocessGhTransport:
                 f"malformed gh api paginated JSON for {endpoint}: {exc}"
             ) from exc
         payload = _merge_paginated_payload(documents)
-        if isinstance(payload, Mapping) and "check_runs" in payload:
-            return payload.get("check_runs") or []
+        if isinstance(payload, Mapping) and "statuses" in payload:
+            return payload.get("statuses") or []
         return payload
 
 
@@ -485,15 +487,31 @@ def _normalize_merge_state(raw: str | None) -> str:
     return "UNKNOWN"
 
 
-def _normalize_check_runs(check_runs: Sequence[Mapping[str, Any]]) -> list[Any]:
+_STATUS_STATE_MAP: dict[str, tuple[str, str]] = {
+    "success": ("COMPLETED", "SUCCESS"),
+    "failure": ("COMPLETED", "FAILURE"),
+    "error": ("COMPLETED", "FAILURE"),
+    "pending": ("IN_PROGRESS", "PENDING"),
+}
+
+
+def _normalize_required_check_facts(
+    statuses: Sequence[Mapping[str, Any]],
+) -> list[Any]:
+    """Map Commit Status entries (`context`/`state`) to RequiredCheckFact.
+
+    `cdb-local-ci` is published as a GitHub Commit Status, not a Check Run,
+    so the live payload shape differs from hosted Actions check-runs
+    (`context`/`state` instead of `name`/`status`/`conclusion`).
+    """
     classifier = _load_classifier_module()
     facts: list[Any] = []
-    for run in check_runs:
-        name = str(run.get("name") or "").strip()
+    for entry in statuses:
+        name = str(entry.get("context") or "").strip()
         if name not in REQUIRED_CHECK_NAMES:
             continue
-        status = str(run.get("status") or "").strip().upper()
-        conclusion = str(run.get("conclusion") or "").strip().upper()
+        state = str(entry.get("state") or "").strip().lower()
+        status, conclusion = _STATUS_STATE_MAP.get(state, ("UNKNOWN", "UNKNOWN"))
         facts.append(classifier.RequiredCheckFact(name, status, conclusion))
     return facts
 
@@ -617,15 +635,17 @@ def _build_facts_for_pull(
     file_items = files if isinstance(files, list) else []
     patch_facts = _merge_patch_facts(file_items)
 
-    check_runs: list[Mapping[str, Any]] = []
+    required_check_entries: list[Mapping[str, Any]] = []
     if head_sha:
         try:
             payload = transport.get_json(
-                f"repos/{repo}/commits/{head_sha}/check-runs",
+                f"repos/{repo}/commits/{head_sha}/status",
                 params={"per_page": "100"},
             )
             if isinstance(payload, list):
-                check_runs = [item for item in payload if isinstance(item, Mapping)]
+                required_check_entries = [
+                    item for item in payload if isinstance(item, Mapping)
+                ]
         except GitHubApiError:
             api_error = True
 
@@ -690,7 +710,7 @@ def _build_facts_for_pull(
         commit_count=len(commit_items),
         commit_authors=tuple(commit_authors),
         changed_files=tuple(patch_facts.get("changed_files") or ()),
-        required_checks=tuple(_normalize_check_runs(check_runs)),
+        required_checks=tuple(_normalize_required_check_facts(required_check_entries)),
         branch_is_current=branch_is_current,
         merge_state=merge_state,
         ecosystem=ecosystem,
