@@ -33,3 +33,6 @@ Base: `origin/main` @ `7e9e5e809d8e3dc8288957a986a1dfd13eb62a4f`
 ## Handoff
 - Issue #4218 remains OPEN until batch merge
 - Needed on issue (human/capable session): labels `objective:no-post-merge-status-tail`, `contract:no-status-tail-pr-v1`, `risk:none`
+
+## Final head
+- PR #4219 @ `4c6f5fc8f452611d8edbc64a16df6870b3fc424e`
