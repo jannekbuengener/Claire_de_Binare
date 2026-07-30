@@ -41,7 +41,7 @@ services:
       TRACE_CONTRACT_V1_ENABLED: "1"
       MEXC_TESTNET: "true"
       CDB_MOCK_RESTING_ORDERS: "true"
-      CDB_OPEN_ORDER_LEDGER_PATH: /app/logs/kill_cancel_open_orders.json
+      CDB_OPEN_ORDER_LEDGER_PATH: /tmp/cdb_open_orders.json
       CDB_KILL_CANCEL_POLL_SECONDS: "0.5"
       CDB_KILL_SWITCH_STATE_FILE: /app/kill_switch/.cdb_kill_switch.state
     volumes:
@@ -64,7 +64,7 @@ services:
       CDB_4185_DRILL: "1"
       MEXC_TESTNET: "true"
       CDB_MOCK_RESTING_ORDERS: "true"
-      CDB_OPEN_ORDER_LEDGER_PATH: /app/logs/kill_cancel_open_orders.json
+      CDB_OPEN_ORDER_LEDGER_PATH: /tmp/cdb_open_orders.json
       CDB_KILL_SWITCH_STATE_FILE: /app/kill_switch/.cdb_kill_switch.state
       RISK_BASE_URL: http://cdb_risk_test:8002
       EXECUTION_BASE_URL: http://cdb_execution_test:8003
