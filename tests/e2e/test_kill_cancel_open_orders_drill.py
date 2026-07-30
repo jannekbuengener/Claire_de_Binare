@@ -108,6 +108,12 @@ def _set_inactive() -> None:
     )
     assert response.status_code == 200, response.text
     assert response.json()["active"] is False
+    # Wait until execution supervisor resumes acceptance after deactivation.
+    _wait_for_kill_cancel(
+        predicate=lambda snap: snap.get("ready_for_new_orders") is True
+        and snap.get("hold_new_orders") is False,
+        timeout_s=20.0,
+    )
 
 
 def _set_active(*, reason: str = "manual") -> None:
@@ -300,9 +306,9 @@ def test_s10b_restart_reconciles_before_new_orders(redis_client: redis.Redis) ->
     assert kc.get("hold_new_orders") is True
 
 
-def test_s12_positions_visible_no_auto_unwind() -> None:
+def test_s12_positions_visible_no_auto_unwind(tmp_path: Path) -> None:
     """S12: residual positions remain visible; no auto-unwind claim."""
-    reg = OpenOrderRegistry()
+    reg = OpenOrderRegistry(ledger_path=tmp_path / "s12.json")
     adapter = MockExecutionAdapter(
         executor=MockExecutor(
             resting_orders=True,
@@ -330,7 +336,7 @@ def test_s12_positions_visible_no_auto_unwind() -> None:
 # --- In-process cancel contract scenarios (mock-only, compose-gated) ---
 
 
-def test_s6_cancel_rejection_hold() -> None:
+def test_s6_cancel_rejection_hold(tmp_path: Path) -> None:
     executor = MockExecutor(
         resting_orders=True,
         success_rate=1.0,
@@ -339,7 +345,7 @@ def test_s6_cancel_rejection_hold() -> None:
         cancel_behavior="reject",
     )
     adapter = MockExecutionAdapter(executor=executor)
-    reg = OpenOrderRegistry()
+    reg = OpenOrderRegistry(ledger_path=tmp_path / "s6.json")
     executor.place_resting_order(
         order_id="s6", symbol="BTCUSDT", side="BUY", quantity=1.0
     )
@@ -355,7 +361,7 @@ def test_s6_cancel_rejection_hold() -> None:
     assert reg.count_open() == 1
 
 
-def test_s7_cancel_exception_and_malformed_hold() -> None:
+def test_s7_cancel_exception_and_malformed_hold(tmp_path: Path) -> None:
     for behavior, expected in (
         ("error", RC_CANCEL_EXECUTION_ERROR),
         ("malformed", RC_OPEN_ORDER_STATUS_UNKNOWN),
@@ -368,7 +374,7 @@ def test_s7_cancel_exception_and_malformed_hold() -> None:
             cancel_behavior=behavior,
         )
         adapter = MockExecutionAdapter(executor=executor)
-        reg = OpenOrderRegistry()
+        reg = OpenOrderRegistry(ledger_path=tmp_path / f"s7-{behavior}.json")
         oid = f"s7-{behavior}"
         executor.place_resting_order(
             order_id=oid, symbol="BTCUSDT", side="BUY", quantity=1.0
@@ -384,8 +390,8 @@ def test_s7_cancel_exception_and_malformed_hold() -> None:
         assert reg.get(oid) is not None
 
 
-def test_s8_adapter_without_cancel_hold() -> None:
-    reg = OpenOrderRegistry()
+def test_s8_adapter_without_cancel_hold(tmp_path: Path) -> None:
+    reg = OpenOrderRegistry(ledger_path=tmp_path / "s8.json")
     reg.register(internal_order_id="s8", symbol="BTCUSDT", status="PENDING", quantity=1)
     adapter = MexcExecutionAdapter(executor=object())  # type: ignore[arg-type]
     adapter._executor = None
@@ -396,7 +402,7 @@ def test_s8_adapter_without_cancel_hold() -> None:
     assert RC_CANCEL_ADAPTER_UNSUPPORTED in manifest.reason_codes
 
 
-def test_s11_fill_after_kill_fail() -> None:
+def test_s11_fill_after_kill_fail(tmp_path: Path) -> None:
     executor = MockExecutor(
         resting_orders=True,
         success_rate=1.0,
@@ -405,7 +411,7 @@ def test_s11_fill_after_kill_fail() -> None:
         cancel_behavior="confirm",
     )
     adapter = MockExecutionAdapter(executor=executor)
-    reg = OpenOrderRegistry()
+    reg = OpenOrderRegistry(ledger_path=tmp_path / "s11.json")
     executor.place_resting_order(
         order_id="s11", symbol="BTCUSDT", side="BUY", quantity=1.0
     )
@@ -424,7 +430,7 @@ def test_s11_fill_after_kill_fail() -> None:
         symbol="BTCUSDT",
         filled_quantity=1.0,
     )
-    reg2 = OpenOrderRegistry()
+    reg2 = OpenOrderRegistry(ledger_path=tmp_path / "s11b.json")
     coord2 = KillCancelCoordinator(
         registry=reg2, adapter=adapter, position_resolver=_flat_positions
     )
@@ -435,7 +441,7 @@ def test_s11_fill_after_kill_fail() -> None:
     assert RC_FILL_AFTER_KILL_ACTIVATION in manifest.reason_codes
 
 
-def test_s9_inprocess_double_reconcile_no_duplicate_cancel() -> None:
+def test_s9_inprocess_double_reconcile_no_duplicate_cancel(tmp_path: Path) -> None:
     executor = MockExecutor(
         resting_orders=True,
         success_rate=1.0,
@@ -444,7 +450,7 @@ def test_s9_inprocess_double_reconcile_no_duplicate_cancel() -> None:
         cancel_behavior="confirm",
     )
     adapter = MockExecutionAdapter(executor=executor)
-    reg = OpenOrderRegistry()
+    reg = OpenOrderRegistry(ledger_path=tmp_path / "s9.json")
     executor.place_resting_order(
         order_id="s9i", symbol="BTCUSDT", side="BUY", quantity=1.0
     )

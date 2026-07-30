@@ -266,6 +266,14 @@ requests.post(f"{risk}/kill-switch/deactivate", json={
     "operator": "issue-4185-drill",
     "justification": "restart prep",
 }, timeout=10).raise_for_status()
+deadline = time.time() + 20
+while time.time() < deadline:
+    kc = requests.get(f"{execution}/status", timeout=10).json().get("kill_cancel") or {}
+    if kc.get("ready_for_new_orders") is True:
+        break
+    time.sleep(0.5)
+else:
+    raise RuntimeError(f"execution not ready after deactivate: {kc}")
 
 secret = Path("/run/secrets/redis_password").read_text().strip()
 client = redis.Redis(host=os.environ["REDIS_HOST"], port=6379, password=secret, decode_responses=True)

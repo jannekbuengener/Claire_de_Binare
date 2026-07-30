@@ -820,9 +820,11 @@ class KillCancelSupervisor:
                     self._orders_accepted = True
                 return None
         elif previous is True and not active:
-            # Deactivation is operator-owned; do not self-heal cancels here.
+            # Deactivation is operator-owned for cancel residuals, but new-order
+            # acceptance must resume once kill is inactive (#4185).
             with self._lock:
                 self._hold_new_orders = False
+                self._orders_accepted = True
             return None
 
         if not active:
@@ -870,6 +872,7 @@ class KillCancelSupervisor:
             with self._lock:
                 self._last_active = False
                 self._hold_new_orders = False
+                self._orders_accepted = True
             return None
         return None
 

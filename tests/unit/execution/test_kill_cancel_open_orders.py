@@ -359,6 +359,31 @@ def test_supervisor_unevaluable_fail_closed(resting_adapter, tmp_path: Path) -> 
 
 
 @pytest.mark.unit
+def test_supervisor_deactivation_resumes_order_acceptance(
+    resting_adapter, tmp_path: Path
+) -> None:
+    """After unevaluable/active HOLD, kill inactive must accept new orders again."""
+    reg = OpenOrderRegistry(ledger_path=tmp_path / "l.json")
+    coord = _coordinator(reg, resting_adapter)
+    state = {"active": True, "reason": "evaluation_error"}
+
+    def details(*, create_if_missing=False):
+        return state["active"], state["reason"], "boom", None
+
+    supervisor = KillCancelSupervisor(coordinator=coord, get_kill_details=details)
+    assert supervisor.run_startup_gate() is not None
+    assert supervisor.hold_new_orders is True
+    assert supervisor.orders_accepted is False
+
+    state["active"] = False
+    state["reason"] = None
+    assert supervisor.poll_once() is None
+    assert supervisor.hold_new_orders is False
+    assert supervisor.orders_accepted is True
+    assert supervisor.status_snapshot()["ready_for_new_orders"] is True
+
+
+@pytest.mark.unit
 def test_fill_after_kill_fail(resting_adapter, tmp_path: Path) -> None:
     reg = OpenOrderRegistry(ledger_path=tmp_path / "l.json")
     resting_adapter._executor.place_resting_order(
