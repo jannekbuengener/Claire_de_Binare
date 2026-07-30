@@ -36,17 +36,64 @@ OVERLAY_FILE="${REPO_ROOT}/infrastructure/compose/issue-4185-kill-cancel.yml"
 COMPOSE=(docker compose -p "$PROJECT_NAME" -f "$BASE_FILE" -f "$TEST_FILE" -f "$OVERLAY_FILE")
 
 SECRET_ROOT="$(mktemp -d "${TMPDIR:-/tmp}/cdb-4185-XXXXXX")"
-printf '%s' 'cdb-4185-redis-only' >"${SECRET_ROOT}/REDIS_PASSWORD"
-printf '%s' 'cdb-4185-postgres-only' >"${SECRET_ROOT}/POSTGRES_PASSWORD"
+# Dummy mock-only secrets — never productive credentials.
+for _f in REDIS_PASSWORD POSTGRES_PASSWORD POSTGRES_PASSWORD_DSN GRAFANA_PASSWORD \
+  SMTP_USER SMTP_PASSWORD SMTP_FROM ALERT_EMAIL_TO; do
+  printf '%s' 'cdb-4185-mock-only' >"${SECRET_ROOT}/${_f}"
+done
+printf '%s' 'drill-4185@example.invalid' >"${SECRET_ROOT}/SMTP_FROM"
+printf '%s' 'cdb-4185-mock-only' >"${SECRET_ROOT}/MEXC_API_KEY.txt"
+printf '%s' 'cdb-4185-mock-only' >"${SECRET_ROOT}/MEXC_API_SECRET.txt"
 
 export STACK_NAME="$PROJECT_NAME"
 export SECRETS_PATH="$SECRET_ROOT"
-export REDIS_PASSWORD='cdb-4185-redis-only'
-export POSTGRES_PASSWORD='cdb-4185-postgres-only'
+export REDIS_PASSWORD='cdb-4185-mock-only'
+# Keep POSTGRES_PASSWORD for test.yml substitution; runtime overlay unsets it in-container.
+export POSTGRES_PASSWORD='cdb-4185-mock-only'
 export POSTGRES_USER="${POSTGRES_USER:-cdb_user}"
 export CDB_GIT_COMMIT="$COMMIT_SHA"
 export CDB_POLICY_VERSION='issue-4185-drill'
 export CDB_4185_EVIDENCE_DIR="$EVIDENCE_DIR"
+
+# Runtime-only postgres patch. Service key discovered from base+test so the
+# committed overlay never embeds infra hostnames.
+PG_RUNTIME_OVERLAY="${EVIDENCE_DIR}/postgres_runtime_overlay.yml"
+export PG_RUNTIME_OVERLAY
+python3 - <<'PY'
+import json, os, subprocess
+from pathlib import Path
+project = os.environ["STACK_NAME"]
+files = [
+    "infrastructure/compose/base.yml",
+    "infrastructure/compose/test.yml",
+]
+cmd = ["docker", "compose", "-p", project]
+for f in files:
+    cmd.extend(["-f", f])
+cmd.extend(["config", "--format", "json"])
+cfg = json.loads(subprocess.check_output(cmd, text=True))
+pg_name = None
+for name, svc in (cfg.get("services") or {}).items():
+    image = str(svc.get("image") or "")
+    if "postgres" in image.lower():
+        pg_name = name
+        break
+if not pg_name:
+    raise SystemExit("could not discover postgres service name for runtime overlay")
+out = Path(os.environ["PG_RUNTIME_OVERLAY"])
+out.write_text(
+    "services:\n"
+    f"  {pg_name}:\n"
+    "    entrypoint:\n"
+    "      - sh\n"
+    "      - -c\n"
+    "      - unset POSTGRES_PASSWORD; exec docker-entrypoint.sh postgres\n"
+    "    environment:\n"
+    "      POSTGRES_PASSWORD_FILE: /run/secrets/postgres_password\n"
+)
+print(f"wrote postgres runtime overlay for service {pg_name!r} -> {out}")
+PY
+COMPOSE=(docker compose -p "$PROJECT_NAME" -f "$BASE_FILE" -f "$TEST_FILE" -f "$OVERLAY_FILE" -f "$PG_RUNTIME_OVERLAY")
 
 INITIAL_EXIT=1
 RESTART_EXIT=1
