@@ -29,3 +29,7 @@ cache:
   cleanup_must_not_delete_unrelated_images_or_volumes: true
 
 temp_preflight: true
+
+# Bound Black --check so a hung formatter cannot stall local CI indefinitely.
+# Timeout → FAIL with reason_code=BLACK_TIMEOUT (never SKIP/PASS).
+black_timeout_seconds: 120

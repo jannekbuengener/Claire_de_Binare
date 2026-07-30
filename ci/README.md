@@ -76,11 +76,20 @@ pwsh -File ci/scripts/publish_status.ps1 -Command publish -EvidenceDir ci/artifa
 | containers | `docker build -f ci/Dockerfile` only; no push |
 | report | `reports/check-matrix.json` + fail-closed `manifest.json` |
 
-Auf Windows bleibt `sys.executable -m black` der Default. Falls genau dieser
-Interpreter einen belegten Black-Runtime-Defekt hat, darf der lokale Operator
-`CDB_BLACK_EXECUTABLE` auf eine existierende Black-CLI setzen. Der Runner
-validiert den Pfad fail-closed und protokolliert das konkrete Executable in der
-Stage-Evidence; die Formatprüfung wird nicht übersprungen.
+Auf Windows bleibt `sys.executable -m black` der Default (gepinntes
+`black==26.5.1` aus `requirements-dev.txt`). Black erhält einen Timeout aus
+`ci/config/resources.yaml` (`black_timeout_seconds`, Default 120). Ein Hang
+endet als Stage-**FAIL** mit `reason_code=BLACK_TIMEOUT` und Exit-Code 124 —
+niemals als SKIP oder PASS. Dockerfile-/ci.yml-unpinned Black ist bewusst
+außerhalb dieses Slices.
+
+Falls genau dieser Interpreter einen belegten Black-Runtime-Defekt hat, darf
+der lokale Operator `CDB_BLACK_EXECUTABLE` auf eine existierende Black-CLI
+setzen. Das ist ein **strikt validierter Escape Hatch** (Pfad muss eine Datei
+sein; Shell-Metazeichen wie `;`, `|`, `&`, `$()` werden abgelehnt). Der Runner
+protokolliert das konkrete Executable in der Stage-Evidence; die Formatprüfung
+wird nicht übersprungen. Invalid override → FAIL mit
+`reason_code=BLACK_EXECUTABLE_INVALID`.
 
 ## Evidence contract
 

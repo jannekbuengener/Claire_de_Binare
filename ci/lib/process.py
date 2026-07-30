@@ -13,6 +13,10 @@ from dataclasses import dataclass
 from pathlib import Path
 from typing import Mapping, Sequence
 
+# Conventional exit code when a subprocess hits its wall-clock timeout.
+# Matches GNU timeout(1); stages map this to a typed reason_code (never SKIP).
+EXIT_CODE_TIMEOUT = 124
+
 
 @dataclass(frozen=True)
 class CommandResult:
@@ -21,6 +25,7 @@ class CommandResult:
     duration_seconds: float
     stdout: str
     stderr: str
+    timed_out: bool = False
 
 
 def run_command(
@@ -43,16 +48,30 @@ def run_command(
     with log_path.open("w", encoding="utf-8") as handle:
         handle.write(f"$ {' '.join(command)}\n")
         handle.flush()
-        proc = subprocess.run(
-            list(command),
-            cwd=str(cwd),
-            stdout=handle,
-            stderr=subprocess.STDOUT,
-            text=True,
-            env=merged,
-            timeout=timeout,
-            check=False,
-        )
+        try:
+            proc = subprocess.run(
+                list(command),
+                cwd=str(cwd),
+                stdout=handle,
+                stderr=subprocess.STDOUT,
+                text=True,
+                env=merged,
+                timeout=timeout,
+                check=False,
+            )
+        except subprocess.TimeoutExpired:
+            # Never re-raise: callers treat exit_code=124 as FAIL, not SKIP/PASS.
+            handle.write("\nreason_code=COMMAND_TIMEOUT\n")
+            handle.write(f"exit_code={EXIT_CODE_TIMEOUT}\n")
+            duration = time.perf_counter() - started
+            return CommandResult(
+                command=list(command),
+                exit_code=EXIT_CODE_TIMEOUT,
+                duration_seconds=round(duration, 3),
+                stdout="",
+                stderr="",
+                timed_out=True,
+            )
         handle.write(f"\nexit_code={proc.returncode}\n")
     duration = time.perf_counter() - started
     return CommandResult(
@@ -61,4 +80,5 @@ def run_command(
         duration_seconds=round(duration, 3),
         stdout="",
         stderr="",
+        timed_out=False,
     )
