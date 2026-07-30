@@ -183,9 +183,7 @@ def test_multiple_valid_skill_groups() -> None:
     )
     assert assessment.physical_changed_files == 12
     assert assessment.logical_review_units == 4  # 2 groups + 2 extras
-    assert {group.skill for group in assessment.recognized_mirror_groups} == set(
-        skills
-    )
+    assert {group.skill for group in assessment.recognized_mirror_groups} == set(skills)
 
 
 def test_pr_4219_shaped_fixture_routes_without_pr_hardcode() -> None:
@@ -252,9 +250,7 @@ def test_mirror_drift_fails_closed() -> None:
 
 def test_mirror_without_canon_is_not_free() -> None:
     skill = "cdb-pr-router"
-    paths = [
-        template.format(name=skill) for template in SURFACES.values()
-    ]
+    paths = [template.format(name=skill) for template in SURFACES.values()]
     contents = {path: _adapter_text(skill) for path in paths}
     assessment = assess_reviewability(
         physical_changed_files=4,

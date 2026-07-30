@@ -148,9 +148,7 @@ def assess_reviewability(
     reason_codes: list[str] = []
 
     if not inventory_complete and physical_changed_files >= files_limit:
-        reason_codes.extend(
-            ("INVENTORY_INCOMPLETE", "REVIEWABILITY_PHYSICAL_FALLBACK")
-        )
+        reason_codes.extend(("INVENTORY_INCOMPLETE", "REVIEWABILITY_PHYSICAL_FALLBACK"))
         return ReviewabilityAssessment(
             physical_changed_files=physical_changed_files,
             logical_review_units=physical_changed_files,
@@ -206,7 +204,11 @@ def assess_reviewability(
         )
 
     paths = tuple(dict.fromkeys(p.replace("\\", "/") for p in changed_paths))
-    if inventory_complete and physical_changed_files and len(paths) != physical_changed_files:
+    if (
+        inventory_complete
+        and physical_changed_files
+        and len(paths) != physical_changed_files
+    ):
         reason_codes.append("PATH_COUNT_MISMATCH")
         inventory_complete = False
         if physical_changed_files >= files_limit:
@@ -317,9 +319,7 @@ def assess_reviewability(
         "logical_mirror_units"
         if groups
         else (
-            "physical_no_valid_mirror_groups"
-            if by_skill
-            else "physical_no_skill_paths"
+            "physical_no_valid_mirror_groups" if by_skill else "physical_no_skill_paths"
         )
     )
     if groups:

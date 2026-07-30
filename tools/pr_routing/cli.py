@@ -122,9 +122,7 @@ def _candidate_from_json(data: dict[str, Any]) -> CandidatePullRequest:
             else None
         ),
         inventory_complete=bool(data.get("inventory_complete", True)),
-        head_ref_oid=(
-            str(data["head_ref_oid"]) if data.get("head_ref_oid") else None
-        ),
+        head_ref_oid=(str(data["head_ref_oid"]) if data.get("head_ref_oid") else None),
     )
 
 

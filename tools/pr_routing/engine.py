@@ -506,9 +506,7 @@ def route_issue(
             incompatibilities.add("FORBIDDEN_RISK_COMBINATION")
             continue
         assessment = assess_candidate_reviewability(policy, pr)
-        reviewability_evidence.append(
-            {"pr": pr.number, **assessment.to_evidence()}
-        )
+        reviewability_evidence.append({"pr": pr.number, **assessment.to_evidence()})
         if assessment.exceeds_reviewability:
             incompatibilities.add("REVIEWABILITY_LIMIT_REACHED")
             continue

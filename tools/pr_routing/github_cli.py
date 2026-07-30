@@ -208,9 +208,7 @@ class GhReadOnlyInventory:
                 timeout=self.timeout_seconds,
             )
         except (OSError, subprocess.TimeoutExpired) as exc:
-            raise GitHubInventoryError(
-                f"gh PR file inventory failed: {exc}"
-            ) from exc
+            raise GitHubInventoryError(f"gh PR file inventory failed: {exc}") from exc
         if result.returncode != 0:
             detail = (result.stderr or "").strip()
             raise GitHubInventoryError(
@@ -230,10 +228,7 @@ class GhReadOnlyInventory:
                 [
                     "gh",
                     "api",
-                    (
-                        f"repos/{self.repository}/contents/"
-                        f"{path}?ref={ref}"
-                    ),
+                    (f"repos/{self.repository}/contents/" f"{path}?ref={ref}"),
                 ]
             )
         except GitHubInventoryError:
