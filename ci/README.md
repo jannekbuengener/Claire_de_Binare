@@ -100,6 +100,16 @@ Bindings:
 - Any required SKIPPED ⇒ overall `FAIL`
 - Optional SKIPPED requires `skip_reason`
 
+## Temp-root preflight (#4205)
+
+Before unit/pytest stages, the orchestrator probes a run-scoped temp root at
+`ci/artifacts/<run_id>/tmp` (create/read/rename/delete). Failure stops the run
+with a stable reason code (`TEMP_ROOT_*`) and writes
+`reports/temp_preflight.json` (redacted paths only — no user-home absolutes).
+On success, `TEMP`/`TMP`/`TMPDIR` and pytest `--basetemp` / `cache_dir` point
+at that controlled root. No global ACL changes, no foreign-temp cleanup, no
+`.wslconfig` edits.
+
 ## Resources (16 GB host defaults)
 
 See `ci/config/resources.yaml`: light parallelism ≤2, heavy serial, memory caps

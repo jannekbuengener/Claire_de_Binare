@@ -27,3 +27,5 @@ cache:
   pip_cache_cap: "2g"
   docker_build_cache_cleanup_supported: true
   cleanup_must_not_delete_unrelated_images_or_volumes: true
+
+temp_preflight: true
