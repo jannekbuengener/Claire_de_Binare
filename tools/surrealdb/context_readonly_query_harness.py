@@ -147,7 +147,9 @@ def classify_db_evidence_posture(
         "brain_status": "not-used",
         "db_claims_allowed": False,
         "repo_fallback_used": True,
-        "repo_fallback_reason": "unavailable" if not db_reachable else "insufficient_evidence",
+        "repo_fallback_reason": (
+            "unavailable" if not db_reachable else "insufficient_evidence"
+        ),
         "record_ids": [],
     }
 
@@ -257,7 +259,12 @@ def build_adapter_for_mode(
             raise ValueError("file mode requires config_path")
         config = load_config(config_path)
         return MemQueryAdapter(
-            [{"config_namespace": config.namespace, "config_database": config.database}],
+            [
+                {
+                    "config_namespace": config.namespace,
+                    "config_database": config.database,
+                }
+            ],
             namespace=config.namespace,
             database=config.database,
         )
@@ -268,7 +275,9 @@ def build_adapter_for_mode(
     raise ValueError(f"unsupported harness mode: {mode}")
 
 
-def run_readonly_probe(adapter: QueryAdapter, *, query: str = HARNESS_PROBE_QUERY) -> dict[str, Any]:
+def run_readonly_probe(
+    adapter: QueryAdapter, *, query: str = HARNESS_PROBE_QUERY
+) -> dict[str, Any]:
     """Execute a read-only probe and return structured harness evidence."""
 
     classification = adapter.classify(query)
@@ -302,9 +311,15 @@ def standard_ci_excludes_local_only() -> dict[str, Any]:
 
     root = repo_root()
     ci_yaml = (root / ".github" / "workflows" / "ci.yml").read_text(encoding="utf-8")
+    unit_stage = (root / "ci" / "stages" / "unit.py").read_text(encoding="utf-8")
     pytest_ini = (root / "pytest.ini").read_text(encoding="utf-8")
     marker_present = "local_only:" in pytest_ini
-    ci_excludes = "pytest -q" in ci_yaml and "norecursedirs = local" in pytest_ini
+    # #4163: thin ci.yml delegates to run.py; unit stage owns the pytest filter.
+    delegates = "ci/scripts/run.py" in ci_yaml and "--profile fast" in ci_yaml
+    unit_filter = (
+        "pytest" in unit_stage and "not test_mcp_time_server_runtime" in unit_stage
+    )
+    ci_excludes = delegates and unit_filter and "norecursedirs = local" in pytest_ini
     return {
         "pytest_marker_registered": marker_present,
         "ci_excludes_local_only": ci_excludes,
