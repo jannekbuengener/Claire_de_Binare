@@ -373,7 +373,8 @@ def test_supervisor_deactivation_resumes_order_acceptance(
     supervisor = KillCancelSupervisor(coordinator=coord, get_kill_details=details)
     assert supervisor.run_startup_gate() is not None
     assert supervisor.hold_new_orders is True
-    assert supervisor.orders_accepted is False
+    # Empty book may PASS cancel reconciliation, but hold_new_orders still blocks.
+    assert supervisor.status_snapshot()["ready_for_new_orders"] is False
 
     state["active"] = False
     state["reason"] = None
