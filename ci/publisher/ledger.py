@@ -95,6 +95,31 @@ def assert_run_id_not_reused(
             )
 
 
+def find_exact_publication(
+    ledger: dict[str, Any],
+    *,
+    run_id: str,
+    commit_sha: str,
+    repository: str,
+    status_context: str,
+    manifest_sha256: str,
+    state: str,
+) -> dict[str, Any] | None:
+    """Return an identical prior publication, otherwise ``None``."""
+    expected = {
+        "run_id": run_id,
+        "commit_sha": commit_sha,
+        "repository": repository,
+        "status_context": status_context,
+        "manifest_sha256": manifest_sha256,
+        "state": state,
+    }
+    for entry in ledger.get("entries") or []:
+        if all(str(entry.get(key)) == str(value) for key, value in expected.items()):
+            return dict(entry)
+    return None
+
+
 def append_entry(path: Path, entry: LedgerEntry) -> None:
     ledger = load_ledger(path)
     assert_run_id_not_reused(ledger, run_id=entry.run_id, commit_sha=entry.commit_sha)

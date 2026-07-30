@@ -522,3 +522,23 @@ Status
 - Do not claim checks ran when they did not.
 - Do not hide uncommitted residue.
 - Do not label work as `bereit fuer Claude Code` without a real continuation need.
+
+## Default Batch-Slice Close
+
+Der normale Abschluss ist:
+
+```yaml
+full_fast_ci: false
+publish_cdb_local_ci: false
+merge: false
+close_issue: false
+status: DONE_SLICE_ADDED_TO_BATCH_PR
+```
+
+Pflicht sind targeted Tests, betroffener Lint/Format-Scope, `git diff --check`,
+Commit, Push, PR-Ledger-Update, Issue-Handoff und dokumentierte
+Restunsicherheit. Der Issue bleibt bis zum verifizierten Merge offen.
+
+Nur ein eingefrorener `merge_candidate` wechselt in den separaten
+Merge-Steward-Flow mit Full Fast-CI und `cdb-local-ci` auf exakt dem finalen
+Head.

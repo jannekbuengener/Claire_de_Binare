@@ -178,28 +178,42 @@ no raw SurrealQL agent surface; no trading-state/secrets ingestion into SurrealD
 
 ---
 
-## Write-Gates (Single-Writer LOCK)
+## Write-Gates (PR Router + Dual-Lock)
 
 Per `knowledge/governance/CDB_AGENT_POLICY.md` §4. Applies to agents with
 `readonly: false` in frontmatter **before any** commit, push, PR create/update,
 label, merge, or other repository-mutating GitHub action.
 
-**LOCK format (exact):**
+Before Session-Plan finalization, branch, worktree, or PR creation, the parent
+MUST run:
 
-`LOCK: agent=<AGENT_NAME> issue=#<ISSUE> ts=<ISO8601> mode=single-writer`
+`python -m tools.pr_routing route --issue <ISSUE> --agent <AGENT_NAME>`
 
-**UNLOCK format (exact):**
+The read-only result fixes the target PR/branch, lane, validation profile and
+lock state. `HOLD_*` means no write surface may be created.
 
-`UNLOCK: agent=<OLD> issue=#<ISSUE> ts=<ISO8601> reason=handoff-to-<NEW>`
+Before a new PR, reserve on the Issue:
+
+`LOCK_RESERVATION: agent=<AGENT_NAME> issue=#<ISSUE> batch_pr=pending ts=<ISO8601> mode=batch-slice`
+
+After Draft-PR creation, set the same LOCK on Issue and PR:
+
+`LOCK: agent=<AGENT_NAME> issue=#<ISSUE> batch_pr=#<PR> ts=<ISO8601> mode=batch-slice`
+
+Handoff requires matching UNLOCK events on Issue and PR:
+
+`UNLOCK: agent=<OLD> issue=#<ISSUE> batch_pr=#<PR> ts=<ISO8601> mode=batch-slice reason=handoff-to-<NEW>`
 
 **Rules:**
 
-1. Before the first write action, identify or create the associated open PR.
-2. Before the first push or immediately after PR creation, set `LOCK:` as the first PR comment (via `gh`, only after Jannek GO).
-3. Before every subsequent write, verify no conflicting `LOCK:` from another agent exists.
-4. Conflicting `LOCK:` → **HARD STOP** (no commits, push, PR update, auto-merge).
-5. Open PR exists but no `LOCK:` → **STOP & ask** or explicit handoff via `UNLOCK:` + new `LOCK:`.
-6. Lock violation detected → `STOP: lock violation avoided. Detected LOCK by <X>. No changes made.`
+1. Only a complete, live-revalidated Issue/PR lock pair permits writes.
+2. `PARTIAL_LOCK`, malformed, foreign or stale locks → **HARD STOP**.
+3. Never auto-take over a stale lock.
+4. Only one writer may modify a batch PR at a time.
+5. Session Close defaults to targeted Slice Validation and
+   `DONE_SLICE_ADDED_TO_BATCH_PR`, without merge or Issue close.
+6. Full Fast-CI and `cdb-local-ci` belong only to a frozen final merge head.
+7. Lock violation detected → `STOP: lock violation avoided. Detected LOCK by <X>. No changes made.`
 
 Until Jannek GO + session-start + valid LOCK (when issue-scoped), remain read-only
 even if frontmatter says `readonly: false`.
@@ -212,6 +226,7 @@ even if frontmatter says `readonly: false`.
 
 - Cursor: `.cursor/skills/cdb-session-start/SKILL.md`
 - Codex: `.codex/cdb_skills/cdb-session-start/SKILL.md`
+- Router: `docs/skills/cdb-pr-router/SKILL.md`
 
 **After** implementation/validation/repo work, before session close:
 

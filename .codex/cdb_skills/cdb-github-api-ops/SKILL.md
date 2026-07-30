@@ -160,7 +160,7 @@ collection_errors:
 | Create issue/PR | Only if Plan-GO explicitly allows it |
 | Label/milestone changes | Only if Plan-GO explicitly allows it |
 | Rebase/push | Only if Plan-GO explicitly allows it |
-| Squash merge (`gh pr merge --squash --delete-branch`) | Autonomous only when every capability gate in `docs/runbooks/merge_policy_ci_gate.md` § Capability-based autonomous merge is proven for the exact PR head (task allows autonomous merge, PR in scope/mergeable, no blocking reviews, local Fast-CI PASS bound to head, main unchanged since validation, `cdb-local-ci` SUCCESS on exact head, session can perform the merge). Capability-based, not agent-type-based. `--admin` is never a substitute for missing/red `cdb-local-ci`. If any gate is unproven: report `DONE_PR_OPEN_MERGE_HANDOFF` naming the exact missing capability — do not loop, do not force. |
+| Squash merge (`gh pr merge --squash --delete-branch`) | Never a normal slice-close action. Only in separately authorized Merge Mode after the PR is frozen as `merge_candidate` and every capability gate in `docs/runbooks/merge_policy_ci_gate.md` is proven for the exact final head and integrated base (no blocking reviews, full Fast-CI PASS, latest `cdb-local-ci` Commit Status SUCCESS, unchanged head/base). `--admin` is never a substitute. If any gate is unproven: `DONE_PR_OPEN_MERGE_HANDOFF`; do not loop or force. |
 | Repo settings/admin | Separate scope, never automatic |
 | Branch protection changes | Separate scope, never automatic |
 
@@ -293,3 +293,16 @@ and the missing capability is named for the next session/human to close.
 - Do NOT read or expose tokens, secrets, or private keys in any output
 - Do NOT create issues, PRs, or comments without Human-GO
 - Do NOT treat Board stage or `trade-capable` as Live-Go; LR remains NO-GO
+
+## PR-Routing und gh-only Writes
+
+- Vor neuen Branches oder PRs `cdb-pr-router` ausführen.
+- Routing-Inventar read-only über `gh issue view`, `gh pr list` und
+  `gh pr view` erheben.
+- Issue-/PR-Kommentare, Body-/Ledger-Updates und Merge ausschließlich über
+  `gh`.
+- Der `cdb-local-ci` Publisher schreibt Commit Status ausschließlich über
+  `gh api`; direkte HTTP-Writes sind verboten.
+- Combined Commit Status über `/commits/<sha>/status` prüfen; Check Runs separat
+  lesen.
+- Bei Pagination, Rate-Limit, Auth- oder Lock-Ambiguität fail-closed HOLD.

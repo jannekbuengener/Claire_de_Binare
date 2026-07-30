@@ -212,19 +212,20 @@ Read the example flow:
 Rehearse the workflow for a tiny docs-only slice:
 
 1. Verify the issue state on GitHub live.
-2. Branch from current `main`.
-3. Make the smallest scoped docs change.
-4. Run the scoped validation for that slice.
-5. Push and create the PR.
-6. Set the required PR lock before any follow-up push or PR mutation:
+2. Run `cdb-pr-router` before plan, branch, worktree, or PR creation.
+3. Reuse the assigned PR/branch, or reserve the Issue before an explicitly
+   permitted new Draft PR.
+4. Establish the identical Issue-/PR-level lock pair:
 
 ```text
-LOCK: agent=<agent-id> issue=#<issue> ts=<ISO8601> mode=single-writer
+LOCK: agent=<agent-id> issue=#<issue> batch_pr=#<pr> ts=<ISO8601> mode=batch-slice
 ```
 
-7. Wait for the repo-required checks to go green.
-8. Squash-merge only if the diff stays inside the approved scope.
-9. Comment the issue and close it only after the merged PR satisfies acceptance.
+5. Make the smallest scoped docs change and run targeted validation.
+6. Push the slice, update the PR ledger and Issue handoff, then stop without
+   merge or Issue closure.
+7. Full Fast-CI, exact-head `cdb-local-ci`, merge, and closure occur only in the
+   separate flow for a frozen `merge_candidate`.
 
 Stay out of runtime, Docker, trading, DB-write, memory-write, LR, or live-capital
 scope for this first rehearsal.

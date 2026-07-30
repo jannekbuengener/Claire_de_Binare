@@ -115,3 +115,26 @@ Restunsicherheiten
 - Do not expand into adjacent issues, epics, or refactors unless the dependency is explicit and current.
 - Do not imply live approval, Echtgeld readiness, or strategy release from issue wording.
 - Do not hide uncertainty; mark open points as unconfirmed.
+
+## Mandatory Routing Block
+
+Jeder Session-Plan enthält vor Implementation:
+
+```yaml
+routing:
+  issue_number: <N>
+  routing_decision: <decision>
+  target_pr: <number-or-null>
+  target_branch: <branch-or-null>
+  batch_key: <key-or-null>
+  lane: <lane>
+  lock_state: <state>
+  validation_profile: <profile>
+  merge_mode: <batch-or-dedicated>
+  merge_trigger_state: <state>
+  reason_codes: []
+```
+
+Der Block stammt aus `cdb-pr-router`. Ohne sichere Route bleibt der Plan HOLD.
+Ein normaler Plan endet mit Slice-Handoff; Full Fast-CI und Merge werden nur für
+einen separaten Final-Batch-Head geplant.

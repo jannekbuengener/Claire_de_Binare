@@ -272,6 +272,7 @@ OpenCode skill surface zusaetzlich: `.opencode/skills/` (gezielt laden, nicht pa
 | Skill | Purpose | Cursor path |
 |-------|---------|-------------|
 | `cdb-session-start` | Fail-closed session start (verifies Git truth first) | `.cursor/skills/cdb-session-start/SKILL.md` |
+| `cdb-pr-router` | Read-only PR routing before plan/branch/worktree/PR creation | `.cursor/skills/cdb-pr-router/SKILL.md` |
 | `cdb-session-close` | Disciplined session close with honest summary | `.cursor/skills/cdb-session-close/SKILL.md` |
 | `cdb-issue-to-session-plan` | Convert issue to session plan | `.cursor/skills/cdb-issue-to-session-plan/SKILL.md` |
 | `cdb-control-intake` | Control context reading | `.cursor/skills/cdb-control-intake/SKILL.md` |

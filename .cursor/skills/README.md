@@ -7,6 +7,7 @@ Repo-versionierte Session-Skills für Cursor Agents. Jeder Skill lebt in `<name>
 | Skill | Wann |
 |---|---|
 | [`cdb-session-start`](cdb-session-start/SKILL.md) | Vor Repo-/GitHub-/Implementierungsarbeit |
+| [`cdb-pr-router`](cdb-pr-router/SKILL.md) | Vor Plan-, Branch-, Worktree- oder PR-Erstellung |
 | [`cdb-session-close`](cdb-session-close/SKILL.md) | Nach Implementierung/Validierung, vor Abschluss |
 
 ## Control / planning

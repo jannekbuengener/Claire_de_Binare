@@ -10,19 +10,24 @@ Echtgeld-Go.
 ## Purpose / What this sandbox is
 
 This sandbox is a safe, minimal rehearsal path for a new developer or agent who
-wants to walk through CDB's branch, validation, PR, LOCK, required checks, merge,
-and issue-close workflow without touching runtime, Docker, trading, LR, or
+wants to walk through CDB's PR Router, Slice Validation, Dual-Lock and handoff
+workflow without touching runtime, Docker, trading, LR, or
 productive DB surfaces.
 
 After completing this rehearsal you will have:
 
-- created a feature branch from `main`,
+- executed or simulated `cdb-pr-router` before creating a work surface,
+- reused a compatible PR or recorded a justified create decision,
 - made the smallest docs-only change,
-- run the scoped validation for that change,
-- opened a PR with a proper body and LOCK comment,
-- understood which checks must pass before merge,
-- merged (or simulated merge criteria), and
-- commented and closed the target issue.
+- run targeted Slice Validation,
+- practiced the Issue-/PR-Level-Lock pair,
+- updated the Batch Ledger and Issue handoff,
+- understood why Full Fast-CI and `cdb-local-ci` belong only to a frozen final
+  merge head, and
+- left the Issue open until an actual verified merge.
+
+Sections describing merge criteria are a separate merge-candidate rehearsal;
+they are not the default end of the first Issue-Slice.
 
 The sandbox expects a **tiny docs-only issue**. If no real issue is available,
 simulate one: add a sentence to `docs/onboarding/cdb_glossary.md` or
@@ -168,9 +173,11 @@ python -m tools.onboarding_tour --role agent
 python -m tools.onboarding_tour --role developer
 ```
 
-## Prepare PR body
+## Prepare routed PR body
 
-Start from the template at `docs/onboarding/templates/pr_body_template.md`.
+For a Batch-PR start from
+`.github/PULL_REQUEST_TEMPLATE/cdb_batch_pr.md`; Dedicated PRs retain the
+standard PR template.
 
 Required sections in every PR body:
 
@@ -181,42 +188,49 @@ Required sections in every PR body:
 | Validation | Commands run and their results. |
 | Scope Boundary | Docs/onboarding only; no runtime/Docker/trading/LR/DB changes. |
 | Safety/LR | LR bleibt NO-GO. Board stage `trade-capable` is not Live-Go. No Echtgeld-Go. |
-| Issue Links | `Closes #<issue>`, `Refs #<parent>`. |
+| Issue Links | Ledger row plus exactly one `Closes #<issue>` per delivered Issue. |
 | Brain Evidence | Required when scope touches module/service/contract/context surfaces. |
 
-## Post PR LOCK
+## Reserve and post the Dual-Lock
 
-After pushing and creating the PR, the **first PR comment** must be the exact
-single-writer lock. This is mandatory per `knowledge/governance/CDB_AGENT_POLICY.md`
-section 4 and the definition in `docs/onboarding/cdb_glossary.md`.
-
-**Format**:
+Before a new PR, reserve the Issue:
 
 ```text
-LOCK: agent=<agent-id> issue=#<issue> ts=<ISO8601> mode=single-writer
+LOCK_RESERVATION: agent=<agent-id> issue=#<issue> batch_pr=pending ts=<ISO8601> mode=batch-slice
+```
+
+After Draft-PR creation, post the identical lock on Issue and PR:
+
+```text
+LOCK: agent=<agent-id> issue=#<issue> batch_pr=#<pr> ts=<ISO8601> mode=batch-slice
 ```
 
 **Rules**:
 
-- The `LOCK:` must be the **first PR comment**. Do not push or mutate the PR
-  before posting it.
+- Until both live comments match, `PARTIAL_LOCK` blocks further writes.
 - If a `LOCK:` from another agent already exists on the PR: **HARD STOP**.
   Do not push, comment, or mutate.
-- If no `LOCK:` exists but a PR already exists: do not create a second PR.
-  Inspect the existing PR's comments first.
-- An issue-level `START:` comment is useful for status but does **not** replace
-  the required PR LOCK.
+- Never auto-take over a stale or malformed lock.
+- Reuse the PR selected by `cdb-pr-router`; never create a duplicate.
 
 **Post via `gh` CLI**:
 
 ```bash
-gh pr comment <pr-number> --body "LOCK: agent=<agent-id> issue=#<issue> ts=<ISO8601> mode=single-writer"
+gh issue comment <issue> --body "LOCK: agent=<agent-id> issue=#<issue> batch_pr=#<pr> ts=<ISO8601> mode=batch-slice"
+gh pr comment <pr> --body "LOCK: agent=<agent-id> issue=#<issue> batch_pr=#<pr> ts=<ISO8601> mode=batch-slice"
 ```
 
 All GitHub writes (PR create, comment, merge, issue comment, labels) go through
 `gh` CLI only. No MCP/GitHub API/connector writes.
 
-## Check required status (merge gate)
+## Slice Handoff
+
+The normal sandbox result uses targeted tests, affected lint/format and
+`git diff --check`, updates the Ledger and Issue, and ends
+`DONE_SLICE_ADDED_TO_BATCH_PR`. It does not publish a status, merge, or close
+the Issue.
+
+## Check required status (final merge-candidate gate)
 
 SSOT: [`docs/runbooks/merge_policy_ci_gate.md`](../runbooks/merge_policy_ci_gate.md).
 Verify live with `gh api` — do not hardcode elsewhere.
@@ -226,7 +240,7 @@ Verify live with `gh api` — do not hardcode elsewhere.
 | `cdb-local-ci` | **Yes** (Commit Status, exact PR head) | Local Fast-CI evidence published for this head |
 | Hosted Actions (`ci`, `policy-gate`, …) | Advisory | Safety/diagnostics; billing-red ≠ code failure |
 
-Publish path (when the session has `statuses:write`):
+Only after the PR is frozen as `merge_candidate`, use the final publish path:
 
 ```powershell
 pwsh -File ci/scripts/run_all.ps1 -Profile fast
@@ -239,16 +253,17 @@ scope if possible, otherwise stop with `DONE_PR_OPEN_MERGE_HANDOFF`.
 
 ## Merge criteria (capability-based)
 
-Autonomous squash merge is allowed when **all** capability gates are proven
+Normal squash merge is allowed when **all** capability gates are proven
 (see merge-policy runbook). Not agent-type-based. Checklist:
 
-1. Live `cdb-local-ci` SUCCESS on the exact PR head SHA.
-2. Full local Fast-CI PASS bound to that head; validated `main` unchanged.
-3. Diff stays inside the approved scope (docs/onboarding + narrow discovery).
-4. No new `LOCK:` from another writer; no blocking reviews / `CHANGES_REQUESTED`.
-5. PR is not draft / HOLD / BLOCKED; mergeable.
-6. No secrets in the diff; no LR/Live/Echtgeld boundary touched.
-7. Session can perform regular squash merge (no `--admin` bypass).
+1. PR is frozen as `merge_candidate`.
+2. Live `cdb-local-ci` SUCCESS on the exact PR head SHA.
+3. Full local Fast-CI PASS bound to Head and integrated Base SHA.
+4. Diff stays inside the approved scope (docs/onboarding + narrow discovery).
+5. No conflicting lock; no blocking reviews / `CHANGES_REQUESTED`.
+6. PR is not draft / HOLD / BLOCKED; mergeable.
+7. No secrets in the diff; no LR/Live/Echtgeld boundary touched.
+8. Session can perform regular squash merge (no `--admin` bypass).
 
 If gates are met and the task allows autonomous merge:
 
@@ -341,7 +356,7 @@ at [`examples/first_issue_to_pr_flow.md`](examples/first_issue_to_pr_flow.md).
 | `main` diverged from `origin/main` | `git fetch origin --prune && git reset --hard origin/main` |
 | Issue already closed | Pick a different open issue. |
 | Matching open PR with active `LOCK:` by another writer | HARD STOP. Wait or ask. |
-| Required status `cdb-local-ci` missing/red | Run local Fast-CI + publish, or hand off with `DONE_PR_OPEN_MERGE_HANDOFF` if lacking `statuses:write`. |
+| Required status `cdb-local-ci` missing/red on a frozen final merge candidate | Run full Fast-CI + publish on the exact final head, or hand off with `DONE_PR_OPEN_MERGE_HANDOFF` if lacking `statuses:write`. Intermediate slices do not publish. |
 | Hosted Actions `ci`/`policy-gate` red | Treat as advisory; fix real code/governance issues; billing-red ≠ code failure. |
 | Diff grows into runtime/Docker/trading/LR/DB scope | Revert the out-of-scope change. Commit only docs. |
 | Secret value appears in diff | Revert immediately. Do not push. |

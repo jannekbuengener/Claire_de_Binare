@@ -473,13 +473,14 @@ class TestBuildPrLockSimulation:
     def test_contains_required_checks(self) -> None:
         lines = _build_pr_lock_simulation()
         text = "\n".join(lines)
-        assert "ci" in text
-        assert "policy-gate" in text
+        assert "Targeted validation" in text
+        assert "cdb-local-ci" in text
 
-    def test_contains_squash_merge(self) -> None:
+    def test_defers_merge_until_frozen_candidate(self) -> None:
         lines = _build_pr_lock_simulation()
         text = "\n".join(lines)
-        assert "Squash-merge" in text
+        assert "merge_candidate" in text
+        assert "Targeted validation" in text
 
 
 class TestValidateOutputSafe:

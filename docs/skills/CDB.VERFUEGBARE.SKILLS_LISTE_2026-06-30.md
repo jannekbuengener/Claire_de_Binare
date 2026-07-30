@@ -31,6 +31,7 @@ Messaging-Komponente — **kein** Agent-Brain, kein Evidence-/Memory-Ersatz.
 | --- | --- | --- |
 | `cdb-session-start` | `.cursor/`, `.opencode/`, `.codex/` | Fail-closed Session-Start |
 | `cdb-session-close` | `.cursor/`, `.opencode/`, `.codex/` | Session-Abschluss |
+| `cdb-pr-router` | repo surfaces | Read-only PR-/Branch-Routing vor dem Session-Plan |
 | `cdb-control-intake` | repo surfaces | Control/Board/LR-Kontext |
 | `cdb-issue-to-session-plan` | repo surfaces | Issue → Session-Plan |
 
@@ -59,6 +60,7 @@ vorhanden) bzw. Surface-Adapter unter `.cursor/skills/`, `.opencode/skills/`,
 | `gh-fix-ci` | CI failures |
 | `gh-address-comments` | PR review comments |
 | `cdb-test-first` | Test-first planning (Cursor) |
+| `cdb-pr-router` | Deterministisches Batch-/Dedicated-PR-Routing |
 
 Vollständige Cursor-Tabelle: [`AGENTS.md`](../../AGENTS.md) § Selected repo skills.
 
@@ -113,7 +115,7 @@ Laden nur nach Session-Bootstrap, task-spezifisch — keine Massenladung.
 ## Routing-Kurzreferenz
 
 ```text
-Session:  /cdb-session-start → /cdb-control-intake → [optional] /cdb-issue-to-session-plan
+Session:  /cdb-session-start → /cdb-control-intake → /cdb-pr-router → [optional] /cdb-issue-to-session-plan
 Redis:    /redis-development + subset (core set) — siehe CDB_REDIS_SKILL_ROUTING.md
 Events:   + /messaging-redis-streams | /ctb-docker-stack | /cdb-shadow-validation
 Brain:    SurrealDB skills — nicht durch Redis ersetzen

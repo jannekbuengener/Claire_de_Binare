@@ -178,12 +178,12 @@ def _build_first_issue_dry_run() -> list[str]:
     return [
         "First-Issue Dry Run:",
         "  Scope: docs-only change (e.g. add term to cdb_glossary.md).",
-        "  1. Branch from origin/main: docs/<issue>-<slug>.",
-        "  2. Edit a single safe file under docs/onboarding/.",
-        "  3. Run: python -m tools.validate_onboarding_docs.",
-        "  4. Run: ruff check .",
-        "  5. Commit with conventional commit message.",
-        "  6. Push branch.",
+        "  1. Run cdb-pr-router before planning, branch, worktree, or PR.",
+        "  2. Reuse the routed PR/branch; create only on an explicit CREATE decision.",
+        "  3. Edit a single safe file under docs/onboarding/.",
+        "  4. Run targeted docs validation, affected lint, and git diff --check.",
+        "  5. Commit and push one coherent slice to the assigned PR.",
+        "  6. Update ledger + Issue handoff; stop without merge or Issue closure.",
     ]
 
 
@@ -191,11 +191,11 @@ def _build_pr_lock_simulation() -> list[str]:
     return [
         "PR / LOCK Simulation:",
         "  1. PR body MUST contain: Delivered, Validation, Non-Goals, Safety, Restunsicherheiten.",
-        "  2. Post LOCK: comment on the PR before any further mutation.",
-        "  3. Required checks: ci (Unit/Integration + Lint).",
-        "  4. Required checks: policy-gate.",
-        "  5. Wait for CI green before merge.",
-        "  6. Squash-merge after green + approved.",
+        "  2. Before a new PR, post LOCK_RESERVATION on the Issue.",
+        "  3. After PR creation, post the identical LOCK on Issue and PR.",
+        "  4. PARTIAL_LOCK or a foreign/stale lock blocks all writes.",
+        "  5. Targeted validation is sufficient for the slice handoff.",
+        "  6. Full Fast-CI, cdb-local-ci, and merge belong only to a frozen merge_candidate.",
     ]
 
 
@@ -209,7 +209,7 @@ def _build_hold_conditions() -> list[str]:
         "  - Target issue not readable via gh.",
         "  - Context Brain Preflight fails without valid fallback reason.",
         "  - Bootloader files missing or unreadable.",
-        "  - Required checks red and not scope-fixable.",
+        "  - Targeted slice validation fails, or final merge-candidate gates are red.",
         "  - Diff shows scope growth beyond allowed surfaces.",
         "  - Secrets or LR/Live boundaries touched.",
     ]

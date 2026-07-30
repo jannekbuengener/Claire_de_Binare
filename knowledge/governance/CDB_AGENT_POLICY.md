@@ -120,43 +120,65 @@ Agenten dürfen **niemals**:
 - Execution ohne Risk-Layer durchführen
 - Safety-, Kill- oder Guardrails umgehen
 
+**Einmalige Transition #4202:** Der Repository Owner hat die Änderungen an
+dieser Policy und am Issue-/Branch-Lifecycle ausschließlich für die Einführung
+des CDB PR-Steward-/Batch-Routing-Vertrags autorisiert. Diese Autorisierung ist
+kein Präzedenzfall und keine allgemeine Erlaubnis für spätere Canon-Änderungen.
+Human Authority, explizites Scope-GO und fail-closed Verhalten bleiben erhalten.
+
 ---
 
 ## 4. Write-Gates (hart)
 
-### 4.1 Single-Writer Lock pro Issue (absolut)
+### 4.1 PR-Routing vor Arbeitsflächen-Erstellung (absolut)
 
-Für jedes Issue gilt:
+Vor Session-Plan-Finalisierung, Branch-, Worktree- oder PR-Erstellung MUSS der
+read-only `cdb-pr-router` ausgeführt werden. Er entscheidet ausschließlich aus
+versionierter Policy und live gelesener GitHub-Evidence:
 
-- Es darf zu jedem Zeitpunkt **genau einen aktiven Writer** geben.
-- **Writer** bedeutet jeder Agent, der Commits erstellt, pusht, PRs erstellt oder
-  aktualisiert, Labels setzt, Auto-Merge aktiviert oder sonstige
-  repository-mutierende GitHub-Aktionen ausführt.
-- Alle anderen Agenten arbeiten für dieses Issue **read-only** oder **STOPPEN**.
+- kompatiblen offenen Batch-PR wiederverwenden,
+- bestehenden Dedicated-PR wiederverwenden,
+- neuen Batch- oder Dedicated-PR empfehlen,
+- bei Konflikt oder unvollständiger Evidence HOLD.
 
-**LOCK-Format (exakt):**
+Ein Issue behält eine **eindeutige Issue-Lineage**, benötigt aber keinen eigenen
+finalen Pull Request. Kompatible Issue-Slices dürfen einem durch den PR Steward
+kontrollierten Batch-PR zugeordnet werden.
+
+### 4.2 Single-Writer auf Issue- und PR-Ebene (absolut)
+
+- Es darf je Issue genau einen aktiven Writer geben.
+- Es darf je Batch-PR genau einen aktiven Slice-Writer geben.
+- Andere Agenten bleiben read-only oder stoppen.
+- Fremde, partielle, beschädigte oder nur als stale vermutete Locks werden
+  niemals automatisch übernommen.
+
+Vor einem neuen PR wird auf dem Issue reserviert:
+
+`LOCK_RESERVATION: agent=<AGENT_NAME> issue=#<ISSUE> batch_pr=pending ts=<ISO8601> mode=batch-slice`
+
+Nach Draft-PR-Erstellung MUSS derselbe Lock auf Issue und PR stehen:
+
+`LOCK: agent=<AGENT_NAME> issue=#<ISSUE> batch_pr=#<PR> ts=<ISO8601> mode=batch-slice`
+
+Nur ein vollständiges, live revalidiertes Lock-Paar autorisiert weitere Writes.
+Eine nur einseitig gesetzte Sperre ist `PARTIAL_LOCK` und blockiert.
+
+Dedicated Legacy-PRs dürfen während der Transition weiterhin das alte Format
+verwenden:
 
 `LOCK: agent=<AGENT_NAME> issue=#<ISSUE> ts=<ISO8601> mode=single-writer`
 
-**Pflichtregeln:**
+### 4.3 Writer-Handoff und Unlock (verbindlich)
 
-1. Vor der ersten Schreibaktion MUSS der Writer die zugehörige offene PR
-   identifizieren oder erzeugen.
-2. Vor dem ersten Push oder spätestens direkt nach PR-Erstellung MUSS der
-   Writer als ersten PR-Kommentar den `LOCK:` im exakten Format setzen.
-3. Vor **jeder** weiteren Schreibaktion MUSS der Agent prüfen, ob bereits ein
-   `LOCK:` existiert.
-4. Existiert ein `LOCK:` eines anderen Agents, gilt **HARD STOP**:
-   - keine Commits
-   - kein Push
-   - keine PR-Änderung
-   - kein Auto-Merge
-   - keine Folgeaktionen zur Weiterführung der Delivery
-5. Existiert kein `LOCK:` und es gibt bereits eine offene PR, darf kein zweiter
-   Agent implizit Writer werden. In diesem Fall gilt **STOP & Rückfrage** oder
-   expliziter Handoff.
+Ein Batch-Writer-Wechsel erfordert identische `UNLOCK`-Events auf Issue und PR:
 
-### 4.2 HARD STOP bei explizitem Stop-Signal
+`UNLOCK: agent=<OLD> issue=#<ISSUE> batch_pr=#<PR> ts=<ISO8601> mode=batch-slice reason=handoff-to-<NEW>`
+
+Danach setzt der neue Writer ein neues Lock-Paar. Vor dessen Revalidierung darf
+er weder committen noch pushen oder PR-/Issue-Inhalte verändern.
+
+### 4.4 HARD STOP bei explizitem Stop-Signal
 
 Wenn der User oder der koordinierende Lead explizit schreibt:
 
@@ -178,19 +200,7 @@ Erlaubt sind dann nur noch:
 - nächsten geplanten Schritt benennen
 - auf neue explizite Freigabe warten
 
-### 4.3 Writer-Handoff (verbindlich)
-
-Ein Writer-Wechsel ist nur über explizite Übergabe erlaubt.
-
-**UNLOCK-Format (exakt):**
-
-`UNLOCK: agent=<OLD> issue=#<ISSUE> ts=<ISO8601> reason=handoff-to-<NEW>`
-
-Danach setzt der neue Writer als ersten Schritt den neuen `LOCK:`-Kommentar im
-definierten Format. Vor diesem neuen `LOCK:` darf der neue Agent nichts
-Schreibendes tun.
-
-### 4.4 Lock-Verstoß vermeiden (fail-closed)
+### 4.5 Lock-Verstoß vermeiden (fail-closed)
 
 Wenn ein Agent erkennt, dass eine beabsichtigte Aktion gegen diese
 Single-Writer-Regel verstoßen würde, gilt:
@@ -205,10 +215,13 @@ Single-Writer-Regel verstoßen würde, gilt:
 - `knowledge/**`
 - `knowledge/logs/**`
 - `.cdb_agent_workspace/**` (lokal, gitignored, Claire de Binare repository)
+- eng begrenzte Repo-Code-, Test-, Docs- und Konfigurations-Slices nach
+  explizitem Human-GO, erfolgreichem PR-Routing und aktivem Lock
 
 ### Verbotene persistente Writes
-- `knowledge/governance/**`
-- Claire de Binare repository-Code (`/core`, `/services`, `/infrastructure`, `/tests`)
+- `knowledge/governance/**`; die einzige Ausnahme ist die oben dokumentierte,
+  einmalige Transition #4202 in ihrem genehmigten Foundation-Diff
+- Repo-Code, Tests oder Infrastruktur außerhalb des gerouteten Issue-Scope
 - Tresor-Zone (`CDB_TRESOR_POLICY.md`)
 
 ---

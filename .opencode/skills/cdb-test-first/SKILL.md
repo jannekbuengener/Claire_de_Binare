@@ -2,7 +2,7 @@
 Canonical Skill Source: docs/skills/cdb-test-first/SKILL.md
 Surface: opencode
 Sync Status: mirrored-from-canon
-Last Verified: 2026-07-01
+Last Verified: 2026-07-30
 Drift Policy: Surface-Adapter duerfen nur mit dokumentierter Begruendung abweichen.
 -->
 ---
@@ -152,3 +152,16 @@ Test-first planning references external testing and linting tools:
 - `knowledge/testing/MOCKEXCHANGE_CDB_TEST_MAP.md` — MockExchange pattern translations
 - `knowledge/testing/SKILL_VALLEY_TEST_UPGRADE_PLAN.md` — upgrade plan (R1-R8)
 - `knowledge/testing/README.md` — testing knowledge index
+
+## PR-Routing Test Profiles
+
+Für Router- und Batch-Flow-Änderungen zuerst Schutztests formulieren:
+
+- **Bauteil-Test:** pure Routing-, Lock-, Marker-, Ledger- und Trigger-Engine.
+- **Agenten-Wissens-Test:** Router-before-branch und Slice-Close ohne Merge.
+- **Wissens-Test:** Canon-, Registry- und Mirror-Parität.
+- **Contract-Test:** Commit Status versus Check Run sowie `gh api` Publisher.
+
+Jeder Test benennt, ob er `slice` oder `final_batch_head` schützt. Slice-Tests
+dürfen keine vollständige Fast-CI oder `cdb-local-ci` voraussetzen; der finale
+Merge-Head muss beide verlangen.

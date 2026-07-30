@@ -269,3 +269,17 @@ If no internet/browsing is available, report `EXTERNAL_DOCS_UNVERIFIED` instead 
   solo-maintainer repo.
 - Do not treat repo presence of MCP files, registry entries, or `tools/mcp/server.py`
   as proof that a tool is callable through the active MCP surface.
+
+## PR Routing Gate
+
+Nach Git-Truth, Bootloader und Live-Dedupe MUSS `cdb-pr-router`
+vor Branch-, Worktree- oder PR-Erstellung und vor Plan-Finalisierung laufen.
+
+```powershell
+python -m tools.pr_routing route --issue <ISSUE> --agent <AGENT>
+```
+
+Die Session dokumentiert Ziel-PR, Zielbranch, Lane, Validation Profile,
+Lock-State und Reason Codes. Bei `HOLD_*`, unvollständigem Inventar oder fremdem
+Lock endet der Start fail-closed. Ein neuer Branch ist nur nach
+`CREATE_NEW_BATCH_PR` oder `CREATE_DEDICATED_PR` zulässig.

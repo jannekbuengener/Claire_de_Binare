@@ -1,6 +1,6 @@
 ---
 name: cdb-operator
-description: Enforces Claire de Binare operator workflow: bootloader first, live GitHub truth, dry-run planning, strict GO gates. Autonomous squash-merge is allowed only when the full capability gate (docs/runbooks/merge_policy_ci_gate.md) is proven for the exact PR head; otherwise honest DONE_PR_OPEN_MERGE_HANDOFF, never --admin.
+description: Enforces Claire de Binare operator workflow with router-first slice delivery as the default. Merge is a separate mode only for a frozen merge_candidate after the final integrated head/base capability gate is proven; otherwise honest DONE_PR_OPEN_MERGE_HANDOFF, never --admin.
 compatibility: opencode
 metadata:
   project: claire-de-binare
@@ -24,11 +24,13 @@ Use this skill when working on Claire_de_Binare with OpenCode.
 6. Treat `CURRENT_STATUS.md` as ledger, not live truth.
 7. Produce only Lage, Befund, Plan, Dry-Run, Validierung, Restunsicherheiten.
 8. Do not write, commit, push, comment, label, or close without explicit human GO.
-9. Merge is capability-based, not agent-type-based: after Plan-GO, a squash
-   merge (`gh pr merge <PR> --squash --delete-branch`) is autonomous and
-   allowed only when every capability gate in
+9. Delivery is the default after Plan-GO: route first, deliver the scoped slice,
+   update ledger and Issue handoff, then stop without merge or Issue closure.
+   A squash merge (`gh pr merge <PR> --squash --delete-branch`) is considered
+   only in a separately authorized Merge Mode after the PR is frozen as
+   `merge_candidate` and every capability gate in
    `docs/runbooks/merge_policy_ci_gate.md` § Capability-based autonomous
-   merge is proven for the exact PR head (task allows autonomous merge, PR
+   merge is proven for the exact final PR head (task explicitly allows merge, PR
    in scope/mergeable/no blocking reviews, local Fast-CI PASS bound to head,
    main unchanged since validation, `cdb-local-ci` SUCCESS on exact head,
    session can perform the merge). `--admin` is never a substitute for a
@@ -43,9 +45,20 @@ Use this skill when working on Claire_de_Binare with OpenCode.
 
 ## Stop conditions
 
-Stop immediately on missing bootloader, unclear scope, unexpected diff, red
-`cdb-local-ci` (the sole required merge context; Hosted Actions red is
-advisory), a capability gate unproven for merge, scope growth, any
+Stop immediately on missing bootloader, unclear scope, unexpected diff, failed
+targeted slice validation, or scope growth. In Merge Mode also stop on red
+`cdb-local-ci` for the exact final head (the sole required merge context;
+Hosted Actions red is advisory) or any unproven merge capability. Also stop on
 live-readiness/echtgeld implication, or a cleanup request that would
 discard unsaved/unmerged local work.
+
+## Delivery Mode versus Merge Mode
+
+- **Delivery Mode:** Router ausführen, Slice in den zugewiesenen PR liefern,
+  targeted Validation, Ledger-/Issue-Handoff, kein Merge.
+- **Merge Mode:** nur für `merge_candidate`; Intake einfrieren, Base integrieren,
+  kombinierten Diff reviewen, Full Fast-CI und exact-SHA `cdb-local-ci`.
+
+Ein Merge-Trigger ist kein Human-GO und keine Merge-Autorisierung. Head- oder
+Base-Drift invalidiert die Final-Evidence.
 

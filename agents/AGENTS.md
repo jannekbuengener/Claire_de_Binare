@@ -59,6 +59,11 @@ shared contract § Zone A vs Write-Zone).
 
 Invocation: `/cdb-<name>` (e.g. `/cdb-governance-gatekeeper`).
 
+`/cdb-pr-steward` ist der read-only Routing-Helper. Er MUSS den kanonischen
+`cdb-pr-router` ausführen und Evidence plus Routing-Entscheidung liefern, bevor
+der Parent einen Branch, Worktree oder PR erzeugt. Er besitzt den PR nicht und
+führt keine Writes aus.
+
 Related surfaces (not subagents): `.cursor/skills/` (session skills),
 `.opencode/skills/` (OpenCode), `.claude/skills/` (Claude Code), `.codex/cdb_skills/` (Codex).
 
@@ -71,6 +76,8 @@ versionierte Root-Flächen für `.claude/`, `.codex/`, `.cursor/`, `.gemini/`, `
   - Gemeinsame Agenten-Entrypoints und lokale Agenten-Navigation.
 - `.cursor/agents/`
   - Cursor subagent definitions (helper roles; shared contract required).
+- `docs/skills/cdb-pr-router/SKILL.md`
+  - Read-only PR-routing gate before Session-Plan and work-surface creation.
 - `knowledge/governance/`
   - Kanonische Governance-, Policy- und Invariant-Dokumente.
 - `knowledge/`
