@@ -141,12 +141,29 @@ def _clear_open_residuals() -> None:
     _set_inactive()
 
 
-def _wait_for_message(pubsub, *, timeout_s: float = 10.0) -> dict | None:
+def _wait_for_message(
+    pubsub,
+    *,
+    timeout_s: float = 30.0,
+    order_id: str | None = None,
+    client_id: str | None = None,
+) -> dict | None:
     deadline = time.monotonic() + timeout_s
     while time.monotonic() < deadline:
         message = pubsub.get_message(timeout=0.25)
-        if message and message["type"] == "message":
-            return json.loads(message["data"])
+        if not message or message["type"] != "message":
+            continue
+        data = json.loads(message["data"])
+        # Mock may rewrite order_id to MOCK_*; prefer client_id match.
+        if client_id is not None:
+            if data.get("client_id") == client_id:
+                return data
+            continue
+        if order_id is not None:
+            if data.get("order_id") == order_id:
+                return data
+            continue
+        return data
     return None
 
 
@@ -187,13 +204,20 @@ def _is_schema_mapped_resting_open(result: dict) -> bool:
 
 
 def _send_resting_order(client: redis.Redis, *, suffix: str) -> dict:
+    order_id = f"4185-{suffix}"
+    client_id = f"4185-client-{suffix}"
     pubsub = client.pubsub()
     pubsub.subscribe("order_results")
-    pubsub.get_message(timeout=1)
+    # Drain subscribe ack; ignore any stale payloads.
+    drain_deadline = time.monotonic() + 1.0
+    while time.monotonic() < drain_deadline:
+        msg = pubsub.get_message(timeout=0.1)
+        if msg is None:
+            break
     payload = {
         "type": "order",
-        "order_id": f"4185-{suffix}",
-        "client_id": f"4185-client-{suffix}",
+        "order_id": order_id,
+        "client_id": client_id,
         "decision_id": f"4185-decision-{suffix}",
         "strategy_id": "issue-4185-drill",
         "symbol": "BTC/USDT",
@@ -201,9 +225,11 @@ def _send_resting_order(client: redis.Redis, *, suffix: str) -> dict:
         "quantity": 0.001,
     }
     assert client.publish("orders", json.dumps(payload)) >= 1
-    result = _wait_for_message(pubsub)
+    result = _wait_for_message(
+        pubsub, timeout_s=30.0, order_id=order_id, client_id=client_id
+    )
     pubsub.close()
-    assert result is not None
+    assert result is not None, f"no order_results for {order_id}"
     return result
 
 

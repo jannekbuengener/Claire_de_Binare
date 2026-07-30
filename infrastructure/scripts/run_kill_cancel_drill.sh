@@ -298,11 +298,18 @@ client = redis.Redis(host=os.environ["REDIS_HOST"], port=6379, password=secret, 
 client.ping()
 
 def send(suffix: str):
-    pub = client.pubsub(); pub.subscribe("order_results"); pub.get_message(timeout=1)
+    order_id = f"4185-restart-{suffix}"
+    client_id = f"4185-restart-client-{suffix}"
+    pub = client.pubsub()
+    pub.subscribe("order_results")
+    drain_until = time.time() + 1.0
+    while time.time() < drain_until:
+        if pub.get_message(timeout=0.1) is None:
+            break
     payload = {
         "type": "order",
-        "order_id": f"4185-restart-{suffix}",
-        "client_id": f"4185-restart-client-{suffix}",
+        "order_id": order_id,
+        "client_id": client_id,
         "decision_id": f"4185-restart-decision-{suffix}",
         "strategy_id": "issue-4185-drill",
         "symbol": "BTC/USDT",
@@ -310,15 +317,16 @@ def send(suffix: str):
         "quantity": 0.001,
     }
     assert client.publish("orders", json.dumps(payload)) >= 1
-    deadline = time.time() + 15
+    deadline = time.time() + 30
     while time.time() < deadline:
         msg = pub.get_message(timeout=0.5)
         if msg and msg.get("type") == "message":
             data = json.loads(msg["data"])
-            pub.close()
-            return data
+            if data.get("client_id") == client_id:
+                pub.close()
+                return data
     pub.close()
-    raise RuntimeError("no order result")
+    raise RuntimeError(f"no order result for {order_id}")
 
 def is_schema_mapped_resting_open(result: dict) -> bool:
     # EVENT_SCHEMA maps PENDING/SUBMITTED -> ERROR on pub/sub order_results.
