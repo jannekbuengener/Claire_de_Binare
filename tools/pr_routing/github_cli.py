@@ -411,6 +411,14 @@ class GhReadOnlyInventory:
                 head_ref_oid=head_ref_oid or "",
                 path_threshold=path_threshold,
             )
+            merge_mode = "dedicated"
+            if "cdb-batch-pr:v1" in body:
+                # Prefer the marker's merge_mode so dedicated PRs that carry a
+                # ledger/marker are not misclassified as batch-only.
+                mode_match = re.search(
+                    r"(?m)^merge_mode:\s*(batch|dedicated)\s*$", body
+                )
+                merge_mode = mode_match.group(1) if mode_match else "batch"
             candidates.append(
                 CandidatePullRequest(
                     number=number,
@@ -426,7 +434,7 @@ class GhReadOnlyInventory:
                     changed_files=changed_files,
                     additions=int(details.get("additions") or 0),
                     deletions=int(details.get("deletions") or 0),
-                    merge_mode=("batch" if "cdb-batch-pr:v1" in body else "dedicated"),
+                    merge_mode=merge_mode,
                     changed_file_paths=paths,
                     file_contents=contents,
                     inventory_complete=inventory_complete,
