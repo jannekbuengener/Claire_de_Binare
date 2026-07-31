@@ -52,10 +52,9 @@ agent prompt.
 5. Prefer verified Context/MCP evidence when available; otherwise declare
    `brain_source=repo-only` and use repo/GitHub live cross-checks.
 6. For issue work, verify GitHub live state before writing.
-7. Respect the single-writer lock from `CDB_AGENT_POLICY.md` section 4. Do not
-   treat an issue-only status comment as satisfying the policy lock; the required
-   `LOCK:` must be the first PR comment on the associated PR before further
-   push, PR update, or follow-up GitHub mutation.
+7. Run `cdb-pr-router` before plan, branch, worktree, or PR creation. Respect
+   the paired Issue-/PR single-writer lock from `CDB_AGENT_POLICY.md` section 4;
+   either side alone is `PARTIAL_LOCK` and blocks writes.
 
 ## Safety And LR Boundaries
 
@@ -80,13 +79,13 @@ flowchart TD
     B --> D[Docs Index]
     C --> E[Choose Small Issue]
     D --> E
-    E --> F[Create Branch]
-    F --> G[Make Scoped Docs Change]
-    G --> H[Run Validation]
-    H --> I[Open PR]
-    I --> J[Required Checks Green]
-    J --> K[Merge After Scope Review]
-    K --> L[Comment And Close Issue]
+    E --> F[Run PR Router]
+    F --> G[Reuse Assigned PR Or Create When Permitted]
+    G --> H[Establish Paired Lock]
+    H --> I[Make Scoped Docs Slice]
+    I --> J[Run Targeted Validation]
+    J --> K[Ledger And Issue Handoff]
+    K --> L[Stop Without Default Merge]
 ```
 
 ## Repo Brain / Context Intelligence Flow

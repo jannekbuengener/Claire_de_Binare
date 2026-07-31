@@ -10,6 +10,19 @@ or references to hidden ChatGPT/internal documents.
 Docs/UI sind Orientierung, keine Autoritaet. LR bleibt NO-GO. No Live-Go. No
 Echtgeld-Go.
 
+## PR Routing (Pflicht)
+
+Vor Plan-Finalisierung, Branch-, Worktree- oder PR-Erstellung:
+
+```powershell
+python -m tools.pr_routing route --issue <issue-number> --agent <agent-id>
+```
+
+Der Prompt muss die Router-Ausgabe mit Ziel-PR/-Branch, Lane, Validation
+Profile, Lock-State und Reason Codes enthalten. `HOLD_*` stoppt alle Writes.
+Der normale Abschluss ist `DONE_SLICE_ADDED_TO_BATCH_PR`; Merge und
+Issue-Closure sind kein Session-Default.
+
 ## Aufgabe
 
 Bearbeite CDB Issue `<issue-number>`:
@@ -120,18 +133,21 @@ rg -n "Live-Go|Echtgeld-Go|LR bleibt NO-GO|Docs/UI sind Orientierung" <target-pa
 
 ## Issue-/PR-Regeln
 
-- Check the target issue and matching open PRs for existing `LOCK:` comments
-  before becoming the writer.
-- Create a branch from current `main` only after the writer surface is clear.
+- Run `cdb-pr-router` before Plan, Branch, Worktree or PR creation.
+- Reuse the uniquely compatible PR; multiple candidates or lock ambiguity mean
+  HOLD.
+- Create a branch only after `CREATE_NEW_BATCH_PR` or `CREATE_DEDICATED_PR`.
 - Commit only intended files.
-- Open a PR with summary, changed files, validation, scope boundary,
-  Safety/LR statement, and issue links.
-- Post the exact `LOCK:` as the first PR comment on the associated PR before
-  further push, PR update, or follow-up GitHub mutation; an issue-only status
-  comment does not satisfy the PR lock requirement.
-- Do not merge while required checks are red or scope is unclear.
-- Comment the target issue with the PR link after PR creation.
-- After merge, comment and close only if the merged diff satisfies acceptance.
+- Require matching Issue-/PR-Level Locks before writing a Batch-PR.
+- End a normal Slice with targeted Validation, Ledger update, Issue handoff and
+  `DONE_SLICE_ADDED_TO_BATCH_PR`.
+- Do not publish `cdb-local-ci`, merge or close the Issue for an intermediate
+  Slice.
+- Only a frozen `merge_candidate` enters Full Fast-CI, exact-SHA status and
+  normal squash-merge gates. Never use `--admin` as a bypass.
+- After a live-verified merge (`DONE_MERGED_CLOSED`), comment and close only
+  if the merged diff satisfies acceptance. Do not re-push a remote branch
+  deleted by `--delete-branch`.
 
 ## Safety
 

@@ -14,6 +14,7 @@ def run(ctx: StageContext) -> StageResult:
         commands=[
             [py, "-m", "tools.validate_onboarding_docs"],
             [py, "-m", "tools.validate_readme_links"],
+            [py, "-m", "tools.validate_status_freshness"],
             [py, "-m", "tools.ci.docs_conflict_guard"],
             [py, "-m", "tools.ci.repository_canon_guard"],
         ],

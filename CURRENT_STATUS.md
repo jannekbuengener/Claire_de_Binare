@@ -3,20 +3,40 @@
 **Status Class**: Claire de Binare repository / Engineering Status
 **Authority**: Current repo/main/test/dependency snapshot; not the canonical live-readiness or Echtgeld Go/No-Go source.
 **Operational Canon**: `docs/live-readiness/LR-AUDIT-STATUS-2026-03-05.md`
-**Last Updated**: 2026-07-29
+<!-- cdb:status-freshness header-date=2026-07-31 -->
+**Last Updated**: 2026-07-31
 **GitHub Boundary**: The live commit and PR state is tracked in GitHub (UI/API or `gh`); this file is a curated repo/engineering ledger, not a live mirror.
+**Freshness Guard**: Only the newest dated block below is a live claim. Everything from the previous dated block onward is marked `historical as of` and is append-only. Marker convention: [`docs/meta/REPOSITORY_CANON.md`](docs/meta/REPOSITORY_CANON.md); validator: `python -m tools.validate_status_freshness`.
 
 ---
 
-## Repo / Engineering Status (2026-07-29)
+## Repo / Engineering Status (2026-07-31)
 
-- **#4184 Reduce-only Unwind Contract (PR #4187)**: expliziter,
-  PostgreSQL-gebundener Mock-/Shadow-Execution-Contract für Long/Short, Full/
-  Partial Fill, Rejection, Duplicate und Restart. Code-Commit-Drill
-  `4184_d89b8333_20260729T210152Z`:
-  `PASS_REDUCE_ONLY_PROVEN_MOCK_SHADOW`, kein Positionsanstieg, kein Side Flip,
-  Cleanup PASS. Produktiver Adapter weiterhin unbewiesen/fail-closed;
-  Stop-Loss Protection `UNAVAILABLE`; LR `NO-GO`.
+<!-- cdb:live-claim type=main_sha value=eddcd1bc -->
+- **Confirmed main state**: `origin/main` @ `eddcd1bc` — same snapshot as the [`README.md`](README.md) Current-main section. Both surfaces are reconciled against this commit (post wave PRs [#4238](https://github.com/jannekbuengener/Claire_de_Binare/pull/4238)–[#4241](https://github.com/jannekbuengener/Claire_de_Binare/pull/4241)).
+
+<!-- cdb:live-claim type=issue_state issue=3995 state=closed -->
+<!-- cdb:live-claim type=issue_state issue=4005 state=closed -->
+<!-- cdb:live-claim type=issue_state issue=4204 state=closed -->
+<!-- cdb:live-claim type=issue_state issue=4228 state=closed -->
+- **#4119 Status-SSOT reconcile**: Delivery slice — README-Snapshot und dieser Block referenzieren denselben bestaetigten Main-Stand. GitHub-live nachgezogen: [#3995](https://github.com/jannekbuengener/Claire_de_Binare/issues/3995) **CLOSED** (PR [#4018](https://github.com/jannekbuengener/Claire_de_Binare/pull/4018) @ `60ddf8b3`) und [#4005](https://github.com/jannekbuengener/Claire_de_Binare/issues/4005) **CLOSED** (PR [#4024](https://github.com/jannekbuengener/Claire_de_Binare/pull/4024) @ `13eab660`); beide erscheinen nicht mehr als aktuelle offene Delivery. Aeltere Ledger-Zeilen, die sie damals als offen fuehrten, bleiben unveraendert im historischen Block. Reconciles auf `main`: PR [#4099](https://github.com/jannekbuengener/Claire_de_Binare/pull/4099) (kanonische Root-Informationsarchitektur), PR [#4103](https://github.com/jannekbuengener/Claire_de_Binare/pull/4103) (Workflow-Bereinigung + Control-Plane-Docs), PR [#4104](https://github.com/jannekbuengener/Claire_de_Binare/pull/4104) (Post-Merge-Workflow-Audit-Luecken), PR [#4105](https://github.com/jannekbuengener/Claire_de_Binare/pull/4105) (Single Repository Canon). Neu: semantischer Freshness-Guard `tools/validate_status_freshness.py` in der CI-Docs-Stage. LR **NO-GO** unchanged.
+
+- **#4204 Fast-CI Slice Gates**: **DONE_MERGED_CLOSED** — PR [#4236](https://github.com/jannekbuengener/Claire_de_Binare/pull/4236) squash-merged @ `e96f724c` (2026-07-31). Versioned slice policy, fail-closed unknown-path → full Fast-CI, `merge_evidence=false` publish rejection, unit/stage timing evidence; Final-Head selector unchanged. LR **NO-GO** unchanged.
+
+- **#4228 PR-Router Real Conventions**: **DONE_MERGED_CLOSED** — PR [#4231](https://github.com/jannekbuengener/Claire_de_Binare/pull/4231) squash-merged @ `e5711c2a` (2026-07-31). Policy/matcher aligned to live title tokens and `scope:*`/`type:*` labels; actionable `repair_hints` + safe `CREATE_NEW_BATCH_PR`. LR **NO-GO** unchanged.
+
+- **#4184 Reduce-only Unwind Contract (PR #4187)**: Acceptance/Merge in progress — main integrated into `fix/4184-reduce-only-unwind-contract` (kill-cancel + reduce-only coexistence); Fast-CI / `cdb-local-ci` / Completeness pending on final head. Refs only until merge SHA verified; #4152/#4147 remain open. LR **NO-GO** unchanged.
+
+<!-- cdb:historical-as-of date=2026-07-30 -->
+> Historical as of 2026-07-30 — append-only ledger. Entries below record the
+> state at their own date and are intentionally not rewritten when reality
+> moves on. They are exempt from live freshness verification.
+
+## Repo / Engineering Status (2026-07-30)
+
+- **PR-Acceptance Skill Family**: **DONE_PR_ACCEPTANCE_SKILL_FAMILY_MERGED** — PR [#4211](https://github.com/jannekbuengener/Claire_de_Binare/pull/4211) @ `be969889…` (`cdb-integration-wiring-audit`, `cdb-pr-gap-classifier`, policy+schema). CI foundation [#4212](https://github.com/jannekbuengener/Claire_de_Binare/pull/4212)/#4205 + [#4213](https://github.com/jannekbuengener/Claire_de_Binare/pull/4213)/#4206 on main. Batch2 [#4216](https://github.com/jannekbuengener/Claire_de_Binare/pull/4216) @ d47ee745… delivered Completeness+Conductor; family complete (#4207–#4210 CLOSED). #4184/PR #4187 untouched. LR **NO-GO** unchanged.
+
+## Repo / Engineering Status (2026-07-28)
 
 - **PR-queue clearing PLAN-GO (final)**: **PARTIAL** — Open start queue reduced from 22 → **2**. Merged: [#4171](https://github.com/jannekbuengener/Claire_de_Binare/pull/4171) Actions patch, [#4172](https://github.com/jannekbuengener/Claire_de_Binare/pull/4172) Actions major, [#4173](https://github.com/jannekbuengener/Claire_de_Binare/pull/4173) Python deps, [#4177](https://github.com/jannekbuengener/Claire_de_Binare/pull/4177) python trixie digest D1, [#4178](https://github.com/jannekbuengener/Claire_de_Binare/pull/4178) python bookworm digest D2, [#4179](https://github.com/jannekbuengener/Claire_de_Binare/pull/4179) Redis 8.8.1; tip `main` @ `14b1bc57`. Holds: **#4154** `HOLD_4154_ACCEPTANCE_GAP` (#4148 OPEN); **#4162** Grafana `HOLD_REAL_BLOCKER` (Docker Desktop unable to start; Trivy delta incomplete). Follow-up [#4174](https://github.com/jannekbuengener/Claire_de_Binare/issues/4174). Prior partial ledger entry superseded by this line. LR **NO-GO** unchanged.
 
@@ -482,6 +502,8 @@
 - **Session 2026-05-29 (#2606 follow-up roadmap)**: Parent-DoD follow-up issues angelegt: #2701 (agent output contract), #2702 (DB stale scan), #2703 (write path v1), #2704 (MCP write design), #2705 (closure audit). Index-Kommentar: https://github.com/jannekbuengener/Claire_de_Binare/issues/2606#issuecomment-4573401988. #2606 bleibt OPEN; Gatekeeper **BLOCKED**. Kein Code/DB/MCP-Change. Session-Log: `knowledge/logs/sessions/2026-05-29-2606-followup-roadmap-issues.md`.
 
 ---
+
+<!-- cdb:historical-end -->
 
 ## Live-Readiness
 

@@ -37,6 +37,7 @@ class RegimeConfig:
     atr_period: int = _required_int("REGIME_ATR_PERIOD")
     adx_trend_threshold: float = _required_float("REGIME_ADX_TREND_THRESHOLD")
     adx_range_threshold: float = _required_float("REGIME_ADX_RANGE_THRESHOLD")
+    # Unit: atr_over_close (dimensionless ATR/close ratio). Not absolute price ATR.
     atr_high_vol_threshold: float = _required_float("REGIME_ATR_HIGH_VOL_THRESHOLD")
     confirmation_bars: int = _required_int("REGIME_CONFIRMATION_BARS")
 
@@ -46,6 +47,8 @@ class RegimeConfig:
 
     source_version: str = os.getenv("REGIME_SOURCE_VERSION", "1")
     schema_version: str = "1"
+    # Explicit semantics marker for config snapshots / emits (#4149).
+    atr_high_vol_unit: str = "atr_over_close"
 
     def validate(self) -> bool:
         if self.adx_period <= 0:
@@ -54,8 +57,14 @@ class RegimeConfig:
             raise ValueError("REGIME_ATR_PERIOD muss > 0 sein")
         if self.adx_trend_threshold <= self.adx_range_threshold:
             raise ValueError("ADX Trend Threshold muss > Range Threshold sein")
+        if self.atr_high_vol_threshold <= 0:
+            raise ValueError(
+                "REGIME_ATR_HIGH_VOL_THRESHOLD muss > 0 sein (unit: atr_over_close)"
+            )
         if self.confirmation_bars <= 0:
             raise ValueError("REGIME_CONFIRMATION_BARS muss > 0 sein")
+        if self.heartbeat_interval_s <= 0:
+            raise ValueError("REGIME_HEARTBEAT_INTERVAL_S muss > 0 sein")
         return True
 
 

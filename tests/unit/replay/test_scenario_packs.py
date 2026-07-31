@@ -7,7 +7,11 @@ from pathlib import Path
 
 import pytest
 
-from core.replay.scenario_harness import ScenarioHarnessError, ScenarioRunResult, ScenarioSpec
+from core.replay.scenario_harness import (
+    ScenarioHarnessError,
+    ScenarioRunResult,
+    ScenarioSpec,
+)
 from core.replay.scenario_packs import (
     BUILTIN_SCENARIO_IDS,
     ScenarioPackError,
@@ -15,7 +19,6 @@ from core.replay.scenario_packs import (
     list_builtin_scenario_ids,
     run_builtin_scenario_group,
 )
-
 
 # ---------------------------------------------------------------------------
 # Helpers
@@ -91,10 +94,10 @@ class TestGetScenarioPack:
         overrides = spec.config_overrides
         perturbation_keys = {
             "execution_slippage_bps",
-            "fill_rate",
+            "usable_depth_fraction",
             "execution_posture",
             "execution_delay_bars",
-            "fill_depth_factor",
+            "depth_impact_factor",
             "feed_gap_bars",
         }
         assert not perturbation_keys.intersection(overrides.keys())
@@ -110,7 +113,8 @@ class TestGetScenarioPack:
         spec = get_scenario_pack("pessimistic_execution")
         o = spec.config_overrides
         assert o["execution_slippage_bps"] == 30
-        assert o["fill_rate"] == 0.7
+        assert o["usable_depth_fraction"] == 0.7
+        assert "fill_rate" not in o
         assert o["execution_posture"] == "pessimistic"
         assert o["pack_id"] == "pessimistic_execution"
         assert o["pack_version"] == "1"
@@ -130,7 +134,8 @@ class TestGetScenarioPack:
     def test_low_liquidity_overrides(self) -> None:
         spec = get_scenario_pack("low_liquidity")
         o = spec.config_overrides
-        assert o["fill_depth_factor"] == 0.3
+        assert o["depth_impact_factor"] == 0.3
+        assert "fill_depth_factor" not in o
         assert o["execution_posture"] == "low_liquidity"
         assert o["pack_id"] == "low_liquidity"
 
@@ -233,10 +238,14 @@ class TestRunBuiltinScenarioGroup:
             ids, run_fn=_success_fn, output_dir=tmp_path / "run2"
         )
         specs1 = json.loads(
-            (Path(manifest1.artifact_root) / "scenario_specs.json").read_text(encoding="utf-8")
+            (Path(manifest1.artifact_root) / "scenario_specs.json").read_text(
+                encoding="utf-8"
+            )
         )
         specs2 = json.loads(
-            (Path(manifest2.artifact_root) / "scenario_specs.json").read_text(encoding="utf-8")
+            (Path(manifest2.artifact_root) / "scenario_specs.json").read_text(
+                encoding="utf-8"
+            )
         )
         assert specs1 == specs2
 

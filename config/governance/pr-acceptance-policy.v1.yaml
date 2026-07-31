@@ -1,0 +1,411 @@
+{
+  "schema_version": "cdb-pr-acceptance-policy/v1",
+  "policy_id": "cdb-pr-acceptance-v1",
+  "evidence_marker": "<!-- cdb-pr-acceptance:v1 -->",
+  "producers": [
+    "cdb-integration-wiring-audit",
+    "cdb-pr-gap-classifier",
+    "cdb-pr-completeness-review",
+    "cdb-batch-merge-conductor"
+  ],
+  "lifecycle": {
+    "states": [
+      "ACCEPTING_SLICES",
+      "SLICE_IN_REVIEW",
+      "COMPLETENESS_REVIEW",
+      "EXTENSION_REQUIRED",
+      "MERGE_CANDIDATE",
+      "FROZEN",
+      "FINAL_VALIDATION",
+      "MERGED",
+      "BLOCKED"
+    ],
+    "allowed_transitions": {
+      "ACCEPTING_SLICES": [
+        "SLICE_IN_REVIEW",
+        "COMPLETENESS_REVIEW",
+        "BLOCKED"
+      ],
+      "SLICE_IN_REVIEW": [
+        "ACCEPTING_SLICES",
+        "COMPLETENESS_REVIEW",
+        "BLOCKED"
+      ],
+      "COMPLETENESS_REVIEW": [
+        "EXTENSION_REQUIRED",
+        "MERGE_CANDIDATE",
+        "ACCEPTING_SLICES",
+        "BLOCKED"
+      ],
+      "EXTENSION_REQUIRED": [
+        "ACCEPTING_SLICES",
+        "SLICE_IN_REVIEW",
+        "COMPLETENESS_REVIEW",
+        "BLOCKED"
+      ],
+      "MERGE_CANDIDATE": [
+        "FROZEN",
+        "COMPLETENESS_REVIEW",
+        "BLOCKED"
+      ],
+      "FROZEN": [
+        "FINAL_VALIDATION",
+        "COMPLETENESS_REVIEW",
+        "BLOCKED"
+      ],
+      "FINAL_VALIDATION": [
+        "MERGED",
+        "FROZEN",
+        "COMPLETENESS_REVIEW",
+        "BLOCKED"
+      ],
+      "MERGED": [],
+      "BLOCKED": [
+        "ACCEPTING_SLICES",
+        "SLICE_IN_REVIEW",
+        "COMPLETENESS_REVIEW"
+      ]
+    },
+    "forbidden_transitions": [
+      [
+        "ACCEPTING_SLICES",
+        "MERGE_CANDIDATE"
+      ],
+      [
+        "ACCEPTING_SLICES",
+        "FROZEN"
+      ],
+      [
+        "ACCEPTING_SLICES",
+        "FINAL_VALIDATION"
+      ],
+      [
+        "ACCEPTING_SLICES",
+        "MERGED"
+      ],
+      [
+        "SLICE_IN_REVIEW",
+        "MERGE_CANDIDATE"
+      ],
+      [
+        "SLICE_IN_REVIEW",
+        "FROZEN"
+      ],
+      [
+        "SLICE_IN_REVIEW",
+        "FINAL_VALIDATION"
+      ],
+      [
+        "SLICE_IN_REVIEW",
+        "MERGED"
+      ],
+      [
+        "COMPLETENESS_REVIEW",
+        "FROZEN"
+      ],
+      [
+        "COMPLETENESS_REVIEW",
+        "FINAL_VALIDATION"
+      ],
+      [
+        "COMPLETENESS_REVIEW",
+        "MERGED"
+      ],
+      [
+        "EXTENSION_REQUIRED",
+        "MERGE_CANDIDATE"
+      ],
+      [
+        "EXTENSION_REQUIRED",
+        "FROZEN"
+      ],
+      [
+        "EXTENSION_REQUIRED",
+        "FINAL_VALIDATION"
+      ],
+      [
+        "EXTENSION_REQUIRED",
+        "MERGED"
+      ],
+      [
+        "MERGE_CANDIDATE",
+        "ACCEPTING_SLICES"
+      ],
+      [
+        "MERGE_CANDIDATE",
+        "MERGED"
+      ],
+      [
+        "FROZEN",
+        "ACCEPTING_SLICES"
+      ],
+      [
+        "FROZEN",
+        "MERGED"
+      ],
+      [
+        "FINAL_VALIDATION",
+        "ACCEPTING_SLICES"
+      ],
+      [
+        "MERGED",
+        "ACCEPTING_SLICES"
+      ],
+      [
+        "MERGED",
+        "MERGE_CANDIDATE"
+      ],
+      [
+        "MERGED",
+        "FROZEN"
+      ],
+      [
+        "MERGED",
+        "FINAL_VALIDATION"
+      ],
+      [
+        "MERGED",
+        "BLOCKED"
+      ]
+    ],
+    "trigger_semantics": "A routing merge trigger sets transport steward_state=merge_candidate, but acceptance lifecycle starts at COMPLETENESS_REVIEW. Only a green completeness verdict promotes acceptance state to MERGE_CANDIDATE."
+  },
+  "steward_acceptance_mapping": {
+    "accepting_slices": [
+      "ACCEPTING_SLICES",
+      "SLICE_IN_REVIEW"
+    ],
+    "merge_candidate": [
+      "COMPLETENESS_REVIEW",
+      "EXTENSION_REQUIRED",
+      "MERGE_CANDIDATE"
+    ],
+    "frozen": [
+      "FROZEN",
+      "FINAL_VALIDATION"
+    ],
+    "live_verified": [
+      "MERGED"
+    ]
+  },
+  "session_status_mappings": {
+    "DONE_SLICE_ADDED_TO_BATCH_PR": [
+      "ACCEPTING_SLICES",
+      "SLICE_IN_REVIEW"
+    ],
+    "DONE_BATCH1_TARGETED_VALIDATED_WAITING_CI_FOUNDATION": [
+      "ACCEPTING_SLICES",
+      "COMPLETENESS_REVIEW"
+    ],
+    "DONE_WIRING_SLICE_ADDED": [
+      "ACCEPTING_SLICES",
+      "SLICE_IN_REVIEW"
+    ],
+    "DONE_GAP_CLASSIFIER_SLICE_ADDED": [
+      "ACCEPTING_SLICES",
+      "SLICE_IN_REVIEW"
+    ],
+    "DONE_COMPLETENESS_SLICE_ADDED": [
+      "COMPLETENESS_REVIEW",
+      "EXTENSION_REQUIRED",
+      "MERGE_CANDIDATE"
+    ],
+    "DONE_CONDUCTOR_SLICE_ADDED": [
+      "FROZEN",
+      "FINAL_VALIDATION",
+      "MERGED",
+      "BLOCKED"
+    ],
+    "DONE_PR_ACCEPTANCE_SKILL_FAMILY_MERGED": [
+      "MERGED"
+    ]
+  },
+  "dimension_states": [
+    "PASS",
+    "FAIL",
+    "NOT_APPLICABLE",
+    "UNKNOWN"
+  ],
+  "dimension_rules": {
+    "NOT_APPLICABLE_requires_reason": true,
+    "UNKNOWN_blocks_MERGE_CANDIDATE": true,
+    "head_or_base_drift_invalidates_evidence": true
+  },
+  "run_status": [
+    "COMPLETE",
+    "BLOCKED",
+    "INVALIDATED_BY_DRIFT"
+  ],
+  "wiring_axes": [
+    "Entry Point",
+    "Registration / Discovery",
+    "Configuration",
+    "Dataflow",
+    "Persistence",
+    "Runtime",
+    "Failure Path",
+    "Observability",
+    "Documentation",
+    "Legacy / Bypass Risk"
+  ],
+  "wiring_verdicts": [
+    "UNREACHABLE_IMPLEMENTATION",
+    "BLOCKED_UNCLEAR_INTEGRATION",
+    "WIRING_REQUIRED_IN_CURRENT_PR",
+    "WIRING_FOLLOWUP_ALLOWED",
+    "WIRED_AND_REACHABLE"
+  ],
+  "wiring_verdict_precedence": [
+    "UNREACHABLE_IMPLEMENTATION",
+    "BLOCKED_UNCLEAR_INTEGRATION",
+    "WIRING_REQUIRED_IN_CURRENT_PR",
+    "WIRING_FOLLOWUP_ALLOWED",
+    "WIRED_AND_REACHABLE"
+  ],
+  "gap_classes": [
+    "MUST_FIX_IN_CURRENT_PR",
+    "FOLLOWUP_AFTER_MERGE",
+    "SEPARATE_DEDICATED_PR",
+    "PARKED_NOT_ACTIVE",
+    "NOT_A_REAL_GAP"
+  ],
+  "gap_classification_status": [
+    "CLASSIFIED",
+    "BLOCKED_INSUFFICIENT_EVIDENCE"
+  ],
+  "completeness_dimensions": [
+    "Funktionalität",
+    "Wiring / Integration",
+    "Konfiguration",
+    "Persistenz / Zustand",
+    "Runtime / Deployment",
+    "Tests / Validierung",
+    "Dokumentation / Runbooks / Contracts",
+    "Operative Readiness / Observability"
+  ],
+  "completeness_verdicts": [
+    "MERGE_CANDIDATE",
+    "CURRENT_PR_EXTENSION_REQUIRED",
+    "PR_SPLIT_REQUIRED",
+    "FOLLOWUP_SLICES_REQUIRED",
+    "BLOCKED_MISSING_EVIDENCE",
+    "BLOCKED_SCOPE_AMBIGUITY",
+    "BLOCKED_VALIDATION_GAP",
+    "BLOCKED_UNCLEAR_CLOSURE"
+  ],
+  "completeness_verdict_precedence": [
+    "BLOCKED_MISSING_EVIDENCE",
+    "BLOCKED_SCOPE_AMBIGUITY",
+    "BLOCKED_VALIDATION_GAP",
+    "BLOCKED_UNCLEAR_CLOSURE",
+    "PR_SPLIT_REQUIRED",
+    "CURRENT_PR_EXTENSION_REQUIRED",
+    "FOLLOWUP_SLICES_REQUIRED",
+    "MERGE_CANDIDATE"
+  ],
+  "conductor_blockcodes": [
+    "BLOCKED_SCOPE_OR_REVIEW",
+    "BLOCKED_HEAD_BASE_DRIFT",
+    "BLOCKED_LOCAL_VALIDATION",
+    "BLOCKED_REQUIRED_STATUS",
+    "BLOCKED_AUTH_PUBLISHER",
+    "BLOCKED_MERGE_METHOD",
+    "BLOCKED_ISSUE_CLOSEOUT"
+  ],
+  "block_codes": [
+    "BLOCKED_UNCLEAR_INTEGRATION",
+    "BLOCKED_INSUFFICIENT_EVIDENCE",
+    "BLOCKED_MISSING_EVIDENCE",
+    "BLOCKED_SCOPE_AMBIGUITY",
+    "BLOCKED_VALIDATION_GAP",
+    "BLOCKED_UNCLEAR_CLOSURE",
+    "BLOCKED_SCOPE_OR_REVIEW",
+    "BLOCKED_HEAD_BASE_DRIFT",
+    "BLOCKED_LOCAL_VALIDATION",
+    "BLOCKED_REQUIRED_STATUS",
+    "BLOCKED_AUTH_PUBLISHER",
+    "BLOCKED_MERGE_METHOD",
+    "BLOCKED_ISSUE_CLOSEOUT",
+    "INVALIDATED_BY_DRIFT"
+  ],
+  "delegation_matrix": {
+    "cdb-integration-wiring-audit": {
+      "reads": [
+        "live_pr",
+        "diff",
+        "entry_points",
+        "runtime_surfaces",
+        "docs"
+      ],
+      "delegates_to": [],
+      "forbidden": [
+        "writes",
+        "routing_engine",
+        "ci_decision_logic",
+        "issue_creation",
+        "implementation"
+      ]
+    },
+    "cdb-pr-gap-classifier": {
+      "reads": [
+        "prediscovered_findings",
+        "evidence_ids",
+        "claims"
+      ],
+      "delegates_to": [],
+      "forbidden": [
+        "finding_discovery",
+        "issue_creation",
+        "writes",
+        "class_guessing_without_evidence"
+      ]
+    },
+    "cdb-pr-completeness-review": {
+      "reads": [
+        "live_pr",
+        "ledger",
+        "acceptance_criteria",
+        "reviews"
+      ],
+      "delegates_to": [
+        "cdb-integration-wiring-audit",
+        "cdb-pr-gap-classifier",
+        "cdb-contract-evidence-gatekeeper",
+        "cdb-test-first",
+        "cdb-shadow-validation",
+        "cdb-ci-cd-guard",
+        "cdb-drift-reconcile"
+      ],
+      "forbidden": [
+        "merge_execution",
+        "issue_closure",
+        "writes"
+      ]
+    },
+    "cdb-batch-merge-conductor": {
+      "reads": [
+        "merge_candidate_bundle",
+        "live_pr",
+        "task_scope",
+        "locks"
+      ],
+      "delegates_to": [
+        "cdb-pr-completeness-review",
+        "cdb-ci-cd-guard",
+        "cdb-session-close"
+      ],
+      "forbidden": [
+        "human_merge_authorization_field",
+        "admin_merge",
+        "stale_evidence",
+        "own_ci_logic",
+        "own_routing_logic"
+      ]
+    }
+  },
+  "sha_rules": {
+    "head_sha_pattern": "^[a-f0-9]{40}$",
+    "base_sha_pattern": "^[a-f0-9]{40}$",
+    "lowercase_hex_only": true
+  }
+}

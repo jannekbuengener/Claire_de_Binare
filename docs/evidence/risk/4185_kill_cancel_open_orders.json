@@ -1,0 +1,84 @@
+{
+  "cancel_attempts": 2,
+  "commit_sha": "ae28496947e50fbb4f61ce5e420564e27142453d",
+  "fill_after_kill_events": [],
+  "kill_activated_at_utc": "2026-07-30T19:50:00.000000",
+  "kill_event_id": "kill_g1g2_fix",
+  "kill_reason": "manual",
+  "kill_state": "active",
+  "limitations": [
+    "Mock/dry-run cancel proof only; no productive venue activation",
+    "Positions are reported residual-only; no automatic unwind",
+    "No authoritative position SSOT in #4185 scope \u2014 UNKNOWN/HOLD is correct",
+    "Supersedes prior PASS+NONE/0.0 evidence at 59e31c60 (G1/G2 false PASS)"
+  ],
+  "open_order_source": "execution_open_order_registry",
+  "open_order_source_status": "ok",
+  "orders_already_terminal": 0,
+  "orders_confirmed_cancelled": 2,
+  "orders_discovered": 2,
+  "orders_rejected": 0,
+  "orders_unknown": 0,
+  "overall_verdict": "HOLD",
+  "per_order": [
+    {
+      "adapter_accepted": true,
+      "cancel_attempt_count": 1,
+      "cancel_confirmed": true,
+      "cancel_requested_at_utc": "2026-07-30T19:50:00.000100",
+      "filled_quantity_at_kill": 0.0,
+      "internal_order_id": "ev_o0",
+      "kill_cancel_state": "CANCEL_CONFIRMED",
+      "position_effect": "none",
+      "reason_code": "KILL_CANCEL_PASS",
+      "remaining_quantity_at_kill": 1.0,
+      "residual_open": false,
+      "status_after_cancel": "CANCELLED",
+      "status_at_kill": "PENDING",
+      "symbol": "BTCUSDT",
+      "terminal_status": "CANCELLED",
+      "venue_order_id": null
+    },
+    {
+      "adapter_accepted": true,
+      "cancel_attempt_count": 1,
+      "cancel_confirmed": true,
+      "cancel_requested_at_utc": "2026-07-30T19:50:00.000200",
+      "filled_quantity_at_kill": 0.0,
+      "internal_order_id": "ev_o1",
+      "kill_cancel_state": "CANCEL_CONFIRMED",
+      "position_effect": "none",
+      "reason_code": "KILL_CANCEL_PASS",
+      "remaining_quantity_at_kill": 1.0,
+      "residual_open": false,
+      "status_after_cancel": "CANCELLED",
+      "status_at_kill": "PENDING",
+      "symbol": "BTCUSDT",
+      "terminal_status": "CANCELLED",
+      "venue_order_id": null
+    }
+  ],
+  "reason_codes": [
+    "RESIDUAL_POSITION_UNKNOWN",
+    "KILL_CANCEL_HOLD"
+  ],
+  "reconciliation_completed_at_utc": "2026-07-30T19:50:00.000500",
+  "reconciliation_started_at_utc": "2026-07-30T19:50:00.000000",
+  "residual_open_orders": [],
+  "residual_positions": [
+    {
+      "quantity": null,
+      "reason_code": "RESIDUAL_POSITION_UNKNOWN",
+      "status": "UNKNOWN",
+      "symbol": "*"
+    }
+  ],
+  "run_id": "4185_g1g2_hold_ae284969",
+  "safety_boundaries": [
+    "LR remains NO-GO",
+    "No live/echtgeld go",
+    "No automatic position close",
+    "No kill-switch self-heal/deactivate"
+  ],
+  "schema_version": "cdb-kill-cancel-evidence/v1"
+}

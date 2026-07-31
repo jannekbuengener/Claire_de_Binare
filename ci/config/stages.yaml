@@ -7,6 +7,13 @@ profiles:
     - unit
     - docs
     - governance
+  # Slice uses the same stage list as fast, but unit may run a path-selected
+  # subset. Slice evidence is always merge_evidence=false (#4204).
+  slice:
+    - lint
+    - unit
+    - docs
+    - governance
   heavy:
     - lint
     - unit

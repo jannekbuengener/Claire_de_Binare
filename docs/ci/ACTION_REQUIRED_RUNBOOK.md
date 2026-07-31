@@ -23,7 +23,12 @@ Evidence anchors from triage:
 2. Check for the approval banner (`Approval required`).
 3. Click `Approve and run` (or equivalent approval button).
 4. Verify jobs are created and start running (no longer `jobs=[]`).
-5. Verify required context emission on the PR, especially `ci (Unit/Integration + Lint gesammelt)`.
+5. Verify the required context on the PR head: `cdb-local-ci` (the sole
+   branch-protection-required Commit Status; SSOT:
+   [`merge_policy_ci_gate.md`](../runbooks/merge_policy_ci_gate.md)). Hosted
+   Actions contexts like `ci (Unit/Integration + Lint gesammelt)` are
+   advisory only — approving their run does not by itself satisfy the merge
+   gate.
 
 Important:
 - Approve only; do not post or expose secret values.
@@ -65,7 +70,9 @@ Decision tree:
 ## E) Maintainer Checklist (Daily Ops)
 - If a PR run is `action_required`:
   - 1) Approve run.
-  - 2) Confirm required context is emitted: `ci (Unit/Integration + Lint gesammelt)`.
+  - 2) Confirm the actual required merge context is live-green on the exact
+       PR head SHA: `cdb-local-ci` (verify via `gh api`). Hosted Actions
+       context emission alone is advisory evidence, not the merge gate.
   - 3) If recurring, review governance settings using MODE 1 vs MODE 2.
 
 ## F) Do / Don't

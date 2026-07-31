@@ -272,6 +272,11 @@ OpenCode skill surface zusaetzlich: `.opencode/skills/` (gezielt laden, nicht pa
 | Skill | Purpose | Cursor path |
 |-------|---------|-------------|
 | `cdb-session-start` | Fail-closed session start (verifies Git truth first) | `.cursor/skills/cdb-session-start/SKILL.md` |
+| `cdb-pr-router` | Read-only PR routing before plan/branch/worktree/PR creation | `.cursor/skills/cdb-pr-router/SKILL.md` |
+| `cdb-integration-wiring-audit` | Read-only wiring/reachability audit for PR acceptance | `.cursor/skills/cdb-integration-wiring-audit/SKILL.md` |
+| `cdb-pr-gap-classifier` | Read-only residual-work classification for PR findings | `.cursor/skills/cdb-pr-gap-classifier/SKILL.md` |
+| `cdb-pr-completeness-review` | Read-only eight-dimension PR completeness aggregator before MERGE_CANDIDATE | `.cursor/skills/cdb-pr-completeness-review/SKILL.md` |
+| `cdb-batch-merge-conductor` | Freeze/final-validation/regular squash-merge orchestration for MERGE_CANDIDATE | `.cursor/skills/cdb-batch-merge-conductor/SKILL.md` |
 | `cdb-session-close` | Disciplined session close with honest summary | `.cursor/skills/cdb-session-close/SKILL.md` |
 | `cdb-issue-to-session-plan` | Convert issue to session plan | `.cursor/skills/cdb-issue-to-session-plan/SKILL.md` |
 | `cdb-control-intake` | Control context reading | `.cursor/skills/cdb-control-intake/SKILL.md` |

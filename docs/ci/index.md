@@ -9,24 +9,40 @@
 - Branch Protection and GitHub workflows remain unchanged in Phase 1.
 - See [merge_policy_ci_gate.md](../runbooks/merge_policy_ci_gate.md) § Local Docker CI Phase 1.
 
-## Local status publisher (Phase 3a)
+## Local status publisher (Phase 3a + #4170 Phase A)
 
 - Doc: [`local-status-publisher.md`](local-status-publisher.md)
+- Cutover runbook: [`cdb_local_ci_app_check_run_cutover.md`](../runbooks/cdb_local_ci_app_check_run_cutover.md)
 - Entry: `python -m ci.publisher` / `pwsh -File ci/scripts/publish_status.ps1`
 - Make: `ci-local-publish-dry-run` / `ci-local-publish` / `ci-local-publish-inspect`
-- Publishes a **non-required** Commit Status only after fail-closed evidence validation.
-- Preferred preview context: `cdb-local-ci-preview`. Branch Protection unchanged.
+- Default publishes required-path Commit Status `cdb-local-ci` after fail-closed
+  evidence validation (interim `app_id=null` trust model).
+- Explicit `--publisher-backend check-run` is code-ready; live Branch Protection
+  cutover remains an external Human-GO.
+- Preferred preview context: `cdb-local-ci-preview`.
 
 ## Kanonischer PR-Merge-Vertrag
 
-| Workflow | Check-Kontext | Trigger |
-|---|---|---|
-| [`ci.yml`](../../.github/workflows/ci.yml) | `ci (Unit/Integration + Lint gesammelt)` | `pull_request`, gefilterter `push` |
-| [`policy-gate.yml`](../../.github/workflows/policy-gate.yml) | `policy-gate` | `pull_request` |
+SSOT: [`merge_policy_ci_gate.md`](../runbooks/merge_policy_ci_gate.md). Der
+einzige merge-relevante Required Context auf `main` ist `cdb-local-ci`
+(Commit Status, lokaler Publisher, exakter PR-Head-SHA), live verifizierbar
+via `gh api`.
 
-Die frühere parallele Legacy-Pipeline wurde entfernt. Es gibt nur noch einen
-kanonischen CI-Pfad; Diagnose, Branch Protection und Dokumentation müssen sich
-auf die beiden Check-Kontexte oben beziehen.
+| Quelle | Check-Kontext | Typ |
+|---|---|---|
+| Local CI Status Publisher | `cdb-local-ci` | Commit Status |
+
+| Workflow | Rolle | Trigger |
+|---|---|---|
+| [`ci.yml`](../../.github/workflows/ci.yml) | Hosted Actions, advisory | `pull_request`, gefilterter `push` |
+| [`policy-gate.yml`](../../.github/workflows/policy-gate.yml) | Hosted Actions, advisory | `pull_request` |
+
+`ci.yml` und `policy-gate.yml` sind seit Migration #4169 **nicht mehr**
+branch-protection-required. Sie bleiben als Workflow-Inhalt / Safety-Gates
+nützlich (Hosted-Actions-Signal), ersetzen aber nicht `cdb-local-ci`. Ein
+rotes/blockiertes Hosted-Actions-Billing-/Runner-Lock ist eine
+Infrastruktur-Bedingung, kein Code-Fehler, und darf nicht mit einem
+fehlenden/roten `cdb-local-ci` verwechselt werden.
 
 ## Ergänzende Prüfungen
 
@@ -39,12 +55,13 @@ auf die beiden Check-Kontexte oben beziehen.
 | Audit | `required-checks-audit.yml`, `governance-audit.yml` |
 
 Diese Prüfungen können Fehler oder Findings liefern, sind aber keine
-Ersatzquelle für die beiden branch-protected Check-Kontexte.
+Ersatzquelle für den einzigen branch-protected Check-Kontext `cdb-local-ci`.
 
 ## Einstieg bei Fehlern
 
-1. Betroffenen Check-Kontext und Commit-SHA bestimmen.
-2. Job- und Step-Logs des konkreten Runs lesen.
+1. `cdb-local-ci` live für den exakten PR-Head-SHA prüfen (`gh api`), nicht
+   aus veralteten Tabellen ableiten.
+2. Job- und Step-Logs des konkreten Runs (Hosted Actions, advisory) lesen.
 3. [Merge-Policy-Runbook](../runbooks/merge_policy_ci_gate.md) anwenden.
 4. Bei Inventar- oder Trigger-Drift das
    [Workflow-Register](../runbooks/GITHUB_WORKFLOW_REGISTER.md) prüfen.

@@ -21,6 +21,9 @@ attribution, and net return into one repeatable research contract.
 |---|---|---|
 | Economics model schema | `docs/contracts/profitability_execution_economics_model.v1.schema.json` | Research fee/spread/slippage model and fail-closed assumption policy |
 | Economics assessment schema | `docs/contracts/profitability_execution_economics_assessment.v1.schema.json` | Candidate-level gross-to-net assessment output |
+| **Gross-to-Net SSOT (v1, #4150)** | `docs/contracts/EXECUTION_ECONOMICS_GROSS_TO_NET_V1.md` | Executable units, scenario mapping, reconciliation formula |
+| Gross-to-Net schema | `docs/contracts/execution_economics_gross_to_net.v1.schema.json` | Machine-readable gross-to-net evidence |
+| Gross-to-Net code SSOT | `core/replay/execution_economics_v1.py` | Mapping, assumptions snapshot, reconcile helpers |
 | Model example | `docs/contracts/examples/profitability_execution_economics_model_valid.json` | Valid research-only economics model fixture |
 | Assessment example | `docs/contracts/examples/profitability_execution_economics_assessment_valid.json` | Valid research-only assessment fixture |
 

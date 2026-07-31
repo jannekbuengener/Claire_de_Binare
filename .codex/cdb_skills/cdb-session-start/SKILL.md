@@ -2,7 +2,7 @@
 Canonical Skill Source: docs/skills/cdb-session-start/SKILL.md
 Surface: codex
 Sync Status: mirrored-from-canon
-Last Verified: 2026-07-01
+Last Verified: 2026-07-30
 Drift Policy: Surface-Adapter duerfen nur mit dokumentierter Begruendung abweichen.
 -->
 ---
@@ -68,8 +68,8 @@ Establish a verified, fail-closed starting state before any repo work begins.
    |---|---|
    | Dirty worktree with unknown changes | STOP — identify origin, stash or resolve |
    | Local main behind origin/main | Do not start from stale local main; refresh or use origin/main explicitly |
-   | Gone upstream branch (remote deleted, local present) | Mark stale; do not build on it |
-   | Old local worktree from a prior session | Do not read as implicit active progress |
+| Gone upstream branch (remote deleted, local present) | Mark stale; do not build on it. If the remote was deleted by a prior squash-merge (`--delete-branch`), do not re-push or recreate it (anti-repush). Do **not** auto-delete the local branch/worktree here — route cleanup to `cdb-session-close` § Safe Post-Merge Cleanup (or `cdb-drift-reconcile` for lineage classification) with evidence |
+| Old local worktree from a prior session | Do not read as implicit active progress; do not auto-remove; route to `cdb-session-close` cleanup if a merged PR is identified |
    | Branch-local commits presented as merged truth | Verify via `gh pr list --state merged` |
    | Auto-merge enabled on repo during closure-sensitive work | State `Closes #N` vs `Refs #N` explicitly |
 
@@ -188,6 +188,10 @@ Establish a verified, fail-closed starting state before any repo work begins.
    - Scope stated: what is IN, what is OUT.
    - Closure semantics confirmed: `Closes #N` (full delivery) vs. `Refs #N`
      (partial or scoped delivery).
+   - If the session may end in an autonomous merge, note that capability
+     (not agent type) gates it; see `docs/runbooks/merge_policy_ci_gate.md`
+     § Capability-based autonomous merge. Missing capability at close time
+     is `DONE_PR_OPEN_MERGE_HANDOFF`, not a blocker to starting session work.
 
 ## Fail-Closed Rules
 
@@ -265,3 +269,17 @@ If no internet/browsing is available, report `EXTERNAL_DOCS_UNVERIFIED` instead 
   solo-maintainer repo.
 - Do not treat repo presence of MCP files, registry entries, or `tools/mcp/server.py`
   as proof that a tool is callable through the active MCP surface.
+
+## PR Routing Gate
+
+Nach Git-Truth, Bootloader und Live-Dedupe MUSS `cdb-pr-router`
+vor Branch-, Worktree- oder PR-Erstellung und vor Plan-Finalisierung laufen.
+
+```powershell
+python -m tools.pr_routing route --issue <ISSUE> --agent <AGENT>
+```
+
+Die Session dokumentiert Ziel-PR, Zielbranch, Lane, Validation Profile,
+Lock-State und Reason Codes. Bei `HOLD_*`, unvollständigem Inventar oder fremdem
+Lock endet der Start fail-closed. Ein neuer Branch ist nur nach
+`CREATE_NEW_BATCH_PR` oder `CREATE_DEDICATED_PR` zulässig.

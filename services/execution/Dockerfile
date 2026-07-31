@@ -22,8 +22,10 @@ RUN apt-get update \
 
 # Python Requirements
 COPY services/execution/requirements.txt ./
+# The build venv is copied into the runtime image, so its pip is a production
+# image path — Security pin (#4095): pip 26.1.2 fixes CVE-2026-8643.
 RUN python -m venv /venv \
-    && /venv/bin/pip install --upgrade pip==26.1 \
+    && /venv/bin/pip install --upgrade pip==26.1.2 \
     && /venv/bin/pip install --no-cache-dir --upgrade setuptools==82.0.0 wheel==0.46.2 \
     && /venv/bin/pip install --no-cache-dir -r requirements.txt
 
@@ -47,7 +49,8 @@ RUN apt-get update \
     && rm -rf /var/lib/apt/lists/*
 
 RUN python -m pip install --no-cache-dir --upgrade setuptools==82.0.0 wheel==0.46.2
-RUN pip install --upgrade pip==26.1
+# Security pin (#4095): pip 26.1.2 fixes CVE-2026-8643 (global runtime pip)
+RUN pip install --upgrade pip==26.1.2
 
 COPY --from=build /venv /venv
 ENV PATH="/venv/bin:$PATH"

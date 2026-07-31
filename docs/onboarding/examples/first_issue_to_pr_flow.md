@@ -9,6 +9,15 @@ issue numbers, validation, and closure wording to the actual task.
 Docs/UI sind Orientierung, keine Autoritaet. LR bleibt NO-GO. No Live-Go. No
 Echtgeld-Go.
 
+## PR-Flow v1
+
+This example now rehearses a routed **Issue-Slice**, not an automatic
+Issue→own-PR→merge chain. Before creating a Branch, Worktree or PR, run
+`cdb-pr-router`. Reuse the selected compatible PR. A normal rehearsal ends
+`DONE_SLICE_ADDED_TO_BATCH_PR` after targeted Validation and handoff; the later
+merge section applies only when the PR is explicitly frozen as
+`merge_candidate`.
+
 ## 1. Read The Issue And Canon First
 
 Start with the issue, but do not trust issue prose alone.
@@ -21,6 +30,8 @@ Required shape:
    `docs/live-readiness/LR-AUDIT-STATUS-2026-03-05.md` as separate status
    surfaces.
 4. Pull GitHub live state for the target issue, related issues, and open PRs.
+5. Run `python -m tools.pr_routing route --issue <ISSUE>` and record the
+   target PR/branch, lane, validation profile and lock state.
 
 Governance reminders:
 
@@ -43,40 +54,32 @@ gh issue view <issue> --json number,title,state,labels,body,comments
 gh pr list --state open --limit 20
 ```
 
-Stop if the repo is not on `main`, local `main` differs from `origin/main`, the
-issue is closed, a matching open PR already exists, or scope drifts into GUI,
+Stop if the base cannot be verified, the Issue is closed, the router returns
+`HOLD_*`, or scope drifts into GUI,
 runtime, Docker, trading, live, DB write, memory write, or LR changes.
 
-## 3. Branch, Change, And PR Lock
+## 3. Route, Change, And Dual-Lock
 
-Before writing, check the target issue and open PRs for an active writer. If a
-matching open PR already exists, inspect its comments first and stop if another
-agent owns the `LOCK:`.
+Run the router before selecting any work surface:
 
-If no matching PR exists, create the branch from current `main` and make the
-smallest local change:
-
-```bash
-git switch -c docs/<short-scope>-<issue>
+```powershell
+python -m tools.pr_routing route --issue <issue> --agent <agent-id>
 ```
 
-After pushing and creating the PR, post the exact single-writer lock as the
-first PR comment before any further push, PR update, or follow-up GitHub
-mutation:
+Reuse `target_pr` when routed to an existing Batch-PR. Only a create decision
+permits a new branch. Before a new PR, reserve the Issue:
 
 ```text
-LOCK: agent=<agent-id> issue=#<issue> ts=<ISO8601> mode=single-writer
+LOCK_RESERVATION: agent=<agent-id> issue=#<issue> batch_pr=pending ts=<ISO8601> mode=batch-slice
 ```
 
-An issue-level `START:` comment is useful for status, but it does not satisfy
-the PR lock requirement from `CDB_AGENT_POLICY.md` section 4.1.
-
-Example status comment on the issue:
+After Draft-PR creation, set the identical lock on Issue and PR:
 
 ```text
-START: <one-sentence scoped task and safety boundary; PR lock will be first PR comment>
+LOCK: agent=<agent-id> issue=#<issue> batch_pr=#<pr> ts=<ISO8601> mode=batch-slice
 ```
 
+Until both comments match live, `PARTIAL_LOCK` blocks all further writes.
 Make the smallest docs change that satisfies the issue. Avoid opportunistic
 cleanup in adjacent docs unless the issue explicitly asks for it.
 
@@ -96,40 +99,47 @@ separate validation step, and investigate any hit before publishing.
 If a validation failure is caused by known unrelated untracked files, document it
 as scope-fremd and do not fix it inside the issue unless explicitly instructed.
 
-## 5. Commit, Push, And Open PR
+## 5. Commit, Push, And Slice Handoff
 
 Use a narrow commit message:
 
 ```bash
 git add docs/<scope>
 git commit -m "docs(onboarding): add visual developer start pack"
-git push -u origin docs/<short-scope>-<issue>
-gh pr create --base main --head docs/<short-scope>-<issue>
-gh pr comment <pr-number> --body "LOCK: agent=<agent-id> issue=#<issue> ts=<ISO8601> mode=single-writer"
+git push <assigned-remote> <assigned-branch>
 ```
 
-PR body should include summary, changed files, validation, scope boundaries,
-Safety/LR statement, and issue links. Use
-[`../templates/pr_body_template.md`](../templates/pr_body_template.md) as the
-starting point.
+Update the PR ledger and Issue with PR, Commit, targeted Validation and
+Restunsicherheit. Finish the normal Session as
+`DONE_SLICE_ADDED_TO_BATCH_PR`.
 
-## 6. Wait For Checks And Merge Only If Safe
+## 6. Final Merge Candidate (separate flow)
 
-Before merge:
+Only after a Merge Trigger freezes the PR as `merge_candidate`:
 
-1. Required checks are green.
-2. Diff remains in scope.
+1. Live `cdb-local-ci` SUCCESS on the exact PR head SHA (Commit Status).
+2. Combined diff remains in scope; Full Fast-CI is bound to Head and Base.
 3. No new stop condition appeared in comments or checks.
 4. No live, runtime, Docker, trading, DB write, memory write, or LR change was
    introduced.
+5. Session can perform regular squash merge (capability gate). Hosted Actions
+   red due to billing/lock is not automatically a merge blocker.
 
-Use squash merge only when the repo rules and required checks allow it.
+Use squash merge when the capability gate is proven:
+
+```bash
+gh pr merge <pr-number> --squash --delete-branch
+```
+
+If the session lacks publisher/merge rights: leave the PR open and report
+`DONE_PR_OPEN_MERGE_HANDOFF`. Never use `--admin` as a bypass. Do not
+re-push a remote branch deleted after squash merge.
 
 ## 7. Comment And Close
 
-After merge, comment on the target issue with the PR link, commit, validation,
-and scope boundary. Close the issue only when the merged PR satisfies the issue
-acceptance.
+After a **live-verified final merge** (`DONE_MERGED_CLOSED`), comment on the target
+issue with the PR link, commit, validation, and scope boundary. Close the
+issue only when the merged PR satisfies the issue acceptance.
 
 If the issue is part of a parent chain, add a short parent status comment with
 the next recommended slice.

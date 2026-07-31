@@ -2,6 +2,14 @@
 alwaysApply: true
 ---
 
+## Batch-routing boundary
+
+Plan-GO authorizes only the routed Delivery-Slice unless the plan explicitly
+defines a final Merge-Steward phase. It does not authorize a new PR when a
+compatible Batch-PR exists and does not turn a Merge Trigger into merge
+authority. Full Fast-CI, `cdb-local-ci` publish and merge apply only to a frozen
+`merge_candidate` on its exact final Head and integrated Base.
+
 When Jannek approves a plan, that approval covers all explicitly described steps inside that plan scope.
 
 Do not ask for separate micro-approvals such as:
@@ -24,17 +32,40 @@ After Plan-GO:
 Allowed after Plan-GO, if explicitly inside scope:
 - review PRs
 - inspect diffs
-- check required checks
+- check required checks (live `cdb-local-ci` via `gh api`; see
+  `CDB-Checks-and-Merge-Rule.mdc`)
 - update branches
-- rerun checks
+- rerun checks / republish `cdb-local-ci` if capable
 - implement small in-scope fixes
 - commit and push
 - resolve review threads
 - post comments
 - apply or remove labels
 - close issues
-- merge PRs
+- merge PRs autonomously when the capability gate in
+  `CDB-Checks-and-Merge-Rule.mdc` is fully satisfied
 - create deduplicated follow-up issues
 - report final status
 
 This is not a blank check. Productive DB writes, MCP mutations, BLUE/RED runtime changes, LR/live/echtgeld actions, secret handling, and scope expansion still require their own explicit scope or gate.
+
+## Merge capability, not agent type
+
+Plan-GO authorizes autonomous merge for **any** session — local or cloud —
+that proves the full capability gate defined in
+`CDB-Checks-and-Merge-Rule.mdc` (scope, no blockers, `cdb-local-ci` SUCCESS
+on exact head, unchanged validated `main`, and the ability to perform the
+merge itself). Merge authority is never granted or withheld based on which
+agent surface is running; it is granted only when the gate is proven.
+
+If a session lacks a capability (e.g. no `statuses:write`, no verifiable
+identity, evidence not bound to the exact head): do not use `--admin` as a
+substitute, and do not loop the same blocked attempt. Report
+`DONE_PR_OPEN_MERGE_HANDOFF` with the exact missing capability and the next
+command for a capable session/human, then continue other approved,
+independent work.
+
+`DONE_MERGED` (or the more precise `DONE_MERGED_CLOSED`) may only be reported
+after live verification that the PR is actually merged on `main` (commit
+present, PR state closed/merged) — never assumed from a queued or in-flight
+merge command.

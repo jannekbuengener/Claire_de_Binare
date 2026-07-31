@@ -1,7 +1,7 @@
 # Branch Protection Drift Report (main)
 
-Timestamp (Europe/Berlin): `2026-03-15T22:16:32+01:00`  
-Timestamp (UTC): `2026-03-15T21:16:32Z`  
+Timestamp (Europe/Berlin): `2026-07-30T11:50:51+02:00`
+Timestamp (UTC): `2026-07-30T09:50:51Z`
 Repo: `jannekbuengener/Claire_de_Binare`  
 Branch: `main`  
 State: **NO DRIFT**
@@ -14,8 +14,8 @@ State: **NO DRIFT**
 
 ## Hashes (SHA256)
 
-- Baseline snapshot hash: `e987fc8d7369348df2bdfaa1fbc964029af693254b7a243a6c9a429eb4f32b28`
-- Current snapshot hash: `e987fc8d7369348df2bdfaa1fbc964029af693254b7a243a6c9a429eb4f32b28`
+- Baseline snapshot hash: `ca793caaf1dc8a3d666749c4eb7d17f97437792d66ce8041f64153ffee103ff2`
+- Current snapshot hash: `ca793caaf1dc8a3d666749c4eb7d17f97437792d66ce8041f64153ffee103ff2`
 
 ## Drift Summary
 
@@ -30,7 +30,7 @@ State: **NO DRIFT**
 ## Manual Apply Commands (maintainer only, never auto-executed)
 
 ```bash
-gh api repos/jannekbuengener/Claire_de_Binare/branches/main/protection > docs/evidence/reports/BRANCH_PROTECTION_CURRENT_main.json
+gh api repos/jannekbuengener/Claire_de_Binare/branches/main/protection > artifacts/reports/governance/BRANCH_PROTECTION_CURRENT_main.json
 gh api --method PUT repos/jannekbuengener/Claire_de_Binare/branches/main/protection --input docs/evidence/reports/BRANCH_PROTECTION_APPLY_PAYLOAD_main.json
 gh api --method DELETE repos/jannekbuengener/Claire_de_Binare/branches/main/protection/required_signatures
 ```

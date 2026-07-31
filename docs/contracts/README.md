@@ -7,6 +7,7 @@ Repo-backed JSON/YAML schemas und Contract-Dokumente für Messages, Replay und C
 | Area | Path | Notes |
 |---|---|---|
 | Message schemas | `market_data.schema.json`, `signal.schema.json`, … | CI/validation |
+| PR acceptance | `pr_acceptance_skill_family.v1.schema.json (wiring, gap, completeness, conductor)` | PR-Acceptance Skill Family v1 envelope (#4207/#4208) |
 | Context tooling | [`context_tooling/`](context_tooling/) | MCP evidence contracts |
 | Examples | [`examples/`](examples/) | Valid/invalid fixtures |
 | Replay | [`REPLAY_CONTRACTS_AND_DETERMINISM.md`](REPLAY_CONTRACTS_AND_DETERMINISM.md) | Determinism rules |

@@ -22,10 +22,18 @@ from ci.lib.gitinfo import (
     collect_git_info,
 )
 from ci.publisher.exceptions import PublisherError
-from ci.publisher.models import StatusPayload, ValidationResult
+from ci.publisher.models import (
+    CHECK_RUN_NAME,
+    CheckRunPayload,
+    StatusPayload,
+    ValidationResult,
+    build_check_run_external_id,
+)
 
 SUCCESS_SUMMARY = "Local Docker CI evidence verified for exact commit SHA."
 FAILURE_SUMMARY = "Local Docker CI evidence rejected or pipeline failed."
+CHECK_RUN_SUCCESS_TITLE = "cdb-local-ci success"
+CHECK_RUN_FAILURE_TITLE = "cdb-local-ci failure"
 
 
 def resolve_repository(
@@ -88,6 +96,44 @@ def build_status_payload(
     )
 
 
+def build_check_run_payload(
+    *,
+    commit_sha: str,
+    run_id: str,
+    ok: bool,
+    started_at_utc: str,
+    ended_at_utc: str,
+    target_url: str | None,
+    optional_skipped: list[dict[str, str]],
+    name: str = CHECK_RUN_NAME,
+) -> CheckRunPayload:
+    """Build a deterministic Check Run payload from validated evidence fields."""
+    if not commit_sha:
+        raise PublisherError("Refusing Check Run without exact head_sha")
+    if ok:
+        title = CHECK_RUN_SUCCESS_TITLE
+        summary = SUCCESS_SUMMARY
+        if optional_skipped:
+            names = ",".join(s["name"] for s in optional_skipped)
+            summary = f"{SUCCESS_SUMMARY} Optional skipped: {names}"
+        conclusion = "success"
+    else:
+        title = CHECK_RUN_FAILURE_TITLE
+        summary = FAILURE_SUMMARY
+        conclusion = "failure"
+    return CheckRunPayload(
+        name=name,
+        head_sha=commit_sha,
+        conclusion=conclusion,  # type: ignore[arg-type]
+        started_at=started_at_utc,
+        completed_at=ended_at_utc,
+        external_id=build_check_run_external_id(run_id=run_id, commit_sha=commit_sha),
+        output_title=title,
+        output_summary=summary,
+        details_url=target_url,
+    )
+
+
 def validate_evidence_for_publish(
     evidence_dir: Path,
     *,
@@ -134,6 +180,8 @@ def validate_evidence_for_publish(
             manifest_sha256=digest,
             optional_skipped=skipped,
             intended_payload=payload,
+            started_at_utc=str(manifest.get("started_at_utc") or ""),
+            ended_at_utc=str(manifest.get("ended_at_utc") or ""),
         )
     except (EvidenceError, PublisherError, ValueError) as exc:
         reason = str(exc)

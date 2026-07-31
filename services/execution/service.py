@@ -13,6 +13,7 @@ import logging.config
 import math
 import time
 from decimal import Decimal
+from typing import Optional
 from datetime import datetime
 from pathlib import Path
 import importlib.util
@@ -53,6 +54,13 @@ try:
         REDUCE_ONLY_POSITION_UNKNOWN,
         REDUCE_ONLY_REJECTED,
     )
+    from .open_order_registry import OpenOrderRegistry, OPEN_STATUSES
+    from .kill_cancel import (
+        KillCancelBatchVerdict,
+        KillCancelCoordinator,
+        KillCancelSupervisor,
+        RC_FILL_AFTER_KILL_ACTIVATION,
+    )
 except ImportError:
     import config
     from models import Order, ExecutionResult, OrderStatus
@@ -62,6 +70,13 @@ except ImportError:
         REDUCE_ONLY_POSITION_INCREASE_BLOCKED,
         REDUCE_ONLY_POSITION_UNKNOWN,
         REDUCE_ONLY_REJECTED,
+    )
+    from open_order_registry import OpenOrderRegistry, OPEN_STATUSES
+    from kill_cancel import (
+        KillCancelBatchVerdict,
+        KillCancelCoordinator,
+        KillCancelSupervisor,
+        RC_FILL_AFTER_KILL_ACTIVATION,
     )
 
 # Logging setup mit zentraler Konfiguration
@@ -110,7 +125,13 @@ stats = {
 bot_shutdown_active = False
 blocked_strategy_ids = set()
 blocked_bot_ids = set()
+# Legacy name retained for imports; canonical truth is open_order_registry (#4185).
 open_orders = set()
+
+open_order_registry: Optional[OpenOrderRegistry] = None
+kill_cancel_coordinator: Optional[KillCancelCoordinator] = None
+kill_cancel_supervisor: Optional[KillCancelSupervisor] = None
+_known_residual_positions: dict = {}
 
 
 def increment_stat(key: str, value: int = 1) -> None:
@@ -129,6 +150,139 @@ def get_stats_copy() -> dict:
     """Thread-safe stats read"""
     with _stats_lock:
         return stats.copy()
+
+
+def _resolve_commit_sha() -> str:
+    return (
+        os.getenv("CDB_SOURCE_SHA")
+        or os.getenv("GITHUB_SHA")
+        or os.getenv("COMMIT_SHA")
+        or "unknown"
+    )
+
+
+def _position_resolver() -> list:
+    """Return only authoritatively known residual position snapshots.
+
+    An empty ``_known_residual_positions`` map is **not** flat evidence.
+    Returning ``[]`` lets ``KillCancelCoordinator._resolve_positions`` normalize
+    to ``status=UNKNOWN`` / ``RESIDUAL_POSITION_UNKNOWN`` / batch HOLD.
+    Do not invent ``NONE`` + ``quantity=0.0`` from absence (#4185 G1).
+    """
+    with _stats_lock:
+        if not _known_residual_positions:
+            return []
+        return [
+            {
+                "symbol": symbol,
+                "status": "OPEN" if qty else "NONE",
+                "quantity": qty,
+                "reason_code": "RESIDUAL_POSITION_KNOWN",
+            }
+            for symbol, qty in sorted(_known_residual_positions.items())
+        ]
+
+
+def _ensure_kill_cancel_stack() -> None:
+    """Create registry/coordinator/supervisor if missing (lazy for tests)."""
+    global open_order_registry, kill_cancel_coordinator, kill_cancel_supervisor
+    if open_order_registry is None:
+        ledger = config.OPEN_ORDER_LEDGER_PATH or None
+        open_order_registry = OpenOrderRegistry(ledger_path=ledger or None)
+    if kill_cancel_coordinator is None:
+        kill_cancel_coordinator = KillCancelCoordinator(
+            registry=open_order_registry,
+            adapter=executor,
+            commit_sha=_resolve_commit_sha(),
+            position_resolver=_position_resolver,
+        )
+    else:
+        kill_cancel_coordinator.adapter = executor
+        kill_cancel_coordinator.registry = open_order_registry
+    if kill_cancel_supervisor is None:
+        kill_cancel_supervisor = KillCancelSupervisor(
+            coordinator=kill_cancel_coordinator,
+            poll_interval_seconds=getattr(config, "KILL_CANCEL_POLL_SECONDS", 1.0),
+        )
+        # Evaluate kill before any order acceptance (fail-closed startup gate)
+        kill_cancel_supervisor.run_startup_gate()
+
+
+def _register_order_pre_submit(order: Order) -> str:
+    """Register before adapter call so kill between gate and submit cannot lose the order."""
+    _ensure_kill_cancel_stack()
+    assert open_order_registry is not None
+    internal_id = order.order_id or generate_uuid_hex(
+        name=f"pre-submit:{order.symbol}:{order.side}:{order.quantity}:{utcnow().isoformat()}"
+    )
+    if not order.order_id:
+        order.order_id = internal_id
+    open_order_registry.register(
+        internal_order_id=internal_id,
+        symbol=order.symbol,
+        status="PENDING",
+        venue_order_id=None,
+        quantity=float(order.quantity),
+        filled_quantity=0.0,
+        remaining_quantity=float(order.quantity),
+        side=order.side,
+    )
+    open_orders.add(internal_id)
+    return internal_id
+
+
+def _apply_execution_result_to_registry(order: Order, result: ExecutionResult) -> None:
+    _ensure_kill_cancel_stack()
+    assert open_order_registry is not None
+    assert kill_cancel_coordinator is not None
+    internal_id = order.order_id or result.order_id
+    venue_id = result.order_id
+    status = str(result.status).upper()
+    filled = float(result.filled_quantity or 0.0)
+
+    if (
+        kill_cancel_coordinator.active_kill_event_id
+        and status == OrderStatus.FILLED.value
+        and filled > 0
+    ):
+        kill_cancel_coordinator.note_fill_after_kill(
+            internal_order_id=internal_id,
+            venue_order_id=venue_id,
+            symbol=order.symbol,
+            filled_quantity=filled,
+        )
+        logger.error(
+            "FILL_AFTER_KILL_ACTIVATION order=%s symbol=%s qty=%s",
+            internal_id,
+            order.symbol,
+            filled,
+        )
+        return
+
+    if status in OPEN_STATUSES:
+        open_order_registry.register(
+            internal_order_id=internal_id,
+            symbol=order.symbol,
+            status=status,
+            venue_order_id=venue_id,
+            quantity=float(order.quantity),
+            filled_quantity=filled,
+            remaining_quantity=max(float(order.quantity) - filled, 0.0),
+            side=order.side,
+        )
+        open_orders.add(internal_id)
+        return
+
+    # Terminal confirmed from adapter result
+    open_order_registry.update_status(
+        internal_id,
+        status=status,
+        venue_order_id=venue_id,
+        filled_quantity=filled,
+        remaining_quantity=max(float(order.quantity) - filled, 0.0),
+        confirmed_terminal=status in {"FILLED", "CANCELLED", "REJECTED"},
+    )
+    open_orders.discard(internal_id)
 
 
 def _mark_invalid_payload(reason: str, *, exc: Exception | None = None) -> None:
@@ -437,12 +591,23 @@ def init_services():
         )
 
         if adapter_id == MOCK_BUILTIN:
+            mock_kwargs = {}
+            if getattr(config, "MOCK_RESTING_ORDERS", False):
+                mock_kwargs = {
+                    "resting_orders": True,
+                    "min_latency_ms": 0,
+                    "max_latency_ms": 0,
+                    "success_rate": 1.0,
+                }
             executor = build_execution_adapter(
                 adapter_id,
                 mock_trading=config.MOCK_TRADING,
+                **mock_kwargs,
             )
             logger.info(
-                "🟢 Using execution adapter: %s (Paper Trading Mode)", adapter_id
+                "🟢 Using execution adapter: %s (Paper Trading Mode resting=%s)",
+                adapter_id,
+                bool(mock_kwargs),
             )
         elif adapter_id == MEXC_BUILTIN:
             dry_run = config.DRY_RUN if hasattr(config, "DRY_RUN") else True
@@ -479,6 +644,12 @@ def init_services():
             "PostgreSQL", Database, retries=3, delay=config.RETRY_DELAY_SECONDS * 2
         )
         logger.info("Database initialized")
+
+        _ensure_kill_cancel_stack()
+        logger.info(
+            "Kill-cancel stack ready (residual_open=%s)",
+            open_order_registry.count_open() if open_order_registry else 0,
+        )
 
         return True
 
@@ -625,6 +796,31 @@ def process_order(order_data: object):
             _publish_result(result)
             return result
 
+        _ensure_kill_cancel_stack()
+        if kill_cancel_supervisor is not None and (
+            kill_cancel_supervisor.hold_new_orders
+            or not kill_cancel_supervisor.orders_accepted
+        ):
+            # Startup HOLD / unfinished reconciliation — fail closed for new orders
+            result = ExecutionResult(
+                order_id=order.order_id or "KILL_CANCEL_HOLD",
+                symbol=order.symbol,
+                side=order.side,
+                quantity=order.quantity,
+                filled_quantity=0.0,
+                status=OrderStatus.REJECTED.value,
+                price=None,
+                client_id=order.client_id,
+                error_message="Order blocked: kill-cancel reconciliation HOLD",
+                timestamp=utcnow().isoformat(),
+                strategy_id=order.strategy_id,
+                bot_id=order.bot_id,
+            )
+            result.metadata = _build_result_metadata(order, result)
+            increment_stat("orders_rejected")
+            _publish_result(result)
+            return result
+
         if (
             bot_shutdown_active
             or (order.strategy_id and order.strategy_id in blocked_strategy_ids)
@@ -714,6 +910,41 @@ def process_order(order_data: object):
 
         if executor is None:
             raise RuntimeError("Execution adapter not initialised")
+
+        # Register BEFORE adapter call (race: kill between gate and submit)
+        _register_order_pre_submit(order)
+
+        # Re-check kill immediately before adapter handoff
+        try:
+            from core.safety.kill_switch import get_kill_switch_details as _ks_recheck
+
+            ks2_active, ks2_reason, _, _ = _ks_recheck(create_if_missing=False)
+        except Exception:
+            ks2_active, ks2_reason = True, "evaluation_error"
+        if ks2_active:
+            if kill_cancel_supervisor is not None:
+                kill_cancel_supervisor.on_kill_transition(
+                    active=True, reason=str(ks2_reason)
+                )
+            result = ExecutionResult(
+                order_id=order.order_id or "KILL_SWITCH_BLOCKED",
+                symbol=order.symbol,
+                side=order.side,
+                quantity=order.quantity,
+                filled_quantity=0.0,
+                status=OrderStatus.REJECTED.value,
+                price=None,
+                client_id=order.client_id,
+                error_message=f"Order blocked: kill-switch active ({ks2_reason})",
+                timestamp=utcnow().isoformat(),
+                strategy_id=order.strategy_id,
+                bot_id=order.bot_id,
+            )
+            result.metadata = _build_result_metadata(order, result)
+            # Keep registered as residual open until cancel confirms
+            increment_stat("orders_rejected")
+            _publish_result(result)
+            return result
 
         execute_v2 = getattr(executor, "execute", None)
         if callable(execute_v2):
@@ -849,6 +1080,8 @@ def process_order(order_data: object):
                 }
                 result.filled_quantity = 0.0
                 result.fill_id = None
+
+        _apply_execution_result_to_registry(order, result)
 
         result.metadata = _build_result_metadata(order, result)
         if reduce_only_preparation is not None:
@@ -1069,13 +1302,23 @@ def _handle_bot_shutdown(payload: dict) -> None:
         payload.get("reason"),
     )
 
-    if executor:
-        for order_id in list(open_orders):
-            try:
-                executor.cancel_order(order_id)
-            except Exception as exc:  # noqa: BLE001
-                logger.warning("Cancel failed for %s: %s", order_id, exc)
+    _ensure_kill_cancel_stack()
+    if kill_cancel_coordinator is not None:
+        # Bot-shutdown also triggers cancel reconciliation; never blind-clear.
+        manifest = kill_cancel_coordinator.reconcile(
+            kill_state="active",
+            kill_reason=str(payload.get("reason") or "bot_shutdown"),
+        )
+        logger.warning(
+            "Bot-shutdown kill-cancel verdict=%s residual=%s",
+            manifest.overall_verdict,
+            len(manifest.residual_open_orders),
+        )
+        # Sync legacy set with registry residuals only (no wholesale clear)
         open_orders.clear()
+        open_orders.update(
+            o["internal_order_id"] for o in manifest.residual_open_orders
+        )
 
 
 def listen_bot_shutdown():
@@ -1110,12 +1353,25 @@ if _FLASK_AVAILABLE:
     @app.route("/health", methods=["GET"])
     def health():
         """Health check endpoint"""
+        _ensure_kill_cancel_stack()
+        kc = kill_cancel_supervisor.status_snapshot() if kill_cancel_supervisor else {}
+        ready = bool(kc.get("ready_for_new_orders", True))
+        # Kill active still blocks new orders; residual HOLD means not fully ready
+        status_value = "ok" if ready else "hold"
         return (
             jsonify(
                 {
                     "service": config.SERVICE_NAME,
-                    "status": "ok",
+                    "status": status_value,
                     "version": config.SERVICE_VERSION,
+                    "kill_cancel": {
+                        "residual_open_order_count": kc.get(
+                            "residual_open_order_count", 0
+                        ),
+                        "last_verdict": kc.get("last_verdict"),
+                        "hold_new_orders": kc.get("hold_new_orders"),
+                        "contract": kc.get("kill_cancel_contract"),
+                    },
                 }
             ),
             200,
@@ -1129,6 +1385,9 @@ if _FLASK_AVAILABLE:
         except Exception:
             redis_connected = False
 
+        _ensure_kill_cancel_stack()
+        kc = kill_cancel_supervisor.status_snapshot() if kill_cancel_supervisor else {}
+
         return (
             jsonify(
                 {
@@ -1138,6 +1397,7 @@ if _FLASK_AVAILABLE:
                     "stats": stats,
                     "redis": {"connected": redis_connected},
                     "database": db.get_stats() if db else {"error": "not initialized"},
+                    "kill_cancel": kc,
                 }
             ),
             200,
@@ -1275,6 +1535,11 @@ def main():
     shutdown_thread = Thread(target=listen_bot_shutdown, daemon=True)
     shutdown_thread.start()
     logger.info("Bot-shutdown listener started")
+
+    _ensure_kill_cancel_stack()
+    if kill_cancel_supervisor is not None:
+        kill_cancel_supervisor.start(running_flag=lambda: running)
+        logger.info("Kill-cancel supervisor started")
 
     # Start Flask app
     if not _FLASK_AVAILABLE or app is None:

@@ -1,4 +1,9 @@
-"""GitHub Commit Status client (Phase 3a). Check Runs require a GitHub App."""
+"""GitHub reads plus gh-cli-only Commit Status writes.
+
+Check Runs are implemented in ``ci.publisher.backends.CheckRunBackend`` and
+require a GitHub App installation token — this client intentionally has no
+``create_check_run`` method.
+"""
 
 from __future__ import annotations
 
@@ -29,6 +34,91 @@ class GitHubResponse:
 
 
 Transport = Callable[[str, str, dict[str, str], bytes | None, float], GitHubResponse]
+StatusWriter = Callable[[str, str, str, dict[str, Any]], dict[str, Any]]
+
+
+class GhCliStatusWriter:
+    """Create Commit Statuses through ``gh api`` without exposing auth headers."""
+
+    def __init__(
+        self,
+        *,
+        runner: Callable[..., subprocess.CompletedProcess[str]] = subprocess.run,
+        timeout_seconds: float = DEFAULT_TIMEOUT_SECONDS,
+    ) -> None:
+        self._runner = runner
+        self._timeout = timeout_seconds
+
+    def __call__(
+        self,
+        owner: str,
+        repo: str,
+        sha: str,
+        body: dict[str, Any],
+    ) -> dict[str, Any]:
+        argv = [
+            "gh",
+            "api",
+            "--method",
+            "POST",
+            f"repos/{owner}/{repo}/statuses/{quote(sha)}",
+            "--input",
+            "-",
+        ]
+        encoded = json.dumps(
+            body, sort_keys=True, separators=(",", ":"), ensure_ascii=False
+        )
+        try:
+            result = self._runner(
+                argv,
+                input=encoded,
+                capture_output=True,
+                text=True,
+                check=False,
+                timeout=self._timeout,
+            )
+        except subprocess.TimeoutExpired as exc:
+            raise GitHubApiError("gh api status write timed out") from exc
+        except OSError as exc:
+            raise GitHubApiError(f"Unable to execute gh api: {exc}") from exc
+        if result.returncode != 0:
+            detail = redact_text((result.stderr or "").strip())
+            if "401" in detail or "403" in detail:
+                raise AuthenticationError(
+                    "Insufficient gh permission to create commit status"
+                )
+            raise GitHubApiError(
+                f"gh api status write failed with exit {result.returncode}: {detail}"
+            )
+        try:
+            payload = json.loads(result.stdout or "")
+        except json.JSONDecodeError as exc:
+            raise GitHubApiError("gh api returned malformed status response") from exc
+        if not isinstance(payload, dict):
+            raise GitHubApiError("gh api returned ambiguous status response")
+        expected_status_url = f"{GITHUB_API}/repos/{owner}/{repo}/statuses/{quote(sha)}"
+        expected_commit_url = f"{GITHUB_API}/repos/{owner}/{repo}/commits/{quote(sha)}"
+        response_sha = str(payload.get("sha") or "").lower()
+        if not response_sha:
+            status_url = str(payload.get("url") or "")
+            commit_url = str(payload.get("commit_url") or "")
+            if status_url == expected_status_url or commit_url == expected_commit_url:
+                response_sha = sha.lower()
+        expected = {
+            "sha": sha.lower(),
+            "context": str(body.get("context") or ""),
+            "state": str(body.get("state") or ""),
+        }
+        observed = {
+            "sha": response_sha,
+            "context": str(payload.get("context") or ""),
+            "state": str(payload.get("state") or ""),
+        }
+        if observed != expected:
+            raise GitHubApiError(
+                "gh api status response does not match requested SHA, context, and state"
+            )
+        return redact_mapping(payload)
 
 
 def resolve_token(*, explicit: str | None = None) -> str:
@@ -124,6 +214,7 @@ class GitHubStatusClient:
         owner: str = "jannekbuengener",
         repo: str = "Claire_de_Binare",
         transport: Transport | None = None,
+        status_writer: StatusWriter | None = None,
         timeout_seconds: float = DEFAULT_TIMEOUT_SECONDS,
     ) -> None:
         if not token:
@@ -132,6 +223,9 @@ class GitHubStatusClient:
         self.owner = owner
         self.repo = repo
         self._transport = transport or _default_transport
+        self._status_writer = status_writer or GhCliStatusWriter(
+            timeout_seconds=timeout_seconds
+        )
         self._timeout = timeout_seconds
         self.write_calls: list[dict[str, Any]] = []
 
@@ -290,21 +384,4 @@ class GitHubStatusClient:
             return {"dry_run": True, "sha": payload.sha, "body": body}
         if payload.state == "success" and not payload.sha:
             raise GitHubApiError("Refusing success status without commit SHA")
-        path = f"/repos/{self.owner}/{self.repo}/statuses/{quote(payload.sha)}"
-        response = self._request("POST", path, body=body)
-        if response.status_code in {401, 403}:
-            raise AuthenticationError(
-                "Insufficient token permissions to create commit status "
-                "(need Commit statuses: Write or classic repo scope)"
-            )
-        if response.status_code >= 400:
-            raise GitHubApiError(
-                f"Commit status create failed HTTP {response.status_code}: "
-                f"{response.body}"
-            )
-        if not isinstance(response.body, dict):
-            raise GitHubApiError("Ambiguous commit status create response")
-        # Ensure we never report success when API returned failure body.
-        if body.get("state") == "success" and response.status_code not in {200, 201}:
-            raise GitHubApiError("Success status was not accepted by GitHub")
-        return response.body
+        return self._status_writer(self.owner, self.repo, payload.sha, body)

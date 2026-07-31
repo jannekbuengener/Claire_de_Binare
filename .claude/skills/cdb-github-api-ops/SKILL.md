@@ -2,7 +2,7 @@
 Canonical Skill Source: docs/skills/cdb-github-api-ops/SKILL.md
 Surface: claude
 Sync Status: mirrored-from-canon
-Last Verified: 2026-07-01
+Last Verified: 2026-07-30
 Drift Policy: Surface-Adapter duerfen nur mit dokumentierter Begruendung abweichen.
 -->
 ---
@@ -159,7 +159,8 @@ collection_errors:
 | Comment on issue/PR | Only if Plan-GO explicitly allows it |
 | Create issue/PR | Only if Plan-GO explicitly allows it |
 | Label/milestone changes | Only if Plan-GO explicitly allows it |
-| Merge/rebase/push | Separate scope, never automatic |
+| Rebase/push | Only if Plan-GO explicitly allows it |
+| Squash merge (`gh pr merge --squash --delete-branch`) | Never a normal slice-close action. Only in separately authorized Merge Mode after the PR is frozen as `merge_candidate` and every capability gate in `docs/runbooks/merge_policy_ci_gate.md` is proven for the exact final head and integrated base (no blocking reviews, full Fast-CI PASS, latest `cdb-local-ci` Commit Status SUCCESS, unchanged head/base). `--admin` is never a substitute. If any gate is unproven: `DONE_PR_OPEN_MERGE_HANDOFF`; do not loop or force. |
 | Repo settings/admin | Separate scope, never automatic |
 | Branch protection changes | Separate scope, never automatic |
 
@@ -169,6 +170,10 @@ When a write seems necessary but no approved scope exists:
 2. Report what needs writing and why.
 3. Propose the write as a follow-up with explicit Human-GO.
 4. Do NOT execute the write.
+
+For the merge row specifically: an unproven capability gate is a
+`DONE_PR_OPEN_MERGE_HANDOFF` report, not a STOP-and-ask — the PR stays open
+and the missing capability is named for the next session/human to close.
 
 ## Hard rules
 
@@ -288,3 +293,16 @@ When a write seems necessary but no approved scope exists:
 - Do NOT read or expose tokens, secrets, or private keys in any output
 - Do NOT create issues, PRs, or comments without Human-GO
 - Do NOT treat Board stage or `trade-capable` as Live-Go; LR remains NO-GO
+
+## PR-Routing und gh-only Writes
+
+- Vor neuen Branches oder PRs `cdb-pr-router` ausführen.
+- Routing-Inventar read-only über `gh issue view`, `gh pr list` und
+  `gh pr view` erheben.
+- Issue-/PR-Kommentare, Body-/Ledger-Updates und Merge ausschließlich über
+  `gh`.
+- Der `cdb-local-ci` Publisher schreibt Commit Status ausschließlich über
+  `gh api`; direkte HTTP-Writes sind verboten.
+- Combined Commit Status über `/commits/<sha>/status` prüfen; Check Runs separat
+  lesen.
+- Bei Pagination, Rate-Limit, Auth- oder Lock-Ambiguität fail-closed HOLD.

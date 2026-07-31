@@ -50,6 +50,14 @@ Branch protection mode note:
 - Branch protection drift:
   - Use generated apply payload/commands as manual maintainer action only.
   - Never apply via CI workflow automation.
+  - `main` must keep `allow_force_pushes=false`; Issue #4196 records the
+    decision that force pushes are not an intentional operating mode.
+  - Before applying this setting, derive a complete update payload from the
+    current live protection response. Change only `allow_force_pushes` to
+    `false`; preserve every other field.
+  - Read the complete live protection again after apply and compare it with the
+    pre-apply response. Any additional changed field is a failed apply and
+    requires immediate investigation before delivery continues.
 - Always capture evidence:
   - Actions run URL.
   - Artifact filename(s) and hash (for audit traceability).

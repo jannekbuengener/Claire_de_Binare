@@ -10,6 +10,7 @@ This does NOT publish a GitHub Required Check. Branch Protection stays unchanged
 from __future__ import annotations
 
 import argparse
+import json
 import platform
 import subprocess
 import sys
@@ -23,6 +24,7 @@ if str(REPO_ROOT) not in sys.path:
 
 from ci.lib.config import load_yaml, profiles_from_config  # noqa: E402
 from ci.lib.evidence import (  # noqa: E402
+    StageResult,
     assert_run_id_available,
     assert_safe_cleanup_project,
     build_manifest,
@@ -33,6 +35,16 @@ from ci.lib.evidence import (  # noqa: E402
     write_manifest,
 )
 from ci.lib.gitinfo import collect_git_info  # noqa: E402
+from ci.lib.slice_selection import (  # noqa: E402
+    default_policy_path,
+    normalize_changed_paths,
+    select_slice_test_groups,
+)
+from ci.lib.temp_preflight import (  # noqa: E402
+    prepare_ci_temp_root,
+    temp_env_for,
+    write_temp_preflight_report,
+)
 from ci.stages import containers as stage_containers  # noqa: E402
 from ci.stages import docs as stage_docs  # noqa: E402
 from ci.stages import governance as stage_governance  # noqa: E402
@@ -119,21 +131,66 @@ def render_latest_report(artifacts_root: Path) -> int:
     return 0 if manifest["overall_status"] == "PASS" else 1
 
 
+def _changed_paths_vs_base(repo_root: Path, base_ref: str = "origin/main") -> list[str]:
+    """Return sorted changed paths vs base_ref (name-status, including renames)."""
+    result = subprocess.run(
+        ["git", "diff", "--name-only", f"{base_ref}...HEAD"],
+        cwd=str(repo_root),
+        capture_output=True,
+        text=True,
+        check=False,
+    )
+    if result.returncode != 0:
+        # Fail closed: empty list triggers unclassified/full fallback upstream.
+        return []
+    return list(normalize_changed_paths(result.stdout.splitlines()))
+
+
 def run_ci(
     *,
     profile: str,
     stage: str | None,
     run_id: str | None,
     repo_root: Path,
+    slice_mode: bool = False,
+    changed_paths: list[str] | None = None,
+    routing_lane: str = "",
+    validation_profile: str = "",
+    unit_durations: int = 50,
 ) -> int:
     cfg_dir = repo_root / "ci" / "config"
     stages_cfg = load_yaml(cfg_dir / "stages.yaml")
     resources = load_yaml(cfg_dir / "resources.yaml")
     profiles = profiles_from_config(stages_cfg)
 
+    if slice_mode and profile == "fast":
+        profile = "slice"
     if profile not in profiles:
         raise SystemExit(
             f"Unknown profile {profile!r}; expected one of {sorted(profiles)}"
+        )
+
+    merge_evidence = profile != "slice" and not slice_mode
+    slice_selection_payload = None
+    if profile == "slice" or slice_mode:
+        merge_evidence = False
+        paths = list(
+            normalize_changed_paths(
+                changed_paths
+                if changed_paths is not None
+                else _changed_paths_vs_base(repo_root)
+            )
+        )
+        selection = select_slice_test_groups(
+            changed_paths=paths,
+            routing_lane=routing_lane,
+            validation_profile=validation_profile,
+            policy_path=default_policy_path(repo_root),
+        )
+        slice_selection_payload = selection.to_dict()
+        print(
+            f"slice_selection groups={selection.selected_test_groups} "
+            f"fallback={selection.fallback_reason!r} merge_evidence=false"
         )
 
     git = collect_git_info(repo_root)
@@ -149,6 +206,13 @@ def run_ci(
     (run_dir / "logs").mkdir()
     (run_dir / "reports").mkdir()
 
+    if slice_selection_payload is not None:
+        slice_report = run_dir / "reports" / "slice_selection.json"
+        slice_report.write_text(
+            json.dumps(slice_selection_payload, indent=2, sort_keys=True) + "\n",
+            encoding="utf-8",
+        )
+
     started = utc_now()
     ctx = StageContext(
         repo_root=repo_root,
@@ -157,18 +221,95 @@ def run_ci(
         git=git,
         profile=profile,
         resources=resources,
+        slice_selection=slice_selection_payload,
+        merge_evidence=merge_evidence,
+        unit_durations=unit_durations,
     )
 
     selected = [stage] if stage else list(profiles[profile])
     # Always append report aggregation for full/profile runs; for single-stage,
     # still produce a report unless stage==report.
-    stage_results = []
+    stage_results: list[StageResult] = []
     skipped_checks = [
         {
             "check": "policy-gate",
             "skip_reason": "GitHub-native PR API evaluation; local mirror only in Phase 1",
         }
     ]
+    if not merge_evidence:
+        skipped_checks.append(
+            {
+                "check": "merge_evidence",
+                "skip_reason": "slice_profile_merge_evidence_false",
+            }
+        )
+
+    # Temp-root preflight before any pytest/unit collection (#4205).
+    print("==> stage temp_preflight")
+    preflight_started = utc_now()
+    preflight = prepare_ci_temp_root(run_dir, rid, repo_root=repo_root)
+    preflight_report = run_dir / "reports" / "temp_preflight.json"
+    write_temp_preflight_report(preflight_report, preflight)
+    preflight_ended = utc_now()
+    preflight_stage = StageResult(
+        name="temp_preflight",
+        status="PASS" if preflight.ok else "FAIL",
+        exit_code=0 if preflight.ok else 1,
+        started_at_utc=preflight_started,
+        ended_at_utc=preflight_ended,
+        duration_seconds=0.0,
+        command_summary=[f"prepare_ci_temp_root:{preflight.reason_code}"],
+        log_path="",
+        artifacts=["reports/temp_preflight.json"],
+        skip_reason=None if preflight.ok else preflight.reason_code,
+        required=True,
+    )
+    stage_results.append(preflight_stage)
+    skipped_checks.append(
+        {
+            "check": "temp_root",
+            "skip_reason": f"{preflight.reason_code}:{preflight.redacted_root}",
+        }
+    )
+
+    if not preflight.ok:
+        print(f"temp_preflight FAIL reason_code={preflight.reason_code}")
+        report_result = stage_report.run(ctx, stage_results)
+        stage_results.append(report_result)
+        artifact_paths = sorted(run_dir.rglob("*"))
+        artifact_paths = [p for p in artifact_paths if p.is_file()]
+        artifact_hashes = hash_artifacts(artifact_paths, relative_to=run_dir)
+        ended = utc_now()
+        docker_v, compose_v = _docker_versions()
+        manifest = build_manifest(
+            run_id=rid,
+            commit_sha=git.commit_sha,
+            branch=git.branch,
+            dirty_worktree=git.dirty_worktree,
+            started_at_utc=started,
+            ended_at_utc=ended,
+            host_platform=platform.platform(),
+            tool_versions={
+                "python": platform.python_version(),
+                "ruff": _tool_version(["ruff", "--version"]),
+                "pytest": _tool_version([sys.executable, "-m", "pytest", "--version"]),
+            },
+            docker_version=docker_v,
+            compose_version=compose_v,
+            profile=profile if not stage else f"stage:{stage}",
+            stages=stage_results,
+            skipped_checks=skipped_checks,
+            artifact_hashes=artifact_hashes,
+            repo_name=git.repo_name,
+            merge_evidence=merge_evidence,
+        )
+        write_manifest(run_dir, manifest)
+        print(f"overall_status={manifest['overall_status']}")
+        print(f"evidence={run_dir}")
+        return 1
+
+    ctx.temp_root = preflight.temp_root
+    ctx.temp_env = temp_env_for(preflight.temp_root)
 
     for name in selected:
         if name == "report":
@@ -209,12 +350,14 @@ def run_ci(
         skipped_checks=skipped_checks,
         artifact_hashes=artifact_hashes,
         repo_name=git.repo_name,
+        merge_evidence=merge_evidence,
     )
     write_manifest(run_dir, manifest)
 
     # Re-hash after manifest write is intentionally NOT included in artifact_hashes
     # inside manifest (manifest.sha256 covers the finalized JSON).
     print(f"overall_status={manifest['overall_status']}")
+    print(f"merge_evidence={manifest.get('merge_evidence')}")
     print(f"evidence={run_dir}")
     if manifest["overall_status"] == "PASS":
         return 0
@@ -228,11 +371,43 @@ def main(argv: list[str] | None = None) -> int:
     parser.add_argument(
         "--profile",
         default="fast",
-        choices=["fast", "heavy"],
-        help="fast=lint/unit/docs/governance; heavy adds integration/security/containers",
+        choices=["fast", "slice", "heavy"],
+        help=(
+            "fast=full lint/unit/docs/governance (merge evidence eligible); "
+            "slice=same stages with path-selected unit tests (merge_evidence=false); "
+            "heavy adds integration/security/containers"
+        ),
     )
     parser.add_argument("--stage", default=None, help="Run a single named stage")
     parser.add_argument("--run-id", default=None, help="Optional explicit run id")
+    parser.add_argument(
+        "--slice",
+        action="store_true",
+        help="Enable slice selection (forces merge_evidence=false)",
+    )
+    parser.add_argument(
+        "--changed-path",
+        action="append",
+        default=None,
+        dest="changed_paths",
+        help="Changed path for slice selection (repeatable); default: git vs origin/main",
+    )
+    parser.add_argument(
+        "--routing-lane",
+        default="",
+        help="PR-router lane input for slice selection",
+    )
+    parser.add_argument(
+        "--validation-profile",
+        default="",
+        help="PR-router validation_profile input for slice selection",
+    )
+    parser.add_argument(
+        "--unit-durations",
+        type=int,
+        default=50,
+        help="Pass --durations=N to pytest unit stage (0 disables)",
+    )
     parser.add_argument(
         "--cleanup",
         metavar="RUN_ID",
@@ -260,6 +435,11 @@ def main(argv: list[str] | None = None) -> int:
         stage=args.stage,
         run_id=args.run_id,
         repo_root=repo_root,
+        slice_mode=bool(args.slice),
+        changed_paths=args.changed_paths,
+        routing_lane=args.routing_lane,
+        validation_profile=args.validation_profile,
+        unit_durations=int(args.unit_durations),
     )
 
 

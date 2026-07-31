@@ -11,11 +11,15 @@ The authoritative role definition for Claude is at `agents/roles/CLAUDE.md`. Rea
 **Mandatory session-start read order:**
 1. `agents/roles/CLAUDE.md` (role + governance)
 2. `agents/AGENTS.md` (agent registry)
-3. `knowledge/SYSTEM.CONTEXT.md`
-4. `CURRENT_STATUS.md` (current repo/engineering status)
-5. `docs/live-readiness/LR-AUDIT-STATUS-2026-03-05.md` (Go/No-Go verdict)
-6. `docs/runbooks/CONTROL_REGISTER.md` (board/stage focus)
-7. `knowledge/ACTIVE_ROADMAP.md`
+3. `knowledge/governance/CDB_CONSTITUTION.md`
+4. `knowledge/governance/CDB_GOVERNANCE.md`
+5. `knowledge/governance/CDB_AGENT_POLICY.md`
+6. `knowledge/governance/SYSTEM_INVARIANTS.md`
+7. `docs/meta/REPOSITORY_CANON.md`
+8. `CURRENT_STATUS.md` (current repo/engineering status)
+9. `docs/live-readiness/LR-AUDIT-STATUS-2026-03-05.md` (Go/No-Go verdict)
+10. `docs/runbooks/CONTROL_REGISTER.md` (board/stage focus)
+11. `agents/OPEN_CODE_AGENTS.md`
 
 **Live-Readiness: NO-GO** — no real trades without explicit human gate. See `docs/live-readiness/`.
 **Control Board Stage:** `trade-capable` (ratified 2026-04-08) — orthogonal to LR `NO-GO`; no live capital, no Grafana gate, no strategy validation.
@@ -24,11 +28,21 @@ The authoritative role definition for Claude is at `agents/roles/CLAUDE.md`. Rea
 - **Vor** jeder Repo-/GitHub-/Planungs-/Implementierungsarbeit:
   - Codex: `.codex/cdb_skills/cdb-session-start/SKILL.md`
   - Cursor: `.cursor/skills/cdb-session-start/SKILL.md`
+- **Vor** Plan-Finalisierung, Branch-, Worktree- oder PR-Erstellung:
+  - `python -m tools.pr_routing route --issue <ISSUE>`
+  - Skill: `docs/skills/cdb-pr-router/SKILL.md`
+  - Skill: `docs/skills/cdb-pr-completeness-review/SKILL.md` (before MERGE_CANDIDATE)
+  - Skill: `docs/skills/cdb-batch-merge-conductor/SKILL.md` (freeze/final merge orchestration)
 - **Nach** Implementierung/Validierung/Repo-Arbeit, vor Abschluss:
   - Codex: `.codex/cdb_skills/cdb-session-close/SKILL.md`
   - Cursor: `.cursor/skills/cdb-session-close/SKILL.md`
 
 **Session-Ende (Pflicht):** Session-Log unter `knowledge/logs/sessions/YYYY-MM-DD-<topic>.md` ablegen. `CURRENT_STATUS.md` aktualisieren wenn sich Repo-/Engineering-Status geändert hat.
+
+**PR-Flow v1:** Normale Sessions liefern targeted-validierte Slices in den
+gerouteten PR und enden mit `DONE_SLICE_ADDED_TO_BATCH_PR`. Full Fast-CI,
+`cdb-local-ci`, Merge und Issue-Closure gelten nur für einen eingefrorenen
+finalen `merge_candidate`.
 
 ---
 
@@ -107,9 +121,6 @@ make daily-check
 make backup              # Postgres + Redis to F:\Claire_Backups
 make security-scan       # gitleaks + ruff + bandit
 make pre-close           # pre-close sweep (untracked artefacts)
-make rollback MR=<number>  # rollback a merged MR
-make cleanup             # DRY-RUN: clean up merged branches
-make cleanup-live        # LIVE: clean up merged branches
 make mcp-config-validate # validate MCP configuration
 ```
 
@@ -187,11 +198,13 @@ Coverage target: 80% on `core/` and `services/` (enforced by `make test-coverage
 
 ### CI / Branch Protection
 
-- Required checks: `ci (Unit/Integration + Lint gesammelt)` + `policy-gate`
+- Required merge context (SSOT: `docs/runbooks/merge_policy_ci_gate.md`, verify live via `gh api`): `cdb-local-ci` (Commit Status, exact PR head SHA) — the only branch-protection-required context on `main`.
+- `ci (Unit/Integration + Lint gesammelt)` + `policy-gate` (Hosted Actions) remain advisory/safety-relevant but are not branch-protection-required since migration #4169.
 - `policy-gate` categorizes PRs; core/service PRs need label `allow-core-change` or `manual-approval`
 - `strict: true` — branch must be up-to-date with main before merge
 - Bot review threads (Sourcery, Copilot) must be resolved before merge
 - Runner: `ci.yml` runs on `ubuntu-latest` (GitHub-hosted); self-hosted runners decommissioned from active CI per #3575; historical labels defined in `infrastructure/actions-runner/`
+- Autonomous squash merge is capability-based (see `.cursor/rules/CDB-Checks-and-Merge-Rule.mdc`): allowed once `cdb-local-ci` SUCCESS is proven live on the exact PR head SHA; `--admin` is never a substitute for a missing/red required status.
 
 ### Key Governance Files
 

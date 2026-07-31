@@ -1,4 +1,6 @@
-# Canonical PR gate.
+# Canonical PR gate (advisory workflow content; not BP-required).
+# Validation logic is delegated to the local CI orchestrator (Issue #4163).
+# Required merge context remains Commit Status `cdb-local-ci` (see merge_policy_ci_gate.md).
 # This workflow is not the Docker CI lab baseline; 431B baseline is base.yml + test.yml.
 name: ci
 
@@ -24,9 +26,10 @@ permissions:
   contents: read
 
 jobs:
-  # SurrealQL syntax validation via official SurrealDB CLI binary.
+  # GitHub-native remainder: path-filtered SurrealQL syntax check (no Docker).
+  # Full governance (MCP + surreal + drift) also runs via --profile fast below.
   # Uses surreal validate (NOT surrealkit validate — that command does not exist).
-  # Binary downloaded directly from pinned GitHub release (v3.1.5), no Docker needed.
+  # Binary downloaded directly from pinned GitHub release (v3.1.5).
   # No DB connection, no schema sync, no migration. Pure syntax check.
   surrealdb-validate:
     name: surrealdb-validate
@@ -45,13 +48,18 @@ jobs:
           /tmp/surreal validate "${{ github.workspace }}/infrastructure/surrealdb/context_intelligence_v0.surql"
 
   ci:
-    # Canonical PR gate: branch protection and Sentinel depend on this exact check-run name.
+    # Stable check-run name (workflow safety surface; not BP-required after #4169).
     name: ci (Unit/Integration + Lint gesammelt)
     runs-on: ubuntu-latest
 
     steps:
       - name: Checkout
         uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1
+        with:
+          fetch-depth: 0
+
+      - name: Fetch origin/main for lint base
+        run: git fetch --no-tags --depth=1 origin main
 
       - name: Setup Python
         uses: actions/setup-python@5fda3b95a4ea91299a34e894583c3862153e4b97
@@ -64,28 +72,14 @@ jobs:
           pip install -r requirements.txt
           pip install -r requirements-dev.txt
           pip install -r requirements-mcp.txt
-          pip install ruff black
-        # Falls ihr kein requirements.txt habt, sag kurz Bescheid – dann passt man das sauber an.
+          # Toolchain SSOT (#4206): black/ruff pins from requirements-dev.txt only.
+          # Do not reinstall unversioned ruff/black after the requirements install.
 
-      - name: MCP Validation
-        run: make mcp-config-validate MCP_CONFIG_PATHS="tests/fixtures/mcp_smoke_config.json"
-
-      - name: Ruff
-        run: ruff check .
-
-      - name: Black
+      - name: Install SurrealDB CLI (pinned v3.1.5)
         run: |
-          BASE="${{ github.event.pull_request.base.sha || github.event.before }}"
-          HEAD="${{ github.sha }}"
-          FILES=$(git diff --name-only --diff-filter=d "$BASE" "$HEAD" -- '*.py' ':!.codex/**' ':!.opencode/**' | xargs)
-          [ -z "$FILES" ] && echo "No python changes" && exit 0
-          black --config pyproject.toml --check $FILES
+          curl -fsSL "https://github.com/surrealdb/surrealdb/releases/download/v3.1.5/surreal-v3.1.5.linux-amd64.tgz" | tar xz -C /tmp
+          sudo install -m 0755 /tmp/surreal /usr/local/bin/surreal
+          surreal version
 
-      - name: Tests
-        run: pytest -q -k "not test_mcp_time_server_runtime"
-
-      - name: Onboarding Docs Guard
-        run: python -m tools.validate_onboarding_docs
-
-      - name: README Links Guard
-        run: python -m tools.validate_readme_links
+      - name: Run canonical local CI (fast profile)
+        run: python ci/scripts/run.py --profile fast

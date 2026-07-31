@@ -20,6 +20,13 @@ from typing import Any, Mapping, Sequence
 from jsonschema.validators import validator_for
 
 from core.replay.canonical_json import canonical_hash, canonical_json_dumps
+from core.replay.execution_economics_v1 import (
+    COMPONENT_STATUS_ACTIVE,
+    COMPONENT_STATUS_NOT_APPLICABLE,
+    ORDER_TYPE_MARKET,
+    build_assumptions_snapshot,
+    reconcile_gross_to_net,
+)
 
 from core.replay.regime_stats import regime_scorecard_status_from_stats
 from services.validation.profitability_evidence_packet_assembler import (
@@ -38,13 +45,18 @@ EVIDENCE_CLASS = "historical_cross_venue_research"
 SOURCE_VENUE = "Binance Spot BTCUSDT"
 LR_STATUS = "NO-GO"
 BOARD_STAGE = "trade-capable"
-BOARD_STAGE_NOTE = (
-    "Board stage trade-capable is orthogonal to LR NO-GO and authorizes no live capital."
-)
+BOARD_STAGE_NOTE = "Board stage trade-capable is orthogonal to LR NO-GO and authorizes no live capital."
 
 SCENARIOS = ("baseline", "pessimistic_execution", "feed_gap")
 PURPOSE_ORDER = ("development", "validation", "out_of_sample", "stress")
-WINDOW_CLASS_ORDER = ("monthly", "quarterly", "yearly", "stress_v2", "stress", "unknown")
+WINDOW_CLASS_ORDER = (
+    "monthly",
+    "quarterly",
+    "yearly",
+    "stress_v2",
+    "stress",
+    "unknown",
+)
 
 RANKABILITY_RANKABLE = "RANKABLE_FOR_CROSS_VENUE_COMPARISON"
 RANKABILITY_NOT = "NOT_RANKABLE"
@@ -98,7 +110,9 @@ def _validate_metrics_bundle(bundle: Mapping[str, Any]) -> None:
     validator_cls = validator_for(schema)
     validator_cls.check_schema(schema)
     validator = validator_cls(schema)
-    errors = sorted(validator.iter_errors(dict(bundle)), key=lambda err: str(err.message))
+    errors = sorted(
+        validator.iter_errors(dict(bundle)), key=lambda err: str(err.message)
+    )
     if errors:
         first = errors[0]
         path = ".".join(str(part) for part in first.path) or "<root>"
@@ -397,7 +411,9 @@ def _scenario_sensitivity(records: Sequence[Mapping[str, Any]]) -> list[dict[str
                 "cost_sensitivity": {
                     "pessimistic_execution": {
                         "net_pnl_quote_delta": _safe_delta(base_net, pessimistic_net),
-                        "fees_total_quote_delta": _safe_delta(base_fees, pessimistic_fees),
+                        "fees_total_quote_delta": _safe_delta(
+                            base_fees, pessimistic_fees
+                        ),
                         "max_drawdown_r_delta": _safe_delta(base_dd, pessimistic_dd),
                     }
                 },
@@ -455,14 +471,18 @@ def _split_stability(
     return stability
 
 
-def _assess_candidate_rankability(records: Sequence[Mapping[str, Any]]) -> tuple[str, list[str]]:
+def _assess_candidate_rankability(
+    records: Sequence[Mapping[str, Any]],
+) -> tuple[str, list[str]]:
     baseline_records = [
         record for record in records if str(record.get("scenario") or "") == "baseline"
     ]
     if not baseline_records:
         return RANKABILITY_NOT, ["missing_baseline_records"]
 
-    rankable_count = sum(1 for record in baseline_records if record.get("rankable") is True)
+    rankable_count = sum(
+        1 for record in baseline_records if record.get("rankable") is True
+    )
     zero_trade = sum(
         1
         for record in baseline_records
@@ -518,13 +538,104 @@ def _packet_content_hash(packet: Mapping[str, Any]) -> str:
     return canonical_hash(_hashable_packet(packet))
 
 
-def _top_level_summary(records: Sequence[Mapping[str, Any]]) -> dict[str, Any]:
-    baseline = [
+def _baseline_records(
+    records: Sequence[Mapping[str, Any]],
+) -> list[Mapping[str, Any]]:
+    return [
         record for record in records if str(record.get("scenario") or "") == "baseline"
     ]
+
+
+def _median_optional(values: Sequence[float | None]) -> float | None:
+    present = [v for v in values if v is not None]
+    if not present:
+        return None
+    return _median(present)
+
+
+def _build_gross_to_net_block(
+    records: Sequence[Mapping[str, Any]],
+) -> dict[str, Any]:
+    """Build machine-readable gross-to-net evidence for baseline medians.
+
+    Legacy ``gross_pnl_quote`` is treated as fill-price-embedded gross. When
+    per-window ``slippage_cost_quote`` is absent, slippage is marked
+    not_applicable (not a measured zero). Spread remains not_applicable.
+    """
+    baseline = _baseline_records(records)
+    embedded_gross = _median_optional(
+        [_as_float(record.get("gross_pnl_quote")) for record in baseline]
+    )
+    fees = _median_optional(
+        [_as_float(record.get("fees_total_quote")) for record in baseline]
+    )
+    maker_fees = _median_optional(
+        [_as_float(record.get("maker_fee_cost_quote")) for record in baseline]
+    )
+    taker_fees = _median_optional(
+        [_as_float(record.get("taker_fee_cost_quote")) for record in baseline]
+    )
+    slippage_values = [
+        _as_float(record.get("slippage_cost_quote")) for record in baseline
+    ]
+    slippage_present = [v for v in slippage_values if v is not None]
+    slippage_median = _median(slippage_present) if slippage_present else None
+
+    if taker_fees is None and maker_fees is None:
+        maker_fee_cost = 0.0
+        taker_fee_cost = float(fees or 0.0)
+    else:
+        maker_fee_cost = float(maker_fees or 0.0)
+        taker_fee_cost = float(taker_fees if taker_fees is not None else (fees or 0.0))
+
+    # When slippage is attributed, reconstruct reference gross = embedded + slippage.
+    if slippage_median is not None:
+        reference_gross = float(embedded_gross or 0.0) + float(slippage_median)
+        slippage_status = COMPONENT_STATUS_ACTIVE
+        slippage_cost = float(slippage_median)
+    else:
+        # Without attribution, do not invent slippage; treat embedded gross as
+        # the research gross and mark slippage not_applicable.
+        reference_gross = float(embedded_gross or 0.0)
+        slippage_status = COMPONENT_STATUS_NOT_APPLICABLE
+        slippage_cost = None
+
+    result = reconcile_gross_to_net(
+        gross_pnl=reference_gross,
+        maker_fee_cost=maker_fee_cost,
+        taker_fee_cost=taker_fee_cost,
+        slippage_cost=slippage_cost,
+        slippage_status=slippage_status,
+        order_type=ORDER_TYPE_MARKET,
+        fill_price_embedded_gross=embedded_gross,
+        assumptions_snapshot=build_assumptions_snapshot(),
+        limitations=(
+            "Top-level PEP gross_return/net_return remain descriptive medians.",
+            "Spread is not modeled in ExecutionSimulator (not_applicable).",
+            "Slippage is not_applicable unless slippage_cost_quote is present on metrics.",
+            "Funding is inactive_not_wired: no funding-rate series reaches the runner path.",
+            "Limit orders are parked and not economics-billable; ARVP fills are market/taker.",
+            "Synthetic research assumptions; not venue-verified.",
+            "Does not prove profitability, live readiness, or venue realism.",
+        ),
+    )
+    payload = result.to_dict()
+    payload["slippage_availability"] = (
+        "available" if slippage_median is not None else "not_available"
+    )
+    payload["spread_availability"] = "not_applicable"
+    return payload
+
+
+def _top_level_summary(records: Sequence[Mapping[str, Any]]) -> dict[str, Any]:
+    baseline = _baseline_records(records)
     net_values = [_as_float(record.get("net_pnl_quote")) for record in baseline]
     gross_values = [_as_float(record.get("gross_pnl_quote")) for record in baseline]
     fee_values = [_as_float(record.get("fees_total_quote")) for record in baseline]
+    slippage_values = [
+        _as_float(record.get("slippage_cost_quote")) for record in baseline
+    ]
+    slippage_present = [v for v in slippage_values if v is not None]
     pf_values = [
         value
         for record in baseline
@@ -551,12 +662,18 @@ def _top_level_summary(records: Sequence[Mapping[str, Any]]) -> dict[str, Any]:
         if (trades := _as_int(record.get("closed_trades_total"))) is not None
     )
 
+    # PEP schema requires numeric spread/slippage >= 0. Measured absence is
+    # represented as 0 at top-level with explicit availability in cost_evidence.
+    slippage_top = float(_median(slippage_present)) if slippage_present else 0.0
+
     return {
         "gross_return": _median([v for v in gross_values if v is not None]) or 0.0,
         "net_return": _median([v for v in net_values if v is not None]) or 0.0,
         "fees": _median([v for v in fee_values if v is not None]) or 0.0,
         "spread_cost": 0.0,
-        "slippage_cost": 0.0,
+        "spread_availability": "not_applicable",
+        "slippage_cost": slippage_top,
+        "slippage_availability": ("available" if slippage_present else "not_available"),
         "profit_factor": _median(pf_values),
         "expectancy": _median(expectancy_values) or 0.0,
         "win_rate": _median(win_values) or 0.0,
@@ -565,6 +682,7 @@ def _top_level_summary(records: Sequence[Mapping[str, Any]]) -> dict[str, Any]:
         "max_drawdown": max(dd_values) if dd_values else None,
         "loss_streak": 0,
         "trade_count": trade_total,
+        "execution_economics_gross_to_net": _build_gross_to_net_block(records),
     }
 
 
@@ -654,15 +772,17 @@ def build_candidate_evidence_packet(
     summary = _top_level_summary(records)
     purposes = sorted(
         {_normalize_purpose(record.get("purpose")) for record in records},
-        key=lambda item: PURPOSE_ORDER.index(item)
-        if item in PURPOSE_ORDER
-        else len(PURPOSE_ORDER),
+        key=lambda item: (
+            PURPOSE_ORDER.index(item) if item in PURPOSE_ORDER else len(PURPOSE_ORDER)
+        ),
     )
     window_classes = sorted(
         {_normalize_window_class(record.get("window_class")) for record in records},
-        key=lambda item: WINDOW_CLASS_ORDER.index(item)
-        if item in WINDOW_CLASS_ORDER
-        else len(WINDOW_CLASS_ORDER),
+        key=lambda item: (
+            WINDOW_CLASS_ORDER.index(item)
+            if item in WINDOW_CLASS_ORDER
+            else len(WINDOW_CLASS_ORDER)
+        ),
     )
 
     limitations = list(_LIMITATIONS_BASE)
@@ -676,6 +796,16 @@ def build_candidate_evidence_packet(
     )
     limitations.append(
         "Regime fields describe window-level regime_availability and compact regime_stats when present."
+    )
+    limitations.append(
+        "Spread cost is not_applicable (not modeled); top-level spread_cost=0 is schema placeholder, not measured zero."
+    )
+    if summary.get("slippage_availability") != "available":
+        limitations.append(
+            "Slippage cost not_available on metrics; top-level slippage_cost=0 is schema placeholder, not measured zero."
+        )
+    limitations.append(
+        "Gross-to-net details live under arvp_evidence.cost_evidence.execution_economics_gross_to_net."
     )
 
     regime_scorecard_block = _regime_scorecard_block_from_records(records)
@@ -784,7 +914,8 @@ def build_candidate_evidence_packet(
                     trades
                     for record in records
                     if str(record.get("scenario") or "") == "baseline"
-                    and (trades := _as_int(record.get("closed_trades_total"))) is not None
+                    and (trades := _as_int(record.get("closed_trades_total")))
+                    is not None
                 ),
                 "zero_trade_baseline_windows": sum(
                     1
@@ -796,10 +927,14 @@ def build_candidate_evidence_packet(
         },
         "arvp_evidence": {
             "economic_metric_summaries": [
-                _economic_summary(record) for record in sorted(records, key=lambda item: (
-                    str(item.get("job_id") or ""),
-                    str(item.get("scenario") or ""),
-                ))
+                _economic_summary(record)
+                for record in sorted(
+                    records,
+                    key=lambda item: (
+                        str(item.get("job_id") or ""),
+                        str(item.get("scenario") or ""),
+                    ),
+                )
             ],
             "scenario_sensitivity": _scenario_sensitivity(records),
             "split_stability": _split_stability(records, scenario="baseline"),
@@ -811,7 +946,15 @@ def build_candidate_evidence_packet(
                         if str(record.get("scenario") or "") == "baseline"
                     ]
                 ),
-                "slippage_availability": "not_available",
+                "spread_availability": summary.get(
+                    "spread_availability", "not_applicable"
+                ),
+                "slippage_availability": summary.get(
+                    "slippage_availability", "not_available"
+                ),
+                "execution_economics_gross_to_net": summary[
+                    "execution_economics_gross_to_net"
+                ],
             },
             "stress_evidence": {
                 "stress_windows": [
@@ -821,7 +964,9 @@ def build_candidate_evidence_packet(
                         "scenario": record.get("scenario"),
                         "net_pnl_quote": _as_float(record.get("net_pnl_quote")),
                         "max_drawdown_r": _as_float(record.get("max_drawdown_r")),
-                        "closed_trades_total": _as_int(record.get("closed_trades_total")),
+                        "closed_trades_total": _as_int(
+                            record.get("closed_trades_total")
+                        ),
                     }
                     for record in records
                     if _normalize_purpose(record.get("purpose")) == "stress"
@@ -847,7 +992,9 @@ def assemble_arvp_candidate_evidence(
 
     records_raw = metrics_bundle.get("records")
     if not isinstance(records_raw, list) or not records_raw:
-        raise ArvpCandidateEvidenceAssemblerError("metrics bundle records must be non-empty")
+        raise ArvpCandidateEvidenceAssemblerError(
+            "metrics bundle records must be non-empty"
+        )
 
     campaign_id = str(metrics_bundle.get("campaign_id") or "")
     source_content_hash = str(metrics_bundle.get("content_hash") or "")
@@ -901,7 +1048,9 @@ def assemble_from_metrics_bundle_path(
 ) -> CandidateAssemblyResult:
     payload = json.loads(bundle_path.read_text(encoding="utf-8"))
     if not isinstance(payload, dict):
-        raise ArvpCandidateEvidenceAssemblerError("metrics bundle must be a JSON object")
+        raise ArvpCandidateEvidenceAssemblerError(
+            "metrics bundle must be a JSON object"
+        )
     return assemble_arvp_candidate_evidence(payload, generated_at=generated_at)
 
 

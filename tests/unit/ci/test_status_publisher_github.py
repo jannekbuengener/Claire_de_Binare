@@ -49,6 +49,22 @@ class FakeTransport:
         return self.responses.pop(0)
 
 
+class FakeStatusWriter:
+    def __init__(self, response: dict[str, Any] | None = None) -> None:
+        self.calls: list[dict[str, Any]] = []
+        self.response = response or {"id": 1, "state": "success", "sha": SHA}
+
+    def __call__(
+        self,
+        owner: str,
+        repo: str,
+        sha: str,
+        body: dict[str, Any],
+    ) -> dict[str, Any]:
+        self.calls.append({"owner": owner, "repo": repo, "sha": sha, "body": body})
+        return self.response
+
+
 def test_dry_run_performs_no_write():
     transport = FakeTransport()
     client = GitHubStatusClient(token="ghs_testtoken12345678", transport=transport)
@@ -65,11 +81,8 @@ def test_dry_run_performs_no_write():
 
 
 def test_success_payload_targets_exact_sha():
-    transport = FakeTransport()
-    transport.responses.append(
-        GitHubResponse(201, {"id": 1, "state": "success", "sha": SHA}, {})
-    )
-    client = GitHubStatusClient(token="token", transport=transport)
+    writer = FakeStatusWriter()
+    client = GitHubStatusClient(token="token", status_writer=writer)
     payload = StatusPayload(
         sha=SHA,
         state="success",
@@ -77,10 +90,9 @@ def test_success_payload_targets_exact_sha():
         description="Local Docker CI evidence verified for exact commit SHA.",
     )
     client.create_commit_status(payload, dry_run=False)
-    assert transport.calls[0]["method"] == "POST"
-    assert SHA in transport.calls[0]["url"]
-    assert transport.calls[0]["body"]["state"] == "success"
-    assert transport.calls[0]["body"]["context"] == "cdb-local-ci"
+    assert writer.calls[0]["sha"] == SHA
+    assert writer.calls[0]["body"]["state"] == "success"
+    assert writer.calls[0]["body"]["context"] == "cdb-local-ci"
 
 
 def test_failure_never_produces_success_conclusion():
@@ -95,11 +107,10 @@ def test_failure_never_produces_success_conclusion():
 
 
 def test_insufficient_permissions_fail_closed():
-    transport = FakeTransport()
-    transport.responses.append(
-        GitHubResponse(403, {"message": "Resource not accessible"}, {})
-    )
-    client = GitHubStatusClient(token="token", transport=transport)
+    def denied(owner: str, repo: str, sha: str, body: dict[str, Any]) -> dict[str, Any]:
+        raise AuthenticationError("Insufficient gh permission")
+
+    client = GitHubStatusClient(token="token", status_writer=denied)
     payload = StatusPayload(
         sha=SHA, state="success", context="cdb-local-ci", description="ok"
     )
@@ -156,10 +167,12 @@ def test_existing_unrelated_statuses_remain_untouched():
             {},
         )
     )
-    transport.responses.append(
-        GitHubResponse(201, {"id": 99, "context": "cdb-local-ci-preview"}, {})
+    writer = FakeStatusWriter(
+        {"id": 99, "state": "success", "context": "cdb-local-ci-preview"}
     )
-    client = GitHubStatusClient(token="token", transport=transport)
+    client = GitHubStatusClient(
+        token="token", transport=transport, status_writer=writer
+    )
     before = client.get_commit_status(SHA)
     assert len(before["statuses"]) == 2
     payload = StatusPayload(
@@ -169,13 +182,9 @@ def test_existing_unrelated_statuses_remain_untouched():
         description="ok",
     )
     client.create_commit_status(payload, dry_run=False)
-    assert transport.calls[1]["body"]["context"] == "cdb-local-ci-preview"
+    assert writer.calls[0]["body"]["context"] == "cdb-local-ci-preview"
     # No call mutated other contexts.
-    assert all(
-        c.get("body", {}).get("context") != "policy-gate"
-        for c in transport.calls
-        if c["method"] == "POST"
-    )
+    assert all(c.get("body", {}).get("context") != "policy-gate" for c in writer.calls)
 
 
 def test_check_run_and_commit_status_payloads_are_deterministic():
@@ -194,5 +203,8 @@ def test_check_run_and_commit_status_payloads_are_deterministic():
         target_url="https://example.test/evidence",
     )
     assert a.to_api_body() == b.to_api_body()
-    # Phase 3a documents Commit Status only; Check Run adapter is intentionally absent.
+    # Check Runs are implemented in CheckRunBackend, not on GitHubStatusClient.
     assert not hasattr(GitHubStatusClient, "create_check_run")
+    from ci.publisher.backends import CheckRunBackend
+
+    assert hasattr(CheckRunBackend, "publish")

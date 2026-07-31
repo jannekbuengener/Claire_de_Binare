@@ -2,7 +2,7 @@
 Canonical Skill Source: docs/skills/cdb-session-close/SKILL.md
 Surface: opencode
 Sync Status: mirrored-from-canon
-Last Verified: 2026-07-01
+Last Verified: 2026-07-30
 Drift Policy: Surface-Adapter duerfen nur mit dokumentierter Begruendung abweichen.
 -->
 ---
@@ -78,33 +78,40 @@ Close a working session so the repo, git state, and issue thread reflect reality
    - If push is not done, say so explicitly in the rest status.
    - If the issue state should change, describe the correct next state rather than claiming it changed when it did not.
    - If the work is still local-only, make that explicit in the issue-facing close-out instead of implying landed or review-ready state.
-   - If a PR was merged during this session, proceed to step 6. If no PR exists or the PR is still open, skip steps 6–7 and record `pending main-verification` or `n.a.` in the rest status.
-6. Verify delivery on `main` — only when a PR was merged in this session:
+   - If a PR was merged during this session, proceed to step 6. If no PR
+     exists: skip steps 6–7. If the PR is still open because this session
+     could not prove the autonomous-merge capability gate (missing
+     `statuses:write`, unbound evidence, auth/publisher block): record
+     `DONE_PR_OPEN_MERGE_HANDOFF` with the exact missing capability and
+     skip steps 6–7. Do not use `--admin` and do not loop retries.
+6. Verify remote merge delivery — only when a PR was merged in this session
+   (or when closing after a known merge of this session's PR):
 
    ```bash
-   gh pr view <PR> --json state,mergedAt,mergeCommit
-   git fetch origin main
-   git log origin/main --oneline -5
-   git checkout main
-   git merge --ff-only origin/main
+   git fetch origin --prune
+   gh pr view <PR> --json state,mergedAt,mergeCommit,headRefName,headRefOid
+   gh issue view <N> --json state,closedAt   # if an issue was targeted
+   git rev-parse origin/main
+   git merge-base --is-ancestor <MERGE_SHA> origin/main
    ```
 
    Determine:
-   - PR merged + merge commit visible on `origin/main` + `--ff-only` succeeded → proceed to step 7.
-   - PR merged but merge commit absent from `origin/main` → STOP, session = incomplete.
-   - `--ff-only` fails → report as pending, do not force.
-   - No PR in this session → mark as `n.a.`, skip this step.
-7. Classify temporary git surfaces — only when applicable:
+   - PR `MERGED` + merge commit on `origin/main` → proceed to step 7
+     (local post-merge cleanup). Issue may be `CLOSED` or still open; document
+     which. Remote head-branch absent (API 404 after `--delete-branch`) is
+     expected; do not recreate it.
+   - PR merged but merge commit absent from `origin/main` → STOP,
+     session incomplete / `HOLD_REMOTE_STATE_DRIFT`.
+   - Unexpected remote branch still present after squash+delete →
+     `HOLD_REMOTE_BRANCH_UNEXPECTEDLY_EXISTS` (do not auto-delete/repush).
+   - No PR in this session → mark as `n.a.`, skip steps 6–7.
 
-   ```bash
-   git worktree list                       # any session worktrees?
-   git branch -v --merged origin/main      # any merged feature branch?
-   ```
+7. Local post-merge cleanup (evidence-based; never blind delete) — only when
+   step 6 proved `MERGED` for this session's PR. Full contract:
+   **§ Safe Post-Merge Cleanup** below. Success status for this hop:
+   `DONE_LOCAL_POST_MERGE_CLEANUP`. Note: `DONE_MERGED_CLOSED` alone does
+   **not** mean local cleanup already finished.
 
-   - If a session worktree is present and unambiguously from this session: `git worktree remove <path>`.
-   - If a feature branch is merged and clearly tied to this session: `git branch -d <branch>`.
-   - Otherwise: record as `n.a.` or `pending` — no blind deletes.
-   - Leftover untracked files (session logs, patches): name each one explicitly and state whether it is committed, discarded, or pending. Do not ignore.
 8. Post-close Control-Plane Follow-up Intake — mandatory after steps 6–7 when applicable, or after any issue-driven session close:
 
    Always after a merged PR or issue-driven session close, sweep for new
@@ -278,6 +285,132 @@ Close a working session so the repo, git state, and issue thread reflect reality
 - Do not mark a session `erledigt` when step 9 found residual work requiring a
   follow-up issue that was not created or linked.
 - Do not silently expand scope to resolve residual findings during close.
+- **Kein sofortiger / kein unmittelbarer `CURRENT_STATUS-only`- oder
+  `ledger-only`-Nachlauf-PR nach Merge** (verboten, Issue `#4218`). Status-
+  oder Ledger-Nachpflege gehört entweder **vor dem Freeze** in den
+  ursprünglichen PR oder später in den nächsten kompatiblen
+  **`docs-governance`**-Batch via `cdb-pr-router`. Unklarheit → fail-closed:
+  dokumentieren und batchen, keinen Einzel-PR öffnen. Enge Ausnahme nur bei
+  nachweislich sicherheitskritisch falschem Claim mit unmittelbarer
+  Runtime-/Risk-/LR-/Echtgeld-Fehlentscheidungsgefahr (begründet, geroutet,
+  Incident-/Governance-Scope — kein gewöhnlicher Status-Tail-PR).
+
+## Safe Post-Merge Cleanup (canonical)
+
+Trigger: a PR from this session (or an explicitly identified PR) is live
+`MERGED` and the merge commit is on `origin/main`. Cleanup is **not** blind
+deletion. Remove worktree/branch only when evidence proves no unsaved or
+unmerged content would be lost.
+
+### Status taxonomy (cleanup hop)
+
+| Status | Meaning |
+|---|---|
+| `DONE_LOCAL_POST_MERGE_CLEANUP` | Remote merge verified + local worktree/branch cleaned + main ff-only + no repush |
+| `HOLD_REMOTE_STATE_DRIFT` | PR/issue/merge-SHA state unexpected |
+| `HOLD_REMOTE_BRANCH_UNEXPECTEDLY_EXISTS` | Remote head still present after expected `--delete-branch` |
+| `HOLD_UNSAVED_LOCAL_CHANGES` | Target worktree dirty (staged/unstaged/untracked) |
+| `HOLD_REAL_UNMERGED_CHANGES` | Extra commits/patches not in `origin/main` |
+| `HOLD_MAIN_NOT_FAST_FORWARDABLE` | Local main cannot ff-only to `origin/main` |
+| `BLOCKED_CLEANUP_EQUIVALENCE_UNCLEAR` | Squash tree/patch equivalence not proven |
+| `BLOCKED_WORKTREE_REMOVAL` | Worktree cannot be removed safely |
+| `BLOCKED_LOCAL_BRANCH_REMOVAL` | Local branch cannot be removed safely |
+
+`DONE_MERGED_CLOSED` ≠ local cleanup done. Report cleanup separately.
+
+### Phase A — Inventory
+
+```bash
+git worktree list --porcelain
+git branch -vv
+```
+
+Identify: primary/main worktree, PR worktree path, local `[gone]` branch,
+whether the branch is checked out anywhere. Touch **only** this PR's worktree
+and branch.
+
+### Phase B — Data safety (inside target worktree)
+
+```bash
+git status --porcelain=v1 --untracked-files=all   # must be empty
+git rev-parse HEAD HEAD^{tree} origin/main origin/main^{tree}
+git log --oneline origin/main..HEAD               # expect PR commits or empty after squash tip
+git diff --quiet HEAD origin/main                 # exit 0 ⇒ identical trees preferred
+git diff --stat origin/main..HEAD                 # two-dot should be empty when trees match
+git cherry origin/main HEAD                       # advisory only after squash
+```
+
+**Squash rule:** Squash merges create new SHAs. `git cherry` / missing ancestry
+are **not** alone proof of unmerged work. Prefer identical
+`HEAD^{tree}` vs `origin/main^{tree}`, empty two-dot diff, and/or all PR
+paths blob-identical on `origin/main`. Optional: stable patch-id when lineage
+is unclear. No commits after the verified PR head. No open PR on that head.
+
+Dirty → `HOLD_UNSAVED_LOCAL_CHANGES`. Real delta → `HOLD_REAL_UNMERGED_CHANGES`.
+Unclear equivalence → `BLOCKED_CLEANUP_EQUIVALENCE_UNCLEAR`.
+
+### Phase C — Worktree removal
+
+Preconditions: Phase B clean + equivalence proven; remote branch absent;
+worktree is not the main worktree; remove from **another** worktree.
+
+```bash
+git worktree remove <TARGET_WORKTREE_PATH>
+git worktree prune
+git worktree list --porcelain
+```
+
+No `--force` while cause is unclear. Never delete foreign worktrees.
+
+### Phase D — Local branch removal
+
+Preconditions: worktree removed; branch not checked out; remote absent;
+equivalence proven.
+
+```bash
+git branch -d <PR_HEAD_BRANCH>
+```
+
+If `-d` fails **only** because squash non-ancestor and Phase B fully proved
+tree/patch equivalence, then:
+
+```bash
+git branch -D <PR_HEAD_BRANCH>
+```
+
+`-D` is a controlled squash fallback, not the default.
+
+### Phase E — Main ff-only
+
+Use the existing main worktree (do not force a second `main`). Require clean
+main worktree, then:
+
+```bash
+git fetch origin --prune
+git pull --ff-only origin main
+git rev-parse HEAD origin/main   # must match; merge SHA on HEAD
+```
+
+No local merge commit. No `reset --hard` / `git clean -fd` as default. If
+divergent → `HOLD_MAIN_NOT_FAST_FORWARDABLE`.
+
+### Phase F — Anti-repush (hard)
+
+Before any `git push -u origin HEAD`:
+
+1. Is the associated PR already `MERGED`?
+2. Is the remote branch deleted?
+3. Is the local branch only historical (`[gone]`)?
+
+If yes: **do not** republish that branch. New unmerged work → **new** branch
+name / follow-up PR — never revive the deleted merged head.
+
+### Fail-closed additions for cleanup
+
+- If `git merge --ff-only origin/main` fails: `HOLD_MAIN_NOT_FAST_FORWARDABLE`;
+  do not force.
+- If worktree remove fails for unclear dirty state: `BLOCKED_WORKTREE_REMOVAL`.
+- If equivalence is incomplete: do not `-D`; `BLOCKED_CLEANUP_EQUIVALENCE_UNCLEAR`.
 
 ## Fail-Closed Rules
 
@@ -292,7 +425,13 @@ Close a working session so the repo, git state, and issue thread reflect reality
 - If push or issue-status updates were not performed, keep them as pending actions in the close-out.
 - If the issue comment would overstate what landed, what was pushed, or what is actually done, downgrade the final status and state the pending step explicitly.
 - If a PR was merged but the merge commit cannot be verified on `origin/main`: the session is incomplete; do not set status to `erledigt`.
-- If `git merge --ff-only origin/main` fails: report as pending; do not force a merge or ignore the divergence.
+- If `git merge --ff-only origin/main` / main ff-only fails: report
+  `HOLD_MAIN_NOT_FAST_FORWARDABLE`; do not force a merge or ignore divergence.
+- If local post-merge cleanup would discard unsaved changes: `HOLD_UNSAVED_LOCAL_CHANGES`.
+- If squash tree/patch equivalence is unclear: `BLOCKED_CLEANUP_EQUIVALENCE_UNCLEAR`
+  (do not `branch -D`).
+- If tempted to `git push -u origin HEAD` for a MERGED/`[gone]` branch: STOP
+  (anti-repush).
 - If new follow-up issues are found but their link to this session is unclear: do not auto-start.
 - If more than one equally ranked candidate exists: do not pick blindly; emit a prioritized list.
 - If the candidate issue has Runtime-, Docker-rebuild-, Secrets-, Security-, LR-, Live-,
@@ -332,6 +471,8 @@ Main-Verifikation (nur wenn PR gemergt, sonst n.a.)
 Surface-Cleanup (nur wenn applicable, sonst n.a.)
 - Worktrees: entfernt: <liste> / n.a. / pending
 - Feature-Branch: gelöscht: <name> / n.a. / pending
+- Local post-merge cleanup: DONE_LOCAL_POST_MERGE_CLEANUP / HOLD_* / BLOCKED_* / n.a.
+- Anti-repush: confirmed (no republish of deleted remote) / n.a.
 - Leftover-Files: <klassifikation> / keine / n.a.
 
 Post-Close Follow-up Intake
@@ -397,3 +538,25 @@ Status
 - Do not claim checks ran when they did not.
 - Do not hide uncommitted residue.
 - Do not label work as `bereit fuer Claude Code` without a real continuation need.
+
+## Default Batch-Slice Close
+
+Der normale Abschluss ist:
+
+```yaml
+full_fast_ci: false
+publish_cdb_local_ci: false
+merge: false
+close_issue: false
+status: DONE_SLICE_ADDED_TO_BATCH_PR
+```
+
+Pflicht sind targeted Tests, betroffener Lint/Format-Scope, `git diff --check`,
+Commit, Push, PR-Ledger-Update, Issue-Handoff und dokumentierte
+Restunsicherheit. Der Issue bleibt bis zum verifizierten Merge offen.
+
+Nur nach schema-validem Completeness-Verdikt `MERGE_CANDIDATE` von
+`cdb-pr-completeness-review` und Conductor-Freeze (`cdb-batch-merge-conductor`)
+wechselt der PR in den separaten Merge-Steward-Flow mit Full Fast-CI und
+`cdb-local-ci` auf exakt dem finalen Head. Schließe nur Ledger-Zeilen mit
+`SLICE_DELIVERED`.

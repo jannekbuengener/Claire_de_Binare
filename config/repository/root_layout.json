@@ -30,7 +30,6 @@
     ".env.memory.example",
     ".gitattributes",
     ".gitignore",
-    ".gitlab-ci.yml",
     ".gitleaksignore",
     ".pre-commit-config.yaml",
     ".secretsignore",

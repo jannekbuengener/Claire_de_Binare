@@ -46,16 +46,25 @@ LR remains **NO-GO**.
 
 - `SIGNAL_STRATEGY_ID`
 - `SIGNAL_SYMBOL`
+- `SIGNAL_LOOKBACK_MIN` — event-time window (minutes) for `pct_change_15m` (#4149); default `15`
 - `SIGNAL_ENTRY_LOOKBACK_MIN`
 - `SIGNAL_EXIT_LOOKBACK_MIN`
 - `SIGNAL_BREAKOUT_BUFFER`
 - `SIGNAL_MIN_MINUTES_BETWEEN_ENTRIES`
+- `SIGNAL_MARKET_STATE_STALENESS_S` — PB1 entry freshness on `market_state.ts_ms` (default `30`)
 - `SIGNAL_ENTRY_CHANNEL_BARS` (donchian_breakout_v1, default `20`)
 - `SIGNAL_EXIT_CHANNEL_BARS` (donchian_breakout_v1, default `10`)
 - `SIGNAL_OUTPUT_STREAM`
 - `SIGNAL_BOT_ID` (experiment audit identity; compose-wired)
 - `CDB_CAMPAIGN_ID` (campaign-scoped overlays; lane-specific via `CDB_CAMPAIGN_ID_PB1` / `CDB_CAMPAIGN_ID_DONCHIAN`)
 - `CDB_SOURCE_SHA` (image build marker; set at `docker build --build-arg`; verified before ARVP observation)
+
+## pct_change_15m / Lookback Semantik (#4149)
+
+- `pct_change_15m` is the percentage-point change over `SIGNAL_LOOKBACK_MIN` minutes of **event time** (not tick-to-tick).
+- Insufficient history → field is omitted/`None` (Risk RC_010 fail-closed). No invented substitute.
+- Tick `pct_change` remains a separate last-tick metric for the generic momentum path.
+- Freshness/Heartbeat/TTL matrix: see `services/regime/README.md`.
 
 ## ARVP Telemetry (measurement chain only)
 

@@ -381,22 +381,27 @@ mypy core/ services/
 
 ### PR / Issue Workflow
 
-1. Branch from `main`: `git checkout -b <type>/<issue-number>-<description>`
-2. Make changes with meaningful commits
-3. Run lint + test: `ruff check . && pytest -q -k "not test_mcp_time_server_runtime"`
-4. Push and create PR against `main`
-5. After PR creation, the agent or contributor must set a `LOCK:` comment on the
-   PR before any further push/PR/GitHub mutation.
-6. Wait for required checks (CI must be green).
-7. Squash-merge when approved and green.
+1. Run `python -m tools.pr_routing route --issue <N>` before planning, branch,
+   worktree, or PR creation.
+2. Reuse the routed open PR/branch; create a Draft PR only when the routing
+   decision explicitly permits it.
+3. Before a new PR, reserve the Issue. After PR creation, establish the
+   identical Issue-/PR-level `LOCK:` pair before any write.
+4. Make one scoped slice and run targeted tests, affected lint, and
+   `git diff --check`.
+5. Push the slice, update the PR ledger and Issue handoff, then stop with
+   `DONE_SLICE_ADDED_TO_BATCH_PR`. Do not merge or close the Issue by default.
+6. Only a frozen `merge_candidate` receives combined-diff review, full Fast-CI,
+   exact-head `cdb-local-ci`, and the separate authorized merge flow.
 
-**Required checks**: CI gate (`.github/workflows/ci.yml`) must pass.
+**Required status at merge**: `cdb-local-ci` is a Commit Status on the exact
+final PR head. It is not required for an intermediate slice handoff.
 Scope boundaries: no runtime, Docker, live-trading, LR, or DB-write changes
 without explicit issue scope.
 
-**Important**: A `LOCK:` comment on a PR replaces the need for an issue-level
-LOCK. Issue-status comments (e.g. "working on this") do **not** replace the
-required PR LOCK. Always set `LOCK:` on the PR before mutating.
+**Important**: Neither an Issue-only status comment nor a one-sided PR lock is
+sufficient. Until Issue and PR contain the identical live lock, the state is
+`PARTIAL_LOCK` and writes are blocked.
 
 ### Commit Messages
 

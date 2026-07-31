@@ -9,7 +9,6 @@ Automation, Guards und Evidence-Helfer auf Repo-Root-Ebene. Für Stack/Backup/Se
 | `lr003_contract_drift_guard.py` | Contract drift |
 | `lr004_completion_guard.py` | LR completion guard |
 | `dual_write_evidence_gate.py` | Dual-write evidence |
-| `validate_write_zones.sh` | Write-zone validation |
 | `pre_close_sweep.sh` | Pre-close untracked sweep |
 
 ## Smoke / validation
@@ -19,7 +18,6 @@ Automation, Guards und Evidence-Helfer auf Repo-Root-Ebene. Für Stack/Backup/Se
 | `smoke_core_flow.py` | Core flow smoke (allocation → signal path) |
 | `validate_paper_market_data_provenance.py` | Paper market_data provenance |
 | `smart_health_check.py` | Health aggregation |
-| `smart_startup.py` | Startup helper |
 
 ## Ops / reporting
 
@@ -40,11 +38,22 @@ Automation, Guards und Evidence-Helfer auf Repo-Root-Ebene. Für Stack/Backup/Se
 | `bulk-issue-labeling.ps1` | Issue labeling |
 | `milestone-assignment.ps1` | Milestones |
 
+## Project automation (PowerShell, owner under `scripts/`)
+
+| Script | Zweck |
+|---|---|
+| `time-tracker-enhanced.ps1` | Lokales Session-Zeittracking (schreibt `.timetrack.json` untracked neben dem Skript) |
+| `dimensionality_audit/measure_dimensionality.py` | Dimensionality audit helper |
+
+Exact byte-identical copies under `infrastructure/scripts/` are forbidden; see
+`check_core_duplicates.py` Rule 3 (#4125).
+
 ## Related (canonical paths)
 
 | Pfad | Zweck |
 |---|---|
 | [`infrastructure/scripts/README.md`](../infrastructure/scripts/README.md) | `setup_blue_red.ps1`, `smoke_test.ps1`, backup/DR |
+| [`infrastructure/scripts/legacy/smart_startup.py`](../infrastructure/scripts/legacy/smart_startup.py) | Quarantined legacy startup (fail-closed; not an active entrypoint) |
 | [`tools/README.md`](../tools/README.md) | `cdb.ps1`, MCP validate, secrets rotator |
 | [`.github/scripts/`](../.github/scripts/) | Workflow-backed Python |
 

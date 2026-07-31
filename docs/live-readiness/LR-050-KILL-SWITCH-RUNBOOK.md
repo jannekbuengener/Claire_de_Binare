@@ -27,7 +27,7 @@
 | **Circuit Breaker (in-memory)** | `risk_state.circuit_breaker_active` set by `check_drawdown_limit()` in [`services/risk/service.py`](../../services/risk/service.py) — blocks signals; **does not** write the file Kill Switch |
 | **Circuit Breaker (module)** | [`services/risk/circuit_breakers.py`](../../services/risk/circuit_breakers.py) — standalone thresholds; **not imported** in production `process_signal` path |
 | **Risk-service halt** | Signal blocked before order creation (kill-switch gate, drawdown, exposure, `decide_trade` BLOCK, bot shutdown) |
-| **Execution-service halt** | Order rejected in `process_order()` (kill-switch, shadow, bot shutdown, trace contract) |
+| **Execution-service halt** | Order rejected in `process_order()` (kill-switch, shadow, bot shutdown, trace contract); open-order kill-cancel reconciliation (#4185) |
 | **Alert-triggered halt** | Operator/policy response per [`LR-050-OBSERVABILITY-GATES.md`](./LR-050-OBSERVABILITY-GATES.md) ([#2531](https://github.com/jannekbuengener/Claire_de_Binare/issues/2531)) |
 | **Safe execution mode (not halt)** | `MOCK_TRADING`, `DRY_RUN`, `MEXC_TESTNET` — reduce real mainnet capital exposure; **do not** REJECT orders in `process_order()`; `MockExecutor` / `LiveExecutor` dry-run may return **FILLED** simulated results |
 
@@ -178,7 +178,15 @@ Canary-specific tuning remains `blocker_before_live` until [#2532](https://githu
 | 1 | Trace contract (`TRACE_CONTRACT_V1_ENABLED`, Compose `"1"`) — missing `decision_id` | REJECTED |
 | 2 | `run_mode == "shadow"` | REJECTED (`shadow_blocked`) |
 | 3 | File Kill Switch (`get_kill_switch_details`) | REJECTED; eval exception → fail-closed active |
-| 4 | Bot shutdown (`bot_shutdown_active`, blocked strategy/bot IDs) | REJECTED |
+| 4 | Kill-cancel readiness HOLD (startup / residual reconciliation incomplete) | REJECTED |
+| 5 | Bot shutdown (`bot_shutdown_active`, blocked strategy/bot IDs) | REJECTED |
+
+**Open-order cancel (distinct from new-order block):** when kill becomes active or
+unevaluable, `KillCancelSupervisor` runs deterministic cancel reconciliation over
+`OpenOrderRegistry`. Failed/unknown cancels remain residual (HOLD). See
+[`docs/contracts/EXECUTION_KILL_CANCEL_CONTRACT_V1.md`](../contracts/EXECUTION_KILL_CANCEL_CONTRACT_V1.md)
+and evidence `docs/evidence/risk/4185_kill_cancel_open_orders.md`. Mock-only proof;
+no automatic position unwind; no productive adapter activation; LR remains NO-GO.
 
 **Not halt gates** (order may proceed to executor after gates above pass):
 

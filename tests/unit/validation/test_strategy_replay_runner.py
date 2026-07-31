@@ -275,7 +275,9 @@ class TestARVPReplayConfig:
             dataset_source="s3",
             input_candles_file="candles.json",
         )
-        with pytest.raises(ValueError, match="dataset_source must be 'file', 'db', or 'binance_window'"):
+        with pytest.raises(
+            ValueError, match="dataset_source must be 'file', 'db', or 'binance_window'"
+        ):
             cfg.validate()
 
     def test_db_dataset_id_field_is_not_supported(self):
@@ -1517,6 +1519,21 @@ class TestScenarioOverrides:
 
         with pytest.raises(ReplayRunnerError, match="not representable"):
             _apply_scenario_overrides(cfg, {"feed_gap_seconds": 30})
+
+    def test_apply_scenario_overrides_maps_usable_depth_fraction(self):
+        cfg = ARVPReplayConfig(input_candles_file="candles.json")
+        result = _apply_scenario_overrides(cfg, {"usable_depth_fraction": 0.7})
+        assert result.simulator_config["FILL_THRESHOLD"] == 0.7
+
+    def test_apply_scenario_overrides_rejects_legacy_fill_rate(self):
+        cfg = ARVPReplayConfig(input_candles_file="candles.json")
+        with pytest.raises(ReplayRunnerError, match="usable_depth_fraction"):
+            _apply_scenario_overrides(cfg, {"fill_rate": 0.7})
+
+    def test_apply_scenario_overrides_maps_depth_impact_factor(self):
+        cfg = ARVPReplayConfig(input_candles_file="candles.json")
+        result = _apply_scenario_overrides(cfg, {"depth_impact_factor": 0.3})
+        assert result.simulator_config["DEPTH_IMPACT_FACTOR"] == 0.3
 
 
 @pytest.mark.unit

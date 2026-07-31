@@ -68,15 +68,41 @@ with an explicit `skip_reason`. Skips are disclosed in the status description.
 
 ## Check Run versus Commit Status
 
-**Phase 3a uses Commit Status** (`POST /repos/{owner}/{repo}/statuses/{sha}`).
+**Phase 3a default remains Commit Status**
+(`POST /repos/{owner}/{repo}/statuses/{sha}`) via
+`gh api --method POST ... --input -`.
 
-| Surface | Auth needed | Phase 3a |
-|---------|-------------|----------|
-| Commit Status | PAT / `gh` with statuses write (`repo` or fine-grained Commit statuses: Write) | **Used** |
-| Check Run | GitHub App installation token with `checks:write` | Documented future path |
+**#4170 adds an explicit Check Run backend** (`--publisher-backend check-run`)
+that uses `POST /repos/{owner}/{repo}/check-runs` with a GitHub App
+installation token only. Live Branch Protection is **unchanged** until a
+separate Human-GO cutover (see
+[`docs/runbooks/cdb_local_ci_app_check_run_cutover.md`](../runbooks/cdb_local_ci_app_check_run_cutover.md)).
 
-User/OAuth tokens from `gh auth` cannot safely create Check Runs without an App.
-The client intentionally has no `create_check_run` method.
+| Surface | Auth needed | Status |
+|---------|-------------|--------|
+| Commit Status | PAT / `gh` with statuses write | **Default / current required path** |
+| Check Run | GitHub App installation token (`CDB_GH_APP_INSTALLATION_TOKEN`) + expected App/Installation IDs | **Code-ready; BP cutover external** |
+
+`GitHubStatusClient` still has no `create_check_run` method. Check Runs live in
+`ci.publisher.backends.CheckRunBackend`. User/OAuth/`gh auth` tokens are **not**
+accepted as App identity proof for Check Run mode.
+
+### CLI backend switch
+
+```bash
+# Default — interim required Commit Status path
+python -m ci.publisher publish --evidence-dir ci/artifacts/<run_id> \
+  --commit-sha <sha> --pr-number <n>
+
+# Explicit App-bound Check Run (does not change Branch Protection by itself)
+python -m ci.publisher dry-run --publisher-backend check-run \
+  --expected-app-id <id> --expected-installation-id <id> \
+  --evidence-dir ci/artifacts/<run_id> --commit-sha <sha> --pr-number <n>
+```
+
+Why Commit Status `app_id=null` is not the long-term trust model: any actor with
+Commit statuses: Write can POST success for the same context. App-bound Check
+Runs bind the required check to a dedicated App identity after cutover.
 
 ## Authentication (least privilege)
 
@@ -102,6 +128,28 @@ Then:
 pwsh -File ci/scripts/publish_status.ps1 -Command dry-run -EvidenceDir ci/artifacts/<run_id> `
   -PrNumber <n>
 ```
+
+## Identity preflight and handoff when `statuses:write` is missing
+
+Before attempting `publish`, a session should preflight its own capability
+rather than discover the failure mid-merge attempt:
+
+1. `gh auth status` — confirm an authenticated identity exists.
+2. Confirm a usable token per the resolution order above
+   (`GITHUB_TOKEN` → `GH_TOKEN` → `gh auth token`).
+3. Attempt `python -m ci.publisher dry-run ...` first; a dry-run failure due
+   to insufficient scope (no Commit-statuses write) surfaces as a clear
+   `REJECT:` without mutating anything.
+
+If the preflight shows the session cannot write the required Commit Status
+(no `statuses:write`-capable token, no authenticated identity, or the token
+owner lacks permission on this repo): do not fall back to `--admin` merge
+and do not loop retries. Report `DONE_PR_OPEN_MERGE_HANDOFF` /
+`BLOCKED_AUTH_PUBLISHER` (see
+[`merge_policy_ci_gate.md`](../runbooks/merge_policy_ci_gate.md) §
+Capability-based Autonomous Merge) with the exact missing capability
+(e.g. "no fine-grained PAT with Commit statuses: Write available in this
+session") and the concrete next command for a capable session/human to run.
 
 ## Commands
 
@@ -173,11 +221,15 @@ BP-required.
 Use `cdb-local-ci-preview` for optional smoke publishes without the mandatory
 PR constraint of the required path.
 
-## Future hardening
+## Future hardening / cutover
 
-After publisher parity + security review, evaluate GitHub-App Check Runs and
-retiring or thinning GitHub-hosted heavy CI. Until then, `cdb-local-ci` remains
-the interim Commit Status required context.
+Phase A (#4170) delivers the Check Run publisher backend while keeping Commit
+Status as the live required path. App creation, installation-token minting,
+shadow smoke (`cdb-local-ci-app-preview`), and Branch Protection cutover are
+external Human-GO steps documented in
+[`docs/runbooks/cdb_local_ci_app_check_run_cutover.md`](../runbooks/cdb_local_ci_app_check_run_cutover.md).
+Until cutover evidence exists, `cdb-local-ci` remains the interim Commit Status
+required context (`app_id` null).
 
 ## Rollback / revocation
 
@@ -190,5 +242,6 @@ the interim Commit Status required context.
 
 - [`ci/README.md`](../../ci/README.md)
 - [`docs/runbooks/merge_policy_ci_gate.md`](../runbooks/merge_policy_ci_gate.md)
+- [`docs/runbooks/cdb_local_ci_app_check_run_cutover.md`](../runbooks/cdb_local_ci_app_check_run_cutover.md)
 - [`tools/ci/policy_gate_local.py`](../../tools/ci/policy_gate_local.py)
 - Phase 1 evidence contract + PR #4166

@@ -136,18 +136,28 @@ def test_get_order_status(executor, sample_order):
 
 @pytest.mark.unit
 def test_cancel_order(executor, sample_order):
-    """Test: Orders können gecancelt werden"""
-    result = executor.execute_order(sample_order)
+    """Test: Offene (resting) Orders können gecancelt werden"""
+    resting = MockExecutor(
+        resting_orders=True, success_rate=1.0, min_latency_ms=0, max_latency_ms=0
+    )
+    result = resting.execute_order(sample_order)
     order_id = result.order_id
+    assert result.status == OrderStatus.SUBMITTED.value
 
-    # Cancel Order
-    success = executor.cancel_order(order_id)
+    success = resting.cancel_order(order_id)
 
     assert success is True
-
-    # Status sollte CANCELLED sein
-    cancelled_order = executor.get_order_status(order_id)
+    cancelled_order = resting.get_order_status(order_id)
     assert cancelled_order.status == OrderStatus.CANCELLED.value
+
+
+@pytest.mark.unit
+def test_cancel_does_not_rewrite_filled_order(executor, sample_order):
+    """FILLED darf nicht still zu CANCELLED umgeschrieben werden (#4185)."""
+    result = executor.execute_order(sample_order)
+    assert result.status == OrderStatus.FILLED.value
+    assert executor.cancel_order(result.order_id) is False
+    assert executor.get_order_status(result.order_id).status == OrderStatus.FILLED.value
 
 
 @pytest.mark.unit

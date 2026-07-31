@@ -18,10 +18,13 @@ from types import MappingProxyType
 from typing import Any, Callable, Mapping, cast
 
 from .external_adapter_contracts import (
+    CancelOrderRequest,
+    CancelOrderResponse,
     ExecutionAdapter,
     ExecutionAdapterId,
     ExecutionAdapterRequest,
     ExecutionAdapterResponse,
+    OpenOrderSnapshot,
     StrategyAdapter,
     StrategyAdapterId,
     StrategyAdapterRequest,
@@ -149,6 +152,7 @@ class MockExecutionAdapter:
 
     adapter_id: ExecutionAdapterId = MOCK_BUILTIN
     supports_reduce_only = True
+    supports_cancel: bool = True
 
     def __init__(self, executor=None, **executor_kwargs: Any) -> None:
         if executor is None:
@@ -193,11 +197,171 @@ class MockExecutionAdapter:
             order_id=result.order_id,
             filled_quantity=result.filled_quantity,
             price=result.price,
-            venue_order_id=None,
+            venue_order_id=result.order_id,
             error_message=result.error_message,
             raw_venue_payload={"adapter_id": self.adapter_id},
             reduce_only_acknowledged=request.reduce_only,
         )
+
+    def cancel_order(self, request: CancelOrderRequest) -> CancelOrderResponse:
+        from core.utils.clock import utcnow
+        from services.execution.models import OrderStatus
+
+        order_id = request.venue_order_id or request.internal_order_id
+        behavior = getattr(self._executor, "cancel_behavior_by_id", {}).get(
+            order_id, getattr(self._executor, "cancel_behavior", "confirm")
+        )
+        observed = utcnow().isoformat()
+
+        if behavior == "error":
+            raise RuntimeError(f"mock adapter cancel error for {order_id}")
+        if behavior == "malformed":
+            # Intentionally invalid payload shape for contract tests; caller maps
+            # non-CancelOrderResponse to STATUS_UNKNOWN. We still return a response
+            # object but with empty/ambiguous fields that are not confirmed.
+            return CancelOrderResponse(
+                internal_order_id=request.internal_order_id,
+                venue_order_id=request.venue_order_id,
+                accepted=False,
+                confirmed_cancelled=False,
+                terminal_status=None,
+                adapter_reason_code="OPEN_ORDER_STATUS_UNKNOWN",
+                raw_status_redacted="malformed",
+                observed_at_utc=observed,
+            )
+        if behavior == "reject":
+            return CancelOrderResponse(
+                internal_order_id=request.internal_order_id,
+                venue_order_id=request.venue_order_id or order_id,
+                accepted=False,
+                confirmed_cancelled=False,
+                terminal_status=None,
+                adapter_reason_code="CANCEL_REQUEST_REJECTED",
+                raw_status_redacted="rejected",
+                observed_at_utc=observed,
+            )
+        if behavior == "accepted_unconfirmed":
+            return CancelOrderResponse(
+                internal_order_id=request.internal_order_id,
+                venue_order_id=request.venue_order_id or order_id,
+                accepted=True,
+                confirmed_cancelled=False,
+                terminal_status=None,
+                adapter_reason_code="CANCEL_CONFIRMATION_MISSING",
+                raw_status_redacted="accepted_unconfirmed",
+                observed_at_utc=observed,
+            )
+
+        existing = self._executor.get_order_status(order_id)
+        if existing is None:
+            # Try internal id
+            existing = self._executor.get_order_status(request.internal_order_id)
+            if existing is not None:
+                order_id = request.internal_order_id
+
+        if existing is None:
+            return CancelOrderResponse(
+                internal_order_id=request.internal_order_id,
+                venue_order_id=request.venue_order_id,
+                accepted=False,
+                confirmed_cancelled=False,
+                terminal_status=None,
+                adapter_reason_code="CANCEL_REQUEST_REJECTED",
+                raw_status_redacted="not_found",
+                observed_at_utc=observed,
+            )
+
+        if existing.status in {
+            OrderStatus.FILLED.value,
+            OrderStatus.CANCELLED.value,
+            OrderStatus.REJECTED.value,
+        }:
+            return CancelOrderResponse(
+                internal_order_id=request.internal_order_id,
+                venue_order_id=order_id,
+                accepted=True,
+                confirmed_cancelled=existing.status == OrderStatus.CANCELLED.value,
+                terminal_status=existing.status,
+                adapter_reason_code="CANCEL_ALREADY_CONFIRMED",
+                raw_status_redacted=existing.status,
+                observed_at_utc=observed,
+            )
+
+        ok = self._executor.cancel_order(order_id)
+        if not ok:
+            return CancelOrderResponse(
+                internal_order_id=request.internal_order_id,
+                venue_order_id=order_id,
+                accepted=False,
+                confirmed_cancelled=False,
+                terminal_status=None,
+                adapter_reason_code="CANCEL_REQUEST_REJECTED",
+                raw_status_redacted="cancel_false",
+                observed_at_utc=observed,
+            )
+        return CancelOrderResponse(
+            internal_order_id=request.internal_order_id,
+            venue_order_id=order_id,
+            accepted=True,
+            confirmed_cancelled=True,
+            terminal_status="CANCELLED",
+            adapter_reason_code="KILL_CANCEL_PASS",
+            raw_status_redacted="CANCELLED",
+            observed_at_utc=observed,
+        )
+
+    def get_open_order(
+        self, *, internal_order_id: str, venue_order_id: str | None = None
+    ) -> OpenOrderSnapshot | None:
+        from core.utils.clock import utcnow
+
+        order_id = venue_order_id or internal_order_id
+        existing = self._executor.get_order_status(order_id)
+        if existing is None and venue_order_id:
+            existing = self._executor.get_order_status(internal_order_id)
+            order_id = internal_order_id
+        if existing is None:
+            return None
+        remaining = max(float(existing.quantity) - float(existing.filled_quantity), 0.0)
+        return OpenOrderSnapshot(
+            internal_order_id=internal_order_id,
+            venue_order_id=order_id,
+            symbol=existing.symbol,
+            status=existing.status,
+            filled_quantity=float(existing.filled_quantity),
+            remaining_quantity=remaining,
+            observed_at_utc=utcnow().isoformat(),
+        )
+
+    def list_open_orders(self) -> tuple[OpenOrderSnapshot, ...]:
+        from core.utils.clock import utcnow
+        from services.execution.models import OrderStatus
+
+        open_statuses = {
+            OrderStatus.PENDING.value,
+            OrderStatus.SUBMITTED.value,
+            OrderStatus.PARTIALLY_FILLED.value,
+        }
+        snapshots = []
+        now = utcnow().isoformat()
+        for order_id, existing in sorted(self._executor.orders.items()):
+            if existing.status not in open_statuses:
+                continue
+            remaining = max(
+                float(existing.quantity) - float(existing.filled_quantity), 0.0
+            )
+            snapshots.append(
+                OpenOrderSnapshot(
+                    internal_order_id=order_id,
+                    venue_order_id=order_id,
+                    symbol=existing.symbol,
+                    status=existing.status,
+                    filled_quantity=float(existing.filled_quantity),
+                    remaining_quantity=remaining,
+                    observed_at_utc=now,
+                )
+            )
+        return tuple(snapshots)
 
 
 class MexcExecutionAdapter:
@@ -206,6 +370,7 @@ class MexcExecutionAdapter:
     adapter_id: ExecutionAdapterId = MEXC_BUILTIN
     # No venue-native or equivalent reduce-only behavior is proven for this shim.
     supports_reduce_only = False
+    supports_cancel: bool = False
 
     def __init__(self, executor=None, **executor_kwargs: Any) -> None:
         if executor is None:
@@ -229,6 +394,29 @@ class MexcExecutionAdapter:
             raw_venue_payload={"adapter_id": self.adapter_id},
             reduce_only_acknowledged=False,
         )
+
+    def cancel_order(self, request: CancelOrderRequest) -> CancelOrderResponse:
+        """Productive cancel is intentionally unsupported in this slice (#4185)."""
+        from core.utils.clock import utcnow
+
+        return CancelOrderResponse(
+            internal_order_id=request.internal_order_id,
+            venue_order_id=request.venue_order_id,
+            accepted=False,
+            confirmed_cancelled=False,
+            terminal_status=None,
+            adapter_reason_code="CANCEL_ADAPTER_UNSUPPORTED",
+            raw_status_redacted="mexc_cancel_unsupported_in_scope",
+            observed_at_utc=utcnow().isoformat(),
+        )
+
+    def get_open_order(
+        self, *, internal_order_id: str, venue_order_id: str | None = None
+    ) -> OpenOrderSnapshot | None:
+        return None
+
+    def list_open_orders(self) -> tuple[OpenOrderSnapshot, ...]:
+        return ()
 
 
 _STRATEGY_ADAPTER_REGISTRY: dict[StrategyAdapterId, StrategyAdapterFactory] = {

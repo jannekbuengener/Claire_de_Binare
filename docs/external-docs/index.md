@@ -36,7 +36,6 @@
 | GitHub Docs | https://docs.github.com | Issues, PRs, Actions, Security, Repo-Governance | required | Actions, Rulesets, Secrets |
 | GitHub CLI | https://cli.github.com/manual | gh-basierte Issue-/PR-/Check-Steuerung | required | CI, PR-Workflow |
 | VS Code | https://code.visualstudio.com/docs | Editor-/Workspace-Referenz | secondary | `.vscode/` |
-| GitLab Docs | https://docs.gitlab.com | Sekundär: `.gitlab-ci.yml` existiert | secondary | `.gitlab-ci.yml` |
 | Conventional Commits | https://www.conventionalcommits.org/en/v1.0.0/ | Commit-/PR-Titel-Format | secondary | CONTRIBUTING.md |
 
 ---

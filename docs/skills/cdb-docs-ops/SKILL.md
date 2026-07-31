@@ -2,7 +2,7 @@
 Canonical Skill Source: docs/skills/cdb-docs-ops/SKILL.md
 Surface: docs (canonical)
 Sync Status: canonical
-Last Verified: 2026-07-01
+Last Verified: 2026-07-30
 Drift Policy: Surface-Adapter duerfen nur mit dokumentierter Begruendung abweichen.
 -->
 ---
@@ -61,3 +61,12 @@ When creating docs that reference external tools or services:
 - No real trades.
 - No irreversible action without explicit human approval.
 - For any live-trading topic, treat `knowledge/operating_rules/LIVE_TRADING_RUNBOOK.md` as procedure shape only and `LR-AUDIT-STATUS` as the verdict authority.
+
+## Post-Merge Status-/Ledger-Pflege (Issue #4218)
+- Kein sofortiger `CURRENT_STATUS-only`- oder `ledger-only`-**Nachlauf-PR** nach
+  einem Merge.
+- Erlaubt: Anpassung **vor dem Freeze** im ursprünglichen PR, oder später im
+  nächsten kompatiblen **`docs-governance`**-Batch (`cdb-pr-router`).
+- Unklare Sofortnotwendigkeit → fail-closed dokumentieren und batchen.
+- Enge Ausnahme nur bei nachweislich sicherheitskritisch falschem Claim mit
+  unmittelbarer Runtime-/Risk-/LR-/Echtgeld-Fehlentscheidungsgefahr.

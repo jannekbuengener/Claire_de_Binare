@@ -2,10 +2,9 @@
 Canonical Skill Source: docs/skills/cdb-drift-reconcile/SKILL.md
 Surface: cursor
 Sync Status: mirrored-from-canon
-Last Verified: 2026-07-01
+Last Verified: 2026-07-30
 Drift Policy: Surface-Adapter duerfen nur mit dokumentierter Begruendung abweichen.
 -->
-
 ---
 name: cdb-drift-reconcile
 description: >
@@ -66,6 +65,15 @@ Always check these areas unless the request explicitly narrows scope further:
    - Do not convert every drift finding into a follow-up issue or workflow change.
    - Keep Board stage separate from LR status at all times.
 
+## Post-Merge Status-/Ledger Drift (Issue #4218)
+
+Stale `CURRENT_STATUS.md` or ledger lines after a merge are **documentation
+drift**, not a reason to open an immediate `CURRENT_STATUS-only` /
+`ledger-only`-**Nachlauf-PR**. Route corrections via freeze-in-original-PR or
+the next compatible **`docs-governance`** batch (`cdb-pr-router`). Fail-closed
+when urgency is unclear. Safety-critical false claims need an explicit
+Incident-/Governance exception — never a routine status-tail PR.
+
 ## Skill Surface Mirror Drift
 
 Since PR #3637 the canonical skill source is `docs/skills/<name>/SKILL.md`.
@@ -99,7 +107,23 @@ report `skill surface drift unknown`.
 
 **Follow-up rule:** On `DRIFT_FOUND`, either re-mirror the affected adapters from
 canon within the current scope, or create a deduplicated re-mirror follow-up issue
-and hand off. Never auto-merge without green required checks.
+and hand off. Never auto-merge without live `cdb-local-ci` SUCCESS on the
+exact PR head (SSOT: `docs/runbooks/merge_policy_ci_gate.md`). Autonomous
+merge remains capability-based when those gates are proven.
+
+## Post-merge branch / worktree drift
+
+When classifying local/remote branch lineage after a squash merge:
+
+- Treat `[gone]` after `--delete-branch` as normal, not as a push trigger.
+- Detect republished merged heads (same topic branch reappearing remotely
+  after MERGED) as drift; do not recommend `git push -u origin HEAD` to
+  "restore" them.
+- Squash non-ancestor / `git cherry +` is **not** alone proof of unmerged
+  work — require tree/patch equivalence (see `cdb-session-close`
+  § Safe Post-Merge Cleanup).
+- Worktree/branch cleanup routing: hand off to `cdb-session-close`; do not
+  remove foreign worktrees from this skill.
 
 ## Classification Rules
 
@@ -149,3 +173,17 @@ Nicht im Scope
 - Do not treat historical anchors as active tasks by default.
 - Do not expand from one drift vector into a full repo rewrite.
 - Do not read Board stage as LR-GO or use LR files to redefine Board stage.
+
+## PR-Flow Drift
+
+Zusätzlich erkennen:
+
+- dieselbe Issue in mehreren aktiven Delivery-PRs,
+- mehrere kompatible Batch-PRs derselben Lane und Objective,
+- PR ohne parsebaren Batch-Marker oder Ledger,
+- `accepting_slices` trotz erreichtem Merge-Trigger,
+- Session-Surfaces, die weiterhin automatisch eigenen PR, Full Fast-CI oder
+  Merge pro Issue verlangen,
+- Slice-Evidence, die als Final-Head-Evidence wiederverwendet wird.
+
+Duplicate- oder Lock-Drift führt zu HOLD; keine automatische Konsolidierung.

@@ -10,13 +10,18 @@ synchron gehalten werden.
 **Aenderungen an Skills starten hier.** Surface-Adapter werden daraus gespiegelt
 (`Sync Status: mirrored-from-canon`, Last Verified 2026-07-01, Issue #3639).
 
-## Kanonische Skill-Dateien (29 aktive CDB-Repo-Skills)
+## Kanonische Skill-Dateien (32 aktive CDB-Repo-Skills)
 
 | Skill | Pfad | Surfaces |
 |---|---|---|
 | `onboarding` | [`onboarding/SKILL.md`](onboarding/SKILL.md) | opencode, cursor, codex, claude |
 | `cdb-onboarding` | [`cdb-onboarding/SKILL.md`](cdb-onboarding/SKILL.md) | codex (alias → onboarding) |
 | `cdb-session-start` | [`cdb-session-start/SKILL.md`](cdb-session-start/SKILL.md) | opencode, cursor, codex, claude |
+| `cdb-pr-router` | [`cdb-pr-router/SKILL.md`](cdb-pr-router/SKILL.md) | opencode, cursor, codex, claude |
+| `cdb-integration-wiring-audit` | [`cdb-integration-wiring-audit/SKILL.md`](cdb-integration-wiring-audit/SKILL.md) | opencode, cursor, codex, claude — PR-Acceptance leaf (#4207) |
+| `cdb-pr-gap-classifier` | [`cdb-pr-gap-classifier/SKILL.md`](cdb-pr-gap-classifier/SKILL.md) | opencode, cursor, codex, claude — PR-Acceptance leaf (#4208) |
+| `cdb-pr-completeness-review` | [`cdb-pr-completeness-review/SKILL.md`](cdb-pr-completeness-review/SKILL.md) | opencode, cursor, codex, claude — PR-Acceptance aggregator (#4209) |
+| `cdb-batch-merge-conductor` | [`cdb-batch-merge-conductor/SKILL.md`](cdb-batch-merge-conductor/SKILL.md) | opencode, cursor, codex, claude — PR-Acceptance conductor (#4210) |
 | `cdb-session-close` | [`cdb-session-close/SKILL.md`](cdb-session-close/SKILL.md) | opencode, cursor, codex, claude — Post-Close Follow-up Intake (#3638) |
 | `cdb-control-intake` | [`cdb-control-intake/SKILL.md`](cdb-control-intake/SKILL.md) | opencode, cursor, codex, claude |
 | `cdb-issue-to-session-plan` | [`cdb-issue-to-session-plan/SKILL.md`](cdb-issue-to-session-plan/SKILL.md) | opencode, cursor, codex, claude |

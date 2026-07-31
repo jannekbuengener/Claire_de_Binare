@@ -2,7 +2,7 @@
 Canonical Skill Source: docs/skills/cdb-issue-to-session-plan/SKILL.md
 Surface: opencode
 Sync Status: mirrored-from-canon
-Last Verified: 2026-07-01
+Last Verified: 2026-07-30
 Drift Policy: Surface-Adapter duerfen nur mit dokumentierter Begruendung abweichen.
 -->
 ---
@@ -49,6 +49,14 @@ Use this after `cdb-control-intake` when the next concrete unit of work is one s
    - Rank the issue inside the current stage and weekly context.
    - Name guardrails, blockers, and explicit non-goals.
    - Break the work into a short, ordered session plan with concrete next steps.
+   - If the plan ends in a PR, name the expected close state honestly:
+     autonomous squash merge only when the full capability gate in
+     `docs/runbooks/merge_policy_ci_gate.md` § Capability-based autonomous
+     merge is provable for the exact head; otherwise plan for
+     `DONE_PR_OPEN_MERGE_HANDOFF`, not a silent assumption of merge.
+   - If the plan spans multiple sequential PRs on the same base (a merge
+     wave), state that each merge requires a rebase + full revalidation
+     against the just-merged main before the next merge is attempted.
    - Mark all unresolved assumptions as unconfirmed.
 
 ## Interpretation Rules
@@ -107,3 +115,26 @@ Restunsicherheiten
 - Do not expand into adjacent issues, epics, or refactors unless the dependency is explicit and current.
 - Do not imply live approval, Echtgeld readiness, or strategy release from issue wording.
 - Do not hide uncertainty; mark open points as unconfirmed.
+
+## Mandatory Routing Block
+
+Jeder Session-Plan enthält vor Implementation:
+
+```yaml
+routing:
+  issue_number: <N>
+  routing_decision: <decision>
+  target_pr: <number-or-null>
+  target_branch: <branch-or-null>
+  batch_key: <key-or-null>
+  lane: <lane>
+  lock_state: <state>
+  validation_profile: <profile>
+  merge_mode: <batch-or-dedicated>
+  merge_trigger_state: <state>
+  reason_codes: []
+```
+
+Der Block stammt aus `cdb-pr-router`. Ohne sichere Route bleibt der Plan HOLD.
+Ein normaler Plan endet mit Slice-Handoff; Full Fast-CI und Merge werden nur für
+einen separaten Final-Batch-Head geplant.

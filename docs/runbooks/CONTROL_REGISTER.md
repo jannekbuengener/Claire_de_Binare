@@ -1,9 +1,11 @@
 # Control Register
 
-**Letzte Aktualisierung:** 2026-07-14 (Reconcile-Batch #4041/#4043/#4045/#4053/#4057/#4060/#4066/#4084/#4086)
+<!-- cdb:status-freshness header-date=2026-07-16 -->
+**Letzte Aktualisierung:** 2026-07-16 (Workflow-Hygiene und Action-Bump-Reconciles #4100/#4101; vorheriger Stand 2026-07-14 mit Reconcile-Batch #4041/#4043/#4045/#4053/#4057/#4060/#4066/#4084/#4086)
 **SSOT Live-Readiness:** [`docs/live-readiness/LR-AUDIT-STATUS-2026-03-05.md`](../live-readiness/LR-AUDIT-STATUS-2026-03-05.md)
 **Verdict:** NO-GO
 **Control-Board Stage:** `trade-capable` (ratifiziert 2026-04-08 via Issue [#1492](https://github.com/jannekbuengener/Claire_de_Binare/issues/1492))
+**Freshness Guard:** Header- und Body-Datum werden von `python -m tools.validate_status_freshness` gegeneinander geprueft; append-only Notizbloecke sind als `historical as of` markiert. Markerkonvention: [`docs/meta/REPOSITORY_CANON.md`](../meta/REPOSITORY_CANON.md).
 
 ---
 
@@ -127,7 +129,12 @@ Kontext-Issue-Nummern sind historische Anker (alle CLOSED) — nicht als offene 
 
 ---
 
+<!-- cdb:historical-as-of date=2026-07-16 -->
 ## Workflow-Control-Notizen
+
+Append-only Notizen zu einzelnen Workflow-Merges. Jeder Eintrag beschreibt den
+Stand zu seinem eigenen Zeitpunkt und wird nicht rueckwirkend umgeschrieben;
+der Block ist daher von der Live-Freshness-Pruefung ausgenommen.
 
 - Dependabot Autopilot (PRs #4062, #4067): Der fail-closed Klassifikator liest normalisierte Fakten gegen die versionierte Phase-1-Allowlist. Der Broker ist **report-only**; `ELIGIBLE` autorisiert keinen Merge, `merge_authorized=false`, keine GitHub-Mutation und keine Runtime-/LR-Ableitung. Phase-1-Kill-Switch/Merge-Ausführung bleibt außerhalb dieses Control-Stands.
 - `security-scan.yml` / Prometheus (PR #4083, gemergt 2026-07-14, Commit `2081d41d`): Scan-cleared Pin `prom/prometheus:v3.13.0@sha256:c6b27ea…` → `v3.13.1@sha256:3c42b892…` in Security-Matrix, Shared Base, RED und v3-Overlay synchron nachgezogen. `CVE-2026-39822` ist im validierten Kandidaten nicht mehr vorhanden; Postgres/Grafana bleiben upstream-abhaengig und unveraendert. Keine Alert-Dismissals, kein Runtime-Deploy, LR **NO-GO**.
@@ -184,6 +191,8 @@ Kontext-Issue-Nummern sind historische Anker (alle CLOSED) — nicht als offene 
 - Action-Dependency-Bump (PR #4050, gemergt 2026-07-16T11:59:57Z, Commit `ef101952`): Konsolidierter `github/codeql-action` Bump 4.36.3→4.37.0 (`99df26d4f13ea111d4ec1a7dddef6063f76b97e9`) fuer `init`/`analyze`/`upload-sarif` in `codeql-python.yml`, `gitleaks.yml`, `security-scan.yml` und `trivy.yml`. Repo-seitig bleiben Trigger, Permissions, Queries, lokale `config-file`-Referenz, SARIF-Kategorien und die `upload: false`-Posture des Advanced-CodeQL-Workflows unveraendert; upstream wechselt das Default-CodeQL-Bundle auf 2.26.0 und ergaenzt schrittweise ein alternatives `config-file`-Kurzformat, das der lokale Pfad nicht nutzt. Control-Reconcile [#4101](https://github.com/jannekbuengener/Claire_de_Binare/issues/4101). Kein LR-/Live-/Echtgeld-Signal.
 
 ---
+
+<!-- cdb:historical-end -->
 
 ## Manuelle HITL-Klassifikation
 

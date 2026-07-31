@@ -42,19 +42,16 @@ def _load_policy() -> classifier.AllowlistPolicy:
 
 def _checks(
     *,
-    policy_status: str = "COMPLETED",
-    policy_conclusion: str = "SUCCESS",
-    ci_status: str = "COMPLETED",
-    ci_conclusion: str = "SUCCESS",
+    status: str = "COMPLETED",
+    conclusion: str = "SUCCESS",
 ) -> tuple[RequiredCheckFact, ...]:
-    return (
-        RequiredCheckFact("policy-gate", policy_status, policy_conclusion),
-        RequiredCheckFact(
-            "ci (Unit/Integration + Lint gesammelt)",
-            ci_status,
-            ci_conclusion,
-        ),
-    )
+    """Build the sole live required merge context (`cdb-local-ci`).
+
+    `cdb-local-ci` is a Commit Status (not a hosted Actions check-run) per
+    docs/runbooks/merge_policy_ci_gate.md; it is the only merge-relevant
+    required context.
+    """
+    return (RequiredCheckFact("cdb-local-ci", status, conclusion),)
 
 
 def _facts(**overrides: object) -> Facts:
@@ -352,7 +349,9 @@ def test_incomplete_metadata_holds() -> None:
 def test_missing_required_check_holds() -> None:
     result = classifier.classify_dependabot_pr(
         _facts(
-            required_checks=(RequiredCheckFact("policy-gate", "COMPLETED", "SUCCESS"),)
+            required_checks=(
+                RequiredCheckFact("unrelated-check", "COMPLETED", "SUCCESS"),
+            )
         ),
         _load_policy(),
     )
@@ -365,8 +364,8 @@ def test_completed_with_failure_conclusion_holds() -> None:
     result = classifier.classify_dependabot_pr(
         _facts(
             required_checks=_checks(
-                ci_status="COMPLETED",
-                ci_conclusion="FAILURE",
+                status="COMPLETED",
+                conclusion="FAILURE",
             )
         ),
         _load_policy(),
@@ -380,8 +379,8 @@ def test_in_progress_with_success_conclusion_holds() -> None:
     result = classifier.classify_dependabot_pr(
         _facts(
             required_checks=_checks(
-                ci_status="IN_PROGRESS",
-                ci_conclusion="SUCCESS",
+                status="IN_PROGRESS",
+                conclusion="SUCCESS",
             )
         ),
         _load_policy(),
@@ -395,13 +394,8 @@ def test_duplicate_required_check_with_conflicting_results_holds() -> None:
     result = classifier.classify_dependabot_pr(
         _facts(
             required_checks=(
-                RequiredCheckFact("policy-gate", "COMPLETED", "SUCCESS"),
-                RequiredCheckFact("policy-gate", "COMPLETED", "FAILURE"),
-                RequiredCheckFact(
-                    "ci (Unit/Integration + Lint gesammelt)",
-                    "COMPLETED",
-                    "SUCCESS",
-                ),
+                RequiredCheckFact("cdb-local-ci", "COMPLETED", "SUCCESS"),
+                RequiredCheckFact("cdb-local-ci", "COMPLETED", "FAILURE"),
             )
         ),
         _load_policy(),
@@ -666,11 +660,6 @@ MALFORMED_FACT_CASES = [
         {
             "required_checks": (
                 RequiredCheckFact(None, "COMPLETED", "SUCCESS"),  # type: ignore[arg-type]
-                RequiredCheckFact(
-                    "ci (Unit/Integration + Lint gesammelt)",
-                    "COMPLETED",
-                    "SUCCESS",
-                ),
             )
         },
         id="required_check_name_none",
@@ -678,12 +667,7 @@ MALFORMED_FACT_CASES = [
     pytest.param(
         {
             "required_checks": (
-                RequiredCheckFact("policy-gate", 123, "SUCCESS"),  # type: ignore[arg-type]
-                RequiredCheckFact(
-                    "ci (Unit/Integration + Lint gesammelt)",
-                    "COMPLETED",
-                    "SUCCESS",
-                ),
+                RequiredCheckFact("cdb-local-ci", 123, "SUCCESS"),  # type: ignore[arg-type]
             )
         },
         id="required_check_status_int",
@@ -691,12 +675,7 @@ MALFORMED_FACT_CASES = [
     pytest.param(
         {
             "required_checks": (
-                RequiredCheckFact("policy-gate", "COMPLETED", []),  # type: ignore[arg-type]
-                RequiredCheckFact(
-                    "ci (Unit/Integration + Lint gesammelt)",
-                    "COMPLETED",
-                    "SUCCESS",
-                ),
+                RequiredCheckFact("cdb-local-ci", "COMPLETED", []),  # type: ignore[arg-type]
             )
         },
         id="required_check_conclusion_list",

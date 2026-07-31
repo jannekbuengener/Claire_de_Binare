@@ -1,0 +1,112 @@
+# Slice Validation Policy — selective Fast-CI test groups for delivery slices.
+# Schema: cdb-slice-validation-policy/v1
+#
+# Hard rules:
+# - Unknown / unclassified paths => full Fast-CI unit selector (fail-closed).
+# - Policy/schema/parse errors => full Fast-CI unit selector (fail-closed).
+# - Slice runs ALWAYS carry merge_evidence=false and must never publish cdb-local-ci.
+# - Final merge evidence remains profile=fast with the unchanged full unit selector.
+schema_version: "cdb-slice-validation-policy/v1"
+policy_id: "cdb-slice-validation-v1"
+
+full_fast_unit:
+  id: full_fast
+  description: "Complete Fast-CI unit selector (ci.yml / profile=fast SSOT)"
+  pytest_args:
+    - "-q"
+    - "-k"
+    - "not test_mcp_time_server_runtime"
+  # Supplemental marker exclusions for documentation only; selection is path-based.
+  complementary_marker_exclusions:
+    - e2e
+    - local_only
+    - chaos
+    - performance
+    - resilience
+    - external
+
+test_groups:
+  docs_guards:
+    description: "Docs/README/onboarding/canon guard unit tests"
+    pytest_paths:
+      - "tests/unit/tools/test_validate_readme_links.py"
+      - "tests/unit/tools/test_validate_onboarding_docs.py"
+      - "tests/unit/tools/ci/test_docs_conflict_guard.py"
+  ci_contracts:
+    description: "Local CI evidence, stage, and publisher contract tests"
+    pytest_paths:
+      - "tests/unit/ci/"
+  ci_tooling:
+    description: "CI tooling helpers under tests/unit/tools/ci"
+    pytest_paths:
+      - "tests/unit/tools/ci/"
+  full_fast:
+    description: "Complete Fast-CI unit selector"
+    inherits: full_fast_unit
+
+path_rules:
+  - id: docs_surface
+    match_prefixes:
+      - "docs/"
+      - "README.md"
+      - "CONTRIBUTING.md"
+      - "AGENTS.md"
+      - "CLAUDE.md"
+    groups:
+      - docs_guards
+  - id: ci_surface
+    match_prefixes:
+      - "ci/"
+    groups:
+      - ci_contracts
+      - ci_tooling
+  - id: ci_unit_tests
+    match_prefixes:
+      - "tests/unit/ci/"
+      - "tests/unit/tools/ci/"
+    groups:
+      - ci_contracts
+      - ci_tooling
+  - id: runtime_risk_force_full
+    match_prefixes:
+      - "services/"
+      - "core/"
+      - "infrastructure/"
+    force_full_fallback: true
+    fallback_reason: "runtime_or_risk_path"
+  - id: docker_or_external_tests
+    match_prefixes:
+      - "tests/e2e/"
+      - "tests/local/"
+      - "tests/chaos/"
+    force_full_fallback: true
+    fallback_reason: "docker_or_external_tool_required"
+
+lane_rules:
+  - id: ci_tooling_lane
+    lanes:
+      - ci-tooling
+    validation_profiles:
+      - ci-tooling-v1
+    groups:
+      - ci_contracts
+      - ci_tooling
+  - id: docs_lane
+    lanes:
+      - docs
+      - documentation
+    validation_profiles:
+      - docs-v1
+    groups:
+      - docs_guards
+
+# Paths that always require full Fast-CI when touched (even if also matching a
+# narrower prefix rule). Matched after prefix rules; any hit forces full.
+always_full_path_globs: []
+
+fail_closed:
+  unknown_path_fallback: full_fast
+  empty_policy_fallback: full_fast
+  schema_error_fallback: full_fast
+  parse_error_fallback: full_fast
+  empty_selection_fallback: full_fast

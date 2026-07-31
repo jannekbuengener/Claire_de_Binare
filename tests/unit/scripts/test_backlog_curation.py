@@ -19,6 +19,39 @@ sys.modules[_SPEC.name] = backlog_curation
 _SPEC.loader.exec_module(backlog_curation)
 
 
+def _write(path: Path, content: str = "# decoy\n") -> None:
+    path.parent.mkdir(parents=True, exist_ok=True)
+    path.write_text(content, encoding="utf-8")
+
+
+def _historical_only_payload() -> dict[str, object]:
+    return _payload(
+        event_label="task",
+        labels=["task"],
+        body=(
+            "See `docs/archive/knowledge/ARCHITECTURE_MAP.md` and "
+            "`knowledge/logs/sessions/historical-session.md`."
+        ),
+    )
+
+
+def _source_paths(artifact: dict[str, object]) -> set[str]:
+    sources = artifact.get("sources") or []
+    assert isinstance(sources, list)
+    return {str(item["path"]) for item in sources if isinstance(item, dict)}
+
+
+def _handoff_paths(artifact: dict[str, object]) -> set[str]:
+    handoff = artifact.get("handoff") or {}
+    assert isinstance(handoff, dict)
+    paths: set[str] = set()
+    for key in ("must_read", "supporting", "background"):
+        for item in handoff.get(key) or []:
+            if isinstance(item, dict) and "path" in item:
+                paths.add(str(item["path"]))
+    return paths
+
+
 def _payload(
     *,
     event_label: str,
@@ -385,3 +418,150 @@ def test_extract_explicit_repo_paths_adversarial_many_slashes() -> None:
     backlog_curation.extract_explicit_repo_paths(adversarial)
     elapsed = time.time() - start
     assert elapsed < 1.0, f"Path extraction took {elapsed}s (should complete in <1s)"
+
+
+def test_worktrees_decoy_does_not_change_historical_only_fail_closed(
+    tmp_path: Path,
+) -> None:
+    """Named `.worktrees/` trees must never enter ranking or flip fail_closed."""
+    decoy = (
+        tmp_path / ".worktrees" / "decoy-branch" / "knowledge" / "ARCHITECTURE_MAP.md"
+    )
+    _write(
+        decoy,
+        "# Architecture Map\narchitecture map knowledge sessions archive\n",
+    )
+    _write(tmp_path / "CURRENT_STATUS.md", "# status\n")
+
+    artifact = backlog_curation.curate_issue_payload(
+        _historical_only_payload(), repo_root=tmp_path
+    )
+
+    assert artifact is not None
+    assert artifact["curation_status"]["state"] == "fail_closed"
+    decoy_rel = decoy.relative_to(tmp_path).as_posix()
+    all_paths = _source_paths(artifact) | _handoff_paths(artifact)
+    assert decoy_rel not in all_paths
+    assert not any(".worktrees/" in path for path in all_paths)
+    assert decoy_rel not in backlog_curation.iter_repo_files(tmp_path)
+
+
+def test_nested_git_root_outside_named_worktrees_is_not_traversed(
+    tmp_path: Path,
+) -> None:
+    nested_root = tmp_path / "vendor-or-temp" / "nested-copy"
+    (nested_root / ".git").mkdir(parents=True)
+    decoy = nested_root / "knowledge" / "ARCHITECTURE_MAP.md"
+    _write(
+        decoy,
+        "# Architecture Map\narchitecture map knowledge sessions archive\n",
+    )
+    _write(tmp_path / "CURRENT_STATUS.md", "# status\n")
+
+    artifact = backlog_curation.curate_issue_payload(
+        _historical_only_payload(), repo_root=tmp_path
+    )
+
+    assert artifact is not None
+    assert artifact["curation_status"]["state"] == "fail_closed"
+    decoy_rel = decoy.relative_to(tmp_path).as_posix()
+    all_paths = _source_paths(artifact) | _handoff_paths(artifact)
+    assert decoy_rel not in all_paths
+    assert decoy_rel not in backlog_curation.iter_repo_files(tmp_path)
+    assert backlog_curation.is_nested_git_root(tmp_path, nested_root) is True
+    assert backlog_curation.is_nested_git_root(tmp_path, tmp_path) is False
+
+
+def test_nested_git_file_marker_is_treated_as_nested_root(tmp_path: Path) -> None:
+    nested_root = tmp_path / "scratch" / "linked-worktree"
+    nested_root.mkdir(parents=True)
+    (nested_root / ".git").write_text(
+        "gitdir: /tmp/fake-main/.git/worktrees/linked\n", encoding="utf-8"
+    )
+    decoy = nested_root / "knowledge" / "ARCHITECTURE_MAP.md"
+    _write(decoy, "# Architecture Map\narchitecture map\n")
+
+    assert backlog_curation.is_nested_git_root(tmp_path, nested_root) is True
+    assert decoy.relative_to(
+        tmp_path
+    ).as_posix() not in backlog_curation.iter_repo_files(tmp_path)
+
+
+def test_normal_canon_file_remains_discoverable(tmp_path: Path) -> None:
+    canon = tmp_path / "knowledge" / "ARCHITECTURE_MAP.md"
+    _write(canon, "# Architecture Map\nactive architecture map canon\n")
+    _write(
+        tmp_path / ".worktrees" / "noise" / "knowledge" / "ARCHITECTURE_MAP.md",
+        "# decoy architecture map\n",
+    )
+
+    files = backlog_curation.iter_repo_files(tmp_path)
+    assert "knowledge/ARCHITECTURE_MAP.md" in files
+    assert not any(path.startswith(".worktrees/") for path in files)
+
+    payload = _payload(
+        event_label="task",
+        labels=["task"],
+        title="Architecture map reconcile",
+        body="Update `knowledge/ARCHITECTURE_MAP.md` for the active architecture map.",
+    )
+    artifact = backlog_curation.curate_issue_payload(payload, repo_root=tmp_path)
+    assert artifact is not None
+    assert "knowledge/ARCHITECTURE_MAP.md" in (
+        _source_paths(artifact) | _handoff_paths(artifact)
+    )
+    assert not any(
+        ".worktrees/" in path
+        for path in (_source_paths(artifact) | _handoff_paths(artifact))
+    )
+
+
+@pytest.mark.parametrize(
+    ("rel_dir", "expected"),
+    [
+        (".worktrees", True),
+        (".worktrees/decoy-branch", True),
+        ("prefix/.worktrees/nested", True),
+        (r".worktrees\decoy-branch", True),
+        ("docs/worktrees-guide", False),
+        ("knowledge/not-a-.worktrees-name", False),
+        ("artifacts", True),
+        ("node_modules", True),
+        (".pytest_cache", True),
+        ("docs/archive/knowledge", True),
+        ("knowledge/logs/sessions", True),
+    ],
+)
+def test_should_skip_dir_segment_and_existing_skip_contract(
+    rel_dir: str, expected: bool
+) -> None:
+    assert backlog_curation.should_skip_dir(rel_dir) is expected
+
+
+def test_platform_path_normalization_for_skip_and_nested_git(tmp_path: Path) -> None:
+    """Separators and nested-.git markers must be decided on real paths."""
+    assert backlog_curation.should_skip_dir(".worktrees/foo") is True
+    assert backlog_curation.should_skip_dir(".worktrees\\foo") is True
+    assert backlog_curation.should_skip_dir("docs/worktrees-guide") is False
+
+    nested_dir = tmp_path / "vendor" / "nested-dir"
+    nested_dir.mkdir(parents=True)
+    (nested_dir / ".git").mkdir()
+    assert backlog_curation.is_nested_git_root(tmp_path, nested_dir) is True
+    assert backlog_curation.is_nested_git_root(tmp_path, tmp_path) is False
+
+    nested_file = tmp_path / "vendor" / "nested-file"
+    nested_file.mkdir(parents=True)
+    (nested_file / ".git").write_text(
+        "gitdir: ../.git/worktrees/linked\n", encoding="utf-8"
+    )
+    assert backlog_curation.is_nested_git_root(tmp_path, nested_file) is True
+
+    outside = tmp_path.parent / f"{tmp_path.name}-outside-nested"
+    outside.mkdir(exist_ok=True)
+    (outside / ".git").mkdir(exist_ok=True)
+    try:
+        assert backlog_curation.is_nested_git_root(tmp_path, outside) is True
+    finally:
+        (outside / ".git").rmdir()
+        outside.rmdir()

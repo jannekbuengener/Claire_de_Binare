@@ -31,9 +31,8 @@ Implementierungspfad (REQUIRED):
   - Required Status Checks: CI Test Suite, Linting, Write-Zonen-Validierung, Secrets-Scan, Conversation Resolution.
   - CODEOWNERS fuer kritische Zonen (mind. Maintainer-Team) + PR-Template fordert Rollback-Plan.
 - Write-Zonen-Validierung (FND-001):
-  - Allowed: CDB_KNOWLEDGE_HUB.md und .cdb_agent_workspace/*.
-  - Protected: /core, /services, /infrastructure, /tests, /governance, Tresor-Zone.
-  - CI-Gate: Script scripts/validate_write_zones.sh blockt PRs mit Verstoessen; pre-commit Hook prueft Pfade lokal; Audit-Log fuer Abweichungen.
+  - Canonical policy: `knowledge/governance/CDB_AGENT_POLICY.md` §4 (allowed `knowledge/**` / `.cdb_agent_workspace/**`; forbidden `knowledge/governance/**` and protected code zones).
+  - GitHub is the sole active repository control-plane path; the former GitLab `scripts/validate_write_zones.sh` gate was removed with #4121.
 - Secrets-Scan (FND-002):
   - Pre-commit: git-secrets oder gitleaks MUSS installiert und enforced sein.
   - CI: truffleHog/detect-secrets scannt PR-Diffs; custom Regex fuer projektspezifische Tokens; Block on detection + Incident-Playbook (Rotation, Audit, PR-Hinweis).
