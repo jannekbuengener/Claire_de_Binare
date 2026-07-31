@@ -42,5 +42,10 @@ Mirror `services/candles/service.py:_lookup_regime_id`:
 - Forbidden paths untouched (`core/replay/dataset_provider.py`, `services/**`, CURRENT_STATUS, …)
 - LR: NO-GO
 
+## Delivery
+- Branch: `cloud-cursor/regime-offline-unknown-4188-5585` @ `fc5a557b`
+- PR: `#4241` (draft, base `main`)
+- Issue `#4188` bleibt OPEN (Refs only, kein Closes)
+
 ## Status
-`DONE_SLICE_ADDED_TO_BATCH_PR` (pending PR handoff)
+`DONE_SLICE_ADDED_TO_BATCH_PR`
