@@ -76,3 +76,11 @@ limitations:
 `DONE_SLICE_ADDED_TO_BATCH_PR` (nach PR-Handoff)
 
 Refs #4061
+
+## PR Handoff
+
+- PR number: 4244
+- Head SHA: 4cc12966
+- Draft: true
+- Issue comment via API: blocked (integration lacks addComment); delivery documented in PR body
+
