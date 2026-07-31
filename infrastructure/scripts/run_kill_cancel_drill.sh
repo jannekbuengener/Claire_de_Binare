@@ -31,6 +31,8 @@ EVIDENCE_DIR="${REPO_ROOT}/${EVIDENCE_ROOT}/${RUN_ID}"
 mkdir -p "${EVIDENCE_DIR}/ledger"
 # execuser (uid 1000) must write the shared open-order ledger bind mount.
 chmod 777 "${EVIDENCE_DIR}/ledger"
+# Run marker bounds JUnit freshness so stale XML from another run cannot map in.
+printf '%s\n' "${RUN_ID}" >"${EVIDENCE_DIR}/.run_marker"
 
 BASE_FILE="${REPO_ROOT}/infrastructure/compose/base.yml"
 TEST_FILE="${REPO_ROOT}/infrastructure/compose/test.yml"
@@ -391,133 +393,10 @@ COMPLETED_AT="$(date -u +%Y-%m-%dT%H:%M:%SZ)"
 cleanup
 trap - EXIT
 
+# Evidence writer (extracted): JUnit/scenario status must not contradict pytest.
+# See tools/ci/kill_cancel_compose_evidence.py and docs/contracts/…
 EVIDENCE_DIR="$EVIDENCE_DIR" PROJECT_NAME="$PROJECT_NAME" COMMIT_SHA="$COMMIT_SHA" \
 RUN_ID="$RUN_ID" INITIAL_EXIT="$INITIAL_EXIT" RESTART_EXIT="$RESTART_EXIT" \
 CLEANUP_PASS="$CLEANUP_PASS" STARTED_AT="$STARTED_AT" COMPLETED_AT="$COMPLETED_AT" \
 RUN_ERROR="$RUN_ERROR" \
-python3 - <<'PY'
-import hashlib, json, os
-from pathlib import Path
-
-evidence = Path(os.environ["EVIDENCE_DIR"])
-project = os.environ["PROJECT_NAME"]
-commit = os.environ["COMMIT_SHA"]
-run_id = os.environ["RUN_ID"]
-initial = int(os.environ["INITIAL_EXIT"])
-restart = int(os.environ["RESTART_EXIT"])
-cleanup_pass = int(os.environ["CLEANUP_PASS"])
-started = os.environ["STARTED_AT"]
-completed = os.environ["COMPLETED_AT"]
-run_error = os.environ.get("RUN_ERROR") or ""
-
-def sha256(path: Path) -> str:
-    h = hashlib.sha256()
-    h.update(path.read_bytes())
-    return h.hexdigest()
-
-def junit_status(path: Path, test_name: str) -> str:
-    if not path.exists():
-        return "FAIL"
-    import xml.etree.ElementTree as ET
-    root = ET.parse(path).getroot()
-    for tc in root.iter("testcase"):
-        if tc.get("name") == test_name:
-            if tc.find("failure") is not None or tc.find("error") is not None:
-                return "FAIL"
-            if tc.find("skipped") is not None:
-                return "HOLD"
-            return "PASS"
-    return "FAIL"
-
-p1 = evidence / "phase1.xml"
-p2 = evidence / "phase2.xml"
-scenarios = {
-    "S1_S2_inactive_keeps_open": junit_status(p1, "test_s1_s2_inactive_keeps_resting_orders_open"),
-    "S3_S5_active_cancel_confirmed": junit_status(p1, "test_s3_s5_active_cancels_confirmed"),
-    "S4_unevaluable_fail_closed": junit_status(p1, "test_s4_unevaluable_fail_closed"),
-    "S6_cancel_rejection_hold": junit_status(p1, "test_s6_cancel_rejection_hold"),
-    "S7_cancel_exception_malformed": junit_status(p1, "test_s7_cancel_exception_and_malformed_hold"),
-    "S8_adapter_unsupported_hold": junit_status(p1, "test_s8_adapter_without_cancel_hold"),
-    "S9_double_kill_idempotent": junit_status(p1, "test_s9_double_kill_idempotent"),
-    "S10a_ledger_persists": junit_status(p1, "test_s10a_ledger_persists_open_orders"),
-    "S10b_restart_reconcile": junit_status(p2, "test_s10b_restart_reconciles_before_new_orders"),
-    "S11_fill_after_kill_fail": junit_status(p1, "test_s11_fill_after_kill_fail"),
-    "S12_positions_visible_no_unwind": junit_status(p1, "test_s12_positions_visible_no_auto_unwind"),
-}
-
-overall = "PASS"
-if initial != 0 or restart != 0 or not cleanup_pass or run_error:
-    overall = "HOLD" if cleanup_pass and not run_error else "FAIL"
-    if initial != 0 or restart != 0:
-        overall = "FAIL"
-
-artifact_sha = {}
-for path in sorted(evidence.iterdir()):
-    if path.is_file() and path.name != "manifest.json":
-        artifact_sha[path.name] = sha256(path)
-
-manifest = {
-    "schema_version": "cdb-kill-cancel-compose-evidence/v1",
-    "run_id": run_id,
-    "commit_sha": commit,
-    "started_at_utc": started,
-    "completed_at_utc": completed,
-    "compose_project": project,
-    "mock_only": True,
-    "dry_run": True,
-    "productive_adapter_active": False,
-    "scenarios": scenarios,
-    "orders_discovered": "see phase logs / status snapshots",
-    "cancel_attempts": "see phase logs / status snapshots",
-    "confirmed_cancelled": "see phase logs / status snapshots",
-    "residual_open_orders": [],
-    "residual_positions": [
-        {
-            "symbol": "*",
-            "status": "UNKNOWN",
-            "quantity": None,
-            "reason_code": "RESIDUAL_POSITION_UNKNOWN",
-        }
-    ],
-    "fill_after_kill_events": ["proven in S11 in-process"],
-    "overall_verdict": overall,
-    "reason_codes": [
-        "KILL_CANCEL_HOLD",
-        "RESIDUAL_POSITION_UNKNOWN",
-        "CANCEL_REQUEST_REJECTED",
-        "CANCEL_EXECUTION_ERROR",
-        "CANCEL_ADAPTER_UNSUPPORTED",
-        "FILL_AFTER_KILL_ACTIVATION",
-        "RESIDUAL_OPEN_ORDERS",
-    ],
-    "cleanup_state": {
-        "pass": bool(cleanup_pass),
-        "containers_remaining": 0 if cleanup_pass else "nonzero",
-        "volumes_remaining": 0 if cleanup_pass else "nonzero",
-        "networks_remaining": 0 if cleanup_pass else "nonzero",
-    },
-    "limitations": [
-        "Mock/dry-run compose drill only; no productive venue activation",
-        "Cancel rejection/error/malformed/unsupported proven in-process under CDB_4185_DRILL",
-        "No authoritative position SSOT in #4185 scope — confirmed cancel + UNKNOWN position => HOLD",
-        "Batch KILL_CANCEL_PASS is not claimed for the real execution service path",
-    ],
-    "safety_boundaries": [
-        "LR NO-GO",
-        "MOCK_TRADING=true",
-        "DRY_RUN=true",
-        "USE_REAL_BALANCE=false",
-        "no host ports",
-        "no MEXC credential mounts",
-        "no auto-unwind",
-    ],
-    "artifact_sha256": artifact_sha,
-    "run_error": run_error or None,
-    "phase1_exit": initial,
-    "phase2_exit": restart,
-}
-(evidence / "manifest.json").write_text(json.dumps(manifest, indent=2, sort_keys=True) + "\n")
-print(f"Evidence: {evidence}")
-print(f"Verdict: {overall}")
-raise SystemExit(0 if overall == "PASS" and cleanup_pass else 1)
-PY
+python3 -m tools.ci.kill_cancel_compose_evidence
