@@ -17,15 +17,20 @@ import sys
 from collections import Counter
 from pathlib import Path
 
+from tools.market_data.assign_regime_offline import (
+    REGIME_ID_TO_NAME,
+    REGIME_NAME_TO_ID,
+    annotate_regime_row,
+    resolve_assigned_regime,
+)
+
 RAW_DIR = Path("artifacts/candles/mexc_strict_window_3091")
 RAW_PATH = RAW_DIR / "candles.jsonl"
 DERIVED_DIR = Path("artifacts/candles/mexc_strict_window_3091_regime_assigned")
 DERIVED_PATH = DERIVED_DIR / "candles.jsonl"
 MANIFEST_PATH = DERIVED_DIR / "regime_assignment_manifest.json"
 
-EXPECTED_RAW_SHA256 = (
-    "d79a1c3c81191dcf4418ae0c2b2775a6f354ed0cc6801a6955904871c4077605"
-)
+EXPECTED_RAW_SHA256 = "d79a1c3c81191dcf4418ae0c2b2775a6f354ed0cc6801a6955904871c4077605"
 EXPECTED_ROW_COUNT = 3496
 
 # ── Canonical regime config ──
@@ -38,15 +43,7 @@ ATR_HIGH_VOL_THRESHOLD = 2.0
 CONFIRMATION_BARS = 3
 BUFFER_MAXLEN = max(ADX_PERIOD, ATR_PERIOD) * 5  # 70
 
-# Canonical regime ID mapping from services/candles/service.py:_lookup_regime_id
-REGIME_NAME_TO_ID = {
-    "TREND": 0,
-    "RANGE": 1,
-    "HIGH_VOL_CHAOTIC": 2,
-    "CRISIS": 3,
-}
-
-REGIME_ID_TO_NAME = {v: k for k, v in REGIME_NAME_TO_ID.items()}
+_VALID_REGIME_IDS = frozenset(REGIME_NAME_TO_ID.values())
 
 
 def compute_atr(candles: list[dict], period: int) -> float | None:
@@ -135,12 +132,12 @@ def build_derived_candles(raw_candles: list[dict]) -> list[dict]:
     """Build derived candles with integer regime_id using offline ADX/ATR heuristic.
 
     Faithfully mirrors the regime derivation + confirmation logic from
-    services/regime/service.py:_derive_regime.
+    services/regime/service.py:_derive_regime. Warmup / UNKNOWN map to
+    ``regime_id=None`` (fail-closed; never silent TREND / 0). Refs #4188.
     """
     current_regime = "UNKNOWN"
     candidate_regime: str | None = None
     candidate_count = 0
-    assigned_regime_id = 0  # fallback for warmup
 
     buffer: list[dict] = []
     derived: list[dict] = []
@@ -176,13 +173,23 @@ def build_derived_candles(raw_candles: list[dict]) -> list[dict]:
                 candidate_regime = None
                 candidate_count = 0
 
-            assigned_regime_id = REGIME_NAME_TO_ID.get(current_regime, 0)
+            assigned_regime_id, block_reason = resolve_assigned_regime(
+                indicators_ready=True,
+                current_regime=current_regime,
+            )
         else:
-            assigned_regime_id = 0
+            assigned_regime_id, block_reason = resolve_assigned_regime(
+                indicators_ready=False,
+                current_regime=current_regime,
+            )
 
-        row = dict(candle)
-        row["regime_id"] = assigned_regime_id
-        derived.append(row)
+        derived.append(
+            annotate_regime_row(
+                candle,
+                regime_id=assigned_regime_id,
+                block_reason=block_reason,
+            )
+        )
 
     return derived
 
@@ -229,28 +236,45 @@ def write_manifest(
             "1": "RANGE",
             "2": "HIGH_VOL_CHAOTIC",
             "3": "CRISIS",
+            "null": "UNKNOWN",
         },
         "regime_distribution": {
-            str(regime_id): {
-                "regime_name": REGIME_ID_TO_NAME.get(regime_id, "UNKNOWN"),
+            ("null" if regime_id is None else str(regime_id)): {
+                "regime_name": (
+                    "UNKNOWN"
+                    if regime_id is None
+                    else REGIME_ID_TO_NAME.get(regime_id, "UNKNOWN")
+                ),
                 "count": count,
             }
-            for regime_id, count in sorted(distribution.items())
+            for regime_id, count in sorted(
+                distribution.items(),
+                key=lambda item: (-1 if item[0] is None else item[0]),
+            )
         },
         "regime_distribution_summary": {
-            str(regime_id): count
-            for regime_id, count in sorted(distribution.items())
+            ("null" if regime_id is None else str(regime_id)): count
+            for regime_id, count in sorted(
+                distribution.items(),
+                key=lambda item: (-1 if item[0] is None else item[0]),
+            )
         },
         "initial_fallback_regime": {
-            "regime_id": 0,
-            "regime_name": "TREND",
+            "regime_id": None,
+            "regime_name": "UNKNOWN",
+            "block_reason": "WARMUP_INSUFFICIENT_INDICATORS",
             "note": (
-                f"Regime defaulted to 0 (TREND) for first {ADX_PERIOD} candles "
-                f"(ADX/ATR require period+1={ADX_PERIOD+1} candles). "
+                f"Regime defaults to null/UNKNOWN for first {ADX_PERIOD} candles "
+                f"(ADX/ATR require period+1={ADX_PERIOD + 1} candles). "
+                f"Never silent TREND / regime_id=0. Refs #4188 #4149. "
                 f"Full buffer depth is {BUFFER_MAXLEN} candles."
             ),
         },
         "warmup_candles_defaulted": ADX_PERIOD,
+        "fail_closed_semantics": (
+            "Warmup / UNKNOWN / unmapped regimes emit regime_id=null "
+            "(never silent TREND / regime_id=0). Refs #4188 #4149."
+        ),
         "confirmation_bars_applied": True,
         "deterministic": True,
         "no_randomness": True,
@@ -309,17 +333,16 @@ def main() -> int:
 
     derived = build_derived_candles(raw_candles)
 
-    null_count = sum(1 for r in derived if r["regime_id"] is None)
-    if null_count > 0:
-        print(f"ERROR: {null_count} rows have null regime_id", file=sys.stderr)
-        return 2
-
-    invalid = [i for i, r in enumerate(derived) if r["regime_id"] not in {0, 1, 2, 3}]
+    unknown_count = sum(1 for r in derived if r["regime_id"] is None)
+    invalid = [
+        i
+        for i, r in enumerate(derived)
+        if r["regime_id"] is not None and r["regime_id"] not in _VALID_REGIME_IDS
+    ]
     if invalid:
-        print(
-            f"ERROR: {len(invalid)} rows have invalid regime_id", file=sys.stderr
-        )
+        print(f"ERROR: {len(invalid)} rows have invalid regime_id", file=sys.stderr)
         return 2
+    print(f"UNKNOWN/null regime_id rows (warmup or unmapped): {unknown_count}")
 
     distribution = Counter(r["regime_id"] for r in derived)
 
@@ -332,8 +355,10 @@ def main() -> int:
     print(f"Derived dataset: {DERIVED_PATH} ({len(derived)} rows)")
     print(f"Manifest:       {MANIFEST_PATH}")
     print("Regime distribution:")
-    for rid, count in sorted(distribution.items()):
-        name = REGIME_ID_TO_NAME.get(rid, "???")
+    for rid, count in sorted(
+        distribution.items(), key=lambda item: (-1 if item[0] is None else item[0])
+    ):
+        name = "UNKNOWN" if rid is None else REGIME_ID_TO_NAME.get(rid, "???")
         pct = count / len(derived) * 100
         print(f"  {rid} ({name}): {count} ({pct:.1f}%)")
     print("ALL REGIME LABELS ARE ESTIMATED. NOT runtime-derived.")
@@ -383,15 +408,20 @@ def verify_only() -> int:
     for i in range(len(derived)):
         rid = derived[i].get("regime_id")
         if rid is None:
-            print(f"FAIL: Null regime_id at row {i}", file=sys.stderr)
-            return 2
-        if not isinstance(rid, int):
+            # Fail-closed UNKNOWN/warmup is allowed (#4188).
+            if derived[i].get("regime_name") != "UNKNOWN":
+                print(
+                    f"FAIL: null regime_id without regime_name=UNKNOWN at row {i}",
+                    file=sys.stderr,
+                )
+                return 2
+        elif not isinstance(rid, int):
             print(
                 f"FAIL: non-int regime_id at row {i}: {type(rid).__name__}",
                 file=sys.stderr,
             )
             return 2
-        if rid not in {0, 1, 2, 3}:
+        elif rid not in _VALID_REGIME_IDS:
             print(f"FAIL: Invalid regime_id at row {i}: {rid}", file=sys.stderr)
             return 2
         if derived[i]["ts_ms"] != raw_candles[i]["ts_ms"]:
@@ -410,17 +440,18 @@ def verify_only() -> int:
                 )
                 return 2
 
-    null_in_derived = sum(
-        1 for r in derived if r["regime_id"] is None
+    null_in_derived = sum(1 for r in derived if r["regime_id"] is None)
+    print(f"PASS: null/UNKNOWN regime_id in derived: {null_in_derived}")
+    print(
+        "PASS: Non-null regime_id values are valid integers in "
+        f"{sorted(_VALID_REGIME_IDS)}"
     )
-    print(f"PASS: null regime_id in derived: {null_in_derived}")
-    print("PASS: All regime_id values are valid integers in {0,1,2,3}")
-    print(f"PASS: All ts_ms and OHLCV fields match raw dataset")
+    print("PASS: All ts_ms and OHLCV fields match raw dataset")
 
     distribution = Counter(r["regime_id"] for r in derived)
     print("Regime distribution:")
-    for rid in sorted(distribution):
-        name = REGIME_ID_TO_NAME.get(rid, "???")
+    for rid in sorted(distribution, key=lambda x: (-1 if x is None else x)):
+        name = "UNKNOWN" if rid is None else REGIME_ID_TO_NAME.get(rid, "???")
         pct = distribution[rid] / len(derived) * 100
         print(f"  {rid} ({name}): {distribution[rid]} ({pct:.1f}%)")
 
