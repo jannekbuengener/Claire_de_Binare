@@ -72,13 +72,11 @@ def boundary(monkeypatch: pytest.MonkeyPatch) -> Database:
         with conn.cursor() as cur:
             cur.execute("DELETE FROM reduce_only_executions")
             cur.execute("DELETE FROM positions")
-            cur.execute(
-                """
+            cur.execute("""
                 DELETE FROM trades
                 WHERE metadata->'reduce_only'->>'position_update_owner'
                     = 'execution_reduce_only_v1'
-                """
-            )
+                """)
 
     _configure_boundary(monkeypatch, database)
     return database
@@ -627,14 +625,12 @@ def test_db_writer_verifies_ledger_pnl_and_deduplicates_trade(
         writer.process_trade_event(payload)
         with boundary.get_connection() as conn:
             with conn.cursor() as cur:
-                cur.execute(
-                    """
+                cur.execute("""
                     SELECT COUNT(*), MIN(realized_pnl)
                     FROM trades
                     WHERE metadata->>'order_id'
                         = '4184-DB_WRITER_NEGATIVE_CONTROL'
-                    """
-                )
+                    """)
                 persisted = cur.fetchone()
         assert persisted == (1, Decimal("0E-8"))
         assert _signed_position(boundary) == Decimal("0.6")

@@ -116,6 +116,7 @@ def test_reactive_unwind_suppressed_in_shadow(
     mock_result.strategy_id = "paper"
     mock_result.filled_quantity = 0.01
     mock_result.symbol = "BTCUSDT"
+    mock_result.reduce_only = False
 
     risk_manager._maybe_auto_unwind(mock_result)
 
@@ -141,6 +142,7 @@ def test_reactive_unwind_works_in_paper(
     mock_result.filled_quantity = 0.01
     mock_result.symbol = "BTCUSDT"
     mock_result.price = 50000.0
+    mock_result.reduce_only = False
 
     risk_manager._maybe_auto_unwind(mock_result)
 
