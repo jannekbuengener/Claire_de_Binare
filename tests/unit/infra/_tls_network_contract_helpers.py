@@ -1,4 +1,4 @@
-"""Shared helpers for TLS / network overlay contract tests (#3860)."""
+"""Shared helpers for TLS / network overlay contract tests (#3860, #4120)."""
 
 from __future__ import annotations
 
@@ -19,6 +19,10 @@ TLS_DIR = REPO_ROOT / "infrastructure" / "tls"
 SCRIPTS_DIR = REPO_ROOT / "infrastructure" / "scripts"
 
 TLS_OVERLAY_FILE = "tls.yml"
+TLS_OVERLAY_REL = f"infrastructure/compose/{TLS_OVERLAY_FILE}"
+TLS_SETUP_REL = "infrastructure/tls/TLS_SETUP.md"
+STACK_UP_REL = "infrastructure/scripts/stack_up.ps1"
+ENV_INDEX_REL = "docs/env/index.md"
 NETWORK_PROD_OVERLAY_FILE = "network-prod.yml"
 
 CERT_UTILITY_SCRIPTS: tuple[str, ...] = (
@@ -41,6 +45,12 @@ KNOWN_PUBLIC_EXPOSURE_FILES: frozenset[str] = frozenset(
 
 SERVICE_NAME_PATTERN = re.compile(r"\bcdb_[a-z0-9_]+\b")
 
+FORBIDDEN_ACTIVE_START_PHRASES: tuple[str, ...] = (
+    "Status:** Implemented",
+    "Kanonisch: BLUE + TLS-Overlay",
+    "Start Stack with TLS",
+)
+
 PortBindingKind = Literal["localhost", "public", "unqualified", "none"]
 
 
@@ -59,6 +69,19 @@ class CertUtilityClassification:
     has_legacy_banner: bool
     mutates_filesystem: bool
     detail: str
+
+
+@dataclass(frozen=True)
+class TlsQuarantineScan:
+    overlay_has_quarantine_banner: bool
+    setup_is_quarantined: bool
+    setup_has_forbidden_active_start: bool
+    setup_runbook_link_ok: bool
+    env_index_points_tls_setup_as_postgres_canon: bool
+    stack_up_tls_fail_closed: bool
+    stack_up_still_appends_tls_overlay: bool
+    cdb_local_tls_refs: tuple[str, ...]
+    limitations: tuple[str, ...] = field(default_factory=tuple)
 
 
 @dataclass(frozen=True)
@@ -180,6 +203,93 @@ def extract_service_names_from_text(*texts: str) -> tuple[str, ...]:
     return tuple(sorted(names))
 
 
+def _header_before_services(text: str) -> str:
+    marker = "\nservices:"
+    idx = text.find(marker)
+    if idx < 0:
+        return text[:800]
+    return text[:idx]
+
+
+def _text_has_quarantine_markers(text: str) -> bool:
+    upper = text.upper()
+    return all(
+        marker.upper() in upper
+        for marker in ("LEGACY", "QUARANTINED", "RETIRE_QUARANTINE")
+    )
+
+
+def scan_tls_quarantine_contract() -> TlsQuarantineScan:
+    """Static quarantine evidence for #4120 RETIRE_QUARANTINE."""
+    overlay_text = (COMPOSE_DIR / TLS_OVERLAY_FILE).read_text(encoding="utf-8")
+    setup_text = (REPO_ROOT / TLS_SETUP_REL).read_text(encoding="utf-8")
+    env_text = (REPO_ROOT / ENV_INDEX_REL).read_text(encoding="utf-8")
+    stack_up_text = (REPO_ROOT / STACK_UP_REL).read_text(encoding="utf-8")
+
+    overlay_header = _header_before_services(overlay_text)
+    overlay_quarantined = _text_has_quarantine_markers(overlay_header) and (
+        "DO NOT USE" in overlay_header.upper() or "DO NOT:" in overlay_header.upper()
+    )
+
+    setup_quarantined = _text_has_quarantine_markers(setup_text[:1200]) and (
+        "DO NOT USE" in setup_text.upper()
+    )
+    setup_forbidden = any(phrase in setup_text for phrase in FORBIDDEN_ACTIVE_START_PHRASES)
+
+    runbook_ok = (
+        "knowledge/operations/DOCKER_STACK_RUNBOOK.md" in setup_text
+        and (REPO_ROOT / "knowledge/operations/DOCKER_STACK_RUNBOOK.md").is_file()
+    )
+
+    env_points_tls = bool(
+        re.search(
+            r"POSTGRES_SSLMODE[\s\S]{0,400}?infrastructure/tls/TLS_SETUP\.md",
+            env_text,
+        )
+    )
+
+    tls_block_match = re.search(
+        r"if\s*\(\s*\$TLS\s*\)\s*\{(?P<body>.*?)\n\s*\}",
+        stack_up_text,
+        flags=re.DOTALL | re.IGNORECASE,
+    )
+    tls_body = tls_block_match.group("body") if tls_block_match else ""
+    fail_closed = (
+        "RETIRE_QUARANTINE" in tls_body
+        or "QUARANTINED" in tls_body.upper()
+        or "LEGACY" in tls_body.upper()
+    ) and ("exit 1" in tls_body or "Write-Error" in tls_body)
+    still_appends = (
+        "tls.yml" in tls_body
+        and "composeArgs += '-f'" in tls_body
+        and "exit 1" not in tls_body
+    )
+
+    cdb_local_refs: list[str] = []
+    for rel in (TLS_OVERLAY_REL, TLS_SETUP_REL, STACK_UP_REL, ENV_INDEX_REL):
+        text = (REPO_ROOT / rel).read_text(encoding="utf-8")
+        if ".cdb_local/tls" in text or ".cdb_local\\tls" in text:
+            cdb_local_refs.append(rel)
+
+    limitations = (
+        "Quarantine scan is static text/YAML only; no Docker compose config proof.",
+        "Cert generation and host secret paths are never executed or read.",
+        "stack_up.ps1 -TLS path is asserted fail-closed via source markers only.",
+    )
+
+    return TlsQuarantineScan(
+        overlay_has_quarantine_banner=overlay_quarantined,
+        setup_is_quarantined=setup_quarantined,
+        setup_has_forbidden_active_start=setup_forbidden,
+        setup_runbook_link_ok=runbook_ok,
+        env_index_points_tls_setup_as_postgres_canon=env_points_tls,
+        stack_up_tls_fail_closed=fail_closed,
+        stack_up_still_appends_tls_overlay=still_appends,
+        cdb_local_tls_refs=tuple(cdb_local_refs),
+        limitations=limitations,
+    )
+
+
 def scan_tls_network_contract() -> TlsNetworkScan:
     tls_overlay = load_overlay_yaml(TLS_OVERLAY_FILE)
     network_overlay = load_overlay_yaml(NETWORK_PROD_OVERLAY_FILE)
@@ -190,11 +300,15 @@ def scan_tls_network_contract() -> TlsNetworkScan:
     cert_mounts = tuple(extract_tls_cert_mount_paths(tls_overlay))
 
     networks = network_overlay.get("networks") or {}
-    cdb_network = networks.get("cdb_network") if isinstance(networks, dict) else None
+    network_cfg = None
+    if isinstance(networks, dict):
+        # Pick the first network mapping that declares an internal flag.
+        for value in networks.values():
+            if isinstance(value, dict) and "internal" in value:
+                network_cfg = value
+                break
     internal_flag = (
-        bool(cdb_network.get("internal"))
-        if isinstance(cdb_network, dict)
-        else None
+        bool(network_cfg.get("internal")) if isinstance(network_cfg, dict) else None
     )
 
     nulled_ports: list[str] = []
@@ -205,9 +319,7 @@ def scan_tls_network_contract() -> TlsNetworkScan:
                 nulled_ports.append(name)
 
     all_bindings = scan_compose_port_bindings(tuple(CANONICAL_RUNTIME_FILES))
-    canonical_localhost = tuple(
-        b for b in all_bindings if b.kind == "localhost"
-    )
+    canonical_localhost = tuple(b for b in all_bindings if b.kind == "localhost")
     public_findings = tuple(
         b
         for b in scan_compose_port_bindings(

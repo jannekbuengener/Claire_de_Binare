@@ -1,7 +1,7 @@
-"""TLS and network overlay contract tests (#3860).
+"""TLS and network overlay contract tests (#3860, #4120).
 
 Static YAML/script classification only — no certificate generation, no network
-creation, no productive TLS/network mutation. Parent #3855.
+creation, no productive TLS/network mutation. Parent #3855; quarantine #4120.
 """
 
 from __future__ import annotations
@@ -81,3 +81,86 @@ def test_scan_surfaces_limitations() -> None:
     assert scan.limitations
     assert any("no Docker network" in item for item in scan.limitations)
     assert any("never generate certificates" in item for item in scan.limitations)
+
+
+# --- #4120 RETIRE_QUARANTINE -------------------------------------------------
+
+
+def test_tls_overlay_carries_retire_quarantine_banner() -> None:
+    """
+    test_id: tc_tls_overlay_quarantine_banner_4120
+    test_type: Wissens-Test
+    rule_ref: INV-022
+    issue_ref: #4120
+    decision_ref: RETIRE_QUARANTINE
+    """
+    scan = helpers.scan_tls_quarantine_contract()
+    assert scan.overlay_has_quarantine_banner
+
+
+def test_tls_setup_guide_is_quarantined_not_implemented() -> None:
+    """
+    test_id: tc_tls_setup_quarantined_4120
+    test_type: Wissens-Test
+    rule_ref: INV-022
+    issue_ref: #4120
+    decision_ref: RETIRE_QUARANTINE
+    """
+    scan = helpers.scan_tls_quarantine_contract()
+    assert scan.setup_is_quarantined
+    assert not scan.setup_has_forbidden_active_start
+
+
+def test_tls_setup_docker_stack_runbook_link_resolves() -> None:
+    """
+    test_id: tc_tls_setup_runbook_link_4120
+    test_type: Wissens-Test
+    issue_ref: #4120
+    """
+    scan = helpers.scan_tls_quarantine_contract()
+    assert scan.setup_runbook_link_ok
+
+
+def test_env_index_does_not_use_tls_setup_as_postgres_canon() -> None:
+    """
+    test_id: tc_env_index_no_tls_setup_postgres_canon_4120
+    test_type: Wissens-Test
+    issue_ref: #4120
+    decision_ref: RETIRE_QUARANTINE
+    """
+    scan = helpers.scan_tls_quarantine_contract()
+    assert not scan.env_index_points_tls_setup_as_postgres_canon
+
+
+def test_stack_up_tls_flag_is_fail_closed_legacy_compat() -> None:
+    """
+    test_id: tc_stack_up_tls_fail_closed_4120
+    test_type: Schutz-Test
+    rule_ref: INV-022
+    issue_ref: #4120
+    decision_ref: RETIRE_QUARANTINE
+    """
+    scan = helpers.scan_tls_quarantine_contract()
+    assert scan.stack_up_tls_fail_closed
+    assert not scan.stack_up_still_appends_tls_overlay
+
+
+def test_cdb_local_tls_refs_only_on_quarantined_surfaces() -> None:
+    """
+    test_id: tc_cdb_local_tls_quarantine_surfaces_4120
+    test_type: Wissens-Test
+    issue_ref: #4120
+    """
+    scan = helpers.scan_tls_quarantine_contract()
+    # Allowed residual historical refs: overlay body + quarantined guide.
+    # stack_up.ps1 and docs/env/index.md must not keep active .cdb_local/tls paths.
+    assert helpers.TLS_OVERLAY_REL in scan.cdb_local_tls_refs
+    assert helpers.TLS_SETUP_REL in scan.cdb_local_tls_refs
+    assert helpers.STACK_UP_REL not in scan.cdb_local_tls_refs
+    assert helpers.ENV_INDEX_REL not in scan.cdb_local_tls_refs
+
+
+def test_tls_quarantine_scan_documents_limitations() -> None:
+    scan = helpers.scan_tls_quarantine_contract()
+    assert scan.limitations
+    assert any("static" in item.lower() for item in scan.limitations)
