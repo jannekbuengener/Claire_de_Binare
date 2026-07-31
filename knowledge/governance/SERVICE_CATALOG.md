@@ -220,7 +220,10 @@ compose.red.yml    → RED: Signal Generation + Monitoring               [kanoni
 logging.yml        → Logging Overlay (Loki + Promtail + Alertmanager)  [separates Overlay, nicht Standard-Start]
 ```
 
-Legacy-Layer (base.yml, dev.yml, tls.yml, etc.) existieren noch im Repo, sind aber nicht mehr kanonisch für den Betrieb.
+Legacy-Layer (base.yml, dev.yml, etc.) existieren noch im Repo, sind aber nicht mehr kanonisch für den Betrieb.
+`tls.yml` ist **LEGACY / QUARANTINED** (Decision `RETIRE_QUARANTINE`, Issue #4120):
+kein unterstützter Startpfad, kein Secrets-Canon (historische `.cdb_local/tls`-Mounts
+≠ `${SECRETS_PATH}`).
 
 ---
 

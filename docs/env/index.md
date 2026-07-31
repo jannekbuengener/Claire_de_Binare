@@ -11,7 +11,7 @@ Nicht exhaustiv; diese Seite zeigt die Canon-Pointer.
 | `LIVE_TRADING_CONFIRMED` | unset | Human gate fuer `TRADING_MODE=live` | [`core/config/trading_mode.py`](../../core/config/trading_mode.py) |
 | `MOCK_TRADING` | `true` | Execution-Service waehlt Non-Live statt Live-Executor | [`services/execution/config.py`](../../services/execution/config.py), [`services/execution/service.py`](../../services/execution/service.py) |
 | `CDB_CONTROL_BOARD_AUTOMATION_ENABLED` | `false` | Control-Board-Routing und Upsert | [docs/runbooks/control_board_board_as_code.md](../runbooks/control_board_board_as_code.md) |
-| `POSTGRES_SSLMODE` | `prefer` | Postgres-DSN / SSL-Verbindung | [`core/utils/postgres_client.py`](../../core/utils/postgres_client.py), [`infrastructure/tls/TLS_SETUP.md`](../../infrastructure/tls/TLS_SETUP.md) |
+| `POSTGRES_SSLMODE` | `prefer` | Postgres-DSN / SSL-Verbindung | [`core/utils/postgres_client.py`](../../core/utils/postgres_client.py) |
 | `SECRETS_PATH` | lokal: `~/Documents/.secrets/.cdb`, CI: `${{ github.workspace }}/.ci-secrets` | Compose, Bootstrap, E2E/Soak | BLUE+RED compose (`compose.blue.yml` / `compose.red.yml`), [`infrastructure/scripts/bootstrap_local.sh`](../../infrastructure/scripts/bootstrap_local.sh), [tests/fixtures/README.md](../../tests/fixtures/README.md) |
 | `CDB_EXTERNAL_TESTS` | off | Opt-in fuer externe Integrations-Tests | [`tests/integration/test_mexc_testnet.py`](../../tests/integration/test_mexc_testnet.py) |
 | `surrealdb_enabled` / `governance_source` | `false` / `git` | SurrealDB-Mirror und Governance-Read-Quelle | [`infrastructure/config/surrealdb/feature-flags.yaml`](../../infrastructure/config/surrealdb/feature-flags.yaml), [docs/surrealdb/rollback-cutover-plan.md](../surrealdb/rollback-cutover-plan.md) |
@@ -69,9 +69,19 @@ Guardrails:
 - `CDB_READONLY_PASSWORD` is only a temporary operator bridge variable. The canonical stored secret remains `POSTGRES_READONLY_PASSWORD`.
 - The canonical readonly-login boundary is documented in [`docs/runbooks/postgres_least_privilege_rls.md`](../runbooks/postgres_least_privilege_rls.md).
 
+## Legacy / quarantined TLS overlay
+
+`infrastructure/compose/tls.yml` und
+[`infrastructure/tls/TLS_SETUP.md`](../../infrastructure/tls/TLS_SETUP.md)
+sind **LEGACY / QUARANTINED** (Decision `RETIRE_QUARANTINE`, Issue #4120).
+Sie sind kein aktiver Startpfad und kein Secrets-Canon. Secrets bleiben unter
+`${SECRETS_PATH}`; historische TLS-Hostpfade aus dem Overlay sind nicht
+unterstuetzt.
+
 ## Wenn du etwas nachschlagen willst
 
 - Defaults und Validierung fuer lokale Laufzeit: [`infrastructure/scripts/check_env.ps1`](../../infrastructure/scripts/check_env.ps1)
-- DB-Verbindungsvariablen und TLS: [`core/utils/postgres_client.py`](../../core/utils/postgres_client.py)
+- DB-Verbindungsvariablen und SSL-Env: [`core/utils/postgres_client.py`](../../core/utils/postgres_client.py)
 - Fixture-DB-Zugang fuer Tests: [tests/fixtures/README.md](../../tests/fixtures/README.md)
 - Board-/Project-v2-Auth und Fallbacks: [docs/runbooks/project_board_automation.md](../runbooks/project_board_automation.md)
+- Quarantinierter TLS-Overlay-Hinweis: [`infrastructure/tls/TLS_SETUP.md`](../../infrastructure/tls/TLS_SETUP.md)
