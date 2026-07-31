@@ -1,6 +1,12 @@
 #!/usr/bin/env python3
+# LEGACY — not canonical; do not use as an active entrypoint.
+# Quarantined forensic reference only (#4125). Prefer make docker-up / tools/cdb.ps1.
 """
-COPILOT SMART STARTUP ORCHESTRATOR — LEGACY / NICHT KANONISCH
+LEGACY QUARANTINE — COPILOT SMART STARTUP ORCHESTRATOR
+
+Nicht kanonisch. Nicht als aktive Frontdoor verwenden.
+Aktiver Runtime-Pfad: BLUE+RED via `make docker-up` oder `tools/cdb.ps1 runtime up`.
+Quarantined under infrastructure/scripts/legacy/ for forensic reference only (#4125).
 
 ⚠️  Dieses Skript stammt aus der Single-Compose-Ära und ist NICHT mehr der
     kanonische Startpfad. Der aktive Runtime-Pfad ist BLUE+RED:
@@ -54,7 +60,9 @@ def wait_for_service(name, url, max_attempts=12, delay=10):
                 print(f"✅ {name} is healthy!")
                 return True
         except requests.RequestException:
-            logging.getLogger(__name__).debug("Service not ready, retrying", exc_info=True)
+            logging.getLogger(__name__).debug(
+                "Service not ready, retrying", exc_info=True
+            )
 
         wait_time = min(delay * (1.5**attempt), 60)  # Exponential backoff, max 60s
         print(f"   Attempt {attempt + 1}/{max_attempts}, waiting {wait_time:.1f}s...")
@@ -110,5 +118,9 @@ def smart_startup():
 
 
 if __name__ == "__main__":
-    success = smart_startup()
-    sys.exit(0 if success else 1)
+    print(
+        "LEGACY QUARANTINE: infrastructure/scripts/legacy/smart_startup.py "
+        "is not an active entrypoint."
+    )
+    print("Use: make docker-up  OR  tools/cdb.ps1 runtime up")
+    sys.exit(2)
