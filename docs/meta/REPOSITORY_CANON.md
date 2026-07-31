@@ -56,6 +56,58 @@ einzigen generischen "Current Status"-Datei gebuendelt.
 - Neue Reports, Pass-Reports oder Audit-Snapshots duerfen scope-lokale Findings
   dokumentieren, aber nicht als aktuelle repo-weite Wahrheit auftreten.
 
+## Status Freshness Rule
+
+Status-Flaechen mischen zwei Sorten von Aussagen: **Live-Claims**, die nur
+solange stimmen wie die Realitaet sie stuetzt, und **append-only Historie**,
+die den Stand eines vergangenen Zeitpunkts festhaelt und bewusst nicht
+nachgezogen wird. Beides muss maschinell unterscheidbar sein.
+
+Der Guard `python -m tools.validate_status_freshness` prueft die Live-Claims
+von `README.md`, `CURRENT_STATUS.md` und `docs/runbooks/CONTROL_REGISTER.md`
+semantisch. Er vergleicht bewusst **kein** Alter und kein Aenderungsdatum: ein
+altes Dokument besteht, solange jeder Live-Claim weiterhin zutrifft, und ein
+heute editiertes Dokument faellt durch, sobald es einen ueberholten Zustand
+behauptet.
+
+### Markerkonvention
+
+| Marker | Bedeutung |
+| --- | --- |
+| `<!-- cdb:status-freshness header-date=YYYY-MM-DD -->` | Header-Datum des Dokuments; muss im sichtbaren Text neben dem Marker stehen und darf nicht aelter sein als das juengste im Body verwendete Datum |
+| `<!-- cdb:live-claim type=main_sha value=<sha> -->` | Das Dokument behauptet einen bestaetigten `origin/main`-Stand |
+| `<!-- cdb:live-claim type=issue_state issue=<n> state=open\|closed\|merged -->` | Das Dokument behauptet einen aktuellen Issue-/PR-Zustand |
+| `<!-- cdb:historical-as-of date=YYYY-MM-DD -->` … `<!-- cdb:historical-end -->` | Absichtlicher historischer Snapshot; von Live-Pruefungen ausgenommen |
+
+### Ergebnisklassen
+
+- `PASS` — Claim ist gegen Git bzw. GitHub belegt.
+- `FAIL` — Claim widerspricht dem belegten Zustand, oder die Markierung ist
+  strukturell defekt.
+- `UNVERIFIED` — Git- oder GitHub-Zugriff fehlt. Ein GitHub-abhaengiger Claim
+  gilt bei API-Ausfall nie als `PASS`; `--strict` macht `UNVERIFIED` zum Fehler.
+
+### Semantik der Claim-Typen
+
+- `main_sha`: Der genannte Commit muss von `origin/main` aus erreichbar sein und
+  alle Flaechen muessen denselben Stand nennen. Ein fortschreitendes `main`
+  entwertet einen korrekten Snapshot damit nicht, ein erfundener oder
+  divergierender Snapshot dagegen schon.
+- `issue_state`: Der deklarierte Zustand wird gegen GitHub live geprueft.
+- `header_date`: Reine Konsistenzpruefung innerhalb des Dokuments.
+
+### Regeln fuer Autoren
+
+- Ein absichtlicher historischer Snapshot wird durch ein
+  `historical-as-of`/`historical-end`-Paar markiert; sein Datum darf nicht
+  neuer sein als das Header-Datum.
+- In einem historischen Block darf kein `live-claim` stehen.
+- Live-Claims in Prosa (`origin/main` mit Commit, `in delivery` mit
+  Issue-Referenz) brauchen einen passenden Marker, sonst schlaegt der Guard
+  fehl. Damit kann Drift nicht unbemerkt neu entstehen.
+- Historische Ledger-Eintraege werden nicht umgeschrieben. Ein Reconcile-Ergebnis
+  gehoert in den aktuellen Block, nicht in den historischen.
+
 ## Operational Runbook Canon Rule
 
 - Aktive Operating Rules und operator-nahe Runbooks gehoeren unter `knowledge/operating_rules/`.
