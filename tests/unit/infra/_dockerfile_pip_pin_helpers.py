@@ -7,10 +7,23 @@ mutation.
 from __future__ import annotations
 
 import re
+import subprocess
 from dataclasses import dataclass
 from pathlib import Path
 
 REPO_ROOT = Path(__file__).resolve().parents[3]
+
+# Path segments that must never contribute Dockerfiles to the security inventory,
+# even if somehow present in the git index (local worktrees, vendor trees, venvs).
+_DISCOVERY_EXCLUDED_PATH_SEGMENTS: frozenset[str] = frozenset(
+    {
+        ".git",
+        ".venv",
+        ".worktrees",
+        ".worktrees_backup",
+        "third_party",
+    }
+)
 
 # Advisory SSOT for the pinned floor:
 #   CVE-2026-8643 / GHSA-wf93-45jw-7689 / PYSEC-2026-196 -> fixed in pip 26.1.2
@@ -117,16 +130,65 @@ def has_unpinned_pip_upgrade(relative_path: str) -> bool:
     return False
 
 
-def discover_dockerfiles() -> list[str]:
-    """Every tracked Dockerfile in the repo, as repo-relative POSIX paths."""
+def _is_excluded_discovery_path(relative_posix: str) -> bool:
+    """Return True when any path segment is a known non-canon discovery surface."""
+    return any(
+        part in _DISCOVERY_EXCLUDED_PATH_SEGMENTS for part in Path(relative_posix).parts
+    )
+
+
+def _is_dockerfile_basename(relative_posix: str) -> bool:
+    """Match Dockerfile / Dockerfile.* basenames (same semantics as Path.rglob)."""
+    return Path(relative_posix).name.startswith("Dockerfile")
+
+
+def discover_dockerfiles(repo_root: Path | None = None) -> list[str]:
+    """Every git-tracked Dockerfile* under *repo_root*, as repo-relative POSIX paths.
+
+    Discovery is intentionally bound to ``git ls-files`` so nested worktrees,
+    backups, vendor copies, and untracked local files cannot pollute the
+    productive/non-productive classification contract (#4237).
+
+    Fail-closed: if git evidence cannot be collected, raise rather than silently
+    returning a filesystem subset.
+    """
+    root = Path(repo_root) if repo_root is not None else REPO_ROOT
+    try:
+        result = subprocess.run(
+            [
+                "git",
+                "-C",
+                str(root),
+                "ls-files",
+                "-z",
+                "--",
+                "*Dockerfile*",
+                "*/Dockerfile*",
+            ],
+            check=False,
+            capture_output=True,
+        )
+    except OSError as exc:
+        raise RuntimeError(
+            f"cannot enumerate tracked Dockerfiles in {root}: git unavailable ({exc})"
+        ) from exc
+
+    if result.returncode != 0:
+        stderr = result.stderr.decode("utf-8", errors="replace").strip()
+        detail = f": {stderr}" if stderr else ""
+        raise RuntimeError(
+            f"cannot enumerate tracked Dockerfiles in {root} "
+            f"(git ls-files exit {result.returncode}{detail})"
+        )
+
     found: list[str] = []
-    for path in REPO_ROOT.rglob("Dockerfile*"):
-        if not path.is_file():
+    for raw in result.stdout.split(b"\0"):
+        if not raw:
             continue
-        relative = path.relative_to(REPO_ROOT).as_posix()
-        if relative.startswith(
-            (".git/", ".venv/", "third_party/", ".worktrees_backup/")
-        ):
+        relative = raw.decode("utf-8").replace("\\", "/")
+        if not _is_dockerfile_basename(relative):
+            continue
+        if _is_excluded_discovery_path(relative):
             continue
         found.append(relative)
     return sorted(found)
