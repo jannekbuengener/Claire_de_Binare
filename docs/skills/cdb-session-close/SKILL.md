@@ -71,9 +71,16 @@ Close a working session so the repo, git state, and issue thread reflect reality
    - If push is not done, say so explicitly in the rest status.
    - If the issue state should change, describe the correct next state rather than claiming it changed when it did not.
    - If the work is still local-only, make that explicit in the issue-facing close-out instead of implying landed or review-ready state.
-   - If a PR was merged during this session, proceed to step 6. If no PR
-     exists: skip steps 6–7. If the PR is still open because this session
-     could not prove the autonomous-merge capability gate (missing
+   - A delivery session closes at the PR handoff: record
+     `DONE_SLICE_ADDED_TO_BATCH_PR` (see § Default Batch-Slice Close), leave
+     the PR and the issue open, and skip steps 6–7. Do not merge and do not
+     start the acceptance chain (`cdb-integration-wiring-audit`,
+     `cdb-pr-gap-classifier`, `cdb-pr-completeness-review`,
+     `cdb-batch-merge-conductor`).
+   - Merge outcomes below apply only to a separately started merge session.
+     If a PR was merged during this session, proceed to step 6. If no PR
+     exists: skip steps 6–7. If the PR is still open because that merge
+     session could not prove the autonomous-merge capability gate (missing
      `statuses:write`, unbound evidence, auth/publisher block): record
      `DONE_PR_OPEN_MERGE_HANDOFF` with the exact missing capability and
      skip steps 6–7. Do not use `--admin` and do not loop retries.
