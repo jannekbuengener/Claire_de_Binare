@@ -5,38 +5,141 @@
   "candidate_limit": 50,
   "lanes": {
     "docs-governance": {
-      "labels": ["docs", "documentation", "governance"],
-      "title_prefixes": ["[DOCS]", "[GOVERNANCE]"],
+      "labels": [
+        "docs",
+        "documentation",
+        "governance",
+        "scope:docs",
+        "scope:governance",
+        "scope:repo",
+        "type:docs",
+        "type:doc",
+        "type:docs-meta",
+        "type:gov",
+        "type:governance",
+        "type:gov-meta"
+      ],
+      "title_prefixes": [
+        "[DOCS]",
+        "[DOC]",
+        "[GOVERNANCE]",
+        "[GOV]",
+        "[META]"
+      ],
       "validation_profile": "docs-governance-v1",
       "default_merge_mode": "batch"
     },
     "agent-skills": {
-      "labels": ["agents", "skills"],
-      "title_prefixes": ["[AGENT]", "[SKILL]"],
+      "labels": [
+        "agent",
+        "agents",
+        "skills",
+        "scope:integrations"
+      ],
+      "title_prefixes": [
+        "[AGENT]",
+        "[AGENTS]",
+        "[SKILL]",
+        "[SKILLS]"
+      ],
       "validation_profile": "agent-skills-v1",
       "default_merge_mode": "batch"
     },
     "ci-tooling": {
-      "labels": ["ci", "tooling"],
-      "title_prefixes": ["[CI]", "[TOOLING]"],
+      "labels": [
+        "ci",
+        "ci-cd",
+        "github_actions",
+        "github-actions",
+        "infra",
+        "infrastructure",
+        "scripts",
+        "scope:ci",
+        "scope:infra",
+        "tooling",
+        "type:chore",
+        "type:ci",
+        "type:infra",
+        "type:ops",
+        "type:operations"
+      ],
+      "title_prefixes": [
+        "[CI]",
+        "[TOOLING]",
+        "[OPS]",
+        "[INFRA]",
+        "[SCRIPTS]",
+        "[PERF]",
+        "[COST]"
+      ],
       "validation_profile": "ci-tooling-v1",
       "default_merge_mode": "batch"
     },
     "validation-research": {
-      "labels": ["validation", "research", "arvp", "replay"],
-      "title_prefixes": ["[VALIDATION]", "[RESEARCH]", "[ARVP]"],
+      "labels": [
+        "arvp",
+        "replay",
+        "research",
+        "scope:data",
+        "scope:drills",
+        "testing",
+        "tests",
+        "type:research",
+        "type:sim",
+        "type:test",
+        "type:testing",
+        "validation"
+      ],
+      "title_prefixes": [
+        "[VALIDATION]",
+        "[RESEARCH]",
+        "[ARVP]",
+        "[DATA]",
+        "[REGIME]",
+        "[STRATEGY]",
+        "[PAPER]",
+        "[PORTFOLIO]",
+        "[REPLAY]"
+      ],
       "validation_profile": "validation-research-v1",
       "default_merge_mode": "batch"
     },
     "dependencies": {
-      "labels": ["dependencies"],
-      "title_prefixes": ["[DEPENDENCY]", "[DEPENDENCIES]"],
+      "labels": [
+        "dependencies"
+      ],
+      "title_prefixes": [
+        "[DEPENDENCY]",
+        "[DEPENDENCIES]",
+        "[DEPS]"
+      ],
       "validation_profile": "dependencies-v1",
       "default_merge_mode": "batch"
     },
     "runtime-risk": {
-      "labels": ["risk", "execution", "runtime"],
-      "title_prefixes": ["[RISK]", "[EXECUTION]", "[RUNTIME]"],
+      "labels": [
+        "execution",
+        "gate-risk",
+        "live-readiness",
+        "risk",
+        "RISK",
+        "runtime",
+        "scope:core",
+        "scope:security",
+        "security",
+        "type:risk_guard",
+        "type:safety",
+        "type:security"
+      ],
+      "title_prefixes": [
+        "[RISK]",
+        "[EXECUTION]",
+        "[RUNTIME]",
+        "[SECURITY]",
+        "[SAFETY]",
+        "[STOP-LOSS]",
+        "[ECONOMICS]"
+      ],
       "validation_profile": "runtime-risk-v1",
       "default_merge_mode": "dedicated_or_tightly_scoped"
     }
@@ -49,7 +152,11 @@
       "live-readiness",
       "risk",
       "execution",
-      "runtime"
+      "runtime",
+      "type:security",
+      "scope:security",
+      "type:safety",
+      "type:risk_guard"
     ],
     "title_prefixes": [
       "[SECURITY]",
@@ -61,9 +168,7 @@
       "[EXECUTION]",
       "[RUNTIME]"
     ],
-    "branch_overrides": {
-      "[GOVERNANCE][PR-FLOW]": "governance/pr-steward-batch-routing"
-    }
+    "branch_overrides": {}
   },
   "compatibility": {
     "validation_profile_matrix": {

@@ -140,6 +140,7 @@ class RoutingResult:
     reason_codes: tuple[str, ...]
     candidate_prs_considered: tuple[int, ...]
     reviewability_evidence: tuple[dict[str, object], ...] = ()
+    repair_hints: tuple[str, ...] = ()
 
 
 @dataclass(frozen=True)
@@ -298,6 +299,60 @@ def assess_candidate_reviewability(
     )
 
 
+def _metadata_incomplete(issue: IssueFacts) -> bool:
+    return (
+        issue.objective_key is None or not issue.contract_keys or not issue.risk_flags
+    )
+
+
+def _metadata_repair_hints(issue: IssueFacts, *, lane: str | None) -> tuple[str, ...]:
+    """Actionable gh commands when objective/contract/risk labels are missing."""
+    hints: list[str] = []
+    objective = issue.objective_key or f"issue-{issue.number}"
+    if issue.objective_key is None:
+        hints.append(
+            "gh label create "
+            f"'objective:{objective}' "
+            "--description 'PR-routing objective key' --force"
+        )
+        hints.append(
+            f"gh issue edit {issue.number} --add-label 'objective:{objective}'"
+        )
+    if not issue.contract_keys:
+        contract = f"{lane or 'routing'}-v1"
+        hints.append(
+            "gh label create "
+            f"'contract:{contract}' "
+            "--description 'PR-routing contract key' --force"
+        )
+        hints.append(f"gh issue edit {issue.number} --add-label 'contract:{contract}'")
+    if not issue.risk_flags:
+        hints.append(
+            "gh label create 'risk:none' "
+            "--description 'No elevated routing risk' --force"
+        )
+        hints.append(f"gh issue edit {issue.number} --add-label 'risk:none'")
+    hints.append(
+        "Missing objective:*/contract:*/risk:* labels block reuse of an "
+        "existing batch PR; CREATE_NEW_BATCH_PR uses issue-local defaults "
+        f"(objective_key={objective}, contract_keys=none, risk_flags=none)."
+    )
+    return tuple(hints)
+
+
+def _lane_repair_hints(issue: IssueFacts) -> tuple[str, ...]:
+    return (
+        "Add a leftmost lane title token such as [DOCS], [GOVERNANCE], "
+        "[AGENTS], [SKILLS], [CI], [OPS], [TOOLING], [VALIDATION], "
+        "[RESEARCH], [DATA], [REGIME], [STRATEGY], [PAPER], [DEPENDENCIES], "
+        "[RISK], [EXECUTION], or [SECURITY].",
+        "Or attach exactly one repo lane label family, e.g. scope:docs, "
+        "scope:governance, scope:ci, scope:infra, scope:core, skills, "
+        "dependencies, type:security.",
+        f"Re-run: python -m tools.pr_routing route --issue {issue.number}",
+    )
+
+
 def _result(
     *,
     policy: RoutingPolicy,
@@ -315,6 +370,7 @@ def _result(
     reasons: tuple[str, ...] = (),
     considered: tuple[int, ...] = (),
     reviewability_evidence: tuple[dict[str, object], ...] = (),
+    repair_hints: tuple[str, ...] = (),
 ) -> RoutingResult:
     return RoutingResult(
         issue_number=issue.number,
@@ -333,6 +389,7 @@ def _result(
         reason_codes=reasons,
         candidate_prs_considered=considered,
         reviewability_evidence=reviewability_evidence,
+        repair_hints=repair_hints,
     )
 
 
@@ -384,6 +441,7 @@ def route_issue(
                 profile=None,
                 reasons=("LANE_AMBIGUOUS_OR_UNKNOWN",),
                 considered=considered,
+                repair_hints=_lane_repair_hints(issue),
             )
 
     for pr in candidates:
@@ -437,22 +495,28 @@ def route_issue(
             considered=considered,
         )
 
-    if issue.objective_key is None or not issue.contract_keys or not issue.risk_flags:
-        return _result(
-            policy=policy,
-            issue=issue,
-            decision=RoutingDecision.HOLD_NO_SAFE_ROUTE,
-            lane=lane,
-            profile=profile,
-            incompatible=("ISSUE_COMPATIBILITY_METADATA_INCOMPLETE",),
-            reasons=("ISSUE_COMPATIBILITY_METADATA_INCOMPLETE",),
-            considered=considered,
-        )
+    metadata_incomplete = _metadata_incomplete(issue)
+    metadata_hints = (
+        _metadata_repair_hints(issue, lane=lane) if metadata_incomplete else ()
+    )
+    # Incomplete objective/contract/risk labels must not join an existing batch.
+    # Creating a new batch PR with issue-local defaults remains fail-closed-safe.
+    effective_objective = issue.objective_key
+    effective_contracts = issue.contract_keys
+    effective_risks = issue.risk_flags
+    if metadata_incomplete:
+        effective_objective = None
+        effective_contracts = ()
+        effective_risks = ()
 
     compatible: list[tuple[CandidatePullRequest, BatchMetadata]] = []
     incompatibilities: set[str] = set()
     reviewability_evidence: list[dict[str, object]] = []
+    if metadata_incomplete:
+        incompatibilities.add("ISSUE_COMPATIBILITY_METADATA_INCOMPLETE")
     for pr in candidates:
+        if metadata_incomplete:
+            break
         if "cdb-batch-pr:" not in pr.body:
             continue
         try:
@@ -467,6 +531,7 @@ def route_issue(
                 incompatible=("PR_METADATA_INVALID",),
                 reasons=("PR_METADATA_INVALID",),
                 considered=considered,
+                repair_hints=metadata_hints,
             )
         if (
             metadata.base_branch != issue.base_branch
@@ -488,13 +553,13 @@ def route_issue(
         ):
             incompatibilities.add("VALIDATION_PROFILE_INCOMPATIBLE")
             continue
-        if issue.objective_key is None or metadata.objective_key != issue.objective_key:
+        if effective_objective is None or metadata.objective_key != effective_objective:
             incompatibilities.add("OBJECTIVE_KEY_INCOMPATIBLE")
             continue
-        if tuple(sorted(issue.contract_keys or ("none",))) != metadata.contract_keys:
+        if tuple(sorted(effective_contracts or ("none",))) != metadata.contract_keys:
             incompatibilities.add("CONTRACT_KEYS_INCOMPATIBLE")
             continue
-        issue_risks = tuple(sorted(issue.risk_flags or ("none",)))
+        issue_risks = tuple(sorted(effective_risks or ("none",)))
         if issue_risks != metadata.risk_flags:
             incompatibilities.add("RISK_FLAGS_INCOMPATIBLE")
             continue
@@ -532,6 +597,7 @@ def route_issue(
                 reasons=("LOCK_CONFLICT",),
                 considered=considered,
                 reviewability_evidence=tuple(reviewability_evidence),
+                repair_hints=metadata_hints,
             )
         compatible.append((pr, metadata))
 
@@ -547,6 +613,7 @@ def route_issue(
             reasons=("MULTIPLE_COMPATIBLE_PRS",),
             considered=considered,
             reviewability_evidence=evidence,
+            repair_hints=metadata_hints,
         )
     if compatible:
         pr, metadata = compatible[0]
@@ -570,6 +637,14 @@ def route_issue(
             considered=considered,
             reviewability_evidence=evidence,
         )
+    reasons: tuple[str, ...]
+    if metadata_incomplete:
+        reasons = (
+            "ISSUE_COMPATIBILITY_METADATA_INCOMPLETE",
+            "CREATE_NEW_BATCH_WITH_DEFAULT_METADATA",
+        )
+    else:
+        reasons = ("NO_COMPATIBLE_OPEN_PR",)
     return _result(
         policy=policy,
         issue=issue,
@@ -580,9 +655,10 @@ def route_issue(
         batch_key=lane,
         lock_state=issue.lock_state.value,
         incompatible=tuple(sorted(incompatibilities)),
-        reasons=("NO_COMPATIBLE_OPEN_PR",),
+        reasons=reasons,
         considered=considered,
         reviewability_evidence=evidence,
+        repair_hints=metadata_hints,
     )
 
 
