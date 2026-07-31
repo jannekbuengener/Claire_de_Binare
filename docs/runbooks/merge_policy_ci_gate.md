@@ -7,6 +7,19 @@ geliefert. Targeted Tests, betroffener Lint/Format-Scope und
 `git diff --check` reichen für den Slice-Handoff; Full Fast-CI,
 `cdb-local-ci`, Merge und Issue-Closure sind dabei `false`.
 
+### Slice Validation vs Merge Acceptance (#4204)
+
+| Oberfläche | Zweck | Merge-Evidence? |
+|---|---|---|
+| **Slice Validation** (`--profile slice` / `--slice`) | Deterministische, path-/lane-/profile-basierte Testgruppen für schnelle Entwicklungsprüfungen. Policy: `ci/config/slice_validation_policy.v1.yaml`. Report: `reports/slice_selection.json` mit `merge_evidence=false`. | **Nein** — Publisher lehnt `merge_evidence=false` und `profile=slice` ab. |
+| **Final-Head / Fast-CI** (`--profile fast`) | Unveränderter vollständiger Unit-Selektor `pytest -q -k "not test_mcp_time_server_runtime"` plus lint/docs/governance. | Nur nach Publish als Commit Status `cdb-local-ci` auf exaktem Head. |
+
+Fail-closed: unbekannte/nicht klassifizierte Pfade, Policy-/Schema-/Parsefehler
+oder Runtime-/Risk-/Docker-Pfade erzwingen automatisch das vollständige
+Fast-CI-Unit-Profil. Marker dürfen ergänzend dokumentiert sein, sind aber
+keine alleinige Auswahlgrundlage. Slice-Grün ersetzt niemals Final-Head-
+Abdeckung.
+
 Transport-`steward_state=merge_candidate` startet die Acceptance-Phase
 `COMPLETENESS_REVIEW` (`cdb-pr-completeness-review`). Nur ein schema-valides
 Completeness-Verdikt `MERGE_CANDIDATE` darf in die Conductor-Phase

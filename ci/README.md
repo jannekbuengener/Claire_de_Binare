@@ -62,10 +62,26 @@ pwsh -File ci/scripts/publish_status.ps1 -Command publish -EvidenceDir ci/artifa
 
 ## Profiles
 
-| Profile | Stages |
-|---------|--------|
-| `fast` (default) | lint, unit, docs, governance (+ report) |
-| `heavy` | fast + integration, security, containers (+ report) |
+| Profile | Stages | Merge evidence? |
+|---------|--------|-----------------|
+| `fast` (default) | lint, unit, docs, governance (+ report) | Eligible after publish (`merge_evidence=true`) |
+| `slice` (#4204) | same stages as fast; unit may use path-selected groups | **Never** (`merge_evidence=false`) |
+| `heavy` | fast + integration, security, containers (+ report) | Eligible after publish when clean |
+
+### Slice selection (#4204)
+
+```bash
+python ci/scripts/run.py --profile slice \
+  --changed-path ci/lib/slice_selection.py \
+  --routing-lane ci-tooling \
+  --validation-profile ci-tooling-v1
+```
+
+Policy: `ci/config/slice_validation_policy.v1.yaml`. Selection report:
+`ci/artifacts/<run_id>/reports/slice_selection.json`. Unknown paths and
+policy errors fall back to the full Fast-CI unit selector. Timing evidence:
+`--unit-durations 50` (default) writes `reports/unit_timing.json` and
+`reports/stage_timing.json` without changing pass/fail.
 
 ## Stage commands (reuse-first)
 

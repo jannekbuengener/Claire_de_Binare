@@ -68,20 +68,30 @@ This skill audits CI/CD tooling with external documentation dependencies:
 
 ## Slice Validation
 
-- targeted Tests und relevante Contract-Tests,
+- Deterministische Auswahl über `ci/config/slice_validation_policy.v1.yaml`
+  (Inputs: `changed_paths`, `routing_lane`, `validation_profile`).
+- Outputs maschinenlesbar: `selected_test_groups`, `selection_reasons`,
+  `unclassified_paths`, `fallback_reason`, immer `merge_evidence=false`.
+- Unbekannte Pfade, Policy-/Schemafehler, Runtime/Risk/Docker-Pfade →
+  fail-closed Full Fast-CI Unit-Selektor.
+- Targeted Tests und relevante Contract-Tests laut Selection,
 - Lint/Format für betroffene Dateien,
 - `git diff --check`,
-- kein Full Fast-CI als Default,
-- kein `cdb-local-ci` Publish.
+- kein Full Fast-CI als Default für Delivery-Slices,
+- **kein** `cdb-local-ci` Publish (Publisher rejected slice evidence).
+- Stage-/Unit-Timing: `reports/stage_timing.json`, `reports/unit_timing.json`
+  (`--durations`) — ändert nicht Pass/Fail.
 
 ## Final Batch Head Validation
 
 - PR ist `merge_candidate` und für neue Slices eingefroren,
-- Full Fast-CI auf dem exakten finalen Head,
+- Full Fast-CI auf dem exakten finalen Head
+  (`pytest -q -k "not test_mcp_time_server_runtime"` unverändert),
 - integrierter Base-SHA ist in der Evidence gebunden,
 - lokaler Policy-Gate-Mirror ist grün,
 - `cdb-local-ci=success` liegt als Commit Status auf exakt diesem Head,
 - Head-/Base-Drift erzwingt vollständige Revalidierung.
+- Slice-Validation ist **kein** Ersatz für Final-Head-Evidence.
 
 Check Runs und Commit Status sind getrennte GitHub-Typen. Ein namensgleicher
 Check Run erfüllt den Required Commit Status nicht.

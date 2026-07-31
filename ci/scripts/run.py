@@ -10,6 +10,7 @@ This does NOT publish a GitHub Required Check. Branch Protection stays unchanged
 from __future__ import annotations
 
 import argparse
+import json
 import platform
 import subprocess
 import sys
@@ -34,6 +35,11 @@ from ci.lib.evidence import (  # noqa: E402
     write_manifest,
 )
 from ci.lib.gitinfo import collect_git_info  # noqa: E402
+from ci.lib.slice_selection import (  # noqa: E402
+    default_policy_path,
+    normalize_changed_paths,
+    select_slice_test_groups,
+)
 from ci.lib.temp_preflight import (  # noqa: E402
     prepare_ci_temp_root,
     temp_env_for,
@@ -125,21 +131,66 @@ def render_latest_report(artifacts_root: Path) -> int:
     return 0 if manifest["overall_status"] == "PASS" else 1
 
 
+def _changed_paths_vs_base(repo_root: Path, base_ref: str = "origin/main") -> list[str]:
+    """Return sorted changed paths vs base_ref (name-status, including renames)."""
+    result = subprocess.run(
+        ["git", "diff", "--name-only", f"{base_ref}...HEAD"],
+        cwd=str(repo_root),
+        capture_output=True,
+        text=True,
+        check=False,
+    )
+    if result.returncode != 0:
+        # Fail closed: empty list triggers unclassified/full fallback upstream.
+        return []
+    return list(normalize_changed_paths(result.stdout.splitlines()))
+
+
 def run_ci(
     *,
     profile: str,
     stage: str | None,
     run_id: str | None,
     repo_root: Path,
+    slice_mode: bool = False,
+    changed_paths: list[str] | None = None,
+    routing_lane: str = "",
+    validation_profile: str = "",
+    unit_durations: int = 50,
 ) -> int:
     cfg_dir = repo_root / "ci" / "config"
     stages_cfg = load_yaml(cfg_dir / "stages.yaml")
     resources = load_yaml(cfg_dir / "resources.yaml")
     profiles = profiles_from_config(stages_cfg)
 
+    if slice_mode and profile == "fast":
+        profile = "slice"
     if profile not in profiles:
         raise SystemExit(
             f"Unknown profile {profile!r}; expected one of {sorted(profiles)}"
+        )
+
+    merge_evidence = profile != "slice" and not slice_mode
+    slice_selection_payload = None
+    if profile == "slice" or slice_mode:
+        merge_evidence = False
+        paths = list(
+            normalize_changed_paths(
+                changed_paths
+                if changed_paths is not None
+                else _changed_paths_vs_base(repo_root)
+            )
+        )
+        selection = select_slice_test_groups(
+            changed_paths=paths,
+            routing_lane=routing_lane,
+            validation_profile=validation_profile,
+            policy_path=default_policy_path(repo_root),
+        )
+        slice_selection_payload = selection.to_dict()
+        print(
+            f"slice_selection groups={selection.selected_test_groups} "
+            f"fallback={selection.fallback_reason!r} merge_evidence=false"
         )
 
     git = collect_git_info(repo_root)
@@ -155,6 +206,13 @@ def run_ci(
     (run_dir / "logs").mkdir()
     (run_dir / "reports").mkdir()
 
+    if slice_selection_payload is not None:
+        slice_report = run_dir / "reports" / "slice_selection.json"
+        slice_report.write_text(
+            json.dumps(slice_selection_payload, indent=2, sort_keys=True) + "\n",
+            encoding="utf-8",
+        )
+
     started = utc_now()
     ctx = StageContext(
         repo_root=repo_root,
@@ -163,6 +221,9 @@ def run_ci(
         git=git,
         profile=profile,
         resources=resources,
+        slice_selection=slice_selection_payload,
+        merge_evidence=merge_evidence,
+        unit_durations=unit_durations,
     )
 
     selected = [stage] if stage else list(profiles[profile])
@@ -175,6 +236,13 @@ def run_ci(
             "skip_reason": "GitHub-native PR API evaluation; local mirror only in Phase 1",
         }
     ]
+    if not merge_evidence:
+        skipped_checks.append(
+            {
+                "check": "merge_evidence",
+                "skip_reason": "slice_profile_merge_evidence_false",
+            }
+        )
 
     # Temp-root preflight before any pytest/unit collection (#4205).
     print("==> stage temp_preflight")
@@ -233,6 +301,7 @@ def run_ci(
             skipped_checks=skipped_checks,
             artifact_hashes=artifact_hashes,
             repo_name=git.repo_name,
+            merge_evidence=merge_evidence,
         )
         write_manifest(run_dir, manifest)
         print(f"overall_status={manifest['overall_status']}")
@@ -281,12 +350,14 @@ def run_ci(
         skipped_checks=skipped_checks,
         artifact_hashes=artifact_hashes,
         repo_name=git.repo_name,
+        merge_evidence=merge_evidence,
     )
     write_manifest(run_dir, manifest)
 
     # Re-hash after manifest write is intentionally NOT included in artifact_hashes
     # inside manifest (manifest.sha256 covers the finalized JSON).
     print(f"overall_status={manifest['overall_status']}")
+    print(f"merge_evidence={manifest.get('merge_evidence')}")
     print(f"evidence={run_dir}")
     if manifest["overall_status"] == "PASS":
         return 0
@@ -300,11 +371,43 @@ def main(argv: list[str] | None = None) -> int:
     parser.add_argument(
         "--profile",
         default="fast",
-        choices=["fast", "heavy"],
-        help="fast=lint/unit/docs/governance; heavy adds integration/security/containers",
+        choices=["fast", "slice", "heavy"],
+        help=(
+            "fast=full lint/unit/docs/governance (merge evidence eligible); "
+            "slice=same stages with path-selected unit tests (merge_evidence=false); "
+            "heavy adds integration/security/containers"
+        ),
     )
     parser.add_argument("--stage", default=None, help="Run a single named stage")
     parser.add_argument("--run-id", default=None, help="Optional explicit run id")
+    parser.add_argument(
+        "--slice",
+        action="store_true",
+        help="Enable slice selection (forces merge_evidence=false)",
+    )
+    parser.add_argument(
+        "--changed-path",
+        action="append",
+        default=None,
+        dest="changed_paths",
+        help="Changed path for slice selection (repeatable); default: git vs origin/main",
+    )
+    parser.add_argument(
+        "--routing-lane",
+        default="",
+        help="PR-router lane input for slice selection",
+    )
+    parser.add_argument(
+        "--validation-profile",
+        default="",
+        help="PR-router validation_profile input for slice selection",
+    )
+    parser.add_argument(
+        "--unit-durations",
+        type=int,
+        default=50,
+        help="Pass --durations=N to pytest unit stage (0 disables)",
+    )
     parser.add_argument(
         "--cleanup",
         metavar="RUN_ID",
@@ -332,6 +435,11 @@ def main(argv: list[str] | None = None) -> int:
         stage=args.stage,
         run_id=args.run_id,
         repo_root=repo_root,
+        slice_mode=bool(args.slice),
+        changed_paths=args.changed_paths,
+        routing_lane=args.routing_lane,
+        validation_profile=args.validation_profile,
+        unit_durations=int(args.unit_durations),
     )
 
 

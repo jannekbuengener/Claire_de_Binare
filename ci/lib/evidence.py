@@ -172,11 +172,14 @@ def build_manifest(
     skipped_checks: list[dict[str, str]],
     artifact_hashes: dict[str, str],
     repo_name: str,
+    merge_evidence: bool = True,
 ) -> dict[str, Any]:
     validate_run_id(run_id)
     validate_repo_name(repo_name)
     validate_stage_skip_rules(stages)
     overall = aggregate_overall_status(stages, dirty_worktree=dirty_worktree)
+    # Slice / selective runs must never count as merge evidence (#4204).
+    effective_merge_evidence = bool(merge_evidence) and profile not in ("slice",)
     return {
         "schema_version": SCHEMA_VERSION,
         "run_id": run_id,
@@ -191,6 +194,7 @@ def build_manifest(
         "docker_version": docker_version,
         "compose_version": compose_version,
         "profile": profile,
+        "merge_evidence": effective_merge_evidence,
         "stages": [asdict(s) for s in stages],
         "skipped_checks": skipped_checks,
         "artifact_hashes": artifact_hashes,
@@ -345,6 +349,13 @@ def assert_publishable(
     """
     if manifest.get("dirty_worktree") is True:
         raise EvidenceError("Dirty worktree evidence cannot be published")
+    # Explicit slice / selective Fast-CI must never publish as cdb-local-ci (#4204).
+    if manifest.get("merge_evidence") is False:
+        raise EvidenceError(
+            "Evidence merge_evidence=false cannot be published as merge proof"
+        )
+    if str(manifest.get("profile") or "") == "slice":
+        raise EvidenceError("Slice profile evidence cannot be published as merge proof")
     if manifest.get("overall_status") != "PASS":
         raise EvidenceError(
             f"Evidence overall_status is {manifest.get('overall_status')!r}, not PASS"
