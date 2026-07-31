@@ -172,7 +172,18 @@ def test_install_path_is_patchable_and_does_not_run_real_task_install_in_tests(
     monkeypatch: pytest.MonkeyPatch,
     capsys: pytest.CaptureFixture[str],
 ) -> None:
+    """
+    test_id: tc_evidence_harvester_scheduler_install_tmp_path_001
+    test_type: Bauteil-Test
+    cdb_area: tools/evidence_harvester
+    rule_ref: test isolation — no repo worktree writes
+    issue_ref: #4229
+    security_relevant: false
+    live_relevant: false
+    profitability_relevant: false
+    """
     fixture_path = _write_fixture(tmp_path)
+    output_dir = tmp_path / "scheduled"
     calls: list[list[str]] = []
 
     def _fake_run(command: list[str], check: bool) -> subprocess.CompletedProcess[str]:
@@ -187,6 +198,8 @@ def test_install_path_is_patchable_and_does_not_run_real_task_install_in_tests(
             "install",
             "--fixture",
             str(fixture_path),
+            "--output-dir",
+            str(output_dir),
             "--explicit",
             "--start-time",
             "04:30",
@@ -204,4 +217,59 @@ def test_install_path_is_patchable_and_does_not_run_real_task_install_in_tests(
     payload = json.loads(capsys.readouterr().out)
     assert payload["installed"] is True
     assert payload["start_time"] == "04:30"
-    assert Path(payload["run_task_cmd"]).exists()
+    run_task_cmd = Path(payload["run_task_cmd"])
+    assert run_task_cmd.exists()
+    assert run_task_cmd == (output_dir / "run_task.cmd").resolve()
+    assert run_task_cmd.is_relative_to(tmp_path.resolve())
+    assert str(output_dir.resolve()) in run_task_cmd.read_text(encoding="utf-8")
+
+
+@pytest.mark.unit
+def test_install_run_task_cmd_stays_under_injected_output_dir(
+    tmp_path: Path,
+    monkeypatch: pytest.MonkeyPatch,
+    capsys: pytest.CaptureFixture[str],
+) -> None:
+    """
+    test_id: tc_evidence_harvester_scheduler_install_isolation_002
+    test_type: Schutz-Test
+    cdb_area: tools/evidence_harvester
+    rule_ref: unit tests must not leave untracked artifacts in the repo worktree
+    issue_ref: #4229
+    security_relevant: false
+    live_relevant: false
+    profitability_relevant: false
+    """
+    from tools.evidence_harvester.scheduler import _default_output_dir
+
+    fixture_path = _write_fixture(tmp_path)
+    output_dir = tmp_path / "isolated_scheduled"
+    repo_default = _default_output_dir().resolve()
+    repo_default_cmd = repo_default / "run_task.cmd"
+    existed_before = repo_default_cmd.exists()
+
+    monkeypatch.setattr(
+        "tools.evidence_harvester.scheduler.subprocess.run",
+        lambda command, check: subprocess.CompletedProcess(command, 0),
+    )
+
+    exit_code = main(
+        [
+            "install",
+            "--fixture",
+            str(fixture_path),
+            "--output-dir",
+            str(output_dir),
+            "--explicit",
+        ]
+    )
+
+    assert exit_code == 0
+    payload = json.loads(capsys.readouterr().out)
+    run_task_cmd = Path(payload["run_task_cmd"]).resolve()
+    assert run_task_cmd.parent == output_dir.resolve()
+    assert run_task_cmd.is_relative_to(tmp_path.resolve())
+    assert not run_task_cmd.is_relative_to(repo_default)
+    assert payload["output_dir"] == str(output_dir.resolve())
+    # Productive default path must remain untouched by the isolated install.
+    assert repo_default_cmd.exists() is existed_before
