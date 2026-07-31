@@ -8,7 +8,7 @@ Security triage, CodeQL/Trivy readouts, und Alert-Inventar — **kein** Live-Go-
 |---|---|
 | [`TRIAGE_RUNBOOK.md`](TRIAGE_RUNBOOK.md) | Alert triage, dismiss rules, workflow modes |
 | [`code-scanning-alert-inventory.md`](code-scanning-alert-inventory.md) | CodeQL inventory (Python) |
-| [`TRIVY_TRIAGE_1651.md`](TRIVY_TRIAGE_1651.md) | Trivy cluster notes |
+| [`TRIVY_TRIAGE_1651.md`](TRIVY_TRIAGE_1651.md) | Trivy cluster notes (§3 `venv-pip` korrigiert via #4095 — `venv/`-Pfad ist kein False-Positive-Kriterium) |
 
 ## Readouts
 
