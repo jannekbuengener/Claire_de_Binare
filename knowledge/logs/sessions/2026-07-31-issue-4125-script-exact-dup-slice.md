@@ -29,5 +29,10 @@
 - git diff --check — PASS
 - gitleaks protect --staged — (run at commit)
 
+## GitHub
+- PR: #4248 (draft) on branch `cloud-cursor/scripts-exact-dup-consolidate-4125-0f03`
+- Head: `ea8e410d`
+- Issue #4125 remains OPEN (Refs only; no Closes)
+
 ## Status
-`DONE_SLICE_ADDED_TO_BATCH_PR` (target after PR handoff; issue stays open)
+`DONE_SLICE_ADDED_TO_BATCH_PR`
