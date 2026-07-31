@@ -3,12 +3,14 @@
 **Status Class**: Claire de Binare repository / Engineering Status
 **Authority**: Current repo/main/test/dependency snapshot; not the canonical live-readiness or Echtgeld Go/No-Go source.
 **Operational Canon**: `docs/live-readiness/LR-AUDIT-STATUS-2026-03-05.md`
-**Last Updated**: 2026-07-30
+**Last Updated**: 2026-07-31
 **GitHub Boundary**: The live commit and PR state is tracked in GitHub (UI/API or `gh`); this file is a curated repo/engineering ledger, not a live mirror.
 
 ---
 
 ## Repo / Engineering Status (2026-07-31)
+
+- **#4204 Fast-CI Slice Gates**: Delivery slice on `batch/ci-tooling-issue-4204` — versioned slice policy, fail-closed unknown-path → full Fast-CI, `merge_evidence=false` publish rejection, unit/stage timing evidence; Final-Head selector unchanged (collect-only 8957→8970 +13 tests). Merge/Issue-close/`cdb-local-ci` not in this session. LR **NO-GO** unchanged.
 
 - **#4228 PR-Router Real Conventions**: Delivery slice on `cloud-cursor/pr-router-real-conventions-5132` — policy/matcher aligned to live title tokens (`[AGENTS]`/`[SKILLS]`/`[OPS]`/…) and `scope:*`/`type:*` labels; missing metadata yields actionable `repair_hints` + safe `CREATE_NEW_BATCH_PR`; deleted override `governance/pr-steward-batch-routing` removed. Merge/Issue-close not in this session. LR **NO-GO** unchanged.
 

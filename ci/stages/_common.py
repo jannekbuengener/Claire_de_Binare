@@ -27,6 +27,11 @@ class StageContext:
     resources: dict
     temp_root: Path | None = None
     temp_env: dict[str, str] | None = None
+    # Slice selection (optional). When set, unit stage uses selected paths and
+    # the run is always merge_evidence=false.
+    slice_selection: dict[str, Any] | None = None
+    merge_evidence: bool = True
+    unit_durations: int = 50
 
     @property
     def logs_dir(self) -> Path:
