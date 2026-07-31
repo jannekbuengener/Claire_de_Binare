@@ -30,8 +30,14 @@ Operator scripts for stack lifecycle, backup/DR, smoke, and evidence — prefer 
 
 | Path | Notes |
 |---|---|
-| [`legacy/`](legacy/) | `stack_up.ps1`, old verify paths — not v1 discovery default |
+| [`legacy/`](legacy/) | Quarantined helpers — not v1 discovery default |
+| [`legacy/smart_startup.py`](legacy/smart_startup.py) | Single-compose-era startup; fail-closed quarantine (#4125) |
 | [`stack_up.ps1`](stack_up.ps1) | Superseded by `setup_blue_red.ps1` |
+
+Repo-root helpers such as `smart_health_check.py`, project PowerShell automation,
+`check_core_duplicates.py`, and `dimensionality_audit/` own under [`scripts/`](../../scripts/).
+Do not reintroduce identical copies here; Rule 3 in `scripts/check_core_duplicates.py`
+guards against new exact clones.
 
 ## Related
 

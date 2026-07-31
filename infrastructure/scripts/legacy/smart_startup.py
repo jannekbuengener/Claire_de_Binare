@@ -1,6 +1,10 @@
 #!/usr/bin/env python3
 """
-COPILOT SMART STARTUP ORCHESTRATOR — LEGACY / NICHT KANONISCH
+LEGACY QUARANTINE — COPILOT SMART STARTUP ORCHESTRATOR
+
+Nicht kanonisch. Nicht als aktive Frontdoor verwenden.
+Aktiver Runtime-Pfad: BLUE+RED via `make docker-up` oder `tools/cdb.ps1 runtime up`.
+Quarantined under infrastructure/scripts/legacy/ for forensic reference only (#4125).
 
 ⚠️  Dieses Skript stammt aus der Single-Compose-Ära und ist NICHT mehr der
     kanonische Startpfad. Der aktive Runtime-Pfad ist BLUE+RED:
@@ -110,5 +114,9 @@ def smart_startup():
 
 
 if __name__ == "__main__":
-    success = smart_startup()
-    sys.exit(0 if success else 1)
+    print(
+        "LEGACY QUARANTINE: infrastructure/scripts/legacy/smart_startup.py "
+        "is not an active entrypoint."
+    )
+    print("Use: make docker-up  OR  tools/cdb.ps1 runtime up")
+    sys.exit(2)
