@@ -13,6 +13,9 @@ RUN useradd -m -u 1000 paperuser
 # Set working directory
 WORKDIR /app
 
+# Security pin (#4095): pip 26.1.2 fixes CVE-2026-8643
+RUN pip install --upgrade pip==26.1.2
+
 # Fix CVE-2026-23949 (jaraco.context), CVE-2026-24049 (wheel)
 RUN python -m pip install --no-cache-dir --upgrade setuptools==82.0.0 wheel==0.46.2
 

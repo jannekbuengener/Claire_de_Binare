@@ -128,7 +128,29 @@ Runbook: docs/security/TRIAGE_RUNBOOK.md §5
 
 ### Cluster: venv-pip (1 Alert)
 
-**Begründung:**
+> [!CAUTION]
+> **Korrigiert 2026-07-31 (Issue #4095).**
+> Die untenstehende Begründung war als **generelle Regel** falsch. „Pfad beginnt
+> mit `venv/`" ist **kein** Beleg für ein Dev-venv und **kein** False-Positive-Kriterium.
+> `services/execution/Dockerfile` baut ein venv unter `/venv` und kopiert es per
+> `COPY --from=build /venv /venv` in die Runtime-Stage. Im Image-Scan erscheint
+> dieses produktive venv als `venv/lib/python3.14/site-packages/pip-*.dist-info/METADATA`
+> — also exakt in der Form, die hier als „nicht Teil des produktiven Builds"
+> eingestuft wurde. Ein solcher Alert ist ein **Image-Pfad und ein reales Finding**.
+>
+> Die konkrete Alert-ID 2736 bleibt unverändert dismissed: sie nennt
+> `python3.11`, und kein CDB-Image nutzt Python 3.11 (produktiv: 3.14, lokale CI:
+> 3.12). Für diesen Einzelfall bleibt die Dev-venv-Einordnung plausibel. Der
+> historische Dismissal wird nicht angefasst.
+>
+> **Verbindliches Triage-Kriterium ab sofort:** Ein `venv/`-Pfad ist nur dann ein
+> Dev-Artefakt, wenn die Python-Minor-Version **keinem** produktiven Image
+> entspricht **und** die Quelle ein FS-Scan (`trivy.yml`, `scan-type: fs`) ist.
+> Stammt der Alert aus dem Image-Scan (`security-scan.yml`, `trivy-scan-custom`)
+> oder passt die Python-Version zu einem Service-Image, ist er zu fixen — nicht
+> zu dismissen.
+
+**Ursprüngliche Begründung (historisch, nicht mehr als Regel gültig):**
 FS-Scan hat ein Python-venv gescannt (`venv/lib/python3.11/site-packages/pip-25.3.dist-info/METADATA`). Das venv ist nicht Teil des produktiven Builds.
 
 **Alert-ID:** 2736
