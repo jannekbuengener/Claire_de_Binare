@@ -74,6 +74,7 @@ def cmd_route(args: argparse.Namespace) -> int:
             policy=policy,
             issue_comments=issue_comments,
             current_agent=args.agent,
+            issue_number=args.issue,
         )
     except GitHubInventoryError as exc:
         _emit(

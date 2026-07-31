@@ -63,6 +63,20 @@ python -m tools.pr_routing merge-readiness --body-file <BODY_FILE>
 - `collection_errors`
 - `candidate_prs_considered`
 - `reason_codes`
+- `repair_hints` (actionable fix commands on HOLD or incomplete metadata)
+
+## Lane matching (repo convention)
+
+- Match leading `[TOKEN]` segments left-to-right; first unique lane wins.
+- Plural/singular prefixes are equivalent (`[AGENTS]`/`[AGENT]`,
+  `[SKILLS]`/`[SKILL]`).
+- Active families include `[OPS]`, `[META]`, `[DATA]`, `[REGIME]`,
+  `[STRATEGY]`, `[PAPER]`, `[INFRA]`, `[SCRIPTS]`.
+- Prefer live repo labels (`scope:*`, `type:*`, `skills`, `dependencies`)
+  over obsolete policy-only label names.
+- Missing `objective:*` / `contract:*` / `risk:*` blocks batch reuse only;
+  `CREATE_NEW_BATCH_PR` may proceed with defaults plus `repair_hints`.
+- Never recommend a squash-merged deleted head via `branch_overrides`.
 
 ## Decisions
 

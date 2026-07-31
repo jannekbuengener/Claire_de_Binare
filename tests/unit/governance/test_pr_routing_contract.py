@@ -98,11 +98,29 @@ def test_no_compatible_pr_creates_new_batch_pr() -> None:
     assert result.target_branch == "batch/docs-governance-issue-4202"
 
 
-def test_missing_issue_compatibility_metadata_holds() -> None:
+def test_missing_issue_compatibility_metadata_creates_new_batch_with_hints() -> None:
+    """
+    test_id: tc_pr_routing_metadata_defaults_001
+    test_type: Bauteil-Test
+    rule_ref: ISSUE_COMPATIBILITY_METADATA_INCOMPLETE
+    issue_ref: 4228
+    """
     issue = _issue(objective_key=None, contract_keys=(), risk_flags=())
     result = route_issue(_policy(), issue, [])
-    assert result.routing_decision is RoutingDecision.HOLD_NO_SAFE_ROUTE
+    assert result.routing_decision is RoutingDecision.CREATE_NEW_BATCH_PR
     assert "ISSUE_COMPATIBILITY_METADATA_INCOMPLETE" in result.reason_codes
+    assert "CREATE_NEW_BATCH_WITH_DEFAULT_METADATA" in result.reason_codes
+    assert result.repair_hints
+    assert any("objective:issue-4202" in hint for hint in result.repair_hints)
+    assert any("risk:none" in hint for hint in result.repair_hints)
+
+
+def test_missing_metadata_does_not_join_existing_batch() -> None:
+    issue = _issue(objective_key=None, contract_keys=(), risk_flags=())
+    result = route_issue(_policy(), issue, [_candidate()])
+    assert result.routing_decision is RoutingDecision.CREATE_NEW_BATCH_PR
+    assert "ISSUE_COMPATIBILITY_METADATA_INCOMPLETE" in result.incompatibility_reasons
+    assert result.target_pr is None
 
 
 def test_security_issue_requires_dedicated_pr() -> None:
@@ -114,11 +132,21 @@ def test_security_issue_requires_dedicated_pr() -> None:
     assert result.routing_decision is RoutingDecision.CREATE_DEDICATED_PR
 
 
-def test_pr_flow_foundation_uses_authorized_branch_override() -> None:
+def test_pr_flow_uses_fresh_dedicated_branch_not_deleted_override() -> None:
+    """
+    test_id: tc_pr_routing_deleted_branch_override_001
+    test_type: Schutz-Test
+    rule_ref: anti-repush / dedicated_branch fallback
+    issue_ref: 4228
+    """
     issue = _issue(title="[GOVERNANCE][PR-FLOW] Introduce PR Steward")
     result = route_issue(_policy(), issue, [])
     assert result.routing_decision is RoutingDecision.CREATE_DEDICATED_PR
-    assert result.target_branch == "governance/pr-steward-batch-routing"
+    assert result.target_branch == "dedicated/docs-governance-issue-4202"
+    assert result.target_branch != "governance/pr-steward-batch-routing"
+    assert "governance/pr-steward-batch-routing" not in (
+        _policy().dedicated_branch_overrides.values()
+    )
 
 
 def test_existing_dedicated_pr_is_reused() -> None:
@@ -277,3 +305,154 @@ def test_merge_candidate_rejects_new_slices() -> None:
     )
     assert result.routing_decision is RoutingDecision.CREATE_NEW_BATCH_PR
     assert "PR_NOT_ACCEPTING_SLICES" in result.incompatibility_reasons
+
+
+@pytest.mark.parametrize(
+    ("title", "labels", "expected_lane", "expected_decision"),
+    [
+        (
+            "[AGENTS][DELIVERY] PR-Handoff verpflichtend",
+            frozenset(),
+            "agent-skills",
+            RoutingDecision.CREATE_NEW_BATCH_PR,
+        ),
+        (
+            "[SKILLS][SESSION-CLOSE] harden cleanup",
+            frozenset({"skills"}),
+            "agent-skills",
+            RoutingDecision.CREATE_NEW_BATCH_PR,
+        ),
+        (
+            "[OPS][CI] Resume image PR queue",
+            frozenset(),
+            "ci-tooling",
+            RoutingDecision.CREATE_NEW_BATCH_PR,
+        ),
+        (
+            "[CI][PERF] Fast-CI-Laufzeitprofil",
+            frozenset(),
+            "ci-tooling",
+            RoutingDecision.CREATE_NEW_BATCH_PR,
+        ),
+        (
+            "[META][PARAMETERS] Parameter Correctness",
+            frozenset(),
+            "docs-governance",
+            RoutingDecision.CREATE_NEW_BATCH_PR,
+        ),
+        (
+            "[DATA][PROVENANCE] Content-Fingerprint",
+            frozenset(),
+            "validation-research",
+            RoutingDecision.CREATE_NEW_BATCH_PR,
+        ),
+        (
+            "[REGIME][REPLAY] Offline/assign paths",
+            frozenset(),
+            "validation-research",
+            RoutingDecision.CREATE_NEW_BATCH_PR,
+        ),
+        (
+            "[STRATEGY][PAPER] shadow readiness",
+            frozenset(),
+            "validation-research",
+            RoutingDecision.CREATE_NEW_BATCH_PR,
+        ),
+        (
+            "[PAPER] natural-paper pilot",
+            frozenset(),
+            "validation-research",
+            RoutingDecision.CREATE_NEW_BATCH_PR,
+        ),
+        (
+            "[SCRIPTS][REFACTOR] Legacy scripts",
+            frozenset({"scope:infra", "type:refactor"}),
+            "ci-tooling",
+            RoutingDecision.CREATE_NEW_BATCH_PR,
+        ),
+        (
+            "[INFRA][TLS] TLS-Overlay",
+            frozenset({"scope:infra"}),
+            "ci-tooling",
+            RoutingDecision.CREATE_NEW_BATCH_PR,
+        ),
+        (
+            "Label-only docs reconciliation",
+            frozenset({"scope:docs", "type:docs"}),
+            "docs-governance",
+            RoutingDecision.CREATE_NEW_BATCH_PR,
+        ),
+        (
+            "[GOVERNANCE][PR-FLOW] cdb-pr-router real conventions",
+            frozenset(),
+            "docs-governance",
+            RoutingDecision.CREATE_DEDICATED_PR,
+        ),
+        (
+            "[RISK][STOP-LOSS] Restart-sicherer Consumer",
+            frozenset(),
+            "runtime-risk",
+            RoutingDecision.CREATE_DEDICATED_PR,
+        ),
+        (
+            "[Security][P0] CVE remediation",
+            frozenset({"type:security"}),
+            "runtime-risk",
+            RoutingDecision.CREATE_DEDICATED_PR,
+        ),
+    ],
+)
+def test_real_repo_title_and_label_routing_matrix(
+    title: str,
+    labels: frozenset[str],
+    expected_lane: str,
+    expected_decision: RoutingDecision,
+) -> None:
+    """
+    test_id: tc_pr_routing_real_convention_matrix_001
+    test_type: Contract-Test
+    rule_ref: pr-routing-policy lane matching vs live CDB titles
+    issue_ref: 4228
+    """
+    issue = _issue(
+        title=title,
+        labels=labels,
+        objective_key=None,
+        contract_keys=(),
+        risk_flags=(),
+    )
+    result = route_issue(_policy(), issue, [])
+    assert result.lane == expected_lane
+    assert result.routing_decision is expected_decision
+    if expected_decision is RoutingDecision.CREATE_DEDICATED_PR:
+        assert result.target_branch == f"dedicated/{expected_lane}-issue-4202"
+    else:
+        assert result.target_branch == f"batch/{expected_lane}-issue-4202"
+        assert result.repair_hints
+
+
+def test_leftmost_title_token_wins_over_secondary_governance_token() -> None:
+    issue = _issue(
+        title="[CI][GOVERNANCE] Harden cdb-local-ci",
+        labels=frozenset({"scope:ci", "type:chore"}),
+        objective_key=None,
+        contract_keys=(),
+        risk_flags=(),
+    )
+    result = route_issue(_policy(), issue, [])
+    assert result.lane == "ci-tooling"
+    assert result.routing_decision is RoutingDecision.CREATE_NEW_BATCH_PR
+
+
+def test_title_and_label_contradiction_holds_with_repair_hints() -> None:
+    issue = _issue(
+        title="[AGENTS] delivery contract",
+        labels=frozenset({"scope:ci"}),
+        objective_key="x",
+        contract_keys=("y",),
+        risk_flags=("none",),
+    )
+    result = route_issue(_policy(), issue, [])
+    assert result.routing_decision is RoutingDecision.HOLD_NO_SAFE_ROUTE
+    assert "LANE_AMBIGUOUS_OR_UNKNOWN" in result.reason_codes
+    assert result.repair_hints

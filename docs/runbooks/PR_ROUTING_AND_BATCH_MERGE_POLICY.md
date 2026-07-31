@@ -51,6 +51,30 @@ Echtgeld-adjacent Governance und unabhängige Risk-/Execution-/Runtime-Verträge
 | `dependencies` | `dependencies-v1` | batch |
 | `runtime-risk` | `runtime-risk-v1` | dedicated oder eng isoliert |
 
+### 4.1 Titel- und Label-Auflösung (Issue `#4228`)
+
+Lane-Auflösung ist **leftmost-title-token first**, danach Repo-Labels:
+
+1. Führende `[TOKEN]`-Segmente im Issuetitel werden von links nach rechts
+   gelesen. Der erste Token, der genau eine Lane trifft, gewinnt.
+2. Singular/Plural sind äquivalent (`[AGENT]` ↔ `[AGENTS]`,
+   `[SKILL]` ↔ `[SKILLS]`).
+3. Aktive Familien sind in der Policy hinterlegt, u. a. `[OPS]`, `[META]`,
+   `[DATA]`, `[REGIME]`, `[STRATEGY]`, `[PAPER]`, `[INFRA]`, `[SCRIPTS]`.
+4. Repo-Labels nutzen die reale Taxonomie `scope:*` / `type:*`
+   (z. B. `scope:docs`, `scope:governance`, `scope:ci`, `scope:infra`,
+   `scope:core`, `type:security`, `skills`, `dependencies`). Die früheren
+   Policy-only-Labels ohne Repo-Gegenstück reichen allein nicht mehr.
+5. Titel-Lane und Label-Lane dürfen sich nicht widersprechen; sonst
+   `HOLD_NO_SAFE_ROUTE` / `LANE_AMBIGUOUS_OR_UNKNOWN` mit `repair_hints`.
+6. Fehlende `objective:*` / `contract:*` / `risk:*`-Labels blockieren nur das
+   **Wiederverwenden** eines bestehenden Batch-PRs. `CREATE_NEW_BATCH_PR`
+   bleibt mit Issue-Defaults erlaubt und liefert ausführbare `repair_hints`
+   (`gh label create` / `gh issue edit`).
+7. `dedicated_rules.branch_overrides` dürfen keinen gemergten und gelöschten
+   Head empfehlen. Ohne Override gilt
+   `dedicated/<lane>-issue-<N>` (Anti-Repush).
+
 Die Dependencies-Lane ersetzt den Dependabot-Broker aus #4061 nicht.
 Pausierte oder blockierte Arbeit, insbesondere #4184/PR #4187, ist nicht
 routefähig.

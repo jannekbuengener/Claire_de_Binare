@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import json
+import re
 from dataclasses import dataclass
 from pathlib import Path
 from typing import Any
@@ -15,6 +16,43 @@ DEFAULT_POLICY_PATH = (
     / "governance"
     / "pr-routing-policy.v1.yaml"
 )
+
+# Leading bracket tokens in CDB issue titles, e.g. [OPS][CI] → OPS, CI.
+_TITLE_TOKEN_RE = re.compile(r"^\[([^\]]+)\]")
+
+
+def extract_title_tokens(title: str) -> tuple[str, ...]:
+    """Return ordered leading ``[TOKEN]`` segments from an issue title."""
+    remaining = title.lstrip()
+    tokens: list[str] = []
+    while remaining.startswith("["):
+        match = _TITLE_TOKEN_RE.match(remaining)
+        if match is None:
+            break
+        tokens.append(match.group(1).strip().upper())
+        remaining = remaining[match.end() :].lstrip()
+    return tuple(tokens)
+
+
+def normalize_routing_token(value: str) -> str:
+    """Normalize a title token or policy prefix for comparison."""
+    token = value.strip().upper()
+    if token.startswith("[") and token.endswith("]") and len(token) > 2:
+        token = token[1:-1].strip()
+    return token
+
+
+def tokens_equivalent(left: str, right: str) -> bool:
+    """Match singular/plural title families (``AGENT`` ↔ ``AGENTS``)."""
+    a = normalize_routing_token(left)
+    b = normalize_routing_token(right)
+    if a == b:
+        return True
+    if a.endswith("S") and a[:-1] == b:
+        return True
+    if b.endswith("S") and b[:-1] == a:
+        return True
+    return False
 
 
 @dataclass(frozen=True)
@@ -34,26 +72,66 @@ class RoutingPolicy:
     ledger_columns: tuple[str, ...]
     merge_triggers: dict[str, int]
 
-    def classify_lane(self, title: str, labels: frozenset[str]) -> str:
+    def _lane_label_set(self, definition: dict[str, Any]) -> set[str]:
+        return {str(label).lower() for label in definition.get("labels", [])}
+
+    def _lane_prefix_tokens(self, definition: dict[str, Any]) -> tuple[str, ...]:
+        return tuple(
+            normalize_routing_token(str(prefix))
+            for prefix in definition.get("title_prefixes", [])
+        )
+
+    def _lanes_for_title_token(self, token: str) -> list[str]:
         matches: list[str] = []
-        normalized = {label.lower() for label in labels}
-        upper_title = title.upper()
         for lane, definition in self.lanes.items():
-            label_hit = normalized.intersection(
-                str(label).lower() for label in definition.get("labels", [])
-            )
-            prefix_hit = any(
-                upper_title.startswith(str(prefix).upper())
-                for prefix in definition.get("title_prefixes", [])
-            )
-            if label_hit or prefix_hit:
+            if any(
+                tokens_equivalent(token, prefix)
+                for prefix in self._lane_prefix_tokens(definition)
+            ):
                 matches.append(lane)
-        if len(matches) != 1:
-            raise ValueError(
-                "Issue lane must resolve to exactly one policy lane; "
-                f"resolved={sorted(matches)}"
-            )
-        return matches[0]
+        return matches
+
+    def _lanes_for_labels(self, labels: frozenset[str]) -> set[str]:
+        normalized = {label.lower() for label in labels}
+        matches: set[str] = set()
+        for lane, definition in self.lanes.items():
+            if normalized.intersection(self._lane_label_set(definition)):
+                matches.add(lane)
+        return matches
+
+    def classify_lane(self, title: str, labels: frozenset[str]) -> str:
+        """Resolve exactly one lane from leftmost title token and repo labels.
+
+        Title tokens are scanned left-to-right; the first token that maps to
+        exactly one lane wins. Label hits must not contradict that lane.
+        Label-only resolution requires exactly one matching lane.
+        """
+        title_lane: str | None = None
+        for token in extract_title_tokens(title):
+            matched = self._lanes_for_title_token(token)
+            if len(matched) > 1:
+                raise ValueError(
+                    "Issue lane must resolve to exactly one policy lane; "
+                    f"resolved={sorted(matched)}"
+                )
+            if len(matched) == 1:
+                title_lane = matched[0]
+                break
+
+        label_lanes = self._lanes_for_labels(labels)
+        if title_lane is not None:
+            if label_lanes and title_lane not in label_lanes:
+                raise ValueError(
+                    "Issue lane must resolve to exactly one policy lane; "
+                    f"resolved={sorted({title_lane, *label_lanes})}"
+                )
+            return title_lane
+        if len(label_lanes) == 1:
+            return next(iter(label_lanes))
+        raise ValueError(
+            "Issue lane must resolve to exactly one policy lane; "
+            f"resolved={sorted(label_lanes)}"
+        )
 
     def requires_dedicated(self, title: str, labels: frozenset[str]) -> bool:
         normalized = {label.lower() for label in labels}
@@ -62,10 +140,20 @@ class RoutingPolicy:
         ):
             return True
         upper_title = title.upper()
-        return any(
-            upper_title.startswith(prefix.upper())
-            for prefix in self.dedicated_rules["title_prefixes"]
-        )
+        title_tokens = extract_title_tokens(title)
+        for prefix in self.dedicated_rules["title_prefixes"]:
+            raw = str(prefix)
+            # Compound prefixes (e.g. [GOVERNANCE][PR-FLOW]) stay startswith-only.
+            if "][" in raw.upper():
+                if upper_title.startswith(raw.upper()):
+                    return True
+                continue
+            if upper_title.startswith(raw.upper()):
+                return True
+            prefix_token = normalize_routing_token(raw)
+            if any(tokens_equivalent(token, prefix_token) for token in title_tokens):
+                return True
+        return False
 
     def dedicated_branch(self, title: str, lane: str, issue_number: int) -> str:
         upper_title = title.upper()

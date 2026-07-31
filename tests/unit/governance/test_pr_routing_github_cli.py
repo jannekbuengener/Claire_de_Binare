@@ -243,3 +243,66 @@ def test_reviewability_inventory_under_threshold_skips_paths() -> None:
     assert paths is None
     assert contents is None
     assert complete is True
+
+
+def test_candidates_respect_dedicated_merge_mode_inside_marker() -> None:
+    """Dedicated PRs with a ledger marker must not be inventored as batch."""
+    policy = load_policy()
+    body = """<!-- cdb-batch-pr:v1
+policy_id: cdb-pr-routing-v1
+batch_key: docs-governance-issue-4228
+lane: docs-governance
+base_branch: main
+validation_profile: docs-governance-v1
+merge_mode: dedicated
+steward_state: accepting_slices
+objective_key: pr-router-real-conventions
+planned_issues: #4228
+contract_keys: pr-routing-v1
+risk_flags: none
+-->
+
+Refs #4228
+"""
+
+    def runner(argv: list[str], **kwargs: Any) -> subprocess.CompletedProcess[str]:
+        if argv[:3] == ["gh", "pr", "list"]:
+            payload = [
+                {
+                    "number": 4231,
+                    "title": "fix(pr-routing): align router",
+                    "isDraft": True,
+                    "headRefName": "cloud-cursor/pr-router-real-conventions-5132",
+                    "baseRefName": "main",
+                    "body": body,
+                    "labels": [],
+                    "updatedAt": "2026-07-31T03:24:00Z",
+                    "mergeable": "MERGEABLE",
+                    "url": "https://example.invalid/pull/4231",
+                }
+            ]
+        elif argv[:3] == ["gh", "pr", "view"]:
+            payload = {
+                "number": 4231,
+                "comments": [],
+                "createdAt": "2026-07-31T03:24:00Z",
+                "changedFiles": 2,
+                "additions": 10,
+                "deletions": 2,
+                "headRefOid": "a" * 40,
+            }
+        else:
+            raise AssertionError(f"unexpected argv: {argv}")
+        return subprocess.CompletedProcess(
+            args=argv, returncode=0, stdout=json.dumps(payload), stderr=""
+        )
+
+    inventory = GhReadOnlyInventory(repository="owner/repo", runner=runner)
+    candidates = inventory.candidates(
+        policy=policy,
+        issue_comments=[],
+        current_agent="Codex",
+        issue_number=4228,
+    )
+    assert len(candidates) == 1
+    assert candidates[0].merge_mode == "dedicated"
