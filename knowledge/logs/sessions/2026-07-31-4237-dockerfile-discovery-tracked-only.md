@@ -3,7 +3,11 @@
 **Date:** 2026-07-31  
 **Agent:** cursor-cloud  
 **Wave:** parallel-wave-2026-07-31-b  
-**Status:** DONE_SLICE_ADDED_TO_BATCH_PR (pending PR handoff)
+**Status:** DONE_SLICE_ADDED_TO_BATCH_PR  
+**PR:** #4239  
+**Head:** `a088fcbdba6170a4a1d96fddf5f61f62a8b12cf6`  
+**Branch:** `batch/ci-tooling-issue-4237`  
+**Issue LOCK comment:** blocked (`Resource not accessible by integration`)
 
 ## Brain Evidence
 
