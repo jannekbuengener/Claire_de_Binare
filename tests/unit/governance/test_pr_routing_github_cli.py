@@ -299,7 +299,10 @@ Refs #4228
 
     inventory = GhReadOnlyInventory(repository="owner/repo", runner=runner)
     candidates = inventory.candidates(
-        policy=policy, issue_comments=[], current_agent="Codex"
+        policy=policy,
+        issue_comments=[],
+        current_agent="Codex",
+        issue_number=4228,
     )
     assert len(candidates) == 1
     assert candidates[0].merge_mode == "dedicated"

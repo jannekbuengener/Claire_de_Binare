@@ -370,6 +370,7 @@ class GhReadOnlyInventory:
         policy: RoutingPolicy,
         issue_comments: list[dict[str, Any]],
         current_agent: str,
+        issue_number: int,
     ) -> list[CandidatePullRequest]:
         candidates: list[CandidatePullRequest] = []
         for raw in self.open_pull_requests(policy):
@@ -380,23 +381,7 @@ class GhReadOnlyInventory:
                 issue_comments=issue_comments,
                 pr_comments=list(details.get("comments") or []),
                 current_agent=current_agent,
-                issue_number=int(
-                    next(
-                        (
-                            match.group("issue")
-                            for comment in issue_comments
-                            if (
-                                match := LOCK_RE.fullmatch(
-                                    str(comment.get("body") or "")
-                                    .strip()
-                                    .splitlines()[0]
-                                )
-                            )
-                        ),
-                        0,
-                    )
-                )
-                or 0,
+                issue_number=issue_number,
                 pr_number=number,
             )
             changed_files = int(details.get("changedFiles") or 0)
