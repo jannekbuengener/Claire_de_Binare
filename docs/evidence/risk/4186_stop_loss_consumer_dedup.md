@@ -6,6 +6,9 @@
 
 **Base:** `main@379d031d78a045198f4eab5d145459b82d4df3d1`
 
+**Bewiesener Code-Commit:** `4b3c1b39313551fabd15b797d92a3f7177c7b387`
+(`worktree_dirty: false`)
+
 **Verdict:** `PASS_CONSUMER_DEDUP_MOCK_SHADOW`
 
 **Stop-Loss-Protection:** `UNAVAILABLE` (unverändert)
