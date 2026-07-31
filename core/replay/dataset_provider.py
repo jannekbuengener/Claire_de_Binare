@@ -31,6 +31,7 @@ from dataclasses import dataclass
 from pathlib import Path
 from typing import Protocol
 
+from core.replay.dataset_identity import content_fingerprint, request_fingerprint
 from core.replay.dataset_spec import (
     DatasetSpec,
     DatasetSpecError as DatasetSpecError,
@@ -54,8 +55,13 @@ class DatasetResult:
     Inner dict values are all numeric primitives (int/float) and are effectively
     immutable. Do not mutate candle dicts after construction.
 
-    ``fingerprint`` is the spec-level request fingerprint (not content hash).
-    See ``DatasetSpec.fingerprint()`` for the distinction.
+    Identity fields (#4151)
+    -----------------------
+    ``fingerprint`` / ``request_fingerprint``:
+        Spec-level *request* identity (compatible alias pair).
+    ``content_fingerprint``:
+        Hash of the actually loaded candle content after semantic normalization.
+        ``None`` only for synthetic/non-provider constructions that omit it.
     """
 
     spec: DatasetSpec
@@ -63,6 +69,8 @@ class DatasetResult:
     fingerprint: str
     warmup_count: int
     effective_candle_count: int
+    request_fingerprint: str | None = None
+    content_fingerprint: str | None = None
 
 
 class DatasetProvider(Protocol):
@@ -170,12 +178,16 @@ class FileBackedDatasetProvider:
                 f"Need at least {spec.warmup_candles + 1} candles."
             )
 
+        loaded = tuple(dict(c) for c in candles)
+        req_fp = request_fingerprint(spec)
         return DatasetResult(
             spec=spec,
-            candles=tuple(dict(c) for c in candles),
-            fingerprint=spec.fingerprint(),
+            candles=loaded,
+            fingerprint=req_fp,
             warmup_count=spec.warmup_candles,
             effective_candle_count=len(candles) - spec.warmup_candles,
+            request_fingerprint=req_fp,
+            content_fingerprint=content_fingerprint(loaded),
         )
 
     def _parse(self, raw: str, file_path: Path) -> list[dict]:
@@ -338,10 +350,14 @@ class DBBackedDatasetProvider:
                 f"Need at least {spec.warmup_candles + 1} candles."
             )
 
+        loaded = tuple(dict(c) for c in candles)
+        req_fp = request_fingerprint(spec)
         return DatasetResult(
             spec=spec,
-            candles=tuple(dict(c) for c in candles),
-            fingerprint=spec.fingerprint(),
+            candles=loaded,
+            fingerprint=req_fp,
             warmup_count=spec.warmup_candles,
             effective_candle_count=len(candles) - spec.warmup_candles,
+            request_fingerprint=req_fp,
+            content_fingerprint=content_fingerprint(loaded),
         )

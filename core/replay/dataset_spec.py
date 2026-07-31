@@ -10,7 +10,7 @@ they want for a replay run. Providers (dataset_provider.py) are responsible for
 Fingerprint note: ``DatasetSpec.fingerprint()`` is a *request* identity hash,
 not a *dataset content* hash. Two specs with identical fields produce the same
 fingerprint regardless of the file content at ``file_path``. Content-based
-hashing is deferred to the runner/reporting layer.
+hashing lives in ``core.replay.dataset_identity`` (#4151).
 """
 
 from __future__ import annotations
@@ -153,6 +153,10 @@ class DatasetSpec:
         Two ``DatasetSpec`` instances with identical field values always produce
         the same fingerprint. This is a *request* fingerprint, not a *content*
         fingerprint — it does not depend on what the file at ``file_path``
-        actually contains.
+        actually contains. See ``core.replay.dataset_identity.content_fingerprint``.
         """
         return canonical_hash(self.to_dict())
+
+    def request_fingerprint(self) -> str:
+        """Alias for ``fingerprint()`` — explicit request-identity name (#4151)."""
+        return self.fingerprint()
