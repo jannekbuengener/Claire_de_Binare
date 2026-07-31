@@ -281,7 +281,7 @@ def test_slice_manifest_rejected_by_publisher_gate():
         stages=stages,
         skipped_checks=[],
         artifact_hashes={},
-        repo_name="[REDACTED]",
+        repo_name="Claire_de_Binare",  # pragma: allowlist secret
         merge_evidence=False,
     )
     assert manifest["merge_evidence"] is False
