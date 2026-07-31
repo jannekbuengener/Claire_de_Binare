@@ -8,6 +8,7 @@
   "required": [
     "contract_version",
     "formula",
+    "execution_semantics",
     "gross_pnl",
     "components",
     "net_pnl",
@@ -23,6 +24,47 @@
     "formula": {
       "type": "string",
       "minLength": 1
+    },
+    "execution_semantics": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["order_type", "fill_status", "maker_fill_evidence", "funding_basis"],
+      "description": "Disambiguates maker/taker, fill/partial/no-fill and funding provenance for this reconciliation.",
+      "properties": {
+        "order_type": {
+          "type": "string",
+          "enum": ["market", "limit"]
+        },
+        "fill_status": {
+          "type": "string",
+          "enum": ["filled", "partially_filled", "not_filled"]
+        },
+        "maker_fill_evidence": {
+          "type": "boolean",
+          "description": "True only when a proven maker fill backs a non-zero maker_fee_cost."
+        },
+        "funding_basis": {
+          "type": ["object", "null"],
+          "additionalProperties": false,
+          "description": "Present only when funding is active; funding is then derived, never asserted.",
+          "required": [
+            "position_value",
+            "funding_rate",
+            "funding_rate_source",
+            "hours_held",
+            "settlement_hours",
+            "derived_cost"
+          ],
+          "properties": {
+            "position_value": { "type": "string" },
+            "funding_rate": { "type": "string" },
+            "funding_rate_source": { "type": "string", "minLength": 1 },
+            "hours_held": { "type": "string" },
+            "settlement_hours": { "type": "string" },
+            "derived_cost": { "type": "string" }
+          }
+        }
+      }
     },
     "gross_pnl": {
       "type": "string",
@@ -61,6 +103,10 @@
     "net_pnl": {
       "type": "string"
     },
+    "reported_net_pnl": {
+      "type": ["string", "null"],
+      "description": "Independently reported net PnL to reconcile against; null when the caller supplies none."
+    },
     "reconciled": {
       "type": "boolean"
     },
@@ -85,15 +131,17 @@
         "name": { "type": "string", "minLength": 1 },
         "amount": {
           "type": ["string", "null"],
-          "description": "Unsigned quote cost when status is active/zero; null when not_applicable or inactive_not_wired."
+          "description": "Unsigned quote cost when status is active/zero/embedded_in_fill_price; null when not_applicable, inactive_not_wired or unavailable."
         },
         "status": {
           "type": "string",
+          "description": "active/zero are subtracted; embedded_in_fill_price is informational; not_applicable, inactive_not_wired and unavailable carry a null amount and are never treated as a measured zero.",
           "enum": [
             "active",
             "zero",
             "not_applicable",
             "inactive_not_wired",
+            "unavailable",
             "embedded_in_fill_price"
           ]
         },
