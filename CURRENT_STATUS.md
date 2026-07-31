@@ -25,6 +25,8 @@
 
 - **#4228 PR-Router Real Conventions**: **DONE_MERGED_CLOSED** — PR [#4231](https://github.com/jannekbuengener/Claire_de_Binare/pull/4231) squash-merged @ `e5711c2a` (2026-07-31). Policy/matcher aligned to live title tokens and `scope:*`/`type:*` labels; actionable `repair_hints` + safe `CREATE_NEW_BATCH_PR`. LR **NO-GO** unchanged.
 
+- **#4184 Reduce-only Unwind Contract (PR #4187)**: Acceptance/Merge in progress — main integrated into `fix/4184-reduce-only-unwind-contract` (kill-cancel + reduce-only coexistence); Fast-CI / `cdb-local-ci` / Completeness pending on final head. Refs only until merge SHA verified; #4152/#4147 remain open. LR **NO-GO** unchanged.
+
 <!-- cdb:historical-as-of date=2026-07-30 -->
 > Historical as of 2026-07-30 — append-only ledger. Entries below record the
 > state at their own date and are intentionally not rewritten when reality

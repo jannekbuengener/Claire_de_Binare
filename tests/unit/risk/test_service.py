@@ -312,6 +312,8 @@ def test_proactive_unwind_triggers_on_blocked_buy(mock_redis, mock_postgres):
             assert unwind_order.symbol == "BTCUSDT"
             assert unwind_order.quantity == 0.001  # Matches position size
             assert "proactive_unwind" in unwind_order.reason
+            assert unwind_order.reduce_only is True
+            assert unwind_order.order_id is not None
 
             # Verify: Stats counter incremented
             assert risk_service.stats["proactive_unwind_triggered"] == 1
@@ -323,6 +325,53 @@ def test_proactive_unwind_triggers_on_blocked_buy(mock_redis, mock_postgres):
             risk_service.risk_state.total_exposure = original_total_exposure
             risk_service.risk_off_active = original_risk_off
             risk_service.stats = original_stats
+
+
+@pytest.mark.unit
+def test_proactive_unwind_short_emits_reduce_only_buy(mock_redis, mock_postgres):
+    manager = RiskManager()
+    manager.config.paper_auto_unwind = True
+    manager.send_order = MagicMock()
+
+    original_positions = risk_service.risk_state.positions.copy()
+    original_last_prices = risk_service.risk_state.last_prices.copy()
+    try:
+        risk_service.risk_state.positions = {"ETHUSDT": -2.0}
+        risk_service.risk_state.last_prices = {"ETHUSDT": 3000.0}
+
+        manager._trigger_proactive_unwind()
+
+        unwind_order = manager.send_order.call_args.args[0]
+        assert unwind_order.side == "BUY"
+        assert unwind_order.quantity == 2.0
+        assert unwind_order.reduce_only is True
+        assert unwind_order.order_id is not None
+    finally:
+        risk_service.risk_state.positions = original_positions
+        risk_service.risk_state.last_prices = original_last_prices
+
+
+@pytest.mark.unit
+def test_reactive_auto_unwind_ignores_reduce_only_fill(mock_redis, mock_postgres):
+    manager = RiskManager()
+    manager.config.paper_auto_unwind = True
+    manager.send_order = MagicMock()
+    result = risk_service.OrderResult(
+        order_id="reduce-only-buy-4184",
+        status="FILLED",
+        symbol="BTCUSDT",
+        side="BUY",
+        quantity=1.0,
+        filled_quantity=0.25,
+        timestamp=1,
+        strategy_id="paper",
+        price=50000.0,
+        reduce_only=True,
+    )
+
+    manager._maybe_auto_unwind(result)
+
+    manager.send_order.assert_not_called()
 
 
 @pytest.mark.unit

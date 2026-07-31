@@ -531,7 +531,12 @@ class DatabaseWriter:
             )
 
             # Validate execution quantity (must be > 0)
-            execution_qty_raw = data.get("quantity") or data.get("size")
+            execution_qty_raw = (
+                data.get("filled_quantity")
+                or data.get("filled_size")
+                or data.get("quantity")
+                or data.get("size")
+            )
             execution_qty = self._get_positive_decimal(
                 execution_qty_raw, "execution_quantity", data
             )
@@ -557,15 +562,78 @@ class DatabaseWriter:
                     )
 
             cursor = self.db_conn.cursor()
-            existing_position = self._fetch_open_position(cursor, data.get("symbol"))
-            realized_pnl = self._calculate_trade_realized_pnl(
-                existing_position, side, execution_price, execution_qty
+            reduce_only_evidence = metadata.get("reduce_only")
+            reduce_only_claimed = data.get("reduce_only") is True
+            metadata_owner_claimed = (
+                isinstance(reduce_only_evidence, dict)
+                and reduce_only_evidence.get("position_update_owner")
+                == "execution_reduce_only_v1"
             )
+            if reduce_only_claimed is not metadata_owner_claimed:
+                raise ValueError("reduce-only event ownership mismatch")
+            execution_owned_reduce_only = False
+            if reduce_only_claimed:
+                if not (
+                    isinstance(reduce_only_evidence, dict)
+                    and reduce_only_evidence.get("contract_version")
+                    == "execution_reduce_only_v1"
+                    and reduce_only_evidence.get("position_update_owner")
+                    == "execution_reduce_only_v1"
+                ):
+                    raise ValueError("unverified reduce-only execution owner")
+                internal_order_id = str(metadata.get("order_id") or "").strip()
+                if not internal_order_id:
+                    raise ValueError("missing reduce-only ledger order_id")
+                pnl_raw = reduce_only_evidence.get("realized_pnl_delta")
+                try:
+                    realized_pnl = Decimal(str(pnl_raw))
+                except (InvalidOperation, TypeError, ValueError) as exc:
+                    raise ValueError("invalid reduce-only realized PnL") from exc
+                if not realized_pnl.is_finite():
+                    raise ValueError("invalid reduce-only realized PnL")
+                cursor.execute(
+                    """
+                    SELECT symbol, side, filled_quantity, status,
+                           fill_price, realized_pnl_delta
+                    FROM reduce_only_executions
+                    WHERE order_id = %s
+                    """,
+                    (internal_order_id,),
+                )
+                ledger_row = cursor.fetchone()
+                expected_ledger_status = (
+                    "PARTIALLY_FILLED"
+                    if status in {"partial", "partially_filled"}
+                    else "FILLED"
+                )
+                if (
+                    ledger_row is None
+                    or str(ledger_row[0]) != str(data.get("symbol"))
+                    or str(ledger_row[1]).upper() != side.upper()
+                    or Decimal(str(ledger_row[2])) != execution_qty
+                    or str(ledger_row[3]).upper() != expected_ledger_status
+                    or Decimal(str(ledger_row[4])) != execution_price
+                    or Decimal(str(ledger_row[5])) != realized_pnl
+                ):
+                    raise ValueError("reduce-only ledger evidence mismatch")
+                execution_owned_reduce_only = True
+                existing_position = None
+            else:
+                existing_position = self._fetch_open_position(
+                    cursor, data.get("symbol")
+                )
+                realized_pnl = self._calculate_trade_realized_pnl(
+                    existing_position, side, execution_price, execution_qty
+                )
             cursor.execute(
                 """
                 INSERT INTO trades
                 (symbol, side, price, size, status, execution_price, slippage_bps, fees, realized_pnl, timestamp, exchange, metadata)
                 VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s)
+                ON CONFLICT ((metadata->>'order_id'))
+                WHERE metadata->'reduce_only'->>'position_update_owner'
+                    = 'execution_reduce_only_v1'
+                DO NOTHING
                 RETURNING id
             """,
                 (
@@ -583,7 +651,14 @@ class DatabaseWriter:
                     json.dumps(metadata),
                 ),
             )
-            trade_id = cursor.fetchone()[0]
+            trade_row = cursor.fetchone()
+            if trade_row is None:
+                logger.info(
+                    "Skipping duplicate reduce-only trade event for order %s",
+                    metadata.get("order_id"),
+                )
+                return
+            trade_id = trade_row[0]
             logger.info(
                 "✅ Trade persisted: ID=%d, %s %s @ %s",
                 trade_id,
@@ -593,8 +668,13 @@ class DatabaseWriter:
             )
             DB_WRITER_EVENTS_PROCESSED.labels(channel="order_results").inc()
 
-            # Update positions table (source-of-truth for current holdings)
-            self.update_position_from_trade(data, existing_position=existing_position)
+            # Issue #4184: the execution service already applied this guarded
+            # reduce-only fill atomically with its persistent claim. Keep the
+            # trade row, but never apply the position effect twice.
+            if not execution_owned_reduce_only:
+                self.update_position_from_trade(
+                    data, existing_position=existing_position
+                )
         except ValueError as e:
             # Validation error - log but don't crash the service
             logger.error(
@@ -636,7 +716,12 @@ class DatabaseWriter:
                 data,
             )
             execution_qty = self._get_positive_decimal(
-                data.get("quantity") or data.get("size"), "execution_quantity", data
+                data.get("filled_quantity")
+                or data.get("filled_size")
+                or data.get("quantity")
+                or data.get("size"),
+                "execution_quantity",
+                data,
             )
             timestamp = self.convert_timestamp(data.get("timestamp"))
 
@@ -847,6 +932,7 @@ class DatabaseWriter:
         else:
             logger.warning(f"Unknown channel: {channel}")
 
+    # fmt: off
     def _persist_candle_entry(self, cursor, row: dict) -> bool:
         """Insert a normalised candle row into ``candles_1m``.
 
@@ -940,6 +1026,7 @@ class DatabaseWriter:
                         DB_WRITER_EVENTS_FAILED.labels(channel="candles_1m").inc()
                         # do NOT advance last_id: transient DB error → retry on next XREAD
 
+    # fmt: on
     def run(self):
         """Main event loop"""
         logger.info("Starting DB Writer Service...")

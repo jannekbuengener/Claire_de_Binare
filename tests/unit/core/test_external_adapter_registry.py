@@ -1,5 +1,7 @@
 """Unit tests for the static external adapter registry (#1579)."""
 
+from unittest.mock import MagicMock
+
 import pytest
 
 from core.contracts.external_adapter_contracts import (
@@ -139,6 +141,125 @@ def test_mock_execution_adapter_wraps_current_mock_executor_path() -> None:
     assert response.order_id.startswith("MOCK_")
     assert response.filled_quantity == pytest.approx(0.01)
     assert response.raw_venue_payload == {"adapter_id": MOCK_BUILTIN}
+
+
+def test_mock_execution_adapter_enforces_reduce_only_before_executor() -> None:
+    class CountingExecutor:
+        def __init__(self) -> None:
+            self.calls = 0
+
+        def execute_order(self, order):
+            self.calls += 1
+            raise AssertionError("invalid reduce-only request reached executor")
+
+    executor = CountingExecutor()
+    adapter = MockExecutionAdapter(executor=executor)
+    with pytest.raises(ValueError, match="reduce-only adapter contract rejected"):
+        adapter.execute(
+            ExecutionAdapterRequest(
+                order={
+                    "symbol": "BTCUSDT",
+                    "side": "BUY",
+                    "quantity": 1.1,
+                    "timestamp": 1700000000,
+                    "reduce_only": True,
+                },
+                run_mode="paper",
+                decision_contract_v1={"contract_version": "decision_contract_v1"},
+                runtime_context={},
+                reduce_only=True,
+                position_before="1",
+                max_executable_quantity="1",
+                reduce_only_contract_version="execution_reduce_only_v1",
+            )
+        )
+    assert executor.calls == 0
+
+
+@pytest.mark.parametrize(
+    ("position", "side"),
+    [("1", "SELL"), ("-1", "BUY")],
+)
+def test_mock_execution_adapter_acknowledges_valid_reduce_only_contract(
+    position: str, side: str
+) -> None:
+    adapter = MockExecutionAdapter(
+        executor=MockExecutor(
+            success_rate=1.0,
+            min_latency_ms=0,
+            max_latency_ms=0,
+            base_slippage_pct=0.0,
+        )
+    )
+    response = adapter.execute(
+        ExecutionAdapterRequest(
+            order={
+                "symbol": "BTCUSDT",
+                "side": side,
+                "quantity": 0.4,
+                "timestamp": 1700000000,
+                "reduce_only": True,
+            },
+            run_mode="paper",
+            decision_contract_v1={"contract_version": "decision_contract_v1"},
+            runtime_context={},
+            reduce_only=True,
+            position_before=position,
+            max_executable_quantity="0.4",
+            reduce_only_contract_version="execution_reduce_only_v1",
+        )
+    )
+    assert response.reduce_only_acknowledged is True
+
+
+def test_mock_execution_adapter_rejects_maximum_larger_than_position() -> None:
+    executor = MagicMock()
+    adapter = MockExecutionAdapter(executor=executor)
+    with pytest.raises(ValueError, match="reduce-only adapter contract rejected"):
+        adapter.execute(
+            ExecutionAdapterRequest(
+                order={
+                    "symbol": "BTCUSDT",
+                    "side": "SELL",
+                    "quantity": 2,
+                    "timestamp": 1700000000,
+                    "reduce_only": True,
+                },
+                run_mode="paper",
+                decision_contract_v1={"contract_version": "decision_contract_v1"},
+                runtime_context={},
+                reduce_only=True,
+                position_before="1",
+                max_executable_quantity="2",
+                reduce_only_contract_version="execution_reduce_only_v1",
+            )
+        )
+    executor.execute_order.assert_not_called()
+
+
+def test_mock_execution_adapter_rejects_outer_inner_reduce_only_mismatch() -> None:
+    executor = MagicMock()
+    adapter = MockExecutionAdapter(executor=executor)
+    with pytest.raises(ValueError, match="reduce-only adapter flag mismatch"):
+        adapter.execute(
+            ExecutionAdapterRequest(
+                order={
+                    "symbol": "BTCUSDT",
+                    "side": "SELL",
+                    "quantity": 0.4,
+                    "timestamp": 1700000000,
+                    "reduce_only": True,
+                },
+                run_mode="paper",
+                decision_contract_v1={"contract_version": "decision_contract_v1"},
+                runtime_context={},
+                reduce_only=False,
+                position_before="1",
+                max_executable_quantity="0.4",
+                reduce_only_contract_version="execution_reduce_only_v1",
+            )
+        )
+    executor.execute_order.assert_not_called()
 
 
 def test_execution_registry_can_build_mexc_adapter_without_wiring_service() -> None:
