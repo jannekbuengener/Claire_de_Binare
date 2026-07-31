@@ -63,7 +63,7 @@ flowchart TD
 1. **BLUE is the core.** It contains all trading-critical services: Market, Candles, Regime, Allocation, Risk, Execution, DB Writer, and Paper Runner. If BLUE is down, the system cannot function.
 2. **RED is signal + observability.** WebSocket feeds market data in; Signal produces trading signals. Monitoring (Prometheus, Grafana, exporters) lives here. RED can fail without taking down BLUE's core pipeline.
 3. **The Logging Overlay is optional.** Loki, Promtail, and Alertmanager are not part of the standard BLUE/RED start sequence. Activate them explicitly via `-f logging.yml`.
-4. **`compose.blue.yml` and `compose.red.yml` are the canonical compose files.** Legacy files (`base.yml`, `dev.yml`, `tls.yml`) exist but are non-canonical.
+4. **`compose.blue.yml` and `compose.red.yml` are the canonical compose files.** Legacy files (`base.yml`, `dev.yml`) exist but are non-canonical. `tls.yml` is **LEGACY / QUARANTINED** (`RETIRE_QUARANTINE`, #4120) — not an operator start path; do not combine it with BLUE/RED.
 5. **Healthy stack != Live-readiness.** The stack can be fully up and healthy while the system remains in LR NO-GO status.
 
 ## Source of Truth / Primary Repo Sources
