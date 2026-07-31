@@ -1,4 +1,6 @@
 #!/usr/bin/env python3
+# LEGACY — not canonical; do not use as an active entrypoint.
+# Quarantined forensic reference only (#4125). Prefer make docker-up / tools/cdb.ps1.
 """
 LEGACY QUARANTINE — COPILOT SMART STARTUP ORCHESTRATOR
 
