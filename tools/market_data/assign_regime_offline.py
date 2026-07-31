@@ -23,6 +23,65 @@ REGIME_NAME_TO_ID = {
 }
 REGIME_ID_TO_NAME = {value: key for key, value in REGIME_NAME_TO_ID.items()}
 
+# Fail-closed block reasons — mirror services/candles._lookup_regime_id
+# (UNKNOWN/missing/stale → None, never silent TREND / regime_id=0).
+REGIME_BLOCK_WARMUP = "WARMUP_INSUFFICIENT_INDICATORS"
+REGIME_BLOCK_UNKNOWN = "UNKNOWN_OR_UNMAPPED_REGIME"
+REGIME_NAME_UNKNOWN = "UNKNOWN"
+
+
+def regime_name_to_id(regime_name: str | None) -> int | None:
+    """Map a regime name to its canonical integer id (fail-closed).
+
+    Matches ``services/candles/service.py:_lookup_regime_id``:
+    - TREND → 0, RANGE → 1, HIGH_VOL_* → 2, CRISIS → 3
+    - UNKNOWN / missing / unmapped → None (never default to TREND/0)
+    """
+    if regime_name is None:
+        return None
+    key = str(regime_name).strip().upper()
+    if not key or key == REGIME_NAME_UNKNOWN:
+        return None
+    if key.startswith("HIGH_VOL"):
+        return REGIME_NAME_TO_ID["HIGH_VOL_CHAOTIC"]
+    return REGIME_NAME_TO_ID.get(key)
+
+
+def resolve_assigned_regime(
+    *,
+    indicators_ready: bool,
+    current_regime: str | None,
+) -> tuple[int | None, str | None]:
+    """Resolve offline regime_id with explicit UNKNOWN / block-reason semantics.
+
+    Returns ``(regime_id, block_reason)``. ``block_reason`` is set iff
+    ``regime_id`` is None (warmup or unmapped/UNKNOWN name).
+    """
+    if not indicators_ready:
+        return None, REGIME_BLOCK_WARMUP
+    regime_id = regime_name_to_id(current_regime)
+    if regime_id is None:
+        return None, REGIME_BLOCK_UNKNOWN
+    return regime_id, None
+
+
+def annotate_regime_row(
+    candle: dict[str, Any],
+    *,
+    regime_id: int | None,
+    block_reason: str | None,
+) -> dict[str, Any]:
+    """Attach regime_id plus UNKNOWN/block-reason fields for offline outputs."""
+    row = dict(candle)
+    row["regime_id"] = regime_id
+    if block_reason is not None:
+        row["regime_name"] = REGIME_NAME_UNKNOWN
+        row["regime_block_reason"] = block_reason
+    else:
+        row["regime_name"] = REGIME_ID_TO_NAME[int(regime_id)]  # type: ignore[arg-type]
+        row.pop("regime_block_reason", None)
+    return row
+
 
 @dataclass
 class RegimeCarryState:
@@ -166,13 +225,23 @@ def assign_regime_ids_with_state(
                 candidate_regime = None
                 candidate_count = 0
 
-            assigned_regime_id = REGIME_NAME_TO_ID.get(current_regime, 0)
+            assigned_regime_id, block_reason = resolve_assigned_regime(
+                indicators_ready=True,
+                current_regime=current_regime,
+            )
         else:
-            assigned_regime_id = 0
+            assigned_regime_id, block_reason = resolve_assigned_regime(
+                indicators_ready=False,
+                current_regime=current_regime,
+            )
 
-        row = dict(candle)
-        row["regime_id"] = assigned_regime_id
-        derived.append(row)
+        derived.append(
+            annotate_regime_row(
+                candle,
+                regime_id=assigned_regime_id,
+                block_reason=block_reason,
+            )
+        )
 
     return derived, RegimeCarryState(
         current_regime=current_regime,
@@ -251,8 +320,12 @@ def analyze_regime_plausibility(
             "avg_close": avg_close,
             "atr_min": min(atr_values) if atr_values else None,
             "atr_max": max(atr_values) if atr_values else None,
-            "atr_median": sorted(atr_values)[len(atr_values) // 2] if atr_values else None,
-            "adx_median": sorted(adx_values)[len(adx_values) // 2] if adx_values else None,
+            "atr_median": (
+                sorted(atr_values)[len(atr_values) // 2] if atr_values else None
+            ),
+            "adx_median": (
+                sorted(adx_values)[len(adx_values) // 2] if adx_values else None
+            ),
             "atr_above_threshold_pct": atr_above_threshold_pct,
             "thresholds": {
                 "adx_trend": ADX_TREND_THRESHOLD,
@@ -265,11 +338,29 @@ def analyze_regime_plausibility(
 
 
 def regime_distribution(candles: list[dict[str, Any]]) -> dict[str, Any]:
-    counts = Counter(int(row.get("regime_id", 0)) for row in candles)
-    return {
-        str(regime_id): {
-            "regime_name": REGIME_ID_TO_NAME.get(regime_id, "UNKNOWN"),
+    """Summarize regime_id counts without coercing missing → TREND/0."""
+    counts: Counter[int | None] = Counter()
+    for row in candles:
+        rid = row.get("regime_id", None)
+        if rid is None:
+            counts[None] += 1
+        else:
+            counts[int(rid)] += 1
+
+    def _sort_key(item: tuple[int | None, int]) -> tuple[int, int]:
+        regime_id, _count = item
+        # Place UNKNOWN/null first, then numeric ids ascending.
+        return (1, 0) if regime_id is None else (0, int(regime_id))
+
+    result: dict[str, Any] = {}
+    for regime_id, count in sorted(counts.items(), key=_sort_key):
+        key = "null" if regime_id is None else str(regime_id)
+        result[key] = {
+            "regime_name": (
+                REGIME_NAME_UNKNOWN
+                if regime_id is None
+                else REGIME_ID_TO_NAME.get(regime_id, REGIME_NAME_UNKNOWN)
+            ),
             "count": count,
         }
-        for regime_id, count in sorted(counts.items())
-    }
+    return result
