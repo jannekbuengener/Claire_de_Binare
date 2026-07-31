@@ -24,7 +24,10 @@ def test_tls_and_network_overlays_parse() -> None:
 def test_tls_overlay_mounts_local_cert_paths_only() -> None:
     scan = helpers.scan_tls_network_contract()
     assert scan.tls_cert_mount_paths
-    assert all(".cdb_local/tls" in mount or "/tls" in mount for mount in scan.tls_cert_mount_paths)
+    assert all(
+        ".cdb_local/tls" in mount or "/tls" in mount
+        for mount in scan.tls_cert_mount_paths
+    )
 
 
 def test_tls_overlay_touches_expected_services() -> None:

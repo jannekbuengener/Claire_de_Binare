@@ -123,7 +123,9 @@ def classify_port_binding(binding: str) -> PortBindingKind:
     return "public"
 
 
-def extract_port_bindings(compose: dict[str, Any], filename: str) -> list[PortBindingFinding]:
+def extract_port_bindings(
+    compose: dict[str, Any], filename: str
+) -> list[PortBindingFinding]:
     services = compose.get("services") or {}
     findings: list[PortBindingFinding] = []
     if not isinstance(services, dict):
@@ -234,7 +236,9 @@ def scan_tls_quarantine_contract() -> TlsQuarantineScan:
     setup_quarantined = _text_has_quarantine_markers(setup_text[:1200]) and (
         "DO NOT USE" in setup_text.upper()
     )
-    setup_forbidden = any(phrase in setup_text for phrase in FORBIDDEN_ACTIVE_START_PHRASES)
+    setup_forbidden = any(
+        phrase in setup_text for phrase in FORBIDDEN_ACTIVE_START_PHRASES
+    )
 
     runbook_ok = (
         "knowledge/operations/DOCKER_STACK_RUNBOOK.md" in setup_text
@@ -295,7 +299,11 @@ def scan_tls_network_contract() -> TlsNetworkScan:
     network_overlay = load_overlay_yaml(NETWORK_PROD_OVERLAY_FILE)
 
     tls_services = tuple(
-        sorted(name for name in (tls_overlay.get("services") or {}) if name.startswith("cdb_"))
+        sorted(
+            name
+            for name in (tls_overlay.get("services") or {})
+            if name.startswith("cdb_")
+        )
     )
     cert_mounts = tuple(extract_tls_cert_mount_paths(tls_overlay))
 
@@ -328,7 +336,9 @@ def scan_tls_network_contract() -> TlsNetworkScan:
         if b.kind in {"public", "unqualified"}
     )
 
-    cert_utils = tuple(classify_cert_utility_script(path) for path in CERT_UTILITY_SCRIPTS)
+    cert_utils = tuple(
+        classify_cert_utility_script(path) for path in CERT_UTILITY_SCRIPTS
+    )
 
     prometheus_text = (
         REPO_ROOT / "infrastructure" / "monitoring" / "prometheus.yml"
