@@ -1,7 +1,7 @@
 # CDB Local CI — GitHub App Cutover (Phase B/C Operator Contract)
 
-Status: Phase-B readiness (#4170) — credential-free preflight + operator sequence  
-Authority: Operator runbook for the later App-bound Check Run cutover  
+Status: Phase-B readiness (#4170) — credential-free preflight + operator sequence
+Authority: Operator runbook for the later App-bound Check Run cutover
 Does **not** install a GitHub App, mutate Branch Protection, publish Check Runs,
 or close #4170.
 
