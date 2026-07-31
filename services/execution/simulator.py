@@ -5,10 +5,15 @@ including:
 - Slippage (base + volatility-adjusted + depth impact)
 - Trading fees (maker/taker)
 - Partial fills
-- Funding fees
 - Order book depth impact
 
 Designed for backtesting and paper trading to minimize backtest bias.
+
+Parked surfaces (#4190): ``simulate_limit_order`` and ``calculate_funding_fees``
+are retired from the economics path. No replay/ARVP/paper runner calls them and
+neither has a proven input, so their results are marked
+``parked_not_economics_billable`` and must not feed
+``core.replay.execution_economics_v1``.
 
 References:
 - Almgren & Chriss (2000): "Optimal Execution of Portfolio Transactions"
@@ -24,6 +29,21 @@ from typing import Dict, Optional
 
 logger = logging.getLogger(__name__)
 
+# Wire-or-retire verdict for the surfaces inventoried by #4150 (resolved #4190).
+# Both are retired from the economics path: no replay/ARVP/paper runner calls
+# them and neither has a proven input, so their numbers must never reach
+# core.replay.execution_economics_v1.reconcile_gross_to_net.
+PARKED_NOT_ECONOMICS_BILLABLE = "parked_not_economics_billable"
+LIMIT_ORDER_MODEL_STATUS = PARKED_NOT_ECONOMICS_BILLABLE
+FUNDING_MODEL_STATUS = PARKED_NOT_ECONOMICS_BILLABLE
+FUNDING_RATE_SOURCE = "synthetic_default"
+
+ORDER_TYPE_MARKET = "market"
+ORDER_TYPE_LIMIT = "limit"
+
+FEE_ROLE_TAKER = "taker"
+FEE_ROLE_MAKER_ASSUMED_UNPROVEN = "maker_assumed_unproven"
+
 
 @dataclass
 class ExecutionResult:
@@ -38,6 +58,9 @@ class ExecutionResult:
         fill_ratio: Ratio of filled to requested size (0.0-1.0).
         execution_posture: Execution posture from scenario (baseline/pessimistic/etc).
         notes: Optional execution notes.
+        order_type: "market" or "limit".
+        fee_role: Which side of the fee schedule produced ``fees``.
+        economics_billable: False when the result must not feed gross-to-net.
     """
 
     filled_size: float
@@ -48,6 +71,9 @@ class ExecutionResult:
     fill_ratio: float
     execution_posture: Optional[str] = None
     notes: Optional[str] = None
+    order_type: str = ORDER_TYPE_MARKET
+    fee_role: str = FEE_ROLE_TAKER
+    economics_billable: bool = True
 
 
 class ExecutionSimulator:
@@ -177,6 +203,9 @@ class ExecutionSimulator:
             fill_ratio=fill_ratio,
             execution_posture=self.execution_posture,
             notes=f"Market order {side} with {slippage_bps:.1f}bps slippage",
+            order_type=ORDER_TYPE_MARKET,
+            fee_role=FEE_ROLE_TAKER,
+            economics_billable=True,
         )
 
     def simulate_limit_order(
@@ -187,11 +216,23 @@ class ExecutionSimulator:
         current_price: float,
         time_in_force: str = "GTC",
     ) -> ExecutionResult:
-        """Simulate limit order execution (simplified model).
+        """PARKED research stub for limit orders — not economics-billable (#4190).
 
-        For limit orders, we use a simplified model:
-        - If limit price is better than market: no fill (too aggressive)
-        - If limit price is at or worse than market: fill as maker
+        Status: ``LIMIT_ORDER_MODEL_STATUS``. Retired from the economics path:
+
+        1. No replay, ARVP or paper runner calls this method.
+        2. Its fill trigger is marketable — a buy limit at or above the market
+           crosses the book — yet it books the fill at the **maker** rate with
+           zero slippage. Real venues bill a marketable limit as a taker fill,
+           so the maker fee here is an unproven assumption, not a measurement.
+
+        Results are therefore returned with ``economics_billable=False`` and
+        ``fee_role=FEE_ROLE_MAKER_ASSUMED_UNPROVEN``. They must not be passed
+        into ``core.replay.execution_economics_v1.reconcile_gross_to_net``,
+        which rejects maker fees unless a proven maker fill is declared.
+
+        Wiring this for real requires a queue-position / maker-fill model plus
+        venue evidence; that is out of scope here.
 
         Args:
             side: Order side ("buy" or "sell").
@@ -201,13 +242,7 @@ class ExecutionSimulator:
             time_in_force: Time in force (default "GTC").
 
         Returns:
-            ExecutionResult with fill details.
-
-        Example:
-            >>> sim = ExecutionSimulator()
-            >>> result = sim.simulate_limit_order("buy", 0.5, 49000, 50000)
-            >>> result.filled_size
-            0.5  # Fill at limit price (maker fee)
+            ExecutionResult with ``economics_billable=False``.
         """
         notional = size * limit_price
 
@@ -230,11 +265,11 @@ class ExecutionSimulator:
                 avg_fill_price = 0.0
 
         if filled:
-            # Filled as maker
+            # Assumed maker fill; see the parked-model warning in the docstring.
             fees = notional * self.maker_fee
             logger.info(
-                f"Limit Order: {side} {size:.4f} @ {avg_fill_price:.2f} "
-                f"(maker fee={fees:.2f})"
+                f"Limit Order [{LIMIT_ORDER_MODEL_STATUS}]: {side} {size:.4f} "
+                f"@ {avg_fill_price:.2f} (assumed maker fee={fees:.2f})"
             )
             return ExecutionResult(
                 filled_size=size,
@@ -243,12 +278,20 @@ class ExecutionSimulator:
                 fees=fees,
                 partial_fill=False,
                 fill_ratio=1.0,
-                notes=f"Limit order {side} filled as maker",
+                notes=(
+                    f"[{LIMIT_ORDER_MODEL_STATUS}] Limit order {side} filled at "
+                    "an assumed maker rate; a marketable limit is a taker fill "
+                    "on a real venue"
+                ),
+                order_type=ORDER_TYPE_LIMIT,
+                fee_role=FEE_ROLE_MAKER_ASSUMED_UNPROVEN,
+                economics_billable=False,
             )
         else:
             # Not filled
             logger.info(
-                f"Limit Order: {side} {size:.4f} @ {limit_price:.2f} NOT FILLED"
+                f"Limit Order [{LIMIT_ORDER_MODEL_STATUS}]: {side} {size:.4f} "
+                f"@ {limit_price:.2f} NOT FILLED"
             )
             return ExecutionResult(
                 filled_size=0.0,
@@ -257,7 +300,13 @@ class ExecutionSimulator:
                 fees=0.0,
                 partial_fill=False,
                 fill_ratio=0.0,
-                notes=f"Limit order {side} not filled (price not reached)",
+                notes=(
+                    f"[{LIMIT_ORDER_MODEL_STATUS}] Limit order {side} not filled "
+                    "(price not reached)"
+                ),
+                order_type=ORDER_TYPE_LIMIT,
+                fee_role=FEE_ROLE_MAKER_ASSUMED_UNPROVEN,
+                economics_billable=False,
             )
 
     def calculate_funding_fees(
@@ -267,30 +316,39 @@ class ExecutionSimulator:
         funding_rate: Optional[float] = None,
         hours_held: float = 8.0,
     ) -> float:
-        """Calculate funding fees for a perpetual position.
+        """PARKED funding helper — not economics-billable by default (#4190).
+
+        Status: ``FUNDING_MODEL_STATUS``. The arithmetic is sound, but the
+        active replay/paper path cannot bill it:
+
+        1. Replay datasets are OHLCV only; no funding-rate series exists in the
+           repository, so ``self.funding_rate`` is a synthetic default whose
+           provenance is ``FUNDING_RATE_SOURCE``.
+        2. No runner tracks per-position holding duration across settlement
+           boundaries, so ``hours_held`` has no measured source either.
+
+        ``core.replay.execution_economics_v1`` keeps
+        ``funding_cost_when_active`` at ``inactive_not_wired`` and refuses to
+        activate it from a synthetic rate source. Use
+        ``execution_economics_v1.funding_cost_from_rate`` with a sourced rate
+        once a funding-rate series and holding durations exist.
 
         Args:
             position_size: Position size in base currency.
             position_value: Position value in quote currency.
-            funding_rate: Funding rate (default from config).
+            funding_rate: Funding rate (default from config, synthetic).
             hours_held: Hours position was held (default 8h = 1 settlement).
 
         Returns:
             Funding fee in quote currency. Positive = pay, Negative = receive.
-
-        Example:
-            >>> sim = ExecutionSimulator()
-            >>> fee = sim.calculate_funding_fees(0.1, 5000, 0.0001, 8.0)
-            >>> fee
-            0.5  # Pay 0.5 USDT per 8h settlement
         """
         rate = funding_rate if funding_rate is not None else self.funding_rate
         settlement_periods = hours_held / 8.0
         fee = position_value * rate * settlement_periods
 
         logger.debug(
-            f"Funding Fee: value={position_value:.0f} rate={rate:.6f} "
-            f"hours={hours_held:.1f} → fee={fee:.4f}"
+            f"Funding Fee [{FUNDING_MODEL_STATUS}]: value={position_value:.0f} "
+            f"rate={rate:.6f} hours={hours_held:.1f} → fee={fee:.4f}"
         )
 
         return fee
