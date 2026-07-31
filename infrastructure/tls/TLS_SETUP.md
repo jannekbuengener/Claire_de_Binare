@@ -1,279 +1,117 @@
-# TLS/SSL Setup Guide
+# TLS/SSL Setup Guide — LEGACY / QUARANTINED
 
-**Issue:** #103
-**Status:** Implemented
-**Last Updated:** 2025-12-28
-
----
-
-## Overview
-
-This guide documents the TLS/SSL implementation for Claire de Binare infrastructure.
-
-### What's Protected
-
-| Component | TLS Status | Port | Notes |
-|-----------|------------|------|-------|
-| Redis | ✅ Enabled | 6379 | TLS-only mode (port 0 disabled) |
-| PostgreSQL | ✅ Enabled | 5432 | SSL required for network connections |
-| Service-to-Service | ✅ Enabled | - | Via Redis/PostgreSQL TLS |
+**Issue (original):** #103
+**Issue (decision):** #4120
+**Status:** LEGACY / QUARANTINED — DO NOT USE
+**Decision:** `RETIRE_QUARANTINE`
+**Last Updated:** 2026-07-31
 
 ---
 
-## Quick Start
+## Operator notice (read first)
 
-### 1. Generate Certificates
+`infrastructure/compose/tls.yml` is **not** part of the canonical BLUE+RED
+runtime. Do **not** start the stack with the TLS overlay.
+
+Canonical operator path:
 
 ```bash
-# Navigate to infrastructure directory
-cd infrastructure/tls
-
-# Generate self-signed certificates
-chmod +x generate_certs.sh
-./generate_certs.sh ../../../.cdb_local/tls
+docker compose -f infrastructure/compose/compose.blue.yml up -d
+docker compose -f infrastructure/compose/compose.red.yml up -d
+# or: .\tools\cdb.ps1 runtime up
 ```
 
-This creates:
-- `ca.crt` / `ca.key` — Certificate Authority
-- `redis.crt` / `redis.key` — Redis server certificate
-- `postgres.crt` / `postgres.key` — PostgreSQL server certificate
-- `client.crt` / `client.key` — Client certificate for services
-- `redis.dh` — Diffie-Hellman parameters
+Secrets canon remains `${SECRETS_PATH}` with default
+`~/Documents/.secrets/.cdb`. Historical `.cdb_local/tls` paths in this guide
+and in `tls.yml` are **not** the secrets canon and are not a supported
+operator workflow.
 
-### 2. Start Stack with TLS
+The PowerShell `-TLS` switch in `infrastructure/scripts/stack_up.ps1` is
+fail-closed legacy compatibility: it refuses to attach `tls.yml`.
 
-```powershell
-# Kanonisch: BLUE + TLS-Overlay, dann RED
+This document is retained as a **historical reference** only. It must not be
+linked from active env/onboarding surfaces as an executable start guide.
+
+---
+
+## Historical overview (archived)
+
+This guide originally documented an experimental TLS/SSL overlay for Redis and
+PostgreSQL (Issue #103). That overlay was never reconciled to the BLUE/RED and
+`${SECRETS_PATH}` secrets canon and is now quarantined (#4120).
+
+### What the overlay historically attempted
+
+| Component | Intent | Port |
+|-----------|--------|------|
+| Redis | TLS-only mode | 6379 |
+| PostgreSQL | SSL for network connections | 5432 |
+| Service-to-Service | Via Redis/PostgreSQL TLS | - |
+
+---
+
+## Historical certificate layout (do not generate here)
+
+Certificate generation and rotation instructions are intentionally **not**
+reproduced as an active procedure in this quarantined guide. Do not run
+`generate_certs.sh` as part of a normal operator path from this document.
+
+Historical storage path referenced by the overlay (non-canon):
+
+```text
+../.cdb_local/tls/   # gitignored; NOT ${SECRETS_PATH}
+```
+
+---
+
+## Historical compose overlay shape (do not start)
+
+The quarantined `tls.yml` historically overrode Redis/PostgreSQL commands and
+mounted certificates from `.cdb_local/tls`, plus client env such as
+`REDIS_TLS=true` and `POSTGRES_SSLMODE=verify-ca`.
+
+Do **not** run:
+
+```text
 docker compose -f infrastructure/compose/compose.blue.yml -f infrastructure/compose/tls.yml up -d
-docker compose -f infrastructure/compose/compose.red.yml up -d
-
-# Mit Network-Isolation zusätzlich:
-docker compose -f infrastructure/compose/compose.blue.yml -f infrastructure/compose/tls.yml -f infrastructure/compose/network-prod.yml up -d
-docker compose -f infrastructure/compose/compose.red.yml up -d
-```
-
-### 3. Verify TLS
-
-```bash
-# Check Redis TLS
-docker exec cdb_redis redis-cli --tls \
-    --cert /tls/client.crt \
-    --key /tls/client.key \
-    --cacert /tls/ca.crt \
-    -a "$REDIS_PASSWORD" \
-    INFO server | grep tcp_port
-
-# Check PostgreSQL SSL
-docker exec cdb_postgres psql -U claire_user -d claire_de_binare \
-    -c "SHOW ssl;"
 ```
 
 ---
 
-## Architecture
+## Active SSL-related runtime knobs (without overlay)
 
-### Certificate Chain
-
-```
-CA (ca.crt)
-├── Redis Server (redis.crt)
-├── PostgreSQL Server (postgres.crt)
-└── Client (client.crt) ← Used by all services
-```
-
-### Compose Overlay
-
-The `tls.yml` overlay adds:
-
-1. **Redis Configuration**
-   - `--tls-port 6379` (TLS on main port)
-   - `--port 0` (disable non-TLS)
-   - Certificate mounting
-
-2. **PostgreSQL Configuration**
-   - SSL init script
-   - `hostssl` in pg_hba.conf
-   - Certificate mounting
-
-3. **Service Environment**
-   - `REDIS_TLS=true`
-   - `POSTGRES_SSLMODE=verify-ca`
-   - Certificate volume mounts
+Service clients may still honor env knobs such as `POSTGRES_SSLMODE` via
+[`core/utils/postgres_client.py`](../../core/utils/postgres_client.py). That is
+independent of the quarantined compose overlay. Default operator stacks do not
+require `tls.yml`.
 
 ---
 
-## Configuration Reference
+## Files reference (quarantine map)
 
-### Environment Variables (Services)
-
-```bash
-# Redis TLS
-REDIS_TLS=true
-REDIS_CA_CERT=/tls/ca.crt
-REDIS_CERT=/tls/client.crt      # Optional (mTLS)
-REDIS_KEY=/tls/client.key       # Optional (mTLS)
-
-# PostgreSQL SSL
-POSTGRES_SSLMODE=verify-ca       # or verify-full
-POSTGRES_SSLROOTCERT=/tls/ca.crt
-POSTGRES_SSLCERT=/tls/client.crt # Optional
-POSTGRES_SSLKEY=/tls/client.key  # Optional
-```
-
-### SSL Modes (PostgreSQL)
-
-| Mode | Description | Recommended |
-|------|-------------|-------------|
-| `disable` | No SSL | ❌ Never |
-| `allow` | Try SSL, fallback | ❌ No |
-| `prefer` | Try SSL, fallback | ⚠️ Dev only |
-| `require` | Require SSL, no verification | ⚠️ Internal only |
-| `verify-ca` | Require SSL + CA verification | ✅ Production |
-| `verify-full` | Above + hostname verification | ✅ External |
-
----
-
-## Client Code Integration
-
-### Redis (Python)
-
-```python
-from core.utils.redis_client import create_redis_client
-
-# Automatic TLS based on REDIS_TLS env var
-client = create_redis_client()
-
-# Explicit TLS
-client = create_redis_client(
-    host="cdb_redis",
-    use_tls=True,
-    ssl_ca_certs="/tls/ca.crt"
-)
-```
-
-### PostgreSQL (Python)
-
-```python
-from core.utils.postgres_client import create_postgres_connection
-
-# Automatic SSL based on POSTGRES_SSLMODE env var
-conn = create_postgres_connection()
-
-# Explicit SSL
-conn = create_postgres_connection(
-    host="cdb_postgres",
-    sslmode="verify-ca",
-    sslrootcert="/tls/ca.crt"
-)
-```
-
----
-
-## Certificate Management
-
-### Development (Self-Signed)
-
-- Valid for 365 days
-- Regenerate with `generate_certs.sh`
-- Stored in `../.cdb_local/tls/`
-
-### Production (Recommended)
-
-1. **Let's Encrypt** — For external-facing services
-2. **HashiCorp Vault** — For internal PKI
-3. **AWS ACM / GCP Certificate Manager** — Cloud environments
-
-### Rotation
-
-```bash
-# 1. Generate new certificates
-./generate_certs.sh ../../../.cdb_local/tls_new
-
-# 2. Stop services
-docker compose down
-
-# 3. Replace certificates
-mv ../.cdb_local/tls ../.cdb_local/tls_backup
-mv ../.cdb_local/tls_new ../.cdb_local/tls
-
-# 4. Restart with TLS
-docker compose -f infrastructure/compose/compose.blue.yml -f infrastructure/compose/tls.yml up -d
-docker compose -f infrastructure/compose/compose.red.yml up -d
-```
-
----
-
-## Troubleshooting
-
-### Redis Connection Refused
-
-```
-Error: Connection refused (TLS handshake failed)
-```
-
-**Fix:** Ensure `REDIS_TLS=true` is set and CA cert path is correct.
-
-### PostgreSQL SSL Required
-
-```
-FATAL: no pg_hba.conf entry for host ... SSL off
-```
-
-**Fix:** Use `sslmode=require` or higher in connection string.
-
-### Certificate Expired
-
-```
-Error: certificate has expired
-```
-
-**Fix:** Regenerate certificates with `generate_certs.sh`.
-
----
-
-## Security Notes
-
-1. **Self-signed certs are for development only**
-   - Use proper CA for production
-   - Consider automated rotation
-
-2. **Protect private keys**
-   - Keys have 600 permissions
-   - Never commit to git
-   - Use Docker secrets in production
-
-3. **Verify connections**
-   - Use `verify-ca` or `verify-full` for PostgreSQL
-   - Enable mTLS for mutual authentication
-
----
-
-## Files Reference
-
-```
+```text
 infrastructure/
 ├── tls/
-│   ├── generate_certs.sh      # Certificate generator
-│   ├── postgres_ssl_init.sh   # PostgreSQL SSL init script
-│   └── TLS_SETUP.md           # This documentation
+│   ├── generate_certs.sh      # utility; not an operator start path
+│   ├── postgres_ssl_init.sh   # historical init helper
+│   └── TLS_SETUP.md           # this quarantined documentation
 └── compose/
-    └── tls.yml                # TLS overlay for docker-compose
+    └── tls.yml                # LEGACY / QUARANTINED overlay
 
-../.cdb_local/tls/             # Generated certificates (gitignored)
-    ├── ca.crt / ca.key
-    ├── redis.crt / redis.key / redis.dh
-    ├── postgres.crt / postgres.key
-    └── client.crt / client.key
+# Historical non-canon host path (do not treat as secrets SSOT):
+#   ../.cdb_local/tls/
 
 core/utils/
-    ├── redis_client.py        # TLS-aware Redis client factory
-    └── postgres_client.py     # SSL-aware PostgreSQL client factory
+    ├── redis_client.py        # TLS-aware Redis client factory (env-driven)
+    └── postgres_client.py     # SSL-aware PostgreSQL client factory (env-driven)
 ```
 
 ---
 
 ## See Also
 
-- [DOCKER_STACK_RUNBOOK.md](../../DOCKER_STACK_RUNBOOK.md) — Stack operations
-- [COMPOSE_LAYERS.md](../compose/COMPOSE_LAYERS.md) — Compose overlay architecture
-- [LEGACY_FILES.md](../../LEGACY_FILES.md) — Migration from legacy setup
+- [`knowledge/operations/DOCKER_STACK_RUNBOOK.md`](../../knowledge/operations/DOCKER_STACK_RUNBOOK.md) — Stack operations (canonical)
+- [`infrastructure/compose/COMPOSE_LAYERS.md`](../compose/COMPOSE_LAYERS.md) — Compose overlay architecture
+- [`LEGACY_FILES.md`](../../LEGACY_FILES.md) — Legacy file map
+- [`docs/onboarding/core-eventflows/blue_red_runtime_topology.md`](../../docs/onboarding/core-eventflows/blue_red_runtime_topology.md) — BLUE/RED topology
+- [`docs/env/index.md`](../../docs/env/index.md) — Env / secrets canon pointers
