@@ -290,6 +290,10 @@ def validate_compiler_input_completeness(
     if source_evidence_refs is None or len(source_evidence_refs) == 0:
         reasons.append("missing SourceEvidence references")
         return "NEEDS_RESEARCH", reasons
+    sort_errors = validate_source_evidence_refs_sorted(source_evidence_refs)
+    if sort_errors:
+        # Unsorted refs break deterministic hashing (G-03) — BLOCKED, not inventable.
+        return "BLOCKED", sort_errors
     if candidate_draft is None:
         return "BLOCKED", ["missing candidate draft fields"]
 
@@ -313,6 +317,93 @@ def validate_compiler_input_completeness(
             return "NEEDS_RESEARCH", reasons
         return "BLOCKED", reasons
     return "READY", []
+
+
+def _non_empty_id(value: Any, *, prefix: str) -> bool:
+    return (
+        isinstance(value, str) and value.startswith(prefix) and len(value) > len(prefix)
+    )
+
+
+def validate_registry_entry_status_bindings(entry: Mapping[str, Any]) -> list[str]:
+    """Fail-closed status bindings for registry entries (G-01/G-02/G-04)."""
+    errors: list[str] = []
+    status = entry.get("status")
+    if status == "VALIDATING":
+        if not _non_empty_id(entry.get("validation_manifest_id"), prefix="vm-"):
+            errors.append("VALIDATING requires non-null validation_manifest_id (vm-*)")
+    elif status == "EVIDENCE_READY":
+        if not _non_empty_id(entry.get("run_id"), prefix="run-"):
+            errors.append("EVIDENCE_READY requires non-null run_id (run-*)")
+        if not _non_empty_id(entry.get("evidence_id"), prefix="ce-"):
+            errors.append("EVIDENCE_READY requires non-null evidence_id (ce-*)")
+    elif status == "PAPER_CANDIDATE":
+        if not _non_empty_id(entry.get("run_id"), prefix="run-"):
+            errors.append("PAPER_CANDIDATE entry requires non-null run_id (run-*)")
+        if not _non_empty_id(entry.get("evidence_id"), prefix="ce-"):
+            errors.append("PAPER_CANDIDATE entry requires non-null evidence_id (ce-*)")
+        if not _non_empty_id(entry.get("decision_id"), prefix="dr-"):
+            errors.append("PAPER_CANDIDATE entry requires non-null decision_id (dr-*)")
+    return errors
+
+
+def validate_transition_status_bindings(transition: Mapping[str, Any]) -> list[str]:
+    """Fail-closed to_status bindings for transitions (G-01/G-02)."""
+    errors: list[str] = []
+    to_status = transition.get("to_status")
+    if to_status == "VALIDATING":
+        if not _non_empty_id(transition.get("validation_manifest_id"), prefix="vm-"):
+            errors.append(
+                "to_status=VALIDATING requires non-null validation_manifest_id"
+            )
+    elif to_status == "EVIDENCE_READY":
+        if not _non_empty_id(transition.get("run_id"), prefix="run-"):
+            errors.append("to_status=EVIDENCE_READY requires non-null run_id")
+        if not _non_empty_id(transition.get("evidence_id"), prefix="ce-"):
+            errors.append("to_status=EVIDENCE_READY requires non-null evidence_id")
+        evidence_hash = transition.get("evidence_hash")
+        if not isinstance(evidence_hash, str) or not SHA256_RE.fullmatch(evidence_hash):
+            errors.append(
+                "to_status=EVIDENCE_READY requires evidence_hash (^sha256:[a-f0-9]{64}$)"
+            )
+    elif to_status == "PAPER_CANDIDATE":
+        if not _non_empty_id(transition.get("run_id"), prefix="run-"):
+            errors.append("to_status=PAPER_CANDIDATE requires non-null run_id")
+        if not _non_empty_id(transition.get("evidence_id"), prefix="ce-"):
+            errors.append("to_status=PAPER_CANDIDATE requires non-null evidence_id")
+        evidence_hash = transition.get("evidence_hash")
+        if not isinstance(evidence_hash, str) or not SHA256_RE.fullmatch(evidence_hash):
+            errors.append(
+                "to_status=PAPER_CANDIDATE requires evidence_hash (^sha256:[a-f0-9]{64}$)"
+            )
+    return errors
+
+
+def validate_source_evidence_refs_sorted(
+    source_evidence_refs: Sequence[Mapping[str, Any]] | None,
+) -> list[str]:
+    """Require lexicographic ascending evidence_id order (G-03).
+
+    Unsorted refs must be rejected, not silently accepted with a different hash.
+    """
+    if source_evidence_refs is None:
+        return ["source_evidence_refs required"]
+    if not isinstance(source_evidence_refs, Sequence):
+        return ["source_evidence_refs must be a sequence"]
+    ids: list[str] = []
+    for idx, row in enumerate(source_evidence_refs):
+        if not isinstance(row, Mapping):
+            return [f"source_evidence_refs[{idx}] must be an object"]
+        evidence_id = row.get("evidence_id")
+        if not isinstance(evidence_id, str) or not evidence_id:
+            return [f"source_evidence_refs[{idx}].evidence_id required"]
+        ids.append(evidence_id)
+    if ids != sorted(ids):
+        return [
+            "source_evidence_refs must be sorted by evidence_id ascending "
+            f"(got {ids!r}, expected {sorted(ids)!r})"
+        ]
+    return []
 
 
 def assert_valid(errors: Sequence[str], *, context: str) -> None:
