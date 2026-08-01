@@ -1,0 +1,803 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "title": "CDB Research Validation Pilot Spec v1",
+  "description": "Fail-closed SPECIFICATION-ONLY pilot contract for three Research-to-Hermes strategy candidates (#4272). Describes a future end-to-end run completely but does not execute it. No invented PASS evidence, Decision verdicts, provider responses, or fetched dataset hashes. Synthetic planned fixtures only.",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "schema_version",
+    "pilot_id",
+    "created_at",
+    "updated_at",
+    "spec_status",
+    "execution_status",
+    "validation_profile",
+    "contract_set",
+    "candidate_specs",
+    "common_gate_bindings",
+    "data_and_time_policy",
+    "execution_economics_policy",
+    "scenario_specs",
+    "expected_artifacts",
+    "comparative_summary_spec",
+    "visualization_policy",
+    "authority_boundaries",
+    "safety_boundaries",
+    "official_external_docs_evidence",
+    "limitations"
+  ],
+  "properties": {
+    "schema_version": {
+      "const": "cdb.research_validation_pilot.v1"
+    },
+    "pilot_id": {
+      "type": "string",
+      "pattern": "^rvp-[a-z0-9][a-z0-9-]{2,80}$"
+    },
+    "created_at": {
+      "type": "string",
+      "format": "date-time"
+    },
+    "updated_at": {
+      "type": "string",
+      "format": "date-time"
+    },
+    "spec_status": {
+      "type": "string",
+      "enum": ["PLANNED", "SUPERSEDED", "ARCHIVED"]
+    },
+    "execution_status": {
+      "const": "SPECIFICATION_ONLY"
+    },
+    "validation_profile": {
+      "const": "validation-research-v1"
+    },
+    "contract_set": {
+      "$ref": "#/definitions/ContractSet"
+    },
+    "candidate_specs": {
+      "type": "array",
+      "minItems": 3,
+      "maxItems": 3,
+      "items": {
+        "$ref": "#/definitions/CandidateSpec"
+      }
+    },
+    "common_gate_bindings": {
+      "$ref": "#/definitions/CommonGateBindings"
+    },
+    "data_and_time_policy": {
+      "$ref": "#/definitions/DataAndTimePolicy"
+    },
+    "execution_economics_policy": {
+      "$ref": "#/definitions/ExecutionEconomicsPolicy"
+    },
+    "scenario_specs": {
+      "type": "array",
+      "minItems": 2,
+      "items": {
+        "$ref": "#/definitions/ScenarioSpec"
+      }
+    },
+    "expected_artifacts": {
+      "type": "array",
+      "minItems": 1,
+      "items": {
+        "$ref": "#/definitions/ExpectedArtifact"
+      }
+    },
+    "comparative_summary_spec": {
+      "$ref": "#/definitions/ComparativeSummarySpec"
+    },
+    "visualization_policy": {
+      "$ref": "#/definitions/VisualizationPolicy"
+    },
+    "authority_boundaries": {
+      "$ref": "#/definitions/AuthorityBoundaries"
+    },
+    "safety_boundaries": {
+      "$ref": "#/definitions/SafetyBoundaries"
+    },
+    "official_external_docs_evidence": {
+      "type": "array",
+      "minItems": 1,
+      "items": {
+        "$ref": "#/definitions/ExternalDocEvidence"
+      }
+    },
+    "limitations": {
+      "type": "array",
+      "minItems": 1,
+      "items": {
+        "type": "string",
+        "minLength": 1
+      }
+    }
+  },
+  "allOf": [
+    {
+      "if": {
+        "properties": {
+          "execution_status": {
+            "const": "SPECIFICATION_ONLY"
+          }
+        },
+        "required": ["execution_status"]
+      },
+      "then": {
+        "properties": {
+          "spec_status": {
+            "const": "PLANNED"
+          }
+        }
+      }
+    }
+  ],
+  "definitions": {
+    "Sha256OrNull": {
+      "oneOf": [
+        {
+          "type": "string",
+          "pattern": "^sha256:[a-f0-9]{64}$"
+        },
+        {
+          "type": "null"
+        }
+      ]
+    },
+    "ArtifactStatus": {
+      "type": "string",
+      "enum": ["PLANNED", "NOT_RUN", "PENDING_BINDING"]
+    },
+    "SourceType": {
+      "type": "string",
+      "enum": [
+        "binance",
+        "coinmarketcap",
+        "token_terminal",
+        "bigdata_com",
+        "gainium",
+        "hugging_face"
+      ]
+    },
+    "CandidateKey": {
+      "type": "string",
+      "enum": [
+        "breakout",
+        "liquidity_or_volume_filter",
+        "on_chain_regime_filter"
+      ]
+    },
+    "ContractSet": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "research_brief",
+        "source_evidence",
+        "strategy_candidate",
+        "validation_manifest",
+        "research_security_gate",
+        "hermes_orchestration_run",
+        "candidate_evidence",
+        "decision_record",
+        "candidate_registry_entry",
+        "candidate_transition",
+        "execution_economics_gross_to_net"
+      ],
+      "properties": {
+        "research_brief": { "const": "cdb.research_brief.v1" },
+        "source_evidence": { "const": "cdb.source_evidence.v1" },
+        "strategy_candidate": { "const": "cdb.strategy_candidate.v1" },
+        "validation_manifest": { "const": "cdb.validation_manifest.v1" },
+        "research_security_gate": { "const": "cdb.research_security_gate.v1" },
+        "hermes_orchestration_run": {
+          "const": "cdb.hermes_orchestration_run.v1"
+        },
+        "candidate_evidence": { "const": "cdb.candidate_evidence.v1" },
+        "decision_record": { "const": "cdb.decision_record.v1" },
+        "candidate_registry_entry": {
+          "const": "cdb.candidate_registry_entry.v1"
+        },
+        "candidate_transition": { "const": "cdb.candidate_transition.v1" },
+        "execution_economics_gross_to_net": {
+          "const": "execution_economics_gross_to_net.v1"
+        }
+      }
+    },
+    "CommonGateBindings": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "same_contract_versions_for_all_candidates",
+        "same_validation_profile_for_all_candidates",
+        "same_security_and_integrity_gates",
+        "source_specific_gate_bypass_allowed",
+        "source_adapters_have_no_validation_authority",
+        "hermes_has_no_validation_authority",
+        "no_automatic_candidate_promotion",
+        "research_security_gate_schema",
+        "hermes_orchestration_run_schema"
+      ],
+      "properties": {
+        "same_contract_versions_for_all_candidates": { "const": true },
+        "same_validation_profile_for_all_candidates": { "const": true },
+        "same_security_and_integrity_gates": { "const": true },
+        "source_specific_gate_bypass_allowed": { "const": false },
+        "source_adapters_have_no_validation_authority": { "const": true },
+        "hermes_has_no_validation_authority": { "const": true },
+        "no_automatic_candidate_promotion": { "const": true },
+        "research_security_gate_schema": {
+          "const": "cdb.research_security_gate.v1"
+        },
+        "hermes_orchestration_run_schema": {
+          "const": "cdb.hermes_orchestration_run.v1"
+        }
+      }
+    },
+    "DataAndTimePolicy": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "timezone",
+        "research_cutoff_field",
+        "data_cutoff_field",
+        "run_start_field",
+        "decision_time_field",
+        "forbid_as_of_after_decision_time",
+        "provider_response_provenance_separate_from_source_evidence",
+        "credentials_forbidden_in_artifacts",
+        "fail_closed_data_classes",
+        "partial_or_missing_source_cannot_be_source_pass",
+        "token_terminal_nonempty_errors_must_be_classified",
+        "bigdata_outputs_are_untrusted_input",
+        "bigdata_cannot_replace_numeric_validation_evidence"
+      ],
+      "properties": {
+        "timezone": { "const": "UTC" },
+        "research_cutoff_field": { "const": "research_cutoff" },
+        "data_cutoff_field": { "const": "data_cutoff" },
+        "run_start_field": { "const": "run_start" },
+        "decision_time_field": { "const": "decision_time" },
+        "forbid_as_of_after_decision_time": { "const": true },
+        "provider_response_provenance_separate_from_source_evidence": {
+          "const": true
+        },
+        "credentials_forbidden_in_artifacts": { "const": true },
+        "fail_closed_data_classes": {
+          "type": "array",
+          "minItems": 5,
+          "uniqueItems": true,
+          "items": {
+            "type": "string",
+            "enum": [
+              "missing",
+              "partial",
+              "delayed",
+              "revised",
+              "unavailable"
+            ]
+          }
+        },
+        "partial_or_missing_source_cannot_be_source_pass": { "const": true },
+        "token_terminal_nonempty_errors_must_be_classified": { "const": true },
+        "bigdata_outputs_are_untrusted_input": { "const": true },
+        "bigdata_cannot_replace_numeric_validation_evidence": { "const": true }
+      }
+    },
+    "ExecutionEconomicsPolicy": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "reuse_ssot",
+        "reuse_ssot_path",
+        "required_components",
+        "baseline_rule",
+        "pessimistic_rule",
+        "no_invented_results",
+        "no_silent_zero_costs"
+      ],
+      "properties": {
+        "reuse_ssot": {
+          "const": "execution_economics_gross_to_net.v1"
+        },
+        "reuse_ssot_path": {
+          "const": "docs/contracts/EXECUTION_ECONOMICS_GROSS_TO_NET_V1.md"
+        },
+        "required_components": {
+          "type": "array",
+          "minItems": 6,
+          "uniqueItems": true,
+          "items": {
+            "type": "string",
+            "enum": [
+              "fees",
+              "spread",
+              "slippage",
+              "fill_assumptions",
+              "reject_assumptions",
+              "latency_or_delay",
+              "funding_when_relevant"
+            ]
+          }
+        },
+        "baseline_rule": {
+          "const": "All cost components explicit or justified not-applicable; no silent zero costs."
+        },
+        "pessimistic_rule": {
+          "const": "Higher spread and slippage, stricter fill/liquidity, additional execution delay, no positive price improvement; net path includes all friction components."
+        },
+        "no_invented_results": { "const": true },
+        "no_silent_zero_costs": { "const": true }
+      }
+    },
+    "ScenarioSpec": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "scenario_key",
+        "applies_to_all_candidates",
+        "status",
+        "required_friction_components",
+        "adverse_relative_to_baseline",
+        "notes"
+      ],
+      "properties": {
+        "scenario_key": {
+          "type": "string",
+          "enum": ["baseline", "pessimistic_liquidity_and_delay"]
+        },
+        "applies_to_all_candidates": { "const": true },
+        "status": { "$ref": "#/definitions/ArtifactStatus" },
+        "required_friction_components": {
+          "type": "array",
+          "minItems": 3,
+          "uniqueItems": true,
+          "items": {
+            "type": "string",
+            "enum": [
+              "fees",
+              "spread",
+              "slippage",
+              "fill_assumptions",
+              "reject_assumptions",
+              "latency_or_delay"
+            ]
+          }
+        },
+        "additional_execution_delay_required": { "type": "boolean" },
+        "higher_spread_required": { "type": "boolean" },
+        "higher_slippage_required": { "type": "boolean" },
+        "stricter_fill_or_liquidity_required": { "type": "boolean" },
+        "positive_price_improvement_allowed": { "type": "boolean" },
+        "adverse_relative_to_baseline": { "type": "boolean" },
+        "notes": {
+          "type": "array",
+          "minItems": 1,
+          "items": { "type": "string", "minLength": 1 }
+        }
+      },
+      "allOf": [
+        {
+          "if": {
+            "properties": {
+              "scenario_key": {
+                "const": "pessimistic_liquidity_and_delay"
+              }
+            },
+            "required": ["scenario_key"]
+          },
+          "then": {
+            "required": [
+              "additional_execution_delay_required",
+              "higher_spread_required",
+              "higher_slippage_required",
+              "stricter_fill_or_liquidity_required",
+              "positive_price_improvement_allowed"
+            ],
+            "properties": {
+              "additional_execution_delay_required": { "const": true },
+              "higher_spread_required": { "const": true },
+              "higher_slippage_required": { "const": true },
+              "stricter_fill_or_liquidity_required": { "const": true },
+              "positive_price_improvement_allowed": { "const": false },
+              "adverse_relative_to_baseline": { "const": true }
+            }
+          }
+        },
+        {
+          "if": {
+            "properties": {
+              "scenario_key": { "const": "baseline" }
+            },
+            "required": ["scenario_key"]
+          },
+          "then": {
+            "properties": {
+              "adverse_relative_to_baseline": { "const": false }
+            }
+          }
+        }
+      ]
+    },
+    "ExpectedArtifact": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "candidate_key",
+        "artifact_type",
+        "planned_id",
+        "schema_version",
+        "status"
+      ],
+      "properties": {
+        "candidate_key": { "$ref": "#/definitions/CandidateKey" },
+        "artifact_type": {
+          "type": "string",
+          "enum": [
+            "research_brief",
+            "source_evidence",
+            "strategy_candidate",
+            "validation_manifest",
+            "research_security_gate",
+            "hermes_orchestration_run",
+            "candidate_evidence",
+            "decision_record",
+            "candidate_registry_entry",
+            "candidate_transition",
+            "comparative_summary"
+          ]
+        },
+        "planned_id": {
+          "type": "string",
+          "minLength": 3,
+          "maxLength": 120
+        },
+        "schema_version": {
+          "type": "string",
+          "minLength": 3
+        },
+        "status": { "$ref": "#/definitions/ArtifactStatus" },
+        "notes": {
+          "type": "string",
+          "minLength": 1
+        }
+      }
+    },
+    "ComparativeSummarySpec": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "status",
+        "dimensions",
+        "no_subjective_ranking",
+        "no_ranking_without_comparable_evidence",
+        "tickersage_may_visualize_only"
+      ],
+      "properties": {
+        "status": { "$ref": "#/definitions/ArtifactStatus" },
+        "dimensions": {
+          "type": "array",
+          "minItems": 12,
+          "uniqueItems": true,
+          "items": {
+            "type": "string",
+            "enum": [
+              "candidate_key",
+              "contract_completeness",
+              "source_completeness",
+              "provenance_completeness",
+              "security_gate_status",
+              "orchestration_status",
+              "dataset_binding_status",
+              "execution_economics_completeness",
+              "baseline_scenario_status",
+              "pessimistic_scenario_status",
+              "evidence_completeness",
+              "final_structured_verdict"
+            ]
+          }
+        },
+        "pre_execution_cell_status": {
+          "type": "string",
+          "enum": ["PLANNED", "NOT_RUN"]
+        },
+        "no_subjective_ranking": { "const": true },
+        "no_ranking_without_comparable_evidence": { "const": true },
+        "tickersage_may_visualize_only": { "const": true }
+      }
+    },
+    "VisualizationPolicy": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "tickersage_role",
+        "validation_authority",
+        "decision_authority",
+        "may_mutate_metrics",
+        "may_write_lifecycle_transitions",
+        "official_api_contract_present"
+      ],
+      "properties": {
+        "tickersage_role": { "const": "visualization_only" },
+        "validation_authority": { "const": false },
+        "decision_authority": { "const": false },
+        "may_mutate_metrics": { "const": false },
+        "may_write_lifecycle_transitions": { "const": false },
+        "official_api_contract_present": { "const": false },
+        "notes": {
+          "type": "array",
+          "items": { "type": "string", "minLength": 1 }
+        }
+      }
+    },
+    "AuthorityBoundaries": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "research_apps_validation_authority",
+        "hermes_live_authority",
+        "hermes_validation_authority",
+        "tickersage_validation_authority",
+        "tickersage_decision_authority",
+        "automatic_strategy_promotion",
+        "paper_candidate_is_live_go",
+        "paper_go",
+        "live_go",
+        "real_money_go",
+        "capital_go",
+        "risk_bypass",
+        "productive_db_writes",
+        "productive_agent_execution",
+        "ml_rl_integration",
+        "pilot_execution_claims_results"
+      ],
+      "properties": {
+        "research_apps_validation_authority": { "const": false },
+        "hermes_live_authority": { "const": false },
+        "hermes_validation_authority": { "const": false },
+        "tickersage_validation_authority": { "const": false },
+        "tickersage_decision_authority": { "const": false },
+        "automatic_strategy_promotion": { "const": false },
+        "paper_candidate_is_live_go": { "const": false },
+        "paper_go": { "const": false },
+        "live_go": { "const": false },
+        "real_money_go": { "const": false },
+        "capital_go": { "const": false },
+        "risk_bypass": { "const": false },
+        "productive_db_writes": { "const": false },
+        "productive_agent_execution": { "const": false },
+        "ml_rl_integration": { "const": false },
+        "pilot_execution_claims_results": { "const": false }
+      }
+    },
+    "SafetyBoundaries": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "lr_status",
+        "board_trade_capable_is_live_go",
+        "pilot_execution",
+        "merge_allowed"
+      ],
+      "properties": {
+        "lr_status": { "const": "NO-GO" },
+        "board_trade_capable_is_live_go": { "const": false },
+        "pilot_execution": { "const": false },
+        "merge_allowed": { "const": false }
+      }
+    },
+    "ExternalDocEvidence": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "provider",
+        "official_domain",
+        "document_title",
+        "url",
+        "retrieved_at",
+        "relevant_statements",
+        "retrieval_limitations"
+      ],
+      "properties": {
+        "provider": {
+          "type": "string",
+          "enum": [
+            "binance",
+            "coinmarketcap",
+            "token_terminal",
+            "bigdata_com",
+            "tickersage"
+          ]
+        },
+        "official_domain": { "type": "string", "minLength": 3 },
+        "document_title": { "type": "string", "minLength": 3 },
+        "url": { "type": "string", "minLength": 8 },
+        "retrieved_at": { "type": "string", "format": "date-time" },
+        "relevant_statements": {
+          "type": "array",
+          "minItems": 1,
+          "items": { "type": "string", "minLength": 1 }
+        },
+        "retrieval_limitations": {
+          "type": "array",
+          "items": { "type": "string", "minLength": 1 }
+        }
+      }
+    },
+    "SourceBinding": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "source_type",
+        "provider",
+        "surface",
+        "security_type_or_auth",
+        "identifiers",
+        "query_parameters_planned",
+        "api_version",
+        "read_only",
+        "content_classification"
+      ],
+      "properties": {
+        "source_type": { "$ref": "#/definitions/SourceType" },
+        "provider": { "type": "string", "minLength": 1 },
+        "surface": { "type": "string", "minLength": 1 },
+        "security_type_or_auth": { "type": "string", "minLength": 1 },
+        "identifiers": {
+          "type": "object",
+          "minProperties": 1,
+          "additionalProperties": {
+            "type": "string",
+            "minLength": 1
+          }
+        },
+        "query_parameters_planned": {
+          "type": "object",
+          "additionalProperties": {
+            "type": ["string", "number", "boolean", "null"]
+          }
+        },
+        "api_version": { "type": "string", "minLength": 1 },
+        "read_only": { "const": true },
+        "content_classification": {
+          "type": "string",
+          "enum": ["MARKET_PUBLIC_DATA", "UNTRUSTED_INPUT"]
+        },
+        "notes": {
+          "type": "array",
+          "items": { "type": "string", "minLength": 1 }
+        }
+      }
+    },
+    "TimeCausality": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "research_cutoff",
+        "data_cutoff",
+        "decision_time",
+        "earliest_execution_time",
+        "signal_bar_time",
+        "timezone"
+      ],
+      "properties": {
+        "research_cutoff": { "type": "string", "format": "date-time" },
+        "data_cutoff": { "type": "string", "format": "date-time" },
+        "decision_time": { "type": "string", "format": "date-time" },
+        "earliest_execution_time": { "type": "string", "format": "date-time" },
+        "signal_bar_time": { "type": "string", "format": "date-time" },
+        "timezone": { "const": "UTC" }
+      }
+    },
+    "DatasetBindingPolicy": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["status", "snapshot_hash", "binding_rule"],
+      "properties": {
+        "status": { "const": "PENDING_BINDING" },
+        "snapshot_hash": { "type": "null" },
+        "binding_rule": {
+          "const": "Bind provider/surface/identifiers/query/api_version and compute snapshot hash only after a real future fetch; do not invent hashes in SPECIFICATION_ONLY."
+        }
+      }
+    },
+    "EconomicsComponents": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "fees",
+        "spread",
+        "slippage",
+        "fill_assumptions",
+        "reject_assumptions",
+        "latency_or_delay",
+        "funding_when_relevant"
+      ],
+      "properties": {
+        "fees": { "type": "string", "minLength": 1 },
+        "spread": { "type": "string", "minLength": 1 },
+        "slippage": { "type": "string", "minLength": 1 },
+        "fill_assumptions": { "type": "string", "minLength": 1 },
+        "reject_assumptions": { "type": "string", "minLength": 1 },
+        "latency_or_delay": { "type": "string", "minLength": 1 },
+        "funding_when_relevant": { "type": "string", "minLength": 1 }
+      }
+    },
+    "CandidateSpec": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "candidate_key",
+        "planned_strategy_candidate_id",
+        "planned_research_brief_id",
+        "planned_validation_manifest_id",
+        "required_sources",
+        "purpose",
+        "constraints",
+        "expected_artifact_refs",
+        "time_causality",
+        "as_of_rule",
+        "source_bindings",
+        "dataset_binding_policy",
+        "economics_components",
+        "token_terminal_partial_success_policy",
+        "no_invented_numeric_results"
+      ],
+      "properties": {
+        "candidate_key": { "$ref": "#/definitions/CandidateKey" },
+        "planned_strategy_candidate_id": {
+          "type": "string",
+          "pattern": "^sc-pilot-[a-z0-9][a-z0-9-]{2,80}$"
+        },
+        "planned_research_brief_id": {
+          "type": "string",
+          "pattern": "^rb-pilot-[a-z0-9][a-z0-9-]{2,80}$"
+        },
+        "planned_validation_manifest_id": {
+          "type": "string",
+          "pattern": "^vm-pilot-[a-z0-9][a-z0-9-]{2,80}$"
+        },
+        "required_sources": {
+          "type": "array",
+          "minItems": 2,
+          "maxItems": 2,
+          "uniqueItems": true,
+          "items": { "$ref": "#/definitions/SourceType" }
+        },
+        "purpose": { "type": "string", "minLength": 1 },
+        "constraints": {
+          "type": "array",
+          "minItems": 1,
+          "items": { "type": "string", "minLength": 1 }
+        },
+        "expected_artifact_refs": {
+          "type": "array",
+          "minItems": 8,
+          "items": {
+            "$ref": "#/definitions/ExpectedArtifact"
+          }
+        },
+        "time_causality": { "$ref": "#/definitions/TimeCausality" },
+        "as_of_rule": {
+          "const": "No source or market datum with as_of after decision_time may be used."
+        },
+        "source_bindings": {
+          "type": "array",
+          "minItems": 2,
+          "items": { "$ref": "#/definitions/SourceBinding" }
+        },
+        "dataset_binding_policy": {
+          "$ref": "#/definitions/DatasetBindingPolicy"
+        },
+        "economics_components": {
+          "$ref": "#/definitions/EconomicsComponents"
+        },
+        "token_terminal_partial_success_policy": {
+          "type": "string",
+          "minLength": 1
+        },
+        "no_invented_numeric_results": { "const": true }
+      }
+    }
+  }
+}
