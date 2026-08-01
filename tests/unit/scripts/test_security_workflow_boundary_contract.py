@@ -99,8 +99,8 @@ def test_security_scan_bimonthly_trigger_contract() -> None:
 
 
 def test_security_alert_readout_scheduled_vs_manual_boundary_is_documented() -> None:
-    content = (
-        helpers.WORKFLOWS_DIR / "security-alert-readout.yml"
-    ).read_text(encoding="utf-8")
+    content = (helpers.WORKFLOWS_DIR / "security-alert-readout.yml").read_text(
+        encoding="utf-8"
+    )
     assert 'LIVE_MODE="true"' in content
     assert 'if [[ "${GITHUB_EVENT_NAME}" == "workflow_dispatch" ]]; then' in content

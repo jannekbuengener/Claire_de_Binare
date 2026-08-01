@@ -33,8 +33,14 @@ def test_schedule_map_is_deterministic_and_visible() -> None:
     "filename,expected_crons",
     [
         ("weekly_digest.yml", ("0 8 * * 1",)),
-        ("cdb-daily-delta-triage.yml", ("20 6 * * 0", "20 6 * * 2", "20 6 * * 3", "20 6 * * 5")),
-        ("cdb-weekly-control-hygiene-classifier.yml", ("30 7 * * 1", "30 7 * * 4", "30 7 * * 5")),
+        (
+            "cdb-daily-delta-triage.yml",
+            ("20 6 * * 0", "20 6 * * 2", "20 6 * * 3", "20 6 * * 5"),
+        ),
+        (
+            "cdb-weekly-control-hygiene-classifier.yml",
+            ("30 7 * * 1", "30 7 * * 4", "30 7 * * 5"),
+        ),
         ("cdb-context-refresh-report.yml", ("0 8 * * 1", "0 8 * * 4")),
         ("stale.yml", ("0 0 * * *",)),
         ("python-compat.yml", ("0 0 * * 0",)),
