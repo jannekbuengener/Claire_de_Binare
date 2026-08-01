@@ -86,3 +86,12 @@ def test_weekly_digest_and_context_refresh_share_monday_08_utc_collision() -> No
     assert "0 8 * * 1" in collisions
     assert "weekly_digest.yml" in collisions["0 8 * * 1"]
     assert "cdb-context-refresh-report.yml" in collisions["0 8 * * 1"]
+
+
+def test_security_scan_uses_bimonthly_cron_not_weekly_monday() -> None:
+    """#4275: security-scan cadence is bimonthly, not weekly Monday."""
+    entry = helpers.build_schedule_entry(helpers.WORKFLOWS_DIR / "security-scan.yml")
+    assert entry.has_schedule is True
+    assert entry.has_workflow_dispatch is True
+    assert entry.crons == ("0 2 1 2,4,6,8,10,12 *",)
+    assert "0 2 * * 1" not in entry.crons
