@@ -20,6 +20,7 @@ relations:
 *   [CDB Governance (CDB_GOVERNANCE.md)](CDB_GOVERNANCE.md)
 *   [CDB Agent Policy (CDB_AGENT_POLICY.md)](CDB_AGENT_POLICY.md)
 *   [CDB Agent Control Plane (CDB_AGENT_CONTROL_PLANE.md)](CDB_AGENT_CONTROL_PLANE.md) — provider-neutral ACP architecture, authority matrix, lifecycle (`#4250`); distinct from `.github` Workflow Control Plane
+*   Agent Execution Contract v1 — [`docs/contracts/agent_execution/CDB_AGENT_EXECUTION_CONTRACT_V1.md`](../../docs/contracts/agent_execution/CDB_AGENT_EXECUTION_CONTRACT_V1.md) (`cdb.agent_execution.v1`, `#4251`)
 *   [CDB Trust Score Policy (CDB_TRUST_SCORE_POLICY.md)](CDB_TRUST_SCORE_POLICY.md)
 *   [ARVP Product Intent (ARVP_PRODUCT_INTENT.md)](ARVP_PRODUCT_INTENT.md) — north-star anchor for accelerated replay paper-mode platform
 

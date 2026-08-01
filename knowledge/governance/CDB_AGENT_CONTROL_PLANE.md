@@ -45,8 +45,9 @@ Dieses Dokument definiert:
 
 ### 1.3 Nicht-Ziele (verbindlich)
 
-- Kein Dispatcher-, Registry-, Provider-Adapter- oder Execution-Contract-Schema
-  (Follow-ups `#4251`–`#4257`; dieses Dokument nimmt deren Schemata nicht vorweg)
+- Kein Dispatcher-, Registry- oder Provider-Adapter-Code
+  (Follow-ups `#4252`–`#4257`; Execution-Contract-Schema liegt in `#4251` /
+  `cdb.agent_execution.v1`, nicht in diesem Canon-Dokument)
 - Kein Ersatz und keine Umbenennung der **GitHub Workflow Control Plane**
   (`.github/CONTROL_PLANE.md`, `#1640`/`#1644`-Lineage)
 - Kein neuer Merge-Prozess und kein Bypass von `cdb-local-ci`
@@ -129,7 +130,7 @@ Für jede Komponente gilt genau eine primäre Verantwortung. Spalten:
 | --- | --- | --- | --- | --- | --- |
 | **CDB Governance** | Policy, Write-Gates, Safety/LR-Grenzen, Canon | Canon-/Policy-Writes nur mit Human-GO und Session-Gates | Governance-Drift, Policy-Verletzungen | STOP bei Safety-/Canon-Verletzung | Live-Go, Echtgeld, produktive DB/MCP-Writes ohne eigenen Gate |
 | **PR Router** | Ziel-PR / Branch / Lane / Validation Profile | nichts (read-only) | Kompatibilität, Locks, Inventar | `HOLD_*` bei unsicherer Route | Branch/Worktree/PR-Erstellung, Merge, Status-Publish |
-| **Agent Execution Contract** | Handoff-Inhalt und Pflichtfelder (Schema später `#4251`) | nichts | Contract-Vollständigkeit gegen Schema | Fail-closed bei fehlendem/ungültigem Contract | Merge, Live-Go, Provider-Start ohne Dispatcher |
+| **Agent Execution Contract** | Handoff-Inhalt und Pflichtfelder (`cdb.agent_execution.v1`, `#4251`) | nichts | Contract-Vollständigkeit gegen Schema | Fail-closed bei fehlendem/ungültigem Contract | Merge, Live-Go, Provider-Start ohne Dispatcher |
 | **Dispatcher** | Run-Start und erlaubte Lifecycle-Übergänge | Provider-Dispatch gemäß Contract + Route + Environment | Preflight (Contract/Route/Env) | HOLD/BLOCKED/FAILED bei Preflight- oder Lauf-Fehler | Merge, Approval ersetzen, Final-CI vortäuschen |
 | **Provider Adapter** | Provider-spezifische Aufrufabbildung | Provider-API/CLI/SDK laut öffentlicher Capability | Capability Probe / Drift gegen Registry | STOP wenn Capability fehlt oder Drift kritisch | Private API / UI-Scraping als Kern; Merge; Secrets speichern |
 | **Cursor** | nichts in CDB-Authority | Zugewiesene Delivery-Arbeit im Provider-Environment | Provider-lokale Logs/Status an Adapter | Provider-seitiger Abbruch melden | Merge, `cdb-local-ci`, Issue-Close, Live-Go, Governance-Override |
@@ -310,16 +311,13 @@ STOP und dokumentieren, wenn:
 - verpflichtende Canon-Dateien fehlen oder widersprechen
 - ungeklärter Konflikt mit `#4226`, `#4227` oder `#4170` entsteht
 
-## 12. Acceptance Anchor für Folge-Issue `#4251`
+## 12. Execution Contract Anchor (`#4251`)
 
-Dieses Dokument ist ausreichend als Grundlage für `#4251` (Execution Contract),
-wenn `#4251`:
+Schema und Validator für die Router-Handoff-Übergabe:
 
-- die Komponenten und Authority-Grenzen hier referenziert,
-- Contract-Felder für Route, Scope, Evidence-Erwartungen und Stop-Bedingungen
-  spezifiziert,
-- **kein** Schema dieses Canons vorwegnehmen muss jenseits der hier genannten
-  Lifecycle-/Authority-Namen.
+- Spec: [`docs/contracts/agent_execution/CDB_AGENT_EXECUTION_CONTRACT_V1.md`](../../docs/contracts/agent_execution/CDB_AGENT_EXECUTION_CONTRACT_V1.md)
+- JSON Schema: [`docs/contracts/cdb_agent_execution.v1.schema.json`](../../docs/contracts/cdb_agent_execution.v1.schema.json)
+- Tooling: `python -m tools.agent_execution_contract`
 
-Schema-Details, JSON/YAML-Shapes und Validatoren gehören ausschließlich nach
-`#4251` und Folgeslices.
+Dieses Canon-Dokument bleibt die Authority-/Lifecycle-SSOT; Feldshapes und
+Hash/Attenuation liegen ausschließlich im Execution-Contract-Slice `#4251`.

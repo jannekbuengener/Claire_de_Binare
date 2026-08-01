@@ -1,0 +1,16 @@
+{
+  "batch_key": "agent-skills",
+  "issue_number": 4251,
+  "lane": "agent-skills",
+  "lock_state": "UNLOCKED",
+  "merge_mode": "batch",
+  "observed_at": "2026-08-01T20:21:58Z",
+  "policy_id": "cdb-pr-routing-v1",
+  "reason_codes": [
+    "ISSUE_COMPATIBILITY_METADATA_INCOMPLETE"
+  ],
+  "routing_decision": "CREATE_NEW_BATCH_PR",
+  "target_branch": "batch/agent-skills-issue-4251",
+  "target_pr": null,
+  "validation_profile": "agent-skills-v1"
+}

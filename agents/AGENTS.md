@@ -83,6 +83,9 @@ versionierte Root-Flächen für `.claude/`, `.codex/`, `.cursor/`, `.gemini/`, `
   - Agent Control Plane Canon:
     [`knowledge/governance/CDB_AGENT_CONTROL_PLANE.md`](../knowledge/governance/CDB_AGENT_CONTROL_PLANE.md)
     (provider-neutral; nicht die GitHub Workflow Control Plane unter `.github/`).
+  - Agent Execution Contract v1:
+    [`docs/contracts/agent_execution/CDB_AGENT_EXECUTION_CONTRACT_V1.md`](../docs/contracts/agent_execution/CDB_AGENT_EXECUTION_CONTRACT_V1.md)
+    (`cdb.agent_execution.v1`, `#4251`; Router-Handoff, fail-closed).
 - `knowledge/`
   - Aktive Knowledge-Dokumente und historische Referenzflächen; kein pauschaler Status-Canon.
 - `knowledge/testing/`
