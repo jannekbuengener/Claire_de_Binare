@@ -143,11 +143,11 @@ def _add_common_args(parser: argparse.ArgumentParser) -> None:
     )
     parser.add_argument(
         "--publisher-backend",
-        default="commit-status",
+        default="check-run",
         choices=sorted(ALLOWED_BACKENDS),
         help=(
-            "Publish surface: commit-status (default, interim required path) or "
-            "check-run (explicit App-bound; Branch Protection unchanged until cutover)"
+            "Publish surface: check-run (default, App-bound required path after "
+            "#4170 Phase D) or commit-status (legacy; does not satisfy BP)"
         ),
     )
     parser.add_argument(
@@ -200,9 +200,7 @@ def _require_pr_for_required_context(args: argparse.Namespace) -> None:
 
 
 def _backend_name(args: argparse.Namespace) -> str:
-    backend = str(
-        getattr(args, "publisher_backend", "commit-status") or "commit-status"
-    )
+    backend = str(getattr(args, "publisher_backend", "check-run") or "check-run")
     if backend not in ALLOWED_BACKENDS:
         raise PublisherError(
             f"Unknown publisher backend {backend!r}; "

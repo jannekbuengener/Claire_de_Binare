@@ -6,8 +6,8 @@ Lokale, Docker-fähige CI-Ausführungsschicht für Claire_de_Binare.
 
 - **Phase 1:** Scaffold + Evidence-Contract unter `ci/`.
 - **Phase 3a + BP #4169:** Nach strikter Evidence-Validation setzt der
-  Status-Publisher (`ci/publisher/`) den Required Commit Status `cdb-local-ci`
-  (interim PAT / Commit Status, `app_id=null`).
+  Status-Publisher (`ci/publisher/`) den Required App Check Run `cdb-local-ci`
+  (`app_id=4410232`, `--publisher-backend check-run`).
   Siehe [docs/ci/local-status-publisher.md](../docs/ci/local-status-publisher.md).
 - **#4170 Phase A:** Explizites Check-Run-Backend
   (`--publisher-backend check-run`) ist code-ready; Branch Protection und der
@@ -154,9 +154,9 @@ for ci_image/test_runner/postgres/redis, compose project template
 | `surrealdb-validate` job | covered inside governance stage | path-filtered GitHub-native remainder in `ci.yml` |
 | Docs Conflict / Canon | docs stage modules | also separate advisory workflows |
 | CodeQL | optional local SARIF | Security-tab authoritative |
-| Branch Protection | — | required: `cdb-local-ci` (Commit Status) |
+| Branch Protection | — | required: `cdb-local-ci` (App Check Run `app_id=4410232`) |
 | Local evidence | advisory artifacts until publish | — |
-| Status publisher (Phase 3a) | Commit Status after validation | required context `cdb-local-ci` |
+| Status publisher (Phase 3a/#4170) | App Check Run after validation | required `cdb-local-ci` (`app_id=4410232`) |
 
 ### Workflow → Stage mapping (`ci.yml` job `ci`)
 
@@ -173,7 +173,7 @@ GitHub-native remainder (not replaced by local orchestrator):
 - `.github/workflows/policy-gate.yml` (full PR/label/permission evaluation)
 
 Do **not** treat the job name `ci (Unit/Integration + Lint gesammelt)` as the live
-required context. Live required context is Commit Status `cdb-local-ci`.
+required context. Live required context is App Check Run `cdb-local-ci` (`app_id=4410232`).
 
 ## Architecture
 

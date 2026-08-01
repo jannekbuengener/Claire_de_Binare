@@ -63,7 +63,7 @@ def _checks(
 ) -> list[dict[str, str]]:
     """Build live Commit Status entries for the `cdb-local-ci` context.
 
-    `cdb-local-ci` is published as a Commit Status (`context`/`state`), not a
+    `cdb-local-ci` merge gate is an App-bound Check Run (`name`/`conclusion`, `app_id=4410232`), not a
     hosted Actions check-run (`name`/`status`/`conclusion`).
     """
     statuses = [{"context": "cdb-local-ci", "state": state.lower()}]

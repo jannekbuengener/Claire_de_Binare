@@ -83,7 +83,7 @@ Based on [DISCOVERY_REPORT.md](../../../docs/skills/gh-fix-ci/DISCOVERY_REPORT.m
 Live branch protection on `main` requires **exactly one** merge-relevant
 context:
 
-- **`cdb-local-ci`** — a GitHub **Commit Status** (not a Check Run) published
+- **`cdb-local-ci`** — a GitHub **App-bound Check Run** (`app_id=4410232`) published
   by the local Fast-CI status publisher for the exact PR head SHA. Verify
   live with `gh api`, not from any hardcoded list (including this one).
 

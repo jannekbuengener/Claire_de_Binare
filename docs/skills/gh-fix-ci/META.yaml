@@ -67,9 +67,10 @@ safety_rules:
   - "Suggest-only fixes (no auto-apply)"
 
 # SSOT: docs/runbooks/merge_policy_ci_gate.md. `cdb-local-ci` is the sole
-# live merge-relevant required context (Commit Status, exact PR head SHA).
-# Verify live with `gh api`; do not hardcode elsewhere. Hosted GitHub
-# Actions check-runs (ci, validate-branch-name, gitleaks, trivy, Check Core
+# live merge-relevant required context (App Check Run app_id=4410232, exact
+# PR head SHA). Same-named Commit Status is not merge-sufficient. Verify
+# live with `gh api`; do not hardcode elsewhere. Hosted GitHub Actions
+# check-runs (ci, validate-branch-name, gitleaks, trivy, Check Core
 # Duplicates, Check Delivery Gate, guard, E2E Happy Path) are
 # advisory/safety-relevant only since migration #4169.
 required_checks:
@@ -170,7 +171,7 @@ changelog:
   - version: 1.1.0
     date: 2026-07-30
     changes:
-      - "BREAKING: required_checks reduced to sole live context cdb-local-ci (Commit Status), per merge_policy_ci_gate.md and migration #4169"
+      - "BREAKING: required_checks reduced to sole live context cdb-local-ci (App Check Run app_id=4410232 post-#4170 Phase D; Commit Status same name not sufficient), per merge_policy_ci_gate.md"
       - Added advisory_hosted_actions_checks for the former 8-check list (still useful signal, no longer merge-relevant)
       - inspect_pr_checks.py now normalizes Commit Status (context/state) alongside Check Run (name/status/conclusion)
       - Added failure classification: MERGE_READY / REQUIRED_STATUS_MISSING / CODE_FAILURE / HOSTED_ACTIONS_INFRA_BLOCK / AUTH_PUBLISHER_BLOCK
