@@ -32,14 +32,15 @@ DEFAULT_LOG_LINES = 100
 MAX_LOG_LINES = 500
 RETRY_COUNT = 2
 
-# The sole live merge-relevant required context on `main` (Commit Status,
-# not a Check Run). SSOT: docs/runbooks/merge_policy_ci_gate.md.
-# Hosted GitHub Actions check-runs remain advisory/safety-relevant only
-# (migration #4169) and are reported separately below.
+# The sole live merge-relevant required context on `main` is the App-bound
+# Check Run `cdb-local-ci` (`app_id=4410232`). SSOT:
+# docs/runbooks/merge_policy_ci_gate.md. A same-named Commit Status is not
+# merge-sufficient. Hosted GitHub Actions check-runs remain
+# advisory/safety-relevant only (migration #4169) and are reported separately.
 REQUIRED_CHECKS = ["cdb-local-ci"]
 
-# Commit Status `state` values (cdb-local-ci) normalized to Check Run-style
-# conclusions so the rest of this script can treat both uniformly.
+# Legacy Commit Status `state` values (same name, non-sufficient) normalized
+# to Check Run-style conclusions so rollup parsing can treat both uniformly.
 _STATUS_STATE_TO_CONCLUSION = {
     "SUCCESS": "SUCCESS",
     "FAILURE": "FAILURE",

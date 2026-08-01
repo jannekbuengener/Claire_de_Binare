@@ -162,6 +162,8 @@ def test_preview_without_pr_number_still_allowed(tmp_path: Path, monkeypatch, ca
         ledger=str(tmp_path / "ledger.json"),
         pr_number=0,
         status_context=PREVIEW_STATUS_CONTEXT,
+        # Preview path may use legacy commit-status; default check-run needs App IDs.
+        publisher_backend="commit-status",
     )
     git = SimpleNamespace(
         dirty_worktree=False,

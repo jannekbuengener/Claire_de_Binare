@@ -1,3 +1,10 @@
+<!--
+Canonical Skill Source: docs/skills/cdb-github-api-ops/SKILL.md
+Surface: claude
+Sync Status: mirrored-from-canon
+Last Verified: 2026-07-30
+Drift Policy: Surface-Adapter duerfen nur mit dokumentierter Begruendung abweichen.
+-->
 ---
 name: cdb-github-api-ops
 description: >

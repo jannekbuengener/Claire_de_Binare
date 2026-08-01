@@ -200,9 +200,7 @@ def _require_pr_for_required_context(args: argparse.Namespace) -> None:
 
 
 def _backend_name(args: argparse.Namespace) -> str:
-    backend = str(
-        getattr(args, "publisher_backend", "check-run") or "check-run"
-    )
+    backend = str(getattr(args, "publisher_backend", "check-run") or "check-run")
     if backend not in ALLOWED_BACKENDS:
         raise PublisherError(
             f"Unknown publisher backend {backend!r}; "

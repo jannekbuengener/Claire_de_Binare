@@ -90,10 +90,12 @@ prüfen, erzeugt selbst aber keinen merge-relevanten Ersatzcheck.
 ## Diagnose
 
 1. PR-Head-SHA ermitteln.
-2. Commit Status `cdb-local-ci` für exakt diesen SHA prüfen.
-3. Fehlenden Status von einem fehlgeschlagenen Status unterscheiden.
+2. App-gebundenen Check Run `cdb-local-ci` (`app_id=4410232`) für exakt
+   diesen SHA prüfen (`gh api repos/.../commits/<sha>/check-runs`).
+3. Fehlenden Check Run von einem fehlgeschlagenen Check Run unterscheiden.
+   Ein gleichnamiger Commit Status zählt nicht.
 4. Publisher-Evidence und Policy-Mirror-Fail prüfen.
-5. Erst nach grünem aktuellem `cdb-local-ci` mergen.
+5. Erst nach erfolgreichem aktuellem App-Check-Run `cdb-local-ci` mergen.
 
 ## Capability-based Autonomous Merge
 
@@ -109,18 +111,21 @@ proven true for the exact PR head SHA:
 4. Full local Fast-CI PASS for the exact PR head.
 5. Evidence bound to the exact PR head (no stale/other-SHA evidence).
 6. Validated `main` unchanged since validation (no drift since evidence).
-7. `cdb-local-ci` SUCCESS on the exact PR head SHA (live via `gh api`).
+7. `cdb-local-ci` SUCCESS as App Check Run (`app_id=4410232`) on the exact
+   PR head SHA (live via `gh api`). Same-named Commit Status is not enough.
 8. The session can perform the regular squash merge itself (has merge
-   permission / `statuses:write`), and can publish `cdb-local-ci` itself if
-   it is still missing and the session holds bound evidence to do so.
+   permission) and can publish `cdb-local-ci` via `--publisher-backend
+   check-run` / App auto-mint if it is still missing and the session holds
+   bound evidence to do so.
 
 `--admin` is **never** a bypass for a missing/red/stale `cdb-local-ci`.
 Fake-green claims and merging an untested head are forbidden.
 
 ### Honest handoff when capability is missing
 
-If a session lacks any gate above (no `statuses:write`, no verifiable
-identity, evidence not bound to the exact head, publisher auth blocked):
+If a session lacks any gate above (no App Check Run publish capability,
+no verifiable identity, evidence not bound to the exact head, publisher
+auth blocked):
 leave the PR open, do not use `--admin`, do not loop the same blocked
 attempt, and report `DONE_PR_OPEN_MERGE_HANDOFF` with the exact missing
 capability and the next command for a capable session/human. See

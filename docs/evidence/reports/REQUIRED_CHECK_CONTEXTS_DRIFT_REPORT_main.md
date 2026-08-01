@@ -107,7 +107,7 @@ State: **NO DRIFT**
 
 | context | status | workflow_file | job_id | job_name | workflow_name |
 |---|---|---|---|---|---|
-| `cdb-local-ci` | external/commit-status | n/a | n/a | n/a | n/a |
+| `cdb-local-ci` | external/app-check-run | n/a | n/a | n/a | n/a |
 
 ## Parse Errors
 

@@ -1,7 +1,7 @@
 <!--
 Canonical Skill Source: docs/skills/cdb-batch-merge-conductor/SKILL.md
-Surface: docs (canonical)
-Sync Status: canonical
+Surface: claude
+Sync Status: mirrored-from-canon
 Last Verified: 2026-07-30
 Drift Policy: Surface-Adapter duerfen nur mit dokumentierter Begruendung abweichen.
 -->

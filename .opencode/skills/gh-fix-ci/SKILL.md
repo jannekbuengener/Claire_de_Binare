@@ -1,3 +1,10 @@
+<!--
+Canonical Skill Source: docs/skills/gh-fix-ci/SKILL.md
+Surface: opencode
+Sync Status: mirrored-from-canon
+Last Verified: 2026-07-30
+Drift Policy: Surface-Adapter duerfen nur mit dokumentierter Begruendung abweichen.
+-->
 # gh-fix-ci - GitHub CI Failure Inspector
 
 **Version:** 1.1.0
