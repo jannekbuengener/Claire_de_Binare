@@ -197,7 +197,14 @@ def test_gh_auth_token_not_auto_used(monkeypatch: pytest.MonkeyPatch):
         resolve_app_installation_token()
 
 
-def test_missing_expected_app_id_rejected():
+def test_missing_expected_app_id_rejected(monkeypatch: pytest.MonkeyPatch):
+    for key in (
+        "CDB_GH_APP_ID",
+        "CDB_GITHUB_APP_ID",
+        "CDB_GH_APP_INSTALLATION_ID",
+        "CDB_GITHUB_APP_INSTALLATION_ID",
+    ):
+        monkeypatch.delenv(key, raising=False)
     with pytest.raises(PublisherError, match="expected-app-id"):
         build_publisher_backend(
             backend="check-run",
