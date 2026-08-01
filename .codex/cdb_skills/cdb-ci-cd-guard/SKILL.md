@@ -37,7 +37,7 @@ disable-model-invocation: true
 - No silent stub or mock path on protected refs.
 - Missing critical secrets on protected refs must fail closed.
 - Without explicit approval, default to audit plus fix plan rather than mutation.
-- The sole live merge-relevant required context is `cdb-local-ci` (a Commit
+- The sole live merge-relevant required context is `cdb-local-ci` (an App-bound Check Run
   Status, not a Check Run). Verify live with `gh api`; do not hardcode a
   required-checks list from memory. Hosted Actions check-runs are
   advisory/safety-relevant only (migration #4169).
@@ -96,7 +96,7 @@ This skill audits CI/CD tooling with external documentation dependencies:
   (`pytest -q -k "not test_mcp_time_server_runtime"` unverändert),
 - integrierter Base-SHA ist in der Evidence gebunden,
 - lokaler Policy-Gate-Mirror ist grün,
-- `cdb-local-ci=success` liegt als Commit Status auf exakt diesem Head,
+- `cdb-local-ci=success` liegt als App-gebundener Check Run (`app_id=4410232`) auf exakt diesem Head,
 - Head-/Base-Drift erzwingt vollständige Revalidierung.
 - Slice-Validation ist **kein** Ersatz für Final-Head-Evidence.
 

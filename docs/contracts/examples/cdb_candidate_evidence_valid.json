@@ -1,0 +1,56 @@
+{
+  "schema_version": "cdb.candidate_evidence.v1",
+  "evidence_id": "ce-wave1-example-001",
+  "run_id": "run-wave1-example-001",
+  "candidate_id": "sc-wave1-btc-trend-breakout",
+  "candidate_version": "v1",
+  "generated_at": "2026-08-01T10:30:00Z",
+  "artifact_hashes": [
+    {
+      "artifact_ref": "metrics.json",
+      "sha256": "sha256:aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"
+    }
+  ],
+  "gate_results": [
+    {
+      "gate": "contract_completeness",
+      "verdict": "PASS",
+      "notes": "All required candidate fields present."
+    },
+    {
+      "gate": "dataset_quality",
+      "verdict": "WARNING",
+      "notes": "Example-only quality signal."
+    },
+    {
+      "gate": "deterministic_baseline_replay",
+      "verdict": "INSUFFICIENT_DATA",
+      "notes": "No runner executed in Wave 1."
+    }
+  ],
+  "gross_results": {
+    "return_ratio": 0.018,
+    "max_drawdown": 0.08
+  },
+  "net_results": {
+    "return_ratio": 0.011,
+    "max_drawdown": 0.08
+  },
+  "fees": 0.002,
+  "spread": 0.0015,
+  "slippage": 0.0035,
+  "overall_verdict": "INSUFFICIENT_DATA",
+  "limitations": [
+    "Wave-1 fixture; not a ranking claim.",
+    "Does not replace profitability_evidence_packet.v1."
+  ],
+  "lineage_refs": {
+    "profitability_evidence_packet": "profitability_evidence_packet.v1",
+    "notes": "Adjacent evidence envelope; lineage #3043/#4022 remains authoritative for PEP."
+  },
+  "safety_boundaries": {
+    "missing_evidence_cannot_pass": true,
+    "lr_status": "NO-GO",
+    "automatic_strategy_promotion": false
+  }
+}

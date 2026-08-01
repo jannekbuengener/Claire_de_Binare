@@ -13,14 +13,15 @@ _TOKEN_RE = re.compile(
     r"|ghu_[A-Za-z0-9_]{8,}"
     r"|ghs_[A-Za-z0-9_]{8,}"
     r"|ghr_[A-Za-z0-9_]{8,}"
-    r"|Bearer\s+[A-Za-z0-9\-._~+/]+=*"
+    r"|Bearer\s+\S+"
     r")\b"
 )
+_JWT_RE = re.compile(r"\beyJ[A-Za-z0-9_-]+\.[A-Za-z0-9_-]+\.[A-Za-z0-9_-]+\b")
 _PRIVATE_KEY_RE = re.compile(
     r"-----BEGIN[A-Z ]*PRIVATE KEY-----[\s\S]*?-----END[A-Z ]*PRIVATE KEY-----"
 )
 _AUTH_HEADER_RE = re.compile(
-    r"(?i)(authorization\s*[:=]\s*)(['\"]?)([^'\"\s,;]+)(['\"]?)"
+    r"(?i)(authorization\s*[:=]\s*)(['\"]?)(Bearer\s+\S+|[^'\"\s,;]+)(['\"]?)"
 )
 _QUERY_TOKEN_RE = re.compile(r"(?i)([?&](?:access_token|token|auth)=)([^&\s]+)")
 
@@ -33,6 +34,7 @@ def redact_text(value: str) -> str:
     redacted = _QUERY_TOKEN_RE.sub(r"\1[REDACTED]", redacted)
     redacted = _PRIVATE_KEY_RE.sub("[REDACTED_PRIVATE_KEY]", redacted)
     redacted = _TOKEN_RE.sub("[REDACTED]", redacted)
+    redacted = _JWT_RE.sub("[REDACTED_JWT]", redacted)
     return redacted
 
 
@@ -50,6 +52,8 @@ def redact_mapping(payload: Any) -> Any:
                 "secret",
                 "private_key",
                 "privatekey",
+                "jwt",
+                "app_jwt",
             }:
                 out[key] = "[REDACTED]"
             else:

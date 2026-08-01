@@ -10,7 +10,7 @@
       "expected_output_contains": [
         "MERGE_READY"
       ],
-      "note": "PR #807 had all checks passing (as of 2026-02-08); required context is now cdb-local-ci (Commit Status) per migration #4169, re-verify against a current PR"
+      "note": "PR #807 had all checks passing (as of 2026-02-08); required context is now cdb-local-ci (App Check Run app_id=4410232) post-#4170 Phase D, re-verify against a current PR"
     },
     {
       "name": "failing_check_mypy",
@@ -73,7 +73,7 @@
       "expected_output_contains": [
         "MERGE_READY"
       ],
-      "note": "SSOT: docs/runbooks/merge_policy_ci_gate.md. Since migration #4169 only cdb-local-ci (Commit Status) is merge-relevant; the former 8-check list is advisory only."
+      "note": "SSOT: docs/runbooks/merge_policy_ci_gate.md. Post-#4170 Phase D only cdb-local-ci (App Check Run app_id=4410232) is merge-relevant; the former 8-check list is advisory only."
     },
     {
       "name": "required_status_missing",
