@@ -1,6 +1,6 @@
 # Research-to-Hermes Pipeline Canon v1
 
-**Status:** Canon for Wave 1 + Wave 2 (#4264–#4269)
+**Status:** Canon for Wave 1 + Wave 2 + Wave-3 security gates (#4264–#4269, #4271)
 **Parent:** #4263
 **Mode:** Docs / contracts only — no runtime, no plugins, no cloud provisioning
 **Live-Readiness:** NO-GO
@@ -28,6 +28,10 @@ promotion path.
 [Candidate Compiler] ---- ResearchBrief + SourceEvidence → StrategyCandidate
         |                 + CompilerReport (READY|BLOCKED|NEEDS_RESEARCH)
         v
+[Security / Provenance / Integrity Gate] ---- cdb.research_security_gate.v1
+        |                                      (UNTRUSTED_INPUT; fail-closed)
+        |                                      PASS ≠ validation authority
+        v
 [GitHub Candidate Registry] ---- immutable versions + DecisionRecord transitions
         |                        (control plane; not productive DB)
         v
@@ -50,6 +54,7 @@ promotion path.
 | Claire Context Gate | Read-only context briefing, stop/required-reads | Writes, live GO, strategy promotion |
 | Research sources (Binance/CMC/Token Terminal/Bigdata/Gainium/HF) | SourceEvidence / hypothesis input only | Validation verdict authority |
 | Candidate Compiler | Emit StrategyCandidate + CompilerReport | Runtime trading, DB registry, promotion |
+| Security / Provenance / Integrity Gate | Untrusted-input, injection, secrets, hashes, Codex Security disposition | Validation PASS, PAPER_CANDIDATE, Live-Go, scanner runtime |
 | GitHub Candidate Registry | Immutable issue/artifact ledger + transitions | Productive strategy registry; validation authority |
 | Hermes Validation Chief | Orchestrate validation gates via manifest | Live, Risk, Promotion authority |
 | Cloud Runner | Execute offline validation jobs | Capital allocation, live credentials |
@@ -84,7 +89,8 @@ Hard invariants for pipeline v1:
 | `RESEARCH_REQUESTED` | Briefing intent captured | `cdb.research_brief.v1` |
 | `SOURCE_EVIDENCE` | Normalized untrusted inputs | `cdb.source_evidence.v1` |
 | `CANDIDATE_DRAFTED` | Structured candidate exists | `cdb.strategy_candidate.v1` + CompilerReport |
-| `READY_FOR_VALIDATION` | Completeness gate passed | Candidate completeness + registry status |
+| `SECURITY_GATE` | Provenance/integrity/untrusted checks | `cdb.research_security_gate.v1` |
+| `READY_FOR_VALIDATION` | Completeness + security handoff ok | Candidate completeness + security gate + registry status |
 | `VALIDATION_RUNNING` | Manifest + runner active | `cdb.validation_manifest.v1` |
 | `EVIDENCE_COMPLETE` | Hashes + metrics present | `cdb.candidate_evidence.v1` |
 | `DECIDED` | Explicit next actions | `cdb.decision_record.v1` + registry transition |
@@ -99,6 +105,7 @@ may only advance when the corresponding machine-readable contract validates.
 | Research intent | Research / Compiler | `cdb.research_brief.v1` |
 | Source normalization | Source adapters (contract only in Wave 2) | `cdb.source_evidence.v1` |
 | Falsifiable candidate | Compiler | `cdb.strategy_candidate.v1` + `cdb.compiler_report.v1` |
+| Security / provenance / integrity | Security gate (Wave 3 / #4271) | `cdb.research_security_gate.v1` |
 | Registry / lifecycle | GitHub-backed artifacts | `cdb.candidate_registry_entry.v1` / `cdb.candidate_transition.v1` |
 | Validation plan / gates | Hermes orchestration | `cdb.validation_manifest.v1` |
 | Measured outcomes | Runner / ARVP | `cdb.candidate_evidence.v1` |
@@ -134,6 +141,8 @@ profitability artifacts by ID/hash; they do not supersede them.
 - Free-form agent text is never a valid handoff
 - SourceEvidence never sets PASS/FAIL/PAPER_CANDIDATE
 - READY (compiler) is not validation PASS
+- Security/integrity PASS is not semantic correctness and not validation authority
+- Head/candidate/manifest/dataset drift invalidates prior evidence for PASS / PAPER_CANDIDATE
 
 ## Related artifacts
 
@@ -143,4 +152,5 @@ profitability artifacts by ID/hash; they do not supersede them.
 | Source adapters | [`docs/research/CDB_RESEARCH_SOURCE_ADAPTER_CONTRACTS_V1.md`](CDB_RESEARCH_SOURCE_ADAPTER_CONTRACTS_V1.md) |
 | Compiler | [`docs/research/CDB_STRATEGY_CANDIDATE_COMPILER_V1.md`](CDB_STRATEGY_CANDIDATE_COMPILER_V1.md) |
 | Registry | [`docs/research/CDB_GITHUB_CANDIDATE_REGISTRY_V1.md`](CDB_GITHUB_CANDIDATE_REGISTRY_V1.md) |
+| Security / provenance / integrity | [`docs/research/CDB_RESEARCH_VALIDATION_SECURITY_PROVENANCE_GATES_V1.md`](CDB_RESEARCH_VALIDATION_SECURITY_PROVENANCE_GATES_V1.md) |
 | Profitability candidate (lineage) | [`docs/strategy/CDB_PROFITABILITY_CANDIDATE_CONTRACT_V1.md`](../strategy/CDB_PROFITABILITY_CANDIDATE_CONTRACT_V1.md) |

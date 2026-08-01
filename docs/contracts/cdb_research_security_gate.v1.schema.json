@@ -1,0 +1,746 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "title": "CDB Research Security Gate v1",
+  "description": "Security, provenance and integrity gate for Research-to-Hermes (#4271). External research is UNTRUSTED_INPUT. Security PASS is not validation authority, not PAPER_CANDIDATE, not Live-Go. Synthetic fixtures only in examples. No scanner execution in this contract slice.",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "schema_version",
+    "gate_id",
+    "candidate_id",
+    "candidate_version",
+    "evaluated_at",
+    "content_classification",
+    "source_provenance",
+    "integrity_bindings",
+    "check_results",
+    "injection_assessment",
+    "sensitive_data_assessment",
+    "codex_security_review",
+    "overall_verdict",
+    "limitations",
+    "authority_boundaries",
+    "safety_boundaries"
+  ],
+  "properties": {
+    "schema_version": {
+      "const": "cdb.research_security_gate.v1"
+    },
+    "gate_id": {
+      "type": "string",
+      "pattern": "^rsg-[a-z0-9][a-z0-9-]{2,80}$"
+    },
+    "candidate_id": {
+      "type": "string",
+      "pattern": "^sc-[a-z0-9][a-z0-9-]{2,80}$"
+    },
+    "candidate_version": {
+      "type": "string",
+      "pattern": "^v[0-9]+$"
+    },
+    "research_brief_id": {
+      "type": "string",
+      "pattern": "^rb-[a-z0-9][a-z0-9-]{2,80}$"
+    },
+    "research_brief_content_hash": {
+      "type": "string",
+      "pattern": "^sha256:[a-f0-9]{64}$"
+    },
+    "evaluated_at": {
+      "type": "string",
+      "format": "date-time"
+    },
+    "content_classification": {
+      "const": "UNTRUSTED_INPUT"
+    },
+    "source_provenance": {
+      "type": "array",
+      "minItems": 1,
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "source_id",
+          "provider",
+          "locator",
+          "content_hash"
+        ],
+        "properties": {
+          "source_id": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 120
+          },
+          "provider": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 120
+          },
+          "locator": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 500
+          },
+          "content_hash": {
+            "type": "string",
+            "pattern": "^sha256:[a-f0-9]{64}$"
+          }
+        }
+      }
+    },
+    "integrity_bindings": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "candidate_content_hash",
+        "validation_manifest_id",
+        "validation_manifest_hash",
+        "code_head_ref",
+        "code_head_sha",
+        "dataset_hashes",
+        "artifact_hashes"
+      ],
+      "properties": {
+        "candidate_content_hash": {
+          "type": "string",
+          "pattern": "^sha256:[a-f0-9]{64}$"
+        },
+        "validation_manifest_id": {
+          "type": "string",
+          "pattern": "^vm-[a-z0-9][a-z0-9-]{2,80}$"
+        },
+        "validation_manifest_hash": {
+          "type": "string",
+          "pattern": "^sha256:[a-f0-9]{64}$"
+        },
+        "code_head_ref": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 200
+        },
+        "code_head_sha": {
+          "type": "string",
+          "pattern": "^[a-f0-9]{40}$"
+        },
+        "dataset_hashes": {
+          "type": "array",
+          "minItems": 1,
+          "items": {
+            "type": "object",
+            "additionalProperties": false,
+            "required": [
+              "dataset_ref",
+              "sha256"
+            ],
+            "properties": {
+              "dataset_ref": {
+                "type": "string",
+                "minLength": 1
+              },
+              "sha256": {
+                "type": "string",
+                "pattern": "^sha256:[a-f0-9]{64}$"
+              }
+            }
+          }
+        },
+        "artifact_hashes": {
+          "type": "array",
+          "minItems": 1,
+          "items": {
+            "type": "object",
+            "additionalProperties": false,
+            "required": [
+              "artifact_ref",
+              "sha256"
+            ],
+            "properties": {
+              "artifact_ref": {
+                "type": "string",
+                "minLength": 1
+              },
+              "sha256": {
+                "type": "string",
+                "pattern": "^sha256:[a-f0-9]{64}$"
+              }
+            }
+          }
+        }
+      }
+    },
+    "check_results": {
+      "type": "array",
+      "minItems": 8,
+      "maxItems": 8,
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "check_id",
+          "category",
+          "verdict",
+          "evidence",
+          "disposition"
+        ],
+        "properties": {
+          "check_id": {
+            "type": "string",
+            "enum": [
+              "untrusted_input_classification",
+              "prompt_injection_resistance",
+              "sensitive_data_exclusion",
+              "source_provenance_complete",
+              "artifact_hash_bindings",
+              "head_and_dataset_integrity",
+              "codex_security_review",
+              "read_only_enforcement"
+            ]
+          },
+          "category": {
+            "type": "string",
+            "enum": [
+              "untrusted_input",
+              "prompt_injection",
+              "sensitive_data",
+              "provenance",
+              "integrity",
+              "supply_chain",
+              "read_only"
+            ]
+          },
+          "verdict": {
+            "type": "string",
+            "enum": [
+              "PASS",
+              "WARNING",
+              "FAIL",
+              "BLOCKED",
+              "REVIEW_REQUIRED"
+            ]
+          },
+          "evidence": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 2000
+          },
+          "disposition": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 2000
+          },
+          "affected_surface": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 200
+          }
+        }
+      }
+    },
+    "injection_assessment": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "suspicion",
+        "verdict",
+        "notes"
+      ],
+      "properties": {
+        "suspicion": {
+          "type": "boolean"
+        },
+        "verdict": {
+          "type": "string",
+          "enum": [
+            "PASS",
+            "WARNING",
+            "FAIL",
+            "BLOCKED",
+            "REVIEW_REQUIRED"
+          ]
+        },
+        "notes": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 2000
+        }
+      }
+    },
+    "sensitive_data_assessment": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "suspicion",
+        "verdict",
+        "redactions",
+        "notes"
+      ],
+      "properties": {
+        "suspicion": {
+          "type": "boolean"
+        },
+        "verdict": {
+          "type": "string",
+          "enum": [
+            "PASS",
+            "WARNING",
+            "FAIL",
+            "BLOCKED",
+            "REVIEW_REQUIRED"
+          ]
+        },
+        "redactions": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "additionalProperties": false,
+            "required": [
+              "field_path",
+              "data_class"
+            ],
+            "properties": {
+              "field_path": {
+                "type": "string",
+                "minLength": 1,
+                "maxLength": 300
+              },
+              "data_class": {
+                "type": "string",
+                "enum": [
+                  "secret",
+                  "token",
+                  "password",
+                  "private_key",
+                  "live_credential",
+                  "account_balance",
+                  "personal_account_data",
+                  "other_sensitive"
+                ]
+              }
+            }
+          }
+        },
+        "notes": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 2000
+        }
+      }
+    },
+    "codex_security_review": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "status",
+        "scope_note",
+        "findings",
+        "may_authorize_live",
+        "may_authorize_risk_bypass",
+        "may_authorize_capital",
+        "scanner_executed"
+      ],
+      "properties": {
+        "status": {
+          "type": "string",
+          "enum": [
+            "NOT_RUN",
+            "PENDING",
+            "PASS",
+            "WARNING",
+            "FAIL",
+            "BLOCKED",
+            "REVIEW_REQUIRED"
+          ]
+        },
+        "scope_note": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 2000
+        },
+        "findings": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "additionalProperties": false,
+            "required": [
+              "severity",
+              "evidence",
+              "affected_surface",
+              "disposition"
+            ],
+            "properties": {
+              "severity": {
+                "type": "string",
+                "enum": [
+                  "INFO",
+                  "LOW",
+                  "MEDIUM",
+                  "HIGH",
+                  "CRITICAL"
+                ]
+              },
+              "evidence": {
+                "type": "string",
+                "minLength": 1,
+                "maxLength": 2000
+              },
+              "affected_surface": {
+                "type": "string",
+                "minLength": 1,
+                "maxLength": 200
+              },
+              "disposition": {
+                "type": "string",
+                "minLength": 1,
+                "maxLength": 2000
+              }
+            }
+          }
+        },
+        "may_authorize_live": {
+          "const": false
+        },
+        "may_authorize_risk_bypass": {
+          "const": false
+        },
+        "may_authorize_capital": {
+          "const": false
+        },
+        "scanner_executed": {
+          "const": false
+        }
+      }
+    },
+    "drift_status": {
+      "type": "string",
+      "enum": [
+        "NONE",
+        "HEAD_DRIFT",
+        "CANDIDATE_DRIFT",
+        "MANIFEST_DRIFT",
+        "DATASET_DRIFT",
+        "ARTIFACT_DRIFT"
+      ]
+    },
+    "overall_verdict": {
+      "type": "string",
+      "enum": [
+        "PASS",
+        "WARNING",
+        "FAIL",
+        "BLOCKED",
+        "REVIEW_REQUIRED"
+      ]
+    },
+    "limitations": {
+      "type": "array",
+      "minItems": 1,
+      "items": {
+        "type": "string",
+        "minLength": 1
+      }
+    },
+    "authority_boundaries": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "research_apps_validation_authority",
+        "hermes_live_authority",
+        "automatic_strategy_promotion",
+        "security_integrity_implies_semantic_correctness",
+        "paper_candidate_is_live_go",
+        "real_money_go",
+        "risk_bypass"
+      ],
+      "properties": {
+        "research_apps_validation_authority": {
+          "const": false
+        },
+        "hermes_live_authority": {
+          "const": false
+        },
+        "automatic_strategy_promotion": {
+          "const": false
+        },
+        "security_integrity_implies_semantic_correctness": {
+          "const": false
+        },
+        "paper_candidate_is_live_go": {
+          "const": false
+        },
+        "real_money_go": {
+          "const": false
+        },
+        "risk_bypass": {
+          "const": false
+        }
+      }
+    },
+    "safety_boundaries": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "lr_status",
+        "missing_required_check_cannot_pass",
+        "productive_db_writes",
+        "plugin_installation",
+        "productive_agent_execution"
+      ],
+      "properties": {
+        "lr_status": {
+          "const": "NO-GO"
+        },
+        "missing_required_check_cannot_pass": {
+          "const": true
+        },
+        "productive_db_writes": {
+          "const": false
+        },
+        "plugin_installation": {
+          "const": false
+        },
+        "productive_agent_execution": {
+          "const": false
+        }
+      }
+    }
+  },
+  "allOf": [
+    {
+      "if": {
+        "properties": {
+          "overall_verdict": {
+            "const": "PASS"
+          }
+        },
+        "required": [
+          "overall_verdict"
+        ]
+      },
+      "then": {
+        "properties": {
+          "content_classification": {
+            "const": "UNTRUSTED_INPUT"
+          },
+          "drift_status": {
+            "const": "NONE"
+          },
+          "injection_assessment": {
+            "type": "object",
+            "required": [
+              "suspicion",
+              "verdict"
+            ],
+            "properties": {
+              "suspicion": {
+                "const": false
+              },
+              "verdict": {
+                "enum": [
+                  "PASS",
+                  "WARNING"
+                ]
+              }
+            }
+          },
+          "sensitive_data_assessment": {
+            "type": "object",
+            "required": [
+              "suspicion",
+              "verdict"
+            ],
+            "properties": {
+              "suspicion": {
+                "const": false
+              },
+              "verdict": {
+                "enum": [
+                  "PASS",
+                  "WARNING"
+                ]
+              }
+            }
+          },
+          "codex_security_review": {
+            "type": "object",
+            "required": [
+              "status",
+              "scanner_executed"
+            ],
+            "properties": {
+              "status": {
+                "enum": [
+                  "PASS",
+                  "WARNING",
+                  "NOT_RUN",
+                  "PENDING"
+                ],
+                "description": "NOT_RUN/PENDING are research-phase dispositions before implementation approval; they require WARNING on the codex check and an explicit limitation. FAIL/BLOCKED/REVIEW_REQUIRED cannot accompany overall PASS."
+              },
+              "scanner_executed": {
+                "const": false
+              }
+            }
+          },
+          "check_results": {
+            "type": "array",
+            "minItems": 8,
+            "maxItems": 8,
+            "items": {
+              "type": "object",
+              "required": [
+                "check_id",
+                "verdict"
+              ],
+              "properties": {
+                "verdict": {
+                  "enum": [
+                    "PASS",
+                    "WARNING"
+                  ]
+                }
+              }
+            }
+          }
+        },
+        "allOf": [
+          {
+            "properties": {
+              "check_results": {
+                "contains": {
+                  "type": "object",
+                  "required": [
+                    "check_id"
+                  ],
+                  "properties": {
+                    "check_id": {
+                      "const": "untrusted_input_classification"
+                    }
+                  }
+                }
+              }
+            }
+          },
+          {
+            "properties": {
+              "check_results": {
+                "contains": {
+                  "type": "object",
+                  "required": [
+                    "check_id"
+                  ],
+                  "properties": {
+                    "check_id": {
+                      "const": "prompt_injection_resistance"
+                    }
+                  }
+                }
+              }
+            }
+          },
+          {
+            "properties": {
+              "check_results": {
+                "contains": {
+                  "type": "object",
+                  "required": [
+                    "check_id"
+                  ],
+                  "properties": {
+                    "check_id": {
+                      "const": "sensitive_data_exclusion"
+                    }
+                  }
+                }
+              }
+            }
+          },
+          {
+            "properties": {
+              "check_results": {
+                "contains": {
+                  "type": "object",
+                  "required": [
+                    "check_id"
+                  ],
+                  "properties": {
+                    "check_id": {
+                      "const": "source_provenance_complete"
+                    }
+                  }
+                }
+              }
+            }
+          },
+          {
+            "properties": {
+              "check_results": {
+                "contains": {
+                  "type": "object",
+                  "required": [
+                    "check_id"
+                  ],
+                  "properties": {
+                    "check_id": {
+                      "const": "artifact_hash_bindings"
+                    }
+                  }
+                }
+              }
+            }
+          },
+          {
+            "properties": {
+              "check_results": {
+                "contains": {
+                  "type": "object",
+                  "required": [
+                    "check_id"
+                  ],
+                  "properties": {
+                    "check_id": {
+                      "const": "head_and_dataset_integrity"
+                    }
+                  }
+                }
+              }
+            }
+          },
+          {
+            "properties": {
+              "check_results": {
+                "contains": {
+                  "type": "object",
+                  "required": [
+                    "check_id"
+                  ],
+                  "properties": {
+                    "check_id": {
+                      "const": "codex_security_review"
+                    }
+                  }
+                }
+              }
+            }
+          },
+          {
+            "properties": {
+              "check_results": {
+                "contains": {
+                  "type": "object",
+                  "required": [
+                    "check_id"
+                  ],
+                  "properties": {
+                    "check_id": {
+                      "const": "read_only_enforcement"
+                    }
+                  }
+                }
+              }
+            }
+          }
+        ]
+      }
+    }
+  ]
+}
