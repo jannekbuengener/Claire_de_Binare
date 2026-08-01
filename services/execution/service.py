@@ -12,6 +12,7 @@ import logging
 import logging.config
 import math
 import time
+from decimal import Decimal
 from typing import Optional
 from datetime import datetime
 from pathlib import Path
@@ -47,6 +48,12 @@ try:
     from . import config
     from .models import Order, ExecutionResult, OrderStatus
     from .database import Database
+    from .reduce_only import (
+        REDUCE_ONLY_DUPLICATE_RESULT,
+        REDUCE_ONLY_POSITION_INCREASE_BLOCKED,
+        REDUCE_ONLY_POSITION_UNKNOWN,
+        REDUCE_ONLY_REJECTED,
+    )
     from .open_order_registry import OpenOrderRegistry, OPEN_STATUSES
     from .kill_cancel import (
         KillCancelBatchVerdict,
@@ -58,6 +65,12 @@ except ImportError:
     import config
     from models import Order, ExecutionResult, OrderStatus
     from database import Database
+    from reduce_only import (
+        REDUCE_ONLY_DUPLICATE_RESULT,
+        REDUCE_ONLY_POSITION_INCREASE_BLOCKED,
+        REDUCE_ONLY_POSITION_UNKNOWN,
+        REDUCE_ONLY_REJECTED,
+    )
     from open_order_registry import OpenOrderRegistry, OPEN_STATUSES
     from kill_cancel import (
         KillCancelBatchVerdict,
@@ -65,6 +78,7 @@ except ImportError:
         KillCancelSupervisor,
         RC_FILL_AFTER_KILL_ACTIVATION,
     )
+
 # Logging setup mit zentraler Konfiguration
 # Im Container ist logging_config.json nicht verfügbar, daher Fallback
 logging_config_path = Path("/app/logging_config.json")  # Falls gemountet
@@ -387,6 +401,71 @@ def _build_result_metadata(order: Order, result: ExecutionResult) -> dict:
     )
     metadata["fill_context"] = fill_context
     return metadata
+
+
+def _reduce_only_metadata(preparation: dict, finalization: dict | None = None) -> dict:
+    """Build stable machine-readable evidence without using it as enforcement."""
+
+    final = finalization or {}
+
+    def _text(value):
+        return None if value is None else str(value)
+
+    return {
+        "contract_version": "execution_reduce_only_v1",
+        "position_sign_convention": "long_positive_short_negative",
+        "quantity_unit": "base_asset",
+        "position_before": _text(preparation.get("position_before")),
+        "requested_quantity": _text(preparation.get("requested_quantity")),
+        "submitted_quantity": _text(preparation.get("submitted_quantity")),
+        "filled_quantity": _text(final.get("filled_quantity", Decimal("0"))),
+        "adapter_reported_filled_quantity": _text(
+            final.get("adapter_reported_filled_quantity")
+        ),
+        "position_after": _text(
+            final.get("position_after", preparation.get("position_after"))
+        ),
+        "remaining_position_quantity": _text(final.get("remaining_position_quantity")),
+        "reason_code": final.get(
+            "reason_code", preparation.get("reason_code", REDUCE_ONLY_REJECTED)
+        ),
+        "prepare_reason_code": preparation.get("reason_code"),
+        "position_before_apply": _text(final.get("position_before_apply")),
+        "realized_pnl_delta": _text(final.get("realized_pnl_delta")),
+        "realized_pnl_after": _text(final.get("realized_pnl_after")),
+        "adapter_status": final.get("adapter_status"),
+        "duplicate": bool(final.get("duplicate", preparation.get("duplicate", False))),
+        "position_increase_observed": bool(
+            final.get("position_increase_observed", False)
+        ),
+        "side_flip_observed": bool(final.get("side_flip_observed", False)),
+        "position_update_owner": "execution_reduce_only_v1",
+    }
+
+
+def _reject_reduce_only(order: Order, preparation: dict) -> ExecutionResult:
+    reason_code = str(preparation.get("reason_code") or REDUCE_ONLY_REJECTED)
+    result = ExecutionResult(
+        order_id=order.order_id or "REDUCE_ONLY_BLOCKED",
+        symbol=order.symbol,
+        side=order.side,
+        quantity=order.quantity,
+        filled_quantity=0.0,
+        status=OrderStatus.REJECTED.value,
+        price=None,
+        client_id=order.client_id,
+        error_message=f"Order blocked: {reason_code}",
+        timestamp=utcnow().isoformat(),
+        strategy_id=order.strategy_id,
+        bot_id=order.bot_id,
+    )
+    result.metadata = _build_result_metadata(order, result)
+    result.metadata["reduce_only"] = _reduce_only_metadata(preparation)
+    result.reduce_only = True
+    result.reduce_only_contract = result.metadata["reduce_only"]
+    increment_stat("orders_rejected")
+    _publish_result(result)
+    return result
 
 
 _ARVP_PAPER_ORDER_ID_PREFIX = "paper_"
@@ -769,6 +848,59 @@ def process_order(order_data: object):
             _publish_result(result)
             return result
 
+        reduce_only_preparation: dict | None = None
+        if order.reduce_only:
+            adapter_supports_reduce_only = (
+                getattr(executor, "supports_reduce_only", False) is True
+            )
+            if not config.MOCK_TRADING or not adapter_supports_reduce_only:
+                return _reject_reduce_only(
+                    order,
+                    {
+                        "allowed": False,
+                        "duplicate": False,
+                        "position_before": None,
+                        "requested_quantity": Decimal(str(order.quantity)),
+                        "submitted_quantity": Decimal("0"),
+                        "reason_code": REDUCE_ONLY_REJECTED,
+                    },
+                )
+            if db is None or not order.order_id:
+                return _reject_reduce_only(
+                    order,
+                    {
+                        "allowed": False,
+                        "duplicate": False,
+                        "position_before": None,
+                        "requested_quantity": Decimal(str(order.quantity)),
+                        "submitted_quantity": Decimal("0"),
+                        "reason_code": REDUCE_ONLY_POSITION_UNKNOWN,
+                    },
+                )
+            try:
+                reduce_only_preparation = db.prepare_reduce_only(
+                    order_id=order.order_id,
+                    symbol=order.symbol,
+                    side=order.side,
+                    requested_quantity=Decimal(str(order.quantity)),
+                )
+            except Exception as exc:
+                logger.error("Reduce-only preparation failed closed: %s", exc)
+                return _reject_reduce_only(
+                    order,
+                    {
+                        "allowed": False,
+                        "duplicate": False,
+                        "position_before": None,
+                        "requested_quantity": Decimal(str(order.quantity)),
+                        "submitted_quantity": Decimal("0"),
+                        "reason_code": REDUCE_ONLY_POSITION_UNKNOWN,
+                    },
+                )
+            if not reduce_only_preparation.get("allowed"):
+                return _reject_reduce_only(order, reduce_only_preparation)
+            order.quantity = float(reduce_only_preparation["submitted_quantity"])
+
         logger.info(
             "Processing order: %s %s qty=%.4f",
             order.symbol,
@@ -832,8 +964,33 @@ def process_order(order_data: object):
                         "adapter_id": getattr(executor, "adapter_id", None),
                     },
                     policy_snapshot=order.policy_snapshot,
+                    reduce_only=order.reduce_only,
+                    position_before=(
+                        str(reduce_only_preparation.get("position_before"))
+                        if reduce_only_preparation is not None
+                        else None
+                    ),
+                    max_executable_quantity=(
+                        str(reduce_only_preparation.get("submitted_quantity"))
+                        if reduce_only_preparation is not None
+                        else None
+                    ),
+                    reduce_only_contract_version=(
+                        "execution_reduce_only_v1"
+                        if reduce_only_preparation is not None
+                        else None
+                    ),
                 )
             )
+
+            if (
+                order.reduce_only
+                and getattr(adapter_response, "reduce_only_acknowledged", False)
+                is not True
+            ):
+                raise RuntimeError(
+                    "Reduce-only adapter response missing contract acknowledgement"
+                )
 
             result = ExecutionResult(
                 order_id=adapter_response.order_id,
@@ -851,7 +1008,11 @@ def process_order(order_data: object):
                 fill_id=(
                     getattr(adapter_response, "fill_id", None)
                     or adapter_response.order_id
-                    if adapter_response.status == OrderStatus.FILLED.value
+                    if adapter_response.status
+                    in {
+                        OrderStatus.FILLED.value,
+                        OrderStatus.PARTIALLY_FILLED.value,
+                    }
                     else None
                 ),
             )
@@ -866,8 +1027,70 @@ def process_order(order_data: object):
             result.strategy_id = order.strategy_id
             result.bot_id = order.bot_id
 
+        reduce_only_finalization: dict | None = None
+        if reduce_only_preparation is not None:
+            adapter_reported_filled_quantity = Decimal(str(result.filled_quantity))
+            adapter_status = result.status
+            try:
+                reduce_only_finalization = db.finalize_reduce_only(
+                    order_id=order.order_id,
+                    status=result.status,
+                    filled_quantity=adapter_reported_filled_quantity,
+                    fill_price=(
+                        Decimal(str(result.price)) if result.price is not None else None
+                    ),
+                )
+                reduce_only_finalization["adapter_status"] = adapter_status
+                if (
+                    reduce_only_finalization.get("reason_code")
+                    == REDUCE_ONLY_POSITION_INCREASE_BLOCKED
+                ):
+                    result.status = OrderStatus.FAILED.value
+                    result.filled_quantity = 0.0
+                    result.fill_id = None
+                    result.error_message = (
+                        "Reduce-only result blocked: "
+                        f"{REDUCE_ONLY_POSITION_INCREASE_BLOCKED}"
+                    )
+            except Exception as exc:
+                logger.error("Reduce-only finalization failed closed: %s", exc)
+                result.error_message = (
+                    f"Reduce-only result blocked: {REDUCE_ONLY_POSITION_UNKNOWN}"
+                )
+                result.status = OrderStatus.FAILED.value
+                reduce_only_finalization = {
+                    "applied": False,
+                    "duplicate": False,
+                    "position_after": reduce_only_preparation.get("position_before"),
+                    "remaining_position_quantity": abs(
+                        Decimal(
+                            str(
+                                reduce_only_preparation.get(
+                                    "position_before", Decimal("0")
+                                )
+                            )
+                        )
+                    ),
+                    "filled_quantity": Decimal("0"),
+                    "adapter_reported_filled_quantity": (
+                        adapter_reported_filled_quantity
+                    ),
+                    "adapter_status": adapter_status,
+                    "reason_code": REDUCE_ONLY_POSITION_UNKNOWN,
+                }
+                result.filled_quantity = 0.0
+                result.fill_id = None
+
         _apply_execution_result_to_registry(order, result)
+
         result.metadata = _build_result_metadata(order, result)
+        if reduce_only_preparation is not None:
+            result.metadata["reduce_only"] = _reduce_only_metadata(
+                reduce_only_preparation,
+                reduce_only_finalization,
+            )
+            result.reduce_only = True
+            result.reduce_only_contract = result.metadata["reduce_only"]
 
         # Phase 8C/8E: Persist ORDER and FILL events to correlation_ledger
         # ARVP paper-reference contract v1 (Issue #1901) qualifies paper runs via
@@ -917,8 +1140,8 @@ def process_order(order_data: object):
                         "⚠️ correlation_ledger ORDER write failed (evidence debt)"
                     )
 
-                # Phase 8E: FILL event (only for fully filled orders, same timestamp_ms)
-                if schema_status == "FILLED" and result.fill_id:
+                # Phase 8E: actual full or partial FILL, same timestamp_ms.
+                if schema_status in {"FILLED", "PARTIALLY_FILLED"} and result.fill_id:
                     fill_payload = {
                         "signal_id": order.signal_id,
                         "decision_id": order.decision_id,
@@ -974,7 +1197,8 @@ def process_order(order_data: object):
             _lr021_emit = False
         if (
             _lr021_emit
-            and ExecutionResult._schema_status(result.status) == "FILLED"
+            and ExecutionResult._schema_status(result.status)
+            in {"FILLED", "PARTIALLY_FILLED"}
             and getattr(result, "fill_id", None)
         ):
             try:
@@ -1006,9 +1230,14 @@ def process_order(order_data: object):
 
         # Update stats (Thread-safe)
         schema_status = ExecutionResult._schema_status(result.status)
-        if schema_status == "FILLED":
+        if schema_status in {"FILLED", "PARTIALLY_FILLED"}:
             increment_stat("orders_filled")
-            logger.info("Order filled: %s at %s", result.order_id, result.price)
+            logger.info(
+                "Order execution result %s: %s at %s",
+                schema_status,
+                result.order_id,
+                result.price,
+            )
         else:
             increment_stat("orders_rejected")
             logger.warning(

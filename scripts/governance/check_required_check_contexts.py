@@ -77,9 +77,13 @@ def load_baseline(path: Path) -> dict[str, Any]:
     )
     data["contexts"] = cleaned_contexts
 
-    # Optional: Commit Status / external contexts (not workflow job names).
-    # Accept either key; normalize onto commit_status_contexts.
-    if "commit_status_contexts" in data:
+    # Optional: external required contexts (not workflow job names).
+    # Prefer check_run_contexts (App Check Run post-#4170 Phase D); keep
+    # legacy aliases. Normalize onto commit_status_contexts for report code.
+    if "check_run_contexts" in data:
+        external_raw = data.get("check_run_contexts")
+        external_field = "check_run_contexts"
+    elif "commit_status_contexts" in data:
         external_raw = data.get("commit_status_contexts")
         external_field = "commit_status_contexts"
     elif "external_contexts" in data:
@@ -87,9 +91,14 @@ def load_baseline(path: Path) -> dict[str, Any]:
         external_field = "external_contexts"
     else:
         external_raw = []
-        external_field = "commit_status_contexts"
+        external_field = "check_run_contexts"
     cleaned_external = _clean_context_list(external_raw, field_name=external_field)
     data["commit_status_contexts"] = cleaned_external
+    data["external_context_kind"] = (
+        "app-check-run"
+        if external_field == "check_run_contexts"
+        else "commit-status-or-external"
+    )
     return data
 
 
@@ -238,7 +247,7 @@ def write_report(
         if not providers:
             if context in commit_status_set:
                 table_lines.append(
-                    f"| `{_escape_cell(context)}` | external/commit-status | n/a | n/a | n/a | n/a |"
+                    f"| `{_escape_cell(context)}` | external/app-check-run | n/a | n/a | n/a | n/a |"
                 )
             else:
                 table_lines.append(

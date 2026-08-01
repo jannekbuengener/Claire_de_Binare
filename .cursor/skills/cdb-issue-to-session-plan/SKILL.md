@@ -49,14 +49,19 @@ Use this after `cdb-control-intake` when the next concrete unit of work is one s
    - Rank the issue inside the current stage and weekly context.
    - Name guardrails, blockers, and explicit non-goals.
    - Break the work into a short, ordered session plan with concrete next steps.
-   - If the plan ends in a PR, name the expected close state honestly:
-     autonomous squash merge only when the full capability gate in
+   - Every plan ends in a PR handoff. Name the target PR from the routing
+     block and the expected close state `DONE_SLICE_ADDED_TO_BATCH_PR`: the
+     issue is delivered into a compatible open PR, that PR stays open, and the
+     issue stays open until a verified merge. A compatible open PR always has
+     priority over a new PR.
+   - Never plan a merge, a full final-head Fast-CI, a `cdb-local-ci` publish,
+     an acceptance-chain run (`cdb-integration-wiring-audit`,
+     `cdb-pr-gap-classifier`, `cdb-pr-completeness-review`,
+     `cdb-batch-merge-conductor`), or an issue closure into a delivery
+     session. Merge planning — including merge waves, rebase-and-revalidate
+     sequencing, and the capability gate in
      `docs/runbooks/merge_policy_ci_gate.md` § Capability-based autonomous
-     merge is provable for the exact head; otherwise plan for
-     `DONE_PR_OPEN_MERGE_HANDOFF`, not a silent assumption of merge.
-   - If the plan spans multiple sequential PRs on the same base (a merge
-     wave), state that each merge requires a rebase + full revalidation
-     against the just-merged main before the next merge is attempted.
+     merge — belongs to a separately started merge session.
    - Mark all unresolved assumptions as unconfirmed.
 
 ## Interpretation Rules

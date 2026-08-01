@@ -1,0 +1,94 @@
+{
+  "description": "Deterministic 1m candle series for the Issue #4186 stop-loss shadow run. Candle shape mirrors services/candles/models.py (ts in seconds, decimal-string OHLCV). Long position at 100.00 with a 2% stop at 98.00: the series stays above the stop, breaches it once, and keeps printing below it. shadow_restart_before_indices simulates a consumer restart on the step right after the exit intent was emitted.",
+  "symbol": "BTCUSDT",
+  "stop_loss_pct": "0.02",
+  "max_price_age_ms": 120000,
+  "shadow_restart_before_indices": [4],
+  "position": {
+    "symbol": "BTCUSDT",
+    "side": "LONG",
+    "quantity": "0.50000000",
+    "entry_price": "100.00000000",
+    "position_id": "pos-4186-shadow-1",
+    "opened_at_ms": 1800000000000
+  },
+  "candles": [
+    {
+      "ts": "1800000060",
+      "symbol": "BTCUSDT",
+      "timeframe": "60s",
+      "open": "100.00000000",
+      "high": "100.40000000",
+      "low": "99.80000000",
+      "close": "100.20000000",
+      "volume": "1.50000000",
+      "trades": "12"
+    },
+    {
+      "ts": "1800000120",
+      "symbol": "BTCUSDT",
+      "timeframe": "60s",
+      "open": "100.20000000",
+      "high": "100.30000000",
+      "low": "99.10000000",
+      "close": "99.30000000",
+      "volume": "2.10000000",
+      "trades": "18"
+    },
+    {
+      "ts": "1800000180",
+      "symbol": "BTCUSDT",
+      "timeframe": "60s",
+      "open": "99.30000000",
+      "high": "99.40000000",
+      "low": "98.20000000",
+      "close": "98.40000000",
+      "volume": "2.60000000",
+      "trades": "21"
+    },
+    {
+      "ts": "1800000240",
+      "symbol": "BTCUSDT",
+      "timeframe": "60s",
+      "open": "98.40000000",
+      "high": "98.45000000",
+      "low": "97.20000000",
+      "close": "97.60000000",
+      "volume": "3.40000000",
+      "trades": "27"
+    },
+    {
+      "ts": "1800000300",
+      "symbol": "BTCUSDT",
+      "timeframe": "60s",
+      "open": "97.60000000",
+      "high": "97.70000000",
+      "low": "96.10000000",
+      "close": "96.30000000",
+      "volume": "4.20000000",
+      "trades": "31"
+    },
+    {
+      "ts": "1800000360",
+      "symbol": "BTCUSDT",
+      "timeframe": "60s",
+      "open": "96.30000000",
+      "high": "96.90000000",
+      "low": "95.80000000",
+      "close": "96.80000000",
+      "volume": "3.10000000",
+      "trades": "24"
+    },
+    {
+      "ts": "1800000420",
+      "symbol": "BTCUSDT",
+      "timeframe": "60s",
+      "open": "96.80000000",
+      "high": "97.60000000",
+      "low": "96.70000000",
+      "close": "97.40000000",
+      "volume": "2.20000000",
+      "trades": "19"
+    }
+  ]
+}

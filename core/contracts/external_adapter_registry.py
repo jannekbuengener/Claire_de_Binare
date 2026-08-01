@@ -13,6 +13,7 @@ can wire them in later without inventing a plugin system.
 
 from __future__ import annotations
 
+from decimal import Decimal, InvalidOperation
 from types import MappingProxyType
 from typing import Any, Callable, Mapping, cast
 
@@ -150,6 +151,7 @@ class MockExecutionAdapter:
     """First-party shim for the current mock execution path."""
 
     adapter_id: ExecutionAdapterId = MOCK_BUILTIN
+    supports_reduce_only = True
     supports_cancel: bool = True
 
     def __init__(self, executor=None, **executor_kwargs: Any) -> None:
@@ -163,6 +165,32 @@ class MockExecutionAdapter:
         from services.execution.models import Order
 
         order = Order.from_event(dict(request.order))
+        if request.reduce_only is not order.reduce_only:
+            raise ValueError("reduce-only adapter flag mismatch")
+        if request.reduce_only:
+            try:
+                position = Decimal(str(request.position_before))
+                maximum = Decimal(str(request.max_executable_quantity))
+                quantity = Decimal(str(order.quantity))
+            except (InvalidOperation, TypeError, ValueError) as exc:
+                raise ValueError("invalid reduce-only adapter quantities") from exc
+            if not (
+                request.reduce_only_contract_version == "execution_reduce_only_v1"
+                and order.reduce_only is True
+                and position.is_finite()
+                and position != 0
+                and maximum.is_finite()
+                and maximum > 0
+                and maximum <= abs(position)
+                and quantity.is_finite()
+                and quantity > 0
+                and quantity <= maximum
+                and (
+                    (position > 0 and order.side == "SELL")
+                    or (position < 0 and order.side == "BUY")
+                )
+            ):
+                raise ValueError("reduce-only adapter contract rejected")
         result = self._executor.execute_order(order)
         return ExecutionAdapterResponse(
             status=result.status,
@@ -172,6 +200,7 @@ class MockExecutionAdapter:
             venue_order_id=result.order_id,
             error_message=result.error_message,
             raw_venue_payload={"adapter_id": self.adapter_id},
+            reduce_only_acknowledged=request.reduce_only,
         )
 
     def cancel_order(self, request: CancelOrderRequest) -> CancelOrderResponse:
@@ -339,6 +368,8 @@ class MexcExecutionAdapter:
     """First-party shim for the current MEXC-backed execution path."""
 
     adapter_id: ExecutionAdapterId = MEXC_BUILTIN
+    # No venue-native or equivalent reduce-only behavior is proven for this shim.
+    supports_reduce_only = False
     supports_cancel: bool = False
 
     def __init__(self, executor=None, **executor_kwargs: Any) -> None:
@@ -361,6 +392,7 @@ class MexcExecutionAdapter:
             venue_order_id=result.order_id,
             error_message=result.error_message,
             raw_venue_payload={"adapter_id": self.adapter_id},
+            reduce_only_acknowledged=False,
         )
 
     def cancel_order(self, request: CancelOrderRequest) -> CancelOrderResponse:

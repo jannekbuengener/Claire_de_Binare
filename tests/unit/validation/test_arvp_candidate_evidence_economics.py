@@ -42,6 +42,40 @@ def test_cost_evidence_includes_gross_to_net_block() -> None:
         assert "fingerprint" in g2n["assumptions_snapshot"]
 
 
+def test_funding_and_limit_orders_are_not_billed() -> None:
+    """#4190: both surfaces stay retired and never become a measured zero."""
+    result = assemble_arvp_candidate_evidence(_bundle())
+    for packet in result.packets:
+        g2n = packet["arvp_evidence"]["cost_evidence"][
+            "execution_economics_gross_to_net"
+        ]
+        funding = g2n["components"]["funding_cost_when_active"]
+        assert funding["status"] == "inactive_not_wired"
+        assert funding["amount"] is None
+        snapshot = g2n["assumptions_snapshot"]
+        assert snapshot["funding_model"]["wired_into_replay_pnl"] is False
+        assert snapshot["funding_model"]["input_availability"] == (
+            "unavailable_no_funding_rate_series"
+        )
+        assert snapshot["limit_order_model"]["status"] == (
+            "parked_not_economics_billable"
+        )
+        assert snapshot["limit_order_model"]["wired_into_arvp_runners"] is False
+
+
+def test_market_only_path_reports_taker_semantics() -> None:
+    result = assemble_arvp_candidate_evidence(_bundle())
+    for packet in result.packets:
+        g2n = packet["arvp_evidence"]["cost_evidence"][
+            "execution_economics_gross_to_net"
+        ]
+        semantics = g2n["execution_semantics"]
+        assert semantics["order_type"] == "market"
+        assert semantics["maker_fill_evidence"] is False
+        assert semantics["funding_basis"] is None
+        assert g2n["components"]["maker_fee_cost"]["status"] == "zero"
+
+
 def test_limitations_document_placeholder_zeros() -> None:
     result = assemble_arvp_candidate_evidence(_bundle())
     for packet in result.packets:

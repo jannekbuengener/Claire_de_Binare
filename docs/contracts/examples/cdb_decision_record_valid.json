@@ -1,0 +1,27 @@
+{
+  "schema_version": "cdb.decision_record.v1",
+  "decision_id": "dr-wave1-example-001",
+  "run_id": "run-wave1-example-001",
+  "candidate_id": "sc-wave1-btc-trend-breakout",
+  "candidate_version": "v1",
+  "evidence_id": "ce-wave1-example-001",
+  "decided_at": "2026-08-01T10:35:00Z",
+  "decision": "PARK",
+  "rationale": "Evidence incomplete for Wave-1 docs-only slice; park pending runner/ARVP execution.",
+  "allowed_next_actions": [
+    "revise_candidate_version",
+    "collect_missing_gate_evidence",
+    "keep_parked"
+  ],
+  "forbidden_next_actions": [
+    "automatic_strategy_promotion",
+    "live_capital_allocation",
+    "bypass_risk_layer"
+  ],
+  "paper_candidate_is_not_live_go": true,
+  "safety_boundaries": {
+    "lr_status": "NO-GO",
+    "real_money_go": false,
+    "automatic_strategy_promotion": false
+  }
+}
