@@ -24,17 +24,20 @@ LR: **NO-GO**
 [Hetzner Ubuntu Hermes host]
   - user: hermes (unprivileged)
   - profiles: jannek-assistant | cdb-engineer | (validation-chief disabled)
-  - serve bind: 127.0.0.1 only
+  - dashboard bind: 127.0.0.1 only (distinct ports per profile)
       | scoped
-      +--> [GitHub App installation tokens] --> Claire_de_Binare only  <!-- pragma: allowlist secret -->
+      +--> [dedicated GitHub App tokens] --> Claire_de_Binare only  <!-- pragma: allowlist secret -->
       +--> [Windows hermes-win] --> D:\Dev\HermesWorkspace\Claire_de_Binare only  <!-- pragma: allowlist secret -->
 ```
+
+App `4410232` (`cdb-local-ci`) is **not** the Hermes write App unless live
+permissions prove `contents`/`pull_requests`/`issues` write without `checks:write`.
 
 ## Actors / threats
 
 | Actor | Threat | Mitigation |
 |---|---|---|
-| Internet anon | Reach Hermes/dashboard | Hetzner firewall deny-inbound; loopback bind; no public 9119 |
+| Internet anon | Reach Hermes/dashboard | Hetzner firewall deny-inbound; loopback bind; no public 9119/9120 |
 | Stolen laptop on Tailscale | Abuse Hermes | Hermes auth for non-loopback; OS login; approvals.deny; redact_secrets |
 | Prompt injection via tools | Escape workspace | Docker/SSH allowlists; deny rules; no YOLO in units |
 | Compromised cdb-engineer | Broad GitHub admin | Scoped installation tokens; forbid checks:write / admin merge / secrets |
@@ -50,7 +53,7 @@ LR: **NO-GO**
 |---|---|
 | Windows `kill-switch.ps1 -Action Disable` | `WORKSTATION_UNAVAILABLE`; sshd disabled |
 | Stop Tailscale on Windows or Hetzner | Private path gone; no public fallback |
-| `systemctl stop hermes-serve@*` | Agent offline |
+| `systemctl stop 'hermes-dashboard@*'` | Agent offline |
 | Revoke GitHub App installation / rotate PEM | Tokens useless |
 | `CONFIRM=DESTROY destroy.sh` | Cloud resources removed |
 
@@ -67,9 +70,10 @@ Enforced in `tools/hermes_ops/policy.py` (`omnipotent_combination_forbidden`).
 
 ## Auth lineage
 
-GitHub authentication reuses App minting primitives from `ci.publisher.app_auth`
-(#4170 / #4195). Hermes adds repository + permission scoping and explicitly
-forbids `checks:write` so this surface cannot publish `cdb-local-ci`.
+Token minting reuses JWT/PEM helpers from `ci.publisher.app_auth` (#4170 / #4195)
+as library code only. Hermes adds repository + permission scoping, rejects App
+`4410232` without a verified compatible permission map, forbids `checks:write`,
+and writes live tokens only to a `0600` `--token-file` (never stdout).
 
 ## Residual risks
 

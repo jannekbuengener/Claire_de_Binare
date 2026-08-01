@@ -1,24 +1,35 @@
 #Requires -Version 5.1
 <#
 .SYNOPSIS
-  Prepare a dedicated, non-admin Windows workspace for Hermes (#4289).
+  Create dedicated non-admin Windows user + Hermes workspace (#4289).
 
 .DESCRIPTION
-  Creates D:\Dev\HermesWorkspace\Claire_de_Binare (override via -WorkspaceRoot),  # pragma: allowlist secret
-  a dedicated local user (non-admin), and restrictive NTFS ACLs.
-  Does NOT open public SSH/RDP/VNC ports. Does NOT touch the normal user profile.
+  - Creates local user hermes-win if missing (non-admin).
+  - Creates D:\Dev\HermesWorkspace\Claire_de_Binare (override via -WorkspaceRoot).
+  - Removes ACL inheritance; grants SYSTEM/Administrators full, hermes-win limited.
+  - Does NOT open public SSH/RDP/VNC. Does NOT touch the normal user profile.
 
 .NOTES
-  Run elevated once by Jannek (Human-GO). No secrets are written by this script.
+  Run elevated once (UAC / Human-GO). No secrets are written by this script.
+  Password: pass -PasswordSecure or set HERMES_WIN_PASSWORD env (SecureString recommended).
 #>
 [CmdletBinding(SupportsShouldProcess = $true)]
 param(
-    [string]$WorkspaceRoot = 'D:\Dev\HermesWorkspace\Claire_de_Binare',  # pragma: allowlist secret
+    [string]$WorkspaceRoot = 'D:\Dev\HermesWorkspace\Claire_de_Binare',
     [string]$HermesUser = 'hermes-win',
+    [SecureString]$PasswordSecure,
     [switch]$GrantWrite
 )
 
 $ErrorActionPreference = 'Stop'
+
+function Assert-Elevated {
+    $id = [Security.Principal.WindowsIdentity]::GetCurrent()
+    $p = New-Object Security.Principal.WindowsPrincipal($id)
+    if (-not $p.IsInRole([Security.Principal.WindowsBuiltInRole]::Administrator)) {
+        throw 'setup-workspace.ps1 must run elevated (Administrator).'
+    }
+}
 
 function Assert-NotAdminProfileLeak {
     $forbidden = @(
@@ -32,21 +43,76 @@ function Assert-NotAdminProfileLeak {
             throw "Refuse workspace under personal/sensitive path: $WorkspaceRoot"
         }
     }
+    if ($WorkspaceRoot -match '^[A-Za-z]:\\Users\\') {
+        throw "Refuse workspace under C:\\Users profile tree: $WorkspaceRoot"
+    }
 }
 
-Assert-NotAdminProfileLeak
+function Ensure-HermesUser {
+    param([string]$UserName, [SecureString]$Password)
+    $existing = Get-LocalUser -Name $UserName -ErrorAction SilentlyContinue
+    if (-not $existing) {
+        if (-not $Password) {
+            $envPw = $env:HERMES_WIN_PASSWORD
+            if ([string]::IsNullOrWhiteSpace($envPw)) {
+                throw 'Hermes user missing: pass -PasswordSecure or set HERMES_WIN_PASSWORD for creation.'
+            }
+            $Password = ConvertTo-SecureString $envPw -AsPlainText -Force
+            Remove-Item Env:HERMES_WIN_PASSWORD -ErrorAction SilentlyContinue
+        }
+        if ($PSCmdlet.ShouldProcess($UserName, 'Create local non-admin user')) {
+            New-LocalUser -Name $UserName -Password $Password -PasswordNeverExpires `
+                -UserMayNotChangePassword:$false -AccountNeverExpires `
+                -Description 'CDB Hermes dedicated workspace user (#4289)' | Out-Null
+            Write-Host "Created local user: $UserName"
+        }
+    }
+    else {
+        Write-Host "Local user already exists: $UserName"
+    }
 
-if (-not (Test-Path -LiteralPath (Split-Path -Parent $WorkspaceRoot))) {
-    New-Item -ItemType Directory -Path (Split-Path -Parent $WorkspaceRoot) -Force | Out-Null
+    # Ensure NOT in Administrators.
+    $admins = Get-LocalGroupMember -Group 'Administrators' -ErrorAction SilentlyContinue |
+        Where-Object { $_.Name -like "*\$UserName" -or $_.Name -eq $UserName }
+    if ($admins) {
+        Remove-LocalGroupMember -Group 'Administrators' -Member $UserName -ErrorAction Stop
+        Write-Host "Removed $UserName from Administrators"
+    }
+
+    # Ensure Users membership for interactive/SSH baseline.
+    $users = Get-LocalGroupMember -Group 'Users' -ErrorAction SilentlyContinue |
+        Where-Object { $_.Name -like "*\$UserName" -or $_.Name -eq $UserName }
+    if (-not $users) {
+        Add-LocalGroupMember -Group 'Users' -Member $UserName
+    }
+
+    $verify = Get-LocalUser -Name $UserName
+    if (-not $verify.Enabled) {
+        Enable-LocalUser -Name $UserName
+    }
+    $stillAdmin = Get-LocalGroupMember -Group 'Administrators' -ErrorAction SilentlyContinue |
+        Where-Object { $_.Name -like "*\$UserName" -or $_.Name -eq $UserName }
+    if ($stillAdmin) {
+        throw "FAIL: $UserName is still in Administrators after remediation"
+    }
+    Write-Host "Verified non-admin user: $UserName (Enabled=$($verify.Enabled))"
+}
+
+Assert-Elevated
+Assert-NotAdminProfileLeak
+Ensure-HermesUser -UserName $HermesUser -Password $PasswordSecure
+
+$parent = Split-Path -Parent $WorkspaceRoot
+if (-not (Test-Path -LiteralPath $parent)) {
+    New-Item -ItemType Directory -Path $parent -Force | Out-Null
 }
 if (-not (Test-Path -LiteralPath $WorkspaceRoot)) {
     New-Item -ItemType Directory -Path $WorkspaceRoot -Force | Out-Null
 }
 
-# ACL: SYSTEM + Administrators full; HermesUser limited; remove inherited Everyone/Users.
 $acl = Get-Acl -LiteralPath $WorkspaceRoot
 $acl.SetAccessRuleProtection($true, $false)
-$acl.Access | ForEach-Object { [void]$acl.RemoveAccessRule($_) }
+@($acl.Access) | ForEach-Object { [void]$acl.RemoveAccessRule($_) }
 
 $adminRule = New-Object System.Security.AccessControl.FileSystemAccessRule(
     'BUILTIN\Administrators', 'FullControl', 'ContainerInherit,ObjectInherit', 'None', 'Allow'
@@ -62,6 +128,15 @@ $acl.AddAccessRule($adminRule)
 $acl.AddAccessRule($systemRule)
 $acl.AddAccessRule($userRule)
 Set-Acl -LiteralPath $WorkspaceRoot -AclObject $acl
+
+# Deny-list smoke: ensure we did not grant Users/Everyone.
+$acl2 = Get-Acl -LiteralPath $WorkspaceRoot
+$bad = $acl2.Access | Where-Object {
+    $_.IdentityReference -match '^(Everyone|BUILTIN\\Users)$'
+}
+if ($bad) {
+    throw 'FAIL: unexpected broad ACE present on workspace'
+}
 
 Write-Host "Workspace ready: $WorkspaceRoot (user=$HermesUser rights=$rights)"
 Write-Host 'Next: configure OpenSSH for hermes-win with pubkey auth on Tailscale only.'

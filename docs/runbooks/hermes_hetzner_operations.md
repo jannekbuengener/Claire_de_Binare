@@ -1,8 +1,8 @@
 # Hermes Hetzner Operations Runbook
 
-Status: Active operator runbook  
+Status: Active operator runbook
 Issue: [#4289](https://github.com/jannekbuengener/Claire_de_Binare/issues/4289)    <!-- pragma: allowlist secret -->
-LR: **NO-GO** (unchanged)  
+LR: **NO-GO** (unchanged)
 Board stage: `trade-capable` ≠ Live-Go
 
 ## Purpose
@@ -20,16 +20,27 @@ workspace — without public dashboards or omnipotent agents.
 | `tools/hermes_ops/` | Validate, secret-scan, policy, token broker |
 | `docs/security/hermes_hetzner_threat_model.md` | Trust boundaries + kill-switch |
 
+## Official docs (pin sources)
+
+- Installation: https://hermes-agent.nousresearch.com/docs/getting-started/installation
+- Web Dashboard flags: https://hermes-agent.nousresearch.com/docs/user-guide/features/web-dashboard
+- CLI reference: https://hermes-agent.nousresearch.com/docs/reference/cli-commands
+- Release tag used in pin: `v2026.7.30` (Hermes Agent v0.19.1)
+
+Entrypoint: **`hermes dashboard`** (not `hermes serve` for the web UI).
+Installer env `HERMES_GIT_REF` is **not** supported; use `--branch` / `--commit`.
+
 ## Preconditions
 
-1. Hetzner Cloud API token available to the **operator** (not committed).
-2. `hcloud` CLI authenticated.
-3. Tailscale (or equivalent private net) planned for Jannek ↔ Hetzner ↔ Windows.
-4. `infrastructure/hermes/VERSION_PIN.yaml` filled with Hermes `git_ref` and
-   `install_script_sha256` before install.
-5. GitHub App credentials reuse lineage [#4170](https://github.com/jannekbuengener/Claire_de_Binare/issues/4170) /  <!-- pragma: allowlist secret -->
-   [#4195](https://github.com/jannekbuengener/Claire_de_Binare/issues/4195) when compatible.  <!-- pragma: allowlist secret -->
-   PEM path **outside** `/var/lib/hermes/profiles` and `D:\Dev\HermesWorkspace`.
+1. Valid Hetzner Cloud API token for `hcloud` (operator-owned; not in repo).
+2. `hcloud` CLI authenticated (`hcloud server list` succeeds).
+3. Tailscale (or equivalent private net) for Jannek ↔ Hetzner ↔ Windows.
+4. `infrastructure/hermes/VERSION_PIN.yaml` filled; `python -m tools.hermes_ops pin-check --require-pinned` exits 0.
+5. Dedicated GitHub App for Hermes write with minimal perms (see below).
+   **Do not** expand App `4410232` (`cdb-local-ci`: `checks:write` + `metadata:read` only).
+   Auth lineage [#4170](https://github.com/jannekbuengener/Claire_de_Binare/issues/4170) /  <!-- pragma: allowlist secret -->
+   [#4195](https://github.com/jannekbuengener/Claire_de_Binare/issues/4195) is reference-only unless a separate App proves compatible perms.  <!-- pragma: allowlist secret -->
+6. PEM path **outside** `/var/lib/hermes/profiles` and `D:\Dev\HermesWorkspace`.
 
 ## Repo validation (no cloud credentials)
 
@@ -39,22 +50,32 @@ python -m tools.hermes_ops secret-scan
 python -m tools.hermes_ops policy-check --profile cdb-engineer --action github_write_branch_pr --expect allow
 python -m tools.hermes_ops policy-check --profile jannek-assistant --action windows_shell --expect deny
 python -m tools.hermes_ops mint-token --profile cdb-engineer --dry-run
-python -m tools.hermes_ops pin-check
+python -m tools.hermes_ops pin-check --require-pinned
+pytest -q tests/unit/hermes_ops
+ruff check tools/hermes_ops tests/unit/hermes_ops
 ```
 
 ## Provision (Hetzner)
 
+Cost gate: CPX21 + IPv4 + backups ≈ **14.89 EUR/mo** (official price table after 2026-06-15) &lt; 15 EUR.
+
 ```bash
-# 1) Create firewall from infrastructure/hermes/hetzner/firewall.yaml intent
-# 2) Create server from server.yaml + cloud-init.yaml (inject SSH pubkey)
-# 3) Attach firewall / labels role=hermes
-# 4) Join Tailscale; remove any temporary public SSH exception
-# 5) On host, as root:
+export HERMES_SSH_KEY_NAME=<existing-hcloud-ssh-key-name>
+bash infrastructure/hermes/hetzner/provision.sh
+# On host, after Tailscale is up and any temporary public SSH exception removed:
 sudo bash infrastructure/hermes/hetzner/bootstrap.sh
 ```
 
-Bootstrap is idempotent for profile homes and systemd units. It **STOPS** if the
-version pin is empty or `install.sh` sha256 mismatches.
+`provision.sh` is idempotent (no duplicate `cdb-hermes-01`).
+`bootstrap.sh` fails closed on empty pin, sha256 mismatch, or service start errors (no `|| true`).
+
+Ports (loopback only):
+
+| Profile | Port |
+|---|---|
+| `jannek-assistant` | 9119 |
+| `cdb-engineer` | 9120 |
+| `validation-chief` | 9121 (disabled) |
 
 ## Profiles
 
@@ -69,36 +90,45 @@ Each profile has its own `HERMES_HOME` under `/var/lib/hermes/profiles/<name>/`.
 ## Start / Stop / Status
 
 ```bash
-sudo systemctl start hermes-serve@jannek-assistant
-sudo systemctl start hermes-serve@cdb-engineer
-sudo systemctl status 'hermes-serve@*'
+sudo systemctl start hermes-dashboard@jannek-assistant
+sudo systemctl start hermes-dashboard@cdb-engineer
+sudo systemctl status 'hermes-dashboard@*'
 sudo -u hermes HERMES_HOME=/var/lib/hermes/profiles/cdb-engineer /opt/hermes/bin/hermes doctor
 ```
 
-`hermes serve` binds `127.0.0.1:9119` only. Reach it via Tailscale SSH tunnel or
-loopback on the host. Non-loopback binds require Hermes auth providers; `--insecure`
-must not be used (unit forbids it).
+Unit binds `127.0.0.1:${HERMES_PORT}` with `--no-open --isolated`. Reach via Tailscale
+SSH tunnel or host loopback. Non-loopback binds require Hermes auth providers;
+`--insecure` is a no-op and must not be used as a security control.
 
 ## GitHub token mint
 
+Minimal dedicated App permission set (repo `jannekbuengener/Claire_de_Binare` only):
+
+- `contents: write`
+- `pull_requests: write`
+- `issues: write`
+- `metadata: read`
+- **no** `checks: write`
+
 ```bash
-# Preview (no credentials required)
+# Preview (no credentials / no token)
 python -m tools.hermes_ops mint-token --profile cdb-engineer --dry-run
 
-# Live mint on the host with App env configured (token opt-in print)
-python -m tools.hermes_ops mint-token --profile cdb-engineer --print-token
+# Live mint — token ONLY to a 0600 file (never stdout)
+python -m tools.hermes_ops mint-token --profile cdb-engineer \
+  --token-file /run/hermes/cdb-engineer.token
 ```
 
-Forbidden for all Hermes profiles: `cdb-local-ci` publish, admin merge,
-branch-protection edits, secret read/write, force-push, default-branch delete,
-App permission expansion.
+Forbidden: `cdb-local-ci` publish, admin merge, branch-protection edits,
+secret read/write, force-push, default-branch delete, App permission expansion.
 
 ## Windows workspace
 
-On Windows (Human-GO, elevated once):
+On Windows (elevated once / UAC):
 
 ```powershell
-.\infrastructure\hermes\windows\setup-workspace.ps1 -HermesUser hermes-win
+# Prefer SecureString; HERMES_WIN_PASSWORD env is accepted then cleared
+.\infrastructure\hermes\windows\setup-workspace.ps1 -HermesUser hermes-win -GrantWrite
 .\infrastructure\hermes\windows\kill-switch.ps1 -Action Status
 ```
 
@@ -111,21 +141,22 @@ Kill-switch:
 
 No public SSH/RDP/VNC. OpenSSH only on private net for `hermes-win`.
 
-## Backup / Restore
+## Backup / Restore / Update / Rollback
 
-1. Enable Hetzner server backups (`server.yaml` → `backups: true`).
-2. Additionally: encrypted off-host archive of `/var/lib/hermes/profiles/*/memories`,
-   `sessions`, `config.yaml`, `SOUL.md`, skills — **exclude** `.env` from unencrypted
-   channels; store secrets via operator secret store.
-3. Restore: stop units → restore profile trees with `0700` → start units → `hermes doctor`.
+```bash
+BACKUP_OUT=/mnt/offhost AGE_RECIPIENT=<age-pubkey> \
+  bash infrastructure/hermes/hetzner/backup.sh
 
-## Update / Rollback
+CONFIRM=RESTORE bash infrastructure/hermes/hetzner/restore.sh /mnt/offhost/hermes-profiles-*.tar.age
 
-1. Set new pin in `VERSION_PIN.yaml` (ref + sha256).
-2. Drain sessions; `systemctl stop 'hermes-serve@*'`.
-3. Re-run pinned install path from bootstrap (or documented update procedure).
-4. `hermes doctor` per profile; start units.
-5. Rollback: re-pin previous ref/sha256 and reinstall; restore profile data from backup.
+CONFIRM=UPDATE HERMES_COMMIT=<sha> HERMES_INSTALL_SH_SHA256=<sha> \
+  bash infrastructure/hermes/hetzner/update.sh
+
+CONFIRM=ROLLBACK HERMES_INSTALL_SH_SHA256=<sha> \
+  bash infrastructure/hermes/hetzner/rollback.sh
+```
+
+Also enable Hetzner server backups (`provision.sh` / `server.yaml` → `backups: true`).
 
 ## Rotation / Revoke
 
@@ -140,11 +171,12 @@ No public SSH/RDP/VNC. OpenSSH only on private net for `hermes-win`.
 CONFIRM=DESTROY bash infrastructure/hermes/hetzner/destroy.sh
 ```
 
-Then complete the revocation checklist printed by the script.
+Only `cdb-hermes-01` + `cdb-hermes-deny-inbound` are eligible. Then complete the
+revocation checklist printed by the script.
 
 ## Evidence
 
-Repo-side evidence template:
+Repo-side evidence:
 `docs/evidence/hermes/hermes_hetzner_repo_slice_evidence.md`
 
 Live E2E evidence (portscan, reboot persistence, backup drill, Windows ACL drill)
@@ -153,4 +185,4 @@ stays **outside** the repository when it contains host inventory. Redact secrets
 ## Non-goals reminder
 
 No public dashboard, no K8s, no GUI automation, no personal memory in git,
-no second GitHub App authenticator, no merge-gate bypass, no live trading.
+no silent expansion of `cdb-local-ci` App, no merge-gate bypass, no live trading.

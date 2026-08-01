@@ -38,9 +38,12 @@ apply_to:
 forbidden_public_ports:
   - 22
   - 9119
+  - 9120
+  - 9121
   - 8000
   - 8080
   - 8443
 notes:
   - "SSH should ride Tailscale or a short-lived admin IP exception."
-  - "Hermes dashboard/serve MUST bind 127.0.0.1; never publish 9119."
+  - "Hermes dashboard MUST bind 127.0.0.1; never publish 9119/9120."
+  - "Official CLI entrypoint is `hermes dashboard` (not `hermes serve`)."

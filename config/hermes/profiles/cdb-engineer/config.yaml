@@ -44,7 +44,7 @@ ssh_targets:
 
 github:
   auth_mode: app_installation_token
-  token_broker: python -m tools.hermes_ops mint-token --profile cdb-engineer
+  token_broker: python -m tools.hermes_ops mint-token --profile cdb-engineer --token-file /run/hermes/cdb-engineer.token
   allowed_repositories:
     - jannekbuengener/Claire_de_Binare  # pragma: allowlist secret
   forbidden_actions:
@@ -58,5 +58,5 @@ github:
 
 server:
   host: 127.0.0.1
-  port: 9119
+  port: 9120
   require_auth_non_loopback: true

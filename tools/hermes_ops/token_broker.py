@@ -185,6 +185,52 @@ def credential_paths_outside_workspace(
     return errors
 
 
+# cdb-local-ci App (app_id=4410232) is specialized for Check Runs only.
+# Hermes engineering write must NOT silently reuse it without compatible perms.
+CDB_LOCAL_CI_APP_ID = 4410232
+REQUIRED_HERMES_WRITE_PERMS = ("contents", "pull_requests", "issues")
+FORBIDDEN_HERMES_PERMS = ("checks",)
+
+
+def assert_app_compatible_for_hermes_write(
+    *,
+    app_id: int | None = None,
+    installation_permissions: dict[str, str] | None = None,
+) -> None:
+    """Fail closed when the resolved App cannot mint Hermes write tokens.
+
+    Callers that have live installation permission JSON should pass it.
+    Without a permission map, App 4410232 is rejected by known specialization.
+    """
+    resolved = app_id
+    if resolved is None:
+        raw = (os.environ.get("CDB_GH_APP_ID") or os.environ.get("APP_ID") or "").strip()
+        if raw.isdigit():
+            resolved = int(raw)
+    if resolved == CDB_LOCAL_CI_APP_ID and installation_permissions is None:
+        raise AuthenticationError(
+            "App 4410232 (cdb-local-ci) is not reusable for Hermes GitHub write; "
+            "live perms are checks:write+metadata:read only. "
+            "Provide a dedicated engineering App or pass verified "
+            "installation_permissions proving contents/pull_requests/issues write "
+            "without checks:write. HOLD_SCOPE_BLOCKER."
+        )
+    if installation_permissions is None:
+        return
+    for key in REQUIRED_HERMES_WRITE_PERMS:
+        if installation_permissions.get(key) != "write":
+            raise AuthenticationError(
+                f"Hermes write App missing required permission {key}:write "
+                "(HOLD_SCOPE_BLOCKER — do not expand cdb-local-ci App)"
+            )
+    for key in FORBIDDEN_HERMES_PERMS:
+        if installation_permissions.get(key) == "write":
+            raise AuthenticationError(
+                f"Hermes write App must not have {key}:write "
+                "(separation from cdb-local-ci publish)"
+            )
+
+
 def metadata_only(profile: str) -> dict[str, Any]:
     """Safe JSON-able mint preview (no token)."""
     _, meta = mint_profile_token(profile, dry_run=True)
@@ -194,5 +240,13 @@ def metadata_only(profile: str) -> dict[str, Any]:
         "permissions": meta.permissions,
         "expires_hint": meta.expires_hint,
         "forbidden_actions": sorted(FORBIDDEN_GITHUB_ACTIONS),
-        "reuses_auth_lineage": ["4170", "4195"],
+        "auth_lineage_reference_only": ["4170", "4195"],
+        "reuse_cdb_local_ci_app": False,
+        "required_app_permissions": {
+            "contents": "write",
+            "pull_requests": "write",
+            "issues": "write",
+            "metadata": "read",
+        },
+        "forbidden_app_permissions": {"checks": "write"},
     }

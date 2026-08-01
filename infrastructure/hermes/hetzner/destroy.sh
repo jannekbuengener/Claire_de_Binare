@@ -1,22 +1,40 @@
 #!/usr/bin/env bash
-# Destroy / revoke Hermes Hetzner host (#4289).
-# Does NOT delete off-host encrypted backups. Requires explicit CONFIRM=DESTROY.
+# Destroy / revoke Hermes Hetzner host created for #4289.
+# Fail-closed: only deletes resources whose names match the Hermes contract.
+# Does NOT delete off-host encrypted backups. Requires CONFIRM=DESTROY.
 set -euo pipefail
 
 CONFIRM="${CONFIRM:-}"
 SERVER_NAME="${HERMES_SERVER_NAME:-cdb-hermes-01}"
 FIREWALL_NAME="${HERMES_FIREWALL_NAME:-cdb-hermes-deny-inbound}"
+ALLOWED_SERVER_NAME="cdb-hermes-01"
+ALLOWED_FIREWALL_NAME="cdb-hermes-deny-inbound"
 
 die() { printf '[hermes-destroy] ERROR: %s\n' "$*" >&2; exit 1; }
 log() { printf '[hermes-destroy] %s\n' "$*"; }
 
 [[ "${CONFIRM}" == "DESTROY" ]] || die "set CONFIRM=DESTROY to proceed"
+[[ "${SERVER_NAME}" == "${ALLOWED_SERVER_NAME}" ]] \
+  || die "refuse destroy of unexpected server name: ${SERVER_NAME}"
+[[ "${FIREWALL_NAME}" == "${ALLOWED_FIREWALL_NAME}" ]] \
+  || die "refuse destroy of unexpected firewall name: ${FIREWALL_NAME}"
 
 command -v hcloud >/dev/null 2>&1 || die "hcloud CLI required"
 
-log "stopping remote services is operator-owned; deleting cloud resources"
+# Label / name guard: if server exists, require matching name only (no wildcards).
+if hcloud server describe "${SERVER_NAME}" >/dev/null 2>&1; then
+  labels="$(hcloud server describe "${SERVER_NAME}" -o json 2>/dev/null \
+    | python3 -c 'import json,sys; d=json.load(sys.stdin); print(d.get("labels") or {})' \
+    2>/dev/null || echo '{}')"
+  log "target server labels=${labels}"
+else
+  log "server ${SERVER_NAME} already absent"
+fi
+
 # Best-effort local stop if executed on the host itself.
 if command -v systemctl >/dev/null 2>&1; then
+  systemctl stop 'hermes-dashboard@*' 2>/dev/null || true
+  systemctl disable 'hermes-dashboard@*' 2>/dev/null || true
   systemctl stop 'hermes-serve@*' 2>/dev/null || true
   systemctl disable 'hermes-serve@*' 2>/dev/null || true
 fi

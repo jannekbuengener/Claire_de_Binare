@@ -1,5 +1,5 @@
 #cloud-config
-# Hermes host baseline (#4289). Idempotent intent; secrets injected later via operator.
+# Hermes host baseline (#4289). No general sudo for the hermes runtime user.
 
 package_update: true
 package_upgrade: true
@@ -13,12 +13,13 @@ packages:
   - chrony
   - ufw
   - acl
+  - rsync
+  - xz-utils
 
 users:
   - name: hermes
-    groups: [sudo]
+    # Intentionally NOT in the sudo group. Limited NOPASSWD via sudoers.d only.
     shell: /bin/bash
-    sudo: "ALL=(ALL) NOPASSWD: /bin/systemctl start hermes-serve@*, /bin/systemctl stop hermes-serve@*, /bin/systemctl restart hermes-serve@*, /bin/systemctl status hermes-serve@*, /bin/systemctl is-active hermes-serve@*"
     lock_passwd: true
     ssh_authorized_keys: []
     # Operator injects the bootstrap public key at provision time.
@@ -27,6 +28,11 @@ ssh_pwauth: false
 disable_root: true
 
 write_files:
+  - path: /etc/sudoers.d/99-cdb-hermes
+    permissions: "0440"
+    content: |
+      # Limited service control only — no general root shell.
+      hermes ALL=(root) NOPASSWD: /bin/systemctl start hermes-dashboard@*, /bin/systemctl stop hermes-dashboard@*, /bin/systemctl restart hermes-dashboard@*, /bin/systemctl status hermes-dashboard@*, /bin/systemctl is-active hermes-dashboard@*
   - path: /etc/ssh/sshd_config.d/99-cdb-hermes.conf
     permissions: "0644"
     content: |
@@ -64,8 +70,8 @@ runcmd:
   - ufw default deny incoming
   - ufw default allow outgoing
   - ufw --force enable
-  - mkdir -p /opt/hermes /var/lib/hermes /var/log/hermes
+  - mkdir -p /opt/hermes /var/lib/hermes /var/log/hermes /etc/hermes
   - chown -R hermes:hermes /opt/hermes /var/lib/hermes /var/log/hermes
-  - chmod 0750 /opt/hermes /var/lib/hermes /var/log/hermes
+  - chmod 0750 /opt/hermes /var/lib/hermes /var/log/hermes /etc/hermes
 
 final_message: "CDB Hermes cloud-init baseline complete. Run infrastructure/hermes/hetzner/bootstrap.sh next."
