@@ -1,0 +1,9 @@
+# Optional provider dependencies for Agent Control Plane adapters (#4254).
+# Not required for base CI, mock dispatch, registry validation, or dry-run.
+#
+# After local verification against https://cursor.com/docs/sdk/python.md,
+# pin an exact version here, for example:
+#   cursor-sdk==X.Y.Z
+#
+# Until pinned, adapters lazy-import cursor_sdk and treat absence as
+# PROVIDER_SDK_MISSING / offline-capable.

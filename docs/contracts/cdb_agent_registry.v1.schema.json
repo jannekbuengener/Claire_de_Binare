@@ -142,7 +142,14 @@
       "properties": {
         "provider_id": {
           "type": "string",
-          "enum": ["mock", "cursor", "local"]
+          "enum": [
+            "mock",
+            "cursor",
+            "cursor-sdk",
+            "cursor-cli",
+            "cursor-cloud-api",
+            "local"
+          ]
         },
         "description": {
           "type": "string",
@@ -153,6 +160,16 @@
           "type": "string",
           "minLength": 1,
           "maxLength": 120
+        },
+        "live_dispatch": {
+          "type": "boolean",
+          "default": false,
+          "description": "When false (default), real provider execution remains fail-closed."
+        },
+        "capability_baseline_ref": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 200
         },
         "secret_references": {
           "type": "array",

@@ -43,6 +43,8 @@ def test_schema_file_declares_draft_2020_12() -> None:
     schema = json.loads(SCHEMA.read_text(encoding="utf-8"))
     assert schema["$schema"] == "https://json-schema.org/draft/2020-12/schema"
     assert schema["properties"]["schema_id"]["const"] == "cdb.agent_execution.v1"
+    assert set(schema["properties"]["schema_version"]["enum"]) == {"1.0.0", "1.1.0"}
+    assert "provider_work_order" in schema["properties"]
 
 
 @pytest.mark.unit

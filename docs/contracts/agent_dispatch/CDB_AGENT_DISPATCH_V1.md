@@ -1,9 +1,9 @@
 # CDB Agent Dispatch v1
 
-Status: Canonical (engineering contract)  
-Schema id: `cdb.agent_dispatch_run.v1`  
-Issue: `#4253`  
-Parent: `#4249`  
+Status: Canonical (engineering contract)
+Schema id: `cdb.agent_dispatch_run.v1`
+Issue: `#4253` (dispatcher) / `#4254` (Cursor providers)
+Parent: `#4249`
 Predecessors: `#4250` (ACP), `#4251` (execution contract), `#4252` (registry)
 
 ## Purpose
@@ -31,6 +31,7 @@ Issue `#4253` labels mapped as **events**, not extra states:
 python -m tools.agent_control dispatch --contract <PATH> --registry <PATH> \
   --agent-id <ID> --state <PATH> --dry-run
 python -m tools.agent_control dispatch ... --execute --allow-mock-dispatch
+python -m tools.agent_control provider capabilities --provider cursor-sdk --offline
 python -m tools.agent_control watch --run-id <ID> --state <PATH>
 python -m tools.agent_control cancel --run-id <ID> --state <PATH> --reason <TEXT>
 python -m tools.agent_control retry --previous-run-id <ID> --contract <PATH> \
@@ -39,7 +40,9 @@ python -m tools.agent_control evidence --run-id <ID> --state <PATH>
 ```
 
 `dispatch` defaults to dry-run (no provider calls, no state writes).
-Live providers raise `PROVIDER_LIVE_DISPATCH_FORBIDDEN`.
+Live Cursor dispatch remains fail-closed (`CURSOR_ENVIRONMENT_PROFILE_NOT_READY`
+/ `PROVIDER_LIVE_DISPATCH_FORBIDDEN`) until `#4255`. Recorded/fake transports
+are test-only.
 
 ## Authority
 
@@ -49,6 +52,14 @@ Live providers raise `PROVIDER_LIVE_DISPATCH_FORBIDDEN`.
 - `evidence` returns a dispatcher lifecycle snapshot, **not** `#4256` Agent Run
   Evidence Bundle / JSONL store.
 
-## Mock agent
+## Providers
 
-Registry agent: `acp-mock-dispatcher` (`provider_profile: mock.v1`).
+| provider_id | Driver | Notes |
+| --- | --- | --- |
+| `mock` | `MockProvider` | `#4253` in-process only |
+| `cursor-sdk` | `CursorSdkDriver` | Primary Python surface; optional `cursor-sdk` dep |
+| `cursor-cli` | `CursorCliDriver` | Headless `--print` / `stream-json`; no `--force` |
+| `cursor-cloud-api` | `CursorCloudApiDriver` | Public Cloud Agents API v1; no DELETE |
+
+Registry agents: `acp-mock-dispatcher` (`mock.v1`), `acp-cursor-sdk-adapter`
+(`cursor-sdk.v1`, `live_dispatch: false`).

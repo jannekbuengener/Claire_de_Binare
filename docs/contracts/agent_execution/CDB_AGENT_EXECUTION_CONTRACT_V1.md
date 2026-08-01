@@ -19,8 +19,8 @@ relations:
 
 Status: Technical contract (schema/tooling)
 Schema id: `cdb.agent_execution.v1`
-Schema version: `1.0.0`
-Issue: `#4251`
+Schema version: `1.0.0` (fixtures) / `1.1.0` (optional `provider_work_order`)
+Issue: `#4251` (base) / `#4254` (work-order binding)
 Parent: `#4249`
 Predecessor canon: `#4250` /
 `knowledge/governance/CDB_AGENT_CONTROL_PLANE.md`
@@ -59,9 +59,12 @@ Pflichtfelder: `schema_id`, `schema_version`, `contract_id`, `created_at`,
 `producer`, `issue`, `route`, `integrity`.
 
 - `schema_id` ist exakt `cdb.agent_execution.v1`.
-- `schema_version` ist exakt `1.0.0` für diese Migrationsgrenze.
+- `schema_version` ist `1.0.0` oder additiv `1.1.0`.
+- Optional ab `1.1.0`: `provider_work_order` mit `prompt_ref`, `source_commit`,
+  `prompt_digest` (`sha256:<hex>`). Bestehende `1.0.0`-Fixtures ohne Work Order
+  bleiben gültig. Live-Cursor-Dispatch verlangt die Bindung (#4254).
 - Unknown fields werden fail-closed abgelehnt (`additionalProperties: false`).
-- Inkompatible Änderungen erfordern `cdb.agent_execution.v2` (neues Schema),
+- Breaking Änderungen erfordern `cdb.agent_execution.v2` (neues Schema),
   nicht stille Erweiterung von v1.
 
 ## 4. Permissions

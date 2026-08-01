@@ -63,11 +63,26 @@ def _semantic_validate(contract: dict[str, Any]) -> None:
             "CONTRACT_SCHEMA_VERSION",
             "schema_id must be cdb.agent_execution.v1",
         )
-    if contract.get("schema_version") != "1.0.0":
+    schema_version = contract.get("schema_version")
+    if schema_version not in {"1.0.0", "1.1.0"}:
         raise ContractValidationError(
             "CONTRACT_SCHEMA_VERSION",
-            "schema_version must be 1.0.0",
+            "schema_version must be 1.0.0 or 1.1.0",
         )
+
+    work_order = contract.get("provider_work_order")
+    if work_order is not None:
+        if not isinstance(work_order, dict):
+            raise ContractValidationError(
+                "CONTRACT_PROVIDER_WORK_ORDER_INVALID",
+                "provider_work_order must be an object",
+            )
+        for key in ("prompt_ref", "source_commit", "prompt_digest"):
+            if not work_order.get(key):
+                raise ContractValidationError(
+                    "CONTRACT_PROVIDER_WORK_ORDER_INVALID",
+                    f"provider_work_order.{key} is required when work order is present",
+                )
 
     permissions = contract.get("permissions")
     if not isinstance(permissions, dict):

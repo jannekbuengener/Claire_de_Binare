@@ -90,3 +90,33 @@ agents:
       runtime_mutation: false
       database_mutation: false
       mcp_live_mutation: false
+
+  - agent_id: acp-cursor-sdk-adapter
+    version: "1.0.0"
+    enabled: true
+    description: >
+      Cursor SDK adapter agent for #4254. Provider profile live_dispatch=false;
+      real Cursor runs remain blocked until #4255 environment profile.
+    execution_contract_profile: delivery_safe.v1
+    provider_profile: cursor-sdk.v1
+    environment_profile: local_repo.v1
+    skills:
+      - session_core.v1
+    mcp_profiles:
+      - none.v1
+    subagents: []
+    labels_or_routing_selectors:
+      lane: agent-skills
+      batch_key: agent-skills
+      role: cursor-sdk-adapter
+      objective: issue-4254
+    depends_on:
+      - acp-mock-dispatcher
+    permission_overrides:
+      merge: false
+      publish_cdb_local_ci: false
+      close_issue: false
+      open_pr: false
+      runtime_mutation: false
+      database_mutation: false
+      mcp_live_mutation: false

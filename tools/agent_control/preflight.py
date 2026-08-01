@@ -3,15 +3,18 @@
 from __future__ import annotations
 
 from dataclasses import dataclass
+from pathlib import Path
 from typing import Any
 
 from tools.agent_control.errors import DispatchError, RegistryError
 from tools.agent_control.normalize import normalize_registry
+from tools.agent_control.providers.factory import CURSOR_PROVIDER_IDS
 from tools.agent_control.validate import validate_registry
 from tools.agent_execution_contract.attenuation import PERMISSION_KEYS
 from tools.agent_execution_contract.errors import ContractValidationError
 from tools.agent_execution_contract.hashing import compute_digest
 from tools.agent_execution_contract.validate import validate_contract
+from tools.agent_execution_contract.work_order import verify_provider_work_order
 
 HOLD_ROUTE_DECISIONS = frozenset({"HOLD_PR_LOCK_CONFLICT", "HOLD_NO_SAFE_ROUTE"})
 SAFE_ROUTE_DECISIONS = frozenset(
@@ -47,6 +50,10 @@ class PreflightResult:
     provider_id: str | None
     route: dict[str, Any] | None
     budget: dict[str, Any] | None
+    prompt_ref: str | None = None
+    prompt_digest: str | None = None
+    prompt_text: str | None = None
+    provider_profile: dict[str, Any] | None = None
 
     def raise_if_blocked_for_execute(self) -> None:
         if self.ok:
@@ -83,6 +90,9 @@ def preflight(
     agent_id: str,
     *,
     execute: bool,
+    repo_root: Path | None = None,
+    allow_recorded_cursor: bool = False,
+    prompt_text_override: str | None = None,
 ) -> PreflightResult:
     """Validate contract digest + registry binding. Shared by dry-run and execute."""
     try:
@@ -229,12 +239,44 @@ def preflight(
             terminal_state="BLOCKED",
         )
 
+    live_dispatch = bool(provider_profile.get("live_dispatch", False))
     if execute and provider_id != "mock":
-        return _fail(
-            "PROVIDER_LIVE_DISPATCH_FORBIDDEN",
-            f"execute forbidden for provider_id={provider_id!r} in #4253",
-            terminal_state="BLOCKED",
+        if provider_id in CURSOR_PROVIDER_IDS:
+            if live_dispatch and not allow_recorded_cursor:
+                return _fail(
+                    "CURSOR_ENVIRONMENT_PROFILE_NOT_READY",
+                    "real Cursor write/live dispatch blocked until #4255",
+                    terminal_state="BLOCKED",
+                )
+            if not allow_recorded_cursor and not live_dispatch:
+                return _fail(
+                    "PROVIDER_LIVE_DISPATCH_FORBIDDEN",
+                    f"execute for {provider_id!r} requires recorded/fake transport "
+                    "or later environment profile (#4255)",
+                    terminal_state="BLOCKED",
+                )
+        else:
+            return _fail(
+                "PROVIDER_LIVE_DISPATCH_FORBIDDEN",
+                f"execute forbidden for provider_id={provider_id!r}",
+                terminal_state="BLOCKED",
+            )
+
+    prompt_ref = None
+    prompt_digest = None
+    prompt_text = None
+    root = repo_root or Path(__file__).resolve().parents[2]
+    try:
+        prompt_ref, prompt_digest, prompt_text = verify_provider_work_order(
+            validated,
+            provider_id=str(provider_id),
+            repo_root=root,
+            require_for_live_provider=execute and provider_id in CURSOR_PROVIDER_IDS,
+            prompt_text_override=prompt_text_override,
+            verify_content=execute or prompt_text_override is not None,
         )
+    except ContractValidationError as exc:
+        return _fail(exc.code, exc.message, terminal_state="BLOCKED")
 
     return PreflightResult(
         ok=True,
@@ -247,4 +289,8 @@ def preflight(
         provider_id=provider_id,
         route=route,
         budget=budget,
+        prompt_ref=prompt_ref,
+        prompt_digest=prompt_digest,
+        prompt_text=prompt_text,
+        provider_profile=provider_profile,
     )

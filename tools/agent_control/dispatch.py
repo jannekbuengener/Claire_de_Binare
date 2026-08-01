@@ -217,12 +217,14 @@ def dispatch_run(
     *,
     dry_run: bool = True,
     allow_mock_dispatch: bool = False,
+    allow_recorded_cursor: bool = False,
     scenario: str = "success",
     clock: Clock | None = None,
     provider: Provider | None = None,
     previous_run_id: str | None = None,
     attempt: int | None = None,
     run_id: str | None = None,
+    prompt_text_override: str | None = None,
 ) -> dict[str, Any]:
     clock = clock or SystemClock()
     if dry_run:
@@ -240,13 +242,20 @@ def dispatch_run(
             "execute requires a RunStore",
         )
 
-    if not allow_mock_dispatch:
+    if not allow_mock_dispatch and not allow_recorded_cursor:
         raise DispatchError(
             "PROVIDER_LIVE_DISPATCH_FORBIDDEN",
-            "execute requires --allow-mock-dispatch (mock only; no live providers)",
+            "execute requires --allow-mock-dispatch or recorded/fake Cursor transport",
         )
 
-    pf = preflight(contract, registry_document, agent_id, execute=True)
+    pf = preflight(
+        contract,
+        registry_document,
+        agent_id,
+        execute=True,
+        allow_recorded_cursor=allow_recorded_cursor,
+        prompt_text_override=prompt_text_override,
+    )
     if not pf.ok:
         # Persist a blocked/held terminal run only when execute was requested and
         # preflight fails after explicit mock allow — still no provider call.
@@ -316,10 +325,14 @@ def dispatch_run(
         }
 
     active_provider = provider or get_provider(pf.provider_id)
-    if not isinstance(active_provider, MockProvider) and pf.provider_id != "mock":
+    if (
+        not isinstance(active_provider, MockProvider)
+        and pf.provider_id != "mock"
+        and not allow_recorded_cursor
+    ):
         raise DispatchError(
             "PROVIDER_LIVE_DISPATCH_FORBIDDEN",
-            "only MockProvider may execute in #4253",
+            "Cursor providers require recorded/fake transport in #4254",
         )
 
     at = _iso(clock)
@@ -386,6 +399,7 @@ def dispatch_run(
     record["revision"] = 2
     store.update_cas(rid, 1, record)
 
+    scope = pf.contract.get("execution_scope") or {}
     request = ProviderRequest(
         run_id=rid,
         contract_id=pf.contract["contract_id"],
@@ -393,7 +407,26 @@ def dispatch_run(
         agent_id=agent_id,
         scenario=scenario,
         delivery_receipt=receipt,
+        idempotency_key=idem,
+        provider_id=pf.provider_id,
+        provider_profile=deepcopy(pf.provider_profile or {}),
+        route=deepcopy(pf.route or {}),
+        effective_permissions=deepcopy(pf.agent.get("effective_permissions") or {}),
+        allowed_paths=list(scope.get("allowed_paths") or []),
+        allowed_command_classes=list(
+            scope.get("allowed_commands_or_command_classes") or []
+        ),
+        budget=deepcopy(pf.budget or {}),
+        prompt_ref=pf.prompt_ref,
+        prompt_digest=pf.prompt_digest,
+        prompt_text=pf.prompt_text,
+        secret_references=list(
+            ((pf.contract.get("environment") or {}).get("secret_references") or [])
+        ),
     )
+    # Never persist prompt_text on the run record.
+    record["prompt_ref"] = pf.prompt_ref
+    record["prompt_digest"] = pf.prompt_digest
     try:
         result = active_provider.dispatch(request)
     except DispatchError as exc:
@@ -487,10 +520,10 @@ def watch_run(
             "DISPATCH_PROVIDER_RUN_MISSING",
             "run has no provider_run_id",
         )
-    if record.get("provider_id") != "mock":
+    if record.get("provider_id") != "mock" and provider is None:
         raise DispatchError(
             "PROVIDER_LIVE_DISPATCH_FORBIDDEN",
-            "watch may only mutate mock runs in #4253",
+            "watch for Cursor runs requires an injected provider instance",
         )
 
     active = provider or get_provider("mock")
@@ -772,10 +805,10 @@ def cancel_run(
             "DISPATCH_TERMINAL_TRANSITION",
             f"cannot cancel terminal run in state {record['state']!r}",
         )
-    if record.get("provider_id") not in {None, "mock"}:
+    if record.get("provider_id") not in {None, "mock"} and provider is None:
         raise DispatchError(
             "PROVIDER_LIVE_DISPATCH_FORBIDDEN",
-            "cancel may only mutate mock runs in #4253",
+            "cancel for Cursor runs requires an injected provider instance",
         )
 
     rev = int(record["revision"])

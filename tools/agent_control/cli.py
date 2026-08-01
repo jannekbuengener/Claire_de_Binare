@@ -4,6 +4,7 @@ Examples:
   python -m tools.agent_control registry validate --config <PATH>
   python -m tools.agent_control dispatch --contract <PATH> --registry <PATH> \\
       --agent-id <ID> --state <PATH> --dry-run
+  python -m tools.agent_control provider capabilities --provider cursor-sdk --offline
   python -m tools.agent_control watch --run-id <ID> --state <PATH>
   python -m tools.agent_control cancel --run-id <ID> --state <PATH> --reason <TEXT>
   python -m tools.agent_control retry --previous-run-id <ID> --contract <PATH> --reason <TEXT>
@@ -33,6 +34,8 @@ from tools.agent_control.load import (
 )
 from tools.agent_control.normalize import normalize_registry, registry_fingerprint
 from tools.agent_control.paths import DEFAULT_CONFIG_ROOT
+from tools.agent_control.providers.capability import offline_capability_snapshot
+from tools.agent_control.providers.factory import CURSOR_PROVIDER_IDS
 from tools.agent_control.reconcile import backend_from_state, build_plan, reconcile
 from tools.agent_control.run_store import JsonFileRunStore
 from tools.agent_control.validate import validate_registry
@@ -234,6 +237,114 @@ def cmd_evidence(args: argparse.Namespace) -> int:
     return 0
 
 
+def cmd_provider_capabilities(args: argparse.Namespace) -> int:
+    if not args.offline:
+        print(
+            "INVALID PROVIDER_PROBE_LIVE_FORBIDDEN: only --offline capability "
+            "snapshots are allowed in #4254",
+            file=sys.stderr,
+        )
+        return 1
+    try:
+        snapshot = offline_capability_snapshot(args.provider)
+    except KeyError:
+        print(
+            f"INVALID PROVIDER_UNKNOWN: unknown provider {args.provider!r}",
+            file=sys.stderr,
+        )
+        return 1
+    _print_json(snapshot)
+    return 0
+
+
+def cmd_provider_probe(args: argparse.Namespace) -> int:
+    return cmd_provider_capabilities(args)
+
+
+def _load_run(store: JsonFileRunStore, run_id: str) -> dict[str, Any]:
+    record = store.get(run_id)
+    if record is None:
+        raise DispatchError("DISPATCH_RUN_NOT_FOUND", f"unknown run_id: {run_id}")
+    return record
+
+
+def cmd_provider_stream(args: argparse.Namespace) -> int:
+    try:
+        store = JsonFileRunStore(Path(args.state))
+        record = _load_run(store, args.run_id)
+        provider_id = record.get("provider_id")
+        if provider_id not in CURSOR_PROVIDER_IDS:
+            raise DispatchError(
+                "PROVIDER_STREAM_UNSUPPORTED",
+                f"stream unsupported for provider_id={provider_id!r}",
+            )
+        # Offline CLI stream reconstructs from stored refs only (no network).
+        payload = {
+            "run_id": args.run_id,
+            "provider_id": provider_id,
+            "provider_run_id": record.get("provider_run_id"),
+            "events": [],
+            "note": "offline stream view; live SSE requires injected transport",
+        }
+    except DispatchError as exc:
+        print(f"INVALID {exc.code}: {exc.message}", file=sys.stderr)
+        return 1
+    _print_json(payload)
+    return 0
+
+
+def cmd_provider_follow_up(args: argparse.Namespace) -> int:
+    print(
+        "INVALID PROVIDER_FOLLOW_UP_LIVE_FORBIDDEN: follow-up execute requires "
+        "recorded/fake transport; use unit tests or later #4255 gate",
+        file=sys.stderr,
+    )
+    return 1
+
+
+def cmd_provider_artifacts(args: argparse.Namespace) -> int:
+    try:
+        store = JsonFileRunStore(Path(args.state))
+        record = _load_run(store, args.run_id)
+        refs = (record.get("delivery_receipt") or {}) if False else {}
+        payload = {
+            "run_id": args.run_id,
+            "provider_id": record.get("provider_id"),
+            "artifacts": list((record.get("result_refs") or {}).get("artifacts") or []),
+            "refs": refs,
+        }
+    except DispatchError as exc:
+        print(f"INVALID {exc.code}: {exc.message}", file=sys.stderr)
+        return 1
+    _print_json(payload)
+    return 0
+
+
+def cmd_provider_usage(args: argparse.Namespace) -> int:
+    try:
+        store = JsonFileRunStore(Path(args.state))
+        record = _load_run(store, args.run_id)
+        payload = {
+            "run_id": args.run_id,
+            "provider_id": record.get("provider_id"),
+            "usage": record.get("usage") or {},
+        }
+    except DispatchError as exc:
+        print(f"INVALID {exc.code}: {exc.message}", file=sys.stderr)
+        return 1
+    _print_json(payload)
+    return 0
+
+
+def cmd_provider_archive(args: argparse.Namespace) -> int:
+    print(
+        "INVALID PROVIDER_ARCHIVE_LIVE_FORBIDDEN: archive mutate requires "
+        "recorded/fake transport; permanent delete is never offered",
+        file=sys.stderr,
+    )
+    return 1
+
+
 def build_parser() -> argparse.ArgumentParser:
     parser = argparse.ArgumentParser(
         prog="python -m tools.agent_control",
@@ -364,6 +475,48 @@ def build_parser() -> argparse.ArgumentParser:
     p_evidence.add_argument("--run-id", required=True)
     p_evidence.add_argument("--state", required=True)
     p_evidence.set_defaults(func=cmd_evidence)
+
+    provider = sub.add_parser(
+        "provider", help="Cursor provider offline/ops surface (#4254)"
+    )
+    prov_sub = provider.add_subparsers(dest="provider_command", required=True)
+
+    p_caps = prov_sub.add_parser("capabilities", help="Offline capability snapshot")
+    p_caps.add_argument("--provider", required=True)
+    p_caps.add_argument("--offline", action="store_true", required=True)
+    p_caps.set_defaults(func=cmd_provider_capabilities)
+
+    p_probe = prov_sub.add_parser("probe", help="Offline capability probe (alias)")
+    p_probe.add_argument("--provider", required=True)
+    p_probe.add_argument("--offline", action="store_true", required=True)
+    p_probe.set_defaults(func=cmd_provider_probe)
+
+    p_stream = prov_sub.add_parser("stream", help="Offline stream view for a run")
+    p_stream.add_argument("--run-id", required=True)
+    p_stream.add_argument("--state", required=True)
+    p_stream.set_defaults(func=cmd_provider_stream)
+
+    p_fu = prov_sub.add_parser("follow-up", help="Follow-up (gated; no live execute)")
+    p_fu.add_argument("--run-id", required=True)
+    p_fu.add_argument("--contract", required=True)
+    p_fu.set_defaults(func=cmd_provider_follow_up)
+
+    p_art = prov_sub.add_parser("artifacts", help="Artifact helpers")
+    art_sub = p_art.add_subparsers(dest="artifacts_command", required=True)
+    p_art_list = art_sub.add_parser("list", help="List artifact refs for a run")
+    p_art_list.add_argument("--run-id", required=True)
+    p_art_list.add_argument("--state", required=True)
+    p_art_list.set_defaults(func=cmd_provider_artifacts)
+
+    p_usage = prov_sub.add_parser("usage", help="Usage snapshot from run store")
+    p_usage.add_argument("--run-id", required=True)
+    p_usage.add_argument("--state", required=True)
+    p_usage.set_defaults(func=cmd_provider_usage)
+
+    p_arch = prov_sub.add_parser("archive", help="Archive (gated; no live mutate)")
+    p_arch.add_argument("--run-id", required=True)
+    p_arch.add_argument("--state", required=True)
+    p_arch.set_defaults(func=cmd_provider_archive)
 
     return parser
 

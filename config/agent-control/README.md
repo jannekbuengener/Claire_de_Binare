@@ -13,12 +13,12 @@ only reduce permissions; they never invent merge, Live-Go, or mutation rights.
 | --- | --- |
 | `agents/registry.v1.yaml` | Desired agent entries |
 | `profiles/execution_contracts/` | Permission ceilings |
-| `profiles/providers/` | Provider profiles (mock/cursor/local) |
+| `profiles/providers/` | Provider profiles (`mock`, `cursor-sdk`, `cursor-cli`, `cursor-cloud-api`, legacy `cursor`) |
 | `profiles/environments/` | Environment profiles |
 | `profiles/skills/` | Skill pack profiles |
 | `profiles/mcp/` | MCP profiles (`mutation_allowed` must be false here) |
 | `policies/` | Future overlays (unused in `#4252`) |
-| `capability-baselines/` | Future capability inventory hooks |
+| `capability-baselines/` | Offline capability baseline hooks (`#4254`) |
 
 ## CLI (zero-click / no dashboard)
 
@@ -29,12 +29,17 @@ python -m tools.agent_control registry reconcile --config config/agent-control -
 python -m tools.agent_control dispatch --contract <PATH> --registry config/agent-control \
   --agent-id acp-mock-dispatcher --dry-run
 python -m tools.agent_control dispatch ... --state <RUNSTORE> --execute --allow-mock-dispatch
+python -m tools.agent_control provider capabilities --provider cursor-sdk --offline
+python -m tools.agent_control provider capabilities --provider cursor-cli --offline
+python -m tools.agent_control provider capabilities --provider cursor-cloud-api --offline
 ```
 
 `reconcile` / `dispatch` default to dry-run. Live provider create/update/delete
-and live dispatch are forbidden. Mock execute is test-only
-(`--execute --allow-mock-dispatch`). Registry agent `acp-mock-dispatcher` is the
-#4253 mock-only dispatcher binding.
+and live Cursor dispatch are forbidden in `#4254`. Mock execute is test-only
+(`--execute --allow-mock-dispatch`). Cursor adapters are constructible offline /
+with injected fake transports only. Registry agents:
+`acp-mock-dispatcher` (`#4253`), `acp-cursor-sdk-adapter` (`#4254`,
+`live_dispatch: false`).
 
 ## Schema
 
@@ -48,4 +53,6 @@ Spec:
 
 - LR remains **NO-GO**
 - No plaintext secrets (use `env:` / `secret:` references only)
-- No dispatcher (`#4253`) and no Cursor adapter (`#4254`) in this tree
+- Cursor API key is `MANUAL_BOOTSTRAP_ONLY` (`env:CURSOR_API_KEY`); never read
+  during dry-run / offline capability probes
+- Environment hardening remains `#4255`; evidence bundle `#4256`; approval `#4257`

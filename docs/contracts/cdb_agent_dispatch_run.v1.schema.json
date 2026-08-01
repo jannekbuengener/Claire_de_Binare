@@ -105,6 +105,13 @@
     "created_at": { "type": "string" },
     "updated_at": { "type": "string" },
     "scenario": { "type": ["string", "null"] },
-    "delivery_receipt": { "type": ["object", "null"] }
+    "delivery_receipt": { "type": ["object", "null"] },
+    "prompt_ref": { "type": ["string", "null"] },
+    "prompt_digest": {
+      "type": ["string", "null"],
+      "pattern": "^sha256:[a-f0-9]{64}$"
+    },
+    "provider_watch_ticks": { "type": ["integer", "null"], "minimum": 0 },
+    "capability_snapshot": { "type": ["object", "null"] }
   }
 }

@@ -1,4 +1,4 @@
-"""Provider protocol and MockProvider for #4253 (no live/network/shell)."""
+"""Provider protocol, MockProvider, and shared result sanitization."""
 
 from __future__ import annotations
 
@@ -22,6 +22,12 @@ PROVIDER_STATUSES = (
 _SECRET_HINT = re.compile(
     r"(?i)\b(api[_-]?key|secret|token|password|bearer)\b\s*[:=]\s*\S+"
 )
+_AUTH_KEY = re.compile(
+    r"(?i)^(authorization|cookie|x-api-key|api[-_]?key|token|secret|password)$"
+)
+_BEARER = re.compile(r"(?i)\b(bearer|basic)\s+\S+")
+_CRSR = re.compile(r"\bcrsr_[A-Za-z0-9_\-]{8,}\b")
+_PRESIGNED = re.compile(r"(?i)[?&](X-Amz-Signature|Signature|token)=|presigned")
 
 
 @dataclass
@@ -33,6 +39,19 @@ class ProviderRequest:
     scenario: str = "success"
     delivery_receipt: dict[str, Any] | None = None
     cancel_reason: str | None = None
+    # #4254 envelope fields (additive; mock may omit)
+    idempotency_key: str | None = None
+    provider_id: str | None = None
+    provider_profile: dict[str, Any] | None = None
+    route: dict[str, Any] | None = None
+    effective_permissions: dict[str, Any] | None = None
+    allowed_paths: list[str] | None = None
+    allowed_command_classes: list[str] | None = None
+    budget: dict[str, Any] | None = None
+    prompt_ref: str | None = None
+    prompt_digest: str | None = None
+    prompt_text: str | None = field(default=None, repr=False)
+    secret_references: list[dict[str, str]] | None = None
 
 
 @dataclass
@@ -40,7 +59,7 @@ class ProviderResult:
     provider_id: str
     provider_run_id: str
     normalized_status: str
-    usage: dict[str, int] = field(default_factory=dict)
+    usage: dict[str, Any] = field(default_factory=dict)
     result_refs: dict[str, Any] = field(default_factory=dict)
     error_category: str | None = None
     error_code: str | None = None
@@ -74,15 +93,27 @@ class Provider(Protocol):
 def _reject_secret_payload(node: Any, *, path: str = "$") -> None:
     if isinstance(node, dict):
         for key, value in node.items():
-            _reject_secret_payload(value, path=f"{path}.{key}")
+            key_s = str(key)
+            if _AUTH_KEY.match(key_s):
+                raise DispatchError(
+                    "DISPATCH_PROVIDER_SECRET_PAYLOAD",
+                    f"secret-like provider key rejected at {path}.{key_s}",
+                )
+            _reject_secret_payload(value, path=f"{path}.{key_s}")
     elif isinstance(node, list):
         for idx, value in enumerate(node):
             _reject_secret_payload(value, path=f"{path}[{idx}]")
-    elif isinstance(node, str) and _SECRET_HINT.search(node):
-        raise DispatchError(
-            "DISPATCH_PROVIDER_SECRET_PAYLOAD",
-            f"secret-like provider payload rejected at {path}",
-        )
+    elif isinstance(node, str):
+        if (
+            _SECRET_HINT.search(node)
+            or _BEARER.search(node)
+            or _CRSR.search(node)
+            or _PRESIGNED.search(node)
+        ):
+            raise DispatchError(
+                "DISPATCH_PROVIDER_SECRET_PAYLOAD",
+                f"secret-like provider payload rejected at {path}",
+            )
 
 
 def sanitize_provider_result(result: ProviderResult) -> ProviderResult:
@@ -128,7 +159,6 @@ class MockProvider:
         self.dispatch_calls += 1
         provider_run_id = self._provider_run_id(request)
         if provider_run_id in self._runs:
-            # Idempotent replay of identical dispatch.
             internal = self._runs[provider_run_id]
             return sanitize_provider_result(
                 ProviderResult(
@@ -151,7 +181,6 @@ class MockProvider:
         status = "QUEUED"
         usage = {"iterations": 0, "tool_calls": 0}
         receipt = deepcopy(request.delivery_receipt)
-        cancel_confirmed: bool | None = None
 
         if scenario == "fail_on_dispatch":
             status = "FAILED"
@@ -166,7 +195,6 @@ class MockProvider:
             status=status,
             usage=usage,
             delivery_receipt=receipt,
-            cancel_confirmed=cancel_confirmed,
             request=request,
         )
         self._runs[provider_run_id] = internal
@@ -266,27 +294,30 @@ class MockProvider:
                 normalized_status=status,
                 usage=dict(internal.usage),
                 result_refs={"cancel_reason": reason},
-                error_category=None,
-                error_code=None,
                 delivery_receipt=deepcopy(internal.delivery_receipt),
                 cancel_confirmed=internal.cancel_confirmed,
             )
         )
 
 
-_PROVIDERS: dict[str, type] = {
-    "mock": MockProvider,
-}
+def get_provider(provider_id: str, **kwargs: Any) -> Provider:
+    """Resolve provider via factory. Live Cursor execute remains gated."""
+    from tools.agent_control.providers.factory import build_provider
 
-
-def get_provider(provider_id: str) -> Provider:
-    if provider_id != "mock":
-        raise DispatchError(
-            "PROVIDER_LIVE_DISPATCH_FORBIDDEN",
-            f"live provider {provider_id!r} forbidden in #4253; only mock allowed",
-        )
-    return MockProvider()
+    if provider_id == "mock":
+        return MockProvider()
+    # Cursor providers are constructible for dry-run/capabilities; live execute
+    # is still blocked inside drivers unless injected transports are supplied.
+    return build_provider(provider_id, **kwargs)
 
 
 def provider_registry() -> dict[str, str]:
-    return {key: cls.__name__ for key, cls in sorted(_PROVIDERS.items())}
+    from tools.agent_control.providers.factory import registered_provider_ids
+
+    mapping = {
+        "mock": "MockProvider",
+        "cursor-sdk": "CursorSdkDriver",
+        "cursor-cli": "CursorCliDriver",
+        "cursor-cloud-api": "CursorCloudApiDriver",
+    }
+    return {key: mapping[key] for key in registered_provider_ids()}

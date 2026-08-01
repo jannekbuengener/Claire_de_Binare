@@ -26,7 +26,26 @@
     },
     "schema_version": {
       "type": "string",
-      "const": "1.0.0"
+      "enum": ["1.0.0", "1.1.0"]
+    },
+    "provider_work_order": {
+      "type": "object",
+      "additionalProperties": false,
+      "description": "Optional digest-bound provider work order. Required for live Cursor provider dispatch; omitted contracts remain valid as schema 1.0.0.",
+      "required": ["prompt_ref", "source_commit", "prompt_digest"],
+      "properties": {
+        "prompt_ref": {
+          "$ref": "#/$defs/RepoRelativePath"
+        },
+        "source_commit": {
+          "type": "string",
+          "pattern": "^[a-f0-9]{40}$"
+        },
+        "prompt_digest": {
+          "type": "string",
+          "pattern": "^sha256:[a-f0-9]{64}$"
+        }
+      }
     },
     "contract_id": {
       "type": "string",
