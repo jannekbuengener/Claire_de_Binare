@@ -66,17 +66,19 @@ Stage und LR sind orthogonale Systeme: `trade-capable` autorisiert kein Live-Tra
 
 ## Current-main Snapshot
 
-<!-- cdb:status-freshness header-date=2026-07-31 -->
-<!-- cdb:live-claim type=main_sha value=eddcd1bc -->
-Auf `origin/main` (`eddcd1bc`, Stand 2026-07-31) sind die juengsten relevanten Merge-Cluster u. a.:
+<!-- cdb:status-freshness header-date=2026-08-01 -->
+<!-- cdb:live-claim type=main_sha value=6ac6b767 -->
+<!-- cdb:live-claim type=issue_state issue=4289 state=open -->
+Auf `origin/main` (`6ac6b767`, Stand 2026-08-01) sind die juengsten relevanten Merge-Cluster u. a.:
 
-- **Multitask-Welle [#4238](https://github.com/jannekbuengener/Claire_de_Binare/pull/4238)–[#4241](https://github.com/jannekbuengener/Claire_de_Binare/pull/4241):** Evidence-harvester Test-Isolation, Dockerfile Discovery Guard, TLS-Overlay Quarantine, Regime Offline-UNKNOWN — Tip `eddcd1bc`.
-- **Fast-CI Slice Gates ([#4204](https://github.com/jannekbuengener/Claire_de_Binare/issues/4204) / PR [#4236](https://github.com/jannekbuengener/Claire_de_Binare/pull/4236)):** **CLOSED/MERGED** — Versionierte Slice-Policy, fail-closed unbekannte Pfade, Timing-Evidence.
-- **PR-Router Live-Konventionen ([#4228](https://github.com/jannekbuengener/Claire_de_Binare/issues/4228) / PR [#4231](https://github.com/jannekbuengener/Claire_de_Binare/pull/4231)):** **CLOSED/MERGED** — Policy/Matcher an reale Titel-Token und `scope:*`/`type:*` Labels angeglichen.
-- **PR-Acceptance Skill Family ([#4211](https://github.com/jannekbuengener/Claire_de_Binare/pull/4211) / [#4216](https://github.com/jannekbuengener/Claire_de_Binare/pull/4216)):** Wiring-Audit, Gap-Classifier, Completeness-Review und Batch-Merge-Conductor.
+- **Hermes Hetzner Bootstrap ([#4289](https://github.com/jannekbuengener/Claire_de_Binare/issues/4289)):** Repo-Slice in Delivery (Infrastructure/Profiles/Ops/Token-Broker); Live-VM/Windows-Drills bleiben `HOLD_SCOPE_BLOCKER`. Tip `main` @ `6ac6b767`.  <!-- pragma: allowlist secret -->
+- **Multitask-Welle [#4238](https://github.com/jannekbuengener/Claire_de_Binare/pull/4238)–[#4241](https://github.com/jannekbuengener/Claire_de_Binare/pull/4241):** Evidence-harvester Test-Isolation, Dockerfile Discovery Guard, TLS-Overlay Quarantine, Regime Offline-UNKNOWN.  <!-- pragma: allowlist secret -->
+- **Fast-CI Slice Gates ([#4204](https://github.com/jannekbuengener/Claire_de_Binare/issues/4204) / PR [#4236](https://github.com/jannekbuengener/Claire_de_Binare/pull/4236)):** **CLOSED/MERGED** — Versionierte Slice-Policy, fail-closed unbekannte Pfade, Timing-Evidence.  <!-- pragma: allowlist secret -->
+- **PR-Router Live-Konventionen ([#4228](https://github.com/jannekbuengener/Claire_de_Binare/issues/4228) / PR [#4231](https://github.com/jannekbuengener/Claire_de_Binare/pull/4231)):** **CLOSED/MERGED** — Policy/Matcher an reale Titel-Token und `scope:*`/`type:*` Labels angeglichen.  <!-- pragma: allowlist secret -->
+- **PR-Acceptance Skill Family ([#4211](https://github.com/jannekbuengener/Claire_de_Binare/pull/4211) / [#4216](https://github.com/jannekbuengener/Claire_de_Binare/pull/4216)):** Wiring-Audit, Gap-Classifier, Completeness-Review und Batch-Merge-Conductor.  <!-- pragma: allowlist secret -->
 
 <!-- cdb:live-claim type=issue_state issue=1445 state=open -->
-Operatives Cockpit: [Issue #1445](https://github.com/jannekbuengener/Claire_de_Binare/issues/1445) (offen). Der Nav-/Snapshot-Reconcile [#3995](https://github.com/jannekbuengener/Claire_de_Binare/issues/3995) (PR [#4018](https://github.com/jannekbuengener/Claire_de_Binare/pull/4018)) und der Community-Health-Reconcile [#4005](https://github.com/jannekbuengener/Claire_de_Binare/issues/4005) (PR [#4024](https://github.com/jannekbuengener/Claire_de_Binare/pull/4024)) sind abgeschlossen. Vollstaendiges Session-Ledger: [`CURRENT_STATUS.md`](CURRENT_STATUS.md).
+Operatives Cockpit: [Issue #1445](https://github.com/jannekbuengener/Claire_de_Binare/issues/1445) (offen). Der Nav-/Snapshot-Reconcile [#3995](https://github.com/jannekbuengener/Claire_de_Binare/issues/3995) (PR [#4018](https://github.com/jannekbuengener/Claire_de_Binare/pull/4018)) und der Community-Health-Reconcile [#4005](https://github.com/jannekbuengener/Claire_de_Binare/issues/4005) (PR [#4024](https://github.com/jannekbuengener/Claire_de_Binare/pull/4024)) sind abgeschlossen. Vollstaendiges Session-Ledger: [`CURRENT_STATUS.md`](CURRENT_STATUS.md).  <!-- pragma: allowlist secret -->
 
 Dieser Abschnitt ist ein Live-Claim und wird von `python -m tools.validate_status_freshness` semantisch geprueft; die Markerkonvention steht in [`docs/meta/REPOSITORY_CANON.md`](docs/meta/REPOSITORY_CANON.md).
 
@@ -85,7 +87,7 @@ LR bleibt **NO-GO** — SSOT: [`docs/live-readiness/LR-AUDIT-STATUS-2026-03-05.m
 ## Docs / Canonical Entrypoints
 
 1. [`docs/runbooks/CONTROL_REGISTER.md`](docs/runbooks/CONTROL_REGISTER.md)
-2. [GitHub Issue #1445](https://github.com/jannekbuengener/Claire_de_Binare/issues/1445) (inkl. neuestem Wochenkommentar)
+2. [GitHub Issue #1445](https://github.com/jannekbuengener/Claire_de_Binare/issues/1445) (inkl. neuestem Wochenkommentar)  <!-- pragma: allowlist secret -->
 3. [`CURRENT_STATUS.md`](CURRENT_STATUS.md)
 4. [`docs/live-readiness/LR-AUDIT-STATUS-2026-03-05.md`](docs/live-readiness/LR-AUDIT-STATUS-2026-03-05.md)
 5. [`docs/meta/REPOSITORY_CANON.md`](docs/meta/REPOSITORY_CANON.md)

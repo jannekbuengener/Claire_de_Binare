@@ -1,0 +1,62 @@
+# Non-secret config for cdb-engineer (#4289)
+profile:
+  name: cdb-engineer
+  class: engineering
+
+security:
+  redact_secrets: true
+  tirith_enabled: true
+  tirith_fail_open: false
+
+approvals:
+  mode: smart
+  timeout: 300
+  cron_mode: deny
+  deny:
+    - "git push --force*"
+    - "git push -f*"
+    - "gh pr merge *--admin*"
+    - "gh api *branch-protection*"
+    - "gh secret *"
+    - "*cdb-local-ci*"
+    - "make ci-local-publish*"
+    - "python -m ci.publisher *"
+
+terminal:
+  # Prefer isolated backend; SSH to Windows only via dedicated user + allowlist.
+  backend: docker
+  cwd: /workspace
+  home_mode: profile
+
+# Optional SSH backend (operator-enabled) must target hermes-win + workspace only.
+ssh_targets:
+  windows_workspace:
+    enabled: false
+    user: hermes-win
+    # Host is Tailscale MagicDNS / private IP — never a public SSH port.
+    host_env: HERMES_WINDOWS_TAILSCALE_HOST
+    allow_paths:
+      - "D:\\Dev\\HermesWorkspace\\Claire_de_Binare"  # pragma: allowlist secret
+    deny_paths:
+      - "C:\\Users"
+      - "D:\\"
+      - "C:\\"
+
+github:
+  auth_mode: app_installation_token
+  token_broker: python -m tools.hermes_ops mint-token --profile cdb-engineer
+  allowed_repositories:
+    - jannekbuengener/Claire_de_Binare  # pragma: allowlist secret
+  forbidden_actions:
+    - publish_cdb_local_ci
+    - admin_merge
+    - edit_branch_protection
+    - read_or_write_repo_secrets
+    - force_push
+    - delete_default_branch
+    - expand_app_permissions
+
+server:
+  host: 127.0.0.1
+  port: 9119
+  require_auth_non_loopback: true

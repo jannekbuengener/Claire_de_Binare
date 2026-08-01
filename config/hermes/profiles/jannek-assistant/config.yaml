@@ -1,0 +1,42 @@
+# Non-secret config for jannek-assistant (#4289)
+profile:
+  name: jannek-assistant
+  class: personal
+
+security:
+  redact_secrets: true
+  tirith_enabled: true
+  tirith_fail_open: false
+
+approvals:
+  mode: smart
+  timeout: 300
+  cron_mode: deny
+  deny:
+    - "git push*"
+    - "gh * --admin*"
+    - "*curl*|*bash*"
+    - "*powershell*"
+    - "ssh *"
+
+terminal:
+  # No host/Windows shell for personal profile.
+  backend: docker
+  cwd: /workspace
+  home_mode: profile
+
+platform_toolsets:
+  cli:
+    - file_operations
+
+agent:
+  disabled_toolsets:
+    - code_execution
+    - browser
+    - web
+
+# Dashboard/serve must remain loopback on the Hetzner host.
+server:
+  host: 127.0.0.1
+  port: 9119
+  require_auth_non_loopback: true

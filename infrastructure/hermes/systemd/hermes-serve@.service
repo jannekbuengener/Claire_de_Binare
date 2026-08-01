@@ -1,0 +1,48 @@
+[Unit]
+Description=CDB Hermes serve profile %i (#4289)
+Documentation=https://github.com/jannekbuengener/Claire_de_Binare/issues/4289  # pragma: allowlist secret
+After=network-online.target
+Wants=network-online.target
+ConditionPathExists=!/var/lib/hermes/profiles/%i/.DISABLED
+
+[Service]
+Type=simple
+User=hermes
+Group=hermes
+Environment=HERMES_HOME=/var/lib/hermes/profiles/%i
+Environment=HERMES_PROFILE=%i
+# Secrets are injected from an operator-owned env file outside the repo.
+EnvironmentFile=-/etc/hermes/%i.env
+WorkingDirectory=/var/lib/hermes/profiles/%i
+# Loopback-only bind. Remote access via Tailscale/SSH tunnel. Auth required for any non-loopback.
+ExecStart=/opt/hermes/bin/hermes serve --host 127.0.0.1 --port 9119 --no-open
+ExecStartPre=/usr/bin/test -d /var/lib/hermes/profiles/%i
+ExecStartPre=/usr/bin/test -f /var/lib/hermes/profiles/%i/config.yaml
+Restart=on-failure
+RestartSec=5
+TimeoutStartSec=60
+TimeoutStopSec=30
+# Resource hard caps (adjust via drop-in if needed).
+CPUQuota=80%
+MemoryMax=1536M
+TasksMax=256
+LimitNOFILE=8192
+NoNewPrivileges=true
+PrivateTmp=true
+ProtectSystem=strict
+ProtectHome=true
+ReadWritePaths=/var/lib/hermes/profiles/%i /var/log/hermes
+ProtectKernelTunables=true
+ProtectKernelModules=true
+ProtectControlGroups=true
+LockPersonality=true
+RestrictSUIDSGID=true
+RestrictRealtime=true
+SystemCallArchitectures=native
+UMask=0077
+StandardOutput=journal
+StandardError=journal
+SyslogIdentifier=hermes-%i
+
+[Install]
+WantedBy=multi-user.target

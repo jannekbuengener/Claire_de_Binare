@@ -1,0 +1,39 @@
+# Credentials & secrets — NEVER commit
+auth.json
+.env
+.env.*
+!.env.EXAMPLE
+
+# Runtime databases & state
+state.db
+state.db-shm
+state.db-wal
+hermes_state.db
+response_store.db*
+gateway.pid
+gateway_state.json
+processes.json
+auth.lock
+active_profile
+.update_check
+
+# User data — NEVER commit
+memories/
+sessions/
+logs/
+plans/
+workspace/
+home/
+
+# Caches & generated artifacts
+image_cache/
+audio_cache/
+document_cache/
+browser_screenshots/
+cache/
+checkpoints/
+sandboxes/
+backups/
+errors.log
+.hermes_history
+local/

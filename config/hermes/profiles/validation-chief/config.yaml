@@ -1,0 +1,20 @@
+profile:
+  name: validation-chief
+  class: validation
+  enabled: false
+
+security:
+  redact_secrets: true
+
+approvals:
+  mode: manual
+  cron_mode: deny
+
+terminal:
+  backend: docker
+  cwd: /workspace
+
+server:
+  host: 127.0.0.1
+  port: 9119
+  require_auth_non_loopback: true

@@ -1,0 +1,23 @@
+# Shared non-secret defaults for Hermes profiles (#4289)
+security:
+  redact_secrets: true
+  tirith_enabled: true
+  tirith_fail_open: false
+
+approvals:
+  mode: smart
+  timeout: 300
+  cron_mode: deny
+
+server:
+  host: 127.0.0.1
+  port: 9119
+  require_auth_non_loopback: true
+
+# Omnipotent / combined personal+admin profiles are forbidden by policy.
+cdb_invariants:
+  live_authority: false
+  risk_authority: false
+  merge_authority: false
+  cdb_local_ci_publish: false
+  public_dashboard: false

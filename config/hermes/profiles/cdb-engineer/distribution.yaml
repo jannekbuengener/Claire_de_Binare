@@ -1,0 +1,34 @@
+name: cdb-engineer
+version: 1.0.0
+description: "CDB engineering profile with scoped workspace + short-lived GitHub App tokens. No live/risk/merge authority."
+hermes_requires: ">=0.12.0"
+author: "Claire de Binare"
+license: "UNLICENSED"
+cdb:
+  issue: 4289
+  profile_class: engineering
+  windows_access: dedicated_workspace_only
+  windows_workspace: "D:\\Dev\\HermesWorkspace\\Claire_de_Binare"  # pragma: allowlist secret
+  github_write: scoped_app_token
+  allowed_repositories:
+    - jannekbuengener/Claire_de_Binare  # pragma: allowlist secret
+  live_authority: false
+  risk_authority: false
+  merge_authority: false
+  cdb_local_ci_publish: false
+  reuses_auth_lineage:
+    - 4170
+    - 4195
+env_requires:
+  - name: CDB_GH_APP_ID
+    description: "GitHub App ID (reuse CI App lineage when compatible)"
+    required: true
+  - name: CDB_GH_APP_INSTALLATION_ID
+    description: "GitHub App installation ID"
+    required: true
+  - name: CDB_GH_APP_PRIVATE_KEY_PATH
+    description: "Absolute path to PEM outside agent-readable workspace"
+    required: true
+  - name: OPENROUTER_API_KEY
+    description: "Model provider key"
+    required: false

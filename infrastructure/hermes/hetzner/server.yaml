@@ -1,0 +1,30 @@
+# Declarative Hetzner Cloud server intent for Hermes (#4289).
+# Applied via hcloud CLI (or equivalent API). No secrets here.
+
+schema_version: cdb.hermes.hetzner_server/v1
+name: cdb-hermes-01
+image: ubuntu-24.04
+server_type: cpx21
+location: nbg1
+backups: true
+labels:
+  project: claire-de-binare
+  role: hermes
+  issue: "4289"
+ssh_keys:
+  # Replace with operator key name registered in Hetzner Cloud.
+  - jannek-hermes-bootstrap
+user_data_file: cloud-init.yaml
+networks:
+  # Public IPv4 may exist for egress; inbound is denied by firewall.
+  public_net:
+    enable_ipv4: true
+    enable_ipv6: true
+firewall_names:
+  - cdb-hermes-deny-inbound
+placement:
+  # Single-node only; no cluster.
+  mode: single
+cost_guard:
+  monthly_eur_limit: 15
+  refuse_larger_than: cpx31

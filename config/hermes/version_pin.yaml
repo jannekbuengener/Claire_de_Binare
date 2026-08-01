@@ -1,0 +1,19 @@
+# Mirror of infrastructure pin for validators (#4289).
+# Authoritative pin for install remains infrastructure/hermes/VERSION_PIN.yaml.
+schema_version: cdb.hermes.config_version_pin/v1
+issue: 4289
+profiles:
+  - jannek-assistant
+  - cdb-engineer
+  - validation-chief
+distributions_require_hermes: ">=0.12.0"
+forbidden_in_repo:
+  - ".env"
+  - "auth.json"
+  - "memories/"
+  - "sessions/"
+  - "state.db"
+  - "*.pem"
+  - "*_TOKEN"
+  - "*_SECRET"
+  - "*_PASSWORD"

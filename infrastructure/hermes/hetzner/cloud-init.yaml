@@ -1,0 +1,71 @@
+#cloud-config
+# Hermes host baseline (#4289). Idempotent intent; secrets injected later via operator.
+
+package_update: true
+package_upgrade: true
+packages:
+  - unattended-upgrades
+  - fail2ban
+  - curl
+  - jq
+  - git
+  - ca-certificates
+  - chrony
+  - ufw
+  - acl
+
+users:
+  - name: hermes
+    groups: [sudo]
+    shell: /bin/bash
+    sudo: "ALL=(ALL) NOPASSWD: /bin/systemctl start hermes-serve@*, /bin/systemctl stop hermes-serve@*, /bin/systemctl restart hermes-serve@*, /bin/systemctl status hermes-serve@*, /bin/systemctl is-active hermes-serve@*"
+    lock_passwd: true
+    ssh_authorized_keys: []
+    # Operator injects the bootstrap public key at provision time.
+
+ssh_pwauth: false
+disable_root: true
+
+write_files:
+  - path: /etc/ssh/sshd_config.d/99-cdb-hermes.conf
+    permissions: "0644"
+    content: |
+      PermitRootLogin no
+      PasswordAuthentication no
+      KbdInteractiveAuthentication no
+      PubkeyAuthentication yes
+      AllowUsers hermes
+      X11Forwarding no
+      AllowTcpForwarding yes
+      ClientAliveInterval 30
+      ClientAliveCountMax 3
+  - path: /etc/security/limits.d/99-hermes.conf
+    permissions: "0644"
+    content: |
+      hermes soft nproc 512
+      hermes hard nproc 1024
+      hermes soft nofile 8192
+      hermes hard nofile 16384
+  - path: /etc/systemd/system.conf.d/99-hermes-defaults.conf
+    permissions: "0644"
+    content: |
+      [Manager]
+      DefaultLimitNOFILE=16384
+  - path: /etc/apt/apt.conf.d/20auto-upgrades
+    permissions: "0644"
+    content: |
+      APT::Periodic::Update-Package-Lists "1";
+      APT::Periodic::Unattended-Upgrade "1";
+
+runcmd:
+  - timedatectl set-ntp true
+  - systemctl enable --now chrony
+  - systemctl enable --now unattended-upgrades
+  - ufw default deny incoming
+  - ufw default allow outgoing
+  - ufw --force enable
+  - mkdir -p /opt/hermes /var/lib/hermes /var/log/hermes
+  - chown -R hermes:hermes /opt/hermes /var/lib/hermes /var/log/hermes
+  - chmod 0750 /opt/hermes /var/lib/hermes /var/log/hermes
+
+final_message: "CDB Hermes cloud-init baseline complete. Run infrastructure/hermes/hetzner/bootstrap.sh next."

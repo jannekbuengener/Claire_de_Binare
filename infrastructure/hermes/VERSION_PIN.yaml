@@ -1,0 +1,30 @@
+# Hermes runtime version pin for Hetzner bootstrap (#4289).
+# Operator MUST set hermes.git_ref / hermes.sha256 before productive install.
+# curl|bash without this pin is REJECTED by bootstrap.sh.
+
+schema_version: cdb.hermes.version_pin/v1
+issue: 4289
+
+hermes:
+  # Official install source (docs: https://hermes-agent.nousresearch.com/)
+  install_url: https://hermes-agent.nousresearch.com/install.sh
+  # Exact git tag or commit SHA to install. Empty => bootstrap STOP.
+  git_ref: ""
+  # Optional: sha256 of the install script bytes at pin time.
+  install_script_sha256: ""
+  # Minimum Hermes version required by profile distributions.
+  requires_min: ">=0.12.0"
+  # Provenance note: fill after first verified download.
+  provenance_note: "Unset until operator pins a verified Hermes release/commit."
+
+os:
+  image: ubuntu-24.04
+  architecture: x86
+
+hetzner:
+  # Cost-conscious default; operator may raise with documented cost limit.
+  server_type: cpx21
+  location: nbg1
+  backups: true
+  # Soft monthly EUR cost ceiling for planning (not an API hard limit).
+  monthly_cost_eur_limit: 15
