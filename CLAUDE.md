@@ -198,7 +198,7 @@ Coverage target: 80% on `core/` and `services/` (enforced by `make test-coverage
 
 ### CI / Branch Protection
 
-- Required merge context (SSOT: `docs/runbooks/merge_policy_ci_gate.md`, verify live via `gh api`): `cdb-local-ci` (Commit Status, exact PR head SHA) — the only branch-protection-required context on `main`.
+- Required merge context (SSOT: `docs/runbooks/merge_policy_ci_gate.md`, verify live via `gh api`): `cdb-local-ci` (App-bound Check Run `app_id=4410232`, exact PR head SHA) — the only branch-protection-required context on `main`.
 - `ci (Unit/Integration + Lint gesammelt)` + `policy-gate` (Hosted Actions) remain advisory/safety-relevant but are not branch-protection-required since migration #4169.
 - `policy-gate` categorizes PRs; core/service PRs need label `allow-core-change` or `manual-approval`
 - `strict: true` — branch must be up-to-date with main before merge

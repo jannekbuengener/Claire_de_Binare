@@ -200,7 +200,7 @@ Merge contract on `main` (SSOT:
 
 | Check | Source | Type |
 |-------|--------|------|
-| `cdb-local-ci` | Local CI Status Publisher | Commit Status (the only merge-relevant required context) |
+| `cdb-local-ci` | Local CI Status Publisher | App Check Run `app_id=4410232` (the only merge-relevant required context) |
 
 `ci (Unit/Integration + Lint gesammelt)` (`.github/workflows/ci.yml`) and
 `policy-gate` (`.github/workflows/policy-gate.yml`) are Hosted GitHub
@@ -214,7 +214,7 @@ Python under `services/` and `tests/`. Coverage >= 80% applies when running
 every PR.
 
 Normal Issue-Slices use targeted Validation and do not publish
-`cdb-local-ci`. Full Fast-CI and the required Commit Status apply to the exact,
+`cdb-local-ci`. Full Fast-CI and the required App-bound Check Run apply to the exact,
 frozen final merge head.
 
 Classify your PR scope with the policy-gate rules in the merge-policy runbook.

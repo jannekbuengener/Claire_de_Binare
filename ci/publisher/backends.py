@@ -9,6 +9,13 @@ from typing import Any, Protocol
 from urllib.parse import quote
 
 from ci.publisher import EXPECTED_REPOSITORY
+from ci.publisher.app_auth import (
+    APP_ID_ALIAS_ENV,
+    APP_ID_ENV,
+    INSTALLATION_ID_ALIAS_ENV,
+    INSTALLATION_ID_ENV,
+    mint_installation_token,
+)
 from ci.publisher.exceptions import AuthenticationError, GitHubApiError, PublisherError
 from ci.publisher.github_client import (
     DEFAULT_TIMEOUT_SECONDS,
@@ -27,8 +34,8 @@ from ci.publisher.models import (
 from ci.publisher.redaction import redact_mapping, redact_text
 
 APP_INSTALLATION_TOKEN_ENV = "CDB_GH_APP_INSTALLATION_TOKEN"
-EXPECTED_APP_ID_ENV = "CDB_GH_APP_ID"
-EXPECTED_INSTALLATION_ID_ENV = "CDB_GH_APP_INSTALLATION_ID"
+EXPECTED_APP_ID_ENV = APP_ID_ENV
+EXPECTED_INSTALLATION_ID_ENV = INSTALLATION_ID_ENV
 ALLOWED_BACKENDS = frozenset({"commit-status", "check-run"})
 _DEFAULT_OWNER, _DEFAULT_REPO = EXPECTED_REPOSITORY.split("/", 1)
 
@@ -46,10 +53,18 @@ def parse_positive_int(value: object, *, field_name: str) -> int:
     return parsed
 
 
-def resolve_app_installation_token(*, explicit: str | None = None) -> str:
+def resolve_app_installation_token(
+    *,
+    explicit: str | None = None,
+    transport: Transport | None = None,
+) -> str:
     """Resolve GitHub App installation token — never gh auth / GITHUB_TOKEN / GH_TOKEN.
 
-    Only ``CDB_GH_APP_INSTALLATION_TOKEN`` (or an explicit test inject) is accepted.
+    Priority:
+    1. explicit test inject
+    2. ``CDB_GH_APP_INSTALLATION_TOKEN``
+    3. auto-mint from App ID + Installation ID + private key (path or inline)
+    4. ``AuthenticationError`` (no PAT / ``gh auth`` fallback)
     """
     if explicit is not None:
         token = explicit.strip()
@@ -57,12 +72,22 @@ def resolve_app_installation_token(*, explicit: str | None = None) -> str:
             raise AuthenticationError("Empty GitHub App installation token")
         return token
     token = (os.environ.get(APP_INSTALLATION_TOKEN_ENV) or "").strip()
-    if not token:
+    if token:
+        return token
+    try:
+        return mint_installation_token(transport=transport)
+    except AuthenticationError as exc:
         raise AuthenticationError(
-            f"Missing {APP_INSTALLATION_TOKEN_ENV}; Check Run mode refuses "
-            "GITHUB_TOKEN / GH_TOKEN / gh auth token as App identity proof"
-        )
-    return token
+            f"Missing {APP_INSTALLATION_TOKEN_ENV} and App credential auto-mint "
+            f"failed ({exc}); Check Run mode refuses GITHUB_TOKEN / GH_TOKEN / "
+            "gh auth token as App identity proof"
+        ) from exc
+    except (GitHubApiError, PublisherError) as exc:
+        raise AuthenticationError(
+            f"Missing {APP_INSTALLATION_TOKEN_ENV} and App credential auto-mint "
+            f"failed ({exc}); Check Run mode refuses GITHUB_TOKEN / GH_TOKEN / "
+            "gh auth token as App identity proof"
+        ) from exc
 
 
 def resolve_expected_app_id(
@@ -71,11 +96,14 @@ def resolve_expected_app_id(
     if cli_value is not None:
         return parse_positive_int(cli_value, field_name="expected-app-id")
     env_raw = (os.environ.get(EXPECTED_APP_ID_ENV) or "").strip()
+    if not env_raw:
+        env_raw = (os.environ.get(APP_ID_ALIAS_ENV) or "").strip()
     if env_raw:
         return parse_positive_int(env_raw, field_name=EXPECTED_APP_ID_ENV)
     if require:
         raise PublisherError(
-            f"Check Run mode requires --expected-app-id or {EXPECTED_APP_ID_ENV}"
+            f"Check Run mode requires --expected-app-id or {EXPECTED_APP_ID_ENV} "
+            f"(alias {APP_ID_ALIAS_ENV})"
         )
     return None
 
@@ -86,12 +114,14 @@ def resolve_expected_installation_id(
     if cli_value is not None:
         return parse_positive_int(cli_value, field_name="expected-installation-id")
     env_raw = (os.environ.get(EXPECTED_INSTALLATION_ID_ENV) or "").strip()
+    if not env_raw:
+        env_raw = (os.environ.get(INSTALLATION_ID_ALIAS_ENV) or "").strip()
     if env_raw:
         return parse_positive_int(env_raw, field_name=EXPECTED_INSTALLATION_ID_ENV)
     if require:
         raise PublisherError(
             "Check Run mode requires --expected-installation-id or "
-            f"{EXPECTED_INSTALLATION_ID_ENV}"
+            f"{EXPECTED_INSTALLATION_ID_ENV} (alias {INSTALLATION_ID_ALIAS_ENV})"
         )
     return None
 

@@ -28,7 +28,7 @@ dieser Tabelle.
 
 | Quelle | Check-Kontext | Typ |
 |---|---|---|
-| Local CI Status Publisher | `cdb-local-ci` | Commit Status |
+| Local CI Status Publisher | `cdb-local-ci` | App Check Run (`app_id=4410232`) |
 
 | Workflow | Rolle |
 |---|---|

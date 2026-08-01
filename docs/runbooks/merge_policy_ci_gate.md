@@ -12,7 +12,7 @@ geliefert. Targeted Tests, betroffener Lint/Format-Scope und
 | Oberfläche | Zweck | Merge-Evidence? |
 |---|---|---|
 | **Slice Validation** (`--profile slice` / `--slice`) | Deterministische, path-/lane-/profile-basierte Testgruppen für schnelle Entwicklungsprüfungen. Policy: `ci/config/slice_validation_policy.v1.yaml`. Report: `reports/slice_selection.json` mit `merge_evidence=false`. | **Nein** — Publisher lehnt `merge_evidence=false` und `profile=slice` ab. |
-| **Final-Head / Fast-CI** (`--profile fast`) | Unveränderter vollständiger Unit-Selektor `pytest -q -k "not test_mcp_time_server_runtime"` plus lint/docs/governance. | Nur nach Publish als Commit Status `cdb-local-ci` auf exaktem Head. |
+| **Final-Head / Fast-CI** (`--profile fast`) | Unveränderter vollständiger Unit-Selektor `pytest -q -k "not test_mcp_time_server_runtime"` plus lint/docs/governance. | Nur nach Publish als App-gebundenem Check Run `cdb-local-ci` (`app_id=4410232`) auf exaktem Head. |
 
 Fail-closed: unbekannte/nicht klassifizierte Pfade, Policy-/Schema-/Parsefehler
 oder Runtime-/Risk-/Docker-Pfade erzwingen automatisch das vollständige
@@ -35,20 +35,31 @@ Für Pull Requests auf `main` gilt genau ein merge-relevanter Required Context
 
 | Quelle | Context | Typ |
 |---|---|---|
-| Local CI Status Publisher | `cdb-local-ci` | Commit Status (`app_id` null) — interim |
+| Local CI Status Publisher | `cdb-local-ci` | **GitHub App Check Run** (`app_id=4410232`) |
 
 Die früheren Required Checks `ci (Unit/Integration + Lint gesammelt)` und
 `policy-gate` sind **nicht mehr** branch-protection-required (Migration #4169).
 `ci.yml` und `policy-gate.yml` bleiben als Workflow-Inhalt / Safety-Gates
 nützlich, ersetzen aber den Required Context nicht.
 
-**Trust gap / #4170:** Commit Status with `app_id=null` is not App-bound; any
-credential with Commit statuses: Write can POST the same context. Phase A of
-#4170 adds an explicit Check Run publisher backend
-(`--publisher-backend check-run`) but does **not** change live Branch
-Protection. Cutover to an App-bound required Check Run is a separate Human-GO
-(see [`cdb_local_ci_app_check_run_cutover.md`](cdb_local_ci_app_check_run_cutover.md)).
-Until that cutover, merge evidence remains the Commit Status path.
+**Post-#4170 Phase D (live):** Branch Protection akzeptiert `cdb-local-ci`
+ausschließlich als Check Run der GitHub App `4410232`. Ein gleichnamiger
+**Commit Status ist wirkungslos** für den Merge-Gate. Kanonischer Publish:
+
+```powershell
+python -m ci.publisher publish `
+  --publisher-backend check-run `
+  --evidence-dir ci/artifacts/<run_id> `
+  --commit-sha <exact_pr_head> `
+  --pr-number <n>
+```
+
+Auto-Mint aus `CDB_GH_APP_ID` / `CDB_GH_APP_INSTALLATION_ID` /
+`CDB_GH_APP_PRIVATE_KEY_PATH` (siehe
+[`cdb_local_ci_app_check_run_cutover.md`](cdb_local_ci_app_check_run_cutover.md),
+[`local-status-publisher.md`](../ci/local-status-publisher.md)).
+`--publisher-backend commit-status` bleibt nur als Legacy/Debug-Pfad und
+erfüllt die Required Protection **nicht**.
 
 Lint/Format (orchestrator stage `lint`, Issue #4206): Black und Ruff kommen
 ausschließlich aus dem Pin in `requirements-dev.txt`. Black läuft als
@@ -79,10 +90,12 @@ prüfen, erzeugt selbst aber keinen merge-relevanten Ersatzcheck.
 ## Diagnose
 
 1. PR-Head-SHA ermitteln.
-2. Commit Status `cdb-local-ci` für exakt diesen SHA prüfen.
-3. Fehlenden Status von einem fehlgeschlagenen Status unterscheiden.
+2. App-gebundenen Check Run `cdb-local-ci` (`app_id=4410232`) für exakt
+   diesen SHA prüfen (`gh api repos/.../commits/<sha>/check-runs`).
+3. Fehlenden Check Run von einem fehlgeschlagenen Check Run unterscheiden.
+   Ein gleichnamiger Commit Status zählt nicht.
 4. Publisher-Evidence und Policy-Mirror-Fail prüfen.
-5. Erst nach grünem aktuellem `cdb-local-ci` mergen.
+5. Erst nach erfolgreichem aktuellem App-Check-Run `cdb-local-ci` mergen.
 
 ## Capability-based Autonomous Merge
 
@@ -98,18 +111,21 @@ proven true for the exact PR head SHA:
 4. Full local Fast-CI PASS for the exact PR head.
 5. Evidence bound to the exact PR head (no stale/other-SHA evidence).
 6. Validated `main` unchanged since validation (no drift since evidence).
-7. `cdb-local-ci` SUCCESS on the exact PR head SHA (live via `gh api`).
+7. `cdb-local-ci` SUCCESS as App Check Run (`app_id=4410232`) on the exact
+   PR head SHA (live via `gh api`). Same-named Commit Status is not enough.
 8. The session can perform the regular squash merge itself (has merge
-   permission / `statuses:write`), and can publish `cdb-local-ci` itself if
-   it is still missing and the session holds bound evidence to do so.
+   permission) and can publish `cdb-local-ci` via `--publisher-backend
+   check-run` / App auto-mint if it is still missing and the session holds
+   bound evidence to do so.
 
 `--admin` is **never** a bypass for a missing/red/stale `cdb-local-ci`.
 Fake-green claims and merging an untested head are forbidden.
 
 ### Honest handoff when capability is missing
 
-If a session lacks any gate above (no `statuses:write`, no verifiable
-identity, evidence not bound to the exact head, publisher auth blocked):
+If a session lacks any gate above (no App Check Run publish capability,
+no verifiable identity, evidence not bound to the exact head, publisher
+auth blocked):
 leave the PR open, do not use `--admin`, do not loop the same blocked
 attempt, and report `DONE_PR_OPEN_MERGE_HANDOFF` with the exact missing
 capability and the next command for a capable session/human. See
@@ -155,8 +171,9 @@ Lokale Docker-CI unter `ci/` (siehe [`ci/README.md`](../../ci/README.md)) und
 Publisher (siehe [`docs/ci/local-status-publisher.md`](../ci/local-status-publisher.md)):
 
 - Lokale Evidence allein autorisiert keinen Merge; erst der published
-  Commit Status `cdb-local-ci` ist der Required Context.
-- Branch Protection required contexts: `["cdb-local-ci"]` (Commit Status).
+  App-gebundene Check Run `cdb-local-ci` (`app_id=4410232`) ist der Required
+  Context.
+- Branch Protection: context `cdb-local-ci` mit `checks[].app_id == 4410232`.
 - Dirty worktree ⇒ lokale Evidence `BLOCKED` und kein Publish.
 - Publish-Pfad erzwingt Policy-Gate-Mirror (Parität zu
   `.github/workflows/policy-gate.yml`).
@@ -165,12 +182,16 @@ Publisher (siehe [`docs/ci/local-status-publisher.md`](../ci/local-status-publis
 - Lokales CodeQL/SARIF ersetzt nicht den GitHub Security-Tab.
 
 Live Branch-Protection-Hinweis (reverify with `gh api`):
-`required_status_checks.contexts == ["cdb-local-ci"]`, `checks[].app_id == null`.
+`required_status_checks.checks == [{"context":"cdb-local-ci","app_id":4410232}]`,
+`strict: true`.
 
 Windows front door:
 
 ```powershell
 pwsh -File ci/scripts/run_all.ps1 -Profile fast
-pwsh -File ci/scripts/publish_status.ps1 -Command publish `
-  -EvidenceDir ci/artifacts/<run_id> -StatusContext cdb-local-ci -PrNumber <n>
+python -m ci.publisher publish `
+  --publisher-backend check-run `
+  --evidence-dir ci/artifacts/<run_id> `
+  --commit-sha <exact_pr_head> `
+  --pr-number <n>
 ```

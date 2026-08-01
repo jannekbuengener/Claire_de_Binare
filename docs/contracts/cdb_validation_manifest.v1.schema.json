@@ -1,0 +1,106 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "title": "CDB Validation Manifest v1",
+  "description": "Hermes/CDB validation handoff manifest. Orchestration only; no live/risk/promotion authority.",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "schema_version",
+    "manifest_id",
+    "run_id",
+    "candidate_id",
+    "candidate_version",
+    "requested_gates",
+    "dataset_refs",
+    "artifact_hash_plan",
+    "created_at",
+    "orchestrator",
+    "safety_boundaries"
+  ],
+  "properties": {
+    "schema_version": {
+      "const": "cdb.validation_manifest.v1"
+    },
+    "manifest_id": {
+      "type": "string",
+      "pattern": "^vm-[a-z0-9][a-z0-9-]{2,80}$"
+    },
+    "run_id": {
+      "type": "string",
+      "pattern": "^run-[a-z0-9][a-z0-9-]{2,80}$"
+    },
+    "candidate_id": {
+      "type": "string",
+      "pattern": "^sc-[a-z0-9][a-z0-9-]{2,80}$"
+    },
+    "candidate_version": {
+      "type": "string",
+      "pattern": "^v[0-9]+$"
+    },
+    "requested_gates": {
+      "type": "array",
+      "minItems": 11,
+      "uniqueItems": true,
+      "items": {
+        "type": "string",
+        "enum": [
+          "contract_completeness",
+          "dataset_quality",
+          "deterministic_baseline_replay",
+          "execution_cost_model",
+          "parameter_sensitivity",
+          "walk_forward",
+          "bootstrap_or_monte_carlo",
+          "scenario_stress",
+          "arvp_replay",
+          "regime_scorecard",
+          "replay_vs_paper"
+        ]
+      }
+    },
+    "dataset_refs": {
+      "type": "array",
+      "minItems": 1,
+      "items": {
+        "type": "string",
+        "minLength": 1
+      }
+    },
+    "artifact_hash_plan": {
+      "type": "array",
+      "minItems": 1,
+      "items": {
+        "type": "string",
+        "minLength": 1
+      }
+    },
+    "created_at": {
+      "type": "string",
+      "format": "date-time"
+    },
+    "orchestrator": {
+      "type": "string",
+      "minLength": 1
+    },
+    "safety_boundaries": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "hermes_live_authority",
+        "automatic_strategy_promotion",
+        "lr_status"
+      ],
+      "properties": {
+        "hermes_live_authority": {
+          "const": false
+        },
+        "automatic_strategy_promotion": {
+          "const": false
+        },
+        "lr_status": {
+          "const": "NO-GO"
+        }
+      }
+    }
+  }
+}

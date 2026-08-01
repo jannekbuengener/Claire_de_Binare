@@ -1,0 +1,104 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "title": "CDB Decision Record v1",
+  "description": "Post-validation decision record. PAPER_CANDIDATE is not Live-Go. Explicit allowed/forbidden next actions required.",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "schema_version",
+    "decision_id",
+    "run_id",
+    "candidate_id",
+    "candidate_version",
+    "evidence_id",
+    "decided_at",
+    "decision",
+    "rationale",
+    "allowed_next_actions",
+    "forbidden_next_actions",
+    "paper_candidate_is_not_live_go",
+    "safety_boundaries"
+  ],
+  "properties": {
+    "schema_version": {
+      "const": "cdb.decision_record.v1"
+    },
+    "decision_id": {
+      "type": "string",
+      "pattern": "^dr-[a-z0-9][a-z0-9-]{2,80}$"
+    },
+    "run_id": {
+      "type": "string",
+      "pattern": "^run-[a-z0-9][a-z0-9-]{2,80}$"
+    },
+    "candidate_id": {
+      "type": "string",
+      "pattern": "^sc-[a-z0-9][a-z0-9-]{2,80}$"
+    },
+    "candidate_version": {
+      "type": "string",
+      "pattern": "^v[0-9]+$"
+    },
+    "evidence_id": {
+      "type": "string",
+      "pattern": "^ce-[a-z0-9][a-z0-9-]{2,80}$"
+    },
+    "decided_at": {
+      "type": "string",
+      "format": "date-time"
+    },
+    "decision": {
+      "type": "string",
+      "enum": [
+        "REJECT",
+        "REVISE",
+        "PARK",
+        "PAPER_CANDIDATE"
+      ]
+    },
+    "rationale": {
+      "type": "string",
+      "minLength": 1,
+      "maxLength": 4000
+    },
+    "allowed_next_actions": {
+      "type": "array",
+      "minItems": 1,
+      "items": {
+        "type": "string",
+        "minLength": 1
+      }
+    },
+    "forbidden_next_actions": {
+      "type": "array",
+      "minItems": 1,
+      "items": {
+        "type": "string",
+        "minLength": 1
+      }
+    },
+    "paper_candidate_is_not_live_go": {
+      "const": true
+    },
+    "safety_boundaries": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "lr_status",
+        "real_money_go",
+        "automatic_strategy_promotion"
+      ],
+      "properties": {
+        "lr_status": {
+          "const": "NO-GO"
+        },
+        "real_money_go": {
+          "const": false
+        },
+        "automatic_strategy_promotion": {
+          "const": false
+        }
+      }
+    }
+  }
+}

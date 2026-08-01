@@ -22,12 +22,13 @@ evidence and requires a fresh Completeness Review.
 
 Red, missing, stale, or pending required checks are not a reason to stop and ask Jannek.
 
-The only merge-relevant required context for `main` is `cdb-local-ci` (a Commit
-Status, not a Check Run), exact PR head SHA. SSOT:
-`docs/runbooks/merge_policy_ci_gate.md`. Verify live with `gh api` — do not
-rely on stale tables. Hosted GitHub Actions check-runs (including any
-`ci`/`policy-gate` workflow content) are advisory/safety-relevant but are
-**not** the required merge gate. Hosted Actions red due to billing/runner
+The only merge-relevant required context for `main` is `cdb-local-ci` (a GitHub
+App **Check Run** bound to `app_id=4410232`, not a Commit Status), exact PR head
+SHA. SSOT: `docs/runbooks/merge_policy_ci_gate.md`. Verify live with `gh api` —
+do not rely on stale tables. A same-named Commit Status does **not** satisfy
+Branch Protection after #4170 Phase D. Hosted GitHub Actions check-runs
+(including any `ci`/`policy-gate` workflow content) are advisory/safety-relevant
+but are **not** the required merge gate. Hosted Actions red due to billing/runner
 lock is an infra condition, not a code failure, and must not be conflated
 with a missing/red `cdb-local-ci`.
 
@@ -66,11 +67,12 @@ the following are proven true:
 5. Evidence is bound to the exact PR head SHA (no stale/other-SHA evidence).
 6. Validated `main` is unchanged since validation (no drift since evidence
    was produced).
-7. `cdb-local-ci` shows SUCCESS as a live Commit Status on the exact PR head
-   SHA (verified via `gh api`, not inferred).
-8. The session can perform a regular squash merge (`statuses:write`/merge
-   permission available), and can publish `cdb-local-ci` itself if it is
-   still missing and the session holds evidence to do so.
+7. `cdb-local-ci` shows SUCCESS as a live App-bound Check Run
+   (`app_id=4410232`) on the exact PR head SHA (verified via `gh api`, not
+   inferred). Same-named Commit Status is not sufficient.
+8. The session can perform a regular squash merge and can publish
+   `cdb-local-ci` via `--publisher-backend check-run` (App auto-mint) itself
+   if it is still missing and the session holds evidence to do so.
 
 Command: `gh pr merge <PR> --squash --delete-branch`.
 

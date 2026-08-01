@@ -1,7 +1,8 @@
 """Local mirror of `.github/workflows/policy-gate.yml` evaluation rules.
 
 Pure, fail-closed evaluation used by the local status publisher before writing
-the required-path Commit Status context ``cdb-local-ci``. Does not call GitHub.
+the required-path App Check Run ``cdb-local-ci`` (``app_id=4410232``).
+Does not call GitHub.
 """
 
 from __future__ import annotations

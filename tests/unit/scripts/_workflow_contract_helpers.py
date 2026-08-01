@@ -320,8 +320,15 @@ def load_required_checks_baseline(path: Path) -> list[str]:
 
 
 def load_commit_status_contexts(path: Path) -> list[str]:
+    """Load non-workflow required contexts (App Check Run after #4170 Phase D).
+
+    Prefers ``check_run_contexts``; falls back to legacy ``commit_status_contexts``
+    / ``external_contexts`` keys for older baselines.
+    """
     payload = json.loads(path.read_text(encoding="utf-8"))
-    if "commit_status_contexts" in payload:
+    if "check_run_contexts" in payload:
+        raw = payload.get("check_run_contexts") or []
+    elif "commit_status_contexts" in payload:
         raw = payload.get("commit_status_contexts") or []
     else:
         raw = payload.get("external_contexts") or []
@@ -672,7 +679,7 @@ AGENT_WORKFLOW_MAP_JSON = (
     REPO_ROOT / ".github" / "control-plane" / "generated" / "agent-workflow-map.json"
 )
 
-# Interim #4169: required context is Commit Status `cdb-local-ci`, not a workflow job.
+# Post-#4170: required context is App-bound Check Run `cdb-local-ci` (`app_id=4410232`), not a workflow job.
 REQUIRED_CHECK_PRODUCER_FILES: frozenset[str] = frozenset()
 
 RISKY_CASCADE_FAMILIES: dict[str, tuple[str, ...]] = {

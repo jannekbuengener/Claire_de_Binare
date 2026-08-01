@@ -47,7 +47,7 @@ def _checks(
 ) -> tuple[RequiredCheckFact, ...]:
     """Build the sole live required merge context (`cdb-local-ci`).
 
-    `cdb-local-ci` is a Commit Status (not a hosted Actions check-run) per
+    `cdb-local-ci` is an App-bound Check Run (`app_id=4410232`, not a hosted Actions job) per
     docs/runbooks/merge_policy_ci_gate.md; it is the only merge-relevant
     required context.
     """
