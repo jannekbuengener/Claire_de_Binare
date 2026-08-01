@@ -1,0 +1,26 @@
+{
+  "schema_version": "cdb.candidate_transition.v1",
+  "transition_id": "ct-wave2-to-paper-001",
+  "candidate_id": "sc-wave1-btc-trend-breakout",
+  "candidate_version": "v1",
+  "from_status": "EVIDENCE_READY",
+  "to_status": "PAPER_CANDIDATE",
+  "decision_id": "dr-wave2-paper-001",
+  "decision_record_hash": "sha256:eeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeee",
+  "validation_manifest_id": "vm-wave1-example-001",
+  "run_id": "run-wave2-pass-001",
+  "evidence_id": "ce-wave2-pass-001",
+  "evidence_hash": "sha256:dddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddd",
+  "transitioned_at": "2026-08-01T12:00:00Z",
+  "identity_separation": {
+    "issue_id_is_not_candidate_id": true,
+    "candidate_id_is_not_run_id": true,
+    "run_id_is_not_evidence_id": true
+  },
+  "safety_boundaries": {
+    "no_silent_overwrite": true,
+    "paper_candidate_is_not_live_go": true,
+    "paper_candidate_is_not_paper_go": true,
+    "lr_status": "NO-GO"
+  }
+}

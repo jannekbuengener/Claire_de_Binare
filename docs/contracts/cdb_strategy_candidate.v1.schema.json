@@ -1,7 +1,7 @@
 {
   "$schema": "http://json-schema.org/draft-07/schema#",
   "title": "CDB Strategy Candidate v1",
-  "description": "Falsifiable strategy candidate for Research-to-Hermes handoff. Adjacent to profitability_candidate_contract.v1 (#3034/#3043); does not replace it. Free-form text is invalid.",
+  "description": "Falsifiable strategy candidate for Research-to-Hermes handoff. Adjacent to profitability_candidate_contract.v1 (#3034/#3043); does not replace it. Free-form text is invalid. Version lineage (parent_version exact prior) is enforced by tools/research_validation/wave2_cross_contract.py (PMR-01). Brief provenance requires version+hash (PMR-02).",
   "type": "object",
   "additionalProperties": false,
   "required": [
@@ -207,6 +207,8 @@
       "additionalProperties": false,
       "required": [
         "research_brief_id",
+        "research_brief_version",
+        "research_brief_content_hash",
         "compiler_ref",
         "source_origin"
       ],
@@ -214,6 +216,16 @@
         "research_brief_id": {
           "type": "string",
           "pattern": "^rb-[a-z0-9][a-z0-9-]{2,80}$"
+        },
+        "research_brief_version": {
+          "type": "string",
+          "pattern": "^v[0-9]+$",
+          "description": "Exact ResearchBrief version required for reproducible compiler input (PMR-02)."
+        },
+        "research_brief_content_hash": {
+          "type": "string",
+          "pattern": "^sha256:[a-f0-9]{64}$",
+          "description": "Immutable ResearchBrief content hash required for reproducible compiler input (PMR-02)."
         },
         "compiler_ref": {
           "type": "string",
