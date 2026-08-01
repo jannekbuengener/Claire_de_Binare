@@ -3,7 +3,9 @@
 Date: 2026-08-01 (Europe/Berlin)
 Status: `DONE_SLICE_ADDED_TO_BATCH_PR`
 PR: #4286 (`batch/agent-skills-issue-4250`)
+Final head: `4c1465e7265c648c64f226973879366eb05a418a`
 Routing: `OPERATIONAL_BATCH_CONTINUATION` (router returned `CREATE_NEW_BATCH_PR` only for `ISSUE_COMPATIBILITY_METADATA_INCOMPLETE`)
+GitHub writes: PR body marker/ledger updated; comments on PR #4286, Issues #4254 and #4249
 
 ## Brain Evidence
 
