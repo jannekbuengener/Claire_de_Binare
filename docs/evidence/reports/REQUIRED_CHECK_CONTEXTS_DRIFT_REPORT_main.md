@@ -18,9 +18,9 @@ State: **NO DRIFT**
 
 - `cdb-local-ci`
 
-## Commit Status / External Contexts (not workflow jobs)
+## App Check Run / External Contexts (not workflow jobs)
 
-- `cdb-local-ci`
+- `cdb-local-ci` (`app_id=4410232`, post-#4170 Phase D)
 
 ## Missing Required Contexts
 

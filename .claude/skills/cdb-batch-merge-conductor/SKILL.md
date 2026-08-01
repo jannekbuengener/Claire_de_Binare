@@ -1,7 +1,7 @@
 <!--
 Canonical Skill Source: docs/skills/cdb-batch-merge-conductor/SKILL.md
-Surface: claude
-Sync Status: mirrored-from-canon
+Surface: docs (canonical)
+Sync Status: canonical
 Last Verified: 2026-07-30
 Drift Policy: Surface-Adapter duerfen nur mit dokumentierter Begruendung abweichen.
 -->
@@ -77,7 +77,7 @@ invalidates the old Completeness bundle and forces a fresh
 9. Delegate final validation path to existing skills (`cdb-ci-cd-guard`, etc.).
 10. Run Full Fast-CI once on the exact final head.
 11. Run local policy-gate mirror.
-12. Publish `cdb-local-ci` as Commit Status on exactly that head.
+12. Publish `cdb-local-ci` as an App-bound Check Run (`app_id=4410232`) on exactly that head.
 13. Re-check head, base, reviews, mergeability immediately before merge.
 14. Execute regular squash-merge only.
 15. Verify merge SHA, PR state, and main live.

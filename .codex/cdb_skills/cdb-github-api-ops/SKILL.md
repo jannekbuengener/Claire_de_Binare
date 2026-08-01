@@ -1,10 +1,3 @@
-<!--
-Canonical Skill Source: docs/skills/cdb-github-api-ops/SKILL.md
-Surface: codex
-Sync Status: mirrored-from-canon
-Last Verified: 2026-07-30
-Drift Policy: Surface-Adapter duerfen nur mit dokumentierter Begruendung abweichen.
--->
 ---
 name: cdb-github-api-ops
 description: >
@@ -160,7 +153,7 @@ collection_errors:
 | Create issue/PR | Only if Plan-GO explicitly allows it |
 | Label/milestone changes | Only if Plan-GO explicitly allows it |
 | Rebase/push | Only if Plan-GO explicitly allows it |
-| Squash merge (`gh pr merge --squash --delete-branch`) | Never a normal slice-close action. Only in separately authorized Merge Mode after the PR is frozen as `merge_candidate` and every capability gate in `docs/runbooks/merge_policy_ci_gate.md` is proven for the exact final head and integrated base (no blocking reviews, full Fast-CI PASS, latest `cdb-local-ci` Commit Status SUCCESS, unchanged head/base). `--admin` is never a substitute. If any gate is unproven: `DONE_PR_OPEN_MERGE_HANDOFF`; do not loop or force. |
+| Squash merge (`gh pr merge --squash --delete-branch`) | Never a normal slice-close action. Only in separately authorized Merge Mode after the PR is frozen as `merge_candidate` and every capability gate in `docs/runbooks/merge_policy_ci_gate.md` is proven for the exact final head and integrated base (no blocking reviews, full Fast-CI PASS, latest `cdb-local-ci` App-bound Check Run SUCCESS (`app_id=4410232`), unchanged head/base). `--admin` is never a substitute. If any gate is unproven: `DONE_PR_OPEN_MERGE_HANDOFF`; do not loop or force. |
 | Repo settings/admin | Separate scope, never automatic |
 | Branch protection changes | Separate scope, never automatic |
 
@@ -301,7 +294,7 @@ and the missing capability is named for the next session/human to close.
   `gh pr view` erheben.
 - Issue-/PR-Kommentare, Body-/Ledger-Updates und Merge ausschließlich über
   `gh`.
-- Der `cdb-local-ci` Publisher schreibt Commit Status ausschließlich über
+- Der `cdb-local-ci` Publisher schreibt App-gebundene Check Runs (default) über
   `gh api`; direkte HTTP-Writes sind verboten.
 - Combined Commit Status über `/commits/<sha>/status` prüfen; Check Runs separat
   lesen.

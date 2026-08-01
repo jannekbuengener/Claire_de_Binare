@@ -26,12 +26,14 @@ PERMISSION_DOC_MARKERS = (
 def test_branch_protection_baselines_unchanged_for_code_pr():
     bp = json.loads(BASELINE_BP.read_text(encoding="utf-8"))
     checks = bp["required_status_checks"]["checks"]
-    assert checks == [{"app_id": None, "context": "cdb-local-ci"}]
+    assert checks == [{"app_id": 4410232, "context": "cdb-local-ci"}]
     assert bp["required_status_checks"]["contexts"] == ["cdb-local-ci"]
+    assert bp["required_status_checks"]["strict"] is True
 
     ctx = json.loads(BASELINE_CTX.read_text(encoding="utf-8"))
     assert ctx["contexts"] == ["cdb-local-ci"]
-    assert "cdb-local-ci" in ctx.get("commit_status_contexts", [])
+    assert ctx.get("required_app_id") == 4410232
+    assert "cdb-local-ci" in ctx.get("check_run_contexts", ctx["contexts"])
 
 
 def test_no_private_key_or_token_examples_in_publisher_tree():
@@ -105,7 +107,7 @@ def test_no_heavy_ci_restore_in_publisher_slice():
     assert contexts == ["cdb-local-ci"]
 
 
-def test_check_run_mode_requires_explicit_backend_flag():
+def test_check_run_mode_is_default_backend():
     from ci.publisher.cli import build_parser
 
     parser = build_parser()
@@ -118,4 +120,4 @@ def test_check_run_mode_requires_explicit_backend_flag():
             "1",
         ]
     )
-    assert args.publisher_backend == "commit-status"
+    assert args.publisher_backend == "check-run"

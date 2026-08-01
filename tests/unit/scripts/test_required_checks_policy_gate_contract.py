@@ -18,18 +18,16 @@ def test_required_checks_baseline_matches_cdb_local_ci() -> None:
     assert contexts == ["cdb-local-ci"]
 
 
-def test_commit_status_contexts_contain_cdb_local_ci() -> None:
-    commit_status = helpers.load_commit_status_contexts(
-        helpers.REQUIRED_CHECKS_BASELINE
-    )
-    assert "cdb-local-ci" in commit_status
-    assert set(commit_status) <= helpers.REQUIRED_CHECK_CONTEXTS
+def test_app_check_run_contexts_contain_cdb_local_ci() -> None:
+    check_runs = helpers.load_commit_status_contexts(helpers.REQUIRED_CHECKS_BASELINE)
+    assert "cdb-local-ci" in check_runs
+    assert set(check_runs) <= helpers.REQUIRED_CHECK_CONTEXTS
 
 
 def test_workflow_mapping_need_not_include_cdb_local_ci() -> None:
     mapping, parse_errors = derive_context_mapping(helpers.WORKFLOWS_DIR)
     assert parse_errors == []
-    # Interim Commit Status (#4169): not a workflow job name.
+    # App Check Run (#4170): not a workflow job name.
     assert "cdb-local-ci" not in mapping
 
 
@@ -83,7 +81,7 @@ def test_drift_report_and_baseline_metadata_exist() -> None:
     report_text = report.read_text(encoding="utf-8")
     assert "## Required Contexts (Baseline)" in report_text
     assert "cdb-local-ci" in report_text
-    assert "external/commit-status" in report_text
     payload = json.loads(helpers.REQUIRED_CHECKS_BASELINE.read_text(encoding="utf-8"))
     assert payload.get("source") == "branch_protection_main"
-    assert "cdb-local-ci" in (payload.get("commit_status_contexts") or [])
+    assert payload.get("required_app_id") == 4410232
+    assert "cdb-local-ci" in (payload.get("check_run_contexts") or [])

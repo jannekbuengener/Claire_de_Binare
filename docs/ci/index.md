@@ -15,22 +15,22 @@
 - Cutover runbook: [`cdb_local_ci_app_check_run_cutover.md`](../runbooks/cdb_local_ci_app_check_run_cutover.md)
 - Entry: `python -m ci.publisher` / `pwsh -File ci/scripts/publish_status.ps1`
 - Make: `ci-local-publish-dry-run` / `ci-local-publish` / `ci-local-publish-inspect`
-- Default publishes required-path Commit Status `cdb-local-ci` after fail-closed
-  evidence validation (interim `app_id=null` trust model).
-- Explicit `--publisher-backend check-run` is code-ready; live Branch Protection
-  cutover remains an external Human-GO.
-- Preferred preview context: `cdb-local-ci-preview`.
+- Default publishes required-path App Check Run `cdb-local-ci` (`app_id=4410232`)
+  after fail-closed evidence validation (`--publisher-backend check-run`).
+- Live Branch Protection requires App `4410232`; same-named Commit Status does
+  not satisfy the gate (Phase D / #4170 CLOSED).
+- Preferred preview/shadow context: `cdb-local-ci-app-preview`.
 
 ## Kanonischer PR-Merge-Vertrag
 
 SSOT: [`merge_policy_ci_gate.md`](../runbooks/merge_policy_ci_gate.md). Der
 einzige merge-relevante Required Context auf `main` ist `cdb-local-ci`
-(Commit Status, lokaler Publisher, exakter PR-Head-SHA), live verifizierbar
-via `gh api`.
+(App Check Run `app_id=4410232`, lokaler Publisher, exakter PR-Head-SHA), live
+verifizierbar via `gh api` Check Runs — nicht via Commit Status.
 
 | Quelle | Check-Kontext | Typ |
 |---|---|---|
-| Local CI Status Publisher | `cdb-local-ci` | Commit Status |
+| Local CI Status Publisher | `cdb-local-ci` | App Check Run (`app_id=4410232`) |
 
 | Workflow | Rolle | Trigger |
 |---|---|---|

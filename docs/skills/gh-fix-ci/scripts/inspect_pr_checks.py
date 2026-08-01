@@ -259,7 +259,7 @@ class PRCheckInspector:
 
         `statusCheckRollup` mixes two GitHub object shapes:
         - Check Run (Hosted Actions): `name` / `status` / `conclusion`.
-        - Commit Status (`cdb-local-ci`): `context` / `state` (no separate
+        - Required App Check Run (`cdb-local-ci`, `app_id=4410232`) uses Check Run `name` / `conclusion`; legacy Commit Status same name is not merge-sufficient. Rollup may still include StatusContext entries (no separate
           status/conclusion pair). Both are normalized into `CheckResult`
           here so downstream logic (required-check lookup, categorization)
           does not need to special-case the required context.
