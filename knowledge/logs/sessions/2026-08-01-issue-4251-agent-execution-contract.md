@@ -47,6 +47,17 @@ repo_fallback_reason: unavailable
 - `python -m tools.validate_readme_links` → OK
 - `python -m tools.validate_onboarding_docs` → OK
 
+## GitHub write limitations (this session)
+
+- `git push` to `batch/agent-skills-issue-4250` succeeded (head `653690f2`).
+- PR `#4286` converted to draft via GraphQL succeeded earlier.
+- `gh issue comment` / `gh pr edit` / REST issue+PR PATCH → HTTP 403
+  (`Resource not accessible by integration`).
+- ManagePullRequest body update blocked (description not agent-managed).
+- ManagePullRequest PR comment with delivery evidence posted successfully.
+- Issue `#4251` / parent `#4249` comments remain pending a token with
+  `issues:write` (handoff contents are in the PR comment + this session log).
+
 ## Non-goals preserved
 
 No dispatcher, registry, provider adapter, merge, or `cdb-local-ci` publish.
