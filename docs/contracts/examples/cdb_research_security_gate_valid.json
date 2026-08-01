@@ -1,0 +1,146 @@
+{
+  "schema_version": "cdb.research_security_gate.v1",
+  "gate_id": "rsg-wave3-btc-trend-001",
+  "candidate_id": "sc-wave1-btc-trend-breakout",
+  "candidate_version": "v1",
+  "research_brief_id": "rb-wave1-btc-trend-001",
+  "research_brief_content_hash": "sha256:1111111111111111111111111111111111111111111111111111111111111111",
+  "evaluated_at": "2026-08-01T18:00:00Z",
+  "content_classification": "UNTRUSTED_INPUT",
+  "source_provenance": [
+    {
+      "source_id": "se-binance-btc-trend-001",
+      "provider": "binance",
+      "locator": "synthetic://fixtures/binance/btcusdt-1m-trend",
+      "content_hash": "sha256:2222222222222222222222222222222222222222222222222222222222222222"
+    }
+  ],
+  "integrity_bindings": {
+    "candidate_content_hash": "sha256:3333333333333333333333333333333333333333333333333333333333333333",
+    "validation_manifest_id": "vm-wave1-btc-trend-001",
+    "validation_manifest_hash": "sha256:4444444444444444444444444444444444444444444444444444444444444444",
+    "code_head_ref": "refs/heads/main",
+    "code_head_sha": "6ac6b767f0f57d6c0e795fab81da8b2b1d2ebe1e",
+    "dataset_hashes": [
+      {
+        "dataset_ref": "synthetic://datasets/btcusdt-1m-fixture",
+        "sha256": "sha256:5555555555555555555555555555555555555555555555555555555555555555"
+      }
+    ],
+    "artifact_hashes": [
+      {
+        "artifact_ref": "security-gate-record.json",
+        "sha256": "sha256:6666666666666666666666666666666666666666666666666666666666666666"
+      }
+    ]
+  },
+  "check_results": [
+    {
+      "check_id": "untrusted_input_classification",
+      "category": "untrusted_input",
+      "verdict": "PASS",
+      "evidence": "All external research payloads classified UNTRUSTED_INPUT; treated as data only.",
+      "disposition": "accept",
+      "affected_surface": "source_evidence"
+    },
+    {
+      "check_id": "prompt_injection_resistance",
+      "category": "prompt_injection",
+      "verdict": "PASS",
+      "evidence": "No instruction-like overrides detected in normalized claims for this synthetic fixture.",
+      "disposition": "accept",
+      "affected_surface": "research_claim_payload"
+    },
+    {
+      "check_id": "sensitive_data_exclusion",
+      "category": "sensitive_data",
+      "verdict": "PASS",
+      "evidence": "No secret/token/credential/account fields present; redactions empty.",
+      "disposition": "accept",
+      "affected_surface": "artifacts_and_logs"
+    },
+    {
+      "check_id": "source_provenance_complete",
+      "category": "provenance",
+      "verdict": "PASS",
+      "evidence": "Each source has source_id, provider, locator, content_hash.",
+      "disposition": "accept",
+      "affected_surface": "source_provenance"
+    },
+    {
+      "check_id": "artifact_hash_bindings",
+      "category": "integrity",
+      "verdict": "PASS",
+      "evidence": "Candidate, manifest, dataset, and artifact hashes present and well-formed.",
+      "disposition": "accept",
+      "affected_surface": "integrity_bindings"
+    },
+    {
+      "check_id": "head_and_dataset_integrity",
+      "category": "integrity",
+      "verdict": "PASS",
+      "evidence": "code_head_sha and dataset hashes bound; drift_status NONE.",
+      "disposition": "accept",
+      "affected_surface": "code_head_and_datasets"
+    },
+    {
+      "check_id": "codex_security_review",
+      "category": "supply_chain",
+      "verdict": "WARNING",
+      "evidence": "Codex Security review gate recorded as NOT_RUN; scanner not executed in contract slice #4271.",
+      "disposition": "defer_until_pre_implementation_review",
+      "affected_surface": "dependency_and_diff_review"
+    },
+    {
+      "check_id": "read_only_enforcement",
+      "category": "read_only",
+      "verdict": "PASS",
+      "evidence": "Gate record asserts read-only research path; no live/write actions authorized.",
+      "disposition": "accept",
+      "affected_surface": "pipeline_handoff"
+    }
+  ],
+  "injection_assessment": {
+    "suspicion": false,
+    "verdict": "PASS",
+    "notes": "Synthetic fixture; no injection markers."
+  },
+  "sensitive_data_assessment": {
+    "suspicion": false,
+    "verdict": "PASS",
+    "redactions": [],
+    "notes": "Synthetic fixture; no sensitive raw values."
+  },
+  "codex_security_review": {
+    "status": "NOT_RUN",
+    "scope_note": "Review gate for necessary repo/diff/dependency scope before later implementation approval. Not executed in #4271.",
+    "findings": [],
+    "may_authorize_live": false,
+    "may_authorize_risk_bypass": false,
+    "may_authorize_capital": false,
+    "scanner_executed": false
+  },
+  "drift_status": "NONE",
+  "overall_verdict": "PASS",
+  "limitations": [
+    "Codex Security scanner not executed in this contract slice; review remains a pre-implementation gate.",
+    "Security/integrity PASS does not imply semantic correctness or validation PASS.",
+    "Synthetic fixture only; no Live/Paper/Capital GO."
+  ],
+  "authority_boundaries": {
+    "research_apps_validation_authority": false,
+    "hermes_live_authority": false,
+    "automatic_strategy_promotion": false,
+    "security_integrity_implies_semantic_correctness": false,
+    "paper_candidate_is_live_go": false,
+    "real_money_go": false,
+    "risk_bypass": false
+  },
+  "safety_boundaries": {
+    "lr_status": "NO-GO",
+    "missing_required_check_cannot_pass": true,
+    "productive_db_writes": false,
+    "plugin_installation": false,
+    "productive_agent_execution": false
+  }
+}
