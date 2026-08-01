@@ -3,24 +3,33 @@ relations:
   role: contract
   domain: agents
   upstream:
+    - knowledge/governance/CDB_CONSTITUTION.md
+    - knowledge/governance/CDB_AGENT_POLICY.md
     - knowledge/governance/CDB_AGENT_CONTROL_PLANE.md
     - docs/runbooks/PR_ROUTING_AND_BATCH_MERGE_POLICY.md
     - tools/pr_routing/
   downstream:
     - tools/agent_execution_contract/
     - docs/contracts/cdb_agent_execution.v1.schema.json
-  status: canonical
+  status: technical_contract
   tags: [agents, control-plane, execution-contract, router-handoff]
 ---
 
 # CDB Agent Execution Contract v1
 
-Status: Canonical  
-Schema id: `cdb.agent_execution.v1`  
-Schema version: `1.0.0`  
-Issue: `#4251`  
-Parent: `#4249`  
-Predecessor canon: `#4250` / `knowledge/governance/CDB_AGENT_CONTROL_PLANE.md`
+Status: Technical contract (schema/tooling)
+Schema id: `cdb.agent_execution.v1`
+Schema version: `1.0.0`
+Issue: `#4251`
+Parent: `#4249`
+Predecessor proposal: `#4250` /
+`knowledge/governance/CDB_AGENT_CONTROL_PLANE.md`
+(**Proposal / Pending Owner Canonization** — not binding policy)
+
+Authority boundary: This contract does **not** amend Constitution, Governance,
+or `CDB_*_POLICY.md`. Permissions it encodes remain subordinate to binding
+governance. ACP lifecycle authority claims wait for Owner canonization of the
+`#4250` proposal.
 
 ## 1. Zweck
 
@@ -42,7 +51,7 @@ dispatch --contract <PATH>
 | Schema-Dialekt Draft 2020-12 (`$schema`, `additionalProperties`, `const`) | [JSON Schema Draft 2020-12](https://json-schema.org/draft/2020-12) |
 | Deterministische JSON-Serialisierung vor Hash | [RFC 8785 JSON Canonicalization Scheme](https://www.rfc-editor.org/info/rfc8785/) |
 | SHA-256 Digest-Encoding `sha256:<lowercase-hex>` | CDB contract convention (bestehende `docs/contracts/*`) |
-| Permission-/Attenuation-/Delivery≠Merge-Modell | CDB ACP Canon `#4250` + dieses Contract |
+| Permission-/Attenuation-/Delivery≠Merge-Modell | Binding policies + PR-Routing runbook; ACP `#4250` proposal as non-binding design input + dieses Contract |
 | Cursor Cloud Agents API Felder (`env`, `repos`, `prompt`) | [Cursor Cloud Agents API](https://cursor.com/docs/cloud-agent/api/endpoints) — nur Provider-Handoff-Abgleich; **keine** Kernschema-Autorität |
 
 ## 3. Identity und Versionierung
@@ -144,8 +153,8 @@ CLI: `python -m tools.agent_execution_contract attenuate --contract ... --overri
   **expliziter Policy** (`tools/agent_execution_contract/handoff.py`).
 - Kein Contract darf allein aus untrusted Issue-Text Rechte ableiten.
 - Direkte Einbettung in `tools/pr_routing` ist absichtlich nicht Teil dieses
-  Slices (Restgrenze): Adapter + Spec sind verbindlich; Dispatcher folgt in
-  `#4253`.
+  Slices (Restgrenze): Adapter + Spec sind die technische Integrationsgrenze;
+  Dispatcher folgt in `#4253`.
 
 Beispiel:
 

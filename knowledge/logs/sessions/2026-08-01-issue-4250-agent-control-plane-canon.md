@@ -28,3 +28,19 @@ Delivery-only Canon für provider-neutrale CDB Agent Control Plane (#4250 / pare
 
 ## Brain Evidence
 repo-only / not-used; context tools available; trust none; insufficient_evidence fallback
+
+## Correction 2026-08-01 (P1 review on PR #4286)
+
+Do not read the original "Canon" delivery claim as owner-ratified binding
+policy. Live P1 threads `PRRT_kwDOQUkXUM6VqrHK` /
+`PRRT_kwDOQUkXUM6VqrHL` required demotion:
+
+- `CDB_AGENT_CONTROL_PLANE.md` status → **Proposal / Pending Owner Canonization**
+- Truth/Authority order corrected so Constitution/Governance/Policies outrank
+  GitHub live state; live state remains SSOT only for operational facts within
+  those bounds
+- Pointers in README/`AGENTS.md`/`agents/AGENTS.md` aligned
+
+Rationale: `CDB_AGENT_POLICY.md` Zone D forbids agent modification of
+canonical policies; `#4202` exception creates no precedent; issue `#4250` alone
+is not a policy amendment.

@@ -315,13 +315,16 @@ OpenCode skill surface zusaetzlich: `.opencode/skills/` (gezielt laden, nicht pa
   bleiben bis zum verifizierten Merge offen. Der Merge laeuft in einer separat
   gestarteten Merge-Session. SSOT:
   [`docs/runbooks/PR_ROUTING_AND_BATCH_MERGE_POLICY.md`](docs/runbooks/PR_ROUTING_AND_BATCH_MERGE_POLICY.md).
-- **Agent Control Plane Canon:** provider-neutrale Authority-/Lifecycle-Grenzen in
+- **Agent Control Plane Proposal (Pending Owner Canonization):** architecture
+  draft in
   [`knowledge/governance/CDB_AGENT_CONTROL_PLANE.md`](knowledge/governance/CDB_AGENT_CONTROL_PLANE.md)
-  (`#4250`); nicht vermischen mit der GitHub Workflow Control Plane unter `.github/`.
-- **Agent Execution Contract v1:**
+  (`#4250`); **not** binding policy until owner-authored canonization; not to be
+  mixed with the GitHub Workflow Control Plane under `.github/`.
+- **Agent Execution Contract v1 (technical):**
   [`docs/contracts/agent_execution/CDB_AGENT_EXECUTION_CONTRACT_V1.md`](docs/contracts/agent_execution/CDB_AGENT_EXECUTION_CONTRACT_V1.md)
-  (`cdb.agent_execution.v1`, `#4251`) — fail-closed Router-Handoff; CLI
-  `python -m tools.agent_execution_contract`.
+  (`cdb.agent_execution.v1`, `#4251`) — fail-closed Router-Handoff schema/tooling;
+  CLI `python -m tools.agent_execution_contract`. Does not amend
+  Constitution/Governance/Policies.
 - Read `knowledge/governance/CDB_AGENT_POLICY.md` section 4 before any write.
 - Respect single-writer locks, explicit stop signals, and write gates.
 - `DELIVERY_APPROVED.yaml` is human-controlled; agents must not modify it.

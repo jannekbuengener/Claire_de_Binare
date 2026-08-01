@@ -62,3 +62,10 @@ repo_fallback_reason: unavailable
 
 No dispatcher, registry, provider adapter, merge, or `cdb-local-ci` publish.
 LR remains NO-GO.
+
+## Correction 2026-08-01 (ACP demotion impact)
+
+After P1 governance fix on PR `#4286`, `#4250` ACP is a **non-binding
+proposal**. `#4251` remains a technically validatable schema/tooling contract
+and does **not** inherit governance-binding authority from the demoted ACP
+proposal. `#4252` must not treat ACP as an already-canonized policy dependency.

@@ -1,6 +1,6 @@
 ---
 relations:
-  role: policy
+  role: proposal
   domain: governance
   upstream:
     - knowledge/governance/CDB_CONSTITUTION.md
@@ -10,31 +10,39 @@ relations:
   downstream:
     - agents/AGENTS.md
     - docs/skills/cdb-pr-router/SKILL.md
-  status: canonical
-  tags: [agents, control-plane, authority, lifecycle, evidence]
+  status: proposal_pending_owner_canonization
+  tags: [agents, control-plane, authority, lifecycle, evidence, proposal]
 ---
 
 # CDB Agent Control Plane
 
-Status: Canonical  
-Version: `cdb-agent-control-plane/v1`  
-Issue: `#4250`  
-Parent: `#4249`  
-Authority class: Architecture and governance contract (docs/canon only)
+Status: **Proposal / Draft — Pending Owner Canonization**
+Version: `cdb-agent-control-plane/v1-proposal`
+Issue: `#4250`
+Parent: `#4249`
+Authority class: Agent-authored architecture proposal (not binding policy)
+
+> **Authority notice:** This file was authored by an agent under `knowledge/governance/**`.
+> Per `CDB_AGENT_POLICY.md` Zone D and the single `#4202` transition exception,
+> agents must not modify or create binding canonical policies. Issue `#4250`
+> and ordinary Human-/Plan-GO do **not** authorize policy canonization.
+> Until the Repository Owner performs an explicit owner-authored policy
+> amendment, this document is a **non-binding proposal** only. It must not be
+> treated as Constitution-, Governance-, or Policy-level authority.
 
 ## 1. Zweck, Scope und Nicht-Ziele
 
 ### 1.1 Zweck
 
-Die **CDB Agent Control Plane (ACP)** ist der provider-neutrale Steuerrahmen
-für governed Agentenläufe im Claire-de-Binare-Repository. CDB bleibt die
-Autorität für Routing, Contracts, Gates und Merge. Ausführungsprovider
-(zuerst Cursor) führen zugewiesene Arbeit aus, autorisieren aber weder Merge
-noch Live-Trading.
+Die vorgeschlagene **CDB Agent Control Plane (ACP)** beschreibt einen
+provider-neutralen Steuerrahmen für governed Agentenläufe im
+Claire-de-Binare-Repository. CDB bleibt die Autorität für Routing, Contracts,
+Gates und Merge. Ausführungsprovider (zuerst Cursor) führen zugewiesene Arbeit
+aus, autorisieren aber weder Merge noch Live-Trading.
 
-### 1.2 Scope dieses Canon-Dokuments
+### 1.2 Scope dieses Proposal-Dokuments
 
-Dieses Dokument definiert:
+Dieses Dokument schlägt vor:
 
 - Architektur und Systemgrenzen der ACP
 - Authority Matrix je Komponente
@@ -43,11 +51,11 @@ Dieses Dokument definiert:
 - Zero-Click-/Bootstrap-Regeln und Capability-Drift
 - Lineage zu bestehenden Routing-, Delivery-/Merge- und Final-CI-Verträgen
 
-### 1.3 Nicht-Ziele (verbindlich)
+### 1.3 Nicht-Ziele (für diesen Proposal-Slice)
 
 - Kein Dispatcher-, Registry- oder Provider-Adapter-Code
   (Follow-ups `#4252`–`#4257`; Execution-Contract-Schema liegt in `#4251` /
-  `cdb.agent_execution.v1`, nicht in diesem Canon-Dokument)
+  `cdb.agent_execution.v1`, nicht in diesem Proposal)
 - Kein Ersatz und keine Umbenennung der **GitHub Workflow Control Plane**
   (`.github/CONTROL_PLANE.md`, `#1640`/`#1644`-Lineage)
 - Kein neuer Merge-Prozess und kein Bypass von `cdb-local-ci`
@@ -61,7 +69,7 @@ Dieses Dokument definiert:
 
 | Fläche | Autorität | Zweck |
 | --- | --- | --- |
-| **Agent Control Plane** (dieses Dokument) | CDB Governance + Agenten-Skills/Tools | Issue → Route → Contract → Dispatch → Provider-Run → Review → Delivery/Merge-Handoff |
+| **Agent Control Plane** (dieses Proposal) | vorgeschlagen: CDB Governance + Agenten-Skills/Tools | Issue → Route → Contract → Dispatch → Provider-Run → Review → Delivery/Merge-Handoff |
 | **GitHub Workflow Control Plane** | `.github/` Automation | CI/Security/Repo-Automation, Workflow-Register, Manifeste, Seal |
 
 Die GitHub Workflow Control Plane bleibt unverändert unter:
@@ -259,16 +267,31 @@ Felder/Capabilities, die öffentlich nicht automatisierbar sind:
 - Keine Klartext-Werte in Canon, Issues, Prompts, Evidence oder Logs
 - Provider-API-Keys nur über Secret-Store-/Environment-Referenz
 
-## 8. Truth Order
+## 8. Authority- und Truth-Order
 
-Bei Konflikten gilt (höher schlägt niedriger):
+Binding authority folgt der Constitution-Hierarchie. Höher schlägt niedriger;
+Live-GitHub darf diese Ordnung **nicht** umkehren:
 
-1. Live GitHub (Issues, PRs, Checks, Branches, Comments)
-2. Repo-live Canon/Code
-3. Verifizierte Context-/DB-/MCP-Evidence mit Record-Nachweis
-4. Canonical Governance (dieses Dokument und Upstream-Policies)
-5. Ledger (`CURRENT_STATUS.md` u. a.)
-6. Backoffice / Memory
+1. **CDB Constitution** (`CDB_CONSTITUTION.md`)
+2. **Binding CDB Governance** und spezifische Policies (`CDB_GOVERNANCE.md`,
+   `CDB_*_POLICY.md`, inkl. `CDB_AGENT_POLICY.md`)
+3. **Anwendbare, bereits owner-ratifizierte** kanonische Contracts und Runbooks
+4. **GitHub- und Repo-Live-State** für operative Fakten *innerhalb* dieser
+   Grenzen (Issue/PR-Zustand, Checks, Branches, Diffs, Kommentare als Evidenz)
+5. Verifizierte Context-/DB-/MCP-Evidence mit Record-Nachweis
+6. Ledger (`CURRENT_STATUS.md` u. a.), Backoffice und Memory
+
+Regeln:
+
+- Ein GitHub-Issue, PR-Kommentar, Check oder Branch überschreibt keine
+  bindende Governance und erzeugt keine verbotene Authority.
+- Live-State darf veraltete operative Snapshots/Ledger korrigieren.
+- Widerspruch zu bindender Governance → `HOLD` oder `BLOCKED`, kein stilles
+  Override.
+- Dieses Proposal steht **unter** Constitution/Governance/Policies und darf
+  sie weder ersetzen noch abschwächen.
+- Ein späterer Execution Contract darf Rechte nur innerhalb dieser Hierarchie
+  beschreiben; Approval, Delivery und Tests erzeugen keine Merge-Authority.
 
 Board-Stage `trade-capable` und Ledger-Einträge erzeugen kein Live-Go.
 LR-SSOT bleibt [`docs/live-readiness/LR-AUDIT-STATUS-2026-03-05.md`](../../docs/live-readiness/LR-AUDIT-STATUS-2026-03-05.md).
@@ -282,8 +305,8 @@ LR-SSOT bleibt [`docs/live-readiness/LR-AUDIT-STATUS-2026-03-05.md`](../../docs/
 | `#4170` | `cdb-local-ci` / Final-CI-Härtung (Lineage; nicht durch Cursor ersetzen) |
 | `#1640`, `#1644` | Historische **GitHub Workflow** Control Plane — nur Abgrenzung |
 | `#4249` | Meta-Epic ACP |
-| `#4250` | Dieses Canon-Dokument |
-| `#4251`+ | Folge-Implementierungen; Schemata/Code außerhalb dieses Docs |
+| `#4250` | Dieses Proposal-Dokument (Pending Owner Canonization) |
+| `#4251`+ | Folge-Implementierungen; Schemata/Code außerhalb dieses Docs; bindende Governance-Dependency erst nach Owner-Canonization |
 
 Konflikte mit `#4226`/`#4227`/`#4170` werden nicht durch ACP-Neudefinition
 „gelöst“. ACP referenziert ihre gelieferte Semantik und erweitert sie nicht
@@ -293,7 +316,7 @@ in Merge- oder Final-CI-Authority.
 
 | Fläche | Verhältnis |
 | --- | --- |
-| [`CDB_AGENT_POLICY.md`](CDB_AGENT_POLICY.md) | Write-Gates, Autonomie-Zonen, Agentenverhalten — ACP ergänzt Orchestrierungs-Authority, ersetzt Policy nicht |
+| [`CDB_AGENT_POLICY.md`](CDB_AGENT_POLICY.md) | Write-Gates, Autonomie-Zonen, Agentenverhalten — dieses Proposal darf Policy nicht ersetzen oder erweitern |
 | [`PR_ROUTING_AND_BATCH_MERGE_POLICY.md`](../../docs/runbooks/PR_ROUTING_AND_BATCH_MERGE_POLICY.md) | Delivery/Merge-Trennung und Router — ACP konsumiert, ersetzt nicht |
 | [`merge_policy_ci_gate.md`](../../docs/runbooks/merge_policy_ci_gate.md) | Required Final-CI / Capability Merge — ACP konsumiert, ersetzt nicht |
 | [`ISSUE_AND_BRANCH_LIFECYCLE.md`](ISSUE_AND_BRANCH_LIFECYCLE.md) | Issue/Branch-Lifecycle — ACP Run-Lifecycle ist orthogonal und ergänzend |
@@ -313,11 +336,15 @@ STOP und dokumentieren, wenn:
 
 ## 12. Execution Contract Anchor (`#4251`)
 
-Schema und Validator für die Router-Handoff-Übergabe:
+Technisches Schema und Validator für die Router-Handoff-Übergabe:
 
 - Spec: [`docs/contracts/agent_execution/CDB_AGENT_EXECUTION_CONTRACT_V1.md`](../../docs/contracts/agent_execution/CDB_AGENT_EXECUTION_CONTRACT_V1.md)
 - JSON Schema: [`docs/contracts/cdb_agent_execution.v1.schema.json`](../../docs/contracts/cdb_agent_execution.v1.schema.json)
 - Tooling: `python -m tools.agent_execution_contract`
 
-Dieses Canon-Dokument bleibt die Authority-/Lifecycle-SSOT; Feldshapes und
-Hash/Attenuation liegen ausschließlich im Execution-Contract-Slice `#4251`.
+Dieses Proposal ist **keine** bindende Authority-/Lifecycle-SSOT. Feldshapes
+und Hash/Attenuation liegen im Execution-Contract-Slice `#4251` als
+technischer Contract; governance-binding Ansprüche aus dem ACP-Lifecycle
+bleiben bis zur Owner-Canonization dieses Proposals deferred.
+`#4252` und spätere Komponenten dürfen dieses Dokument nicht als bereits
+kanonisierte Policy-Dependency behandeln.
