@@ -244,6 +244,9 @@ def test_proactive_unwind_triggers_on_blocked_buy(mock_redis, mock_postgres):
             allocation_pct=0.5,
             cooldown_until=None,
         )
+        manager._acquire_paper_unwind_claim = MagicMock(
+            return_value=RiskManager.PAPER_UNWIND_DISPATCH_ALLOWED
+        )
 
         # Save original state
         original_positions = risk_service.risk_state.positions.copy()
@@ -332,6 +335,9 @@ def test_proactive_unwind_short_emits_reduce_only_buy(mock_redis, mock_postgres)
     manager = RiskManager()
     manager.config.paper_auto_unwind = True
     manager.send_order = MagicMock()
+    manager._acquire_paper_unwind_claim = MagicMock(
+        return_value=RiskManager.PAPER_UNWIND_DISPATCH_ALLOWED
+    )
 
     original_positions = risk_service.risk_state.positions.copy()
     original_last_prices = risk_service.risk_state.last_prices.copy()

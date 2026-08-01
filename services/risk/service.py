@@ -548,6 +548,8 @@ class RiskManager:
         self._pg_conn: Optional[psycopg2.extensions.connection] = None
         self._envelope_redis_client: Optional[redis.Redis] = None
         self._envelope_publisher: EnvelopePublisher | None = None
+        # Injectable claim port for PAPER_AUTO_UNWIND (tests / production DB).
+        self._reduce_only_claimer = None
 
         # Validiere Config
         try:
@@ -2338,6 +2340,125 @@ class RiskManager:
             1 for qty in risk_state.positions.values() if abs(qty) > 1e-6
         )
 
+    # --- PAPER_AUTO_UNWIND claim-before-dispatch (Issue #4261) ---
+
+    PAPER_UNWIND_DISPATCH_ALLOWED = "DISPATCH_ALLOWED"
+    PAPER_UNWIND_CLAIM_ALREADY_EXISTS = "CLAIM_ALREADY_EXISTS"
+    PAPER_UNWIND_CLAIM_NOT_ACQUIRED = "CLAIM_NOT_ACQUIRED"
+    PAPER_UNWIND_POSITION_UNKNOWN = "POSITION_UNKNOWN"
+    PAPER_UNWIND_PERSISTENCE_UNAVAILABLE = "PERSISTENCE_UNAVAILABLE"
+    PAPER_UNWIND_BLOCKED = "BLOCKED"
+
+    def _postgres_dsn(self) -> str:
+        """Build a libpq DSN from risk postgres settings (no secrets logged)."""
+        from urllib.parse import quote_plus
+
+        password = self.config.postgres_password or ""
+        user = quote_plus(str(self.config.postgres_user or ""))
+        pwd = quote_plus(str(password))
+        host = self.config.postgres_host
+        port = int(self.config.postgres_port)
+        db = self.config.postgres_db
+        return f"postgresql://{user}:{pwd}@{host}:{port}/{db}"
+
+    def _ensure_reduce_only_claimer(self):
+        """Lazy-wire the shared reduce-only ledger (execution Database)."""
+        if self._reduce_only_claimer is not None:
+            return self._reduce_only_claimer
+        from services.execution.database import Database
+
+        self._reduce_only_claimer = Database(
+            connection_string=self._postgres_dsn(),
+            test_on_init=False,
+        )
+        return self._reduce_only_claimer
+
+    def _acquire_paper_unwind_claim(
+        self,
+        *,
+        order_id: str,
+        symbol: str,
+        side: str,
+        quantity: float | Decimal,
+    ) -> str:
+        """Acquire durable exclusive claim before externally visible unwind dispatch.
+
+        Returns one of the PAPER_UNWIND_* outcome codes. Only
+        ``DISPATCH_ALLOWED`` authorizes ``send_order``.
+        """
+        if not order_id:
+            return self.PAPER_UNWIND_CLAIM_NOT_ACQUIRED
+        try:
+            claimer = self._ensure_reduce_only_claimer()
+        except Exception as exc:
+            logger.error(
+                "PAPER_AUTO_UNWIND claimer unavailable (fail-closed): %s",
+                exc,
+            )
+            return self.PAPER_UNWIND_PERSISTENCE_UNAVAILABLE
+
+        try:
+            result = claimer.prepare_reduce_only(
+                order_id=order_id,
+                symbol=symbol,
+                side=side,
+                requested_quantity=Decimal(str(quantity)),
+                persist_blocked=False,
+                bind_for_adapter=False,
+            )
+        except Exception as exc:
+            logger.error(
+                "PAPER_AUTO_UNWIND claim failed closed order_id=%s: %s",
+                order_id,
+                exc,
+            )
+            return self.PAPER_UNWIND_PERSISTENCE_UNAVAILABLE
+
+        if result.get("allowed"):
+            return self.PAPER_UNWIND_DISPATCH_ALLOWED
+
+        reason = str(result.get("reason_code") or "")
+        if result.get("duplicate"):
+            return self.PAPER_UNWIND_CLAIM_ALREADY_EXISTS
+        if reason in {
+            "REDUCE_ONLY_POSITION_UNKNOWN",
+        }:
+            return self.PAPER_UNWIND_POSITION_UNKNOWN
+        if reason in {
+            "REDUCE_ONLY_NO_POSITION",
+            "REDUCE_ONLY_CONCURRENT_CLAIM_BLOCKED",
+            "REDUCE_ONLY_SIDE_MISMATCH",
+            "REDUCE_ONLY_INVALID_QUANTITY",
+        }:
+            return self.PAPER_UNWIND_CLAIM_NOT_ACQUIRED
+        return self.PAPER_UNWIND_BLOCKED
+
+    def _dispatch_paper_unwind_order(self, order: Order, *, log_label: str) -> bool:
+        """Claim then dispatch. Returns True only when send_order ran."""
+        outcome = self._acquire_paper_unwind_claim(
+            order_id=str(order.order_id or ""),
+            symbol=order.symbol,
+            side=order.side,
+            quantity=order.quantity,
+        )
+        if outcome != self.PAPER_UNWIND_DISPATCH_ALLOWED:
+            logger.warning(
+                "%s blocked before dispatch: outcome=%s symbol=%s order_id=%s",
+                log_label,
+                outcome,
+                order.symbol,
+                order.order_id,
+            )
+            stats["paper_auto_unwind_claim_blocked"] = (
+                stats.get("paper_auto_unwind_claim_blocked", 0) + 1
+            )
+            stats[f"paper_auto_unwind_{outcome.lower()}"] = (
+                stats.get(f"paper_auto_unwind_{outcome.lower()}", 0) + 1
+            )
+            return False
+        self.send_order(order)
+        return True
+
     def _trigger_proactive_unwind(self) -> None:
         """
         Proactive auto-unwind: Generate SELL orders when over limit.
@@ -2351,6 +2472,7 @@ class RiskManager:
         - Position stays open forever
 
         Solution: Proactively unwind when blocked.
+        Claim must be won before Redis dispatch (Issue #4261).
         """
         # LR-030: No unwind orders in shadow mode
         if self._resolve_contract_run_mode() == "shadow":
@@ -2402,15 +2524,19 @@ class RiskManager:
             )
 
             logger.warning(
-                f"🔄 PROACTIVE AUTO-UNWIND: queued SELL {symbol} qty={abs(position_qty):.8f} "
-                f"(exposure over limit, forcing position close)"
+                f"🔄 PROACTIVE AUTO-UNWIND: claim then queue SELL {symbol} "
+                f"qty={abs(position_qty):.8f} (exposure over limit)"
             )
+            if not self._dispatch_paper_unwind_order(
+                order, log_label="PROACTIVE_AUTO_UNWIND"
+            ):
+                # Fail-closed: do not flood other symbols after a claim miss.
+                break
             stats["proactive_unwind_triggered"] = (
                 stats.get("proactive_unwind_triggered", 0) + 1
             )
             stats["orders_approved"] += 1
             risk_state.pending_orders += 1
-            self.send_order(order)
 
             # Only unwind one position per trigger to avoid flooding
             break
@@ -2421,6 +2547,7 @@ class RiskManager:
 
         This is the original auto-unwind logic that triggers after successful BUY fills.
         Complements the proactive unwind above.
+        Durable claim must succeed before Redis dispatch (Issue #4261).
         """
         # LR-030: No unwind orders in shadow mode
         if self._resolve_contract_run_mode() == "shadow":
@@ -2463,6 +2590,9 @@ class RiskManager:
             reduce_only=True,
         )
 
+        if not self._dispatch_paper_unwind_order(order, log_label="PAPER_AUTO_UNWIND"):
+            return
+
         logger.info(
             "PAPER_AUTO_UNWIND: queued SELL %s qty=%.4f (order_id=%s)",
             order.symbol,
@@ -2471,7 +2601,6 @@ class RiskManager:
         )
         stats["orders_approved"] += 1
         risk_state.pending_orders += 1
-        self.send_order(order)
 
     def handle_order_result(self, result: OrderResult):
         """Verarbeitet Order-Result Events vom Execution-Service"""

@@ -3,6 +3,8 @@ Database Layer for Execution Service
 Claire de Binare Trading Bot
 """
 
+from __future__ import annotations
+
 import json
 import logging
 import psycopg2
@@ -20,10 +22,12 @@ try:
     from . import config
     from .models import ExecutionResult, OrderStatus
     from .reduce_only import (
+        REDUCE_ONLY_ADAPTER_BOUND,
         REDUCE_ONLY_DUPLICATE_RESULT,
         REDUCE_ONLY_PARTIAL_FILL,
         REDUCE_ONLY_POSITION_INCREASE_BLOCKED,
         REDUCE_ONLY_POSITION_UNKNOWN,
+        REDUCE_ONLY_BINDABLE_REASONS,
         apply_reduce_only_result,
         prepare_reduce_only,
     )
@@ -31,10 +35,12 @@ except ImportError:
     import config
     from models import ExecutionResult, OrderStatus
     from reduce_only import (
+        REDUCE_ONLY_ADAPTER_BOUND,
         REDUCE_ONLY_DUPLICATE_RESULT,
         REDUCE_ONLY_PARTIAL_FILL,
         REDUCE_ONLY_POSITION_INCREASE_BLOCKED,
         REDUCE_ONLY_POSITION_UNKNOWN,
+        REDUCE_ONLY_BINDABLE_REASONS,
         apply_reduce_only_result,
         prepare_reduce_only,
     )
@@ -53,10 +59,16 @@ VALID_EVENT_TYPES = {"SIGNAL", "DECISION", "ORDER", "FILL"}
 class Database:
     """PostgreSQL database handler"""
 
-    def __init__(self):
-        self.connection_string = config.DATABASE_URL
+    def __init__(
+        self,
+        connection_string: str | None = None,
+        *,
+        test_on_init: bool = True,
+    ):
+        self.connection_string = connection_string or config.DATABASE_URL
         self._orders_has_order_id_column = None
-        self._test_connection()
+        if test_on_init:
+            self._test_connection()
 
     def _test_connection(self):
         """Test database connection on init"""
@@ -128,6 +140,38 @@ class Database:
             payload["reason_code"] = REDUCE_ONLY_DUPLICATE_RESULT
         return payload
 
+    def _bind_prepared_for_adapter(self, cur, *, order_id: str) -> dict | None:
+        """Atomically mark a bindable PREPARED claim as adapter-bound.
+
+        Returns the bound row payload when this caller won the CAS; otherwise None.
+        """
+        cur.execute(
+            """
+            UPDATE reduce_only_executions
+            SET reason_code = %s,
+                updated_at = CURRENT_TIMESTAMP
+            WHERE order_id = %s
+              AND status = 'PREPARED'
+              AND reason_code IN %s
+            RETURNING order_id, symbol, side, position_before,
+                      requested_quantity, submitted_quantity,
+                      filled_quantity, fill_price, realized_pnl_delta,
+                      position_after, status, reason_code
+            """,
+            (
+                REDUCE_ONLY_ADAPTER_BOUND,
+                order_id,
+                tuple(REDUCE_ONLY_BINDABLE_REASONS),
+            ),
+        )
+        bound = cur.fetchone()
+        if bound is None:
+            return None
+        payload = self._reduce_only_row(bound, duplicate=False)
+        payload["allowed"] = True
+        payload["adapter_bound"] = True
+        return payload
+
     def prepare_reduce_only(
         self,
         *,
@@ -135,8 +179,20 @@ class Database:
         symbol: str,
         side: str,
         requested_quantity: Decimal,
+        persist_blocked: bool = True,
+        bind_for_adapter: bool = True,
     ) -> dict:
-        """Persistently validate/reserve a reduce-only order before submission."""
+        """Persistently validate/reserve a reduce-only order before submission.
+
+        ``bind_for_adapter=True`` (execution default) atomically transitions a
+        bindable ``PREPARED`` claim to ``REDUCE_ONLY_ADAPTER_BOUND`` so exactly
+        one adapter submission can proceed. ``bind_for_adapter=False`` is used
+        by risk PAPER_AUTO_UNWIND to claim before Redis dispatch without binding.
+
+        When ``persist_blocked=False``, unsuccessful preparations do not insert
+        a ``BLOCKED`` ledger row (keeps deterministic unwind ``order_id``s
+        retryable after a persistence race).
+        """
 
         if not order_id:
             raise ValueError("reduce-only order_id is required")
@@ -157,6 +213,26 @@ class Database:
                 )
                 existing = cur.fetchone()
                 if existing is not None:
+                    existing_reason = str(existing.get("reason_code") or "")
+                    if (
+                        existing.get("status") == "PREPARED"
+                        and existing_reason in REDUCE_ONLY_BINDABLE_REASONS
+                    ):
+                        if bind_for_adapter:
+                            bound = self._bind_prepared_for_adapter(
+                                cur, order_id=order_id
+                            )
+                            if bound is not None:
+                                # Preserve clamp/ready reason for caller metadata.
+                                bound["reason_code"] = existing_reason
+                                return bound
+                            return self._reduce_only_row(existing, duplicate=True)
+                        # Risk re-entry: claim held, not yet adapter-bound.
+                        payload = dict(existing)
+                        payload["allowed"] = True
+                        payload["duplicate"] = True
+                        payload["resume_dispatch"] = True
+                        return payload
                     return self._reduce_only_row(existing, duplicate=True)
 
                 cur.execute(
@@ -205,6 +281,22 @@ class Database:
                     requested_quantity=requested_quantity,
                     reserved_quantity=reserved,
                 )
+                if not preparation.allowed and not persist_blocked:
+                    return {
+                        "allowed": False,
+                        "duplicate": False,
+                        "order_id": order_id,
+                        "symbol": symbol,
+                        "side": str(side).upper(),
+                        "position_before": preparation.position_before,
+                        "requested_quantity": preparation.requested_quantity,
+                        "submitted_quantity": preparation.submitted_quantity,
+                        "position_after": preparation.position_before,
+                        "status": "BLOCKED",
+                        "reason_code": preparation.reason_code,
+                        "persisted": False,
+                    }
+
                 status = "PREPARED" if preparation.allowed else "BLOCKED"
                 cur.execute(
                     """
@@ -230,7 +322,22 @@ class Database:
                         preparation.reason_code,
                     ),
                 )
-                return self._reduce_only_row(cur.fetchone(), duplicate=False)
+                inserted = cur.fetchone()
+                payload = self._reduce_only_row(inserted, duplicate=False)
+                payload["persisted"] = True
+                if (
+                    bind_for_adapter
+                    and preparation.allowed
+                    and preparation.reason_code in REDUCE_ONLY_BINDABLE_REASONS
+                ):
+                    bound = self._bind_prepared_for_adapter(cur, order_id=order_id)
+                    if bound is None:
+                        # Lost CAS after insert — fail closed.
+                        return self._reduce_only_row(inserted, duplicate=True)
+                    bound["reason_code"] = preparation.reason_code
+                    bound["persisted"] = True
+                    return bound
+                return payload
 
     def finalize_reduce_only(
         self,

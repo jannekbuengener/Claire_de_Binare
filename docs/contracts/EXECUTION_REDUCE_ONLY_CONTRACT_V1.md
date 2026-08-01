@@ -37,6 +37,17 @@ Der Claim wird vor Submission in `reduce_only_executions` unter der
 deterministischen `order_id` persistiert. Eine identische `order_id` wird nicht
 erneut submitted.
 
+PAPER_AUTO_UNWIND Claim-vor-Dispatch (Issue `#4261`, Residual
+`PAPER_AUTO_UNWIND_CLAIM_RACE`): Risk darf einen Paper-Unwind erst nach
+erfolgreichem durable Claim (`prepare_reduce_only` mit
+`persist_blocked=false`, `bind_for_adapter=false`) über Redis dispatchen.
+Execution bindet denselben `PREPARED`-Claim atomar auf
+`REDUCE_ONLY_ADAPTER_BOUND` (`bind_for_adapter=true`, Default), bevor der
+Adapter aufgerufen wird. Dadurch gibt es höchstens eine Adapter-Submission pro
+`order_id`. Ein fehlender, widersprüchlicher oder nicht gewonnener Claim ist
+fail-closed (kein neuer Unwind-Dispatch). In-memory Fill-/Positionsstate allein
+autorisiert keinen Dispatch.
+
 Schema-Wiring (Issue `#4261`): Migration
 `012_reduce_only_execution_contract.sql` ist auf kanonischem BLUE
 (`compose.blue.yml`) und dem TLS-Postgres-Overlay (`tls.yml`) als initdb-Mount
@@ -72,6 +83,8 @@ Reduce-only-Fills verantwortlich. Der DB-Writer persistiert das Trade-Artefakt,
 - `REDUCE_ONLY_PARTIAL_FILL`
 - `REDUCE_ONLY_DUPLICATE_RESULT`
 - `REDUCE_ONLY_POSITION_INCREASE_BLOCKED`
+- `REDUCE_ONLY_ADAPTER_BOUND` (Ledger-Markierung: Claim für genau eine
+  Adapter-Submission gebunden; keine Schema-Migration)
 
 ## Adaptergrenze
 
