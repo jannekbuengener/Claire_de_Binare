@@ -1,0 +1,29 @@
+{
+  "schema_version": "cdb.candidate_registry_entry.v1",
+  "registry_entry_id": "re-wave2-sc-btc-v1",
+  "issue_id": 4269,
+  "candidate_id": "sc-wave1-btc-trend-breakout",
+  "candidate_version": "v1",
+  "parent_version": null,
+  "status": "EVIDENCE_READY",
+  "research_brief_id": "rb-wave1-example-btc-trend",
+  "research_brief_version": "v1",
+  "research_brief_content_hash": "sha256:bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb",
+  "validation_manifest_id": "vm-wave1-example-001",
+  "run_id": "run-wave2-pass-001",
+  "evidence_id": "ce-wave2-pass-001",
+  "decision_id": "dr-wave2-paper-001",
+  "artifact_refs": [
+    "docs/contracts/examples/cdb_strategy_candidate_valid.json",
+    "docs/contracts/examples/cdb_candidate_evidence_pass_valid.json"
+  ],
+  "open_blockers": [],
+  "immutable": true,
+  "safety_boundaries": {
+    "paper_candidate_is_not_paper_go": true,
+    "paper_candidate_is_not_live_go": true,
+    "github_is_not_validation_authority": true,
+    "lr_status": "NO-GO",
+    "automatic_strategy_promotion": false
+  }
+}

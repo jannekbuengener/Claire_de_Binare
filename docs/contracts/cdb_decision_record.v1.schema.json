@@ -64,17 +64,39 @@
     "allowed_next_actions": {
       "type": "array",
       "minItems": 1,
+      "uniqueItems": true,
+      "description": "Narrow safe vocabulary only (PMR-03). Live/capital/risk-bypass/auto-promotion actions are not validatable here.",
       "items": {
         "type": "string",
-        "minLength": 1
+        "enum": [
+          "revise_candidate_version",
+          "collect_missing_gate_evidence",
+          "keep_parked",
+          "open_validation_run",
+          "attach_evidence_artifact",
+          "record_reject",
+          "record_revise",
+          "register_paper_candidate_status"
+        ]
       }
     },
     "forbidden_next_actions": {
       "type": "array",
       "minItems": 1,
+      "uniqueItems": true,
       "items": {
         "type": "string",
-        "minLength": 1
+        "enum": [
+          "automatic_strategy_promotion",
+          "live_capital_allocation",
+          "live_trading",
+          "real_money_go",
+          "bypass_risk_layer",
+          "promote_to_live",
+          "paper_trading_go",
+          "capital_allocation",
+          "risk_bypass"
+        ]
       }
     },
     "paper_candidate_is_not_live_go": {

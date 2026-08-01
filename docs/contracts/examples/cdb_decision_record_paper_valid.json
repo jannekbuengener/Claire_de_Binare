@@ -1,0 +1,28 @@
+{
+  "schema_version": "cdb.decision_record.v1",
+  "decision_id": "dr-wave2-paper-001",
+  "run_id": "run-wave2-pass-001",
+  "candidate_id": "sc-wave1-btc-trend-breakout",
+  "candidate_version": "v1",
+  "evidence_id": "ce-wave2-pass-001",
+  "decided_at": "2026-08-01T12:00:00Z",
+  "decision": "PAPER_CANDIDATE",
+  "rationale": "PASS-compatible synthetic evidence bound for registry PAPER_CANDIDATE status only; not Paper/Live GO.",
+  "allowed_next_actions": [
+    "register_paper_candidate_status",
+    "keep_parked"
+  ],
+  "forbidden_next_actions": [
+    "automatic_strategy_promotion",
+    "live_capital_allocation",
+    "bypass_risk_layer",
+    "live_trading",
+    "real_money_go"
+  ],
+  "paper_candidate_is_not_live_go": true,
+  "safety_boundaries": {
+    "lr_status": "NO-GO",
+    "real_money_go": false,
+    "automatic_strategy_promotion": false
+  }
+}
