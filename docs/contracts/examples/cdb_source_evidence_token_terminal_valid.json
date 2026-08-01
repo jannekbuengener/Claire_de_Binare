@@ -1,0 +1,30 @@
+{
+  "schema_version": "cdb.source_evidence.v1",
+  "evidence_id": "se-wave2-tt-protocol",
+  "source_type": "token_terminal",
+  "source_reference": "synthetic://token-terminal/protocol",
+  "retrieved_at": "2026-08-01T11:00:00Z",
+  "observation_window": {
+    "start": "2026-07-01T00:00:00Z",
+    "end": "2026-07-31T23:59:59Z"
+  },
+  "claim": "Synthetic protocol metric fixture; hypothesis material only.",
+  "claim_type": "METRIC",
+  "uncertainty": [
+    "Synthetic fixture; source may be incomplete or conflicting."
+  ],
+  "missing_data": [],
+  "conflict_state": "NONE",
+  "provenance": {
+    "adapter_profile": "token_terminal.read_only.v1",
+    "retrieval_mode": "read_only",
+    "synthetic_fixture": true,
+    "notes": "Wave-2 contract fixture; no external API call."
+  },
+  "content_hash": "sha256:cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc",
+  "trust_classification": "UNTRUSTED_INPUT",
+  "validation_authority": false,
+  "decision_authority": false,
+  "contains_secrets": false,
+  "contains_account_data": false
+}
