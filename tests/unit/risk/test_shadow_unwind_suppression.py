@@ -43,6 +43,16 @@ def risk_manager(_snapshot_risk_globals):
     rm.config.stop_loss_pct = 0.02
     rm.redis_client = MagicMock()
     rm._circuit_shutdown_emitted = False
+    rm._reduce_only_claimer = MagicMock()
+    # Claim-before-dispatch: default happy-path claim for paper regression guards.
+    rm._acquire_paper_unwind_claim = MagicMock(
+        return_value={
+            "outcome": RiskManager.PAPER_UNWIND_DISPATCH_ALLOWED,
+            "order_id": "test-attempt-oid",
+            "attempt_number": 1,
+            "retry_decision": "NEW_ATTEMPT",
+        }
+    )
     # Patch send_order as the business seam for order emission
     rm.send_order = MagicMock()
     return rm

@@ -3,6 +3,8 @@ Database Layer for Execution Service
 Claire de Binare Trading Bot
 """
 
+from __future__ import annotations
+
 import json
 import logging
 import psycopg2
@@ -20,22 +22,42 @@ try:
     from . import config
     from .models import ExecutionResult, OrderStatus
     from .reduce_only import (
+        REDUCE_ONLY_ADAPTER_BOUND,
+        REDUCE_ONLY_CLAIM_MISMATCH,
+        REDUCE_ONLY_DISPATCH_CLAIMABLE_REASONS,
+        REDUCE_ONLY_DISPATCH_CLAIMED,
         REDUCE_ONLY_DUPLICATE_RESULT,
         REDUCE_ONLY_PARTIAL_FILL,
         REDUCE_ONLY_POSITION_INCREASE_BLOCKED,
         REDUCE_ONLY_POSITION_UNKNOWN,
+        REDUCE_ONLY_BINDABLE_REASONS,
         apply_reduce_only_result,
+        derive_reduce_only_attempt_order_id,
+        derive_reduce_only_legacy_order_id,
+        is_active_reduce_only_attempt,
+        is_retryable_reduce_only_terminal,
+        is_successful_reduce_only_attempt,
         prepare_reduce_only,
     )
 except ImportError:
     import config
     from models import ExecutionResult, OrderStatus
     from reduce_only import (
+        REDUCE_ONLY_ADAPTER_BOUND,
+        REDUCE_ONLY_CLAIM_MISMATCH,
+        REDUCE_ONLY_DISPATCH_CLAIMABLE_REASONS,
+        REDUCE_ONLY_DISPATCH_CLAIMED,
         REDUCE_ONLY_DUPLICATE_RESULT,
         REDUCE_ONLY_PARTIAL_FILL,
         REDUCE_ONLY_POSITION_INCREASE_BLOCKED,
         REDUCE_ONLY_POSITION_UNKNOWN,
+        REDUCE_ONLY_BINDABLE_REASONS,
         apply_reduce_only_result,
+        derive_reduce_only_attempt_order_id,
+        derive_reduce_only_legacy_order_id,
+        is_active_reduce_only_attempt,
+        is_retryable_reduce_only_terminal,
+        is_successful_reduce_only_attempt,
         prepare_reduce_only,
     )
 
@@ -53,10 +75,16 @@ VALID_EVENT_TYPES = {"SIGNAL", "DECISION", "ORDER", "FILL"}
 class Database:
     """PostgreSQL database handler"""
 
-    def __init__(self):
-        self.connection_string = config.DATABASE_URL
+    def __init__(
+        self,
+        connection_string: str | None = None,
+        *,
+        test_on_init: bool = True,
+    ):
+        self.connection_string = connection_string or config.DATABASE_URL
         self._orders_has_order_id_column = None
-        self._test_connection()
+        if test_on_init:
+            self._test_connection()
 
     def _test_connection(self):
         """Test database connection on init"""
@@ -128,6 +156,110 @@ class Database:
             payload["reason_code"] = REDUCE_ONLY_DUPLICATE_RESULT
         return payload
 
+    @staticmethod
+    def _reduce_only_fields_match(
+        existing: dict,
+        *,
+        symbol: str,
+        side: str,
+        requested_quantity: Decimal,
+    ) -> bool:
+        """True when persisted claim fields match the incoming order identity."""
+        try:
+            existing_qty = (
+                existing.get("requested_quantity")
+                if isinstance(existing.get("requested_quantity"), Decimal)
+                else Decimal(str(existing.get("requested_quantity")))
+            )
+            incoming_qty = (
+                requested_quantity
+                if isinstance(requested_quantity, Decimal)
+                else Decimal(str(requested_quantity))
+            )
+        except (InvalidOperation, TypeError, ValueError):
+            return False
+        if not existing_qty.is_finite() or not incoming_qty.is_finite():
+            return False
+        return (
+            str(existing.get("symbol") or "") == str(symbol or "")
+            and str(existing.get("side") or "").upper() == str(side or "").upper()
+            and existing_qty == incoming_qty
+        )
+
+    @staticmethod
+    def _reduce_only_claim_mismatch(existing: dict) -> dict:
+        payload = dict(existing)
+        payload["allowed"] = False
+        payload["duplicate"] = False
+        payload["reason_code"] = REDUCE_ONLY_CLAIM_MISMATCH
+        return payload
+
+    def _bind_prepared_for_adapter(self, cur, *, order_id: str) -> dict | None:
+        """Atomically mark a bindable PREPARED claim as adapter-bound.
+
+        Returns the bound row payload when this caller won the CAS; otherwise None.
+        """
+        cur.execute(
+            """
+            UPDATE reduce_only_executions
+            SET reason_code = %s,
+                updated_at = CURRENT_TIMESTAMP
+            WHERE order_id = %s
+              AND status = 'PREPARED'
+              AND reason_code IN %s
+            RETURNING order_id, symbol, side, position_before,
+                      requested_quantity, submitted_quantity,
+                      filled_quantity, fill_price, realized_pnl_delta,
+                      position_after, status, reason_code
+            """,
+            (
+                REDUCE_ONLY_ADAPTER_BOUND,
+                order_id,
+                tuple(REDUCE_ONLY_BINDABLE_REASONS),
+            ),
+        )
+        bound = cur.fetchone()
+        if bound is None:
+            return None
+        payload = self._reduce_only_row(bound, duplicate=False)
+        payload["allowed"] = True
+        payload["adapter_bound"] = True
+        return payload
+
+    def _claim_dispatch_ownership(self, cur, *, order_id: str) -> dict | None:
+        """Atomically mark exclusive Redis-dispatch ownership for a PREPARED claim.
+
+        Transitions READY/CLAMPED → DISPATCH_CLAIMED. Returns payload when this
+        caller won the CAS; otherwise None (loser / restart must fail closed).
+        """
+        cur.execute(
+            """
+            UPDATE reduce_only_executions
+            SET reason_code = %s,
+                updated_at = CURRENT_TIMESTAMP
+            WHERE order_id = %s
+              AND status = 'PREPARED'
+              AND reason_code IN %s
+            RETURNING order_id, symbol, side, position_before,
+                      requested_quantity, submitted_quantity,
+                      filled_quantity, fill_price, realized_pnl_delta,
+                      position_after, status, reason_code
+            """,
+            (
+                REDUCE_ONLY_DISPATCH_CLAIMED,
+                order_id,
+                tuple(REDUCE_ONLY_DISPATCH_CLAIMABLE_REASONS),
+            ),
+        )
+        claimed = cur.fetchone()
+        if claimed is None:
+            return None
+        payload = self._reduce_only_row(claimed, duplicate=False)
+        payload["allowed"] = True
+        payload["dispatch_claimed"] = True
+        payload["resume_dispatch"] = True
+        return payload
+
     def prepare_reduce_only(
         self,
         *,
@@ -135,8 +267,21 @@ class Database:
         symbol: str,
         side: str,
         requested_quantity: Decimal,
+        persist_blocked: bool = True,
+        bind_for_adapter: bool = True,
     ) -> dict:
-        """Persistently validate/reserve a reduce-only order before submission."""
+        """Persistently validate/reserve a reduce-only order before submission.
+
+        ``bind_for_adapter=True`` (execution default) atomically transitions a
+        bindable ``PREPARED`` claim to ``REDUCE_ONLY_ADAPTER_BOUND`` so exactly
+        one adapter submission can proceed. ``bind_for_adapter=False`` is used
+        by risk PAPER_AUTO_UNWIND to claim exclusive dispatch ownership
+        (``REDUCE_ONLY_DISPATCH_CLAIMED``) before Redis publish without binding.
+
+        When ``persist_blocked=False``, unsuccessful preparations do not insert
+        a ``BLOCKED`` ledger row (keeps deterministic unwind ``order_id``s
+        retryable after a persistence race).
+        """
 
         if not order_id:
             raise ValueError("reduce-only order_id is required")
@@ -157,6 +302,32 @@ class Database:
                 )
                 existing = cur.fetchone()
                 if existing is not None:
+                    existing_reason = str(existing.get("reason_code") or "")
+                    if (
+                        existing.get("status") == "PREPARED"
+                        and existing_reason in REDUCE_ONLY_BINDABLE_REASONS
+                    ):
+                        if not self._reduce_only_fields_match(
+                            existing,
+                            symbol=symbol,
+                            side=side,
+                            requested_quantity=requested_quantity,
+                        ):
+                            return self._reduce_only_claim_mismatch(existing)
+                        if bind_for_adapter:
+                            bound = self._bind_prepared_for_adapter(
+                                cur, order_id=order_id
+                            )
+                            if bound is not None:
+                                # Preserve prior ready/clamp/dispatch reason for metadata.
+                                bound["reason_code"] = existing_reason
+                                return bound
+                            return self._reduce_only_row(existing, duplicate=True)
+                        # Risk re-entry: CAS exclusive dispatch ownership.
+                        claimed = self._claim_dispatch_ownership(cur, order_id=order_id)
+                        if claimed is not None:
+                            return claimed
+                        return self._reduce_only_row(existing, duplicate=True)
                     return self._reduce_only_row(existing, duplicate=True)
 
                 cur.execute(
@@ -205,6 +376,22 @@ class Database:
                     requested_quantity=requested_quantity,
                     reserved_quantity=reserved,
                 )
+                if not preparation.allowed and not persist_blocked:
+                    return {
+                        "allowed": False,
+                        "duplicate": False,
+                        "order_id": order_id,
+                        "symbol": symbol,
+                        "side": str(side).upper(),
+                        "position_before": preparation.position_before,
+                        "requested_quantity": preparation.requested_quantity,
+                        "submitted_quantity": preparation.submitted_quantity,
+                        "position_after": preparation.position_before,
+                        "status": "BLOCKED",
+                        "reason_code": preparation.reason_code,
+                        "persisted": False,
+                    }
+
                 status = "PREPARED" if preparation.allowed else "BLOCKED"
                 cur.execute(
                     """
@@ -230,7 +417,208 @@ class Database:
                         preparation.reason_code,
                     ),
                 )
-                return self._reduce_only_row(cur.fetchone(), duplicate=False)
+                inserted = cur.fetchone()
+                payload = self._reduce_only_row(inserted, duplicate=False)
+                payload["persisted"] = True
+                if (
+                    bind_for_adapter
+                    and preparation.allowed
+                    and preparation.reason_code in REDUCE_ONLY_BINDABLE_REASONS
+                ):
+                    bound = self._bind_prepared_for_adapter(cur, order_id=order_id)
+                    if bound is None:
+                        # Lost CAS after insert — fail closed.
+                        return self._reduce_only_row(inserted, duplicate=True)
+                    bound["reason_code"] = preparation.reason_code
+                    bound["persisted"] = True
+                    return bound
+                if (
+                    not bind_for_adapter
+                    and preparation.allowed
+                    and preparation.reason_code
+                    in REDUCE_ONLY_DISPATCH_CLAIMABLE_REASONS
+                ):
+                    claimed = self._claim_dispatch_ownership(cur, order_id=order_id)
+                    if claimed is None:
+                        # Lost dispatch CAS after insert — fail closed.
+                        return self._reduce_only_row(inserted, duplicate=True)
+                    claimed["persisted"] = True
+                    return claimed
+                return payload
+
+    def _fetch_reduce_only_row(self, cur, *, order_id: str):
+        cur.execute(
+            """
+            SELECT order_id, symbol, side, position_before,
+                   requested_quantity, submitted_quantity,
+                   filled_quantity, fill_price, realized_pnl_delta,
+                   position_after, status, reason_code
+            FROM reduce_only_executions
+            WHERE order_id = %s
+            FOR UPDATE
+            """,
+            (order_id,),
+        )
+        return cur.fetchone()
+
+    def _annotate_attempt(
+        self,
+        payload: dict,
+        *,
+        logical_operation_key: str,
+        attempt_number: int,
+        retry_decision: str,
+    ) -> dict:
+        annotated = dict(payload)
+        annotated["logical_operation_key"] = logical_operation_key
+        annotated["attempt_number"] = attempt_number
+        annotated["retry_decision"] = retry_decision
+        annotated["order_id"] = payload.get("order_id")
+        return annotated
+
+    def _decide_reduce_only_attempt(
+        self,
+        cur,
+        *,
+        logical_operation_key: str,
+        max_attempts: int,
+    ) -> dict:
+        """Scan attempt lineage under row locks; return create/resume/block."""
+
+        legacy_order_id = derive_reduce_only_legacy_order_id(logical_operation_key)
+        for attempt_number in range(1, max_attempts + 1):
+            attempt_order_id = derive_reduce_only_attempt_order_id(
+                logical_operation_key, attempt_number
+            )
+            row = self._fetch_reduce_only_row(cur, order_id=attempt_order_id)
+            resolved_order_id = attempt_order_id
+            if row is None and attempt_number == 1:
+                legacy = self._fetch_reduce_only_row(cur, order_id=legacy_order_id)
+                if legacy is not None:
+                    row = legacy
+                    resolved_order_id = legacy_order_id
+            if row is None:
+                return {
+                    "action": "create",
+                    "order_id": attempt_order_id,
+                    "attempt_number": attempt_number,
+                }
+            if is_active_reduce_only_attempt(status=row.get("status")):
+                return {
+                    "action": "resume",
+                    "order_id": resolved_order_id,
+                    "attempt_number": attempt_number,
+                }
+            if is_successful_reduce_only_attempt(status=row.get("status")):
+                payload = self._reduce_only_row(row, duplicate=True)
+                return {
+                    "action": "block",
+                    "payload": self._annotate_attempt(
+                        payload,
+                        logical_operation_key=logical_operation_key,
+                        attempt_number=attempt_number,
+                        retry_decision="BLOCKED_SUCCESS",
+                    ),
+                }
+            if is_retryable_reduce_only_terminal(
+                status=row.get("status"),
+                reason_code=row.get("reason_code"),
+                filled_quantity=row.get("filled_quantity") or 0,
+            ):
+                continue
+            payload = self._reduce_only_row(row, duplicate=True)
+            return {
+                "action": "block",
+                "payload": self._annotate_attempt(
+                    payload,
+                    logical_operation_key=logical_operation_key,
+                    attempt_number=attempt_number,
+                    retry_decision="BLOCKED_NON_RETRYABLE",
+                ),
+            }
+        return {
+            "action": "block",
+            "payload": self._annotate_attempt(
+                {
+                    "allowed": False,
+                    "duplicate": False,
+                    "order_id": derive_reduce_only_attempt_order_id(
+                        logical_operation_key, max_attempts
+                    ),
+                    "status": "BLOCKED",
+                    "reason_code": REDUCE_ONLY_DUPLICATE_RESULT,
+                },
+                logical_operation_key=logical_operation_key,
+                attempt_number=max_attempts,
+                retry_decision="BLOCKED_MAX_ATTEMPTS",
+            ),
+        }
+
+    def prepare_reduce_only_attempt(
+        self,
+        *,
+        logical_operation_key: str,
+        symbol: str,
+        side: str,
+        requested_quantity: Decimal,
+        persist_blocked: bool = True,
+        bind_for_adapter: bool = True,
+        max_attempts: int = 32,
+    ) -> dict:
+        """Claim or resume the next durable attempt for a logical unwind.
+
+        Separates stable ``logical_operation_key`` from concrete attempt
+        ``order_id`` (``uuid5(logical:attempt:N)``). A terminal retryable
+        ``REJECTED`` (zero fill) may advance the generation; active, successful,
+        unknown, or contradictory states remain fail-closed.
+        """
+
+        if not logical_operation_key:
+            raise ValueError("logical_operation_key is required")
+        if not isinstance(max_attempts, int) or max_attempts < 1:
+            raise ValueError("max_attempts must be a positive integer")
+
+        with self.get_connection() as conn:
+            with conn.cursor(cursor_factory=RealDictCursor) as cur:
+                decision = self._decide_reduce_only_attempt(
+                    cur,
+                    logical_operation_key=logical_operation_key,
+                    max_attempts=max_attempts,
+                )
+                if decision["action"] == "block":
+                    return decision["payload"]
+                order_id = str(decision["order_id"])
+                attempt_number = int(decision["attempt_number"])
+                retry_decision = (
+                    "RESUME_ACTIVE" if decision["action"] == "resume" else "NEW_ATTEMPT"
+                )
+
+        # Unique PK on order_id collapses parallel creates onto one attempt.
+        try:
+            result = self.prepare_reduce_only(
+                order_id=order_id,
+                symbol=symbol,
+                side=side,
+                requested_quantity=requested_quantity,
+                persist_blocked=persist_blocked,
+                bind_for_adapter=bind_for_adapter,
+            )
+        except psycopg2.IntegrityError:
+            result = self.prepare_reduce_only(
+                order_id=order_id,
+                symbol=symbol,
+                side=side,
+                requested_quantity=requested_quantity,
+                persist_blocked=persist_blocked,
+                bind_for_adapter=bind_for_adapter,
+            )
+            retry_decision = "RESUME_ACTIVE"
+        return self._annotate_attempt(
+            result,
+            logical_operation_key=logical_operation_key,
+            attempt_number=attempt_number,
+            retry_decision=retry_decision,
+        )
 
     def finalize_reduce_only(
         self,
