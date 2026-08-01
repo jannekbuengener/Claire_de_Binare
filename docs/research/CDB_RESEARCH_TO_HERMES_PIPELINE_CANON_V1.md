@@ -1,6 +1,6 @@
 # Research-to-Hermes Pipeline Canon v1
 
-**Status:** Canon for Wave 1 + Wave 2 + Wave-3 security gates (#4264–#4269, #4271)
+**Status:** Canon for Wave 1 + Wave 2 + Wave-3 security/orchestration (#4264–#4269, #4271, #4270)
 **Parent:** #4263
 **Mode:** Docs / contracts only — no runtime, no plugins, no cloud provisioning
 **Live-Readiness:** NO-GO
@@ -35,11 +35,12 @@ promotion path.
 [GitHub Candidate Registry] ---- immutable versions + DecisionRecord transitions
         |                        (control plane; not productive DB)
         v
-[Hermes Validation Chief] ---- ValidationManifest orchestration
-        |                      (no live / risk / promotion authority)
+[Hermes Validation Chief] ---- cdb.hermes_orchestration_run.v1
+        |                      ValidationManifest + security-gate bindings
+        |                      (no live / risk / promotion / validation authority)
         v
 [Cloud Runner / CDB ARVP] ---- offline validation jobs + evidence artifacts
-        |
+        |                      (requested by orchestration; not implemented here)
         v
 [Candidate Evidence + Decision Record]
         |
@@ -56,7 +57,7 @@ promotion path.
 | Candidate Compiler | Emit StrategyCandidate + CompilerReport | Runtime trading, DB registry, promotion |
 | Security / Provenance / Integrity Gate | Untrusted-input, injection, secrets, hashes, Codex Security disposition | Validation PASS, PAPER_CANDIDATE, Live-Go, scanner runtime |
 | GitHub Candidate Registry | Immutable issue/artifact ledger + transitions | Productive strategy registry; validation authority |
-| Hermes Validation Chief | Orchestrate validation gates via manifest | Live, Risk, Promotion authority |
+| Hermes Validation Chief | Orchestrate validation via `cdb.hermes_orchestration_run.v1` | Live, Risk, Promotion, Validation authority |
 | Cloud Runner | Execute offline validation jobs | Capital allocation, live credentials |
 | CDB ARVP | Offline replay / scorecard evidence | Live readiness or promotion |
 | TickerSage | Visualization only | Research, validation, decision authority |
@@ -91,7 +92,7 @@ Hard invariants for pipeline v1:
 | `CANDIDATE_DRAFTED` | Structured candidate exists | `cdb.strategy_candidate.v1` + CompilerReport |
 | `SECURITY_GATE` | Provenance/integrity/untrusted checks | `cdb.research_security_gate.v1` |
 | `READY_FOR_VALIDATION` | Completeness + security handoff ok | Candidate completeness + security gate + registry status |
-| `VALIDATION_RUNNING` | Manifest + runner active | `cdb.validation_manifest.v1` |
+| `VALIDATION_RUNNING` | Manifest + orchestration run active | `cdb.validation_manifest.v1` + `cdb.hermes_orchestration_run.v1` |
 | `EVIDENCE_COMPLETE` | Hashes + metrics present | `cdb.candidate_evidence.v1` |
 | `DECIDED` | Explicit next actions | `cdb.decision_record.v1` + registry transition |
 
@@ -107,7 +108,7 @@ may only advance when the corresponding machine-readable contract validates.
 | Falsifiable candidate | Compiler | `cdb.strategy_candidate.v1` + `cdb.compiler_report.v1` |
 | Security / provenance / integrity | Security gate (Wave 3 / #4271) | `cdb.research_security_gate.v1` |
 | Registry / lifecycle | GitHub-backed artifacts | `cdb.candidate_registry_entry.v1` / `cdb.candidate_transition.v1` |
-| Validation plan / gates | Hermes orchestration | `cdb.validation_manifest.v1` |
+| Validation plan / gates | Hermes orchestration | `cdb.validation_manifest.v1` + `cdb.hermes_orchestration_run.v1` |
 | Measured outcomes | Runner / ARVP | `cdb.candidate_evidence.v1` |
 | Next-action decision | Decision steward (human-gated) | `cdb.decision_record.v1` |
 
@@ -153,4 +154,5 @@ profitability artifacts by ID/hash; they do not supersede them.
 | Compiler | [`docs/research/CDB_STRATEGY_CANDIDATE_COMPILER_V1.md`](CDB_STRATEGY_CANDIDATE_COMPILER_V1.md) |
 | Registry | [`docs/research/CDB_GITHUB_CANDIDATE_REGISTRY_V1.md`](CDB_GITHUB_CANDIDATE_REGISTRY_V1.md) |
 | Security / provenance / integrity | [`docs/research/CDB_RESEARCH_VALIDATION_SECURITY_PROVENANCE_GATES_V1.md`](CDB_RESEARCH_VALIDATION_SECURITY_PROVENANCE_GATES_V1.md) |
+| Hermes Validation Chief orchestration | [`docs/research/CDB_HERMES_VALIDATION_CHIEF_ORCHESTRATION_CONTRACT_V1.md`](CDB_HERMES_VALIDATION_CHIEF_ORCHESTRATION_CONTRACT_V1.md) |
 | Profitability candidate (lineage) | [`docs/strategy/CDB_PROFITABILITY_CANDIDATE_CONTRACT_V1.md`](../strategy/CDB_PROFITABILITY_CANDIDATE_CONTRACT_V1.md) |
