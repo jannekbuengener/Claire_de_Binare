@@ -22,7 +22,6 @@ from ci.publisher.github_client import (
     GITHUB_API,
     GitHubResponse,
     Transport,
-    _default_transport,
 )
 from ci.publisher.redaction import redact_mapping, redact_text
 
@@ -172,6 +171,87 @@ def mint_app_jwt(
     return f"{signing_input.decode('ascii')}.{_b64url(signature)}"
 
 
+_REDACTED_SENTINELS = frozenset(
+    {
+        "[REDACTED]",
+        "[REDACTED_JWT]",
+        "[REDACTED_PRIVATE_KEY]",
+    }
+)
+
+
+def _mint_transport(
+    method: str,
+    url: str,
+    headers: dict[str, str],
+    body: bytes | None,
+    timeout: float,
+) -> GitHubResponse:
+    """HTTP transport for installation-token minting.
+
+    Unlike ``_default_transport``, successful JSON bodies are returned
+    **unredacted** so the ``token`` field can be extracted in memory.
+    Error bodies remain redacted. Callers must never log the success body.
+    """
+    import urllib.error
+    import urllib.request
+
+    request = urllib.request.Request(url, data=body, headers=headers, method=method)
+    try:
+        with urllib.request.urlopen(request, timeout=timeout) as response:
+            raw = response.read()
+            parsed: Any
+            if raw:
+                try:
+                    parsed = json.loads(raw.decode("utf-8"))
+                except json.JSONDecodeError:
+                    parsed = {"raw": redact_text(raw.decode("utf-8", errors="replace"))}
+            else:
+                parsed = {}
+            header_map = {k.lower(): v for k, v in response.headers.items()}
+            return GitHubResponse(
+                status_code=getattr(response, "status", 200),
+                body=parsed,
+                headers=header_map,
+            )
+    except urllib.error.HTTPError as exc:
+        raw = exc.read() if hasattr(exc, "read") else b""
+        parsed: Any
+        try:
+            parsed = json.loads(raw.decode("utf-8")) if raw else {"message": str(exc)}
+        except json.JSONDecodeError:
+            parsed = {"message": redact_text(raw.decode("utf-8", errors="replace"))}
+        header_map = {
+            k.lower(): v for k, v in (exc.headers.items() if exc.headers else [])
+        }
+        return GitHubResponse(
+            status_code=exc.code,
+            body=redact_mapping(parsed),
+            headers=header_map,
+        )
+    except urllib.error.URLError as exc:
+        raise GitHubApiError(
+            f"Network failure talking to GitHub API: {redact_text(str(exc.reason))}"
+        ) from exc
+    except TimeoutError as exc:
+        raise GitHubApiError("GitHub App installation token request timed out") from exc
+
+
+def _extract_installation_token(body: Any) -> str:
+    """Pull installation token from mint response; reject redaction sentinels."""
+    if not isinstance(body, dict):
+        raise GitHubApiError("Ambiguous installation token response")
+    token = str(body.get("token") or "").strip()
+    if not token:
+        raise AuthenticationError("Installation token response missing token field")
+    if token in _REDACTED_SENTINELS:
+        raise AuthenticationError(
+            "Installation token response was redacted before extraction; "
+            "mint transport must preserve the token field in memory"
+        )
+    return token
+
+
 def request_installation_token(
     *,
     app_jwt: str,
@@ -179,7 +259,12 @@ def request_installation_token(
     transport: Transport | None = None,
     timeout_seconds: float = DEFAULT_TIMEOUT_SECONDS,
 ) -> str:
-    """POST /app/installations/{id}/access_tokens; return token (memory only)."""
+    """POST /app/installations/{id}/access_tokens; return token (memory only).
+
+    Default transport intentionally does **not** run ``redact_mapping`` on the
+    success body: ``_default_transport`` would replace ``token`` with
+    ``[REDACTED]`` and break live Check Run auth (#4170 Phase D).
+    """
     if not app_jwt.strip():
         raise AuthenticationError("Empty GitHub App JWT")
     installation_id = _parse_positive_int(
@@ -194,7 +279,8 @@ def request_installation_token(
         "User-Agent": "cdb-local-ci-app-auth",
         "Content-Type": "application/json",
     }
-    runner = transport or _default_transport
+    # Never default to _default_transport — it redacts the token field.
+    runner = transport or _mint_transport
     try:
         response: GitHubResponse = runner("POST", url, headers, b"{}", timeout_seconds)
     except TimeoutError as exc:
@@ -220,13 +306,7 @@ def request_installation_token(
             f"Installation token mint failed HTTP {response.status_code}: "
             f"{redact_mapping(response.body)}"
         )
-    body = response.body
-    if not isinstance(body, dict):
-        raise GitHubApiError("Ambiguous installation token response")
-    token = str(body.get("token") or "").strip()
-    if not token:
-        raise AuthenticationError("Installation token response missing token field")
-    return token
+    return _extract_installation_token(response.body)
 
 
 def mint_installation_token(

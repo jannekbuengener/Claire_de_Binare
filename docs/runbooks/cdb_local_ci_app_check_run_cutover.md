@@ -172,6 +172,11 @@ Publisher Check Run mode **auto-mints** the installation token when App
 credentials are present (`ci.publisher.app_auth`). Explicit
 `CDB_GH_APP_INSTALLATION_TOKEN` still wins when set.
 
+Implementation note: mint uses a dedicated transport that keeps the success
+`token` field in memory. The shared publisher `_default_transport` runs
+`redact_mapping` on JSON bodies and must **not** be used for mint extraction
+(would replace `token` with `[REDACTED]` and yield HTTP 401 Bad credentials).
+
 Collision note: Control-Board workflows already document `CDB_GH_APP_ID` /
 `PRIVATE_KEY` / `INSTALLATION_ID`. Prefer a **dedicated** local-ci App and
 document which values the publisher expects. Do not overwrite Control-Board

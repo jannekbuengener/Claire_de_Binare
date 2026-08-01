@@ -244,6 +244,41 @@ def test_request_installation_token_missing_token_field(pem_bytes: bytes):
         )
 
 
+def test_request_installation_token_rejects_redacted_sentinel(pem_bytes: bytes):
+    """Regression: _default_transport redact_mapping replaced token with [REDACTED]."""
+    transport = FakeTransport()
+    transport.responses.append(GitHubResponse(201, {"token": "[REDACTED]"}, {}))
+    jwt = mint_app_jwt(app_id=APP_ID, private_key_pem=pem_bytes, now=1_700_000_000)
+    with pytest.raises(AuthenticationError, match="redacted before extraction"):
+        request_installation_token(
+            app_jwt=jwt, installation_id=INSTALLATION_ID, transport=transport
+        )
+
+
+def test_default_style_redacting_transport_would_break_without_mint_transport(
+    pem_bytes: bytes,
+):
+    """Simulate _default_transport success path (redact_mapping on body)."""
+    from ci.publisher.redaction import redact_mapping
+
+    real_token = "ghs_live_style_installation_token_xx"
+
+    def redacting_transport(method, url, headers, body, timeout):
+        return GitHubResponse(
+            201,
+            redact_mapping({"token": real_token, "permissions": {"checks": "write"}}),
+            {},
+        )
+
+    jwt = mint_app_jwt(app_id=APP_ID, private_key_pem=pem_bytes, now=1_700_000_000)
+    with pytest.raises(AuthenticationError, match="redacted before extraction"):
+        request_installation_token(
+            app_jwt=jwt,
+            installation_id=INSTALLATION_ID,
+            transport=redacting_transport,
+        )
+
+
 def test_mint_installation_token_end_to_end(
     clear_app_env: None,
     monkeypatch: pytest.MonkeyPatch,
