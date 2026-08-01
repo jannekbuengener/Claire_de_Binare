@@ -188,10 +188,17 @@ Establish a verified, fail-closed starting state before any repo work begins.
    - Scope stated: what is IN, what is OUT.
    - Closure semantics confirmed: `Closes #N` (full delivery) vs. `Refs #N`
      (partial or scoped delivery).
-   - If the session may end in an autonomous merge, note that capability
-     (not agent type) gates it; see `docs/runbooks/merge_policy_ci_gate.md`
-     § Capability-based autonomous merge. Missing capability at close time
-     is `DONE_PR_OPEN_MERGE_HANDOFF`, not a blocker to starting session work.
+   - Expected close state named up front: `DONE_SLICE_ADDED_TO_BATCH_PR`. A
+     delivery session ends when the issue is delivered into the routed PR;
+     PR and issue both stay open.
+   - A delivery session never plans a merge, a full final-head Fast-CI, a
+     `cdb-local-ci` publish, an acceptance-chain run
+     (`cdb-integration-wiring-audit`, `cdb-pr-gap-classifier`,
+     `cdb-pr-completeness-review`, `cdb-batch-merge-conductor`), or an issue
+     closure. Those belong to a separately started merge session, where the
+     capability gate in `docs/runbooks/merge_policy_ci_gate.md`
+     § Capability-based autonomous merge is evaluated and a missing capability
+     maps to `DONE_PR_OPEN_MERGE_HANDOFF`.
 
 ## Fail-Closed Rules
 
