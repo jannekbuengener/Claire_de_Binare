@@ -176,7 +176,7 @@ Security gate `PASS` does **not** imply validation `PASS` or `PAPER_CANDIDATE`.
 - No security scanner implementation
 - No plugin installation / external app calls
 - No secret or account-data access
-- No Hermes orchestration (#4270) or pilot spec (#4272)
+- No Hermes orchestration runtime (contract surface is #4270) or pilot spec (#4272)
 - No CI / branch-protection / authenticator work
 - No runtime, trading, risk, or execution changes
 - No merge / issue closure in the delivery slice

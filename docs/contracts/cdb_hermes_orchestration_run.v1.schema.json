@@ -1,0 +1,794 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "title": "CDB Hermes Orchestration Run v1",
+  "description": "Fail-closed Hermes Validation Chief orchestration run (#4270). Coordinates validation attempts and evidence collection only. Orchestration PASS is not validation authority, not PAPER promotion, not Live-Go. Synthetic fixtures only. No productive Hermes/worker execution in this contract slice.",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "schema_version",
+    "run_id",
+    "created_at",
+    "updated_at",
+    "orchestrator",
+    "run_status",
+    "bindings",
+    "security_gate_binding",
+    "steps",
+    "attempts",
+    "retry_policy",
+    "retry_disposition",
+    "evidence_collection",
+    "drift_status",
+    "structured_verdict",
+    "allowed_actions_executed",
+    "forbidden_actions_attempted",
+    "authority_boundaries",
+    "safety_boundaries",
+    "limitations"
+  ],
+  "properties": {
+    "schema_version": {
+      "const": "cdb.hermes_orchestration_run.v1"
+    },
+    "run_id": {
+      "type": "string",
+      "pattern": "^hor-[a-z0-9][a-z0-9-]{2,80}$"
+    },
+    "created_at": {
+      "type": "string",
+      "format": "date-time"
+    },
+    "updated_at": {
+      "type": "string",
+      "format": "date-time"
+    },
+    "orchestrator": {
+      "const": "hermes-validation-chief"
+    },
+    "run_status": {
+      "type": "string",
+      "enum": [
+        "PENDING",
+        "RUNNING",
+        "AWAITING_TECHNICAL_RETRY",
+        "COMPLETED",
+        "FAILED",
+        "BLOCKED",
+        "CANCELLED"
+      ]
+    },
+    "bindings": {
+      "$ref": "#/definitions/RunBindings"
+    },
+    "security_gate_binding": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "security_gate_id",
+        "security_gate_hash",
+        "security_gate_verdict",
+        "content_classification"
+      ],
+      "properties": {
+        "security_gate_id": {
+          "type": "string",
+          "pattern": "^rsg-[a-z0-9][a-z0-9-]{2,80}$"
+        },
+        "security_gate_hash": {
+          "type": "string",
+          "pattern": "^sha256:[a-f0-9]{64}$"
+        },
+        "security_gate_version": {
+          "type": "string",
+          "pattern": "^v[0-9]+$"
+        },
+        "security_gate_verdict": {
+          "type": "string",
+          "enum": [
+            "PASS",
+            "WARNING",
+            "FAIL",
+            "BLOCKED",
+            "REVIEW_REQUIRED"
+          ]
+        },
+        "content_classification": {
+          "const": "UNTRUSTED_INPUT"
+        }
+      }
+    },
+    "steps": {
+      "type": "array",
+      "minItems": 1,
+      "items": {
+        "$ref": "#/definitions/OrchestrationStep"
+      }
+    },
+    "attempts": {
+      "type": "array",
+      "minItems": 1,
+      "items": {
+        "$ref": "#/definitions/OrchestrationAttempt"
+      }
+    },
+    "retry_policy": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "max_technical_attempts",
+        "backoff_seconds",
+        "domain_failures_retryable"
+      ],
+      "properties": {
+        "max_technical_attempts": {
+          "type": "integer",
+          "minimum": 1,
+          "maximum": 10
+        },
+        "backoff_seconds": {
+          "type": "array",
+          "minItems": 1,
+          "items": {
+            "type": "integer",
+            "minimum": 0
+          }
+        },
+        "domain_failures_retryable": {
+          "const": false
+        }
+      }
+    },
+    "retry_disposition": {
+      "$ref": "#/definitions/RetryDisposition"
+    },
+    "evidence_collection": {
+      "$ref": "#/definitions/EvidenceCollectionStatus"
+    },
+    "drift_status": {
+      "$ref": "#/definitions/DriftStatus"
+    },
+    "structured_verdict": {
+      "$ref": "#/definitions/StructuredVerdict"
+    },
+    "failure_records": {
+      "type": "array",
+      "items": {
+        "oneOf": [
+          {
+            "$ref": "#/definitions/TechnicalFailure"
+          },
+          {
+            "$ref": "#/definitions/DomainFailure"
+          }
+        ]
+      }
+    },
+    "allowed_actions_executed": {
+      "type": "array",
+      "items": {
+        "type": "string",
+        "enum": [
+          "validate_inbound_contracts",
+          "load_manifest_and_security_gate",
+          "select_allowed_worker_type",
+          "request_structured_validation_run",
+          "monitor_run_status",
+          "classify_technical_failure",
+          "trigger_technical_retry",
+          "collect_evidence_artifacts",
+          "verify_hash_and_binding_completeness",
+          "publish_structured_verdict"
+        ]
+      }
+    },
+    "forbidden_actions_attempted": {
+      "type": "array",
+      "maxItems": 0,
+      "items": {
+        "type": "string"
+      }
+    },
+    "authority_boundaries": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "research_apps_validation_authority",
+        "hermes_live_authority",
+        "hermes_validation_authority",
+        "automatic_strategy_promotion",
+        "paper_candidate_is_live_go",
+        "real_money_go",
+        "risk_bypass",
+        "orchestration_pass_implies_validation_pass"
+      ],
+      "properties": {
+        "research_apps_validation_authority": {
+          "const": false
+        },
+        "hermes_live_authority": {
+          "const": false
+        },
+        "hermes_validation_authority": {
+          "const": false
+        },
+        "automatic_strategy_promotion": {
+          "const": false
+        },
+        "paper_candidate_is_live_go": {
+          "const": false
+        },
+        "real_money_go": {
+          "const": false
+        },
+        "risk_bypass": {
+          "const": false
+        },
+        "orchestration_pass_implies_validation_pass": {
+          "const": false
+        }
+      }
+    },
+    "safety_boundaries": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "lr_status",
+        "productive_db_writes",
+        "plugin_installation",
+        "productive_agent_execution",
+        "incomplete_evidence_cannot_pass",
+        "drift_cannot_pass",
+        "security_block_cannot_pass"
+      ],
+      "properties": {
+        "lr_status": {
+          "const": "NO-GO"
+        },
+        "productive_db_writes": {
+          "const": false
+        },
+        "plugin_installation": {
+          "const": false
+        },
+        "productive_agent_execution": {
+          "const": false
+        },
+        "incomplete_evidence_cannot_pass": {
+          "const": true
+        },
+        "drift_cannot_pass": {
+          "const": true
+        },
+        "security_block_cannot_pass": {
+          "const": true
+        }
+      }
+    },
+    "limitations": {
+      "type": "array",
+      "minItems": 1,
+      "items": {
+        "type": "string",
+        "minLength": 1
+      }
+    }
+  },
+  "definitions": {
+    "Sha256Digest": {
+      "type": "string",
+      "pattern": "^sha256:[a-f0-9]{64}$"
+    },
+    "HeadSha": {
+      "type": "string",
+      "pattern": "^[a-f0-9]{40}$"
+    },
+    "HashBinding": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "ref",
+        "sha256"
+      ],
+      "properties": {
+        "ref": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 500
+        },
+        "sha256": {
+          "$ref": "#/definitions/Sha256Digest"
+        }
+      }
+    },
+    "RunBindings": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "strategy_candidate_id",
+        "strategy_candidate_version",
+        "candidate_content_hash",
+        "validation_manifest_id",
+        "validation_manifest_hash",
+        "security_gate_id",
+        "security_gate_hash",
+        "code_head_ref",
+        "code_head_sha",
+        "dataset_hashes",
+        "produced_artifact_hashes"
+      ],
+      "properties": {
+        "strategy_candidate_id": {
+          "type": "string",
+          "pattern": "^sc-[a-z0-9][a-z0-9-]{2,80}$"
+        },
+        "strategy_candidate_version": {
+          "type": "string",
+          "pattern": "^v[0-9]+$"
+        },
+        "candidate_content_hash": {
+          "$ref": "#/definitions/Sha256Digest"
+        },
+        "validation_manifest_id": {
+          "type": "string",
+          "pattern": "^vm-[a-z0-9][a-z0-9-]{2,80}$"
+        },
+        "validation_manifest_hash": {
+          "$ref": "#/definitions/Sha256Digest"
+        },
+        "security_gate_id": {
+          "type": "string",
+          "pattern": "^rsg-[a-z0-9][a-z0-9-]{2,80}$"
+        },
+        "security_gate_hash": {
+          "$ref": "#/definitions/Sha256Digest"
+        },
+        "security_gate_version": {
+          "type": "string",
+          "pattern": "^v[0-9]+$"
+        },
+        "code_head_ref": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 200
+        },
+        "code_head_sha": {
+          "$ref": "#/definitions/HeadSha"
+        },
+        "dataset_hashes": {
+          "type": "array",
+          "minItems": 1,
+          "items": {
+            "$ref": "#/definitions/HashBinding"
+          }
+        },
+        "produced_artifact_hashes": {
+          "type": "array",
+          "items": {
+            "$ref": "#/definitions/HashBinding"
+          }
+        }
+      }
+    },
+    "OrchestrationStep": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "step_id",
+        "action",
+        "status"
+      ],
+      "properties": {
+        "step_id": {
+          "type": "string",
+          "pattern": "^step-[a-z0-9][a-z0-9-]{1,60}$"
+        },
+        "action": {
+          "type": "string",
+          "enum": [
+            "validate_inbound_contracts",
+            "load_manifest_and_security_gate",
+            "select_allowed_worker_type",
+            "request_structured_validation_run",
+            "monitor_run_status",
+            "classify_technical_failure",
+            "trigger_technical_retry",
+            "collect_evidence_artifacts",
+            "verify_hash_and_binding_completeness",
+            "publish_structured_verdict"
+          ]
+        },
+        "status": {
+          "type": "string",
+          "enum": [
+            "PENDING",
+            "RUNNING",
+            "PASSED",
+            "FAILED",
+            "SKIPPED",
+            "BLOCKED"
+          ]
+        },
+        "notes": {
+          "type": "string",
+          "maxLength": 500
+        }
+      }
+    },
+    "TechnicalFailure": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "failure_class",
+        "code",
+        "retryable",
+        "message"
+      ],
+      "properties": {
+        "failure_class": {
+          "const": "TECHNICAL"
+        },
+        "code": {
+          "type": "string",
+          "enum": [
+            "RUNNER_UNAVAILABLE",
+            "NETWORK_TRANSIENT",
+            "WORKER_START_TIMEOUT",
+            "STATUS_POLL_TIMEOUT",
+            "ARTIFACT_TRANSFER_FAILED"
+          ]
+        },
+        "retryable": {
+          "type": "boolean"
+        },
+        "message": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 500
+        }
+      }
+    },
+    "DomainFailure": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "failure_class",
+        "code",
+        "retryable",
+        "message"
+      ],
+      "properties": {
+        "failure_class": {
+          "const": "DOMAIN"
+        },
+        "code": {
+          "type": "string",
+          "enum": [
+            "RESEARCH_CONTRACT_INVALID",
+            "VALIDATION_FAILED",
+            "EVIDENCE_INCOMPLETE",
+            "SECURITY_BLOCKED",
+            "DRIFT_INVALIDATED",
+            "DATA_UNAVAILABLE_AS_CONTRACTED"
+          ]
+        },
+        "retryable": {
+          "const": false
+        },
+        "message": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 500
+        }
+      }
+    },
+    "OrchestrationAttempt": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "attempt_id",
+        "attempt_number",
+        "started_at",
+        "worker_type",
+        "status",
+        "bindings_snapshot"
+      ],
+      "properties": {
+        "attempt_id": {
+          "type": "string",
+          "pattern": "^att-[a-z0-9][a-z0-9-]{2,80}$"
+        },
+        "attempt_number": {
+          "type": "integer",
+          "minimum": 1
+        },
+        "started_at": {
+          "type": "string",
+          "format": "date-time"
+        },
+        "ended_at": {
+          "type": "string",
+          "format": "date-time"
+        },
+        "worker_type": {
+          "type": "string",
+          "enum": [
+            "cdb-arvp-offline",
+            "cdb-validation-worker-docs-only",
+            "synthetic-fixture-worker"
+          ]
+        },
+        "status": {
+          "type": "string",
+          "enum": [
+            "PENDING",
+            "RUNNING",
+            "SUCCEEDED",
+            "FAILED_TECHNICAL",
+            "FAILED_DOMAIN",
+            "CANCELLED"
+          ]
+        },
+        "bindings_snapshot": {
+          "$ref": "#/definitions/RunBindings"
+        },
+        "failure": {
+          "oneOf": [
+            {
+              "$ref": "#/definitions/TechnicalFailure"
+            },
+            {
+              "$ref": "#/definitions/DomainFailure"
+            }
+          ]
+        }
+      },
+      "allOf": [
+        {
+          "if": {
+            "properties": {
+              "status": {
+                "const": "FAILED_TECHNICAL"
+              }
+            },
+            "required": [
+              "status"
+            ]
+          },
+          "then": {
+            "required": [
+              "failure"
+            ],
+            "properties": {
+              "failure": {
+                "$ref": "#/definitions/TechnicalFailure"
+              }
+            }
+          }
+        },
+        {
+          "if": {
+            "properties": {
+              "status": {
+                "const": "FAILED_DOMAIN"
+              }
+            },
+            "required": [
+              "status"
+            ]
+          },
+          "then": {
+            "required": [
+              "failure"
+            ],
+            "properties": {
+              "failure": {
+                "$ref": "#/definitions/DomainFailure"
+              }
+            }
+          }
+        }
+      ]
+    },
+    "RetryDisposition": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "retryable",
+        "reason_code",
+        "next_attempt_allowed"
+      ],
+      "properties": {
+        "retryable": {
+          "type": "boolean"
+        },
+        "reason_code": {
+          "type": "string",
+          "enum": [
+            "NONE",
+            "TECHNICAL_RETRYABLE",
+            "TECHNICAL_EXHAUSTED",
+            "DOMAIN_NOT_RETRYABLE",
+            "DRIFT_NOT_RETRYABLE",
+            "SECURITY_NOT_RETRYABLE",
+            "CANCELLED"
+          ]
+        },
+        "next_attempt_allowed": {
+          "type": "boolean"
+        }
+      }
+    },
+    "EvidenceCollectionStatus": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "status",
+        "artifact_hashes",
+        "missing_artifacts"
+      ],
+      "properties": {
+        "status": {
+          "type": "string",
+          "enum": [
+            "PENDING",
+            "PARTIAL",
+            "COMPLETE",
+            "FAILED"
+          ]
+        },
+        "artifact_hashes": {
+          "type": "array",
+          "items": {
+            "$ref": "#/definitions/HashBinding"
+          }
+        },
+        "missing_artifacts": {
+          "type": "array",
+          "items": {
+            "type": "string",
+            "minLength": 1
+          }
+        }
+      }
+    },
+    "DriftStatus": {
+      "type": "string",
+      "enum": [
+        "NONE",
+        "HEAD_DRIFT",
+        "CANDIDATE_DRIFT",
+        "MANIFEST_DRIFT",
+        "SECURITY_GATE_DRIFT",
+        "DATASET_DRIFT",
+        "ARTIFACT_DRIFT"
+      ]
+    },
+    "StructuredVerdict": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "verdict",
+        "rationale_codes",
+        "free_form_opinion_is_leading"
+      ],
+      "properties": {
+        "verdict": {
+          "type": "string",
+          "enum": [
+            "PASS",
+            "FAIL",
+            "BLOCKED",
+            "REVIEW_REQUIRED",
+            "TECHNICAL_RETRY_PENDING",
+            "CANCELLED"
+          ]
+        },
+        "rationale_codes": {
+          "type": "array",
+          "minItems": 1,
+          "items": {
+            "type": "string",
+            "pattern": "^[A-Z][A-Z0-9_]{2,80}$"
+          }
+        },
+        "notes": {
+          "type": "string",
+          "maxLength": 1000
+        },
+        "free_form_opinion_is_leading": {
+          "const": false
+        }
+      }
+    }
+  },
+  "allOf": [
+    {
+      "if": {
+        "properties": {
+          "structured_verdict": {
+            "properties": {
+              "verdict": {
+                "const": "PASS"
+              }
+            },
+            "required": [
+              "verdict"
+            ]
+          }
+        },
+        "required": [
+          "structured_verdict"
+        ]
+      },
+      "then": {
+        "properties": {
+          "drift_status": {
+            "const": "NONE"
+          },
+          "evidence_collection": {
+            "type": "object",
+            "required": [
+              "status",
+              "missing_artifacts"
+            ],
+            "properties": {
+              "status": {
+                "const": "COMPLETE"
+              },
+              "missing_artifacts": {
+                "maxItems": 0
+              }
+            }
+          },
+          "security_gate_binding": {
+            "type": "object",
+            "required": [
+              "security_gate_verdict",
+              "content_classification"
+            ],
+            "properties": {
+              "security_gate_verdict": {
+                "enum": [
+                  "PASS",
+                  "WARNING"
+                ]
+              },
+              "content_classification": {
+                "const": "UNTRUSTED_INPUT"
+              }
+            }
+          },
+          "bindings": {
+            "type": "object",
+            "required": [
+              "produced_artifact_hashes"
+            ],
+            "properties": {
+              "produced_artifact_hashes": {
+                "minItems": 1
+              }
+            }
+          },
+          "retry_disposition": {
+            "type": "object",
+            "required": [
+              "retryable",
+              "next_attempt_allowed"
+            ],
+            "properties": {
+              "retryable": {
+                "const": false
+              },
+              "next_attempt_allowed": {
+                "const": false
+              }
+            }
+          },
+          "forbidden_actions_attempted": {
+            "maxItems": 0
+          }
+        }
+      }
+    }
+  ]
+}
