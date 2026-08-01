@@ -22,14 +22,13 @@ Schema id: `cdb.agent_execution.v1`
 Schema version: `1.0.0`
 Issue: `#4251`
 Parent: `#4249`
-Predecessor proposal: `#4250` /
+Predecessor canon: `#4250` /
 `knowledge/governance/CDB_AGENT_CONTROL_PLANE.md`
-(**Proposal / Pending Owner Canonization** — not binding policy)
+(Owner-ratified 2026-08-01 at `c691a8d0`)
 
 Authority boundary: This contract does **not** amend Constitution, Governance,
 or `CDB_*_POLICY.md`. Permissions it encodes remain subordinate to binding
-governance. ACP lifecycle authority claims wait for Owner canonization of the
-`#4250` proposal.
+governance and the ratified ACP Truth Order.
 
 ## 1. Zweck
 
@@ -51,7 +50,7 @@ dispatch --contract <PATH>
 | Schema-Dialekt Draft 2020-12 (`$schema`, `additionalProperties`, `const`) | [JSON Schema Draft 2020-12](https://json-schema.org/draft/2020-12) |
 | Deterministische JSON-Serialisierung vor Hash | [RFC 8785 JSON Canonicalization Scheme](https://www.rfc-editor.org/info/rfc8785/) |
 | SHA-256 Digest-Encoding `sha256:<lowercase-hex>` | CDB contract convention (bestehende `docs/contracts/*`) |
-| Permission-/Attenuation-/Delivery≠Merge-Modell | Binding policies + PR-Routing runbook; ACP `#4250` proposal as non-binding design input + dieses Contract |
+| Permission-/Attenuation-/Delivery≠Merge-Modell | Binding policies + PR-Routing runbook + ratified ACP `#4250` + dieses Contract |
 | Cursor Cloud Agents API Felder (`env`, `repos`, `prompt`) | [Cursor Cloud Agents API](https://cursor.com/docs/cloud-agent/api/endpoints) — nur Provider-Handoff-Abgleich; **keine** Kernschema-Autorität |
 
 ## 3. Identity und Versionierung

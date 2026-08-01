@@ -80,13 +80,13 @@ versionierte Root-Flächen für `.claude/`, `.codex/`, `.cursor/`, `.gemini/`, `
   - Read-only PR-routing gate before Session-Plan and work-surface creation.
 - `knowledge/governance/`
   - Kanonische Governance-, Policy- und Invariant-Dokumente.
-  - Agent Control Plane Proposal (Pending Owner Canonization):
+  - Agent Control Plane Canon:
     [`knowledge/governance/CDB_AGENT_CONTROL_PLANE.md`](../knowledge/governance/CDB_AGENT_CONTROL_PLANE.md)
-    (`#4250`; agent-authored draft; not binding policy; not the GitHub Workflow
+    (`#4250`; Owner-ratified 2026-08-01 at `c691a8d0`; not the GitHub Workflow
     Control Plane under `.github/`).
-  - Agent Execution Contract v1 (technical schema/tooling):
+  - Agent Execution Contract v1:
     [`docs/contracts/agent_execution/CDB_AGENT_EXECUTION_CONTRACT_V1.md`](../docs/contracts/agent_execution/CDB_AGENT_EXECUTION_CONTRACT_V1.md)
-    (`cdb.agent_execution.v1`, `#4251`; Router-Handoff, fail-closed; no policy amendment).
+    (`cdb.agent_execution.v1`, `#4251`; Router-Handoff, fail-closed).
 - `knowledge/`
   - Aktive Knowledge-Dokumente und historische Referenzflächen; kein pauschaler Status-Canon.
 - `knowledge/testing/`

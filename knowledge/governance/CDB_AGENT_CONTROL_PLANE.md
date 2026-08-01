@@ -1,6 +1,6 @@
 ---
 relations:
-  role: proposal
+  role: policy
   domain: governance
   upstream:
     - knowledge/governance/CDB_CONSTITUTION.md
@@ -10,39 +10,49 @@ relations:
   downstream:
     - agents/AGENTS.md
     - docs/skills/cdb-pr-router/SKILL.md
-  status: proposal_pending_owner_canonization
-  tags: [agents, control-plane, authority, lifecycle, evidence, proposal]
+    - tools/agent_control/
+  status: canonical
+  tags: [agents, control-plane, authority, lifecycle, evidence]
 ---
 
 # CDB Agent Control Plane
 
-Status: **Proposal / Draft — Pending Owner Canonization**
-Version: `cdb-agent-control-plane/v1-proposal`
-Issue: `#4250`
-Parent: `#4249`
-Authority class: Agent-authored architecture proposal (not binding policy)
+Status: Canonical  
+Version: `cdb-agent-control-plane/v1`  
+Issue: `#4250`  
+Parent: `#4249`  
+Authority class: Architecture and governance contract (docs/canon)
 
-> **Authority notice:** This file was authored by an agent under `knowledge/governance/**`.
-> Per `CDB_AGENT_POLICY.md` Zone D and the single `#4202` transition exception,
-> agents must not modify or create binding canonical policies. Issue `#4250`
-> and ordinary Human-/Plan-GO do **not** authorize policy canonization.
-> Until the Repository Owner performs an explicit owner-authored policy
-> amendment, this document is a **non-binding proposal** only. It must not be
-> treated as Constitution-, Governance-, or Policy-level authority.
+## Owner Ratification Record
+
+| Field | Value |
+| --- | --- |
+| Owner | Jannek Büngener |
+| Decision | `RATIFY` |
+| Declared | `Ratifizieren` |
+| Decided at | 2026-08-01 (Europe/Berlin) |
+| Ratified artifact | `knowledge/governance/CDB_AGENT_CONTROL_PLANE.md` |
+| Ratified version commit | `c691a8d0469924cf233fd72965bb77b7f98bb9db` |
+| Effect | The corrected authority-order / demotion-safe Fassung at that commit is ratified as the binding CDB Agent Control Plane Canon. |
+| Limits | No merge authority; no `cdb-local-ci` publish; no Live/Echtgeld-Go; no weakening of existing governance; no automatic ratification of later material changes |
+
+Later **material** changes to this document require a fresh Owner ratification
+(`HOLD_OWNER_RE_RATIFICATION_REQUIRED`). Purely editorial, non-normative
+pointer/status sync after this record is allowed.
 
 ## 1. Zweck, Scope und Nicht-Ziele
 
 ### 1.1 Zweck
 
-Die vorgeschlagene **CDB Agent Control Plane (ACP)** beschreibt einen
-provider-neutralen Steuerrahmen für governed Agentenläufe im
-Claire-de-Binare-Repository. CDB bleibt die Autorität für Routing, Contracts,
-Gates und Merge. Ausführungsprovider (zuerst Cursor) führen zugewiesene Arbeit
-aus, autorisieren aber weder Merge noch Live-Trading.
+Die **CDB Agent Control Plane (ACP)** ist der provider-neutrale Steuerrahmen
+für governed Agentenläufe im Claire-de-Binare-Repository. CDB bleibt die
+Autorität für Routing, Contracts, Gates und Merge. Ausführungsprovider
+(zuerst Cursor) führen zugewiesene Arbeit aus, autorisieren aber weder Merge
+noch Live-Trading.
 
-### 1.2 Scope dieses Proposal-Dokuments
+### 1.2 Scope dieses Canon-Dokuments
 
-Dieses Dokument schlägt vor:
+Dieses Dokument definiert:
 
 - Architektur und Systemgrenzen der ACP
 - Authority Matrix je Komponente
@@ -51,11 +61,11 @@ Dieses Dokument schlägt vor:
 - Zero-Click-/Bootstrap-Regeln und Capability-Drift
 - Lineage zu bestehenden Routing-, Delivery-/Merge- und Final-CI-Verträgen
 
-### 1.3 Nicht-Ziele (für diesen Proposal-Slice)
+### 1.3 Nicht-Ziele (verbindlich)
 
-- Kein Dispatcher-, Registry- oder Provider-Adapter-Code
+- Kein Dispatcher-, Registry- oder Provider-Adapter-Code in diesem Canon-Dokument
   (Follow-ups `#4252`–`#4257`; Execution-Contract-Schema liegt in `#4251` /
-  `cdb.agent_execution.v1`, nicht in diesem Proposal)
+  `cdb.agent_execution.v1`, nicht hier)
 - Kein Ersatz und keine Umbenennung der **GitHub Workflow Control Plane**
   (`.github/CONTROL_PLANE.md`, `#1640`/`#1644`-Lineage)
 - Kein neuer Merge-Prozess und kein Bypass von `cdb-local-ci`
@@ -69,7 +79,7 @@ Dieses Dokument schlägt vor:
 
 | Fläche | Autorität | Zweck |
 | --- | --- | --- |
-| **Agent Control Plane** (dieses Proposal) | vorgeschlagen: CDB Governance + Agenten-Skills/Tools | Issue → Route → Contract → Dispatch → Provider-Run → Review → Delivery/Merge-Handoff |
+| **Agent Control Plane** (dieses Dokument) | CDB Governance + Agenten-Skills/Tools | Issue → Route → Contract → Dispatch → Provider-Run → Review → Delivery/Merge-Handoff |
 | **GitHub Workflow Control Plane** | `.github/` Automation | CI/Security/Repo-Automation, Workflow-Register, Manifeste, Seal |
 
 Die GitHub Workflow Control Plane bleibt unverändert unter:
@@ -288,9 +298,9 @@ Regeln:
 - Live-State darf veraltete operative Snapshots/Ledger korrigieren.
 - Widerspruch zu bindender Governance → `HOLD` oder `BLOCKED`, kein stilles
   Override.
-- Dieses Proposal steht **unter** Constitution/Governance/Policies und darf
-  sie weder ersetzen noch abschwächen.
-- Ein späterer Execution Contract darf Rechte nur innerhalb dieser Hierarchie
+- Dieses Canon-Dokument steht **unter** Constitution/Governance/Policies und
+  darf sie weder ersetzen noch abschwächen.
+- Ein Execution Contract darf Rechte nur innerhalb dieser Hierarchie
   beschreiben; Approval, Delivery und Tests erzeugen keine Merge-Authority.
 
 Board-Stage `trade-capable` und Ledger-Einträge erzeugen kein Live-Go.
@@ -305,8 +315,8 @@ LR-SSOT bleibt [`docs/live-readiness/LR-AUDIT-STATUS-2026-03-05.md`](../../docs/
 | `#4170` | `cdb-local-ci` / Final-CI-Härtung (Lineage; nicht durch Cursor ersetzen) |
 | `#1640`, `#1644` | Historische **GitHub Workflow** Control Plane — nur Abgrenzung |
 | `#4249` | Meta-Epic ACP |
-| `#4250` | Dieses Proposal-Dokument (Pending Owner Canonization) |
-| `#4251`+ | Folge-Implementierungen; Schemata/Code außerhalb dieses Docs; bindende Governance-Dependency erst nach Owner-Canonization |
+| `#4250` | Dieses Canon-Dokument (Owner-ratified at `c691a8d0`) |
+| `#4251`+ | Folge-Implementierungen; Schemata/Code außerhalb dieses Docs |
 
 Konflikte mit `#4226`/`#4227`/`#4170` werden nicht durch ACP-Neudefinition
 „gelöst“. ACP referenziert ihre gelieferte Semantik und erweitert sie nicht
@@ -316,7 +326,7 @@ in Merge- oder Final-CI-Authority.
 
 | Fläche | Verhältnis |
 | --- | --- |
-| [`CDB_AGENT_POLICY.md`](CDB_AGENT_POLICY.md) | Write-Gates, Autonomie-Zonen, Agentenverhalten — dieses Proposal darf Policy nicht ersetzen oder erweitern |
+| [`CDB_AGENT_POLICY.md`](CDB_AGENT_POLICY.md) | Write-Gates, Autonomie-Zonen, Agentenverhalten — ACP ergänzt Orchestrierungs-Authority, ersetzt Policy nicht |
 | [`PR_ROUTING_AND_BATCH_MERGE_POLICY.md`](../../docs/runbooks/PR_ROUTING_AND_BATCH_MERGE_POLICY.md) | Delivery/Merge-Trennung und Router — ACP konsumiert, ersetzt nicht |
 | [`merge_policy_ci_gate.md`](../../docs/runbooks/merge_policy_ci_gate.md) | Required Final-CI / Capability Merge — ACP konsumiert, ersetzt nicht |
 | [`ISSUE_AND_BRANCH_LIFECYCLE.md`](ISSUE_AND_BRANCH_LIFECYCLE.md) | Issue/Branch-Lifecycle — ACP Run-Lifecycle ist orthogonal und ergänzend |
@@ -336,15 +346,13 @@ STOP und dokumentieren, wenn:
 
 ## 12. Execution Contract Anchor (`#4251`)
 
-Technisches Schema und Validator für die Router-Handoff-Übergabe:
+Schema und Validator für die Router-Handoff-Übergabe:
 
 - Spec: [`docs/contracts/agent_execution/CDB_AGENT_EXECUTION_CONTRACT_V1.md`](../../docs/contracts/agent_execution/CDB_AGENT_EXECUTION_CONTRACT_V1.md)
 - JSON Schema: [`docs/contracts/cdb_agent_execution.v1.schema.json`](../../docs/contracts/cdb_agent_execution.v1.schema.json)
 - Tooling: `python -m tools.agent_execution_contract`
 
-Dieses Proposal ist **keine** bindende Authority-/Lifecycle-SSOT. Feldshapes
-und Hash/Attenuation liegen im Execution-Contract-Slice `#4251` als
-technischer Contract; governance-binding Ansprüche aus dem ACP-Lifecycle
-bleiben bis zur Owner-Canonization dieses Proposals deferred.
-`#4252` und spätere Komponenten dürfen dieses Dokument nicht als bereits
-kanonisierte Policy-Dependency behandeln.
+Dieses Canon-Dokument ist die Authority-/Lifecycle-SSOT für ACP-Rollen und
+Truth Order. Feldshapes und Hash/Attenuation liegen im
+Execution-Contract-Slice `#4251`. Registry/Reconciler folgen in `#4252` und
+dürfen Contract-Autorität nicht erweitern.
