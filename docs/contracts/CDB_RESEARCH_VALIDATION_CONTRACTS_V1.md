@@ -1,6 +1,6 @@
 # CDB Research Validation Contracts v1
 
-**Status:** Wave-1 + Wave-2 contract surface (#4265/#4266/#4267/#4268/#4269)
+**Status:** Wave-1 + Wave-2 + Wave-3 security/orchestration surface (#4265–#4269, #4271, #4270)
 **Parent:** #4263
 **Canon:** [`docs/research/CDB_RESEARCH_TO_HERMES_PIPELINE_CANON_V1.md`](../research/CDB_RESEARCH_TO_HERMES_PIPELINE_CANON_V1.md)
 **Mode:** Schemas + examples + docs + read-only cross-contract helpers
@@ -24,6 +24,8 @@ Decision. Free-form agent text is never a valid handoff.
 | `cdb.compiler_report.v1` | `cdb_compiler_report.v1.schema.json` | `examples/cdb_compiler_report_valid.json` | #4268 |
 | `cdb.candidate_registry_entry.v1` | `cdb_candidate_registry_entry.v1.schema.json` | `examples/cdb_candidate_registry_entry_valid.json` | #4269 |
 | `cdb.candidate_transition.v1` | `cdb_candidate_transition.v1.schema.json` | `examples/cdb_candidate_transition_paper_valid.json` | #4269 |
+| `cdb.research_security_gate.v1` | `cdb_research_security_gate.v1.schema.json` | `examples/cdb_research_security_gate_valid.json` | #4271 |
+| `cdb.hermes_orchestration_run.v1` | `cdb_hermes_orchestration_run.v1.schema.json` | `examples/cdb_hermes_orchestration_run_valid.json` | #4270 |
 
 Wave-2 docs:
 
@@ -31,8 +33,16 @@ Wave-2 docs:
 - [`docs/research/CDB_STRATEGY_CANDIDATE_COMPILER_V1.md`](../research/CDB_STRATEGY_CANDIDATE_COMPILER_V1.md)
 - [`docs/research/CDB_GITHUB_CANDIDATE_REGISTRY_V1.md`](../research/CDB_GITHUB_CANDIDATE_REGISTRY_V1.md)
 
-Cross-contract validator (relational invariants):
-`tools/research_validation/wave2_cross_contract.py`
+Wave-3 security / orchestration docs:
+
+- [`docs/research/CDB_RESEARCH_VALIDATION_SECURITY_PROVENANCE_GATES_V1.md`](../research/CDB_RESEARCH_VALIDATION_SECURITY_PROVENANCE_GATES_V1.md)
+- [`docs/research/CDB_HERMES_VALIDATION_CHIEF_ORCHESTRATION_CONTRACT_V1.md`](../research/CDB_HERMES_VALIDATION_CHIEF_ORCHESTRATION_CONTRACT_V1.md)
+
+Cross-contract validators (relational invariants):
+
+- `tools/research_validation/wave2_cross_contract.py`
+- `tools/research_validation/security_gates_cross_contract.py`
+- `tools/research_validation/hermes_orchestration_cross_contract.py`
 
 ## Wave-2 hardenings of Wave-1 surfaces (PMR)
 
@@ -91,12 +101,46 @@ Rules:
 - Registry `PAPER_CANDIDATE` additionally requires PASS-compatible evidence
   (PMR-04)
 
+## Security / provenance / integrity (#4271)
+
+`cdb.research_security_gate.v1` is the fail-closed handoff gate between
+SourceEvidence/Candidate compilation and validation orchestration.
+
+Hard rules:
+
+- External research content remains `UNTRUSTED_INPUT` (data, never instructions)
+- Missing provenance or missing content/artifact hashes cannot PASS
+- Injection or secret/credential suspicion cannot yield overall `PASS`
+- `FAIL` / `BLOCKED` / `REVIEW_REQUIRED` on required checks cannot yield overall `PASS`
+- Head / candidate / manifest / dataset drift invalidates PASS evidence
+- Security/integrity PASS ≠ semantic correctness ≠ validation authority ≠ Live-Go
+- Codex Security is specified as a pre-implementation review gate; this slice
+  does not execute scanners (`scanner_executed: false`)
+
+## Hermes Validation Chief orchestration (#4270)
+
+`cdb.hermes_orchestration_run.v1` is the fail-closed orchestration envelope that
+binds a validation run to candidate, manifest, security-gate, head, dataset, and
+artifact hashes.
+
+Hard rules:
+
+- Technical and domain failures are structurally separated
+- Automatic retries apply only to explicitly retryable technical failures
+- Bindings are immutable across attempts; drift requires a new `run_id`
+- Security-gate `FAIL` / `BLOCKED` / `REVIEW_REQUIRED` cannot yield orchestration `PASS`
+- Incomplete evidence or invalidating drift cannot yield orchestration `PASS`
+- Orchestration `PASS` ≠ validation authority ≠ Live-Go ≠ paper/capital promotion
+- No productive Hermes/worker execution in this contract slice
+
 ## Producer / Consumer (Wave-2)
 
 | Contract | Producer | Consumer |
 |---|---|---|
 | SourceEvidence | Research adapters (future) / fixtures | Compiler |
 | CompilerReport | Compiler (future) | Registry / Hermes |
+| ResearchSecurityGate | Security/provenance steward (future) / fixtures | Registry / Hermes handoff |
+| HermesOrchestrationRun | Hermes Validation Chief (future) / fixtures | Evidence / Decision steward |
 | Registry entry/transition | Humans / delivery agents (repo artifacts) | Completeness / audit |
 
 ## Lineage boundary (do not replace)
@@ -116,4 +160,5 @@ profitability artifacts; they must not redefine or supersede them.
 - Automatic strategy promotion
 - Live / Paper / Echtgeld GO
 - ML / RL training
-- Full #4271 security/supply-chain gates (only PMR-03/04 registry-needed invariants)
+- Security scanner / plugin / worker / Hermes runtime implementation
+  (contract + tests only for #4271 / #4270)
