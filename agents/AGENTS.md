@@ -80,6 +80,9 @@ versionierte Root-Flächen für `.claude/`, `.codex/`, `.cursor/`, `.gemini/`, `
   - Read-only PR-routing gate before Session-Plan and work-surface creation.
 - `knowledge/governance/`
   - Kanonische Governance-, Policy- und Invariant-Dokumente.
+  - Agent Control Plane Canon:
+    [`knowledge/governance/CDB_AGENT_CONTROL_PLANE.md`](../knowledge/governance/CDB_AGENT_CONTROL_PLANE.md)
+    (provider-neutral; nicht die GitHub Workflow Control Plane unter `.github/`).
 - `knowledge/`
   - Aktive Knowledge-Dokumente und historische Referenzflächen; kein pauschaler Status-Canon.
 - `knowledge/testing/`

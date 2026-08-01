@@ -7,6 +7,7 @@ relations:
     - knowledge/governance/CDB_CONSTITUTION.md
     - knowledge/governance/CDB_GOVERNANCE.md
     - knowledge/governance/CDB_AGENT_POLICY.md
+    - knowledge/governance/CDB_AGENT_CONTROL_PLANE.md
 ---
 # Canonical governance policies and rules.
 
@@ -18,6 +19,7 @@ relations:
 *   [CDB Constitution (CDB_CONSTITUTION.md)](CDB_CONSTITUTION.md)
 *   [CDB Governance (CDB_GOVERNANCE.md)](CDB_GOVERNANCE.md)
 *   [CDB Agent Policy (CDB_AGENT_POLICY.md)](CDB_AGENT_POLICY.md)
+*   [CDB Agent Control Plane (CDB_AGENT_CONTROL_PLANE.md)](CDB_AGENT_CONTROL_PLANE.md) — provider-neutral ACP architecture, authority matrix, lifecycle (`#4250`); distinct from `.github` Workflow Control Plane
 *   [CDB Trust Score Policy (CDB_TRUST_SCORE_POLICY.md)](CDB_TRUST_SCORE_POLICY.md)
 *   [ARVP Product Intent (ARVP_PRODUCT_INTENT.md)](ARVP_PRODUCT_INTENT.md) — north-star anchor for accelerated replay paper-mode platform
 
