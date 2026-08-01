@@ -144,7 +144,7 @@
         {
           "source_type": "coinmarketcap",
           "provider": "coinmarketcap",
-          "surface": "historical OHLCV / market pairs / global metrics (plan-dependent)",
+          "surface": "GET /v2/cryptocurrency/ohlcv/historical (primary); optional /v2/cryptocurrency/market-pairs/latest and /v1/global-metrics as plan-dependent context",
           "security_type_or_auth": "API key required for authenticated catalog; no key material stored in artifacts",
           "identifiers": {
             "cmc_id": "1",
@@ -155,13 +155,14 @@
             "id": "1",
             "time_start": "planned-utc",
             "time_end": "planned-utc",
-            "interval": "hourly"
+            "time_period": "hourly"
           },
-          "api_version": "v1",
+          "api_version": "v2",
           "read_only": true,
           "content_classification": "UNTRUSTED_INPUT",
           "notes": [
-            "Bind CMC ID mapping, server timestamp, and credit metadata as provenance.",
+            "Bind CMC ID mapping, server timestamp (status.timestamp), error_code/error_message, elapsed, and credit_count as provenance.",
+            "Prefer stable cmc_id over symbol-only mapping.",
             "Unavailable plan endpoints must not be silently simulated."
           ]
         }
@@ -300,7 +301,7 @@
         {
           "source_type": "coinmarketcap",
           "provider": "coinmarketcap",
-          "surface": "exchange market pairs / quote volume",
+          "surface": "GET /v2/cryptocurrency/market-pairs/latest (quote volume / pair liquidity context; plan-dependent)",
           "security_type_or_auth": "API key required for authenticated catalog; no key material stored in artifacts",
           "identifiers": {
             "cmc_id": "1",
@@ -311,9 +312,12 @@
             "id": "1",
             "convert": "USDT"
           },
-          "api_version": "v1",
+          "api_version": "v2",
           "read_only": true,
-          "content_classification": "UNTRUSTED_INPUT"
+          "content_classification": "UNTRUSTED_INPUT",
+          "notes": [
+            "Bind CMC ID mapping and status envelope metadata as provenance; plan tiers may restrict access."
+          ]
         }
       ],
       "dataset_binding_policy": {
@@ -730,7 +734,9 @@
     "may_write_lifecycle_transitions": false,
     "official_api_contract_present": false,
     "notes": [
-      "Public tickersage.com presents market analysis and heatmaps; no official API contract found for programmatic integration."
+      "Public tickersage.com presents market analysis and heatmaps.",
+      "No official public API contract was identified as of 2026-08-01.",
+      "Human visualization of already produced results only; no programmatic integration."
     ]
   },
   "authority_boundaries": {
@@ -777,17 +783,19 @@
     {
       "provider": "coinmarketcap",
       "official_domain": "coinmarketcap.com",
-      "document_title": "CoinMarketCap API Documentation v1",
-      "url": "https://coinmarketcap.com/api/documentation/v1/",
-      "retrieved_at": "2026-08-01T21:30:00Z",
+      "document_title": "CoinMarketCap API — cryptocurrency OHLCV/market-pairs reference",
+      "url": "https://coinmarketcap.com/api/documentation/pro-api-reference/cryptocurrency",
+      "retrieved_at": "2026-08-01T21:45:00Z",
       "relevant_statements": [
-        "API exposes real-time and historical market data, exchange data, global metrics, and DEX data.",
-        "Historical OHLCV and exchange market pairs are documented capability areas.",
-        "Plan tiers affect endpoint access, historical coverage, and call limits.",
-        "Response format/IDs guidance covers stable IDs, timestamps, and bundling."
+        "GET /v2/cryptocurrency/ohlcv/historical is the current historical OHLCV surface (time_period daily/hourly).",
+        "GET /v2/cryptocurrency/market-pairs/latest is the current market-pairs surface.",
+        "GET /v3/cryptocurrency/quotes/historical is the current historical quotes surface when quote series are needed.",
+        "Prefer stable cryptocurrency id mapping over symbol-only identifiers.",
+        "Status envelope includes timestamp, error_code, error_message, elapsed, and credit_count.",
+        "Plan tiers affect endpoint access, historical coverage, and call limits; availability is not absolute."
       ],
       "retrieval_limitations": [
-        "Landing documentation; plan-specific endpoint availability must be re-checked before any future live fetch."
+        "Plan-specific endpoint availability must be re-checked before any future live fetch; no credentials used in this slice."
       ]
     },
     {
@@ -828,7 +836,7 @@
       "retrieved_at": "2026-08-01T21:30:00Z",
       "relevant_statements": [
         "Public site presents data-driven market analysis, charts, and a market heatmap.",
-        "No official programmatic API contract was found on the public site."
+        "No official public API contract was identified as of 2026-08-01."
       ],
       "retrieval_limitations": [
         "No inventable API; TickerSage remains human visualization of already produced results only."

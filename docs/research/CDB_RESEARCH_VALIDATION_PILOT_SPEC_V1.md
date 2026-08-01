@@ -111,18 +111,19 @@ Forbidden in this slice:
 - `validation_authority: false`
 - `decision_authority: false`
 - Must not mutate metrics, weights, verdicts, or lifecycle transitions
-- Public site retrieved 2026-08-01 shows analysis/heatmap UI; **no official API
-  contract** found → human visualization option only
+- Public site retrieved 2026-08-01 shows analysis/heatmap UI.
+- No official public API contract was identified as of 2026-08-01.
+- Human visualization option only; no programmatic integration
 
 ## Official external docs (retrieved 2026-08-01)
 
 | Provider | Source used | Key binding for pilot |
 |---|---|---|
 | Binance | Official GitHub spot REST docs (`rest-api.md`); developers.binance.com HTML JS-blocked | Public `NONE` market data: klines/trades/aggTrades/depth; no TRADE/USER_DATA |
-| CoinMarketCap | Official API docs landing | Historical OHLCV, pairs, global metrics; ID mapping; plan-dependent availability |
+| CoinMarketCap | Official cryptocurrency API reference | `/v2/.../ohlcv/historical`, `/v2/.../market-pairs/latest`, optional `/v3/.../quotes/historical`; ID mapping; plan-dependent availability |
 | Token Terminal | Official project historical metrics docs | Partial success + `errors` array; bearer auth; project/metric/chain/product bindings |
 | Bigdata.com | Official REST introduction + docs index | Distinguish Search vs Research Agent vs Workflows; pilot uses REST Search |
-| TickerSage | Public site | No API contract; visualization only |
+| TickerSage | Public site | No official public API contract was identified as of 2026-08-01; visualization only |
 
 CDB canon and CDB contracts remain leading over external docs.
 
