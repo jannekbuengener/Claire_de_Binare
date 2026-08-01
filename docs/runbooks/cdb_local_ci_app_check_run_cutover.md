@@ -1,34 +1,35 @@
 # cdb-local-ci App-bound Check Run Cutover
 
-Status: Phase A code-ready preparation (#4170)
-Authority: Operational runbook for migrating the required merge context from
-interim Commit Status (`app_id=null`) to a GitHub-App-bound Check Run.
-Live Branch Protection is **not** changed by the publisher code PR.
+Status: **Phase D COMPLETE** (live cutover 2026-08-01, #4170 closed)
+Authority: Operational runbook for the migration from interim Commit Status
+(`app_id=null`) to a GitHub-App-bound Check Run. Live Branch Protection now
+requires Check Run `cdb-local-ci` with `app_id=4410232`.
 
 LR remains **NO-GO**. This runbook does not authorize live trading.
 
 ---
 
-## Why Commit Status `app_id=null` is not the target model
+## Why Commit Status `app_id=null` was not the target model
 
-After #4169 the sole Branch Protection required context on `main` is
+After #4169 the sole Branch Protection required context on `main` was
 `cdb-local-ci` as a **Commit Status** with `app_id: null`. Any credential with
-Commit statuses: Write can POST `success` for that context. Evidence gates in
+Commit statuses: Write could POST `success` for that context. Evidence gates in
 `ci/publisher/` reduce accidental misuse, but they do not cryptographically bind
 the status to a single publisher identity.
 
-Target model: only a dedicated GitHub App may create the required Check Run
-named `cdb-local-ci`, bound to App identity, exact PR head SHA, and validated
-local CI evidence.
+**Live target (met):** only the dedicated GitHub App (`4410232`) may satisfy the
+required Check Run named `cdb-local-ci`, bound to App identity, exact PR head
+SHA, and validated local CI evidence. Same-named Commit Status is **not**
+merge-sufficient.
 
 ---
 
 ## Publisher backend architecture
 
-| Backend | CLI | Auth | GitHub object |
-|---|---|---|---|
-| `commit-status` (default) | `--publisher-backend commit-status` | `GITHUB_TOKEN` / `GH_TOKEN` / `gh auth` via existing resolver | Commit Status |
-| `check-run` (explicit) | `--publisher-backend check-run` | App credentials auto-mint **or** `CDB_GH_APP_INSTALLATION_TOKEN` (never PAT/`gh`) | Check Run |
+| Backend | CLI | Auth | GitHub object | Satisfies BP? |
+|---|---|---|---|---|
+| `check-run` (**default**) | `--publisher-backend check-run` | App JWT auto-mint / `CDB_GH_APP_INSTALLATION_TOKEN` (never PAT/`gh`) | Check Run | **Yes** (`app_id=4410232`) |
+| `commit-status` (legacy) | `--publisher-backend commit-status` | `GITHUB_TOKEN` / `GH_TOKEN` / `gh auth` | Commit Status | **No** after Phase D |
 
 Shared fail-closed gates (unchanged): evidence validation, exact SHA bind,
 `--pr-number` for required context, local policy-gate mirror, dirty-worktree

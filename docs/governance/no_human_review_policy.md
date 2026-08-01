@@ -83,7 +83,7 @@ PR authors post this as a comment before merge:
 
 | Risk | Mitigation |
 |------|-----------|
-| Bad code merges without review | Required merge context on `main`: `cdb-local-ci` (Commit Status); Hosted Actions (`ci`, `policy-gate`) remain advisory/safety-relevant |
+| Bad code merges without review | Required merge context on `main`: `cdb-local-ci` (App Check Run `app_id=4410232`); Hosted Actions (`ci`, `policy-gate`) remain advisory/safety-relevant |
 | Schema/infra breakage | Runbooks required for infra PRs; enforcement scripts are opt-in operator steps |
 | Silent behavioral regression | Decision contract tests (`tests/contract/`), deterministic gate in conftest.py |
 | Accidental secret exposure | Auxiliary scans (for example `gitleaks`) plus PR hygiene; not a required merge context on `main` |
@@ -117,7 +117,7 @@ gh api repos/jannekbuengener/Claire_de_Binare/branches/main/protection
 
 | Setting | Last-known live value | Purpose |
 |---------|-------|---------|
-| `required_status_checks.contexts` | `["cdb-local-ci"]` | Sole merge-relevant required context on `main` (Commit Status) |
+| `required_status_checks.checks` | `[{"context":"cdb-local-ci","app_id":4410232}]` | Sole merge-relevant required context on `main` (App Check Run) |
 | `required_status_checks.strict` | `true` | Branch must be up-to-date |
 | `enforce_admins` | `true` | Admins also bound by checks |
 | `required_conversation_resolution` | `false` | Verify live — do not assume `true` |

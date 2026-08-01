@@ -1,30 +1,31 @@
 # CDB Local CI — GitHub App Cutover (Phase B/C Operator Contract)
 
-Status: Phase-B readiness (#4170) — credential-free preflight + operator sequence
-Authority: Operator runbook for the later App-bound Check Run cutover
-Does **not** install a GitHub App, mutate Branch Protection, publish Check Runs,
-or close #4170.
+Status: Phase D COMPLETE (#4170 CLOSED) — historical Phase-B/C operator contract
+kept for audit; live merge gate is App Check Run. Canon sync: #4280.
+Authority: Operator preflight / smoke sequence used before Phase D. Live Branch
+Protection and publisher default are documented in
+[`merge_policy_ci_gate.md`](./merge_policy_ci_gate.md) and
+[`cdb_local_ci_app_check_run_cutover.md`](./cdb_local_ci_app_check_run_cutover.md).
 
 LR remains **NO-GO**. This document does not authorize live trading.
 
-Related Phase-A code/runbook (already on `main` via PR #4214):
+Related Phase-A/D runbook:
 [`cdb_local_ci_app_check_run_cutover.md`](./cdb_local_ci_app_check_run_cutover.md)
 
 ---
 
 ## Current Trust Model
 
-| Item | Live state (until Phase D) |
+| Item | Live state (post Phase D / #4170) |
 |---|---|
 | Required merge context | `cdb-local-ci` |
-| GitHub object | **Commit Status** |
-| App binding | `app_id: null` |
-| Publisher default | `--publisher-backend commit-status` |
-| Risk | Any credential with Commit statuses: Write can POST `success` |
+| GitHub object | **App Check Run** |
+| App binding | `app_id: 4410232` |
+| Publisher default | `--publisher-backend check-run` (auto-mint) |
+| Commit Status same name | Does **not** satisfy Branch Protection |
 
-Phase A delivered `CheckRunBackend` behind an explicit flag. The live required
-context remains the interim Commit Status until a real App-bound smoke succeeds
-and a separate Human-GO authorizes Branch Protection cutover.
+Historical Phase A–C: Check Run behind flag; interim Commit Status until smoke
++ Human-GO cutover. That interim model is retired for merge.
 
 ---
 
