@@ -1,7 +1,7 @@
 {
   "$schema": "http://json-schema.org/draft-07/schema#",
   "title": "CDB Candidate Registry Entry v1",
-  "description": "GitHub-backed immutable candidate registry entry. Repo/artifact based; not a productive DB. GitHub is control plane, not validation authority.",
+  "description": "GitHub-backed immutable candidate registry entry. Repo/artifact based; not a productive DB. GitHub is control plane, not validation authority. Status-conditional bindings (G-01/G-02/G-04) are fail-closed via allOf if/then.",
   "type": "object",
   "additionalProperties": false,
   "required": [
@@ -167,5 +167,91 @@
         }
       }
     }
-  }
+  },
+  "allOf": [
+    {
+      "if": {
+        "properties": {
+          "status": {
+            "const": "VALIDATING"
+          }
+        },
+        "required": [
+          "status"
+        ]
+      },
+      "then": {
+        "required": [
+          "validation_manifest_id"
+        ],
+        "properties": {
+          "validation_manifest_id": {
+            "type": "string",
+            "pattern": "^vm-[a-z0-9][a-z0-9-]{2,80}$"
+          }
+        }
+      }
+    },
+    {
+      "if": {
+        "properties": {
+          "status": {
+            "const": "EVIDENCE_READY"
+          }
+        },
+        "required": [
+          "status"
+        ]
+      },
+      "then": {
+        "required": [
+          "run_id",
+          "evidence_id"
+        ],
+        "properties": {
+          "run_id": {
+            "type": "string",
+            "pattern": "^run-[a-z0-9][a-z0-9-]{2,80}$"
+          },
+          "evidence_id": {
+            "type": "string",
+            "pattern": "^ce-[a-z0-9][a-z0-9-]{2,80}$"
+          }
+        }
+      }
+    },
+    {
+      "if": {
+        "properties": {
+          "status": {
+            "const": "PAPER_CANDIDATE"
+          }
+        },
+        "required": [
+          "status"
+        ]
+      },
+      "then": {
+        "required": [
+          "run_id",
+          "evidence_id",
+          "decision_id"
+        ],
+        "properties": {
+          "run_id": {
+            "type": "string",
+            "pattern": "^run-[a-z0-9][a-z0-9-]{2,80}$"
+          },
+          "evidence_id": {
+            "type": "string",
+            "pattern": "^ce-[a-z0-9][a-z0-9-]{2,80}$"
+          },
+          "decision_id": {
+            "type": "string",
+            "pattern": "^dr-[a-z0-9][a-z0-9-]{2,80}$"
+          }
+        }
+      }
+    }
+  ]
 }
