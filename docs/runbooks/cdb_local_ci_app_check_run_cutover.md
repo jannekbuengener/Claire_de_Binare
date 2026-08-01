@@ -28,7 +28,7 @@ local CI evidence.
 | Backend | CLI | Auth | GitHub object |
 |---|---|---|---|
 | `commit-status` (default) | `--publisher-backend commit-status` | `GITHUB_TOKEN` / `GH_TOKEN` / `gh auth` via existing resolver | Commit Status |
-| `check-run` (explicit) | `--publisher-backend check-run` | **only** `CDB_GH_APP_INSTALLATION_TOKEN` | Check Run |
+| `check-run` (explicit) | `--publisher-backend check-run` | App credentials auto-mint **or** `CDB_GH_APP_INSTALLATION_TOKEN` (never PAT/`gh`) | Check Run |
 
 Shared fail-closed gates (unchanged): evidence validation, exact SHA bind,
 `--pr-number` for required context, local policy-gate mirror, dirty-worktree
@@ -82,15 +82,24 @@ path so Checks R/W + Metadata Read is the minimum for the Check Run writer.
 6. Do **not** reuse the Control-Board / Projects App as the local-ci publisher
    unless explicitly decided; least privilege prefers a dedicated App.
 
-### C_SHADOW_SMOKE (explicit credentials + Human-GO)
+### C_SHADOW_SMOKE (App credentials + Human-GO; publisher auto-mints)
 
 Recommended shadow name: `cdb-local-ci-app-preview` (not required).
 
+Phase C (#4170): the publisher mints a short-lived installation token from
+App ID + Installation ID + private key (path or inline). Manual
+`CDB_GH_APP_INSTALLATION_TOKEN` remains optional override.
+
 ```bash
-export CDB_GH_APP_INSTALLATION_TOKEN="<short-lived installation token>"
 export CDB_GH_APP_ID="<app_id>"
 export CDB_GH_APP_INSTALLATION_ID="<installation_id>"
+export CDB_GH_APP_PRIVATE_KEY_PATH="/path/to/cdb-local-ci-app.pem"
+# optional override: export CDB_GH_APP_INSTALLATION_TOKEN="<short-lived token>"
 
+# Disposable probe SHA (no full evidence gates); refuses required name cdb-local-ci:
+python -m ci.publisher app-auth-probe --commit-sha <exact_probe_sha>
+
+# Full evidence path for shadow Check Run (after dry-run OK + Human-GO):
 python -m ci.publisher dry-run \
   --publisher-backend check-run \
   --expected-app-id "$CDB_GH_APP_ID" \
@@ -100,7 +109,6 @@ python -m ci.publisher dry-run \
   --commit-sha <exact_pr_head_sha> \
   --pr-number <n>
 
-# Only after dry-run OK and Human-GO:
 python -m ci.publisher publish \
   --publisher-backend check-run \
   --expected-app-id "$CDB_GH_APP_ID" \
@@ -119,6 +127,8 @@ python -m ci.publisher inspect \
 ```
 
 Verify remote: `name`, `head_sha`, `conclusion`, `external_id`, **`app.id`**.
+On 403 / missing `checks:write` → **STOP** `BLOCKED_APP_PERMISSION`
+(no Commit Status bypass).
 
 ### D_CUTOVER (separate Human-GO; not this PR)
 
@@ -143,21 +153,24 @@ Verify remote: `name`, `head_sha`, `conclusion`, `external_id`, **`app.id`**.
 
 | Name | Kind | Notes |
 |---|---|---|
-| `CDB_GH_APP_INSTALLATION_TOKEN` | ephemeral secret | Installation token (~1h); mint outside publisher core |
-| `CDB_GH_APP_ID` | non-secret config | Expected App ID for readback |
-| `CDB_GH_APP_INSTALLATION_ID` | non-secret config | Expected installation ID |
-| Private Key | secret, external SSOT only | Never in repo, logs, issues, or PR bodies |
+| `CDB_GH_APP_ID` | non-secret config | Expected App ID for readback (+ JWT `iss`) |
+| `CDB_GH_APP_INSTALLATION_ID` | non-secret config | Installation used for token mint |
+| `CDB_GH_APP_PRIVATE_KEY_PATH` / `CDB_GH_APP_PRIVATE_KEY` | secret | PEM path (preferred) or inline; external SSOT only |
+| `CDB_GH_APP_INSTALLATION_TOKEN` | ephemeral secret | Optional override (~1h); else publisher auto-mints |
+
+Documented read aliases (User-env convenience): `CDB_GITHUB_APP_ID`,
+`CDB_GITHUB_APP_INSTALLATION_ID`, `CDB_GITHUB_APP_PRIVATE_KEY_PATH`.
 
 Rotation:
 
 1. Generate new Private Key in GitHub App settings (or rotate App).
 2. Store in external secrets SSOT; sync to GitHub repo secrets if needed.
 3. Revoke old key.
-4. Mint fresh installation tokens from the new key via a separate ops path.
-5. Re-run shadow smoke.
+4. Re-run shadow smoke / `app-auth-probe` (publisher mints a fresh installation token).
 
-Publisher core **consumes** an installation token; it does not mint from a
-Private Key in this slice.
+Publisher Check Run mode **auto-mints** the installation token when App
+credentials are present (`ci.publisher.app_auth`). Explicit
+`CDB_GH_APP_INSTALLATION_TOKEN` still wins when set.
 
 Collision note: Control-Board workflows already document `CDB_GH_APP_ID` /
 `PRIVATE_KEY` / `INSTALLATION_ID`. Prefer a **dedicated** local-ci App and
@@ -174,7 +187,7 @@ secrets blindly.
 - [ ] Permission matrix matches this runbook (no prohibited grants)
 - [ ] Shadow check name `cdb-local-ci-app-preview` chosen
 - [ ] Test PR number and exact head SHA recorded
-- [ ] Installation token available in env (not argv, not logged)
+- [ ] App PEM path or inline key available (or optional installation token override)
 - [ ] Local evidence validated for that SHA
 
 ---
@@ -237,14 +250,14 @@ secret_names:
   installation_token: CDB_GH_APP_INSTALLATION_TOKEN
   expected_app_id: CDB_GH_APP_ID
   expected_installation_id: CDB_GH_APP_INSTALLATION_ID
+  private_key_path: CDB_GH_APP_PRIVATE_KEY_PATH
+  private_key_inline: CDB_GH_APP_PRIVATE_KEY
 private_key_storage: "External secrets SSOT only (never repository)"
-token_minting_responsibility: "Human/ops outside publisher core"
+token_minting_responsibility: "Publisher auto-mint via ci.publisher.app_auth (Phase C); optional INSTALLATION_TOKEN override"
 shadow_check_name: cdb-local-ci-app-preview
 shadow_smoke_command: >
-  python -m ci.publisher publish --publisher-backend check-run
-  --check-run-name cdb-local-ci-app-preview
-  --expected-app-id <ID> --expected-installation-id <ID>
-  --evidence-dir ci/artifacts/<run_id> --commit-sha <SHA> --pr-number <N>
+  python -m ci.publisher app-auth-probe --commit-sha <PROBE_SHA>
+phase_c_completed_by_code: true
 expected_remote_app_id_verification: "GET check-run → app.id == CDB_GH_APP_ID"
 branch_protection_before:
   required_contexts: ["cdb-local-ci"]
@@ -265,5 +278,5 @@ human_go_points:
 unresolved_risks:
   - "Live BP not writable/readable by cloud integration (403 observed)"
   - "Control-Board CDB_GH_APP_* name collision if shared carelessly"
-  - "Installation token minting ops path not automated in this PR"
+  - "Live App checks:write still required for probe; BP cutover remains Phase D Human-GO"
 ```

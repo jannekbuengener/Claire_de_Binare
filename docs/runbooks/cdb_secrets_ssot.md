@@ -55,14 +55,22 @@ powershell -File scripts/secrets/sync_cdb_secrets.ps1
     (non-secret config). Prefer a **dedicated** local-ci App; do not blindly
     overwrite Control-Board values.
 - `CDB_GH_APP_PRIVATE_KEY`:
-  - GitHub App private key (optional, required with app id for minting).
-  - Never commit; store only in external SSOT. Publisher core does not mint
-    tokens from this key (#4170).
+  - GitHub App private key (optional inline PEM; required with app id for minting
+    when path is unset).
+  - Never commit; store only in external SSOT.
+- `CDB_GH_APP_PRIVATE_KEY_PATH` (local operator input, preferred):
+  - Absolute path to PEM in the external SSOT directory (e.g.
+    `...\Documents\.secrets\.cdb\cdb-local-ci-app.pem`).
+  - Prefer path over inline env when both are available locally.
+  - Documented alias: `CDB_GITHUB_APP_PRIVATE_KEY_PATH`.
 - `CDB_GH_APP_INSTALLATION_ID`:
   - Optional explicit installation id for app path / Check Run expected ID.
+  - Documented alias: `CDB_GITHUB_APP_INSTALLATION_ID` (with
+    `CDB_GITHUB_APP_ID` for App ID).
 - `CDB_GH_APP_INSTALLATION_TOKEN` (publisher Check Run mode, ephemeral):
-  - Short-lived installation token consumed by
-    `--publisher-backend check-run`. Not minted by the publisher itself.
+  - Short-lived installation token for `--publisher-backend check-run`.
+  - Optional override; when unset, `ci.publisher.app_auth` auto-mints from
+    App ID + Installation ID + PEM (#4170 Phase C).
   - Never pass as CLI argument; never log. See
     [`cdb_local_ci_app_check_run_cutover.md`](cdb_local_ci_app_check_run_cutover.md).
 

@@ -11,6 +11,7 @@ from typing import Any, Sequence
 from ci.lib.evidence import DEFAULT_FRESHNESS_HOURS, utc_now
 from ci.lib.gitinfo import EXPECTED_REPOSITORY, collect_git_info
 from ci.publisher import DEFAULT_STATUS_CONTEXT, PREVIEW_STATUS_CONTEXT
+from ci.publisher.app_auth import credential_summary
 from ci.publisher.backends import (
     ALLOWED_BACKENDS,
     CheckRunBackend,
@@ -39,7 +40,12 @@ from ci.publisher.ledger import (
     find_exact_publication,
     load_ledger,
 )
-from ci.publisher.models import CHECK_RUN_NAME, SHADOW_CHECK_RUN_NAME
+from ci.publisher.models import (
+    CHECK_RUN_NAME,
+    SHADOW_CHECK_RUN_NAME,
+    CheckRunPayload,
+    build_check_run_external_id,
+)
 from ci.publisher.redaction import redact_mapping, redact_text
 from tools.ci.policy_gate_local import evaluate_policy_gate
 
@@ -816,14 +822,167 @@ def cmd_inspect(args: argparse.Namespace) -> int:
     return SUCCESS_EXIT
 
 
+def cmd_app_auth_probe(args: argparse.Namespace) -> int:
+    """Mint App installation token and write SHADOW Check Run only (#4170 Phase C).
+
+    Refuses required name ``cdb-local-ci`` and any Commit Status write. Intended
+    for disposable probe SHAs — bypasses full evidence gates by design.
+    """
+    commit_sha = (args.commit_sha or "").strip().lower()
+    if not commit_sha or len(commit_sha) != 40:
+        print(
+            "REJECT: --commit-sha must be the exact 40-char probe SHA",
+            file=sys.stderr,
+        )
+        _print_json(
+            {
+                "command": "app-auth-probe",
+                "ok": False,
+                "reason": "exact 40-char commit SHA required",
+            }
+        )
+        return USAGE_EXIT
+
+    check_name = str(getattr(args, "check_run_name", None) or SHADOW_CHECK_RUN_NAME)
+    if check_name != SHADOW_CHECK_RUN_NAME:
+        print(
+            f"REJECT: app-auth-probe only allows check-run name "
+            f"{SHADOW_CHECK_RUN_NAME!r} (refused {check_name!r})",
+            file=sys.stderr,
+        )
+        _print_json(
+            {
+                "command": "app-auth-probe",
+                "ok": False,
+                "reason": f"refused non-shadow check-run name {check_name!r}",
+                "allowed_name": SHADOW_CHECK_RUN_NAME,
+            }
+        )
+        return FAILURE_EXIT
+    if check_name == CHECK_RUN_NAME:
+        print(
+            f"REJECT: app-auth-probe refuses required name {CHECK_RUN_NAME!r}",
+            file=sys.stderr,
+        )
+        return FAILURE_EXIT
+
+    repository = str(args.repository or EXPECTED_REPOSITORY)
+    if repository != EXPECTED_REPOSITORY:
+        print(
+            f"REJECT: repository must be {EXPECTED_REPOSITORY}",
+            file=sys.stderr,
+        )
+        return FAILURE_EXIT
+
+    try:
+        owner, repo = repository.split("/", 1)
+        app_id, installation_id = _cli_app_ids(args)
+        expected_app_id = resolve_expected_app_id(cli_value=app_id, require=True)
+        expected_installation_id = resolve_expected_installation_id(
+            cli_value=installation_id, require=True
+        )
+        assert expected_app_id is not None and expected_installation_id is not None
+        token = resolve_app_installation_token()
+        backend = CheckRunBackend(
+            token=token,
+            expected_app_id=expected_app_id,
+            expected_installation_id=expected_installation_id,
+            owner=owner,
+            repo=repo,
+        )
+        now = utc_now()
+        run_id = f"app-auth-probe-{commit_sha[:12]}"
+        payload = CheckRunPayload(
+            name=SHADOW_CHECK_RUN_NAME,
+            head_sha=commit_sha,
+            conclusion="success",
+            started_at=now,
+            completed_at=now,
+            external_id=build_check_run_external_id(
+                run_id=run_id, commit_sha=commit_sha
+            ),
+            output_title="cdb-local-ci App auth probe (shadow)",
+            output_summary=(
+                "Phase-C shadow probe: GitHub App JWT auto-mint + Check Run write. "
+                "Not the required cdb-local-ci context."
+            ),
+        )
+        if args.dry_run:
+            result = backend.publish(check_run_payload=payload, dry_run=True)
+            _print_json(
+                {
+                    "command": "app-auth-probe",
+                    "ok": True,
+                    "dry_run": True,
+                    "sha": commit_sha,
+                    "check_run_name": SHADOW_CHECK_RUN_NAME,
+                    "expected_app_id": expected_app_id,
+                    "expected_installation_id": expected_installation_id,
+                    "credentials": credential_summary(),
+                    "remote_verification_status": result.remote_verification_status,
+                }
+            )
+            return SUCCESS_EXIT
+
+        result = backend.publish(check_run_payload=payload, dry_run=False)
+        _print_json(
+            {
+                "command": "app-auth-probe",
+                "ok": True,
+                "dry_run": False,
+                "sha": commit_sha,
+                "check_run_name": result.check_run_name,
+                "github_check_run_id": result.remote_id,
+                "app_id": result.github_app_id,
+                "installation_id": result.github_installation_id,
+                "external_id": result.external_id,
+                "remote_verification_status": result.remote_verification_status,
+                "idempotent_noop": result.idempotent_noop,
+                "credentials": credential_summary(),
+            }
+        )
+        return SUCCESS_EXIT
+    except AuthenticationError as exc:
+        message = redact_text(str(exc))
+        blocked = (
+            "insufficient app permission" in message.lower()
+            or "checks" in message.lower()
+        )
+        status = "BLOCKED_APP_PERMISSION" if blocked else "AUTH_FAILED"
+        print(f"REJECT: {message}", file=sys.stderr)
+        _print_json(
+            {
+                "command": "app-auth-probe",
+                "ok": False,
+                "status": status,
+                "reason": message,
+                "credentials": credential_summary(),
+            }
+        )
+        return FAILURE_EXIT
+    except (GitHubApiError, PublisherError) as exc:
+        message = redact_text(str(exc))
+        print(f"REJECT: {message}", file=sys.stderr)
+        _print_json(
+            {
+                "command": "app-auth-probe",
+                "ok": False,
+                "reason": message,
+                "credentials": credential_summary(),
+            }
+        )
+        return FAILURE_EXIT
+
+
 def build_parser() -> argparse.ArgumentParser:
     parser = argparse.ArgumentParser(
         prog="python -m ci.publisher",
         description=(
             "Validate local Docker CI evidence and publish a commit-bound "
             "GitHub Commit Status (default) or an explicit App-bound Check Run "
-            "(--publisher-backend check-run). Branch Protection is not changed "
-            "by this tool."
+            "(--publisher-backend check-run). Check Run mode auto-mints an "
+            "installation token when App ID/Installation ID/PEM are set. "
+            "Branch Protection is not changed by this tool."
         ),
     )
     sub = parser.add_subparsers(dest="command", required=True)
@@ -854,6 +1013,48 @@ def build_parser() -> argparse.ArgumentParser:
             action.required = False
             action.default = "."
     inspect.set_defaults(func=cmd_inspect)
+
+    probe = sub.add_parser(
+        "app-auth-probe",
+        help=(
+            f"Mint App installation token and write shadow Check Run "
+            f"{SHADOW_CHECK_RUN_NAME} only (no evidence gates; refuses "
+            f"{CHECK_RUN_NAME})"
+        ),
+    )
+    probe.add_argument(
+        "--commit-sha",
+        required=True,
+        help="Exact 40-char probe commit SHA (not main)",
+    )
+    probe.add_argument(
+        "--repository",
+        default=EXPECTED_REPOSITORY,
+        help="owner/name (must be jannekbuengener/Claire_de_Binare)",
+    )
+    probe.add_argument(
+        "--expected-app-id",
+        type=int,
+        default=0,
+        help="Expected GitHub App ID (or CDB_GH_APP_ID / alias)",
+    )
+    probe.add_argument(
+        "--expected-installation-id",
+        type=int,
+        default=0,
+        help="Expected installation ID (or CDB_GH_APP_INSTALLATION_ID / alias)",
+    )
+    probe.add_argument(
+        "--check-run-name",
+        default=SHADOW_CHECK_RUN_NAME,
+        help=f"Must be {SHADOW_CHECK_RUN_NAME} (default)",
+    )
+    probe.add_argument(
+        "--dry-run",
+        action="store_true",
+        help="Resolve credentials path and build payload without GitHub write",
+    )
+    probe.set_defaults(func=cmd_app_auth_probe)
 
     return parser
 
