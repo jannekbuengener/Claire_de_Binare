@@ -1,0 +1,32 @@
+{
+  "schema_version": "cdb.compiler_report.v1",
+  "compiler_contract_version": "cdb.strategy_candidate_compiler.v1",
+  "report_id": "cr-wave2-example-ready",
+  "status": "READY",
+  "research_brief_id": "rb-wave1-example-btc-trend",
+  "research_brief_version": "v1",
+  "research_brief_content_hash": "sha256:bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb",
+  "source_evidence_refs": [
+    {
+      "evidence_id": "se-wave2-binance-btc-1m",
+      "content_hash": "sha256:cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc"
+    },
+    {
+      "evidence_id": "se-wave2-cmc-global-regime",
+      "content_hash": "sha256:cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc"
+    }
+  ],
+  "claire_context_ref": "repo-only:docs/research/CDB_STRATEGY_CANDIDATE_COMPILER_V1.md",
+  "candidate_id": "sc-wave1-btc-trend-breakout",
+  "candidate_version": "v1",
+  "output_hash": "sha256:dddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddd",
+  "reject_reasons": [],
+  "deterministic": true,
+  "safety_boundaries": {
+    "ready_is_not_validation_pass": true,
+    "ready_is_not_paper_candidate": true,
+    "ready_is_not_live_go": true,
+    "compiler_must_not_promote": true,
+    "lr_status": "NO-GO"
+  }
+}

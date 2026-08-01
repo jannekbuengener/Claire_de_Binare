@@ -1,0 +1,165 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "title": "CDB Candidate Transition v1",
+  "description": "Auditable registry status transition. Every substantive status change requires a DecisionRecord. PAPER_CANDIDATE additionally requires PASS-compatible CandidateEvidence for the exact candidate_version. Relational checks are enforced by tools/research_validation/wave2_cross_contract.py.",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "schema_version",
+    "transition_id",
+    "candidate_id",
+    "candidate_version",
+    "from_status",
+    "to_status",
+    "decision_id",
+    "decision_record_hash",
+    "transitioned_at",
+    "identity_separation",
+    "safety_boundaries"
+  ],
+  "properties": {
+    "schema_version": {
+      "const": "cdb.candidate_transition.v1"
+    },
+    "transition_id": {
+      "type": "string",
+      "pattern": "^ct-[a-z0-9][a-z0-9-]{2,80}$"
+    },
+    "candidate_id": {
+      "type": "string",
+      "pattern": "^sc-[a-z0-9][a-z0-9-]{2,80}$"
+    },
+    "candidate_version": {
+      "type": "string",
+      "pattern": "^v[0-9]+$"
+    },
+    "from_status": {
+      "type": "string",
+      "enum": [
+        "IDEA",
+        "SPECIFIED",
+        "READY_FOR_VALIDATION",
+        "VALIDATING",
+        "EVIDENCE_READY",
+        "REJECTED",
+        "REVISE",
+        "PARKED",
+        "PAPER_CANDIDATE"
+      ]
+    },
+    "to_status": {
+      "type": "string",
+      "enum": [
+        "IDEA",
+        "SPECIFIED",
+        "READY_FOR_VALIDATION",
+        "VALIDATING",
+        "EVIDENCE_READY",
+        "REJECTED",
+        "REVISE",
+        "PARKED",
+        "PAPER_CANDIDATE"
+      ]
+    },
+    "decision_id": {
+      "type": "string",
+      "pattern": "^dr-[a-z0-9][a-z0-9-]{2,80}$"
+    },
+    "decision_record_hash": {
+      "type": "string",
+      "pattern": "^sha256:[a-f0-9]{64}$"
+    },
+    "validation_manifest_id": {
+      "oneOf": [
+        {
+          "type": "null"
+        },
+        {
+          "type": "string",
+          "pattern": "^vm-[a-z0-9][a-z0-9-]{2,80}$"
+        }
+      ]
+    },
+    "run_id": {
+      "oneOf": [
+        {
+          "type": "null"
+        },
+        {
+          "type": "string",
+          "pattern": "^run-[a-z0-9][a-z0-9-]{2,80}$"
+        }
+      ]
+    },
+    "evidence_id": {
+      "oneOf": [
+        {
+          "type": "null"
+        },
+        {
+          "type": "string",
+          "pattern": "^ce-[a-z0-9][a-z0-9-]{2,80}$"
+        }
+      ]
+    },
+    "evidence_hash": {
+      "oneOf": [
+        {
+          "type": "null"
+        },
+        {
+          "type": "string",
+          "pattern": "^sha256:[a-f0-9]{64}$"
+        }
+      ]
+    },
+    "transitioned_at": {
+      "type": "string",
+      "format": "date-time"
+    },
+    "identity_separation": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "issue_id_is_not_candidate_id",
+        "candidate_id_is_not_run_id",
+        "run_id_is_not_evidence_id"
+      ],
+      "properties": {
+        "issue_id_is_not_candidate_id": {
+          "const": true
+        },
+        "candidate_id_is_not_run_id": {
+          "const": true
+        },
+        "run_id_is_not_evidence_id": {
+          "const": true
+        }
+      }
+    },
+    "safety_boundaries": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "no_silent_overwrite",
+        "paper_candidate_is_not_live_go",
+        "paper_candidate_is_not_paper_go",
+        "lr_status"
+      ],
+      "properties": {
+        "no_silent_overwrite": {
+          "const": true
+        },
+        "paper_candidate_is_not_live_go": {
+          "const": true
+        },
+        "paper_candidate_is_not_paper_go": {
+          "const": true
+        },
+        "lr_status": {
+          "const": "NO-GO"
+        }
+      }
+    }
+  }
+}
