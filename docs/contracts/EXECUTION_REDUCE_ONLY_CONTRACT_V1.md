@@ -85,6 +85,24 @@ Reduce-only-Fills verantwortlich. Der DB-Writer persistiert das Trade-Artefakt,
 überspringt aber eine zweite Positionsanwendung, wenn
 `position_update_owner=execution_reduce_only_v1` vorliegt.
 
+### Explicit zero fill (Issue `#4261`, Residual `FILLED_QUANTITY_ZERO_FALLBACK`)
+
+`DatabaseWriter.resolve_fill_quantity` trennt Missing / Null / Zero / Positive /
+Invalid ohne Python-Truthiness:
+
+| Zustand | Bedeutung | Verhalten |
+| --- | --- | --- |
+| `FIELD_MISSING` | weder `filled_quantity` noch `filled_size` im Payload | Legacy-Fallback auf `quantity`/`size` nur dann |
+| `FIELD_NULL` | Primary-Key vorhanden, Wert `null`/`None` | fail-closed; kein Fallback auf requested qty |
+| `FIELD_ZERO` | explizit numerisch `0` | bekannte Null-Füllmenge; **kein** Trade-/Positions-Insert |
+| `FIELD_POSITIVE` | valide positive Füllmenge | normal persistieren |
+| `FIELD_INVALID` | negativ, NaN, nicht numerisch | fail-closed |
+
+Verboten: `payload.get("filled_quantity") or payload.get("quantity")` und
+äquivalente falsy-`or`-Ketten. Ein `REJECTED`/`REDUCE_ONLY_REJECTED`-Attempt mit
+`filled_quantity=0` bleibt dadurch als nicht ausgeführt erkennbar und retryfähig
+nach dem Attempt-Contract.
+
 ## Reason Codes
 
 - `REDUCE_ONLY_POSITION_UNKNOWN`
