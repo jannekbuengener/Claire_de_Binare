@@ -1,14 +1,11 @@
 name: Security Scan
 
-# Weekly scan + PR trigger for infrastructure changes
-# Issue #97: Trivy Container Scanning
+# Bimonthly automatic image scan (1st of even months, 02:00 UTC) plus manual
+# workflow_dispatch override for urgent CVE checks. Push/PR triggers removed
+# to avoid per-merge cost (#4275). Issue #97: Trivy Container Scanning.
 on:
-  push:
-    branches: [main]
-  # NOISE-FREEZE (#2613): push auto-trigger disabled due to billing/account-locked
-  # RESTORED (#3659): billing recovery complete, trigger re-enabled
   schedule:
-    - cron: '0 2 * * 1'  # Monday 02:00 UTC
+    - cron: '0 2 1 2,4,6,8,10,12 *'  # 1st of even months, 02:00 UTC
   workflow_dispatch:
 
 permissions:
@@ -395,7 +392,7 @@ jobs:
 # 1. Base image scans (Redis/Postgres) set exit-code: false
 #    - gosu CVEs are documented in docs/security/TRIAGE_RUNBOOK.md
 #    - Attack surface: minimal (startup-only, no network exposure)
-#    - Weekly scans monitor for NEW vulnerabilities
+#    - Bimonthly scans monitor for NEW vulnerabilities
 #
 # 2. Custom image scans are report-only
 #    - pip 25.3 resolves CVE-2025-8869
