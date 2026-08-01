@@ -23,6 +23,11 @@ Postgres schema, migrations, and least-privilege scripts for CDB.
 
 Use project Makefile/operator scripts documented in `docs/db/index.md` and playbooks under `knowledge/playbooks/03_DB_*` — do not apply migrations ad hoc without migration runner discipline.
 
+### Reduce-only ledger (`012_reduce_only_execution_contract.sql`, Issue #4261)
+
+- **Fresh Postgres volume**: `compose.blue.yml` and `tls.yml` mount migration `012` into `docker-entrypoint-initdb.d` (between `011` and `013` on BLUE). Lab overlays (`base.yml`, `test.yml`) already mount it.
+- **Existing `postgres_data` volume**: initdb does **not** re-run. Apply the idempotent SQL (`CREATE … IF NOT EXISTS`) via `infrastructure/scripts/db_migration_runner.ps1 -ApplyMigrations` under explicit Operator-GO. Agents must not apply migrations to productive volumes without that gate.
+
 ## SSOT boundary
 
 Postgres is trading SSOT; SurrealDB remains experimental mirror (see `infrastructure/surrealdb/README.md`). LR **NO-GO**.

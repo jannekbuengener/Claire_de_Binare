@@ -37,6 +37,14 @@ Der Claim wird vor Submission in `reduce_only_executions` unter der
 deterministischen `order_id` persistiert. Eine identische `order_id` wird nicht
 erneut submitted.
 
+Schema-Wiring (Issue `#4261`): Migration
+`012_reduce_only_execution_contract.sql` ist auf kanonischem BLUE
+(`compose.blue.yml`) und dem TLS-Postgres-Overlay (`tls.yml`) als initdb-Mount
+verdrahtet. Bestehende Volumes erhalten die Tabelle nicht über initdb — der
+Operator wendet die idempotente Migration über
+`infrastructure/scripts/db_migration_runner.ps1 -ApplyMigrations` an
+(explizites Operator-GO; siehe `infrastructure/database/README.md`).
+
 ## Fill, Partial Fill und Rejection
 
 - `FILLED`: nur die tatsächliche `filled_quantity` wird angewandt.
