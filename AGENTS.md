@@ -306,6 +306,15 @@ OpenCode skill surface zusaetzlich: `.opencode/skills/` (gezielt laden, nicht pa
 
 - **Context Brain first.** Jeder Agenten-Prompt MUSS vor Repo-Reads einen Context Brain Preflight versuchen. Repo-Fallback ist nur nach belegtem Fehlversuch erlaubt. Siehe `agents/AGENTS.md` § Context Brain Preflight Gate (inkl. Fallback-Klassifikationsmatrix).
 - **Fallback-Klassifikation hart:** `repo_fallback_reason=unavailable` ist NUR erlaubt, wenn Context Tools wirklich nicht verfuegbar sind. Bei verfuegbarem Tool + LOW/no Records ist `insufficient_evidence` oder `missing_record` korrekt. Falsche Klassifikation blockiert den Workflow (`HOLD_BOOTLOADER_EVIDENCE_MISCLASSIFIED`).
+- **Delivery und Merge sind getrennte Auftraege (PR-Flow v1).** Eine normale
+  Issue-Session routet zuerst (`cdb-pr-router`), liefert das Issue vollstaendig
+  in den zugewiesenen offenen PR und endet mit `DONE_SLICE_ADDED_TO_BATCH_PR`.
+  Ein kompatibler offener PR hat Vorrang vor einem neuen PR. Der
+  Delivery-Agent mergt nicht, startet die PR-Acceptance-Kette nicht,
+  publiziert kein `cdb-local-ci` und schliesst kein Issue; PR und Issue
+  bleiben bis zum verifizierten Merge offen. Der Merge laeuft in einer separat
+  gestarteten Merge-Session. SSOT:
+  [`docs/runbooks/PR_ROUTING_AND_BATCH_MERGE_POLICY.md`](docs/runbooks/PR_ROUTING_AND_BATCH_MERGE_POLICY.md).
 - Read `knowledge/governance/CDB_AGENT_POLICY.md` section 4 before any write.
 - Respect single-writer locks, explicit stop signals, and write gates.
 - `DELIVERY_APPROVED.yaml` is human-controlled; agents must not modify it.
