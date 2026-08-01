@@ -2376,18 +2376,25 @@ class RiskManager:
     def _acquire_paper_unwind_claim(
         self,
         *,
-        order_id: str,
+        logical_operation_key: str,
         symbol: str,
         side: str,
         quantity: float | Decimal,
-    ) -> str:
-        """Acquire durable exclusive claim before externally visible unwind dispatch.
+    ) -> dict:
+        """Acquire durable exclusive attempt-claim before unwind dispatch.
 
-        Returns one of the PAPER_UNWIND_* outcome codes. Only
-        ``DISPATCH_ALLOWED`` authorizes ``send_order``.
+        Returns a dict with ``outcome`` (PAPER_UNWIND_* code) and, when dispatch
+        is allowed, ``order_id`` / ``attempt_number`` for the concrete attempt.
+        Only ``DISPATCH_ALLOWED`` authorizes ``send_order``.
         """
-        if not order_id:
-            return self.PAPER_UNWIND_CLAIM_NOT_ACQUIRED
+        empty = {
+            "outcome": self.PAPER_UNWIND_CLAIM_NOT_ACQUIRED,
+            "order_id": None,
+            "attempt_number": None,
+            "retry_decision": None,
+        }
+        if not logical_operation_key:
+            return empty
         try:
             claimer = self._ensure_reduce_only_claimer()
         except Exception as exc:
@@ -2395,11 +2402,14 @@ class RiskManager:
                 "PAPER_AUTO_UNWIND claimer unavailable (fail-closed): %s",
                 exc,
             )
-            return self.PAPER_UNWIND_PERSISTENCE_UNAVAILABLE
+            return {
+                **empty,
+                "outcome": self.PAPER_UNWIND_PERSISTENCE_UNAVAILABLE,
+            }
 
         try:
-            result = claimer.prepare_reduce_only(
-                order_id=order_id,
+            result = claimer.prepare_reduce_only_attempt(
+                logical_operation_key=logical_operation_key,
                 symbol=symbol,
                 side=side,
                 requested_quantity=Decimal(str(quantity)),
@@ -2408,46 +2418,87 @@ class RiskManager:
             )
         except Exception as exc:
             logger.error(
-                "PAPER_AUTO_UNWIND claim failed closed order_id=%s: %s",
-                order_id,
+                "PAPER_AUTO_UNWIND claim failed closed logical_key=%s: %s",
+                logical_operation_key,
                 exc,
             )
-            return self.PAPER_UNWIND_PERSISTENCE_UNAVAILABLE
+            return {
+                **empty,
+                "outcome": self.PAPER_UNWIND_PERSISTENCE_UNAVAILABLE,
+            }
 
         if result.get("allowed"):
-            return self.PAPER_UNWIND_DISPATCH_ALLOWED
+            return {
+                "outcome": self.PAPER_UNWIND_DISPATCH_ALLOWED,
+                "order_id": result.get("order_id"),
+                "attempt_number": result.get("attempt_number"),
+                "retry_decision": result.get("retry_decision"),
+            }
 
         reason = str(result.get("reason_code") or "")
-        if result.get("duplicate"):
-            return self.PAPER_UNWIND_CLAIM_ALREADY_EXISTS
+        retry_decision = str(result.get("retry_decision") or "")
+        if result.get("duplicate") or retry_decision.startswith("BLOCKED_"):
+            outcome = self.PAPER_UNWIND_CLAIM_ALREADY_EXISTS
+            if retry_decision in {
+                "BLOCKED_NON_RETRYABLE",
+                "BLOCKED_MAX_ATTEMPTS",
+            }:
+                outcome = self.PAPER_UNWIND_BLOCKED
+            return {
+                "outcome": outcome,
+                "order_id": result.get("order_id"),
+                "attempt_number": result.get("attempt_number"),
+                "retry_decision": retry_decision,
+            }
         if reason in {
             "REDUCE_ONLY_POSITION_UNKNOWN",
         }:
-            return self.PAPER_UNWIND_POSITION_UNKNOWN
+            return {
+                **empty,
+                "outcome": self.PAPER_UNWIND_POSITION_UNKNOWN,
+                "retry_decision": retry_decision or None,
+            }
         if reason in {
             "REDUCE_ONLY_NO_POSITION",
             "REDUCE_ONLY_CONCURRENT_CLAIM_BLOCKED",
             "REDUCE_ONLY_SIDE_MISMATCH",
             "REDUCE_ONLY_INVALID_QUANTITY",
         }:
-            return self.PAPER_UNWIND_CLAIM_NOT_ACQUIRED
-        return self.PAPER_UNWIND_BLOCKED
+            return {
+                **empty,
+                "outcome": self.PAPER_UNWIND_CLAIM_NOT_ACQUIRED,
+                "retry_decision": retry_decision or None,
+            }
+        return {
+            **empty,
+            "outcome": self.PAPER_UNWIND_BLOCKED,
+            "retry_decision": retry_decision or None,
+        }
 
-    def _dispatch_paper_unwind_order(self, order: Order, *, log_label: str) -> bool:
-        """Claim then dispatch. Returns True only when send_order ran."""
-        outcome = self._acquire_paper_unwind_claim(
-            order_id=str(order.order_id or ""),
+    def _dispatch_paper_unwind_order(
+        self,
+        order: Order,
+        *,
+        logical_operation_key: str,
+        log_label: str,
+    ) -> bool:
+        """Claim attempt then dispatch. Returns True only when send_order ran."""
+        claim = self._acquire_paper_unwind_claim(
+            logical_operation_key=logical_operation_key,
             symbol=order.symbol,
             side=order.side,
             quantity=order.quantity,
         )
+        outcome = str(claim.get("outcome") or "")
         if outcome != self.PAPER_UNWIND_DISPATCH_ALLOWED:
             logger.warning(
-                "%s blocked before dispatch: outcome=%s symbol=%s order_id=%s",
+                "%s blocked before dispatch: outcome=%s symbol=%s "
+                "logical_key=%s retry_decision=%s",
                 log_label,
                 outcome,
                 order.symbol,
-                order.order_id,
+                logical_operation_key,
+                claim.get("retry_decision"),
             )
             stats["paper_auto_unwind_claim_blocked"] = (
                 stats.get("paper_auto_unwind_claim_blocked", 0) + 1
@@ -2456,6 +2507,22 @@ class RiskManager:
                 stats.get(f"paper_auto_unwind_{outcome.lower()}", 0) + 1
             )
             return False
+        claimed_order_id = claim.get("order_id")
+        attempt_number = claim.get("attempt_number")
+        if not claimed_order_id or attempt_number is None:
+            logger.error(
+                "%s claim missing attempt identity (fail-closed) logical_key=%s",
+                log_label,
+                logical_operation_key,
+            )
+            stats["paper_auto_unwind_claim_blocked"] = (
+                stats.get("paper_auto_unwind_claim_blocked", 0) + 1
+            )
+            return False
+        order.order_id = str(claimed_order_id)
+        order.decision_id = generate_uuid(
+            name=(f"{logical_operation_key}:decision:attempt:{int(attempt_number)}")
+        )
         self.send_order(order)
         return True
 
@@ -2502,6 +2569,7 @@ class RiskManager:
                 )
                 continue
 
+            logical_operation_key = f"proactive-unwind:{symbol}:{position_qty:.8f}"
             order = Order(
                 symbol=symbol,
                 side="SELL" if position_qty > 0 else "BUY",
@@ -2510,16 +2578,13 @@ class RiskManager:
                 signal_id=int(time.time()),
                 reason="proactive_unwind:over_limit",
                 timestamp=int(time.time()),
-                client_id=f"proactive-unwind-{symbol}-{int(time.time())}",
+                client_id=f"proactive-unwind-{symbol}-{logical_operation_key}",
                 strategy_id="paper",  # Use paper strategy for auto-unwind
                 bot_id=None,
                 price=current_price,
-                order_id=generate_uuid(
-                    name=f"proactive-unwind:{symbol}:{position_qty:.8f}"
-                ),
-                decision_id=generate_uuid(
-                    name=f"proactive-unwind-decision:{symbol}:{position_qty:.8f}"
-                ),
+                # Attempt order_id/decision_id assigned only after durable claim.
+                order_id=None,
+                decision_id=None,
                 reduce_only=True,
             )
 
@@ -2528,7 +2593,9 @@ class RiskManager:
                 f"qty={abs(position_qty):.8f} (exposure over limit)"
             )
             if not self._dispatch_paper_unwind_order(
-                order, log_label="PROACTIVE_AUTO_UNWIND"
+                order,
+                logical_operation_key=logical_operation_key,
+                log_label="PROACTIVE_AUTO_UNWIND",
             ):
                 # Fail-closed: do not flood other symbols after a claim miss.
                 break
@@ -2571,6 +2638,7 @@ class RiskManager:
         if result.filled_quantity <= 0:
             return
 
+        logical_operation_key = f"paper-auto-unwind:{result.order_id}"
         order = Order(
             symbol=result.symbol,
             side="SELL",
@@ -2583,14 +2651,17 @@ class RiskManager:
             strategy_id=result.strategy_id,
             bot_id=result.bot_id,
             price=result.price,
-            order_id=generate_uuid(name=f"paper-auto-unwind:{result.order_id}"),
-            decision_id=generate_uuid(
-                name=f"paper-auto-unwind-decision:{result.order_id}"
-            ),
+            # Attempt order_id/decision_id assigned only after durable claim.
+            order_id=None,
+            decision_id=None,
             reduce_only=True,
         )
 
-        if not self._dispatch_paper_unwind_order(order, log_label="PAPER_AUTO_UNWIND"):
+        if not self._dispatch_paper_unwind_order(
+            order,
+            logical_operation_key=logical_operation_key,
+            log_label="PAPER_AUTO_UNWIND",
+        ):
             return
 
         logger.info(

@@ -34,19 +34,32 @@ fehlende Adapter-Capability blockieren vor dem Adapter. Ein übergroßer Exit
 wird auf die verfügbare Position gekappt.
 
 Der Claim wird vor Submission in `reduce_only_executions` unter der
-deterministischen `order_id` persistiert. Eine identische `order_id` wird nicht
-erneut submitted.
+deterministischen Attempt-`order_id` persistiert. Eine identische Attempt-
+`order_id` wird nicht erneut submitted.
 
 PAPER_AUTO_UNWIND Claim-vor-Dispatch (Issue `#4261`, Residual
 `PAPER_AUTO_UNWIND_CLAIM_RACE`): Risk darf einen Paper-Unwind erst nach
-erfolgreichem durable Claim (`prepare_reduce_only` mit
-`persist_blocked=false`, `bind_for_adapter=false`) über Redis dispatchen.
-Execution bindet denselben `PREPARED`-Claim atomar auf
+erfolgreichem durable Claim (`prepare_reduce_only_attempt` /
+`prepare_reduce_only` mit `persist_blocked=false`, `bind_for_adapter=false`)
+über Redis dispatchen. Execution bindet denselben `PREPARED`-Claim atomar auf
 `REDUCE_ONLY_ADAPTER_BOUND` (`bind_for_adapter=true`, Default), bevor der
 Adapter aufgerufen wird. Dadurch gibt es höchstens eine Adapter-Submission pro
-`order_id`. Ein fehlender, widersprüchlicher oder nicht gewonnener Claim ist
-fail-closed (kein neuer Unwind-Dispatch). In-memory Fill-/Positionsstate allein
-autorisiert keinen Dispatch.
+Attempt-`order_id`. Ein fehlender, widersprüchlicher oder nicht gewonnener
+Claim ist fail-closed (kein neuer Unwind-Dispatch). In-memory
+Fill-/Positionsstate allein autorisiert keinen Dispatch.
+
+Deterministische Retry-Identität (Issue `#4261`, Residual
+`DETERMINISTIC_ORDER_ID_RETRY`): Ein logischer Unwind besitzt eine stabile
+`logical_operation_key` (z. B. `paper-auto-unwind:<parent_order_id>`). Jeder
+konkrete Dispatch-Versuch erhält eine Attempt-Generation `N` und die
+deterministische Attempt-`order_id` =
+`uuid5("<logical_operation_key>:attempt:<N>")`. Die Legacy-Identität
+`uuid5("<logical_operation_key>")` gilt als Attempt-1-Alias für in-flight
+Claims. Ein terminaler `REJECTED`-Versuch mit `reason_code=REDUCE_ONLY_REJECTED`
+und `filled_quantity=0` ist explizit retryfähig und darf genau die nächste
+Generation gewinnen. `PREPARED`/`DISPATCHING`-äquivalent (aktive Claims),
+`FILLED`/`PARTIALLY_FILLED`, unklare Exchange-Wirkung oder sonstige
+nicht-retryfähige Zustände bleiben fail-closed. Keine Schema-Migration.
 
 Schema-Wiring (Issue `#4261`): Migration
 `012_reduce_only_execution_contract.sql` ist auf kanonischem BLUE

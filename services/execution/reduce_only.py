@@ -37,6 +37,81 @@ REDUCE_ONLY_BINDABLE_REASONS = frozenset(
     }
 )
 
+# Terminal ledger states that may never auto-retry.
+REDUCE_ONLY_SUCCESS_STATUSES = frozenset({"FILLED", "PARTIALLY_FILLED"})
+REDUCE_ONLY_ACTIVE_STATUSES = frozenset({"PREPARED"})
+
+# Explicit retryable terminal policy (Issue #4261 DETERMINISTIC_ORDER_ID_RETRY).
+# REJECTED is retryable only when finalize proved zero fill / no position change.
+REDUCE_ONLY_RETRYABLE_TERMINAL_STATUSES = frozenset({"REJECTED"})
+REDUCE_ONLY_RETRYABLE_TERMINAL_REASONS = frozenset({REDUCE_ONLY_REJECTED})
+
+
+def is_retryable_reduce_only_terminal(
+    *,
+    status: object,
+    reason_code: object,
+    filled_quantity: object = 0,
+) -> bool:
+    """Return True only for an explicitly retryable terminal attempt.
+
+    Fail-closed: unknown / active / successful / contradictory rows are not
+    retryable. A REJECTED row with non-zero filled quantity is never retryable.
+    """
+
+    normalized_status = str(status or "").upper()
+    normalized_reason = str(reason_code or "")
+    try:
+        filled = (
+            filled_quantity
+            if isinstance(filled_quantity, Decimal)
+            else Decimal(str(filled_quantity))
+        )
+    except (InvalidOperation, TypeError, ValueError):
+        return False
+    if not filled.is_finite() or filled != 0:
+        return False
+    return (
+        normalized_status in REDUCE_ONLY_RETRYABLE_TERMINAL_STATUSES
+        and normalized_reason in REDUCE_ONLY_RETRYABLE_TERMINAL_REASONS
+    )
+
+
+def is_active_reduce_only_attempt(*, status: object) -> bool:
+    """True while an attempt still owns the exclusive active claim."""
+
+    return str(status or "").upper() in REDUCE_ONLY_ACTIVE_STATUSES
+
+
+def is_successful_reduce_only_attempt(*, status: object) -> bool:
+    """True after a terminal success that must never auto-retry."""
+
+    return str(status or "").upper() in REDUCE_ONLY_SUCCESS_STATUSES
+
+
+def derive_reduce_only_attempt_order_id(
+    logical_operation_key: str, attempt_number: int
+) -> str:
+    """Deterministic attempt order_id from logical key + persistent generation."""
+
+    from core.utils.uuid_gen import generate_uuid
+
+    if not logical_operation_key:
+        raise ValueError("logical_operation_key is required")
+    if not isinstance(attempt_number, int) or attempt_number < 1:
+        raise ValueError("attempt_number must be a positive integer")
+    return generate_uuid(name=f"{logical_operation_key}:attempt:{attempt_number}")
+
+
+def derive_reduce_only_legacy_order_id(logical_operation_key: str) -> str:
+    """Pre-attempt UUID5 identity (logical key only) for lineage resume."""
+
+    from core.utils.uuid_gen import generate_uuid
+
+    if not logical_operation_key:
+        raise ValueError("logical_operation_key is required")
+    return generate_uuid(name=logical_operation_key)
+
 
 @dataclass(frozen=True, slots=True)
 class ReduceOnlyPreparation:
