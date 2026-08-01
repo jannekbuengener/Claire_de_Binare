@@ -23,6 +23,9 @@ try:
     from .models import ExecutionResult, OrderStatus
     from .reduce_only import (
         REDUCE_ONLY_ADAPTER_BOUND,
+        REDUCE_ONLY_CLAIM_MISMATCH,
+        REDUCE_ONLY_DISPATCH_CLAIMABLE_REASONS,
+        REDUCE_ONLY_DISPATCH_CLAIMED,
         REDUCE_ONLY_DUPLICATE_RESULT,
         REDUCE_ONLY_PARTIAL_FILL,
         REDUCE_ONLY_POSITION_INCREASE_BLOCKED,
@@ -41,6 +44,9 @@ except ImportError:
     from models import ExecutionResult, OrderStatus
     from reduce_only import (
         REDUCE_ONLY_ADAPTER_BOUND,
+        REDUCE_ONLY_CLAIM_MISMATCH,
+        REDUCE_ONLY_DISPATCH_CLAIMABLE_REASONS,
+        REDUCE_ONLY_DISPATCH_CLAIMED,
         REDUCE_ONLY_DUPLICATE_RESULT,
         REDUCE_ONLY_PARTIAL_FILL,
         REDUCE_ONLY_POSITION_INCREASE_BLOCKED,
@@ -150,6 +156,44 @@ class Database:
             payload["reason_code"] = REDUCE_ONLY_DUPLICATE_RESULT
         return payload
 
+    @staticmethod
+    def _reduce_only_fields_match(
+        existing: dict,
+        *,
+        symbol: str,
+        side: str,
+        requested_quantity: Decimal,
+    ) -> bool:
+        """True when persisted claim fields match the incoming order identity."""
+        try:
+            existing_qty = (
+                existing.get("requested_quantity")
+                if isinstance(existing.get("requested_quantity"), Decimal)
+                else Decimal(str(existing.get("requested_quantity")))
+            )
+            incoming_qty = (
+                requested_quantity
+                if isinstance(requested_quantity, Decimal)
+                else Decimal(str(requested_quantity))
+            )
+        except (InvalidOperation, TypeError, ValueError):
+            return False
+        if not existing_qty.is_finite() or not incoming_qty.is_finite():
+            return False
+        return (
+            str(existing.get("symbol") or "") == str(symbol or "")
+            and str(existing.get("side") or "").upper() == str(side or "").upper()
+            and existing_qty == incoming_qty
+        )
+
+    @staticmethod
+    def _reduce_only_claim_mismatch(existing: dict) -> dict:
+        payload = dict(existing)
+        payload["allowed"] = False
+        payload["duplicate"] = False
+        payload["reason_code"] = REDUCE_ONLY_CLAIM_MISMATCH
+        return payload
+
     def _bind_prepared_for_adapter(self, cur, *, order_id: str) -> dict | None:
         """Atomically mark a bindable PREPARED claim as adapter-bound.
 
@@ -182,6 +226,40 @@ class Database:
         payload["adapter_bound"] = True
         return payload
 
+    def _claim_dispatch_ownership(self, cur, *, order_id: str) -> dict | None:
+        """Atomically mark exclusive Redis-dispatch ownership for a PREPARED claim.
+
+        Transitions READY/CLAMPED → DISPATCH_CLAIMED. Returns payload when this
+        caller won the CAS; otherwise None (loser / restart must fail closed).
+        """
+        cur.execute(
+            """
+            UPDATE reduce_only_executions
+            SET reason_code = %s,
+                updated_at = CURRENT_TIMESTAMP
+            WHERE order_id = %s
+              AND status = 'PREPARED'
+              AND reason_code IN %s
+            RETURNING order_id, symbol, side, position_before,
+                      requested_quantity, submitted_quantity,
+                      filled_quantity, fill_price, realized_pnl_delta,
+                      position_after, status, reason_code
+            """,
+            (
+                REDUCE_ONLY_DISPATCH_CLAIMED,
+                order_id,
+                tuple(REDUCE_ONLY_DISPATCH_CLAIMABLE_REASONS),
+            ),
+        )
+        claimed = cur.fetchone()
+        if claimed is None:
+            return None
+        payload = self._reduce_only_row(claimed, duplicate=False)
+        payload["allowed"] = True
+        payload["dispatch_claimed"] = True
+        payload["resume_dispatch"] = True
+        return payload
+
     def prepare_reduce_only(
         self,
         *,
@@ -197,7 +275,8 @@ class Database:
         ``bind_for_adapter=True`` (execution default) atomically transitions a
         bindable ``PREPARED`` claim to ``REDUCE_ONLY_ADAPTER_BOUND`` so exactly
         one adapter submission can proceed. ``bind_for_adapter=False`` is used
-        by risk PAPER_AUTO_UNWIND to claim before Redis dispatch without binding.
+        by risk PAPER_AUTO_UNWIND to claim exclusive dispatch ownership
+        (``REDUCE_ONLY_DISPATCH_CLAIMED``) before Redis publish without binding.
 
         When ``persist_blocked=False``, unsuccessful preparations do not insert
         a ``BLOCKED`` ledger row (keeps deterministic unwind ``order_id``s
@@ -228,21 +307,27 @@ class Database:
                         existing.get("status") == "PREPARED"
                         and existing_reason in REDUCE_ONLY_BINDABLE_REASONS
                     ):
+                        if not self._reduce_only_fields_match(
+                            existing,
+                            symbol=symbol,
+                            side=side,
+                            requested_quantity=requested_quantity,
+                        ):
+                            return self._reduce_only_claim_mismatch(existing)
                         if bind_for_adapter:
                             bound = self._bind_prepared_for_adapter(
                                 cur, order_id=order_id
                             )
                             if bound is not None:
-                                # Preserve clamp/ready reason for caller metadata.
+                                # Preserve prior ready/clamp/dispatch reason for metadata.
                                 bound["reason_code"] = existing_reason
                                 return bound
                             return self._reduce_only_row(existing, duplicate=True)
-                        # Risk re-entry: claim held, not yet adapter-bound.
-                        payload = dict(existing)
-                        payload["allowed"] = True
-                        payload["duplicate"] = True
-                        payload["resume_dispatch"] = True
-                        return payload
+                        # Risk re-entry: CAS exclusive dispatch ownership.
+                        claimed = self._claim_dispatch_ownership(cur, order_id=order_id)
+                        if claimed is not None:
+                            return claimed
+                        return self._reduce_only_row(existing, duplicate=True)
                     return self._reduce_only_row(existing, duplicate=True)
 
                 cur.execute(
@@ -347,6 +432,18 @@ class Database:
                     bound["reason_code"] = preparation.reason_code
                     bound["persisted"] = True
                     return bound
+                if (
+                    not bind_for_adapter
+                    and preparation.allowed
+                    and preparation.reason_code
+                    in REDUCE_ONLY_DISPATCH_CLAIMABLE_REASONS
+                ):
+                    claimed = self._claim_dispatch_ownership(cur, order_id=order_id)
+                    if claimed is None:
+                        # Lost dispatch CAS after insert — fail closed.
+                        return self._reduce_only_row(inserted, duplicate=True)
+                    claimed["persisted"] = True
+                    return claimed
                 return payload
 
     def _fetch_reduce_only_row(self, cur, *, order_id: str):
