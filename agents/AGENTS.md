@@ -87,6 +87,10 @@ versionierte Root-Flächen für `.claude/`, `.codex/`, `.cursor/`, `.gemini/`, `
   - Agent Execution Contract v1:
     [`docs/contracts/agent_execution/CDB_AGENT_EXECUTION_CONTRACT_V1.md`](../docs/contracts/agent_execution/CDB_AGENT_EXECUTION_CONTRACT_V1.md)
     (`cdb.agent_execution.v1`, `#4251`; Router-Handoff, fail-closed).
+  - Agent Registry v1:
+    [`docs/contracts/agent_registry/CDB_AGENT_REGISTRY_V1.md`](../docs/contracts/agent_registry/CDB_AGENT_REGISTRY_V1.md)
+    + [`config/agent-control/`](../config/agent-control/) (`cdb.agent_registry.v1`,
+    `#4252`; dry-run reconciler via `python -m tools.agent_control`).
 - `knowledge/`
   - Aktive Knowledge-Dokumente und historische Referenzflächen; kein pauschaler Status-Canon.
 - `knowledge/testing/`

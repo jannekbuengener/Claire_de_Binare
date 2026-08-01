@@ -9,6 +9,7 @@ Repo-backed JSON/YAML schemas und Contract-Dokumente für Messages, Replay und C
 | Message schemas | `market_data.schema.json`, `signal.schema.json`, … | CI/validation |
 | PR acceptance | `pr_acceptance_skill_family.v1.schema.json (wiring, gap, completeness, conductor)` | PR-Acceptance Skill Family v1 envelope (#4207/#4208) |
 | Agent Execution Contract | `cdb_agent_execution.v1.schema.json`, [`agent_execution/CDB_AGENT_EXECUTION_CONTRACT_V1.md`](agent_execution/CDB_AGENT_EXECUTION_CONTRACT_V1.md), examples under `examples/agent_execution/` | Provider-neutral Router handoff (`#4251`); CLI `python -m tools.agent_execution_contract` |
+| Agent Registry | `cdb_agent_registry.v1.schema.json`, [`agent_registry/CDB_AGENT_REGISTRY_V1.md`](agent_registry/CDB_AGENT_REGISTRY_V1.md), examples under `examples/agent_registry/`, Desired State under `config/agent-control/` | Provider-neutral declarative registry + dry-run reconciler (`#4252`); CLI `python -m tools.agent_control registry …` |
 | Context tooling | [`context_tooling/`](context_tooling/) | MCP evidence contracts |
 | Examples | [`examples/`](examples/) | Valid/invalid fixtures |
 | Replay | [`REPLAY_CONTRACTS_AND_DETERMINISM.md`](REPLAY_CONTRACTS_AND_DETERMINISM.md) | Determinism rules |

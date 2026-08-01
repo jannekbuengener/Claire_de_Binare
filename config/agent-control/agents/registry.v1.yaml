@@ -1,0 +1,63 @@
+schema_id: cdb.agent_registry.v1
+schema_version: "1.0.0"
+# Desired-state agent registry for the CDB Agent Control Plane (#4252).
+# Profiles are loaded from ../profiles/. This file is provider-neutral Desired
+# State only; reconcile defaults to dry-run and never mutates live providers.
+agents:
+  - agent_id: acp-docs-steward
+    version: "1.0.0"
+    enabled: true
+    description: Docs/governance delivery agent for Agent Control Plane slices.
+    execution_contract_profile: docs_only.v1
+    provider_profile: mock.v1
+    environment_profile: local_repo.v1
+    skills:
+      - governance_docs.v1
+    mcp_profiles:
+      - none.v1
+    subagents:
+      - cdb-docs-canon-maintainer
+      - cdb-governance-gatekeeper
+    labels_or_routing_selectors:
+      lane: agent-skills
+      batch_key: agent-skills
+      objective: issue-4252
+    depends_on: []
+    permission_overrides:
+      open_pr: false
+      merge: false
+
+  - agent_id: acp-registry-reconciler
+    version: "1.0.0"
+    enabled: true
+    description: Registry validate/plan/reconcile operator (CLI-only, dry-run default).
+    execution_contract_profile: delivery_safe.v1
+    provider_profile: mock.v1
+    environment_profile: mock.v1
+    skills:
+      - session_core.v1
+    mcp_profiles:
+      - none.v1
+    subagents: []
+    labels_or_routing_selectors:
+      lane: agent-skills
+      role: registry-reconciler
+    depends_on:
+      - acp-docs-steward
+
+  - agent_id: acp-disabled-placeholder
+    version: "1.0.0"
+    enabled: false
+    description: Disabled placeholder; must never be planned as create/update.
+    execution_contract_profile: docs_only.v1
+    provider_profile: mock.v1
+    environment_profile: mock.v1
+    skills:
+      - session_core.v1
+    mcp_profiles:
+      - none.v1
+    subagents: []
+    labels_or_routing_selectors:
+      lane: agent-skills
+      role: disabled-placeholder
+    depends_on: []

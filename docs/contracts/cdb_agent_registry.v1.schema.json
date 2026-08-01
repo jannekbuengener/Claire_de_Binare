@@ -1,0 +1,334 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://claire-de-binare.local/contracts/cdb_agent_registry.v1.schema.json",
+  "title": "CDB Agent Registry v1",
+  "description": "Provider-neutral declarative agent registry desired state. Schema id: cdb.agent_registry.v1. Unknown fields are rejected. Registry entries may only reduce Execution Contract profile permissions.",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "schema_id",
+    "schema_version",
+    "profiles",
+    "agents"
+  ],
+  "properties": {
+    "schema_id": {
+      "const": "cdb.agent_registry.v1"
+    },
+    "schema_version": {
+      "type": "string",
+      "const": "1.0.0"
+    },
+    "profiles": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "execution_contracts",
+        "providers",
+        "environments",
+        "skills",
+        "mcp"
+      ],
+      "properties": {
+        "execution_contracts": {
+          "type": "object",
+          "minProperties": 1,
+          "additionalProperties": {
+            "$ref": "#/$defs/execution_contract_profile"
+          }
+        },
+        "providers": {
+          "type": "object",
+          "minProperties": 1,
+          "additionalProperties": {
+            "$ref": "#/$defs/provider_profile"
+          }
+        },
+        "environments": {
+          "type": "object",
+          "minProperties": 1,
+          "additionalProperties": {
+            "$ref": "#/$defs/environment_profile"
+          }
+        },
+        "skills": {
+          "type": "object",
+          "minProperties": 1,
+          "additionalProperties": {
+            "$ref": "#/$defs/skill_profile"
+          }
+        },
+        "mcp": {
+          "type": "object",
+          "minProperties": 1,
+          "additionalProperties": {
+            "$ref": "#/$defs/mcp_profile"
+          }
+        }
+      }
+    },
+    "agents": {
+      "type": "array",
+      "minItems": 1,
+      "items": {
+        "$ref": "#/$defs/agent_entry"
+      }
+    }
+  },
+  "$defs": {
+    "profile_id": {
+      "type": "string",
+      "pattern": "^[a-z][a-z0-9_.-]{1,120}$"
+    },
+    "agent_id": {
+      "type": "string",
+      "pattern": "^[a-z][a-z0-9_-]{1,120}$"
+    },
+    "permission_map": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "read_repo",
+        "write_code",
+        "write_docs",
+        "commit",
+        "push",
+        "open_pr",
+        "update_pr",
+        "comment_issue",
+        "close_issue",
+        "publish_cdb_local_ci",
+        "merge",
+        "runtime_mutation",
+        "database_mutation",
+        "mcp_live_mutation"
+      ],
+      "properties": {
+        "read_repo": { "type": "boolean" },
+        "write_code": { "type": "boolean" },
+        "write_docs": { "type": "boolean" },
+        "commit": { "type": "boolean" },
+        "push": { "type": "boolean" },
+        "open_pr": { "type": "boolean" },
+        "update_pr": { "type": "boolean" },
+        "comment_issue": { "type": "boolean" },
+        "close_issue": { "type": "boolean" },
+        "publish_cdb_local_ci": { "type": "boolean" },
+        "merge": { "type": "boolean" },
+        "runtime_mutation": { "type": "boolean" },
+        "database_mutation": { "type": "boolean" },
+        "mcp_live_mutation": { "type": "boolean" }
+      }
+    },
+    "execution_contract_profile": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["description", "permissions"],
+      "properties": {
+        "description": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 500
+        },
+        "permissions": {
+          "$ref": "#/$defs/permission_map"
+        }
+      }
+    },
+    "provider_profile": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["provider_id", "description", "api_surface"],
+      "properties": {
+        "provider_id": {
+          "type": "string",
+          "enum": ["mock", "cursor", "local"]
+        },
+        "description": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 500
+        },
+        "api_surface": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 120
+        },
+        "secret_references": {
+          "type": "array",
+          "default": [],
+          "items": {
+            "type": "object",
+            "additionalProperties": false,
+            "required": ["class", "ref"],
+            "properties": {
+              "class": {
+                "type": "string",
+                "minLength": 1,
+                "maxLength": 80
+              },
+              "ref": {
+                "type": "string",
+                "pattern": "^(env|secret):[A-Za-z0-9_./-]{1,200}$"
+              }
+            }
+          }
+        }
+      }
+    },
+    "environment_profile": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["description", "runtime_class"],
+      "properties": {
+        "description": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 500
+        },
+        "runtime_class": {
+          "type": "string",
+          "enum": ["local_repo", "cloud_agent", "mock"]
+        }
+      }
+    },
+    "skill_profile": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["description", "skill_ids"],
+      "properties": {
+        "description": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 500
+        },
+        "skill_ids": {
+          "type": "array",
+          "minItems": 1,
+          "items": {
+            "type": "string",
+            "pattern": "^[a-z][a-z0-9_-]{1,120}$"
+          }
+        }
+      }
+    },
+    "mcp_profile": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["description", "servers", "mutation_allowed"],
+      "properties": {
+        "description": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 500
+        },
+        "servers": {
+          "type": "array",
+          "items": {
+            "type": "string",
+            "pattern": "^[a-z][a-z0-9_-]{0,120}$"
+          }
+        },
+        "mutation_allowed": {
+          "type": "boolean"
+        }
+      }
+    },
+    "agent_entry": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "agent_id",
+        "version",
+        "enabled",
+        "description",
+        "execution_contract_profile",
+        "provider_profile",
+        "environment_profile",
+        "skills",
+        "mcp_profiles",
+        "subagents",
+        "labels_or_routing_selectors"
+      ],
+      "properties": {
+        "agent_id": {
+          "$ref": "#/$defs/agent_id"
+        },
+        "version": {
+          "type": "string",
+          "pattern": "^[0-9]+\\.[0-9]+\\.[0-9]+$"
+        },
+        "enabled": {
+          "type": "boolean"
+        },
+        "description": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 500
+        },
+        "execution_contract_profile": {
+          "$ref": "#/$defs/profile_id"
+        },
+        "provider_profile": {
+          "$ref": "#/$defs/profile_id"
+        },
+        "environment_profile": {
+          "$ref": "#/$defs/profile_id"
+        },
+        "skills": {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/profile_id"
+          }
+        },
+        "mcp_profiles": {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/profile_id"
+          }
+        },
+        "subagents": {
+          "type": "array",
+          "items": {
+            "type": "string",
+            "pattern": "^[a-z][a-z0-9_-]{1,120}$"
+          }
+        },
+        "labels_or_routing_selectors": {
+          "type": "object",
+          "additionalProperties": {
+            "type": ["string", "boolean", "integer"]
+          },
+          "minProperties": 1
+        },
+        "depends_on": {
+          "type": "array",
+          "default": [],
+          "items": {
+            "$ref": "#/$defs/agent_id"
+          }
+        },
+        "permission_overrides": {
+          "type": "object",
+          "additionalProperties": false,
+          "properties": {
+            "read_repo": { "type": "boolean" },
+            "write_code": { "type": "boolean" },
+            "write_docs": { "type": "boolean" },
+            "commit": { "type": "boolean" },
+            "push": { "type": "boolean" },
+            "open_pr": { "type": "boolean" },
+            "update_pr": { "type": "boolean" },
+            "comment_issue": { "type": "boolean" },
+            "close_issue": { "type": "boolean" },
+            "publish_cdb_local_ci": { "type": "boolean" },
+            "merge": { "type": "boolean" },
+            "runtime_mutation": { "type": "boolean" },
+            "database_mutation": { "type": "boolean" },
+            "mcp_live_mutation": { "type": "boolean" }
+          }
+        }
+      }
+    }
+  }
+}
