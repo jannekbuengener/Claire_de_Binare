@@ -1,10 +1,10 @@
 # CDB Research Validation Contracts v1
 
-**Status:** Wave-1 contract surface (#4265 / #4266)  
-**Parent:** #4263  
-**Canon:** [`docs/research/CDB_RESEARCH_TO_HERMES_PIPELINE_CANON_V1.md`](../research/CDB_RESEARCH_TO_HERMES_PIPELINE_CANON_V1.md)  
-**Mode:** Schemas + examples + docs only  
-**Live-Readiness:** NO-GO  
+**Status:** Wave-1 contract surface (#4265 / #4266)
+**Parent:** #4263
+**Canon:** [`docs/research/CDB_RESEARCH_TO_HERMES_PIPELINE_CANON_V1.md`](../research/CDB_RESEARCH_TO_HERMES_PIPELINE_CANON_V1.md)
+**Mode:** Schemas + examples + docs only
+**Live-Readiness:** NO-GO
 
 ## Purpose
 
@@ -49,7 +49,7 @@ Required gates in `cdb.validation_manifest.v1`:
 10. regime_scorecard
 11. replay_vs_paper
 
-Verdicts: `PASS | WARNING | FAIL | BLOCKED | INSUFFICIENT_DATA`  
+Verdicts: `PASS | WARNING | FAIL | BLOCKED | INSUFFICIENT_DATA`
 Decisions: `REJECT | REVISE | PARK | PAPER_CANDIDATE`
 
 Rules:
@@ -57,7 +57,11 @@ Rules:
 - Evidence must include `run_id`, `candidate_version`, and artifact hashes
 - Gross and net results are separate objects
 - Fees, spread, and slippage are required
-- Missing evidence cannot produce overall `PASS`
+- `overall_verdict PASS` is allowed only when all 11 required gates are present
+  and each gate verdict is `PASS` or `WARNING`
+- Missing gates or gate verdicts `INSUFFICIENT_DATA`, `FAIL`, or `BLOCKED`
+  cannot validate as overall `PASS` (schema-enforced; the const
+  `missing_evidence_cannot_pass: true` alone is not sufficient)
 - Decision records must list allowed and forbidden next actions
 - `paper_candidate_is_not_live_go` is always `true`
 

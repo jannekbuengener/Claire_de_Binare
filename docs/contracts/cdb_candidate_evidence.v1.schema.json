@@ -1,7 +1,7 @@
 {
   "$schema": "http://json-schema.org/draft-07/schema#",
   "title": "CDB Candidate Evidence v1",
-  "description": "Validation evidence packet for Research-to-Hermes. Adjacent to profitability_evidence_packet.v1 (#3043/#4022); does not replace it. Missing evidence cannot yield PASS.",
+  "description": "Validation evidence packet for Research-to-Hermes. Adjacent to profitability_evidence_packet.v1 (#3043/#4022); does not replace it. overall_verdict PASS requires all 11 required gates with PASS or WARNING only; missing, INSUFFICIENT_DATA, FAIL, or BLOCKED gates cannot validate as PASS. safety_boundaries.missing_evidence_cannot_pass remains const true and is not sufficient alone.",
   "type": "object",
   "additionalProperties": false,
   "required": [
@@ -215,5 +215,332 @@
         }
       }
     }
-  }
+  },
+  "allOf": [
+    {
+      "if": {
+        "properties": {
+          "overall_verdict": {
+            "const": "PASS"
+          }
+        },
+        "required": [
+          "overall_verdict"
+        ]
+      },
+      "then": {
+        "properties": {
+          "gate_results": {
+            "type": "array",
+            "minItems": 11,
+            "maxItems": 11,
+            "items": {
+              "type": "object",
+              "additionalProperties": false,
+              "required": [
+                "gate",
+                "verdict",
+                "notes"
+              ],
+              "properties": {
+                "gate": {
+                  "type": "string",
+                  "enum": [
+                    "contract_completeness",
+                    "dataset_quality",
+                    "deterministic_baseline_replay",
+                    "execution_cost_model",
+                    "parameter_sensitivity",
+                    "walk_forward",
+                    "bootstrap_or_monte_carlo",
+                    "scenario_stress",
+                    "arvp_replay",
+                    "regime_scorecard",
+                    "replay_vs_paper"
+                  ]
+                },
+                "verdict": {
+                  "type": "string",
+                  "enum": [
+                    "PASS",
+                    "WARNING"
+                  ]
+                },
+                "notes": {
+                  "type": "string",
+                  "minLength": 1
+                }
+              }
+            }
+          }
+        },
+        "allOf": [
+          {
+            "properties": {
+              "gate_results": {
+                "contains": {
+                  "type": "object",
+                  "required": [
+                    "gate",
+                    "verdict"
+                  ],
+                  "properties": {
+                    "gate": {
+                      "const": "contract_completeness"
+                    },
+                    "verdict": {
+                      "enum": [
+                        "PASS",
+                        "WARNING"
+                      ]
+                    }
+                  }
+                }
+              }
+            }
+          },
+          {
+            "properties": {
+              "gate_results": {
+                "contains": {
+                  "type": "object",
+                  "required": [
+                    "gate",
+                    "verdict"
+                  ],
+                  "properties": {
+                    "gate": {
+                      "const": "dataset_quality"
+                    },
+                    "verdict": {
+                      "enum": [
+                        "PASS",
+                        "WARNING"
+                      ]
+                    }
+                  }
+                }
+              }
+            }
+          },
+          {
+            "properties": {
+              "gate_results": {
+                "contains": {
+                  "type": "object",
+                  "required": [
+                    "gate",
+                    "verdict"
+                  ],
+                  "properties": {
+                    "gate": {
+                      "const": "deterministic_baseline_replay"
+                    },
+                    "verdict": {
+                      "enum": [
+                        "PASS",
+                        "WARNING"
+                      ]
+                    }
+                  }
+                }
+              }
+            }
+          },
+          {
+            "properties": {
+              "gate_results": {
+                "contains": {
+                  "type": "object",
+                  "required": [
+                    "gate",
+                    "verdict"
+                  ],
+                  "properties": {
+                    "gate": {
+                      "const": "execution_cost_model"
+                    },
+                    "verdict": {
+                      "enum": [
+                        "PASS",
+                        "WARNING"
+                      ]
+                    }
+                  }
+                }
+              }
+            }
+          },
+          {
+            "properties": {
+              "gate_results": {
+                "contains": {
+                  "type": "object",
+                  "required": [
+                    "gate",
+                    "verdict"
+                  ],
+                  "properties": {
+                    "gate": {
+                      "const": "parameter_sensitivity"
+                    },
+                    "verdict": {
+                      "enum": [
+                        "PASS",
+                        "WARNING"
+                      ]
+                    }
+                  }
+                }
+              }
+            }
+          },
+          {
+            "properties": {
+              "gate_results": {
+                "contains": {
+                  "type": "object",
+                  "required": [
+                    "gate",
+                    "verdict"
+                  ],
+                  "properties": {
+                    "gate": {
+                      "const": "walk_forward"
+                    },
+                    "verdict": {
+                      "enum": [
+                        "PASS",
+                        "WARNING"
+                      ]
+                    }
+                  }
+                }
+              }
+            }
+          },
+          {
+            "properties": {
+              "gate_results": {
+                "contains": {
+                  "type": "object",
+                  "required": [
+                    "gate",
+                    "verdict"
+                  ],
+                  "properties": {
+                    "gate": {
+                      "const": "bootstrap_or_monte_carlo"
+                    },
+                    "verdict": {
+                      "enum": [
+                        "PASS",
+                        "WARNING"
+                      ]
+                    }
+                  }
+                }
+              }
+            }
+          },
+          {
+            "properties": {
+              "gate_results": {
+                "contains": {
+                  "type": "object",
+                  "required": [
+                    "gate",
+                    "verdict"
+                  ],
+                  "properties": {
+                    "gate": {
+                      "const": "scenario_stress"
+                    },
+                    "verdict": {
+                      "enum": [
+                        "PASS",
+                        "WARNING"
+                      ]
+                    }
+                  }
+                }
+              }
+            }
+          },
+          {
+            "properties": {
+              "gate_results": {
+                "contains": {
+                  "type": "object",
+                  "required": [
+                    "gate",
+                    "verdict"
+                  ],
+                  "properties": {
+                    "gate": {
+                      "const": "arvp_replay"
+                    },
+                    "verdict": {
+                      "enum": [
+                        "PASS",
+                        "WARNING"
+                      ]
+                    }
+                  }
+                }
+              }
+            }
+          },
+          {
+            "properties": {
+              "gate_results": {
+                "contains": {
+                  "type": "object",
+                  "required": [
+                    "gate",
+                    "verdict"
+                  ],
+                  "properties": {
+                    "gate": {
+                      "const": "regime_scorecard"
+                    },
+                    "verdict": {
+                      "enum": [
+                        "PASS",
+                        "WARNING"
+                      ]
+                    }
+                  }
+                }
+              }
+            }
+          },
+          {
+            "properties": {
+              "gate_results": {
+                "contains": {
+                  "type": "object",
+                  "required": [
+                    "gate",
+                    "verdict"
+                  ],
+                  "properties": {
+                    "gate": {
+                      "const": "replay_vs_paper"
+                    },
+                    "verdict": {
+                      "enum": [
+                        "PASS",
+                        "WARNING"
+                      ]
+                    }
+                  }
+                }
+              }
+            }
+          }
+        ]
+      }
+    }
+  ]
 }

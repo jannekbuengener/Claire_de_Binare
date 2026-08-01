@@ -1,10 +1,10 @@
 # Research-to-Hermes Pipeline Canon v1
 
-**Status:** Canon draft for Wave 1 (#4264)  
-**Parent:** #4263  
-**Mode:** Docs / architecture only — no runtime, no plugins, no cloud provisioning  
-**Live-Readiness:** NO-GO  
-**Board stage:** `trade-capable` ≠ Live-Go  
+**Status:** Canon draft for Wave 1 (#4264)
+**Parent:** #4263
+**Mode:** Docs / architecture only — no runtime, no plugins, no cloud provisioning
+**Live-Readiness:** NO-GO
+**Board stage:** `trade-capable` ≠ Live-Go
 
 ## Purpose
 
@@ -126,7 +126,8 @@ profitability artifacts by ID/hash; they do not supersede them.
 - LR-Status: **NO-GO**
 - Board `trade-capable` ≠ Live-Go
 - `PAPER_CANDIDATE` is a research decision class only
-- Missing evidence never yields PASS
+- Missing / insufficient / blocked / failed required gates never yield
+  overall `PASS` (schema-enforced on `cdb.candidate_evidence.v1`)
 - Free-form agent text is never a valid handoff
 
 ## Related artifacts

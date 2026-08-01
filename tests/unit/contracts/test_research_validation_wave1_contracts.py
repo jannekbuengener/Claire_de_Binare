@@ -170,6 +170,77 @@ def test_missing_evidence_cannot_claim_pass_without_safety_flag() -> None:
     assert errors
 
 
+def _pass_compatible_gate_results() -> list[dict]:
+    return [
+        {
+            "gate": gate,
+            "verdict": "PASS",
+            "notes": f"{gate} complete for PASS fixture.",
+        }
+        for gate in sorted(REQUIRED_GATES)
+    ]
+
+
+@pytest.mark.unit
+def test_overall_pass_requires_all_required_gates_pass_compatible() -> None:
+    schema = _load(CONTRACTS / "cdb_candidate_evidence.v1.schema.json")
+    payload = _load(EXAMPLES / "cdb_candidate_evidence_valid.json")
+    payload["overall_verdict"] = "PASS"
+    payload["gate_results"] = _pass_compatible_gate_results()
+    # One WARNING remains PASS-compatible.
+    payload["gate_results"][0]["verdict"] = "WARNING"
+    assert list(Draft7Validator(schema).iter_errors(payload)) == []
+
+
+@pytest.mark.unit
+def test_overall_pass_rejected_when_required_gate_insufficient() -> None:
+    schema = _load(CONTRACTS / "cdb_candidate_evidence.v1.schema.json")
+    payload = _load(EXAMPLES / "cdb_candidate_evidence_valid.json")
+    payload["overall_verdict"] = "PASS"
+    # Live fixture mixes PASS/WARNING/INSUFFICIENT_DATA — must not validate as PASS.
+    assert any(row["verdict"] == "INSUFFICIENT_DATA" for row in payload["gate_results"])
+    errors = list(Draft7Validator(schema).iter_errors(payload))
+    assert errors
+
+
+@pytest.mark.unit
+def test_overall_pass_rejected_when_required_gates_missing() -> None:
+    schema = _load(CONTRACTS / "cdb_candidate_evidence.v1.schema.json")
+    payload = _load(EXAMPLES / "cdb_candidate_evidence_valid.json")
+    payload["overall_verdict"] = "PASS"
+    payload["gate_results"] = [
+        {
+            "gate": "contract_completeness",
+            "verdict": "PASS",
+            "notes": "Only one gate present.",
+        }
+    ]
+    errors = list(Draft7Validator(schema).iter_errors(payload))
+    assert errors
+
+
+@pytest.mark.unit
+@pytest.mark.parametrize("bad_verdict", ["FAIL", "BLOCKED", "INSUFFICIENT_DATA"])
+def test_overall_pass_rejected_for_non_pass_compatible_gate(
+    bad_verdict: str,
+) -> None:
+    schema = _load(CONTRACTS / "cdb_candidate_evidence.v1.schema.json")
+    payload = _load(EXAMPLES / "cdb_candidate_evidence_valid.json")
+    payload["overall_verdict"] = "PASS"
+    payload["gate_results"] = _pass_compatible_gate_results()
+    payload["gate_results"][3]["verdict"] = bad_verdict
+    errors = list(Draft7Validator(schema).iter_errors(payload))
+    assert errors
+
+
+@pytest.mark.unit
+def test_non_pass_overall_still_allows_insufficient_gate_evidence() -> None:
+    schema = _load(CONTRACTS / "cdb_candidate_evidence.v1.schema.json")
+    payload = _load(EXAMPLES / "cdb_candidate_evidence_valid.json")
+    assert payload["overall_verdict"] == "INSUFFICIENT_DATA"
+    assert list(Draft7Validator(schema).iter_errors(payload)) == []
+
+
 @pytest.mark.unit
 def test_decision_record_forbids_live_go_semantics() -> None:
     schema = _load(CONTRACTS / "cdb_decision_record.v1.schema.json")
@@ -200,6 +271,9 @@ def test_canon_and_overview_document_roles_and_lineage() -> None:
     )
     assert "PAPER_CANDIDATE" in overview
     assert "profitability_evidence_packet.v1" in overview
+    assert "overall_verdict PASS" in overview
+    assert "`PASS` or `WARNING`" in overview
+    assert "missing_evidence_cannot_pass" in overview
 
 
 @pytest.mark.unit
