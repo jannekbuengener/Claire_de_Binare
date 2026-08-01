@@ -71,4 +71,5 @@ ruff check tools/hermes_ops tests/unit/hermes_ops  # pass
 ## Close state
 
 Target delivery close: `DONE_SLICE_ADDED_TO_BATCH_PR`  
+PR: [#4290](https://github.com/jannekbuengener/Claire_de_Binare/pull/4290)    <!-- pragma: allowlist secret -->
 Issue remains OPEN until live evidence + merge.

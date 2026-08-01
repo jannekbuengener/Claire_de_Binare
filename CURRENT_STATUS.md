@@ -16,7 +16,7 @@
 - **Confirmed main state**: `origin/main` @ `6ac6b767` — same snapshot as the [`README.md`](README.md) Current-main section.
 
 <!-- cdb:live-claim type=issue_state issue=4289 state=open -->
-- **#4289 Hermes Hetzner Bootstrap**: **IN_DELIVERY** — Issue created (dedupe PASS). Repo-slice: `infrastructure/hermes/`, `config/hermes/`, `tools/hermes_ops/`, runbook, threat model, unit tests. Live Hetzner/Windows/GitHub drills remain `HOLD_SCOPE_BLOCKER`. Auth lineage reuses #4170/#4195 (no second App authenticator). LR **NO-GO** unchanged.
+- **#4289 Hermes Hetzner Bootstrap**: **IN_DELIVERY** — Issue created (dedupe PASS). Repo-slice PR [#4290](https://github.com/jannekbuengener/Claire_de_Binare/pull/4290) on `cloud-cursor/hermes-hetzner-bootstrap-49bf`: `infrastructure/hermes/`, `config/hermes/`, `tools/hermes_ops/`, runbook, threat model, unit tests. Live Hetzner/Windows/GitHub drills remain `HOLD_SCOPE_BLOCKER`. Auth lineage reuses #4170/#4195 (no second App authenticator). LR **NO-GO** unchanged.  <!-- pragma: allowlist secret -->
 
 <!-- cdb:historical-as-of date=2026-07-31 -->
 > Historical as of 2026-07-31 — append-only ledger. Entries below record the

@@ -2,6 +2,7 @@
 
 Status: REPO_SLICE (not live E2E)  
 Date: 2026-08-01  
+PR: [#4290](https://github.com/jannekbuengener/Claire_de_Binare/pull/4290)    <!-- pragma: allowlist secret -->
 LR: NO-GO
 
 ## Scope of this evidence
