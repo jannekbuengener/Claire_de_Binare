@@ -1,0 +1,282 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "title": "CDB Strategy Candidate v1",
+  "description": "Falsifiable strategy candidate for Research-to-Hermes handoff. Adjacent to profitability_candidate_contract.v1 (#3034/#3043); does not replace it. Free-form text is invalid.",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "schema_version",
+    "candidate_id",
+    "candidate_version",
+    "parent_version",
+    "strategy_family",
+    "falsifiable_hypothesis",
+    "source_evidence",
+    "entry_rules",
+    "exit_rules",
+    "inactivity_rules",
+    "parameters",
+    "market_scope",
+    "regime_scope",
+    "data_requirements",
+    "execution_assumptions",
+    "risk_assumptions",
+    "validation_plan",
+    "limitations",
+    "non_goals",
+    "provenance",
+    "uncertainty",
+    "completeness_status",
+    "lineage_refs",
+    "safety_boundaries"
+  ],
+  "properties": {
+    "schema_version": {
+      "const": "cdb.strategy_candidate.v1"
+    },
+    "candidate_id": {
+      "type": "string",
+      "pattern": "^sc-[a-z0-9][a-z0-9-]{2,80}$"
+    },
+    "candidate_version": {
+      "type": "string",
+      "pattern": "^v[0-9]+$"
+    },
+    "parent_version": {
+      "oneOf": [
+        {
+          "type": "null"
+        },
+        {
+          "type": "string",
+          "pattern": "^v[0-9]+$"
+        }
+      ]
+    },
+    "strategy_family": {
+      "type": "string",
+      "minLength": 1,
+      "maxLength": 120
+    },
+    "falsifiable_hypothesis": {
+      "type": "string",
+      "minLength": 1,
+      "maxLength": 4000
+    },
+    "source_evidence": {
+      "type": "array",
+      "minItems": 1,
+      "items": {
+        "type": "string",
+        "minLength": 1
+      }
+    },
+    "entry_rules": {
+      "type": "array",
+      "minItems": 1,
+      "items": {
+        "type": "string",
+        "minLength": 1
+      }
+    },
+    "exit_rules": {
+      "type": "array",
+      "minItems": 1,
+      "items": {
+        "type": "string",
+        "minLength": 1
+      }
+    },
+    "inactivity_rules": {
+      "type": "array",
+      "minItems": 1,
+      "items": {
+        "type": "string",
+        "minLength": 1
+      }
+    },
+    "parameters": {
+      "type": "object",
+      "minProperties": 1
+    },
+    "market_scope": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "symbols",
+        "timeframes"
+      ],
+      "properties": {
+        "symbols": {
+          "type": "array",
+          "minItems": 1,
+          "uniqueItems": true,
+          "items": {
+            "type": "string",
+            "minLength": 1
+          }
+        },
+        "timeframes": {
+          "type": "array",
+          "minItems": 1,
+          "uniqueItems": true,
+          "items": {
+            "type": "string",
+            "minLength": 1
+          }
+        }
+      }
+    },
+    "regime_scope": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "allowed_regimes",
+        "blocked_regimes"
+      ],
+      "properties": {
+        "allowed_regimes": {
+          "type": "array",
+          "minItems": 1,
+          "uniqueItems": true,
+          "items": {
+            "type": "string",
+            "minLength": 1
+          }
+        },
+        "blocked_regimes": {
+          "type": "array",
+          "uniqueItems": true,
+          "items": {
+            "type": "string",
+            "minLength": 1
+          }
+        }
+      }
+    },
+    "data_requirements": {
+      "type": "array",
+      "minItems": 1,
+      "items": {
+        "type": "string",
+        "minLength": 1
+      }
+    },
+    "execution_assumptions": {
+      "type": "array",
+      "minItems": 1,
+      "items": {
+        "type": "string",
+        "minLength": 1
+      }
+    },
+    "risk_assumptions": {
+      "type": "array",
+      "minItems": 1,
+      "items": {
+        "type": "string",
+        "minLength": 1
+      }
+    },
+    "validation_plan": {
+      "type": "array",
+      "minItems": 1,
+      "items": {
+        "type": "string",
+        "minLength": 1
+      }
+    },
+    "limitations": {
+      "type": "array",
+      "minItems": 1,
+      "items": {
+        "type": "string",
+        "minLength": 1
+      }
+    },
+    "non_goals": {
+      "type": "array",
+      "minItems": 1,
+      "items": {
+        "type": "string",
+        "minLength": 1
+      }
+    },
+    "provenance": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "research_brief_id",
+        "compiler_ref",
+        "source_origin"
+      ],
+      "properties": {
+        "research_brief_id": {
+          "type": "string",
+          "pattern": "^rb-[a-z0-9][a-z0-9-]{2,80}$"
+        },
+        "compiler_ref": {
+          "type": "string",
+          "minLength": 1
+        },
+        "source_origin": {
+          "type": "string",
+          "minLength": 1
+        }
+      }
+    },
+    "uncertainty": {
+      "type": "array",
+      "minItems": 1,
+      "items": {
+        "type": "string",
+        "minLength": 1
+      }
+    },
+    "completeness_status": {
+      "type": "string",
+      "enum": [
+        "INCOMPLETE",
+        "READY_FOR_VALIDATION"
+      ]
+    },
+    "lineage_refs": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "profitability_candidate_contract",
+        "notes"
+      ],
+      "properties": {
+        "profitability_candidate_contract": {
+          "type": "string",
+          "const": "profitability_candidate_contract.v1"
+        },
+        "notes": {
+          "type": "string",
+          "minLength": 1
+        }
+      }
+    },
+    "safety_boundaries": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "lr_status",
+        "automatic_strategy_promotion",
+        "real_money_go"
+      ],
+      "properties": {
+        "lr_status": {
+          "const": "NO-GO"
+        },
+        "automatic_strategy_promotion": {
+          "const": false
+        },
+        "real_money_go": {
+          "const": false
+        }
+      }
+    }
+  }
+}

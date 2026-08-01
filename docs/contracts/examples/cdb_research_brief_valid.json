@@ -1,0 +1,40 @@
+{
+  "schema_version": "cdb.research_brief.v1",
+  "brief_id": "rb-wave1-example-btc-trend",
+  "brief_version": "v1",
+  "requested_at": "2026-08-01T10:00:00Z",
+  "objective": "Explore a falsifiable trend-breakout research brief for BTCUSDT without promotion authority.",
+  "market_scope": {
+    "symbols": [
+      "BTCUSDT"
+    ],
+    "timeframes": [
+      "1m"
+    ]
+  },
+  "hypothesis_seed": "Fresh TREND regimes may contain breakout expectancy after friction when inactivity rules prevent overtrading.",
+  "source_refs": [
+    "docs/strategy/CDB_PROFITABILITY_CANDIDATE_CONTRACT_V1.md",
+    "issue:#4265"
+  ],
+  "constraints": [
+    "research-only",
+    "no productive DB writes",
+    "no live credentials"
+  ],
+  "non_goals": [
+    "runtime implementation",
+    "automatic strategy promotion"
+  ],
+  "uncertainty_notes": [
+    "Hypothesis is unvalidated; evidence may be insufficient."
+  ],
+  "requested_by": "research-validation-wave1",
+  "safety_boundaries": {
+    "lr_status": "NO-GO",
+    "real_money_go": false,
+    "automatic_strategy_promotion": false,
+    "hermes_live_authority": false,
+    "research_apps_validation_authority": false
+  }
+}

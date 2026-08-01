@@ -1,0 +1,219 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "title": "CDB Candidate Evidence v1",
+  "description": "Validation evidence packet for Research-to-Hermes. Adjacent to profitability_evidence_packet.v1 (#3043/#4022); does not replace it. Missing evidence cannot yield PASS.",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "schema_version",
+    "evidence_id",
+    "run_id",
+    "candidate_id",
+    "candidate_version",
+    "generated_at",
+    "artifact_hashes",
+    "gate_results",
+    "gross_results",
+    "net_results",
+    "fees",
+    "spread",
+    "slippage",
+    "overall_verdict",
+    "limitations",
+    "lineage_refs",
+    "safety_boundaries"
+  ],
+  "properties": {
+    "schema_version": {
+      "const": "cdb.candidate_evidence.v1"
+    },
+    "evidence_id": {
+      "type": "string",
+      "pattern": "^ce-[a-z0-9][a-z0-9-]{2,80}$"
+    },
+    "run_id": {
+      "type": "string",
+      "pattern": "^run-[a-z0-9][a-z0-9-]{2,80}$"
+    },
+    "candidate_id": {
+      "type": "string",
+      "pattern": "^sc-[a-z0-9][a-z0-9-]{2,80}$"
+    },
+    "candidate_version": {
+      "type": "string",
+      "pattern": "^v[0-9]+$"
+    },
+    "generated_at": {
+      "type": "string",
+      "format": "date-time"
+    },
+    "artifact_hashes": {
+      "type": "array",
+      "minItems": 1,
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "artifact_ref",
+          "sha256"
+        ],
+        "properties": {
+          "artifact_ref": {
+            "type": "string",
+            "minLength": 1
+          },
+          "sha256": {
+            "type": "string",
+            "pattern": "^sha256:[a-f0-9]{64}$"
+          }
+        }
+      }
+    },
+    "gate_results": {
+      "type": "array",
+      "minItems": 1,
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "gate",
+          "verdict",
+          "notes"
+        ],
+        "properties": {
+          "gate": {
+            "type": "string",
+            "enum": [
+              "contract_completeness",
+              "dataset_quality",
+              "deterministic_baseline_replay",
+              "execution_cost_model",
+              "parameter_sensitivity",
+              "walk_forward",
+              "bootstrap_or_monte_carlo",
+              "scenario_stress",
+              "arvp_replay",
+              "regime_scorecard",
+              "replay_vs_paper"
+            ]
+          },
+          "verdict": {
+            "type": "string",
+            "enum": [
+              "PASS",
+              "WARNING",
+              "FAIL",
+              "BLOCKED",
+              "INSUFFICIENT_DATA"
+            ]
+          },
+          "notes": {
+            "type": "string",
+            "minLength": 1
+          }
+        }
+      }
+    },
+    "gross_results": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "return_ratio",
+        "max_drawdown"
+      ],
+      "properties": {
+        "return_ratio": {
+          "type": "number"
+        },
+        "max_drawdown": {
+          "type": "number",
+          "minimum": 0
+        }
+      }
+    },
+    "net_results": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "return_ratio",
+        "max_drawdown"
+      ],
+      "properties": {
+        "return_ratio": {
+          "type": "number"
+        },
+        "max_drawdown": {
+          "type": "number",
+          "minimum": 0
+        }
+      }
+    },
+    "fees": {
+      "type": "number",
+      "minimum": 0
+    },
+    "spread": {
+      "type": "number",
+      "minimum": 0
+    },
+    "slippage": {
+      "type": "number",
+      "minimum": 0
+    },
+    "overall_verdict": {
+      "type": "string",
+      "enum": [
+        "PASS",
+        "WARNING",
+        "FAIL",
+        "BLOCKED",
+        "INSUFFICIENT_DATA"
+      ]
+    },
+    "limitations": {
+      "type": "array",
+      "minItems": 1,
+      "items": {
+        "type": "string",
+        "minLength": 1
+      }
+    },
+    "lineage_refs": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "profitability_evidence_packet",
+        "notes"
+      ],
+      "properties": {
+        "profitability_evidence_packet": {
+          "const": "profitability_evidence_packet.v1"
+        },
+        "notes": {
+          "type": "string",
+          "minLength": 1
+        }
+      }
+    },
+    "safety_boundaries": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "missing_evidence_cannot_pass",
+        "lr_status",
+        "automatic_strategy_promotion"
+      ],
+      "properties": {
+        "missing_evidence_cannot_pass": {
+          "const": true
+        },
+        "lr_status": {
+          "const": "NO-GO"
+        },
+        "automatic_strategy_promotion": {
+          "const": false
+        }
+      }
+    }
+  }
+}
