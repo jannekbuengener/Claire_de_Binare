@@ -23,6 +23,7 @@ from core.replay.canonical_json import canonical_hash, canonical_json_dumps
 from core.replay.execution_economics_v1 import (
     COMPONENT_STATUS_ACTIVE,
     COMPONENT_STATUS_NOT_APPLICABLE,
+    ORDER_TYPE_MARKET,
     build_assumptions_snapshot,
     reconcile_gross_to_net,
 )
@@ -603,14 +604,17 @@ def _build_gross_to_net_block(
         gross_pnl=reference_gross,
         maker_fee_cost=maker_fee_cost,
         taker_fee_cost=taker_fee_cost,
-        slippage_cost=0 if slippage_cost is None else slippage_cost,
+        slippage_cost=slippage_cost,
         slippage_status=slippage_status,
+        order_type=ORDER_TYPE_MARKET,
         fill_price_embedded_gross=embedded_gross,
         assumptions_snapshot=build_assumptions_snapshot(),
         limitations=(
             "Top-level PEP gross_return/net_return remain descriptive medians.",
             "Spread is not modeled in ExecutionSimulator (not_applicable).",
             "Slippage is not_applicable unless slippage_cost_quote is present on metrics.",
+            "Funding is inactive_not_wired: no funding-rate series reaches the runner path.",
+            "Limit orders are parked and not economics-billable; ARVP fills are market/taker.",
             "Synthetic research assumptions; not venue-verified.",
             "Does not prove profitability, live readiness, or venue realism.",
         ),

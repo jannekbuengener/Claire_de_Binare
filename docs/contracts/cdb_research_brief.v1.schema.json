@@ -1,0 +1,144 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "title": "CDB Research Brief v1",
+  "description": "Machine-readable research request for the Research-to-Hermes pipeline. Free-form agent text is not a valid handoff. Research-only; not live/risk/promotion authority.",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "schema_version",
+    "brief_id",
+    "brief_version",
+    "requested_at",
+    "objective",
+    "market_scope",
+    "hypothesis_seed",
+    "source_refs",
+    "constraints",
+    "non_goals",
+    "uncertainty_notes",
+    "requested_by",
+    "safety_boundaries"
+  ],
+  "properties": {
+    "schema_version": {
+      "const": "cdb.research_brief.v1"
+    },
+    "brief_id": {
+      "type": "string",
+      "pattern": "^rb-[a-z0-9][a-z0-9-]{2,80}$"
+    },
+    "brief_version": {
+      "type": "string",
+      "pattern": "^v[0-9]+$"
+    },
+    "requested_at": {
+      "type": "string",
+      "format": "date-time"
+    },
+    "objective": {
+      "type": "string",
+      "minLength": 1,
+      "maxLength": 2000
+    },
+    "market_scope": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "symbols",
+        "timeframes"
+      ],
+      "properties": {
+        "symbols": {
+          "type": "array",
+          "minItems": 1,
+          "uniqueItems": true,
+          "items": {
+            "type": "string",
+            "minLength": 1
+          }
+        },
+        "timeframes": {
+          "type": "array",
+          "minItems": 1,
+          "uniqueItems": true,
+          "items": {
+            "type": "string",
+            "minLength": 1
+          }
+        }
+      }
+    },
+    "hypothesis_seed": {
+      "type": "string",
+      "minLength": 1,
+      "maxLength": 4000
+    },
+    "source_refs": {
+      "type": "array",
+      "minItems": 1,
+      "uniqueItems": true,
+      "items": {
+        "type": "string",
+        "minLength": 1,
+        "maxLength": 400
+      }
+    },
+    "constraints": {
+      "type": "array",
+      "minItems": 1,
+      "items": {
+        "type": "string",
+        "minLength": 1
+      }
+    },
+    "non_goals": {
+      "type": "array",
+      "minItems": 1,
+      "items": {
+        "type": "string",
+        "minLength": 1
+      }
+    },
+    "uncertainty_notes": {
+      "type": "array",
+      "minItems": 1,
+      "items": {
+        "type": "string",
+        "minLength": 1
+      }
+    },
+    "requested_by": {
+      "type": "string",
+      "minLength": 1,
+      "maxLength": 120
+    },
+    "safety_boundaries": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "lr_status",
+        "real_money_go",
+        "automatic_strategy_promotion",
+        "hermes_live_authority",
+        "research_apps_validation_authority"
+      ],
+      "properties": {
+        "lr_status": {
+          "const": "NO-GO"
+        },
+        "real_money_go": {
+          "const": false
+        },
+        "automatic_strategy_promotion": {
+          "const": false
+        },
+        "hermes_live_authority": {
+          "const": false
+        },
+        "research_apps_validation_authority": {
+          "const": false
+        }
+      }
+    }
+  }
+}

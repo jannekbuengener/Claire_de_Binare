@@ -200,20 +200,14 @@ try {
     }
 
     if ($TLS) {
-        $documentsDir = Split-Path -Parent (Split-Path -Parent (Split-Path -Parent $repoRoot))
-        $tlsDir = Join-Path $documentsDir '.cdb_local\tls'
-        if (-not (Test-Path $tlsDir)) {
-            Write-Error "TLS certificates not found at $tlsDir"
-            exit 1
-        }
-        $requiredCerts = @('ca.crt', 'redis.crt', 'redis.key', 'postgres.crt', 'postgres.key', 'client.crt', 'client.key')
-        $missingCerts = $requiredCerts | Where-Object { -not (Test-Path (Join-Path $tlsDir $_)) }
-        if ($missingCerts) {
-            Write-Error "Missing TLS certificates: $($missingCerts -join ', ')"
-            exit 1
-        }
-        $composeArgs += '-f', 'infrastructure\compose\tls.yml'
-        Write-Host "TLS enabled (Redis + PostgreSQL encrypted)" -ForegroundColor Green
+        # LEGACY COMPAT (#4120 RETIRE_QUARANTINE): -TLS must not attach tls.yml.
+        # Fail-closed — do not invent SECRETS_PATH/cert mounts or start the overlay.
+        Write-Error @"
+LEGACY / QUARANTINED: -TLS is not a supported operator path (Issue #4120, RETIRE_QUARANTINE).
+Do not start infrastructure/compose/tls.yml. Use canonical BLUE+RED without the TLS overlay.
+See infrastructure/tls/TLS_SETUP.md (quarantined historical guide). Secrets canon remains SECRETS_PATH.
+"@
+        exit 1
     }
 
     # Target services

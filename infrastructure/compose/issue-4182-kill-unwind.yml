@@ -26,6 +26,13 @@ services:
       - ../../infrastructure/database/migrations/002_orders_price_nullable.sql:/docker-entrypoint-initdb.d/02-migration-002.sql:ro
       - ../../infrastructure/database/migrations/004_governance_v0.sql:/docker-entrypoint-initdb.d/04-migration-004.sql:ro
       - ../../infrastructure/database/migrations/011_trade_realized_pnl.sql:/docker-entrypoint-initdb.d/11-migration-011.sql:ro
+      - ../../infrastructure/database/migrations/012_reduce_only_execution_contract.sql:/docker-entrypoint-initdb.d/12-migration-012.sql:ro
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER:-claire_user} -d claire_de_binare_test"]
+      interval: 5s
+      timeout: 3s
+      retries: 18
+      start_period: 90s
 
   cdb_risk_test:
     container_name: ${STACK_NAME}_risk
@@ -87,6 +94,8 @@ services:
       PAPER_AUTO_UNWIND: "true"
       TRACE_CONTRACT_V1_ENABLED: "1"
       CDB_4182_DRILL: "1"
+      CDB_4184_DRILL: "1"
+      CDB_4184_SCENARIO_JSON: /app/evidence/scenarios.json
       CDB_KILL_SWITCH_STATE_FILE: /app/kill_switch/.cdb_kill_switch.state
       RISK_BASE_URL: http://cdb_risk_test:8002
       EXECUTION_BASE_URL: http://cdb_execution_test:8003

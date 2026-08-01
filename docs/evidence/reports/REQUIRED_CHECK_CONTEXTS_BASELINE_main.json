@@ -1,8 +1,13 @@
 {
-  "timestamp_berlin": "2026-07-27T22:32:00+02:00",
-  "timestamp_utc": "2026-07-27T20:32:00Z",
-  "contexts": ["cdb-local-ci"],
-  "commit_status_contexts": ["cdb-local-ci"],
+  "timestamp_berlin": "2026-08-01T14:25:00+02:00",
+  "timestamp_utc": "2026-08-01T12:25:00Z",
+  "contexts": [
+    "cdb-local-ci"
+  ],
+  "check_run_contexts": [
+    "cdb-local-ci"
+  ],
+  "required_app_id": 4410232,
   "source": "branch_protection_main",
-  "note": "Migrated #4169; cdb-local-ci is interim Commit Status, not a workflow job."
+  "note": "Post-#4170 Phase D: App-bound Check Run cdb-local-ci (app_id=4410232). Same-named Commit Status is not merge-sufficient."
 }

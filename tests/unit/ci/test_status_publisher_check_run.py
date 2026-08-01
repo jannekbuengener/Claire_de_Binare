@@ -144,15 +144,38 @@ def test_unknown_conclusion_rejected():
 
 def test_missing_installation_token_rejected(monkeypatch: pytest.MonkeyPatch):
     monkeypatch.delenv(APP_INSTALLATION_TOKEN_ENV, raising=False)
+    for key in (
+        "CDB_GH_APP_ID",
+        "CDB_GITHUB_APP_ID",
+        "CDB_GH_APP_INSTALLATION_ID",
+        "CDB_GITHUB_APP_INSTALLATION_ID",
+        "CDB_GH_APP_PRIVATE_KEY",
+        "CDB_GH_APP_PRIVATE_KEY_PATH",
+        "CDB_GITHUB_APP_PRIVATE_KEY_PATH",
+    ):
+        monkeypatch.delenv(key, raising=False)
     monkeypatch.setenv("GITHUB_TOKEN", "ghs_should_not_be_used_abcdefgh")
     monkeypatch.setenv("GH_TOKEN", "ghs_also_not_used_abcdefghijkl")
-    with pytest.raises(AuthenticationError, match=APP_INSTALLATION_TOKEN_ENV):
+    with pytest.raises(AuthenticationError, match="refuses"):
         resolve_app_installation_token()
 
 
-def test_empty_installation_token_rejected(monkeypatch: pytest.MonkeyPatch):
+def test_empty_installation_token_falls_through_to_mint_or_reject(
+    monkeypatch: pytest.MonkeyPatch,
+):
+    # Whitespace-only INSTALLATION_TOKEN is treated as unset → mint path / reject.
     monkeypatch.setenv(APP_INSTALLATION_TOKEN_ENV, "   ")
-    with pytest.raises(AuthenticationError, match=APP_INSTALLATION_TOKEN_ENV):
+    for key in (
+        "CDB_GH_APP_ID",
+        "CDB_GITHUB_APP_ID",
+        "CDB_GH_APP_INSTALLATION_ID",
+        "CDB_GITHUB_APP_INSTALLATION_ID",
+        "CDB_GH_APP_PRIVATE_KEY",
+        "CDB_GH_APP_PRIVATE_KEY_PATH",
+        "CDB_GITHUB_APP_PRIVATE_KEY_PATH",
+    ):
+        monkeypatch.delenv(key, raising=False)
+    with pytest.raises(AuthenticationError, match="refuses"):
         resolve_app_installation_token()
 
 
@@ -160,11 +183,28 @@ def test_gh_auth_token_not_auto_used(monkeypatch: pytest.MonkeyPatch):
     monkeypatch.delenv(APP_INSTALLATION_TOKEN_ENV, raising=False)
     monkeypatch.delenv("GITHUB_TOKEN", raising=False)
     monkeypatch.delenv("GH_TOKEN", raising=False)
+    for key in (
+        "CDB_GH_APP_ID",
+        "CDB_GITHUB_APP_ID",
+        "CDB_GH_APP_INSTALLATION_ID",
+        "CDB_GITHUB_APP_INSTALLATION_ID",
+        "CDB_GH_APP_PRIVATE_KEY",
+        "CDB_GH_APP_PRIVATE_KEY_PATH",
+        "CDB_GITHUB_APP_PRIVATE_KEY_PATH",
+    ):
+        monkeypatch.delenv(key, raising=False)
     with pytest.raises(AuthenticationError, match="refuses"):
         resolve_app_installation_token()
 
 
-def test_missing_expected_app_id_rejected():
+def test_missing_expected_app_id_rejected(monkeypatch: pytest.MonkeyPatch):
+    for key in (
+        "CDB_GH_APP_ID",
+        "CDB_GITHUB_APP_ID",
+        "CDB_GH_APP_INSTALLATION_ID",
+        "CDB_GITHUB_APP_INSTALLATION_ID",
+    ):
+        monkeypatch.delenv(key, raising=False)
     with pytest.raises(PublisherError, match="expected-app-id"):
         build_publisher_backend(
             backend="check-run",

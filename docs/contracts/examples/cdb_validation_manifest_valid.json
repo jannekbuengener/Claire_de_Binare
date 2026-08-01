@@ -1,0 +1,35 @@
+{
+  "schema_version": "cdb.validation_manifest.v1",
+  "manifest_id": "vm-wave1-example-001",
+  "run_id": "run-wave1-example-001",
+  "candidate_id": "sc-wave1-btc-trend-breakout",
+  "candidate_version": "v1",
+  "requested_gates": [
+    "contract_completeness",
+    "dataset_quality",
+    "deterministic_baseline_replay",
+    "execution_cost_model",
+    "parameter_sensitivity",
+    "walk_forward",
+    "bootstrap_or_monte_carlo",
+    "scenario_stress",
+    "arvp_replay",
+    "regime_scorecard",
+    "replay_vs_paper"
+  ],
+  "dataset_refs": [
+    "dataset-primary-breakout-v1-reference-20260418"
+  ],
+  "artifact_hash_plan": [
+    "metrics.json",
+    "replay_report.json",
+    "cost_model.json"
+  ],
+  "created_at": "2026-08-01T10:05:00Z",
+  "orchestrator": "hermes-validation-chief-docs-only",
+  "safety_boundaries": {
+    "hermes_live_authority": false,
+    "automatic_strategy_promotion": false,
+    "lr_status": "NO-GO"
+  }
+}

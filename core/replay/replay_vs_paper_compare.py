@@ -28,7 +28,10 @@ from typing import Any, Mapping
 
 from core.replay.canonical_json import canonical_json_dumps
 from core.replay.execution_economics_v1 import (
+    COMPONENT_STATUS_ACTIVE,
+    COMPONENT_STATUS_NOT_APPLICABLE,
     MOCK_PAPER_ECONOMICS_ASSUMPTIONS,
+    ORDER_TYPE_MARKET,
     compare_economics_components,
     reconcile_gross_to_net,
 )
@@ -328,17 +331,18 @@ def economics_payload_from_metrics(metrics: Mapping[str, Any]) -> dict[str, Any]
         taker = fees
     slippage = metrics_map.get("slippage_cost_quote", metrics_map.get("slippage_cost"))
     if slippage is not None:
-        slippage_status = "active"
+        slippage_status = COMPONENT_STATUS_ACTIVE
         reference_gross = float(embedded or 0) + float(slippage)
     else:
-        slippage_status = "not_applicable"
+        slippage_status = COMPONENT_STATUS_NOT_APPLICABLE
         reference_gross = float(embedded or 0)
     return reconcile_gross_to_net(
         gross_pnl=reference_gross,
         maker_fee_cost=maker if maker is not None else 0,
         taker_fee_cost=taker if taker is not None else 0,
-        slippage_cost=0 if slippage is None else slippage,
+        slippage_cost=slippage,
         slippage_status=slippage_status,
+        order_type=ORDER_TYPE_MARKET,
         fill_price_embedded_gross=embedded,
     ).to_dict()
 
@@ -359,15 +363,17 @@ def compare_economics_from_reports(
         paper_econ = reconcile_gross_to_net(
             gross_pnl=0,
             taker_fee_cost=0,
-            slippage_cost=0,
-            slippage_status="not_applicable",
+            slippage_cost=None,
+            slippage_status=COMPONENT_STATUS_NOT_APPLICABLE,
             reject_impact=0,
-            reject_status="active",
+            reject_status=COMPONENT_STATUS_ACTIVE,
             latency_or_delay_impact=0,
-            latency_status="active",
+            latency_status=COMPONENT_STATUS_ACTIVE,
+            order_type=ORDER_TYPE_MARKET,
             limitations=(
                 "Paper economics omitted; mock defaults documented only.",
                 "MockExecutor has no fee/spread model; reject/latency are seeded.",
+                "Funding is inactive_not_wired on both sides; limit orders are parked.",
             ),
         ).to_dict()
         paper_econ["mock_paper_assumptions"] = dict(MOCK_PAPER_ECONOMICS_ASSUMPTIONS)

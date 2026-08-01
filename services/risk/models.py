@@ -138,6 +138,8 @@ class Order:
     # LR-762: Deterministic Decision Contract bundle (input+output+hashes)
     decision_contract_v1: Optional[dict] = None
     metadata: Optional[dict] = None
+    # Issue #4184: explicit execution-enforced exit/unwind contract.
+    reduce_only: bool = False
 
     def to_dict(self) -> dict:
         result = {
@@ -162,6 +164,7 @@ class Order:
             "policy_hash": self.policy_hash,
             "input_hash": self.input_hash,
             "output_hash": self.output_hash,
+            "reduce_only": self.reduce_only,
         }
         # Issue #748: only emit when toggle ON (not None)
         if self.policy_snapshot is not None:
@@ -184,7 +187,7 @@ class OrderResult:
     """Order-Result Event vom Execution-Service"""
 
     order_id: str
-    status: Literal["FILLED", "REJECTED", "ERROR"]
+    status: Literal["FILLED", "PARTIALLY_FILLED", "REJECTED", "ERROR"]
     symbol: str
     side: Literal["BUY", "SELL"]
     quantity: float
@@ -195,6 +198,8 @@ class OrderResult:
     price: Optional[float] = None
     client_id: Optional[str] = None
     error_message: Optional[str] = None
+    reduce_only: bool = False
+    reduce_only_contract: Optional[dict] = None
     type: Literal["order_result"] = "order_result"
 
     @classmethod
@@ -213,7 +218,7 @@ class OrderResult:
         else:
             ts = int(time.time())
         status = data["status"].upper()
-        if status not in {"FILLED", "REJECTED", "ERROR"}:
+        if status not in {"FILLED", "PARTIALLY_FILLED", "REJECTED", "ERROR"}:
             raise ValueError(f"Unbekannter Order-Result-Status: {status}")
 
         side = data.get("side", "BUY").upper()
@@ -232,6 +237,12 @@ class OrderResult:
             bot_id=data.get("bot_id"),
             client_id=data.get("client_id"),
             error_message=data.get("error_message"),
+            reduce_only=data.get("reduce_only") is True,
+            reduce_only_contract=(
+                data.get("reduce_only_contract")
+                if isinstance(data.get("reduce_only_contract"), dict)
+                else None
+            ),
             timestamp=ts,
         )
 

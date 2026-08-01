@@ -28,7 +28,7 @@ DEPENDABOT_HEAD_PREFIX = "dependabot/"
 REQUIRED_CHECK_NAMES = ("cdb-local-ci",)
 """Live required merge context per docs/runbooks/merge_policy_ci_gate.md.
 
-`cdb-local-ci` is a Commit Status (not a Check Run) published by the local
+`cdb-local-ci` is an App-bound Check Run (`app_id=4410232`) published by the local
 Fast-CI publisher. Hosted GitHub Actions check-runs remain advisory only and
 are not consulted here."""
 
@@ -603,7 +603,7 @@ def _normalize_required_check_facts(
 ) -> list[Any]:
     """Map Commit Status entries (`context`/`state`) to RequiredCheckFact.
 
-    `cdb-local-ci` is published as a GitHub Commit Status, not a Check Run,
+    `cdb-local-ci` merge gate is a GitHub App Check Run (`app_id=4410232`), not a Commit Status,
     so the live payload shape differs from hosted Actions check-runs
     (`context`/`state` instead of `name`/`status`/`conclusion`).
     """
