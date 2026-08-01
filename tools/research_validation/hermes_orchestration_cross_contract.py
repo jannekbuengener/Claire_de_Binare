@@ -183,6 +183,119 @@ def validate_attempt_binding_stability(run: Mapping[str, Any]) -> list[str]:
     return errors
 
 
+def validate_attempt_failure_coupling(run: Mapping[str, Any]) -> list[str]:
+    """FAILED_* attempts must carry the matching failure object."""
+    errors: list[str] = []
+    attempts = run.get("attempts")
+    if not isinstance(attempts, Sequence) or isinstance(attempts, (str, bytes)):
+        return ["attempts must be an array"]
+    for idx, attempt in enumerate(attempts):
+        if not isinstance(attempt, Mapping):
+            errors.append(f"attempts[{idx}] must be an object")
+            continue
+        status = attempt.get("status")
+        failure = attempt.get("failure")
+        if status == "FAILED_TECHNICAL":
+            if not isinstance(failure, Mapping):
+                errors.append(
+                    f"attempts[{idx}] FAILED_TECHNICAL requires TechnicalFailure"
+                )
+            elif failure.get("failure_class") != "TECHNICAL":
+                errors.append(
+                    f"attempts[{idx}] FAILED_TECHNICAL requires failure_class=TECHNICAL"
+                )
+        elif status == "FAILED_DOMAIN":
+            if not isinstance(failure, Mapping):
+                errors.append(f"attempts[{idx}] FAILED_DOMAIN requires DomainFailure")
+            elif failure.get("failure_class") != "DOMAIN":
+                errors.append(
+                    f"attempts[{idx}] FAILED_DOMAIN requires failure_class=DOMAIN"
+                )
+        elif isinstance(failure, Mapping) and status in (
+            "PENDING",
+            "RUNNING",
+            "SUCCEEDED",
+            "CANCELLED",
+        ):
+            errors.append(
+                f"attempts[{idx}] status {status} must not carry a failure object"
+            )
+    return errors
+
+
+def validate_failure_verdict_consistency(run: Mapping[str, Any]) -> list[str]:
+    """Domain/terminal technical failure cannot coexist with orchestration PASS."""
+    errors: list[str] = []
+    verdict_obj = run.get("structured_verdict")
+    if not isinstance(verdict_obj, Mapping):
+        return ["structured_verdict must be an object"]
+    verdict = verdict_obj.get("verdict")
+    attempts = run.get("attempts")
+    if not isinstance(attempts, Sequence) or isinstance(attempts, (str, bytes)):
+        return ["attempts must be an array"]
+
+    domain_failures: list[str] = []
+    technical_failures: list[str] = []
+    ordered: list[Mapping[str, Any]] = []
+    for idx, attempt in enumerate(attempts):
+        if not isinstance(attempt, Mapping):
+            errors.append(f"attempts[{idx}] must be an object")
+            continue
+        ordered.append(attempt)
+        status = attempt.get("status")
+        if status == "FAILED_DOMAIN":
+            domain_failures.append(f"attempts[{idx}]")
+        elif status == "FAILED_TECHNICAL":
+            technical_failures.append(f"attempts[{idx}]")
+
+    failure_records = run.get("failure_records")
+    if isinstance(failure_records, Sequence) and not isinstance(
+        failure_records, (str, bytes)
+    ):
+        for idx, row in enumerate(failure_records):
+            if not isinstance(row, Mapping):
+                continue
+            if row.get("failure_class") == "DOMAIN":
+                domain_failures.append(f"failure_records[{idx}]")
+
+    if domain_failures and verdict == "PASS":
+        errors.append(
+            "domain failure cannot yield structured_verdict PASS "
+            f"({', '.join(domain_failures)})"
+        )
+    if domain_failures and verdict not in (
+        "FAIL",
+        "BLOCKED",
+        "REVIEW_REQUIRED",
+        "CANCELLED",
+    ):
+        errors.append(
+            "domain failure requires structured_verdict "
+            "FAIL|BLOCKED|REVIEW_REQUIRED|CANCELLED"
+        )
+
+    if verdict == "PASS":
+        if not ordered:
+            errors.append("PASS requires at least one attempt")
+        else:
+            last = max(
+                ordered,
+                key=lambda row: (
+                    row.get("attempt_number")
+                    if isinstance(row.get("attempt_number"), int)
+                    else -1
+                ),
+            )
+            if last.get("status") != "SUCCEEDED":
+                errors.append("PASS requires final attempt status SUCCEEDED")
+            if technical_failures and last.get("status") != "SUCCEEDED":
+                errors.append(
+                    "technical failure without succeeding final attempt "
+                    "cannot yield PASS"
+                )
+    return errors
+
+
 def validate_retry_policy(run: Mapping[str, Any]) -> list[str]:
     """Technical retries only; domain failures never auto-retry."""
     errors: list[str] = []
@@ -220,6 +333,7 @@ def validate_retry_policy(run: Mapping[str, Any]) -> list[str]:
                 if len(attempts) > max_attempts:
                     errors.append("attempts exceed retry_policy.max_technical_attempts")
 
+        non_retryable_technical = False
         for idx, attempt in enumerate(attempts):
             if not isinstance(attempt, Mapping):
                 continue
@@ -246,6 +360,31 @@ def validate_retry_policy(run: Mapping[str, Any]) -> list[str]:
                         errors.append(
                             "retryable technical failure requires retry_disposition"
                         )
+                elif failure.get("retryable") is False:
+                    non_retryable_technical = True
+
+        if non_retryable_technical and isinstance(disposition, Mapping):
+            if disposition.get("retryable") is True:
+                errors.append(
+                    "non-retryable technical failure cannot yield retryable disposition"
+                )
+            if disposition.get("next_attempt_allowed") is True:
+                errors.append(
+                    "non-retryable technical failure cannot allow next attempt"
+                )
+            reason = disposition.get("reason_code")
+            if reason not in (
+                None,
+                "TECHNICAL_EXHAUSTED",
+                "DOMAIN_NOT_RETRYABLE",
+                "DRIFT_NOT_RETRYABLE",
+                "SECURITY_NOT_RETRYABLE",
+                "CANCELLED",
+                "NONE",
+            ):
+                errors.append(
+                    "non-retryable technical failure requires non-retry reason_code"
+                )
     return errors
 
 
@@ -366,6 +505,8 @@ def validate_hermes_orchestration_run(run: Mapping[str, Any]) -> list[str]:
     errors: list[str] = []
     errors.extend(validate_bindings(run))
     errors.extend(validate_attempt_binding_stability(run))
+    errors.extend(validate_attempt_failure_coupling(run))
+    errors.extend(validate_failure_verdict_consistency(run))
     errors.extend(validate_retry_policy(run))
     errors.extend(validate_security_gate_blocks_pass(run))
     errors.extend(validate_evidence_and_drift_for_pass(run))

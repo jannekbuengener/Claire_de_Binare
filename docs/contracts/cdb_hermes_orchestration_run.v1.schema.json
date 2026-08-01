@@ -541,7 +541,53 @@
             }
           ]
         }
-      }
+      },
+      "allOf": [
+        {
+          "if": {
+            "properties": {
+              "status": {
+                "const": "FAILED_TECHNICAL"
+              }
+            },
+            "required": [
+              "status"
+            ]
+          },
+          "then": {
+            "required": [
+              "failure"
+            ],
+            "properties": {
+              "failure": {
+                "$ref": "#/definitions/TechnicalFailure"
+              }
+            }
+          }
+        },
+        {
+          "if": {
+            "properties": {
+              "status": {
+                "const": "FAILED_DOMAIN"
+              }
+            },
+            "required": [
+              "status"
+            ]
+          },
+          "then": {
+            "required": [
+              "failure"
+            ],
+            "properties": {
+              "failure": {
+                "$ref": "#/definitions/DomainFailure"
+              }
+            }
+          }
+        }
+      ]
     },
     "RetryDisposition": {
       "type": "object",

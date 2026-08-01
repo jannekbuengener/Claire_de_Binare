@@ -8,7 +8,7 @@ cdb_area: contracts
 rule_ref: technical-vs-domain-failure; retry-policy; security-gate-binding; drift-invalidates-pass; no-authority-escalation
 decision_ref: research-validation-wave3-hermes-orchestration
 issue_ref: #4270 #4263 #4271
-pr_ref: pending
+pr_ref: #4291
 evidence_ref: docs/research/CDB_HERMES_VALIDATION_CHIEF_ORCHESTRATION_CONTRACT_V1.md
 security_relevant: true
 live_relevant: false
@@ -238,6 +238,68 @@ def test_bindings_cannot_change_between_attempts() -> None:
     )
     cross = validate_attempt_binding_stability(run)
     assert any("strategy_candidate_version" in err for err in cross)
+
+
+@pytest.mark.unit
+def test_domain_failure_cannot_yield_pass() -> None:
+    run = _valid_run()
+    run["attempts"][0]["status"] = "FAILED_DOMAIN"
+    run["attempts"][0]["failure"] = {
+        "failure_class": "DOMAIN",
+        "code": "VALIDATION_FAILED",
+        "retryable": False,
+        "message": "Domain validation failed.",
+    }
+    run["failure_records"] = [run["attempts"][0]["failure"]]
+    run["retry_disposition"] = {
+        "retryable": False,
+        "reason_code": "DOMAIN_NOT_RETRYABLE",
+        "next_attempt_allowed": False,
+    }
+    # Keep PASS fields otherwise intact — must still be rejected.
+    cross = validate_hermes_orchestration_run(run)
+    assert any("domain failure" in err for err in cross)
+
+
+@pytest.mark.unit
+def test_failed_status_requires_matching_failure_object() -> None:
+    run = _valid_run()
+    run["structured_verdict"]["verdict"] = "FAIL"
+    run["structured_verdict"]["rationale_codes"] = ["VALIDATION_FAILED"]
+    run["run_status"] = "FAILED"
+    run["evidence_collection"]["status"] = "FAILED"
+    run["attempts"][0]["status"] = "FAILED_DOMAIN"
+    run["attempts"][0].pop("failure", None)
+    assert _errors(run)
+    cross = validate_hermes_orchestration_run(run)
+    assert any("FAILED_DOMAIN requires" in err for err in cross)
+
+
+@pytest.mark.unit
+def test_non_retryable_technical_failure_forbids_retry_disposition() -> None:
+    run = _valid_run()
+    run["structured_verdict"] = {
+        "verdict": "FAIL",
+        "rationale_codes": ["TECHNICAL_EXHAUSTED"],
+        "free_form_opinion_is_leading": False,
+    }
+    run["run_status"] = "FAILED"
+    run["evidence_collection"]["status"] = "FAILED"
+    run["attempts"][0]["status"] = "FAILED_TECHNICAL"
+    run["attempts"][0]["failure"] = {
+        "failure_class": "TECHNICAL",
+        "code": "RUNNER_UNAVAILABLE",
+        "retryable": False,
+        "message": "Runner permanently unavailable.",
+    }
+    run["retry_disposition"] = {
+        "retryable": True,
+        "reason_code": "TECHNICAL_RETRYABLE",
+        "next_attempt_allowed": True,
+    }
+    cross = validate_retry_policy(run)
+    assert any("non-retryable technical" in err for err in cross)
+    assert validate_hermes_orchestration_run(run)
 
 
 @pytest.mark.unit
