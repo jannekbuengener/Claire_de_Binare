@@ -81,11 +81,41 @@ separate Human-GO cutover (see
 | Surface | Auth needed | Status |
 |---------|-------------|--------|
 | Commit Status | PAT / `gh` with statuses write | **Default / current required path** |
-| Check Run | GitHub App installation token (`CDB_GH_APP_INSTALLATION_TOKEN`) + expected App/Installation IDs | **Code-ready; BP cutover external** |
+| Check Run | App ID + Installation ID + PEM (auto-mint) **or** `CDB_GH_APP_INSTALLATION_TOKEN` override | **Code-ready + auto-mint; BP cutover external (Phase D)** |
 
 `GitHubStatusClient` still has no `create_check_run` method. Check Runs live in
 `ci.publisher.backends.CheckRunBackend`. User/OAuth/`gh auth` tokens are **not**
 accepted as App identity proof for Check Run mode.
+
+### Check Run auth priority
+
+1. Explicit test inject (programmatic only)
+2. `CDB_GH_APP_INSTALLATION_TOKEN` (optional override)
+3. Auto-mint via `ci.publisher.app_auth` from `CDB_GH_APP_ID` +
+   `CDB_GH_APP_INSTALLATION_ID` + (`CDB_GH_APP_PRIVATE_KEY` **or**
+   `CDB_GH_APP_PRIVATE_KEY_PATH`)
+4. Fail closed — **no** `GITHUB_TOKEN` / `GH_TOKEN` / `gh auth` fallback
+
+Documented aliases: `CDB_GITHUB_APP_ID`, `CDB_GITHUB_APP_INSTALLATION_ID`,
+`CDB_GITHUB_APP_PRIVATE_KEY_PATH`.
+
+Normal Check Run operation does **not** require manual JWT / installation-token
+steps when PEM + IDs are configured. For permission smoke without evidence
+gates:
+
+```bash
+python -m ci.publisher app-auth-probe --commit-sha <exact_probe_sha>
+```
+
+Shadow only (`cdb-local-ci-app-preview`). Refuses required name `cdb-local-ci`.
+
+Troubleshooting:
+
+| Symptom | Likely cause | Action |
+|---------|--------------|--------|
+| 401 on mint / Check Run | Bad PEM, wrong App ID, expired JWT clock skew | Recheck PEM path + IDs; do not print secrets |
+| 403 on Check Run create | Missing App permission `checks:write` | **STOP** `BLOCKED_APP_PERMISSION`; fix App permissions (no Commit Status bypass) |
+| 404 on `/app/installations/.../access_tokens` | Wrong installation ID or App not installed on repo | Fix installation ID / install App on canonical repo |
 
 ### CLI backend switch
 
