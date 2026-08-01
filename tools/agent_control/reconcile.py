@@ -20,7 +20,9 @@ from tools.agent_control.normalize import (
 from tools.agent_control.validate import validate_registry
 
 
-def _plan_digest(operations: list[dict[str, Any]], *, blocked: bool, reason: str | None) -> str:
+def _plan_digest(
+    operations: list[dict[str, Any]], *, blocked: bool, reason: str | None
+) -> str:
     payload = {
         "blocked": blocked,
         "operations": operations,
@@ -170,9 +172,10 @@ def build_plan(
             )
             continue
 
-        if current.get("fingerprint") == fingerprint and current.get("version") == desired[
-            "version"
-        ]:
+        if (
+            current.get("fingerprint") == fingerprint
+            and current.get("version") == desired["version"]
+        ):
             operations.append(
                 {
                     "op": "noop",

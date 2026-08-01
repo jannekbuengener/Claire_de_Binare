@@ -15,16 +15,18 @@ def _sorted_unique(values: list[str]) -> list[str]:
 
 
 def normalize_agent(agent: dict[str, Any], profiles: dict[str, Any]) -> dict[str, Any]:
-    ceiling = dict(profiles["execution_contracts"][agent["execution_contract_profile"]]["permissions"])
+    ceiling = dict(
+        profiles["execution_contracts"][agent["execution_contract_profile"]][
+            "permissions"
+        ]
+    )
     overrides = agent.get("permission_overrides") or {}
     effective = {key: bool(ceiling[key]) for key in PERMISSION_KEYS}
     for key, value in overrides.items():
         effective[key] = effective[key] and bool(value)
 
     labels = agent.get("labels_or_routing_selectors") or {}
-    normalized_labels = {
-        str(key): labels[key] for key in sorted(labels)
-    }
+    normalized_labels = {str(key): labels[key] for key in sorted(labels)}
     return {
         "agent_id": agent["agent_id"],
         "version": agent["version"],

@@ -43,8 +43,10 @@ def _reject_plaintext_secrets(node: Any, *, path: str = "$") -> None:
         for key, value in node.items():
             key_l = str(key).lower()
             if key_l in {"api_key", "secret", "token", "password", "bearer"}:
-                if isinstance(value, str) and value and not value.startswith(
-                    ("env:", "secret:")
+                if (
+                    isinstance(value, str)
+                    and value
+                    and not value.startswith(("env:", "secret:"))
                 ):
                     raise RegistryError(
                         "REGISTRY_PLAINTEXT_SECRET",

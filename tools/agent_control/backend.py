@@ -117,10 +117,14 @@ class MockBackend:
     name = "mock"
 
     def __init__(self, state: dict[str, Any] | None = None) -> None:
-        self._state = copy.deepcopy(state) if state is not None else {
-            "schema_id": "cdb.agent_registry.observed.v1",
-            "agents": {},
-        }
+        self._state = (
+            copy.deepcopy(state)
+            if state is not None
+            else {
+                "schema_id": "cdb.agent_registry.observed.v1",
+                "agents": {},
+            }
+        )
         normalize_observed_state(self._state)
         self.mutations: list[dict[str, Any]] = []
 

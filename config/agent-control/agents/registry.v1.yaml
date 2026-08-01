@@ -61,3 +61,32 @@ agents:
       lane: agent-skills
       role: disabled-placeholder
     depends_on: []
+
+  - agent_id: acp-mock-dispatcher
+    version: "1.0.0"
+    enabled: true
+    description: >
+      Mock-only governed dispatcher agent for #4253. Never live-dispatches;
+      provider_profile remains mock.v1.
+    execution_contract_profile: delivery_safe.v1
+    provider_profile: mock.v1
+    environment_profile: mock.v1
+    skills:
+      - session_core.v1
+    mcp_profiles:
+      - none.v1
+    subagents: []
+    labels_or_routing_selectors:
+      lane: agent-skills
+      batch_key: agent-skills
+      role: mock-dispatcher
+      objective: issue-4253
+    depends_on:
+      - acp-registry-reconciler
+    permission_overrides:
+      merge: false
+      publish_cdb_local_ci: false
+      close_issue: false
+      runtime_mutation: false
+      database_mutation: false
+      mcp_live_mutation: false

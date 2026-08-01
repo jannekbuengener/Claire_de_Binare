@@ -1,6 +1,7 @@
-"""CDB Agent Control Plane tooling (registry + dry-run reconciler).
+"""CDB Agent Control Plane tooling (registry + governed dispatcher).
 
-Issue #4252. Provider-neutral. No live provider mutations in this slice.
+Issues #4252 (registry) and #4253 (dispatcher). Provider-neutral.
+No live provider mutations in these slices; mock-only execute.
 """
 
 from __future__ import annotations

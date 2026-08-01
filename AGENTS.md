@@ -329,6 +329,12 @@ OpenCode skill surface zusaetzlich: `.opencode/skills/` (gezielt laden, nicht pa
   provider-neutral Desired State; CLI
   `python -m tools.agent_control registry validate|plan|reconcile` (dry-run default;
   no live provider mutation).
+- **Agent Dispatcher + Run State Machine:**
+  [`docs/contracts/agent_dispatch/CDB_AGENT_DISPATCH_V1.md`](docs/contracts/agent_dispatch/CDB_AGENT_DISPATCH_V1.md)
+  (`cdb.agent_dispatch_run.v1`, `#4253`) — provider-neutral dispatcher bound to
+  digest-verified execution contracts; CLI
+  `python -m tools.agent_control dispatch|watch|cancel|retry|evidence`
+  (dry-run default; mock-only execute; no Cursor adapter).
 - Read `knowledge/governance/CDB_AGENT_POLICY.md` section 4 before any write.
 - Respect single-writer locks, explicit stop signals, and write gates.
 - `DELIVERY_APPROVED.yaml` is human-controlled; agents must not modify it.

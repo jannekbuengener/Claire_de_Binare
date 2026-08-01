@@ -26,10 +26,15 @@ only reduce permissions; they never invent merge, Live-Go, or mutation rights.
 python -m tools.agent_control registry validate --config config/agent-control
 python -m tools.agent_control registry plan --config config/agent-control --state <STATE>
 python -m tools.agent_control registry reconcile --config config/agent-control --dry-run
+python -m tools.agent_control dispatch --contract <PATH> --registry config/agent-control \
+  --agent-id acp-mock-dispatcher --dry-run
+python -m tools.agent_control dispatch ... --state <RUNSTORE> --execute --allow-mock-dispatch
 ```
 
-`reconcile` defaults to dry-run. Live provider create/update/delete is forbidden
-in this slice. Mock apply is test-only (`--apply --allow-mock-apply`).
+`reconcile` / `dispatch` default to dry-run. Live provider create/update/delete
+and live dispatch are forbidden. Mock execute is test-only
+(`--execute --allow-mock-dispatch`). Registry agent `acp-mock-dispatcher` is the
+#4253 mock-only dispatcher binding.
 
 ## Schema
 
