@@ -64,6 +64,8 @@
   ],
   "provenance": {
     "research_brief_id": "rb-wave1-example-btc-trend",
+    "research_brief_version": "v1",
+    "research_brief_content_hash": "sha256:bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb",
     "compiler_ref": "docs-only-wave1",
     "source_origin": "research-validation-wave1"
   },

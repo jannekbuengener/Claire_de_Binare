@@ -1,0 +1,96 @@
+{
+  "schema_version": "cdb.candidate_evidence.v1",
+  "evidence_id": "ce-wave2-pass-001",
+  "run_id": "run-wave2-pass-001",
+  "candidate_id": "sc-wave1-btc-trend-breakout",
+  "candidate_version": "v1",
+  "generated_at": "2026-08-01T11:45:00Z",
+  "artifact_hashes": [
+    {
+      "artifact_ref": "metrics.json",
+      "sha256": "sha256:aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"
+    }
+  ],
+  "gate_results": [
+    {
+      "gate": "contract_completeness",
+      "verdict": "WARNING",
+      "notes": "Synthetic contract_completeness gate for Wave-2 PAPER contract."
+    },
+    {
+      "gate": "dataset_quality",
+      "verdict": "PASS",
+      "notes": "Synthetic dataset_quality gate for Wave-2 PAPER contract."
+    },
+    {
+      "gate": "deterministic_baseline_replay",
+      "verdict": "PASS",
+      "notes": "Synthetic deterministic_baseline_replay gate for Wave-2 PAPER contract."
+    },
+    {
+      "gate": "execution_cost_model",
+      "verdict": "PASS",
+      "notes": "Synthetic execution_cost_model gate for Wave-2 PAPER contract."
+    },
+    {
+      "gate": "parameter_sensitivity",
+      "verdict": "PASS",
+      "notes": "Synthetic parameter_sensitivity gate for Wave-2 PAPER contract."
+    },
+    {
+      "gate": "walk_forward",
+      "verdict": "PASS",
+      "notes": "Synthetic walk_forward gate for Wave-2 PAPER contract."
+    },
+    {
+      "gate": "bootstrap_or_monte_carlo",
+      "verdict": "PASS",
+      "notes": "Synthetic bootstrap_or_monte_carlo gate for Wave-2 PAPER contract."
+    },
+    {
+      "gate": "scenario_stress",
+      "verdict": "PASS",
+      "notes": "Synthetic scenario_stress gate for Wave-2 PAPER contract."
+    },
+    {
+      "gate": "arvp_replay",
+      "verdict": "PASS",
+      "notes": "Synthetic arvp_replay gate for Wave-2 PAPER contract."
+    },
+    {
+      "gate": "regime_scorecard",
+      "verdict": "PASS",
+      "notes": "Synthetic regime_scorecard gate for Wave-2 PAPER contract."
+    },
+    {
+      "gate": "replay_vs_paper",
+      "verdict": "PASS",
+      "notes": "Synthetic replay_vs_paper gate for Wave-2 PAPER contract."
+    }
+  ],
+  "gross_results": {
+    "return_ratio": 0.02,
+    "max_drawdown": 0.07
+  },
+  "net_results": {
+    "return_ratio": 0.012,
+    "max_drawdown": 0.07
+  },
+  "fees": 0.002,
+  "spread": 0.0015,
+  "slippage": 0.003,
+  "overall_verdict": "PASS",
+  "limitations": [
+    "Synthetic PASS fixture for PAPER_CANDIDATE transition contract only.",
+    "Does not authorize Paper/Live/Capital GO."
+  ],
+  "lineage_refs": {
+    "profitability_evidence_packet": "profitability_evidence_packet.v1",
+    "notes": "Adjacent evidence envelope; lineage #3043/#4022 remains authoritative for PEP."
+  },
+  "safety_boundaries": {
+    "missing_evidence_cannot_pass": true,
+    "lr_status": "NO-GO",
+    "automatic_strategy_promotion": false
+  }
+}
