@@ -1,0 +1,157 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "title": "CDB Source Evidence v1",
+  "description": "Normalized read-only research SourceEvidence. Research content is UNTRUSTED_INPUT. Never validation or decision authority. Synthetic fixtures only in examples.",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "schema_version",
+    "evidence_id",
+    "source_type",
+    "source_reference",
+    "retrieved_at",
+    "observation_window",
+    "claim",
+    "claim_type",
+    "uncertainty",
+    "missing_data",
+    "conflict_state",
+    "provenance",
+    "content_hash",
+    "trust_classification",
+    "validation_authority",
+    "decision_authority",
+    "contains_secrets",
+    "contains_account_data"
+  ],
+  "properties": {
+    "schema_version": {
+      "const": "cdb.source_evidence.v1"
+    },
+    "evidence_id": {
+      "type": "string",
+      "pattern": "^se-[a-z0-9][a-z0-9-]{2,80}$"
+    },
+    "source_type": {
+      "type": "string",
+      "enum": [
+        "binance",
+        "coinmarketcap",
+        "token_terminal",
+        "bigdata_com",
+        "gainium",
+        "hugging_face"
+      ]
+    },
+    "source_reference": {
+      "type": "string",
+      "minLength": 1,
+      "maxLength": 500
+    },
+    "retrieved_at": {
+      "type": "string",
+      "format": "date-time"
+    },
+    "observation_window": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "start",
+        "end"
+      ],
+      "properties": {
+        "start": {
+          "type": "string",
+          "format": "date-time"
+        },
+        "end": {
+          "type": "string",
+          "format": "date-time"
+        }
+      }
+    },
+    "claim": {
+      "type": "string",
+      "minLength": 1,
+      "maxLength": 4000
+    },
+    "claim_type": {
+      "type": "string",
+      "enum": [
+        "MARKET_OBSERVATION",
+        "METRIC",
+        "NARRATIVE",
+        "HYPOTHESIS_MATERIAL",
+        "PRESET_IDEA",
+        "RESEARCH_REFERENCE"
+      ]
+    },
+    "uncertainty": {
+      "type": "array",
+      "minItems": 1,
+      "items": {
+        "type": "string",
+        "minLength": 1
+      }
+    },
+    "missing_data": {
+      "type": "array",
+      "items": {
+        "type": "string",
+        "minLength": 1
+      }
+    },
+    "conflict_state": {
+      "type": "string",
+      "enum": [
+        "NONE",
+        "MARKED_CONFLICT",
+        "UNRESOLVED"
+      ]
+    },
+    "provenance": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "adapter_profile",
+        "retrieval_mode",
+        "synthetic_fixture"
+      ],
+      "properties": {
+        "adapter_profile": {
+          "type": "string",
+          "minLength": 1
+        },
+        "retrieval_mode": {
+          "const": "read_only"
+        },
+        "synthetic_fixture": {
+          "const": true
+        },
+        "notes": {
+          "type": "string",
+          "minLength": 1
+        }
+      }
+    },
+    "content_hash": {
+      "type": "string",
+      "pattern": "^sha256:[a-f0-9]{64}$"
+    },
+    "trust_classification": {
+      "const": "UNTRUSTED_INPUT"
+    },
+    "validation_authority": {
+      "const": false
+    },
+    "decision_authority": {
+      "const": false
+    },
+    "contains_secrets": {
+      "const": false
+    },
+    "contains_account_data": {
+      "const": false
+    }
+  }
+}

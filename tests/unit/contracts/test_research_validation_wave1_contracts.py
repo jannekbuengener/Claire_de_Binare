@@ -117,6 +117,10 @@ def test_incomplete_candidate_rejected_when_required_fields_missing() -> None:
 
 @pytest.mark.unit
 def test_candidate_version_change_requires_new_version_field() -> None:
+    from tools.research_validation.wave2_cross_contract import (
+        validate_candidate_lineage,
+    )
+
     payload = _load(EXAMPLES / "cdb_strategy_candidate_valid.json")
     mutated = deepcopy(payload)
     mutated["candidate_version"] = "v2"
@@ -126,6 +130,11 @@ def test_candidate_version_change_requires_new_version_field() -> None:
     assert list(Draft7Validator(schema).iter_errors(mutated)) == []
     assert mutated["candidate_version"] != payload["candidate_version"]
     assert mutated["parent_version"] == payload["candidate_version"]
+    assert validate_candidate_lineage(mutated) == []
+    assert validate_candidate_lineage(payload) == []
+    bad = deepcopy(mutated)
+    bad["parent_version"] = None
+    assert validate_candidate_lineage(bad)
 
 
 @pytest.mark.unit
