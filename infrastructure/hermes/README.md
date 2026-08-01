@@ -11,7 +11,7 @@ This directory never contains secrets, personal memory, sessions, or tokens.
 |---|---|
 | `VERSION_PIN.yaml` | Bound Hermes version/commit before install |
 | `hetzner/` | CLI/API provision, firewall, cloud-init, bootstrap/destroy |
-| `systemd/` | Hardened `hermes serve` units (loopback bind) |
+| `systemd/` | Hardened `hermes-dashboard@` units (loopback bind, `--isolated`) |
 | `windows/` | Dedicated workspace + kill-switch scripts |
 
 ## Profiles (repo distributions)
@@ -28,6 +28,7 @@ Versioned under `config/hermes/profiles/`:
 python -m tools.hermes_ops validate-profiles
 python -m tools.hermes_ops secret-scan
 python -m tools.hermes_ops policy-check
+python -m tools.hermes_ops pin-check --require-pinned
 ```
 
 Live Hetzner/Windows mutation requires operator credentials and Human-GO.

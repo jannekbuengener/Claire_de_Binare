@@ -149,14 +149,18 @@ BACKUP_OUT=/mnt/offhost AGE_RECIPIENT=<age-pubkey> \
 
 CONFIRM=RESTORE bash infrastructure/hermes/hetzner/restore.sh /mnt/offhost/hermes-profiles-*.tar.age
 
-CONFIRM=UPDATE HERMES_COMMIT=<sha> HERMES_INSTALL_SH_SHA256=<sha> \
-  bash infrastructure/hermes/hetzner/update.sh
+# Reads install_url + sha256 + commit from VERSION_PIN.yaml (required).
+# Checkout path: /opt/hermes/hermes-agent (same as bootstrap.sh).
+CONFIRM=UPDATE bash infrastructure/hermes/hetzner/update.sh
 
-CONFIRM=ROLLBACK HERMES_INSTALL_SH_SHA256=<sha> \
-  bash infrastructure/hermes/hetzner/rollback.sh
+CONFIRM=ROLLBACK bash infrastructure/hermes/hetzner/rollback.sh
 ```
 
-Also enable Hetzner server backups (`provision.sh` / `server.yaml` → `backups: true`).
+`update.sh` / `rollback.sh` refuse unsigned `main/scripts/install.sh` downloads
+and fail if pin sha256 is empty or mismatched.
+
+Hetzner server backups are required: `provision.sh` enables them or dies
+(`server.yaml` → `backups: true` is the intent mirror).
 
 ## Rotation / Revoke
 
@@ -171,7 +175,9 @@ Also enable Hetzner server backups (`provision.sh` / `server.yaml` → `backups:
 CONFIRM=DESTROY bash infrastructure/hermes/hetzner/destroy.sh
 ```
 
-Only `cdb-hermes-01` + `cdb-hermes-deny-inbound` are eligible. Then complete the
+Only `cdb-hermes-01` + `cdb-hermes-deny-inbound` are eligible, and the server
+must carry labels `role=hermes`, `issue=4289`, `project=claire-de-binare`.
+Name-only matches without those labels are refused. Then complete the
 revocation checklist printed by the script.
 
 ## Evidence

@@ -1,6 +1,9 @@
 #!/usr/bin/env bash
 # Idempotent Hetzner Cloud provisioner for Hermes (#4289).
-# Applies firewall + server intent via hcloud CLI. Fail-closed on cost / duplicates.
+# Applies firewall + server via hcloud CLI. server.yaml / firewall.yaml are
+# intent mirrors (documented defaults); live apply uses the variables below
+# which must stay aligned with those YAML files.
+# Fail-closed on cost / duplicates / backup enable failure.
 set -euo pipefail
 
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
@@ -13,6 +16,7 @@ SSH_KEY_NAME="${HERMES_SSH_KEY_NAME:-}"
 MONTHLY_LIMIT_EUR="${HERMES_MONTHLY_EUR_LIMIT:-15}"
 # Documented estimate (official price table 2026-06-15): CPX21 11.99 + IPv4 0.50 + backups ~2.40
 ESTIMATE_EUR="${HERMES_COST_ESTIMATE_EUR:-14.89}"
+ENABLE_BACKUPS="${HERMES_ENABLE_BACKUPS:-1}"
 
 log() { printf '[hermes-provision] %s\n' "$*"; }
 die() { printf '[hermes-provision] ERROR: %s\n' "$*" >&2; exit 1; }
@@ -32,43 +36,45 @@ ensure_firewall() {
     hcloud firewall create --name "${FIREWALL_NAME}"
     log "created firewall ${FIREWALL_NAME}"
   fi
-  # Default deny inbound: remove any inbound rules if present (idempotent best-effort).
-  # Outbound HTTPS/DNS/Tailscale may be added by operator; Hetzner default allows egress.
-  # Explicit: do not open 22/9119/9120 publicly.
+  # Default deny inbound (matches firewall.yaml intent: inbound: []).
+  # Do not open 22/9119/9120 publicly.
   log "firewall inbound remains deny-by-default (no public Hermes/SSH ports)"
+}
+
+enable_backups_or_die() {
+  if [[ "${ENABLE_BACKUPS}" != "1" ]]; then
+    die "HERMES_ENABLE_BACKUPS must be 1 for #4289 (backups required under cost gate)"
+  fi
+  if hcloud server backup enable "${SERVER_NAME}"; then
+    log "backups enabled for ${SERVER_NAME}"
+  else
+    die "failed to enable backups for ${SERVER_NAME} — refuse incomplete provision"
+  fi
 }
 
 ensure_server() {
   if hcloud server describe "${SERVER_NAME}" >/dev/null 2>&1; then
     log "server already exists: ${SERVER_NAME} (no duplicate create)"
+    # Idempotent: ensure backups are on for pre-existing session-owned host.
+    enable_backups_or_die
     return 0
   fi
   [[ -n "${SSH_KEY_NAME}" ]] || die "set HERMES_SSH_KEY_NAME to an existing hcloud SSH key"
   local userdata="${SCRIPT_DIR}/cloud-init.yaml"
   [[ -f "${userdata}" ]] || die "missing ${userdata}"
-  local args=(
-    server create
-    --name "${SERVER_NAME}"
-    --type "${SERVER_TYPE}"
-    --image "${IMAGE}"
-    --location "${LOCATION}"
-    --ssh-key "${SSH_KEY_NAME}"
-    --user-data-from-file "${userdata}"
-    --label "project=claire-de-binare"
-    --label "role=hermes"
-    --label "issue=4289"
+  # Align with server.yaml intent (name/type/image/location/labels/firewall).
+  hcloud server create \
+    --name "${SERVER_NAME}" \
+    --type "${SERVER_TYPE}" \
+    --image "${IMAGE}" \
+    --location "${LOCATION}" \
+    --ssh-key "${SSH_KEY_NAME}" \
+    --user-data-from-file "${userdata}" \
+    --label "project=claire-de-binare" \
+    --label "role=hermes" \
+    --label "issue=4289" \
     --firewall "${FIREWALL_NAME}"
-  )
-  if [[ "${HERMES_ENABLE_BACKUPS:-1}" == "1" ]]; then
-    args+=(--start-after-create)
-  fi
-  hcloud "${args[@]}"
-  # Enable backups if supported by CLI version.
-  if hcloud server backup enable "${SERVER_NAME}" >/dev/null 2>&1; then
-    log "backups enabled for ${SERVER_NAME}"
-  else
-    log "WARN: could not enable backups via CLI — verify in console before go-live"
-  fi
+  enable_backups_or_die
   log "created server ${SERVER_NAME}"
 }
 

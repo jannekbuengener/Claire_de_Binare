@@ -1,4 +1,7 @@
 # Hetzner Cloud Firewall — default deny inbound (#4289).
+# Intent mirror: provision.sh creates/attaches this firewall name with
+# deny-by-default inbound (empty rule set). Outbound rules below document
+# expected egress; Hetzner default egress is allowed unless tightened later.
 # Tailscale / SSH over private path only. No public Hermes or dashboard ports.
 
 schema_version: cdb.hermes.hetzner_firewall/v1

@@ -1,5 +1,7 @@
 # Declarative Hetzner Cloud server intent for Hermes (#4289).
-# Applied via hcloud CLI (or equivalent API). No secrets here.
+# Intent mirror for operators/reviewers. Live apply path is provision.sh
+# (hcloud CLI) which must keep name/type/image/location/labels/firewall aligned.
+# No secrets here.
 
 schema_version: cdb.hermes.hetzner_server/v1
 name: cdb-hermes-01

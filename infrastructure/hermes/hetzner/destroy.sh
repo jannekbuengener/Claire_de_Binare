@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 # Destroy / revoke Hermes Hetzner host created for #4289.
-# Fail-closed: only deletes resources whose names match the Hermes contract.
+# Fail-closed: name allowlist AND required labels. Never deletes foreign resources.
 # Does NOT delete off-host encrypted backups. Requires CONFIRM=DESTROY.
 set -euo pipefail
 
@@ -9,6 +9,9 @@ SERVER_NAME="${HERMES_SERVER_NAME:-cdb-hermes-01}"
 FIREWALL_NAME="${HERMES_FIREWALL_NAME:-cdb-hermes-deny-inbound}"
 ALLOWED_SERVER_NAME="cdb-hermes-01"
 ALLOWED_FIREWALL_NAME="cdb-hermes-deny-inbound"
+REQUIRED_LABEL_ROLE="hermes"
+REQUIRED_LABEL_ISSUE="4289"
+REQUIRED_LABEL_PROJECT="claire-de-binare"
 
 die() { printf '[hermes-destroy] ERROR: %s\n' "$*" >&2; exit 1; }
 log() { printf '[hermes-destroy] %s\n' "$*"; }
@@ -20,16 +23,33 @@ log() { printf '[hermes-destroy] %s\n' "$*"; }
   || die "refuse destroy of unexpected firewall name: ${FIREWALL_NAME}"
 
 command -v hcloud >/dev/null 2>&1 || die "hcloud CLI required"
+command -v python3 >/dev/null 2>&1 || die "python3 required for label guard"
 
-# Label / name guard: if server exists, require matching name only (no wildcards).
-if hcloud server describe "${SERVER_NAME}" >/dev/null 2>&1; then
-  labels="$(hcloud server describe "${SERVER_NAME}" -o json 2>/dev/null \
-    | python3 -c 'import json,sys; d=json.load(sys.stdin); print(d.get("labels") or {})' \
-    2>/dev/null || echo '{}')"
-  log "target server labels=${labels}"
-else
-  log "server ${SERVER_NAME} already absent"
-fi
+require_server_labels() {
+  local json labels_json
+  json="$(hcloud server describe "${SERVER_NAME}" -o json)" \
+    || die "cannot describe server ${SERVER_NAME}"
+  labels_json="$(printf '%s' "${json}" | python3 -c '
+import json, sys
+d = json.load(sys.stdin)
+labels = d.get("labels") or {}
+need = {
+    "role": "'"${REQUIRED_LABEL_ROLE}"'",
+    "issue": "'"${REQUIRED_LABEL_ISSUE}"'",
+    "project": "'"${REQUIRED_LABEL_PROJECT}"'",
+}
+missing = [k for k, v in need.items() if labels.get(k) != v]
+if missing:
+    print("MISSING:" + ",".join(missing))
+    print("LABELS:" + json.dumps(labels, sort_keys=True))
+    sys.exit(2)
+print(json.dumps(labels, sort_keys=True))
+')" || {
+    printf '%s\n' "${labels_json}" >&2
+    die "refuse destroy: server ${SERVER_NAME} missing required labels role=${REQUIRED_LABEL_ROLE} issue=${REQUIRED_LABEL_ISSUE} project=${REQUIRED_LABEL_PROJECT}"
+  }
+  log "label guard PASS: ${labels_json}"
+}
 
 # Best-effort local stop if executed on the host itself.
 if command -v systemctl >/dev/null 2>&1; then
@@ -40,6 +60,7 @@ if command -v systemctl >/dev/null 2>&1; then
 fi
 
 if hcloud server describe "${SERVER_NAME}" >/dev/null 2>&1; then
+  require_server_labels
   hcloud server delete "${SERVER_NAME}"
   log "deleted server ${SERVER_NAME}"
 else
