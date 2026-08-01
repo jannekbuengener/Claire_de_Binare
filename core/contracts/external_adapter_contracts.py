@@ -75,6 +75,10 @@ class ExecutionAdapterRequest:
     decision_contract_v1: Mapping[str, Any]
     runtime_context: Mapping[str, Any]
     policy_snapshot: Mapping[str, Any] | None = None
+    reduce_only: bool = False
+    position_before: str | None = None
+    max_executable_quantity: str | None = None
+    reduce_only_contract_version: str | None = None
 
 
 @dataclass(frozen=True, slots=True)
@@ -88,6 +92,7 @@ class ExecutionAdapterResponse:
     venue_order_id: str | None = None
     error_message: str | None = None
     raw_venue_payload: Mapping[str, Any] | None = None
+    reduce_only_acknowledged: bool = False
 
 
 @dataclass(frozen=True, slots=True)

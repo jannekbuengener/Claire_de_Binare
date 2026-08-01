@@ -86,10 +86,11 @@ def test_main_integration_rebinds_sha_and_drift_forces_completeness() -> None:
     assert "invalidates" in text.lower() or "forces a fresh" in text
 
 
-def test_commit_status_not_check_run_and_no_admin() -> None:
+def test_app_check_run_publish_and_no_admin() -> None:
     text = _skill()
     assert "cdb-local-ci" in text
-    assert "Commit Status" in text
+    assert "Check Run" in text
+    assert "4410232" in text
     assert "never `--admin`" in text or "never `--admin`" in text or "--admin" in text
     assert "Fake-Green" in text or "Fake-Green" in text
 

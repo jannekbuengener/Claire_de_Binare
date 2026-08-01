@@ -28,7 +28,7 @@ dieser Tabelle.
 
 | Quelle | Check-Kontext | Typ |
 |---|---|---|
-| Local CI Status Publisher | `cdb-local-ci` | Commit Status |
+| Local CI Status Publisher | `cdb-local-ci` | App Check Run (`app_id=4410232`) |
 
 | Workflow | Rolle |
 |---|---|
@@ -91,7 +91,7 @@ nicht `cdb-local-ci`.
 | `required-checks-audit.yml` | manual-only | workflow_dispatch | read-only | low |
 | `root-session-hygiene-warning.yml` | manual-only | workflow_dispatch | read-only | low |
 | `security-alert-readout.yml` | aktiv | schedule, workflow_dispatch | issues:write, pull-requests:write | medium |
-| `security-scan.yml` | aktiv | push, schedule, workflow_dispatch | read-only | low |
+| `security-scan.yml` | aktiv | schedule, workflow_dispatch | read-only | low |
 | `shadow-soak-evidence.yml` | aktiv | schedule, workflow_dispatch | read-only | low |
 | `smart-insights.yml` | aktiv | schedule, workflow_dispatch | read-only | low |
 | `stale.yml` | aktiv | schedule, workflow_dispatch | issues:write, pull-requests:write | medium |

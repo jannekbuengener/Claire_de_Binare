@@ -1,0 +1,219 @@
+{
+  "boundaries": {
+    "echtgeld_go": false,
+    "live_go": false,
+    "lr_verdict": "NO-GO",
+    "productive_adapter_enabled": false,
+    "productive_db_write": false,
+    "productive_queue_enabled": false,
+    "real_stack_persistence_proven": false,
+    "risk_limits_changed": false
+  },
+  "commit_sha": "4b3c1b39313551fabd15b797d92a3f7177c7b387",
+  "contract_versions": {
+    "dedup_state": "cdb-stop-loss-dedup-state/v1",
+    "exit_intent": "cdb-stop-loss-exit-intent/v1",
+    "shadow_report": "cdb-stop-loss-shadow-report/v1",
+    "trigger": "cdb-stop-loss-trigger/v1"
+  },
+  "generated_at_utc": "2026-07-31T04:02:38.699587",
+  "issue": 4186,
+  "scenarios": [
+    {
+      "expected": "STOP_LOSS_EXIT_INTENT_EMITTED",
+      "intents_emitted": 1,
+      "observed": "STOP_LOSS_EXIT_INTENT_EMITTED",
+      "scenario_id": "D1",
+      "status": "PASS",
+      "title": "Price breach produces one exit intent"
+    },
+    {
+      "expected": "STOP_LOSS_DUPLICATE_SUPPRESSED",
+      "intents_emitted": 1,
+      "observed": "STOP_LOSS_DUPLICATE_SUPPRESSED",
+      "scenario_id": "D2",
+      "status": "PASS",
+      "title": "Double delivery of the same event"
+    },
+    {
+      "expected": "STOP_LOSS_DUPLICATE_SUPPRESSED",
+      "intents_emitted": 1,
+      "observed": "STOP_LOSS_DUPLICATE_SUPPRESSED",
+      "scenario_id": "D3",
+      "status": "PASS",
+      "title": "Consumer restart after finalize (replay)"
+    },
+    {
+      "expected": "STOP_LOSS_PREPARE_INCOMPLETE",
+      "intents_emitted": 1,
+      "observed": "STOP_LOSS_PREPARE_INCOMPLETE",
+      "scenario_id": "D4",
+      "status": "PASS",
+      "title": "Consumer restart between prepare and finalize"
+    },
+    {
+      "expected": "STOP_LOSS_DEDUP_STATE_MISSING",
+      "intents_emitted": 0,
+      "observed": "STOP_LOSS_DEDUP_STATE_MISSING",
+      "scenario_id": "D5",
+      "status": "PASS",
+      "title": "Missing dedup state"
+    },
+    {
+      "expected": "STOP_LOSS_DEDUP_STATE_CORRUPT",
+      "intents_emitted": 0,
+      "observed": "STOP_LOSS_DEDUP_STATE_CORRUPT",
+      "scenario_id": "D6",
+      "status": "PASS",
+      "title": "Corrupt dedup state"
+    },
+    {
+      "expected": "STOP_LOSS_DEDUP_STATE_CONTRADICTORY",
+      "intents_emitted": 1,
+      "observed": "STOP_LOSS_DEDUP_STATE_CONTRADICTORY",
+      "scenario_id": "D7",
+      "status": "PASS",
+      "title": "Contradictory dedup fingerprint"
+    },
+    {
+      "expected": "STOP_LOSS_EXIT_INTENT_EMITTED",
+      "intents_emitted": 2,
+      "observed": "STOP_LOSS_EXIT_INTENT_EMITTED",
+      "scenario_id": "D8",
+      "status": "PASS",
+      "title": "Newer protection event after reopen"
+    },
+    {
+      "expected": "STOP_LOSS_POSITION_STATE_UNKNOWN",
+      "intents_emitted": 0,
+      "observed": "STOP_LOSS_POSITION_STATE_UNKNOWN",
+      "scenario_id": "D9",
+      "status": "PASS",
+      "title": "Unknown position state"
+    },
+    {
+      "expected": "STOP_LOSS_EXIT_INTENT_SINK_FAILED",
+      "intents_emitted": 0,
+      "observed": "STOP_LOSS_EXIT_INTENT_SINK_FAILED",
+      "scenario_id": "D10",
+      "status": "PASS",
+      "title": "Productive exit adapter stays disabled"
+    },
+    {
+      "expected": "STOP_LOSS_PRICE_STALE",
+      "intents_emitted": 0,
+      "observed": "STOP_LOSS_PRICE_STALE",
+      "scenario_id": "D11",
+      "status": "PASS",
+      "title": "Stale price observation"
+    }
+  ],
+  "schema_version": "cdb-stop-loss-consumer-evidence/v1",
+  "shadow_run": {
+    "decision_counts": {
+      "DUPLICATE_SUPPRESSED": 3,
+      "EXIT_INTENT_EMITTED": 1,
+      "NO_TRIGGER": 3
+    },
+    "emitted_intent_count": 1,
+    "emitted_intent_ids": [
+      "slx-217d9d01bd77dbb432399aec9074803f"
+    ],
+    "productive_adapter_enabled": false,
+    "reason_codes": [
+      "STOP_LOSS_NO_TRIGGER_PRICE_WITHIN_STOP",
+      "STOP_LOSS_EXIT_INTENT_EMITTED",
+      "STOP_LOSS_DUPLICATE_SUPPRESSED"
+    ],
+    "schema_version": "cdb-stop-loss-shadow-report/v1",
+    "steps": [
+      {
+        "close": "100.20000000",
+        "decision": "NO_TRIGGER",
+        "event_id": null,
+        "index": 0,
+        "intent_id": null,
+        "observed_at_ms": 1800000060000,
+        "reason_code": "STOP_LOSS_NO_TRIGGER_PRICE_WITHIN_STOP",
+        "restarted_before_step": false
+      },
+      {
+        "close": "99.30000000",
+        "decision": "NO_TRIGGER",
+        "event_id": null,
+        "index": 1,
+        "intent_id": null,
+        "observed_at_ms": 1800000120000,
+        "reason_code": "STOP_LOSS_NO_TRIGGER_PRICE_WITHIN_STOP",
+        "restarted_before_step": false
+      },
+      {
+        "close": "98.40000000",
+        "decision": "NO_TRIGGER",
+        "event_id": null,
+        "index": 2,
+        "intent_id": null,
+        "observed_at_ms": 1800000180000,
+        "reason_code": "STOP_LOSS_NO_TRIGGER_PRICE_WITHIN_STOP",
+        "restarted_before_step": false
+      },
+      {
+        "close": "97.60000000",
+        "decision": "EXIT_INTENT_EMITTED",
+        "event_id": "slp-7746fa44bee2f0f47bd7807d1d627f9c",
+        "index": 3,
+        "intent_id": "slx-217d9d01bd77dbb432399aec9074803f",
+        "observed_at_ms": 1800000240000,
+        "reason_code": "STOP_LOSS_EXIT_INTENT_EMITTED",
+        "restarted_before_step": false
+      },
+      {
+        "close": "96.30000000",
+        "decision": "DUPLICATE_SUPPRESSED",
+        "event_id": "slp-7746fa44bee2f0f47bd7807d1d627f9c",
+        "index": 4,
+        "intent_id": null,
+        "observed_at_ms": 1800000300000,
+        "reason_code": "STOP_LOSS_DUPLICATE_SUPPRESSED",
+        "restarted_before_step": true
+      },
+      {
+        "close": "96.80000000",
+        "decision": "DUPLICATE_SUPPRESSED",
+        "event_id": "slp-7746fa44bee2f0f47bd7807d1d627f9c",
+        "index": 5,
+        "intent_id": null,
+        "observed_at_ms": 1800000360000,
+        "reason_code": "STOP_LOSS_DUPLICATE_SUPPRESSED",
+        "restarted_before_step": false
+      },
+      {
+        "close": "97.40000000",
+        "decision": "DUPLICATE_SUPPRESSED",
+        "event_id": "slp-7746fa44bee2f0f47bd7807d1d627f9c",
+        "index": 6,
+        "intent_id": null,
+        "observed_at_ms": 1800000420000,
+        "reason_code": "STOP_LOSS_DUPLICATE_SUPPRESSED",
+        "restarted_before_step": false
+      }
+    ],
+    "symbol": "BTCUSDT",
+    "unique_emitted_intent_count": 1
+  },
+  "stop_loss_protection_evidence": {
+    "consumer_proven": true,
+    "persistent_dedup_proven": true,
+    "productive_exit_path_proven": false,
+    "real_stack_persistence_proven": false,
+    "restart_replay_proven": true,
+    "trigger_contract_proven": true
+  },
+  "stop_loss_protection_evidence_gaps": [
+    "real_stack_persistence_proven",
+    "productive_exit_path_proven"
+  ],
+  "stop_loss_protection_status": "UNAVAILABLE",
+  "verdict": "PASS_CONSUMER_DEDUP_MOCK_SHADOW",
+  "worktree_dirty": false
+}

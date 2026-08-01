@@ -85,9 +85,22 @@ def test_security_scan_uses_summary_artifacts_not_secret_payloads() -> None:
     assert "secrets.json" not in content
 
 
+def test_security_scan_bimonthly_trigger_contract() -> None:
+    """#4275: no push/PR noise; bimonthly schedule + manual dispatch only."""
+    path = helpers.WORKFLOWS_DIR / "security-scan.yml"
+    row = helpers.build_security_boundary_row(path)
+    schedule = helpers.build_schedule_entry(path)
+    assert row.has_workflow_dispatch is True
+    assert row.has_schedule is True
+    assert "push" not in row.triggers
+    assert "pull_request" not in row.triggers
+    assert set(row.triggers) == {"schedule", "workflow_dispatch"}
+    assert schedule.crons == ("0 2 1 2,4,6,8,10,12 *",)
+
+
 def test_security_alert_readout_scheduled_vs_manual_boundary_is_documented() -> None:
-    content = (
-        helpers.WORKFLOWS_DIR / "security-alert-readout.yml"
-    ).read_text(encoding="utf-8")
+    content = (helpers.WORKFLOWS_DIR / "security-alert-readout.yml").read_text(
+        encoding="utf-8"
+    )
     assert 'LIVE_MODE="true"' in content
     assert 'if [[ "${GITHUB_EVENT_NAME}" == "workflow_dispatch" ]]; then' in content

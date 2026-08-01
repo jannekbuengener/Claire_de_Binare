@@ -292,7 +292,7 @@ Operative Messkette fuer begrenzte ARVP natural-paper/diagnostic Beobachtungen. 
 2. **Event Sourcing**: Alle State-Aenderungen ueber Events (Replay-faehig)
 3. **Circuit Breaker**: Risk Service gated alle Order Execution
 4. **Determinismus**: Reproduzierbare Ergebnisse via Event Replay (LR-021: deterministic shadow replay via `core/replay/` stack)
-5. **TLS Optional**: Aktivierbar via `-TLS` Flag (Redis + PostgreSQL)
+5. **TLS Overlay quarantiniert**: `tls.yml` / `-TLS` sind LEGACY / QUARANTINED (`RETIRE_QUARANTINE`, #4120); kein Operator-Startpfad
 6. **Localhost Binding**: Alle Ports auf 127.0.0.1 (keine externe Exposition)
 7. **Zugangsdaten-/Logging-Hygiene**: Der Zugangsdaten-Loader und SMTP-Alerter protokollieren keine zugangsdaten-abgeleiteten Identifikatoren oder Empfaengeradressen im Klartext; Service-API-Fehlerantworten bleiben auf sichere Fehlercodes ohne Exception-/Stacktrace-Details begrenzt.
 8. **Canonical Determinism**: Alle kanonischen Report-Felder sind frei von Wall-Clock-Zeit; deterministische JSON-Serialisierung via `core/replay/canonical_json.py` (LR-021)
@@ -318,7 +318,8 @@ compose.red.yml    -> RED: Signal + Monitoring             [kanonisch]
 logging.yml        -> Logging Overlay (Loki + Promtail + Alertmanager) [separates Overlay, nicht Standard-Start]
 ```
 
-Legacy-Layer (base.yml, dev.yml, tls.yml, etc.) existieren noch, sind nicht mehr kanonisch.
+Legacy-Layer (base.yml, dev.yml, etc.) existieren noch, sind nicht mehr kanonisch.
+`tls.yml` ist zusätzlich **QUARANTINED** (#4120) und darf nicht als Startpfad empfohlen werden.
 
 Kanonische Image-Pins fuer BLUE-Datenlayer (`cdb_postgres`, `cdb_redis`): `governance/SERVICE_CATALOG.md` § Infrastruktur-Services (Spiegel von `compose.blue.yml`).
 

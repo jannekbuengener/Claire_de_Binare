@@ -35,6 +35,7 @@ def execution_harness(monkeypatch: pytest.MonkeyPatch) -> ExecutionHarness:
 
     executor = MagicMock()
     executor.execute = None
+    executor.supports_reduce_only = True
     publish_result = MagicMock()
     db = MagicMock()
 

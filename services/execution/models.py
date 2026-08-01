@@ -81,12 +81,18 @@ class Order:
     metadata: Optional[dict] = None
     # LR-030: Shadow mode enforcement
     run_mode: Optional[str] = None
+    # Issue #4184: explicit contract, never inferred from BUY/SELL alone.
+    reduce_only: bool = False
 
     @classmethod
     def from_event(cls, payload: dict) -> "Order":
         """Erstellt Order aus einem Event-Payload"""
         if payload.get("type") not in (None, "order"):
             raise ValueError(f"Ungueltiger Order-Typ: {payload.get('type')}")
+        if "reduce_only" in payload and not isinstance(
+            payload.get("reduce_only"), bool
+        ):
+            raise ValueError("reduce_only must be a boolean")
 
         side = payload["side"].upper()
         if side not in ("BUY", "SELL"):
@@ -136,6 +142,7 @@ class Order:
             policy_snapshot=_parse_json_field(payload.get("policy_snapshot")),
             metadata=_parse_json_field(payload.get("metadata")),
             run_mode=_run_mode,
+            reduce_only=payload.get("reduce_only") is True,
         )
 
     def to_dict(self) -> dict:
@@ -191,6 +198,7 @@ class Order:
             payload["policy_snapshot"] = self.policy_snapshot
         if self.metadata is not None:
             payload["metadata"] = self.metadata
+        payload["reduce_only"] = self.reduce_only
         return payload
 
 
@@ -212,6 +220,8 @@ class ExecutionResult:
     timestamp: Optional[str] = None
     fill_id: Optional[str] = None  # Phase 8E: 1:1 mapping to order_id for FILL events
     metadata: Optional[dict] = None
+    reduce_only: bool = False
+    reduce_only_contract: Optional[dict] = None
     type: Literal["order_result"] = "order_result"
 
     def __post_init__(self) -> None:
@@ -226,7 +236,7 @@ class ExecutionResult:
         if status in {OrderStatus.FAILED.value, OrderStatus.CANCELLED.value}:
             return "ERROR"
         if status == OrderStatus.PARTIALLY_FILLED.value:
-            return "FILLED"
+            return OrderStatus.PARTIALLY_FILLED.value
         if status in {OrderStatus.SUBMITTED.value, OrderStatus.PENDING.value}:
             return "ERROR"
         return status
@@ -273,6 +283,11 @@ class ExecutionResult:
             payload["error_message"] = self.error_message
         if self.metadata is not None:
             payload["metadata"] = self.metadata
+        if self.fill_id is not None:
+            payload["fill_id"] = self.fill_id
+        if self.reduce_only:
+            payload["reduce_only"] = True
+            payload["reduce_only_contract"] = self.reduce_only_contract or {}
         return payload
 
 
