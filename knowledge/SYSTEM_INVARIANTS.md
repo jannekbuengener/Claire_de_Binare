@@ -45,10 +45,10 @@ Ein Verstoss gegen diese Regeln bedeutet **Systembruch**.
 **Ausnahme:** Keine - auch nicht fuer "Debugging".
 **Pruefung:** docker ps zeigt nur 127.0.0.1:PORT.
 
-### INV-022: TLS Optional aber Prepared
-**Regel:** TLS fuer Redis + PostgreSQL muss aktivierbar sein.
-**Implementierung:** `tls.yml` Overlay + `SECRETS_PATH`-Pfad für TLS-Zertifikate. [LEGACY COMPAT: `-TLS` Flag in `infrastructure/scripts/stack_up.ps1`]
-**Pruefung:** tls.yml existiert und ist syntaktisch korrekt.
+### INV-022: TLS Overlay quarantiniert (kein Operator-Startpfad)
+**Regel:** Der historische Compose-Overlay `tls.yml` ist LEGACY / QUARANTINED und darf nicht als normaler Startpfad erscheinen. Canonical Runtime bleibt BLUE+RED ohne `tls.yml`. Secrets-Canon bleibt `${SECRETS_PATH}` (nicht `.cdb_local/tls`).
+**Implementierung:** Quarantäne-Banner in `infrastructure/compose/tls.yml` und `infrastructure/tls/TLS_SETUP.md` (Decision `RETIRE_QUARANTINE`, Issue #4120). `-TLS` in `infrastructure/scripts/stack_up.ps1` ist fail-closed Legacy-Kompatibilitaet (lehnt Overlay-Start ab).
+**Pruefung:** Contract-Tests unter `tests/unit/infra/test_tls_network_contract.py` (Quarantäne-Banner, kein aktiver Canon-Startpfad).
 
 ---
 

@@ -19,12 +19,17 @@ import sys
 from collections import Counter
 from pathlib import Path
 
+from tools.market_data.assign_regime_offline import (
+    REGIME_ID_TO_NAME,
+    REGIME_NAME_TO_ID,
+    annotate_regime_row,
+    resolve_assigned_regime,
+)
+
 RAW_PATH = Path("artifacts/candles/mexc_strict_window_3091/candles.jsonl")
 DERIVED_ROOT = Path("artifacts/candles/mexc_strict_window_3091_regime_calibration")
 
-EXPECTED_RAW_SHA256 = (
-    "d79a1c3c81191dcf4418ae0c2b2775a6f354ed0cc6801a6955904871c4077605"
-)
+EXPECTED_RAW_SHA256 = "d79a1c3c81191dcf4418ae0c2b2775a6f354ed0cc6801a6955904871c4077605"
 
 ADX_PERIOD = 14
 ATR_PERIOD = 14
@@ -33,13 +38,7 @@ ADX_RANGE_THRESHOLD = 20.0
 CONFIRMATION_BARS = 3
 BUFFER_MAXLEN = max(ADX_PERIOD, ATR_PERIOD) * 5
 
-REGIME_NAME_TO_ID = {
-    "TREND": 0,
-    "RANGE": 1,
-    "HIGH_VOL_CHAOTIC": 2,
-    "CRISIS": 3,
-}
-REGIME_ID_TO_NAME = {v: k for k, v in REGIME_NAME_TO_ID.items()}
+_VALID_REGIME_IDS = frozenset(REGIME_NAME_TO_ID.values())
 
 # Calibration grid: (variant_slug, atr_threshold, note)
 # Thresholds derived from data percentiles (see analyze_btcusdt_regime_calibration_3032.py output)
@@ -169,15 +168,15 @@ def compute_adx(candles: list[dict], period: int) -> float | None:
 
 def build_derived_candles(
     raw_candles: list[dict], atr_threshold: float
-) -> tuple[list[dict], Counter[int]]:
+) -> tuple[list[dict], Counter]:
     """Build derived candles with parameterized ATR threshold.
 
     Faithfully mirrors services/regime/service.py:_derive_regime.
+    Warmup / UNKNOWN map to ``regime_id=None`` (fail-closed). Refs #4188.
     """
     current_regime = "UNKNOWN"
     candidate_regime: str | None = None
     candidate_count = 0
-    assigned_regime_id = 0
 
     buffer: list[dict] = []
     derived: list[dict] = []
@@ -213,13 +212,23 @@ def build_derived_candles(
                 candidate_regime = None
                 candidate_count = 0
 
-            assigned_regime_id = REGIME_NAME_TO_ID.get(current_regime, 0)
+            assigned_regime_id, block_reason = resolve_assigned_regime(
+                indicators_ready=True,
+                current_regime=current_regime,
+            )
         else:
-            assigned_regime_id = 0
+            assigned_regime_id, block_reason = resolve_assigned_regime(
+                indicators_ready=False,
+                current_regime=current_regime,
+            )
 
-        row = dict(candle)
-        row["regime_id"] = assigned_regime_id
-        derived.append(row)
+        derived.append(
+            annotate_regime_row(
+                candle,
+                regime_id=assigned_regime_id,
+                block_reason=block_reason,
+            )
+        )
 
     distribution = Counter(r["regime_id"] for r in derived)
     return derived, distribution
@@ -230,7 +239,7 @@ def write_variant_manifest(
     slug: str,
     atr_threshold: float,
     note: str,
-    distribution: Counter[int],
+    distribution: Counter,
     raw_rows: int,
     derived_rows: int,
 ) -> None:
@@ -238,7 +247,7 @@ def write_variant_manifest(
         "schema_version": "calibration_variant_manifest.v1",
         "issue": "#3144",
         "parent": "#3032",
-        "refs": ["#3142", "#3143"],
+        "refs": ["#3142", "#3143", "#4188"],
         "variant_slug": slug,
         "atr_high_vol_threshold": atr_threshold,
         "threshold_note": note,
@@ -277,26 +286,42 @@ def write_variant_manifest(
             "1": "RANGE",
             "2": "HIGH_VOL_CHAOTIC",
             "3": "CRISIS",
+            "null": "UNKNOWN",
         },
         "regime_distribution": {
-            str(rid): {
-                "regime_name": REGIME_ID_TO_NAME.get(rid, "UNKNOWN"),
+            ("null" if rid is None else str(rid)): {
+                "regime_name": (
+                    "UNKNOWN" if rid is None else REGIME_ID_TO_NAME.get(rid, "UNKNOWN")
+                ),
                 "count": count,
             }
-            for rid, count in sorted(distribution.items())
+            for rid, count in sorted(
+                distribution.items(),
+                key=lambda item: (-1 if item[0] is None else item[0]),
+            )
         },
         "regime_distribution_summary": {
-            str(rid): count for rid, count in sorted(distribution.items())
+            ("null" if rid is None else str(rid)): count
+            for rid, count in sorted(
+                distribution.items(),
+                key=lambda item: (-1 if item[0] is None else item[0]),
+            )
         },
         "initial_fallback_regime": {
-            "regime_id": 0,
-            "regime_name": "TREND",
+            "regime_id": None,
+            "regime_name": "UNKNOWN",
+            "block_reason": "WARMUP_INSUFFICIENT_INDICATORS",
             "note": (
-                f"Regime defaulted to 0 (TREND) for first {ADX_PERIOD} candles "
-                f"(ADX/ATR require period+1={ADX_PERIOD + 1} candles)."
+                f"Regime defaults to null/UNKNOWN for first {ADX_PERIOD} candles "
+                f"(ADX/ATR require period+1={ADX_PERIOD + 1} candles). "
+                f"Never silent TREND / regime_id=0. Refs #4188 #4149."
             ),
         },
         "warmup_candles_defaulted": ADX_PERIOD,
+        "fail_closed_semantics": (
+            "Warmup / UNKNOWN / unmapped regimes emit regime_id=null "
+            "(never silent TREND / regime_id=0). Refs #4188 #4149."
+        ),
         "confirmation_bars_applied": True,
         "deterministic": True,
         "no_randomness": True,
@@ -313,9 +338,7 @@ def write_variant_manifest(
         ),
     }
     manifest_path = variant_dir / "calibration_manifest.json"
-    manifest_path.write_text(
-        json.dumps(manifest, indent=2, ensure_ascii=False) + "\n"
-    )
+    manifest_path.write_text(json.dumps(manifest, indent=2, ensure_ascii=False) + "\n")
 
 
 def main() -> int:
@@ -363,13 +386,11 @@ def main() -> int:
 
         derived, distribution = build_derived_candles(raw_candles, atr_threshold)
 
-        null_count = sum(1 for r in derived if r["regime_id"] is None)
-        if null_count > 0:
-            print(f"  ERROR: {null_count} rows have null regime_id", file=sys.stderr)
-            return 2
-
+        unknown_count = sum(1 for r in derived if r["regime_id"] is None)
         invalid = [
-            i for i, r in enumerate(derived) if r["regime_id"] not in {0, 1, 2, 3}
+            i
+            for i, r in enumerate(derived)
+            if r["regime_id"] is not None and r["regime_id"] not in _VALID_REGIME_IDS
         ]
         if invalid:
             print(
@@ -377,6 +398,7 @@ def main() -> int:
                 file=sys.stderr,
             )
             return 2
+        print(f"  UNKNOWN/null regime_id rows: {unknown_count}")
 
         candles_path = variant_dir / "candles.jsonl"
         with candles_path.open("w") as f:
@@ -389,8 +411,8 @@ def main() -> int:
 
         total = sum(distribution.values())
         summary_dist = {}
-        for rid in sorted(distribution):
-            name = REGIME_ID_TO_NAME.get(rid, "???")
+        for rid in sorted(distribution, key=lambda x: (-1 if x is None else x)):
+            name = "UNKNOWN" if rid is None else REGIME_ID_TO_NAME.get(rid, "???")
             count = distribution[rid]
             pct = count / total * 100
             summary_dist[name] = {"count": count, "pct": round(pct, 1)}
@@ -402,7 +424,10 @@ def main() -> int:
                 "atr_threshold": atr_threshold,
                 "note": note,
                 "rows": len(derived),
-                "distribution": {str(k): v for k, v in distribution.items()},
+                "distribution": {
+                    ("null" if k is None else str(k)): v
+                    for k, v in distribution.items()
+                },
             }
         )
 

@@ -50,7 +50,72 @@ COMPONENT_STATUS_ACTIVE = "active"
 COMPONENT_STATUS_ZERO = "zero"
 COMPONENT_STATUS_NOT_APPLICABLE = "not_applicable"
 COMPONENT_STATUS_INACTIVE = "inactive_not_wired"
+COMPONENT_STATUS_UNAVAILABLE = "unavailable"
 COMPONENT_STATUS_EMBEDDED = "embedded_in_fill_price"
+
+VALID_COMPONENT_STATUSES: frozenset[str] = frozenset(
+    {
+        COMPONENT_STATUS_ACTIVE,
+        COMPONENT_STATUS_ZERO,
+        COMPONENT_STATUS_NOT_APPLICABLE,
+        COMPONENT_STATUS_INACTIVE,
+        COMPONENT_STATUS_UNAVAILABLE,
+        COMPONENT_STATUS_EMBEDDED,
+    }
+)
+
+# Statuses whose amount MUST be null: the component carries no billable number.
+NULL_AMOUNT_COMPONENT_STATUSES: frozenset[str] = frozenset(
+    {
+        COMPONENT_STATUS_NOT_APPLICABLE,
+        COMPONENT_STATUS_INACTIVE,
+        COMPONENT_STATUS_UNAVAILABLE,
+    }
+)
+
+# Statuses that are never subtracted from gross (null amounts plus amounts that
+# are already embedded in the fill price and would otherwise double-count).
+NON_SUBTRACTED_COMPONENT_STATUSES: frozenset[str] = NULL_AMOUNT_COMPONENT_STATUSES | {
+    COMPONENT_STATUS_EMBEDDED
+}
+
+ORDER_TYPE_MARKET = "market"
+ORDER_TYPE_LIMIT = "limit"
+VALID_ORDER_TYPES: frozenset[str] = frozenset({ORDER_TYPE_MARKET, ORDER_TYPE_LIMIT})
+
+FILL_STATUS_FILLED = "filled"
+FILL_STATUS_PARTIALLY_FILLED = "partially_filled"
+FILL_STATUS_NOT_FILLED = "not_filled"
+VALID_FILL_STATUSES: frozenset[str] = frozenset(
+    {FILL_STATUS_FILLED, FILL_STATUS_PARTIALLY_FILLED, FILL_STATUS_NOT_FILLED}
+)
+
+DEFAULT_FUNDING_SETTLEMENT_HOURS = Decimal("8")
+
+# Funding rate provenance that is NOT admissible as an active, billable input.
+# Activating funding on any of these would invent a venue cost (#4190).
+UNPROVEN_FUNDING_RATE_SOURCES: frozenset[str] = frozenset(
+    {
+        "",
+        "unknown",
+        "assumed",
+        "placeholder",
+        "synthetic_default",
+        "simulator_default",
+    }
+)
+FUNDING_RATE_SOURCE_SYNTHETIC_DEFAULT = "synthetic_default"
+
+# #4190 wire-or-retire verdict for the two surfaces inventoried by #4150.
+# Replay datasets are OHLCV only; no funding-rate series and no per-position
+# holding duration reach the active runner path, so funding stays unbillable.
+FUNDING_INPUT_AVAILABILITY = "unavailable_no_funding_rate_series"
+# services.execution.simulator.simulate_limit_order is parked: no runner calls
+# it and its fill trigger bills a marketable (taker) limit as a maker fill.
+LIMIT_ORDER_MODEL_STATUS = "parked_not_economics_billable"
+REQUIRED_FUNDING_BASIS_KEYS: frozenset[str] = frozenset(
+    {"position_value", "funding_rate", "funding_rate_source", "hours_held"}
+)
 
 # Scenario override key -> ExecutionSimulator config field
 SCENARIO_OVERRIDE_KEY_TO_SIMULATOR: dict[str, str] = {
@@ -397,6 +462,11 @@ class GrossToNetResult:
     net_pnl: Decimal
     reconciled: bool
     residual: Decimal
+    order_type: str = ORDER_TYPE_MARKET
+    fill_status: str = FILL_STATUS_FILLED
+    maker_fill_evidence: bool = False
+    funding_basis: Optional[dict[str, Any]] = None
+    reported_net_pnl: Optional[Decimal] = None
     assumptions_snapshot: dict[str, Any] = field(default_factory=dict)
     limitations: tuple[str, ...] = ()
 
@@ -404,6 +474,12 @@ class GrossToNetResult:
         return {
             "contract_version": self.contract_version,
             "formula": self.formula,
+            "execution_semantics": {
+                "order_type": self.order_type,
+                "fill_status": self.fill_status,
+                "maker_fill_evidence": self.maker_fill_evidence,
+                "funding_basis": self.funding_basis,
+            },
             "gross_pnl": str(_q_money(self.gross_pnl)),
             "fill_price_embedded_gross": (
                 str(_q_money(self.fill_price_embedded_gross))
@@ -422,6 +498,11 @@ class GrossToNetResult:
                 "funding_cost_when_active": self.funding_cost_when_active.to_dict(),
             },
             "net_pnl": str(_q_money(self.net_pnl)),
+            "reported_net_pnl": (
+                None
+                if self.reported_net_pnl is None
+                else str(_q_money(self.reported_net_pnl))
+            ),
             "reconciled": self.reconciled,
             "residual": str(_q_money(self.residual)),
             "assumptions_snapshot": self.assumptions_snapshot,
@@ -441,13 +522,32 @@ def build_assumptions_snapshot(
     usable_depth_fraction: Any = DEFAULT_USABLE_DEPTH_FRACTION,
     funding_rate: Any = DEFAULT_FUNDING_RATE,
     funding_active: bool = False,
+    funding_rate_source: str = FUNDING_RATE_SOURCE_SYNTHETIC_DEFAULT,
     limit_orders_active: bool = False,
+    limit_order_fill_model: str | None = None,
     spread_model: str = "not_modeled",
     reject_model: str = "not_modeled_in_replay_market_path",
     latency_model: str = "bar_delay_when_runner_implements",
     extras: Mapping[str, Any] | None = None,
 ) -> dict[str, Any]:
-    """Versioned research assumptions (synthetic where marked). No secrets."""
+    """Versioned research assumptions (synthetic where marked). No secrets.
+
+    Activating funding or limit orders is fail-closed: the caller must name a
+    non-synthetic funding rate source, respectively a limit-order fill model,
+    otherwise the snapshot would advertise an active model that no proven input
+    backs (#4190).
+    """
+    if funding_active and funding_rate_source.strip() in UNPROVEN_FUNDING_RATE_SOURCES:
+        raise ExecutionEconomicsError(
+            "funding_active=True requires a non-synthetic funding_rate_source; "
+            f"got {funding_rate_source!r}. Replay datasets carry no funding-rate "
+            "series, so funding must stay inactive_not_wired."
+        )
+    if limit_orders_active and not (limit_order_fill_model or "").strip():
+        raise ExecutionEconomicsError(
+            "limit_orders_active=True requires an explicit limit_order_fill_model; "
+            "maker fills must never be assumed guaranteed."
+        )
     snapshot: dict[str, Any] = {
         "contract_version": CONTRACT_VERSION,
         "order_size": {
@@ -533,18 +633,30 @@ def build_assumptions_snapshot(
                 COMPONENT_STATUS_ACTIVE if funding_active else COMPONENT_STATUS_INACTIVE
             ),
             "funding_rate": str(_to_decimal(funding_rate, field_name="funding_rate")),
+            "funding_rate_source": funding_rate_source,
             "period": "8h",
-            "wired_into_replay_pnl": False,
-            "synthetic": True,
+            "wired_into_replay_pnl": bool(funding_active),
+            "input_availability": (
+                "available" if funding_active else FUNDING_INPUT_AVAILABILITY
+            ),
+            "synthetic": not funding_active,
         },
         "limit_order_model": {
             "status": (
                 COMPONENT_STATUS_ACTIVE
                 if limit_orders_active
-                else COMPONENT_STATUS_INACTIVE
+                else LIMIT_ORDER_MODEL_STATUS
             ),
-            "wired_into_arvp_runners": False,
-            "notes": "simulate_limit_order exists but ARVP/replay runners do not call it",
+            "fill_model": limit_order_fill_model,
+            "wired_into_arvp_runners": bool(limit_orders_active),
+            "notes": (
+                "Limit-order fill model declared by caller"
+                if limit_orders_active
+                else (
+                    "simulate_limit_order is parked: no ARVP/replay runner calls it "
+                    "and its fill trigger bills a marketable (taker) limit as maker"
+                )
+            ),
         },
         "mock_paper_comparison": dict(MOCK_PAPER_ECONOMICS_ASSUMPTIONS),
     }
@@ -559,52 +671,175 @@ def build_assumptions_snapshot(
     return snapshot
 
 
+def _validate_component_status(name: str, status: str) -> str:
+    if status not in VALID_COMPONENT_STATUSES:
+        raise ExecutionEconomicsError(
+            f"{name} status {status!r} is not a valid component status; "
+            f"allowed: {sorted(VALID_COMPONENT_STATUSES)}"
+        )
+    return status
+
+
 def _component(
     name: str,
-    amount: Optional[Decimal],
+    value: Any,
     status: str,
     *,
     notes: str = "",
 ) -> CostComponent:
-    if status in {
-        COMPONENT_STATUS_NOT_APPLICABLE,
-        COMPONENT_STATUS_INACTIVE,
-    }:
+    """Resolve one cost line, fail-closed on status/value contradictions.
+
+    ``value is None`` means "not supplied". A supplied value under a
+    null-amount status is rejected instead of being silently dropped.
+    """
+    _validate_component_status(name, status)
+    if status in NULL_AMOUNT_COMPONENT_STATUSES:
+        if value is not None:
+            raise ExecutionEconomicsError(
+                f"{name} must not carry a value when status={status!r} "
+                f"(got {value!r}); a supplied cost would be silently dropped"
+            )
         return CostComponent(name=name, amount=None, status=status, notes=notes)
-    if amount is None:
-        raise ExecutionEconomicsError(f"{name} amount required for status={status}")
+    amount = Decimal("0") if value is None else _to_decimal(value, field_name=name)
     if amount < 0:
         raise ExecutionEconomicsError(
             f"{name} cost amount must be >= 0 (got {amount}); "
             "costs are unsigned; subtract from gross"
         )
-    resolved_status = COMPONENT_STATUS_ZERO if amount == 0 else status
+    resolved_status = (
+        COMPONENT_STATUS_ZERO
+        if amount == 0 and status == COMPONENT_STATUS_ACTIVE
+        else status
+    )
     return CostComponent(
         name=name, amount=_q_money(amount), status=resolved_status, notes=notes
     )
 
 
-def _active_amount(component: CostComponent) -> Decimal:
-    if component.status in {
-        COMPONENT_STATUS_NOT_APPLICABLE,
-        COMPONENT_STATUS_INACTIVE,
-    }:
+def _billable_amount(component: CostComponent) -> Decimal:
+    if component.status in NON_SUBTRACTED_COMPONENT_STATUSES:
         return Decimal("0")
     if component.amount is None:
         return Decimal("0")
     return component.amount
 
 
+def funding_cost_from_rate(
+    *,
+    position_value: Any,
+    funding_rate: Any,
+    hours_held: Any,
+    settlement_hours: Any = DEFAULT_FUNDING_SETTLEMENT_HOURS,
+) -> Decimal:
+    """Deterministic funding cost = position_value * rate * settlement periods.
+
+    Decimal mirror of ``ExecutionSimulator.calculate_funding_fees`` for evidence
+    use. Requires real inputs; it does not supply a default rate.
+    """
+    value = _to_decimal(position_value, field_name="position_value")
+    if value < 0:
+        raise ExecutionEconomicsError("position_value must be >= 0")
+    rate = _to_decimal(funding_rate, field_name="funding_rate")
+    if rate < 0:
+        raise ExecutionEconomicsError(
+            "negative funding rates (funding received) are not supported in v1; "
+            "costs are unsigned"
+        )
+    hours = _to_decimal(hours_held, field_name="hours_held")
+    if hours < 0:
+        raise ExecutionEconomicsError("hours_held must be >= 0")
+    settlement = _to_decimal(settlement_hours, field_name="settlement_hours")
+    if settlement <= 0:
+        raise ExecutionEconomicsError("settlement_hours must be > 0")
+    return _q_money(value * rate * (hours / settlement))
+
+
+def resolve_funding_basis(basis: Mapping[str, Any]) -> tuple[Decimal, dict[str, Any]]:
+    """Validate a funding basis and derive its deterministic cost.
+
+    Fail-closed: an active funding component needs notional, rate, holding
+    duration and a named non-synthetic rate provenance (#4190).
+    """
+    if not isinstance(basis, Mapping):
+        raise ExecutionEconomicsError("funding_basis must be a mapping")
+    missing = sorted(REQUIRED_FUNDING_BASIS_KEYS - set(basis))
+    if missing:
+        raise ExecutionEconomicsError(
+            f"funding_basis is missing required keys: {missing}"
+        )
+    source = str(basis["funding_rate_source"]).strip()
+    if source in UNPROVEN_FUNDING_RATE_SOURCES:
+        raise ExecutionEconomicsError(
+            f"funding_rate_source {source!r} is not admissible as an active cost; "
+            "funding must stay inactive_not_wired until a sourced rate series exists"
+        )
+    settlement = basis.get("settlement_hours", DEFAULT_FUNDING_SETTLEMENT_HOURS)
+    cost = funding_cost_from_rate(
+        position_value=basis["position_value"],
+        funding_rate=basis["funding_rate"],
+        hours_held=basis["hours_held"],
+        settlement_hours=settlement,
+    )
+    resolved = {
+        "position_value": str(
+            _to_decimal(basis["position_value"], field_name="position_value")
+        ),
+        "funding_rate": str(
+            _to_decimal(basis["funding_rate"], field_name="funding_rate")
+        ),
+        "funding_rate_source": source,
+        "hours_held": str(_to_decimal(basis["hours_held"], field_name="hours_held")),
+        "settlement_hours": str(_to_decimal(settlement, field_name="settlement_hours")),
+        "derived_cost": str(cost),
+    }
+    return cost, resolved
+
+
+def _validate_fill_semantics(
+    *,
+    fill_status: str,
+    gross: Decimal,
+    total_fee: CostComponent,
+    slip: CostComponent,
+    partial: CostComponent,
+) -> None:
+    """Keep fill, no-fill and partial-fill cases mutually unambiguous."""
+    if fill_status == FILL_STATUS_NOT_FILLED:
+        if gross != 0:
+            raise ExecutionEconomicsError(
+                f"fill_status='not_filled' requires gross_pnl == 0 (got {gross})"
+            )
+        for component in (total_fee, slip):
+            if _billable_amount(component) != 0:
+                raise ExecutionEconomicsError(
+                    f"fill_status='not_filled' forbids a non-zero "
+                    f"{component.name} (got {component.amount})"
+                )
+        return
+    if fill_status == FILL_STATUS_PARTIALLY_FILLED:
+        if partial.status in NULL_AMOUNT_COMPONENT_STATUSES:
+            raise ExecutionEconomicsError(
+                "fill_status='partially_filled' requires a billable "
+                f"partial_fill_impact (got status={partial.status!r})"
+            )
+        return
+    if _billable_amount(partial) != 0:
+        raise ExecutionEconomicsError(
+            "fill_status='filled' forbids a non-zero partial_fill_impact "
+            f"(got {partial.amount}); use 'partially_filled' or 'not_filled'"
+        )
+
+
 def reconcile_gross_to_net(
     *,
     gross_pnl: Any,
-    maker_fee_cost: Any = 0,
-    taker_fee_cost: Any = 0,
+    maker_fee_cost: Any | None = None,
+    taker_fee_cost: Any | None = None,
     spread_cost: Any | None = None,
     spread_status: str = COMPONENT_STATUS_NOT_APPLICABLE,
-    slippage_cost: Any = 0,
+    slippage_cost: Any | None = None,
     slippage_status: str = COMPONENT_STATUS_ACTIVE,
-    partial_fill_impact: Any = 0,
+    partial_fill_impact: Any | None = None,
     partial_fill_status: str = COMPONENT_STATUS_ACTIVE,
     reject_impact: Any | None = None,
     reject_status: str = COMPONENT_STATUS_NOT_APPLICABLE,
@@ -612,29 +847,60 @@ def reconcile_gross_to_net(
     latency_status: str = COMPONENT_STATUS_NOT_APPLICABLE,
     funding_cost: Any | None = None,
     funding_status: str = COMPONENT_STATUS_INACTIVE,
+    funding_basis: Mapping[str, Any] | None = None,
+    order_type: str = ORDER_TYPE_MARKET,
+    maker_fill_evidence: bool = False,
+    fill_status: str = FILL_STATUS_FILLED,
     fill_price_embedded_gross: Any | None = None,
+    reported_net_pnl: Any | None = None,
     assumptions_snapshot: Mapping[str, Any] | None = None,
     limitations: Sequence[str] | None = None,
     residual_tolerance: Any = "0.00000001",
 ) -> GrossToNetResult:
-    """Reconcile gross -> costs -> net with fail-closed invariant.
+    """Reconcile gross -> costs -> net with fail-closed invariants.
 
     ``gross_pnl`` must be reference/mid PnL that does **not** already embed
     slippage that is also passed as ``slippage_cost``.
+
+    Cost arguments use ``None`` for "not supplied". Supplying a value under a
+    non-billable status raises instead of dropping the cost silently, and an
+    active status without a proven input raises instead of inventing a value.
     """
+    if order_type not in VALID_ORDER_TYPES:
+        raise ExecutionEconomicsError(
+            f"order_type {order_type!r} invalid; allowed: {sorted(VALID_ORDER_TYPES)}"
+        )
+    if fill_status not in VALID_FILL_STATUSES:
+        raise ExecutionEconomicsError(
+            f"fill_status {fill_status!r} invalid; allowed: {sorted(VALID_FILL_STATUSES)}"
+        )
+    if maker_fill_evidence and order_type != ORDER_TYPE_LIMIT:
+        raise ExecutionEconomicsError(
+            "maker_fill_evidence requires order_type='limit'; a market order is "
+            "always a taker fill"
+        )
+
     gross = _q_money(_to_decimal(gross_pnl, field_name="gross_pnl"))
     maker = _component(
         "maker_fee_cost",
-        _to_decimal(maker_fee_cost, field_name="maker_fee_cost"),
+        maker_fee_cost,
         COMPONENT_STATUS_ACTIVE,
-        notes="Market-only ARVP path typically zero; maker unused",
+        notes="Maker fees require a proven limit-order maker fill",
     )
+    if _billable_amount(maker) > 0 and not (
+        order_type == ORDER_TYPE_LIMIT and maker_fill_evidence
+    ):
+        raise ExecutionEconomicsError(
+            "maker_fee_cost > 0 requires order_type='limit' and "
+            "maker_fill_evidence=True; maker fills must not be assumed on the "
+            "market-only replay path"
+        )
     taker = _component(
         "taker_fee_cost",
-        _to_decimal(taker_fee_cost, field_name="taker_fee_cost"),
+        taker_fee_cost,
         COMPONENT_STATUS_ACTIVE,
     )
-    total_fee_amount = _active_amount(maker) + _active_amount(taker)
+    total_fee_amount = _billable_amount(maker) + _billable_amount(taker)
     total_fee = _component(
         "total_fee_cost",
         total_fee_amount,
@@ -642,23 +908,17 @@ def reconcile_gross_to_net(
         notes="maker_fee_cost + taker_fee_cost",
     )
 
-    if spread_status in {COMPONENT_STATUS_NOT_APPLICABLE, COMPONENT_STATUS_INACTIVE}:
-        spread = _component(
-            "spread_cost",
-            None,
-            spread_status,
-            notes="Spread not modeled in ExecutionSimulator; not silently zeroed as measured",
-        )
-    else:
-        spread = _component(
-            "spread_cost",
-            _to_decimal(spread_cost, field_name="spread_cost"),
-            COMPONENT_STATUS_ACTIVE,
-        )
-
+    spread = _component(
+        "spread_cost",
+        spread_cost,
+        spread_status,
+        notes=(
+            "Spread not modeled in ExecutionSimulator; not silently zeroed as measured"
+        ),
+    )
     slip = _component(
         "slippage_cost",
-        _to_decimal(slippage_cost, field_name="slippage_cost"),
+        slippage_cost,
         slippage_status,
         notes=(
             "Attributed from fill vs reference; do not subtract again from "
@@ -667,66 +927,89 @@ def reconcile_gross_to_net(
     )
     partial = _component(
         "partial_fill_impact",
-        _to_decimal(partial_fill_impact, field_name="partial_fill_impact"),
+        partial_fill_impact,
         partial_fill_status,
         notes="Impact of unfilled quantity; filled quantity carries PnL",
     )
+    reject = _component(
+        "reject_impact",
+        reject_impact,
+        reject_status,
+        notes="Replay market path has no reject model",
+    )
+    latency = _component(
+        "latency_or_delay_impact",
+        latency_or_delay_impact,
+        latency_status,
+        notes="Set active when delay-vs-baseline money impact is measured",
+    )
 
-    if reject_status in {COMPONENT_STATUS_NOT_APPLICABLE, COMPONENT_STATUS_INACTIVE}:
-        reject = _component(
-            "reject_impact",
-            None,
-            reject_status,
-            notes="Replay market path has no reject model",
-        )
-    else:
-        reject = _component(
-            "reject_impact",
-            _to_decimal(reject_impact, field_name="reject_impact"),
-            COMPONENT_STATUS_ACTIVE,
-        )
-
-    if latency_status in {COMPONENT_STATUS_NOT_APPLICABLE, COMPONENT_STATUS_INACTIVE}:
-        latency = _component(
-            "latency_or_delay_impact",
-            None,
-            latency_status,
-            notes="Set active when delay-vs-baseline money impact is measured",
-        )
-    else:
-        latency = _component(
-            "latency_or_delay_impact",
-            _to_decimal(latency_or_delay_impact, field_name="latency_or_delay_impact"),
-            COMPONENT_STATUS_ACTIVE,
-        )
-
-    if funding_status in {COMPONENT_STATUS_NOT_APPLICABLE, COMPONENT_STATUS_INACTIVE}:
+    _validate_component_status("funding_cost_when_active", funding_status)
+    resolved_funding_basis: dict[str, Any] | None = None
+    if funding_status in NULL_AMOUNT_COMPONENT_STATUSES:
+        if funding_basis is not None:
+            raise ExecutionEconomicsError(
+                f"funding_basis must not be supplied when funding_status="
+                f"{funding_status!r}"
+            )
         funding = _component(
             "funding_cost_when_active",
-            None,
+            funding_cost,
             funding_status,
-            notes="Funding API exists but is not wired into replay PnL (CDB-032)",
+            notes=(
+                "Funding API exists on the simulator but no funding-rate series "
+                "reaches the active replay/paper path (#4190)"
+            ),
         )
     else:
+        if funding_basis is None:
+            raise ExecutionEconomicsError(
+                "an active funding_status requires funding_basis "
+                f"({sorted(REQUIRED_FUNDING_BASIS_KEYS)}); a bare funding_cost "
+                "would be an invented venue cost"
+            )
+        derived, resolved_funding_basis = resolve_funding_basis(funding_basis)
+        if funding_cost is not None:
+            supplied = _q_money(_to_decimal(funding_cost, field_name="funding_cost"))
+            if supplied != derived:
+                raise ExecutionEconomicsError(
+                    f"funding_cost {supplied} does not reconcile with the funding "
+                    f"basis ({derived}); funding must be derived deterministically"
+                )
         funding = _component(
             "funding_cost_when_active",
-            _to_decimal(funding_cost, field_name="funding_cost"),
-            COMPONENT_STATUS_ACTIVE,
+            derived,
+            funding_status,
+            notes="Derived from funding_basis: position_value * rate * periods",
         )
+
+    _validate_fill_semantics(
+        fill_status=fill_status,
+        gross=gross,
+        total_fee=total_fee,
+        slip=slip,
+        partial=partial,
+    )
 
     total_costs = (
-        _active_amount(total_fee)
-        + _active_amount(spread)
-        + _active_amount(slip)
-        + _active_amount(partial)
-        + _active_amount(reject)
-        + _active_amount(latency)
-        + _active_amount(funding)
+        _billable_amount(total_fee)
+        + _billable_amount(spread)
+        + _billable_amount(slip)
+        + _billable_amount(partial)
+        + _billable_amount(reject)
+        + _billable_amount(latency)
+        + _billable_amount(funding)
     )
     net = _q_money(gross - total_costs)
     tolerance = _to_decimal(residual_tolerance, field_name="residual_tolerance")
-    # Identity residual vs recomputed net is definitionally zero; expose for evidence.
-    residual = _q_money(Decimal("0"))
+    if tolerance < 0:
+        raise ExecutionEconomicsError("residual_tolerance must be >= 0")
+    if reported_net_pnl is None:
+        residual = _q_money(Decimal("0"))
+    else:
+        residual = _q_money(
+            _to_decimal(reported_net_pnl, field_name="reported_net_pnl") - net
+        )
     reconciled = abs(residual) <= tolerance
 
     embedded: Optional[Decimal] = None
@@ -769,6 +1052,15 @@ def reconcile_gross_to_net(
         net_pnl=net,
         reconciled=reconciled,
         residual=residual,
+        order_type=order_type,
+        fill_status=fill_status,
+        maker_fill_evidence=maker_fill_evidence,
+        funding_basis=resolved_funding_basis,
+        reported_net_pnl=(
+            None
+            if reported_net_pnl is None
+            else _q_money(_to_decimal(reported_net_pnl, field_name="reported_net_pnl"))
+        ),
         assumptions_snapshot=snap,
         limitations=lims,
     )
@@ -863,10 +1155,7 @@ def compare_economics_components(
                 if not isinstance(body, Mapping):
                     continue
                 status = str(body.get("status") or "")
-                if status in {
-                    COMPONENT_STATUS_NOT_APPLICABLE,
-                    COMPONENT_STATUS_INACTIVE,
-                }:
+                if status in NON_SUBTRACTED_COMPONENT_STATUSES:
                     out[str(name)] = None
                     continue
                 amount = body.get("amount")

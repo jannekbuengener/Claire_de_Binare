@@ -548,6 +548,8 @@ class RiskManager:
         self._pg_conn: Optional[psycopg2.extensions.connection] = None
         self._envelope_redis_client: Optional[redis.Redis] = None
         self._envelope_publisher: EnvelopePublisher | None = None
+        # Injectable claim port for PAPER_AUTO_UNWIND (tests / production DB).
+        self._reduce_only_claimer = None
 
         # Validiere Config
         try:
@@ -706,10 +708,7 @@ class RiskManager:
                 "quantity": str(order.quantity),
                 "price_ref": str(price_ref),
                 "timestamp_input_ms": int(timestamp_input_ms),
-                "reduce_only": bool(
-                    order.side == "SELL"
-                    and risk_state.positions.get(order.symbol, 0.0) > 0.0
-                ),
+                "reduce_only": bool(order.reduce_only),
             },
             "account_state": {
                 "balance_usdt": str(balance_usdt),
@@ -1986,6 +1985,18 @@ class RiskManager:
             stats["orders_skipped"] += 1
             return None
 
+        if reduce_only:
+            open_quantity = abs(float(risk_state.positions.get(signal.symbol, 0.0)))
+            quantity = min(quantity, open_quantity)
+            if quantity <= 0:
+                logger.warning(
+                    "Signal SKIPPED: %s %s - reduce-only position unavailable",
+                    signal.symbol,
+                    signal.side,
+                )
+                stats["orders_skipped"] += 1
+                return None
+
         # Mark order if Early-Live exception applies
         reason = signal.reason
         if self._is_early_live_exception(signal.strategy_id):
@@ -2028,6 +2039,7 @@ class RiskManager:
             # Issue #748 Slice 2: Policy snapshot (None when toggle OFF)
             policy_snapshot=policy_snapshot,
             metadata=_build_order_timing_metadata(evidence),
+            reduce_only=reduce_only,
         )
 
         # PR #619 / #4152: HARD EXPOSURE + PROJECTED POSITION GATES
@@ -2328,6 +2340,192 @@ class RiskManager:
             1 for qty in risk_state.positions.values() if abs(qty) > 1e-6
         )
 
+    # --- PAPER_AUTO_UNWIND claim-before-dispatch (Issue #4261) ---
+
+    PAPER_UNWIND_DISPATCH_ALLOWED = "DISPATCH_ALLOWED"
+    PAPER_UNWIND_CLAIM_ALREADY_EXISTS = "CLAIM_ALREADY_EXISTS"
+    PAPER_UNWIND_CLAIM_NOT_ACQUIRED = "CLAIM_NOT_ACQUIRED"
+    PAPER_UNWIND_POSITION_UNKNOWN = "POSITION_UNKNOWN"
+    PAPER_UNWIND_PERSISTENCE_UNAVAILABLE = "PERSISTENCE_UNAVAILABLE"
+    PAPER_UNWIND_BLOCKED = "BLOCKED"
+
+    def _postgres_dsn(self) -> str:
+        """Build a libpq DSN from risk postgres settings (no secrets logged)."""
+        from urllib.parse import quote_plus
+
+        password = self.config.postgres_password or ""
+        user = quote_plus(str(self.config.postgres_user or ""))
+        pwd = quote_plus(str(password))
+        host = self.config.postgres_host
+        port = int(self.config.postgres_port)
+        db = self.config.postgres_db
+        return f"postgresql://{user}:{pwd}@{host}:{port}/{db}"
+
+    def _ensure_reduce_only_claimer(self):
+        """Lazy-wire the shared reduce-only ledger (execution Database)."""
+        if self._reduce_only_claimer is not None:
+            return self._reduce_only_claimer
+        from services.execution.database import Database
+
+        self._reduce_only_claimer = Database(
+            connection_string=self._postgres_dsn(),
+            test_on_init=False,
+        )
+        return self._reduce_only_claimer
+
+    def _acquire_paper_unwind_claim(
+        self,
+        *,
+        logical_operation_key: str,
+        symbol: str,
+        side: str,
+        quantity: float | Decimal,
+    ) -> dict:
+        """Acquire durable exclusive attempt-claim before unwind dispatch.
+
+        Returns a dict with ``outcome`` (PAPER_UNWIND_* code) and, when dispatch
+        is allowed, ``order_id`` / ``attempt_number`` for the concrete attempt.
+        Only ``DISPATCH_ALLOWED`` authorizes ``send_order``.
+        """
+        empty = {
+            "outcome": self.PAPER_UNWIND_CLAIM_NOT_ACQUIRED,
+            "order_id": None,
+            "attempt_number": None,
+            "retry_decision": None,
+        }
+        if not logical_operation_key:
+            return empty
+        try:
+            claimer = self._ensure_reduce_only_claimer()
+        except Exception as exc:
+            logger.error(
+                "PAPER_AUTO_UNWIND claimer unavailable (fail-closed): %s",
+                exc,
+            )
+            return {
+                **empty,
+                "outcome": self.PAPER_UNWIND_PERSISTENCE_UNAVAILABLE,
+            }
+
+        try:
+            result = claimer.prepare_reduce_only_attempt(
+                logical_operation_key=logical_operation_key,
+                symbol=symbol,
+                side=side,
+                requested_quantity=Decimal(str(quantity)),
+                persist_blocked=False,
+                bind_for_adapter=False,
+            )
+        except Exception as exc:
+            logger.error(
+                "PAPER_AUTO_UNWIND claim failed closed logical_key=%s: %s",
+                logical_operation_key,
+                exc,
+            )
+            return {
+                **empty,
+                "outcome": self.PAPER_UNWIND_PERSISTENCE_UNAVAILABLE,
+            }
+
+        if result.get("allowed"):
+            return {
+                "outcome": self.PAPER_UNWIND_DISPATCH_ALLOWED,
+                "order_id": result.get("order_id"),
+                "attempt_number": result.get("attempt_number"),
+                "retry_decision": result.get("retry_decision"),
+            }
+
+        reason = str(result.get("reason_code") or "")
+        retry_decision = str(result.get("retry_decision") or "")
+        if result.get("duplicate") or retry_decision.startswith("BLOCKED_"):
+            outcome = self.PAPER_UNWIND_CLAIM_ALREADY_EXISTS
+            if retry_decision in {
+                "BLOCKED_NON_RETRYABLE",
+                "BLOCKED_MAX_ATTEMPTS",
+            }:
+                outcome = self.PAPER_UNWIND_BLOCKED
+            return {
+                "outcome": outcome,
+                "order_id": result.get("order_id"),
+                "attempt_number": result.get("attempt_number"),
+                "retry_decision": retry_decision,
+            }
+        if reason in {
+            "REDUCE_ONLY_POSITION_UNKNOWN",
+        }:
+            return {
+                **empty,
+                "outcome": self.PAPER_UNWIND_POSITION_UNKNOWN,
+                "retry_decision": retry_decision or None,
+            }
+        if reason in {
+            "REDUCE_ONLY_NO_POSITION",
+            "REDUCE_ONLY_CONCURRENT_CLAIM_BLOCKED",
+            "REDUCE_ONLY_SIDE_MISMATCH",
+            "REDUCE_ONLY_INVALID_QUANTITY",
+        }:
+            return {
+                **empty,
+                "outcome": self.PAPER_UNWIND_CLAIM_NOT_ACQUIRED,
+                "retry_decision": retry_decision or None,
+            }
+        return {
+            **empty,
+            "outcome": self.PAPER_UNWIND_BLOCKED,
+            "retry_decision": retry_decision or None,
+        }
+
+    def _dispatch_paper_unwind_order(
+        self,
+        order: Order,
+        *,
+        logical_operation_key: str,
+        log_label: str,
+    ) -> bool:
+        """Claim attempt then dispatch. Returns True only when send_order ran."""
+        claim = self._acquire_paper_unwind_claim(
+            logical_operation_key=logical_operation_key,
+            symbol=order.symbol,
+            side=order.side,
+            quantity=order.quantity,
+        )
+        outcome = str(claim.get("outcome") or "")
+        if outcome != self.PAPER_UNWIND_DISPATCH_ALLOWED:
+            logger.warning(
+                "%s blocked before dispatch: outcome=%s symbol=%s "
+                "logical_key=%s retry_decision=%s",
+                log_label,
+                outcome,
+                order.symbol,
+                logical_operation_key,
+                claim.get("retry_decision"),
+            )
+            stats["paper_auto_unwind_claim_blocked"] = (
+                stats.get("paper_auto_unwind_claim_blocked", 0) + 1
+            )
+            stats[f"paper_auto_unwind_{outcome.lower()}"] = (
+                stats.get(f"paper_auto_unwind_{outcome.lower()}", 0) + 1
+            )
+            return False
+        claimed_order_id = claim.get("order_id")
+        attempt_number = claim.get("attempt_number")
+        if not claimed_order_id or attempt_number is None:
+            logger.error(
+                "%s claim missing attempt identity (fail-closed) logical_key=%s",
+                log_label,
+                logical_operation_key,
+            )
+            stats["paper_auto_unwind_claim_blocked"] = (
+                stats.get("paper_auto_unwind_claim_blocked", 0) + 1
+            )
+            return False
+        order.order_id = str(claimed_order_id)
+        order.decision_id = generate_uuid(
+            name=(f"{logical_operation_key}:decision:attempt:{int(attempt_number)}")
+        )
+        self.send_order(order)
+        return True
+
     def _trigger_proactive_unwind(self) -> None:
         """
         Proactive auto-unwind: Generate SELL orders when over limit.
@@ -2341,6 +2539,7 @@ class RiskManager:
         - Position stays open forever
 
         Solution: Proactively unwind when blocked.
+        Claim must be won before Redis dispatch (Issue #4261).
         """
         # LR-030: No unwind orders in shadow mode
         if self._resolve_contract_run_mode() == "shadow":
@@ -2357,10 +2556,10 @@ class RiskManager:
         if not risk_state.positions:
             return
 
-        # Generate SELL order for each open LONG position
+        # Generate the closing side for either a long or short position.
         for symbol, position_qty in list(risk_state.positions.items()):
-            if position_qty <= 0:
-                continue  # Skip short positions or zero positions
+            if abs(position_qty) <= 1e-12:
+                continue
 
             # Get current price for this symbol
             current_price = risk_state.last_prices.get(symbol, 0.0)
@@ -2370,30 +2569,41 @@ class RiskManager:
                 )
                 continue
 
+            logical_operation_key = f"proactive-unwind:{symbol}:{position_qty:.8f}"
             order = Order(
                 symbol=symbol,
-                side="SELL",
+                side="SELL" if position_qty > 0 else "BUY",
                 quantity=abs(position_qty),
                 stop_loss_pct=self.config.stop_loss_pct,
                 signal_id=int(time.time()),
                 reason="proactive_unwind:over_limit",
                 timestamp=int(time.time()),
-                client_id=f"proactive-unwind-{symbol}-{int(time.time())}",
+                client_id=f"proactive-unwind-{symbol}-{logical_operation_key}",
                 strategy_id="paper",  # Use paper strategy for auto-unwind
                 bot_id=None,
                 price=current_price,
+                # Attempt order_id/decision_id assigned only after durable claim.
+                order_id=None,
+                decision_id=None,
+                reduce_only=True,
             )
 
             logger.warning(
-                f"🔄 PROACTIVE AUTO-UNWIND: queued SELL {symbol} qty={abs(position_qty):.8f} "
-                f"(exposure over limit, forcing position close)"
+                f"🔄 PROACTIVE AUTO-UNWIND: claim then queue SELL {symbol} "
+                f"qty={abs(position_qty):.8f} (exposure over limit)"
             )
+            if not self._dispatch_paper_unwind_order(
+                order,
+                logical_operation_key=logical_operation_key,
+                log_label="PROACTIVE_AUTO_UNWIND",
+            ):
+                # Fail-closed: do not flood other symbols after a claim miss.
+                break
             stats["proactive_unwind_triggered"] = (
                 stats.get("proactive_unwind_triggered", 0) + 1
             )
             stats["orders_approved"] += 1
             risk_state.pending_orders += 1
-            self.send_order(order)
 
             # Only unwind one position per trigger to avoid flooding
             break
@@ -2404,6 +2614,7 @@ class RiskManager:
 
         This is the original auto-unwind logic that triggers after successful BUY fills.
         Complements the proactive unwind above.
+        Durable claim must succeed before Redis dispatch (Issue #4261).
         """
         # LR-030: No unwind orders in shadow mode
         if self._resolve_contract_run_mode() == "shadow":
@@ -2416,6 +2627,8 @@ class RiskManager:
 
         if not self.config.paper_auto_unwind:
             return
+        if result.reduce_only:
+            return
         if result.status != "FILLED":
             return
         if result.side != "BUY":
@@ -2425,6 +2638,7 @@ class RiskManager:
         if result.filled_quantity <= 0:
             return
 
+        logical_operation_key = f"paper-auto-unwind:{result.order_id}"
         order = Order(
             symbol=result.symbol,
             side="SELL",
@@ -2437,7 +2651,18 @@ class RiskManager:
             strategy_id=result.strategy_id,
             bot_id=result.bot_id,
             price=result.price,
+            # Attempt order_id/decision_id assigned only after durable claim.
+            order_id=None,
+            decision_id=None,
+            reduce_only=True,
         )
+
+        if not self._dispatch_paper_unwind_order(
+            order,
+            logical_operation_key=logical_operation_key,
+            log_label="PAPER_AUTO_UNWIND",
+        ):
+            return
 
         logger.info(
             "PAPER_AUTO_UNWIND: queued SELL %s qty=%.4f (order_id=%s)",
@@ -2447,7 +2672,6 @@ class RiskManager:
         )
         stats["orders_approved"] += 1
         risk_state.pending_orders += 1
-        self.send_order(order)
 
     def handle_order_result(self, result: OrderResult):
         """Verarbeitet Order-Result Events vom Execution-Service"""
@@ -2483,9 +2707,10 @@ class RiskManager:
             if abs(risk_state.pending_position_qty.get(sym, 0.0)) < 1e-12:
                 risk_state.pending_position_qty.pop(sym, None)
 
-        if result.status == "FILLED":
+        if result.status in {"FILLED", "PARTIALLY_FILLED"}:
             self._update_exposure(result)
-            self._maybe_auto_unwind(result)
+            if result.status == "FILLED":
+                self._maybe_auto_unwind(result)
         else:
             stats["orders_rejected_execution"] += 1
             self.send_alert(

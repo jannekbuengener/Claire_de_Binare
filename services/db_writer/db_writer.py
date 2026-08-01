@@ -63,6 +63,18 @@ _CANDLE_STREAM_KEY = "stream.candles_1m"
 EXECUTION_STATUSES = {"filled", "partial", "partially_filled"}
 NON_EXECUTION_STATUSES = {"rejected", "cancelled"}
 
+# Fill-quantity field classification (Issue #4261 FILLED_QUANTITY_ZERO_FALLBACK).
+# Primary keys describe executed fill amount; quantity/size are requested/order
+# amounts and may only be used when every primary fill key is absent.
+_FILL_QUANTITY_PRIMARY_KEYS = ("filled_quantity", "filled_size")
+_FILL_QUANTITY_LEGACY_KEYS = ("quantity", "size")
+FIELD_MISSING = "FIELD_MISSING"
+FIELD_NULL = "FIELD_NULL"
+FIELD_ZERO = "FIELD_ZERO"
+FIELD_POSITIVE = "FIELD_POSITIVE"
+FIELD_INVALID = "FIELD_INVALID"
+FIELD_MISSING_LEGACY_FALLBACK = "FIELD_MISSING_LEGACY_FALLBACK"
+
 
 class DatabaseWriter:
     """
@@ -269,6 +281,133 @@ class DatabaseWriter:
             raise ValueError(f"{field_name} must be > 0, got: {dec}")
 
         return dec
+
+    @staticmethod
+    def resolve_fill_quantity(data: Dict[str, Any]) -> dict:
+        """Resolve fill quantity without Python truthiness fallbacks.
+
+        Semantics (Issue #4261):
+        - Explicit numeric ``filled_quantity`` / ``filled_size`` of 0 is preserved
+          as known zero fill (never falls back to requested ``quantity``/``size``).
+        - Legacy fallback to ``quantity``/``size`` only when every primary fill
+          key is absent from the payload.
+        - Explicit ``None`` on a present primary key is ``FIELD_NULL`` (not zero,
+          not missing) and does not use requested quantity.
+        """
+
+        primary_key_present = False
+        saw_null_primary = False
+        for key in _FILL_QUANTITY_PRIMARY_KEYS:
+            if key not in data:
+                continue
+            primary_key_present = True
+            raw = data.get(key)
+            if raw is None:
+                saw_null_primary = True
+                continue
+            try:
+                dec = Decimal(str(raw))
+            except (InvalidOperation, TypeError, ValueError):
+                return {
+                    "state": FIELD_INVALID,
+                    "source": key,
+                    "raw": raw,
+                    "value": None,
+                }
+            if not dec.is_finite() or dec < 0:
+                return {
+                    "state": FIELD_INVALID,
+                    "source": key,
+                    "raw": raw,
+                    "value": None,
+                }
+            if dec == 0:
+                return {
+                    "state": FIELD_ZERO,
+                    "source": key,
+                    "raw": raw,
+                    "value": Decimal("0"),
+                }
+            return {
+                "state": FIELD_POSITIVE,
+                "source": key,
+                "raw": raw,
+                "value": dec,
+            }
+
+        if primary_key_present and saw_null_primary:
+            return {
+                "state": FIELD_NULL,
+                "source": "filled_quantity",
+                "raw": None,
+                "value": None,
+            }
+
+        for key in _FILL_QUANTITY_LEGACY_KEYS:
+            if key not in data or data.get(key) is None:
+                continue
+            raw = data.get(key)
+            try:
+                dec = Decimal(str(raw))
+            except (InvalidOperation, TypeError, ValueError):
+                return {
+                    "state": FIELD_INVALID,
+                    "source": key,
+                    "raw": raw,
+                    "value": None,
+                }
+            if not dec.is_finite() or dec < 0:
+                return {
+                    "state": FIELD_INVALID,
+                    "source": key,
+                    "raw": raw,
+                    "value": None,
+                }
+            if dec == 0:
+                return {
+                    "state": FIELD_ZERO,
+                    "source": key,
+                    "raw": raw,
+                    "value": Decimal("0"),
+                }
+            return {
+                "state": FIELD_MISSING_LEGACY_FALLBACK,
+                "source": key,
+                "raw": raw,
+                "value": dec,
+            }
+
+        return {
+            "state": FIELD_MISSING,
+            "source": "execution_quantity",
+            "raw": None,
+            "value": None,
+        }
+
+    def _require_positive_fill_quantity(self, data: Dict[str, Any]) -> Decimal:
+        """Resolve fill quantity for trade/position mutation paths.
+
+        Explicit zero fills raise ``ValueError`` so callers fail closed without
+        inventing a positive requested-quantity fallback.
+        """
+
+        resolved = self.resolve_fill_quantity(data)
+        state = resolved["state"]
+        source = resolved["source"]
+        if state == FIELD_ZERO:
+            raise ValueError(
+                f"explicit zero fill from {source}; no positive execution quantity"
+            )
+        if state == FIELD_NULL:
+            raise ValueError("filled_quantity is null")
+        if state == FIELD_MISSING:
+            raise ValueError("execution_quantity is required but was missing")
+        if state == FIELD_INVALID:
+            raise ValueError(f"Invalid {source} format: {resolved.get('raw')!r}")
+        value = resolved["value"]
+        if value is None or value <= 0:
+            raise ValueError(f"{source} must be > 0, got: {value}")
+        return value
 
     @staticmethod
     def _fetch_open_position(cursor, symbol: str):
@@ -530,11 +669,28 @@ class DatabaseWriter:
                 execution_price_raw, "execution_price", data
             )
 
-            # Validate execution quantity (must be > 0)
-            execution_qty_raw = data.get("quantity") or data.get("size")
-            execution_qty = self._get_positive_decimal(
-                execution_qty_raw, "execution_quantity", data
-            )
+            # Resolve fill quantity without falsy-or fallbacks (Issue #4261).
+            fill_resolution = self.resolve_fill_quantity(data)
+            if fill_resolution["state"] == FIELD_ZERO:
+                logger.info(
+                    "⏭️  Skipping zero-fill order_result: %s source=%s "
+                    "(explicit filled quantity 0; no trade/position mutation)",
+                    data.get("symbol"),
+                    fill_resolution["source"],
+                )
+                return
+            if fill_resolution["state"] not in {
+                FIELD_POSITIVE,
+                FIELD_MISSING_LEGACY_FALLBACK,
+            }:
+                # Reuse shared error paths for null/missing/invalid.
+                execution_qty = self._require_positive_fill_quantity(data)
+            else:
+                execution_qty = fill_resolution["value"]
+                if execution_qty is None or execution_qty <= 0:
+                    raise ValueError(
+                        f"{fill_resolution['source']} must be > 0, got: {execution_qty}"
+                    )
 
             # Convert timestamp
             timestamp = self.convert_timestamp(data.get("timestamp"))
@@ -557,15 +713,78 @@ class DatabaseWriter:
                     )
 
             cursor = self.db_conn.cursor()
-            existing_position = self._fetch_open_position(cursor, data.get("symbol"))
-            realized_pnl = self._calculate_trade_realized_pnl(
-                existing_position, side, execution_price, execution_qty
+            reduce_only_evidence = metadata.get("reduce_only")
+            reduce_only_claimed = data.get("reduce_only") is True
+            metadata_owner_claimed = (
+                isinstance(reduce_only_evidence, dict)
+                and reduce_only_evidence.get("position_update_owner")
+                == "execution_reduce_only_v1"
             )
+            if reduce_only_claimed is not metadata_owner_claimed:
+                raise ValueError("reduce-only event ownership mismatch")
+            execution_owned_reduce_only = False
+            if reduce_only_claimed:
+                if not (
+                    isinstance(reduce_only_evidence, dict)
+                    and reduce_only_evidence.get("contract_version")
+                    == "execution_reduce_only_v1"
+                    and reduce_only_evidence.get("position_update_owner")
+                    == "execution_reduce_only_v1"
+                ):
+                    raise ValueError("unverified reduce-only execution owner")
+                internal_order_id = str(metadata.get("order_id") or "").strip()
+                if not internal_order_id:
+                    raise ValueError("missing reduce-only ledger order_id")
+                pnl_raw = reduce_only_evidence.get("realized_pnl_delta")
+                try:
+                    realized_pnl = Decimal(str(pnl_raw))
+                except (InvalidOperation, TypeError, ValueError) as exc:
+                    raise ValueError("invalid reduce-only realized PnL") from exc
+                if not realized_pnl.is_finite():
+                    raise ValueError("invalid reduce-only realized PnL")
+                cursor.execute(
+                    """
+                    SELECT symbol, side, filled_quantity, status,
+                           fill_price, realized_pnl_delta
+                    FROM reduce_only_executions
+                    WHERE order_id = %s
+                    """,
+                    (internal_order_id,),
+                )
+                ledger_row = cursor.fetchone()
+                expected_ledger_status = (
+                    "PARTIALLY_FILLED"
+                    if status in {"partial", "partially_filled"}
+                    else "FILLED"
+                )
+                if (
+                    ledger_row is None
+                    or str(ledger_row[0]) != str(data.get("symbol"))
+                    or str(ledger_row[1]).upper() != side.upper()
+                    or Decimal(str(ledger_row[2])) != execution_qty
+                    or str(ledger_row[3]).upper() != expected_ledger_status
+                    or Decimal(str(ledger_row[4])) != execution_price
+                    or Decimal(str(ledger_row[5])) != realized_pnl
+                ):
+                    raise ValueError("reduce-only ledger evidence mismatch")
+                execution_owned_reduce_only = True
+                existing_position = None
+            else:
+                existing_position = self._fetch_open_position(
+                    cursor, data.get("symbol")
+                )
+                realized_pnl = self._calculate_trade_realized_pnl(
+                    existing_position, side, execution_price, execution_qty
+                )
             cursor.execute(
                 """
                 INSERT INTO trades
                 (symbol, side, price, size, status, execution_price, slippage_bps, fees, realized_pnl, timestamp, exchange, metadata)
                 VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s)
+                ON CONFLICT ((metadata->>'order_id'))
+                WHERE metadata->'reduce_only'->>'position_update_owner'
+                    = 'execution_reduce_only_v1'
+                DO NOTHING
                 RETURNING id
             """,
                 (
@@ -583,7 +802,14 @@ class DatabaseWriter:
                     json.dumps(metadata),
                 ),
             )
-            trade_id = cursor.fetchone()[0]
+            trade_row = cursor.fetchone()
+            if trade_row is None:
+                logger.info(
+                    "Skipping duplicate reduce-only trade event for order %s",
+                    metadata.get("order_id"),
+                )
+                return
+            trade_id = trade_row[0]
             logger.info(
                 "✅ Trade persisted: ID=%d, %s %s @ %s",
                 trade_id,
@@ -593,8 +819,13 @@ class DatabaseWriter:
             )
             DB_WRITER_EVENTS_PROCESSED.labels(channel="order_results").inc()
 
-            # Update positions table (source-of-truth for current holdings)
-            self.update_position_from_trade(data, existing_position=existing_position)
+            # Issue #4184: the execution service already applied this guarded
+            # reduce-only fill atomically with its persistent claim. Keep the
+            # trade row, but never apply the position effect twice.
+            if not execution_owned_reduce_only:
+                self.update_position_from_trade(
+                    data, existing_position=existing_position
+                )
         except ValueError as e:
             # Validation error - log but don't crash the service
             logger.error(
@@ -635,9 +866,25 @@ class DatabaseWriter:
                 "execution_price",
                 data,
             )
-            execution_qty = self._get_positive_decimal(
-                data.get("quantity") or data.get("size"), "execution_quantity", data
-            )
+            fill_resolution = self.resolve_fill_quantity(data)
+            if fill_resolution["state"] == FIELD_ZERO:
+                logger.info(
+                    "⏭️  Skipping zero-fill position update: %s source=%s",
+                    symbol,
+                    fill_resolution["source"],
+                )
+                return
+            if fill_resolution["state"] not in {
+                FIELD_POSITIVE,
+                FIELD_MISSING_LEGACY_FALLBACK,
+            }:
+                execution_qty = self._require_positive_fill_quantity(data)
+            else:
+                execution_qty = fill_resolution["value"]
+                if execution_qty is None or execution_qty <= 0:
+                    raise ValueError(
+                        f"{fill_resolution['source']} must be > 0, got: {execution_qty}"
+                    )
             timestamp = self.convert_timestamp(data.get("timestamp"))
 
             cursor = self.db_conn.cursor()
@@ -847,6 +1094,7 @@ class DatabaseWriter:
         else:
             logger.warning(f"Unknown channel: {channel}")
 
+    # fmt: off
     def _persist_candle_entry(self, cursor, row: dict) -> bool:
         """Insert a normalised candle row into ``candles_1m``.
 
@@ -940,6 +1188,7 @@ class DatabaseWriter:
                         DB_WRITER_EVENTS_FAILED.labels(channel="candles_1m").inc()
                         # do NOT advance last_id: transient DB error → retry on next XREAD
 
+    # fmt: on
     def run(self):
         """Main event loop"""
         logger.info("Starting DB Writer Service...")
