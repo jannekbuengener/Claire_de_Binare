@@ -1,0 +1,83 @@
+{
+  "schema_version": "cdb.strategy_candidate.v1",
+  "candidate_id": "sc-wave1-btc-trend-breakout",
+  "candidate_version": "v1",
+  "parent_version": null,
+  "strategy_family": "trend_breakout",
+  "falsifiable_hypothesis": "BTCUSDT TREND breakouts produce positive net expectancy when fees/spread/slippage and inactivity rules are enforced.",
+  "source_evidence": [
+    "docs/contracts/examples/profitability_candidate_contract_valid.json"
+  ],
+  "entry_rules": [
+    "Enter long only in allowed TREND regime with fresh market_state."
+  ],
+  "exit_rules": [
+    "Exit on opposite break or max-hold timeout."
+  ],
+  "inactivity_rules": [
+    "No new entry within 60 minutes of prior entry."
+  ],
+  "parameters": {
+    "entry_lookback_minutes": 240,
+    "exit_lookback_minutes": 120,
+    "breakout_buffer": 0.0005
+  },
+  "market_scope": {
+    "symbols": [
+      "BTCUSDT"
+    ],
+    "timeframes": [
+      "1m"
+    ]
+  },
+  "regime_scope": {
+    "allowed_regimes": [
+      "TREND"
+    ],
+    "blocked_regimes": [
+      "RANGE",
+      "PANIC",
+      "UNKNOWN"
+    ]
+  },
+  "data_requirements": [
+    "1m OHLCV candles",
+    "regime freshness labels"
+  ],
+  "execution_assumptions": [
+    "Fees, spread, and slippage must be modeled before ranking."
+  ],
+  "risk_assumptions": [
+    "Core risk and kill-switch remain authoritative."
+  ],
+  "validation_plan": [
+    "contract completeness",
+    "deterministic baseline replay",
+    "execution cost model"
+  ],
+  "limitations": [
+    "Example candidate only; not profitability_candidate_contract.v1."
+  ],
+  "non_goals": [
+    "live trading",
+    "automatic promotion"
+  ],
+  "provenance": {
+    "research_brief_id": "rb-wave1-example-btc-trend",
+    "compiler_ref": "docs-only-wave1",
+    "source_origin": "research-validation-wave1"
+  },
+  "uncertainty": [
+    "No walk-forward evidence attached yet."
+  ],
+  "completeness_status": "READY_FOR_VALIDATION",
+  "lineage_refs": {
+    "profitability_candidate_contract": "profitability_candidate_contract.v1",
+    "notes": "Adjacent orchestration candidate; does not replace #3034/#3043."
+  },
+  "safety_boundaries": {
+    "lr_status": "NO-GO",
+    "automatic_strategy_promotion": false,
+    "real_money_go": false
+  }
+}
