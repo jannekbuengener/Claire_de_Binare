@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import subprocess
 from pathlib import Path
 
 import pytest
@@ -25,11 +26,27 @@ def _read(name: str) -> str:
 
 
 def test_ops_scripts_are_executable() -> None:
+    """Executable bit is enforced via git index mode (100755).
+
+    Windows NTFS checkouts often lack +x on disk; Hosted/Linux CI and
+    `git update-index --chmod=+x` remain authoritative for #4289.
+    """
+    listed = subprocess.check_output(
+        ["git", "ls-files", "-s", "--", str(HETZNER)],
+        text=True,
+        encoding="utf-8",
+    )
+    modes_by_name: dict[str, str] = {}
+    for line in listed.splitlines():
+        # format: <mode> <object> <stage>\t<path>
+        meta, path = line.split("\t", 1)
+        mode = meta.split()[0]
+        modes_by_name[Path(path).name] = mode
     for name in SCRIPTS:
         path = HETZNER / name
         assert path.is_file(), path
-        mode = path.stat().st_mode
-        assert mode & 0o111, f"{name} must be executable (mode={oct(mode)})"
+        mode = modes_by_name.get(name)
+        assert mode == "100755", f"{name} must be git mode 100755 (got {mode!r})"
 
 
 def test_update_uses_pinned_installer_not_main_branch() -> None:
@@ -76,10 +93,16 @@ def test_provision_backups_not_start_after_create_flag() -> None:
 def test_bootstrap_paths_align_with_update() -> None:
     bootstrap = _read("bootstrap.sh")
     update = _read("update.sh")
-    assert 'OPT_DIR="${HERMES_OPT_DIR:-/opt/hermes}"' in bootstrap or "/opt/hermes" in bootstrap
+    assert (
+        'OPT_DIR="${HERMES_OPT_DIR:-/opt/hermes}"' in bootstrap
+        or "/opt/hermes" in bootstrap
+    )
     assert "hermes-agent" in bootstrap
     assert "hermes-agent" in update
-    assert "|| true" not in bootstrap.split("enable_services")[-1] or "enable_services" in bootstrap
+    assert (
+        "|| true" not in bootstrap.split("enable_services")[-1]
+        or "enable_services" in bootstrap
+    )
     # Service start must die, not swallow errors.
     assert 'die "jannek-assistant dashboard failed to start"' in bootstrap
     assert 'die "cdb-engineer dashboard failed to start"' in bootstrap

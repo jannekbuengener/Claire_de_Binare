@@ -204,7 +204,9 @@ def assert_app_compatible_for_hermes_write(
     """
     resolved = app_id
     if resolved is None:
-        raw = (os.environ.get("CDB_GH_APP_ID") or os.environ.get("APP_ID") or "").strip()
+        raw = (
+            os.environ.get("CDB_GH_APP_ID") or os.environ.get("APP_ID") or ""
+        ).strip()
         if raw.isdigit():
             resolved = int(raw)
     if resolved == CDB_LOCAL_CI_APP_ID and installation_permissions is None:

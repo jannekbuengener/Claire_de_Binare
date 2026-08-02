@@ -45,7 +45,9 @@ def test_engineer_reuses_auth_lineage_and_scopes_repos() -> None:
             encoding="utf-8"
         )
     )
-    assert dist["cdb"]["allowed_repositories"] == ["jannekbuengener/Claire_de_Binare"]  # pragma: allowlist secret
+    assert dist["cdb"]["allowed_repositories"] == [
+        "jannekbuengener/Claire_de_Binare"
+    ]  # pragma: allowlist secret
     assert "4170" in {str(x) for x in dist["cdb"]["reuses_auth_lineage"]}
     assert dist["cdb"]["cdb_local_ci_publish"] is False
     assert dist["cdb"]["merge_authority"] is False

@@ -6,11 +6,7 @@ from pathlib import Path
 
 REPO_ROOT = Path(__file__).resolve().parents[2]
 UNIT_PATH = (
-    REPO_ROOT
-    / "infrastructure"
-    / "hermes"
-    / "systemd"
-    / "hermes-dashboard@.service"
+    REPO_ROOT / "infrastructure" / "hermes" / "systemd" / "hermes-dashboard@.service"
 )
 LEGACY_SERVE_PATH = (
     REPO_ROOT / "infrastructure" / "hermes" / "systemd" / "hermes-serve@.service"

@@ -35,7 +35,9 @@ PROFILE_POLICY: dict[str, dict[str, Any]] = {
         "risk_authority": False,
         "merge_authority": False,
         "cdb_local_ci_publish": False,
-        "allowed_repositories": ["jannekbuengener/Claire_de_Binare"],  # pragma: allowlist secret
+        "allowed_repositories": [
+            "jannekbuengener/Claire_de_Binare"
+        ],  # pragma: allowlist secret
         # Minimal contents write for branches/PRs; never checks:write (CI publish).
         "token_permissions": {
             "contents": "write",

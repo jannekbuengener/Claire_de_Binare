@@ -32,7 +32,10 @@ Installer env `HERMES_GIT_REF` is **not** supported; use `--branch` / `--commit`
 
 ## Preconditions
 
-1. Valid Hetzner Cloud API token for `hcloud` (operator-owned; not in repo).
+1. Valid **Hetzner Cloud** API token for `hcloud` (operator-owned; not in repo).
+   - Object Storage Access/Secret keys (`HETZNER_ACCESS_KEY` / `HETZNER_SECRET_KEY`
+     shape) are a **different product** and do **not** authorize `hcloud`.
+   - Do not set `HCLOUD_TOKEN` from Object Storage credentials.
 2. `hcloud` CLI authenticated (`hcloud server list` succeeds).
 3. Tailscale (or equivalent private net) for Jannek ↔ Hetzner ↔ Windows.
 4. `infrastructure/hermes/VERSION_PIN.yaml` filled; `python -m tools.hermes_ops pin-check --require-pinned` exits 0.

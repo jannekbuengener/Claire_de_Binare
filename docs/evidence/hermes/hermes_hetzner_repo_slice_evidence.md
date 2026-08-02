@@ -1,15 +1,16 @@
 # Evidence — Hermes Hetzner (#4289)
 
-Status: REPO_PREFLIGHT_FIXED + LIVE_BLOCKED
-Date: 2026-08-01
+Status: REPO_CI_FIXED + LIVE_BLOCKED_WRONG_CREDENTIAL_PRODUCT
+Date: 2026-08-02
 PR: [#4290](https://github.com/jannekbuengener/Claire_de_Binare/pull/4290)    <!-- pragma: allowlist secret -->
+Head (start): `00db85d22e05075da2f07ccca4246fd51c7f860f`
 LR: NO-GO
 
 ## Scope of this evidence
 
-Repository preflight fixes and validators. Live Hetzner / Windows / GitHub write
-drills require credentials listed under Holds. Sensitive host inventory stays
-outside the repository; this file is redacted summary only.
+Repository CI/format fixes, credential-product classification, and redacted
+preflight. Live Hetzner / Windows / GitHub write drills remain blocked.
+Sensitive host inventory stays outside the repository.
 
 ## Pin (verified)
 
@@ -23,75 +24,72 @@ outside the repository; this file is redacted summary only.
 | dashboard entrypoint | `hermes dashboard --host 127.0.0.1 --port <N> --no-open --isolated` |
 | cost estimate | 14.89 EUR/mo (CPX21 + IPv4 + backups) |
 
-Pin re-verified 2026-08-01 against live install.sh sha256 and GitHub annotated
-tag peel to `cc4cab2f…`. Official installer supports `--dir/--commit/--branch`;
-`HERMES_GIT_REF` env is **not** supported.
+## Session 2026-08-02 — CI root cause
 
-## Preflight fixes landed
+Hosted run `30741978587` on head `00db85d2`: `overall_status=FAIL` in stage **lint**.
+Cause: `black --check` would reformat 5 Hermes files under `tools/hermes_ops/` and
+`tests/unit/hermes_ops/`. Classification: **scope-conform**. Fixed by applying Black
+and making the executable-bit contract check **git index mode `100755`** (Windows
+NTFS local `stat` is not authoritative).
 
-| Finding | Fix |
+## Credential / SSH preflight (redacted)
+
+| Check | Result |
 |---|---|
-| Shared port 9119 | Distinct ports 9119 / 9120 (+ unit `--isolated`) |
-| `bootstrap.sh` `|| true` | Hard fail on service start |
-| Windows user not created | `setup-workspace.ps1` creates non-admin `hermes-win` |
-| YAML intent only | `provision.sh` via `hcloud`; YAML documented as intent mirrors |
-| Empty pin accepted for live | `pin-check --require-pinned` exit 2 |
-| hermes in sudo group | cloud-init limited sudoers.d |
-| `--print-token` stdout | removed; `--token-file` 0600 only |
-| App 4410232 reuse | fail-closed without compatible write perms |
-| `hermes serve` unit | replaced by `hermes-dashboard@.service` |
-| Update/rollback soft pin | pin URL + required sha256; path `/opt/hermes/hermes-agent` |
-| Destroy name-only | requires labels `role=hermes` + `issue=4289` + `project=claire-de-binare` |
-| Provision backups flag bug | backups enable fail-closed; no `--start-after-create` misuse |
-| Script mode bits | ops scripts `100755` |
+| `HETZNER_ACCESS_KEY.txt` exists (len=20) | PASS (file present) |
+| `HETZNER_SECRET_KEY.txt` exists (len=40) | PASS (file present) |
+| Access/Secret as `HCLOUD_TOKEN` | FAIL_UNAUTHORIZED |
+| Object Storage S3 ListBuckets (fsn1/nbg1/hel1) | PASS (HTTP 200) |
+| Active `hcloud` context `traumtaenzer` | FAIL_UNAUTHORIZED (stale/invalid) |
+| SSH pubkey fingerprint | PASS `SHA256:1KHxOlbvep+HTwWC5YtZ+CIPrBHCQQ8m2F8xgRlqDD0` |
+| SSH private key present | PASS (basename only) |
+| Tailscale CLI | MISSING |
+| `D:\Dev\HermesWorkspace\Claire_de_Binare` | MISSING |
+| Product classification | **Object Storage keys ≠ Hetzner Cloud API** |
 
 ## Commands (PASS this session)
 
 ```bash
+python -m black --config pyproject.toml --check tools/hermes_ops tests/unit/hermes_ops
 python -m tools.hermes_ops validate-profiles
 python -m tools.hermes_ops secret-scan
-python -m tools.hermes_ops policy-check --profile cdb-engineer --action github_write_branch_pr --expect allow
-python -m tools.hermes_ops policy-check --profile jannek-assistant --action windows_shell --expect deny
-python -m tools.hermes_ops mint-token --profile cdb-engineer --dry-run
 python -m tools.hermes_ops pin-check --require-pinned
 pytest -q tests/unit/hermes_ops   # 28 passed
 ruff check tools/hermes_ops tests/unit/hermes_ops
 git diff --check
 ```
 
-Hosted Actions advisory `ci` on prior head was FAIL without stage detail in logs;
-local hermes_ops suite PASS. Required merge gate `cdb-local-ci` not published
-(out of scope for this operator session).
+Required merge gate `cdb-local-ci` not published (out of scope).
 
-## Live drill matrix (session)
+## Live drill matrix (session 2026-08-02)
 
 | Drill | Result |
 |---|---|
-| Bootstrap on empty VM | NOT_RUN (`HCLOUD_TOKEN` unset in Cloud Agent) |
-| Idempotent second bootstrap | NOT_RUN |
+| Bootstrap on empty VM | BLOCKED (no valid HCLOUD Cloud API token) |
+| Idempotent second bootstrap | BLOCKED |
 | VM reboot + auto start | NOT_RUN |
-| External portscan | NOT_RUN |
-| Concurrent profiles | NOT_RUN (repo unit/port contract only) |
-| Profile/memory isolation | NOT_RUN |
-| Windows ACL allow/deny | NOT_RUN (no Windows host / UAC in Cloud Agent) |
-| Windows kill-switch | NOT_RUN |
-| GitHub token mint/allow/revoke | NOT_RUN (no dedicated Hermes App credentials) |
-| Backup + restore probe | NOT_RUN |
-| Update + rollback | NOT_RUN (script contracts tested; live install NOT_RUN) |
+| Port/firewall external | NOT_RUN |
+| Unauthorized access denied | NOT_RUN |
+| Profile identity/skills/memory isolation | NOT_RUN |
+| Memory/sessions survive restart | NOT_RUN |
+| Cross-profile secret/memory deny | NOT_RUN |
+| Windows ACL allow/deny | NOT_RUN (workspace + Tailscale missing; UAC likely) |
+| Kill-switch | NOT_RUN |
+| Backup + restore | NOT_RUN |
+| Update + rollback | NOT_RUN (script contracts PASS; live NOT_RUN) |
+| Token rotation/revoke | NOT_RUN (no dedicated Hermes GitHub App) |
 | Secret/PII scan of redacted evidence | PASS (repo secret-scan) |
 
-## Holds (exact Human action)
+## Holds (exact Human action — single primary blocker)
 
-1. Provide valid Hetzner Cloud API token / `hcloud` context (`HCLOUD_TOKEN` or
-   equivalent). Variable purpose: provision `cdb-hermes-01` under ≤15 EUR/mo.
-2. Create/install a **dedicated** GitHub App (do not expand `4410232`) with:
-   `contents:write`, `pull_requests:write`, `issues:write`, `metadata:read`;
-   **no** `checks:write`. Place PEM outside agent-readable workspaces; set
-   Hermes App ID + key path for `tools.hermes_ops mint-token`.
-3. UAC elevation on Windows 11 Pro for `hermes-win` + workspace ACL/kill-switch
-   drills; Tailscale (or equivalent) auth for private path.
-4. Hermes model/provider: prefer existing Nous Portal / OAuth subscription —
-   no new pay-as-you-go OpenAI API account.
+1. **PRIMARY:** Create/provide a valid **Hetzner Cloud API token** (product:
+   Cloud, not Object Storage) and authenticate `hcloud` so
+   `hcloud server list` succeeds. Existing Object Storage Access/Secret keys are
+   verified usable for S3 endpoints only and must not be used as `HCLOUD_TOKEN`.
+2. Register SSH pubkey in Hetzner Cloud; set `HERMES_SSH_KEY_NAME`.
+3. Dedicated Hermes GitHub App (do **not** expand App `4410232`):
+   `contents`/`pull_requests`/`issues` write + `metadata:read`; **no** `checks:write`.
+4. Install/auth Tailscale; elevated Windows session for `hermes-win` + ACL/kill-switch.
 
 ## Probe issues
 
