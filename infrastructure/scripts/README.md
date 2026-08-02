@@ -35,7 +35,7 @@ Operator scripts for stack lifecycle, backup/DR, smoke, and evidence — prefer 
 | [`stack_up.ps1`](stack_up.ps1) | Superseded by `setup_blue_red.ps1` |
 
 Repo-root helpers such as `smart_health_check.py`, project PowerShell automation,
-`check_core_duplicates.py`, and `dimensionality_audit/` own under [`scripts/`](../../scripts/).
+`check_core_duplicates.py`, and `dimensionality_audit/` own under [`scripts/`](../../scripts/README.md).
 Do not reintroduce identical copies here; Rule 3 in `scripts/check_core_duplicates.py`
 guards against new exact clones.
 

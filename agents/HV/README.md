@@ -20,7 +20,7 @@ Dokumentation zur **High-Voltage Multi-Agent Engine** — experimenteller/isolie
 | BLUE+RED Trading-Stack | [`infrastructure/compose/README.md`](../../infrastructure/compose/README.md) |
 | Live-Readiness | [`docs/live-readiness/LR-AUDIT-STATUS-2026-03-05.md`](../../docs/live-readiness/LR-AUDIT-STATUS-2026-03-05.md) (**NO-GO**) |
 
-HV-Docs beschreiben keinen LR-Go und ersetzen keine operativen Runbooks unter [`docs/runbooks/`](../../docs/runbooks/).
+HV-Docs beschreiben keinen LR-Go und ersetzen keine operativen Runbooks unter [`docs/runbooks/`](../../docs/runbooks/README.md).
 
 ## Related
 
