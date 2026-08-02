@@ -92,6 +92,24 @@ Required merge gate `cdb-local-ci` not published (out of scope).
 | `POST /volumes` | **HTTP 403 forbidden** |
 | Default type under ≤15 EUR | `cx23` @ `fsn1` estimate **9.03 EUR/mo** (`cpx21` unorderable) |
 
+
+## Session 2026-08-02c — post-repro permission matrix
+
+Live python -m tools.hermes_ops hcloud-preflight → SERVER_CREATE_FORBIDDEN.
+
+| Probe | HTTP |
+|---|---|
+| GET /servers | 200 |
+| POST /firewalls | 201 (deleted) |
+| POST /networks | 201 (earlier matrix) |
+| POST /primary_ips | 201 (earlier matrix) |
+| POST /servers | **403 forbidden** |
+| POST /volumes | **403** |
+| POST /floating_ips | **403** |
+| POST /load_balancers | **403** |
+
+Classification: token is **not** read-only; server/volume create specifically denied.
+
 ## Holds (exact Human action — single primary blocker)
 
 1. **PRIMARY:** Hetzner Cloud project/token can authenticate and manage firewalls,

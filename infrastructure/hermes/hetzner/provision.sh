@@ -99,6 +99,26 @@ ensure_server() {
 main() {
   require_cmd hcloud
   hcloud server list >/dev/null 2>&1 || die "hcloud auth failed — set a valid token/context"
+  # Optional Python capability probe (clearer than raw hcloud 403).
+  if command -v python >/dev/null 2>&1; then
+    local repo_root
+    repo_root="$(cd "${SCRIPT_DIR}/../../.." && pwd)"
+    local pf_out pf_err
+    pf_out="$(mktemp)"
+    pf_err="$(mktemp)"
+    if ! (
+      cd "${repo_root}" && python -m tools.hermes_ops hcloud-preflight
+    ) >"${pf_out}" 2>"${pf_err}"; then
+      cat "${pf_out}" >&2 || true
+      cat "${pf_err}" >&2 || true
+      rm -f "${pf_out}" "${pf_err}"
+      die "hcloud-preflight failed — see SERVER_CREATE_FORBIDDEN / human_actions in JSON above"
+    fi
+    log "hcloud-preflight PASS"
+    rm -f "${pf_out}" "${pf_err}"
+  else
+    log "python missing — skip hcloud-preflight; relying on hcloud create errors"
+  fi
   cost_gate
   ensure_firewall
   ensure_server

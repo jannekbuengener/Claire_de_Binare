@@ -11,6 +11,7 @@ from pathlib import Path
 
 import yaml
 
+from tools.hermes_ops.hcloud_preflight import run_hcloud_preflight
 from tools.hermes_ops.policy import (
     assert_action_allowed,
     omnipotent_combination_forbidden,
@@ -168,6 +169,12 @@ def _pin_fields_missing(pin: dict) -> list[str]:
     return missing
 
 
+def _cmd_hcloud_preflight(_: argparse.Namespace) -> int:
+    report = run_hcloud_preflight()
+    print(json.dumps(report.to_dict(), indent=2, sort_keys=True))
+    return 0 if report.ok else 2
+
+
 def _cmd_pin_check(args: argparse.Namespace) -> int:
     pin_path = Path("infrastructure/hermes/VERSION_PIN.yaml")
     if not pin_path.is_file():
@@ -245,6 +252,12 @@ def build_parser() -> argparse.ArgumentParser:
         help="Fail (exit 2) when git_ref/commit/sha256 are empty (live install gate)",
     )
     p_pin.set_defaults(func=_cmd_pin_check)
+
+    p_hc = sub.add_parser(
+        "hcloud-preflight",
+        help="Probe Hetzner Cloud token capability for Hermes VM create (redacted JSON)",
+    )
+    p_hc.set_defaults(func=_cmd_hcloud_preflight)
     return parser
 
 

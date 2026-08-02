@@ -90,6 +90,7 @@ def test_provision_backups_not_start_after_create_flag() -> None:
     assert "issue=4289" in text
     assert "HERMES_BOOTSTRAP_ADMIN_CIDR" in text
     assert "hermes-bootstrap-ssh-temp" in text
+    assert "hcloud-preflight" in text
 
 
 def test_bootstrap_paths_align_with_update() -> None:
