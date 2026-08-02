@@ -1,0 +1,130 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://claire-de-binare.local/contracts/cdb_agent_dispatch_run.v1.schema.json",
+  "title": "CDB Agent Dispatch Run v1",
+  "description": "Governed dispatcher run record. Schema id: cdb.agent_dispatch_run.v1. Lifecycle states follow ACP §5. Unknown fields rejected.",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "schema_id",
+    "schema_version",
+    "run_id",
+    "attempt",
+    "previous_run_id",
+    "revision",
+    "state",
+    "contract_id",
+    "contract_digest",
+    "delivery_issue",
+    "route",
+    "agent_id",
+    "provider_id",
+    "provider_run_id",
+    "budget",
+    "usage",
+    "lifecycle_events",
+    "terminal_reason",
+    "terminal_code",
+    "created_at",
+    "updated_at"
+  ],
+  "properties": {
+    "schema_id": { "const": "cdb.agent_dispatch_run.v1" },
+    "schema_version": { "const": "1.0.0" },
+    "run_id": {
+      "type": "string",
+      "pattern": "^adr-[a-z0-9]{8,32}$"
+    },
+    "attempt": { "type": "integer", "minimum": 1 },
+    "previous_run_id": { "type": ["string", "null"] },
+    "revision": { "type": "integer", "minimum": 0 },
+    "state": {
+      "type": "string",
+      "enum": [
+        "PLANNED",
+        "ROUTED",
+        "CONTRACTED",
+        "DISPATCHED",
+        "RUNNING",
+        "AWAITING_APPROVAL",
+        "DELIVERED",
+        "PASS",
+        "HOLD",
+        "BLOCKED",
+        "FAILED",
+        "CANCELLED"
+      ]
+    },
+    "contract_id": { "type": ["string", "null"] },
+    "contract_digest": { "type": ["string", "null"] },
+    "delivery_issue": { "type": ["integer", "null"], "minimum": 1 },
+    "route": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["routing_decision", "target_pr", "target_branch", "lane"],
+      "properties": {
+        "routing_decision": { "type": ["string", "null"] },
+        "target_pr": { "type": ["integer", "null"] },
+        "target_branch": { "type": ["string", "null"] },
+        "lane": { "type": ["string", "null"] },
+        "batch_key": { "type": ["string", "null"] }
+      }
+    },
+    "agent_id": { "type": "string", "minLength": 1 },
+    "provider_id": { "type": ["string", "null"] },
+    "provider_run_id": { "type": ["string", "null"] },
+    "budget": { "type": "object" },
+    "usage": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["iterations", "tool_calls"],
+      "properties": {
+        "iterations": { "type": "integer", "minimum": 0 },
+        "tool_calls": { "type": "integer", "minimum": 0 },
+        "input_tokens": { "type": ["integer", "null"], "minimum": 0 },
+        "output_tokens": { "type": ["integer", "null"], "minimum": 0 },
+        "cache_tokens": { "type": ["integer", "null"], "minimum": 0 },
+        "total_tokens": { "type": ["integer", "null"], "minimum": 0 },
+        "cost": { "type": ["string", "integer", "null"] },
+        "currency": { "type": ["string", "null"] }
+      }
+    },
+    "lifecycle_events": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": ["seq", "name", "from_state", "to_state", "at", "detail"],
+        "properties": {
+          "seq": { "type": "integer", "minimum": 1 },
+          "name": { "type": "string" },
+          "from_state": { "type": ["string", "null"] },
+          "to_state": { "type": ["string", "null"] },
+          "at": { "type": "string" },
+          "detail": { "type": "object" }
+        }
+      }
+    },
+    "terminal_reason": { "type": ["string", "null"] },
+    "terminal_code": { "type": ["string", "null"] },
+    "idempotency_key": { "type": ["string", "null"] },
+    "created_at": { "type": "string" },
+    "updated_at": { "type": "string" },
+    "scenario": { "type": ["string", "null"] },
+    "delivery_receipt": { "type": ["object", "null"] },
+    "prompt_ref": { "type": ["string", "null"] },
+    "prompt_digest": {
+      "type": ["string", "null"],
+      "pattern": "^sha256:[a-f0-9]{64}$"
+    },
+    "provider_watch_ticks": { "type": ["integer", "null"], "minimum": 0 },
+    "capability_snapshot": { "type": ["object", "null"] },
+    "result_refs": { "type": ["object", "null"] },
+    "environment_profile_id": { "type": ["string", "null"] },
+    "environment_profile_version": { "type": ["string", "null"] },
+    "environment_profile_digest": { "type": ["string", "null"] },
+    "provider_config_digest": { "type": ["string", "null"] },
+    "environment_preflight_verdict": { "type": ["string", "null"] },
+    "source_commit": { "type": ["string", "null"] }
+  }
+}

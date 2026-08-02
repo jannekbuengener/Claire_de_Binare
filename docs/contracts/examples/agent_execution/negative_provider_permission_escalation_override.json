@@ -1,0 +1,18 @@
+{
+  "permissions": {
+    "close_issue": false,
+    "comment_issue": true,
+    "commit": true,
+    "database_mutation": false,
+    "mcp_live_mutation": false,
+    "merge": true,
+    "open_pr": false,
+    "publish_cdb_local_ci": false,
+    "push": true,
+    "read_repo": true,
+    "runtime_mutation": false,
+    "update_pr": true,
+    "write_code": true,
+    "write_docs": true
+  }
+}

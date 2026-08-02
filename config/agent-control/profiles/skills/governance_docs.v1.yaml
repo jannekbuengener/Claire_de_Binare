@@ -1,0 +1,7 @@
+profile_id: governance_docs.v1
+description: Docs/governance delivery skill pack.
+skill_ids:
+  - cdb-session-start
+  - cdb-control-intake
+  - cdb-docs-ops
+  - cdb-session-close

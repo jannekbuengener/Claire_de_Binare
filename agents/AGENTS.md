@@ -80,6 +80,21 @@ versionierte Root-Flächen für `.claude/`, `.codex/`, `.cursor/`, `.gemini/`, `
   - Read-only PR-routing gate before Session-Plan and work-surface creation.
 - `knowledge/governance/`
   - Kanonische Governance-, Policy- und Invariant-Dokumente.
+  - Agent Control Plane Canon:
+    [`knowledge/governance/CDB_AGENT_CONTROL_PLANE.md`](../knowledge/governance/CDB_AGENT_CONTROL_PLANE.md)
+    (`#4250`; Owner-ratified 2026-08-01 at `c691a8d0`; not the GitHub Workflow
+    Control Plane under `.github/`).
+  - Agent Execution Contract v1:
+    [`docs/contracts/agent_execution/CDB_AGENT_EXECUTION_CONTRACT_V1.md`](../docs/contracts/agent_execution/CDB_AGENT_EXECUTION_CONTRACT_V1.md)
+    (`cdb.agent_execution.v1`, `#4251`; Router-Handoff, fail-closed).
+  - Agent Registry v1:
+    [`docs/contracts/agent_registry/CDB_AGENT_REGISTRY_V1.md`](../docs/contracts/agent_registry/CDB_AGENT_REGISTRY_V1.md)
+    + [`config/agent-control/`](../config/agent-control/) (`cdb.agent_registry.v1`,
+    `#4252`; dry-run reconciler via `python -m tools.agent_control`).
+  - Agent Dispatch v1:
+    [`docs/contracts/agent_dispatch/CDB_AGENT_DISPATCH_V1.md`](../docs/contracts/agent_dispatch/CDB_AGENT_DISPATCH_V1.md)
+    (`cdb.agent_dispatch_run.v1`, `#4253`; mock-only dispatcher via
+    `python -m tools.agent_control dispatch|watch|cancel|retry|evidence`).
 - `knowledge/`
   - Aktive Knowledge-Dokumente und historische Referenzflächen; kein pauschaler Status-Canon.
 - `knowledge/testing/`

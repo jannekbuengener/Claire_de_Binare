@@ -1,0 +1,21 @@
+{
+  "execution_scope": {
+    "allowed_paths": [
+      "docs/contracts",
+      "docs/contracts/*",
+      "tools/agent_execution_contract",
+      "tools/agent_execution_contract/*",
+      "tests/unit/governance",
+      "tests/unit/governance/*",
+      "knowledge/governance",
+      "knowledge/governance/*",
+      "knowledge/logs/sessions",
+      "knowledge/logs/sessions/*",
+      "agents",
+      "agents/*",
+      "AGENTS.md",
+      "services",
+      "services/*"
+    ]
+  }
+}
