@@ -181,11 +181,19 @@ def build_dry_run_plan(
     return plan
 
 
+def _normalized_branch(value: Any) -> str | None:
+    """Return stripped branch name, or None for missing/whitespace-only."""
+    if not isinstance(value, str):
+        return None
+    stripped = value.strip()
+    return stripped or None
+
+
 def _field_present(value: Any, *, field: str) -> bool:
     if value is None:
         return False
     if field == "target_branch":
-        return isinstance(value, str) and bool(value.strip())
+        return _normalized_branch(value) is not None
     return True
 
 
@@ -193,7 +201,8 @@ def assert_delivery_target_consistent(contract: dict[str, Any]) -> None:
     """Fail-closed when route and delivery_target disagree on the same field.
 
     Identical duplicates remain allowed. Create routes may leave targets empty
-    until a validated provider receipt supplies them.
+    until a validated provider receipt supplies them. Whitespace-only branches
+    are treated as absent (same semantics as coalesce in `_delivery_target`).
     """
     route = contract.get("route") or {}
     target = (contract.get("execution_scope") or {}).get("delivery_target") or {}
@@ -201,6 +210,14 @@ def assert_delivery_target_consistent(contract: dict[str, Any]) -> None:
     for field in ("target_pr", "target_branch"):
         route_val = route.get(field)
         target_val = target.get(field)
+        if field == "target_branch":
+            route_cmp = _normalized_branch(route_val)
+            target_cmp = _normalized_branch(target_val)
+            if route_cmp is None or target_cmp is None:
+                continue
+            if route_cmp != target_cmp:
+                conflicts.append(field)
+            continue
         if not (
             _field_present(route_val, field=field)
             and _field_present(target_val, field=field)
@@ -221,9 +238,13 @@ def _delivery_target(contract: dict[str, Any]) -> dict[str, Any]:
     scope = contract.get("execution_scope") or {}
     target = scope.get("delivery_target") or {}
     route = contract.get("route") or {}
+    # Whitespace-only branches must not win over a real route branch via
+    # truthy `or` (R1 / #4293 acceptance residual).
+    delivery_branch = _normalized_branch(target.get("target_branch"))
+    route_branch = _normalized_branch(route.get("target_branch"))
     return {
         "target_pr": target.get("target_pr") or route.get("target_pr"),
-        "target_branch": target.get("target_branch") or route.get("target_branch"),
+        "target_branch": delivery_branch or route_branch,
         "expected_status": target.get("expected_status")
         or "DONE_SLICE_ADDED_TO_BATCH_PR",
         "routing_decision": route.get("routing_decision"),

@@ -46,8 +46,18 @@ SLICE_FORBIDDEN_TRUE = frozenset(
 )
 
 
+def _normalized_branch(value: Any) -> str | None:
+    if not isinstance(value, str):
+        return None
+    stripped = value.strip()
+    return stripped or None
+
+
 def _delivery_target_conflict_message(contract: dict[str, Any]) -> str | None:
-    """Return conflict message when route and delivery_target disagree."""
+    """Return conflict message when route and delivery_target disagree.
+
+    Whitespace-only branches are absent (aligned with dispatch coalesce).
+    """
     route = contract.get("route") or {}
     target = (contract.get("execution_scope") or {}).get("delivery_target") or {}
     conflicts: list[str] = []
@@ -55,11 +65,15 @@ def _delivery_target_conflict_message(contract: dict[str, Any]) -> str | None:
         route_val = route.get(field)
         target_val = target.get(field)
         if field == "target_branch":
-            route_present = isinstance(route_val, str) and bool(route_val.strip())
-            target_present = isinstance(target_val, str) and bool(target_val.strip())
-        else:
-            route_present = route_val is not None
-            target_present = target_val is not None
+            route_cmp = _normalized_branch(route_val)
+            target_cmp = _normalized_branch(target_val)
+            if route_cmp is None or target_cmp is None:
+                continue
+            if route_cmp != target_cmp:
+                conflicts.append(field)
+            continue
+        route_present = route_val is not None
+        target_present = target_val is not None
         if route_present and target_present and route_val != target_val:
             conflicts.append(field)
     if not conflicts:

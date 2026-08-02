@@ -67,12 +67,12 @@ Stage und LR sind orthogonale Systeme: `trade-capable` autorisiert kein Live-Tra
 ## Current-main Snapshot
 
 <!-- cdb:status-freshness header-date=2026-08-02 -->
-<!-- cdb:live-claim type=main_sha value=fce4c754 -->
+<!-- cdb:live-claim type=main_sha value=fca8ad09 -->
 <!-- cdb:live-claim type=issue_state issue=4289 state=open -->
-Auf `origin/main` (`fce4c754`, Stand 2026-08-02) sind die juengsten relevanten Merge-Cluster u. a.:
+Auf `origin/main` (`fca8ad09`, Stand 2026-08-02) sind die juengsten relevanten Merge-Cluster u. a.:
 
-- **Hermes Hetzner Bootstrap ([#4289](https://github.com/jannekbuengener/Claire_de_Binare/issues/4289) / PR [#4290](https://github.com/jannekbuengener/Claire_de_Binare/pull/4290)):** Open issue `#4289` with repo-slice PR `#4290` (Infrastructure/Profiles/Ops/Token-Broker); Live-VM/Windows-Drills bleiben `HOLD_SCOPE_BLOCKER`. Tip `main` @ `fce4c754` vor diesem Merge.  <!-- pragma: allowlist secret -->
-- **Repository consolidation wave:** [#4286](https://github.com/jannekbuengener/Claire_de_Binare/pull/4286) ACP batch, [#4162](https://github.com/jannekbuengener/Claire_de_Binare/pull/4162) Grafana 13.1.1, [#4245](https://github.com/jannekbuengener/Claire_de_Binare/pull/4245) CVE HOLD, [#4246](https://github.com/jannekbuengener/Claire_de_Binare/pull/4246) PG15 preflight, [#4244](https://github.com/jannekbuengener/Claire_de_Binare/pull/4244) Dependabot facts, [#4243](https://github.com/jannekbuengener/Claire_de_Binare/pull/4243) dataset fingerprints — squash-merged onto tip `fce4c754`.
+- **Hermes Hetzner Bootstrap ([#4289](https://github.com/jannekbuengener/Claire_de_Binare/issues/4289) / PR [#4290](https://github.com/jannekbuengener/Claire_de_Binare/pull/4290)):** Repo-Slice **MERGED** @ `fca8ad09`; issue `#4289` remains open for Live-VM/Windows/GitHub drills (`HOLD_SCOPE_BLOCKER`).  <!-- pragma: allowlist secret -->
+- **Repository consolidation wave:** [#4286](https://github.com/jannekbuengener/Claire_de_Binare/pull/4286) ACP batch, [#4162](https://github.com/jannekbuengener/Claire_de_Binare/pull/4162) Grafana 13.1.1, [#4245](https://github.com/jannekbuengener/Claire_de_Binare/pull/4245) CVE HOLD, [#4246](https://github.com/jannekbuengener/Claire_de_Binare/pull/4246) PG15 preflight, [#4244](https://github.com/jannekbuengener/Claire_de_Binare/pull/4244) Dependabot facts, [#4243](https://github.com/jannekbuengener/Claire_de_Binare/pull/4243) dataset fingerprints — squash-merged onto prior tip `fce4c754`.
 - **Validation Pilot Spec ([#4272](https://github.com/jannekbuengener/Claire_de_Binare/issues/4272) / PR [#4292](https://github.com/jannekbuengener/Claire_de_Binare/pull/4292)):** **MERGED** — prior tip cluster (historical relative to consolidation tip).
 - **Fast-CI Slice Gates ([#4204](https://github.com/jannekbuengener/Claire_de_Binare/issues/4204) / PR [#4236](https://github.com/jannekbuengener/Claire_de_Binare/pull/4236)):** **CLOSED/MERGED** — Versionierte Slice-Policy, fail-closed unbekannte Pfade, Timing-Evidence.
 - **PR-Router Live-Konventionen ([#4228](https://github.com/jannekbuengener/Claire_de_Binare/issues/4228) / PR [#4231](https://github.com/jannekbuengener/Claire_de_Binare/pull/4231)):** **CLOSED/MERGED** — Policy/Matcher an reale Titel-Token und `scope:*`/`type:*` Labels angeglichen.

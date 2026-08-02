@@ -12,19 +12,20 @@
 
 ## Repo / Engineering Status (2026-08-02)
 
-<!-- cdb:live-claim type=main_sha value=fce4c754 -->
-- **Confirmed main state**: `origin/main` @ `fce4c754` — same snapshot as the [`README.md`](README.md) Current-main section. Tip after consolidation squash-merges [#4286](https://github.com/jannekbuengener/Claire_de_Binare/pull/4286), [#4162](https://github.com/jannekbuengener/Claire_de_Binare/pull/4162), [#4245](https://github.com/jannekbuengener/Claire_de_Binare/pull/4245), [#4246](https://github.com/jannekbuengener/Claire_de_Binare/pull/4246), [#4244](https://github.com/jannekbuengener/Claire_de_Binare/pull/4244), [#4243](https://github.com/jannekbuengener/Claire_de_Binare/pull/4243).
+<!-- cdb:live-claim type=main_sha value=fca8ad09 -->
+- **Confirmed main state**: `origin/main` @ `fca8ad09` — same snapshot as the [`README.md`](README.md) Current-main section. Tip after Hermes repo-slice squash-merge [#4290](https://github.com/jannekbuengener/Claire_de_Binare/pull/4290) (supersedes consolidation tip `fce4c754`).
 
 <!-- cdb:live-claim type=issue_state issue=4289 state=open -->
 <!-- cdb:live-claim type=issue_state issue=3995 state=closed -->
 <!-- cdb:live-claim type=issue_state issue=4005 state=closed -->
 <!-- cdb:live-claim type=issue_state issue=4204 state=closed -->
 <!-- cdb:live-claim type=issue_state issue=4228 state=closed -->
-- **#4289 Hermes Hetzner Bootstrap**: **IN_DELIVERY** via PR [#4290](https://github.com/jannekbuengener/Claire_de_Binare/pull/4290) (`infrastructure/hermes/`, `config/hermes/`, `tools/hermes_ops/`, runbook, threat model, unit tests). Live Hetzner/Windows/GitHub drills remain `HOLD_SCOPE_BLOCKER`. Auth lineage reuses #4170/#4195. `#4257` remains HOLD. LR **NO-GO** unchanged.  <!-- pragma: allowlist secret -->
+- **#4289 Hermes Hetzner Bootstrap**: Repo-Slice **MERGED** via PR [#4290](https://github.com/jannekbuengener/Claire_de_Binare/pull/4290) (`infrastructure/hermes/`, `config/hermes/`, `tools/hermes_ops/`, runbook, threat model, unit tests). Issue remains open for Live Hetzner/Windows/GitHub drills (`HOLD_SCOPE_BLOCKER`). Auth lineage reuses #4170/#4195. `#4257` remains HOLD. LR **NO-GO** unchanged.  <!-- pragma: allowlist secret -->
 
-- **#4293 ACP dispatcher post-merge residuals**: **IN_DELIVERY** via `batch/agent-skills-issue-4293` (R1–R4 P2 fixes after #4286). Targeted governance tests PASS; no merge / no `cdb-local-ci` in delivery session. `#4257` remains Implementation-Hold until #4293 merges. LR **NO-GO** unchanged.
+<!-- cdb:live-claim type=issue_state issue=4293 state=open -->
+- **#4293 ACP dispatcher post-merge residuals**: open follow-up via PR [#4297](https://github.com/jannekbuengener/Claire_de_Binare/pull/4297) (`batch/agent-skills-issue-4293`; R1–R4). Sequencing hold for Approval Agent stays until this issue closes. LR **NO-GO** unchanged.
 
-- **PR #4286 Agent Control Plane batch**: **DONE_MERGED_CLOSED** — squash-merged; issues #4250–#4256 closed. Prior ledger tip `2d4651a7` superseded by consolidation tip `fce4c754`. LR **NO-GO** unchanged.
+- **PR #4286 Agent Control Plane batch**: **DONE_MERGED_CLOSED** — squash-merged; issues #4250–#4256 closed. Prior ledger tip `2d4651a7` superseded by consolidation tip `fce4c754`, then Hermes tip `fca8ad09`. LR **NO-GO** unchanged.
 
 <!-- cdb:historical-as-of date=2026-07-31 -->
 > Historical as of 2026-07-31 — append-only ledger. Entries below record the

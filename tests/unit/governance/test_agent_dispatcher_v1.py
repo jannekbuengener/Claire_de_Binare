@@ -743,6 +743,38 @@ def test_identical_duplicate_delivery_targets_allowed() -> None:
 
 
 @pytest.mark.unit
+def test_whitespace_only_delivery_branch_does_not_override_route() -> None:
+    """R1: whitespace-only delivery_target branch is absent, not a sealed override."""
+    from tools.agent_control.dispatch import (
+        _delivery_target,
+        assert_delivery_target_consistent,
+    )
+
+    contract = _contract()
+    route_branch = contract["route"]["target_branch"]
+    contract["execution_scope"]["delivery_target"]["target_branch"] = "   \t"
+    contract = attach_digest(contract)
+    assert_delivery_target_consistent(contract)
+    sealed = _delivery_target(contract)
+    assert sealed["target_branch"] == route_branch
+
+    store = InMemoryRunStore()
+    provider = MockProvider()
+    result = dispatch_run(
+        contract,
+        _registry(),
+        AGENT_ID,
+        store,
+        dry_run=False,
+        allow_mock_dispatch=True,
+        provider=provider,
+    )
+    assert result["run"]["state"] != "BLOCKED"
+    assert result["run"]["expected_delivery"]["target_branch"] == route_branch
+    assert provider.dispatch_calls >= 1
+
+
+@pytest.mark.unit
 def test_create_route_empty_targets_allowed() -> None:
     """R1: CREATE routes may leave targets empty until receipt observation."""
     from tools.agent_control.dispatch import assert_delivery_target_consistent
