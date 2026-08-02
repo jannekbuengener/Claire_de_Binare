@@ -775,7 +775,19 @@ def test_whitespace_only_delivery_branch_does_not_override_route() -> None:
 
 
 @pytest.mark.unit
-def test_boolean_create_receipt_pr_rejected() -> None:
+def test_whitespace_only_existing_route_branch_rejected_in_preflight() -> None:
+    """Existing routes must not treat whitespace-only target_branch as present."""
+    from tools.agent_control.preflight import preflight
+
+    contract = _contract()
+    contract["route"]["target_branch"] = "   "
+    contract["execution_scope"]["delivery_target"][
+        "target_branch"
+    ] = "batch/agent-skills-issue-4250"
+    contract = attach_digest(contract)
+    result = preflight(contract, _registry(), AGENT_ID, execute=True)
+    assert result.ok is False
+    assert result.code == "DISPATCH_ROUTE_TARGET_MISSING"
     """R3: bool is not a valid observed target_pr (bool subclasses int)."""
     from tools.agent_control.dispatch import _validate_delivery_receipt
 

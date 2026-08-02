@@ -202,7 +202,14 @@ def preflight(
         "OPERATIONAL_BATCH_CONTINUATION",
     }
     if needs_target:
-        if not route.get("target_pr") or not route.get("target_branch"):
+        route_pr = route.get("target_pr")
+        route_branch = _normalized_branch(route.get("target_branch"))
+        pr_ok = (
+            isinstance(route_pr, int)
+            and not isinstance(route_pr, bool)
+            and route_pr > 0
+        )
+        if not pr_ok or route_branch is None:
             return _fail(
                 "DISPATCH_ROUTE_TARGET_MISSING",
                 "safe existing/continuation route requires target_pr and target_branch",
