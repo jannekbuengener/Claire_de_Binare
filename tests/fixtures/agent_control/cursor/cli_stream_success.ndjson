@@ -1,0 +1,7 @@
+{"type":"system","subtype":"init","apiKeySource":"env","cwd":"/repo","session_id":"c6b62c6f-7ead-4fd6-9922-e952131177ff","model":"Composer","permissionMode":"default"}
+{"type":"assistant","timestamp_ms":1,"message":{"role":"assistant","content":[{"type":"text","text":"Working"}]}}
+{"type":"assistant","timestamp_ms":2,"model_call_id":"mc1","message":{"role":"assistant","content":[{"type":"text","text":"Working"}]}}
+{"type":"assistant","message":{"role":"assistant","content":[{"type":"text","text":"Working"}]}}
+{"type":"tool_call","subtype":"started","call_id":"t1","tool_call":{"readToolCall":{"args":{"path":"README.md"}}},"session_id":"c6b62c6f-7ead-4fd6-9922-e952131177ff"}
+{"type":"tool_call","subtype":"completed","call_id":"t1","tool_call":{"readToolCall":{"args":{"path":"README.md"},"result":{"success":{"content":"ok"}}}},"session_id":"c6b62c6f-7ead-4fd6-9922-e952131177ff"}
+{"type":"result","subtype":"success","is_error":false,"duration_ms":10,"duration_api_ms":10,"result":"done","session_id":"c6b62c6f-7ead-4fd6-9922-e952131177ff"}

@@ -1,0 +1,110 @@
+profile_id: cdb-ci-debug.v1
+profile_version: "1.0.0"
+description: >
+  Narrowly routed CI diagnosis and direct CI fixes (#4255).
+  No branch-protection changes, no admin bypass; Docker only when contract-bound and isolated.
+runtime_class: cloud_agent
+allowed_provider_ids:
+  - cursor-sdk
+  - cursor-cli
+  - cursor-cloud-api
+provider_config_ref: .cursor/environment.json
+provider_config_digest_policy:
+  algorithm: sha256
+  require_match: true
+source_commit_binding:
+  required: true
+  match_mode: exact
+workspace_policy:
+  mode: write_scoped
+  runtime_mutation: false
+  database_mutation: false
+  mcp_live_mutation: false
+allowed_paths:
+  - ci
+  - ci/*
+  - .github/workflows
+  - .github/workflows/*
+  - tools
+  - tools/*
+  - tests/unit
+  - tests/unit/*
+  - docs/runbooks
+  - docs/runbooks/*
+  - knowledge/logs/sessions
+  - knowledge/logs/sessions/*
+forbidden_paths:
+  - infrastructure/compose
+  - infrastructure/compose/*
+  - services
+  - services/*
+allowed_command_classes:
+  - git_read
+  - git_commit_push
+  - pytest_unit
+  - ruff_check
+  - gh_actions_read
+  - gh_pr_edit
+  - docker_isolated_contract_bound
+  - python_module_tools
+required_toolchain:
+  - name: python
+    version_rule: "==3.12"
+  - name: docker
+    version_rule: "optional:contract_bound"
+setup_policy:
+  fallback_to_unknown_base_image: forbidden
+  setup_failed: block
+  setup_unknown: block
+  require_attested_base_identity: true
+network_policy:
+  mode: allowlist
+  allowed_classes:
+    - github_api_write_via_gh_cli
+    - docs_fetch_readonly
+  allowed_domains:
+    - api.github.com
+    - github.com
+  egress_enforcement_required: true
+secret_policy:
+  allowed_classes:
+    - github_token
+  workload_secrets: class_refs_only
+  inject_cursor_api_key: false
+resource_limits:
+  cpu_cores_max: 4
+  memory_mb_max: 8192
+  disk_mb_max: 51200
+  max_processes: 128
+  enforcement_required: true
+execution_limits:
+  setup_timeout_seconds: 1200
+  run_timeout_seconds: 10800
+  cancel_confirmation_required: true
+cost_limit:
+  max_live_cost_usd: 0
+  unknown_cost_blocks_live: true
+  enforcement_required: true
+artifact_policy:
+  allowed_roots:
+    - artifacts
+    - ci/artifacts
+  forbid_absolute_paths: true
+  forbid_presigned_urls: true
+  auto_execute: false
+checkpoint_policy:
+  may_mutate_profile: false
+  may_mutate_digest: false
+  may_mutate_source_commit: false
+  may_mutate_permissions: false
+  provider_snapshot_is_cdb_checkpoint: false
+required_attestations:
+  - setup_status
+  - base_identity
+  - fallback_status
+  - toolchain
+  - egress_enforcement
+  - secret_enforcement
+  - resource_enforcement
+  - cost_enforcement
+live_dispatch_allowed: false

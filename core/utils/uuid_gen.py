@@ -20,7 +20,6 @@ import math
 import uuid
 from typing import Any, Optional
 
-
 DEFAULT_NAMESPACE = uuid.UUID("00000000-0000-0000-0000-000000000000")
 
 
@@ -65,6 +64,20 @@ def generate_uuid_hex(
     return uuid.UUID(value).hex[:length]
 
 
+def generate_runtime_id_hex(length: int = 32) -> str:
+    """Generate a collision-safe runtime id fragment (UUID4-based).
+
+    Use for productive runtime identifiers that must not collide across
+    process restarts. Do **not** use the module-global deterministic counter
+    here: restarts would reuse ids.
+
+    For replay/fixtures, keep using ``generate_uuid_hex(name=..., seed=...)``.
+    """
+    if length < 1 or length > 32:
+        raise ValueError("runtime id length must be between 1 and 32")
+    return uuid.uuid4().hex[:length]
+
+
 def generate_runtime_signal_id_hex(length: int = 32) -> str:
     """Generate a collision-safe runtime signal id fragment (UUID4-based).
 
@@ -74,9 +87,7 @@ def generate_runtime_signal_id_hex(length: int = 32) -> str:
 
     For replay/fixtures, keep using ``generate_uuid_hex(name=..., seed=...)``.
     """
-    if length < 1 or length > 32:
-        raise ValueError("runtime signal id length must be between 1 and 32")
-    return uuid.uuid4().hex[:length]
+    return generate_runtime_id_hex(length=length)
 
 
 def format_runtime_signal_id(length: int = 32) -> str:

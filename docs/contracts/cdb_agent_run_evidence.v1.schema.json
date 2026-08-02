@@ -1,0 +1,308 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://claire-de-binare.local/contracts/cdb_agent_run_evidence.v1.schema.json",
+  "title": "CDB Agent Run Evidence v1",
+  "description": "Deterministic agent run evidence bundle. Schema id: cdb.agent_run_evidence.v1. Not Final-CI, not approval, not merge, not Live-Go (#4256).",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "schema_id",
+    "schema_version",
+    "evidence_class",
+    "evidence_id",
+    "run_id",
+    "attempt",
+    "request_binding",
+    "agent",
+    "provider",
+    "execution_contract",
+    "delivery_context",
+    "environment",
+    "prompt",
+    "lifecycle",
+    "changed_files",
+    "tests",
+    "artifacts",
+    "usage",
+    "result_refs",
+    "delivery_verdict",
+    "authority_limits",
+    "limitations",
+    "integrity",
+    "bundle_digest"
+  ],
+  "properties": {
+    "schema_id": { "const": "cdb.agent_run_evidence.v1" },
+    "schema_version": { "const": "1.0.0" },
+    "evidence_class": { "const": "agent_run_evidence_bundle_v1" },
+    "evidence_id": {
+      "type": "string",
+      "pattern": "^are-[a-f0-9]{24}$"
+    },
+    "run_id": { "type": "string", "minLength": 1 },
+    "attempt": { "type": "integer", "minimum": 1 },
+    "request_binding": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["idempotency_key", "provenance"],
+      "properties": {
+        "idempotency_key": { "type": ["string", "null"] },
+        "provenance": { "$ref": "#/$defs/provenance" }
+      }
+    },
+    "agent": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["value", "provenance"],
+      "properties": {
+        "value": { "type": ["string", "null"] },
+        "provenance": { "$ref": "#/$defs/provenance" }
+      }
+    },
+    "provider": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["provider_id", "provider_run_id", "provenance"],
+      "properties": {
+        "provider_id": { "type": ["string", "null"] },
+        "provider_run_id": { "type": ["string", "null"] },
+        "provenance": { "$ref": "#/$defs/provenance" }
+      }
+    },
+    "execution_contract": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["contract_id", "contract_digest", "provenance"],
+      "properties": {
+        "contract_id": { "type": ["string", "null"] },
+        "contract_digest": {
+          "type": ["string", "null"],
+          "pattern": "^(sha256:[a-f0-9]{64})?$"
+        },
+        "provenance": { "$ref": "#/$defs/provenance" }
+      }
+    },
+    "delivery_context": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "issue",
+        "target_pr",
+        "target_branch",
+        "source_commit",
+        "delivery_commit",
+        "delivery_status",
+        "provenance"
+      ],
+      "properties": {
+        "issue": { "type": ["integer", "null"] },
+        "target_pr": { "type": ["integer", "null"] },
+        "target_branch": { "type": ["string", "null"] },
+        "source_commit": { "type": ["string", "null"] },
+        "delivery_commit": { "type": ["string", "null"] },
+        "delivery_status": { "type": ["string", "null"] },
+        "provenance": { "$ref": "#/$defs/provenance" }
+      }
+    },
+    "environment": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "profile_id",
+        "profile_version",
+        "profile_digest",
+        "provider_config_digest",
+        "preflight_verdict",
+        "provenance"
+      ],
+      "properties": {
+        "profile_id": { "type": ["string", "null"] },
+        "profile_version": { "type": ["string", "null"] },
+        "profile_digest": { "type": ["string", "null"] },
+        "provider_config_digest": { "type": ["string", "null"] },
+        "preflight_verdict": { "type": ["string", "null"] },
+        "provenance": { "$ref": "#/$defs/provenance" }
+      }
+    },
+    "prompt": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["prompt_ref", "prompt_digest", "provenance"],
+      "properties": {
+        "prompt_ref": { "type": ["string", "null"] },
+        "prompt_digest": { "type": ["string", "null"] },
+        "provenance": { "$ref": "#/$defs/provenance" }
+      }
+    },
+    "lifecycle": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "state",
+        "created_at",
+        "updated_at",
+        "terminal_reason",
+        "terminal_code",
+        "events",
+        "provenance"
+      ],
+      "properties": {
+        "state": { "type": ["string", "null"] },
+        "created_at": { "type": ["string", "null"] },
+        "updated_at": { "type": ["string", "null"] },
+        "terminal_reason": { "type": ["string", "null"] },
+        "terminal_code": { "type": ["string", "null"] },
+        "events": { "type": "array", "items": { "type": "object" } },
+        "provenance": { "$ref": "#/$defs/provenance" }
+      }
+    },
+    "changed_files": {
+      "type": "array",
+      "items": { "type": "string" }
+    },
+    "tests": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": ["name", "status", "exit_code", "evidence_digest", "provenance"],
+        "properties": {
+          "name": { "type": ["string", "null"] },
+          "status": { "type": ["string", "null"] },
+          "exit_code": { "type": ["integer", "string", "null"] },
+          "evidence_digest": { "type": ["string", "null"] },
+          "provenance": { "$ref": "#/$defs/provenance" }
+        }
+      }
+    },
+    "artifacts": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": ["path", "digest", "size_bytes", "type", "provenance"],
+        "properties": {
+          "path": { "type": "string" },
+          "digest": { "type": ["string", "null"] },
+          "size_bytes": { "type": ["integer", "null"], "minimum": 0 },
+          "type": { "type": ["string", "null"] },
+          "provenance": { "$ref": "#/$defs/provenance" }
+        }
+      }
+    },
+    "usage": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["iterations", "tool_calls", "tokens", "cost"],
+      "properties": {
+        "iterations": { "type": "integer", "minimum": 0 },
+        "tool_calls": { "type": "integer", "minimum": 0 },
+        "tokens": { "type": "object" },
+        "cost": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": ["amount", "currency", "status", "provenance"],
+          "properties": {
+            "amount": { "type": ["string", "null"] },
+            "currency": { "type": ["string", "null"] },
+            "status": {
+              "type": "string",
+              "enum": ["CONFIRMED", "UNAVAILABLE", "NOT_APPLICABLE"]
+            },
+            "provenance": { "$ref": "#/$defs/provenance" }
+          }
+        }
+      }
+    },
+    "result_refs": { "type": "object" },
+    "delivery_verdict": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["verdict", "reason_codes", "limitations"],
+      "properties": {
+        "verdict": {
+          "type": "string",
+          "enum": ["PASS", "HOLD", "BLOCKED", "FAILED", "CANCELLED"]
+        },
+        "reason_codes": {
+          "type": "array",
+          "items": { "type": "string" }
+        },
+        "limitations": {
+          "type": "array",
+          "items": { "type": "string" }
+        }
+      }
+    },
+    "authority_limits": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "not_final_ci",
+        "not_cdb_local_ci",
+        "not_completeness_review",
+        "not_approval",
+        "not_merge_authority",
+        "not_merge_readiness",
+        "not_live_go"
+      ],
+      "properties": {
+        "not_final_ci": { "const": true },
+        "not_cdb_local_ci": { "const": true },
+        "not_completeness_review": { "const": true },
+        "not_approval": { "const": true },
+        "not_merge_authority": { "const": true },
+        "not_merge_readiness": { "const": true },
+        "not_live_go": { "const": true }
+      }
+    },
+    "limitations": {
+      "type": "array",
+      "items": { "type": "string" }
+    },
+    "integrity": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "canonicalization",
+        "digest_algorithm",
+        "digest_encoding",
+        "digest"
+      ],
+      "properties": {
+        "canonicalization": { "const": "RFC8785" },
+        "digest_algorithm": { "const": "sha256" },
+        "digest_encoding": { "const": "sha256:<lowercase-hex>" },
+        "digest": {
+          "type": "string",
+          "pattern": "^sha256:[a-f0-9]{64}$"
+        }
+      }
+    },
+    "bundle_digest": {
+      "type": "string",
+      "pattern": "^sha256:[a-f0-9]{64}$"
+    }
+  },
+  "$defs": {
+    "provenance": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["trust_class", "source", "reference", "digest"],
+      "properties": {
+        "trust_class": {
+          "type": "string",
+          "enum": [
+            "control_plane_observed",
+            "provider_reported",
+            "agent_reported",
+            "derived"
+          ]
+        },
+        "source": { "type": "string" },
+        "reference": { "type": ["string", "null"] },
+        "digest": { "type": ["string", "null"] }
+      }
+    }
+  }
+}

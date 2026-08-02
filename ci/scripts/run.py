@@ -317,8 +317,13 @@ def run_ci(
         runner = STAGE_RUNNERS.get(name)
         if runner is None:
             raise SystemExit(f"Unknown stage: {name}")
-        print(f"==> stage {name}")
-        stage_results.append(runner(ctx))
+        print(f"==> stage {name}", flush=True)
+        result = runner(ctx)
+        print(
+            f"<== stage {name} status={result.status} exit={result.exit_code}",
+            flush=True,
+        )
+        stage_results.append(result)
 
     report_result = stage_report.run(ctx, stage_results)
     stage_results.append(report_result)
@@ -356,9 +361,9 @@ def run_ci(
 
     # Re-hash after manifest write is intentionally NOT included in artifact_hashes
     # inside manifest (manifest.sha256 covers the finalized JSON).
-    print(f"overall_status={manifest['overall_status']}")
-    print(f"merge_evidence={manifest.get('merge_evidence')}")
-    print(f"evidence={run_dir}")
+    print(f"overall_status={manifest['overall_status']}", flush=True)
+    print(f"merge_evidence={manifest.get('merge_evidence')}", flush=True)
+    print(f"evidence={run_dir}", flush=True)
     if manifest["overall_status"] == "PASS":
         return 0
     if manifest["overall_status"] == "BLOCKED":

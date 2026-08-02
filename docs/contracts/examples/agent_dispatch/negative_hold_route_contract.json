@@ -1,0 +1,185 @@
+{
+  "budget": {
+    "max_iterations": 200,
+    "max_tool_calls": 5000,
+    "network_policy": {
+      "allowed_classes": [
+        "github_api_write_via_gh_cli",
+        "docs_fetch_readonly"
+      ],
+      "allowed_domains": [
+        "api.github.com",
+        "github.com",
+        "json-schema.org",
+        "www.rfc-editor.org",
+        "cursor.com"
+      ],
+      "mode": "allowlist"
+    },
+    "wall_time_seconds": 14400
+  },
+  "contract_id": "aec-issue-4253-mock-dispatch",
+  "created_at": "2026-08-01T20:05:00Z",
+  "environment": {
+    "environment_profile": "mock",
+    "mcp_profiles": [],
+    "provider_profile": {
+      "extensions": {
+        "api_surface": "mock-v1"
+      },
+      "profile_name": "mock-dispatch",
+      "provider_id": "mock"
+    },
+    "secret_references": [
+      {
+        "class": "github_token",
+        "ref": "env:GH_TOKEN"
+      }
+    ],
+    "skills": [
+      "cdb-session-start",
+      "cdb-pr-router",
+      "cdb-session-close"
+    ],
+    "subagents": []
+  },
+  "execution_scope": {
+    "allowed_commands_or_command_classes": [
+      "git_read",
+      "git_commit_push",
+      "pytest_unit",
+      "ruff_check",
+      "gh_issue_comment",
+      "gh_pr_edit",
+      "python_module_tools"
+    ],
+    "allowed_paths": [
+      "docs/contracts",
+      "docs/contracts/*",
+      "tools/agent_execution_contract",
+      "tools/agent_execution_contract/*",
+      "tests/unit/governance",
+      "tests/unit/governance/*",
+      "knowledge/governance",
+      "knowledge/governance/*",
+      "knowledge/logs/sessions",
+      "knowledge/logs/sessions/*",
+      "agents",
+      "agents/*",
+      "AGENTS.md"
+    ],
+    "delivery_target": {
+      "expected_status": "DONE_SLICE_ADDED_TO_BATCH_PR",
+      "mode": "batch_pr",
+      "target_branch": "batch/agent-skills-issue-4250",
+      "target_pr": 4286
+    },
+    "forbidden_paths": [
+      "services",
+      "services/*",
+      "core",
+      "core/*",
+      "infrastructure/compose",
+      "infrastructure/compose/*",
+      ".github/workflows",
+      ".github/workflows/*"
+    ],
+    "issue_scope": {
+      "delivery_issue": 4253,
+      "forbidden_follow_on_issues": [
+        4254,
+        4255,
+        4256,
+        4257,
+        4258,
+        4259,
+        4260
+      ],
+      "topic": "AGENTS Control Plane"
+    },
+    "stop_conditions": [
+      "HOLD_NO_SAFE_ROUTE",
+      "HOLD_DEPENDENCY_NOT_READY",
+      "HOLD_SCOPE_DRIFT",
+      "HOLD_CONTRACT_INTEGRITY_NOT_PROVEN"
+    ]
+  },
+  "integrity": {
+    "canonicalization": "RFC8785",
+    "digest": "sha256:37c9f59ff583a64486898d7dab26218fc7503820f66c689be0da50d9afaa1870",
+    "digest_algorithm": "sha256",
+    "digest_encoding": "sha256:<lowercase-hex>"
+  },
+  "issue": {
+    "number": 4253,
+    "parent_issue": 4249,
+    "predecessor_issue": 4252,
+    "title": "[AGENTS][DISPATCH] Build provider-neutral dispatcher and governed run state machine"
+  },
+  "permissions": {
+    "close_issue": false,
+    "comment_issue": true,
+    "commit": true,
+    "database_mutation": false,
+    "mcp_live_mutation": false,
+    "merge": false,
+    "open_pr": false,
+    "publish_cdb_local_ci": false,
+    "push": true,
+    "read_repo": true,
+    "runtime_mutation": false,
+    "update_pr": true,
+    "write_code": true,
+    "write_docs": true
+  },
+  "producer": {
+    "agent": "cursor-cloud",
+    "component": "pr_router_handoff",
+    "policy_id": "cdb-pr-routing-v1"
+  },
+  "route": {
+    "batch_key": "agent-skills",
+    "lane": "agent-skills",
+    "lock_state": "UNLOCKED",
+    "merge_mode": "batch",
+    "policy_id": "cdb-pr-routing-v1",
+    "reason_codes": [
+      "DEPENDENCY_CANON_ON_BATCH_HEAD",
+      "LABEL_CREATE_FORBIDDEN_403"
+    ],
+    "router_observed_at": "2026-08-01T20:00:00Z",
+    "routing_decision": "HOLD_NO_SAFE_ROUTE",
+    "target_branch": null,
+    "target_pr": null,
+    "validation_profile": "agent-skills-v1"
+  },
+  "schema_id": "cdb.agent_execution.v1",
+  "schema_version": "1.0.0",
+  "validation_and_delivery": {
+    "allowed_delivery_statuses": [
+      "DONE_SLICE_ADDED_TO_BATCH_PR",
+      "HOLD_DEPENDENCY_NOT_READY",
+      "HOLD_PR_LOCK_CONFLICT",
+      "HOLD_NO_SAFE_ROUTE",
+      "HOLD_SCOPE_DRIFT",
+      "HOLD_CONTRACT_INTEGRITY_NOT_PROVEN"
+    ],
+    "evidence_requirements": [
+      "targeted_slice_validation",
+      "brain_evidence_block",
+      "router_decision_record",
+      "contract_hash_record",
+      "issue_comment_handoff"
+    ],
+    "merge_authority": {
+      "granted": false,
+      "role": "none"
+    },
+    "required_validations": [
+      "pytest tests/unit/governance/test_agent_execution_contract_v1.py",
+      "pytest tests/unit/governance/test_pr_routing_contract.py",
+      "git diff --check",
+      "python -m tools.validate_readme_links"
+    ]
+  }
+}

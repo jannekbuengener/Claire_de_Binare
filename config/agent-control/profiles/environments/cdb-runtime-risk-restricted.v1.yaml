@@ -1,0 +1,86 @@
+profile_id: cdb-runtime-risk-restricted.v1
+profile_version: "1.0.0"
+description: >
+  Future tightly bounded risk/runtime inspection profile (#4255).
+  Not executable in this slice; all mutation flags false; default network deny_all.
+runtime_class: cloud_agent
+allowed_provider_ids:
+  - cursor-sdk
+provider_config_ref: .cursor/environment.json
+provider_config_digest_policy:
+  algorithm: sha256
+  require_match: true
+source_commit_binding:
+  required: true
+  match_mode: exact
+workspace_policy:
+  mode: blocked
+  runtime_mutation: false
+  database_mutation: false
+  mcp_live_mutation: false
+allowed_paths:
+  - docs/runbooks
+  - docs/runbooks/*
+  - knowledge/governance
+  - knowledge/governance/*
+forbidden_paths:
+  - services
+  - services/*
+  - core
+  - core/*
+  - infrastructure/compose
+  - infrastructure/compose/*
+allowed_command_classes: []
+required_toolchain:
+  - name: python
+    version_rule: "==3.12"
+setup_policy:
+  fallback_to_unknown_base_image: forbidden
+  setup_failed: block
+  setup_unknown: block
+  require_attested_base_identity: true
+network_policy:
+  mode: deny_all
+  allowed_classes: []
+  allowed_domains: []
+  egress_enforcement_required: true
+secret_policy:
+  allowed_classes: []
+  workload_secrets: none
+  inject_cursor_api_key: false
+resource_limits:
+  cpu_cores_max: 1
+  memory_mb_max: 2048
+  disk_mb_max: 10240
+  max_processes: 16
+  enforcement_required: true
+execution_limits:
+  setup_timeout_seconds: 300
+  run_timeout_seconds: 600
+  cancel_confirmation_required: true
+cost_limit:
+  max_live_cost_usd: 0
+  unknown_cost_blocks_live: true
+  enforcement_required: true
+artifact_policy:
+  allowed_roots:
+    - artifacts
+  forbid_absolute_paths: true
+  forbid_presigned_urls: true
+  auto_execute: false
+checkpoint_policy:
+  may_mutate_profile: false
+  may_mutate_digest: false
+  may_mutate_source_commit: false
+  may_mutate_permissions: false
+  provider_snapshot_is_cdb_checkpoint: false
+required_attestations:
+  - setup_status
+  - base_identity
+  - fallback_status
+  - toolchain
+  - egress_enforcement
+  - secret_enforcement
+  - resource_enforcement
+  - cost_enforcement
+live_dispatch_allowed: false
