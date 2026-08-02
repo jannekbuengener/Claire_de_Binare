@@ -14,7 +14,7 @@
     "scenario": "success",
     "expect_call_count": 1
   },
-  "expect_final_status": "HOLD",
+  "expect_final_status": "UNKNOWN",
   "expect_approval_not_recommended": true,
   "expect_reason_code": "MECHANISM_MISMATCH"
 }

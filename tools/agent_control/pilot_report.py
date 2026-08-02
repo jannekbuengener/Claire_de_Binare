@@ -110,8 +110,15 @@ def validate_report(
             "PILOT_REPORT_STATUS_INVALID",
             f"final_status {status!r} not allowed",
         )
-    if status == "PASS" and report.get("final_status") == "UNKNOWN":
-        raise PilotReportError("PILOT_REPORT_UNKNOWN_PASS", "UNKNOWN cannot be PASS")
+    if status == "PASS":
+        steps = report.get("step_results") or []
+        if any(
+            isinstance(step, dict) and step.get("status") == "UNKNOWN" for step in steps
+        ):
+            raise PilotReportError(
+                "PILOT_REPORT_UNKNOWN_PASS",
+                "PASS is forbidden when any step_results.status is UNKNOWN",
+            )
     limits = report.get("authority_limits") or {}
     for key, expected in AUTHORITY_LIMITS.items():
         if limits.get(key) is not expected:
@@ -126,13 +133,31 @@ def verify_report(
 ) -> dict[str, Any]:
     validate_report(report, schema=schema)
     expected = compute_report_digest(report)
-    actual = report.get("report_digest") or (report.get("integrity") or {}).get(
-        "digest"
-    )
-    if actual != expected:
+    report_digest = report.get("report_digest")
+    integrity_digest = (report.get("integrity") or {}).get("digest")
+    if report_digest is None and integrity_digest is None:
+        raise PilotReportError(
+            "PILOT_REPORT_DIGEST_MISSING",
+            "report_digest or integrity.digest is required",
+        )
+    if report_digest is not None and report_digest != expected:
         raise PilotReportError(
             "PILOT_REPORT_DIGEST_MISMATCH",
-            f"report_digest mismatch: got {actual!r} expected {expected!r}",
+            f"report_digest mismatch: got {report_digest!r} expected {expected!r}",
+        )
+    if integrity_digest is not None and integrity_digest != expected:
+        raise PilotReportError(
+            "PILOT_REPORT_DIGEST_MISMATCH",
+            f"integrity.digest mismatch: got {integrity_digest!r} expected {expected!r}",
+        )
+    if (
+        report_digest is not None
+        and integrity_digest is not None
+        and report_digest != integrity_digest
+    ):
+        raise PilotReportError(
+            "PILOT_REPORT_DIGEST_CONFLICT",
+            "report_digest and integrity.digest disagree",
         )
     return {
         "ok": True,

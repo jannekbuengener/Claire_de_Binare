@@ -20,6 +20,8 @@ from datetime import datetime, timezone
 from pathlib import Path
 from typing import Any
 
+from jsonschema import Draft202012Validator
+
 from tools.agent_control.approval.codes import AUTHORITY_LIMITS as APPROVAL_AUTHORITY
 from tools.agent_control.approval.context import (
     RepoPaths,
@@ -42,10 +44,14 @@ from tools.agent_control.pilot_report import (
 )
 from tools.agent_control.provider import MockProvider
 from tools.agent_control.run_store import InMemoryRunStore
-from tools.agent_execution_contract.hashing import attach_digest
+from tools.agent_execution_contract.errors import ContractValidationError
+from tools.agent_execution_contract.validate import validate_contract
 
 MANIFEST_SCHEMA_ID = "cdb.agent_control_pilot_manifest.v1"
 MANIFEST_SCHEMA_VERSION = "1.0.0"
+MANIFEST_SCHEMA_RELPATH = (
+    "docs/contracts/cdb_agent_control_pilot_manifest.v1.schema.json"
+)
 SHA40 = re.compile(r"^[a-f0-9]{40}$")
 
 DEFAULT_LIMITATIONS = [
@@ -74,10 +80,25 @@ def _resolve(repo_root: Path, value: str | Path) -> Path:
     return (repo_root / path).resolve()
 
 
-def load_manifest(path: Path) -> dict[str, Any]:
+def _load_manifest_schema(repo_root: Path | None = None) -> dict[str, Any]:
+    root = repo_root or REPO_ROOT
+    return _load_json(root / MANIFEST_SCHEMA_RELPATH)
+
+
+def load_manifest(path: Path, *, repo_root: Path | None = None) -> dict[str, Any]:
     data = _load_json(path)
     if not isinstance(data, dict):
         raise PilotError("PILOT_MANIFEST_INVALID", "manifest must be a JSON object")
+    schema = _load_manifest_schema(repo_root)
+    validator = Draft202012Validator(schema)
+    errors = sorted(validator.iter_errors(data), key=lambda e: list(e.path))
+    if errors:
+        err = errors[0]
+        loc = ".".join(str(p) for p in err.path) or "$"
+        raise PilotError(
+            "PILOT_MANIFEST_SCHEMA",
+            f"{loc}: {err.message}",
+        )
     if data.get("schema_id") != MANIFEST_SCHEMA_ID:
         raise PilotError(
             "PILOT_MANIFEST_SCHEMA",
@@ -92,12 +113,25 @@ def load_manifest(path: Path) -> dict[str, Any]:
     for key in ("pilot_id", "scenario_id", "agent_id", "contract_path"):
         if not data.get(key):
             raise PilotError("PILOT_MANIFEST_INCOMPLETE", f"missing {key}")
+    provider = data.get("provider")
+    if provider is not None and not isinstance(provider, dict):
+        raise PilotError(
+            "PILOT_MANIFEST_SCHEMA",
+            "provider must be an object when present",
+        )
     return data
 
 
-def _seal_contract(contract: dict[str, Any]) -> dict[str, Any]:
-    sealed = attach_digest(copy.deepcopy(contract))
-    return sealed
+def _load_verified_contract(contract: dict[str, Any]) -> dict[str, Any]:
+    """Validate schema/semantics and verify the supplied integrity.digest.
+
+    Never reseal: a tampered contract with a stale claimed digest must fail
+    closed instead of being silently repaired before dispatch.
+    """
+    try:
+        return validate_contract(copy.deepcopy(contract))
+    except ContractValidationError as exc:
+        raise PilotError(exc.code, exc.message) from exc
 
 
 def _step(
@@ -184,7 +218,7 @@ def run_pilot(
     # --- Contract ---
     try:
         contract_path = _resolve(root, manifest["contract_path"])
-        contract = _seal_contract(_load_json(contract_path))
+        contract = _load_verified_contract(_load_json(contract_path))
         contract_digest = (contract.get("integrity") or {}).get("digest")
         steps.append(
             _step(
@@ -729,81 +763,42 @@ def _finalize(
     *,
     expect_calls: int | None = None,
 ) -> dict[str, Any]:
-    # Scenario-specific final status overrides for negative proofs
+    # Expectations only verify the observed computed status — they never
+    # manufacture BLOCKED/HOLD/FAIL when the machinery did not produce it.
     scenario_id = str(manifest.get("scenario_id"))
     expected_final = manifest.get("expect_final_status")
+    computed = _map_final_status(
+        blocked=blocked,
+        hold=hold,
+        fail=fail,
+        unknown=unknown,
+        approval_rec=approval_rec,
+        evidence_ok=evidence_ok,
+        provider_calls=provider_calls,
+        expect_provider_calls=expect_calls,
+    )
     if expected_final:
-        # Validate expectations met; otherwise FAIL
-        computed = _map_final_status(
-            blocked=blocked,
-            hold=hold,
-            fail=fail,
-            unknown=unknown,
-            approval_rec=approval_rec,
-            evidence_ok=evidence_ok,
-            provider_calls=provider_calls,
-            expect_provider_calls=expect_calls,
-        )
-        # For N* success-of-negative: expected_final is the desired report status
-        if scenario_id.startswith("N") and not fail:
-            # Prefer explicit expect_final_status when negative machinery worked
-            if expected_final == "BLOCKED" and blocked:
-                final_status = "BLOCKED"
-            elif expected_final == "HOLD" and (
-                hold
-                or approval_rec
-                not in {
-                    None,
-                    "APPROVE_RECOMMENDED",
-                }
-            ):
-                final_status = "HOLD"
-            elif expected_final == "FAIL" and fail:
-                final_status = "FAIL"
-            elif expected_final == computed:
-                final_status = computed
-            else:
-                # Negative scenario asserted conditions — if expect matches intent
-                if expected_final in {"BLOCKED", "HOLD", "FAIL"} and (
-                    blocked or hold or fail or approval_rec != "APPROVE_RECOMMENDED"
-                ):
-                    final_status = expected_final
-                else:
-                    final_status = "FAIL"
-                    steps.append(
-                        _step(
-                            "scenario_expectation",
-                            "FAIL",
-                            detail={
-                                "expected_final": expected_final,
-                                "computed": computed,
-                            },
-                        )
-                    )
+        if computed == expected_final:
+            final_status = computed
         else:
-            final_status = computed if computed == expected_final else "FAIL"
-            if final_status == "FAIL" and computed != expected_final:
-                steps.append(
-                    _step(
-                        "scenario_expectation",
-                        "FAIL",
-                        detail={
-                            "expected_final": expected_final,
-                            "computed": computed,
-                        },
-                    )
+            final_status = "FAIL"
+            steps.append(
+                _step(
+                    "scenario_expectation",
+                    "FAIL",
+                    detail={
+                        "expected_final": expected_final,
+                        "computed": computed,
+                        "blocked": blocked,
+                        "hold": hold,
+                        "fail": fail,
+                        "unknown": unknown,
+                        "approval_recommendation": approval_rec,
+                    },
                 )
+            )
     else:
-        final_status = _map_final_status(
-            blocked=blocked,
-            hold=hold,
-            fail=fail,
-            unknown=unknown,
-            approval_rec=approval_rec,
-            evidence_ok=evidence_ok,
-            provider_calls=provider_calls,
-            expect_provider_calls=expect_calls,
-        )
+        final_status = computed
 
     # UNKNOWN never becomes PASS
     if final_status == "UNKNOWN":
@@ -848,7 +843,7 @@ def run_pilot_from_path(
     out_path: Path | None = None,
 ) -> dict[str, Any]:
     root = repo_root or REPO_ROOT
-    manifest = load_manifest(manifest_path)
+    manifest = load_manifest(manifest_path, repo_root=root)
     store_path = None
     if manifest.get("evidence_store_path"):
         store_path = _resolve(root, manifest["evidence_store_path"])

@@ -93,7 +93,7 @@ def test_n3_malformed_receipt() -> None:
 @pytest.mark.unit
 def test_n4_stale_head() -> None:
     report = _run("n4_stale_head.manifest.json")
-    assert report["final_status"] in {"HOLD", "BLOCKED"}
+    assert report["final_status"] == "BLOCKED"
     assert report["approval_recommendation"] != "APPROVE_RECOMMENDED"
     appr = [s for s in report["step_results"] if s["step"] == "approval_context"][0]
     assert "STALE_HEAD" in (appr["detail"].get("reason_codes") or [])
@@ -102,7 +102,7 @@ def test_n4_stale_head() -> None:
 @pytest.mark.unit
 def test_n5_mechanism_mismatch() -> None:
     report = _run("n5_mechanism_mismatch.manifest.json")
-    assert report["final_status"] in {"HOLD", "BLOCKED"}
+    assert report["final_status"] == "UNKNOWN"
     assert report["approval_recommendation"] != "APPROVE_RECOMMENDED"
     appr = [s for s in report["step_results"] if s["step"] == "approval_context"][0]
     assert "MECHANISM_MISMATCH" in (appr["detail"].get("reason_codes") or [])
@@ -242,7 +242,103 @@ def test_manifest_validation(tmp_path: Path) -> None:
     path.write_text(json.dumps(bad), encoding="utf-8")
     with pytest.raises(PilotError) as exc:
         load_manifest(path)
-    assert exc.value.code == "PILOT_HEAD_INVALID"
+    assert exc.value.code in {"PILOT_HEAD_INVALID", "PILOT_MANIFEST_SCHEMA"}
+
+
+@pytest.mark.unit
+def test_manifest_rejects_non_object_provider(tmp_path: Path) -> None:
+    from tools.agent_control.pilot import PilotError
+
+    bad = deepcopy(json.loads((FIXTURES / "p1_pass.manifest.json").read_text()))
+    bad["provider"] = "success"
+    path = tmp_path / "bad_provider.manifest.json"
+    path.write_text(json.dumps(bad), encoding="utf-8")
+    with pytest.raises(PilotError) as exc:
+        load_manifest(path)
+    assert exc.value.code == "PILOT_MANIFEST_SCHEMA"
+
+
+@pytest.mark.unit
+def test_tampered_contract_digest_not_resealed(tmp_path: Path) -> None:
+    from tools.agent_control.pilot import run_pilot
+
+    manifest = deepcopy(json.loads((FIXTURES / "p1_pass.manifest.json").read_text()))
+    contract = deepcopy(json.loads((FIXTURES / "contract_p1_pass.json").read_text()))
+    contract["budget"]["wall_time_seconds"] = 1  # keep stale integrity.digest
+    cpath = tmp_path / "tampered_contract.json"
+    cpath.write_text(json.dumps(contract), encoding="utf-8")
+    manifest["contract_path"] = str(cpath)
+    report = run_pilot(manifest, repo_root=REPO_ROOT)
+    assert report["final_status"] == "FAIL"
+    load_steps = [s for s in report["step_results"] if s["step"] == "load_contract"]
+    assert load_steps and load_steps[0]["status"] == "FAIL"
+    assert "HASH" in (load_steps[0].get("detail") or {}).get("error", "").upper() or (
+        "digest" in (load_steps[0].get("detail") or {}).get("error", "").lower()
+    )
+
+
+@pytest.mark.unit
+def test_expect_final_status_does_not_manufacture_blocked() -> None:
+    from tools.agent_control.pilot import _finalize
+
+    steps: list[dict] = []
+    report = _finalize(
+        {
+            "pilot_id": "x",
+            "scenario_id": "N1",
+            "expect_final_status": "BLOCKED",
+            "subject": {},
+        },
+        steps,
+        None,
+        None,
+        "a" * 40,
+        "b" * 40,
+        {},
+        0,
+        [],
+        None,
+        None,  # no approval
+        blocked=False,
+        hold=False,
+        fail=False,
+        unknown=False,
+        evidence_ok=True,
+        limitations=[],
+        contract_digest=None,
+    )
+    assert report["final_status"] == "FAIL"
+    assert any(s["step"] == "scenario_expectation" for s in report["step_results"])
+
+
+@pytest.mark.unit
+def test_verify_rejects_pass_with_unknown_step() -> None:
+    from tools.agent_control.pilot_report import PilotReportError, attach_report_digest
+
+    report = _run("p1_pass.manifest.json")
+    report["step_results"] = list(report["step_results"]) + [
+        {"step": "injected", "status": "UNKNOWN"}
+    ]
+    report["final_status"] = "PASS"
+    report = attach_report_digest(report)
+    with pytest.raises(PilotReportError) as exc:
+        verify_report(report)
+    assert exc.value.code == "PILOT_REPORT_UNKNOWN_PASS"
+
+
+@pytest.mark.unit
+def test_verify_rejects_integrity_digest_conflict() -> None:
+    from tools.agent_control.pilot_report import PilotReportError
+
+    report = _run("p1_pass.manifest.json")
+    report["integrity"] = dict(report["integrity"])
+    report["integrity"]["digest"] = "sha256:" + ("f" * 64)
+    with pytest.raises(PilotReportError) as exc:
+        verify_report(report)
+    assert exc.value.code in {
+        "PILOT_REPORT_DIGEST_MISMATCH",
+        "PILOT_REPORT_DIGEST_CONFLICT",
+    }
 
 
 @pytest.mark.unit
