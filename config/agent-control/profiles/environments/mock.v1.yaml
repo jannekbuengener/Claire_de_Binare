@@ -1,0 +1,3 @@
+profile_id: mock.v1
+description: Mock environment for deterministic reconciler fixtures.
+runtime_class: mock

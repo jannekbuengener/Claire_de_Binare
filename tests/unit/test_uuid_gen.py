@@ -1,9 +1,11 @@
 import pytest
+
 """Unit tests for core.utils.uuid_gen module."""
 
 from core.utils.uuid_gen import (
     DeterministicUUIDGenerator,
     format_runtime_signal_id,
+    generate_runtime_id_hex,
     generate_runtime_signal_id_hex,
     generate_uuid,
     generate_uuid_hex,
@@ -57,3 +59,17 @@ def test_runtime_signal_id_hex_is_uuid4_fragment():
     runtime_hex = generate_runtime_signal_id_hex(length=32)
     assert len(runtime_hex) == 32
     assert runtime_hex.isalnum()
+
+
+@pytest.mark.unit
+def test_generate_runtime_id_hex_length_and_uniqueness():
+    """General collision-safe runtime helper for non-signal ids (e.g. adr-*)."""
+    fragment = generate_runtime_id_hex(length=16)
+    assert len(fragment) == 16
+    assert fragment.isalnum()
+    samples = {generate_runtime_id_hex(16) for _ in range(32)}
+    assert len(samples) == 32
+    with pytest.raises(ValueError):
+        generate_runtime_id_hex(length=0)
+    with pytest.raises(ValueError):
+        generate_runtime_id_hex(length=33)

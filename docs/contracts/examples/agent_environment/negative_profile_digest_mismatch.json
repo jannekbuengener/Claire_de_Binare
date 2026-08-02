@@ -1,0 +1,24 @@
+{
+  "profile_id": "cdb-agent-skills.v1",
+  "profile_version": "1.0.0",
+  "profile_digest": "sha256:deadbeefdeadbeefdeadbeefdeadbeefdeadbeefdeadbeefdeadbeefdeadbeef",
+  "source_commit": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+  "provider_id": "cursor-sdk",
+  "provider_config_ref": ".cursor/environment.json",
+  "provider_config_digest": "sha256:67728065787273072fe58ec91413eadc32ca1ba5c5516e2b0148445c119d5e47",
+  "setup_status": "succeeded",
+  "base_identity_status": "verified",
+  "fallback_detected": false,
+  "observed_tool_versions": {
+    "python": "3.12.8",
+    "ruff": "pinned:requirements-dev.txt",
+    "black": "pinned:requirements-dev.txt"
+  },
+  "enforcement": {
+    "egress": "enforced",
+    "secrets": "enforced",
+    "resources": "enforced",
+    "cost": "enforced",
+    "timeout_cancel_confirmed": true
+  }
+}
