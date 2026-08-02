@@ -330,7 +330,7 @@ def test_area_entry_direct_yaml_ok(tmp_path: Path) -> None:
 
 
 def test_area_entry_established_index_hub_ok(tmp_path: Path) -> None:
-    _make_file(tmp_path, "docs/index.md", "# docs hub")
+    _make_file(tmp_path, "docs/index.md", "# docs landing")
     errors = _validate_content(
         tmp_path,
         "README.md",
