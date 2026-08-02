@@ -6,6 +6,8 @@ from dataclasses import dataclass
 from datetime import datetime, timezone
 from typing import Protocol
 
+from core.utils.clock import utcnow
+
 
 class Clock(Protocol):
     def now(self) -> datetime:
@@ -15,7 +17,10 @@ class Clock(Protocol):
 @dataclass
 class SystemClock:
     def now(self) -> datetime:
-        return datetime.now(timezone.utc)
+        value = utcnow()
+        if value.tzinfo is None:
+            return value.replace(tzinfo=timezone.utc)
+        return value.astimezone(timezone.utc)
 
 
 @dataclass

@@ -258,7 +258,9 @@ def test_nondeterministic_or_duplicate_state_rejected() -> None:
 
 
 @pytest.mark.unit
-def test_cli_validate_and_plan(tmp_path: Path, capsys: pytest.CaptureFixture[str]) -> None:
+def test_cli_validate_and_plan(
+    tmp_path: Path, capsys: pytest.CaptureFixture[str]
+) -> None:
     config = EXAMPLES / "positive_multi_stable_order.json"
     state_path = tmp_path / "empty_state.json"
     state_path.write_text(
@@ -286,7 +288,9 @@ def test_cli_validate_and_plan(tmp_path: Path, capsys: pytest.CaptureFixture[str
 
 
 @pytest.mark.unit
-def test_cli_reconcile_dry_run_default(tmp_path: Path, capsys: pytest.CaptureFixture[str]) -> None:
+def test_cli_reconcile_dry_run_default(
+    tmp_path: Path, capsys: pytest.CaptureFixture[str]
+) -> None:
     config = EXAMPLES / "positive_enabled_valid.json"
     state_path = tmp_path / "state.json"
     state_path.write_text(

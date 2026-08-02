@@ -8,9 +8,10 @@ from untrusted issue text.
 from __future__ import annotations
 
 import copy
-from datetime import datetime, timezone
+from datetime import timezone
 from typing import Any, Mapping
 
+from core.utils.clock import utcnow
 from tools.agent_execution_contract.errors import ContractValidationError
 from tools.agent_execution_contract.hashing import attach_digest
 from tools.agent_execution_contract.jcs import canonicalize
@@ -48,12 +49,12 @@ def _require_mapping(value: Any, label: str) -> dict[str, Any]:
 def _iso_now(created_at: str | None) -> str:
     if created_at:
         return created_at
-    return (
-        datetime.now(timezone.utc)
-        .replace(microsecond=0)
-        .isoformat()
-        .replace("+00:00", "Z")
-    )
+    value = utcnow()
+    if value.tzinfo is None:
+        value = value.replace(tzinfo=timezone.utc)
+    else:
+        value = value.astimezone(timezone.utc)
+    return value.replace(microsecond=0).isoformat().replace("+00:00", "Z")
 
 
 def build_contract_from_router_result(

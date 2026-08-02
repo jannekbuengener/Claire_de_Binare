@@ -3,11 +3,11 @@
 from __future__ import annotations
 
 import hashlib
-import uuid
 from copy import deepcopy
 from datetime import datetime
 from typing import Any
 
+from core.utils.uuid_gen import generate_runtime_id_hex
 from tools.agent_execution_contract.jcs import canonicalize
 from tools.agent_control.clock import Clock, SystemClock
 from tools.agent_control.errors import DispatchError
@@ -93,7 +93,7 @@ def _idempotency_key(contract_digest: str, agent_id: str, attempt: int) -> str:
 
 
 def _new_run_id() -> str:
-    return "adr-" + uuid.uuid4().hex[:16]
+    return "adr-" + generate_runtime_id_hex(16)
 
 
 def build_dry_run_plan(
