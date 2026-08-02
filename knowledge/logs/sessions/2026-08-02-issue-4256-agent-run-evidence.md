@@ -29,4 +29,8 @@ Start base: `53752e47093a21c9a579189c2625a7562f435456`
 
 ## Status
 
-`DONE_SLICE_ADDED_TO_BATCH_PR` (pending push + PR ledger update in this session)
+`DONE_SLICE_ADDED_TO_BATCH_PR`
+
+Commit: `7cf1d14ea9e360f8ef5c186f2716126c7c53952f`
+PR: https://github.com/jannekbuengener/Claire_de_Binare/pull/4286
+Hosted checks at handoff: partially pending (ci / CodeQL in progress); advisory only.
