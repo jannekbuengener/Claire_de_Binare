@@ -1,0 +1,196 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://claire-de-binare.local/contracts/cdb_pr_approval_context.v1.schema.json",
+  "title": "CDB PR Approval Context v1",
+  "description": "Repo-backed read-only PR approval context. Schema id: cdb.pr_approval_context.v1. Recommendation only — not merge, not cdb-local-ci publish, not Live-Go (#4257).",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "schema_id",
+    "schema_version",
+    "subject",
+    "recommendation",
+    "reason_codes",
+    "policy",
+    "prompt",
+    "required_checks",
+    "drift",
+    "pr_state",
+    "authority_limits",
+    "limitations",
+    "integrity",
+    "context_digest"
+  ],
+  "properties": {
+    "schema_id": { "const": "cdb.pr_approval_context.v1" },
+    "schema_version": { "const": "1.0.0" },
+    "subject": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["pr_number", "head_sha", "base_sha"],
+      "properties": {
+        "pr_number": { "type": ["integer", "null"] },
+        "head_sha": {
+          "type": "string",
+          "pattern": "^([a-f0-9]{40})?$"
+        },
+        "base_sha": {
+          "type": "string",
+          "pattern": "^([a-f0-9]{40})?$"
+        }
+      }
+    },
+    "recommendation": {
+      "type": "string",
+      "enum": [
+        "APPROVE_RECOMMENDED",
+        "REQUEST_CHANGES",
+        "ABSTAIN",
+        "HOLD",
+        "BLOCKED",
+        "UNKNOWN"
+      ]
+    },
+    "reason_codes": {
+      "type": "array",
+      "items": { "type": "string", "minLength": 1 }
+    },
+    "policy": { "$ref": "#/$defs/versioned_artifact" },
+    "prompt": { "$ref": "#/$defs/versioned_artifact" },
+    "required_checks": {
+      "type": "array",
+      "items": { "$ref": "#/$defs/required_check" }
+    },
+    "drift": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["status", "sources"],
+      "properties": {
+        "status": {
+          "type": "string",
+          "enum": [
+            "NONE",
+            "POLICY",
+            "PROMPT",
+            "ADAPTER",
+            "PROTECTION_VIEW",
+            "UNKNOWN"
+          ]
+        },
+        "sources": {
+          "type": "array",
+          "items": {
+            "type": "string",
+            "enum": [
+              "NONE",
+              "POLICY",
+              "PROMPT",
+              "ADAPTER",
+              "PROTECTION_VIEW",
+              "UNKNOWN"
+            ]
+          }
+        }
+      }
+    },
+    "pr_state": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["is_draft", "review_decision", "blocking_threads"],
+      "properties": {
+        "is_draft": { "type": "boolean" },
+        "review_decision": { "type": ["string", "null"] },
+        "blocking_threads": { "type": "integer", "minimum": 0 }
+      }
+    },
+    "authority_limits": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "merge",
+        "publish_cdb_local_ci",
+        "modify_branch_protection",
+        "modify_rulesets",
+        "execute_live_agent",
+        "live_go",
+        "real_money_go"
+      ],
+      "properties": {
+        "merge": { "const": false },
+        "publish_cdb_local_ci": { "const": false },
+        "modify_branch_protection": { "const": false },
+        "modify_rulesets": { "const": false },
+        "execute_live_agent": { "const": false },
+        "live_go": { "const": false },
+        "real_money_go": { "const": false }
+      }
+    },
+    "limitations": {
+      "type": "array",
+      "items": { "type": "string" }
+    },
+    "metadata": {
+      "type": "object",
+      "additionalProperties": true,
+      "description": "Non-digest metadata (e.g. observed_at). Must not affect context_digest."
+    },
+    "integrity": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "canonicalization",
+        "digest_algorithm",
+        "digest_encoding",
+        "digest"
+      ],
+      "properties": {
+        "canonicalization": { "const": "RFC8785" },
+        "digest_algorithm": { "const": "sha256" },
+        "digest_encoding": { "const": "sha256:<lowercase-hex>" },
+        "digest": {
+          "type": "string",
+          "pattern": "^sha256:[a-f0-9]{64}$"
+        }
+      }
+    },
+    "context_digest": {
+      "type": "string",
+      "pattern": "^sha256:[a-f0-9]{64}$"
+    }
+  },
+  "$defs": {
+    "versioned_artifact": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["version", "source_path", "content_sha256"],
+      "properties": {
+        "version": { "type": "string", "minLength": 1 },
+        "source_path": { "type": "string", "minLength": 1 },
+        "content_sha256": {
+          "type": "string",
+          "pattern": "^sha256:[a-f0-9]{64}$"
+        }
+      }
+    },
+    "required_check": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["name", "mechanism", "status", "matches_protection"],
+      "properties": {
+        "name": { "type": "string", "minLength": 1 },
+        "mechanism": {
+          "type": "string",
+          "enum": ["check_run", "commit_status", "unknown"]
+        },
+        "status": { "type": "string", "minLength": 1 },
+        "matches_protection": { "type": "boolean" },
+        "app_id": { "type": ["integer", "null"] },
+        "conclusion": { "type": ["string", "null"] },
+        "source_sha": {
+          "type": ["string", "null"],
+          "pattern": "^([a-f0-9]{40})?$"
+        }
+      }
+    }
+  }
+}

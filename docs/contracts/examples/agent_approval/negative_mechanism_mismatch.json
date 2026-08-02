@@ -1,0 +1,63 @@
+{
+  "authority_limits": {
+    "execute_live_agent": false,
+    "live_go": false,
+    "merge": false,
+    "modify_branch_protection": false,
+    "modify_rulesets": false,
+    "publish_cdb_local_ci": false,
+    "real_money_go": false
+  },
+  "context_digest": "sha256:f1e0aa8dde1ebc8ced3ab7995ced445fa2fdee3753891c1ac0a0fb065760dd62",
+  "drift": {
+    "sources": [],
+    "status": "NONE"
+  },
+  "integrity": {
+    "canonicalization": "RFC8785",
+    "digest": "sha256:f1e0aa8dde1ebc8ced3ab7995ced445fa2fdee3753891c1ac0a0fb065760dd62",
+    "digest_algorithm": "sha256",
+    "digest_encoding": "sha256:<lowercase-hex>"
+  },
+  "limitations": [
+    "mechanism_mismatch",
+    "not_merge_authority",
+    "not_cdb_local_ci_publisher"
+  ],
+  "policy": {
+    "content_sha256": "sha256:2597528b687b901cad20791371b884a18cd8c1b693c801cbb111a8773eff0472",
+    "source_path": "config/agent-control/policies/approval/pr_approval.v1.yaml",
+    "version": "1.0.0"
+  },
+  "pr_state": {
+    "blocking_threads": 0,
+    "is_draft": false,
+    "review_decision": "APPROVED"
+  },
+  "prompt": {
+    "content_sha256": "sha256:a59c8d22a802ebe4894702be3873f31e5f3f58126d4f2ecb908f00ea971f3c21",
+    "source_path": "config/agent-control/prompts/approval/pr_approval.v1.md",
+    "version": "1.0.0"
+  },
+  "reason_codes": [
+    "MECHANISM_MISMATCH"
+  ],
+  "recommendation": "UNKNOWN",
+  "required_checks": [
+    {
+      "app_id": 4410232,
+      "matches_protection": false,
+      "mechanism": "check_run",
+      "name": "cdb-local-ci",
+      "source_sha": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+      "status": "success"
+    }
+  ],
+  "schema_id": "cdb.pr_approval_context.v1",
+  "schema_version": "1.0.0",
+  "subject": {
+    "base_sha": "bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb",
+    "head_sha": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+    "pr_number": 1
+  }
+}
