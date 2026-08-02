@@ -1,0 +1,853 @@
+{
+  "schema_version": "cdb.research_validation_pilot.v1",
+  "pilot_id": "rvp-wave3-three-candidate-pilot-001",
+  "created_at": "2026-08-01T21:30:00Z",
+  "updated_at": "2026-08-01T21:30:00Z",
+  "spec_status": "PLANNED",
+  "execution_status": "SPECIFICATION_ONLY",
+  "validation_profile": "validation-research-v1",
+  "contract_set": {
+    "research_brief": "cdb.research_brief.v1",
+    "source_evidence": "cdb.source_evidence.v1",
+    "strategy_candidate": "cdb.strategy_candidate.v1",
+    "validation_manifest": "cdb.validation_manifest.v1",
+    "research_security_gate": "cdb.research_security_gate.v1",
+    "hermes_orchestration_run": "cdb.hermes_orchestration_run.v1",
+    "candidate_evidence": "cdb.candidate_evidence.v1",
+    "decision_record": "cdb.decision_record.v1",
+    "candidate_registry_entry": "cdb.candidate_registry_entry.v1",
+    "candidate_transition": "cdb.candidate_transition.v1",
+    "execution_economics_gross_to_net": "execution_economics_gross_to_net.v1"
+  },
+  "candidate_specs": [
+    {
+      "candidate_key": "breakout",
+      "planned_strategy_candidate_id": "sc-pilot-breakout-001",
+      "planned_research_brief_id": "rb-pilot-breakout-001",
+      "planned_validation_manifest_id": "vm-pilot-breakout-001",
+      "required_sources": ["binance", "coinmarketcap"],
+      "purpose": "Time-causal breakout hypothesis on public market price data with external read-only market-regime context from CoinMarketCap.",
+      "constraints": [
+        "No future regime or market data after decision_time.",
+        "Signal bar, decision time, and earliest execution time are separated.",
+        "Fees, spread, slippage, fill, reject, and delay are modeled explicitly.",
+        "No invented PnL or executed evidence in SPECIFICATION_ONLY."
+      ],
+      "expected_artifact_refs": [
+        {
+          "candidate_key": "breakout",
+          "artifact_type": "research_brief",
+          "planned_id": "rb-pilot-breakout-001",
+          "schema_version": "cdb.research_brief.v1",
+          "status": "PLANNED"
+        },
+        {
+          "candidate_key": "breakout",
+          "artifact_type": "source_evidence",
+          "planned_id": "se-pilot-breakout-binance-001",
+          "schema_version": "cdb.source_evidence.v1",
+          "status": "PLANNED"
+        },
+        {
+          "candidate_key": "breakout",
+          "artifact_type": "source_evidence",
+          "planned_id": "se-pilot-breakout-cmc-001",
+          "schema_version": "cdb.source_evidence.v1",
+          "status": "PLANNED"
+        },
+        {
+          "candidate_key": "breakout",
+          "artifact_type": "strategy_candidate",
+          "planned_id": "sc-pilot-breakout-001",
+          "schema_version": "cdb.strategy_candidate.v1",
+          "status": "PLANNED"
+        },
+        {
+          "candidate_key": "breakout",
+          "artifact_type": "validation_manifest",
+          "planned_id": "vm-pilot-breakout-001",
+          "schema_version": "cdb.validation_manifest.v1",
+          "status": "PLANNED"
+        },
+        {
+          "candidate_key": "breakout",
+          "artifact_type": "research_security_gate",
+          "planned_id": "rsg-pilot-breakout-001",
+          "schema_version": "cdb.research_security_gate.v1",
+          "status": "NOT_RUN"
+        },
+        {
+          "candidate_key": "breakout",
+          "artifact_type": "hermes_orchestration_run",
+          "planned_id": "hor-pilot-breakout-001",
+          "schema_version": "cdb.hermes_orchestration_run.v1",
+          "status": "NOT_RUN"
+        },
+        {
+          "candidate_key": "breakout",
+          "artifact_type": "candidate_evidence",
+          "planned_id": "ce-pilot-breakout-001",
+          "schema_version": "cdb.candidate_evidence.v1",
+          "status": "NOT_RUN",
+          "notes": "Existing candidate_evidence schema has no honest NOT_RUN executed packet; slot only."
+        },
+        {
+          "candidate_key": "breakout",
+          "artifact_type": "decision_record",
+          "planned_id": "dr-pilot-breakout-001",
+          "schema_version": "cdb.decision_record.v1",
+          "status": "NOT_RUN",
+          "notes": "No invented REJECT/REVISE/PARK/PAPER_CANDIDATE verdict."
+        },
+        {
+          "candidate_key": "breakout",
+          "artifact_type": "candidate_registry_entry",
+          "planned_id": "re-pilot-breakout-001",
+          "schema_version": "cdb.candidate_registry_entry.v1",
+          "status": "PLANNED"
+        }
+      ],
+      "time_causality": {
+        "research_cutoff": "2026-07-31T00:00:00Z",
+        "data_cutoff": "2026-07-31T00:00:00Z",
+        "decision_time": "2026-07-31T00:05:00Z",
+        "earliest_execution_time": "2026-07-31T00:06:00Z",
+        "signal_bar_time": "2026-07-30T23:59:00Z",
+        "timezone": "UTC"
+      },
+      "as_of_rule": "No source or market datum with as_of after decision_time may be used.",
+      "source_bindings": [
+        {
+          "source_type": "binance",
+          "provider": "binance",
+          "surface": "GET /api/v3/klines",
+          "security_type_or_auth": "NONE",
+          "identifiers": {
+            "symbol": "BTCUSDT",
+            "interval": "1m"
+          },
+          "query_parameters_planned": {
+            "symbol": "BTCUSDT",
+            "interval": "1m",
+            "startTime": "planned-utc-ms",
+            "endTime": "planned-utc-ms",
+            "limit": 1000
+          },
+          "api_version": "api/v3",
+          "read_only": true,
+          "content_classification": "MARKET_PUBLIC_DATA",
+          "notes": [
+            "Also planned: /api/v3/trades, /api/v3/aggTrades, /api/v3/depth as read-only public market data.",
+            "TRADE/USER_DATA/USER_STREAM surfaces are forbidden for this pilot."
+          ]
+        },
+        {
+          "source_type": "coinmarketcap",
+          "provider": "coinmarketcap",
+          "surface": "GET /v2/cryptocurrency/ohlcv/historical (primary); optional /v2/cryptocurrency/market-pairs/latest and /v1/global-metrics as plan-dependent context",
+          "security_type_or_auth": "API key required for authenticated catalog; no key material stored in artifacts",
+          "identifiers": {
+            "cmc_id": "1",
+            "symbol": "BTC",
+            "quote": "USDT"
+          },
+          "query_parameters_planned": {
+            "id": "1",
+            "time_start": "planned-utc",
+            "time_end": "planned-utc",
+            "time_period": "hourly"
+          },
+          "api_version": "v2",
+          "read_only": true,
+          "content_classification": "UNTRUSTED_INPUT",
+          "notes": [
+            "Bind CMC ID mapping, server timestamp (status.timestamp), error_code/error_message, elapsed, and credit_count as provenance.",
+            "Prefer stable cmc_id over symbol-only mapping.",
+            "Unavailable plan endpoints must not be silently simulated."
+          ]
+        }
+      ],
+      "dataset_binding_policy": {
+        "status": "PENDING_BINDING",
+        "snapshot_hash": null,
+        "binding_rule": "Bind provider/surface/identifiers/query/api_version and compute snapshot hash only after a real future fetch; do not invent hashes in SPECIFICATION_ONLY."
+      },
+      "economics_components": {
+        "fees": "Planned taker/maker fee path via execution_economics_gross_to_net.v1; no invented fee PnL.",
+        "spread": "Planned entry/exit half-spread from public book/trade surfaces; explicit baseline vs pessimistic values at execution time.",
+        "slippage": "Planned quantity-sensitive slippage; no positive price improvement in pessimistic scenario.",
+        "fill_assumptions": "Baseline: full fill within planned liquidity band; pessimistic: reduced available liquidity / stricter fill.",
+        "reject_assumptions": "Rejects counted as zero-fill with reject_impact component; not silently ignored.",
+        "latency_or_delay": "Signal-bar to decision to earliest execution delays modeled; pessimistic adds at least one extra delay bar.",
+        "funding_when_relevant": "Spot BTCUSDT: funding not applicable; record N/A with reason at execution time."
+      },
+      "token_terminal_partial_success_policy": "N/A for this candidate; Token Terminal not a required source.",
+      "no_invented_numeric_results": true
+    },
+    {
+      "candidate_key": "liquidity_or_volume_filter",
+      "planned_strategy_candidate_id": "sc-pilot-liquidity-001",
+      "planned_research_brief_id": "rb-pilot-liquidity-001",
+      "planned_validation_manifest_id": "vm-pilot-liquidity-001",
+      "required_sources": ["binance", "coinmarketcap"],
+      "purpose": "Deterministic liquidity or volume filter that excludes insufficiently tradeable breakout or trend situations.",
+      "constraints": [
+        "Liquidity/volume inputs exactly defined before execution.",
+        "No dynamic agentic threshold tuning.",
+        "Market-pair, quote-volume, and asset mapping must be unique.",
+        "Thin liquidity must be tightened in the pessimistic scenario."
+      ],
+      "expected_artifact_refs": [
+        {
+          "candidate_key": "liquidity_or_volume_filter",
+          "artifact_type": "research_brief",
+          "planned_id": "rb-pilot-liquidity-001",
+          "schema_version": "cdb.research_brief.v1",
+          "status": "PLANNED"
+        },
+        {
+          "candidate_key": "liquidity_or_volume_filter",
+          "artifact_type": "source_evidence",
+          "planned_id": "se-pilot-liquidity-binance-001",
+          "schema_version": "cdb.source_evidence.v1",
+          "status": "PLANNED"
+        },
+        {
+          "candidate_key": "liquidity_or_volume_filter",
+          "artifact_type": "source_evidence",
+          "planned_id": "se-pilot-liquidity-cmc-001",
+          "schema_version": "cdb.source_evidence.v1",
+          "status": "PLANNED"
+        },
+        {
+          "candidate_key": "liquidity_or_volume_filter",
+          "artifact_type": "strategy_candidate",
+          "planned_id": "sc-pilot-liquidity-001",
+          "schema_version": "cdb.strategy_candidate.v1",
+          "status": "PLANNED"
+        },
+        {
+          "candidate_key": "liquidity_or_volume_filter",
+          "artifact_type": "validation_manifest",
+          "planned_id": "vm-pilot-liquidity-001",
+          "schema_version": "cdb.validation_manifest.v1",
+          "status": "PLANNED"
+        },
+        {
+          "candidate_key": "liquidity_or_volume_filter",
+          "artifact_type": "research_security_gate",
+          "planned_id": "rsg-pilot-liquidity-001",
+          "schema_version": "cdb.research_security_gate.v1",
+          "status": "NOT_RUN"
+        },
+        {
+          "candidate_key": "liquidity_or_volume_filter",
+          "artifact_type": "hermes_orchestration_run",
+          "planned_id": "hor-pilot-liquidity-001",
+          "schema_version": "cdb.hermes_orchestration_run.v1",
+          "status": "NOT_RUN"
+        },
+        {
+          "candidate_key": "liquidity_or_volume_filter",
+          "artifact_type": "candidate_evidence",
+          "planned_id": "ce-pilot-liquidity-001",
+          "schema_version": "cdb.candidate_evidence.v1",
+          "status": "NOT_RUN"
+        },
+        {
+          "candidate_key": "liquidity_or_volume_filter",
+          "artifact_type": "decision_record",
+          "planned_id": "dr-pilot-liquidity-001",
+          "schema_version": "cdb.decision_record.v1",
+          "status": "NOT_RUN"
+        },
+        {
+          "candidate_key": "liquidity_or_volume_filter",
+          "artifact_type": "candidate_registry_entry",
+          "planned_id": "re-pilot-liquidity-001",
+          "schema_version": "cdb.candidate_registry_entry.v1",
+          "status": "PLANNED"
+        }
+      ],
+      "time_causality": {
+        "research_cutoff": "2026-07-31T00:00:00Z",
+        "data_cutoff": "2026-07-31T00:00:00Z",
+        "decision_time": "2026-07-31T00:05:00Z",
+        "earliest_execution_time": "2026-07-31T00:06:00Z",
+        "signal_bar_time": "2026-07-30T23:59:00Z",
+        "timezone": "UTC"
+      },
+      "as_of_rule": "No source or market datum with as_of after decision_time may be used.",
+      "source_bindings": [
+        {
+          "source_type": "binance",
+          "provider": "binance",
+          "surface": "GET /api/v3/depth + GET /api/v3/trades",
+          "security_type_or_auth": "NONE",
+          "identifiers": {
+            "symbol": "BTCUSDT"
+          },
+          "query_parameters_planned": {
+            "symbol": "BTCUSDT",
+            "limit": 1000
+          },
+          "api_version": "api/v3",
+          "read_only": true,
+          "content_classification": "MARKET_PUBLIC_DATA",
+          "notes": [
+            "Depth data source Memory per official spot REST docs; treat provider delay as data-quality factor."
+          ]
+        },
+        {
+          "source_type": "coinmarketcap",
+          "provider": "coinmarketcap",
+          "surface": "GET /v2/cryptocurrency/market-pairs/latest (quote volume / pair liquidity context; plan-dependent)",
+          "security_type_or_auth": "API key required for authenticated catalog; no key material stored in artifacts",
+          "identifiers": {
+            "cmc_id": "1",
+            "exchange_slug": "binance",
+            "market_pair": "BTC/USDT"
+          },
+          "query_parameters_planned": {
+            "id": "1",
+            "convert": "USDT"
+          },
+          "api_version": "v2",
+          "read_only": true,
+          "content_classification": "UNTRUSTED_INPUT",
+          "notes": [
+            "Bind CMC ID mapping and status envelope metadata as provenance; plan tiers may restrict access."
+          ]
+        }
+      ],
+      "dataset_binding_policy": {
+        "status": "PENDING_BINDING",
+        "snapshot_hash": null,
+        "binding_rule": "Bind provider/surface/identifiers/query/api_version and compute snapshot hash only after a real future fetch; do not invent hashes in SPECIFICATION_ONLY."
+      },
+      "economics_components": {
+        "fees": "Required fee path; no silent zero.",
+        "spread": "Required; pessimistic increases spread.",
+        "slippage": "Required; pessimistic increases slippage under thin book.",
+        "fill_assumptions": "Liquidity filter must define minimum quote volume / depth before entry.",
+        "reject_assumptions": "Insufficient liquidity rejects entry; reject_impact recorded.",
+        "latency_or_delay": "Pessimistic scenario requires additional delay while liquidity is re-checked.",
+        "funding_when_relevant": "Spot: N/A with reason."
+      },
+      "token_terminal_partial_success_policy": "N/A for this candidate; Token Terminal not a required source.",
+      "no_invented_numeric_results": true
+    },
+    {
+      "candidate_key": "on_chain_regime_filter",
+      "planned_strategy_candidate_id": "sc-pilot-onchain-001",
+      "planned_research_brief_id": "rb-pilot-onchain-001",
+      "planned_validation_manifest_id": "vm-pilot-onchain-001",
+      "required_sources": ["token_terminal", "bigdata_com"],
+      "purpose": "Deterministic on-chain regime filter with separately held narrative research context. Bigdata content must not overwrite on-chain metrics.",
+      "constraints": [
+        "On-chain metrics and narrative research signals remain separate.",
+        "Methodology, chain, project, product, and version bindings are mandatory.",
+        "Publication lag and later data revisions are modeled as fail-closed risks.",
+        "Bigdata outputs are UNTRUSTED_INPUT and never numeric validation evidence."
+      ],
+      "expected_artifact_refs": [
+        {
+          "candidate_key": "on_chain_regime_filter",
+          "artifact_type": "research_brief",
+          "planned_id": "rb-pilot-onchain-001",
+          "schema_version": "cdb.research_brief.v1",
+          "status": "PLANNED"
+        },
+        {
+          "candidate_key": "on_chain_regime_filter",
+          "artifact_type": "source_evidence",
+          "planned_id": "se-pilot-onchain-tt-001",
+          "schema_version": "cdb.source_evidence.v1",
+          "status": "PLANNED"
+        },
+        {
+          "candidate_key": "on_chain_regime_filter",
+          "artifact_type": "source_evidence",
+          "planned_id": "se-pilot-onchain-bigdata-001",
+          "schema_version": "cdb.source_evidence.v1",
+          "status": "PLANNED"
+        },
+        {
+          "candidate_key": "on_chain_regime_filter",
+          "artifact_type": "strategy_candidate",
+          "planned_id": "sc-pilot-onchain-001",
+          "schema_version": "cdb.strategy_candidate.v1",
+          "status": "PLANNED"
+        },
+        {
+          "candidate_key": "on_chain_regime_filter",
+          "artifact_type": "validation_manifest",
+          "planned_id": "vm-pilot-onchain-001",
+          "schema_version": "cdb.validation_manifest.v1",
+          "status": "PLANNED"
+        },
+        {
+          "candidate_key": "on_chain_regime_filter",
+          "artifact_type": "research_security_gate",
+          "planned_id": "rsg-pilot-onchain-001",
+          "schema_version": "cdb.research_security_gate.v1",
+          "status": "NOT_RUN"
+        },
+        {
+          "candidate_key": "on_chain_regime_filter",
+          "artifact_type": "hermes_orchestration_run",
+          "planned_id": "hor-pilot-onchain-001",
+          "schema_version": "cdb.hermes_orchestration_run.v1",
+          "status": "NOT_RUN"
+        },
+        {
+          "candidate_key": "on_chain_regime_filter",
+          "artifact_type": "candidate_evidence",
+          "planned_id": "ce-pilot-onchain-001",
+          "schema_version": "cdb.candidate_evidence.v1",
+          "status": "NOT_RUN"
+        },
+        {
+          "candidate_key": "on_chain_regime_filter",
+          "artifact_type": "decision_record",
+          "planned_id": "dr-pilot-onchain-001",
+          "schema_version": "cdb.decision_record.v1",
+          "status": "NOT_RUN"
+        },
+        {
+          "candidate_key": "on_chain_regime_filter",
+          "artifact_type": "candidate_registry_entry",
+          "planned_id": "re-pilot-onchain-001",
+          "schema_version": "cdb.candidate_registry_entry.v1",
+          "status": "PLANNED"
+        }
+      ],
+      "time_causality": {
+        "research_cutoff": "2026-07-31T00:00:00Z",
+        "data_cutoff": "2026-07-31T00:00:00Z",
+        "decision_time": "2026-07-31T00:05:00Z",
+        "earliest_execution_time": "2026-07-31T00:06:00Z",
+        "signal_bar_time": "2026-07-30T23:59:00Z",
+        "timezone": "UTC"
+      },
+      "as_of_rule": "No source or market datum with as_of after decision_time may be used.",
+      "source_bindings": [
+        {
+          "source_type": "token_terminal",
+          "provider": "token_terminal",
+          "surface": "GET /v2/projects/{project_id}/metrics",
+          "security_type_or_auth": "bearerAuth",
+          "identifiers": {
+            "project_id": "planned-project-id",
+            "metric_ids": "fees,revenue",
+            "chain_ids": "ethereum"
+          },
+          "query_parameters_planned": {
+            "metric_ids": "fees,revenue",
+            "chain_ids": "ethereum",
+            "start": "planned-date",
+            "end": "planned-date",
+            "order_direction": "desc"
+          },
+          "api_version": "v2",
+          "read_only": true,
+          "content_classification": "UNTRUSTED_INPUT",
+          "notes": [
+            "HTTP 200 alone is not Source-PASS.",
+            "Non-empty errors array must be classified; partial success is not silent PASS.",
+            "Bind project/metric/chain/product/version and as-of; later methodology changes are dataset drift."
+          ]
+        },
+        {
+          "source_type": "bigdata_com",
+          "provider": "bigdata_com",
+          "surface": "REST Search documents (not Workflows, not Research Agent)",
+          "security_type_or_auth": "API key via Bigdata REST auth; no key material in artifacts",
+          "identifiers": {
+            "entity_or_topic": "planned-topic",
+            "time_window": "planned-utc-window"
+          },
+          "query_parameters_planned": {
+            "query": "planned-research-query",
+            "from": "planned-utc",
+            "to": "planned-utc"
+          },
+          "api_version": "api-rest",
+          "read_only": true,
+          "content_classification": "UNTRUSTED_INPUT",
+          "notes": [
+            "Search/Retrieval outputs remain UNTRUSTED_INPUT.",
+            "Generated summaries must not replace numeric validation evidence.",
+            "Web vs premium results must remain distinguishable in SourceEvidence."
+          ]
+        }
+      ],
+      "dataset_binding_policy": {
+        "status": "PENDING_BINDING",
+        "snapshot_hash": null,
+        "binding_rule": "Bind provider/surface/identifiers/query/api_version and compute snapshot hash only after a real future fetch; do not invent hashes in SPECIFICATION_ONLY."
+      },
+      "economics_components": {
+        "fees": "Required if any linked market execution path is evaluated later; still declared for shared economics completeness.",
+        "spread": "Required for shared path completeness.",
+        "slippage": "Required for shared path completeness.",
+        "fill_assumptions": "On-chain filter does not invent fills; fill assumptions remain explicit for linked market validation.",
+        "reject_assumptions": "Missing/partial on-chain inputs reject Source-PASS fail-closed.",
+        "latency_or_delay": "Publication lag modeled; pessimistic adds extra delay before acting on revised metrics.",
+        "funding_when_relevant": "N/A unless a funded market path is later bound; record reason."
+      },
+      "token_terminal_partial_success_policy": "Non-empty Token Terminal errors array must be classified; partial success cannot become Source-PASS without explicit fail-closed disposition.",
+      "no_invented_numeric_results": true
+    }
+  ],
+  "common_gate_bindings": {
+    "same_contract_versions_for_all_candidates": true,
+    "same_validation_profile_for_all_candidates": true,
+    "same_security_and_integrity_gates": true,
+    "source_specific_gate_bypass_allowed": false,
+    "source_adapters_have_no_validation_authority": true,
+    "hermes_has_no_validation_authority": true,
+    "no_automatic_candidate_promotion": true,
+    "research_security_gate_schema": "cdb.research_security_gate.v1",
+    "hermes_orchestration_run_schema": "cdb.hermes_orchestration_run.v1"
+  },
+  "data_and_time_policy": {
+    "timezone": "UTC",
+    "research_cutoff_field": "research_cutoff",
+    "data_cutoff_field": "data_cutoff",
+    "run_start_field": "run_start",
+    "decision_time_field": "decision_time",
+    "forbid_as_of_after_decision_time": true,
+    "provider_response_provenance_separate_from_source_evidence": true,
+    "credentials_forbidden_in_artifacts": true,
+    "fail_closed_data_classes": [
+      "missing",
+      "partial",
+      "delayed",
+      "revised",
+      "unavailable"
+    ],
+    "partial_or_missing_source_cannot_be_source_pass": true,
+    "token_terminal_nonempty_errors_must_be_classified": true,
+    "bigdata_outputs_are_untrusted_input": true,
+    "bigdata_cannot_replace_numeric_validation_evidence": true
+  },
+  "execution_economics_policy": {
+    "reuse_ssot": "execution_economics_gross_to_net.v1",
+    "reuse_ssot_path": "docs/contracts/EXECUTION_ECONOMICS_GROSS_TO_NET_V1.md",
+    "required_components": [
+      "fees",
+      "spread",
+      "slippage",
+      "fill_assumptions",
+      "reject_assumptions",
+      "latency_or_delay",
+      "funding_when_relevant"
+    ],
+    "baseline_rule": "All cost components explicit or justified not-applicable; no silent zero costs.",
+    "pessimistic_rule": "Higher spread and slippage, stricter fill/liquidity, additional execution delay, no positive price improvement; net path includes all friction components.",
+    "no_invented_results": true,
+    "no_silent_zero_costs": true
+  },
+  "scenario_specs": [
+    {
+      "scenario_key": "baseline",
+      "applies_to_all_candidates": true,
+      "status": "PLANNED",
+      "required_friction_components": [
+        "fees",
+        "spread",
+        "slippage",
+        "fill_assumptions",
+        "reject_assumptions",
+        "latency_or_delay"
+      ],
+      "adverse_relative_to_baseline": false,
+      "notes": [
+        "Baseline defines the parameter path only; no invented numeric results."
+      ]
+    },
+    {
+      "scenario_key": "pessimistic_liquidity_and_delay",
+      "applies_to_all_candidates": true,
+      "status": "PLANNED",
+      "required_friction_components": [
+        "fees",
+        "spread",
+        "slippage",
+        "fill_assumptions",
+        "reject_assumptions",
+        "latency_or_delay"
+      ],
+      "additional_execution_delay_required": true,
+      "higher_spread_required": true,
+      "higher_slippage_required": true,
+      "stricter_fill_or_liquidity_required": true,
+      "positive_price_improvement_allowed": false,
+      "adverse_relative_to_baseline": true,
+      "notes": [
+        "Pessimistic scenario must be adverse relative to baseline on spread, slippage, liquidity/fill, and delay."
+      ]
+    }
+  ],
+  "expected_artifacts": [
+    {
+      "candidate_key": "breakout",
+      "artifact_type": "comparative_summary",
+      "planned_id": "cmp-pilot-three-candidate-001",
+      "schema_version": "cdb.research_validation_pilot.v1",
+      "status": "PLANNED",
+      "notes": "Comparative summary lives inside this pilot contract; not a separate executed verdict table."
+    },
+    {
+      "candidate_key": "breakout",
+      "artifact_type": "research_brief",
+      "planned_id": "rb-pilot-breakout-001",
+      "schema_version": "cdb.research_brief.v1",
+      "status": "PLANNED"
+    },
+    {
+      "candidate_key": "liquidity_or_volume_filter",
+      "artifact_type": "research_brief",
+      "planned_id": "rb-pilot-liquidity-001",
+      "schema_version": "cdb.research_brief.v1",
+      "status": "PLANNED"
+    },
+    {
+      "candidate_key": "on_chain_regime_filter",
+      "artifact_type": "research_brief",
+      "planned_id": "rb-pilot-onchain-001",
+      "schema_version": "cdb.research_brief.v1",
+      "status": "PLANNED"
+    },
+    {
+      "candidate_key": "breakout",
+      "artifact_type": "strategy_candidate",
+      "planned_id": "sc-pilot-breakout-001",
+      "schema_version": "cdb.strategy_candidate.v1",
+      "status": "PLANNED"
+    },
+    {
+      "candidate_key": "liquidity_or_volume_filter",
+      "artifact_type": "strategy_candidate",
+      "planned_id": "sc-pilot-liquidity-001",
+      "schema_version": "cdb.strategy_candidate.v1",
+      "status": "PLANNED"
+    },
+    {
+      "candidate_key": "on_chain_regime_filter",
+      "artifact_type": "strategy_candidate",
+      "planned_id": "sc-pilot-onchain-001",
+      "schema_version": "cdb.strategy_candidate.v1",
+      "status": "PLANNED"
+    },
+    {
+      "candidate_key": "breakout",
+      "artifact_type": "validation_manifest",
+      "planned_id": "vm-pilot-breakout-001",
+      "schema_version": "cdb.validation_manifest.v1",
+      "status": "PLANNED"
+    },
+    {
+      "candidate_key": "liquidity_or_volume_filter",
+      "artifact_type": "validation_manifest",
+      "planned_id": "vm-pilot-liquidity-001",
+      "schema_version": "cdb.validation_manifest.v1",
+      "status": "PLANNED"
+    },
+    {
+      "candidate_key": "on_chain_regime_filter",
+      "artifact_type": "validation_manifest",
+      "planned_id": "vm-pilot-onchain-001",
+      "schema_version": "cdb.validation_manifest.v1",
+      "status": "PLANNED"
+    },
+    {
+      "candidate_key": "breakout",
+      "artifact_type": "candidate_evidence",
+      "planned_id": "ce-pilot-breakout-001",
+      "schema_version": "cdb.candidate_evidence.v1",
+      "status": "NOT_RUN"
+    },
+    {
+      "candidate_key": "liquidity_or_volume_filter",
+      "artifact_type": "candidate_evidence",
+      "planned_id": "ce-pilot-liquidity-001",
+      "schema_version": "cdb.candidate_evidence.v1",
+      "status": "NOT_RUN"
+    },
+    {
+      "candidate_key": "on_chain_regime_filter",
+      "artifact_type": "candidate_evidence",
+      "planned_id": "ce-pilot-onchain-001",
+      "schema_version": "cdb.candidate_evidence.v1",
+      "status": "NOT_RUN"
+    },
+    {
+      "candidate_key": "breakout",
+      "artifact_type": "decision_record",
+      "planned_id": "dr-pilot-breakout-001",
+      "schema_version": "cdb.decision_record.v1",
+      "status": "NOT_RUN"
+    },
+    {
+      "candidate_key": "liquidity_or_volume_filter",
+      "artifact_type": "decision_record",
+      "planned_id": "dr-pilot-liquidity-001",
+      "schema_version": "cdb.decision_record.v1",
+      "status": "NOT_RUN"
+    },
+    {
+      "candidate_key": "on_chain_regime_filter",
+      "artifact_type": "decision_record",
+      "planned_id": "dr-pilot-onchain-001",
+      "schema_version": "cdb.decision_record.v1",
+      "status": "NOT_RUN"
+    }
+  ],
+  "comparative_summary_spec": {
+    "status": "PLANNED",
+    "dimensions": [
+      "candidate_key",
+      "contract_completeness",
+      "source_completeness",
+      "provenance_completeness",
+      "security_gate_status",
+      "orchestration_status",
+      "dataset_binding_status",
+      "execution_economics_completeness",
+      "baseline_scenario_status",
+      "pessimistic_scenario_status",
+      "evidence_completeness",
+      "final_structured_verdict"
+    ],
+    "pre_execution_cell_status": "NOT_RUN",
+    "no_subjective_ranking": true,
+    "no_ranking_without_comparable_evidence": true,
+    "tickersage_may_visualize_only": true
+  },
+  "visualization_policy": {
+    "tickersage_role": "visualization_only",
+    "validation_authority": false,
+    "decision_authority": false,
+    "may_mutate_metrics": false,
+    "may_write_lifecycle_transitions": false,
+    "official_api_contract_present": false,
+    "notes": [
+      "Public tickersage.com presents market analysis and heatmaps.",
+      "No official public API contract was identified as of 2026-08-01.",
+      "Human visualization of already produced results only; no programmatic integration."
+    ]
+  },
+  "authority_boundaries": {
+    "research_apps_validation_authority": false,
+    "hermes_live_authority": false,
+    "hermes_validation_authority": false,
+    "tickersage_validation_authority": false,
+    "tickersage_decision_authority": false,
+    "automatic_strategy_promotion": false,
+    "paper_candidate_is_live_go": false,
+    "paper_go": false,
+    "live_go": false,
+    "real_money_go": false,
+    "capital_go": false,
+    "risk_bypass": false,
+    "productive_db_writes": false,
+    "productive_agent_execution": false,
+    "ml_rl_integration": false,
+    "pilot_execution_claims_results": false
+  },
+  "safety_boundaries": {
+    "lr_status": "NO-GO",
+    "board_trade_capable_is_live_go": false,
+    "pilot_execution": false,
+    "merge_allowed": false
+  },
+  "official_external_docs_evidence": [
+    {
+      "provider": "binance",
+      "official_domain": "github.com/binance/binance-spot-api-docs",
+      "document_title": "Binance Spot REST API (rest-api.md)",
+      "url": "https://raw.githubusercontent.com/binance/binance-spot-api-docs/master/rest-api.md",
+      "retrieved_at": "2026-08-01T21:30:00Z",
+      "relevant_statements": [
+        "Security type NONE means public market data.",
+        "Market Data endpoints include GET /api/v3/depth, /api/v3/trades, /api/v3/aggTrades, /api/v3/klines.",
+        "Order book depth documents Data Source: Memory.",
+        "Klines are uniquely identified by open time; startTime/endTime omitted returns most recent klines."
+      ],
+      "retrieval_limitations": [
+        "developers.binance.com HTML docs were JS-challenge blocked in agent fetch; official GitHub spot API docs used as authoritative public source."
+      ]
+    },
+    {
+      "provider": "coinmarketcap",
+      "official_domain": "coinmarketcap.com",
+      "document_title": "CoinMarketCap API — cryptocurrency OHLCV/market-pairs reference",
+      "url": "https://coinmarketcap.com/api/documentation/pro-api-reference/cryptocurrency",
+      "retrieved_at": "2026-08-01T21:45:00Z",
+      "relevant_statements": [
+        "GET /v2/cryptocurrency/ohlcv/historical is the current historical OHLCV surface (time_period daily/hourly).",
+        "GET /v2/cryptocurrency/market-pairs/latest is the current market-pairs surface.",
+        "GET /v3/cryptocurrency/quotes/historical is the current historical quotes surface when quote series are needed.",
+        "Prefer stable cryptocurrency id mapping over symbol-only identifiers.",
+        "Status envelope includes timestamp, error_code, error_message, elapsed, and credit_count.",
+        "Plan tiers affect endpoint access, historical coverage, and call limits; availability is not absolute."
+      ],
+      "retrieval_limitations": [
+        "Plan-specific endpoint availability must be re-checked before any future live fetch; no credentials used in this slice."
+      ]
+    },
+    {
+      "provider": "token_terminal",
+      "official_domain": "tokenterminal.com",
+      "document_title": "Get historical metrics for a project",
+      "url": "https://tokenterminal.com/docs/api-reference/projects/get-historical-metrics-for-a-project.md",
+      "retrieved_at": "2026-08-01T21:30:00Z",
+      "relevant_statements": [
+        "Endpoint GET /v2/projects/{project_id}/metrics supports partial success.",
+        "Invalid metric/chain/product IDs return data for valid entities plus an errors array.",
+        "HTTP 200 responses may include errors; auth is bearerAuth.",
+        "Parameters include metric_ids, chain_ids, product_ids, start, end, order_direction."
+      ],
+      "retrieval_limitations": []
+    },
+    {
+      "provider": "bigdata_com",
+      "official_domain": "docs.bigdata.com",
+      "document_title": "Introduction to Bigdata APIs",
+      "url": "https://docs.bigdata.com/api-rest/introduction.md",
+      "retrieved_at": "2026-08-01T21:30:00Z",
+      "relevant_statements": [
+        "REST APIs are the deterministic programmable interface; MCP/CLI are alternative access paths.",
+        "Search, Research Agent, and Workflows are distinct surfaces.",
+        "Search documents endpoint is the planned pilot retrieval surface.",
+        "API keys are managed via Developer Platform; credentials must not be stored in artifacts."
+      ],
+      "retrieval_limitations": [
+        "Pilot specifies REST Search only; no new SDK contract assumed."
+      ]
+    },
+    {
+      "provider": "tickersage",
+      "official_domain": "tickersage.com",
+      "document_title": "TickerSage public site — Market Insights / Heatmap",
+      "url": "https://tickersage.com/",
+      "retrieved_at": "2026-08-01T21:30:00Z",
+      "relevant_statements": [
+        "Public site presents data-driven market analysis, charts, and a market heatmap.",
+        "No official public API contract was identified as of 2026-08-01."
+      ],
+      "retrieval_limitations": [
+        "No inventable API; TickerSage remains human visualization of already produced results only."
+      ]
+    }
+  ],
+  "limitations": [
+    "SPECIFICATION_ONLY: no pilot execution, no provider fetch, no invented evidence or decision verdicts.",
+    "Wave-1 candidate_evidence and decision_record schemas lack an honest executed NOT_RUN packet; expected slots use status NOT_RUN/PLANNED only.",
+    "Dataset snapshot hashes remain PENDING_BINDING until a future authorized fetch.",
+    "Optional Gainium/Hugging Face sources are not required for the three pilot candidates.",
+    "LR remains NO-GO; PAPER_CANDIDATE would not be Live-Go even after a future executed pilot."
+  ]
+}
