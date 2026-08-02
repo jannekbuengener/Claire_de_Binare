@@ -1,0 +1,52 @@
+[Unit]
+Description=CDB Hermes dashboard profile %i (#4289)
+Documentation=https://github.com/jannekbuengener/Claire_de_Binare/issues/4289
+After=network-online.target
+Wants=network-online.target
+ConditionPathExists=!/var/lib/hermes/profiles/%i/.DISABLED
+
+[Service]
+Type=simple
+User=hermes
+Group=hermes
+Environment=HERMES_HOME=/var/lib/hermes/profiles/%i
+Environment=HERMES_PROFILE=%i
+# Per-profile port MUST be set in /etc/hermes/%i.env (HERMES_PORT).
+# Defaults intentionally omitted here so a missing env fails closed.
+EnvironmentFile=/etc/hermes/%i.env
+WorkingDirectory=/var/lib/hermes/profiles/%i
+# Official entrypoint for v0.19.1 is hermes dashboard (web UI).
+# Loopback-only. Remote access via Tailscale/SSH tunnel.
+# --isolated: per-profile dashboard (required for concurrent profiles).
+# Flags verified against official Web Dashboard docs (v0.19.x).
+ExecStart=/opt/hermes/bin/hermes dashboard --host 127.0.0.1 --port ${HERMES_PORT} --no-open --isolated
+ExecStartPre=/usr/bin/test -d /var/lib/hermes/profiles/%i
+ExecStartPre=/usr/bin/test -f /var/lib/hermes/profiles/%i/config.yaml
+ExecStartPre=/usr/bin/test -n "${HERMES_PORT}"
+Restart=on-failure
+RestartSec=5
+TimeoutStartSec=60
+TimeoutStopSec=30
+CPUQuota=80%
+MemoryMax=1536M
+TasksMax=256
+LimitNOFILE=8192
+NoNewPrivileges=true
+PrivateTmp=true
+ProtectSystem=strict
+ProtectHome=true
+ReadWritePaths=/var/lib/hermes/profiles/%i /var/log/hermes
+ProtectKernelTunables=true
+ProtectKernelModules=true
+ProtectControlGroups=true
+LockPersonality=true
+RestrictSUIDSGID=true
+RestrictRealtime=true
+SystemCallArchitectures=native
+UMask=0077
+StandardOutput=journal
+StandardError=journal
+SyslogIdentifier=hermes-%i
+
+[Install]
+WantedBy=multi-user.target

@@ -1,0 +1,88 @@
+#cloud-config
+# Hermes host baseline (#4289). No general sudo for the hermes runtime user.
+
+package_update: true
+package_upgrade: true
+packages:
+  - unattended-upgrades
+  - fail2ban
+  - curl
+  - jq
+  - git
+  - ca-certificates
+  - chrony
+  - ufw
+  - acl
+  - rsync
+  - xz-utils
+
+users:
+  - name: hermes
+    # Not in the sudo group. Bootstrap window uses NOPASSWD ALL via sudoers.d;
+    # bootstrap.sh replaces that with service-only rules before exit.
+    shell: /bin/bash
+    lock_passwd: true
+    ssh_authorized_keys:
+      # Public key only (matches hcloud ssh-key cdb-hermes-hetzner / SHA256:1KHx…).
+      - ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAIJoOcf8G2Rc6D1XuTBvaviZA25Vf/PpoTrupxgj58853 cdb-hermes-hetzner
+
+ssh_pwauth: false
+disable_root: true
+
+write_files:
+  - path: /etc/sudoers.d/99-cdb-hermes
+    permissions: "0440"
+    content: |
+      # BOOTSTRAP WINDOW — replaced by limited rules at end of bootstrap.sh.
+      # Do not leave NOPASSWD ALL in place after first successful bootstrap.
+      hermes ALL=(root) NOPASSWD:ALL
+  - path: /etc/sudoers.d/99-cdb-hermes-limited.example
+    permissions: "0440"
+    content: |
+      # Installed by bootstrap.sh after first apply (service control only).
+      hermes ALL=(root) NOPASSWD: /bin/systemctl start hermes-dashboard@*, /bin/systemctl stop hermes-dashboard@*, /bin/systemctl restart hermes-dashboard@*, /bin/systemctl status hermes-dashboard@*, /bin/systemctl is-active hermes-dashboard@*
+  - path: /etc/ssh/sshd_config.d/99-cdb-hermes.conf
+    permissions: "0644"
+    content: |
+      PermitRootLogin no
+      PasswordAuthentication no
+      KbdInteractiveAuthentication no
+      PubkeyAuthentication yes
+      AllowUsers hermes
+      X11Forwarding no
+      AllowTcpForwarding yes
+      ClientAliveInterval 30
+      ClientAliveCountMax 3
+  - path: /etc/security/limits.d/99-hermes.conf
+    permissions: "0644"
+    content: |
+      hermes soft nproc 512
+      hermes hard nproc 1024
+      hermes soft nofile 8192
+      hermes hard nofile 16384
+  - path: /etc/systemd/system.conf.d/99-hermes-defaults.conf
+    permissions: "0644"
+    content: |
+      [Manager]
+      DefaultLimitNOFILE=16384
+  - path: /etc/apt/apt.conf.d/20auto-upgrades
+    permissions: "0644"
+    content: |
+      APT::Periodic::Update-Package-Lists "1";
+      APT::Periodic::Unattended-Upgrade "1";
+
+runcmd:
+  - timedatectl set-ntp true
+  - systemctl enable --now chrony
+  - systemctl enable --now unattended-upgrades
+  - ufw default deny incoming
+  - ufw default allow outgoing
+  # Temporary OpenSSH allow for first bootstrap over a short-lived Hetzner
+  # firewall admin-IP exception. Remove after Tailscale is up (harden step).
+  - ufw allow OpenSSH
+  - ufw --force enable
+  - mkdir -p /opt/hermes /var/lib/hermes /var/log/hermes /etc/hermes
+  - chown -R hermes:hermes /opt/hermes /var/lib/hermes /var/log/hermes
+  - chmod 0750 /opt/hermes /var/lib/hermes /var/log/hermes /etc/hermes
+
+final_message: "CDB Hermes cloud-init baseline complete. Run infrastructure/hermes/hetzner/bootstrap.sh next."

@@ -1,0 +1,36 @@
+# Declarative Hetzner Cloud server intent for Hermes (#4289).
+# Intent mirror for operators/reviewers. Live apply path is provision.sh
+# (hcloud CLI) which must keep name/type/image/location/labels/firewall aligned.
+# No secrets here.
+
+schema_version: cdb.hermes.hetzner_server/v1
+name: cdb-hermes-01
+image: ubuntu-24.04
+# cx23 replaces unorderable cpx21 under the ≤15 EUR/mo gate (2026-08-02 live prices).
+server_type: cx23
+location: fsn1
+backups: true
+labels:
+  project: claire-de-binare
+  role: hermes
+  issue: "4289"
+ssh_keys:
+  # Matches registered hcloud ssh-key + local id_ed25519_cdb_hetzner.
+  - cdb-hermes-hetzner
+user_data_file: cloud-init.yaml
+networks:
+  # Public IPv4 may exist for egress; inbound is denied by firewall.
+  public_net:
+    enable_ipv4: true
+    enable_ipv6: true
+firewall_names:
+  - cdb-hermes-deny-inbound
+placement:
+  # Single-node only; no cluster.
+  mode: single
+cost_guard:
+  monthly_eur_limit: 15
+  estimate_eur: 9.03
+  refuse_larger_than: cpx31
+  notes:
+    - "cpx21 no longer orderable in fsn1/nbg1/hel1; cx23 is the default under cost gate."

@@ -1,0 +1,22 @@
+name: jannek-assistant
+version: 1.0.0
+description: "Personal assistant for Jannek. No Windows shell, no GitHub write, no CDB trading authority."
+hermes_requires: ">=0.12.0"
+author: "Claire de Binare"
+license: "UNLICENSED"
+cdb:
+  issue: 4289
+  profile_class: personal
+  windows_access: false
+  github_write: false
+  live_authority: false
+  risk_authority: false
+  merge_authority: false
+  cdb_local_ci_publish: false
+env_requires:
+  - name: OPENROUTER_API_KEY
+    description: "Model provider key for personal assistant (operator-owned)"
+    required: false
+  - name: ANTHROPIC_API_KEY
+    description: "Optional Anthropic key"
+    required: false

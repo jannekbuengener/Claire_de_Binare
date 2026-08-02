@@ -1,0 +1,52 @@
+# Hetzner Cloud Firewall — default deny inbound (#4289).
+# Intent mirror: provision.sh creates/attaches this firewall name with
+# deny-by-default inbound (empty rule set). Outbound rules below document
+# expected egress; Hetzner default egress is allowed unless tightened later.
+# Tailscale / SSH over private path only. No public Hermes or dashboard ports.
+
+schema_version: cdb.hermes.hetzner_firewall/v1
+name: cdb-hermes-deny-inbound
+rules:
+  inbound: []
+  # Explicit empty inbound = block all. Operator may add temporary SSH from a
+  # single admin IP during bootstrap, then remove it after Tailscale is up.
+  outbound:
+    - direction: out
+      protocol: tcp
+      port: "80"
+      destination_ips: ["0.0.0.0/0", "::/0"]
+      description: http-egress
+    - direction: out
+      protocol: tcp
+      port: "443"
+      destination_ips: ["0.0.0.0/0", "::/0"]
+      description: https-egress
+    - direction: out
+      protocol: udp
+      port: "41641"
+      destination_ips: ["0.0.0.0/0", "::/0"]
+      description: tailscale-derp
+    - direction: out
+      protocol: udp
+      port: "53"
+      destination_ips: ["0.0.0.0/0", "::/0"]
+      description: dns-udp
+    - direction: out
+      protocol: tcp
+      port: "53"
+      destination_ips: ["0.0.0.0/0", "::/0"]
+      description: dns-tcp
+apply_to:
+  label_selector: "role=hermes"
+forbidden_public_ports:
+  - 22
+  - 9119
+  - 9120
+  - 9121
+  - 8000
+  - 8080
+  - 8443
+notes:
+  - "SSH should ride Tailscale or a short-lived admin IP exception."
+  - "Hermes dashboard MUST bind 127.0.0.1; never publish 9119/9120."
+  - "Official CLI entrypoint is `hermes dashboard` (not `hermes serve`)."

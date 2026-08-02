@@ -1,0 +1,20 @@
+name: validation-chief
+version: 0.1.0
+description: "Optional technical stub for Hermes Validation Chief (#4270). Disabled until orchestration contract lands."
+hermes_requires: ">=0.12.0"
+author: "Claire de Binare"
+license: "UNLICENSED"
+cdb:
+  issue: 4289
+  related_contract_issue: 4270
+  profile_class: validation
+  enabled_by_default: false
+  windows_access: false
+  github_write: false
+  live_authority: false
+  risk_authority: false
+  merge_authority: false
+  cdb_local_ci_publish: false
+  strategy_promotion_authority: false
+  capital_authority: false
+env_requires: []

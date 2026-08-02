@@ -12,14 +12,17 @@
 
 ## Repo / Engineering Status (2026-08-02)
 
-<!-- cdb:live-claim type=main_sha value=2d4651a7 -->
-- **Confirmed main state**: `origin/main` @ `2d4651a7` — same snapshot as the [`README.md`](README.md) Current-main section. Tip is squash-merge of validation pilot spec PR [#4292](https://github.com/jannekbuengener/Claire_de_Binare/pull/4292) (issue [#4272](https://github.com/jannekbuengener/Claire_de_Binare/issues/4272)).
+<!-- cdb:live-claim type=main_sha value=fce4c754 -->
+- **Confirmed main state**: `origin/main` @ `fce4c754` — same snapshot as the [`README.md`](README.md) Current-main section. Tip after consolidation squash-merges [#4286](https://github.com/jannekbuengener/Claire_de_Binare/pull/4286), [#4162](https://github.com/jannekbuengener/Claire_de_Binare/pull/4162), [#4245](https://github.com/jannekbuengener/Claire_de_Binare/pull/4245), [#4246](https://github.com/jannekbuengener/Claire_de_Binare/pull/4246), [#4244](https://github.com/jannekbuengener/Claire_de_Binare/pull/4244), [#4243](https://github.com/jannekbuengener/Claire_de_Binare/pull/4243).
 
+<!-- cdb:live-claim type=issue_state issue=4289 state=open -->
 <!-- cdb:live-claim type=issue_state issue=3995 state=closed -->
 <!-- cdb:live-claim type=issue_state issue=4005 state=closed -->
 <!-- cdb:live-claim type=issue_state issue=4204 state=closed -->
 <!-- cdb:live-claim type=issue_state issue=4228 state=closed -->
-- **PR #4286 Agent Control Plane batch**: Conductor Final-CI blocked on stale `main_sha` claims (`eddcd1bc`); this block reconciles ledger/README to live `2d4651a7` before Completeness recheck. `#4257` remains HOLD. LR **NO-GO** unchanged.
+- **#4289 Hermes Hetzner Bootstrap**: **IN_DELIVERY** via PR [#4290](https://github.com/jannekbuengener/Claire_de_Binare/pull/4290) (`infrastructure/hermes/`, `config/hermes/`, `tools/hermes_ops/`, runbook, threat model, unit tests). Live Hetzner/Windows/GitHub drills remain `HOLD_SCOPE_BLOCKER`. Auth lineage reuses #4170/#4195. `#4257` remains HOLD. LR **NO-GO** unchanged.  <!-- pragma: allowlist secret -->
+
+- **PR #4286 Agent Control Plane batch**: **DONE_MERGED_CLOSED** — squash-merged; issues #4250–#4256 closed. Prior ledger tip `2d4651a7` superseded by consolidation tip `fce4c754`. LR **NO-GO** unchanged.
 
 <!-- cdb:historical-as-of date=2026-07-31 -->
 > Historical as of 2026-07-31 — append-only ledger. Entries below record the
