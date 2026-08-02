@@ -82,4 +82,15 @@ jobs:
           surreal version
 
       - name: Run canonical local CI (fast profile)
-        run: python ci/scripts/run.py --profile fast
+        env:
+          PYTHONUNBUFFERED: "1"
+        run: python -u ci/scripts/run.py --profile fast
+
+      - name: Upload local CI evidence
+        if: always()
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
+        with:
+          name: cdb-local-ci-fast-${{ github.sha }}
+          path: ci/artifacts/
+          if-no-files-found: warn
+          retention-days: 7
