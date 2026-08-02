@@ -319,7 +319,10 @@ def run_ci(
             raise SystemExit(f"Unknown stage: {name}")
         print(f"==> stage {name}", flush=True)
         result = runner(ctx)
-        print(f"<== stage {name} status={result.status} exit={result.exit_code}", flush=True)
+        print(
+            f"<== stage {name} status={result.status} exit={result.exit_code}",
+            flush=True,
+        )
         stage_results.append(result)
 
     report_result = stage_report.run(ctx, stage_results)

@@ -59,7 +59,9 @@ jobs:
           fetch-depth: 0
 
       - name: Fetch origin/main for lint base
-        run: git fetch --no-tags --depth=1 origin main
+        # Full tip history of main is required so docs status-freshness can
+        # resolve claimed main SHAs (shallow depth=1 makes ancestors unreachable).
+        run: git fetch --no-tags origin main
 
       - name: Setup Python
         uses: actions/setup-python@5fda3b95a4ea91299a34e894583c3862153e4b97
@@ -84,7 +86,7 @@ jobs:
       - name: Run canonical local CI (fast profile)
         env:
           PYTHONUNBUFFERED: "1"
-        run: python -u ci/scripts/run.py --profile fast
+        run: python ci/scripts/run.py --profile fast
 
       - name: Upload local CI evidence
         if: always()
