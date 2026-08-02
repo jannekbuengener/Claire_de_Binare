@@ -65,7 +65,7 @@ Required merge gate `cdb-local-ci` not published (out of scope).
 
 | Drill | Result |
 |---|---|
-| Bootstrap on empty VM | BLOCKED (no valid HCLOUD Cloud API token) |
+| Bootstrap on empty VM | BLOCKED (`POST /servers` HTTP 403 forbidden; firewall OK) |
 | Idempotent second bootstrap | BLOCKED |
 | VM reboot + auto start | NOT_RUN |
 | Port/firewall external | NOT_RUN |
@@ -80,16 +80,29 @@ Required merge gate `cdb-local-ci` not published (out of scope).
 | Token rotation/revoke | NOT_RUN (no dedicated Hermes GitHub App) |
 | Secret/PII scan of redacted evidence | PASS (repo secret-scan) |
 
+## Session 2026-08-02b — HCLOUD_TOKEN follow-up
+
+| Check | Result |
+|---|---|
+| `HCLOUD_TOKEN.txt` present (len=64) | PASS |
+| `hcloud server list` | PASS (0 servers) |
+| SSH key `cdb-hermes-hetzner` registered + fingerprint match | PASS |
+| Firewall `cdb-hermes-deny-inbound` create + temp SSH rule | PASS |
+| `POST /servers` (cx23/cpx22/…) | **HTTP 403 forbidden** |
+| `POST /volumes` | **HTTP 403 forbidden** |
+| Default type under ≤15 EUR | `cx23` @ `fsn1` estimate **9.03 EUR/mo** (`cpx21` unorderable) |
+
 ## Holds (exact Human action — single primary blocker)
 
-1. **PRIMARY:** Create/provide a valid **Hetzner Cloud API token** (product:
-   Cloud, not Object Storage) and authenticate `hcloud` so
-   `hcloud server list` succeeds. Existing Object Storage Access/Secret keys are
-   verified usable for S3 endpoints only and must not be used as `HCLOUD_TOKEN`.
-2. Register SSH pubkey in Hetzner Cloud; set `HERMES_SSH_KEY_NAME`.
-3. Dedicated Hermes GitHub App (do **not** expand App `4410232`):
-   `contents`/`pull_requests`/`issues` write + `metadata:read`; **no** `checks:write`.
-4. Install/auth Tailscale; elevated Windows session for `hermes-win` + ACL/kill-switch.
+1. **PRIMARY:** Hetzner Cloud project/token can authenticate and manage firewalls,
+   but **server/volume create returns HTTP 403 `forbidden`**. In Hetzner Console
+   verify: API token is **Read & Write**, payment method active, project role
+   allows server create, no account lock. Then re-run
+   `HERMES_SSH_KEY_NAME=cdb-hermes-hetzner HERMES_BOOTSTRAP_ADMIN_CIDR=<ip>/32
+   bash infrastructure/hermes/hetzner/provision.sh`.
+2. Dedicated Hermes GitHub App (do **not** expand App `4410232`).
+3. Install/auth Tailscale; elevated Windows session for `hermes-win` + ACL/kill-switch.
+4. After Tailscale: remove temp firewall rule `hermes-bootstrap-ssh-temp` and UFW OpenSSH.
 
 ## Probe issues
 

@@ -182,6 +182,20 @@ enable_services() {
   log "enabled profile dashboards on ports ${p1} and ${p2}"
 }
 
+harden_sudoers_after_bootstrap() {
+  local limited="/etc/sudoers.d/99-cdb-hermes"
+  cat >"${limited}" <<'EOF'
+# Post-bootstrap: service control only — no general root shell (#4289).
+hermes ALL=(root) NOPASSWD: /bin/systemctl start hermes-dashboard@*, /bin/systemctl stop hermes-dashboard@*, /bin/systemctl restart hermes-dashboard@*, /bin/systemctl status hermes-dashboard@*, /bin/systemctl is-active hermes-dashboard@*
+EOF
+  chmod 0440 "${limited}"
+  if visudo -cf "${limited}" >/dev/null 2>&1; then
+    log "sudoers hardened to service-only NOPASSWD"
+  else
+    die "sudoers harden failed validation — refuse leaving bootstrap ALL in place without check"
+  fi
+}
+
 main() {
   [[ "$(id -u)" -eq 0 ]] || die "bootstrap.sh must run as root on the Hetzner host"
   require_cmd rsync
@@ -195,6 +209,7 @@ main() {
   ensure_profile_homes
   install_hermes_pinned "${git_ref}" "${git_commit}"
   enable_services
+  harden_sudoers_after_bootstrap
   log "bootstrap complete (idempotent re-run safe for homes + units)"
 }
 

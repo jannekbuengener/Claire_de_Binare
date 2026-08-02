@@ -88,6 +88,8 @@ def test_provision_backups_not_start_after_create_flag() -> None:
     assert "HERMES_ENABLE_BACKUPS must be 1" in text
     assert "role=hermes" in text
     assert "issue=4289" in text
+    assert "HERMES_BOOTSTRAP_ADMIN_CIDR" in text
+    assert "hermes-bootstrap-ssh-temp" in text
 
 
 def test_bootstrap_paths_align_with_update() -> None:
@@ -106,3 +108,5 @@ def test_bootstrap_paths_align_with_update() -> None:
     # Service start must die, not swallow errors.
     assert 'die "jannek-assistant dashboard failed to start"' in bootstrap
     assert 'die "cdb-engineer dashboard failed to start"' in bootstrap
+    assert "harden_sudoers_after_bootstrap" in bootstrap
+    assert "service control only" in bootstrap

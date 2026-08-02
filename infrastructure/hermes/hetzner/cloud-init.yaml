@@ -18,11 +18,13 @@ packages:
 
 users:
   - name: hermes
-    # Intentionally NOT in the sudo group. Limited NOPASSWD via sudoers.d only.
+    # Not in the sudo group. Bootstrap window uses NOPASSWD ALL via sudoers.d;
+    # bootstrap.sh replaces that with service-only rules before exit.
     shell: /bin/bash
     lock_passwd: true
-    ssh_authorized_keys: []
-    # Operator injects the bootstrap public key at provision time.
+    ssh_authorized_keys:
+      # Public key only (matches hcloud ssh-key cdb-hermes-hetzner / SHA256:1KHx…).
+      - ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAIJoOcf8G2Rc6D1XuTBvaviZA25Vf/PpoTrupxgj58853 cdb-hermes-hetzner
 
 ssh_pwauth: false
 disable_root: true
@@ -31,7 +33,13 @@ write_files:
   - path: /etc/sudoers.d/99-cdb-hermes
     permissions: "0440"
     content: |
-      # Limited service control only — no general root shell.
+      # BOOTSTRAP WINDOW — replaced by limited rules at end of bootstrap.sh.
+      # Do not leave NOPASSWD ALL in place after first successful bootstrap.
+      hermes ALL=(root) NOPASSWD:ALL
+  - path: /etc/sudoers.d/99-cdb-hermes-limited.example
+    permissions: "0440"
+    content: |
+      # Installed by bootstrap.sh after first apply (service control only).
       hermes ALL=(root) NOPASSWD: /bin/systemctl start hermes-dashboard@*, /bin/systemctl stop hermes-dashboard@*, /bin/systemctl restart hermes-dashboard@*, /bin/systemctl status hermes-dashboard@*, /bin/systemctl is-active hermes-dashboard@*
   - path: /etc/ssh/sshd_config.d/99-cdb-hermes.conf
     permissions: "0644"
@@ -69,6 +77,9 @@ runcmd:
   - systemctl enable --now unattended-upgrades
   - ufw default deny incoming
   - ufw default allow outgoing
+  # Temporary OpenSSH allow for first bootstrap over a short-lived Hetzner
+  # firewall admin-IP exception. Remove after Tailscale is up (harden step).
+  - ufw allow OpenSSH
   - ufw --force enable
   - mkdir -p /opt/hermes /var/lib/hermes /var/log/hermes /etc/hermes
   - chown -R hermes:hermes /opt/hermes /var/lib/hermes /var/log/hermes

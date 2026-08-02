@@ -60,10 +60,14 @@ ruff check tools/hermes_ops tests/unit/hermes_ops
 
 ## Provision (Hetzner)
 
-Cost gate: CPX21 + IPv4 + backups ≈ **14.89 EUR/mo** (official price table after 2026-06-15) &lt; 15 EUR.
+Cost gate: CX23 + IPv4 + backups ≈ **9.03 EUR/mo** (live price table 2026-08-02) &lt; 15 EUR.
+(`cpx21` remains documented as legacy intent but is no longer orderable in EU locations.)
 
 ```bash
-export HERMES_SSH_KEY_NAME=<existing-hcloud-ssh-key-name>
+export HCLOUD_TOKEN="$(tr -d '\r\n' < \"$HOME/Documents/.secrets/.cdb/HCLOUD_TOKEN.txt\")"
+export HERMES_SSH_KEY_NAME=cdb-hermes-hetzner
+# Optional short-lived admin SSH during first bootstrap (remove after Tailscale):
+export HERMES_BOOTSTRAP_ADMIN_CIDR=<your-public-ip>/32
 bash infrastructure/hermes/hetzner/provision.sh
 # On host, after Tailscale is up and any temporary public SSH exception removed:
 sudo bash infrastructure/hermes/hetzner/bootstrap.sh

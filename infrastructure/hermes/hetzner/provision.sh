@@ -9,13 +9,14 @@ set -euo pipefail
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 SERVER_NAME="${HERMES_SERVER_NAME:-cdb-hermes-01}"
 FIREWALL_NAME="${HERMES_FIREWALL_NAME:-cdb-hermes-deny-inbound}"
-LOCATION="${HERMES_LOCATION:-nbg1}"
-SERVER_TYPE="${HERMES_SERVER_TYPE:-cpx21}"
+LOCATION="${HERMES_LOCATION:-fsn1}"
+SERVER_TYPE="${HERMES_SERVER_TYPE:-cx23}"
 IMAGE="${HERMES_IMAGE:-ubuntu-24.04}"
 SSH_KEY_NAME="${HERMES_SSH_KEY_NAME:-}"
 MONTHLY_LIMIT_EUR="${HERMES_MONTHLY_EUR_LIMIT:-15}"
-# Documented estimate (official price table 2026-06-15): CPX21 11.99 + IPv4 0.50 + backups ~2.40
-ESTIMATE_EUR="${HERMES_COST_ESTIMATE_EUR:-14.89}"
+# Documented estimate (live price table 2026-08-02): CX23 ~6.53 + IPv4 0.50 + backups ~20%
+# CPX21 remains compatible but is no longer orderable in EU locations.
+ESTIMATE_EUR="${HERMES_COST_ESTIMATE_EUR:-9.03}"
 ENABLE_BACKUPS="${HERMES_ENABLE_BACKUPS:-1}"
 
 log() { printf '[hermes-provision] %s\n' "$*"; }
@@ -37,8 +38,25 @@ ensure_firewall() {
     log "created firewall ${FIREWALL_NAME}"
   fi
   # Default deny inbound (matches firewall.yaml intent: inbound: []).
-  # Do not open 22/9119/9120 publicly.
-  log "firewall inbound remains deny-by-default (no public Hermes/SSH ports)"
+  # Optional short-lived admin SSH exception for first bootstrap only.
+  # Set HERMES_BOOTSTRAP_ADMIN_CIDR=x.x.x.x/32 then remove after Tailscale.
+  if [[ -n "${HERMES_BOOTSTRAP_ADMIN_CIDR:-}" ]]; then
+    if hcloud firewall describe "${FIREWALL_NAME}" -o json \
+      | grep -q "hermes-bootstrap-ssh-temp"; then
+      log "temp SSH rule already present for ${FIREWALL_NAME}"
+    else
+      hcloud firewall add-rule \
+        --direction in \
+        --protocol tcp \
+        --port 22 \
+        --source-ips "${HERMES_BOOTSTRAP_ADMIN_CIDR}" \
+        --description "hermes-bootstrap-ssh-temp" \
+        "${FIREWALL_NAME}"
+      log "added temp SSH allow from ${HERMES_BOOTSTRAP_ADMIN_CIDR} (remove after Tailscale)"
+    fi
+  else
+    log "firewall inbound remains deny-by-default (no public Hermes/SSH ports)"
+  fi
 }
 
 enable_backups_or_die() {
