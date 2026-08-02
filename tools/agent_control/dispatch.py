@@ -181,17 +181,135 @@ def build_dry_run_plan(
     return plan
 
 
+def _normalized_branch(value: Any) -> str | None:
+    """Return stripped branch name, or None for missing/whitespace-only."""
+    if not isinstance(value, str):
+        return None
+    stripped = value.strip()
+    return stripped or None
+
+
+def _positive_pr_number(value: Any) -> int | None:
+    """Return a positive PR number, excluding bool (bool subclasses int)."""
+    if isinstance(value, bool) or not isinstance(value, int):
+        return None
+    if value <= 0:
+        return None
+    return value
+
+
+def _normalize_route_bindings(route: dict[str, Any] | None) -> dict[str, Any]:
+    """Normalize route target bindings used on run records and provider requests."""
+    out = deepcopy(route or {})
+    out["target_branch"] = _normalized_branch(out.get("target_branch"))
+    if isinstance(out.get("target_pr"), bool):
+        out["target_pr"] = None
+    return out
+
+
+def _field_present(value: Any, *, field: str) -> bool:
+    if value is None:
+        return False
+    if field == "target_branch":
+        return _normalized_branch(value) is not None
+    return True
+
+
+def assert_delivery_target_consistent(contract: dict[str, Any]) -> None:
+    """Fail-closed when route and delivery_target disagree on the same field.
+
+    Identical duplicates remain allowed. Create routes may leave targets empty
+    until a validated provider receipt supplies them. Whitespace-only branches
+    are treated as absent (same semantics as coalesce in `_delivery_target`).
+    """
+    route = contract.get("route") or {}
+    target = (contract.get("execution_scope") or {}).get("delivery_target") or {}
+    conflicts: list[str] = []
+    for field in ("target_pr", "target_branch"):
+        route_val = route.get(field)
+        target_val = target.get(field)
+        if field == "target_branch":
+            route_cmp = _normalized_branch(route_val)
+            target_cmp = _normalized_branch(target_val)
+            if route_cmp is None or target_cmp is None:
+                continue
+            if route_cmp != target_cmp:
+                conflicts.append(field)
+            continue
+        if not (
+            _field_present(route_val, field=field)
+            and _field_present(target_val, field=field)
+        ):
+            continue
+        if route_val != target_val:
+            conflicts.append(field)
+    if conflicts:
+        raise DispatchError(
+            "DISPATCH_DELIVERY_TARGET_CONFLICT",
+            "route and execution_scope.delivery_target conflict on: "
+            + ", ".join(conflicts),
+        )
+
+
 def _delivery_target(contract: dict[str, Any]) -> dict[str, Any]:
+    assert_delivery_target_consistent(contract)
     scope = contract.get("execution_scope") or {}
     target = scope.get("delivery_target") or {}
     route = contract.get("route") or {}
+    # Whitespace-only branches must not win over a real route branch via
+    # truthy `or` (R1 / #4293 acceptance residual).
+    delivery_branch = _normalized_branch(target.get("target_branch"))
+    route_branch = _normalized_branch(route.get("target_branch"))
     return {
         "target_pr": target.get("target_pr") or route.get("target_pr"),
-        "target_branch": target.get("target_branch") or route.get("target_branch"),
+        "target_branch": delivery_branch or route_branch,
         "expected_status": target.get("expected_status")
         or "DONE_SLICE_ADDED_TO_BATCH_PR",
         "routing_decision": route.get("routing_decision"),
     }
+
+
+def effective_dispatch_budget(
+    contract_budget: dict[str, Any] | None,
+    effective_constraints: dict[str, Any] | None,
+) -> dict[str, Any]:
+    """Merge contract budget with attenuated environment ceilings (restrictive).
+
+    Does not mutate the signed/hashed contract input. Numeric ceilings take the
+    more restrictive value when both sides are present.
+    """
+    budget = deepcopy(contract_budget or {})
+    eff = effective_constraints or {}
+    wall_e = eff.get("wall_time_seconds")
+    if isinstance(wall_e, int) and not isinstance(wall_e, bool):
+        wall_c = budget.get("wall_time_seconds")
+        if isinstance(wall_c, int) and not isinstance(wall_c, bool):
+            budget["wall_time_seconds"] = min(wall_c, wall_e)
+        else:
+            budget["wall_time_seconds"] = wall_e
+    return budget
+
+
+def _merge_observed_create_targets(
+    record: dict[str, Any], receipt: dict[str, Any]
+) -> None:
+    """For CREATE routes, persist validated receipt targets onto the run route."""
+    route = record.get("route") or {}
+    routing = route.get("routing_decision")
+    if routing not in CREATE_ROUTE_DECISIONS:
+        return
+    updated = False
+    receipt_pr = _positive_pr_number(receipt.get("target_pr"))
+    receipt_branch = _normalized_branch(receipt.get("target_branch"))
+    if receipt_pr is not None:
+        route["target_pr"] = receipt_pr
+        updated = True
+    if receipt_branch is not None:
+        route["target_branch"] = receipt_branch
+        updated = True
+    if updated:
+        route["target_provenance"] = "route+validated_provider_receipt"
+    record["route"] = route
 
 
 def _expected_delivery_from_contract(contract: dict[str, Any]) -> dict[str, Any]:
@@ -212,7 +330,7 @@ def _validate_delivery_receipt(
     contract_pr = target.get("target_pr")
     receipt_pr = receipt.get("target_pr")
     if routing in CREATE_ROUTE_DECISIONS and contract_pr is None:
-        if not isinstance(receipt_pr, int) or int(receipt_pr) <= 0:
+        if _positive_pr_number(receipt_pr) is None:
             raise DispatchError(
                 "DISPATCH_DELIVERY_RECEIPT_MISMATCH",
                 "create route requires observed positive target_pr on receipt",
@@ -223,9 +341,9 @@ def _validate_delivery_receipt(
             "delivery receipt target_pr does not match contract",
         )
     contract_branch = target.get("target_branch")
-    receipt_branch = receipt.get("target_branch")
+    receipt_branch = _normalized_branch(receipt.get("target_branch"))
     if routing in CREATE_ROUTE_DECISIONS and not contract_branch:
-        if not isinstance(receipt_branch, str) or not receipt_branch.strip():
+        if receipt_branch is None:
             raise DispatchError(
                 "DISPATCH_DELIVERY_RECEIPT_MISMATCH",
                 "create route requires observed target_branch on receipt",
@@ -402,6 +520,11 @@ def dispatch_run(
     at = _iso(clock)
     rid = run_id or _new_run_id()
     expected_delivery = _expected_delivery_from_contract(pf.contract)
+    # Effective budget = contract ∩ attenuated environment ceilings.
+    # Contract digest/input remain untouched; only the run/request budget shrinks.
+    run_budget = effective_dispatch_budget(
+        pf.budget, pf.effective_environment_constraints
+    )
     record: dict[str, Any] = {
         "schema_id": "cdb.agent_dispatch_run.v1",
         "schema_version": "1.0.0",
@@ -413,18 +536,22 @@ def dispatch_run(
         "contract_id": pf.contract["contract_id"],
         "contract_digest": pf.contract_digest,
         "delivery_issue": (pf.contract.get("issue") or {}).get("number"),
-        "route": {
-            "routing_decision": pf.route.get("routing_decision") if pf.route else None,
-            "target_pr": pf.route.get("target_pr") if pf.route else None,
-            "target_branch": pf.route.get("target_branch") if pf.route else None,
-            "lane": pf.route.get("lane") if pf.route else None,
-            "batch_key": pf.route.get("batch_key") if pf.route else None,
-        },
+        "route": _normalize_route_bindings(
+            {
+                "routing_decision": (
+                    pf.route.get("routing_decision") if pf.route else None
+                ),
+                "target_pr": pf.route.get("target_pr") if pf.route else None,
+                "target_branch": pf.route.get("target_branch") if pf.route else None,
+                "lane": pf.route.get("lane") if pf.route else None,
+                "batch_key": pf.route.get("batch_key") if pf.route else None,
+            }
+        ),
         "expected_delivery": expected_delivery,
         "agent_id": agent_id,
         "provider_id": pf.provider_id,
         "provider_run_id": None,
-        "budget": deepcopy(pf.budget or {}),
+        "budget": run_budget,
         "usage": {"iterations": 0, "tool_calls": 0},
         "lifecycle_events": [],
         "terminal_reason": None,
@@ -473,7 +600,7 @@ def dispatch_run(
         idempotency_key=idem,
         provider_id=pf.provider_id,
         provider_profile=deepcopy(pf.provider_profile or {}),
-        route=deepcopy(pf.route or {}),
+        route=_normalize_route_bindings(pf.route or {}),
         effective_permissions=deepcopy(pf.agent.get("effective_permissions") or {}),
         allowed_paths=list(
             (pf.effective_environment_constraints or {}).get("allowed_paths")
@@ -485,7 +612,7 @@ def dispatch_run(
             or scope.get("allowed_commands_or_command_classes")
             or []
         ),
-        budget=deepcopy(pf.budget or {}),
+        budget=deepcopy(run_budget),
         prompt_ref=pf.prompt_ref,
         prompt_digest=pf.prompt_digest,
         prompt_text=pf.prompt_text,
@@ -627,7 +754,7 @@ def watch_run(
                         "routing_decision": record["route"].get("routing_decision"),
                     }
                 ),
-                route=deepcopy(record.get("route") or {}),
+                route=_normalize_route_bindings(record.get("route") or {}),
             )
             active.dispatch(seeded)
             internal = active._runs[provider_run_id]  # noqa: SLF001
@@ -799,6 +926,7 @@ def watch_run(
             return store.update_cas(run_id, rev, record)
 
         record["delivery_receipt"] = deepcopy(receipt)
+        _merge_observed_create_targets(record, receipt)
         if auto_advance_success:
             _apply_state(
                 record,

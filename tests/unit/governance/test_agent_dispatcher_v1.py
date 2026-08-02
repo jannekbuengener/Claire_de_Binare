@@ -682,3 +682,367 @@ def test_create_route_accepts_observed_new_pr_number() -> None:
             },
         )
     assert exc.value.code == "DISPATCH_DELIVERY_RECEIPT_MISMATCH"
+
+
+# ---------------------------------------------------------------------------
+# #4293 post-merge residuals R1–R3
+# ---------------------------------------------------------------------------
+
+
+@pytest.mark.unit
+def test_conflicting_delivery_targets_block_before_provider() -> None:
+    """R1: mismatched route vs delivery_target must fail-closed; no provider call."""
+    from tools.agent_control.dispatch import assert_delivery_target_consistent
+
+    contract = _contract()
+    contract["execution_scope"]["delivery_target"]["target_pr"] = 13
+    # route still has 4286
+    contract = attach_digest(contract)
+    with pytest.raises(DispatchError) as exc:
+        assert_delivery_target_consistent(contract)
+    assert exc.value.code == "DISPATCH_DELIVERY_TARGET_CONFLICT"
+
+    store = InMemoryRunStore()
+    provider = MockProvider()
+    result = dispatch_run(
+        contract,
+        _registry(),
+        AGENT_ID,
+        store,
+        dry_run=False,
+        allow_mock_dispatch=True,
+        provider=provider,
+    )
+    assert provider.dispatch_calls == 0
+    assert result["run"]["state"] == "BLOCKED"
+    assert result["run"]["terminal_code"] == "DISPATCH_DELIVERY_TARGET_CONFLICT"
+
+
+@pytest.mark.unit
+def test_conflicting_delivery_branches_block() -> None:
+    """R1: mismatched target_branch also conflicts."""
+    from tools.agent_control.dispatch import assert_delivery_target_consistent
+
+    contract = _contract()
+    contract["execution_scope"]["delivery_target"][
+        "target_branch"
+    ] = "batch/other-branch"
+    contract = attach_digest(contract)
+    with pytest.raises(DispatchError) as exc:
+        assert_delivery_target_consistent(contract)
+    assert exc.value.code == "DISPATCH_DELIVERY_TARGET_CONFLICT"
+
+
+@pytest.mark.unit
+def test_identical_duplicate_delivery_targets_allowed() -> None:
+    """R1: identical route + delivery_target values remain valid."""
+    from tools.agent_control.dispatch import assert_delivery_target_consistent
+
+    contract = _contract()
+    assert_delivery_target_consistent(contract)  # no raise
+
+
+@pytest.mark.unit
+def test_whitespace_only_delivery_branch_does_not_override_route() -> None:
+    """R1: whitespace-only delivery_target branch is absent, not a sealed override."""
+    from tools.agent_control.dispatch import (
+        _delivery_target,
+        assert_delivery_target_consistent,
+    )
+
+    contract = _contract()
+    route_branch = contract["route"]["target_branch"]
+    contract["execution_scope"]["delivery_target"]["target_branch"] = "   \t"
+    contract = attach_digest(contract)
+    assert_delivery_target_consistent(contract)
+    sealed = _delivery_target(contract)
+    assert sealed["target_branch"] == route_branch
+
+    store = InMemoryRunStore()
+    provider = MockProvider()
+    result = dispatch_run(
+        contract,
+        _registry(),
+        AGENT_ID,
+        store,
+        dry_run=False,
+        allow_mock_dispatch=True,
+        provider=provider,
+    )
+    assert result["run"]["state"] != "BLOCKED"
+    assert result["run"]["expected_delivery"]["target_branch"] == route_branch
+    assert provider.dispatch_calls >= 1
+
+
+@pytest.mark.unit
+def test_whitespace_only_existing_route_branch_rejected_in_preflight() -> None:
+    """Existing routes must not treat whitespace-only target_branch as present."""
+    from tools.agent_control.preflight import preflight
+
+    contract = _contract()
+    contract["route"]["target_branch"] = "   "
+    contract["execution_scope"]["delivery_target"][
+        "target_branch"
+    ] = "batch/agent-skills-issue-4250"
+    contract = attach_digest(contract)
+    result = preflight(contract, _registry(), AGENT_ID, execute=True)
+    assert result.ok is False
+    assert result.code == "DISPATCH_ROUTE_TARGET_MISSING"
+    """R3: bool is not a valid observed target_pr (bool subclasses int)."""
+    from tools.agent_control.dispatch import _validate_delivery_receipt
+
+    contract = {
+        "route": {
+            "routing_decision": "CREATE_NEW_BATCH_PR",
+            "target_pr": None,
+            "target_branch": None,
+        },
+        "execution_scope": {
+            "delivery_target": {
+                "expected_status": "DONE_PR_OPEN",
+                "target_pr": None,
+                "target_branch": None,
+            }
+        },
+    }
+    with pytest.raises(DispatchError) as exc:
+        _validate_delivery_receipt(
+            contract,
+            {
+                "target_pr": True,
+                "target_branch": "batch/agent-skills-issue-4293",
+                "commit": "a" * 40,
+                "delivery_status": "DONE_PR_OPEN",
+            },
+        )
+    assert exc.value.code == "DISPATCH_DELIVERY_RECEIPT_MISMATCH"
+
+
+@pytest.mark.unit
+def test_padded_route_branch_normalized_on_run_and_request() -> None:
+    """R1: padded route branches are normalized on run record and provider request."""
+
+    class CapturingProvider(MockProvider):
+        def __init__(self) -> None:
+            super().__init__()
+            self.last_request = None
+
+        def dispatch(self, request):  # type: ignore[no-untyped-def]
+            self.last_request = request
+            return super().dispatch(request)
+
+    contract = _contract()
+    padded = f"  {contract['route']['target_branch']}  "
+    contract["route"]["target_branch"] = padded
+    contract["execution_scope"]["delivery_target"]["target_branch"] = padded
+    contract = attach_digest(contract)
+
+    store = InMemoryRunStore()
+    provider = CapturingProvider()
+    result = dispatch_run(
+        contract,
+        _registry(),
+        AGENT_ID,
+        store,
+        dry_run=False,
+        allow_mock_dispatch=True,
+        provider=provider,
+    )
+    expected = padded.strip()
+    assert result["run"]["route"]["target_branch"] == expected
+    assert result["run"]["expected_delivery"]["target_branch"] == expected
+    assert provider.last_request is not None
+    assert provider.last_request.route["target_branch"] == expected
+
+
+@pytest.mark.unit
+def test_create_route_empty_targets_allowed() -> None:
+    """R1: CREATE routes may leave targets empty until receipt observation."""
+    from tools.agent_control.dispatch import assert_delivery_target_consistent
+
+    contract = {
+        "route": {
+            "routing_decision": "CREATE_NEW_BATCH_PR",
+            "target_pr": None,
+            "target_branch": None,
+        },
+        "execution_scope": {
+            "delivery_target": {
+                "expected_status": "DONE_PR_OPEN",
+                "target_pr": None,
+                "target_branch": None,
+            }
+        },
+    }
+    assert_delivery_target_consistent(contract)
+
+
+@pytest.mark.unit
+def test_attenuated_wall_time_applied_to_run_and_request(monkeypatch) -> None:
+    """R2: lower profile wall ceiling becomes effective run/request budget."""
+    import tools.agent_control.preflight as pf_mod
+    from tools.agent_control.dispatch import effective_dispatch_budget
+    from tools.agent_control.provider import ProviderRequest, ProviderResult
+
+    # Unit: restrictive merge
+    merged = effective_dispatch_budget(
+        {"wall_time_seconds": 14400, "max_iterations": 10},
+        {"wall_time_seconds": 60},
+    )
+    assert merged["wall_time_seconds"] == 60
+    assert merged["max_iterations"] == 10
+    # Higher profile must not expand
+    expanded = effective_dispatch_budget(
+        {"wall_time_seconds": 100},
+        {"wall_time_seconds": 9999},
+    )
+    assert expanded["wall_time_seconds"] == 100
+
+    original_digest = compute_digest(_contract())
+
+    class _Capture:
+        provider_id = "mock"
+
+        def __init__(self) -> None:
+            self.inner = MockProvider()
+            self.last_request = None
+
+        def dispatch(self, request: ProviderRequest) -> ProviderResult:
+            self.last_request = request
+            return self.inner.dispatch(request)
+
+        def watch(self, provider_run_id: str) -> ProviderResult:
+            return self.inner.watch(provider_run_id)
+
+        def cancel(self, provider_run_id: str, reason: str) -> ProviderResult:
+            return self.inner.cancel(provider_run_id, reason)
+
+    real_env = pf_mod.run_environment_preflight
+
+    def _with_wall(**kwargs):
+        result = real_env(**kwargs)
+        result.effective_constraints = {
+            **(result.effective_constraints or {}),
+            "wall_time_seconds": 60,
+        }
+        return result
+
+    monkeypatch.setattr(pf_mod, "run_environment_preflight", _with_wall)
+    contract = _contract()
+    store = InMemoryRunStore()
+    provider = _Capture()
+    clock = FrozenClock(datetime(2026, 8, 1, 21, 0, tzinfo=timezone.utc))
+    result = dispatch_run(
+        contract,
+        _registry(),
+        AGENT_ID,
+        store,
+        dry_run=False,
+        allow_mock_dispatch=True,
+        provider=provider,
+        clock=clock,
+        scenario="success",
+    )
+    run = result["run"]
+    assert run["budget"]["wall_time_seconds"] == 60
+    assert provider.last_request is not None
+    assert provider.last_request.budget["wall_time_seconds"] == 60
+    assert compute_digest(contract) == original_digest
+    # Timeout enforcement uses the same restrictive budget
+    clock.advance(61)
+    timed = watch_run(run["run_id"], store, provider=provider, clock=clock)
+    assert timed["state"] in {"CANCELLED", "BLOCKED"}
+    assert timed["terminal_code"] in {"TIMEOUT", "PROVIDER_CANCEL_UNCONFIRMED"}
+
+
+@pytest.mark.unit
+def test_create_route_records_observed_targets_on_run() -> None:
+    """R3: CREATE routes persist validated receipt targets onto the run route."""
+    from tools.agent_control.dispatch import _merge_observed_create_targets
+    from tools.agent_control.provider import ProviderRequest, ProviderResult
+
+    class _CreateProvider:
+        provider_id = "mock"
+
+        def __init__(self) -> None:
+            self._ticks = 0
+
+        def dispatch(self, request: ProviderRequest) -> ProviderResult:
+            return ProviderResult(
+                provider_id="mock",
+                provider_run_id=f"mock-{request.run_id}",
+                normalized_status="QUEUED",
+                usage={"iterations": 0, "tool_calls": 0},
+            )
+
+        def watch(self, provider_run_id: str) -> ProviderResult:
+            self._ticks += 1
+            if self._ticks == 1:
+                return ProviderResult(
+                    provider_id="mock",
+                    provider_run_id=provider_run_id,
+                    normalized_status="RUNNING",
+                    usage={"iterations": 1, "tool_calls": 1},
+                )
+            return ProviderResult(
+                provider_id="mock",
+                provider_run_id=provider_run_id,
+                normalized_status="SUCCEEDED",
+                usage={"iterations": 2, "tool_calls": 2},
+                delivery_receipt={
+                    "target_pr": 99123,
+                    "target_branch": "batch/agent-skills-issue-4293",
+                    "commit": "c" * 40,
+                    "delivery_status": "DONE_PR_OPEN",
+                },
+            )
+
+        def cancel(self, provider_run_id: str, reason: str) -> ProviderResult:
+            raise AssertionError("cancel not expected")
+
+    contract = _contract()
+    contract["route"] = {
+        **contract["route"],
+        "routing_decision": "CREATE_NEW_BATCH_PR",
+        "target_pr": None,
+        "target_branch": None,
+    }
+    contract["execution_scope"]["delivery_target"] = {
+        **contract["execution_scope"]["delivery_target"],
+        "expected_status": "DONE_PR_OPEN",
+        "target_pr": None,
+        "target_branch": None,
+    }
+    contract = attach_digest(contract)
+    store = InMemoryRunStore()
+    provider = _CreateProvider()
+    clock = FrozenClock(datetime(2026, 8, 1, 21, 0, tzinfo=timezone.utc))
+    result = dispatch_run(
+        contract,
+        _registry(),
+        AGENT_ID,
+        store,
+        dry_run=False,
+        allow_mock_dispatch=True,
+        provider=provider,
+        clock=clock,
+        scenario="success",
+    )
+    run = watch_run(result["run"]["run_id"], store, provider=provider, clock=clock)
+    run = watch_run(run["run_id"], store, provider=provider, clock=clock)
+    assert run["state"] == "PASS"
+    assert run["route"]["target_pr"] == 99123
+    assert run["route"]["target_branch"] == "batch/agent-skills-issue-4293"
+    assert run["route"]["target_provenance"] == "route+validated_provider_receipt"
+
+    # HOLD / missing receipt must not invent targets
+    record = {
+        "route": {
+            "routing_decision": "CREATE_NEW_BATCH_PR",
+            "target_pr": None,
+            "target_branch": None,
+        }
+    }
+    _merge_observed_create_targets(record, {})
+    assert record["route"]["target_pr"] is None
+    assert record["route"].get("target_provenance") is None

@@ -515,3 +515,114 @@ def test_evidence_id_versions_across_lifecycle_states() -> None:
     assert hold_id != pass_id
     assert hold_id.startswith("are-")
     assert pass_id.startswith("are-")
+
+
+@pytest.mark.unit
+def test_lifecycle_versioned_store_allows_hold_then_pass(tmp_path: Path) -> None:
+    """R4: HOLD + PASS for same run/attempt verify together in the store."""
+    store, run = _pass_run()
+    jsonl = tmp_path / "lifecycle.jsonl"
+
+    def to_hold(record: dict) -> None:
+        record["state"] = "HOLD"
+        record["terminal_code"] = "HOLD_TEST"
+        record["terminal_reason"] = "pre-pass hold emission"
+
+    _mutate(store, run["run_id"], to_hold)
+    hold_bundle = emit_evidence(run["run_id"], store, jsonl_path=jsonl)["bundle"]
+
+    def to_pass(record: dict) -> None:
+        record["state"] = "PASS"
+        record["terminal_code"] = "PASS"
+        record["terminal_reason"] = "delivery_goals_met"
+
+    _mutate(store, run["run_id"], to_pass)
+    pass_bundle = emit_evidence(run["run_id"], store, jsonl_path=jsonl)["bundle"]
+
+    assert hold_bundle["evidence_id"] != pass_bundle["evidence_id"]
+    assert hold_bundle["lifecycle"]["state"] == "HOLD"
+    assert pass_bundle["lifecycle"]["state"] == "PASS"
+    result = verify_store(jsonl)
+    assert result["ok"] is True
+    assert result["count"] == 2
+
+
+@pytest.mark.unit
+def test_same_lifecycle_conflicting_bundles_still_blocked(tmp_path: Path) -> None:
+    """R4: same run/attempt/lifecycle with conflicting content remains blocked."""
+    store, run = _pass_run()
+    jsonl = tmp_path / "collision.jsonl"
+    bundle = emit_evidence(run["run_id"], store, jsonl_path=jsonl)["bundle"]
+    other = deepcopy(bundle)
+    other["limitations"] = list(bundle["limitations"]) + ["extra-conflict"]
+    from tools.agent_control.evidence.digest import attach_bundle_digest
+
+    other.pop("bundle_digest", None)
+    other.get("integrity", {}).pop("digest", None)
+    other = attach_bundle_digest(other)
+    with pytest.raises(EvidenceError) as exc:
+        EvidenceJsonlStore(jsonl).append_idempotent(other)
+    assert exc.value.code == "EVIDENCE_ID_DIGEST_COLLISION"
+
+
+@pytest.mark.unit
+def test_create_route_evidence_includes_observed_targets() -> None:
+    """R3: evidence delivery_context carries observed create-route targets."""
+    store, run = _pass_run()
+
+    def mutate(record: dict) -> None:
+        record["route"] = {
+            "routing_decision": "CREATE_NEW_BATCH_PR",
+            "target_pr": None,
+            "target_branch": None,
+        }
+        record["delivery_receipt"] = {
+            "target_pr": 77777,
+            "target_branch": "batch/create-77777",
+            "commit": "d" * 40,
+            "delivery_status": "DONE_PR_OPEN",
+        }
+
+    _mutate(store, run["run_id"], mutate)
+    bundle = build_evidence_bundle(store.get(run["run_id"]))
+    ctx = bundle["delivery_context"]
+    assert ctx["target_pr"] == 77777
+    assert ctx["target_branch"] == "batch/create-77777"
+    assert ctx["provenance"]["source"] == "run.route+validated_provider_receipt"
+
+    # After route merge (happy path), provenance must still mark receipt origin.
+    def mutate_merged(record: dict) -> None:
+        record["route"] = {
+            "routing_decision": "CREATE_NEW_BATCH_PR",
+            "target_pr": 77777,
+            "target_branch": "batch/create-77777",
+            "target_provenance": "route+validated_provider_receipt",
+        }
+        record["delivery_receipt"] = {
+            "target_pr": 77777,
+            "target_branch": "batch/create-77777",
+            "commit": "d" * 40,
+            "delivery_status": "DONE_PR_OPEN",
+        }
+
+    _mutate(store, run["run_id"], mutate_merged)
+    merged = build_evidence_bundle(store.get(run["run_id"]))
+    assert merged["delivery_context"]["target_pr"] == 77777
+    assert (
+        merged["delivery_context"]["provenance"]["source"]
+        == "run.route+validated_provider_receipt"
+    )
+
+    # Missing receipt → no invented target
+    def clear_receipt(record: dict) -> None:
+        record["route"] = {
+            "routing_decision": "CREATE_NEW_BATCH_PR",
+            "target_pr": None,
+            "target_branch": None,
+        }
+        record["delivery_receipt"] = None
+
+    _mutate(store, run["run_id"], clear_receipt)
+    bare = build_evidence_bundle(store.get(run["run_id"]))
+    assert bare["delivery_context"]["target_pr"] is None
+    assert bare["delivery_context"]["target_branch"] is None

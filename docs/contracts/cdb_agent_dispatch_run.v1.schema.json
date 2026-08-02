@@ -67,7 +67,11 @@
         "target_pr": { "type": ["integer", "null"] },
         "target_branch": { "type": ["string", "null"] },
         "lane": { "type": ["string", "null"] },
-        "batch_key": { "type": ["string", "null"] }
+        "batch_key": { "type": ["string", "null"] },
+        "target_provenance": {
+          "type": ["string", "null"],
+          "enum": [null, "route+validated_provider_receipt"]
+        }
       }
     },
     "agent_id": { "type": "string", "minLength": 1 },

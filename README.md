@@ -69,10 +69,11 @@ Stage und LR sind orthogonale Systeme: `trade-capable` autorisiert kein Live-Tra
 ## Current-main Snapshot
 
 <!-- cdb:status-freshness header-date=2026-08-02 -->
-<!-- cdb:live-claim type=main_sha value=fca8ad09 -->
+<!-- cdb:live-claim type=main_sha value=365f50b9 -->
 <!-- cdb:live-claim type=issue_state issue=4289 state=open -->
-Auf `origin/main` (`fca8ad09`, Stand 2026-08-02) sind die juengsten relevanten Merge-Cluster u. a.:
+Auf `origin/main` (`365f50b9`, Stand 2026-08-02) sind die juengsten relevanten Merge-Cluster u. a.:
 
+- **Area Entry Link Canon ([#4294](https://github.com/jannekbuengener/Claire_de_Binare/issues/4294)/[#4296](https://github.com/jannekbuengener/Claire_de_Binare/issues/4296) / PR [#4295](https://github.com/jannekbuengener/Claire_de_Binare/pull/4295)):** **MERGED** — README Area Entry Link Rule + active README reconcile @ `365f50b9`.
 - **Hermes Hetzner Bootstrap ([#4289](https://github.com/jannekbuengener/Claire_de_Binare/issues/4289) / PR [#4290](https://github.com/jannekbuengener/Claire_de_Binare/pull/4290)):** Repo-Slice **MERGED** auf tip `fca8ad09` (Infrastructure/Profiles/Ops/Token-Broker). Issue `#4289` bleibt offen fuer Live-VM/Windows/GitHub-Drills (`HOLD_SCOPE_BLOCKER`).  <!-- pragma: allowlist secret -->
 - **Repository consolidation wave:** [#4286](https://github.com/jannekbuengener/Claire_de_Binare/pull/4286) ACP batch, [#4162](https://github.com/jannekbuengener/Claire_de_Binare/pull/4162) Grafana 13.1.1, [#4245](https://github.com/jannekbuengener/Claire_de_Binare/pull/4245) CVE HOLD, [#4246](https://github.com/jannekbuengener/Claire_de_Binare/pull/4246) PG15 preflight, [#4244](https://github.com/jannekbuengener/Claire_de_Binare/pull/4244) Dependabot facts, [#4243](https://github.com/jannekbuengener/Claire_de_Binare/pull/4243) dataset fingerprints — squash-merged (prior tip `fce4c754`, superseded by Hermes tip).
 - **Validation Pilot Spec ([#4272](https://github.com/jannekbuengener/Claire_de_Binare/issues/4272) / PR [#4292](https://github.com/jannekbuengener/Claire_de_Binare/pull/4292)):** **MERGED** — prior tip cluster (historical relative to consolidation tip).
