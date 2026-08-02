@@ -1,0 +1,129 @@
+{
+  "agents": [
+    {
+      "agent_id": "agent-a",
+      "depends_on": [
+        "agent-b"
+      ],
+      "description": "Fixture agent agent-a",
+      "enabled": true,
+      "environment_profile": "mock.v1",
+      "execution_contract_profile": "docs_only.v1",
+      "labels_or_routing_selectors": {
+        "fixture": "agent-a",
+        "lane": "agent-skills"
+      },
+      "mcp_profiles": [
+        "none.v1"
+      ],
+      "provider_profile": "mock.v1",
+      "skills": [
+        "session_core.v1"
+      ],
+      "subagents": [],
+      "version": "1.0.0"
+    },
+    {
+      "agent_id": "agent-b",
+      "depends_on": [
+        "agent-a"
+      ],
+      "description": "Fixture agent agent-b",
+      "enabled": true,
+      "environment_profile": "mock.v1",
+      "execution_contract_profile": "docs_only.v1",
+      "labels_or_routing_selectors": {
+        "fixture": "agent-b",
+        "lane": "agent-skills"
+      },
+      "mcp_profiles": [
+        "none.v1"
+      ],
+      "provider_profile": "mock.v1",
+      "skills": [
+        "session_core.v1"
+      ],
+      "subagents": [],
+      "version": "1.0.0"
+    }
+  ],
+  "profiles": {
+    "environments": {
+      "local_repo.v1": {
+        "description": "Local repo",
+        "runtime_class": "local_repo"
+      },
+      "mock.v1": {
+        "description": "Mock environment",
+        "runtime_class": "mock"
+      }
+    },
+    "execution_contracts": {
+      "delivery_safe.v1": {
+        "description": "Delivery-safe ceiling",
+        "permissions": {
+          "close_issue": false,
+          "comment_issue": true,
+          "commit": true,
+          "database_mutation": false,
+          "mcp_live_mutation": false,
+          "merge": false,
+          "open_pr": false,
+          "publish_cdb_local_ci": false,
+          "push": true,
+          "read_repo": true,
+          "runtime_mutation": false,
+          "update_pr": true,
+          "write_code": true,
+          "write_docs": true
+        }
+      },
+      "docs_only.v1": {
+        "description": "Docs-only ceiling",
+        "permissions": {
+          "close_issue": false,
+          "comment_issue": true,
+          "commit": true,
+          "database_mutation": false,
+          "mcp_live_mutation": false,
+          "merge": false,
+          "open_pr": false,
+          "publish_cdb_local_ci": false,
+          "push": true,
+          "read_repo": true,
+          "runtime_mutation": false,
+          "update_pr": true,
+          "write_code": false,
+          "write_docs": true
+        }
+      }
+    },
+    "mcp": {
+      "none.v1": {
+        "description": "No MCP",
+        "mutation_allowed": false,
+        "servers": []
+      }
+    },
+    "providers": {
+      "mock.v1": {
+        "api_surface": "mock-v1",
+        "description": "Mock provider",
+        "provider_id": "mock",
+        "secret_references": []
+      }
+    },
+    "skills": {
+      "session_core.v1": {
+        "description": "Session core",
+        "skill_ids": [
+          "cdb-session-start",
+          "cdb-pr-router",
+          "cdb-session-close"
+        ]
+      }
+    }
+  },
+  "schema_id": "cdb.agent_registry.v1",
+  "schema_version": "1.0.0"
+}

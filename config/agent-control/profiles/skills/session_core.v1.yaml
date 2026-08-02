@@ -1,0 +1,6 @@
+profile_id: session_core.v1
+description: Minimal session skill pack for delivery slices.
+skill_ids:
+  - cdb-session-start
+  - cdb-pr-router
+  - cdb-session-close

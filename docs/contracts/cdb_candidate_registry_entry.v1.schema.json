@@ -1,0 +1,257 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "title": "CDB Candidate Registry Entry v1",
+  "description": "GitHub-backed immutable candidate registry entry. Repo/artifact based; not a productive DB. GitHub is control plane, not validation authority. Status-conditional bindings (G-01/G-02/G-04) are fail-closed via allOf if/then.",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "schema_version",
+    "registry_entry_id",
+    "issue_id",
+    "candidate_id",
+    "candidate_version",
+    "parent_version",
+    "status",
+    "research_brief_id",
+    "research_brief_version",
+    "research_brief_content_hash",
+    "artifact_refs",
+    "open_blockers",
+    "immutable",
+    "safety_boundaries"
+  ],
+  "properties": {
+    "schema_version": {
+      "const": "cdb.candidate_registry_entry.v1"
+    },
+    "registry_entry_id": {
+      "type": "string",
+      "pattern": "^re-[a-z0-9][a-z0-9-]{2,80}$"
+    },
+    "issue_id": {
+      "type": "integer",
+      "minimum": 1
+    },
+    "candidate_id": {
+      "type": "string",
+      "pattern": "^sc-[a-z0-9][a-z0-9-]{2,80}$"
+    },
+    "candidate_version": {
+      "type": "string",
+      "pattern": "^v[0-9]+$"
+    },
+    "parent_version": {
+      "oneOf": [
+        {
+          "type": "null"
+        },
+        {
+          "type": "string",
+          "pattern": "^v[0-9]+$"
+        }
+      ]
+    },
+    "status": {
+      "type": "string",
+      "enum": [
+        "IDEA",
+        "SPECIFIED",
+        "READY_FOR_VALIDATION",
+        "VALIDATING",
+        "EVIDENCE_READY",
+        "REJECTED",
+        "REVISE",
+        "PARKED",
+        "PAPER_CANDIDATE"
+      ]
+    },
+    "research_brief_id": {
+      "type": "string",
+      "pattern": "^rb-[a-z0-9][a-z0-9-]{2,80}$"
+    },
+    "research_brief_version": {
+      "type": "string",
+      "pattern": "^v[0-9]+$"
+    },
+    "research_brief_content_hash": {
+      "type": "string",
+      "pattern": "^sha256:[a-f0-9]{64}$"
+    },
+    "validation_manifest_id": {
+      "oneOf": [
+        {
+          "type": "null"
+        },
+        {
+          "type": "string",
+          "pattern": "^vm-[a-z0-9][a-z0-9-]{2,80}$"
+        }
+      ]
+    },
+    "run_id": {
+      "oneOf": [
+        {
+          "type": "null"
+        },
+        {
+          "type": "string",
+          "pattern": "^run-[a-z0-9][a-z0-9-]{2,80}$"
+        }
+      ]
+    },
+    "evidence_id": {
+      "oneOf": [
+        {
+          "type": "null"
+        },
+        {
+          "type": "string",
+          "pattern": "^ce-[a-z0-9][a-z0-9-]{2,80}$"
+        }
+      ]
+    },
+    "decision_id": {
+      "oneOf": [
+        {
+          "type": "null"
+        },
+        {
+          "type": "string",
+          "pattern": "^dr-[a-z0-9][a-z0-9-]{2,80}$"
+        }
+      ]
+    },
+    "artifact_refs": {
+      "type": "array",
+      "minItems": 1,
+      "items": {
+        "type": "string",
+        "minLength": 1
+      }
+    },
+    "open_blockers": {
+      "type": "array",
+      "items": {
+        "type": "string",
+        "minLength": 1
+      }
+    },
+    "immutable": {
+      "const": true
+    },
+    "safety_boundaries": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "paper_candidate_is_not_paper_go",
+        "paper_candidate_is_not_live_go",
+        "github_is_not_validation_authority",
+        "lr_status",
+        "automatic_strategy_promotion"
+      ],
+      "properties": {
+        "paper_candidate_is_not_paper_go": {
+          "const": true
+        },
+        "paper_candidate_is_not_live_go": {
+          "const": true
+        },
+        "github_is_not_validation_authority": {
+          "const": true
+        },
+        "lr_status": {
+          "const": "NO-GO"
+        },
+        "automatic_strategy_promotion": {
+          "const": false
+        }
+      }
+    }
+  },
+  "allOf": [
+    {
+      "if": {
+        "properties": {
+          "status": {
+            "const": "VALIDATING"
+          }
+        },
+        "required": [
+          "status"
+        ]
+      },
+      "then": {
+        "required": [
+          "validation_manifest_id"
+        ],
+        "properties": {
+          "validation_manifest_id": {
+            "type": "string",
+            "pattern": "^vm-[a-z0-9][a-z0-9-]{2,80}$"
+          }
+        }
+      }
+    },
+    {
+      "if": {
+        "properties": {
+          "status": {
+            "const": "EVIDENCE_READY"
+          }
+        },
+        "required": [
+          "status"
+        ]
+      },
+      "then": {
+        "required": [
+          "run_id",
+          "evidence_id"
+        ],
+        "properties": {
+          "run_id": {
+            "type": "string",
+            "pattern": "^run-[a-z0-9][a-z0-9-]{2,80}$"
+          },
+          "evidence_id": {
+            "type": "string",
+            "pattern": "^ce-[a-z0-9][a-z0-9-]{2,80}$"
+          }
+        }
+      }
+    },
+    {
+      "if": {
+        "properties": {
+          "status": {
+            "const": "PAPER_CANDIDATE"
+          }
+        },
+        "required": [
+          "status"
+        ]
+      },
+      "then": {
+        "required": [
+          "run_id",
+          "evidence_id",
+          "decision_id"
+        ],
+        "properties": {
+          "run_id": {
+            "type": "string",
+            "pattern": "^run-[a-z0-9][a-z0-9-]{2,80}$"
+          },
+          "evidence_id": {
+            "type": "string",
+            "pattern": "^ce-[a-z0-9][a-z0-9-]{2,80}$"
+          },
+          "decision_id": {
+            "type": "string",
+            "pattern": "^dr-[a-z0-9][a-z0-9-]{2,80}$"
+          }
+        }
+      }
+    }
+  ]
+}

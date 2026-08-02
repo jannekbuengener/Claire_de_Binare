@@ -1,0 +1,146 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "title": "CDB Compiler Report v1",
+  "description": "Deterministic Strategy Candidate Compiler report. READY means ready for validation only — not PASS, PAPER_CANDIDATE, or Live-Go. Docs/contract surface only; no runtime compiler.",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "schema_version",
+    "compiler_contract_version",
+    "report_id",
+    "status",
+    "research_brief_id",
+    "research_brief_version",
+    "research_brief_content_hash",
+    "source_evidence_refs",
+    "claire_context_ref",
+    "candidate_id",
+    "candidate_version",
+    "output_hash",
+    "reject_reasons",
+    "deterministic",
+    "safety_boundaries"
+  ],
+  "properties": {
+    "schema_version": {
+      "const": "cdb.compiler_report.v1"
+    },
+    "compiler_contract_version": {
+      "const": "cdb.strategy_candidate_compiler.v1"
+    },
+    "report_id": {
+      "type": "string",
+      "pattern": "^cr-[a-z0-9][a-z0-9-]{2,80}$"
+    },
+    "status": {
+      "type": "string",
+      "enum": [
+        "READY",
+        "BLOCKED",
+        "NEEDS_RESEARCH"
+      ]
+    },
+    "research_brief_id": {
+      "type": "string",
+      "pattern": "^rb-[a-z0-9][a-z0-9-]{2,80}$"
+    },
+    "research_brief_version": {
+      "type": "string",
+      "pattern": "^v[0-9]+$"
+    },
+    "research_brief_content_hash": {
+      "type": "string",
+      "pattern": "^sha256:[a-f0-9]{64}$"
+    },
+    "source_evidence_refs": {
+      "type": "array",
+      "minItems": 1,
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "evidence_id",
+          "content_hash"
+        ],
+        "properties": {
+          "evidence_id": {
+            "type": "string",
+            "pattern": "^se-[a-z0-9][a-z0-9-]{2,80}$"
+          },
+          "content_hash": {
+            "type": "string",
+            "pattern": "^sha256:[a-f0-9]{64}$"
+          }
+        }
+      }
+    },
+    "claire_context_ref": {
+      "type": "string",
+      "minLength": 1
+    },
+    "candidate_id": {
+      "oneOf": [
+        {
+          "type": "null"
+        },
+        {
+          "type": "string",
+          "pattern": "^sc-[a-z0-9][a-z0-9-]{2,80}$"
+        }
+      ]
+    },
+    "candidate_version": {
+      "oneOf": [
+        {
+          "type": "null"
+        },
+        {
+          "type": "string",
+          "pattern": "^v[0-9]+$"
+        }
+      ]
+    },
+    "output_hash": {
+      "type": "string",
+      "pattern": "^sha256:[a-f0-9]{64}$"
+    },
+    "reject_reasons": {
+      "type": "array",
+      "items": {
+        "type": "string",
+        "minLength": 1
+      }
+    },
+    "deterministic": {
+      "const": true
+    },
+    "safety_boundaries": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "ready_is_not_validation_pass",
+        "ready_is_not_paper_candidate",
+        "ready_is_not_live_go",
+        "compiler_must_not_promote",
+        "lr_status"
+      ],
+      "properties": {
+        "ready_is_not_validation_pass": {
+          "const": true
+        },
+        "ready_is_not_paper_candidate": {
+          "const": true
+        },
+        "ready_is_not_live_go": {
+          "const": true
+        },
+        "compiler_must_not_promote": {
+          "const": true
+        },
+        "lr_status": {
+          "const": "NO-GO"
+        }
+      }
+    }
+  }
+}

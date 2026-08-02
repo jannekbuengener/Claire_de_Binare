@@ -1,0 +1,14 @@
+{
+  "description": "Anonymized Phase-0 FACTS_INVALID reproduction: docker-compose digest-only bump with missing update-type (#4055).",
+  "source_pr": 4055,
+  "head_ref": "dependabot/docker_compose/infrastructure/compose/postgres-18.4-alpine",
+  "author": "dependabot[bot]",
+  "commit_message": "deps(docker-compose): bump postgres in /infrastructure/compose\n\nBumps postgres from 18.4-alpine to 18.4-alpine.\n\n---\nupdated-dependencies:\n- dependency-name: postgres\n  dependency-version: 18.4-alpine\n  dependency-type: direct:production\n...\n\nSigned-off-by: dependabot[bot] <support@github.com>",
+  "files": [
+    {
+      "filename": "infrastructure/compose/compose.blue.yml",
+      "patch": "@@ -17,7 +17,7 @@ services:\n   # ==================== DATA LAYER ====================\n \n   app_database:\n-    image: postgres:18.4-alpine@sha256:ecafd34249b5c248f3cb6ebe339584ee6448b36fad3f0a827ae5e8efbae6afda\n+    image: postgres:18.4-alpine@sha256:9a8afca54e7861fd90fab5fdf4c42477a6b1cb7d293595148eff001122334455\n     container_name: app_database"
+    }
+  ],
+  "expected_reason": "DOCKER_CHANGE"
+}

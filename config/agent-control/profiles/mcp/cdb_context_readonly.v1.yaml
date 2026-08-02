@@ -1,0 +1,5 @@
+profile_id: cdb_context_readonly.v1
+description: Read-only Context Brain MCP profile (no mutation).
+servers:
+  - cdb_context
+mutation_allowed: false

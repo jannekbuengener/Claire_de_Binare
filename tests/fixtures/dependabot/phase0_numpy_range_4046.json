@@ -1,0 +1,14 @@
+{
+  "description": "Anonymized Phase-0 FACTS_INVALID reproduction: pip range lower-bound bump without update-type (#4046).",
+  "source_pr": 4046,
+  "head_ref": "dependabot/pip/numpy-gte-2.5.1",
+  "author": "dependabot[bot]",
+  "commit_message": "deps(pip): update numpy requirement from >=1.26.0 to >=2.5.1\n\n---\nupdated-dependencies:\n- dependency-name: numpy\n  dependency-version: 2.5.1\n  dependency-type: direct:production\n...\n\nSigned-off-by: dependabot[bot] <support@github.com>",
+  "files": [
+    {
+      "filename": "requirements.txt",
+      "patch": "@@ -23,7 +23,7 @@ psycopg2-binary==2.9.12\n python-dateutil==2.8.2\n python-dotenv==1.2.2\n python-json-logger==4.1.0\n-numpy>=1.26.0\n+numpy>=2.5.1\n prometheus_client==0.25.0\n redis==8.0.1\n requests==2.34.2"
+    }
+  ],
+  "expected_reason": "RANGE_CHANGE"
+}

@@ -1,0 +1,26 @@
+{
+  "provider_id": "cursor-sdk",
+  "surface": "python-sdk",
+  "stability": "public",
+  "api_or_sdk_version": "cursor-sdk-public",
+  "supported_operations": [
+    "dispatch",
+    "watch",
+    "cancel",
+    "stream",
+    "resume",
+    "follow_up",
+    "get_usage",
+    "archive",
+    "unarchive"
+  ],
+  "unsupported_operations": ["delete", "download_artifact"],
+  "observed_capabilities": {
+    "runtimes": ["local", "cloud"],
+    "router_modes": ["cost", "balanced", "intelligence"]
+  },
+  "limitations": [
+    "Optional dependency; base CI must import without cursor-sdk installed.",
+    "Billed cost may be delayed/None."
+  ]
+}

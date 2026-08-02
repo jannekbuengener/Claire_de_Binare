@@ -1,11 +1,12 @@
 from __future__ import annotations
 
 import importlib.util
+import json
 import re
 import subprocess
 import sys
 from pathlib import Path
-from typing import Any
+from typing import Any, Mapping
 
 import pytest
 import yaml
@@ -756,3 +757,171 @@ def test_workflow_cron_documented_for_utc_and_berlin_offset() -> None:
     content = WORKFLOW_PATH.read_text(encoding="utf-8")
     assert 'cron: "0 5 * * 1"' in content
     assert "Europe/Berlin" in content or "CET" in content or "CEST" in content
+
+
+FIXTURES_DIR = Path(__file__).resolve().parents[2] / "fixtures" / "dependabot"
+
+
+def _load_fixture(name: str) -> dict[str, Any]:
+    payload = json.loads((FIXTURES_DIR / name).read_text(encoding="utf-8"))
+    assert isinstance(payload, dict)
+    return payload
+
+
+def _transport_from_fixture(fixture: Mapping[str, Any]) -> report.InMemoryGhTransport:
+    files = [
+        {"filename": item["filename"], "patch": item.get("patch")}
+        for item in fixture["files"]
+    ]
+    commits = [
+        {
+            "authors": [{"login": str(fixture.get("author") or "dependabot[bot]")}],
+            "commit": {"message": fixture["commit_message"]},
+        }
+    ]
+    head_ref = str(fixture["head_ref"])
+    return _build_transport(
+        pulls=[_pull_stub(4049, head_ref=head_ref)],
+        detail=_detail_stub(
+            author=str(fixture.get("author") or "dependabot[bot]"),
+            head_ref=head_ref,
+        ),
+        commits=commits,
+        files=files,
+    )
+
+
+@pytest.mark.parametrize(
+    "fixture_name,expected_reason",
+    [
+        ("phase0_numpy_range_4046.json", classifier.REASON_RANGE),
+        ("phase0_prometheus_docker_4054.json", classifier.REASON_DOCKER),
+        ("phase0_postgres_docker_4055.json", classifier.REASON_DOCKER),
+        ("incomplete_api_payload.json", classifier.REASON_FACTS_INVALID),
+    ],
+)
+def test_phase0_facts_invalid_cases_normalize_to_concrete_holds(
+    fixture_name: str, expected_reason: str
+) -> None:
+    fixture = _load_fixture(fixture_name)
+    outcome = _run(_transport_from_fixture(fixture))
+
+    assert outcome.exit_code == 0
+    assert len(outcome.rows) == 1
+    row = outcome.rows[0]
+    assert row.classification == "HOLD"
+    assert row.action == "HOLD"
+    assert row.merge_authorized is False
+    assert expected_reason in row.reason_codes
+    if expected_reason != classifier.REASON_FACTS_INVALID:
+        assert classifier.REASON_FACTS_INVALID not in row.reason_codes
+
+
+def test_docker_compose_digest_pin_parses_as_docker_change() -> None:
+    # Tag suffix intentionally avoids host/user secret substrings in CI agents.
+    patch = (
+        "-    image: grafana/grafana:13.0.3-bookworm"
+        "@sha256:7c1acd41225a05af53fa2af32a044a2a96cdef2540f2c415ee5b1e98fae99084\n"
+        "+    image: grafana/grafana:13.1.1-bookworm"
+        "@sha256:5a9df011defa8384ee01fc9b393854daecc6afb98132c66e2e658b3f564830e8\n"
+    )
+    outcome = _run(
+        _build_transport(
+            files=_files_stub(
+                patch=patch,
+                filename="infrastructure/compose/compose.red.yml",
+            ),
+            detail=_detail_stub(
+                head_ref=(
+                    "dependabot/docker_compose/infrastructure/compose/"
+                    "grafana/grafana-13.1.1-bookworm"
+                )
+            ),
+            commits=[
+                {
+                    "authors": [{"login": "dependabot[bot]"}],
+                    "commit": {
+                        "message": (
+                            "updated-dependencies:\n"
+                            "- dependency-name: grafana/grafana\n"
+                            "  dependency-version: 13.1.1-bookworm\n"
+                            "  dependency-type: direct:production\n"
+                            "  update-type: version-update:semver-minor\n"
+                        )
+                    },
+                }
+            ],
+        )
+    )
+
+    row = outcome.rows[0]
+    assert row.classification == "HOLD"
+    assert classifier.REASON_DOCKER in row.reason_codes
+    assert classifier.REASON_FACTS_INVALID not in row.reason_codes
+    assert row.ecosystem == "docker-compose"
+
+
+def test_date_version_remains_concrete_hold() -> None:
+    outcome = _run(
+        _build_transport(
+            files=_files_stub(
+                patch="-mcp-server-time==2026.6.4\n+mcp-server-time==2026.7.10\n",
+                filename="requirements-mcp.txt",
+            ),
+            detail=_detail_stub(head_ref="dependabot/pip/mcp-server-time-2026.7.10"),
+            commits=[
+                {
+                    "authors": [{"login": "dependabot[bot]"}],
+                    "commit": {
+                        "message": (
+                            "updated-dependencies:\n"
+                            "- dependency-name: mcp-server-time\n"
+                            "  dependency-version: 2026.7.10\n"
+                            "  dependency-type: direct:production\n"
+                            "  update-type: version-update:semver-minor\n"
+                        )
+                    },
+                }
+            ],
+        )
+    )
+
+    row = outcome.rows[0]
+    assert row.classification == "HOLD"
+    assert classifier.REASON_DATE_VERSION in row.reason_codes
+    assert classifier.REASON_FACTS_INVALID not in row.reason_codes
+
+
+def test_title_or_branch_alone_never_eligible() -> None:
+    outcome = _run(
+        _build_transport(
+            files=_files_stub(patch=None, filename="requirements-dev.txt"),
+            detail=_detail_stub(head_ref="dependabot/pip/ruff-0.15.21"),
+            commits=[
+                {
+                    "authors": [{"login": "dependabot[bot]"}],
+                    "commit": {
+                        "message": "deps(pip): bump ruff from 0.15.20 to 0.15.21"
+                    },
+                }
+            ],
+        )
+    )
+
+    row = outcome.rows[0]
+    assert row.classification == "HOLD"
+    assert row.merge_authorized is False
+    assert classifier.REASON_ELIGIBLE not in row.reason_codes
+    assert classifier.REASON_FACTS_INVALID in row.reason_codes
+
+
+def test_report_module_has_no_mutation_helpers() -> None:
+    source = SCRIPT_PATH.read_text(encoding="utf-8")
+    lowered = source.lower()
+    assert "gh pr merge" not in lowered
+    assert "pull-requests: write" not in lowered
+    assert "issues: write" not in lowered
+    assert "add_label" not in lowered
+    assert "create_comment" not in lowered
+    assert "--method" in source
+    assert "GET" in source
