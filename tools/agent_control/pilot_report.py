@@ -119,6 +119,18 @@ def validate_report(
                 "PILOT_REPORT_UNKNOWN_PASS",
                 "PASS is forbidden when any step_results.status is UNKNOWN",
             )
+    head_sha = report.get("head_sha")
+    subject = report.get("subject") or {}
+    subject_head = subject.get("head_sha") if isinstance(subject, dict) else None
+    if (
+        isinstance(head_sha, str)
+        and isinstance(subject_head, str)
+        and head_sha != subject_head
+    ):
+        raise PilotReportError(
+            "PILOT_REPORT_HEAD_MISMATCH",
+            "head_sha and subject.head_sha must bind the same SHA",
+        )
     limits = report.get("authority_limits") or {}
     for key, expected in AUTHORITY_LIMITS.items():
         if limits.get(key) is not expected:

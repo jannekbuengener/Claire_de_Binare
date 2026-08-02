@@ -342,6 +342,47 @@ def test_verify_rejects_integrity_digest_conflict() -> None:
 
 
 @pytest.mark.unit
+def test_verify_rejects_head_sha_subject_mismatch() -> None:
+    from tools.agent_control.pilot_report import PilotReportError, attach_report_digest
+
+    report = _run("p1_pass.manifest.json")
+    report["subject"] = dict(report["subject"])
+    report["subject"]["head_sha"] = "c" * 40
+    report = attach_report_digest(report)
+    with pytest.raises(PilotReportError) as exc:
+        verify_report(report)
+    assert exc.value.code == "PILOT_REPORT_HEAD_MISMATCH"
+
+
+@pytest.mark.unit
+def test_call_count_checked_before_blocked_short_circuit() -> None:
+    from tools.agent_control.pilot import _map_final_status
+
+    status = _map_final_status(
+        blocked=True,
+        hold=False,
+        fail=False,
+        unknown=False,
+        approval_rec=None,
+        evidence_ok=True,
+        provider_calls=1,
+        expect_provider_calls=0,
+    )
+    assert status == "FAIL"
+
+
+@pytest.mark.unit
+def test_missing_base_sha_not_fabricated() -> None:
+    from tools.agent_control.pilot import run_pilot
+
+    manifest = deepcopy(json.loads((FIXTURES / "p1_pass.manifest.json").read_text()))
+    manifest.pop("base_sha", None)
+    report = run_pilot(manifest, repo_root=REPO_ROOT)
+    assert report["final_status"] == "PASS"
+    assert report["subject"]["base_sha"] is None
+
+
+@pytest.mark.unit
 def test_cli_pilot_run_and_verify(tmp_path: Path) -> None:
     out = tmp_path / "report.json"
     code = cli_main(

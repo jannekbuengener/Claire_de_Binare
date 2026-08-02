@@ -119,6 +119,12 @@ def load_manifest(path: Path, *, repo_root: Path | None = None) -> dict[str, Any
             "PILOT_MANIFEST_SCHEMA",
             "provider must be an object when present",
         )
+    subject = data.get("subject")
+    if subject is not None and not isinstance(subject, dict):
+        raise PilotError(
+            "PILOT_MANIFEST_SCHEMA",
+            "subject must be an object when present",
+        )
     return data
 
 
@@ -154,6 +160,11 @@ def _map_final_status(
     provider_calls: int,
     expect_provider_calls: int | None,
 ) -> str:
+    # Call-count expectations are independent observations: evaluate before
+    # terminal status short-circuits so a mismatched count cannot hide behind
+    # BLOCKED/HOLD/UNKNOWN from another step.
+    if expect_provider_calls is not None and provider_calls != expect_provider_calls:
+        return "FAIL"
     if unknown:
         return "UNKNOWN"
     if blocked:
@@ -162,8 +173,6 @@ def _map_final_status(
         return "FAIL"
     if hold:
         return "HOLD"
-    if expect_provider_calls is not None and provider_calls != expect_provider_calls:
-        return "FAIL"
     if not evidence_ok:
         return "HOLD"
     if approval_rec == "APPROVE_RECOMMENDED":
@@ -205,15 +214,23 @@ def run_pilot(
     effective_wall: int | None = None
 
     head_sha = str(manifest["head_sha"])
-    base_sha = manifest.get("base_sha") or ("b" * 40)
+    base_raw = manifest.get("base_sha")
+    base_sha = str(base_raw) if isinstance(base_raw, str) else None
     agent_id = str(manifest["agent_id"])
-    scenario = str((manifest.get("provider") or {}).get("scenario") or "success")
-    expect_calls = (manifest.get("provider") or {}).get("expect_call_count")
+    provider_cfg = manifest.get("provider")
+    if provider_cfg is not None and not isinstance(provider_cfg, dict):
+        raise PilotError("PILOT_MANIFEST_SCHEMA", "provider must be an object")
+    provider_cfg = provider_cfg or {}
+    scenario = str(provider_cfg.get("scenario") or "success")
+    expect_calls = provider_cfg.get("expect_call_count")
     skip_approval = bool(manifest.get("skip_approval"))
     skip_evidence = bool(manifest.get("skip_evidence"))
     registry_root = _resolve(
         root, manifest.get("registry_root") or str(DEFAULT_CONFIG_ROOT)
     )
+    subject_cfg = manifest.get("subject")
+    if subject_cfg is not None and not isinstance(subject_cfg, dict):
+        raise PilotError("PILOT_MANIFEST_SCHEMA", "subject must be an object")
 
     # --- Contract ---
     try:
@@ -747,7 +764,7 @@ def _finalize(
     run_id: str | None,
     attempt: int | None,
     head_sha: str,
-    base_sha: str,
+    base_sha: str | None,
     input_digests: dict[str, Any],
     provider_calls: int,
     evidence_refs: list[dict[str, Any]],
@@ -812,6 +829,9 @@ def _finalize(
         "approval": "cdb.pr_approval_context.v1",
         "pilot_report": REPORT_SCHEMA_ID,
     }
+    subject_in = (
+        manifest.get("subject") if isinstance(manifest.get("subject"), dict) else {}
+    )
     return build_report(
         pilot_id=str(manifest["pilot_id"]),
         scenario_id=scenario_id,
@@ -819,7 +839,7 @@ def _finalize(
             "head_sha": head_sha,
             "base_sha": base_sha,
             "issue": 4258,
-            "pr_number": (manifest.get("subject") or {}).get("pr_number"),
+            "pr_number": subject_in.get("pr_number"),
         },
         contract_versions=contract_versions,
         run_id=run_id,
