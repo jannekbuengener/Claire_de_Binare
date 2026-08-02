@@ -1,6 +1,6 @@
 # Knowledge Runbooks (`knowledge/runbooks/`)
 
-Knowledge-tree runbooks (stack, DB, replay, control board). For GitHub/control-plane automation see [`docs/runbooks/`](../../docs/runbooks/).
+Knowledge-tree runbooks (stack, DB, replay, control board). For GitHub/control-plane automation see [`docs/runbooks/`](../../docs/runbooks/README.md).
 
 ## Start here
 

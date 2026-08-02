@@ -16,7 +16,7 @@ pytest -v -m "integration and not e2e and not local_only"
 
 ## SSOT boundary
 
-- Kein E2E-Stack nötig; für echte Container siehe [`tests/e2e/`](../e2e/) und [`tests/README.md`](../README.md).
+- Kein E2E-Stack nötig; für echte Container siehe [`tests/e2e/`](../e2e/README.md) und [`tests/README.md`](../README.md).
 - LR bleibt **NO-GO** — Integration-Grün beweist keine Live-Freigabe.
 
 ## Related

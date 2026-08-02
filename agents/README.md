@@ -19,7 +19,9 @@ relations:
 - [Agent root surface matrix](../docs/onboarding/AGENT_ROOT_SURFACE_MATRIX.md)
 - [OpenCode shared contract](OPEN_CODE_AGENTS.md)
 - [Cursor subagents](../.cursor/agents/README_CDB_CURSOR_SUBAGENTS.md)
-- [Role definitions](roles/)
+- [Role definitions](roles/README.md)
+- [Prompts](prompts/README.md)
+- [Task lists](tasklists/README.md)
 
 ## Boundary
 

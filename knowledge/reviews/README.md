@@ -13,7 +13,7 @@ relations:
 
 ## Key entrypoints
 *   [Shared working memory (knowledge/SHARED.WORKING.MEMORY.md)](../SHARED.WORKING.MEMORY.md) — session-scoped, not canonical status
-*   [Session logs (knowledge/logs/sessions/)](../logs/sessions/)
-*   [Governance (knowledge/governance/)](../governance/)
+*   [Session logs (knowledge/logs/sessions/)](../logs/sessions/README.md)
+*   [Governance (knowledge/governance/)](../governance/README.md)
 
 Prefer dated review files in this directory over duplicating findings in status ledgers.
