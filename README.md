@@ -66,11 +66,12 @@ Stage und LR sind orthogonale Systeme: `trade-capable` autorisiert kein Live-Tra
 
 ## Current-main Snapshot
 
-<!-- cdb:status-freshness header-date=2026-07-31 -->
-<!-- cdb:live-claim type=main_sha value=eddcd1bc -->
-Auf `origin/main` (`eddcd1bc`, Stand 2026-07-31) sind die juengsten relevanten Merge-Cluster u. a.:
+<!-- cdb:status-freshness header-date=2026-08-02 -->
+<!-- cdb:live-claim type=main_sha value=2d4651a7 -->
+Auf `origin/main` (`2d4651a7`, Stand 2026-08-02) sind die juengsten relevanten Merge-Cluster u. a.:
 
-- **Multitask-Welle [#4238](https://github.com/jannekbuengener/Claire_de_Binare/pull/4238)–[#4241](https://github.com/jannekbuengener/Claire_de_Binare/pull/4241):** Evidence-harvester Test-Isolation, Dockerfile Discovery Guard, TLS-Overlay Quarantine, Regime Offline-UNKNOWN — Tip `eddcd1bc`.
+- **Validation Pilot Spec ([#4272](https://github.com/jannekbuengener/Claire_de_Binare/issues/4272) / PR [#4292](https://github.com/jannekbuengener/Claire_de_Binare/pull/4292)):** **MERGED** — Three-candidate pilot specification on tip `2d4651a7`.
+- **Multitask-Welle [#4238](https://github.com/jannekbuengener/Claire_de_Binare/pull/4238)–[#4241](https://github.com/jannekbuengener/Claire_de_Binare/pull/4241):** Evidence-harvester Test-Isolation, Dockerfile Discovery Guard, TLS-Overlay Quarantine, Regime Offline-UNKNOWN (prior cluster; no longer tip).
 - **Fast-CI Slice Gates ([#4204](https://github.com/jannekbuengener/Claire_de_Binare/issues/4204) / PR [#4236](https://github.com/jannekbuengener/Claire_de_Binare/pull/4236)):** **CLOSED/MERGED** — Versionierte Slice-Policy, fail-closed unbekannte Pfade, Timing-Evidence.
 - **PR-Router Live-Konventionen ([#4228](https://github.com/jannekbuengener/Claire_de_Binare/issues/4228) / PR [#4231](https://github.com/jannekbuengener/Claire_de_Binare/pull/4231)):** **CLOSED/MERGED** — Policy/Matcher an reale Titel-Token und `scope:*`/`type:*` Labels angeglichen.
 - **PR-Acceptance Skill Family ([#4211](https://github.com/jannekbuengener/Claire_de_Binare/pull/4211) / [#4216](https://github.com/jannekbuengener/Claire_de_Binare/pull/4216)):** Wiring-Audit, Gap-Classifier, Completeness-Review und Batch-Merge-Conductor.
