@@ -26,7 +26,6 @@ from core.replay.dataset_provider import (
 )
 from core.replay.dataset_spec import DatasetSpec, DatasetSpecError
 
-
 # ---------------------------------------------------------------------------
 # Helpers
 # ---------------------------------------------------------------------------
@@ -135,7 +134,9 @@ def test_start_greater_than_end_rejected() -> None:
 
 @pytest.mark.unit
 def test_start_equals_end_accepted() -> None:
-    spec = _make_spec(start_ts_ms=_BASE_START_MS, end_ts_ms=_BASE_START_MS, warmup_candles=0)
+    spec = _make_spec(
+        start_ts_ms=_BASE_START_MS, end_ts_ms=_BASE_START_MS, warmup_candles=0
+    )
     spec.validate()
 
 
@@ -249,6 +250,10 @@ def test_file_backed_loads_json_array(tmp_path: object) -> None:
     assert result.warmup_count == 3
     assert result.effective_candle_count == 7
     assert result.fingerprint == spec.fingerprint()
+    assert result.request_fingerprint == spec.fingerprint()
+    assert result.content_fingerprint is not None
+    assert len(result.content_fingerprint) == 64
+    assert result.content_fingerprint != result.request_fingerprint
     assert result.spec is spec
 
 
@@ -372,7 +377,9 @@ def test_file_backed_missing_ts_ms_field_raises(tmp_path: object) -> None:
 def test_file_backed_duplicate_ts_ms_raises(tmp_path: object) -> None:
     """Duplicate ts_ms values violate strictly-increasing invariant."""
     candles = _make_candles(5)
-    candles[3]["ts_ms"] = candles[2]["ts_ms"]  # make [3] == [2], not strictly increasing
+    candles[3]["ts_ms"] = candles[2][
+        "ts_ms"
+    ]  # make [3] == [2], not strictly increasing
     f = tmp_path / "data.json"
     f.write_text(json.dumps(candles), encoding="utf-8")
     spec = _make_spec(file_path=str(f))
@@ -439,7 +446,10 @@ def test_file_backed_null_required_field_raises(tmp_path: object) -> None:
 @pytest.mark.unit
 def test_file_backed_array_element_not_dict_raises(tmp_path: object) -> None:
     """JSON array containing a non-object element → DatasetLoadError (fail-closed)."""
-    data = [{"ts_ms": _BASE_START_MS, "high": 50000.0, "low": 49000.0, "close": 49500.0}, 42]
+    data = [
+        {"ts_ms": _BASE_START_MS, "high": 50000.0, "low": 49000.0, "close": 49500.0},
+        42,
+    ]
     f = tmp_path / "data.json"
     f.write_text(json.dumps(data), encoding="utf-8")
     spec = _make_spec(file_path=str(f))
@@ -492,6 +502,10 @@ def test_db_backed_valid_rows_returns_dataset_result() -> None:
     assert result.warmup_count == _DB_WARMUP
     assert result.effective_candle_count == 14 - _DB_WARMUP
     assert len(result.candles) == 14
+    assert result.request_fingerprint == spec.fingerprint()
+    assert result.fingerprint == result.request_fingerprint
+    assert result.content_fingerprint is not None
+    assert result.content_fingerprint != result.request_fingerprint
 
 
 @pytest.mark.unit
@@ -583,7 +597,9 @@ def test_db_backed_ts_ms_is_int() -> None:
     spec = _make_db_spec()
     result = DBBackedDatasetProvider(conn).load(spec)
     for candle in result.candles:
-        assert isinstance(candle["ts_ms"], int), f"Expected int, got {type(candle['ts_ms'])}"
+        assert isinstance(
+            candle["ts_ms"], int
+        ), f"Expected int, got {type(candle['ts_ms'])}"
 
 
 @pytest.mark.unit
@@ -595,9 +611,9 @@ def test_db_backed_price_fields_are_decimal() -> None:
     result = DBBackedDatasetProvider(conn).load(spec)
     for candle in result.candles:
         for field in ("open", "high", "low", "close", "volume"):
-            assert isinstance(candle[field], Decimal), (
-                f"Field {field!r} expected Decimal, got {type(candle[field])}"
-            )
+            assert isinstance(
+                candle[field], Decimal
+            ), f"Field {field!r} expected Decimal, got {type(candle[field])}"
 
 
 @pytest.mark.unit
@@ -631,4 +647,3 @@ def test_db_backed_db_exception_raises_dataset_load_error() -> None:
     spec = _make_db_spec()
     with pytest.raises(DatasetLoadError, match="DB query failed"):
         DBBackedDatasetProvider(conn).load(spec)
-
