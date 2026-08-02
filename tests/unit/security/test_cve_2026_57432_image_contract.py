@@ -78,16 +78,20 @@ def test_scope_dockerfiles_still_run_apt_upgrade(dockerfile: Path) -> None:
 
 
 def test_cve_is_not_silenced_by_trivyignore() -> None:
-    text = TRIVYIGNORE_FILE.read_text(encoding="utf-8") if TRIVYIGNORE_FILE.exists() else ""
+    text = (
+        TRIVYIGNORE_FILE.read_text(encoding="utf-8")
+        if TRIVYIGNORE_FILE.exists()
+        else ""
+    )
     entries = [
         line.strip()
         for line in text.splitlines()
         if line.strip() and not line.strip().startswith("#")
     ]
     silenced = [entry for entry in entries if CVE_ID in entry or PACKAGE in entry]
-    assert silenced == [], (
-        f"{CVE_ID} / {PACKAGE} must not be ignored in .trivyignore: {silenced}"
-    )
+    assert (
+        silenced == []
+    ), f"{CVE_ID} / {PACKAGE} must not be ignored in .trivyignore: {silenced}"
 
 
 def test_upstream_hold_evidence_documents_required_fields() -> None:
