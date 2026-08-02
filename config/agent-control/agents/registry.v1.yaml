@@ -91,6 +91,37 @@ agents:
       database_mutation: false
       mcp_live_mutation: false
 
+  - agent_id: acp-e2e-pilot
+    version: "1.0.0"
+    enabled: true
+    description: >
+      Mock-first ACP E2E foundation pilot agent for #4258. Uses MockProvider only;
+      environment mock-pilot.v1 for timeout attenuation. Never live-dispatches.
+      Does not close #4258 (Live-Cursor rest remains open).
+    execution_contract_profile: delivery_safe.v1
+    provider_profile: mock.v1
+    environment_profile: mock-pilot.v1
+    skills:
+      - session_core.v1
+    mcp_profiles:
+      - none.v1
+    subagents: []
+    labels_or_routing_selectors:
+      lane: agent-skills
+      batch_key: agent-skills
+      role: e2e-pilot
+      objective: issue-4258
+    depends_on:
+      - acp-mock-dispatcher
+    permission_overrides:
+      merge: false
+      publish_cdb_local_ci: false
+      close_issue: false
+      open_pr: false
+      runtime_mutation: false
+      database_mutation: false
+      mcp_live_mutation: false
+
   - agent_id: acp-cursor-sdk-adapter
     version: "1.0.0"
     enabled: true

@@ -1,0 +1,44 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "cdb.agent_control_pilot_manifest.v1",
+  "title": "CDB Agent Control Pilot Manifest v1",
+  "type": "object",
+  "additionalProperties": true,
+  "required": [
+    "schema_id",
+    "schema_version",
+    "pilot_id",
+    "scenario_id",
+    "agent_id",
+    "contract_path",
+    "head_sha"
+  ],
+  "properties": {
+    "schema_id": { "const": "cdb.agent_control_pilot_manifest.v1" },
+    "schema_version": { "type": "string", "const": "1.0.0" },
+    "pilot_id": { "type": "string" },
+    "scenario_id": { "type": "string" },
+    "agent_id": { "type": "string" },
+    "contract_path": { "type": "string" },
+    "registry_root": { "type": "string" },
+    "head_sha": { "type": "string", "pattern": "^[a-f0-9]{40}$" },
+    "base_sha": { "type": "string", "pattern": "^[a-f0-9]{40}$" },
+    "approval_snapshot_path": { "type": "string" },
+    "provider": {
+      "type": "object",
+      "properties": {
+        "scenario": { "type": "string" },
+        "expect_call_count": { "type": "integer", "minimum": 0 }
+      }
+    },
+    "expect_final_status": {
+      "type": "string",
+      "enum": ["PASS", "HOLD", "BLOCKED", "FAIL", "UNKNOWN"]
+    },
+    "expect_approval_recommendation": { "type": "string" },
+    "force_approval_head_from_manifest": { "type": "boolean" },
+    "require_head_match": { "type": "boolean" },
+    "skip_approval": { "type": "boolean" },
+    "skip_evidence": { "type": "boolean" }
+  }
+}

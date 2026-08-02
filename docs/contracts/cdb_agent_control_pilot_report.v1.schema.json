@@ -1,0 +1,126 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "cdb.agent_control_pilot_report.v1",
+  "title": "CDB Agent Control Pilot Report v1",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "schema_id",
+    "schema_version",
+    "pilot_id",
+    "scenario_id",
+    "subject",
+    "contract_versions",
+    "head_sha",
+    "input_digests",
+    "step_results",
+    "provider_call_count",
+    "run_evidence_refs",
+    "authority_limits",
+    "final_status",
+    "limitations",
+    "report_digest",
+    "integrity"
+  ],
+  "properties": {
+    "schema_id": { "const": "cdb.agent_control_pilot_report.v1" },
+    "schema_version": { "type": "string", "const": "1.0.0" },
+    "pilot_id": { "type": "string", "minLength": 1 },
+    "scenario_id": { "type": "string", "minLength": 1 },
+    "subject": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["head_sha", "issue"],
+      "properties": {
+        "head_sha": { "type": "string", "pattern": "^[a-f0-9]{40}$" },
+        "base_sha": { "type": ["string", "null"], "pattern": "^[a-f0-9]{40}$" },
+        "issue": { "type": "integer", "const": 4258 },
+        "pr_number": { "type": ["integer", "null"] }
+      }
+    },
+    "contract_versions": {
+      "type": "object",
+      "additionalProperties": { "type": "string" }
+    },
+    "run_id": { "type": ["string", "null"] },
+    "attempt": { "type": ["integer", "null"] },
+    "head_sha": { "type": "string", "pattern": "^[a-f0-9]{40}$" },
+    "input_digests": { "type": "object" },
+    "step_results": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "required": ["step", "status"],
+        "properties": {
+          "step": { "type": "string" },
+          "status": {
+            "type": "string",
+            "enum": ["PASS", "HOLD", "BLOCKED", "FAIL", "UNKNOWN", "SKIP"]
+          },
+          "detail": { "type": "object" }
+        },
+        "additionalProperties": false
+      }
+    },
+    "provider_call_count": { "type": "integer", "minimum": 0 },
+    "run_evidence_refs": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "properties": {
+          "evidence_id": { "type": "string" },
+          "bundle_digest": { "type": "string" },
+          "verdict": { "type": "string" }
+        },
+        "additionalProperties": true
+      }
+    },
+    "approval_context_digest": { "type": ["string", "null"] },
+    "approval_recommendation": { "type": ["string", "null"] },
+    "authority_limits": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "merge",
+        "publish_cdb_local_ci",
+        "modify_branch_protection",
+        "modify_rulesets",
+        "execute_live_agent",
+        "live_go",
+        "real_money_go",
+        "close_issue"
+      ],
+      "properties": {
+        "merge": { "const": false },
+        "publish_cdb_local_ci": { "const": false },
+        "modify_branch_protection": { "const": false },
+        "modify_rulesets": { "const": false },
+        "execute_live_agent": { "const": false },
+        "live_go": { "const": false },
+        "real_money_go": { "const": false },
+        "close_issue": { "const": false }
+      }
+    },
+    "final_status": {
+      "type": "string",
+      "enum": ["PASS", "HOLD", "BLOCKED", "FAIL", "UNKNOWN"]
+    },
+    "limitations": {
+      "type": "array",
+      "items": { "type": "string" }
+    },
+    "report_digest": { "type": "string", "pattern": "^sha256:[a-f0-9]{64}$" },
+    "integrity": {
+      "type": "object",
+      "required": ["digest"],
+      "properties": {
+        "canonicalization": { "type": "string" },
+        "digest": { "type": "string" },
+        "digest_algorithm": { "type": "string" },
+        "digest_encoding": { "type": "string" }
+      },
+      "additionalProperties": false
+    },
+    "metadata": { "type": "object" }
+  }
+}

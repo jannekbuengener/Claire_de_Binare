@@ -16,6 +16,8 @@ Examples:
   python -m tools.agent_control evidence show --run <ID> --store <JSONL>
   python -m tools.agent_control approval context --pr <N> --snapshot <PATH>
   python -m tools.agent_control approval drift --baseline <PATH>
+  python -m tools.agent_control pilot run --manifest <PATH> [--out <REPORT>]
+  python -m tools.agent_control pilot verify --report <PATH>
 """
 
 from __future__ import annotations
@@ -529,6 +531,55 @@ def cmd_provider_archive(args: argparse.Namespace) -> int:
     return 1
 
 
+def cmd_pilot_run(args: argparse.Namespace) -> int:
+    """Run mock-first ACP foundation pilot; never closes issues or live-dispatches."""
+    from tools.agent_control.paths import REPO_ROOT
+    from tools.agent_control.pilot import PilotError, run_pilot_from_path
+    from tools.agent_control.pilot_report import PilotReportError
+
+    try:
+        root = Path(args.repo_root) if args.repo_root else REPO_ROOT
+        out = Path(args.out) if args.out else None
+        report = run_pilot_from_path(Path(args.manifest), repo_root=root, out_path=out)
+    except (PilotError, PilotReportError, AgentControlError) as exc:
+        print(f"INVALID {exc.code}: {exc.message}", file=sys.stderr)
+        return EXIT_ERROR
+    except (OSError, json.JSONDecodeError) as exc:
+        print(f"INVALID PILOT_IO: {exc}", file=sys.stderr)
+        return EXIT_ERROR
+    _print_json(report)
+    status = str(report.get("final_status"))
+    if status == "PASS":
+        return EXIT_OK
+    if status == "BLOCKED":
+        return EXIT_BLOCKED
+    if status == "HOLD":
+        return EXIT_HOLD
+    if status == "UNKNOWN":
+        return EXIT_UNKNOWN
+    return EXIT_ERROR
+
+
+def cmd_pilot_verify(args: argparse.Namespace) -> int:
+    from tools.agent_control.pilot_report import PilotReportError, verify_report
+
+    try:
+        report = _load_json(Path(args.report))
+        if not isinstance(report, dict):
+            raise PilotReportError(
+                "PILOT_REPORT_TYPE_INVALID", "report must be a JSON object"
+            )
+        result = verify_report(report)
+    except (PilotReportError, AgentControlError) as exc:
+        print(f"INVALID {exc.code}: {exc.message}", file=sys.stderr)
+        return EXIT_ERROR
+    except (OSError, json.JSONDecodeError) as exc:
+        print(f"INVALID PILOT_IO: {exc}", file=sys.stderr)
+        return EXIT_ERROR
+    _print_json(result)
+    return EXIT_OK
+
+
 def _approval_exit_code(recommendation: str) -> int:
     if recommendation == "APPROVE_RECOMMENDED":
         return EXIT_OK
@@ -934,6 +985,32 @@ def build_parser() -> argparse.ArgumentParser:
     p_appr_drift.add_argument("--config", default=str(DEFAULT_CONFIG_ROOT))
     p_appr_drift.add_argument("--output", help="Optional output path (else stdout)")
     p_appr_drift.set_defaults(func=cmd_approval_drift)
+
+    pilot = sub.add_parser(
+        "pilot",
+        help="Mock-first ACP E2E foundation pilot (#4258; Refs only, not Closes)",
+    )
+    pilot_sub = pilot.add_subparsers(dest="pilot_command", required=True)
+
+    p_pilot_run = pilot_sub.add_parser(
+        "run",
+        help="Run fixture/mock-first ACP chain and emit pilot report",
+    )
+    p_pilot_run.add_argument("--manifest", required=True)
+    p_pilot_run.add_argument("--out", help="Optional report output path")
+    p_pilot_run.add_argument(
+        "--repo-root",
+        default=None,
+        help="Optional repo root (defaults to package REPO_ROOT)",
+    )
+    p_pilot_run.set_defaults(func=cmd_pilot_run)
+
+    p_pilot_verify = pilot_sub.add_parser(
+        "verify",
+        help="Verify a pilot report digest + authority limits",
+    )
+    p_pilot_verify.add_argument("--report", required=True)
+    p_pilot_verify.set_defaults(func=cmd_pilot_verify)
 
     return parser
 

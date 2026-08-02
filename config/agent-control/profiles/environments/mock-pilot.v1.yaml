@@ -1,0 +1,23 @@
+profile_id: mock-pilot.v1
+profile_version: "1.0.0"
+description: >
+  Deterministic mock environment for ACP E2E foundation pilot (#4258).
+  Restrictive run_timeout_seconds enables attenuation proof (N2).
+  No live Cursor, no network, no secrets.
+runtime_class: mock
+execution_limits:
+  setup_timeout_seconds: 60
+  run_timeout_seconds: 120
+  cancel_confirmation_required: true
+network_policy:
+  mode: deny_all
+  allowed_classes: []
+  allowed_domains: []
+secret_policy:
+  allowed_classes: []
+  workload_secrets: none
+  inject_cursor_api_key: false
+cost_limit:
+  max_live_cost_usd: 0
+  unknown_cost_blocks_live: true
+  enforcement_required: true

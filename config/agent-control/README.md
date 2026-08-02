@@ -39,6 +39,9 @@ python -m tools.agent_control environment doctor --profile cdb-agent-skills.v1 \
 python -m tools.agent_control approval context --pr <N> --snapshot <SNAPSHOT.json>
 python -m tools.agent_control approval drift \
   --baseline config/agent-control/capability-baselines/approval-dashboard-export.redacted.v1.json
+python -m tools.agent_control pilot run \
+  --manifest tests/fixtures/agent_control/pilot/p1_pass.manifest.json
+python -m tools.agent_control pilot verify --report <REPORT.json>
 ```
 
 Approval context (`#4257`): schema
@@ -53,14 +56,17 @@ source files).
 and live Cursor dispatch are forbidden. Mock execute is test-only
 (`--execute --allow-mock-dispatch`). Cursor adapters are constructible offline /
 with injected fake transports only. Registry agents:
-`acp-mock-dispatcher` (`#4253`), `acp-cursor-sdk-adapter` (`#4254`/`#4255`,
+`acp-mock-dispatcher` (`#4253`), `acp-e2e-pilot` (`#4258` foundation,
+`mock` + `mock-pilot.v1`), `acp-cursor-sdk-adapter` (`#4254`/`#4255`,
 `live_dispatch: false`, environment `cdb-agent-skills.v1`).
 
 Governed environment profiles (`#4255`):
 `cdb-docs-readonly.v1`, `cdb-agent-skills.v1`, `cdb-python-fast.v1`,
 `cdb-ci-debug.v1`, `cdb-validation-research.v1`,
-`cdb-runtime-risk-restricted.v1`. Cursor config: `.cursor/environment.json`.
-Evidence bundle remains `#4256`; approval `#4257`; live pilot `#4258`.
+`cdb-runtime-risk-restricted.v1`, plus `mock-pilot.v1` for the `#4258`
+foundation pilot. Cursor config: `.cursor/environment.json`.
+Evidence bundle remains `#4256`; approval `#4257`; mock-first foundation pilot
+CLI is `#4258` (`Refs` only — Live Cursor rest keeps the issue open).
 
 ## Schema
 
