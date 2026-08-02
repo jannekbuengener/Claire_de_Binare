@@ -13,5 +13,5 @@ relations:
 
 ## Key entrypoints
 *   [Knowledge hub (knowledge/CDB_KNOWLEDGE_HUB.md)](../CDB_KNOWLEDGE_HUB.md)
-*   [Runbooks (knowledge/runbooks/)](../runbooks/)
+*   [Runbooks (knowledge/runbooks/)](../runbooks/README.md)
 *   [Control register (docs/runbooks/CONTROL_REGISTER.md)](../../docs/runbooks/CONTROL_REGISTER.md)

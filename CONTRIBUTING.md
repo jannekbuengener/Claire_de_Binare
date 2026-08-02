@@ -36,6 +36,15 @@ explicit canon entry points listed in
   paths inside code blocks.
 - Prefer a small `## Navigation` block where a README is an area index (adapt
   links to directory depth; no blind copy-paste).
+- When a link means an **area entry** (understand this tree), target the local
+  `README.md` — not the bare folder. The visible label may still show the
+  folder path (e.g. `` [`services/risk/`](services/risk/README.md) ``). Do not
+  use dual links (folder link + separate README link) for the same area.
+- Direct file links remain correct when that specific file is the intended
+  target (canon, SSOT, contract, runbook, tool, config, machine-readable entry).
+- Established `index.md` hubs listed in
+  [`docs/meta/REPOSITORY_CANON.md`](docs/meta/REPOSITORY_CANON.md)
+  § Area Entry Link Rule remain valid exceptions.
 - Archive trees (`docs/archive/`, `knowledge/archive/`) and fixture paths are
   classified out of the README link guard — see
   [`tests/fixtures/readme_link_policy.yaml`](tests/fixtures/readme_link_policy.yaml).
@@ -47,8 +56,11 @@ make readme-links-guard      # active README.md + explicit canon entry points (#
 make onboarding-docs-guard   # onboarding front-door surfaces (#3233)
 ```
 
+The link-existence guard does **not** yet enforce Area Entry Link preference;
+Canon defines the contract, automatic enforcement follows later (Slice S7).
+
 See also [`docs/meta/REPOSITORY_CANON.md`](docs/meta/REPOSITORY_CANON.md)
-(README vs. `docs/index.md` navigation rule).
+(README vs. `index.md` navigation rule; Area Entry Link Rule).
 
 ### Local Setup
 

@@ -12,7 +12,7 @@ Security triage, CodeQL/Trivy readouts, und Alert-Inventar — **kein** Live-Go-
 
 ## Readouts
 
-- [`readouts/`](readouts/) — dated security-alert readout snapshots (e.g. 2026-05-05, 2026-05-10)
+- [`readouts/`](readouts/README.md) — dated security-alert readout snapshots (e.g. 2026-05-05, 2026-05-10)
 
 ## GitHub epic
 

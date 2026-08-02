@@ -32,7 +32,7 @@ Makefile-Helfer (wenn Stack läuft): `make paper-trading-start` / `make paper-tr
 
 - [`service.py`](service.py)
 - [`knowledge/systems/PAPER_TRADING_ARCHITECTURE.md`](../../knowledge/systems/PAPER_TRADING_ARCHITECTURE.md)
-- [`knowledge/operating_rules/`](../../knowledge/operating_rules/)
+- [`knowledge/operating_rules/`](../../knowledge/operating_rules/README.md)
 - [`services/risk/README.md`](../../services/risk/README.md)
 
 ## SSOT boundary

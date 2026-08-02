@@ -62,7 +62,7 @@ Stage `trade-capable` autorisiert kein Live-Trading.
 
 ## Evidence
 
-- [`evidence/`](evidence/) — Run-scoped Evidence (z. B. SurrealDB restore drill); kein Status-SSOT.
+- [`evidence/`](evidence/README.md) — Run-scoped Evidence (z. B. SurrealDB restore drill); kein Status-SSOT.
 
 ## Related
 

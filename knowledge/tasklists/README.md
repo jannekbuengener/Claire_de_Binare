@@ -8,7 +8,7 @@ Structured task lists and execution handoffs for knowledge-domain work.
 
 ## Key entrypoints
 *   [Knowledge hub (knowledge/CDB_KNOWLEDGE_HUB.md)](../CDB_KNOWLEDGE_HUB.md)
-*   [Agent tasklists (agents/tasklists/)](../../agents/tasklists/)
+*   [Agent tasklists (agents/tasklists/)](../../agents/tasklists/README.md)
 *   [Engineering ledger (CURRENT_STATUS.md)](../../CURRENT_STATUS.md)
 
 ## SSOT boundary
