@@ -118,6 +118,12 @@ def validate_artifact_path(path: str) -> str:
     return text
 
 
+def _pr_url_matches_target(pr_url: str, contract_target_pr: int) -> bool:
+    """Match the complete pull-request path segment (avoid /12 matching /123)."""
+    pattern = re.compile(rf"(?:^|/)pull/{int(contract_target_pr)}(?:/|$|[?#])")
+    return pattern.search(pr_url) is not None
+
+
 def guard_cloud_route_binding(
     *,
     auto_create_pr: bool,
@@ -137,11 +143,8 @@ def guard_cloud_route_binding(
                 "PROVIDER_ROUTE_BINDING_MISSING",
                 "workOnCurrentBranch requires bound target PR/branch/prUrl",
             )
-        # prUrl must reference the contract target PR number.
-        if (
-            f"/{contract_target_pr}" not in pr_url
-            and f"pull/{contract_target_pr}" not in pr_url
-        ):
+        # prUrl must reference the exact contract target PR number.
+        if not _pr_url_matches_target(pr_url, int(contract_target_pr)):
             raise DispatchError(
                 "PROVIDER_ROUTE_TARGET_CONFLICT",
                 "prUrl does not match contract target_pr",

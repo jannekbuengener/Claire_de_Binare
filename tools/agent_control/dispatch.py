@@ -31,6 +31,13 @@ ALLOWED_DELIVERY_STATUSES = frozenset(
     }
 )
 
+CREATE_ROUTE_DECISIONS = frozenset(
+    {
+        "CREATE_NEW_BATCH_PR",
+        "CREATE_DEDICATED_PR",
+    }
+)
+
 
 def _persist_evidence_bindings(
     record: dict[str, Any],
@@ -177,14 +184,19 @@ def build_dry_run_plan(
 def _delivery_target(contract: dict[str, Any]) -> dict[str, Any]:
     scope = contract.get("execution_scope") or {}
     target = scope.get("delivery_target") or {}
+    route = contract.get("route") or {}
     return {
-        "target_pr": target.get("target_pr")
-        or (contract.get("route") or {}).get("target_pr"),
-        "target_branch": target.get("target_branch")
-        or (contract.get("route") or {}).get("target_branch"),
+        "target_pr": target.get("target_pr") or route.get("target_pr"),
+        "target_branch": target.get("target_branch") or route.get("target_branch"),
         "expected_status": target.get("expected_status")
         or "DONE_SLICE_ADDED_TO_BATCH_PR",
+        "routing_decision": route.get("routing_decision"),
     }
+
+
+def _expected_delivery_from_contract(contract: dict[str, Any]) -> dict[str, Any]:
+    """Contract-sealed delivery expectations (not a fabricated receipt)."""
+    return deepcopy(_delivery_target(contract))
 
 
 def _validate_delivery_receipt(
@@ -196,12 +208,29 @@ def _validate_delivery_receipt(
             "DELIVERED requires a validated delivery receipt",
         )
     target = _delivery_target(contract)
-    if receipt.get("target_pr") != target.get("target_pr"):
+    routing = target.get("routing_decision")
+    contract_pr = target.get("target_pr")
+    receipt_pr = receipt.get("target_pr")
+    if routing in CREATE_ROUTE_DECISIONS and contract_pr is None:
+        if not isinstance(receipt_pr, int) or int(receipt_pr) <= 0:
+            raise DispatchError(
+                "DISPATCH_DELIVERY_RECEIPT_MISMATCH",
+                "create route requires observed positive target_pr on receipt",
+            )
+    elif receipt_pr != contract_pr:
         raise DispatchError(
             "DISPATCH_DELIVERY_RECEIPT_MISMATCH",
             "delivery receipt target_pr does not match contract",
         )
-    if receipt.get("target_branch") != target.get("target_branch"):
+    contract_branch = target.get("target_branch")
+    receipt_branch = receipt.get("target_branch")
+    if routing in CREATE_ROUTE_DECISIONS and not contract_branch:
+        if not isinstance(receipt_branch, str) or not receipt_branch.strip():
+            raise DispatchError(
+                "DISPATCH_DELIVERY_RECEIPT_MISMATCH",
+                "create route requires observed target_branch on receipt",
+            )
+    elif receipt_branch != contract_branch:
         raise DispatchError(
             "DISPATCH_DELIVERY_RECEIPT_MISMATCH",
             "delivery receipt target_branch does not match contract",
@@ -218,10 +247,11 @@ def _validate_delivery_receipt(
             "DISPATCH_DELIVERY_STATUS_MISMATCH",
             f"delivery_status {status!r} != expected {expected!r}",
         )
-    if not receipt.get("commit"):
+    commit = receipt.get("commit")
+    if not isinstance(commit, str) or not commit or commit == ("0" * 40):
         raise DispatchError(
             "DISPATCH_DELIVERY_RECEIPT_INCOMPLETE",
-            "delivery receipt requires commit",
+            "delivery receipt requires a non-fabricated observed commit",
         )
 
 
@@ -371,13 +401,7 @@ def dispatch_run(
 
     at = _iso(clock)
     rid = run_id or _new_run_id()
-    target = _delivery_target(pf.contract)
-    receipt = {
-        "target_pr": target["target_pr"],
-        "target_branch": target["target_branch"],
-        "commit": "0" * 40,
-        "delivery_status": target["expected_status"],
-    }
+    expected_delivery = _expected_delivery_from_contract(pf.contract)
     record: dict[str, Any] = {
         "schema_id": "cdb.agent_dispatch_run.v1",
         "schema_version": "1.0.0",
@@ -396,6 +420,7 @@ def dispatch_run(
             "lane": pf.route.get("lane") if pf.route else None,
             "batch_key": pf.route.get("batch_key") if pf.route else None,
         },
+        "expected_delivery": expected_delivery,
         "agent_id": agent_id,
         "provider_id": pf.provider_id,
         "provider_run_id": None,
@@ -443,7 +468,8 @@ def dispatch_run(
         contract_digest=pf.contract_digest,
         agent_id=agent_id,
         scenario=scenario,
-        delivery_receipt=receipt,
+        delivery_receipt=None,
+        delivery_expectations=deepcopy(expected_delivery),
         idempotency_key=idem,
         provider_id=pf.provider_id,
         provider_profile=deepcopy(pf.provider_profile or {}),
@@ -591,13 +617,17 @@ def watch_run(
                 contract_digest=record["contract_digest"],
                 agent_id=record["agent_id"],
                 scenario=record.get("scenario") or "success",
-                delivery_receipt=record.get("delivery_receipt")
-                or {
-                    "target_pr": record["route"].get("target_pr"),
-                    "target_branch": record["route"].get("target_branch"),
-                    "commit": "0" * 40,
-                    "delivery_status": "DONE_SLICE_ADDED_TO_BATCH_PR",
-                },
+                delivery_receipt=None,
+                delivery_expectations=deepcopy(
+                    record.get("expected_delivery")
+                    or {
+                        "target_pr": record["route"].get("target_pr"),
+                        "target_branch": record["route"].get("target_branch"),
+                        "expected_status": "DONE_SLICE_ADDED_TO_BATCH_PR",
+                        "routing_decision": record["route"].get("routing_decision"),
+                    }
+                ),
+                route=deepcopy(record.get("route") or {}),
             )
             active.dispatch(seeded)
             internal = active._runs[provider_run_id]  # noqa: SLF001
@@ -735,14 +765,22 @@ def watch_run(
             assert record is not None
 
         receipt = result.delivery_receipt or record.get("delivery_receipt")
-        # Reconstruct minimal contract surface for receipt validation.
+        expected = record.get("expected_delivery") or {}
+        # Reconstruct contract surface from sealed expectations — never from
+        # the provider-reported delivery_status (avoids tautological checks).
         contract_surface = {
-            "route": record["route"],
+            "route": {
+                **(record.get("route") or {}),
+                "routing_decision": expected.get("routing_decision")
+                or (record.get("route") or {}).get("routing_decision"),
+                "target_pr": expected.get("target_pr"),
+                "target_branch": expected.get("target_branch"),
+            },
             "execution_scope": {
                 "delivery_target": {
-                    "target_pr": record["route"].get("target_pr"),
-                    "target_branch": record["route"].get("target_branch"),
-                    "expected_status": (receipt or {}).get("delivery_status")
+                    "target_pr": expected.get("target_pr"),
+                    "target_branch": expected.get("target_branch"),
+                    "expected_status": expected.get("expected_status")
                     or "DONE_SLICE_ADDED_TO_BATCH_PR",
                 }
             },

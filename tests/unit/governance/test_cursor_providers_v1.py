@@ -307,6 +307,47 @@ def test_cloud_fake_http_sse_and_guards() -> None:
 
 
 @pytest.mark.unit
+def test_pr_url_matches_complete_pull_segment_only() -> None:
+    """P2: /pull/12 must not match /pull/123 via substring."""
+    from tools.agent_control.providers.cursor_common import _pr_url_matches_target
+
+    assert _pr_url_matches_target(
+        "https://github.com/jannekbuengener/Claire_de_Binare/pull/12", 12
+    )
+    assert not _pr_url_matches_target(
+        "https://github.com/jannekbuengener/Claire_de_Binare/pull/123", 12
+    )
+    with pytest.raises(DispatchError) as exc:
+        guard_cloud_route_binding(
+            auto_create_pr=False,
+            work_on_current_branch=True,
+            pr_url="https://github.com/o/r/pull/123",
+            contract_target_pr=12,
+            contract_target_branch="feat/x",
+        )
+    assert exc.value.code == "PROVIDER_ROUTE_TARGET_CONFLICT"
+
+
+@pytest.mark.unit
+def test_forbidden_paths_reject_prompt_ref() -> None:
+    """P2: prompt_ref matching forbidden_paths must fail even if under allowed/**."""
+    contract = _work_order_contract()
+    scope = contract["execution_scope"]
+    scope["allowed_paths"] = ["docs/**", "docs/contracts/**"]
+    scope["forbidden_paths"] = ["docs/contracts/secret.md"]
+    contract["provider_work_order"]["prompt_ref"] = "docs/contracts/secret.md"
+    with pytest.raises(ContractValidationError) as exc:
+        verify_provider_work_order(
+            contract,
+            provider_id="cursor-sdk",
+            repo_root=REPO,
+            verify_content=False,
+        )
+    assert exc.value.code == "CONTRACT_PROVIDER_WORK_ORDER_PATH"
+    assert "forbidden" in str(exc.value).lower() or "forbidden" in exc.value.message
+
+
+@pytest.mark.unit
 def test_artifact_traversal_and_secret_sanitize() -> None:
     with pytest.raises(DispatchError):
         validate_artifact_path("../secret.txt")

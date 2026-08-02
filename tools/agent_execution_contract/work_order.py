@@ -21,11 +21,11 @@ def compute_prompt_digest(text: str) -> str:
     return f"{DIGEST_PREFIX}{digest}"
 
 
-def _path_allowed(prompt_ref: str, allowed_paths: list[str]) -> bool:
-    if not allowed_paths:
+def _path_matches(prompt_ref: str, patterns: list[str]) -> bool:
+    if not patterns:
         return False
     normalized = normalize_repo_relative_path(prompt_ref)
-    for raw in allowed_paths:
+    for raw in patterns:
         path = str(raw)
         if path.endswith("/**"):
             prefix = path[:-3]
@@ -43,6 +43,14 @@ def _path_allowed(prompt_ref: str, allowed_paths: list[str]) -> bool:
         elif normalized == path or normalized.startswith(path.rstrip("/") + "/"):
             return True
     return False
+
+
+def _path_allowed(prompt_ref: str, allowed_paths: list[str]) -> bool:
+    return _path_matches(prompt_ref, allowed_paths)
+
+
+def _path_forbidden(prompt_ref: str, forbidden_paths: list[str]) -> bool:
+    return _path_matches(prompt_ref, forbidden_paths)
 
 
 def load_prompt_at_commit(
@@ -105,7 +113,14 @@ def verify_provider_work_order(
             "CONTRACT_PROVIDER_WORK_ORDER_INVALID",
             "prompt_digest must use sha256:<64-hex>",
         )
-    allowed = list((contract.get("execution_scope") or {}).get("allowed_paths") or [])
+    scope = contract.get("execution_scope") or {}
+    allowed = list(scope.get("allowed_paths") or [])
+    forbidden = list(scope.get("forbidden_paths") or [])
+    if _path_forbidden(prompt_ref, forbidden):
+        raise ContractValidationError(
+            "CONTRACT_PROVIDER_WORK_ORDER_PATH",
+            f"prompt_ref {prompt_ref!r} matches forbidden_paths",
+        )
     if not _path_allowed(prompt_ref, allowed):
         raise ContractValidationError(
             "CONTRACT_PROVIDER_WORK_ORDER_PATH",

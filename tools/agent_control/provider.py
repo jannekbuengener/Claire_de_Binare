@@ -38,6 +38,8 @@ class ProviderRequest:
     agent_id: str
     scenario: str = "success"
     delivery_receipt: dict[str, Any] | None = None
+    # Contract-sealed expectations only — never a fabricated success receipt.
+    delivery_expectations: dict[str, Any] | None = None
     cancel_reason: str | None = None
     # #4254 envelope fields (additive; mock may omit)
     idempotency_key: str | None = None
@@ -59,6 +61,51 @@ class ProviderRequest:
     provider_environment_config_digest: str | None = None
     environment_preflight_verdict: str | None = None
     effective_environment_constraints: dict[str, Any] | None = None
+
+
+CREATE_ROUTE_DECISIONS = frozenset(
+    {
+        "CREATE_NEW_BATCH_PR",
+        "CREATE_DEDICATED_PR",
+    }
+)
+
+
+def synthesize_mock_observed_receipt(request: ProviderRequest) -> dict[str, Any]:
+    """Build a mock-observed receipt from expectations + deterministic observation.
+
+    The dispatcher must never pre-seal commit/status into ``delivery_receipt``.
+    Mock observation still binds to sealed expectations for status matching.
+    """
+    expectations = deepcopy(request.delivery_expectations or {})
+    route = request.route or {}
+    routing = expectations.get("routing_decision") or route.get("routing_decision")
+    target_pr = expectations.get("target_pr")
+    if target_pr is None:
+        target_pr = route.get("target_pr")
+    target_branch = expectations.get("target_branch") or route.get("target_branch")
+    if routing in CREATE_ROUTE_DECISIONS and target_pr is None:
+        target_pr = (
+            int(
+                hashlib.sha256(f"mock-pr:{request.run_id}".encode()).hexdigest()[:7],
+                16,
+            )
+            % 900_000
+            + 100_000
+        )
+        if not target_branch:
+            target_branch = f"mock/create-{target_pr}"
+    commit = hashlib.sha256(
+        f"mock-observed-commit:{request.run_id}:{request.contract_digest}".encode()
+    ).hexdigest()
+    status = expectations.get("expected_status") or "DONE_SLICE_ADDED_TO_BATCH_PR"
+    return {
+        "target_pr": target_pr,
+        "target_branch": target_branch,
+        "commit": commit,
+        "delivery_status": status,
+        "observation_source": "mock_provider",
+    }
 
 
 @dataclass
@@ -187,7 +234,8 @@ class MockProvider:
 
         status = "QUEUED"
         usage = {"iterations": 0, "tool_calls": 0}
-        receipt = deepcopy(request.delivery_receipt)
+        # Never echo a caller-fabricated success receipt; observe later on SUCCEEDED.
+        receipt = None
 
         if scenario == "fail_on_dispatch":
             status = "FAILED"
@@ -214,7 +262,7 @@ class MockProvider:
                 result_refs={"scenario": scenario},
                 error_category="provider" if status == "FAILED" else None,
                 error_code="MOCK_DISPATCH_FAILED" if status == "FAILED" else None,
-                delivery_receipt=deepcopy(receipt),
+                delivery_receipt=None,
             )
         )
 
@@ -251,6 +299,10 @@ class MockProvider:
             else:
                 internal.status = "SUCCEEDED"
                 internal.usage = {"iterations": 2, "tool_calls": 3}
+                if internal.request is not None:
+                    internal.delivery_receipt = synthesize_mock_observed_receipt(
+                        internal.request
+                    )
         elif scenario in {"stay_running", "timeout_cancel_unconfirmed"}:
             internal.status = "RUNNING"
             internal.usage = {"iterations": internal.watch_ticks, "tool_calls": 1}

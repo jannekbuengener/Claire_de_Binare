@@ -141,6 +141,7 @@ def test_happy_path_to_pass_with_delivery_receipt() -> None:
     run = watch_run(run["run_id"], store, provider=provider, clock=clock)
     assert run["state"] == "PASS"
     assert run["delivery_receipt"]["target_pr"] == 4286
+    assert run["delivery_receipt"]["commit"] != ("0" * 40)
     assert any(e["name"] == "validation_success" for e in run["lifecycle_events"])
     assert any(e["name"] == "handed_off" for e in run["lifecycle_events"])
 
@@ -551,3 +552,133 @@ def test_secret_like_provider_payload_rejected() -> None:
             )
         )
     assert exc.value.code == "DISPATCH_PROVIDER_SECRET_PAYLOAD"
+
+
+@pytest.mark.unit
+def test_receipt_is_provider_observed_not_pre_fabricated() -> None:
+    """P1: dispatcher must not seal an all-zero success receipt before dispatch."""
+    store = InMemoryRunStore()
+    provider = MockProvider()
+    clock = FrozenClock(datetime(2026, 8, 1, 21, 0, tzinfo=timezone.utc))
+    result = dispatch_run(
+        _contract(),
+        _registry(),
+        AGENT_ID,
+        store,
+        dry_run=False,
+        allow_mock_dispatch=True,
+        provider=provider,
+        clock=clock,
+        scenario="success",
+    )
+    run = result["run"]
+    assert run["delivery_receipt"] is None
+    assert run["expected_delivery"]["expected_status"] == "DONE_SLICE_ADDED_TO_BATCH_PR"
+    assert run["expected_delivery"]["target_pr"] == 4286
+    # Provider request must not carry a fabricated receipt.
+    internal = next(iter(provider._runs.values()))  # noqa: SLF001
+    assert internal.request is not None
+    assert internal.request.delivery_receipt is None
+    run = watch_run(run["run_id"], store, provider=provider, clock=clock)
+    run = watch_run(run["run_id"], store, provider=provider, clock=clock)
+    assert run["state"] == "PASS"
+    receipt = run["delivery_receipt"]
+    assert receipt["commit"] != ("0" * 40)
+    assert receipt["observation_source"] == "mock_provider"
+    assert len(receipt["commit"]) == 64
+
+
+@pytest.mark.unit
+def test_expected_status_not_copied_from_provider_receipt() -> None:
+    """P2: injected provider status must not rewrite sealed expected_status."""
+    from tools.agent_control.provider import ProviderResult
+
+    class _Injected:
+        provider_id = "mock"
+
+        def __init__(self) -> None:
+            self._pid = "inj-1"
+
+        def dispatch(self, request):  # noqa: ANN001
+            return ProviderResult(
+                provider_id=self.provider_id,
+                provider_run_id=self._pid,
+                normalized_status="QUEUED",
+            )
+
+        def watch(self, provider_run_id: str) -> ProviderResult:
+            return ProviderResult(
+                provider_id=self.provider_id,
+                provider_run_id=provider_run_id,
+                normalized_status="SUCCEEDED",
+                usage={"iterations": 1, "tool_calls": 1},
+                delivery_receipt={
+                    "target_pr": 4286,
+                    "target_branch": "batch/agent-skills-issue-4250",
+                    "commit": "a" * 40,
+                    "delivery_status": "DONE_PR_OPEN",  # differs from sealed expected
+                },
+            )
+
+        def cancel(self, provider_run_id: str, reason: str) -> ProviderResult:
+            raise AssertionError("cancel not expected")
+
+    store = InMemoryRunStore()
+    provider = _Injected()
+    clock = FrozenClock(datetime(2026, 8, 1, 21, 0, tzinfo=timezone.utc))
+    result = dispatch_run(
+        _contract(),
+        _registry(),
+        AGENT_ID,
+        store,
+        dry_run=False,
+        allow_mock_dispatch=True,
+        provider=provider,
+        clock=clock,
+        scenario="success",
+    )
+    run = watch_run(result["run"]["run_id"], store, provider=provider, clock=clock)
+    assert run["state"] == "BLOCKED"
+    assert run["terminal_code"] == "DISPATCH_DELIVERY_STATUS_MISMATCH"
+    assert run["expected_delivery"]["expected_status"] == "DONE_SLICE_ADDED_TO_BATCH_PR"
+
+
+@pytest.mark.unit
+def test_create_route_accepts_observed_new_pr_number() -> None:
+    """P2: CREATE_* with null contract target_pr accepts observed PR on receipt."""
+    from tools.agent_control.dispatch import _validate_delivery_receipt
+
+    contract = {
+        "route": {
+            "routing_decision": "CREATE_NEW_BATCH_PR",
+            "target_pr": None,
+            "target_branch": None,
+        },
+        "execution_scope": {
+            "delivery_target": {
+                "expected_status": "DONE_PR_OPEN",
+                "target_pr": None,
+                "target_branch": None,
+            }
+        },
+    }
+    _validate_delivery_receipt(
+        contract,
+        {
+            "target_pr": 99123,
+            "target_branch": "batch/new-99123",
+            "commit": "b" * 40,
+            "delivery_status": "DONE_PR_OPEN",
+        },
+    )
+    with pytest.raises(DispatchError) as exc:
+        _validate_delivery_receipt(
+            contract,
+            {
+                "target_pr": None,
+                "target_branch": "batch/new",
+                "commit": "b" * 40,
+                "delivery_status": "DONE_PR_OPEN",
+            },
+        )
+    assert exc.value.code == "DISPATCH_DELIVERY_RECEIPT_MISMATCH"

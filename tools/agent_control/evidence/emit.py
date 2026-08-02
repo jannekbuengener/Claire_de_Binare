@@ -271,6 +271,8 @@ def build_evidence_bundle(
         "provider_id": run.get("provider_id"),
         "provider_run_id": run.get("provider_run_id"),
         "idempotency_key": run.get("idempotency_key"),
+        # Lifecycle version prevents ID collision when HOLD then PASS emit.
+        "lifecycle_state": run.get("state"),
     }
     evidence_id = derive_evidence_id(id_bindings)
 

@@ -30,6 +30,7 @@ from tools.agent_control.environment.codes import (
     REASON_FALLBACK_FORBIDDEN,
     REASON_PROFILE_DIGEST_MISMATCH,
     REASON_SETUP_FAILED,
+    REASON_TIMEOUT_CANCEL_UNCONFIRMED,
     VERDICT_BLOCKED,
     VERDICT_READY_FOR_RECORDED_TEST,
     VERDICT_READY_OFFLINE_ONLY,
@@ -391,3 +392,26 @@ def test_mock_dispatch_still_works() -> None:
         dry_run=True,
     )
     assert out["plan"]["preflight_ok"] is True
+
+
+@pytest.mark.unit
+def test_timeout_cancel_unconfirmed_blocks_recorded_execute(tmp_path: Path) -> None:
+    """P2: cloud attestation without timeout_cancel_confirmed must hard-block."""
+    src = EXAMPLES / "positive_recorded_attestation.json"
+    synced = _sync_attestation(src)
+    payload = json.loads(synced.read_text(encoding="utf-8"))
+    synced.unlink(missing_ok=True)
+    payload["enforcement"]["timeout_cancel_confirmed"] = False
+    dest = tmp_path / "att_timeout.json"
+    dest.write_text(json.dumps(payload), encoding="utf-8")
+    result = doctor_profile(
+        "cdb-agent-skills.v1",
+        config=DEFAULT_CONFIG_ROOT,
+        attestation_path=dest,
+        provider_id="cursor-sdk",
+        source_commit="a" * 40,
+        offline=True,
+    )
+    assert result.execute_ready is False
+    assert result.verdict == VERDICT_BLOCKED
+    assert REASON_TIMEOUT_CANCEL_UNCONFIRMED in result.reason_codes

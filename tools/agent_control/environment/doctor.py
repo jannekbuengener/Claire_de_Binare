@@ -36,6 +36,7 @@ from tools.agent_control.environment.codes import (
     REASON_SETUP_FAILED,
     REASON_SETUP_UNPROVEN,
     REASON_SOURCE_COMMIT_MISMATCH,
+    REASON_TIMEOUT_CANCEL_UNCONFIRMED,
     REASON_TOOL_VERSION_MISMATCH,
     REASON_WORKSPACE_SCOPE_INVALID,
     VERDICT_BLOCKED,
@@ -497,13 +498,13 @@ def doctor_profile(
                 else:
                     cost_status = "verified"
 
-        # Cancel confirmation / timeout
+        # Cancel confirmation / timeout — cloud profiles require confirmed cancel.
         if enforcement.get("timeout_cancel_confirmed") is True:
             timeout_status = "ok"
         else:
             timeout_status = "unverified"
-            # timeout without confirmed cancel blocks live readiness via reasons
-            # (already covered by execute_ready=false unless recorded path clean)
+            if profile.get("runtime_class") == "cloud_agent":
+                reasons.append(REASON_TIMEOUT_CANCEL_UNCONFIRMED)
 
         ck_att = attestation.get("checkpoint") or {}
         if ck_att.get("profile_digest") and ck_att.get("profile_digest") != digest:
@@ -583,6 +584,7 @@ def doctor_profile(
         REASON_PROVIDER_NOT_ALLOWED,
         REASON_CONFIG_MISSING,
         REASON_WORKSPACE_SCOPE_INVALID,
+        REASON_TIMEOUT_CANCEL_UNCONFIRMED,
     }
     hard_block = [c for c in uniq_reasons if c in live_blocking]
 

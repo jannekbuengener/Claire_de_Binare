@@ -497,3 +497,21 @@ def test_multiple_store_records_verify(tmp_path: Path) -> None:
     emit_evidence(run2["run_id"], store2, jsonl_path=jsonl)
     result = verify_store(jsonl)
     assert result["count"] == 2
+
+
+@pytest.mark.unit
+def test_evidence_id_versions_across_lifecycle_states() -> None:
+    """P2: HOLD then PASS emissions must not collide on evidence_id."""
+    store, run = _pass_run()
+    pass_id = emit_evidence(run["run_id"], store)["bundle"]["evidence_id"]
+
+    def to_hold(record: dict) -> None:
+        record["state"] = "HOLD"
+        record["terminal_code"] = "HOLD_TEST"
+        record["terminal_reason"] = "lifecycle versioning probe"
+
+    _mutate(store, run["run_id"], to_hold)
+    hold_id = build_evidence_bundle(store.get(run["run_id"]))["evidence_id"]
+    assert hold_id != pass_id
+    assert hold_id.startswith("are-")
+    assert pass_id.startswith("are-")
