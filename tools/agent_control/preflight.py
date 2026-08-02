@@ -1,4 +1,4 @@
-"""Contract + registry preflight shared by dry-run and execute paths."""
+"""Contract + registry + environment preflight shared by dry-run and execute."""
 
 from __future__ import annotations
 
@@ -6,6 +6,13 @@ from dataclasses import dataclass
 from pathlib import Path
 from typing import Any
 
+from tools.agent_control.environment.codes import (
+    ENVIRONMENT_LIVE_DISPATCH_FORBIDDEN,
+    PROVIDER_LIVE_DISPATCH_FORBIDDEN,
+    VERDICT_READY_FOR_RECORDED_TEST,
+    VERDICT_READY_OFFLINE_ONLY,
+)
+from tools.agent_control.environment.preflight import run_environment_preflight
 from tools.agent_control.errors import DispatchError, RegistryError
 from tools.agent_control.normalize import normalize_registry
 from tools.agent_control.providers.factory import CURSOR_PROVIDER_IDS
@@ -54,6 +61,13 @@ class PreflightResult:
     prompt_digest: str | None = None
     prompt_text: str | None = None
     provider_profile: dict[str, Any] | None = None
+    environment_profile: dict[str, Any] | None = None
+    environment_profile_digest: str | None = None
+    provider_environment_config_ref: str | None = None
+    provider_environment_config_digest: str | None = None
+    environment_preflight_verdict: str | None = None
+    effective_environment_constraints: dict[str, Any] | None = None
+    environment_execute_ready: bool = False
 
     def raise_if_blocked_for_execute(self) -> None:
         if self.ok:
@@ -93,8 +107,10 @@ def preflight(
     repo_root: Path | None = None,
     allow_recorded_cursor: bool = False,
     prompt_text_override: str | None = None,
+    environment_attestation_path: Path | None = None,
+    config_root: Path | None = None,
 ) -> PreflightResult:
-    """Validate contract digest + registry binding. Shared by dry-run and execute."""
+    """Validate contract digest + registry + environment. Shared by dry-run/execute."""
     try:
         validated = validate_contract(contract)
     except ContractValidationError as exc:
@@ -143,7 +159,7 @@ def preflight(
         if permissions.get(key) is True:
             return _fail(
                 "DISPATCH_FORBIDDEN_PERMISSION",
-                f"permission {key}=true is forbidden for dispatcher slice #4253",
+                f"permission {key}=true is forbidden for dispatcher slice",
                 terminal_state="BLOCKED",
             )
 
@@ -240,32 +256,81 @@ def preflight(
         )
 
     live_dispatch = bool(provider_profile.get("live_dispatch", False))
+    env_profile_id = agent["environment_profile"]
+    env_profile = profiles["environments"][env_profile_id]
+    source_commit = None
+    work_order = validated.get("provider_work_order") or {}
+    if isinstance(work_order, dict):
+        source_commit = work_order.get("source_commit")
+
+    root = repo_root or Path(__file__).resolve().parents[2]
+    env_result = run_environment_preflight(
+        profile_id=env_profile_id,
+        provider_id=str(provider_id) if provider_id else None,
+        contract=validated,
+        source_commit=str(source_commit) if source_commit else None,
+        attestation_path=environment_attestation_path,
+        config=config_root or root / "config" / "agent-control",
+        repo_root=root,
+        execute=execute,
+        allow_recorded=allow_recorded_cursor,
+    )
+
     if execute and provider_id != "mock":
         if provider_id in CURSOR_PROVIDER_IDS:
-            if live_dispatch and not allow_recorded_cursor:
+            # Durable gate: environment preflight never enables live dispatch.
+            if live_dispatch:
                 return _fail(
-                    "CURSOR_ENVIRONMENT_PROFILE_NOT_READY",
-                    "real Cursor write/live dispatch blocked until #4255",
+                    ENVIRONMENT_LIVE_DISPATCH_FORBIDDEN,
+                    "provider live_dispatch=true is forbidden; "
+                    "live Cursor dispatch remains blocked pending ratified "
+                    "pilot/approval/evidence path (#4256-#4258)",
                     terminal_state="BLOCKED",
                 )
-            if not allow_recorded_cursor and not live_dispatch:
+            if not allow_recorded_cursor:
                 return _fail(
-                    "PROVIDER_LIVE_DISPATCH_FORBIDDEN",
-                    f"execute for {provider_id!r} requires recorded/fake transport "
-                    "or later environment profile (#4255)",
+                    PROVIDER_LIVE_DISPATCH_FORBIDDEN,
+                    f"execute for {provider_id!r} requires recorded/fake transport; "
+                    "live Cursor dispatch remains permanently fail-closed here",
+                    terminal_state="BLOCKED",
+                )
+            if env_result.verdict != VERDICT_READY_FOR_RECORDED_TEST:
+                return _fail(
+                    (
+                        env_result.reason_codes[0]
+                        if env_result.reason_codes
+                        else "ENVIRONMENT_EXECUTE_NOT_READY"
+                    ),
+                    f"environment preflight verdict {env_result.verdict} "
+                    f"blocks recorded execute: {env_result.limitations}",
                     terminal_state="BLOCKED",
                 )
         else:
             return _fail(
-                "PROVIDER_LIVE_DISPATCH_FORBIDDEN",
+                PROVIDER_LIVE_DISPATCH_FORBIDDEN,
                 f"execute forbidden for provider_id={provider_id!r}",
+                terminal_state="BLOCKED",
+            )
+
+    # Dry-run: environment must not be schema-hard-broken for cloud profiles.
+    if not execute and env_profile.get("runtime_class") == "cloud_agent":
+        if env_result.verdict not in {
+            VERDICT_READY_OFFLINE_ONLY,
+            VERDICT_READY_FOR_RECORDED_TEST,
+        }:
+            return _fail(
+                (
+                    env_result.reason_codes[0]
+                    if env_result.reason_codes
+                    else "ENVIRONMENT_PREFLIGHT_BLOCKED"
+                ),
+                f"environment dry-run blocked: {env_result.verdict}",
                 terminal_state="BLOCKED",
             )
 
     prompt_ref = None
     prompt_digest = None
     prompt_text = None
-    root = repo_root or Path(__file__).resolve().parents[2]
     try:
         prompt_ref, prompt_digest, prompt_text = verify_provider_work_order(
             validated,
@@ -293,4 +358,11 @@ def preflight(
         prompt_digest=prompt_digest,
         prompt_text=prompt_text,
         provider_profile=provider_profile,
+        environment_profile=env_result.profile_snapshot or env_profile,
+        environment_profile_digest=env_result.profile_digest,
+        provider_environment_config_ref=env_result.provider_config_ref,
+        provider_environment_config_digest=env_result.provider_config_digest,
+        environment_preflight_verdict=env_result.verdict,
+        effective_environment_constraints=env_result.effective_constraints,
+        environment_execute_ready=env_result.execute_ready,
     )

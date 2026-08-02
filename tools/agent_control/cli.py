@@ -296,9 +296,63 @@ def cmd_provider_stream(args: argparse.Namespace) -> int:
 def cmd_provider_follow_up(args: argparse.Namespace) -> int:
     print(
         "INVALID PROVIDER_FOLLOW_UP_LIVE_FORBIDDEN: follow-up execute requires "
-        "recorded/fake transport; use unit tests or later #4255 gate",
+        "recorded/fake transport; live path remains fail-closed",
         file=sys.stderr,
     )
+    return 1
+
+
+def cmd_environment_validate(args: argparse.Namespace) -> int:
+    from tools.agent_control.environment.doctor import (
+        validate_all_profiles,
+        validate_profile,
+    )
+    from tools.agent_control.errors import EnvironmentError
+
+    try:
+        if args.profile:
+            payload = validate_profile(args.profile, config=Path(args.config))
+        else:
+            payload = validate_all_profiles(config=Path(args.config))
+    except (AgentControlError, EnvironmentError) as exc:
+        print(f"INVALID {exc.code}: {exc.message}", file=sys.stderr)
+        return 1
+    _print_json(payload)
+    return 0
+
+
+def cmd_environment_doctor(args: argparse.Namespace) -> int:
+    from tools.agent_control.environment.codes import (
+        VERDICT_READY_FOR_RECORDED_TEST,
+        VERDICT_READY_OFFLINE_ONLY,
+    )
+    from tools.agent_control.environment.doctor import doctor_profile
+
+    attestation = Path(args.attestation) if args.attestation else None
+    # Offline is default; refuse any non-offline without attestation fixture.
+    if not args.offline and attestation is None:
+        print(
+            "INVALID ENVIRONMENT_LIVE_PROBE_FORBIDDEN: doctor requires "
+            "--offline or --attestation <FIXTURE>; never contacts providers",
+            file=sys.stderr,
+        )
+        return 1
+    try:
+        result = doctor_profile(
+            args.profile,
+            config=Path(args.config),
+            attestation_path=attestation,
+            offline=True,
+        )
+    except AgentControlError as exc:
+        print(f"INVALID {exc.code}: {exc.message}", file=sys.stderr)
+        return 1
+    _print_json(result.as_dict())
+    if result.verdict in {
+        VERDICT_READY_OFFLINE_ONLY,
+        VERDICT_READY_FOR_RECORDED_TEST,
+    }:
+        return 0
     return 1
 
 
@@ -517,6 +571,41 @@ def build_parser() -> argparse.ArgumentParser:
     p_arch.add_argument("--run-id", required=True)
     p_arch.add_argument("--state", required=True)
     p_arch.set_defaults(func=cmd_provider_archive)
+
+    environment = sub.add_parser(
+        "environment",
+        help="Governed environment profiles + fail-closed doctor (#4255)",
+    )
+    env_sub = environment.add_subparsers(dest="environment_command", required=True)
+
+    p_env_val = env_sub.add_parser(
+        "validate",
+        help="Validate environment profiles (all or one)",
+    )
+    p_env_val.add_argument("--config", default=str(DEFAULT_CONFIG_ROOT))
+    p_env_val.add_argument(
+        "--profile",
+        help="Optional single profile_id (default: validate all + cursor config)",
+    )
+    p_env_val.set_defaults(func=cmd_environment_validate)
+
+    p_env_doc = env_sub.add_parser(
+        "doctor",
+        help="Offline/fixture environment doctor (never contacts Cursor)",
+    )
+    p_env_doc.add_argument("--profile", required=True)
+    p_env_doc.add_argument("--config", default=str(DEFAULT_CONFIG_ROOT))
+    p_env_doc.add_argument(
+        "--offline",
+        action="store_true",
+        default=True,
+        help="Offline doctor (default)",
+    )
+    p_env_doc.add_argument(
+        "--attestation",
+        help="Optional recorded/fake attestation fixture JSON",
+    )
+    p_env_doc.set_defaults(func=cmd_environment_doctor)
 
     return parser
 

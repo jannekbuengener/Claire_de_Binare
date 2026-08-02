@@ -52,6 +52,13 @@ class ProviderRequest:
     prompt_digest: str | None = None
     prompt_text: str | None = field(default=None, repr=False)
     secret_references: list[dict[str, str]] | None = None
+    # #4255 environment envelope (additive; mock may ignore)
+    environment_profile: dict[str, Any] | None = None
+    environment_profile_digest: str | None = None
+    provider_environment_config_ref: str | None = None
+    provider_environment_config_digest: str | None = None
+    environment_preflight_verdict: str | None = None
+    effective_environment_constraints: dict[str, Any] | None = None
 
 
 @dataclass

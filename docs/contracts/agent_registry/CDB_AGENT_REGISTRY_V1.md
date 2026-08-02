@@ -74,7 +74,8 @@ python -m tools.agent_control registry reconcile --config <PATH> --dry-run
 
 - Dispatcher / state machine (`#4253`)
 - Cursor provider adapter (`#4254`)
-- Environment provisioning (`#4255`)
+- Environment profiles + doctor (`#4255`) — see
+  [`docs/contracts/agent_environment/CDB_AGENT_ENVIRONMENT_V1.md`](../agent_environment/CDB_AGENT_ENVIRONMENT_V1.md)
 - Run evidence (`#4256`)
 - Approval agent (`#4257`)
 - Live provider mutations, UI automation, private APIs

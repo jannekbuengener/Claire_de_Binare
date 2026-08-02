@@ -40,9 +40,10 @@ python -m tools.agent_control evidence --run-id <ID> --state <PATH>
 ```
 
 `dispatch` defaults to dry-run (no provider calls, no state writes).
-Live Cursor dispatch remains fail-closed (`CURSOR_ENVIRONMENT_PROFILE_NOT_READY`
-/ `PROVIDER_LIVE_DISPATCH_FORBIDDEN`) until `#4255`. Recorded/fake transports
-are test-only.
+Live Cursor dispatch remains fail-closed (`PROVIDER_LIVE_DISPATCH_FORBIDDEN` /
+`ENVIRONMENT_LIVE_DISPATCH_FORBIDDEN`). Environment preflight (#4255) never
+enables live dispatch. Recorded/fake transports are test-only and require a
+`READY_FOR_RECORDED_TEST` attestation fixture.
 
 ## Authority
 

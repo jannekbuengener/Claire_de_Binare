@@ -241,6 +241,32 @@ def _semantic_validate(document: dict[str, Any]) -> None:
                     f"mcp profile {mcp_ref!r} sets mutation_allowed=true",
                 )
 
+    # #4255: cloud_agent environment profiles require the governed field set.
+    from tools.agent_control.environment.codes import CLOUD_AGENT_REQUIRED_FIELDS
+
+    for env_id, env_profile in (profiles.get("environments") or {}).items():
+        if not isinstance(env_profile, dict):
+            continue
+        if env_profile.get("runtime_class") != "cloud_agent":
+            continue
+        missing = [f for f in CLOUD_AGENT_REQUIRED_FIELDS if f not in env_profile]
+        if missing:
+            raise RegistryError(
+                "ENVIRONMENT_PROFILE_INCOMPLETE",
+                f"cloud_agent profile {env_id!r} missing fields: {missing}",
+            )
+        if env_profile.get("live_dispatch_allowed") is not False:
+            raise RegistryError(
+                "ENVIRONMENT_LIVE_DISPATCH_FORBIDDEN",
+                f"environment profile {env_id!r} must set live_dispatch_allowed=false",
+            )
+        cost = env_profile.get("cost_limit") or {}
+        if cost.get("max_live_cost_usd") not in (0, 0.0):
+            raise RegistryError(
+                "ENVIRONMENT_COST_LIMIT_UNVERIFIED",
+                f"environment profile {env_id!r} max_live_cost_usd must be 0",
+            )
+
     _detect_cycles(agents)
     _reject_plaintext_secrets(document)
 

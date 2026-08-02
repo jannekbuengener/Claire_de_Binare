@@ -5,6 +5,7 @@ from __future__ import annotations
 import hashlib
 from copy import deepcopy
 from datetime import datetime
+from pathlib import Path
 from typing import Any
 
 from core.utils.uuid_gen import generate_runtime_id_hex
@@ -225,6 +226,7 @@ def dispatch_run(
     attempt: int | None = None,
     run_id: str | None = None,
     prompt_text_override: str | None = None,
+    environment_attestation_path: Path | None = None,
 ) -> dict[str, Any]:
     clock = clock or SystemClock()
     if dry_run:
@@ -255,6 +257,7 @@ def dispatch_run(
         execute=True,
         allow_recorded_cursor=allow_recorded_cursor,
         prompt_text_override=prompt_text_override,
+        environment_attestation_path=environment_attestation_path,
     )
     if not pf.ok:
         # Persist a blocked/held terminal run only when execute was requested and
@@ -412,9 +415,15 @@ def dispatch_run(
         provider_profile=deepcopy(pf.provider_profile or {}),
         route=deepcopy(pf.route or {}),
         effective_permissions=deepcopy(pf.agent.get("effective_permissions") or {}),
-        allowed_paths=list(scope.get("allowed_paths") or []),
+        allowed_paths=list(
+            (pf.effective_environment_constraints or {}).get("allowed_paths")
+            or scope.get("allowed_paths")
+            or []
+        ),
         allowed_command_classes=list(
-            scope.get("allowed_commands_or_command_classes") or []
+            (pf.effective_environment_constraints or {}).get("allowed_command_classes")
+            or scope.get("allowed_commands_or_command_classes")
+            or []
         ),
         budget=deepcopy(pf.budget or {}),
         prompt_ref=pf.prompt_ref,
@@ -422,6 +431,14 @@ def dispatch_run(
         prompt_text=pf.prompt_text,
         secret_references=list(
             ((pf.contract.get("environment") or {}).get("secret_references") or [])
+        ),
+        environment_profile=deepcopy(pf.environment_profile or {}),
+        environment_profile_digest=pf.environment_profile_digest,
+        provider_environment_config_ref=pf.provider_environment_config_ref,
+        provider_environment_config_digest=pf.provider_environment_config_digest,
+        environment_preflight_verdict=pf.environment_preflight_verdict,
+        effective_environment_constraints=deepcopy(
+            pf.effective_environment_constraints or {}
         ),
     )
     # Never persist prompt_text on the run record.

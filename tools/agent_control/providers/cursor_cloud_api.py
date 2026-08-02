@@ -56,8 +56,9 @@ class CursorCloudApiDriver:
     def _gate(self) -> None:
         if self._http is None and not self._allow_live:
             raise DispatchError(
-                "CURSOR_ENVIRONMENT_PROFILE_NOT_READY",
-                "live cursor-cloud-api dispatch blocked until #4255",
+                "PROVIDER_LIVE_DISPATCH_FORBIDDEN",
+                "live cursor-cloud-api dispatch is permanently fail-closed; "
+                "use injected fake/recorded HTTP transport only",
             )
 
     def _request(

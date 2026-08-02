@@ -206,6 +206,303 @@
         "runtime_class": {
           "type": "string",
           "enum": ["local_repo", "cloud_agent", "mock"]
+        },
+        "profile_version": {
+          "type": "string",
+          "pattern": "^[0-9]+\\.[0-9]+\\.[0-9]+$"
+        },
+        "allowed_provider_ids": {
+          "type": "array",
+          "items": {
+            "type": "string",
+            "enum": [
+              "mock",
+              "cursor",
+              "cursor-sdk",
+              "cursor-cli",
+              "cursor-cloud-api",
+              "local"
+            ]
+          }
+        },
+        "provider_config_ref": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 260
+        },
+        "provider_config_digest_policy": {
+          "type": "object",
+          "additionalProperties": false,
+          "properties": {
+            "algorithm": {
+              "type": "string",
+              "enum": ["sha256"]
+            },
+            "require_match": {
+              "type": "boolean"
+            }
+          }
+        },
+        "source_commit_binding": {
+          "type": "object",
+          "additionalProperties": false,
+          "properties": {
+            "required": {
+              "type": "boolean"
+            },
+            "match_mode": {
+              "type": "string",
+              "enum": ["exact", "prefix"]
+            }
+          }
+        },
+        "workspace_policy": {
+          "type": "object",
+          "additionalProperties": false,
+          "properties": {
+            "mode": {
+              "type": "string",
+              "enum": ["read_only", "write_scoped", "blocked"]
+            },
+            "runtime_mutation": {
+              "type": "boolean"
+            },
+            "database_mutation": {
+              "type": "boolean"
+            },
+            "mcp_live_mutation": {
+              "type": "boolean"
+            }
+          }
+        },
+        "allowed_paths": {
+          "type": "array",
+          "items": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 260
+          }
+        },
+        "forbidden_paths": {
+          "type": "array",
+          "items": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 260
+          }
+        },
+        "allowed_command_classes": {
+          "type": "array",
+          "items": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 120
+          }
+        },
+        "required_toolchain": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "additionalProperties": false,
+            "required": ["name", "version_rule"],
+            "properties": {
+              "name": {
+                "type": "string",
+                "minLength": 1,
+                "maxLength": 80
+              },
+              "version_rule": {
+                "type": "string",
+                "minLength": 1,
+                "maxLength": 80
+              }
+            }
+          }
+        },
+        "setup_policy": {
+          "type": "object",
+          "additionalProperties": false,
+          "properties": {
+            "fallback_to_unknown_base_image": {
+              "type": "string",
+              "enum": ["forbidden"]
+            },
+            "setup_failed": {
+              "type": "string",
+              "enum": ["block"]
+            },
+            "setup_unknown": {
+              "type": "string",
+              "enum": ["block"]
+            },
+            "require_attested_base_identity": {
+              "type": "boolean"
+            }
+          }
+        },
+        "network_policy": {
+          "type": "object",
+          "additionalProperties": false,
+          "properties": {
+            "mode": {
+              "type": "string",
+              "enum": ["deny_all", "allowlist"]
+            },
+            "allowed_classes": {
+              "type": "array",
+              "items": {
+                "type": "string",
+                "minLength": 1,
+                "maxLength": 120
+              }
+            },
+            "allowed_domains": {
+              "type": "array",
+              "items": {
+                "type": "string",
+                "minLength": 1,
+                "maxLength": 253
+              }
+            },
+            "egress_enforcement_required": {
+              "type": "boolean"
+            }
+          }
+        },
+        "secret_policy": {
+          "type": "object",
+          "additionalProperties": false,
+          "properties": {
+            "allowed_classes": {
+              "type": "array",
+              "items": {
+                "type": "string",
+                "minLength": 1,
+                "maxLength": 80
+              }
+            },
+            "workload_secrets": {
+              "type": "string",
+              "enum": ["none", "class_refs_only"]
+            },
+            "inject_cursor_api_key": {
+              "type": "boolean"
+            }
+          }
+        },
+        "resource_limits": {
+          "type": "object",
+          "additionalProperties": false,
+          "properties": {
+            "cpu_cores_max": {
+              "type": "number",
+              "exclusiveMinimum": 0
+            },
+            "memory_mb_max": {
+              "type": "integer",
+              "exclusiveMinimum": 0
+            },
+            "disk_mb_max": {
+              "type": "integer",
+              "exclusiveMinimum": 0
+            },
+            "max_processes": {
+              "type": "integer",
+              "exclusiveMinimum": 0
+            },
+            "enforcement_required": {
+              "type": "boolean"
+            }
+          }
+        },
+        "execution_limits": {
+          "type": "object",
+          "additionalProperties": false,
+          "properties": {
+            "setup_timeout_seconds": {
+              "type": "integer",
+              "exclusiveMinimum": 0
+            },
+            "run_timeout_seconds": {
+              "type": "integer",
+              "exclusiveMinimum": 0
+            },
+            "cancel_confirmation_required": {
+              "type": "boolean"
+            }
+          }
+        },
+        "cost_limit": {
+          "type": "object",
+          "additionalProperties": false,
+          "properties": {
+            "max_live_cost_usd": {
+              "type": "number",
+              "minimum": 0
+            },
+            "unknown_cost_blocks_live": {
+              "type": "boolean"
+            },
+            "enforcement_required": {
+              "type": "boolean"
+            }
+          }
+        },
+        "artifact_policy": {
+          "type": "object",
+          "additionalProperties": false,
+          "properties": {
+            "allowed_roots": {
+              "type": "array",
+              "items": {
+                "type": "string",
+                "minLength": 1,
+                "maxLength": 260
+              }
+            },
+            "forbid_absolute_paths": {
+              "type": "boolean"
+            },
+            "forbid_presigned_urls": {
+              "type": "boolean"
+            },
+            "auto_execute": {
+              "type": "boolean"
+            }
+          }
+        },
+        "checkpoint_policy": {
+          "type": "object",
+          "additionalProperties": false,
+          "properties": {
+            "may_mutate_profile": {
+              "type": "boolean"
+            },
+            "may_mutate_digest": {
+              "type": "boolean"
+            },
+            "may_mutate_source_commit": {
+              "type": "boolean"
+            },
+            "may_mutate_permissions": {
+              "type": "boolean"
+            },
+            "provider_snapshot_is_cdb_checkpoint": {
+              "type": "boolean"
+            }
+          }
+        },
+        "required_attestations": {
+          "type": "array",
+          "items": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 120
+          }
+        },
+        "live_dispatch_allowed": {
+          "type": "boolean",
+          "default": false
         }
       }
     },

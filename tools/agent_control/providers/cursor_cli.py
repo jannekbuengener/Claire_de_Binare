@@ -81,8 +81,9 @@ class CursorCliDriver:
     def _blocked_live(self) -> None:
         if self._runner is None and not self._allow_live:
             raise DispatchError(
-                "CURSOR_ENVIRONMENT_PROFILE_NOT_READY",
-                "live cursor-cli dispatch blocked until #4255 environment profile",
+                "PROVIDER_LIVE_DISPATCH_FORBIDDEN",
+                "live cursor-cli dispatch is permanently fail-closed; "
+                "use injected fake/recorded runner only",
             )
 
     def _build_argv(
@@ -102,7 +103,7 @@ class CursorCliDriver:
             if not self._allow_force:
                 raise DispatchError(
                     "PROVIDER_CLI_FORCE_FORBIDDEN",
-                    "--force/--yolo forbidden without governed environment profile",
+                    "--force/--yolo forbidden; live write modes remain fail-closed",
                 )
             argv.append("--force")
         # Never put prompt in argv.
@@ -116,12 +117,13 @@ class CursorCliDriver:
                 "CONTRACT_PROVIDER_WORK_ORDER_MISSING",
                 "cursor-cli requires verified in-memory prompt",
             )
-        # Write permissions imply force would be needed; block until #4255.
+        # Write permissions imply force would be needed; keep fail-closed.
         perms = request.effective_permissions or {}
         if perms.get("write_code") or perms.get("write_docs"):
             raise DispatchError(
-                "CURSOR_ENVIRONMENT_PROFILE_NOT_READY",
-                "cursor-cli write execution blocked until #4255",
+                "PROVIDER_LIVE_DISPATCH_FORBIDDEN",
+                "cursor-cli write execution remains fail-closed without "
+                "ratified live path (#4256-#4258)",
             )
         argv = self._build_argv(request)
         if self._runner is None:

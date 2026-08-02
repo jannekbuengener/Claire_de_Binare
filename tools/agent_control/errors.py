@@ -18,3 +18,7 @@ class RegistryError(AgentControlError):
 
 class DispatchError(AgentControlError):
     """Fail-closed dispatcher / lifecycle / provider error."""
+
+
+class EnvironmentError(AgentControlError):
+    """Fail-closed environment profile / doctor error."""

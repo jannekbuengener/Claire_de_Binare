@@ -1,8 +1,8 @@
 profile_id: cursor-sdk.v1
 provider_id: cursor-sdk
 description: >
-  Cursor Python SDK adapter profile (#4254). Offline/capability default.
-  Live dispatch remains false until governed environment profile (#4255).
+  Cursor Python SDK adapter profile (#4254/#4255). Offline/capability default.
+  Live dispatch remains false; environment preflight never enables live runs.
 api_surface: cursor-sdk-public
 live_dispatch: false
 capability_baseline_ref: cursor-sdk-offline-v1

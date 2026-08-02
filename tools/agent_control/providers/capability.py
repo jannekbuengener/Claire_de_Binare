@@ -70,7 +70,8 @@ _BASELINES: dict[str, dict[str, Any]] = {
             "force_default": False,
         },
         "limitations": [
-            "Write/force modes blocked until governed environment profile (#4255).",
+            "Write/force modes remain fail-closed; live dispatch never enabled "
+            "by environment preflight alone (#4255).",
             "Prompt must travel via stdin, never argv.",
         ],
     },

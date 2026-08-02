@@ -137,7 +137,7 @@ def test_base_import_without_cursor_sdk() -> None:
                 prompt_text="x",
             )
         )
-    assert exc.value.code == "CURSOR_ENVIRONMENT_PROFILE_NOT_READY"
+    assert exc.value.code == "PROVIDER_LIVE_DISPATCH_FORBIDDEN"
 
 
 @pytest.mark.unit
@@ -227,7 +227,7 @@ def test_cli_force_and_write_blocked() -> None:
                 effective_permissions={"write_code": True},
             )
         )
-    assert exc.value.code == "CURSOR_ENVIRONMENT_PROFILE_NOT_READY"
+    assert exc.value.code == "PROVIDER_LIVE_DISPATCH_FORBIDDEN"
 
 
 @pytest.mark.unit
@@ -387,9 +387,35 @@ def test_dry_run_cursor_agent_no_mutation() -> None:
 
 
 @pytest.mark.unit
-def test_recorded_cursor_dispatch_and_duplicate_idempotency() -> None:
+def test_recorded_cursor_dispatch_and_duplicate_idempotency(tmp_path: Path) -> None:
     registry = load_registry_document(REPO / "config" / "agent-control")
     contract = _work_order_contract()
+    # Sync attestation digests to live profile/config.
+    from tools.agent_control.environment.cursor_config import (
+        validate_cursor_environment_config,
+    )
+    from tools.agent_control.environment.digest import profile_digest
+    from tools.agent_control.normalize import normalize_registry
+    from tools.agent_control.validate import validate_registry
+
+    validate_registry(registry)
+    norm = normalize_registry(registry)
+    profile = deepcopy(norm["profiles"]["environments"]["cdb-agent-skills.v1"])
+    att = json.loads(
+        (
+            REPO
+            / "docs/contracts/examples/agent_environment/positive_recorded_attestation.json"
+        ).read_text(encoding="utf-8")
+    )
+    att["profile_digest"] = profile_digest(profile)
+    att["provider_config_digest"] = validate_cursor_environment_config(REPO)["digest"]
+    att["source_commit"] = contract["provider_work_order"]["source_commit"]
+    if isinstance(att.get("checkpoint"), dict):
+        att["checkpoint"]["profile_digest"] = att["profile_digest"]
+        att["checkpoint"]["source_commit"] = att["source_commit"]
+    att_path = tmp_path / "attestation.json"
+    att_path.write_text(json.dumps(att), encoding="utf-8")
+
     store = InMemoryRunStore()
     driver = CursorSdkDriver(client_factory=object, runtime="local")
     text = _prompt_text()
@@ -402,6 +428,7 @@ def test_recorded_cursor_dispatch_and_duplicate_idempotency() -> None:
         allow_recorded_cursor=True,
         provider=driver,
         prompt_text_override=text,
+        environment_attestation_path=att_path,
     )
     assert first["run"]["provider_id"] == "cursor-sdk"
     assert first["run"].get("prompt_text") is None
@@ -416,6 +443,7 @@ def test_recorded_cursor_dispatch_and_duplicate_idempotency() -> None:
         allow_recorded_cursor=True,
         provider=driver,
         prompt_text_override=text,
+        environment_attestation_path=att_path,
     )
     assert second.get("idempotent_replay") is True
     assert driver.dispatch_calls == 1

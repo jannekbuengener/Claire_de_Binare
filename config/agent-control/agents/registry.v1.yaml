@@ -95,11 +95,11 @@ agents:
     version: "1.0.0"
     enabled: true
     description: >
-      Cursor SDK adapter agent for #4254. Provider profile live_dispatch=false;
-      real Cursor runs remain blocked until #4255 environment profile.
+      Cursor SDK adapter agent for #4254/#4255. Provider profile live_dispatch=false;
+      governed environment profile cdb-agent-skills.v1; real Cursor live dispatch remains forbidden.
     execution_contract_profile: delivery_safe.v1
     provider_profile: cursor-sdk.v1
-    environment_profile: local_repo.v1
+    environment_profile: cdb-agent-skills.v1
     skills:
       - session_core.v1
     mcp_profiles:
@@ -109,7 +109,7 @@ agents:
       lane: agent-skills
       batch_key: agent-skills
       role: cursor-sdk-adapter
-      objective: issue-4254
+      objective: issue-4255
     depends_on:
       - acp-mock-dispatcher
     permission_overrides:

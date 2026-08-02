@@ -98,8 +98,10 @@ class CursorSdkDriver:
     def _require_injected_or_block(self) -> None:
         if self._client_factory is None and not self._allow_live:
             raise DispatchError(
-                "CURSOR_ENVIRONMENT_PROFILE_NOT_READY",
-                "live cursor-sdk dispatch blocked until #4255 environment profile",
+                "PROVIDER_LIVE_DISPATCH_FORBIDDEN",
+                "live cursor-sdk dispatch is permanently fail-closed; "
+                "use injected fake/recorded transport only "
+                "(#4256-#4258 for any future live path)",
             )
 
     def package_version(self) -> str | None:
@@ -125,8 +127,8 @@ class CursorSdkDriver:
         if self._client_factory is None:
             self._lazy_import_probe()
             raise DispatchError(
-                "CURSOR_ENVIRONMENT_PROFILE_NOT_READY",
-                "live cursor-sdk execution is not enabled in #4254",
+                "PROVIDER_LIVE_DISPATCH_FORBIDDEN",
+                "live cursor-sdk execution is permanently fail-closed in this slice",
             )
         if not request.prompt_text:
             raise DispatchError(

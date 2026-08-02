@@ -32,14 +32,23 @@ python -m tools.agent_control dispatch ... --state <RUNSTORE> --execute --allow-
 python -m tools.agent_control provider capabilities --provider cursor-sdk --offline
 python -m tools.agent_control provider capabilities --provider cursor-cli --offline
 python -m tools.agent_control provider capabilities --provider cursor-cloud-api --offline
+python -m tools.agent_control environment validate --config config/agent-control
+python -m tools.agent_control environment doctor --profile cdb-agent-skills.v1 \
+  --config config/agent-control --offline
 ```
 
 `reconcile` / `dispatch` default to dry-run. Live provider create/update/delete
-and live Cursor dispatch are forbidden in `#4254`. Mock execute is test-only
+and live Cursor dispatch are forbidden. Mock execute is test-only
 (`--execute --allow-mock-dispatch`). Cursor adapters are constructible offline /
 with injected fake transports only. Registry agents:
-`acp-mock-dispatcher` (`#4253`), `acp-cursor-sdk-adapter` (`#4254`,
-`live_dispatch: false`).
+`acp-mock-dispatcher` (`#4253`), `acp-cursor-sdk-adapter` (`#4254`/`#4255`,
+`live_dispatch: false`, environment `cdb-agent-skills.v1`).
+
+Governed environment profiles (`#4255`):
+`cdb-docs-readonly.v1`, `cdb-agent-skills.v1`, `cdb-python-fast.v1`,
+`cdb-ci-debug.v1`, `cdb-validation-research.v1`,
+`cdb-runtime-risk-restricted.v1`. Cursor config: `.cursor/environment.json`.
+Evidence bundle remains `#4256`; approval `#4257`; live pilot `#4258`.
 
 ## Schema
 
@@ -54,5 +63,5 @@ Spec:
 - LR remains **NO-GO**
 - No plaintext secrets (use `env:` / `secret:` references only)
 - Cursor API key is `MANUAL_BOOTSTRAP_ONLY` (`env:CURSOR_API_KEY`); never read
-  during dry-run / offline capability probes
-- Environment hardening remains `#4255`; evidence bundle `#4256`; approval `#4257`
+  during dry-run / offline capability probes / environment doctor
+- Environment profiles + doctor: `#4255`; evidence bundle `#4256`; approval `#4257`
