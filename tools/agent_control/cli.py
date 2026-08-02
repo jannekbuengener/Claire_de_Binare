@@ -9,6 +9,11 @@ Examples:
   python -m tools.agent_control cancel --run-id <ID> --state <PATH> --reason <TEXT>
   python -m tools.agent_control retry --previous-run-id <ID> --contract <PATH> --reason <TEXT>
   python -m tools.agent_control evidence --run-id <ID> --state <PATH>
+  python -m tools.agent_control evidence snapshot --run <ID> --state <PATH>
+  python -m tools.agent_control evidence emit --run <ID> --state <PATH> [--store <JSONL>]
+  python -m tools.agent_control evidence verify --bundle <PATH>
+  python -m tools.agent_control evidence verify --store <JSONL>
+  python -m tools.agent_control evidence show --run <ID> --store <JSONL>
 """
 
 from __future__ import annotations
@@ -26,7 +31,12 @@ from tools.agent_control.dispatch import (
     retry_run,
     watch_run,
 )
-from tools.agent_control.errors import AgentControlError, DispatchError, RegistryError
+from tools.agent_control.errors import (
+    AgentControlError,
+    DispatchError,
+    EvidenceError,
+    RegistryError,
+)
 from tools.agent_control.load import (
     dump_json,
     load_observed_state,
@@ -227,13 +237,123 @@ def cmd_retry(args: argparse.Namespace) -> int:
 
 
 def cmd_evidence(args: argparse.Namespace) -> int:
+    """Legacy snapshot alias: evidence --run-id/--state."""
     try:
         store = JsonFileRunStore(Path(args.state))
-        snapshot = evidence_snapshot(args.run_id, store)
-    except DispatchError as exc:
+        run_id = getattr(args, "run_id", None) or getattr(args, "run", None)
+        snapshot = evidence_snapshot(run_id, store)
+    except (DispatchError, EvidenceError) as exc:
         print(f"INVALID {exc.code}: {exc.message}", file=sys.stderr)
         return 1
     _print_json(snapshot)
+    return 0
+
+
+def cmd_evidence_dispatch(args: argparse.Namespace) -> int:
+    """Parent evidence command without subcommand.
+
+    - --run-id + --state → legacy lifecycle snapshot
+    - --run + --state → emit bundle (documented bundle entry)
+    """
+    if getattr(args, "evidence_command", None):
+        # Subcommand handlers are set via set_defaults; should not reach here.
+        return 1
+    run_id = getattr(args, "run_id", None)
+    run = getattr(args, "run", None)
+    state = getattr(args, "state", None)
+    if run_id and state and not run:
+        args.run_id = run_id
+        return cmd_evidence(args)
+    if run and state:
+        args.run = run
+        args.store = getattr(args, "store", None)
+        return cmd_evidence_emit(args)
+    print(
+        "INVALID EVIDENCE_USAGE: use "
+        "'evidence snapshot|emit|verify|show', "
+        "legacy 'evidence --run-id <ID> --state <PATH>', "
+        "or bundle entry 'evidence --run <ID> --state <PATH>'",
+        file=sys.stderr,
+    )
+    return 1
+
+
+def cmd_evidence_snapshot(args: argparse.Namespace) -> int:
+    try:
+        store = JsonFileRunStore(Path(args.state))
+        run_id = args.run or args.run_id
+        snapshot = evidence_snapshot(run_id, store)
+    except (DispatchError, EvidenceError) as exc:
+        print(f"INVALID {exc.code}: {exc.message}", file=sys.stderr)
+        return 1
+    _print_json(snapshot)
+    return 0
+
+
+def cmd_evidence_emit(args: argparse.Namespace) -> int:
+    from tools.agent_control.evidence.emit import emit_evidence
+
+    try:
+        if not args.state:
+            print(
+                "INVALID EVIDENCE_STATE_REQUIRED: emit requires --state <PATH>",
+                file=sys.stderr,
+            )
+            return 1
+        store = JsonFileRunStore(Path(args.state))
+        run_id = args.run or args.run_id
+        store_path = Path(args.store) if args.store else None
+        result = emit_evidence(run_id, store, jsonl_path=store_path)
+    except (DispatchError, EvidenceError, AgentControlError) as exc:
+        code = getattr(exc, "code", "EVIDENCE_ERROR")
+        message = getattr(exc, "message", str(exc))
+        print(f"INVALID {code}: {message}", file=sys.stderr)
+        return 1
+    _print_json(result)
+    return 0
+
+
+def cmd_evidence_verify(args: argparse.Namespace) -> int:
+    from tools.agent_control.evidence.verify import (
+        load_bundle_file,
+        verify_bundle,
+        verify_store,
+    )
+
+    try:
+        if args.bundle:
+            result = verify_bundle(load_bundle_file(Path(args.bundle)))
+        elif args.store:
+            result = verify_store(Path(args.store))
+        else:
+            print(
+                "INVALID EVIDENCE_VERIFY_TARGET: pass --bundle or --store",
+                file=sys.stderr,
+            )
+            return 1
+    except EvidenceError as exc:
+        print(f"INVALID {exc.code}: {exc.message}", file=sys.stderr)
+        return 1
+    _print_json(result)
+    return 0
+
+
+def cmd_evidence_show(args: argparse.Namespace) -> int:
+    from tools.agent_control.evidence.store import EvidenceJsonlStore
+
+    try:
+        records = EvidenceJsonlStore(Path(args.store)).find_by_run_id(args.run)
+        payload = {
+            "evidence_class": "agent_run_evidence_bundle_v1",
+            "run_id": args.run,
+            "count": len(records),
+            "bundles": records,
+            "limitations": ["pilot_store_only", "not_final_ci", "not_merge_authority"],
+        }
+    except EvidenceError as exc:
+        print(f"INVALID {exc.code}: {exc.message}", file=sys.stderr)
+        return 1
+    _print_json(payload)
     return 0
 
 
@@ -524,11 +644,60 @@ def build_parser() -> argparse.ArgumentParser:
 
     p_evidence = sub.add_parser(
         "evidence",
-        help="Read-only dispatcher lifecycle snapshot (not #4256 evidence bundle)",
+        help=(
+            "Evidence surfaces: lifecycle snapshot (#4253) and run evidence "
+            "bundle (#4256)"
+        ),
     )
-    p_evidence.add_argument("--run-id", required=True)
-    p_evidence.add_argument("--state", required=True)
-    p_evidence.set_defaults(func=cmd_evidence)
+    ev_sub = p_evidence.add_subparsers(dest="evidence_command", required=False)
+
+    p_ev_snap = ev_sub.add_parser(
+        "snapshot",
+        help="Dispatcher lifecycle snapshot (not agent_run_evidence bundle)",
+    )
+    p_ev_snap.add_argument("--run", dest="run", required=True)
+    p_ev_snap.add_argument("--state", required=True)
+    p_ev_snap.set_defaults(func=cmd_evidence_snapshot, run_id=None)
+
+    p_ev_emit = ev_sub.add_parser(
+        "emit",
+        help="Emit deterministic cdb.agent_run_evidence.v1 bundle",
+    )
+    p_ev_emit.add_argument("--run", dest="run", required=True)
+    p_ev_emit.add_argument("--state", required=True)
+    p_ev_emit.add_argument(
+        "--store",
+        help="Optional JSONL pilot store path (stdout-only when omitted)",
+    )
+    p_ev_emit.set_defaults(func=cmd_evidence_emit, run_id=None)
+
+    p_ev_verify = ev_sub.add_parser(
+        "verify",
+        help="Verify a bundle file or JSONL pilot store",
+    )
+    p_ev_verify.add_argument("--bundle", help="Path to a single bundle JSON file")
+    p_ev_verify.add_argument("--store", help="Path to JSONL pilot store")
+    p_ev_verify.set_defaults(func=cmd_evidence_verify)
+
+    p_ev_show = ev_sub.add_parser(
+        "show",
+        help="Show stored bundles for a run_id from a JSONL store",
+    )
+    p_ev_show.add_argument("--run", required=True)
+    p_ev_show.add_argument("--store", required=True)
+    p_ev_show.set_defaults(func=cmd_evidence_show)
+
+    # Legacy snapshot alias: evidence --run-id ... --state ...
+    p_evidence.add_argument("--run-id", dest="run_id", default=None)
+    p_evidence.add_argument(
+        "--run",
+        dest="run",
+        default=None,
+        help="Bundle entry alias; requires --state (emit path)",
+    )
+    p_evidence.add_argument("--state", default=None)
+    p_evidence.add_argument("--store", default=None)
+    p_evidence.set_defaults(func=cmd_evidence_dispatch)
 
     provider = sub.add_parser(
         "provider", help="Cursor provider offline/ops surface (#4254)"

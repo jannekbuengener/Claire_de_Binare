@@ -21,6 +21,7 @@ from tools.agent_control.provider import (
     get_provider,
 )
 from tools.agent_control.run_store import RunStore
+from tools.agent_control.evidence.redact import sanitize_result_refs
 
 ALLOWED_DELIVERY_STATUSES = frozenset(
     {
@@ -29,6 +30,36 @@ ALLOWED_DELIVERY_STATUSES = frozenset(
         "DONE_PR_OPEN_MERGE_HANDOFF",
     }
 )
+
+
+def _persist_evidence_bindings(
+    record: dict[str, Any],
+    pf: Any,
+    result: Any | None = None,
+) -> None:
+    """Additive #4256 bindings; never persists prompt_text or secrets."""
+    env_profile = pf.environment_profile or {}
+    agent = pf.agent or {}
+    contract_env = (pf.contract or {}).get("environment") or {}
+    record["environment_profile_id"] = (
+        env_profile.get("profile_id")
+        or agent.get("environment_profile")
+        or contract_env.get("environment_profile")
+    )
+    record["environment_profile_version"] = env_profile.get("profile_version")
+    record["environment_profile_digest"] = pf.environment_profile_digest
+    record["provider_config_digest"] = pf.provider_environment_config_digest
+    record["environment_preflight_verdict"] = pf.environment_preflight_verdict
+    work_order = (pf.contract or {}).get("provider_work_order") or {}
+    record["source_commit"] = work_order.get("source_commit")
+    record["prompt_ref"] = pf.prompt_ref
+    record["prompt_digest"] = pf.prompt_digest
+    if result is not None:
+        record["result_refs"] = sanitize_result_refs(
+            getattr(result, "result_refs", None)
+        )
+        if getattr(result, "usage", None) is not None:
+            record["usage"] = dict(result.usage)
 
 
 def _iso(clock: Clock) -> str:
@@ -378,7 +409,10 @@ def dispatch_run(
         "updated_at": at,
         "scenario": scenario,
         "delivery_receipt": None,
+        "result_refs": {},
     }
+    # Never persist prompt_text on the run record.
+    _persist_evidence_bindings(record, pf)
     store.create(record)
 
     # PLANNED -> ROUTED -> CONTRACTED (validation_success maps VALIDATED)
@@ -459,6 +493,7 @@ def dispatch_run(
         return {"dry_run": False, "applied": True, "plan": None, "run": record}
 
     if result.normalized_status == "UNKNOWN":
+        _persist_evidence_bindings(record, pf, result)
         _apply_state(
             record,
             "BLOCKED",
@@ -475,6 +510,7 @@ def dispatch_run(
         return {"dry_run": False, "applied": True, "plan": None, "run": record}
 
     if result.normalized_status == "FAILED":
+        _persist_evidence_bindings(record, pf, result)
         record["provider_run_id"] = result.provider_run_id
         _apply_state(
             record,
@@ -497,7 +533,7 @@ def dispatch_run(
         return {"dry_run": False, "applied": True, "plan": None, "run": record}
 
     record["provider_run_id"] = result.provider_run_id
-    record["usage"] = dict(result.usage)
+    _persist_evidence_bindings(record, pf, result)
     _apply_state(
         record,
         "DISPATCHED",
@@ -581,6 +617,8 @@ def watch_run(
     record = store.get(run_id)
     assert record is not None
     record["usage"] = dict(result.usage)
+    if result.result_refs:
+        record["result_refs"] = sanitize_result_refs(result.result_refs)
     if (
         isinstance(active, MockProvider) and provider_run_id in active._runs
     ):  # noqa: SLF001

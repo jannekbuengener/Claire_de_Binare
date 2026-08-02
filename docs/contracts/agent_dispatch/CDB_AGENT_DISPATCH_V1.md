@@ -37,6 +37,11 @@ python -m tools.agent_control cancel --run-id <ID> --state <PATH> --reason <TEXT
 python -m tools.agent_control retry --previous-run-id <ID> --contract <PATH> \
   --reason <TEXT> --state <PATH>
 python -m tools.agent_control evidence --run-id <ID> --state <PATH>
+python -m tools.agent_control evidence snapshot --run <ID> --state <PATH>
+python -m tools.agent_control evidence emit --run <ID> --state <PATH> [--store <JSONL>]
+python -m tools.agent_control evidence verify --bundle <PATH>
+python -m tools.agent_control evidence verify --store <JSONL>
+python -m tools.agent_control evidence show --run <ID> --store <JSONL>
 ```
 
 `dispatch` defaults to dry-run (no provider calls, no state writes).
@@ -50,8 +55,10 @@ enables live dispatch. Recorded/fake transports are test-only and require a
 - Execution Contract + Registry ceilings are the maximum authority.
 - Dispatcher does not route, approve, publish `cdb-local-ci`, or merge.
 - Provider success ≠ `DELIVERED`/`PASS` without a validated delivery receipt.
-- `evidence` returns a dispatcher lifecycle snapshot, **not** `#4256` Agent Run
-  Evidence Bundle / JSONL store.
+- `evidence snapshot` / legacy `evidence --run-id` returns a dispatcher
+  lifecycle snapshot, **not** `#4256` Agent Run Evidence Bundle / JSONL store.
+- `evidence emit` / `evidence --run` produces `cdb.agent_run_evidence.v1`
+  (see [`../agent_run_evidence/CDB_AGENT_RUN_EVIDENCE_V1.md`](../agent_run_evidence/CDB_AGENT_RUN_EVIDENCE_V1.md)).
 
 ## Providers
 

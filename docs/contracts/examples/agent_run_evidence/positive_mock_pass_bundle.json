@@ -1,0 +1,275 @@
+{
+  "agent": {
+    "provenance": {
+      "digest": null,
+      "reference": null,
+      "source": "run.agent_id",
+      "trust_class": "control_plane_observed"
+    },
+    "value": "acp-mock-dispatcher"
+  },
+  "artifacts": [],
+  "attempt": 1,
+  "authority_limits": {
+    "not_approval": true,
+    "not_cdb_local_ci": true,
+    "not_completeness_review": true,
+    "not_final_ci": true,
+    "not_live_go": true,
+    "not_merge_authority": true,
+    "not_merge_readiness": true
+  },
+  "bundle_digest": "sha256:16e9c3a95ddc99c62c84060d9e9723aa53d791bfa2dab81b3fb6795632a336b2",
+  "changed_files": [],
+  "delivery_context": {
+    "delivery_commit": "0000000000000000000000000000000000000000",
+    "delivery_status": "DONE_SLICE_ADDED_TO_BATCH_PR",
+    "issue": 4253,
+    "provenance": {
+      "digest": null,
+      "reference": "4286",
+      "source": "run.route+delivery_receipt",
+      "trust_class": "control_plane_observed"
+    },
+    "source_commit": null,
+    "target_branch": "batch/agent-skills-issue-4250",
+    "target_pr": 4286
+  },
+  "delivery_verdict": {
+    "limitations": [
+      "not_final_ci",
+      "not_cdb_local_ci",
+      "not_completeness_review",
+      "not_approval",
+      "not_merge_authority",
+      "not_merge_readiness",
+      "not_live_go",
+      "pilot_store_only"
+    ],
+    "reason_codes": [
+      "DELIVERY_GOALS_MET"
+    ],
+    "verdict": "PASS"
+  },
+  "environment": {
+    "preflight_verdict": "BLOCKED",
+    "profile_digest": "sha256:6fbb93c1a68c719a295b1b240346ce43dd1fa31ddac4785794c8e78f82538f0e",
+    "profile_id": "mock.v1",
+    "profile_version": null,
+    "provenance": {
+      "digest": "sha256:6fbb93c1a68c719a295b1b240346ce43dd1fa31ddac4785794c8e78f82538f0e",
+      "reference": "mock.v1",
+      "source": "run.environment_bindings",
+      "trust_class": "control_plane_observed"
+    },
+    "provider_config_digest": "sha256:67728065787273072fe58ec91413eadc32ca1ba5c5516e2b0148445c119d5e47"
+  },
+  "evidence_class": "agent_run_evidence_bundle_v1",
+  "evidence_id": "are-4c3bd60834a51551954fbd15",
+  "execution_contract": {
+    "contract_digest": "sha256:caebb6e7c5d394f7c342051e5fc8c27b9319a2bee4fe50e92a077b73bb45ab9f",
+    "contract_id": "aec-issue-4253-mock-dispatch",
+    "provenance": {
+      "digest": "sha256:caebb6e7c5d394f7c342051e5fc8c27b9319a2bee4fe50e92a077b73bb45ab9f",
+      "reference": "aec-issue-4253-mock-dispatch",
+      "source": "run.contract",
+      "trust_class": "control_plane_observed"
+    }
+  },
+  "integrity": {
+    "canonicalization": "RFC8785",
+    "digest": "sha256:16e9c3a95ddc99c62c84060d9e9723aa53d791bfa2dab81b3fb6795632a336b2",
+    "digest_algorithm": "sha256",
+    "digest_encoding": "sha256:<lowercase-hex>"
+  },
+  "lifecycle": {
+    "created_at": "2026-08-02T12:00:00Z",
+    "events": [
+      {
+        "at": "2026-08-02T12:00:00Z",
+        "detail": {
+          "routing_decision": "OPERATIONAL_BATCH_CONTINUATION"
+        },
+        "from_state": "PLANNED",
+        "name": "route_bound",
+        "seq": 1,
+        "to_state": "ROUTED"
+      },
+      {
+        "at": "2026-08-02T12:00:00Z",
+        "detail": {
+          "mapped_from_issue_label": "VALIDATED"
+        },
+        "from_state": "ROUTED",
+        "name": "validation_success",
+        "seq": 2,
+        "to_state": "CONTRACTED"
+      },
+      {
+        "at": "2026-08-02T12:00:00Z",
+        "detail": {
+          "provider_run_id": "mock-645be295fe99fee3"
+        },
+        "from_state": "CONTRACTED",
+        "name": "provider_dispatched",
+        "seq": 3,
+        "to_state": "DISPATCHED"
+      },
+      {
+        "at": "2026-08-02T12:00:00Z",
+        "detail": {},
+        "from_state": "DISPATCHED",
+        "name": "provider_running",
+        "seq": 4,
+        "to_state": "RUNNING"
+      },
+      {
+        "at": "2026-08-02T12:00:00Z",
+        "detail": {
+          "receipt_commit": "0000000000000000000000000000000000000000"
+        },
+        "from_state": "RUNNING",
+        "name": "delivery_accepted",
+        "seq": 5,
+        "to_state": "DELIVERED"
+      },
+      {
+        "at": "2026-08-02T12:00:00Z",
+        "detail": {
+          "code": "PASS",
+          "not_final_ci": true,
+          "not_merge_authority": true,
+          "reason": "delivery_goals_met"
+        },
+        "from_state": "DELIVERED",
+        "name": "delivery_pass",
+        "seq": 6,
+        "to_state": "PASS"
+      },
+      {
+        "at": "2026-08-02T12:00:00Z",
+        "detail": {
+          "mapped_from_issue_label": "HANDED_OFF"
+        },
+        "from_state": "PASS",
+        "name": "handed_off",
+        "seq": 7,
+        "to_state": "PASS"
+      }
+    ],
+    "provenance": {
+      "digest": null,
+      "reference": "adr-48294b71024a40f6",
+      "source": "run.lifecycle",
+      "trust_class": "control_plane_observed"
+    },
+    "state": "PASS",
+    "terminal_code": "PASS",
+    "terminal_reason": "delivery_goals_met",
+    "updated_at": "2026-08-02T12:00:00Z"
+  },
+  "limitations": [
+    "not_final_ci",
+    "not_cdb_local_ci",
+    "not_completeness_review",
+    "not_approval",
+    "not_merge_authority",
+    "not_merge_readiness",
+    "not_live_go",
+    "pilot_store_only"
+  ],
+  "prompt": {
+    "prompt_digest": null,
+    "prompt_ref": null,
+    "provenance": {
+      "digest": null,
+      "reference": null,
+      "source": "run.prompt",
+      "trust_class": "control_plane_observed"
+    }
+  },
+  "provider": {
+    "provenance": {
+      "digest": null,
+      "reference": "mock-645be295fe99fee3",
+      "source": "run.provider",
+      "trust_class": "control_plane_observed"
+    },
+    "provider_id": "mock",
+    "provider_run_id": "mock-645be295fe99fee3"
+  },
+  "request_binding": {
+    "idempotency_key": "idem-mock-pass-example",
+    "provenance": {
+      "digest": null,
+      "reference": "idem-mock-pass-example",
+      "source": "run.idempotency_key",
+      "trust_class": "control_plane_observed"
+    }
+  },
+  "result_refs": {
+    "scenario": "success",
+    "watch_ticks": 2
+  },
+  "run_id": "adr-48294b71024a40f6",
+  "schema_id": "cdb.agent_run_evidence.v1",
+  "schema_version": "1.0.0",
+  "tests": [],
+  "usage": {
+    "cost": {
+      "amount": null,
+      "currency": null,
+      "provenance": {
+        "digest": null,
+        "reference": null,
+        "source": "evidence.mock_cost",
+        "trust_class": "derived"
+      },
+      "status": "NOT_APPLICABLE"
+    },
+    "iterations": 2,
+    "tokens": {
+      "cache_tokens": {
+        "provenance": {
+          "digest": null,
+          "reference": null,
+          "source": "evidence.normalize_usage_cost",
+          "trust_class": "derived"
+        },
+        "status": "UNAVAILABLE",
+        "value": null
+      },
+      "input_tokens": {
+        "provenance": {
+          "digest": null,
+          "reference": null,
+          "source": "evidence.normalize_usage_cost",
+          "trust_class": "derived"
+        },
+        "status": "UNAVAILABLE",
+        "value": null
+      },
+      "output_tokens": {
+        "provenance": {
+          "digest": null,
+          "reference": null,
+          "source": "evidence.normalize_usage_cost",
+          "trust_class": "derived"
+        },
+        "status": "UNAVAILABLE",
+        "value": null
+      },
+      "total_tokens": {
+        "provenance": {
+          "digest": null,
+          "reference": null,
+          "source": "evidence.normalize_usage_cost",
+          "trust_class": "derived"
+        },
+        "status": "UNAVAILABLE",
+        "value": null
+      }
+    },
+    "tool_calls": 3
+  }
+}

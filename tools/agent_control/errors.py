@@ -22,3 +22,7 @@ class DispatchError(AgentControlError):
 
 class EnvironmentError(AgentControlError):
     """Fail-closed environment profile / doctor error."""
+
+
+class EvidenceError(AgentControlError):
+    """Fail-closed agent run evidence / store / verifier error."""
