@@ -1,0 +1,571 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://claire-de-binare.local/contracts/cdb_agent_execution.v1.schema.json",
+  "title": "CDB Agent Execution Contract v1",
+  "description": "Provider-neutral, fail-closed handoff from the read-only PR Router to later dispatcher/provider consumers. Schema id: cdb.agent_execution.v1. Unknown fields are rejected.",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "schema_id",
+    "schema_version",
+    "contract_id",
+    "created_at",
+    "producer",
+    "issue",
+    "route",
+    "permissions",
+    "execution_scope",
+    "budget",
+    "environment",
+    "validation_and_delivery",
+    "integrity"
+  ],
+  "properties": {
+    "schema_id": {
+      "const": "cdb.agent_execution.v1"
+    },
+    "schema_version": {
+      "type": "string",
+      "enum": ["1.0.0", "1.1.0"]
+    },
+    "provider_work_order": {
+      "type": "object",
+      "additionalProperties": false,
+      "description": "Optional digest-bound provider work order. Required for live Cursor provider dispatch; omitted contracts remain valid as schema 1.0.0.",
+      "required": ["prompt_ref", "source_commit", "prompt_digest"],
+      "properties": {
+        "prompt_ref": {
+          "$ref": "#/$defs/RepoRelativePath"
+        },
+        "source_commit": {
+          "type": "string",
+          "pattern": "^[a-f0-9]{40}$"
+        },
+        "prompt_digest": {
+          "type": "string",
+          "pattern": "^sha256:[a-f0-9]{64}$"
+        }
+      }
+    },
+    "contract_id": {
+      "type": "string",
+      "pattern": "^aec-[a-z0-9][a-z0-9_-]{2,120}$"
+    },
+    "created_at": {
+      "type": "string",
+      "format": "date-time"
+    },
+    "producer": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["component", "agent"],
+      "properties": {
+        "component": {
+          "type": "string",
+          "enum": ["pr_router_handoff", "explicit_policy"]
+        },
+        "agent": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 120
+        },
+        "policy_id": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 120
+        }
+      }
+    },
+    "issue": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["number"],
+      "properties": {
+        "number": {
+          "type": "integer",
+          "minimum": 1
+        },
+        "title": {
+          "type": "string",
+          "maxLength": 500
+        },
+        "parent_issue": {
+          "type": ["integer", "null"],
+          "minimum": 1
+        },
+        "predecessor_issue": {
+          "type": ["integer", "null"],
+          "minimum": 1
+        }
+      }
+    },
+    "route": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "routing_decision",
+        "lane",
+        "validation_profile",
+        "merge_mode",
+        "lock_state",
+        "policy_id"
+      ],
+      "properties": {
+        "routing_decision": {
+          "type": "string",
+          "enum": [
+            "ROUTE_TO_EXISTING_BATCH_PR",
+            "ROUTE_TO_EXISTING_DEDICATED_PR",
+            "CREATE_NEW_BATCH_PR",
+            "CREATE_DEDICATED_PR",
+            "HOLD_PR_LOCK_CONFLICT",
+            "HOLD_NO_SAFE_ROUTE",
+            "OPERATIONAL_BATCH_CONTINUATION"
+          ]
+        },
+        "target_pr": {
+          "type": ["integer", "null"],
+          "minimum": 1
+        },
+        "target_branch": {
+          "type": ["string", "null"],
+          "minLength": 1,
+          "maxLength": 255
+        },
+        "batch_key": {
+          "type": ["string", "null"],
+          "minLength": 1,
+          "maxLength": 120
+        },
+        "lane": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 80
+        },
+        "validation_profile": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 80
+        },
+        "merge_mode": {
+          "type": "string",
+          "enum": ["batch", "dedicated"]
+        },
+        "lock_state": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 80
+        },
+        "policy_id": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 120
+        },
+        "reason_codes": {
+          "type": "array",
+          "items": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 120
+          },
+          "maxItems": 64
+        },
+        "router_observed_at": {
+          "type": "string",
+          "format": "date-time"
+        }
+      }
+    },
+    "permissions": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "read_repo",
+        "write_code",
+        "write_docs",
+        "commit",
+        "push",
+        "open_pr",
+        "update_pr",
+        "comment_issue",
+        "close_issue",
+        "publish_cdb_local_ci",
+        "merge",
+        "runtime_mutation",
+        "database_mutation",
+        "mcp_live_mutation"
+      ],
+      "properties": {
+        "read_repo": { "type": "boolean" },
+        "write_code": { "type": "boolean" },
+        "write_docs": { "type": "boolean" },
+        "commit": { "type": "boolean" },
+        "push": { "type": "boolean" },
+        "open_pr": { "type": "boolean" },
+        "update_pr": { "type": "boolean" },
+        "comment_issue": { "type": "boolean" },
+        "close_issue": { "type": "boolean" },
+        "publish_cdb_local_ci": { "type": "boolean" },
+        "merge": { "type": "boolean" },
+        "runtime_mutation": { "type": "boolean" },
+        "database_mutation": { "type": "boolean" },
+        "mcp_live_mutation": { "type": "boolean" }
+      }
+    },
+    "execution_scope": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "allowed_paths",
+        "forbidden_paths",
+        "allowed_commands_or_command_classes",
+        "issue_scope",
+        "delivery_target",
+        "stop_conditions"
+      ],
+      "properties": {
+        "allowed_paths": {
+          "type": "array",
+          "items": { "$ref": "#/$defs/RepoRelativePath" },
+          "maxItems": 256
+        },
+        "forbidden_paths": {
+          "type": "array",
+          "items": { "$ref": "#/$defs/RepoRelativePath" },
+          "maxItems": 256
+        },
+        "allowed_commands_or_command_classes": {
+          "type": "array",
+          "items": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 120,
+            "pattern": "^[a-z][a-z0-9_.:-]{0,119}$"
+          },
+          "maxItems": 128
+        },
+        "issue_scope": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": ["delivery_issue", "forbidden_follow_on_issues"],
+          "properties": {
+            "delivery_issue": {
+              "type": "integer",
+              "minimum": 1
+            },
+            "forbidden_follow_on_issues": {
+              "type": "array",
+              "items": {
+                "type": "integer",
+                "minimum": 1
+              },
+              "maxItems": 64
+            },
+            "topic": {
+              "type": "string",
+              "maxLength": 200
+            }
+          }
+        },
+        "delivery_target": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": ["mode", "expected_status"],
+          "properties": {
+            "mode": {
+              "type": "string",
+              "enum": ["batch_pr", "dedicated_pr", "none"]
+            },
+            "target_pr": {
+              "type": ["integer", "null"],
+              "minimum": 1
+            },
+            "target_branch": {
+              "type": ["string", "null"],
+              "maxLength": 255
+            },
+            "expected_status": {
+              "type": "string",
+              "enum": [
+                "DONE_SLICE_ADDED_TO_BATCH_PR",
+                "DONE_PR_OPEN",
+                "HOLD",
+                "BLOCKED"
+              ]
+            }
+          }
+        },
+        "stop_conditions": {
+          "type": "array",
+          "minItems": 1,
+          "maxItems": 64,
+          "items": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 240
+          }
+        }
+      }
+    },
+    "budget": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "wall_time_seconds",
+        "max_iterations",
+        "max_tool_calls",
+        "network_policy"
+      ],
+      "properties": {
+        "wall_time_seconds": {
+          "type": "integer",
+          "minimum": 0,
+          "maximum": 86400
+        },
+        "max_iterations": {
+          "type": "integer",
+          "minimum": 0,
+          "maximum": 100000
+        },
+        "max_tool_calls": {
+          "type": "integer",
+          "minimum": 0,
+          "maximum": 1000000
+        },
+        "network_policy": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": ["mode"],
+          "properties": {
+            "mode": {
+              "type": "string",
+              "enum": ["deny_all", "allowlist"]
+            },
+            "allowed_domains": {
+              "type": "array",
+              "items": {
+                "type": "string",
+                "minLength": 1,
+                "maxLength": 253,
+                "pattern": "^[a-z0-9][a-z0-9.-]{0,251}[a-z0-9]$|^[a-z0-9]$"
+              },
+              "maxItems": 64
+            },
+            "allowed_classes": {
+              "type": "array",
+              "items": {
+                "type": "string",
+                "enum": [
+                  "github_api_readonly",
+                  "github_api_write_via_gh_cli",
+                  "docs_fetch_readonly",
+                  "package_index_readonly"
+                ]
+              },
+              "maxItems": 16
+            }
+          }
+        }
+      }
+    },
+    "environment": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "environment_profile",
+        "provider_profile",
+        "mcp_profiles",
+        "skills",
+        "subagents",
+        "secret_references"
+      ],
+      "properties": {
+        "environment_profile": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 120
+        },
+        "provider_profile": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": ["provider_id"],
+          "properties": {
+            "provider_id": {
+              "type": "string",
+              "minLength": 1,
+              "maxLength": 80,
+              "pattern": "^[a-z][a-z0-9_-]{0,79}$"
+            },
+            "profile_name": {
+              "type": "string",
+              "maxLength": 120
+            },
+            "extensions": {
+              "type": "object",
+              "additionalProperties": {
+                "type": ["string", "number", "boolean", "null", "array", "object"]
+              },
+              "propertyNames": {
+                "pattern": "^[a-z][a-z0-9_.-]{0,79}$"
+              }
+            }
+          }
+        },
+        "mcp_profiles": {
+          "type": "array",
+          "items": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 80
+          },
+          "maxItems": 32
+        },
+        "skills": {
+          "type": "array",
+          "items": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 120
+          },
+          "maxItems": 64
+        },
+        "subagents": {
+          "type": "array",
+          "items": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 120
+          },
+          "maxItems": 64
+        },
+        "secret_references": {
+          "type": "array",
+          "items": { "$ref": "#/$defs/SecretReference" },
+          "maxItems": 64
+        }
+      }
+    },
+    "validation_and_delivery": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "required_validations",
+        "evidence_requirements",
+        "allowed_delivery_statuses",
+        "merge_authority"
+      ],
+      "properties": {
+        "required_validations": {
+          "type": "array",
+          "items": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 160
+          },
+          "maxItems": 64
+        },
+        "evidence_requirements": {
+          "type": "array",
+          "items": {
+            "type": "string",
+            "enum": [
+              "targeted_slice_validation",
+              "brain_evidence_block",
+              "router_decision_record",
+              "contract_hash_record",
+              "issue_comment_handoff"
+            ]
+          },
+          "maxItems": 32
+        },
+        "allowed_delivery_statuses": {
+          "type": "array",
+          "minItems": 1,
+          "items": {
+            "type": "string",
+            "enum": [
+              "DONE_SLICE_ADDED_TO_BATCH_PR",
+              "DONE_PR_OPEN",
+              "HOLD_DEPENDENCY_NOT_READY",
+              "HOLD_PR_LOCK_CONFLICT",
+              "HOLD_NO_SAFE_ROUTE",
+              "HOLD_SCOPE_DRIFT",
+              "HOLD_CONTRACT_INTEGRITY_NOT_PROVEN",
+              "HOLD",
+              "BLOCKED"
+            ]
+          },
+          "maxItems": 32
+        },
+        "merge_authority": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": ["granted", "role"],
+          "properties": {
+            "granted": {
+              "const": false
+            },
+            "role": {
+              "const": "none"
+            }
+          }
+        }
+      }
+    },
+    "integrity": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "canonicalization",
+        "digest_algorithm",
+        "digest_encoding",
+        "digest"
+      ],
+      "properties": {
+        "canonicalization": {
+          "const": "RFC8785"
+        },
+        "digest_algorithm": {
+          "const": "sha256"
+        },
+        "digest_encoding": {
+          "const": "sha256:<lowercase-hex>"
+        },
+        "digest": {
+          "type": "string",
+          "pattern": "^sha256:[a-f0-9]{64}$"
+        }
+      }
+    }
+  },
+  "$defs": {
+    "RepoRelativePath": {
+      "type": "string",
+      "minLength": 1,
+      "maxLength": 512,
+      "pattern": "^(?!/)(?!.*(?:^|/)\\.\\.(?:/|$))(?:[A-Za-z0-9._@+-]+(?:/[A-Za-z0-9._@+-]+)*)(?:/\\*)?$"
+    },
+    "SecretReference": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["class", "ref"],
+      "properties": {
+        "class": {
+          "type": "string",
+          "enum": [
+            "provider_api_key",
+            "github_token",
+            "environment_secret",
+            "docker_secret"
+          ]
+        },
+        "ref": {
+          "type": "string",
+          "minLength": 3,
+          "maxLength": 200,
+          "pattern": "^(env|secret|file):[A-Za-z0-9_./-]{1,180}$"
+        }
+      }
+    }
+  }
+}

@@ -1,0 +1,192 @@
+{
+  "budget": {
+    "max_iterations": 200,
+    "max_tool_calls": 5000,
+    "network_policy": {
+      "allowed_classes": [
+        "github_api_write_via_gh_cli",
+        "docs_fetch_readonly"
+      ],
+      "allowed_domains": [
+        "api.github.com",
+        "github.com",
+        "json-schema.org",
+        "www.rfc-editor.org",
+        "cursor.com"
+      ],
+      "mode": "allowlist"
+    },
+    "wall_time_seconds": 14400
+  },
+  "contract_id": "aec-issue-4254-cursor-dry-run",
+  "created_at": "2026-08-01T20:05:00Z",
+  "environment": {
+    "environment_profile": "mock",
+    "mcp_profiles": [],
+    "provider_profile": {
+      "extensions": {
+        "api_surface": "mock-v1"
+      },
+      "profile_name": "cursor-sdk-dry-run",
+      "provider_id": "cursor-sdk"
+    },
+    "secret_references": [
+      {
+        "class": "github_token",
+        "ref": "env:GH_TOKEN"
+      }
+    ],
+    "skills": [
+      "cdb-session-start",
+      "cdb-pr-router",
+      "cdb-session-close"
+    ],
+    "subagents": []
+  },
+  "execution_scope": {
+    "allowed_commands_or_command_classes": [
+      "git_read",
+      "git_commit_push",
+      "pytest_unit",
+      "ruff_check",
+      "gh_issue_comment",
+      "gh_pr_edit",
+      "python_module_tools"
+    ],
+    "allowed_paths": [
+      "docs/contracts",
+      "docs/contracts/*",
+      "tools/agent_execution_contract",
+      "tools/agent_execution_contract/*",
+      "tests/unit/governance",
+      "tests/unit/governance/*",
+      "knowledge/governance",
+      "knowledge/governance/*",
+      "knowledge/logs/sessions",
+      "knowledge/logs/sessions/*",
+      "agents",
+      "agents/*",
+      "AGENTS.md",
+      "tests/fixtures/agent_control/cursor/*",
+      "tools/agent_control",
+      "tools/agent_control/*"
+    ],
+    "delivery_target": {
+      "expected_status": "DONE_SLICE_ADDED_TO_BATCH_PR",
+      "mode": "batch_pr",
+      "target_branch": "batch/agent-skills-issue-4250",
+      "target_pr": 4286
+    },
+    "forbidden_paths": [
+      "services",
+      "services/*",
+      "core",
+      "core/*",
+      "infrastructure/compose",
+      "infrastructure/compose/*",
+      ".github/workflows",
+      ".github/workflows/*"
+    ],
+    "issue_scope": {
+      "delivery_issue": 4254,
+      "forbidden_follow_on_issues": [
+        4255,
+        4256,
+        4257,
+        4258,
+        4259,
+        4260
+      ],
+      "topic": "AGENTS Control Plane"
+    },
+    "stop_conditions": [
+      "HOLD_NO_SAFE_ROUTE",
+      "HOLD_DEPENDENCY_NOT_READY",
+      "HOLD_SCOPE_DRIFT",
+      "HOLD_CONTRACT_INTEGRITY_NOT_PROVEN"
+    ]
+  },
+  "integrity": {
+    "canonicalization": "RFC8785",
+    "digest": "sha256:64a93a7a70a7a01d1b72d4200395ede3318978937d78357ba4ea03d3bc508d03",
+    "digest_algorithm": "sha256",
+    "digest_encoding": "sha256:<lowercase-hex>"
+  },
+  "issue": {
+    "number": 4254,
+    "parent_issue": 4249,
+    "predecessor_issue": 4253,
+    "title": "[AGENTS][CURSOR] Add Cursor CLI, SDK and Cloud Agents provider adapter"
+  },
+  "permissions": {
+    "close_issue": false,
+    "comment_issue": true,
+    "commit": true,
+    "database_mutation": false,
+    "mcp_live_mutation": false,
+    "merge": false,
+    "open_pr": false,
+    "publish_cdb_local_ci": false,
+    "push": true,
+    "read_repo": true,
+    "runtime_mutation": false,
+    "update_pr": true,
+    "write_code": true,
+    "write_docs": true
+  },
+  "producer": {
+    "agent": "cursor-cloud",
+    "component": "pr_router_handoff",
+    "policy_id": "cdb-pr-routing-v1"
+  },
+  "provider_work_order": {
+    "prompt_digest": "sha256:850bc9495f0de2f3d72ec9f3e308308e070bd4656e6999770ffb38b96e74fb56",
+    "prompt_ref": "tests/fixtures/agent_control/cursor/prompt_ok.txt",
+    "source_commit": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"
+  },
+  "route": {
+    "batch_key": "agent-skills",
+    "lane": "agent-skills",
+    "lock_state": "UNLOCKED",
+    "merge_mode": "batch",
+    "policy_id": "cdb-pr-routing-v1",
+    "reason_codes": [
+      "OPERATIONAL_BATCH_CONTINUATION_ON_ACCEPTING_SLICES_PR",
+      "ISSUE_COMPATIBILITY_METADATA_INCOMPLETE"
+    ],
+    "router_observed_at": "2026-08-01T20:00:00Z",
+    "routing_decision": "OPERATIONAL_BATCH_CONTINUATION",
+    "target_branch": "batch/agent-skills-issue-4250",
+    "target_pr": 4286,
+    "validation_profile": "agent-skills-v1"
+  },
+  "schema_id": "cdb.agent_execution.v1",
+  "schema_version": "1.1.0",
+  "validation_and_delivery": {
+    "allowed_delivery_statuses": [
+      "DONE_SLICE_ADDED_TO_BATCH_PR",
+      "HOLD_DEPENDENCY_NOT_READY",
+      "HOLD_PR_LOCK_CONFLICT",
+      "HOLD_NO_SAFE_ROUTE",
+      "HOLD_SCOPE_DRIFT",
+      "HOLD_CONTRACT_INTEGRITY_NOT_PROVEN"
+    ],
+    "evidence_requirements": [
+      "targeted_slice_validation",
+      "brain_evidence_block",
+      "router_decision_record",
+      "contract_hash_record",
+      "issue_comment_handoff"
+    ],
+    "merge_authority": {
+      "granted": false,
+      "role": "none"
+    },
+    "required_validations": [
+      "pytest tests/unit/governance/test_agent_execution_contract_v1.py",
+      "pytest tests/unit/governance/test_pr_routing_contract.py",
+      "git diff --check",
+      "python -m tools.validate_readme_links"
+    ]
+  }
+}

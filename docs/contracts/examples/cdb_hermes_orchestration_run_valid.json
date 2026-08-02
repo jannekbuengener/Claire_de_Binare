@@ -1,0 +1,195 @@
+{
+  "schema_version": "cdb.hermes_orchestration_run.v1",
+  "run_id": "hor-wave3-btc-trend-001",
+  "created_at": "2026-08-01T19:00:00Z",
+  "updated_at": "2026-08-01T19:10:00Z",
+  "orchestrator": "hermes-validation-chief",
+  "run_status": "COMPLETED",
+  "bindings": {
+    "strategy_candidate_id": "sc-wave1-btc-trend-breakout",
+    "strategy_candidate_version": "v1",
+    "candidate_content_hash": "sha256:3333333333333333333333333333333333333333333333333333333333333333",
+    "validation_manifest_id": "vm-wave1-btc-trend-001",
+    "validation_manifest_hash": "sha256:4444444444444444444444444444444444444444444444444444444444444444",
+    "security_gate_id": "rsg-wave3-btc-trend-001",
+    "security_gate_hash": "sha256:7777777777777777777777777777777777777777777777777777777777777777",
+    "security_gate_version": "v1",
+    "code_head_ref": "refs/heads/main",
+    "code_head_sha": "6ac6b767f0f57d6c0e795fab81da8b2b1d2ebe1e",
+    "dataset_hashes": [
+      {
+        "ref": "synthetic://datasets/btcusdt-1m-fixture",
+        "sha256": "sha256:5555555555555555555555555555555555555555555555555555555555555555"
+      }
+    ],
+    "produced_artifact_hashes": [
+      {
+        "ref": "candidate-evidence.json",
+        "sha256": "sha256:8888888888888888888888888888888888888888888888888888888888888888"
+      },
+      {
+        "ref": "orchestration-run.json",
+        "sha256": "sha256:9999999999999999999999999999999999999999999999999999999999999999"
+      }
+    ]
+  },
+  "security_gate_binding": {
+    "security_gate_id": "rsg-wave3-btc-trend-001",
+    "security_gate_hash": "sha256:7777777777777777777777777777777777777777777777777777777777777777",
+    "security_gate_version": "v1",
+    "security_gate_verdict": "PASS",
+    "content_classification": "UNTRUSTED_INPUT"
+  },
+  "steps": [
+    {
+      "step_id": "step-01-validate",
+      "action": "validate_inbound_contracts",
+      "status": "PASSED"
+    },
+    {
+      "step_id": "step-02-load",
+      "action": "load_manifest_and_security_gate",
+      "status": "PASSED"
+    },
+    {
+      "step_id": "step-03-worker",
+      "action": "select_allowed_worker_type",
+      "status": "PASSED"
+    },
+    {
+      "step_id": "step-04-request",
+      "action": "request_structured_validation_run",
+      "status": "PASSED"
+    },
+    {
+      "step_id": "step-05-monitor",
+      "action": "monitor_run_status",
+      "status": "PASSED"
+    },
+    {
+      "step_id": "step-06-collect",
+      "action": "collect_evidence_artifacts",
+      "status": "PASSED"
+    },
+    {
+      "step_id": "step-07-verify",
+      "action": "verify_hash_and_binding_completeness",
+      "status": "PASSED"
+    },
+    {
+      "step_id": "step-08-publish",
+      "action": "publish_structured_verdict",
+      "status": "PASSED"
+    }
+  ],
+  "attempts": [
+    {
+      "attempt_id": "att-wave3-btc-trend-001",
+      "attempt_number": 1,
+      "started_at": "2026-08-01T19:01:00Z",
+      "ended_at": "2026-08-01T19:09:00Z",
+      "worker_type": "synthetic-fixture-worker",
+      "status": "SUCCEEDED",
+      "bindings_snapshot": {
+        "strategy_candidate_id": "sc-wave1-btc-trend-breakout",
+        "strategy_candidate_version": "v1",
+        "candidate_content_hash": "sha256:3333333333333333333333333333333333333333333333333333333333333333",
+        "validation_manifest_id": "vm-wave1-btc-trend-001",
+        "validation_manifest_hash": "sha256:4444444444444444444444444444444444444444444444444444444444444444",
+        "security_gate_id": "rsg-wave3-btc-trend-001",
+        "security_gate_hash": "sha256:7777777777777777777777777777777777777777777777777777777777777777",
+        "security_gate_version": "v1",
+        "code_head_ref": "refs/heads/main",
+        "code_head_sha": "6ac6b767f0f57d6c0e795fab81da8b2b1d2ebe1e",
+        "dataset_hashes": [
+          {
+            "ref": "synthetic://datasets/btcusdt-1m-fixture",
+            "sha256": "sha256:5555555555555555555555555555555555555555555555555555555555555555"
+          }
+        ],
+        "produced_artifact_hashes": [
+          {
+            "ref": "candidate-evidence.json",
+            "sha256": "sha256:8888888888888888888888888888888888888888888888888888888888888888"
+          },
+          {
+            "ref": "orchestration-run.json",
+            "sha256": "sha256:9999999999999999999999999999999999999999999999999999999999999999"
+          }
+        ]
+      }
+    }
+  ],
+  "retry_policy": {
+    "max_technical_attempts": 3,
+    "backoff_seconds": [5, 15, 45],
+    "domain_failures_retryable": false
+  },
+  "retry_disposition": {
+    "retryable": false,
+    "reason_code": "NONE",
+    "next_attempt_allowed": false
+  },
+  "evidence_collection": {
+    "status": "COMPLETE",
+    "artifact_hashes": [
+      {
+        "ref": "candidate-evidence.json",
+        "sha256": "sha256:8888888888888888888888888888888888888888888888888888888888888888"
+      },
+      {
+        "ref": "orchestration-run.json",
+        "sha256": "sha256:9999999999999999999999999999999999999999999999999999999999999999"
+      }
+    ],
+    "missing_artifacts": []
+  },
+  "drift_status": "NONE",
+  "structured_verdict": {
+    "verdict": "PASS",
+    "rationale_codes": [
+      "BINDINGS_COMPLETE",
+      "SECURITY_GATE_PASS",
+      "EVIDENCE_COMPLETE",
+      "NO_DRIFT"
+    ],
+    "notes": "Synthetic orchestration fixture only. PASS is not validation or live authority.",
+    "free_form_opinion_is_leading": false
+  },
+  "failure_records": [],
+  "allowed_actions_executed": [
+    "validate_inbound_contracts",
+    "load_manifest_and_security_gate",
+    "select_allowed_worker_type",
+    "request_structured_validation_run",
+    "monitor_run_status",
+    "collect_evidence_artifacts",
+    "verify_hash_and_binding_completeness",
+    "publish_structured_verdict"
+  ],
+  "forbidden_actions_attempted": [],
+  "authority_boundaries": {
+    "research_apps_validation_authority": false,
+    "hermes_live_authority": false,
+    "hermes_validation_authority": false,
+    "automatic_strategy_promotion": false,
+    "paper_candidate_is_live_go": false,
+    "real_money_go": false,
+    "risk_bypass": false,
+    "orchestration_pass_implies_validation_pass": false
+  },
+  "safety_boundaries": {
+    "lr_status": "NO-GO",
+    "productive_db_writes": false,
+    "plugin_installation": false,
+    "productive_agent_execution": false,
+    "incomplete_evidence_cannot_pass": true,
+    "drift_cannot_pass": true,
+    "security_block_cannot_pass": true
+  },
+  "limitations": [
+    "Contract-only synthetic fixture; no productive Hermes or worker execution.",
+    "Orchestration PASS does not grant validation, paper, live, risk, or capital authority.",
+    "Security gate binding references the #4271 contract surface; scanners not executed here."
+  ]
+}

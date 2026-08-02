@@ -1,7 +1,7 @@
 {
   "$schema": "http://json-schema.org/draft-07/schema#",
   "title": "CDB Candidate Transition v1",
-  "description": "Auditable registry status transition. Every substantive status change requires a DecisionRecord. PAPER_CANDIDATE additionally requires PASS-compatible CandidateEvidence for the exact candidate_version. Relational checks are enforced by tools/research_validation/wave2_cross_contract.py.",
+  "description": "Auditable registry status transition. Every substantive status change requires a DecisionRecord. PAPER_CANDIDATE additionally requires PASS-compatible CandidateEvidence for the exact candidate_version. Status-conditional bindings (G-01/G-02) and relational checks are enforced by schema if/then plus tools/research_validation/wave2_cross_contract.py.",
   "type": "object",
   "additionalProperties": false,
   "required": [
@@ -161,5 +161,96 @@
         }
       }
     }
-  }
+  },
+  "allOf": [
+    {
+      "if": {
+        "properties": {
+          "to_status": {
+            "const": "VALIDATING"
+          }
+        },
+        "required": [
+          "to_status"
+        ]
+      },
+      "then": {
+        "required": [
+          "validation_manifest_id"
+        ],
+        "properties": {
+          "validation_manifest_id": {
+            "type": "string",
+            "pattern": "^vm-[a-z0-9][a-z0-9-]{2,80}$"
+          }
+        }
+      }
+    },
+    {
+      "if": {
+        "properties": {
+          "to_status": {
+            "const": "EVIDENCE_READY"
+          }
+        },
+        "required": [
+          "to_status"
+        ]
+      },
+      "then": {
+        "required": [
+          "run_id",
+          "evidence_id",
+          "evidence_hash"
+        ],
+        "properties": {
+          "run_id": {
+            "type": "string",
+            "pattern": "^run-[a-z0-9][a-z0-9-]{2,80}$"
+          },
+          "evidence_id": {
+            "type": "string",
+            "pattern": "^ce-[a-z0-9][a-z0-9-]{2,80}$"
+          },
+          "evidence_hash": {
+            "type": "string",
+            "pattern": "^sha256:[a-f0-9]{64}$"
+          }
+        }
+      }
+    },
+    {
+      "if": {
+        "properties": {
+          "to_status": {
+            "const": "PAPER_CANDIDATE"
+          }
+        },
+        "required": [
+          "to_status"
+        ]
+      },
+      "then": {
+        "required": [
+          "run_id",
+          "evidence_id",
+          "evidence_hash"
+        ],
+        "properties": {
+          "run_id": {
+            "type": "string",
+            "pattern": "^run-[a-z0-9][a-z0-9-]{2,80}$"
+          },
+          "evidence_id": {
+            "type": "string",
+            "pattern": "^ce-[a-z0-9][a-z0-9-]{2,80}$"
+          },
+          "evidence_hash": {
+            "type": "string",
+            "pattern": "^sha256:[a-f0-9]{64}$"
+          }
+        }
+      }
+    }
+  ]
 }

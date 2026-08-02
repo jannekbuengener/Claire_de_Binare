@@ -1,0 +1,8 @@
+{
+  "build": {
+    "dockerfile": "../ci/Dockerfile",
+    "context": ".."
+  },
+  "install": "python -m pip install -r requirements.txt -r requirements-dev.txt -r requirements-mcp.txt",
+  "agentCanUpdateSnapshot": false
+}

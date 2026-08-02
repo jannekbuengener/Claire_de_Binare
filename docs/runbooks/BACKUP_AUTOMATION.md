@@ -102,3 +102,16 @@ Erwartete Evidence: ZIP-Archiv, `manifest.json`, Restore-Log mit Health-/Count-R
 - Standard-Retention: 14 Tage
 - Bereinigung erfolgt automatisch in `backup_all.ps1`
 - Kein manuelles Cleanup erforderlich
+
+## PG15 Archive Cleanup Preflight (#3612)
+
+Nach der Postgres-15→18-Migration (#3600) liegt ein archiviertes PG15-Cluster
+unter `/data/.pg15_archived/` im Postgres-Volume. Vor einem späteren, separaten
+Operator-GO zum Entfernen dieses Archivs:
+
+1. `make backup-health` und `make backup` ausführen (frische Backup-Referenz).
+2. Restore-Pfad und Manifest-Verifikation wie oben kennen.
+3. Read-only Preflight ausführen: siehe [`PG15_ARCHIVE_CLEANUP.md`](./PG15_ARCHIVE_CLEANUP.md).
+
+Der Preflight (`tools/postgres/pg15_archive_cleanup_preflight.py`) führt keine
+Löschungen aus und erzeugt keine destruktiven Befehle.

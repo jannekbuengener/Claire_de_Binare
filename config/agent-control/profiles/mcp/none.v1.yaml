@@ -1,0 +1,4 @@
+profile_id: none.v1
+description: No MCP servers attached; mutation forbidden.
+servers: []
+mutation_allowed: false

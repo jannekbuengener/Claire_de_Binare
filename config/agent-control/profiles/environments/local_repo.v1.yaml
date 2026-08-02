@@ -1,0 +1,3 @@
+profile_id: local_repo.v1
+description: Local repository working tree (no remote environment provisioning).
+runtime_class: local_repo

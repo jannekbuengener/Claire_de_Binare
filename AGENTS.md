@@ -315,6 +315,26 @@ OpenCode skill surface zusaetzlich: `.opencode/skills/` (gezielt laden, nicht pa
   bleiben bis zum verifizierten Merge offen. Der Merge laeuft in einer separat
   gestarteten Merge-Session. SSOT:
   [`docs/runbooks/PR_ROUTING_AND_BATCH_MERGE_POLICY.md`](docs/runbooks/PR_ROUTING_AND_BATCH_MERGE_POLICY.md).
+- **Agent Control Plane Canon:** provider-neutrale Authority-/Lifecycle-Grenzen in
+  [`knowledge/governance/CDB_AGENT_CONTROL_PLANE.md`](knowledge/governance/CDB_AGENT_CONTROL_PLANE.md)
+  (`#4250`; Owner-ratified 2026-08-01 at `c691a8d0`); nicht vermischen mit der
+  GitHub Workflow Control Plane unter `.github/`.
+- **Agent Execution Contract v1:**
+  [`docs/contracts/agent_execution/CDB_AGENT_EXECUTION_CONTRACT_V1.md`](docs/contracts/agent_execution/CDB_AGENT_EXECUTION_CONTRACT_V1.md)
+  (`cdb.agent_execution.v1`, `#4251`) — fail-closed Router-Handoff; CLI
+  `python -m tools.agent_execution_contract`.
+- **Agent Registry + dry-run Reconciler:**
+  [`docs/contracts/agent_registry/CDB_AGENT_REGISTRY_V1.md`](docs/contracts/agent_registry/CDB_AGENT_REGISTRY_V1.md)
+  / [`config/agent-control/`](config/agent-control/) (`cdb.agent_registry.v1`, `#4252`) —
+  provider-neutral Desired State; CLI
+  `python -m tools.agent_control registry validate|plan|reconcile` (dry-run default;
+  no live provider mutation).
+- **Agent Dispatcher + Run State Machine:**
+  [`docs/contracts/agent_dispatch/CDB_AGENT_DISPATCH_V1.md`](docs/contracts/agent_dispatch/CDB_AGENT_DISPATCH_V1.md)
+  (`cdb.agent_dispatch_run.v1`, `#4253`) — provider-neutral dispatcher bound to
+  digest-verified execution contracts; CLI
+  `python -m tools.agent_control dispatch|watch|cancel|retry|evidence`
+  (dry-run default; mock-only execute; no Cursor adapter).
 - Read `knowledge/governance/CDB_AGENT_POLICY.md` section 4 before any write.
 - Respect single-writer locks, explicit stop signals, and write gates.
 - `DELIVERY_APPROVED.yaml` is human-controlled; agents must not modify it.

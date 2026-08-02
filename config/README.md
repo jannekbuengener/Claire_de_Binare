@@ -5,6 +5,7 @@ Versionierte, bereichsübergreifende Konfiguration, die weder Tool-native
 
 | Path | Purpose |
 |---|---|
+| [`agent-control/`](agent-control/) | Declarative Agent Registry Desired State + profiles (`#4252`); CLI `python -m tools.agent_control` |
 | [`arvp/`](arvp/) | ARVP campaign manifests and Compose overrides |
 | [`live-readiness/`](live-readiness/) | Machine-readable readiness configuration; no Live-Go implication |
 | [`repository/`](repository/) | Repository structure and hygiene policy |

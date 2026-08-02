@@ -7,7 +7,7 @@ test_type: Wissens-Test / Schutz-Test
 cdb_area: contracts
 rule_ref: source-evidence-non-authority; compiler-no-invention; registry-immutable; pmr-01..04
 decision_ref: research-validation-wave2
-issue_ref: #4267 #4268 #4269
+issue_ref: #4267 #4268 #4269 #4283
 pr_ref: pending
 evidence_ref: docs/contracts/CDB_RESEARCH_VALIDATION_CONTRACTS_V1.md
 security_relevant: true
@@ -32,7 +32,10 @@ from tools.research_validation.wave2_cross_contract import (
     validate_compiler_input_completeness,
     validate_decision_allowed_actions,
     validate_paper_candidate_transition,
+    validate_registry_entry_status_bindings,
     validate_source_evidence_non_authority,
+    validate_source_evidence_refs_sorted,
+    validate_transition_status_bindings,
 )
 
 PROJECT_ROOT = Path(__file__).resolve().parents[3]
@@ -445,3 +448,100 @@ def test_wave2_docs_exist() -> None:
     )
     assert "PMR-01" in overview
     assert "cdb.source_evidence.v1" in overview
+
+
+# --- Post-merge residuals G-01..G-04 (#4283) ---
+
+
+@pytest.mark.unit
+def test_g01_validating_rejects_null_validation_manifest() -> None:
+    entry = _load(EXAMPLES / "cdb_candidate_registry_entry_valid.json")
+    entry["status"] = "VALIDATING"
+    entry["validation_manifest_id"] = None
+    entry["run_id"] = None
+    entry["evidence_id"] = None
+    assert _errors("cdb_candidate_registry_entry.v1.schema.json", entry)
+    assert validate_registry_entry_status_bindings(entry)
+
+    transition = _load(EXAMPLES / "cdb_candidate_transition_paper_valid.json")
+    transition["to_status"] = "VALIDATING"
+    transition["validation_manifest_id"] = None
+    transition["run_id"] = None
+    transition["evidence_id"] = None
+    transition["evidence_hash"] = None
+    assert _errors("cdb_candidate_transition.v1.schema.json", transition)
+    assert validate_transition_status_bindings(transition)
+
+
+@pytest.mark.unit
+def test_g02_evidence_ready_rejects_null_run_evidence_fields() -> None:
+    entry = _load(EXAMPLES / "cdb_candidate_registry_entry_valid.json")
+    entry["status"] = "EVIDENCE_READY"
+    entry["run_id"] = None
+    entry["evidence_id"] = None
+    assert _errors("cdb_candidate_registry_entry.v1.schema.json", entry)
+    assert validate_registry_entry_status_bindings(entry)
+
+    transition = _load(EXAMPLES / "cdb_candidate_transition_paper_valid.json")
+    transition["to_status"] = "EVIDENCE_READY"
+    transition["run_id"] = None
+    transition["evidence_id"] = None
+    transition["evidence_hash"] = None
+    assert _errors("cdb_candidate_transition.v1.schema.json", transition)
+    assert validate_transition_status_bindings(transition)
+
+
+@pytest.mark.unit
+def test_g03_unsorted_source_evidence_refs_rejected() -> None:
+    report = _load(EXAMPLES / "cdb_compiler_report_valid.json")
+    assert validate_source_evidence_refs_sorted(report["source_evidence_refs"]) == []
+    reversed_refs = list(reversed(report["source_evidence_refs"]))
+    assert [r["evidence_id"] for r in reversed_refs] != sorted(
+        r["evidence_id"] for r in reversed_refs
+    )
+    errors = validate_source_evidence_refs_sorted(reversed_refs)
+    assert errors
+    assert any("sorted by evidence_id" in e for e in errors)
+    # Hash differs when order differs — determinism requires sort enforcement.
+    assert canonical_content_hash({"refs": report["source_evidence_refs"]}) != (
+        canonical_content_hash({"refs": reversed_refs})
+    )
+
+
+@pytest.mark.unit
+def test_g04_paper_candidate_entry_rejects_null_evidence_run() -> None:
+    entry = _load(EXAMPLES / "cdb_candidate_registry_entry_valid.json")
+    entry["status"] = "PAPER_CANDIDATE"
+    entry["run_id"] = None
+    entry["evidence_id"] = None
+    # decision_id may remain; run/evidence null must still fail.
+    assert _errors("cdb_candidate_registry_entry.v1.schema.json", entry)
+    companion = validate_registry_entry_status_bindings(entry)
+    assert companion
+    assert any("PAPER_CANDIDATE" in e for e in companion)
+
+
+@pytest.mark.unit
+def test_g01_g02_g04_valid_status_bindings_still_pass() -> None:
+    entry = _load(EXAMPLES / "cdb_candidate_registry_entry_valid.json")
+    assert entry["status"] == "EVIDENCE_READY"
+    assert _errors("cdb_candidate_registry_entry.v1.schema.json", entry) == []
+    assert validate_registry_entry_status_bindings(entry) == []
+
+    paper_entry = deepcopy(entry)
+    paper_entry["status"] = "PAPER_CANDIDATE"
+    assert _errors("cdb_candidate_registry_entry.v1.schema.json", paper_entry) == []
+    assert validate_registry_entry_status_bindings(paper_entry) == []
+
+    validating = deepcopy(entry)
+    validating["status"] = "VALIDATING"
+    validating["run_id"] = None
+    validating["evidence_id"] = None
+    validating["decision_id"] = None
+    assert validating["validation_manifest_id"]
+    assert _errors("cdb_candidate_registry_entry.v1.schema.json", validating) == []
+    assert validate_registry_entry_status_bindings(validating) == []
+
+    transition = _load(EXAMPLES / "cdb_candidate_transition_paper_valid.json")
+    assert _errors("cdb_candidate_transition.v1.schema.json", transition) == []
+    assert validate_transition_status_bindings(transition) == []
