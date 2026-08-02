@@ -1,0 +1,26 @@
+# CDB PR Approval Policy v1 (#4257)
+# Integrity hash is computed at load time — do not embed a self-hash field.
+version: "1.0.0"
+policy_id: cdb.pr_approval.v1
+authority:
+  merge: false
+  publish_cdb_local_ci: false
+  modify_branch_protection: false
+  modify_rulesets: false
+  execute_live_agent: false
+  live_go: false
+  real_money_go: false
+rules:
+  require_head_sha_binding: true
+  require_typed_required_checks: true
+  distinguish_check_run_and_commit_status: true
+  drift_blocks_approve_recommended: true
+  unknown_never_approves: true
+  stale_head_is_reason_code: true
+recommendation:
+  approve_requires:
+    - all_required_checks_match_protection
+    - not_draft
+    - no_changes_requested
+    - no_blocking_threads
+    - drift_status_none

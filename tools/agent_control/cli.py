@@ -14,6 +14,8 @@ Examples:
   python -m tools.agent_control evidence verify --bundle <PATH>
   python -m tools.agent_control evidence verify --store <JSONL>
   python -m tools.agent_control evidence show --run <ID> --store <JSONL>
+  python -m tools.agent_control approval context --pr <N> --snapshot <PATH>
+  python -m tools.agent_control approval drift --baseline <PATH>
 """
 
 from __future__ import annotations
@@ -36,6 +38,14 @@ from tools.agent_control.errors import (
     DispatchError,
     EvidenceError,
     RegistryError,
+)
+from tools.agent_control.approval.codes import (
+    EXIT_BLOCKED,
+    EXIT_ERROR,
+    EXIT_HOLD,
+    EXIT_OK,
+    EXIT_UNKNOWN,
+    ApprovalError,
 )
 from tools.agent_control.load import (
     dump_json,
@@ -519,6 +529,126 @@ def cmd_provider_archive(args: argparse.Namespace) -> int:
     return 1
 
 
+def _approval_exit_code(recommendation: str) -> int:
+    if recommendation == "APPROVE_RECOMMENDED":
+        return EXIT_OK
+    if recommendation == "BLOCKED":
+        return EXIT_BLOCKED
+    if recommendation in {"HOLD", "REQUEST_CHANGES", "ABSTAIN"}:
+        return EXIT_HOLD
+    if recommendation == "UNKNOWN":
+        return EXIT_UNKNOWN
+    return EXIT_ERROR
+
+
+def cmd_approval_context(args: argparse.Namespace) -> int:
+    """Build schema-valid approval context from a local/injected snapshot."""
+    from tools.agent_control.approval.context import (
+        RepoPaths,
+        build_approval_context,
+        default_repo_paths,
+    )
+    from tools.agent_control.paths import REPO_ROOT
+
+    try:
+        snapshot = _load_json(Path(args.snapshot))
+        if not isinstance(snapshot, dict):
+            raise ApprovalError("APPROVAL_SCHEMA_INVALID", "snapshot must be a mapping")
+        pr = snapshot.get("pr")
+        if not isinstance(pr, dict):
+            pr = {}
+            snapshot["pr"] = pr
+        pr["number"] = int(args.pr)
+
+        config_root = Path(args.config)
+        paths = default_repo_paths(REPO_ROOT)
+        # Allow alternate config root for policy/prompt/baseline resolution.
+        paths = RepoPaths(
+            repo_root=REPO_ROOT,
+            policy_path=config_root / "policies" / "approval" / "pr_approval.v1.yaml",
+            prompt_path=config_root / "prompts" / "approval" / "pr_approval.v1.md",
+            baseline_path=(
+                config_root
+                / "capability-baselines"
+                / "approval-dashboard-export.redacted.v1.json"
+            ),
+            schema_path=paths.schema_path,
+        )
+        envelope = build_approval_context(snapshot, paths)
+    except (ApprovalError, AgentControlError, OSError, json.JSONDecodeError) as exc:
+        code = getattr(exc, "code", "APPROVAL_ERROR")
+        message = getattr(exc, "message", str(exc))
+        print(f"INVALID {code}: {message}", file=sys.stderr)
+        return EXIT_ERROR
+
+    text = dump_json(envelope)
+    if args.output:
+        Path(args.output).write_text(text, encoding="utf-8")
+    else:
+        sys.stdout.write(text if text.endswith("\n") else text + "\n")
+    return _approval_exit_code(str(envelope.get("recommendation")))
+
+
+def cmd_approval_drift(args: argparse.Namespace) -> int:
+    """Emit machine-readable drift report against a redacted baseline."""
+    from tools.agent_control.approval.drift import audit_drift, load_baseline
+    from tools.agent_control.approval.policy import load_policy
+    from tools.agent_control.approval.prompt import load_prompt
+    from tools.agent_control.paths import REPO_ROOT
+
+    try:
+        baseline_path = Path(args.baseline)
+        baseline = load_baseline(baseline_path)
+        config_root = Path(args.config)
+        policy = load_policy(
+            config_root / "policies" / "approval" / "pr_approval.v1.yaml",
+            repo_root=REPO_ROOT,
+        )
+        prompt = load_prompt(
+            config_root / "prompts" / "approval" / "pr_approval.v1.md",
+            repo_root=REPO_ROOT,
+        )
+        snapshot: dict[str, Any] = {}
+        if args.snapshot:
+            loaded = _load_json(Path(args.snapshot))
+            if isinstance(loaded, dict):
+                snapshot = loaded
+        report = audit_drift(
+            policy=policy, prompt=prompt, snapshot=snapshot, baseline=baseline
+        )
+        payload = {
+            "schema_id": "cdb.pr_approval_drift_report.v1",
+            "baseline_path": str(baseline_path).replace("\\", "/"),
+            "baseline_present": baseline is not None,
+            "policy": {
+                "version": policy["version"],
+                "content_sha256": policy["content_sha256"],
+            },
+            "prompt": {
+                "version": prompt["version"],
+                "content_sha256": prompt["content_sha256"],
+            },
+            "drift": report,
+        }
+    except (ApprovalError, AgentControlError, OSError, json.JSONDecodeError) as exc:
+        code = getattr(exc, "code", "APPROVAL_ERROR")
+        message = getattr(exc, "message", str(exc))
+        print(f"INVALID {code}: {message}", file=sys.stderr)
+        return EXIT_ERROR
+
+    text = json.dumps(payload, indent=2, sort_keys=True) + "\n"
+    if args.output:
+        Path(args.output).write_text(text, encoding="utf-8")
+    else:
+        sys.stdout.write(text)
+    status = report.get("status")
+    if status == "NONE":
+        return EXIT_OK
+    if status == "UNKNOWN":
+        return EXIT_UNKNOWN
+    return EXIT_HOLD
+
+
 def build_parser() -> argparse.ArgumentParser:
     parser = argparse.ArgumentParser(
         prog="python -m tools.agent_control",
@@ -775,6 +905,35 @@ def build_parser() -> argparse.ArgumentParser:
         help="Optional recorded/fake attestation fixture JSON",
     )
     p_env_doc.set_defaults(func=cmd_environment_doctor)
+
+    approval = sub.add_parser(
+        "approval",
+        help="Repo-backed PR approval context + drift audit (#4257)",
+    )
+    appr_sub = approval.add_subparsers(dest="approval_command", required=True)
+
+    p_appr_ctx = appr_sub.add_parser(
+        "context",
+        help="Build cdb.pr_approval_context.v1 from an injected snapshot",
+    )
+    p_appr_ctx.add_argument("--pr", type=int, required=True)
+    p_appr_ctx.add_argument("--snapshot", required=True, help="Local snapshot JSON")
+    p_appr_ctx.add_argument("--config", default=str(DEFAULT_CONFIG_ROOT))
+    p_appr_ctx.add_argument("--output", help="Optional output path (else stdout)")
+    p_appr_ctx.set_defaults(func=cmd_approval_context)
+
+    p_appr_drift = appr_sub.add_parser(
+        "drift",
+        help="Audit policy/prompt/adapter/protection drift against baseline",
+    )
+    p_appr_drift.add_argument("--baseline", required=True)
+    p_appr_drift.add_argument(
+        "--snapshot",
+        help="Optional injected snapshot for adapter/protection view",
+    )
+    p_appr_drift.add_argument("--config", default=str(DEFAULT_CONFIG_ROOT))
+    p_appr_drift.add_argument("--output", help="Optional output path (else stdout)")
+    p_appr_drift.set_defaults(func=cmd_approval_drift)
 
     return parser
 

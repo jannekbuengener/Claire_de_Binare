@@ -17,8 +17,9 @@ only reduce permissions; they never invent merge, Live-Go, or mutation rights.
 | `profiles/environments/` | Environment profiles |
 | `profiles/skills/` | Skill pack profiles |
 | `profiles/mcp/` | MCP profiles (`mutation_allowed` must be false here) |
-| `policies/` | Future overlays (unused in `#4252`) |
-| `capability-baselines/` | Offline capability baseline hooks (`#4254`) |
+| `policies/` | Overlays including approval policy (`policies/approval/`, `#4257`) |
+| `prompts/approval/` | Versioned approval prompt (`#4257`; hash computed at load time) |
+| `capability-baselines/` | Offline capability baselines (`#4254`) + redacted approval dashboard export (`#4257`) |
 
 ## CLI (zero-click / no dashboard)
 
@@ -35,7 +36,18 @@ python -m tools.agent_control provider capabilities --provider cursor-cloud-api 
 python -m tools.agent_control environment validate --config config/agent-control
 python -m tools.agent_control environment doctor --profile cdb-agent-skills.v1 \
   --config config/agent-control --offline
+python -m tools.agent_control approval context --pr <N> --snapshot <SNAPSHOT.json>
+python -m tools.agent_control approval drift \
+  --baseline config/agent-control/capability-baselines/approval-dashboard-export.redacted.v1.json
 ```
+
+Approval context (`#4257`): schema
+[`docs/contracts/cdb_pr_approval_context.v1.schema.json`](../../docs/contracts/cdb_pr_approval_context.v1.schema.json),
+spec
+[`docs/contracts/agent_approval/CDB_PR_APPROVAL_CONTEXT_V1.md`](../../docs/contracts/agent_approval/CDB_PR_APPROVAL_CONTEXT_V1.md).
+Read-only recommendation only — no merge, no `cdb-local-ci` publish, no Live-Go.
+`content_sha256` for policy/prompt is computed at load time (not embedded in
+source files).
 
 `reconcile` / `dispatch` default to dry-run. Live provider create/update/delete
 and live Cursor dispatch are forbidden. Mock execute is test-only
