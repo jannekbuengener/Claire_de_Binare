@@ -321,7 +321,19 @@ def doctor_profile(
             provider_config_digest = None
 
     # Minimal profiles (mock/local_repo): offline schema-ready without attestation.
+    # Still apply Contract ∩ Profile attenuation when a contract is present so
+    # mock execute budgets (e.g. wall_time vs run_timeout_seconds) are binding
+    # for the #4258 foundation pilot and dispatcher run records.
     if profile.get("runtime_class") != "cloud_agent":
+        effective_mock: dict[str, Any] | None = None
+        mock_reasons: list[str] = []
+        mock_limitations = ["mock/local_repo profile: offline only"]
+        if contract is not None:
+            try:
+                effective_mock = attenuate_constraints(contract, profile)
+            except DispatchError as exc:
+                mock_reasons.append(exc.code)
+                mock_limitations.append(exc.message)
         return EnvironmentPreflightResult(
             profile_id=profile_id,
             profile_version=profile.get("profile_version"),
@@ -344,9 +356,10 @@ def doctor_profile(
             execute_ready=False,
             offline_ready=True,
             verdict=VERDICT_READY_OFFLINE_ONLY,
-            reason_codes=[],
-            limitations=["mock/local_repo profile: offline only"],
+            reason_codes=mock_reasons,
+            limitations=mock_limitations,
             profile_snapshot=profile,
+            effective_constraints=effective_mock,
         )
 
     if profile.get("workspace_policy", {}).get("mode") == "blocked":

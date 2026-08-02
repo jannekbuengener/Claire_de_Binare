@@ -68,13 +68,18 @@ Stage und LR sind orthogonale Systeme: `trade-capable` autorisiert kein Live-Tra
 
 ## Current-main Snapshot
 
-<!-- cdb:status-freshness header-date=2026-08-02 -->
-<!-- cdb:live-claim type=main_sha value=d4704025 -->
+<!-- cdb:status-freshness header-date=2026-08-03 -->
+**Stand 2026-08-03.**
+<!-- cdb:live-claim type=main_sha value=a4cfb8a8 -->
 <!-- cdb:live-claim type=issue_state issue=4289 state=open -->
+<!-- cdb:live-claim type=issue_state issue=4257 state=closed -->
+<!-- cdb:live-claim type=issue_state issue=4258 state=open -->
 <!-- cdb:live-claim type=issue_state issue=4293 state=closed -->
-Auf `origin/main` (`d4704025`, Stand 2026-08-02) sind die juengsten relevanten Merge-Cluster u. a.:
+Auf `origin/main` (`a4cfb8a8`) sind die juengsten relevanten Merge-Cluster u. a.:
 
-- **ACP dispatcher residuals ([#4293](https://github.com/jannekbuengener/Claire_de_Binare/issues/4293) / PR [#4297](https://github.com/jannekbuengener/Claire_de_Binare/pull/4297)):** **MERGED** @ `d4704025`.
+- **PR Approval Context ([#4257](https://github.com/jannekbuengener/Claire_de_Binare/issues/4257) / PR [#4300](https://github.com/jannekbuengener/Claire_de_Binare/pull/4300)):** **MERGED** @ `a4cfb8a8`.
+- **ACP E2E Pilot Foundation ([#4258](https://github.com/jannekbuengener/Claire_de_Binare/issues/4258)):** mock-first delivery in flight (`Refs` only; Live-Cursor rest keeps issue open).
+- **ACP dispatcher residuals ([#4293](https://github.com/jannekbuengener/Claire_de_Binare/issues/4293) / PR [#4297](https://github.com/jannekbuengener/Claire_de_Binare/pull/4297)):** **MERGED** @ `d4704025` (ancestor of tip).
 - **Area Entry Link Canon ([#4294](https://github.com/jannekbuengener/Claire_de_Binare/issues/4294)/[#4296](https://github.com/jannekbuengener/Claire_de_Binare/issues/4296) / PR [#4295](https://github.com/jannekbuengener/Claire_de_Binare/pull/4295)):** **MERGED** — README Area Entry Link Rule + active README reconcile @ `365f50b9`.
 - **Hermes Hetzner Bootstrap ([#4289](https://github.com/jannekbuengener/Claire_de_Binare/issues/4289) / PR [#4290](https://github.com/jannekbuengener/Claire_de_Binare/pull/4290)):** Repo-Slice **MERGED** auf tip `fca8ad09` (Infrastructure/Profiles/Ops/Token-Broker). Issue `#4289` bleibt offen fuer Live-VM/Windows/GitHub-Drills (`HOLD_SCOPE_BLOCKER`).  <!-- pragma: allowlist secret -->
 - **Repository consolidation wave:** [#4286](https://github.com/jannekbuengener/Claire_de_Binare/pull/4286) ACP batch, [#4162](https://github.com/jannekbuengener/Claire_de_Binare/pull/4162) Grafana 13.1.1, [#4245](https://github.com/jannekbuengener/Claire_de_Binare/pull/4245) CVE HOLD, [#4246](https://github.com/jannekbuengener/Claire_de_Binare/pull/4246) PG15 preflight, [#4244](https://github.com/jannekbuengener/Claire_de_Binare/pull/4244) Dependabot facts, [#4243](https://github.com/jannekbuengener/Claire_de_Binare/pull/4243) dataset fingerprints — squash-merged (prior tip `fce4c754`, superseded by Hermes tip).

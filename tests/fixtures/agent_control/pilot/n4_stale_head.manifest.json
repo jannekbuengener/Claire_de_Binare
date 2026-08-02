@@ -1,0 +1,21 @@
+{
+  "schema_id": "cdb.agent_control_pilot_manifest.v1",
+  "schema_version": "1.0.0",
+  "pilot_id": "acp-e2e-foundation-4258",
+  "scenario_id": "N4",
+  "agent_id": "acp-e2e-pilot",
+  "contract_path": "tests/fixtures/agent_control/pilot/contract_p1_pass.json",
+  "registry_root": "config/agent-control",
+  "head_sha": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+  "base_sha": "bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb",
+  "approval_snapshot_path": "tests/fixtures/agent_control/approval/stale_head.json",
+  "force_approval_head_from_manifest": false,
+  "require_head_match": false,
+  "provider": {
+    "scenario": "success",
+    "expect_call_count": 1
+  },
+  "expect_final_status": "BLOCKED",
+  "expect_approval_not_recommended": true,
+  "expect_reason_code": "STALE_HEAD"
+}

@@ -3,34 +3,39 @@
 **Status Class**: Claire de Binare repository / Engineering Status
 **Authority**: Current repo/main/test/dependency snapshot; not the canonical live-readiness or Echtgeld Go/No-Go source.
 **Operational Canon**: `docs/live-readiness/LR-AUDIT-STATUS-2026-03-05.md`
-<!-- cdb:status-freshness header-date=2026-08-02 -->
-**Last Updated**: 2026-08-02
+<!-- cdb:status-freshness header-date=2026-08-03 -->
+**Last Updated**: 2026-08-03
 **GitHub Boundary**: The live commit and PR state is tracked in GitHub (UI/API or `gh`); this file is a curated repo/engineering ledger, not a live mirror.
 **Freshness Guard**: Only the newest dated block below is a live claim. Everything from the previous dated block onward is marked `historical as of` and is append-only. Marker convention: [`docs/meta/REPOSITORY_CANON.md`](docs/meta/REPOSITORY_CANON.md); validator: `python -m tools.validate_status_freshness`.
 
 ---
 
+## Repo / Engineering Status (2026-08-03)
+
+<!-- cdb:live-claim type=main_sha value=a4cfb8a8 -->
+- **Confirmed main state**: `origin/main` @ `a4cfb8a8` — tip after PR approval context squash-merge [#4300](https://github.com/jannekbuengener/Claire_de_Binare/pull/4300) (supersedes dispatcher-residuals tip `d4704025`).
+
+<!-- cdb:live-claim type=issue_state issue=4258 state=open -->
+<!-- cdb:live-claim type=issue_state issue=4257 state=closed -->
+<!-- cdb:live-claim type=issue_state issue=4289 state=open -->
+- **#4257 PR Approval Context**: **DONE_MERGED_CLOSED** via PR [#4300](https://github.com/jannekbuengener/Claire_de_Binare/pull/4300) @ `a4cfb8a8`. LR **NO-GO** unchanged.
+
+- **#4258 ACP E2E Pilot Foundation (mock-first)**: Delivery slice on `batch/agent-skills-issue-4258` — CLI `pilot run|verify`, report contract, fixtures P1/N1–N8. **Refs #4258** only (not Closes); Live-Cursor rest keeps issue OPEN. LR **NO-GO** unchanged.
+
+<!-- cdb:historical-as-of date=2026-08-02 -->
+> Historical as of 2026-08-02 — append-only ledger. Entries below record the
+> state at their own date and are intentionally not rewritten when reality
+> moves on. They are exempt from live freshness verification.
+
 ## Repo / Engineering Status (2026-08-02)
 
-<!-- cdb:live-claim type=main_sha value=d4704025 -->
-- **Confirmed main state**: `origin/main` @ `d4704025` — same snapshot as the [`README.md`](README.md) Current-main section. Tip after ACP dispatcher residuals squash-merge [#4297](https://github.com/jannekbuengener/Claire_de_Binare/pull/4297) (supersedes Area Entry Canon tip `365f50b9`).
+- **Confirmed main state (historical)**: previously claimed `origin/main` @ `d4704025` after [#4297](https://github.com/jannekbuengener/Claire_de_Binare/pull/4297); superseded by live tip `a4cfb8a8` on 2026-08-03.
 
-<!-- cdb:live-claim type=issue_state issue=4289 state=open -->
-<!-- cdb:live-claim type=issue_state issue=3995 state=closed -->
-<!-- cdb:live-claim type=issue_state issue=4005 state=closed -->
-<!-- cdb:live-claim type=issue_state issue=4204 state=closed -->
-<!-- cdb:live-claim type=issue_state issue=4228 state=closed -->
-<!-- cdb:live-claim type=issue_state issue=4293 state=closed -->
-- **#4289 Hermes Hetzner Bootstrap**: Repo-Slice **MERGED** via PR [#4290](https://github.com/jannekbuengener/Claire_de_Binare/pull/4290) (`infrastructure/hermes/`, `config/hermes/`, `tools/hermes_ops/`, runbook, threat model, unit tests). Issue remains open for Live Hetzner/Windows/GitHub drills (`HOLD_SCOPE_BLOCKER`). Auth lineage reuses #4170/#4195. `#4257` remains HOLD. LR **NO-GO** unchanged.  <!-- pragma: allowlist secret -->
+- **#4289 Hermes Hetzner Bootstrap**: Repo-Slice **MERGED** via PR [#4290](https://github.com/jannekbuengener/Claire_de_Binare/pull/4290). Issue remains open for Live drills (`HOLD_SCOPE_BLOCKER`). Auth lineage reuses #4170/#4195. LR **NO-GO** unchanged.  <!-- pragma: allowlist secret -->
 
 - **#4293 ACP dispatcher post-merge residuals**: **DONE_MERGED_CLOSED** via PR [#4297](https://github.com/jannekbuengener/Claire_de_Binare/pull/4297) @ `d4704025`. LR **NO-GO** unchanged.
 
 - **PR #4286 Agent Control Plane batch**: **DONE_MERGED_CLOSED** — squash-merged; issues #4250–#4256 closed. Prior ledger tip `2d4651a7` superseded by consolidation tip `fce4c754`, then Hermes tip `fca8ad09`. LR **NO-GO** unchanged.
-
-<!-- cdb:historical-as-of date=2026-07-31 -->
-> Historical as of 2026-07-31 — append-only ledger. Entries below record the
-> state at their own date and are intentionally not rewritten when reality
-> moves on. They are exempt from live freshness verification.
 
 ## Repo / Engineering Status (2026-07-31)
 
