@@ -1,8 +1,8 @@
 # Research-to-Hermes Pipeline Canon v1
 
-**Status:** Canon for Wave 1 + Wave 2 + Wave-3 security/orchestration (#4264–#4269, #4271, #4270)
+**Status:** Canon for Wave 1 + Wave 2 + Wave-3 security/orchestration/pilot (#4264–#4269, #4271, #4270, #4272)
 **Parent:** #4263
-**Mode:** Docs / contracts only — no runtime, no plugins, no cloud provisioning
+**Mode:** Docs / contracts only — no runtime, no plugins, no cloud provisioning, no pilot execution
 **Live-Readiness:** NO-GO
 **Board stage:** `trade-capable` ≠ Live-Go
 
@@ -46,6 +46,10 @@ promotion path.
         |
         +--> REJECT | REVISE | PARK | PAPER_CANDIDATE
              (PAPER_CANDIDATE ≠ Live-Go; no automatic promotion)
+
+[Pilot Spec (#4272)] ---- cdb.research_validation_pilot.v1
+                         SPECIFICATION_ONLY planned path for three candidates
+                         (does not execute; no invented evidence)
 ```
 
 ## Role matrix (installed apps / surfaces)
@@ -61,6 +65,7 @@ promotion path.
 | Cloud Runner | Execute offline validation jobs | Capital allocation, live credentials |
 | CDB ARVP | Offline replay / scorecard evidence | Live readiness or promotion |
 | TickerSage | Visualization only | Research, validation, decision authority |
+| Pilot Spec (#4272) | Planned three-candidate E2E specification | Pilot execution, invented evidence, promotion |
 | Gmail / Calendar | Optional operations surfaces | Pipeline authority |
 | Tarot | **Excluded** — not part of pipeline v1 | All research/validation/decision roles |
 
@@ -95,9 +100,12 @@ Hard invariants for pipeline v1:
 | `VALIDATION_RUNNING` | Manifest + orchestration run active | `cdb.validation_manifest.v1` + `cdb.hermes_orchestration_run.v1` |
 | `EVIDENCE_COMPLETE` | Hashes + metrics present | `cdb.candidate_evidence.v1` |
 | `DECIDED` | Explicit next actions | `cdb.decision_record.v1` + registry transition |
+| `PILOT_SPECIFIED` | Three-candidate planned E2E path (#4272) | `cdb.research_validation_pilot.v1` (SPECIFICATION_ONLY) |
 
 Research, Orchestration, Validation, and Decision remain distinct stages. A stage
 may only advance when the corresponding machine-readable contract validates.
+`PILOT_SPECIFIED` plans a future run; it does not advance evidence or decision
+stages by itself.
 
 ## Separation of concerns
 
@@ -109,6 +117,7 @@ may only advance when the corresponding machine-readable contract validates.
 | Security / provenance / integrity | Security gate (Wave 3 / #4271) | `cdb.research_security_gate.v1` |
 | Registry / lifecycle | GitHub-backed artifacts | `cdb.candidate_registry_entry.v1` / `cdb.candidate_transition.v1` |
 | Validation plan / gates | Hermes orchestration | `cdb.validation_manifest.v1` + `cdb.hermes_orchestration_run.v1` |
+| Pilot specification | Pilot steward (#4272) | `cdb.research_validation_pilot.v1` |
 | Measured outcomes | Runner / ARVP | `cdb.candidate_evidence.v1` |
 | Next-action decision | Decision steward (human-gated) | `cdb.decision_record.v1` |
 
@@ -131,6 +140,7 @@ profitability artifacts by ID/hash; they do not supersede them.
 - No productive DB registry
 - No ML/RL model training
 - No Live / Paper / Echtgeld GO
+- No pilot execution or invented evidence (#4272 is specification-only)
 
 ## Safety boundaries
 
@@ -155,4 +165,5 @@ profitability artifacts by ID/hash; they do not supersede them.
 | Registry | [`docs/research/CDB_GITHUB_CANDIDATE_REGISTRY_V1.md`](CDB_GITHUB_CANDIDATE_REGISTRY_V1.md) |
 | Security / provenance / integrity | [`docs/research/CDB_RESEARCH_VALIDATION_SECURITY_PROVENANCE_GATES_V1.md`](CDB_RESEARCH_VALIDATION_SECURITY_PROVENANCE_GATES_V1.md) |
 | Hermes Validation Chief orchestration | [`docs/research/CDB_HERMES_VALIDATION_CHIEF_ORCHESTRATION_CONTRACT_V1.md`](CDB_HERMES_VALIDATION_CHIEF_ORCHESTRATION_CONTRACT_V1.md) |
+| Research Validation Pilot Spec | [`docs/research/CDB_RESEARCH_VALIDATION_PILOT_SPEC_V1.md`](CDB_RESEARCH_VALIDATION_PILOT_SPEC_V1.md) |
 | Profitability candidate (lineage) | [`docs/strategy/CDB_PROFITABILITY_CANDIDATE_CONTRACT_V1.md`](../strategy/CDB_PROFITABILITY_CANDIDATE_CONTRACT_V1.md) |
