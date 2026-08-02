@@ -42,4 +42,7 @@ Parent: [#4249](https://github.com/jannekbuengener/Claire_de_Binare/issues/4249)
 
 ## Status
 
-`DONE_SLICE_ADDED_TO_BATCH_PR` (pending commit/push/hosted CI evidence in delivery hop)
+`DONE_SLICE_ADDED_TO_BATCH_PR`
+
+**Final head:** `21b585e0535d45d657d0e0e58c114ad2ce2bc170`
+**PR:** https://github.com/jannekbuengener/Claire_de_Binare/pull/4286 (draft, open)
