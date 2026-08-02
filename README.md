@@ -10,6 +10,7 @@ Diese Root-README ist die GitHub-Haupt-Landingpage. Der aktive Pfad bleibt Shado
 
 - [CDB Strategic Idea Lab](docs/strategy/CDB_STRATEGIC_IDEA_LAB.md) — public strategy and architecture drafts, discussion space, and creative exploration around CDB's future-state concepts. Ideas, critique, and suggestions are welcome.
 - Neue Entwickler: [`DEVELOPER_ONBOARDING.md`](DEVELOPER_ONBOARDING.md)
+- Onboarding-Docs: [`docs/onboarding/README.md`](docs/onboarding/README.md)
 - Kurzer Docs-Index: [`docs/index.md`](docs/index.md)
 - Agenten-Bootloader: [`AGENTS.md`](AGENTS.md) -> [`agents/AGENTS.md`](agents/AGENTS.md)
 - Repo Brain / Context Intelligence: [`docs/surrealdb/README.md`](docs/surrealdb/README.md)
@@ -45,6 +46,7 @@ Stage und LR sind orthogonale Systeme: `trade-capable` autorisiert kein Live-Tra
 ## New Developer Entry
 
 - [`docs/onboarding/DEVELOPER_VISUAL_START_HERE.md`](docs/onboarding/DEVELOPER_VISUAL_START_HERE.md) - visueller Developer-Start (Mermaid-Flow, Beispiele, Vorlagen)
+- [`docs/onboarding/README.md`](docs/onboarding/README.md) - Onboarding-Bereichsindex (Templates, Examples, Flows)
 - [`DEVELOPER_ONBOARDING.md`](DEVELOPER_ONBOARDING.md) - lokales Setup, Secrets, Stack-Bootstrap
 - [`docs/index.md`](docs/index.md) - kuerzester aktiver Docs-Einstieg
 - [`services/README.md`](services/README.md) - Service-Grenzen und Topologie
@@ -67,12 +69,13 @@ Stage und LR sind orthogonale Systeme: `trade-capable` autorisiert kein Live-Tra
 ## Current-main Snapshot
 
 <!-- cdb:status-freshness header-date=2026-08-02 -->
-<!-- cdb:live-claim type=main_sha value=fca8ad09 -->
+<!-- cdb:live-claim type=main_sha value=365f50b9 -->
 <!-- cdb:live-claim type=issue_state issue=4289 state=open -->
-Auf `origin/main` (`fca8ad09`, Stand 2026-08-02) sind die juengsten relevanten Merge-Cluster u. a.:
+Auf `origin/main` (`365f50b9`, Stand 2026-08-02) sind die juengsten relevanten Merge-Cluster u. a.:
 
-- **Hermes Hetzner Bootstrap ([#4289](https://github.com/jannekbuengener/Claire_de_Binare/issues/4289) / PR [#4290](https://github.com/jannekbuengener/Claire_de_Binare/pull/4290)):** Repo-Slice **MERGED** @ `fca8ad09`; issue `#4289` remains open for Live-VM/Windows/GitHub drills (`HOLD_SCOPE_BLOCKER`).  <!-- pragma: allowlist secret -->
-- **Repository consolidation wave:** [#4286](https://github.com/jannekbuengener/Claire_de_Binare/pull/4286) ACP batch, [#4162](https://github.com/jannekbuengener/Claire_de_Binare/pull/4162) Grafana 13.1.1, [#4245](https://github.com/jannekbuengener/Claire_de_Binare/pull/4245) CVE HOLD, [#4246](https://github.com/jannekbuengener/Claire_de_Binare/pull/4246) PG15 preflight, [#4244](https://github.com/jannekbuengener/Claire_de_Binare/pull/4244) Dependabot facts, [#4243](https://github.com/jannekbuengener/Claire_de_Binare/pull/4243) dataset fingerprints — squash-merged onto prior tip `fce4c754`.
+- **Area Entry Link Canon ([#4294](https://github.com/jannekbuengener/Claire_de_Binare/issues/4294)/[#4296](https://github.com/jannekbuengener/Claire_de_Binare/issues/4296) / PR [#4295](https://github.com/jannekbuengener/Claire_de_Binare/pull/4295)):** **MERGED** — README Area Entry Link Rule + active README reconcile @ `365f50b9`.
+- **Hermes Hetzner Bootstrap ([#4289](https://github.com/jannekbuengener/Claire_de_Binare/issues/4289) / PR [#4290](https://github.com/jannekbuengener/Claire_de_Binare/pull/4290)):** Repo-Slice **MERGED** auf tip `fca8ad09` (Infrastructure/Profiles/Ops/Token-Broker). Issue `#4289` bleibt offen fuer Live-VM/Windows/GitHub-Drills (`HOLD_SCOPE_BLOCKER`).  <!-- pragma: allowlist secret -->
+- **Repository consolidation wave:** [#4286](https://github.com/jannekbuengener/Claire_de_Binare/pull/4286) ACP batch, [#4162](https://github.com/jannekbuengener/Claire_de_Binare/pull/4162) Grafana 13.1.1, [#4245](https://github.com/jannekbuengener/Claire_de_Binare/pull/4245) CVE HOLD, [#4246](https://github.com/jannekbuengener/Claire_de_Binare/pull/4246) PG15 preflight, [#4244](https://github.com/jannekbuengener/Claire_de_Binare/pull/4244) Dependabot facts, [#4243](https://github.com/jannekbuengener/Claire_de_Binare/pull/4243) dataset fingerprints — squash-merged (prior tip `fce4c754`, superseded by Hermes tip).
 - **Validation Pilot Spec ([#4272](https://github.com/jannekbuengener/Claire_de_Binare/issues/4272) / PR [#4292](https://github.com/jannekbuengener/Claire_de_Binare/pull/4292)):** **MERGED** — prior tip cluster (historical relative to consolidation tip).
 - **Fast-CI Slice Gates ([#4204](https://github.com/jannekbuengener/Claire_de_Binare/issues/4204) / PR [#4236](https://github.com/jannekbuengener/Claire_de_Binare/pull/4236)):** **CLOSED/MERGED** — Versionierte Slice-Policy, fail-closed unbekannte Pfade, Timing-Evidence.
 - **PR-Router Live-Konventionen ([#4228](https://github.com/jannekbuengener/Claire_de_Binare/issues/4228) / PR [#4231](https://github.com/jannekbuengener/Claire_de_Binare/pull/4231)):** **CLOSED/MERGED** — Policy/Matcher an reale Titel-Token und `scope:*`/`type:*` Labels angeglichen.
@@ -101,17 +104,19 @@ LR bleibt **NO-GO** — SSOT: [`docs/live-readiness/LR-AUDIT-STATUS-2026-03-05.m
 - Services: [`services/README.md`](services/README.md)
 - Tests: [`tests/README.md`](tests/README.md)
 
-- `core/` - gemeinsame Domain-/Contract-Logik
-- `services/` - laufende Runtime-Services (Signal/Risk/Execution/etc.)
-- `infrastructure/compose/` - Compose-Canon (`compose.blue.yml` + `compose.red.yml`)
-- `config/arvp/` - ARVP-Kampagnen und Compose-Overrides
-- `.github/governance/` - direkt von GitHub Actions gelesene Governance-Gates
-- `docs/runbooks/` - operative Runbooks inkl. Control Register
-- `docs/live-readiness/` - LR-Audit- und Gate-Artefakte
-- `docs/evidence/` - geprüfte, versionierte Nachweise; neue Ausgaben entstehen unter `artifacts/`
-- `knowledge/` - aktive Knowledge-/Governance-Flaeche
-- `tools/` - PowerShell Front Doors und Ops-Helfer
-- `tests/` - Unit/Integration/E2E/Replay/Chaos
+- [`core/`](core/README.md) — gemeinsame Domain-/Contract-Logik
+- [`services/`](services/README.md) — laufende Runtime-Services (Signal/Risk/Execution/etc.)
+- [`infrastructure/`](infrastructure/README.md) — Compose, DB, Monitoring, Hermes, SurrealDB (Einstieg)
+- [`infrastructure/compose/`](infrastructure/compose/README.md) — Compose-Canon (`compose.blue.yml` + `compose.red.yml`)
+- [`config/`](config/README.md) — versionierte Repo-Konfiguration
+- [`config/arvp/`](config/arvp/README.md) — ARVP-Kampagnen und Compose-Overrides
+- [`.github/governance/`](.github/governance/) — direkt von GitHub Actions gelesene Governance-Gates (kein Area-README; Action-Inputs)
+- [`docs/runbooks/`](docs/runbooks/README.md) — operative Runbooks inkl. Control Register
+- [`docs/live-readiness/`](docs/live-readiness/README.md) — LR-Audit- und Gate-Artefakte
+- [`docs/evidence/`](docs/evidence/README.md) — geprüfte, versionierte Nachweise; neue Ausgaben entstehen unter `artifacts/`
+- [`knowledge/`](knowledge/README.md) — aktive Knowledge-/Governance-Flaeche
+- [`tools/`](tools/README.md) — PowerShell Front Doors und Ops-Helfer
+- [`tests/`](tests/README.md) — Unit/Integration/E2E/Replay/Chaos
 
 ## Dev / Test (CI mode, no containers)
 

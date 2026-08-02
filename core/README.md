@@ -5,11 +5,20 @@
 *   **Do NOT write here:** Service-specific business logic, long-lived runtime processes, Docker/compose config.
 
 ## Key entrypoints
-*   [Domain models (core/domain/)](domain/)
-*   [Shared utilities (core/utils/)](utils/)
-*   [Decision / trace contracts (core/contracts/)](contracts/)
-*   [Replay envelopes (core/replay/)](replay/)
-*   [Service implementations (services/)](../services/)
+*   [`core/domain/`](domain/README.md) — domain models
+*   [`core/utils/`](utils/README.md) — shared utilities (Redis/Postgres clients, clock, UUID)
+*   [`core/contracts/`](contracts/README.md) — decision / trace contracts
+*   [`core/replay/`](replay/README.md) — replay envelopes and canonical JSON
+*   [`services/`](../services/README.md) — service implementations
+
+## Other packages (leaf / secondary)
+
+| Package | Role |
+|---|---|
+| [`clients/`](clients/) | Exchange/API clients (no area README; import from services) |
+| [`config/`](config/) | Feature flags / trading mode helpers |
+| [`indicators/`](indicators/) | Technical indicators |
+| [`safety/`](safety/) | Kill-switch helpers |
 
 ## SSOT boundary
 Contract and status SSOTs live outside this directory — see [`knowledge/contracts/README.md`](../knowledge/contracts/README.md) and [`CURRENT_STATUS.md`](../CURRENT_STATUS.md).

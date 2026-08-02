@@ -290,7 +290,10 @@ def build_evidence_bundle(
             provenance_source = "run.route+validated_provider_receipt"
         # Else fill blanks from validated receipt when route was not yet updated.
         if target_pr is None and isinstance(receipt.get("target_pr"), int):
-            if int(receipt["target_pr"]) > 0:
+            if (
+                not isinstance(receipt.get("target_pr"), bool)
+                and int(receipt["target_pr"]) > 0
+            ):
                 target_pr = receipt.get("target_pr")
                 provenance_source = "run.route+validated_provider_receipt"
         receipt_branch = receipt.get("target_branch")

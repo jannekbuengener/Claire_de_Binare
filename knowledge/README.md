@@ -17,16 +17,23 @@ reviews, and evidence that must stay close to the working codebase.
 - [`knowledge/CURRENT_STATUS.md`](CURRENT_STATUS.md) (historical knowledge snapshot)
 - [`knowledge/SYSTEM.CONTEXT.md`](SYSTEM.CONTEXT.md)
 - [`knowledge/ACTIVE_ROADMAP.md`](ACTIVE_ROADMAP.md)
-- [`knowledge/governance/`](governance/)
+- [`knowledge/governance/`](governance/README.md)
 
 ## Major Areas
 
-- `governance/` policy stack, invariants, and governance configs
-- `roadmap/` active planning and milestone docs
-- `operations/`, `runbooks/`, `playbooks/` operational guidance
-- `decisions/`, `reviews/`, `analysis/` recorded reasoning and audits
-- `discussions/` pipeline config, issue drafts, and supporting material
-- `archive/`, `logs/`, `migrations/` historical evidence preserved locally
+| Area | Role |
+|---|---|
+| [`governance/`](governance/README.md) | Policy stack, invariants, governance configs |
+| `roadmap/` | Active planning and milestone docs (no area README; start at [`ACTIVE_ROADMAP.md`](ACTIVE_ROADMAP.md)) |
+| [`runbooks/`](runbooks/README.md), [`playbooks/`](playbooks/README.md) | Operational guidance |
+| [`operating_rules/`](operating_rules/README.md) | Operating rules adjacent to runbooks |
+| [`decisions/`](decisions/README.md), [`reviews/`](reviews/README.md) | Recorded reasoning and audits |
+| [`contracts/`](contracts/README.md), [`testing/`](testing/README.md), [`systems/`](systems/README.md) | Contracts, test-first, systems notes |
+| [`agent_trust/`](agent_trust/README.md) | Agent trust ledgers/snapshots |
+| `operations/` | Ops notes (nested e.g. disaster recovery); no top README yet |
+| `archive/`, `logs/`, `migrations/` | Historical evidence preserved locally |
+
+Removed stale area label `discussions/` (directory not present).
 
 ## Working Rule
 

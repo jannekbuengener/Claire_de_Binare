@@ -20,9 +20,9 @@ Step-by-step operator/engineering playbooks (golden paths, DB, Redis, E2E, risk,
 
 | Tree | Use when |
 |---|---|
-| [`knowledge/runbooks/`](../runbooks/) | Knowledge-side runbooks (overlap with playbooks — prefer one home for new content) |
-| [`docs/runbooks/`](../../docs/runbooks/) | Control plane, GitHub, SurrealDB MCP operator paths |
-| [`knowledge/operating_rules/`](../operating_rules/) | Standing operating rules |
+| [`knowledge/runbooks/`](../runbooks/README.md) | Knowledge-side runbooks (overlap with playbooks — prefer one home for new content) |
+| [`docs/runbooks/`](../../docs/runbooks/README.md) | Control plane, GitHub, SurrealDB MCP operator paths |
+| [`knowledge/operating_rules/`](../operating_rules/README.md) | Standing operating rules |
 
 ## SSOT boundary
 

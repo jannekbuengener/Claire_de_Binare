@@ -23,7 +23,7 @@ Deterministische Replay-, Shadow- und Envelope-Hilfen. Kein eigenständiger Serv
 
 | Pfad | Marker |
 |---|---|
-| [`tests/replay/`](../../tests/replay/) | Replay-spezifische Tests |
+| [`tests/replay/`](../../tests/replay/README.md) | Replay-spezifische Tests |
 | [`tests/unit/`](../../tests/unit/) | Unit-Tests mit Replay-Mocks |
 
 ```bash
@@ -34,5 +34,5 @@ make test-unit
 ## Related
 
 - [`core/contracts/README.md`](../contracts/README.md)
-- [`knowledge/systems/`](../../knowledge/systems/) — Architektur-Notizen (repo-backed)
+- [`knowledge/systems/`](../../knowledge/systems/README.md) — Architektur-Notizen (repo-backed)
 - [`services/validation/README.md`](../../services/validation/README.md)

@@ -1,6 +1,6 @@
 # Replay tests (`tests/replay/`)
 
-Tests für deterministische Replay-, Envelope- und Report-Pfade unter [`core/replay/`](../../core/replay/).
+Tests für deterministische Replay-, Envelope- und Report-Pfade unter [`core/replay/`](../../core/replay/README.md).
 
 ## Marker
 

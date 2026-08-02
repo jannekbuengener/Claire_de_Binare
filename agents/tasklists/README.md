@@ -14,6 +14,6 @@ relations:
 ## Key entrypoints
 *   [Agent registry (agents/AGENTS.md)](../AGENTS.md)
 *   [OpenCode shared contract (agents/OPEN_CODE_AGENTS.md)](../OPEN_CODE_AGENTS.md)
-*   [Knowledge tasklists (knowledge/tasklists/)](../../knowledge/tasklists/)
+*   [Knowledge tasklists (knowledge/tasklists/)](../../knowledge/tasklists/README.md)
 
 Legacy path `agents/tasklist/COPILOT_TASKLIST.md` **does not exist** — do not link or recreate without explicit scope.

@@ -24,7 +24,7 @@ is the discoverability anchor for the current #3484 graph follow-up surfaces:
 ## Where to write
 
 - New **decisions** with durable rationale → this directory (dated filename or ADR-NNN).
-- **Operational runbooks** → [`knowledge/runbooks/`](../runbooks/) or [`docs/runbooks/`](../../docs/runbooks/) per topic.
+- **Operational runbooks** → [`knowledge/runbooks/`](../runbooks/README.md) or [`docs/runbooks/`](../../docs/runbooks/README.md) per topic.
 - **Status** → `CURRENT_STATUS.md` / LR SSOT — not in decision files alone.
 
 ## SSOT boundary

@@ -189,6 +189,24 @@ def _normalized_branch(value: Any) -> str | None:
     return stripped or None
 
 
+def _positive_pr_number(value: Any) -> int | None:
+    """Return a positive PR number, excluding bool (bool subclasses int)."""
+    if isinstance(value, bool) or not isinstance(value, int):
+        return None
+    if value <= 0:
+        return None
+    return value
+
+
+def _normalize_route_bindings(route: dict[str, Any] | None) -> dict[str, Any]:
+    """Normalize route target bindings used on run records and provider requests."""
+    out = deepcopy(route or {})
+    out["target_branch"] = _normalized_branch(out.get("target_branch"))
+    if isinstance(out.get("target_pr"), bool):
+        out["target_pr"] = None
+    return out
+
+
 def _field_present(value: Any, *, field: str) -> bool:
     if value is None:
         return False
@@ -281,12 +299,12 @@ def _merge_observed_create_targets(
     if routing not in CREATE_ROUTE_DECISIONS:
         return
     updated = False
-    receipt_pr = receipt.get("target_pr")
-    receipt_branch = receipt.get("target_branch")
-    if isinstance(receipt_pr, int) and receipt_pr > 0:
+    receipt_pr = _positive_pr_number(receipt.get("target_pr"))
+    receipt_branch = _normalized_branch(receipt.get("target_branch"))
+    if receipt_pr is not None:
         route["target_pr"] = receipt_pr
         updated = True
-    if isinstance(receipt_branch, str) and receipt_branch.strip():
+    if receipt_branch is not None:
         route["target_branch"] = receipt_branch
         updated = True
     if updated:
@@ -312,7 +330,7 @@ def _validate_delivery_receipt(
     contract_pr = target.get("target_pr")
     receipt_pr = receipt.get("target_pr")
     if routing in CREATE_ROUTE_DECISIONS and contract_pr is None:
-        if not isinstance(receipt_pr, int) or int(receipt_pr) <= 0:
+        if _positive_pr_number(receipt_pr) is None:
             raise DispatchError(
                 "DISPATCH_DELIVERY_RECEIPT_MISMATCH",
                 "create route requires observed positive target_pr on receipt",
@@ -323,9 +341,9 @@ def _validate_delivery_receipt(
             "delivery receipt target_pr does not match contract",
         )
     contract_branch = target.get("target_branch")
-    receipt_branch = receipt.get("target_branch")
+    receipt_branch = _normalized_branch(receipt.get("target_branch"))
     if routing in CREATE_ROUTE_DECISIONS and not contract_branch:
-        if not isinstance(receipt_branch, str) or not receipt_branch.strip():
+        if receipt_branch is None:
             raise DispatchError(
                 "DISPATCH_DELIVERY_RECEIPT_MISMATCH",
                 "create route requires observed target_branch on receipt",
@@ -518,13 +536,17 @@ def dispatch_run(
         "contract_id": pf.contract["contract_id"],
         "contract_digest": pf.contract_digest,
         "delivery_issue": (pf.contract.get("issue") or {}).get("number"),
-        "route": {
-            "routing_decision": pf.route.get("routing_decision") if pf.route else None,
-            "target_pr": pf.route.get("target_pr") if pf.route else None,
-            "target_branch": pf.route.get("target_branch") if pf.route else None,
-            "lane": pf.route.get("lane") if pf.route else None,
-            "batch_key": pf.route.get("batch_key") if pf.route else None,
-        },
+        "route": _normalize_route_bindings(
+            {
+                "routing_decision": (
+                    pf.route.get("routing_decision") if pf.route else None
+                ),
+                "target_pr": pf.route.get("target_pr") if pf.route else None,
+                "target_branch": pf.route.get("target_branch") if pf.route else None,
+                "lane": pf.route.get("lane") if pf.route else None,
+                "batch_key": pf.route.get("batch_key") if pf.route else None,
+            }
+        ),
         "expected_delivery": expected_delivery,
         "agent_id": agent_id,
         "provider_id": pf.provider_id,
@@ -578,7 +600,7 @@ def dispatch_run(
         idempotency_key=idem,
         provider_id=pf.provider_id,
         provider_profile=deepcopy(pf.provider_profile or {}),
-        route=deepcopy(pf.route or {}),
+        route=_normalize_route_bindings(pf.route or {}),
         effective_permissions=deepcopy(pf.agent.get("effective_permissions") or {}),
         allowed_paths=list(
             (pf.effective_environment_constraints or {}).get("allowed_paths")
@@ -732,7 +754,7 @@ def watch_run(
                         "routing_decision": record["route"].get("routing_decision"),
                     }
                 ),
-                route=deepcopy(record.get("route") or {}),
+                route=_normalize_route_bindings(record.get("route") or {}),
             )
             active.dispatch(seeded)
             internal = active._runs[provider_run_id]  # noqa: SLF001

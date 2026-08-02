@@ -12,8 +12,8 @@
 
 ## Repo / Engineering Status (2026-08-02)
 
-<!-- cdb:live-claim type=main_sha value=fca8ad09 -->
-- **Confirmed main state**: `origin/main` @ `fca8ad09` — same snapshot as the [`README.md`](README.md) Current-main section. Tip after Hermes repo-slice squash-merge [#4290](https://github.com/jannekbuengener/Claire_de_Binare/pull/4290) (supersedes consolidation tip `fce4c754`).
+<!-- cdb:live-claim type=main_sha value=365f50b9 -->
+- **Confirmed main state**: `origin/main` @ `365f50b9` — same snapshot as the [`README.md`](README.md) Current-main section. Tip after Area Entry Link Canon squash-merge [#4295](https://github.com/jannekbuengener/Claire_de_Binare/pull/4295) (supersedes Hermes tip `fca8ad09`).
 
 <!-- cdb:live-claim type=issue_state issue=4289 state=open -->
 <!-- cdb:live-claim type=issue_state issue=3995 state=closed -->

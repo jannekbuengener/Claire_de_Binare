@@ -13,8 +13,8 @@ Repo-backed JSON/YAML schemas und Contract-Dokumente für Messages, Replay und C
 | Agent Dispatch | `cdb_agent_dispatch_run.v1.schema.json`, [`agent_dispatch/CDB_AGENT_DISPATCH_V1.md`](agent_dispatch/CDB_AGENT_DISPATCH_V1.md), examples under `examples/agent_dispatch/` | Provider-neutral dispatcher + ACP §5 state machine (`#4253`); CLI `python -m tools.agent_control dispatch|watch|cancel|retry|evidence` (mock-only execute) |
 | Agent Run Evidence | `cdb_agent_run_evidence.v1.schema.json`, [`agent_run_evidence/CDB_AGENT_RUN_EVIDENCE_V1.md`](agent_run_evidence/CDB_AGENT_RUN_EVIDENCE_V1.md), examples under `examples/agent_run_evidence/` | Deterministic run evidence bundle + JSONL pilot store (`#4256`); CLI `python -m tools.agent_control evidence snapshot|emit|verify|show` |
 | Agent Environment | `cursor_environment.schema.json` (vendored official), [`agent_environment/CDB_AGENT_ENVIRONMENT_V1.md`](agent_environment/CDB_AGENT_ENVIRONMENT_V1.md), profiles under `config/agent-control/profiles/environments/`, examples under `examples/agent_environment/` | Governed Cursor execution profiles + fail-closed doctor (`#4255`); CLI `python -m tools.agent_control environment validate|doctor` |
-| Context tooling | [`context_tooling/`](context_tooling/) | MCP evidence contracts |
-| Examples | [`examples/`](examples/) | Valid/invalid fixtures |
+| Context tooling | [`context_tooling/`](context_tooling/README.md) | MCP evidence contracts |
+| Examples | [`examples/`](examples/README.md) | Valid/invalid fixtures |
 | Replay | [`REPLAY_CONTRACTS_AND_DETERMINISM.md`](REPLAY_CONTRACTS_AND_DETERMINISM.md) | Determinism rules |
 | Profitability | `profitability_candidate_contract.v1.schema.json`, `profitability_evidence_packet.v1.schema.json` | Strategy candidate and evidence packet research contracts |
 | Research Validation (Wave 1) | `cdb_research_brief.v1.schema.json`, `cdb_strategy_candidate.v1.schema.json`, `cdb_validation_manifest.v1.schema.json`, `cdb_candidate_evidence.v1.schema.json`, `cdb_decision_record.v1.schema.json` | Research-to-Hermes orchestration contracts (#4264–#4266); adjacent to profitability lineage, does not replace it — see [`CDB_RESEARCH_VALIDATION_CONTRACTS_V1.md`](CDB_RESEARCH_VALIDATION_CONTRACTS_V1.md) |
@@ -37,7 +37,7 @@ Repo-backed JSON/YAML schemas und Contract-Dokumente für Messages, Replay und C
 | Domain | Canonical path |
 |---|---|
 | Strategy contracts (narrative) | [`knowledge/contracts/README.md`](../../knowledge/contracts/README.md) |
-| Runtime decision bundle | [`core/contracts/`](../../core/contracts/) (`decision_contract_v1`) |
+| Runtime decision bundle | [`core/contracts/`](../../core/contracts/README.md) (`decision_contract_v1`) |
 | Market state (risk input) | [`docs/governance/MARKET_STATE_CONTRACT_V1.md`](../governance/MARKET_STATE_CONTRACT_V1.md) |
 
 ## SSOT boundary

@@ -775,6 +775,75 @@ def test_whitespace_only_delivery_branch_does_not_override_route() -> None:
 
 
 @pytest.mark.unit
+def test_boolean_create_receipt_pr_rejected() -> None:
+    """R3: bool is not a valid observed target_pr (bool subclasses int)."""
+    from tools.agent_control.dispatch import _validate_delivery_receipt
+
+    contract = {
+        "route": {
+            "routing_decision": "CREATE_NEW_BATCH_PR",
+            "target_pr": None,
+            "target_branch": None,
+        },
+        "execution_scope": {
+            "delivery_target": {
+                "expected_status": "DONE_PR_OPEN",
+                "target_pr": None,
+                "target_branch": None,
+            }
+        },
+    }
+    with pytest.raises(DispatchError) as exc:
+        _validate_delivery_receipt(
+            contract,
+            {
+                "target_pr": True,
+                "target_branch": "batch/agent-skills-issue-4293",
+                "commit": "a" * 40,
+                "delivery_status": "DONE_PR_OPEN",
+            },
+        )
+    assert exc.value.code == "DISPATCH_DELIVERY_RECEIPT_MISMATCH"
+
+
+@pytest.mark.unit
+def test_padded_route_branch_normalized_on_run_and_request() -> None:
+    """R1: padded route branches are normalized on run record and provider request."""
+
+    class CapturingProvider(MockProvider):
+        def __init__(self) -> None:
+            super().__init__()
+            self.last_request = None
+
+        def dispatch(self, request):  # type: ignore[no-untyped-def]
+            self.last_request = request
+            return super().dispatch(request)
+
+    contract = _contract()
+    padded = f"  {contract['route']['target_branch']}  "
+    contract["route"]["target_branch"] = padded
+    contract["execution_scope"]["delivery_target"]["target_branch"] = padded
+    contract = attach_digest(contract)
+
+    store = InMemoryRunStore()
+    provider = CapturingProvider()
+    result = dispatch_run(
+        contract,
+        _registry(),
+        AGENT_ID,
+        store,
+        dry_run=False,
+        allow_mock_dispatch=True,
+        provider=provider,
+    )
+    expected = padded.strip()
+    assert result["run"]["route"]["target_branch"] == expected
+    assert result["run"]["expected_delivery"]["target_branch"] == expected
+    assert provider.last_request is not None
+    assert provider.last_request.route["target_branch"] == expected
+
+
+@pytest.mark.unit
 def test_create_route_empty_targets_allowed() -> None:
     """R1: CREATE routes may leave targets empty until receipt observation."""
     from tools.agent_control.dispatch import assert_delivery_target_consistent

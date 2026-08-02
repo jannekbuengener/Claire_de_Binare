@@ -9,15 +9,20 @@ relations:
 
 ## Layout
 
-| Tree | Marker / convention | Containers | README |
+| Tree | Marker / convention | Containers | Notes |
 |---|---|---|---|
-| [`unit/`](unit/) | `@pytest.mark.unit` | None (CI default) | — (per-module tests) |
-| [`integration/`](integration/) | `@pytest.mark.integration` | Mocked externals only | [README](integration/README.md) |
-| [`replay/`](replay/) | folder convention | Usually none | [README](replay/README.md) |
-| [`e2e/`](e2e/) | `@pytest.mark.e2e` | BLUE+RED (`make docker-up`) | — |
-| [`local/`](local/) | `@pytest.mark.local_only` | Running stack; not CI | — |
-| [`smoke/`](smoke/) | `@pytest.mark.smoke` (where set) | MCP deps for runtime smoke | [README](smoke/README.md) |
-| [`chaos/`](chaos/) | `@pytest.mark.chaos` | Destructive / local | — |
+| [`unit/`](unit/) | `@pytest.mark.unit` | None (CI default) | Per-module tests; no tree README |
+| [`integration/`](integration/README.md) | `@pytest.mark.integration` | Mocked externals only | CI |
+| [`replay/`](replay/README.md) | folder convention | Usually none | Deterministic replay |
+| [`e2e/`](e2e/README.md) | `@pytest.mark.e2e` | BLUE+RED (`make docker-up`) | Not CI default |
+| [`local/`](local/) | `@pytest.mark.local_only` | Running stack; not CI | No tree README |
+| [`smoke/`](smoke/README.md) | `@pytest.mark.smoke` (where set) | MCP deps for runtime smoke | |
+| [`chaos/`](chaos/) | `@pytest.mark.chaos` | Destructive / local | No tree README |
+| [`contract/`](contract/) | `@pytest.mark.contract` | None / mocks | Contract checks |
+| [`surrealdb/`](surrealdb/) | SurrealDB-local suites | Optional local DB | Context/brain tests |
+| [`tools/`](tools/) | Tool-module tests | None | |
+| [`fixtures/`](fixtures/README.md) | Shared fixtures | N/A | Deterministic inputs |
+| `load/`, `performance/`, `resilience/` | specialty markers | Varies | Not CI default |
 
 ## CI (no containers)
 
@@ -45,7 +50,7 @@ pytest -v -m local_only   # explicit local_only only
 
 - [`pytest.ini`](../pytest.ini) — markers and defaults
 - [`Makefile`](../Makefile) — `test`, `test-unit`, `test-integration`, `test-e2e`, `test-coverage`
-- [`tests/fixtures/README.md`](fixtures/README.md) — deterministic fixtures
+- [`knowledge/testing/README.md`](../knowledge/testing/README.md) — Test-First contract
 
 ## Navigation
 
