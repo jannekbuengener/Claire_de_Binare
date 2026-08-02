@@ -18,6 +18,7 @@ from tools.agent_control.approval.codes import (
     REASON_INVALID_HEAD,
     REASON_MECHANISM_MISMATCH,
     REASON_MISSING_BASE,
+    REASON_MISSING_DRAFT_STATE,
     REASON_MISSING_HEAD,
     REASON_PROTECTION_INCOMPLETE,
     REASON_REQUIRED_CHECK_FAILED,
@@ -175,7 +176,13 @@ def match_required_checks(
             entry["app_id"] = match.get("app_id")
 
         source_sha = match.get("source_sha")
-        if isinstance(source_sha, str) and source_sha and source_sha != head:
+        if not isinstance(source_sha, str) or not source_sha:
+            # Successful required checks must bind to the subject head.
+            reasons.append(REASON_STALE_HEAD)
+            entry["matches_protection"] = False
+            out.append(entry)
+            continue
+        if source_sha != head:
             reasons.append(REASON_STALE_HEAD)
             entry["matches_protection"] = False
             out.append(entry)
@@ -233,7 +240,9 @@ def evaluate_recommendation(
     elif drift_status not in (None, "NONE"):
         reasons.append(REASON_DRIFT)
 
-    if pr.get("is_draft") is True:
+    if "is_draft" not in pr:
+        reasons.append(REASON_MISSING_DRAFT_STATE)
+    elif pr.get("is_draft") is True:
         reasons.append(REASON_DRAFT_PR)
 
     review = pr.get("review_decision")
@@ -264,6 +273,7 @@ def evaluate_recommendation(
         REASON_STALE_HEAD,
         REASON_PROTECTION_INCOMPLETE,
         REASON_INCOMPLETE_SNAPSHOT,
+        REASON_MISSING_DRAFT_STATE,
     }
     if any(r in hard_block for r in reasons):
         return "BLOCKED", reasons, _limitations(reasons, limitations)

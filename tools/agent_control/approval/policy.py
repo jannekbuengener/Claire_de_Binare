@@ -16,7 +16,13 @@ from tools.agent_control.approval.codes import (
 
 
 def content_sha256_bytes(raw: bytes) -> str:
-    return f"{DIGEST_PREFIX}{hashlib.sha256(raw).hexdigest()}"
+    """Hash file bytes after LF-normalization (CRLF/CR → LF).
+
+    Keeps policy/prompt digests stable across Windows working trees and
+    Git LF blobs so baselines match committed artifacts.
+    """
+    normalized = raw.replace(b"\r\n", b"\n").replace(b"\r", b"\n")
+    return f"{DIGEST_PREFIX}{hashlib.sha256(normalized).hexdigest()}"
 
 
 def load_policy(path: Path, *, repo_root: Path | None = None) -> dict[str, Any]:

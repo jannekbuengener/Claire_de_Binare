@@ -8,14 +8,14 @@
     "publish_cdb_local_ci": false,
     "real_money_go": false
   },
-  "context_digest": "sha256:5ee7f0c329137bbe3ffd25e017270426be350d999ecf124d3e4d40eeba9e4208",
+  "context_digest": "sha256:cb0a24110a7d91b54340367123949c3ecb2b63983338274be4c2431cec522b12",
   "drift": {
     "sources": [],
     "status": "NONE"
   },
   "integrity": {
     "canonicalization": "RFC8785",
-    "digest": "sha256:5ee7f0c329137bbe3ffd25e017270426be350d999ecf124d3e4d40eeba9e4208",
+    "digest": "sha256:cb0a24110a7d91b54340367123949c3ecb2b63983338274be4c2431cec522b12",
     "digest_algorithm": "sha256",
     "digest_encoding": "sha256:<lowercase-hex>"
   },
@@ -23,7 +23,7 @@
     "recommendation_only_not_merge_authority"
   ],
   "policy": {
-    "content_sha256": "sha256:18677d90aeeaf56c0bc35b3ddd79a5f36d82594a67e926dd7fd62a6f31af73fd",
+    "content_sha256": "sha256:2597528b687b901cad20791371b884a18cd8c1b693c801cbb111a8773eff0472",
     "source_path": "config/agent-control/policies/approval/pr_approval.v1.yaml",
     "version": "1.0.0"
   },
@@ -33,7 +33,7 @@
     "review_decision": "APPROVED"
   },
   "prompt": {
-    "content_sha256": "sha256:9d50f0f5ee8ba41a8ccf9c0de5f8e37639bc5983b5ce8ed5fc8c4353286edd51",
+    "content_sha256": "sha256:a59c8d22a802ebe4894702be3873f31e5f3f58126d4f2ecb908f00ea971f3c21",
     "source_path": "config/agent-control/prompts/approval/pr_approval.v1.md",
     "version": "1.0.0"
   },

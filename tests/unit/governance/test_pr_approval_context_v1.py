@@ -118,6 +118,41 @@ def test_stale_head_is_reason_code_not_recommendation() -> None:
 
 
 @pytest.mark.unit
+def test_missing_source_sha_blocks_approve() -> None:
+    snap = _load("clean_app_check_run_success")
+    del snap["checks"][0]["source_sha"]
+    env = build_approval_context(snap, _paths())
+    assert env["recommendation"] != "APPROVE_RECOMMENDED"
+    assert REASON_STALE_HEAD in env["reason_codes"]
+    assert env["required_checks"][0]["matches_protection"] is False
+
+
+@pytest.mark.unit
+def test_incomplete_baseline_is_unknown_not_none(tmp_path: Path) -> None:
+    empty = tmp_path / "empty.json"
+    empty.write_text("{}\n", encoding="utf-8")
+    env = build_approval_context(_load("clean_app_check_run_success"), _paths(empty))
+    assert env["drift"]["status"] == "UNKNOWN"
+    assert env["recommendation"] != "APPROVE_RECOMMENDED"
+
+
+@pytest.mark.unit
+def test_missing_is_draft_blocks() -> None:
+    snap = _load("clean_app_check_run_success")
+    del snap["pr"]["is_draft"]
+    env = build_approval_context(snap, _paths())
+    assert env["recommendation"] == "BLOCKED"
+    assert "MISSING_DRAFT_STATE" in env["reason_codes"]
+
+
+@pytest.mark.unit
+def test_content_hash_lf_normalized() -> None:
+    from tools.agent_control.approval.policy import content_sha256_bytes
+
+    assert content_sha256_bytes(b"a\r\nb\n") == content_sha256_bytes(b"a\nb\n")
+
+
+@pytest.mark.unit
 def test_required_check_semantics() -> None:
     wrong_mech = build_approval_context(
         _load("same_name_commit_status_wrong_mechanism"), _paths()
