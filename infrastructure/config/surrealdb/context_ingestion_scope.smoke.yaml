@@ -61,6 +61,10 @@ exclude_paths:
     reason: Research scratch area; contains high-density forbidden-pattern keyword matches; not canonical knowledge for smoke ingestion.
   - path: docs/surrealdb/context-wave21-cross-cutting-hardening.md
     reason: Security-hardening doc that discusses forbidden-pattern keywords (secret, token) in documentation context; excluded from smoke scope to avoid false positives from lexical matching.
+  - path: docs/contracts/examples/agent_execution/negative_plaintext_secret.json
+    reason: Intentional validator negative fixture with synthetic forbidden content; must not be read or hashed by the smoke ingestor.
+  - path: docs/contracts/examples/agent_registry/negative_plaintext_secret.json
+    reason: Intentional validator negative fixture with synthetic forbidden content; must not be read or hashed by the smoke ingestor.
 
 allowed_file_types:
   - extension: .md

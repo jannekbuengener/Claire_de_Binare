@@ -1,0 +1,103 @@
+profile_id: cdb-validation-research.v1
+profile_version: "1.0.0"
+description: >
+  Research-validation code, schemas, fixtures, and tests (#4255).
+  External content remains UNTRUSTED_INPUT; no productive provider fetch in this slice.
+runtime_class: cloud_agent
+allowed_provider_ids:
+  - cursor-sdk
+  - cursor-cli
+  - cursor-cloud-api
+  - mock
+provider_config_ref: .cursor/environment.json
+provider_config_digest_policy:
+  algorithm: sha256
+  require_match: true
+source_commit_binding:
+  required: true
+  match_mode: exact
+workspace_policy:
+  mode: write_scoped
+  runtime_mutation: false
+  database_mutation: false
+  mcp_live_mutation: false
+allowed_paths:
+  - docs/contracts
+  - docs/contracts/*
+  - docs/research
+  - docs/research/*
+  - tools/research_validation
+  - tools/research_validation/*
+  - tests/unit/contracts
+  - tests/unit/contracts/*
+  - tests/fixtures
+  - tests/fixtures/*
+  - knowledge/logs/sessions
+  - knowledge/logs/sessions/*
+forbidden_paths:
+  - services
+  - services/*
+  - infrastructure/compose
+  - infrastructure/compose/*
+  - .github/workflows
+  - .github/workflows/*
+allowed_command_classes:
+  - git_read
+  - git_commit_push
+  - pytest_unit
+  - pytest_contract
+  - ruff_check
+  - python_module_tools
+required_toolchain:
+  - name: python
+    version_rule: "==3.12"
+setup_policy:
+  fallback_to_unknown_base_image: forbidden
+  setup_failed: block
+  setup_unknown: block
+  require_attested_base_identity: true
+network_policy:
+  mode: deny_all
+  allowed_classes: []
+  allowed_domains: []
+  egress_enforcement_required: true
+secret_policy:
+  allowed_classes: []
+  workload_secrets: none
+  inject_cursor_api_key: false
+resource_limits:
+  cpu_cores_max: 2
+  memory_mb_max: 4096
+  disk_mb_max: 20480
+  max_processes: 64
+  enforcement_required: true
+execution_limits:
+  setup_timeout_seconds: 900
+  run_timeout_seconds: 7200
+  cancel_confirmation_required: true
+cost_limit:
+  max_live_cost_usd: 0
+  unknown_cost_blocks_live: true
+  enforcement_required: true
+artifact_policy:
+  allowed_roots:
+    - artifacts
+  forbid_absolute_paths: true
+  forbid_presigned_urls: true
+  auto_execute: false
+checkpoint_policy:
+  may_mutate_profile: false
+  may_mutate_digest: false
+  may_mutate_source_commit: false
+  may_mutate_permissions: false
+  provider_snapshot_is_cdb_checkpoint: false
+required_attestations:
+  - setup_status
+  - base_identity
+  - fallback_status
+  - toolchain
+  - egress_enforcement
+  - secret_enforcement
+  - resource_enforcement
+  - cost_enforcement
+live_dispatch_allowed: false

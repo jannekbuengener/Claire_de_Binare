@@ -1,0 +1,17 @@
+profile_id: docs_only.v1
+description: Docs/governance delivery ceiling without write_code.
+permissions:
+  read_repo: true
+  write_code: false
+  write_docs: true
+  commit: true
+  push: true
+  open_pr: false
+  update_pr: true
+  comment_issue: true
+  close_issue: false
+  publish_cdb_local_ci: false
+  merge: false
+  runtime_mutation: false
+  database_mutation: false
+  mcp_live_mutation: false

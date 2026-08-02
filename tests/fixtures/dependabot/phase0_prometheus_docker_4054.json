@@ -1,0 +1,18 @@
+{
+  "description": "Anonymized Phase-0 FACTS_INVALID reproduction: multi-file docker-compose image bump with digest pins and missing update-type (#4054).",
+  "source_pr": 4054,
+  "head_ref": "dependabot/docker_compose/infrastructure/compose/prom/prometheus-v3.13.1",
+  "author": "dependabot[bot]",
+  "commit_message": "deps(docker-compose): bump prom/prometheus in /infrastructure/compose\n\nBumps prom/prometheus from v3.13.0 to v3.13.1.\n\n---\nupdated-dependencies:\n- dependency-name: prom/prometheus\n  dependency-version: v3.13.1\n  dependency-type: direct:production\n...\n\nSigned-off-by: dependabot[bot] <support@github.com>",
+  "files": [
+    {
+      "filename": "infrastructure/compose/compose.prometheus-v3.yml",
+      "patch": "@@ -8,7 +8,7 @@\n \n services:\n   cdb_prometheus_v3:\n-    image: prom/prometheus:v3.13.0@sha256:c6b27ea434f8389bfe233fbc7be381cf50587c286e871bc842008f5a1b1908a7\n+    image: prom/prometheus:v3.13.1@sha256:3c42b892cf723fa54d2f262c37a0e1f80aa8c8ddb1da7b9b0df9455a35a7f893\n     container_name: cdb_prometheus_v3"
+    },
+    {
+      "filename": "infrastructure/compose/compose.red.yml",
+      "patch": "@@ -93,7 +93,7 @@ services:\n   # ==================== MONITORING ====================\n \n   cdb_prometheus:\n-    image: prom/prometheus:v3.13.0@sha256:c6b27ea434f8389bfe233fbc7be381cf50587c286e871bc842008f5a1b1908a7\n+    image: prom/prometheus:v3.13.1@sha256:3c42b892cf723fa54d2f262c37a0e1f80aa8c8ddb1da7b9b0df9455a35a7f893\n     container_name: cdb_prometheus"
+    }
+  ],
+  "expected_reason": "DOCKER_CHANGE"
+}

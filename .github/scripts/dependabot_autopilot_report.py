@@ -43,9 +43,19 @@ ALLOWED_GET_ENDPOINT = re.compile(
 
 PIP_REQ_LINE = re.compile(r"^([A-Za-z0-9][A-Za-z0-9._-]*)\s*([=<>~!]+)\s*(.+)$")
 ACTIONS_USE_LINE = re.compile(r"^\s*uses:\s*([^\s@]+)@(.+?)\s*$", re.IGNORECASE)
+# Accept optional digest pins (`image: name:tag@sha256:...`) used by Dependabot
+# docker-compose updates in this repository.
 DOCKER_IMAGE_LINE = re.compile(
-    r"^\s*image:\s*([^\s:]+(?::[^\s@]+)?)\s*$", re.IGNORECASE
+    r"^\s*image:\s*"
+    r"(?P<ref>[^\s@]+(?::[^\s@]+)?)"
+    r"(?:@[A-Za-z0-9_+.:-]+)?"
+    r"\s*$",
+    re.IGNORECASE,
 )
+
+UPDATE_TYPE_UNKNOWN = "version-update:unknown"
+DEPENDENCY_TYPE_UNKNOWN = "direct:unknown"
+DOCKER_ECOSYSTEMS = frozenset({"docker", "docker-compose", "docker_compose"})
 
 UPDATED_DEPENDENCY_BLOCK = re.compile(
     r"updated-dependencies:\s*\n"
@@ -417,10 +427,11 @@ def _parse_docker_patch(patch: str) -> dict[str, Any]:
         match = DOCKER_IMAGE_LINE.match(line[1:])
         if not match:
             continue
+        image_ref = match.group("ref")
         if line.startswith("-"):
-            removed.append(match.group(1))
+            removed.append(image_ref)
         else:
-            added.append(match.group(1))
+            added.append(image_ref)
 
     if len(removed) != 1 or len(added) != 1:
         return {"verified": False, "reason": "ambiguous_docker_image"}
@@ -431,11 +442,20 @@ def _parse_docker_patch(patch: str) -> dict[str, Any]:
     return {
         "verified": True,
         "ecosystem": "docker-compose",
-        "package_name": package.split("/")[-1],
+        "package_name": package,
         "current_version": old_parts[1] if len(old_parts) == 2 else "",
         "target_version": new_parts[1] if len(new_parts) == 2 else "",
         "range_change": False,
     }
+
+
+def _path_is_compose_surface(path: str) -> bool:
+    normalized = path.replace("\\", "/").lower()
+    if "compose" in normalized:
+        return True
+    return normalized.endswith(
+        ("docker-compose.yml", "docker-compose.yaml", "compose.yml", "compose.yaml")
+    )
 
 
 def _parse_file_patch(path: str, patch: str | None) -> dict[str, Any]:
@@ -446,11 +466,28 @@ def _parse_file_patch(path: str, patch: str | None) -> dict[str, Any]:
         return _parse_pip_patch(patch)
     if normalized.startswith(".github/workflows/"):
         return _parse_actions_patch(patch)
-    if "compose" in normalized or normalized.endswith(
-        ("docker-compose.yml", "docker-compose.yaml", "compose.yml")
-    ):
+    if _path_is_compose_surface(normalized):
         return _parse_docker_patch(patch)
     return {"verified": False, "reason": "unsupported_file"}
+
+
+def _compatible_docker_facts(verified: Sequence[Mapping[str, Any]]) -> bool:
+    if not verified:
+        return False
+    if not all(
+        str(item.get("ecosystem") or "").lower() in DOCKER_ECOSYSTEMS
+        for item in verified
+    ):
+        return False
+    packages = {str(item.get("package_name") or "") for item in verified}
+    currents = {str(item.get("current_version") or "") for item in verified}
+    targets = {str(item.get("target_version") or "") for item in verified}
+    return (
+        len(packages) == 1
+        and next(iter(packages)) != ""
+        and len(currents) == 1
+        and len(targets) == 1
+    )
 
 
 def _merge_patch_facts(file_entries: Sequence[Mapping[str, Any]]) -> dict[str, Any]:
@@ -467,15 +504,81 @@ def _merge_patch_facts(file_entries: Sequence[Mapping[str, Any]]) -> dict[str, A
         return {"verified": False, "reason": "no_files", "changed_files": tuple()}
 
     verified = [item for item in parsed if item.get("verified")]
-    if len(verified) != 1 or len(parsed) != 1:
-        return {
-            "verified": False,
-            "reason": "ambiguous_or_multi_file",
-            "changed_files": tuple(changed_files),
-        }
-    result = verified[0]
-    result["changed_files"] = tuple(changed_files)
-    return result
+    if len(verified) == 1 and len(parsed) == 1:
+        result = dict(verified[0])
+        result["changed_files"] = tuple(changed_files)
+        return result
+
+    # Multi-file docker-compose bumps (same image across compose files) are a
+    # single logical update and must classify as DOCKER_CHANGE, not FACTS_INVALID.
+    if len(verified) == len(parsed) and _compatible_docker_facts(verified):
+        result = dict(verified[0])
+        result["changed_files"] = tuple(changed_files)
+        return result
+
+    reason = "ambiguous_or_multi_file"
+    if not verified:
+        reason = "unverified_patch"
+    return {
+        "verified": False,
+        "reason": reason,
+        "changed_files": tuple(changed_files),
+    }
+
+
+def _infer_update_type(current_version: str, target_version: str) -> str:
+    """Best-effort semver update-type; empty when not deterministically inferable."""
+    classifier = _load_classifier_module()
+    current = classifier._parse_semver_triplet(current_version)
+    target = classifier._parse_semver_triplet(target_version)
+    if current is None or target is None:
+        return ""
+    if target[0] != current[0]:
+        return "version-update:semver-major"
+    if target[1] != current[1]:
+        return "version-update:semver-minor"
+    if target[2] != current[2]:
+        return "version-update:semver-patch"
+    return ""
+
+
+def _identity_fields_present(
+    *,
+    ecosystem: str,
+    package_name: str,
+    current_version: str,
+    target_version: str,
+) -> bool:
+    return all(
+        isinstance(value, str) and value.strip()
+        for value in (ecosystem, package_name, current_version, target_version)
+    )
+
+
+def _apply_fail_closed_metadata_defaults(
+    *,
+    dependency_type: str,
+    update_type: str,
+    current_version: str,
+    target_version: str,
+    identity_known: bool,
+) -> tuple[str, str]:
+    """Fill missing Dependabot metadata only when package identity is known.
+
+    Incomplete identity stays empty so the classifier returns FACTS_INVALID.
+    Known identity with missing update-/dependency-type becomes an explicit
+    unknown sentinel that yields a concrete HOLD reason instead.
+    """
+    if not identity_known:
+        return dependency_type, update_type
+
+    resolved_dependency = dependency_type.strip() or DEPENDENCY_TYPE_UNKNOWN
+    resolved_update = update_type.strip()
+    if not resolved_update:
+        resolved_update = (
+            _infer_update_type(current_version, target_version) or UPDATE_TYPE_UNKNOWN
+        )
+    return resolved_dependency, resolved_update
 
 
 def _normalize_merge_state(raw: str | None) -> str:
@@ -666,14 +769,25 @@ def _build_facts_for_pull(
     current_version = str(patch_facts.get("current_version") or "")
     target_version = str(patch_facts.get("target_version") or "")
     range_change = bool(patch_facts.get("range_change"))
+    changed_files_tuple = tuple(patch_facts.get("changed_files") or ())
+    if not changed_files_tuple and file_items:
+        changed_files_tuple = tuple(
+            str(item.get("filename") or item.get("path") or "")
+            for item in file_items
+            if isinstance(item, Mapping)
+            and str(item.get("filename") or item.get("path") or "")
+        )
 
     if not ecosystem:
         ecosystem = _infer_ecosystem_from_head_branch(head_branch)
-    changed_files_tuple = tuple(patch_facts.get("changed_files") or ())
     if not ecosystem and any(
         path.startswith(".github/workflows/") for path in changed_files_tuple
     ):
         ecosystem = "github-actions"
+    if not ecosystem and any(
+        _path_is_compose_surface(path) for path in changed_files_tuple
+    ):
+        ecosystem = "docker-compose"
 
     if dependabot_meta:
         if not package_name:
@@ -686,12 +800,20 @@ def _build_facts_for_pull(
 
     metadata_complete = diff_verified
     if dependabot_meta:
+        meta_name = dependabot_meta.get("dependency-name", "")
         if (
             diff_verified
-            and package_name.lower()
-            != dependabot_meta.get("dependency-name", "").lower()
+            and package_name
+            and meta_name
+            and package_name.lower() != meta_name.lower()
         ):
             metadata_complete = False
+            # Prefer the Dependabot metadata name when it contradicts a short
+            # path-derived token so docker image refs stay aligned.
+            if "/" in meta_name and "/" not in package_name:
+                if package_name.lower() == meta_name.split("/")[-1].lower():
+                    package_name = meta_name
+                    metadata_complete = diff_verified
     elif not diff_verified:
         metadata_complete = False
 
@@ -699,6 +821,24 @@ def _build_facts_for_pull(
     update_type = dependabot_meta.get("update-type", "")
     if diff_verified and (not dependency_type or not update_type):
         metadata_complete = False
+
+    identity_known = _identity_fields_present(
+        ecosystem=ecosystem,
+        package_name=package_name,
+        current_version=current_version,
+        target_version=target_version,
+    )
+    dependency_type, update_type = _apply_fail_closed_metadata_defaults(
+        dependency_type=dependency_type,
+        update_type=update_type,
+        current_version=current_version,
+        target_version=target_version,
+        identity_known=identity_known,
+    )
+
+    date_versioned = classifier._is_date_version(
+        current_version
+    ) or classifier._is_date_version(target_version)
 
     return classifier.DependabotAutopilotFacts(
         pr_author=author,
@@ -709,7 +849,7 @@ def _build_facts_for_pull(
         head_sha=head_sha,
         commit_count=len(commit_items),
         commit_authors=tuple(commit_authors),
-        changed_files=tuple(patch_facts.get("changed_files") or ()),
+        changed_files=changed_files_tuple,
         required_checks=tuple(_normalize_required_check_facts(required_check_entries)),
         branch_is_current=branch_is_current,
         merge_state=merge_state,
@@ -722,7 +862,7 @@ def _build_facts_for_pull(
         metadata_complete=metadata_complete,
         diff_verified=diff_verified,
         range_change=range_change,
-        date_versioned=False,
+        date_versioned=date_versioned,
         api_error=api_error,
         execution_mode=execution_mode,
         kill_switch_enabled=False,

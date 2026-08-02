@@ -1,0 +1,13 @@
+{
+  "description": "Incomplete real API-shaped payload: missing patch and no Dependabot metadata block.",
+  "head_ref": "dependabot/pip/mystery-1.0.0",
+  "author": "dependabot[bot]",
+  "commit_message": "deps(pip): bump mystery\n\nNo updated-dependencies metadata present.",
+  "files": [
+    {
+      "filename": "requirements-dev.txt",
+      "patch": null
+    }
+  ],
+  "expected_reason": "FACTS_INVALID"
+}

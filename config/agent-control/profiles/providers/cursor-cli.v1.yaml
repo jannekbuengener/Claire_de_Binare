@@ -1,0 +1,11 @@
+profile_id: cursor-cli.v1
+provider_id: cursor-cli
+description: >
+  Cursor headless CLI adapter profile (#4254). Force/write modes blocked
+  until governed environment profile (#4255).
+api_surface: cursor-agent-cli-public
+live_dispatch: false
+capability_baseline_ref: cursor-cli-offline-v1
+secret_references:
+  - class: cursor_api_key
+    ref: env:CURSOR_API_KEY

@@ -1,0 +1,785 @@
+"""CLI front door for agent registry + governed dispatcher.
+
+Examples:
+  python -m tools.agent_control registry validate --config <PATH>
+  python -m tools.agent_control dispatch --contract <PATH> --registry <PATH> \\
+      --agent-id <ID> --state <PATH> --dry-run
+  python -m tools.agent_control provider capabilities --provider cursor-sdk --offline
+  python -m tools.agent_control watch --run-id <ID> --state <PATH>
+  python -m tools.agent_control cancel --run-id <ID> --state <PATH> --reason <TEXT>
+  python -m tools.agent_control retry --previous-run-id <ID> --contract <PATH> --reason <TEXT>
+  python -m tools.agent_control evidence --run-id <ID> --state <PATH>
+  python -m tools.agent_control evidence snapshot --run <ID> --state <PATH>
+  python -m tools.agent_control evidence emit --run <ID> --state <PATH> [--store <JSONL>]
+  python -m tools.agent_control evidence verify --bundle <PATH>
+  python -m tools.agent_control evidence verify --store <JSONL>
+  python -m tools.agent_control evidence show --run <ID> --store <JSONL>
+"""
+
+from __future__ import annotations
+
+import argparse
+import json
+import sys
+from pathlib import Path
+from typing import Any
+
+from tools.agent_control.dispatch import (
+    cancel_run,
+    dispatch_run,
+    evidence_snapshot,
+    retry_run,
+    watch_run,
+)
+from tools.agent_control.errors import (
+    AgentControlError,
+    DispatchError,
+    EvidenceError,
+    RegistryError,
+)
+from tools.agent_control.load import (
+    dump_json,
+    load_observed_state,
+    load_registry_document,
+)
+from tools.agent_control.normalize import normalize_registry, registry_fingerprint
+from tools.agent_control.paths import DEFAULT_CONFIG_ROOT
+from tools.agent_control.providers.capability import offline_capability_snapshot
+from tools.agent_control.providers.factory import CURSOR_PROVIDER_IDS
+from tools.agent_control.reconcile import backend_from_state, build_plan, reconcile
+from tools.agent_control.run_store import JsonFileRunStore
+from tools.agent_control.validate import validate_registry
+
+
+def _print_json(payload: Any) -> None:
+    sys.stdout.write(dump_json(payload))
+
+
+def _load_json(path: Path) -> Any:
+    with path.open("r", encoding="utf-8") as handle:
+        return json.load(handle)
+
+
+def cmd_registry_validate(args: argparse.Namespace) -> int:
+    try:
+        document = load_registry_document(Path(args.config))
+        validate_registry(document)
+        fingerprint = registry_fingerprint(document)
+    except RegistryError as exc:
+        print(f"INVALID {exc.code}: {exc.message}", file=sys.stderr)
+        return 1
+    print(f"VALID schema_id=cdb.agent_registry.v1 fingerprint={fingerprint}")
+    return 0
+
+
+def cmd_registry_normalize(args: argparse.Namespace) -> int:
+    try:
+        document = load_registry_document(Path(args.config))
+        normalized = normalize_registry(document)
+    except RegistryError as exc:
+        print(f"INVALID {exc.code}: {exc.message}", file=sys.stderr)
+        return 1
+    if args.output:
+        Path(args.output).write_text(dump_json(normalized), encoding="utf-8")
+    else:
+        _print_json(normalized)
+    return 0
+
+
+def cmd_registry_plan(args: argparse.Namespace) -> int:
+    try:
+        document = load_registry_document(Path(args.config))
+        state = load_observed_state(Path(args.state))
+        plan = build_plan(document, state, mode="plan")
+    except RegistryError as exc:
+        print(f"INVALID {exc.code}: {exc.message}", file=sys.stderr)
+        return 1
+    if args.output:
+        Path(args.output).write_text(dump_json(plan), encoding="utf-8")
+    else:
+        _print_json(plan)
+    return 1 if plan.get("blocked") else 0
+
+
+def cmd_registry_reconcile(args: argparse.Namespace) -> int:
+    dry_run = not args.apply
+    if args.apply and not args.allow_mock_apply:
+        print(
+            "INVALID REGISTRY_LIVE_MUTATION_FORBIDDEN: "
+            "reconcile defaults to dry-run; pass --apply --allow-mock-apply "
+            "only against a mock state file (no live provider)",
+            file=sys.stderr,
+        )
+        return 1
+    try:
+        document = load_registry_document(Path(args.config))
+        if args.state:
+            state = load_observed_state(Path(args.state))
+        else:
+            state = {
+                "schema_id": "cdb.agent_registry.observed.v1",
+                "agents": {},
+            }
+        backend_name = "mock" if args.apply else "file"
+        backend = backend_from_state(state, backend_name=backend_name)
+        result = reconcile(document, backend, dry_run=dry_run)
+    except RegistryError as exc:
+        print(f"INVALID {exc.code}: {exc.message}", file=sys.stderr)
+        return 1
+    if args.output:
+        Path(args.output).write_text(dump_json(result), encoding="utf-8")
+    else:
+        _print_json(result)
+    plan = result["plan"]
+    if plan.get("blocked"):
+        return 1
+    return 0
+
+
+def cmd_dispatch(args: argparse.Namespace) -> int:
+    dry_run = not args.execute
+    try:
+        contract = _load_json(Path(args.contract))
+        registry = load_registry_document(Path(args.registry))
+        if dry_run:
+            result = dispatch_run(
+                contract,
+                registry,
+                args.agent_id,
+                store=None,
+                dry_run=True,
+                scenario=args.scenario,
+            )
+        else:
+            if not args.state:
+                raise DispatchError(
+                    "DISPATCH_STATE_REQUIRED",
+                    "execute requires --state <PATH>",
+                )
+            if not args.allow_mock_dispatch:
+                raise DispatchError(
+                    "PROVIDER_LIVE_DISPATCH_FORBIDDEN",
+                    "execute requires --allow-mock-dispatch",
+                )
+            store = JsonFileRunStore(Path(args.state))
+            result = dispatch_run(
+                contract,
+                registry,
+                args.agent_id,
+                store,
+                dry_run=False,
+                allow_mock_dispatch=True,
+                scenario=args.scenario,
+            )
+    except (AgentControlError, json.JSONDecodeError) as exc:
+        code = getattr(exc, "code", "DISPATCH_ERROR")
+        message = getattr(exc, "message", str(exc))
+        print(f"INVALID {code}: {message}", file=sys.stderr)
+        return 1
+    if args.output:
+        Path(args.output).write_text(dump_json(result), encoding="utf-8")
+    else:
+        _print_json(result)
+    if result.get("dry_run"):
+        return 0 if result["plan"].get("preflight_ok") else 1
+    run = result.get("run") or {}
+    return 0 if run.get("state") not in {"HOLD", "BLOCKED", "FAILED"} else 1
+
+
+def cmd_watch(args: argparse.Namespace) -> int:
+    try:
+        store = JsonFileRunStore(Path(args.state))
+        record = watch_run(args.run_id, store)
+    except DispatchError as exc:
+        print(f"INVALID {exc.code}: {exc.message}", file=sys.stderr)
+        return 1
+    _print_json(record)
+    return 0
+
+
+def cmd_cancel(args: argparse.Namespace) -> int:
+    try:
+        store = JsonFileRunStore(Path(args.state))
+        record = cancel_run(args.run_id, store, args.reason)
+    except DispatchError as exc:
+        print(f"INVALID {exc.code}: {exc.message}", file=sys.stderr)
+        return 1
+    _print_json(record)
+    return 0
+
+
+def cmd_retry(args: argparse.Namespace) -> int:
+    dry_run = not args.execute
+    try:
+        contract = _load_json(Path(args.contract))
+        registry = load_registry_document(Path(args.registry))
+        if not args.state:
+            raise DispatchError("DISPATCH_STATE_REQUIRED", "retry requires --state")
+        store = JsonFileRunStore(Path(args.state))
+        result = retry_run(
+            args.previous_run_id,
+            contract,
+            registry,
+            store,
+            args.reason,
+            agent_id=args.agent_id,
+            dry_run=dry_run,
+            allow_mock_dispatch=bool(args.execute and args.allow_mock_dispatch),
+            scenario=args.scenario,
+        )
+    except (AgentControlError, json.JSONDecodeError) as exc:
+        code = getattr(exc, "code", "DISPATCH_ERROR")
+        message = getattr(exc, "message", str(exc))
+        print(f"INVALID {code}: {message}", file=sys.stderr)
+        return 1
+    _print_json(result)
+    return 0
+
+
+def cmd_evidence(args: argparse.Namespace) -> int:
+    """Legacy snapshot alias: evidence --run-id/--state."""
+    try:
+        store = JsonFileRunStore(Path(args.state))
+        run_id = getattr(args, "run_id", None) or getattr(args, "run", None)
+        snapshot = evidence_snapshot(run_id, store)
+    except (DispatchError, EvidenceError) as exc:
+        print(f"INVALID {exc.code}: {exc.message}", file=sys.stderr)
+        return 1
+    _print_json(snapshot)
+    return 0
+
+
+def cmd_evidence_dispatch(args: argparse.Namespace) -> int:
+    """Parent evidence command without subcommand.
+
+    - --run-id + --state → legacy lifecycle snapshot
+    - --run + --state → emit bundle (documented bundle entry)
+    """
+    if getattr(args, "evidence_command", None):
+        # Subcommand handlers are set via set_defaults; should not reach here.
+        return 1
+    run_id = getattr(args, "run_id", None)
+    run = getattr(args, "run", None)
+    state = getattr(args, "state", None)
+    if run_id and state and not run:
+        args.run_id = run_id
+        return cmd_evidence(args)
+    if run and state:
+        args.run = run
+        args.store = getattr(args, "store", None)
+        return cmd_evidence_emit(args)
+    print(
+        "INVALID EVIDENCE_USAGE: use "
+        "'evidence snapshot|emit|verify|show', "
+        "legacy 'evidence --run-id <ID> --state <PATH>', "
+        "or bundle entry 'evidence --run <ID> --state <PATH>'",
+        file=sys.stderr,
+    )
+    return 1
+
+
+def cmd_evidence_snapshot(args: argparse.Namespace) -> int:
+    try:
+        store = JsonFileRunStore(Path(args.state))
+        run_id = args.run or args.run_id
+        snapshot = evidence_snapshot(run_id, store)
+    except (DispatchError, EvidenceError) as exc:
+        print(f"INVALID {exc.code}: {exc.message}", file=sys.stderr)
+        return 1
+    _print_json(snapshot)
+    return 0
+
+
+def cmd_evidence_emit(args: argparse.Namespace) -> int:
+    from tools.agent_control.evidence.emit import emit_evidence
+
+    try:
+        if not args.state:
+            print(
+                "INVALID EVIDENCE_STATE_REQUIRED: emit requires --state <PATH>",
+                file=sys.stderr,
+            )
+            return 1
+        store = JsonFileRunStore(Path(args.state))
+        run_id = args.run or args.run_id
+        store_path = Path(args.store) if args.store else None
+        result = emit_evidence(run_id, store, jsonl_path=store_path)
+    except (DispatchError, EvidenceError, AgentControlError) as exc:
+        code = getattr(exc, "code", "EVIDENCE_ERROR")
+        message = getattr(exc, "message", str(exc))
+        print(f"INVALID {code}: {message}", file=sys.stderr)
+        return 1
+    _print_json(result)
+    return 0
+
+
+def cmd_evidence_verify(args: argparse.Namespace) -> int:
+    from tools.agent_control.evidence.verify import (
+        load_bundle_file,
+        verify_bundle,
+        verify_store,
+    )
+
+    try:
+        if args.bundle:
+            result = verify_bundle(load_bundle_file(Path(args.bundle)))
+        elif args.store:
+            result = verify_store(Path(args.store))
+        else:
+            print(
+                "INVALID EVIDENCE_VERIFY_TARGET: pass --bundle or --store",
+                file=sys.stderr,
+            )
+            return 1
+    except EvidenceError as exc:
+        print(f"INVALID {exc.code}: {exc.message}", file=sys.stderr)
+        return 1
+    _print_json(result)
+    return 0
+
+
+def cmd_evidence_show(args: argparse.Namespace) -> int:
+    from tools.agent_control.evidence.store import EvidenceJsonlStore
+
+    try:
+        records = EvidenceJsonlStore(Path(args.store)).find_by_run_id(args.run)
+        payload = {
+            "evidence_class": "agent_run_evidence_bundle_v1",
+            "run_id": args.run,
+            "count": len(records),
+            "bundles": records,
+            "limitations": ["pilot_store_only", "not_final_ci", "not_merge_authority"],
+        }
+    except EvidenceError as exc:
+        print(f"INVALID {exc.code}: {exc.message}", file=sys.stderr)
+        return 1
+    _print_json(payload)
+    return 0
+
+
+def cmd_provider_capabilities(args: argparse.Namespace) -> int:
+    if not args.offline:
+        print(
+            "INVALID PROVIDER_PROBE_LIVE_FORBIDDEN: only --offline capability "
+            "snapshots are allowed in #4254",
+            file=sys.stderr,
+        )
+        return 1
+    try:
+        snapshot = offline_capability_snapshot(args.provider)
+    except KeyError:
+        print(
+            f"INVALID PROVIDER_UNKNOWN: unknown provider {args.provider!r}",
+            file=sys.stderr,
+        )
+        return 1
+    _print_json(snapshot)
+    return 0
+
+
+def cmd_provider_probe(args: argparse.Namespace) -> int:
+    return cmd_provider_capabilities(args)
+
+
+def _load_run(store: JsonFileRunStore, run_id: str) -> dict[str, Any]:
+    record = store.get(run_id)
+    if record is None:
+        raise DispatchError("DISPATCH_RUN_NOT_FOUND", f"unknown run_id: {run_id}")
+    return record
+
+
+def cmd_provider_stream(args: argparse.Namespace) -> int:
+    try:
+        store = JsonFileRunStore(Path(args.state))
+        record = _load_run(store, args.run_id)
+        provider_id = record.get("provider_id")
+        if provider_id not in CURSOR_PROVIDER_IDS:
+            raise DispatchError(
+                "PROVIDER_STREAM_UNSUPPORTED",
+                f"stream unsupported for provider_id={provider_id!r}",
+            )
+        # Offline CLI stream reconstructs from stored refs only (no network).
+        payload = {
+            "run_id": args.run_id,
+            "provider_id": provider_id,
+            "provider_run_id": record.get("provider_run_id"),
+            "events": [],
+            "note": "offline stream view; live SSE requires injected transport",
+        }
+    except DispatchError as exc:
+        print(f"INVALID {exc.code}: {exc.message}", file=sys.stderr)
+        return 1
+    _print_json(payload)
+    return 0
+
+
+def cmd_provider_follow_up(args: argparse.Namespace) -> int:
+    print(
+        "INVALID PROVIDER_FOLLOW_UP_LIVE_FORBIDDEN: follow-up execute requires "
+        "recorded/fake transport; live path remains fail-closed",
+        file=sys.stderr,
+    )
+    return 1
+
+
+def cmd_environment_validate(args: argparse.Namespace) -> int:
+    from tools.agent_control.environment.doctor import (
+        validate_all_profiles,
+        validate_profile,
+    )
+    from tools.agent_control.errors import EnvironmentError
+
+    try:
+        if args.profile:
+            payload = validate_profile(args.profile, config=Path(args.config))
+        else:
+            payload = validate_all_profiles(config=Path(args.config))
+    except (AgentControlError, EnvironmentError) as exc:
+        print(f"INVALID {exc.code}: {exc.message}", file=sys.stderr)
+        return 1
+    _print_json(payload)
+    return 0
+
+
+def cmd_environment_doctor(args: argparse.Namespace) -> int:
+    from tools.agent_control.environment.codes import (
+        VERDICT_READY_FOR_RECORDED_TEST,
+        VERDICT_READY_OFFLINE_ONLY,
+    )
+    from tools.agent_control.environment.doctor import doctor_profile
+
+    attestation = Path(args.attestation) if args.attestation else None
+    # Offline is default; refuse any non-offline without attestation fixture.
+    if not args.offline and attestation is None:
+        print(
+            "INVALID ENVIRONMENT_LIVE_PROBE_FORBIDDEN: doctor requires "
+            "--offline or --attestation <FIXTURE>; never contacts providers",
+            file=sys.stderr,
+        )
+        return 1
+    try:
+        result = doctor_profile(
+            args.profile,
+            config=Path(args.config),
+            attestation_path=attestation,
+            offline=True,
+        )
+    except AgentControlError as exc:
+        print(f"INVALID {exc.code}: {exc.message}", file=sys.stderr)
+        return 1
+    _print_json(result.as_dict())
+    if result.verdict in {
+        VERDICT_READY_OFFLINE_ONLY,
+        VERDICT_READY_FOR_RECORDED_TEST,
+    }:
+        return 0
+    return 1
+
+
+def cmd_provider_artifacts(args: argparse.Namespace) -> int:
+    try:
+        store = JsonFileRunStore(Path(args.state))
+        record = _load_run(store, args.run_id)
+        refs = (record.get("delivery_receipt") or {}) if False else {}
+        payload = {
+            "run_id": args.run_id,
+            "provider_id": record.get("provider_id"),
+            "artifacts": list((record.get("result_refs") or {}).get("artifacts") or []),
+            "refs": refs,
+        }
+    except DispatchError as exc:
+        print(f"INVALID {exc.code}: {exc.message}", file=sys.stderr)
+        return 1
+    _print_json(payload)
+    return 0
+
+
+def cmd_provider_usage(args: argparse.Namespace) -> int:
+    try:
+        store = JsonFileRunStore(Path(args.state))
+        record = _load_run(store, args.run_id)
+        payload = {
+            "run_id": args.run_id,
+            "provider_id": record.get("provider_id"),
+            "usage": record.get("usage") or {},
+        }
+    except DispatchError as exc:
+        print(f"INVALID {exc.code}: {exc.message}", file=sys.stderr)
+        return 1
+    _print_json(payload)
+    return 0
+
+
+def cmd_provider_archive(args: argparse.Namespace) -> int:
+    print(
+        "INVALID PROVIDER_ARCHIVE_LIVE_FORBIDDEN: archive mutate requires "
+        "recorded/fake transport; permanent delete is never offered",
+        file=sys.stderr,
+    )
+    return 1
+
+
+def build_parser() -> argparse.ArgumentParser:
+    parser = argparse.ArgumentParser(
+        prog="python -m tools.agent_control",
+        description="CDB Agent Control Plane CLI (registry + governed dispatcher)",
+    )
+    sub = parser.add_subparsers(dest="command", required=True)
+
+    registry = sub.add_parser("registry", help="Declarative agent registry commands")
+    reg_sub = registry.add_subparsers(dest="registry_command", required=True)
+
+    p_val = reg_sub.add_parser("validate", help="Validate registry desired state")
+    p_val.add_argument(
+        "--config",
+        default=str(DEFAULT_CONFIG_ROOT),
+        help="Registry file or config/agent-control root",
+    )
+    p_val.set_defaults(func=cmd_registry_validate)
+
+    p_norm = reg_sub.add_parser("normalize", help="Emit normalized registry JSON")
+    p_norm.add_argument("--config", default=str(DEFAULT_CONFIG_ROOT))
+    p_norm.add_argument("--output")
+    p_norm.set_defaults(func=cmd_registry_normalize)
+
+    p_plan = reg_sub.add_parser(
+        "plan",
+        help="Build deterministic reconcile plan (desired vs observed)",
+    )
+    p_plan.add_argument("--config", default=str(DEFAULT_CONFIG_ROOT))
+    p_plan.add_argument("--state", required=True, help="Observed state JSON/YAML")
+    p_plan.add_argument("--output")
+    p_plan.set_defaults(func=cmd_registry_plan)
+
+    p_rec = reg_sub.add_parser(
+        "reconcile",
+        help="Reconcile desired vs observed (dry-run default; no live mutation)",
+    )
+    p_rec.add_argument("--config", default=str(DEFAULT_CONFIG_ROOT))
+    p_rec.add_argument(
+        "--state",
+        help="Observed state JSON/YAML (default: empty observed set)",
+    )
+    p_rec.add_argument(
+        "--dry-run",
+        action="store_true",
+        default=True,
+        help="Plan only (default)",
+    )
+    p_rec.add_argument(
+        "--apply",
+        action="store_true",
+        help="Simulate apply via MockBackend only (requires --allow-mock-apply)",
+    )
+    p_rec.add_argument(
+        "--allow-mock-apply",
+        action="store_true",
+        help="Acknowledge mock-only apply (still no live provider calls)",
+    )
+    p_rec.add_argument("--output")
+    p_rec.set_defaults(func=cmd_registry_reconcile)
+
+    p_dispatch = sub.add_parser(
+        "dispatch",
+        help="Governed dispatch (dry-run default; mock execute opt-in)",
+    )
+    p_dispatch.add_argument("--contract", required=True)
+    p_dispatch.add_argument(
+        "--registry",
+        default=str(DEFAULT_CONFIG_ROOT),
+        help="Registry file or config/agent-control root",
+    )
+    p_dispatch.add_argument("--agent-id", required=True)
+    p_dispatch.add_argument(
+        "--state",
+        help="JSON run-store path (required for --execute)",
+    )
+    p_dispatch.add_argument(
+        "--dry-run",
+        action="store_true",
+        default=True,
+        help="Preflight + plan only (default)",
+    )
+    p_dispatch.add_argument(
+        "--execute",
+        action="store_true",
+        help="Execute mock dispatch (requires --allow-mock-dispatch)",
+    )
+    p_dispatch.add_argument(
+        "--allow-mock-dispatch",
+        action="store_true",
+        help="Acknowledge mock-only provider execution",
+    )
+    p_dispatch.add_argument(
+        "--scenario",
+        default="success",
+        help="MockProvider scenario (tests/CLI)",
+    )
+    p_dispatch.add_argument("--output")
+    p_dispatch.set_defaults(func=cmd_dispatch)
+
+    p_watch = sub.add_parser("watch", help="Watch/advance a mock run")
+    p_watch.add_argument("--run-id", required=True)
+    p_watch.add_argument("--state", required=True)
+    p_watch.set_defaults(func=cmd_watch)
+
+    p_cancel = sub.add_parser("cancel", help="Cancel a non-terminal mock run")
+    p_cancel.add_argument("--run-id", required=True)
+    p_cancel.add_argument("--state", required=True)
+    p_cancel.add_argument("--reason", required=True)
+    p_cancel.set_defaults(func=cmd_cancel)
+
+    p_retry = sub.add_parser("retry", help="Explicit retry as a new attempt")
+    p_retry.add_argument("--previous-run-id", required=True)
+    p_retry.add_argument("--contract", required=True)
+    p_retry.add_argument("--reason", required=True)
+    p_retry.add_argument("--registry", default=str(DEFAULT_CONFIG_ROOT))
+    p_retry.add_argument("--agent-id")
+    p_retry.add_argument("--state", required=True)
+    p_retry.add_argument("--dry-run", action="store_true", default=True)
+    p_retry.add_argument("--execute", action="store_true")
+    p_retry.add_argument("--allow-mock-dispatch", action="store_true")
+    p_retry.add_argument("--scenario", default="success")
+    p_retry.set_defaults(func=cmd_retry)
+
+    p_evidence = sub.add_parser(
+        "evidence",
+        help=(
+            "Evidence surfaces: lifecycle snapshot (#4253) and run evidence "
+            "bundle (#4256)"
+        ),
+    )
+    ev_sub = p_evidence.add_subparsers(dest="evidence_command", required=False)
+
+    p_ev_snap = ev_sub.add_parser(
+        "snapshot",
+        help="Dispatcher lifecycle snapshot (not agent_run_evidence bundle)",
+    )
+    p_ev_snap.add_argument("--run", dest="run", required=True)
+    p_ev_snap.add_argument("--state", required=True)
+    p_ev_snap.set_defaults(func=cmd_evidence_snapshot, run_id=None)
+
+    p_ev_emit = ev_sub.add_parser(
+        "emit",
+        help="Emit deterministic cdb.agent_run_evidence.v1 bundle",
+    )
+    p_ev_emit.add_argument("--run", dest="run", required=True)
+    p_ev_emit.add_argument("--state", required=True)
+    p_ev_emit.add_argument(
+        "--store",
+        help="Optional JSONL pilot store path (stdout-only when omitted)",
+    )
+    p_ev_emit.set_defaults(func=cmd_evidence_emit, run_id=None)
+
+    p_ev_verify = ev_sub.add_parser(
+        "verify",
+        help="Verify a bundle file or JSONL pilot store",
+    )
+    p_ev_verify.add_argument("--bundle", help="Path to a single bundle JSON file")
+    p_ev_verify.add_argument("--store", help="Path to JSONL pilot store")
+    p_ev_verify.set_defaults(func=cmd_evidence_verify)
+
+    p_ev_show = ev_sub.add_parser(
+        "show",
+        help="Show stored bundles for a run_id from a JSONL store",
+    )
+    p_ev_show.add_argument("--run", required=True)
+    p_ev_show.add_argument("--store", required=True)
+    p_ev_show.set_defaults(func=cmd_evidence_show)
+
+    # Legacy snapshot alias: evidence --run-id ... --state ...
+    p_evidence.add_argument("--run-id", dest="run_id", default=None)
+    p_evidence.add_argument(
+        "--run",
+        dest="run",
+        default=None,
+        help="Bundle entry alias; requires --state (emit path)",
+    )
+    p_evidence.add_argument("--state", default=None)
+    p_evidence.add_argument("--store", default=None)
+    p_evidence.set_defaults(func=cmd_evidence_dispatch)
+
+    provider = sub.add_parser(
+        "provider", help="Cursor provider offline/ops surface (#4254)"
+    )
+    prov_sub = provider.add_subparsers(dest="provider_command", required=True)
+
+    p_caps = prov_sub.add_parser("capabilities", help="Offline capability snapshot")
+    p_caps.add_argument("--provider", required=True)
+    p_caps.add_argument("--offline", action="store_true", required=True)
+    p_caps.set_defaults(func=cmd_provider_capabilities)
+
+    p_probe = prov_sub.add_parser("probe", help="Offline capability probe (alias)")
+    p_probe.add_argument("--provider", required=True)
+    p_probe.add_argument("--offline", action="store_true", required=True)
+    p_probe.set_defaults(func=cmd_provider_probe)
+
+    p_stream = prov_sub.add_parser("stream", help="Offline stream view for a run")
+    p_stream.add_argument("--run-id", required=True)
+    p_stream.add_argument("--state", required=True)
+    p_stream.set_defaults(func=cmd_provider_stream)
+
+    p_fu = prov_sub.add_parser("follow-up", help="Follow-up (gated; no live execute)")
+    p_fu.add_argument("--run-id", required=True)
+    p_fu.add_argument("--contract", required=True)
+    p_fu.set_defaults(func=cmd_provider_follow_up)
+
+    p_art = prov_sub.add_parser("artifacts", help="Artifact helpers")
+    art_sub = p_art.add_subparsers(dest="artifacts_command", required=True)
+    p_art_list = art_sub.add_parser("list", help="List artifact refs for a run")
+    p_art_list.add_argument("--run-id", required=True)
+    p_art_list.add_argument("--state", required=True)
+    p_art_list.set_defaults(func=cmd_provider_artifacts)
+
+    p_usage = prov_sub.add_parser("usage", help="Usage snapshot from run store")
+    p_usage.add_argument("--run-id", required=True)
+    p_usage.add_argument("--state", required=True)
+    p_usage.set_defaults(func=cmd_provider_usage)
+
+    p_arch = prov_sub.add_parser("archive", help="Archive (gated; no live mutate)")
+    p_arch.add_argument("--run-id", required=True)
+    p_arch.add_argument("--state", required=True)
+    p_arch.set_defaults(func=cmd_provider_archive)
+
+    environment = sub.add_parser(
+        "environment",
+        help="Governed environment profiles + fail-closed doctor (#4255)",
+    )
+    env_sub = environment.add_subparsers(dest="environment_command", required=True)
+
+    p_env_val = env_sub.add_parser(
+        "validate",
+        help="Validate environment profiles (all or one)",
+    )
+    p_env_val.add_argument("--config", default=str(DEFAULT_CONFIG_ROOT))
+    p_env_val.add_argument(
+        "--profile",
+        help="Optional single profile_id (default: validate all + cursor config)",
+    )
+    p_env_val.set_defaults(func=cmd_environment_validate)
+
+    p_env_doc = env_sub.add_parser(
+        "doctor",
+        help="Offline/fixture environment doctor (never contacts Cursor)",
+    )
+    p_env_doc.add_argument("--profile", required=True)
+    p_env_doc.add_argument("--config", default=str(DEFAULT_CONFIG_ROOT))
+    p_env_doc.add_argument(
+        "--offline",
+        action="store_true",
+        default=True,
+        help="Offline doctor (default)",
+    )
+    p_env_doc.add_argument(
+        "--attestation",
+        help="Optional recorded/fake attestation fixture JSON",
+    )
+    p_env_doc.set_defaults(func=cmd_environment_doctor)
+
+    return parser
+
+
+def main(argv: list[str] | None = None) -> int:
+    parser = build_parser()
+    args = parser.parse_args(argv)
+    return int(args.func(args))
