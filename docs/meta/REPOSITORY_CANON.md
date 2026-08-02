@@ -143,7 +143,7 @@ behauptet.
 | Surface | Rolle | Beispiel |
 | --- | --- | --- |
 | `README.md` in einem Ordner | Lokaler Index + SSOT-Grenzen für diesen Tree | [`docs/runbooks/README.md`](../runbooks/README.md), [`services/risk/README.md`](../../services/risk/README.md) |
-| `index.md` | Kurz-Pointer-Seite über mehrere Untertrees | [`docs/index.md`](../index.md), [`docs/ci/index.md`](../ci/index.md), [`docs/db/index.md`](../db/index.md) |
+| `index.md` | Kurz-Pointer-Seite über mehrere Untertrees | [`docs/index.md`](../index.md), [`docs/ci/index.md`](../ci/index.md), [`docs/db/index.md`](../db/index.md), [`docs/env/index.md`](../env/index.md), [`docs/external-docs/index.md`](../external-docs/index.md) |
 
 Regeln:
 
@@ -151,6 +151,100 @@ Regeln:
 - Ordner mit vielen Dateien bekommen ein `README.md` (Tabelle + Abgrenzung); `index.md` nur wo bereits etabliert oder für flache Nav-Hubs.
 - Status-SSOT bleibt in den kanonischen Statusdateien (siehe Status SSOT Rule); READMEs fassen zusammen oder verweisen, erfinden keinen operativen Verdict.
 - Archiv unter `docs/archive/` ist read-only und niemals eine zweite kanonische Quelle.
+
+## Area Entry Link Rule
+
+Ein Link, der einen Repository-Bereich als Einstieg meint, verweist auf die
+lokale `README.md` dieses Bereichs und nicht auf den nackten Ordner.
+
+Entscheidungsfrage:
+
+```text
+Soll der Leser einen Bereich verstehen oder eine konkrete Datei öffnen?
+```
+
+- Bereich verstehen → lokale `README.md` (Bereichs- oder Unterbereichs-Index).
+- Konkrete Datei öffnen → direkter Dateilink.
+
+### Bereichseinstieg
+
+- Linkziel für einen Bereichseinstieg ist `…/<area>/README.md`.
+- Der sichtbare Linktext darf weiterhin den Ordnerpfad zeigen. Beispiel
+  (Ziel relativ zur jeweiligen Quelldatei auflösen):
+
+```markdown
+[`services/risk/`](services/risk/README.md)
+```
+
+- Redundante Dual-Link-Darstellungen mit getrenntem Ordnerlink **und**
+  README-Link sind unzulässig. Wenn eine Tabelle den Ordnernamen und die
+  README fachlich braucht, bleibt der Ordnerpfad unlinked Text; das einzige
+  Bereichs-Linkziel ist die README.
+- Eine README muss nicht jede Datei eines Trees auflisten. Sie vermittelt
+  Zweck, Zuständigkeit/SSOT-Grenzen und die relevanten nächsten Einstiege.
+
+### Direkte Dateilinks (erlaubt)
+
+Direkte Dateilinks bleiben, wenn genau diese Datei das beabsichtigte Ziel ist,
+insbesondere:
+
+- Canon-Dateien und Policies
+- Status-SSOTs und Live-Readiness-Verdikte
+- Contracts und operative Runbooks
+- konkrete Tools, Tests oder ausführbare Konfiguration
+- maschinenlesbare Entrypoints (YAML/JSON und ähnliche Steuerdateien)
+
+### Etablierte `index.md`-Ausnahmen
+
+Nur die folgenden, live vorhandenen flachen oder bereichsübergreifenden Hubs
+dürfen als Bereichseinstieg statt einer lokalen README dienen:
+
+| Hub | Rolle |
+| --- | --- |
+| [`docs/index.md`](../index.md) | kürzeste repo-weite Docs-Landingpage |
+| [`docs/ci/index.md`](../ci/index.md) | CI-/PR-Gate-Navigationshub |
+| [`docs/db/index.md`](../db/index.md) | DB-/Schema-Navigationshub |
+| [`docs/env/index.md`](../env/index.md) | Env-/Secrets-/Toggle-Hub |
+| [`docs/external-docs/index.md`](../external-docs/index.md) | externe Docs-Verweis-Hub |
+
+Neue `index.md`-Ausnahmen erfordern eine explizite Canon-Erweiterung. Sie
+werden nicht still angenommen.
+
+### Fehlende README
+
+Fehlt für einen aktiven, navigationsrelevanten Bereich eine lokale `README.md`,
+ist das eine Informationsarchitektur-Lücke. Ein nackter Ordnerlink ist kein
+zulässiger dauerhafter Ersatz.
+
+### Bevorzugte Navigationstiefe
+
+```text
+Repository-Front-Door
+→ Bereichs-README
+→ Unterbereichs-README
+→ konkrete kanonische Datei
+```
+
+### Ausgeschlossene Flächen
+
+Nicht als aktive Standardnavigation behandeln:
+
+- `docs/archive/**`
+- `knowledge/archive/**`
+- `artifacts/**` und sonstige generierte Outputs
+- vendorte oder externe Trees
+- Test-Fixtures und Beispielbäume, sofern sie nicht ausdrücklich aktive
+  Einstiegspunkte sind
+
+Ein bewusster direkter Link dorthin bleibt möglich, wenn er fachlich begründet
+ist.
+
+### Enforcement-Hinweis
+
+Diese Regel ist der Navigationsvertrag. Der bestehende README-Link-Guard
+(`python -m tools.validate_readme_links`) prüft Link-Existenz, noch nicht die
+Area-Entry-Präferenz. Automatischer Enforcement-Guard folgt in einem späteren
+Slice (S7).
 
 ## Archive
 
