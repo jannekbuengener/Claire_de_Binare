@@ -181,7 +181,43 @@ def build_dry_run_plan(
     return plan
 
 
+def _field_present(value: Any, *, field: str) -> bool:
+    if value is None:
+        return False
+    if field == "target_branch":
+        return isinstance(value, str) and bool(value.strip())
+    return True
+
+
+def assert_delivery_target_consistent(contract: dict[str, Any]) -> None:
+    """Fail-closed when route and delivery_target disagree on the same field.
+
+    Identical duplicates remain allowed. Create routes may leave targets empty
+    until a validated provider receipt supplies them.
+    """
+    route = contract.get("route") or {}
+    target = (contract.get("execution_scope") or {}).get("delivery_target") or {}
+    conflicts: list[str] = []
+    for field in ("target_pr", "target_branch"):
+        route_val = route.get(field)
+        target_val = target.get(field)
+        if not (
+            _field_present(route_val, field=field)
+            and _field_present(target_val, field=field)
+        ):
+            continue
+        if route_val != target_val:
+            conflicts.append(field)
+    if conflicts:
+        raise DispatchError(
+            "DISPATCH_DELIVERY_TARGET_CONFLICT",
+            "route and execution_scope.delivery_target conflict on: "
+            + ", ".join(conflicts),
+        )
+
+
 def _delivery_target(contract: dict[str, Any]) -> dict[str, Any]:
+    assert_delivery_target_consistent(contract)
     scope = contract.get("execution_scope") or {}
     target = scope.get("delivery_target") or {}
     route = contract.get("route") or {}
@@ -192,6 +228,49 @@ def _delivery_target(contract: dict[str, Any]) -> dict[str, Any]:
         or "DONE_SLICE_ADDED_TO_BATCH_PR",
         "routing_decision": route.get("routing_decision"),
     }
+
+
+def effective_dispatch_budget(
+    contract_budget: dict[str, Any] | None,
+    effective_constraints: dict[str, Any] | None,
+) -> dict[str, Any]:
+    """Merge contract budget with attenuated environment ceilings (restrictive).
+
+    Does not mutate the signed/hashed contract input. Numeric ceilings take the
+    more restrictive value when both sides are present.
+    """
+    budget = deepcopy(contract_budget or {})
+    eff = effective_constraints or {}
+    wall_e = eff.get("wall_time_seconds")
+    if isinstance(wall_e, int) and not isinstance(wall_e, bool):
+        wall_c = budget.get("wall_time_seconds")
+        if isinstance(wall_c, int) and not isinstance(wall_c, bool):
+            budget["wall_time_seconds"] = min(wall_c, wall_e)
+        else:
+            budget["wall_time_seconds"] = wall_e
+    return budget
+
+
+def _merge_observed_create_targets(
+    record: dict[str, Any], receipt: dict[str, Any]
+) -> None:
+    """For CREATE routes, persist validated receipt targets onto the run route."""
+    route = record.get("route") or {}
+    routing = route.get("routing_decision")
+    if routing not in CREATE_ROUTE_DECISIONS:
+        return
+    updated = False
+    receipt_pr = receipt.get("target_pr")
+    receipt_branch = receipt.get("target_branch")
+    if isinstance(receipt_pr, int) and receipt_pr > 0:
+        route["target_pr"] = receipt_pr
+        updated = True
+    if isinstance(receipt_branch, str) and receipt_branch.strip():
+        route["target_branch"] = receipt_branch
+        updated = True
+    if updated:
+        route["target_provenance"] = "route+validated_provider_receipt"
+    record["route"] = route
 
 
 def _expected_delivery_from_contract(contract: dict[str, Any]) -> dict[str, Any]:
@@ -402,6 +481,11 @@ def dispatch_run(
     at = _iso(clock)
     rid = run_id or _new_run_id()
     expected_delivery = _expected_delivery_from_contract(pf.contract)
+    # Effective budget = contract ∩ attenuated environment ceilings.
+    # Contract digest/input remain untouched; only the run/request budget shrinks.
+    run_budget = effective_dispatch_budget(
+        pf.budget, pf.effective_environment_constraints
+    )
     record: dict[str, Any] = {
         "schema_id": "cdb.agent_dispatch_run.v1",
         "schema_version": "1.0.0",
@@ -424,7 +508,7 @@ def dispatch_run(
         "agent_id": agent_id,
         "provider_id": pf.provider_id,
         "provider_run_id": None,
-        "budget": deepcopy(pf.budget or {}),
+        "budget": run_budget,
         "usage": {"iterations": 0, "tool_calls": 0},
         "lifecycle_events": [],
         "terminal_reason": None,
@@ -485,7 +569,7 @@ def dispatch_run(
             or scope.get("allowed_commands_or_command_classes")
             or []
         ),
-        budget=deepcopy(pf.budget or {}),
+        budget=deepcopy(run_budget),
         prompt_ref=pf.prompt_ref,
         prompt_digest=pf.prompt_digest,
         prompt_text=pf.prompt_text,
@@ -799,6 +883,7 @@ def watch_run(
             return store.update_cas(run_id, rev, record)
 
         record["delivery_receipt"] = deepcopy(receipt)
+        _merge_observed_create_targets(record, receipt)
         if auto_advance_success:
             _apply_state(
                 record,

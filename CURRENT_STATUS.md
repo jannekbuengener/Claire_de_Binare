@@ -22,6 +22,8 @@
 <!-- cdb:live-claim type=issue_state issue=4228 state=closed -->
 - **#4289 Hermes Hetzner Bootstrap**: **IN_DELIVERY** via PR [#4290](https://github.com/jannekbuengener/Claire_de_Binare/pull/4290) (`infrastructure/hermes/`, `config/hermes/`, `tools/hermes_ops/`, runbook, threat model, unit tests). Live Hetzner/Windows/GitHub drills remain `HOLD_SCOPE_BLOCKER`. Auth lineage reuses #4170/#4195. `#4257` remains HOLD. LR **NO-GO** unchanged.  <!-- pragma: allowlist secret -->
 
+- **#4293 ACP dispatcher post-merge residuals**: **IN_DELIVERY** via `batch/agent-skills-issue-4293` (R1–R4 P2 fixes after #4286). Targeted governance tests PASS; no merge / no `cdb-local-ci` in delivery session. `#4257` remains Implementation-Hold until #4293 merges. LR **NO-GO** unchanged.
+
 - **PR #4286 Agent Control Plane batch**: **DONE_MERGED_CLOSED** — squash-merged; issues #4250–#4256 closed. Prior ledger tip `2d4651a7` superseded by consolidation tip `fce4c754`. LR **NO-GO** unchanged.
 
 <!-- cdb:historical-as-of date=2026-07-31 -->

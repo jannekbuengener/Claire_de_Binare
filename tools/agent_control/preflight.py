@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+from copy import deepcopy
 from dataclasses import dataclass
 from pathlib import Path
 from typing import Any
@@ -43,6 +44,46 @@ SLICE_FORBIDDEN_TRUE = frozenset(
         "mcp_live_mutation",
     }
 )
+
+
+def _delivery_target_conflict_message(contract: dict[str, Any]) -> str | None:
+    """Return conflict message when route and delivery_target disagree."""
+    route = contract.get("route") or {}
+    target = (contract.get("execution_scope") or {}).get("delivery_target") or {}
+    conflicts: list[str] = []
+    for field in ("target_pr", "target_branch"):
+        route_val = route.get(field)
+        target_val = target.get(field)
+        if field == "target_branch":
+            route_present = isinstance(route_val, str) and bool(route_val.strip())
+            target_present = isinstance(target_val, str) and bool(target_val.strip())
+        else:
+            route_present = route_val is not None
+            target_present = target_val is not None
+        if route_present and target_present and route_val != target_val:
+            conflicts.append(field)
+    if not conflicts:
+        return None
+    return "route and execution_scope.delivery_target conflict on: " + ", ".join(
+        conflicts
+    )
+
+
+def _effective_budget_from_constraints(
+    contract_budget: dict[str, Any],
+    effective_constraints: dict[str, Any] | None,
+) -> dict[str, Any]:
+    """Restrictive merge of contract budget with attenuated environment ceilings."""
+    budget = deepcopy(contract_budget or {})
+    eff = effective_constraints or {}
+    wall_e = eff.get("wall_time_seconds")
+    if isinstance(wall_e, int) and not isinstance(wall_e, bool):
+        wall_c = budget.get("wall_time_seconds")
+        if isinstance(wall_c, int) and not isinstance(wall_c, bool):
+            budget["wall_time_seconds"] = min(wall_c, wall_e)
+        else:
+            budget["wall_time_seconds"] = wall_e
+    return budget
 
 
 @dataclass(frozen=True)
@@ -153,6 +194,14 @@ def preflight(
                 "safe existing/continuation route requires target_pr and target_branch",
                 terminal_state="BLOCKED",
             )
+
+    conflict_msg = _delivery_target_conflict_message(validated)
+    if conflict_msg:
+        return _fail(
+            "DISPATCH_DELIVERY_TARGET_CONFLICT",
+            conflict_msg,
+            terminal_state="BLOCKED",
+        )
 
     permissions = validated.get("permissions") or {}
     for key in SLICE_FORBIDDEN_TRUE:
@@ -343,6 +392,11 @@ def preflight(
     except ContractValidationError as exc:
         return _fail(exc.code, exc.message, terminal_state="BLOCKED")
 
+    # Effective run budget uses attenuated environment ceilings; contract stays intact.
+    effective_budget = _effective_budget_from_constraints(
+        budget, env_result.effective_constraints
+    )
+
     return PreflightResult(
         ok=True,
         terminal_state=None,
@@ -353,7 +407,7 @@ def preflight(
         agent=agent,
         provider_id=provider_id,
         route=route,
-        budget=budget,
+        budget=effective_budget,
         prompt_ref=prompt_ref,
         prompt_digest=prompt_digest,
         prompt_text=prompt_text,

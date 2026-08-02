@@ -39,6 +39,7 @@ from tools.agent_control.evidence.redact import (
 )
 from tools.agent_control.evidence.store import EvidenceJsonlStore
 from tools.agent_control.evidence.verdict import derive_verdict
+from tools.agent_control.provider import CREATE_ROUTE_DECISIONS
 from tools.agent_control.run_store import RunStore
 from tools.agent_execution_contract.jcs import canonicalize
 
@@ -279,6 +280,25 @@ def build_evidence_bundle(
     route = deepcopy(run.get("route") or {})
     receipt = deepcopy(run.get("delivery_receipt") or {})
 
+    target_pr = route.get("target_pr")
+    target_branch = route.get("target_branch")
+    provenance_source = "run.route+delivery_receipt"
+    routing = route.get("routing_decision")
+    if routing in CREATE_ROUTE_DECISIONS:
+        # Prefer explicit route provenance stamped after validated receipt merge.
+        if route.get("target_provenance") == "route+validated_provider_receipt":
+            provenance_source = "run.route+validated_provider_receipt"
+        # Else fill blanks from validated receipt when route was not yet updated.
+        if target_pr is None and isinstance(receipt.get("target_pr"), int):
+            if int(receipt["target_pr"]) > 0:
+                target_pr = receipt.get("target_pr")
+                provenance_source = "run.route+validated_provider_receipt"
+        receipt_branch = receipt.get("target_branch")
+        if (not target_branch) and isinstance(receipt_branch, str):
+            if receipt_branch.strip():
+                target_branch = receipt_branch
+                provenance_source = "run.route+validated_provider_receipt"
+
     bundle: dict[str, Any] = {
         "schema_id": SCHEMA_ID,
         "schema_version": SCHEMA_VERSION,
@@ -318,15 +338,15 @@ def build_evidence_bundle(
         },
         "delivery_context": {
             "issue": run.get("delivery_issue"),
-            "target_pr": route.get("target_pr"),
-            "target_branch": route.get("target_branch"),
+            "target_pr": target_pr,
+            "target_branch": target_branch,
             "source_commit": run.get("source_commit"),
             "delivery_commit": receipt.get("commit"),
             "delivery_status": receipt.get("delivery_status"),
             "provenance": {
                 "trust_class": "control_plane_observed",
-                "source": "run.route+delivery_receipt",
-                "reference": str(route.get("target_pr")),
+                "source": provenance_source,
+                "reference": str(target_pr),
                 "digest": None,
             },
         },

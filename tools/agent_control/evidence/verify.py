@@ -65,7 +65,9 @@ def verify_store(path: Path) -> dict[str, Any]:
     store = EvidenceJsonlStore(path)
     records = store.read_all()
     seen_ids: dict[str, str] = {}
-    seen_run_attempts: set[tuple[str, int]] = set()
+    # Uniqueness is lifecycle-versioned: HOLD then PASS for same run/attempt
+    # must coexist after evidence-id lifecycle binding (#4293 / R4).
+    seen_run_attempts: set[tuple[str, int, str]] = set()
     verified: list[dict[str, Any]] = []
     for record in records:
         result = verify_bundle(record)
@@ -77,11 +79,16 @@ def verify_store(path: Path) -> dict[str, Any]:
                 f"duplicate evidence_id with digest mismatch: {eid}",
             )
         seen_ids[eid] = digest
-        key = (str(record.get("run_id")), int(record.get("attempt") or 0))
+        lifecycle_state = str((record.get("lifecycle") or {}).get("state") or "")
+        key = (
+            str(record.get("run_id")),
+            int(record.get("attempt") or 0),
+            lifecycle_state,
+        )
         if key in seen_run_attempts:
             raise EvidenceError(
                 REASON_DUPLICATE_RUN_ATTEMPT,
-                f"duplicate run/attempt pair: {key}",
+                f"duplicate run/attempt/lifecycle triple: {key}",
             )
         seen_run_attempts.add(key)
         verified.append(result)
