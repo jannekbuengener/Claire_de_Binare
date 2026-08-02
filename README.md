@@ -110,7 +110,7 @@ LR bleibt **NO-GO** — SSOT: [`docs/live-readiness/LR-AUDIT-STATUS-2026-03-05.m
 - [`infrastructure/compose/`](infrastructure/compose/README.md) — Compose-Canon (`compose.blue.yml` + `compose.red.yml`)
 - [`config/`](config/README.md) — versionierte Repo-Konfiguration
 - [`config/arvp/`](config/arvp/README.md) — ARVP-Kampagnen und Compose-Overrides
-- [`.github/governance/`](.github/governance/) — direkt von GitHub Actions gelesene Governance-Gates (kein Area-README; Action-Inputs)
+- [`.github/governance/`](.github/governance/README.md) — Governance-Gates und Action-Inputs (Area-README)
 - [`docs/runbooks/`](docs/runbooks/README.md) — operative Runbooks inkl. Control Register
 - [`docs/live-readiness/`](docs/live-readiness/README.md) — LR-Audit- und Gate-Artefakte
 - [`docs/evidence/`](docs/evidence/README.md) — geprüfte, versionierte Nachweise; neue Ausgaben entstehen unter `artifacts/`

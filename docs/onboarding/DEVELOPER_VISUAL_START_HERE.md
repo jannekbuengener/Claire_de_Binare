@@ -32,7 +32,7 @@ before touching implementation work.
    `python -m tools.onboarding_doctor` or `make onboarding-doctor`.
 7. Use the examples in [`examples/README.md`](examples/README.md) before drafting
    your first issue-to-PR workflow.
-8. Use the templates in [`templates/`](templates/) for prompts, evidence docs,
+8. Use the templates in [`templates/`](templates/README.md) for prompts, evidence docs,
    and docs/onboarding PR bodies.
 
 ## Start Path For Agents

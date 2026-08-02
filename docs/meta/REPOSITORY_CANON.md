@@ -241,10 +241,10 @@ ist.
 
 ### Enforcement-Hinweis
 
-Diese Regel ist der Navigationsvertrag. Der bestehende README-Link-Guard
-(`python -m tools.validate_readme_links`) prüft Link-Existenz, noch nicht die
-Area-Entry-Präferenz. Automatischer Enforcement-Guard folgt in einem späteren
-Slice (S7).
+Diese Regel ist der Navigationsvertrag. Der README-Link-Guard
+(`python -m tools.validate_readme_links`, Policy
+`tests/fixtures/readme_link_policy.yaml` → `area_entry_link_rule`) prüft
+Link-Existenz und die Area Entry Link Rule fail-closed (Issue #4298 / S7).
 
 ## Archive
 

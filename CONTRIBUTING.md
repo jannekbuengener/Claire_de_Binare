@@ -56,8 +56,9 @@ make readme-links-guard      # active README.md + explicit canon entry points (#
 make onboarding-docs-guard   # onboarding front-door surfaces (#3233)
 ```
 
-The link-existence guard does **not** yet enforce Area Entry Link preference;
-Canon defines the contract, automatic enforcement follows later (Slice S7).
+The README link guard enforces both link existence and the Area Entry Link
+Rule (bare folder / dual-link / established `index.md` hubs) via
+`python -m tools.validate_readme_links` / `make readme-links-guard` (#4298).
 
 See also [`docs/meta/REPOSITORY_CANON.md`](docs/meta/REPOSITORY_CANON.md)
 (README vs. `index.md` navigation rule; Area Entry Link Rule).

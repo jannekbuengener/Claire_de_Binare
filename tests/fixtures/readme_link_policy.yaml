@@ -1,12 +1,13 @@
-# README link validation policy (#3994, extended #4037 and #4124)
+# README link validation policy (#3994, extended #4037, #4124, #4298)
 #
 # Discovery: git ls-files '**/README.md' (automatic, fail-closed for new files)
-# This fixture holds only classification rules, explicit active non-README
-# surfaces, and documented exceptions.
+# This fixture holds classification rules, explicit active non-README surfaces,
+# documented exceptions, and the Area Entry Link Rule machine contract.
+# Canon SSOT: docs/meta/REPOSITORY_CANON.md § Area Entry Link Rule.
 
 version: 1
 issue: 3994
-follow_up_issue: 4124
+follow_up_issue: 4298
 
 # Unmatched README paths use this class and are validated (fail-closed).
 default_classification: active
@@ -47,3 +48,20 @@ explicit_active_surfaces:
 
 # Explicit per-path overrides (use sparingly).
 documented_exceptions: []
+
+# Executable mirror of REPOSITORY_CANON.md § Area Entry Link Rule / index hubs.
+# Invalid entries fail closed at policy load (missing fields, duplicates,
+# missing entrypoints, entrypoints outside directory, absolute/external paths).
+area_entry_link_rule:
+  enabled: true
+  established_index_hubs:
+    - directory: docs
+      entrypoint: docs/index.md
+    - directory: docs/ci
+      entrypoint: docs/ci/index.md
+    - directory: docs/db
+      entrypoint: docs/db/index.md
+    - directory: docs/env
+      entrypoint: docs/env/index.md
+    - directory: docs/external-docs
+      entrypoint: docs/external-docs/index.md
