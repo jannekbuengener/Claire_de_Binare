@@ -76,6 +76,7 @@ from core.replay.binance_window_bank_adapter import (
     load_binance_window_dataset,
 )
 from core.replay.canonical_json import canonical_hash, canonical_json_dumps
+from core.replay.dataset_identity import content_fingerprint, request_fingerprint
 from core.replay.execution_economics_v1 import (
     ExecutionEconomicsError,
     resolve_scenario_overrides,
@@ -783,12 +784,21 @@ def _load_dataset_result(
         except DatasetSpecError as exc:
             raise ReplayRunnerError(f"dataset spec validation failed: {exc}") from exc
 
+        # Request identity follows the *final* windowed spec (not temp start/end=0).
+        # Content identity is the loaded candle series (propagate or recompute).
+        req_fp = request_fingerprint(spec)
+        content_fp = temp_result.content_fingerprint
+        if content_fp is None:
+            content_fp = content_fingerprint(temp_result.candles)
+
         return DatasetResult(
             spec=spec,
             candles=temp_result.candles,
-            fingerprint=spec.fingerprint(),
+            fingerprint=req_fp,
             warmup_count=warmup_count,
             effective_candle_count=len(candles) - warmup_count,
+            request_fingerprint=req_fp,
+            content_fingerprint=content_fp,
         )
 
     if dataset_source == "db":
@@ -828,12 +838,21 @@ def _load_dataset_result(
             )
         except BinanceWindowBankAdapterError as exc:
             raise ReplayRunnerError(str(exc)) from exc
+        inner = dataset.dataset_result
+        req_fp = inner.request_fingerprint
+        if req_fp is None:
+            req_fp = request_fingerprint(inner.spec)
+        content_fp = inner.content_fingerprint
+        if content_fp is None:
+            content_fp = content_fingerprint(inner.candles)
         return DatasetResult(
-            spec=dataset.dataset_result.spec,
-            candles=dataset.dataset_result.candles,
-            fingerprint=dataset.dataset_result.fingerprint,
+            spec=inner.spec,
+            candles=inner.candles,
+            fingerprint=req_fp,
             warmup_count=warmup_count,
-            effective_candle_count=dataset.dataset_result.effective_candle_count,
+            effective_candle_count=inner.effective_candle_count,
+            request_fingerprint=req_fp,
+            content_fingerprint=content_fp,
         )
 
     raise ReplayRunnerError(f"unsupported dataset_source: {config.dataset_source!r}")
