@@ -15,8 +15,8 @@
   },
   "override_order": [
     "code_default",
-    "env",
-    "compose"
+    "compose",
+    "env"
   ],
   "regime": {
     "adx_period": 14
@@ -29,5 +29,5 @@
   "signal": {
     "strategy_id": "primary_breakout_v1"
   },
-  "snapshot_fingerprint": "7116e10cdea8bcecbbfe81b3590e0c1f2c36a183c60f5bd3d8b3bf0de1971654"
+  "snapshot_fingerprint": "eceb1fd68085b985c513e17b3b64aae6dbed2605041425a7008090d02f059dfe"
 }

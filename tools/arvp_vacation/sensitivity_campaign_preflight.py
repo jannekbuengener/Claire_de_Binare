@@ -127,17 +127,18 @@ ALLOWED_CLAIMS = (
     "Machine-readable fail-closed readiness preflight exists for #4153.",
     "Experiment manifest contract is versioned and deterministically fingerprintable.",
     "Frozen boundaries and holdout access are technically blocked.",
-    "Current repository state is classified BLOCKED_EXPERIMENT_NOT_READY while "
-    "full Effective-Config evidence is missing (#4151).",
+    "Effective-Config snapshot capability is present and secret-safe (#4151).",
+    "Repo preflight may reach READY_FOR_REPLAY_SENSITIVITY when all gates PASS.",
 )
 
 FORBIDDEN_CLAIMS = (
-    "#4151 is complete.",
-    "The sensitivity campaign is execution-ready.",
+    "The sensitivity campaign has been executed.",
     "Parameters have been investigated.",
     "A candidate is promising or profitable.",
     "Stage-A has been passed.",
     "Replay evidence proves paper, live, or echtgeld readiness.",
+    "Historical #4151 ACs for window-parity, DQ-verdict binding, gap/OOO, "
+    "and rankability provenance are fully closed by Effective-Config alone.",
 )
 
 
@@ -179,7 +180,7 @@ def _gate_invalid(detail: str, *refs: str) -> GateResult:
 def discover_effective_config_capability(
     repo_root: Path,
 ) -> EffectiveConfigCapability:
-    """Probe for the still-missing #4151 Effective-Config capability."""
+    """Probe for #4151 Effective-Config capability (module + schema + validator)."""
     module_path = repo_root / EFFECTIVE_CONFIG_MODULE_REL
     schema_path = repo_root / EFFECTIVE_CONFIG_SCHEMA_REL
     missing: list[str] = []
@@ -195,10 +196,43 @@ def discover_effective_config_capability(
                 f"after PR #4243): {', '.join(missing)}"
             ),
         )
+    try:
+        from core.replay.effective_config_snapshot import (
+            validate_effective_config_snapshot,
+        )
+    except Exception as exc:  # noqa: BLE001 — fail-closed capability probe
+        return EffectiveConfigCapability(
+            available=False,
+            detail=f"Effective-Config module present but not importable: {exc}",
+        )
     return EffectiveConfigCapability(
         available=True,
-        detail="Effective-Config capability markers present",
+        detail="Effective-Config capability present (module+schema+validator)",
+        validate_snapshot=validate_effective_config_snapshot,
     )
+
+
+def _resolve_repo_effective_config_snapshot(
+    repo_root: Path,
+    *,
+    capability: EffectiveConfigCapability,
+    snapshot: Mapping[str, Any] | None,
+) -> Mapping[str, Any] | None:
+    """Use supplied snapshot or build repo-default when capability is available."""
+    if snapshot is not None:
+        return snapshot
+    if not capability.available:
+        return None
+    try:
+        from core.replay.effective_config_snapshot import (
+            build_effective_config_snapshot,
+        )
+    except Exception:  # noqa: BLE001
+        return None
+    try:
+        return build_effective_config_snapshot(repo_root)
+    except Exception:  # noqa: BLE001 — leave gate blocked with missing evidence
+        return None
 
 
 def validate_effective_config_snapshot_structure(
@@ -719,6 +753,12 @@ def run_repo_preflight(
 ) -> dict[str, Any]:
     """Run readiness gates against the live repository (no campaign runs)."""
     root = repo_root or PROJECT_ROOT
+    cap = capability or discover_effective_config_capability(root)
+    resolved_snapshot = _resolve_repo_effective_config_snapshot(
+        root,
+        capability=cap,
+        snapshot=effective_config_snapshot,
+    )
     gates: dict[str, GateResult] = {
         "parameter_control": check_parameter_control_canon(root),
         "regime_signal": check_regime_signal_correctness(root),
@@ -726,8 +766,8 @@ def run_repo_preflight(
         "dataset_provenance": check_dataset_provenance_capability(root),
         "effective_config": check_effective_config_provenance(
             root,
-            capability=capability,
-            snapshot=effective_config_snapshot,
+            capability=cap,
+            snapshot=resolved_snapshot,
         ),
         "frozen_boundaries": check_frozen_boundaries_repo(root),
         "holdout_isolation": check_holdout_isolation_repo(root),
@@ -740,17 +780,19 @@ def run_repo_preflight(
     else:
         verdict = VERDICT_READY
 
-    evidence = {
+    evidence: dict[str, Any] = {
         "locked_development_selection_sha256": LOCKED_DEVELOPMENT_SELECTION_SHA256,
         "execution_economics_contract_version": ECONOMICS_CONTRACT_VERSION,
         "manifest_schema_version": MANIFEST_SCHEMA_VERSION,
         "content_identity_schema_version": CONTENT_IDENTITY_SCHEMA_VERSION,
         "excluded_purposes": sorted(EXCLUDED_PURPOSES),
         "excluded_overlap_classes": sorted(EXCLUDED_OVERLAP_CLASSES),
-        "effective_config_capability_available": (
-            capability or discover_effective_config_capability(root)
-        ).available,
+        "effective_config_capability_available": cap.available,
     }
+    if isinstance(resolved_snapshot, Mapping):
+        fp = resolved_snapshot.get("snapshot_fingerprint")
+        if isinstance(fp, str):
+            evidence["effective_config_snapshot_fingerprint"] = fp
     return build_readiness_report(
         verdict=verdict,
         gates=gates,

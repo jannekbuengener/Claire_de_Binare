@@ -33,13 +33,17 @@ stale, contradictory, or unverifiable evidence blocks.
 
 ## Expected current repository result
 
-Because Issue `#4151` has not delivered a full Effective-Config snapshot
-capability (PR `#4243` only separated request vs content fingerprints), the
-live-repo preflight must return:
+With Effective-Config snapshot capability delivered (`#4151`), the live-repo
+preflight should return:
 
-`BLOCKED_EXPERIMENT_NOT_READY`
+`READY_FOR_REPLAY_SENSITIVITY`
 
-This is the correct fail-closed result, not a preflight defect.
+when every mandatory gate PASSes (parameter-control, regime/signal anchors,
+execution-economics, dataset provenance, effective-config, frozen boundaries,
+holdout isolation).
+
+Missing, incomplete, secret-bearing, or fingerprint-mismatched Effective-Config
+evidence still fails closed as `BLOCKED_EXPERIMENT_NOT_READY`.
 
 ## Allowed claims
 
@@ -47,32 +51,33 @@ This is the correct fail-closed result, not a preflight defect.
 - The experiment manifest contract is versioned and deterministically
   fingerprintable.
 - Frozen boundaries and holdout access are technically blocked.
-- The current repository is correctly classified as
-  `BLOCKED_EXPERIMENT_NOT_READY` while Effective-Config evidence is missing.
+- Effective-Config snapshot capability is present and secret-safe (`#4151`).
+- Repo preflight may reach `READY_FOR_REPLAY_SENSITIVITY` when all gates PASS.
 
 ## Forbidden claims
 
-- `#4151` is complete.
-- The campaign is execution-ready.
+- The sensitivity campaign has been executed.
 - Parameters have been investigated.
 - A candidate is promising or profitable.
 - Stage-A has been passed.
 - Replay evidence proves paper, live, or echtgeld readiness.
+- Historical `#4151` window-parity / DQ / gap-OOO / rankability ACs are fully
+  closed by Effective-Config alone.
 
 ## Non-goals
 
 - No sensitivity campaign runs
 - No parameter grids / Stage-A survivor search
-- No Effective-Config snapshot implementation (`#4151`)
 - No OOS / Stress / Stage-B data reads
 - No Stage-A/B gate or risk/kill/live boundary changes
 - No paper / runtime / live / echtgeld paths
-- No merge and no issue close for `#4153` from this slice alone
+- Closing `#4153` requires the full campaign acceptance criteria, not preflight alone
 
 ## Related
 
 - Parent: `#4147`
-- Blockers remaining for campaign start: `#4151` (Effective-Config)
+- Effective-Config capability: `#4151` (request/content FP + snapshot capability;
+  residual DQ/window/rankability ACs stay on dedicated follow-ups)
 - Safety track (independent): `#4152`
 - Reused locks: Batch-A 39 development windows, Stage-A/B gate contracts,
   parameter-control register, execution-economics v1, dataset identity split
