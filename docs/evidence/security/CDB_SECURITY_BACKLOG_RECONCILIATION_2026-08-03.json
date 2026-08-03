@@ -1,0 +1,375 @@
+{
+  "schema": "cdb.security_backlog_reconciliation.v1",
+  "snapshot_date": "2026-08-03",
+  "anchor_issue": 2513,
+  "base_sha": "abf997d5fec97c4d4da139ae0fb9c1fe28773e89",
+  "base_ref": "origin/main",
+  "branch": "dedicated/security-backlog-reconciliation-2513",
+  "routing_decision": "CREATE_DEDICATED_PR",
+  "merge_allowed": false,
+  "issue_closure_before_merge_allowed": false,
+  "alert_dismissal_allowed": false,
+  "trivyignore_growth_allowed": false,
+  "lr_verdict": "NO-GO",
+  "board_stage": "trade-capable",
+  "open_type_security_count": 20,
+  "unrelated_prs_excluded": [4302],
+  "allowed_dispositions": [
+    "FIXED_SCAN_VERIFIED",
+    "CANONICAL_TRACKER_ACTIVE",
+    "DUPLICATE_TRACKING_PENDING_CLOSE_AFTER_MERGE",
+    "HOLD_UPSTREAM_NO_FIXED_VERSION",
+    "REMEDIATED_SCAN_VERIFIED",
+    "BLOCKED_INSUFFICIENT_EVIDENCE"
+  ],
+  "disposition_summary": {
+    "CANONICAL_TRACKER_ACTIVE": [2513, 2932, 2933, 3705, 3802, 3803, 3936, 4080],
+    "DUPLICATE_TRACKING_PENDING_CLOSE_AFTER_MERGE": [4089, 4090, 4091, 4092, 4093, 4096, 4097, 4098],
+    "FIXED_SCAN_VERIFIED": [4094, 4095],
+    "HOLD_UPSTREAM_NO_FIXED_VERSION": [4106, 4114],
+    "REMEDIATED_SCAN_VERIFIED": [],
+    "BLOCKED_INSUFFICIENT_EVIDENCE": []
+  },
+  "issues": [
+    {
+      "issue": 2513,
+      "role": "meta",
+      "disposition": "CANONICAL_TRACKER_ACTIVE",
+      "canonical_issue": 2513,
+      "primary_subject": "upstream-blocked Trivy residual meta tracker",
+      "alerts": [],
+      "fingerprint": null,
+      "closure_condition": "Close only after residual clusters and alert trackers are reconciled or explicitly superseded on main",
+      "evidence_refs": [
+        "docs/evidence/security/CDB_SECURITY_BACKLOG_RECONCILIATION_2026-08-03.md",
+        "docs/evidence/security/CDB_SECURITY_META_2513_INDEX_2026-07-10.md"
+      ],
+      "notes": "Meta index for open type:security backlog; no alert dismissal."
+    },
+    {
+      "issue": 2932,
+      "role": "canonical_residual",
+      "disposition": "CANONICAL_TRACKER_ACTIVE",
+      "canonical_issue": 2932,
+      "primary_subject": "perl-base upstream-blocked CVEs across CDB service images",
+      "alerts": [],
+      "fingerprint": null,
+      "closure_condition": "Suite-native FixedVersion for tracked perl-base CVEs verified by rebuild+scan on pinned Trixie images",
+      "evidence_refs": [
+        "docs/evidence/security/CDB_SECURITY_PERL_BASE_UPSTREAM_BLOCKED_WATCHPOINT_2026-06-03.md",
+        "docs/evidence/security/CDB_SECURITY_META_2513_INDEX_2026-07-10.md"
+      ],
+      "upstream_hold": true,
+      "notes": "Canonical residual cluster; no suite-native FixedVersion in this slice."
+    },
+    {
+      "issue": 2933,
+      "role": "canonical_residual",
+      "disposition": "CANONICAL_TRACKER_ACTIVE",
+      "canonical_issue": 2933,
+      "primary_subject": "Grafana Prometheus Postgres upstream-blocked image CVEs",
+      "alerts": [],
+      "fingerprint": null,
+      "closure_condition": "Upstream image FixedVersion / digest refresh clears tracked HIGH/CRITICAL findings with scan evidence",
+      "evidence_refs": [
+        "docs/evidence/security/CDB_SECURITY_META_2513_INDEX_2026-07-10.md",
+        "docs/evidence/security/CDB_SECURITY_GRAFANA_3764_CVE-42504_VERIFY_2026-07-06.md"
+      ],
+      "upstream_hold": true,
+      "notes": "Canonical residual cluster for monitoring-stack images."
+    },
+    {
+      "issue": 3705,
+      "role": "canonical_residual",
+      "disposition": "CANONICAL_TRACKER_ACTIVE",
+      "canonical_issue": 3705,
+      "primary_subject": "libsqlite3 CVE-2026-11824 across CDB service images",
+      "alerts": [],
+      "fingerprint": null,
+      "closure_condition": "Debian Trixie FixedVersion for CVE-2026-11824 verified by rebuild+scan",
+      "evidence_refs": [
+        "docs/evidence/security/CDB_SECURITY_BATCH_MATRIX_3619-3625-CVE-11824_2026-07-01.md",
+        "docs/evidence/security/CDB_SECURITY_META_2513_INDEX_2026-07-10.md"
+      ],
+      "upstream_hold": true,
+      "notes": "HOLD_UPSTREAM until suite-native FixedVersion."
+    },
+    {
+      "issue": 3802,
+      "role": "canonical_residual",
+      "disposition": "CANONICAL_TRACKER_ACTIVE",
+      "canonical_issue": 3802,
+      "primary_subject": "gzip CVE-2026-41992 on python:3.14-slim-trixie",
+      "alerts": [],
+      "fingerprint": null,
+      "closure_condition": "Debian Trixie FixedVersion for CVE-2026-41992 verified by rebuild+scan",
+      "evidence_refs": [
+        "docs/evidence/security/CDB_SECURITY_OS_LAYER_3756-3765_CVE-41992_CVE-54369_VERIFY_2026-07-06.md",
+        "docs/evidence/security/CDB_SECURITY_META_2513_INDEX_2026-07-10.md"
+      ],
+      "upstream_hold": true,
+      "notes": "HOLD_UPSTREAM until suite-native FixedVersion."
+    },
+    {
+      "issue": 3803,
+      "role": "canonical_residual",
+      "disposition": "CANONICAL_TRACKER_ACTIVE",
+      "canonical_issue": 3803,
+      "primary_subject": "libacl1 CVE-2026-54369 on python:3.14-slim-trixie",
+      "alerts": [],
+      "fingerprint": null,
+      "closure_condition": "Debian Trixie FixedVersion for CVE-2026-54369 verified by rebuild+scan",
+      "evidence_refs": [
+        "docs/evidence/security/CDB_SECURITY_OS_LAYER_3756-3765_CVE-41992_CVE-54369_VERIFY_2026-07-06.md",
+        "docs/evidence/security/CDB_SECURITY_META_2513_INDEX_2026-07-10.md"
+      ],
+      "upstream_hold": true,
+      "notes": "HOLD_UPSTREAM until suite-native FixedVersion."
+    },
+    {
+      "issue": 3936,
+      "role": "canonical_residual",
+      "disposition": "CANONICAL_TRACKER_ACTIVE",
+      "canonical_issue": 3936,
+      "primary_subject": "libcurl4t64 CVE-2026-12064 on python:3.14-slim-trixie",
+      "alerts": [],
+      "fingerprint": null,
+      "closure_condition": "Debian Trixie FixedVersion for CVE-2026-12064 verified by rebuild+scan",
+      "evidence_refs": [
+        "docs/evidence/security/CDB_SECURITY_POSTGRES_ALPINE_LIBCURL_REBUILD_2026-07-08.md",
+        "docs/evidence/security/CDB_SECURITY_META_2513_INDEX_2026-07-10.md"
+      ],
+      "upstream_hold": true,
+      "notes": "Trixie cdb libcurl residual; distinct from cleared Postgres alpine path."
+    },
+    {
+      "issue": 4080,
+      "role": "canonical_curl",
+      "disposition": "CANONICAL_TRACKER_ACTIVE",
+      "canonical_issue": 4080,
+      "primary_subject": "CVE-2026-8286 curl/libcurl4t64 (canonical)",
+      "adjacent_cves": ["CVE-2026-8927"],
+      "alerts": [],
+      "fingerprint": "d903e05ff3d8dd8b",
+      "closure_condition": "Suite-native FixedVersion >= 8.21.0 for curl/libcurl4t64 on Trixie verified by rebuild+scan; then close component duplicates",
+      "evidence_refs": [
+        "docs/evidence/security/4080_CVE-2026-8286_UPSTREAM_HOLD.md",
+        "tests/unit/security/test_cve_2026_8286_image_contract.py"
+      ],
+      "upstream_hold": true,
+      "component_duplicates": [4089, 4090, 4091, 4092, 4093, 4096, 4097, 4098],
+      "notes": "Canonical curl tracker; adjacent CVE-2026-8927 shares package floor."
+    },
+    {
+      "issue": 4089,
+      "role": "component_duplicate",
+      "disposition": "DUPLICATE_TRACKING_PENDING_CLOSE_AFTER_MERGE",
+      "canonical_issue": 4080,
+      "primary_subject": "CVE-2026-8286 library/cdb_market",
+      "alerts": [],
+      "fingerprint": "d6c6effed073b67f",
+      "closure_condition": "Close after dedicated reconciliation PR merges and canonical #4080 remains the active HOLD tracker",
+      "evidence_refs": [
+        "docs/evidence/security/4080_CVE-2026-8286_UPSTREAM_HOLD.md"
+      ],
+      "notes": "Component manifestation of #4080; no dismissal."
+    },
+    {
+      "issue": 4090,
+      "role": "component_duplicate",
+      "disposition": "DUPLICATE_TRACKING_PENDING_CLOSE_AFTER_MERGE",
+      "canonical_issue": 4080,
+      "primary_subject": "CVE-2026-8286 library/cdb_regime",
+      "alerts": [],
+      "fingerprint": "734d4826f2f46db6",
+      "closure_condition": "Close after dedicated reconciliation PR merges and canonical #4080 remains the active HOLD tracker",
+      "evidence_refs": [
+        "docs/evidence/security/4080_CVE-2026-8286_UPSTREAM_HOLD.md"
+      ],
+      "notes": "Component manifestation of #4080; no dismissal."
+    },
+    {
+      "issue": 4091,
+      "role": "component_duplicate",
+      "disposition": "DUPLICATE_TRACKING_PENDING_CLOSE_AFTER_MERGE",
+      "canonical_issue": 4080,
+      "primary_subject": "CVE-2026-8286 library/cdb_risk",
+      "alerts": [],
+      "fingerprint": "68b83b7ae9bb203d",
+      "closure_condition": "Close after dedicated reconciliation PR merges and canonical #4080 remains the active HOLD tracker",
+      "evidence_refs": [
+        "docs/evidence/security/4080_CVE-2026-8286_UPSTREAM_HOLD.md"
+      ],
+      "notes": "Component manifestation of #4080; no dismissal."
+    },
+    {
+      "issue": 4092,
+      "role": "component_duplicate",
+      "disposition": "DUPLICATE_TRACKING_PENDING_CLOSE_AFTER_MERGE",
+      "canonical_issue": 4080,
+      "primary_subject": "CVE-2026-8286 library/cdb_signal",
+      "alerts": [],
+      "fingerprint": "599eb39ffb3e5b33",
+      "closure_condition": "Close after dedicated reconciliation PR merges and canonical #4080 remains the active HOLD tracker",
+      "evidence_refs": [
+        "docs/evidence/security/4080_CVE-2026-8286_UPSTREAM_HOLD.md"
+      ],
+      "notes": "Component manifestation of #4080; no dismissal."
+    },
+    {
+      "issue": 4093,
+      "role": "component_duplicate",
+      "disposition": "DUPLICATE_TRACKING_PENDING_CLOSE_AFTER_MERGE",
+      "canonical_issue": 4080,
+      "primary_subject": "CVE-2026-8286 library/cdb_ws",
+      "alerts": [],
+      "fingerprint": "f8cf9583e16d1981",
+      "closure_condition": "Close after dedicated reconciliation PR merges and canonical #4080 remains the active HOLD tracker",
+      "evidence_refs": [
+        "docs/evidence/security/4080_CVE-2026-8286_UPSTREAM_HOLD.md"
+      ],
+      "notes": "Component manifestation of #4080; no dismissal."
+    },
+    {
+      "issue": 4094,
+      "role": "pip_fixed",
+      "disposition": "FIXED_SCAN_VERIFIED",
+      "canonical_issue": 4094,
+      "primary_subject": "CVE-2026-8643 pip usr/local path",
+      "alerts": [
+        {
+          "number": 5527,
+          "state": "fixed",
+          "fixed_at": "2026-07-31T12:51:29Z",
+          "dismissed_at": null,
+          "rule_id": "CVE-2026-8643"
+        }
+      ],
+      "fingerprint": "bcb7846adf60ff5e",
+      "closure_condition": "Close after dedicated reconciliation PR merges (alerts already fixed; dismissed_at null)",
+      "evidence_refs": [
+        "docs/evidence/security/CDB_SECURITY_PIP_CVE-2026-8643_4095_2026-07-31.md",
+        "tests/unit/infra/test_dockerfile_pip_pin_contract.py"
+      ],
+      "notes": "Alert 5527 fixed_at present; no dismissal. Twin of #4095."
+    },
+    {
+      "issue": 4095,
+      "role": "pip_fixed",
+      "disposition": "FIXED_SCAN_VERIFIED",
+      "canonical_issue": 4095,
+      "primary_subject": "CVE-2026-8643 pip venv path",
+      "alerts": [
+        {
+          "number": 5526,
+          "state": "fixed",
+          "fixed_at": "2026-07-31T12:51:44Z",
+          "dismissed_at": null,
+          "rule_id": "CVE-2026-8643"
+        }
+      ],
+      "fingerprint": "17da8899e2616dc3",
+      "closure_condition": "Close after dedicated reconciliation PR merges (alerts already fixed; dismissed_at null)",
+      "evidence_refs": [
+        "docs/evidence/security/CDB_SECURITY_PIP_CVE-2026-8643_4095_2026-07-31.md",
+        "tests/unit/infra/test_dockerfile_pip_pin_contract.py"
+      ],
+      "notes": "Alert 5526 fixed_at present; no dismissal. Twin of #4094."
+    },
+    {
+      "issue": 4096,
+      "role": "component_duplicate",
+      "disposition": "DUPLICATE_TRACKING_PENDING_CLOSE_AFTER_MERGE",
+      "canonical_issue": 4080,
+      "primary_subject": "CVE-2026-8927 library/cdb_allocation",
+      "alerts": [],
+      "fingerprint": "28b37973fe132c0b",
+      "closure_condition": "Close after dedicated reconciliation PR merges; adjacent package floor owned by #4080",
+      "evidence_refs": [
+        "docs/evidence/security/4080_CVE-2026-8286_UPSTREAM_HOLD.md"
+      ],
+      "notes": "Adjacent CVE-2026-8927 component under #4080 package floor."
+    },
+    {
+      "issue": 4097,
+      "role": "component_duplicate",
+      "disposition": "DUPLICATE_TRACKING_PENDING_CLOSE_AFTER_MERGE",
+      "canonical_issue": 4080,
+      "primary_subject": "CVE-2026-8927 library/cdb_execution",
+      "alerts": [],
+      "fingerprint": "13dbf0f53e7baed3",
+      "closure_condition": "Close after dedicated reconciliation PR merges; adjacent package floor owned by #4080",
+      "evidence_refs": [
+        "docs/evidence/security/4080_CVE-2026-8286_UPSTREAM_HOLD.md"
+      ],
+      "notes": "Adjacent CVE-2026-8927 component under #4080 package floor."
+    },
+    {
+      "issue": 4098,
+      "role": "component_duplicate",
+      "disposition": "DUPLICATE_TRACKING_PENDING_CLOSE_AFTER_MERGE",
+      "canonical_issue": 4080,
+      "primary_subject": "CVE-2026-8927 library/cdb_market",
+      "alerts": [],
+      "fingerprint": "6eae777f80a5fa9f",
+      "closure_condition": "Close after dedicated reconciliation PR merges; adjacent package floor owned by #4080",
+      "evidence_refs": [
+        "docs/evidence/security/4080_CVE-2026-8286_UPSTREAM_HOLD.md"
+      ],
+      "notes": "Adjacent CVE-2026-8927 component under #4080 package floor."
+    },
+    {
+      "issue": 4106,
+      "role": "perl_cve_hold",
+      "disposition": "HOLD_UPSTREAM_NO_FIXED_VERSION",
+      "canonical_issue": 4106,
+      "primary_subject": "CVE-2026-13221 perl-base across eight service images",
+      "alerts": [],
+      "fingerprint": "30638d9726594146",
+      "closure_condition": "Debian Trixie suite-native FixedVersion for CVE-2026-13221 verified by rebuild+scan; no cross-suite glibc",
+      "evidence_refs": [
+        "docs/evidence/security/4106_CVE-2026-13221_UPSTREAM_HOLD.md",
+        "tests/unit/security/test_cve_2026_13221_image_contract.py"
+      ],
+      "upstream_hold": true,
+      "notes": "Title still says Remediation; operative verdict is HOLD_UPSTREAM_NO_FIXED_VERSION."
+    },
+    {
+      "issue": 4114,
+      "role": "perl_cve_hold",
+      "disposition": "HOLD_UPSTREAM_NO_FIXED_VERSION",
+      "canonical_issue": 4114,
+      "primary_subject": "CVE-2026-57432 perl-base on allocation + db_writer only",
+      "scope_images": ["cdb_allocation", "cdb_db_writer"],
+      "alerts": [],
+      "fingerprint": "134c5ce898aaf0a1",
+      "closure_condition": "Debian Trixie suite-native FixedVersion for CVE-2026-57432 verified by rebuild+scan on allocation and db_writer; no forky glibc cross-suite",
+      "evidence_refs": [
+        "docs/evidence/security/4114_CVE-2026-57432_UPSTREAM_HOLD.md",
+        "tests/unit/security/test_cve_2026_57432_image_contract.py"
+      ],
+      "upstream_hold": true,
+      "scope_drift_correction": "Title previously implied active Remediation; corrected to Upstream HOLD for allocation/db_writer shared perl-base finding (not eight-image #4106 scope).",
+      "notes": "Scope is exactly allocation + db_writer; distinct CVE from #4106."
+    }
+  ],
+  "forbidden_actions_this_slice": [
+    "merge",
+    "issue_close",
+    "alert_dismiss",
+    "trivyignore_expand",
+    "full_fast_ci",
+    "cdb_local_ci_publish",
+    "admin_merge",
+    "secrets_access",
+    "runtime_mutation",
+    "db_writes",
+    "touch_pr_4302"
+  ],
+  "remediations_this_slice": [],
+  "validation": {
+    "profile": "targeted",
+    "full_fast_ci": false,
+    "cdb_local_ci": false
+  }
+}
