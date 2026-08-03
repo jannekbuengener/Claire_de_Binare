@@ -1,0 +1,8 @@
+{
+  "schema_version": "cdb.effective_config_snapshot.v1",
+  "parameter_hash": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+  "env_subset": {
+    "LOG_LEVEL": "INFO"
+  },
+  "snapshot_fingerprint": "bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb"
+}
