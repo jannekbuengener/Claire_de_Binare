@@ -175,6 +175,25 @@ function Write-MachineStatus {
     $obj | ConvertTo-Json -Compress | Write-Host
 }
 
+function Test-LiveBridgeTriple {
+    # Live-only: Running sshd + Serve TCP loopback + local listener. No state-file gate.
+    $svc = Get-Service -Name $ServiceName -ErrorAction SilentlyContinue
+    if (-not $svc) {
+        return @{ Ok = $false; ServiceStatus = 'Missing'; ServePresent = $false; LoopbackOk = $false }
+    }
+    $serve = Get-ServeTcpForward
+    $loop = Test-LoopbackListener
+    $running = ($svc.Status -eq 'Running')
+    $ok = $running -and $serve.Present -and $serve.TargetLoopback -and $loop -and $serve.FunnelForbidden
+    return @{
+        Ok            = $ok
+        ServiceStatus = "$($svc.Status)"
+        ServePresent  = $serve.Present
+        LoopbackOk    = $loop
+        FunnelOk      = $serve.FunnelForbidden
+    }
+}
+
 function Resolve-LiveBridgeHealth {
     # Returns ENABLED only when service Running AND serve loopback AND local listener.
     # Contradictions -> UNAVAILABLE.
@@ -205,8 +224,7 @@ function Resolve-LiveBridgeHealth {
     # Contradictions: Serve without sshd, or sshd without Serve, or no listener.
     if ($running -and $serve.Present -and $serve.TargetLoopback -and $loop) {
         $fileStatus = Read-StateStatus
-        # File may lag; live triple-gate wins for "bridge up". Still fail-closed if
-        # file explicitly DISABLED while live looks up (operator mid-transition).
+        # Status path: DISABLED file while live bridge is up is contradictory.
         if ($fileStatus -eq 'DISABLED') {
             return @{
                 ServiceStatus = "$($svc.Status)"
@@ -293,7 +311,10 @@ switch ($Action) {
         }
     }
     'Enable' {
-        # Ordered: sshd -> loopback health -> Serve -> verify -> ENABLED state.
+        # Ordered: sshd -> loopback -> Serve -> live triple (ignore DISABLED file
+        # mid-transition) -> optional remote proof by operator -> ENABLED state.
+        # Do NOT call the Status health resolver here: file still DISABLED would
+        # wrongly roll back Serve after a successful enable.
         Set-Service -Name $ServiceName -StartupType Automatic
         Start-Service -Name $ServiceName
         Start-Sleep -Seconds 1
@@ -302,11 +323,11 @@ switch ($Action) {
             throw 'Local loopback healthcheck FAILED; Serve not enabled; state UNAVAILABLE'
         }
         Enable-ServeTcpMapping
-        $health = Resolve-LiveBridgeHealth
-        if ($health.KillSwitch -ne 'ENABLED') {
+        $live = Test-LiveBridgeTriple
+        if (-not $live.Ok) {
             Disable-ServeTcpMapping
             Write-State 'UNAVAILABLE'
-            throw 'Post-enable health not ENABLED; rolled back Serve; state UNAVAILABLE'
+            throw 'Post-enable live triple FAILED; rolled back Serve; state UNAVAILABLE'
         }
         Write-State 'ENABLED'
         Write-MachineStatus -ServiceStatus 'Running' -KillSwitch 'ENABLED' `

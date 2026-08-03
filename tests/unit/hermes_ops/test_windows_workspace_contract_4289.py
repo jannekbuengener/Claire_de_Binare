@@ -50,14 +50,18 @@ def test_kill_switch_enable_requires_loopback_before_serve_and_state() -> None:
     # Enable path: loopback healthcheck before Serve and before ENABLED state.
     assert "Test-LoopbackListener" in text
     assert "Enable-ServeTcpMapping" in text
+    assert "Test-LiveBridgeTriple" in text
     assert "Local loopback healthcheck FAILED" in text
     assert "Write-State 'ENABLED'" in text
     enable = text.split("'Enable' {", 1)[1].split("'Status' {", 1)[0]
     assert "Test-LoopbackListener" in enable
     assert "Enable-ServeTcpMapping" in enable
+    assert "Test-LiveBridgeTriple" in enable
     # State ENABLED must come after Serve enable (ordering contract).
     assert enable.index("Enable-ServeTcpMapping") < enable.index("Write-State 'ENABLED'")
     assert enable.index("Test-LoopbackListener") < enable.index("Enable-ServeTcpMapping")
+    # Must not use Resolve-LiveBridgeHealth mid-enable (DISABLED file false-negative).
+    assert "Resolve-LiveBridgeHealth" not in enable
 
 
 def test_kill_switch_disable_removes_serve_mapping() -> None:
