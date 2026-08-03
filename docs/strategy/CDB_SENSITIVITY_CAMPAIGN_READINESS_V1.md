@@ -61,6 +61,8 @@ evidence still fails closed as `BLOCKED_EXPERIMENT_NOT_READY`.
 - A candidate is promising or profitable.
 - Stage-A has been passed.
 - Replay evidence proves paper, live, or echtgeld readiness.
+- Historical `#4151` window-parity / DQ / gap-OOO / rankability ACs are fully
+  closed by Effective-Config alone.
 
 ## Non-goals
 
@@ -74,7 +76,8 @@ evidence still fails closed as `BLOCKED_EXPERIMENT_NOT_READY`.
 ## Related
 
 - Parent: `#4147`
-- Effective-Config capability: `#4151`
+- Effective-Config capability: `#4151` (request/content FP + snapshot capability;
+  residual DQ/window/rankability ACs stay on dedicated follow-ups)
 - Safety track (independent): `#4152`
 - Reused locks: Batch-A 39 development windows, Stage-A/B gate contracts,
   parameter-control register, execution-economics v1, dataset identity split

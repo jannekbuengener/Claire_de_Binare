@@ -137,6 +137,8 @@ FORBIDDEN_CLAIMS = (
     "A candidate is promising or profitable.",
     "Stage-A has been passed.",
     "Replay evidence proves paper, live, or echtgeld readiness.",
+    "Historical #4151 ACs for window-parity, DQ-verdict binding, gap/OOO, "
+    "and rankability provenance are fully closed by Effective-Config alone.",
 )
 
 

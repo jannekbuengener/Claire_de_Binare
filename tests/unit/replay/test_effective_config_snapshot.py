@@ -12,11 +12,14 @@ profitability_relevant: false
 from __future__ import annotations
 
 import copy
+import json
 from pathlib import Path
 
+import jsonschema
 import pytest
 
 REPO_ROOT = Path(__file__).resolve().parents[3]
+SCHEMA_PATH = REPO_ROOT / "docs/contracts/cdb_effective_config_snapshot.v1.schema.json"
 
 
 def test_effective_config_module_importable() -> None:
@@ -100,3 +103,65 @@ def test_required_sections_and_override_order_present() -> None:
     assert list(snap["override_order"]) == ["code_default", "compose", "env"]
     for section in ("compose", "risk", "allocation", "regime", "signal", "execution"):
         assert isinstance(snap[section], dict) and snap[section]
+
+
+def test_compose_override_beats_code_default() -> None:
+    """Later compose layer must win over code_default for resolved fields."""
+    from core.replay.effective_config_snapshot import build_effective_config_snapshot
+
+    baseline = build_effective_config_snapshot(REPO_ROOT)
+    changed = build_effective_config_snapshot(
+        REPO_ROOT,
+        compose_overrides={
+            "regime": {"atr_high_vol_threshold": 0.042},
+            "signal": {"entry_lookback_minutes": 333},
+        },
+    )
+    assert baseline["regime"]["atr_high_vol_threshold"] != 0.042
+    assert changed["regime"]["atr_high_vol_threshold"] == 0.042
+    assert changed["signal"]["entry_lookback_minutes"] == 333
+    assert changed["snapshot_fingerprint"] != baseline["snapshot_fingerprint"]
+
+
+def test_env_override_beats_compose() -> None:
+    """Explicit env/experiment overrides must beat compose (DEFAULT_OVERRIDE_ORDER)."""
+    from core.replay.effective_config_snapshot import build_effective_config_snapshot
+
+    compose_only = build_effective_config_snapshot(
+        REPO_ROOT,
+        compose_overrides={"execution": {"mock_trading": True}},
+    )
+    env_wins = build_effective_config_snapshot(
+        REPO_ROOT,
+        compose_overrides={"execution": {"mock_trading": True}},
+        env_overrides={"MOCK_TRADING": "false"},
+    )
+    assert compose_only["execution"]["mock_trading"] is True
+    assert env_wins["execution"]["mock_trading"] is False
+    assert env_wins["snapshot_fingerprint"] != compose_only["snapshot_fingerprint"]
+
+
+def test_built_snapshot_validates_against_json_schema() -> None:
+    from core.replay.effective_config_snapshot import build_effective_config_snapshot
+
+    schema = json.loads(SCHEMA_PATH.read_text(encoding="utf-8"))
+    snap = build_effective_config_snapshot(REPO_ROOT)
+    jsonschema.validate(instance=snap, schema=schema)
+
+
+def test_evidence_links_do_not_alter_snapshot_fingerprint() -> None:
+    from core.replay.effective_config_snapshot import (
+        build_effective_config_snapshot,
+        link_snapshot_to_evidence,
+    )
+
+    snap = build_effective_config_snapshot(REPO_ROOT)
+    linked = link_snapshot_to_evidence(
+        snap,
+        experiment_id="exp-test",
+        run_id="run-test",
+        preflight_report_fingerprint="a" * 64,
+    )
+    assert linked["snapshot_fingerprint"] == snap["snapshot_fingerprint"]
+    assert linked["evidence_links"]["experiment_id"] == "exp-test"
+    assert "evidence_links" not in snap
