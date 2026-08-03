@@ -1,0 +1,16 @@
+Controlled Cursor Cloud live pilot for Claire_de_Binare issue #4258.
+
+Create exactly one new markdown file at:
+knowledge/logs/sessions/2026-08-03-cursor-live-pilot-delivery-marker.md
+
+File content must be a short non-secret marker that this controlled Cursor Cloud
+pilot delivery for issue #4258 produced a real branch/commit/PR. Include the
+ISO date 2026-08-03 and the phrase "pilot delivery marker" only.
+
+Hard constraints:
+- Do not modify any other files.
+- Do not merge any pull request.
+- Do not change branch protection, rulesets, or CI required checks.
+- Do not touch secrets, credentials, trading, risk, execution, or BLUE/RED runtime.
+- Do not implement issues #4259 or #4260.
+- Keep the change docs-only and reversible.

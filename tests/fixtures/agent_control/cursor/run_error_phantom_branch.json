@@ -1,0 +1,55 @@
+{
+  "schema_note": "Redacted recorded shape from Cursor Cloud Agents API v1 for #4258 diagnosis. No auth headers, no tokens, no full prompt.",
+  "agent_id": "bc-d1ba82b5-db1a-5040-b50a-2007040a65c7",
+  "run_id": "run-d4d336e2-f7d5-4ab6-bbd8-1af94f9a094b",
+  "get_run": {
+    "id": "run-d4d336e2-f7d5-4ab6-bbd8-1af94f9a094b",
+    "status": "ERROR",
+    "createdAt": "2026-08-02T00:00:00.000Z",
+    "updatedAt": "2026-08-02T00:00:10.000Z",
+    "git": {
+      "branches": [
+        {
+          "repoUrl": "github.com/jannekbuengener/Claire_de_Binare",
+          "branch": "cloud-cursor/cursor-cloud-pilot-marker-3c10"
+        }
+      ]
+    }
+  },
+  "stream_events": [
+    {
+      "id": "1",
+      "event": "status",
+      "data": { "status": "ERROR" }
+    },
+    {
+      "id": "2",
+      "event": "result",
+      "data": {
+        "status": "ERROR",
+        "git": {
+          "branches": [
+            {
+              "repoUrl": "github.com/jannekbuengener/Claire_de_Binare",
+              "branch": "cloud-cursor/cursor-cloud-pilot-marker-3c10"
+            }
+          ]
+        }
+      }
+    },
+    {
+      "id": "3",
+      "event": "done",
+      "data": {}
+    }
+  ],
+  "github_branch_lookup": {
+    "status": 404,
+    "message": "Not Found"
+  },
+  "notes": [
+    "OpenAPI Run schema has no structured error field; this recorded body likewise has none.",
+    "claimed git.branches present without commit SHA or prUrl.",
+    "GitHub branch 404 confirms claimed delivery is not verified."
+  ]
+}

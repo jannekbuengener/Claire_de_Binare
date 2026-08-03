@@ -1,0 +1,37 @@
+profile_id: cursor-live-pilot.v1
+profile_version: "1.0.0"
+description: >
+  Human-GO live Cursor cloud pilot environment for #4258. runtime_class remains
+  mock so CI doctor stays friendly; real live dispatch is enabled only via
+  explicit Human-GO CLI flags (allow_live_cursor + human_go_live_cursor), never
+  by flipping this profile. inject_cursor_api_key is a class-ref policy flag
+  only — secrets are never embedded here. No merge / cdb-local-ci / issue close.
+runtime_class: mock
+allowed_provider_ids:
+  - cursor-cloud-api
+  - mock
+execution_limits:
+  setup_timeout_seconds: 120
+  run_timeout_seconds: 3600
+  cancel_confirmation_required: true
+network_policy:
+  mode: allowlist
+  allowed_classes:
+    - github_api_write_via_gh_cli
+    - docs_fetch_readonly
+  allowed_domains:
+    - api.github.com
+    - github.com
+    - api.cursor.com
+    - cursor.com
+secret_policy:
+  allowed_classes:
+    - cursor_api_key
+    - github_token
+  workload_secrets: class_refs_only
+  inject_cursor_api_key: true
+cost_limit:
+  max_live_cost_usd: 2
+  unknown_cost_blocks_live: true
+  enforcement_required: true
+live_dispatch_allowed: false

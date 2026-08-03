@@ -249,6 +249,8 @@ artifacts/local-dev-hygiene/
 # Generated reports and evidence runs (local/CI artifacts, not repository canon)
 /artifacts/reports/
 /artifacts/evidence-runs/
+/artifacts/agent_control/dual_run_4258_support/
+/artifacts/agent_control/dual_run_4258/
 
 # Local nested repo — mock exchange dependency candidate (github.com/didac-crst/mockexchange)
 # Intentionally kept local; must not be staged as gitlink or committed as submodule (#1645)

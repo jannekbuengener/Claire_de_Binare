@@ -18,6 +18,9 @@ Examples:
   python -m tools.agent_control approval drift --baseline <PATH>
   python -m tools.agent_control pilot run --manifest <PATH> [--out <REPORT>]
   python -m tools.agent_control pilot verify --report <PATH>
+  python -m tools.agent_control pilot cursor-preflight --repository owner/name
+  python -m tools.agent_control pilot cursor-support-bundle \\
+      --state-run1 <PATH> --state-run2 <PATH> --output <DIR>
 """
 
 from __future__ import annotations
@@ -532,15 +535,44 @@ def cmd_provider_archive(args: argparse.Namespace) -> int:
 
 
 def cmd_pilot_run(args: argparse.Namespace) -> int:
-    """Run mock-first ACP foundation pilot; never closes issues or live-dispatches."""
+    """Run ACP pilot (mock default; live Cursor only with Human-GO flags)."""
     from tools.agent_control.paths import REPO_ROOT
     from tools.agent_control.pilot import PilotError, run_pilot_from_path
     from tools.agent_control.pilot_report import PilotReportError
 
+    provider_id = str(getattr(args, "provider", "mock") or "mock")
+    human_go = bool(getattr(args, "human_go_live_cursor", False))
+    auto_create_pr = bool(getattr(args, "auto_create_pr", False))
+    if provider_id != "mock" and not human_go:
+        print(
+            "INVALID PILOT_HUMAN_GO_REQUIRED: "
+            "provider!=mock requires --human-go-live-cursor",
+            file=sys.stderr,
+        )
+        return EXIT_ERROR
+    if auto_create_pr and not human_go:
+        print(
+            "INVALID PILOT_HUMAN_GO_REQUIRED: "
+            "--auto-create-pr requires --human-go-live-cursor",
+            file=sys.stderr,
+        )
+        return EXIT_ERROR
+
     try:
         root = Path(args.repo_root) if args.repo_root else REPO_ROOT
         out = Path(args.out) if args.out else None
-        report = run_pilot_from_path(Path(args.manifest), repo_root=root, out_path=out)
+        state = Path(args.state) if getattr(args, "state", None) else None
+        resume = getattr(args, "resume", None)
+        report = run_pilot_from_path(
+            Path(args.manifest),
+            repo_root=root,
+            out_path=out,
+            provider_id=provider_id,
+            human_go_live_cursor=human_go,
+            resume_run_id=resume,
+            state_path=state,
+            auto_create_pr=auto_create_pr,
+        )
     except (PilotError, PilotReportError, AgentControlError) as exc:
         print(f"INVALID {exc.code}: {exc.message}", file=sys.stderr)
         return EXIT_ERROR
@@ -575,6 +607,77 @@ def cmd_pilot_verify(args: argparse.Namespace) -> int:
         return EXIT_ERROR
     except (OSError, json.JSONDecodeError) as exc:
         print(f"INVALID PILOT_IO: {exc}", file=sys.stderr)
+        return EXIT_ERROR
+    _print_json(result)
+    return EXIT_OK
+
+
+def cmd_pilot_cursor_preflight(args: argparse.Namespace) -> int:
+    """Dashboardless Cursor live preflight — zero creates, zero GitHub writes."""
+    from tools.agent_control.cursor_preflight import (
+        CursorPreflightError,
+        run_cursor_live_preflight,
+    )
+    from tools.agent_control.paths import REPO_ROOT
+
+    root = Path(args.repo_root) if args.repo_root else REPO_ROOT
+    secrets = Path(args.secrets_dir) if args.secrets_dir else None
+    state = Path(args.state) if args.state else None
+    dash = None
+    if args.dashboard_observations:
+        try:
+            dash = _load_json(Path(args.dashboard_observations))
+        except (OSError, json.JSONDecodeError, AgentControlError) as exc:
+            print(f"INVALID dashboard_observations: {exc}", file=sys.stderr)
+            return EXIT_ERROR
+    try:
+        report = run_cursor_live_preflight(
+            repository=str(args.repository),
+            environment_name=str(args.environment) if args.environment else None,
+            binding_mode=str(args.binding_mode),
+            repo_root=root,
+            secrets_dir=secrets,
+            state_path=state,
+            existing_agent_id=args.existing_agent_id or None,
+            existing_run_id=args.existing_run_id or None,
+            dashboard_observations=dash if isinstance(dash, dict) else None,
+        )
+    except CursorPreflightError as exc:
+        print(f"INVALID {exc.code}: {exc.message}", file=sys.stderr)
+        return EXIT_ERROR
+    _print_json(report)
+    if args.out:
+        Path(args.out).write_text(
+            json.dumps(report, indent=2, sort_keys=True) + "\n", encoding="utf-8"
+        )
+    return EXIT_OK if report.get("ready_for_live_run") is True else EXIT_HOLD
+
+
+def cmd_pilot_cursor_support_bundle(args: argparse.Namespace) -> int:
+    """Dual-run Cursor ERROR support bundle — recorded states; zero POSTs."""
+    from tools.agent_control.cursor_support_bundle import (
+        SupportBundleError,
+        run_support_bundle_from_states,
+    )
+    from tools.agent_control.paths import REPO_ROOT
+
+    root = Path(args.repo_root) if args.repo_root else REPO_ROOT
+    tracked = Path(args.tracked_summary) if args.tracked_summary else None
+    shared = Path(args.shared) if args.shared else None
+    try:
+        result = run_support_bundle_from_states(
+            state_run1_path=Path(args.state_run1),
+            state_run2_path=Path(args.state_run2),
+            shared_path=shared,
+            output_dir=Path(args.output),
+            repo_root=root,
+            write_tracked_summary=tracked,
+        )
+    except SupportBundleError as exc:
+        print(f"INVALID {exc.code}: {exc.message}", file=sys.stderr)
+        return EXIT_ERROR
+    except (OSError, json.JSONDecodeError) as exc:
+        print(f"INVALID BUNDLE_IO: {exc}", file=sys.stderr)
         return EXIT_ERROR
     _print_json(result)
     return EXIT_OK
@@ -988,13 +1091,13 @@ def build_parser() -> argparse.ArgumentParser:
 
     pilot = sub.add_parser(
         "pilot",
-        help="Mock-first ACP E2E foundation pilot (#4258; Refs only, not Closes)",
+        help="ACP E2E pilot (#4258; mock default; live Cursor needs Human-GO; Refs only)",
     )
     pilot_sub = pilot.add_subparsers(dest="pilot_command", required=True)
 
     p_pilot_run = pilot_sub.add_parser(
         "run",
-        help="Run fixture/mock-first ACP chain and emit pilot report",
+        help="Run ACP pilot chain and emit pilot report (mock default)",
     )
     p_pilot_run.add_argument("--manifest", required=True)
     p_pilot_run.add_argument("--out", help="Optional report output path")
@@ -1002,6 +1105,32 @@ def build_parser() -> argparse.ArgumentParser:
         "--repo-root",
         default=None,
         help="Optional repo root (defaults to package REPO_ROOT)",
+    )
+    p_pilot_run.add_argument(
+        "--provider",
+        choices=("mock", "cursor-cloud-api"),
+        default="mock",
+        help="Provider adapter (default mock; cursor-cloud-api needs Human-GO)",
+    )
+    p_pilot_run.add_argument(
+        "--human-go-live-cursor",
+        action="store_true",
+        help="Explicit Human-GO for live Cursor cloud pilot (required when provider!=mock)",
+    )
+    p_pilot_run.add_argument(
+        "--resume",
+        default=None,
+        help="Resume an existing run_id from --state (skip dispatch)",
+    )
+    p_pilot_run.add_argument(
+        "--state",
+        default=None,
+        help="JsonFileRunStore path for live/resume persistence",
+    )
+    p_pilot_run.add_argument(
+        "--auto-create-pr",
+        action="store_true",
+        help="Optional Cursor autoCreatePR (requires --human-go-live-cursor)",
     )
     p_pilot_run.set_defaults(func=cmd_pilot_run)
 
@@ -1011,6 +1140,77 @@ def build_parser() -> argparse.ArgumentParser:
     )
     p_pilot_verify.add_argument("--report", required=True)
     p_pilot_verify.set_defaults(func=cmd_pilot_verify)
+
+    p_pilot_pf = pilot_sub.add_parser(
+        "cursor-preflight",
+        help=(
+            "Dashboardless Cursor live preflight (official API+gh+environment.json; "
+            "zero creates; Refs #4258)"
+        ),
+    )
+    p_pilot_pf.add_argument(
+        "--repository",
+        default="jannekbuengener/Claire_de_Binare",
+        help="owner/name repository",
+    )
+    p_pilot_pf.add_argument(
+        "--environment",
+        default="jannekbuengener/Claire_de_Binare",
+        help="Requested cloud environment name (supporting; see --binding-mode)",
+    )
+    p_pilot_pf.add_argument(
+        "--binding-mode",
+        choices=("repos_plus_repo_config", "named_cloud_env"),
+        default="repos_plus_repo_config",
+        help="Official create binding: repos+environment.json (default) or named env",
+    )
+    p_pilot_pf.add_argument(
+        "--state", default=None, help="Optional local runstore path"
+    )
+    p_pilot_pf.add_argument("--out", default=None, help="Optional JSON report path")
+    p_pilot_pf.add_argument("--repo-root", default=None)
+    p_pilot_pf.add_argument("--secrets-dir", default=None)
+    p_pilot_pf.add_argument(
+        "--dashboard-observations",
+        default=None,
+        help="Optional JSON file with supporting (non-authoritative) dashboard notes",
+    )
+    p_pilot_pf.add_argument(
+        "--existing-agent-id",
+        default="bc-d1ba82b5-db1a-5040-b50a-2007040a65c7",
+    )
+    p_pilot_pf.add_argument(
+        "--existing-run-id",
+        default="run-d4d336e2-f7d5-4ab6-bbd8-1af94f9a094b",
+    )
+    p_pilot_pf.set_defaults(func=cmd_pilot_cursor_preflight)
+
+    p_pilot_sb = pilot_sub.add_parser(
+        "cursor-support-bundle",
+        help=(
+            "Dual-run Cursor ERROR support bundle (recorded states; zero POSTs; "
+            "Refs #4258)"
+        ),
+    )
+    p_pilot_sb.add_argument("--state-run1", required=True)
+    p_pilot_sb.add_argument("--state-run2", required=True)
+    p_pilot_sb.add_argument(
+        "--shared",
+        default=None,
+        help="Optional shared metadata JSON (/v1/me, repos listing flags)",
+    )
+    p_pilot_sb.add_argument(
+        "--output",
+        required=True,
+        help="Gitignored output directory for redacted bundle + support draft",
+    )
+    p_pilot_sb.add_argument(
+        "--tracked-summary",
+        default=None,
+        help="Optional tracked markdown summary path under docs/evidence/",
+    )
+    p_pilot_sb.add_argument("--repo-root", default=None)
+    p_pilot_sb.set_defaults(func=cmd_pilot_cursor_support_bundle)
 
     return parser
 
