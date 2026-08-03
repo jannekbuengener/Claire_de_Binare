@@ -139,8 +139,8 @@ Hinweis: Der Config-Default fuer `SIGNAL_PORT` liegt in `services/signal/config.
 
 | Service | Container | Image | Port | Status | Funktion |
 |---------|-----------|-------|------|--------|----------|
-| **Prometheus** | cdb_prometheus | prom/prometheus:v3.13.1@sha256:3c42b892cf723fa54d2f262c37a0e1f80aa8c8ddb1da7b9b0df9455a35a7f893 | 19090→9090 | **AKTIV** | Metrics Collection |
-| **Grafana** | cdb_grafana | grafana/grafana:13.0.3-ubuntu@sha256:7c1acd41225a05af53fa2af32a044a2a96cdef2540f2c415ee5b1e98fae99084 | 3000 | **AKTIV** | Dashboards |
+| **Prometheus** | cdb_prometheus | prom/prometheus:v3.13.2@sha256:508729e0e2d18e11fd742a5a5ca70e557b940a93948c3c95fd0123a6fd538b69 | 19090→9090 | **AKTIV** | Metrics Collection |
+| **Grafana** | cdb_grafana | grafana/grafana:13.1.1-ubuntu@sha256:5a9df011defa8384ee01fc9b393854daecc6afb98132c66e2e658b3f564830e8 | 3000 | **AKTIV** | Dashboards |
 | **Postgres Exporter** | cdb_postgres_exporter | prometheuscommunity/postgres-exporter | 9187 | **AKTIV** | PG Metrics; DSN-Wiring ueber `postgres_password` Secret + `PGPASSWORD`, `DATA_SOURCE_NAME` wird zur Laufzeit aus `POSTGRES_USER`/`POSTGRES_DB` und Host/Port zusammengesetzt |
 | **Redis Exporter** | cdb_redis_exporter | bitnami/redis-exporter | 9121 | **AKTIV** | Redis Metrics |
 | **cAdvisor** | cdb_cadvisor | gcr.io/cadvisor/cadvisor:v0.49.2 | — | **AKTIV** | Container Metrics |
