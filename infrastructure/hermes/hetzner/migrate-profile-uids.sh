@@ -34,7 +34,8 @@ ensure_nologin_user() {
     log "user present: ${user}"
     return
   fi
-  useradd --system --user-group --create-home=no --shell /usr/sbin/nologin "${user}" \
+  # Prefer -M/--no-create-home (portable; --create-home=no fails on some useradd builds).
+  useradd --system --user-group -M --shell /usr/sbin/nologin "${user}" \
     || die "useradd failed for ${user}"
   log "created system user ${user}"
 }
@@ -77,6 +78,12 @@ migrate_ownership() {
   local profile user home logdir
   mkdir -p "${LOG_BASE}"
   chmod 0751 "${LOG_BASE}"
+  # Parent dirs must allow traverse for dedicated profile UIDs (profiles stay 0700).
+  # Without this, systemd WorkingDirectory/EnvironmentFile fail closed (CHDIR/ENV).
+  chmod 0751 "${HERMES_BASE}"
+  if [[ -d /etc/hermes ]]; then
+    chmod 0751 /etc/hermes
+  fi
   for profile in jannek-assistant cdb-engineer; do
     user="${PROFILE_USERS[${profile}]}"
     ensure_nologin_user "${user}"
@@ -104,8 +111,22 @@ migrate_ownership() {
       "${HERMES_BASE}/profiles/validation-chief/.DISABLED"
   fi
   # Shared install tree may remain under hermes (binary only — no tokens/PEM).
+  # Profile UIDs must be able to execute the binary (o+rx); never share secrets here.
   if id -u hermes >/dev/null 2>&1 && [[ -d /opt/hermes ]]; then
     chown -R hermes:hermes /opt/hermes
+    chmod 0755 /opt/hermes
+    find /opt/hermes -type d -exec chmod a+rx {} +
+    find /opt/hermes -type f -executable -exec chmod a+rx {} +
+  fi
+  # uv-managed interpreter path used with ProtectHome=read-only (#4329).
+  if [[ -d /home/hermes ]]; then
+    chmod 0751 /home/hermes
+  fi
+  if [[ -d /home/hermes/.local/share/uv ]]; then
+    chmod -R a+rX /home/hermes/.local/share/uv
+  fi
+  if [[ -d "${HERMES_BASE}/_installer_home" ]]; then
+    chmod -R a+rX "${HERMES_BASE}/_installer_home"
   fi
 }
 
