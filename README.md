@@ -70,18 +70,20 @@ Stage und LR sind orthogonale Systeme: `trade-capable` autorisiert kein Live-Tra
 
 <!-- cdb:status-freshness header-date=2026-08-03 -->
 **Stand 2026-08-03.**
-<!-- cdb:live-claim type=main_sha value=abf997d5 -->
+<!-- cdb:live-claim type=main_sha value=312d12e0 -->
 <!-- cdb:live-claim type=issue_state issue=4289 state=open -->
 <!-- cdb:live-claim type=issue_state issue=4257 state=closed -->
 <!-- cdb:live-claim type=issue_state issue=4258 state=open -->
+<!-- cdb:live-claim type=issue_state issue=2513 state=open -->
 <!-- cdb:live-claim type=issue_state issue=4293 state=closed -->
-Auf `origin/main` (`abf997d5`) sind die juengsten relevanten Merge-Cluster u. a.:
+Auf `origin/main` (`312d12e0`) sind die juengsten relevanten Merge-Cluster u. a.:
 
-- **ACP E2E Pilot Foundation ([#4258](https://github.com/jannekbuengener/Claire_de_Binare/issues/4258) / PR [#4301](https://github.com/jannekbuengener/Claire_de_Binare/pull/4301)):** **MERGED** @ `abf997d5` (mock-first). Live Cursor Human-GO path in dedicated delivery (`Refs` only; issue remains open until real cloud evidence).
+- **Security Backlog Reconciliation ([#2513](https://github.com/jannekbuengener/Claire_de_Binare/issues/2513) / PR [#4303](https://github.com/jannekbuengener/Claire_de_Binare/pull/4303)):** **MERGED** @ `312d12e0`. Offene Security-Issues bleiben Upstream-HOLDs (geparkt bis FixedVersion). Meta `#2513` bleibt Tracker.
+- **ACP E2E Pilot Foundation ([#4258](https://github.com/jannekbuengener/Claire_de_Binare/issues/4258) / PR [#4301](https://github.com/jannekbuengener/Claire_de_Binare/pull/4301)):** **MERGED** @ `abf997d5` (mock-first). Live Cursor Human-GO path in dedicated PR [#4302](https://github.com/jannekbuengener/Claire_de_Binare/pull/4302) (`Refs` only; issue remains open until real cloud evidence; kein zweiter Create ohne neues Human-GO).
 - **PR Approval Context ([#4257](https://github.com/jannekbuengener/Claire_de_Binare/issues/4257) / PR [#4300](https://github.com/jannekbuengener/Claire_de_Binare/pull/4300)):** **MERGED** @ `a4cfb8a8` (ancestor of tip).
 - **ACP dispatcher residuals ([#4293](https://github.com/jannekbuengener/Claire_de_Binare/issues/4293) / PR [#4297](https://github.com/jannekbuengener/Claire_de_Binare/pull/4297)):** **MERGED** @ `d4704025` (ancestor of tip).
 - **Area Entry Link Canon ([#4294](https://github.com/jannekbuengener/Claire_de_Binare/issues/4294)/[#4296](https://github.com/jannekbuengener/Claire_de_Binare/issues/4296) / PR [#4295](https://github.com/jannekbuengener/Claire_de_Binare/pull/4295)):** **MERGED** — README Area Entry Link Rule + active README reconcile @ `365f50b9`.
-- **Hermes Hetzner Bootstrap ([#4289](https://github.com/jannekbuengener/Claire_de_Binare/issues/4289) / PR [#4290](https://github.com/jannekbuengener/Claire_de_Binare/pull/4290)):** Repo-Slice **MERGED** auf tip `fca8ad09` (Infrastructure/Profiles/Ops/Token-Broker). Issue `#4289` bleibt offen fuer Live-VM/Windows/GitHub-Drills (`HOLD_SCOPE_BLOCKER`).  <!-- pragma: allowlist secret -->
+- **Hermes Hetzner Bootstrap ([#4289](https://github.com/jannekbuengener/Claire_de_Binare/issues/4289) / PR [#4290](https://github.com/jannekbuengener/Claire_de_Binare/pull/4290)):** Repo-Slice **MERGED**. Issue `#4289` bleibt offen fuer Live-VM/Windows/GitHub-Drills (`HOLD_SCOPE_BLOCKER`, geparkt).  <!-- pragma: allowlist secret -->
 - **Repository consolidation wave:** [#4286](https://github.com/jannekbuengener/Claire_de_Binare/pull/4286) ACP batch, [#4162](https://github.com/jannekbuengener/Claire_de_Binare/pull/4162) Grafana 13.1.1, [#4245](https://github.com/jannekbuengener/Claire_de_Binare/pull/4245) CVE HOLD, [#4246](https://github.com/jannekbuengener/Claire_de_Binare/pull/4246) PG15 preflight, [#4244](https://github.com/jannekbuengener/Claire_de_Binare/pull/4244) Dependabot facts, [#4243](https://github.com/jannekbuengener/Claire_de_Binare/pull/4243) dataset fingerprints — squash-merged (prior tip `fce4c754`, superseded by Hermes tip).
 - **Validation Pilot Spec ([#4272](https://github.com/jannekbuengener/Claire_de_Binare/issues/4272) / PR [#4292](https://github.com/jannekbuengener/Claire_de_Binare/pull/4292)):** **MERGED** — prior tip cluster (historical relative to consolidation tip).
 - **Fast-CI Slice Gates ([#4204](https://github.com/jannekbuengener/Claire_de_Binare/issues/4204) / PR [#4236](https://github.com/jannekbuengener/Claire_de_Binare/pull/4236)):** **CLOSED/MERGED** — Versionierte Slice-Policy, fail-closed unbekannte Pfade, Timing-Evidence.

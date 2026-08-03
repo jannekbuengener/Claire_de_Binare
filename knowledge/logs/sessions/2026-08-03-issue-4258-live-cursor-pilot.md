@@ -82,3 +82,27 @@ Date: 2026-08-03 (same day continuation)
 
 ### Status
 `DONE_CDB_FIX_PUSHED_AWAITING_NEW_LIVE_GO` — next Cursor create needs new explicit Human-GO.
+
+---
+
+## Main reintegration + park (Execute Plan-GO)
+
+Date: 2026-08-03
+Head after merge(main): `b3b4f9fc` (integrated `origin/main` @ `312d12e0` / #4303)
+PR: #4302
+Mode: Finish CDB slice; no second Cursor create; Completeness/Fast-CI/merge intended for CDB delivery only
+
+### Router
+- Labels repaired: `objective:issue-4258`, `contract:agent-skills-v1`, `risk:none`
+- Existing Dedicated PR #4302 retained (plan override vs CREATE_NEW_BATCH_PR metadata noise / Dependabot peers)
+
+### Parked (out of scope)
+- All open `type:security` Upstream HOLDs (#2513 meta + residuals/#4080/#4106/#4114) until FixedVersion
+- #4289 Hermes Live drills (`HOLD_SCOPE_BLOCKER`)
+
+### #4258 Closure
+- Not closing: Acceptance still needs proven cloud delivery / new Human-GO after Dashboard OK
+- Status remains `DONE_CDB_FIX_PUSHED_AWAITING_NEW_LIVE_GO` for the live leg; CDB code path mergeable separately
+
+### Boundaries
+- LR NO-GO; no alert dismissals; no Dependabot PRs #4304–#4306 touched

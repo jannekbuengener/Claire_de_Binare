@@ -12,13 +12,18 @@
 
 ## Repo / Engineering Status (2026-08-03)
 
-<!-- cdb:live-claim type=main_sha value=abf997d5 -->
-- **Confirmed main state**: `origin/main` @ `abf997d5` — tip after mock-first ACP E2E pilot foundation squash-merge [#4301](https://github.com/jannekbuengener/Claire_de_Binare/pull/4301) (supersedes approval-context tip `a4cfb8a8`).
+<!-- cdb:live-claim type=main_sha value=312d12e0 -->
+- **Confirmed main state**: `origin/main` @ `312d12e0` — tip after Security Backlog Reconciliation squash-merge [#4303](https://github.com/jannekbuengener/Claire_de_Binare/pull/4303) (supersedes ACP foundation tip `abf997d5`).
 
 <!-- cdb:live-claim type=issue_state issue=4258 state=open -->
 <!-- cdb:live-claim type=issue_state issue=4257 state=closed -->
 <!-- cdb:live-claim type=issue_state issue=4289 state=open -->
-- **#4258 Live Cursor Pilot wiring (delivery)**: Dedicated branch `dedicated/agent-skills-issue-4258` — Human-GO `cursor-cloud-api` pilot path, credential presence gate, delivery verify, `AWAITING_APPROVAL` handoff, offline recorded tests. Controlled live attempt: `CURSOR_API_KEY` absent → `PRECONDITION_BLOCKED` / zero network. **Refs #4258** only (not Closes until real cloud evidence). LR **NO-GO** unchanged.
+<!-- cdb:live-claim type=issue_state issue=2513 state=open -->
+- **#2513 Security backlog reconciliation**: **DONE_MERGED_CLOSED** via PR [#4303](https://github.com/jannekbuengener/Claire_de_Binare/pull/4303) @ `312d12e0` (meta issue stays open as canonical tracker). Remaining open `type:security` issues are **Upstream HOLDs** — parked until suite-native `FixedVersion` evidence; no remediation slice without live FixedVersion. Duplicate/pip trackers closed post-merge. LR **NO-GO** unchanged.
+
+- **#4258 Live Cursor Pilot (delivery PR #4302)**: Dedicated PR [#4302](https://github.com/jannekbuengener/Claire_de_Binare/pull/4302) reintegrated onto `312d12e0`. CDB hardening + claimed-vs-verified delivery + operator bootstrap preflight delivered; controlled live Cursor run ended `ERROR`/`FAILED` with phantom branch. **No second Cursor create** without new Human-GO after Dashboard OK. Issue stays OPEN until Acceptance (real cloud delivery) is met. LR **NO-GO** unchanged.
+
+- **#4289 Hermes Live drills**: Repo-slice already merged; Live Hetzner/Windows/GitHub drills remain `HOLD_SCOPE_BLOCKER` (parked). LR **NO-GO** unchanged.
 
 - **#4257 PR Approval Context**: **DONE_MERGED_CLOSED** via PR [#4300](https://github.com/jannekbuengener/Claire_de_Binare/pull/4300) @ `a4cfb8a8`. LR **NO-GO** unchanged.
 
@@ -29,7 +34,7 @@
 > state at their own date and are intentionally not rewritten when reality
 > moves on. They are exempt from live freshness verification.
 
-> Note: older 2026-08-03 lines that claimed tip `a4cfb8a8` or foundation still in-flight are superseded by the live tip claim above.
+> Note: older 2026-08-03 lines that claimed tip `abf997d5` / `a4cfb8a8` or foundation still in-flight are superseded by the live tip claim above (`312d12e0`).
 
 ## Repo / Engineering Status (2026-08-02)
 
