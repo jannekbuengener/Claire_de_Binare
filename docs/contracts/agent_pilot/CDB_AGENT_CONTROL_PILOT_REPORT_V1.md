@@ -13,10 +13,14 @@ create a second Run-Evidence truth.
 
 ## Scope boundary
 
-- This foundation slice proves Contract → Registry → Dispatch → Environment →
+- Foundation slice proves Contract → Registry → Dispatch → Environment →
   MockProvider → Run Evidence → Approval Context wiring.
-- It does **not** close Issue `#4258` (use `Refs #4258`, never `Closes #4258`).
-- Live Cursor Cloud/SDK delivery remains the rest of `#4258`.
+- Live Cursor path (Human-GO `--provider cursor-cloud-api --human-go-live-cursor`)
+  extends the same report envelope; default remains mock.
+- It does **not** close Issue `#4258` until a real cloud delivery + CDB approval
+  handoff is evidenced (use `Refs #4258`, never premature `Closes #4258`).
+- Cursor Dashboard Approval Agents remain `MANUAL_BOOTSTRAP_ONLY` (no API handoff).
+- Operator runbook: [`docs/runbooks/agent_control_live_cursor_pilot.md`](../../runbooks/agent_control_live_cursor_pilot.md).
 
 ## Head-SHA binding
 

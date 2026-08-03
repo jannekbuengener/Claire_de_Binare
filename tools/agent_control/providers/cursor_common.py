@@ -131,12 +131,16 @@ def guard_cloud_route_binding(
     pr_url: str | None,
     contract_target_pr: int | None,
     contract_target_branch: str | None,
+    human_go_live: bool = False,
 ) -> None:
-    if auto_create_pr:
+    if auto_create_pr and not human_go_live:
         raise DispatchError(
             "PROVIDER_ROUTE_AUTOPR_FORBIDDEN",
-            "autoCreatePR must remain false",
+            "autoCreatePR must remain false without Human-GO live cursor",
         )
+    if auto_create_pr and human_go_live:
+        # Human-GO live pilot may request PR creation; no workOnCurrentBranch bind.
+        return
     if work_on_current_branch:
         if not contract_target_pr or not contract_target_branch or not pr_url:
             raise DispatchError(
