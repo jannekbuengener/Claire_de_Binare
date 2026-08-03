@@ -57,3 +57,28 @@ Prior HTTP 400 attempt (`Invalid bcId format`) created **zero** Cursor resources
 ## Status
 
 `HOLD_SCOPE_BLOCKER` — live Cursor run evidenced, but GitHub delivery missing (phantom branch / provider ERROR).
+
+---
+
+## Follow-up diagnosis (existing run only — no second create)
+
+Date: 2026-08-03 (same day continuation)
+
+### Official diagnostic surfaces used
+- GET agent / GET run / list runs / artifacts / usage / stream (read-only)
+- Conversation/messages paths: not in public v1 (404)
+- Repo listed in `GET /v1/repositories` (GitHub integration connected)
+
+### Classification
+- primary: `CURSOR_PLATFORM_INTERNAL` / `CURSOR_MODEL_OR_RUNTIME`
+- secondary: claimed `git.branches` without GitHub object; Run schema lacks structured `error`
+- last successful phase: create accepted
+- first failed phase: terminal `ERROR` without proven push; branch still GitHub 404
+
+### CDB MUST_FIX delivered
+- Head: `cfdb04dd` on PR #4302
+- claimed vs verified delivery; ERROR diagnostics preserved; recorded phantom-branch regressions
+- Offline validation: targeted tests + ruff + black + registry validate + secret scan
+
+### Status
+`DONE_CDB_FIX_PUSHED_AWAITING_NEW_LIVE_GO` — next Cursor create needs new explicit Human-GO.
