@@ -9,6 +9,7 @@ from dataclasses import dataclass, field
 from typing import Any, Callable
 from urllib.parse import urlparse
 
+from tools.agent_control.cursor_preflight import extract_environment_identity
 from tools.agent_control.delivery_verify import (
     claimed_delivery_from_git,
     truncate_run_result_text,
@@ -225,14 +226,32 @@ class CursorCloudApiDriver:
         if not starting_ref and auto_create:
             # Official API: omit or set startingRef; default to main for autoCreatePR.
             starting_ref = "main"
-        if pr_url and repo_url:
+        # Named cloud environment XOR repos (official CreateAgentRequest).
+        # Prefer explicit repos + versioned .cursor/environment.json for
+        # dashboardless determinism. Optional named env via profile.
+        env_req = profile.get("env") if isinstance(profile.get("env"), dict) else None
+        use_named_env = bool(env_req and env_req.get("type") and env_req.get("name"))
+        if use_named_env:
+            body["env"] = {
+                "type": str(env_req.get("type") or "cloud"),
+                "name": str(env_req["name"]),
+            }
+        elif pr_url and repo_url:
             body["repos"] = [{"url": repo_url, "prUrl": pr_url}]
         elif repo_url:
             entry: dict[str, Any] = {"url": repo_url}
             if starting_ref:
                 entry["startingRef"] = starting_ref
             body["repos"] = [entry]
+        requested_env = {
+            "binding_mode": (
+                "named_cloud_env" if use_named_env else "repos_plus_repo_config"
+            ),
+            "env": body.get("env"),
+            "repos": body.get("repos"),
+        }
         git_meta: dict[str, Any] = {"branches": []}
+        resolved_env: dict[str, Any] | None = None
         if self._http is not None:
             try:
                 created = self._request("POST", "/v1/agents", json_body=body)
@@ -250,7 +269,9 @@ class CursorCloudApiDriver:
                         raise
                     status = "RUNNING"
                     created = {
-                        "agent": {"id": agent_id},
+                        "agent": (
+                            existing if isinstance(existing, dict) else {"id": agent_id}
+                        ),
                         "run": {"id": run_id, "status": status},
                     }
                 else:
@@ -262,17 +283,35 @@ class CursorCloudApiDriver:
             run_body = (
                 created.get("run") if isinstance(created.get("run"), dict) else {}
             )
+            agent_body = (
+                created.get("agent") if isinstance(created.get("agent"), dict) else {}
+            )
+            resolved_env = extract_environment_identity(agent_body)
+            if use_named_env:
+                req_name = str(env_req.get("name"))
+                got_name = resolved_env.get("name")
+                # Fail closed when API returns a conflicting name. Missing name is
+                # a public observability gap (PARTIAL) recorded in result_refs.
+                if got_name is not None and got_name != req_name:
+                    raise DispatchError(
+                        "PROVIDER_ENVIRONMENT_MISMATCH",
+                        f"requested env.name={req_name!r} resolved={got_name!r}",
+                    )
             git_meta = (
                 run_body.get("git") if isinstance(run_body.get("git"), dict) else {}
             )
-            if not git_meta and isinstance(created.get("agent"), dict):
-                agent_git = created["agent"].get("git")
-                if isinstance(agent_git, dict):
-                    git_meta = agent_git
+            if not git_meta and isinstance(agent_body.get("git"), dict):
+                git_meta = agent_body["git"]
         else:
             agent_id = agent_id_client
             run_id = f"run-{request.run_id[-12:]}"
             status = "FINISHED"
+            resolved_env = {
+                "type": "cloud",
+                "name": (env_req or {}).get("name") if use_named_env else None,
+                "environment_public_id": None,
+                "environment_version_public_id": None,
+            }
             if auto_create:
                 git_meta = {
                     "branches": [
@@ -306,6 +345,8 @@ class CursorCloudApiDriver:
                 "claimed_delivery": claimed_delivery_from_git(git_meta),
                 "delivery_verified": False,
                 "raw_status": status,
+                "environment_requested": requested_env,
+                "environment_resolved": resolved_env,
             },
             delivery_receipt=request.delivery_receipt,
             error_code=(

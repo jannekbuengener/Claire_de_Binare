@@ -18,6 +18,7 @@ Examples:
   python -m tools.agent_control approval drift --baseline <PATH>
   python -m tools.agent_control pilot run --manifest <PATH> [--out <REPORT>]
   python -m tools.agent_control pilot verify --report <PATH>
+  python -m tools.agent_control pilot cursor-preflight --repository owner/name
 """
 
 from __future__ import annotations
@@ -609,6 +610,47 @@ def cmd_pilot_verify(args: argparse.Namespace) -> int:
     return EXIT_OK
 
 
+def cmd_pilot_cursor_preflight(args: argparse.Namespace) -> int:
+    """Dashboardless Cursor live preflight — zero creates, zero GitHub writes."""
+    from tools.agent_control.cursor_preflight import (
+        CursorPreflightError,
+        run_cursor_live_preflight,
+    )
+    from tools.agent_control.paths import REPO_ROOT
+
+    root = Path(args.repo_root) if args.repo_root else REPO_ROOT
+    secrets = Path(args.secrets_dir) if args.secrets_dir else None
+    state = Path(args.state) if args.state else None
+    dash = None
+    if args.dashboard_observations:
+        try:
+            dash = _load_json(Path(args.dashboard_observations))
+        except (OSError, json.JSONDecodeError, AgentControlError) as exc:
+            print(f"INVALID dashboard_observations: {exc}", file=sys.stderr)
+            return EXIT_ERROR
+    try:
+        report = run_cursor_live_preflight(
+            repository=str(args.repository),
+            environment_name=str(args.environment) if args.environment else None,
+            binding_mode=str(args.binding_mode),
+            repo_root=root,
+            secrets_dir=secrets,
+            state_path=state,
+            existing_agent_id=args.existing_agent_id or None,
+            existing_run_id=args.existing_run_id or None,
+            dashboard_observations=dash if isinstance(dash, dict) else None,
+        )
+    except CursorPreflightError as exc:
+        print(f"INVALID {exc.code}: {exc.message}", file=sys.stderr)
+        return EXIT_ERROR
+    _print_json(report)
+    if args.out:
+        Path(args.out).write_text(
+            json.dumps(report, indent=2, sort_keys=True) + "\n", encoding="utf-8"
+        )
+    return EXIT_OK if report.get("ready_for_live_run") is True else EXIT_HOLD
+
+
 def _approval_exit_code(recommendation: str) -> int:
     if recommendation == "APPROVE_RECOMMENDED":
         return EXIT_OK
@@ -1066,6 +1108,50 @@ def build_parser() -> argparse.ArgumentParser:
     )
     p_pilot_verify.add_argument("--report", required=True)
     p_pilot_verify.set_defaults(func=cmd_pilot_verify)
+
+    p_pilot_pf = pilot_sub.add_parser(
+        "cursor-preflight",
+        help=(
+            "Dashboardless Cursor live preflight (official API+gh+environment.json; "
+            "zero creates; Refs #4258)"
+        ),
+    )
+    p_pilot_pf.add_argument(
+        "--repository",
+        default="jannekbuengener/Claire_de_Binare",
+        help="owner/name repository",
+    )
+    p_pilot_pf.add_argument(
+        "--environment",
+        default="jannekbuengener/Claire_de_Binare",
+        help="Requested cloud environment name (supporting; see --binding-mode)",
+    )
+    p_pilot_pf.add_argument(
+        "--binding-mode",
+        choices=("repos_plus_repo_config", "named_cloud_env"),
+        default="repos_plus_repo_config",
+        help="Official create binding: repos+environment.json (default) or named env",
+    )
+    p_pilot_pf.add_argument(
+        "--state", default=None, help="Optional local runstore path"
+    )
+    p_pilot_pf.add_argument("--out", default=None, help="Optional JSON report path")
+    p_pilot_pf.add_argument("--repo-root", default=None)
+    p_pilot_pf.add_argument("--secrets-dir", default=None)
+    p_pilot_pf.add_argument(
+        "--dashboard-observations",
+        default=None,
+        help="Optional JSON file with supporting (non-authoritative) dashboard notes",
+    )
+    p_pilot_pf.add_argument(
+        "--existing-agent-id",
+        default="bc-d1ba82b5-db1a-5040-b50a-2007040a65c7",
+    )
+    p_pilot_pf.add_argument(
+        "--existing-run-id",
+        default="run-d4d336e2-f7d5-4ab6-bbd8-1af94f9a094b",
+    )
+    p_pilot_pf.set_defaults(func=cmd_pilot_cursor_preflight)
 
     return parser
 
