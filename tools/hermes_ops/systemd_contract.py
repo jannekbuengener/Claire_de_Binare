@@ -20,6 +20,11 @@ REQUIRED_SNIPPETS = (
     "${HERMES_PORT}",
     "--isolated",
     "NoNewPrivileges=true",
+    "ProtectSystem=strict",
+    # ProtectHome=true blocks uv CPython under /home/hermes/.local (#4329).
+    "ProtectHome=read-only",
+    "ReadWritePaths=/var/lib/hermes/profiles/%i",
+    "ReadOnlyPaths=",
     "MemoryMax=",
     "CPUQuota=",
     "ConditionPathExists=!/var/lib/hermes/profiles/%i/.DISABLED",
@@ -31,6 +36,7 @@ FORBIDDEN_SNIPPETS = (
     "--insecure",
     "User=root",
     "hermes serve",
+    "ProtectHome=true",
 )
 
 
@@ -53,6 +59,9 @@ def validate_unit(path: Path | None = None) -> list[str]:
         if snippet in text:
             errors.append(f"forbidden snippet present: {snippet}")
     for line in text.splitlines():
-        if line.strip().startswith("ExecStart=") and "hermes serve" in line:
+        stripped = line.strip()
+        if stripped.startswith("ProtectHome=true"):
+            errors.append("forbidden snippet present: ProtectHome=true")
+        if stripped.startswith("ExecStart=") and "hermes serve" in line:
             errors.append("forbidden snippet present: hermes serve")
     return errors
