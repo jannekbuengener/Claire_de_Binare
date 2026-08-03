@@ -71,26 +71,28 @@ function Ensure-HermesUser {
         Write-Host "Local user already exists: $UserName"
     }
 
-    # Ensure NOT in Administrators.
-    $admins = Get-LocalGroupMember -Group 'Administrators' -ErrorAction SilentlyContinue |
+    # Ensure NOT in Administrators (SID S-1-5-32-544; locale-independent).
+    $adminGroup = Get-LocalGroup -SID 'S-1-5-32-544'
+    $admins = Get-LocalGroupMember -Group $adminGroup -ErrorAction SilentlyContinue |
         Where-Object { $_.Name -like "*\$UserName" -or $_.Name -eq $UserName }
     if ($admins) {
-        Remove-LocalGroupMember -Group 'Administrators' -Member $UserName -ErrorAction Stop
+        Remove-LocalGroupMember -Group $adminGroup -Member $UserName -ErrorAction Stop
         Write-Host "Removed $UserName from Administrators"
     }
 
-    # Ensure Users membership for interactive/SSH baseline.
-    $users = Get-LocalGroupMember -Group 'Users' -ErrorAction SilentlyContinue |
+    # Ensure Users membership for interactive/SSH baseline (SID S-1-5-32-545).
+    $usersGroup = Get-LocalGroup -SID 'S-1-5-32-545'
+    $users = Get-LocalGroupMember -Group $usersGroup -ErrorAction SilentlyContinue |
         Where-Object { $_.Name -like "*\$UserName" -or $_.Name -eq $UserName }
     if (-not $users) {
-        Add-LocalGroupMember -Group 'Users' -Member $UserName
+        Add-LocalGroupMember -Group $usersGroup -Member $UserName
     }
 
     $verify = Get-LocalUser -Name $UserName
     if (-not $verify.Enabled) {
         Enable-LocalUser -Name $UserName
     }
-    $stillAdmin = Get-LocalGroupMember -Group 'Administrators' -ErrorAction SilentlyContinue |
+    $stillAdmin = Get-LocalGroupMember -Group $adminGroup -ErrorAction SilentlyContinue |
         Where-Object { $_.Name -like "*\$UserName" -or $_.Name -eq $UserName }
     if ($stillAdmin) {
         throw "FAIL: $UserName is still in Administrators after remediation"
@@ -114,30 +116,43 @@ $acl = Get-Acl -LiteralPath $WorkspaceRoot
 $acl.SetAccessRuleProtection($true, $false)
 @($acl.Access) | ForEach-Object { [void]$acl.RemoveAccessRule($_) }
 
+# Well-known SIDs: Administrators S-1-5-32-544, SYSTEM S-1-5-18 (locale-safe).
+$adminSid = New-Object System.Security.Principal.SecurityIdentifier('S-1-5-32-544')
+$systemSid = New-Object System.Security.Principal.SecurityIdentifier('S-1-5-18')
+$userAccount = New-Object System.Security.Principal.NTAccount("$env:COMPUTERNAME\$HermesUser")
+
 $adminRule = New-Object System.Security.AccessControl.FileSystemAccessRule(
-    'BUILTIN\Administrators', 'FullControl', 'ContainerInherit,ObjectInherit', 'None', 'Allow'
+    $adminSid, 'FullControl', 'ContainerInherit,ObjectInherit', 'None', 'Allow'
 )
 $systemRule = New-Object System.Security.AccessControl.FileSystemAccessRule(
-    'NT AUTHORITY\SYSTEM', 'FullControl', 'ContainerInherit,ObjectInherit', 'None', 'Allow'
+    $systemSid, 'FullControl', 'ContainerInherit,ObjectInherit', 'None', 'Allow'
 )
 $rights = if ($GrantWrite) { 'Modify' } else { 'ReadAndExecute' }
 $userRule = New-Object System.Security.AccessControl.FileSystemAccessRule(
-    $HermesUser, $rights, 'ContainerInherit,ObjectInherit', 'None', 'Allow'
+    $userAccount, $rights, 'ContainerInherit,ObjectInherit', 'None', 'Allow'
 )
 $acl.AddAccessRule($adminRule)
 $acl.AddAccessRule($systemRule)
 $acl.AddAccessRule($userRule)
 Set-Acl -LiteralPath $WorkspaceRoot -AclObject $acl
 
-# Deny-list smoke: ensure we did not grant Users/Everyone.
+# Deny-list smoke: ensure we did not grant Users/Everyone (SID compare, no Translate).
 $acl2 = Get-Acl -LiteralPath $WorkspaceRoot
+$usersSidValue = 'S-1-5-32-545'
+$worldSidValue = 'S-1-1-0'
 $bad = $acl2.Access | Where-Object {
-    $_.IdentityReference -match '^(Everyone|BUILTIN\\Users)$'
+    $id = $_.IdentityReference
+    $s = "$id"
+    if ($s -match '^(Everyone|Jeder|BUILTIN\\Users|VORDEFINIERT\\Benutzer)$') { return $true }
+    if ($id -is [System.Security.Principal.SecurityIdentifier]) {
+        return ($id.Value -eq $usersSidValue -or $id.Value -eq $worldSidValue)
+    }
+    return $false
 }
 if ($bad) {
     throw 'FAIL: unexpected broad ACE present on workspace'
 }
 
 Write-Host "Workspace ready: $WorkspaceRoot (user=$HermesUser rights=$rights)"
-Write-Host 'Next: configure OpenSSH for hermes-win with pubkey auth on Tailscale only.'
+Write-Host 'Next: .\infrastructure\hermes\windows\setup-sshd-hermes.ps1 (Tailscale-only sshd-hermes).'
 Write-Host 'Kill-switch: infrastructure/hermes/windows/kill-switch.ps1 -Action Disable'

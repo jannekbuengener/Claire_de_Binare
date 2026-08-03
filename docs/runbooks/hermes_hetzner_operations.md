@@ -141,22 +141,40 @@ secret read/write, force-push, default-branch delete, App permission expansion.
 
 ## Windows workspace
 
-On Windows (elevated once / UAC):
+On Windows (elevated once / UAC). Docs gate: Microsoft OpenSSH Server install +
+`sshd_config` (`AllowUsers`, `PasswordAuthentication`). Prefer **winget**
+`Microsoft.OpenSSH.Preview` — `Add-WindowsCapability` often hangs on DISM/WU.
+Do **not** use WSL bash for these scripts (native Windows PowerShell / Git Bash).
 
 ```powershell
 # Prefer SecureString; HERMES_WIN_PASSWORD env is accepted then cleared
 .\infrastructure\hermes\windows\setup-workspace.ps1 -HermesUser hermes-win -GrantWrite
+# Dedicated listener (disables public OpenSSH firewall + default sshd)
+.\infrastructure\hermes\windows\setup-sshd-hermes.ps1
 .\infrastructure\hermes\windows\kill-switch.ps1 -Action Status
 ```
 
-Kill-switch:
+Kill-switch (targets **sshd-hermes** only; Enable restores Automatic start):
 
 ```powershell
 .\infrastructure\hermes\windows\kill-switch.ps1 -Action Disable   # WORKSTATION_UNAVAILABLE
 .\infrastructure\hermes\windows\kill-switch.ps1 -Action Enable
 ```
 
-No public SSH/RDP/VNC. OpenSSH only on private net for `hermes-win`.
+No public SSH/RDP/VNC. Firewall `RemoteAddress` = Tailscale IP of `cdb-hermes-01`
+only; public `OpenSSH-Server-In-TCP` stays disabled. On Windows+Tailscale,
+`sshd` listens on `0.0.0.0` behind that remote-only rule (unicast Tailscale bind
+does not reliably accept peer TCP).
+
+Private key for `cdb-engineer → hermes-win` lives only under the engineer profile
+on `cdb-hermes-01` (mode 0600); `jannek-assistant` must not read it.
+
+### Live precondition (Tailscale TCP)
+
+`tailscale ping` Windows↔Hermes is not enough. Hermes must be able to open **TCP**
+to the Windows Tailscale address (test: `bash -c 'echo >/dev/tcp/$HOST/22'`).
+If ping works but every TCP port times out, fix Tailnet ACL / packet filter
+before expecting SSH/kill-switch drills to pass.
 
 ## Backup / Restore / Update / Rollback
 
