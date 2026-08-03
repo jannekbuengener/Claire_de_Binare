@@ -141,22 +141,70 @@ secret read/write, force-push, default-branch delete, App permission expansion.
 
 ## Windows workspace
 
-On Windows (elevated once / UAC):
+On Windows (elevated once / UAC). Docs gate: Microsoft OpenSSH Server install +
+`sshd_config` (`AllowUsers`, `PasswordAuthentication`). Prefer **winget**
+`Microsoft.OpenSSH.Preview` — `Add-WindowsCapability` often hangs on DISM/WU.
+Do **not** use WSL bash for these scripts (native Windows PowerShell / Git Bash).
 
 ```powershell
 # Prefer SecureString; HERMES_WIN_PASSWORD env is accepted then cleared
 .\infrastructure\hermes\windows\setup-workspace.ps1 -HermesUser hermes-win -GrantWrite
+# Loopback sshd + Tailscale Serve TCP bridge (never Funnel)
+.\infrastructure\hermes\windows\setup-sshd-hermes.ps1
 .\infrastructure\hermes\windows\kill-switch.ps1 -Action Status
 ```
 
-Kill-switch:
+Kill-switch (targets **sshd-hermes** + Serve mapping; Enable only after loopback
+health, then Serve, then state ENABLED):
 
 ```powershell
-.\infrastructure\hermes\windows\kill-switch.ps1 -Action Disable   # WORKSTATION_UNAVAILABLE
+.\infrastructure\hermes\windows\kill-switch.ps1 -Action Disable   # Serve off + sshd stop
 .\infrastructure\hermes\windows\kill-switch.ps1 -Action Enable
 ```
 
-No public SSH/RDP/VNC. OpenSSH only on private net for `hermes-win`.
+No public SSH/RDP/VNC. **Do not** open an inbound Windows Firewall allow for
+sshd. Public `OpenSSH-Server-In-TCP` stays disabled. Default system `sshd` stays
+Disabled. Architecture:
+
+1. `sshd-hermes` listens **only** on `127.0.0.1:22` / `::1`
+2. Private Tailscale Serve raw TCP: `tailnet:22 → tcp://127.0.0.1:22` (`--bg`)
+3. Funnel must stay **OFF** (`tailscale funnel` never enabled)
+4. Existing Tailnet ACLs remain authoritative (no policy mutation from scripts)
+
+CLI gate (confirm with installed `tailscale serve --help`; Tailscale 1.98+):
+
+```text
+tailscale serve --bg --tcp=22 tcp://127.0.0.1:22
+tailscale serve --tcp=22 off
+tailscale serve status --json
+```
+
+Private key for `cdb-engineer → hermes-win` lives only under the engineer profile
+on `cdb-hermes-01` (mode 0600); `jannek-assistant` must not read it.
+
+### Live precondition (Tailscale Serve TCP)
+
+`tailscale ping` Windows↔Hermes is not enough. Hermes must open **TCP/22** to
+the Windows Tailscale name (Serve endpoint) and complete pubkey SSH as
+`hermes-win`. Never treat ping-PASS as TCP-PASS. Local `Test-NetConnection` to
+the Tailscale IP can be loopback-optimized and does **not** prove peer delivery.
+
+Root-cause class (corrected 2026-08-03): **`HOLD_WINDOWS_HOST_TCP_STACK`**, not
+Windows Firewall. Evidence: Tailnet PacketFilter allows TCP/22; Shields Up
+false; SYN reaches Tailscale Tunnel + `tcpip.sys`; **no SYN-ACK** on the host
+path. Mitigation: Tailscale Serve bypasses the broken host packet path into
+loopback where `sshd-hermes` answers.
+
+Diagnose layers if Serve Canary fails:
+
+1. **Loopback / OpenSSH** — `sshd-hermes` Running/Automatic, `ListenAddress
+   127.0.0.1`, `sshd -t` OK, loopback TCP/22 PASS.
+2. **Serve** — `tailscale serve status --json` shows TCP/22 → loopback; Funnel
+   OFF. CLI from live `--help`, not memory.
+3. **Shields Up / system policy** — `ShieldsUp=false`; no forced block.
+4. **Do not** mutate Tailnet policy, global firewall, or Funnel as a workaround.
+   On persistent Serve fail: `tailscale bugreport --diagnose --record` once,
+   then `HOLD_TAILSCALE_WINDOWS_CLIENT_BUG` with redacted bugreport id.
 
 ## Backup / Restore / Update / Rollback
 

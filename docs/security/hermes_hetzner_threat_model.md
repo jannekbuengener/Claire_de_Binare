@@ -27,8 +27,14 @@ LR: **NO-GO**
   - dashboard bind: 127.0.0.1 only (distinct ports per profile)
       | scoped
       +--> [dedicated GitHub App tokens] --> Claire_de_Binare only  <!-- pragma: allowlist secret -->
-      +--> [Windows hermes-win] --> D:\Dev\HermesWorkspace\Claire_de_Binare only  <!-- pragma: allowlist secret -->
+      +--> [Windows hermes-win via Tailscale Serve → loopback sshd]
+             --> D:\Dev\HermesWorkspace\Claire_de_Binare only  <!-- pragma: allowlist secret -->
 ```
+
+Windows remote path (corrected 2026-08-03): host TCP after Wintun does not
+SYN-ACK for peer traffic (`HOLD_WINDOWS_HOST_TCP_STACK`). Remote entry is
+**only** private Tailscale Serve TCP → `127.0.0.1:22` (`sshd-hermes`
+loopback-only). Funnel forbidden; no public sshd firewall allow.
 
 App `4410232` (`cdb-local-ci`) is **not** the Hermes write App unless live
 permissions prove `contents`/`pull_requests`/`issues` write without `checks:write`.
@@ -51,7 +57,7 @@ permissions prove `contents`/`pull_requests`/`issues` write without `checks:writ
 
 | Switch | Effect |
 |---|---|
-| Windows `kill-switch.ps1 -Action Disable` | `WORKSTATION_UNAVAILABLE`; sshd disabled |
+| Windows `kill-switch.ps1 -Action Disable` | Serve TCP mapping off + `sshd-hermes` stopped/disabled → `WORKSTATION_UNAVAILABLE` |
 | Stop Tailscale on Windows or Hetzner | Private path gone; no public fallback |
 | `systemctl stop 'hermes-dashboard@*'` | Agent offline |
 | Revoke GitHub App installation / rotate PEM | Tokens useless |
