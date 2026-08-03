@@ -161,11 +161,14 @@ def preflight(
     execute: bool,
     repo_root: Path | None = None,
     allow_recorded_cursor: bool = False,
+    allow_live_cursor: bool = False,
+    human_go_live_cursor: bool = False,
     prompt_text_override: str | None = None,
     environment_attestation_path: Path | None = None,
     config_root: Path | None = None,
 ) -> PreflightResult:
     """Validate contract digest + registry + environment. Shared by dry-run/execute."""
+    live_ok = bool(allow_live_cursor and human_go_live_cursor)
     try:
         validated = validate_contract(contract)
     except ContractValidationError as exc:
@@ -343,38 +346,59 @@ def preflight(
         config=config_root or root / "config" / "agent-control",
         repo_root=root,
         execute=execute,
-        allow_recorded=allow_recorded_cursor,
+        allow_recorded=allow_recorded_cursor or live_ok,
+        allow_live=live_ok,
     )
 
     if execute and provider_id != "mock":
         if provider_id in CURSOR_PROVIDER_IDS:
             # Durable gate: environment preflight never enables live dispatch.
+            # Profile live_dispatch=true remains forbidden; Human-GO uses flags.
             if live_dispatch:
                 return _fail(
                     ENVIRONMENT_LIVE_DISPATCH_FORBIDDEN,
                     "provider live_dispatch=true is forbidden; "
-                    "live Cursor dispatch remains blocked pending ratified "
-                    "pilot/approval/evidence path (#4256-#4258)",
+                    "use Human-GO allow_live_cursor flags instead of profile flip",
                     terminal_state="BLOCKED",
                 )
-            if not allow_recorded_cursor:
+            if not allow_recorded_cursor and not live_ok:
                 return _fail(
                     PROVIDER_LIVE_DISPATCH_FORBIDDEN,
-                    f"execute for {provider_id!r} requires recorded/fake transport; "
-                    "live Cursor dispatch remains permanently fail-closed here",
+                    f"execute for {provider_id!r} requires recorded/fake transport "
+                    "or Human-GO live cursor flags",
                     terminal_state="BLOCKED",
                 )
-            if env_result.verdict != VERDICT_READY_FOR_RECORDED_TEST:
-                return _fail(
-                    (
-                        env_result.reason_codes[0]
-                        if env_result.reason_codes
-                        else "ENVIRONMENT_EXECUTE_NOT_READY"
-                    ),
-                    f"environment preflight verdict {env_result.verdict} "
-                    f"blocks recorded execute: {env_result.limitations}",
-                    terminal_state="BLOCKED",
-                )
+            if allow_recorded_cursor and not live_ok:
+                if env_result.verdict != VERDICT_READY_FOR_RECORDED_TEST:
+                    return _fail(
+                        (
+                            env_result.reason_codes[0]
+                            if env_result.reason_codes
+                            else "ENVIRONMENT_EXECUTE_NOT_READY"
+                        ),
+                        f"environment preflight verdict {env_result.verdict} "
+                        f"blocks recorded execute: {env_result.limitations}",
+                        terminal_state="BLOCKED",
+                    )
+            elif live_ok:
+                if env_result.verdict not in {
+                    VERDICT_READY_FOR_RECORDED_TEST,
+                    VERDICT_READY_OFFLINE_ONLY,
+                }:
+                    # Live path still needs a non-blocked environment surface.
+                    from tools.agent_control.environment.codes import VERDICT_BLOCKED
+
+                    if env_result.verdict == VERDICT_BLOCKED:
+                        return _fail(
+                            (
+                                env_result.reason_codes[0]
+                                if env_result.reason_codes
+                                else "ENVIRONMENT_EXECUTE_NOT_READY"
+                            ),
+                            f"environment preflight verdict {env_result.verdict} "
+                            f"blocks live execute: {env_result.limitations}",
+                            terminal_state="BLOCKED",
+                        )
         else:
             return _fail(
                 PROVIDER_LIVE_DISPATCH_FORBIDDEN,

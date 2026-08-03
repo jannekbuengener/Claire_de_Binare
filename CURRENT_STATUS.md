@@ -12,20 +12,24 @@
 
 ## Repo / Engineering Status (2026-08-03)
 
-<!-- cdb:live-claim type=main_sha value=a4cfb8a8 -->
-- **Confirmed main state**: `origin/main` @ `a4cfb8a8` — tip after PR approval context squash-merge [#4300](https://github.com/jannekbuengener/Claire_de_Binare/pull/4300) (supersedes dispatcher-residuals tip `d4704025`).
+<!-- cdb:live-claim type=main_sha value=abf997d5 -->
+- **Confirmed main state**: `origin/main` @ `abf997d5` — tip after mock-first ACP E2E pilot foundation squash-merge [#4301](https://github.com/jannekbuengener/Claire_de_Binare/pull/4301) (supersedes approval-context tip `a4cfb8a8`).
 
 <!-- cdb:live-claim type=issue_state issue=4258 state=open -->
 <!-- cdb:live-claim type=issue_state issue=4257 state=closed -->
 <!-- cdb:live-claim type=issue_state issue=4289 state=open -->
+- **#4258 Live Cursor Pilot wiring (delivery)**: Dedicated branch `dedicated/agent-skills-issue-4258` — Human-GO `cursor-cloud-api` pilot path, credential presence gate, delivery verify, `AWAITING_APPROVAL` handoff, offline recorded tests. Controlled live attempt: `CURSOR_API_KEY` absent → `PRECONDITION_BLOCKED` / zero network. **Refs #4258** only (not Closes until real cloud evidence). LR **NO-GO** unchanged.
+
 - **#4257 PR Approval Context**: **DONE_MERGED_CLOSED** via PR [#4300](https://github.com/jannekbuengener/Claire_de_Binare/pull/4300) @ `a4cfb8a8`. LR **NO-GO** unchanged.
 
-- **#4258 ACP E2E Pilot Foundation (mock-first)**: Delivery slice on `batch/agent-skills-issue-4258` — CLI `pilot run|verify`, report contract, fixtures P1/N1–N8. **Refs #4258** only (not Closes); Live-Cursor rest keeps issue OPEN. LR **NO-GO** unchanged.
+- **#4258 ACP E2E Pilot Foundation (mock-first)**: **DONE_MERGED_CLOSED** via PR [#4301](https://github.com/jannekbuengener/Claire_de_Binare/pull/4301) @ `abf997d5`. Live-Cursor rest remains OPEN. LR **NO-GO** unchanged.
 
 <!-- cdb:historical-as-of date=2026-08-02 -->
 > Historical as of 2026-08-02 — append-only ledger. Entries below record the
 > state at their own date and are intentionally not rewritten when reality
 > moves on. They are exempt from live freshness verification.
+
+> Note: older 2026-08-03 lines that claimed tip `a4cfb8a8` or foundation still in-flight are superseded by the live tip claim above.
 
 ## Repo / Engineering Status (2026-08-02)
 

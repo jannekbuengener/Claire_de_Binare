@@ -1,0 +1,92 @@
+# Agent Control — Live Cursor Pilot (Zero-Click)
+
+Status: Operator runbook  
+Scope: Issue `#4258` live Cursor cloud pilot (Human-GO)  
+Refs: `#4258` only — never Closes, never merge, never `cdb-local-ci` publish
+
+## Boundaries
+
+- Default pilot remains **mock** (`--provider mock`).
+- Live path requires **explicit Human-GO**: `--provider cursor-cloud-api --human-go-live-cursor`.
+- Credential bootstrap is **MANUAL_BOOTSTRAP_ONLY**: operator places `CURSOR_API_KEY` in the
+  local secrets directory or environment. Agents must not invent or print secret values.
+- Cursor Approval Agents remain **MANUAL_BOOTSTRAP_ONLY** — pilot pauses at
+  `AWAITING_APPROVAL` and does not auto-merge.
+- LR stays NO-GO. No live trading, no productive DB/MCP mutation, no BLUE/RED runtime change.
+
+## Registry surfaces
+
+| Item | Id |
+| --- | --- |
+| Agent | `acp-live-cursor-pilot` |
+| Provider profile | `cursor-cloud-api.v1` (`live_dispatch: false`) |
+| Environment profile | `cursor-live-pilot.v1` (`runtime_class: mock` for CI doctor; live only via Human-GO flags) |
+
+## Credential bootstrap (MANUAL_BOOTSTRAP_ONLY)
+
+1. Obtain a Cursor API key outside the agent session.
+2. Export `CURSOR_API_KEY` in the operator shell **or** place a non-empty file
+   `CURSOR_API_KEY` / `CURSOR_API_KEY.txt` under the operator secrets directory.
+3. Never paste the key into issues, PRs, chat, or pilot reports.
+4. Presence is checked fail-closed (`PRECONDITION_BLOCKED`) before any network call.
+
+## Zero-Click operator flow
+
+```bash
+# 1) Validate registry (includes live-pilot env + agent)
+python -m tools.agent_control registry validate --config config/agent-control
+
+# 2) Optional doctor on the live-pilot env (offline / mock runtime_class)
+python -m tools.agent_control environment doctor \
+  --profile cursor-live-pilot.v1 \
+  --config config/agent-control \
+  --offline
+
+# 3) Human-GO live pilot (operator shell with CURSOR_API_KEY present)
+python -m tools.agent_control pilot run \
+  --manifest <LIVE_MANIFEST.json> \
+  --provider cursor-cloud-api \
+  --human-go-live-cursor \
+  --state artifacts/agent_control/live-pilot-runstore.json \
+  --out artifacts/agent_control/live-pilot-report.json
+
+# Optional: request Cursor autoCreatePR (still Human-GO gated; no merge)
+#   --auto-create-pr
+
+# 4) Resume after process restart (same state file; reuses provider_run_id)
+python -m tools.agent_control pilot run \
+  --manifest <LIVE_MANIFEST.json> \
+  --provider cursor-cloud-api \
+  --human-go-live-cursor \
+  --state artifacts/agent_control/live-pilot-runstore.json \
+  --resume <RUN_ID> \
+  --out artifacts/agent_control/live-pilot-report.json
+```
+
+Fail-closed without Human-GO:
+
+```bash
+python -m tools.agent_control pilot run \
+  --manifest <LIVE_MANIFEST.json> \
+  --provider cursor-cloud-api
+# → PILOT_HUMAN_GO_REQUIRED
+```
+
+## Expected terminal shape
+
+1. Credential presence → PASS (or `PRECONDITION_BLOCKED` with zero network).
+2. Dispatch via `cursor-cloud-api` with injected/live HTTP under Human-GO.
+3. GitHub delivery verify (`gh`) binds head SHA + changed-file allowlist.
+4. Watch with `auto_advance_success=False` → **`AWAITING_APPROVAL`**.
+5. Run evidence may be HOLD (non-terminal) — acceptable.
+6. Approval context recommendation is advisory only; authority limits stay all-false.
+7. Report limitations include `live_cursor_pilot`,
+   `awaiting_approval_operator_handoff`,
+   `cursor_approval_agents_manual_bootstrap_only`.
+
+## Non-goals
+
+- No squash merge, no `--admin`, no branch-protection mutation.
+- No `cdb-local-ci` publish from this pilot.
+- No issue close for `#4258` (Refs only).
+- No real Cursor agents from unit tests (fake HTTP / fake `gh` only).

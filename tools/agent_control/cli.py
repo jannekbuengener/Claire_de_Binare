@@ -532,15 +532,44 @@ def cmd_provider_archive(args: argparse.Namespace) -> int:
 
 
 def cmd_pilot_run(args: argparse.Namespace) -> int:
-    """Run mock-first ACP foundation pilot; never closes issues or live-dispatches."""
+    """Run ACP pilot (mock default; live Cursor only with Human-GO flags)."""
     from tools.agent_control.paths import REPO_ROOT
     from tools.agent_control.pilot import PilotError, run_pilot_from_path
     from tools.agent_control.pilot_report import PilotReportError
 
+    provider_id = str(getattr(args, "provider", "mock") or "mock")
+    human_go = bool(getattr(args, "human_go_live_cursor", False))
+    auto_create_pr = bool(getattr(args, "auto_create_pr", False))
+    if provider_id != "mock" and not human_go:
+        print(
+            "INVALID PILOT_HUMAN_GO_REQUIRED: "
+            "provider!=mock requires --human-go-live-cursor",
+            file=sys.stderr,
+        )
+        return EXIT_ERROR
+    if auto_create_pr and not human_go:
+        print(
+            "INVALID PILOT_HUMAN_GO_REQUIRED: "
+            "--auto-create-pr requires --human-go-live-cursor",
+            file=sys.stderr,
+        )
+        return EXIT_ERROR
+
     try:
         root = Path(args.repo_root) if args.repo_root else REPO_ROOT
         out = Path(args.out) if args.out else None
-        report = run_pilot_from_path(Path(args.manifest), repo_root=root, out_path=out)
+        state = Path(args.state) if getattr(args, "state", None) else None
+        resume = getattr(args, "resume", None)
+        report = run_pilot_from_path(
+            Path(args.manifest),
+            repo_root=root,
+            out_path=out,
+            provider_id=provider_id,
+            human_go_live_cursor=human_go,
+            resume_run_id=resume,
+            state_path=state,
+            auto_create_pr=auto_create_pr,
+        )
     except (PilotError, PilotReportError, AgentControlError) as exc:
         print(f"INVALID {exc.code}: {exc.message}", file=sys.stderr)
         return EXIT_ERROR
@@ -988,13 +1017,13 @@ def build_parser() -> argparse.ArgumentParser:
 
     pilot = sub.add_parser(
         "pilot",
-        help="Mock-first ACP E2E foundation pilot (#4258; Refs only, not Closes)",
+        help="ACP E2E pilot (#4258; mock default; live Cursor needs Human-GO; Refs only)",
     )
     pilot_sub = pilot.add_subparsers(dest="pilot_command", required=True)
 
     p_pilot_run = pilot_sub.add_parser(
         "run",
-        help="Run fixture/mock-first ACP chain and emit pilot report",
+        help="Run ACP pilot chain and emit pilot report (mock default)",
     )
     p_pilot_run.add_argument("--manifest", required=True)
     p_pilot_run.add_argument("--out", help="Optional report output path")
@@ -1002,6 +1031,32 @@ def build_parser() -> argparse.ArgumentParser:
         "--repo-root",
         default=None,
         help="Optional repo root (defaults to package REPO_ROOT)",
+    )
+    p_pilot_run.add_argument(
+        "--provider",
+        choices=("mock", "cursor-cloud-api"),
+        default="mock",
+        help="Provider adapter (default mock; cursor-cloud-api needs Human-GO)",
+    )
+    p_pilot_run.add_argument(
+        "--human-go-live-cursor",
+        action="store_true",
+        help="Explicit Human-GO for live Cursor cloud pilot (required when provider!=mock)",
+    )
+    p_pilot_run.add_argument(
+        "--resume",
+        default=None,
+        help="Resume an existing run_id from --state (skip dispatch)",
+    )
+    p_pilot_run.add_argument(
+        "--state",
+        default=None,
+        help="JsonFileRunStore path for live/resume persistence",
+    )
+    p_pilot_run.add_argument(
+        "--auto-create-pr",
+        action="store_true",
+        help="Optional Cursor autoCreatePR (requires --human-go-live-cursor)",
     )
     p_pilot_run.set_defaults(func=cmd_pilot_run)
 

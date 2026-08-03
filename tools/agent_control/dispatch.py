@@ -398,6 +398,9 @@ def dispatch_run(
     dry_run: bool = True,
     allow_mock_dispatch: bool = False,
     allow_recorded_cursor: bool = False,
+    allow_live_cursor: bool = False,
+    human_go_live_cursor: bool = False,
+    auto_create_pr: bool = False,
     scenario: str = "success",
     clock: Clock | None = None,
     provider: Provider | None = None,
@@ -423,10 +426,12 @@ def dispatch_run(
             "execute requires a RunStore",
         )
 
-    if not allow_mock_dispatch and not allow_recorded_cursor:
+    live_ok = bool(allow_live_cursor and human_go_live_cursor)
+    if not allow_mock_dispatch and not allow_recorded_cursor and not live_ok:
         raise DispatchError(
             "PROVIDER_LIVE_DISPATCH_FORBIDDEN",
-            "execute requires --allow-mock-dispatch or recorded/fake Cursor transport",
+            "execute requires --allow-mock-dispatch, recorded/fake Cursor "
+            "transport, or Human-GO live cursor flags",
         )
 
     pf = preflight(
@@ -435,6 +440,8 @@ def dispatch_run(
         agent_id,
         execute=True,
         allow_recorded_cursor=allow_recorded_cursor,
+        allow_live_cursor=allow_live_cursor,
+        human_go_live_cursor=human_go_live_cursor,
         prompt_text_override=prompt_text_override,
         environment_attestation_path=environment_attestation_path,
     )
@@ -511,10 +518,11 @@ def dispatch_run(
         not isinstance(active_provider, MockProvider)
         and pf.provider_id != "mock"
         and not allow_recorded_cursor
+        and not live_ok
     ):
         raise DispatchError(
             "PROVIDER_LIVE_DISPATCH_FORBIDDEN",
-            "Cursor providers require recorded/fake transport in #4254",
+            "Cursor providers require recorded/fake transport or Human-GO live flags",
         )
 
     at = _iso(clock)
@@ -589,6 +597,14 @@ def dispatch_run(
     store.update_cas(rid, 1, record)
 
     scope = pf.contract.get("execution_scope") or {}
+    provider_profile = deepcopy(pf.provider_profile or {})
+    if live_ok:
+        provider_profile["human_go_live_cursor"] = True
+        if auto_create_pr:
+            provider_profile["autoCreatePR"] = True
+        else:
+            # Default live pilot binds an existing PR (no autoCreatePR).
+            provider_profile["workOnCurrentBranch"] = True
     request = ProviderRequest(
         run_id=rid,
         contract_id=pf.contract["contract_id"],
@@ -599,7 +615,7 @@ def dispatch_run(
         delivery_expectations=deepcopy(expected_delivery),
         idempotency_key=idem,
         provider_id=pf.provider_id,
-        provider_profile=deepcopy(pf.provider_profile or {}),
+        provider_profile=provider_profile,
         route=_normalize_route_bindings(pf.route or {}),
         effective_permissions=deepcopy(pf.agent.get("effective_permissions") or {}),
         allowed_paths=list(
@@ -713,6 +729,9 @@ def watch_run(
         raise DispatchError("DISPATCH_RUN_NOT_FOUND", f"unknown run_id: {run_id}")
     if record["state"] in TERMINAL_STATES:
         return record
+    # Live pilot pause state — treat as watch complete without further provider polls.
+    if record["state"] == "AWAITING_APPROVAL":
+        return record
 
     if record["state"] not in {"DISPATCHED", "RUNNING"}:
         raise DispatchError(
@@ -733,6 +752,24 @@ def watch_run(
         )
 
     active = provider or get_provider("mock")
+    # Rehydrate Cursor cloud driver from persisted result_refs after restart.
+    if (
+        provider is not None
+        and hasattr(provider, "rehydrate")
+        and record.get("provider_id") == "cursor-cloud-api"
+        and record.get("provider_run_id")
+    ):
+        refs = record.get("result_refs") or {}
+        agent_ref = refs.get("agent_id")
+        if agent_ref:
+            try:
+                provider.rehydrate(  # type: ignore[attr-defined]
+                    provider_run_id=str(record["provider_run_id"]),
+                    agent_id=str(agent_ref),
+                    status="RUNNING",
+                )
+            except DispatchError:
+                pass
     # Reuse same mock instance if caller did not inject — for JsonFile CLI,
     # MockProvider is ephemeral; store scenario on record and rebuild.
     if provider is None and isinstance(active, MockProvider):
@@ -967,6 +1004,18 @@ def watch_run(
             )
             record["revision"] = rev + 1
             return store.update_cas(run_id, rev, record)
+        # Live/Human-GO path: pause at AWAITING_APPROVAL (no auto merge path).
+        _apply_state(
+            record,
+            "AWAITING_APPROVAL",
+            event_name="awaiting_approval",
+            clock=clock,
+            detail={
+                "receipt_commit": receipt.get("commit"),
+                "not_merge_authority": True,
+                "cursor_approval_agents": "MANUAL_BOOTSTRAP_ONLY",
+            },
+        )
         record["revision"] = rev + 1
         return store.update_cas(run_id, rev, record)
 
