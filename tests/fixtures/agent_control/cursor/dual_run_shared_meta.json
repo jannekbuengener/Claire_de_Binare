@@ -1,0 +1,16 @@
+{
+  "me": {
+    "apiKeyName": "api.CDB",
+    "userId": 363812814,
+    "createdAt": "2026-08-03T01:14:23.218Z"
+  },
+  "models_count": 33,
+  "claire_repository_listed": true,
+  "repositories": {
+    "items": [
+      { "url": "https://github.com/jannekbuengener/sample-brain" },
+      { "url": "https://github.com/jannekbuengener/Claire_de_Binare" },
+      { "url": "https://github.com/jannekbuengener/gpt-mcp-server" }
+    ]
+  }
+}
