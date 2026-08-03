@@ -1,22 +1,22 @@
 #Requires -Version 5.1
 <#
 .SYNOPSIS
-  Install/configure dedicated Tailscale-only OpenSSH listener sshd-hermes (#4289).
+  Install/configure dedicated loopback OpenSSH + Tailscale Serve bridge (#4289).
 
 .DESCRIPTION
-  Based on Microsoft OpenSSH Server docs (Add-WindowsCapability OpenSSH.Server,
-  sshd_config ListenAddress / AllowUsers / PasswordAuthentication).
+  Windows host TCP after Wintun injection does not SYN-ACK for peer traffic
+  (live evidence 2026-08-03). Architecture:
 
-  - Installs OpenSSH.Server if missing.
-  - Disables the default system-wide sshd service and the public
-    OpenSSH-Server-In-TCP firewall rule.
-  - Creates sshd-hermes with a private config bound to the Windows Tailscale IP.
-  - Firewall allows inbound only from the cdb-hermes-01 Tailscale IP.
-  - Pubkey-only auth for hermes-win. No password SSH, no RDP/VNC, no forwarding.
+  - sshd-hermes listens ONLY on 127.0.0.1:22 (and ::1).
+  - Tailscale Serve raw TCP forwarder: tailnet:22 → tcp://127.0.0.1:22 (--bg).
+  - No inbound Windows Firewall allow for sshd (Serve is the only remote path).
+  - Funnel is forbidden and must stay off.
+  - Default system sshd Disabled; public OpenSSH-Server-In-TCP Disabled.
 
-.NOTES
-  Run elevated once. Does not print Tailscale IPs to GitHub evidence files.
-  Docs gate: learn.microsoft.com OpenSSH install + server configuration (2025).
+  Docs gate (Tailscale 1.98+):
+    tailscale serve --bg --tcp=22 tcp://127.0.0.1:22
+    tailscale serve --tcp=22 off
+    tailscale serve status --json
 #>
 [CmdletBinding(SupportsShouldProcess = $true)]
 param(
@@ -24,9 +24,8 @@ param(
     [string]$ServiceName = 'sshd-hermes',
     [string]$ConfigPath = 'C:\ProgramData\ssh\sshd_hermes_config',
     [string]$HostKeyPath = 'C:\ProgramData\ssh\ssh_host_ed25519_key',
-    [string]$HermesPeerName = 'cdb-hermes-01',
     [int]$ListenPort = 22,
-    [string]$FirewallRuleName = 'CDB-Hermes-sshd-hermes-Tailscale'
+    [string]$LegacyFirewallRuleName = 'CDB-Hermes-sshd-hermes-Tailscale'
 )
 
 $ErrorActionPreference = 'Stop'
@@ -37,26 +36,6 @@ function Assert-Elevated {
     if (-not $p.IsInRole([Security.Principal.WindowsBuiltInRole]::Administrator)) {
         throw 'setup-sshd-hermes.ps1 must run elevated (Administrator).'
     }
-}
-
-function Get-TailscaleIPv4 {
-    param([string]$HostName)
-    $json = & tailscale status --json 2>$null | ConvertFrom-Json
-    if (-not $json) { throw 'tailscale status --json failed' }
-    if ($HostName -eq 'self') {
-        $ips = @($json.Self.TailscaleIPs)
-    }
-    else {
-        $peer = $json.Peer.PSObject.Properties.Value |
-            Where-Object { $_.HostName -eq $HostName -or $_.DNSName -like "$HostName*" } |
-            Select-Object -First 1
-        if (-not $peer) { throw "Tailscale peer not found: $HostName" }
-        if (-not $peer.Online) { throw "Tailscale peer offline: $HostName" }
-        $ips = @($peer.TailscaleIPs)
-    }
-    $v4 = $ips | Where-Object { $_ -match '^\d+\.\d+\.\d+\.\d+$' } | Select-Object -First 1
-    if (-not $v4) { throw "No Tailscale IPv4 for $HostName" }
-    return $v4
 }
 
 function Resolve-SshdExe {
@@ -78,65 +57,54 @@ function Install-OpenSSHServerCapability {
         Write-Host "OpenSSH Server already present: $existing"
         return $existing
     }
-
-    # Prefer winget MSI path — Add-WindowsCapability/-Online often hangs on DISM/WU.
-    # Docs gate: Win32-OpenSSH via winget (package id Microsoft.OpenSSH.Preview).
-    # Avoid WSL/bash shims entirely.
     $winget = Get-Command winget.exe -ErrorAction SilentlyContinue
     if ($winget) {
         $packageId = 'Microsoft.OpenSSH.Preview'
         if ($PSCmdlet.ShouldProcess($packageId, 'winget install OpenSSH Server')) {
             Write-Host "Installing OpenSSH Server via winget ($packageId, no DISM)..."
-            # IMPORTANT: swallow winget stdout — otherwise it becomes the function's
-            # return value in PowerShell and corrupts $sshdExe (empty Path errors).
             & winget.exe install --id $packageId -e --source winget `
                 --accept-package-agreements --accept-source-agreements `
                 --disable-interactivity *>$null
             $wingetExit = $LASTEXITCODE
-            # Common benign codes: already installed / no newer version.
             if ($wingetExit -notin @(0, -1978335189, -1978335135)) {
                 throw "winget install $packageId failed exit=$wingetExit"
             }
         }
+        Start-Sleep -Seconds 2
+        $existing = Resolve-SshdExe
+        if ($existing) { return $existing }
     }
-    else {
-        # Fallback only when winget is unavailable.
-        Write-Host 'winget missing; falling back to Add-WindowsCapability (may be slow)...'
-        $cap = Get-WindowsCapability -Online -Name 'OpenSSH.Server~~~~0.0.1.0' -ErrorAction Stop
-        if ($cap.State -ne 'Installed') {
-            if ($PSCmdlet.ShouldProcess('OpenSSH.Server~~~~0.0.1.0', 'Add-WindowsCapability')) {
-                Add-WindowsCapability -Online -Name 'OpenSSH.Server~~~~0.0.1.0' | Out-Null
-            }
-        }
-    }
-
-    $sshd = Resolve-SshdExe
-    if ([string]::IsNullOrWhiteSpace($sshd)) {
-        throw 'OpenSSH Server install did not provide sshd.exe'
-    }
-    # Explicit single-string return (no accidental pipeline pollution).
-    return [string]$sshd
+    throw 'OpenSSH Server not found after install attempt'
 }
 
 function Disable-DefaultPublicSshd {
-    $default = Get-Service -Name 'sshd' -ErrorAction SilentlyContinue
-    if ($default) {
-        if ($default.Status -eq 'Running') {
-            Stop-Service -Name 'sshd' -Force -ErrorAction SilentlyContinue
-        }
-        Set-Service -Name 'sshd' -StartupType Disabled
-        Write-Host 'Default sshd service set to Disabled (Hermes uses sshd-hermes only).'
+    $svc = Get-Service -Name 'sshd' -ErrorAction SilentlyContinue
+    if ($svc) {
+        if ($svc.Status -eq 'Running') { Stop-Service -Name 'sshd' -Force -ErrorAction SilentlyContinue }
+        Set-Service -Name 'sshd' -StartupType Disabled -ErrorAction SilentlyContinue
     }
-    $pubRule = Get-NetFirewallRule -Name 'OpenSSH-Server-In-TCP' -ErrorAction SilentlyContinue
-    if ($pubRule) {
+    $pub = Get-NetFirewallRule -Name 'OpenSSH-Server-In-TCP' -ErrorAction SilentlyContinue
+    if ($pub -and $pub.Enabled) {
         Disable-NetFirewallRule -Name 'OpenSSH-Server-In-TCP'
-        Write-Host 'Disabled public OpenSSH-Server-In-TCP firewall rule.'
+    }
+    Get-NetFirewallRule -ErrorAction SilentlyContinue |
+        Where-Object { $_.DisplayName -eq 'OpenSSH SSH Server Preview (sshd)' -and $_.Enabled } |
+        ForEach-Object { Disable-NetFirewallRule -Name $_.Name }
+}
+
+function Remove-LegacyExternalSshFirewall {
+    param([string]$RuleName)
+    foreach ($n in @($RuleName, 'CDB-Hermes-sshd-program', 'CDB-Hermes-sshd-TailscaleIF', 'CDB-Hermes-DIAG-tcp22-any-TEMP')) {
+        $existing = Get-NetFirewallRule -Name $n -ErrorAction SilentlyContinue
+        if ($existing) {
+            Remove-NetFirewallRule -Name $n
+            Write-Host "Removed legacy/external firewall rule: $n"
+        }
     }
 }
 
 function Write-HermesSshdConfig {
     param(
-        [string]$ListenIp,
         [int]$Port,
         [string]$UserName,
         [string]$ConfigFile,
@@ -147,7 +115,6 @@ function Write-HermesSshdConfig {
     if ([string]::IsNullOrWhiteSpace($ConfigFile)) { throw 'ConfigFile is required' }
     if ([string]::IsNullOrWhiteSpace($HostKey)) { throw 'HostKey is required' }
     if ([string]::IsNullOrWhiteSpace($KeygenExe)) { throw 'KeygenExe is required' }
-    if ([string]::IsNullOrWhiteSpace($ListenIp)) { throw 'ListenIp is required' }
     $dir = Split-Path -Parent $ConfigFile
     if (-not (Test-Path -LiteralPath $dir)) {
         New-Item -ItemType Directory -Path $dir -Force | Out-Null
@@ -158,17 +125,23 @@ function Write-HermesSshdConfig {
     if ([string]::IsNullOrWhiteSpace($SftpServer)) {
         $SftpServer = 'sftp-server.exe'
     }
+    $authKeys = "C:/Users/$UserName/.ssh/authorized_keys"
     $content = @"
-# CDB Hermes dedicated sshd (#4289). Do not expose publicly.
-# Windows+Tailscale: ListenAddress 0.0.0.0 is required in practice — peer TCP is
-# not reliably delivered to a unicast Tailscale bind (local TS bind tests can
-# still pass). Public exposure is prevented by:
+# CDB Hermes dedicated sshd (#4289). Loopback-only backend.
+# Remote access is ONLY via Tailscale Serve TCP forwarder (never Funnel):
+#   tailscale serve --bg --tcp=$Port tcp://127.0.0.1:$Port
+# Host TCP after Wintun does not SYN-ACK for peer traffic on this Windows build;
+# Serve proxies tailnet TCP into loopback where sshd answers.
+# Public exposure prevented by:
+#   - ListenAddress 127.0.0.1 / ::1 only
+#   - no inbound Windows Firewall allow for sshd
 #   - OpenSSH-Server-In-TCP disabled
-#   - firewall RemoteAddress = cdb-hermes-01 Tailscale IP only
-#   - PasswordAuthentication no / AllowUsers hermes-win
+#   - Funnel forbidden
+#   - PasswordAuthentication no / AllowUsers $UserName
 #   - default system sshd Disabled
 Port $Port
-ListenAddress 0.0.0.0
+ListenAddress 127.0.0.1
+ListenAddress ::1
 HostKey $HostKey
 PubkeyAuthentication yes
 PasswordAuthentication no
@@ -176,7 +149,8 @@ KbdInteractiveAuthentication no
 ChallengeResponseAuthentication no
 PermitEmptyPasswords no
 AllowUsers $UserName
-AuthorizedKeysFile .ssh/authorized_keys
+AuthorizedKeysFile $authKeys
+StrictModes no
 AllowTcpForwarding no
 AllowAgentForwarding no
 X11Forwarding no
@@ -198,8 +172,8 @@ function Ensure-HermesSshService {
     if (-not $existing) {
         if ($PSCmdlet.ShouldProcess($Name, 'New-Service sshd-hermes')) {
             New-Service -Name $Name -BinaryPathName $binPath `
-                -DisplayName 'CDB Hermes OpenSSH (Tailscale-only)' `
-                -Description 'Dedicated Hermes bridge for hermes-win (#4289). Not the public sshd.' `
+                -DisplayName 'CDB Hermes OpenSSH (Tailscale Serve backend)' `
+                -Description 'Loopback-only Hermes bridge; remote via Tailscale Serve (#4289).' `
                 -StartupType Automatic | Out-Null
         }
     }
@@ -209,44 +183,49 @@ function Ensure-HermesSshService {
     }
 }
 
-function Ensure-TailscaleFirewallRule {
-    param(
-        [string]$RuleName,
-        [string]$LocalIp,
-        [string]$RemoteIp,
-        [int]$Port
-    )
-    $existing = Get-NetFirewallRule -Name $RuleName -ErrorAction SilentlyContinue
-    if ($existing) {
-        Remove-NetFirewallRule -Name $RuleName
+function Assert-FunnelOff {
+    $funnel = & tailscale funnel status 2>&1 | Out-String
+    if ($funnel -match '(?i)Funnel on|https://.*ts\.net' -and $funnel -notmatch 'tailnet only') {
+        # Funnel status may echo Serve config; require explicit Funnel enablement markers.
+        if ($funnel -match '(?i)Funnel on:') {
+            throw 'Tailscale Funnel must be OFF for Hermes bridge'
+        }
     }
-    if ($PSCmdlet.ShouldProcess($RuleName, 'New-NetFirewallRule Tailscale-only')) {
-        # IMPORTANT: do not set -LocalAddress to the Tailscale IP. On Windows this
-        # often fails to match packets even when sshd ListenAddress is correct,
-        # causing Hermes→Windows TCP timeouts while `tailscale ping` still works.
-        # Restriction is RemoteAddress = cdb-hermes-01 Tailscale IP only; sshd
-        # binds 0.0.0.0 (peer TCP to a unicast Tailscale bind is unreliable).
-        # Public OpenSSH rule stays disabled.
-        New-NetFirewallRule -Name $RuleName `
-            -DisplayName 'CDB Hermes sshd-hermes (Tailscale from cdb-hermes-01)' `
-            -Direction Inbound -Action Allow -Enabled True -Profile Any `
-            -Protocol TCP -LocalPort $Port `
-            -RemoteAddress $RemoteIp | Out-Null
-        Write-Host "Firewall rule ${RuleName}: remote=hermes-ts only; localAddress=any (sshd still firewalled)"
+    Write-Host 'Funnel check: not enabled (Serve-only path)'
+}
+
+function Enable-TailscaleServeTcp {
+    param([int]$Port)
+    Assert-FunnelOff
+    if ($PSCmdlet.ShouldProcess("tcp/$Port", 'tailscale serve --bg TCP forwarder')) {
+        # Docs (1.98): tailscale serve --bg --tcp=<port> tcp://127.0.0.1:<port>
+        & tailscale serve --bg --yes --tcp=$Port "tcp://127.0.0.1:$Port" *>$null
+        if ($LASTEXITCODE -ne 0) {
+            throw "tailscale serve enable failed exit=$LASTEXITCODE"
+        }
     }
+    $status = & tailscale serve status --json 2>$null | ConvertFrom-Json
+    $key = "$Port"
+    if (-not $status.TCP -or -not $status.TCP.$key -or -not $status.TCP.$key.TCPForward) {
+        throw "tailscale serve status missing TCP/$Port forward"
+    }
+    $fwd = [string]$status.TCP.$key.TCPForward
+    if ($fwd -notmatch '127\.0\.0\.1:' -and $fwd -notmatch '\[::1\]:') {
+        throw "Serve TCPForward must target loopback (got redacted length=$($fwd.Length))"
+    }
+    Write-Host "Tailscale Serve TCP/$Port → loopback READY (Funnel forbidden)"
 }
 
 function Ensure-AuthorizedKeysDir {
     param([string]$UserName)
-    $home = "C:\Users\$UserName"
-    if (-not (Test-Path -LiteralPath $home)) {
+    $userHome = "C:\Users\$UserName"
+    if (-not (Test-Path -LiteralPath $userHome)) {
         throw "User profile missing for $UserName (logon once or create profile before keys)."
     }
-    $sshDir = Join-Path $home '.ssh'
+    $sshDir = Join-Path $userHome '.ssh'
     if (-not (Test-Path -LiteralPath $sshDir)) {
         New-Item -ItemType Directory -Path $sshDir -Force | Out-Null
     }
-    # Restrict .ssh to SYSTEM, Administrators, and the user.
     $acl = Get-Acl -LiteralPath $sshDir
     $acl.SetAccessRuleProtection($true, $false)
     @($acl.Access) | ForEach-Object { [void]$acl.RemoveAccessRule($_) }
@@ -294,17 +273,12 @@ if (-not (Test-Path -LiteralPath $sshKeygen)) {
     throw "ssh-keygen.exe missing next to $sshdExe"
 }
 Disable-DefaultPublicSshd
+Remove-LegacyExternalSshFirewall -RuleName $LegacyFirewallRuleName
 
-$localTs = Get-TailscaleIPv4 -HostName 'self'
-$remoteTs = Get-TailscaleIPv4 -HostName $HermesPeerName
-
-Write-HermesSshdConfig -ListenIp $localTs -Port $ListenPort -UserName $HermesUser `
+Write-HermesSshdConfig -Port $ListenPort -UserName $HermesUser `
     -ConfigFile $ConfigPath -HostKey $HostKeyPath -KeygenExe $sshKeygen -SftpServer $sftpServer
 Ensure-HermesSshService -Name $ServiceName -Config $ConfigPath -SshdExe $sshdExe
-Ensure-TailscaleFirewallRule -RuleName $FirewallRuleName -LocalIp $localTs `
-    -RemoteIp $remoteTs -Port $ListenPort
 
-# Profile/.ssh may not exist until user profile is created — try best-effort.
 try {
     $null = Ensure-AuthorizedKeysDir -UserName $HermesUser
     Write-Host "authorized_keys path prepared for $HermesUser"
@@ -325,7 +299,14 @@ if ($svc.Status -ne 'Running') {
     throw "Service $ServiceName failed to start"
 }
 
-Write-Host "sshd-hermes READY (ListenAddress=0.0.0.0 port=$ListenPort AllowUsers=$HermesUser; FW remote=hermes-ts only)"
+$loop = Test-NetConnection -ComputerName '127.0.0.1' -Port $ListenPort -WarningAction SilentlyContinue
+if (-not $loop.TcpTestSucceeded) {
+    throw "Local loopback TCP/$ListenPort failed after sshd-hermes start"
+}
+
+Enable-TailscaleServeTcp -Port $ListenPort
+
+Write-Host "sshd-hermes READY (ListenAddress=127.0.0.1 port=$ListenPort AllowUsers=$HermesUser; Serve TCP forwarder; Funnel forbidden)"
 Write-Host "sshd_exe=$sshdExe"
-Write-Host 'PasswordAuthentication no; public OpenSSH firewall rule disabled; default sshd Disabled.'
+Write-Host 'PasswordAuthentication no; no external sshd firewall rule; default sshd Disabled.'
 Write-Host 'Install pubkey into hermes-win .ssh\authorized_keys; private key only on cdb-engineer profile.'

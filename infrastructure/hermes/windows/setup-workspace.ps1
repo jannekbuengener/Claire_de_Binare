@@ -153,6 +153,26 @@ if ($bad) {
     throw 'FAIL: unexpected broad ACE present on workspace'
 }
 
+# Explicit deny: sibling Dev worktrees + personal profile trees (top-level only;
+# no deep /T recursion — that hangs on large trees). Fail-closed for Hermes.
+function Set-HermesDenyTopLevel {
+    param([string]$Path, [string]$UserName)
+    if (-not (Test-Path -LiteralPath $Path)) { return }
+    $acct = "$env:COMPUTERNAME\$UserName"
+    # (OI)(CI)(DENY)(F) on the directory itself — no /T
+    & icacls.exe $Path /deny "${acct}:(OI)(CI)(F)" /C /Q *>$null
+    Write-Host "Deny $UserName on $Path (top-level)"
+}
+
+$denyPaths = @(
+    'D:\Dev\Workspaces',
+    'C:\Users\janne',
+    'C:\Users\Janne'
+)
+foreach ($dp in $denyPaths) {
+    Set-HermesDenyTopLevel -Path $dp -UserName $HermesUser
+}
+
 Write-Host "Workspace ready: $WorkspaceRoot (user=$HermesUser rights=$rights)"
-Write-Host 'Next: .\infrastructure\hermes\windows\setup-sshd-hermes.ps1 (Tailscale-only sshd-hermes).'
+Write-Host 'Next: .\infrastructure\hermes\windows\setup-sshd-hermes.ps1 (Serve→loopback sshd-hermes).'
 Write-Host 'Kill-switch: infrastructure/hermes/windows/kill-switch.ps1 -Action Disable'

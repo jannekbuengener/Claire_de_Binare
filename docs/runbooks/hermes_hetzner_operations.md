@@ -149,57 +149,62 @@ Do **not** use WSL bash for these scripts (native Windows PowerShell / Git Bash)
 ```powershell
 # Prefer SecureString; HERMES_WIN_PASSWORD env is accepted then cleared
 .\infrastructure\hermes\windows\setup-workspace.ps1 -HermesUser hermes-win -GrantWrite
-# Dedicated listener (disables public OpenSSH firewall + default sshd)
+# Loopback sshd + Tailscale Serve TCP bridge (never Funnel)
 .\infrastructure\hermes\windows\setup-sshd-hermes.ps1
 .\infrastructure\hermes\windows\kill-switch.ps1 -Action Status
 ```
 
-Kill-switch (targets **sshd-hermes** only; Enable restores Automatic start):
+Kill-switch (targets **sshd-hermes** + Serve mapping; Enable only after loopback
+health, then Serve, then state ENABLED):
 
 ```powershell
-.\infrastructure\hermes\windows\kill-switch.ps1 -Action Disable   # WORKSTATION_UNAVAILABLE
+.\infrastructure\hermes\windows\kill-switch.ps1 -Action Disable   # Serve off + sshd stop
 .\infrastructure\hermes\windows\kill-switch.ps1 -Action Enable
 ```
 
-No public SSH/RDP/VNC. Firewall `RemoteAddress` = Tailscale IP of `cdb-hermes-01`
-only; public `OpenSSH-Server-In-TCP` stays disabled. On Windows+Tailscale,
-`sshd` listens on `0.0.0.0` behind that remote-only rule (unicast Tailscale bind
-does not reliably accept peer TCP).
+No public SSH/RDP/VNC. **Do not** open an inbound Windows Firewall allow for
+sshd. Public `OpenSSH-Server-In-TCP` stays disabled. Default system `sshd` stays
+Disabled. Architecture:
+
+1. `sshd-hermes` listens **only** on `127.0.0.1:22` / `::1`
+2. Private Tailscale Serve raw TCP: `tailnet:22 → tcp://127.0.0.1:22` (`--bg`)
+3. Funnel must stay **OFF** (`tailscale funnel` never enabled)
+4. Existing Tailnet ACLs remain authoritative (no policy mutation from scripts)
+
+CLI gate (confirm with installed `tailscale serve --help`; Tailscale 1.98+):
+
+```text
+tailscale serve --bg --tcp=22 tcp://127.0.0.1:22
+tailscale serve --tcp=22 off
+tailscale serve status --json
+```
 
 Private key for `cdb-engineer → hermes-win` lives only under the engineer profile
 on `cdb-hermes-01` (mode 0600); `jannek-assistant` must not read it.
 
-### Live precondition (Tailscale TCP)
+### Live precondition (Tailscale Serve TCP)
 
-`tailscale ping` Windows↔Hermes is not enough. Hermes must be able to open **TCP**
-to the Windows Tailscale address on port **22** (test:
-`timeout 5 bash -c 'echo >/dev/tcp/$HOST/22'`). Never treat ping-PASS as TCP-PASS.
+`tailscale ping` Windows↔Hermes is not enough. Hermes must open **TCP/22** to
+the Windows Tailscale name (Serve endpoint) and complete pubkey SSH as
+`hermes-win`. Never treat ping-PASS as TCP-PASS. Local `Test-NetConnection` to
+the Tailscale IP can be loopback-optimized and does **not** prove peer delivery.
 
-Diagnose layers separately (do not assume Tailnet ACL first):
+Root-cause class (corrected 2026-08-03): **`HOLD_WINDOWS_HOST_TCP_STACK`**, not
+Windows Firewall. Evidence: Tailnet PacketFilter allows TCP/22; Shields Up
+false; SYN reaches Tailscale Tunnel + `tcpip.sys`; **no SYN-ACK** on the host
+path. Mitigation: Tailscale Serve bypasses the broken host packet path into
+loopback where `sshd-hermes` answers.
 
-1. **Listener / OpenSSH** — `sshd-hermes` Running/Automatic, config
-   `Port 22` + `ListenAddress 0.0.0.0`, `sshd -t` OK, loopback TCP/22 PASS.
-   Live drift to Port 2222 or unicast Tailscale bind is a host config fault,
-   not an ACL fault. Local `Test-NetConnection` to the Tailscale IP can be
-   loopback-optimized and does **not** prove peer delivery.
-2. **Shields Up / system policy** — `tailscale debug prefs` → `ShieldsUp=false`;
-   `tailscale syspolicy list` empty or not forcing block;
-   `tailscale set --shields-up=false` when safe.
-3. **Windows Firewall** — rule `CDB-Hermes-sshd-hermes-Tailscale`: TCP/22,
-   RemoteAddress = `cdb-hermes-01` Tailscale IP only, no `LocalAddress` pin,
-   public `OpenSSH-Server-In-TCP` Disabled. Packet proof (`pktmon` port 22):
-   Hermes SYN must be classified (seen vs dropped vs no SYN-ACK).
-4. **Tailnet PacketFilter** — only if SYN never reaches Windows. Read-only
-   `tailscale debug netmap` PacketFilter: confirm source/dest/TCP/22. Do not
-   mutate policy when the filter already allows peer TCP.
+Diagnose layers if Serve Canary fails:
 
-Observed B1 failure mode (2026-08-03): bidirectional Tailscale ping PASS;
-Hermes→Windows TCP all ports TIMEOUT; pktmon shows Hermes SYN on
-`Tailscale Tunnel` **and** `tcpip.sys` IPv4; **no SYN-ACK**; Tailscale
-`tstun_in_from_wg_drop_filter=0`; temporary Any:22 allow and raw Python
-accept still fail. That is a Windows host TCP path after Wintun injection,
-not Tailnet ACL and not a missing `sshd-hermes` listener. Hold SSH /
-kill-switch / reboot drills until Hermes→Windows TCP/22 PASS.
+1. **Loopback / OpenSSH** — `sshd-hermes` Running/Automatic, `ListenAddress
+   127.0.0.1`, `sshd -t` OK, loopback TCP/22 PASS.
+2. **Serve** — `tailscale serve status --json` shows TCP/22 → loopback; Funnel
+   OFF. CLI from live `--help`, not memory.
+3. **Shields Up / system policy** — `ShieldsUp=false`; no forced block.
+4. **Do not** mutate Tailnet policy, global firewall, or Funnel as a workaround.
+   On persistent Serve fail: `tailscale bugreport --diagnose --record` once,
+   then `HOLD_TAILSCALE_WINDOWS_CLIENT_BUG` with redacted bugreport id.
 
 ## Backup / Restore / Update / Rollback
 
