@@ -83,10 +83,19 @@ def test_setup_sshd_hermes_contract_exists_and_is_private() -> None:
     assert "AllowUsers" in text and "hermes-win" in text
     assert "ListenAddress 0.0.0.0" in text
     assert "RemoteAddress" in text
+    # Firewall rule must not pin -LocalAddress (comment may mention the trap).
+    fw_block = text.split("New-NetFirewallRule -Name $RuleName", 1)[1].split(
+        "Write-Host", 1
+    )[0]
+    assert "-LocalAddress" not in fw_block
     assert "PasswordAuthentication no" in text
     assert "AllowTcpForwarding no" in text
     assert "X11Forwarding no" in text
     assert "AllowAgentForwarding no" in text
+    # READY banner must not claim unicast Tailscale ListenAddress.
+    assert "ListenAddress=0.0.0.0" in text
+    assert "ListenAddress=Tailscale/self" not in text
+    assert "Port $Port" in text
     # Mentions of RDP/VNC only as exclusions are fine; must not enable them.
     assert (
         "Enable-NetFirewallRule" not in text

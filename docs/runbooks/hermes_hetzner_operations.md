@@ -172,9 +172,34 @@ on `cdb-hermes-01` (mode 0600); `jannek-assistant` must not read it.
 ### Live precondition (Tailscale TCP)
 
 `tailscale ping` Windows↔Hermes is not enough. Hermes must be able to open **TCP**
-to the Windows Tailscale address (test: `bash -c 'echo >/dev/tcp/$HOST/22'`).
-If ping works but every TCP port times out, fix Tailnet ACL / packet filter
-before expecting SSH/kill-switch drills to pass.
+to the Windows Tailscale address on port **22** (test:
+`timeout 5 bash -c 'echo >/dev/tcp/$HOST/22'`). Never treat ping-PASS as TCP-PASS.
+
+Diagnose layers separately (do not assume Tailnet ACL first):
+
+1. **Listener / OpenSSH** — `sshd-hermes` Running/Automatic, config
+   `Port 22` + `ListenAddress 0.0.0.0`, `sshd -t` OK, loopback TCP/22 PASS.
+   Live drift to Port 2222 or unicast Tailscale bind is a host config fault,
+   not an ACL fault. Local `Test-NetConnection` to the Tailscale IP can be
+   loopback-optimized and does **not** prove peer delivery.
+2. **Shields Up / system policy** — `tailscale debug prefs` → `ShieldsUp=false`;
+   `tailscale syspolicy list` empty or not forcing block;
+   `tailscale set --shields-up=false` when safe.
+3. **Windows Firewall** — rule `CDB-Hermes-sshd-hermes-Tailscale`: TCP/22,
+   RemoteAddress = `cdb-hermes-01` Tailscale IP only, no `LocalAddress` pin,
+   public `OpenSSH-Server-In-TCP` Disabled. Packet proof (`pktmon` port 22):
+   Hermes SYN must be classified (seen vs dropped vs no SYN-ACK).
+4. **Tailnet PacketFilter** — only if SYN never reaches Windows. Read-only
+   `tailscale debug netmap` PacketFilter: confirm source/dest/TCP/22. Do not
+   mutate policy when the filter already allows peer TCP.
+
+Observed B1 failure mode (2026-08-03): bidirectional Tailscale ping PASS;
+Hermes→Windows TCP all ports TIMEOUT; pktmon shows Hermes SYN on
+`Tailscale Tunnel` **and** `tcpip.sys` IPv4; **no SYN-ACK**; Tailscale
+`tstun_in_from_wg_drop_filter=0`; temporary Any:22 allow and raw Python
+accept still fail. That is a Windows host TCP path after Wintun injection,
+not Tailnet ACL and not a missing `sshd-hermes` listener. Hold SSH /
+kill-switch / reboot drills until Hermes→Windows TCP/22 PASS.
 
 ## Backup / Restore / Update / Rollback
 

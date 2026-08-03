@@ -224,8 +224,9 @@ function Ensure-TailscaleFirewallRule {
         # IMPORTANT: do not set -LocalAddress to the Tailscale IP. On Windows this
         # often fails to match packets even when sshd ListenAddress is correct,
         # causing Hermes→Windows TCP timeouts while `tailscale ping` still works.
-        # Restriction is RemoteAddress = cdb-hermes-01 Tailscale IP only + sshd
-        # ListenAddress bind (no 0.0.0.0). Public OpenSSH rule stays disabled.
+        # Restriction is RemoteAddress = cdb-hermes-01 Tailscale IP only; sshd
+        # binds 0.0.0.0 (peer TCP to a unicast Tailscale bind is unreliable).
+        # Public OpenSSH rule stays disabled.
         New-NetFirewallRule -Name $RuleName `
             -DisplayName 'CDB Hermes sshd-hermes (Tailscale from cdb-hermes-01)' `
             -Direction Inbound -Action Allow -Enabled True -Profile Any `
@@ -324,7 +325,7 @@ if ($svc.Status -ne 'Running') {
     throw "Service $ServiceName failed to start"
 }
 
-Write-Host "sshd-hermes READY (ListenAddress=Tailscale/self port=$ListenPort AllowUsers=$HermesUser)"
+Write-Host "sshd-hermes READY (ListenAddress=0.0.0.0 port=$ListenPort AllowUsers=$HermesUser; FW remote=hermes-ts only)"
 Write-Host "sshd_exe=$sshdExe"
 Write-Host 'PasswordAuthentication no; public OpenSSH firewall rule disabled; default sshd Disabled.'
 Write-Host 'Install pubkey into hermes-win .ssh\authorized_keys; private key only on cdb-engineer profile.'
