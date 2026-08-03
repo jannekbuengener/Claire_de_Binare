@@ -1,0 +1,74 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://claire-de-binare/docs/contracts/cdb_sensitivity_campaign_readiness.v1.schema.json",
+  "title": "CDB Sensitivity Campaign Readiness Report v1",
+  "description": "Machine-readable readiness preflight result for #4153 replay-only sensitivity campaign. Does not authorize runs, survivors, paper, live, or echtgeld.",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "schema_version",
+    "issue_ref",
+    "verdict",
+    "gates",
+    "evidence",
+    "lr_status",
+    "allowed_claims",
+    "forbidden_claims"
+  ],
+  "properties": {
+    "schema_version": {
+      "const": "cdb.sensitivity_campaign_readiness.v1"
+    },
+    "issue_ref": { "const": "#4153" },
+    "verdict": {
+      "type": "string",
+      "enum": [
+        "READY_FOR_REPLAY_SENSITIVITY",
+        "BLOCKED_EXPERIMENT_NOT_READY",
+        "INVALID_EXPERIMENT_MANIFEST",
+        "FROZEN_BOUNDARY_VIOLATION",
+        "HOLDOUT_ACCESS_BLOCKED"
+      ]
+    },
+    "gates": {
+      "type": "object",
+      "additionalProperties": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": ["status", "detail"],
+        "properties": {
+          "status": {
+            "type": "string",
+            "enum": ["PASS", "BLOCKED", "INVALID"]
+          },
+          "detail": { "type": "string" },
+          "evidence_refs": {
+            "type": "array",
+            "items": { "type": "string" }
+          }
+        }
+      }
+    },
+    "evidence": {
+      "type": "object",
+      "additionalProperties": true
+    },
+    "blocking_reasons": {
+      "type": "array",
+      "items": { "type": "string" }
+    },
+    "manifest_fingerprint": {
+      "type": ["string", "null"],
+      "pattern": "^[0-9a-f]{64}$"
+    },
+    "lr_status": { "const": "NO-GO" },
+    "allowed_claims": {
+      "type": "array",
+      "items": { "type": "string" }
+    },
+    "forbidden_claims": {
+      "type": "array",
+      "items": { "type": "string" }
+    }
+  }
+}
