@@ -47,6 +47,7 @@ def build_provider(
             sse=transports.get("sse"),
             allow_live=allow_live,
             model_catalog=transports.get("model_catalog"),
+            human_go_live=bool(transports.get("human_go_live", False)),
         )
     if provider_id == "cursor":
         raise DispatchError(

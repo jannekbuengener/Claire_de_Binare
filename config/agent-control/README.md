@@ -57,16 +57,18 @@ and live Cursor dispatch are forbidden. Mock execute is test-only
 (`--execute --allow-mock-dispatch`). Cursor adapters are constructible offline /
 with injected fake transports only. Registry agents:
 `acp-mock-dispatcher` (`#4253`), `acp-e2e-pilot` (`#4258` foundation,
-`mock` + `mock-pilot.v1`), `acp-cursor-sdk-adapter` (`#4254`/`#4255`,
-`live_dispatch: false`, environment `cdb-agent-skills.v1`).
+`mock` + `mock-pilot.v1`), `acp-live-cursor-pilot` (`#4258` Human-GO live,
+`cursor-cloud-api.v1` + `cursor-live-pilot.v1`), `acp-cursor-sdk-adapter`
+(`#4254`/`#4255`, `live_dispatch: false`, environment `cdb-agent-skills.v1`).
 
 Governed environment profiles (`#4255`):
 `cdb-docs-readonly.v1`, `cdb-agent-skills.v1`, `cdb-python-fast.v1`,
 `cdb-ci-debug.v1`, `cdb-validation-research.v1`,
-`cdb-runtime-risk-restricted.v1`, plus `mock-pilot.v1` for the `#4258`
-foundation pilot. Cursor config: `.cursor/environment.json`.
-Evidence bundle remains `#4256`; approval `#4257`; mock-first foundation pilot
-CLI is `#4258` (`Refs` only — Live Cursor rest keeps the issue open).
+`cdb-runtime-risk-restricted.v1`, plus `mock-pilot.v1` and
+`cursor-live-pilot.v1` for `#4258`. Cursor config: `.cursor/environment.json`.
+Evidence bundle remains `#4256`; approval `#4257`; pilot CLI is `#4258`
+(`Refs` only — Live Cursor requires `--human-go-live-cursor`; see
+[`docs/runbooks/agent_control_live_cursor_pilot.md`](../../docs/runbooks/agent_control_live_cursor_pilot.md)).
 
 ## Schema
 

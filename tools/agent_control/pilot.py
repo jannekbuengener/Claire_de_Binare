@@ -1,14 +1,18 @@
-"""ACP mock-first E2E pilot harness (#4258 foundation slice).
+"""ACP E2E pilot harness (#4258) — mock default + Human-GO live Cursor path.
 
 Wires real ACP components:
   Execution Contract → Registry → Preflight → Environment attenuation →
-  MockProvider → Run Evidence → PR Approval Context → Pilot Report
+  Provider (MockProvider default | CursorCloudApiDriver under Human-GO) →
+  Run Evidence → PR Approval Context → Pilot Report
 
 Hard boundaries:
-- MockProvider only (no live Cursor)
+- Default remains MockProvider (no network, auto_advance_success=True)
+- Live cursor-cloud-api requires --human-go-live-cursor + credential presence
 - Head-SHA bound in manifest/report/approval — Run Evidence schema unchanged
 - Refs #4258 only; never closes the issue
-- No merge / cdb-local-ci publish / protection mutation / secrets / network
+- No merge / cdb-local-ci publish / protection mutation
+- Live path pauses at AWAITING_APPROVAL (operator handoff; Approval Agents
+  remain MANUAL_BOOTSTRAP_ONLY)
 """
 
 from __future__ import annotations
@@ -16,9 +20,10 @@ from __future__ import annotations
 import copy
 import json
 import re
+import time
 from datetime import datetime, timezone
 from pathlib import Path
-from typing import Any
+from typing import Any, Callable
 
 from jsonschema import Draft202012Validator
 
@@ -28,10 +33,18 @@ from tools.agent_control.approval.context import (
     build_approval_context,
     default_repo_paths,
 )
-from tools.agent_control.clock import FrozenClock
+from tools.agent_control.clock import FrozenClock, SystemClock
+from tools.agent_control.credentials import cursor_api_key_present
+from tools.agent_control.delivery_verify import (
+    claimed_delivery_from_git,
+    normalize_cursor_git_branches,
+    pr_number_from_url,
+    verify_github_delivery,
+)
 from tools.agent_control.dispatch import dispatch_run, watch_run
 from tools.agent_control.errors import AgentControlError, DispatchError, EvidenceError
 from tools.agent_control.evidence.emit import emit_evidence
+from tools.agent_control.evidence.redact import sanitize_result_refs
 from tools.agent_control.evidence.store import EvidenceJsonlStore
 from tools.agent_control.evidence.verify import verify_bundle, verify_store
 from tools.agent_control.load import load_registry_document
@@ -43,7 +56,8 @@ from tools.agent_control.pilot_report import (
     verify_report,
 )
 from tools.agent_control.provider import MockProvider
-from tools.agent_control.run_store import InMemoryRunStore
+from tools.agent_control.providers.factory import build_provider
+from tools.agent_control.run_store import InMemoryRunStore, JsonFileRunStore
 from tools.agent_execution_contract.errors import ContractValidationError
 from tools.agent_execution_contract.validate import validate_contract
 
@@ -53,6 +67,7 @@ MANIFEST_SCHEMA_RELPATH = (
     "docs/contracts/cdb_agent_control_pilot_manifest.v1.schema.json"
 )
 SHA40 = re.compile(r"^[a-f0-9]{40}$")
+DEFAULT_GITHUB_REPO = "jannekbuengener/Claire_de_Binare"
 
 DEFAULT_LIMITATIONS = [
     "foundation_slice_only",
@@ -64,9 +79,137 @@ DEFAULT_LIMITATIONS = [
     "refs_4258_not_closes",
 ]
 
+LIVE_LIMITATIONS = [
+    "foundation_slice_only",
+    "live_cursor_pilot",
+    "awaiting_approval_operator_handoff",
+    "cursor_approval_agents_manual_bootstrap_only",
+    "not_issue_closure",
+    "not_final_ci",
+    "not_merge_authority",
+    "refs_4258_not_closes",
+]
+
+GhRunner = Callable[[list[str]], dict[str, Any]]
+HttpTransport = Callable[..., Any]
+SseTransport = Callable[..., Any]
+
+_PROVIDER_TERMINAL = frozenset({"SUCCEEDED", "FAILED", "CANCELLED"})
+
 
 class PilotError(AgentControlError):
     """Pilot harness fail-closed error."""
+
+
+def _enrich_terminal_diagnostics(
+    provider: Any,
+    run_store: Any,
+    run_id: str,
+    *,
+    provider_run_id: str,
+) -> None:
+    """Read-only stream snapshot for FAILED runs; never creates or follows up."""
+    if not hasattr(provider, "read_stream_diagnostics"):
+        return
+    record = run_store.get(run_id)
+    if record is None:
+        return
+    try:
+        diag = provider.read_stream_diagnostics(str(provider_run_id))
+    except DispatchError:
+        return
+    except Exception:  # noqa: BLE001 — diagnostics must never abort pilot
+        return
+    refs = dict(record.get("result_refs") or {})
+    if isinstance(diag.get("result_text"), str) and not refs.get("run_result_text"):
+        refs["run_result_text"] = diag["result_text"]
+    if isinstance(diag.get("stream_error"), dict):
+        refs["stream_error"] = {
+            "code": diag["stream_error"].get("code"),
+            "message": diag["stream_error"].get("message"),
+        }
+    events = diag.get("events")
+    if isinstance(events, list) and events:
+        refs["stream_event_summary"] = events[:20]
+    if isinstance(diag.get("git"), dict) and not refs.get("git"):
+        refs["git"] = diag["git"]
+        refs["claimed_delivery"] = claimed_delivery_from_git(diag["git"])
+    refs["delivery_verified"] = False
+    rev = int(record.get("revision") or 0)
+    record["result_refs"] = sanitize_result_refs(refs)
+    record["updated_at"] = SystemClock().now().isoformat().replace("+00:00", "Z")
+    record["revision"] = rev + 1
+    run_store.update_cas(run_id, rev, record)
+
+
+def _poll_provider_until_terminal(
+    provider: Any,
+    run_store: Any,
+    run_id: str,
+    *,
+    poll_interval_seconds: float = 15.0,
+    max_polls: int = 240,
+    sleep_fn: Callable[[float], None] | None = None,
+) -> dict[str, Any]:
+    """Poll provider.watch until terminal status; update result_refs only.
+
+    Does not advance lifecycle (receipt must be bound before watch_run).
+    """
+    sleeper = sleep_fn or time.sleep
+    record = run_store.get(run_id)
+    if record is None:
+        raise PilotError("PILOT_RESUME_NOT_FOUND", f"run missing for poll: {run_id}")
+    provider_run_id = record.get("provider_run_id")
+    if not provider_run_id:
+        raise PilotError("PILOT_PROVIDER_RUN_MISSING", "no provider_run_id to poll")
+    refs = record.get("result_refs") or {}
+    agent_ref = refs.get("agent_id")
+    if agent_ref and hasattr(provider, "rehydrate"):
+        try:
+            provider.rehydrate(
+                provider_run_id=str(provider_run_id),
+                agent_id=str(agent_ref),
+                status="RUNNING",
+            )
+        except DispatchError:
+            pass
+
+    last_status = "UNKNOWN"
+    for i in range(max_polls):
+        result = provider.watch(str(provider_run_id))
+        last_status = str(result.normalized_status or "UNKNOWN")
+        record = run_store.get(run_id)
+        assert record is not None
+        rev = int(record.get("revision") or 0)
+        if result.result_refs:
+            record["result_refs"] = sanitize_result_refs(result.result_refs)
+        record["updated_at"] = SystemClock().now().isoformat().replace("+00:00", "Z")
+        record["revision"] = rev + 1
+        run_store.update_cas(run_id, rev, record)
+        if last_status in _PROVIDER_TERMINAL:
+            record = run_store.get(run_id) or record
+            rev = int(record.get("revision") or 0)
+            record["last_provider_status"] = last_status
+            record["revision"] = rev + 1
+            run_store.update_cas(run_id, rev, record)
+            if last_status == "FAILED":
+                _enrich_terminal_diagnostics(
+                    provider,
+                    run_store,
+                    run_id,
+                    provider_run_id=str(provider_run_id),
+                )
+            return run_store.get(run_id) or record
+        if last_status == "UNKNOWN":
+            raise PilotError(
+                "PILOT_PROVIDER_STATUS_UNKNOWN",
+                "provider returned UNKNOWN during live poll",
+            )
+        sleeper(poll_interval_seconds)
+    raise PilotError(
+        "PILOT_POLL_TIMEOUT",
+        f"provider still {last_status} after {max_polls} polls",
+    )
 
 
 def _load_json(path: Path) -> Any:
@@ -192,8 +335,45 @@ def run_pilot(
     *,
     repo_root: Path | None = None,
     store_path: Path | None = None,
+    provider_id: str = "mock",
+    human_go_live_cursor: bool = False,
+    resume_run_id: str | None = None,
+    state_path: Path | None = None,
+    http_transport: HttpTransport | None = None,
+    sse_transport: SseTransport | None = None,
+    gh_runner: GhRunner | None = None,
+    auto_create_pr: bool = False,
+    environment_attestation_path: Path | None = None,
+    secrets_dir: Path | None = None,
+    credential_env: dict[str, str] | None = None,
 ) -> dict[str, Any]:
-    """Execute one foundation pilot scenario; return pilot report."""
+    """Execute one pilot scenario; return pilot report.
+
+    Default ``provider_id='mock'`` is behavior-identical to the foundation
+    harness (MockProvider, InMemoryRunStore, auto_advance_success=True).
+    """
+    if provider_id == "cursor-cloud-api":
+        return _run_live_cursor_pilot(
+            manifest,
+            repo_root=repo_root,
+            store_path=store_path,
+            human_go_live_cursor=human_go_live_cursor,
+            resume_run_id=resume_run_id,
+            state_path=state_path,
+            http_transport=http_transport,
+            sse_transport=sse_transport,
+            gh_runner=gh_runner,
+            auto_create_pr=auto_create_pr,
+            environment_attestation_path=environment_attestation_path,
+            secrets_dir=secrets_dir,
+            credential_env=credential_env,
+        )
+    if provider_id != "mock":
+        raise PilotError(
+            "PILOT_PROVIDER_UNSUPPORTED",
+            f"unsupported provider_id={provider_id!r}; use mock|cursor-cloud-api",
+        )
+
     root = repo_root or REPO_ROOT
     steps: list[dict[str, Any]] = []
     limitations = list(DEFAULT_LIMITATIONS)
@@ -758,6 +938,867 @@ def run_pilot(
     )
 
 
+def _live_expected_repo(manifest: dict[str, Any]) -> str:
+    subject = (
+        manifest.get("subject") if isinstance(manifest.get("subject"), dict) else {}
+    )
+    repo = subject.get("repo") or manifest.get("expected_repo") or DEFAULT_GITHUB_REPO
+    return str(repo)
+
+
+def _inject_delivery_receipt(
+    run_store: Any,
+    run_id: str,
+    *,
+    target_pr: int | None,
+    target_branch: str | None,
+    commit: str,
+    expected_status: str,
+) -> None:
+    record = run_store.get(run_id)
+    if record is None:
+        return
+    rev = int(record.get("revision") or 0)
+    record["delivery_receipt"] = {
+        "target_pr": target_pr,
+        "target_branch": target_branch,
+        "commit": commit,
+        "delivery_status": expected_status,
+        "observation_source": "github_delivery_verify",
+    }
+    # Bind observed Cursor/GitHub delivery onto sealed expectations so
+    # autoCreatePR heads are not rejected against fixture placeholders (9999).
+    expected = dict(record.get("expected_delivery") or {})
+    route = dict(record.get("route") or {})
+    if target_pr is not None:
+        expected["target_pr"] = target_pr
+        route["target_pr"] = target_pr
+    if isinstance(target_branch, str) and target_branch:
+        expected["target_branch"] = target_branch
+        route["target_branch"] = target_branch
+    route["target_provenance"] = "cursor_git+github_delivery_verify"
+    record["expected_delivery"] = expected
+    record["route"] = route
+    record["revision"] = rev + 1
+    run_store.update_cas(run_id, rev, record)
+
+
+def _run_live_cursor_pilot(
+    manifest: dict[str, Any],
+    *,
+    repo_root: Path | None = None,
+    store_path: Path | None = None,
+    human_go_live_cursor: bool = False,
+    resume_run_id: str | None = None,
+    state_path: Path | None = None,
+    http_transport: HttpTransport | None = None,
+    sse_transport: SseTransport | None = None,
+    gh_runner: GhRunner | None = None,
+    auto_create_pr: bool = False,
+    environment_attestation_path: Path | None = None,
+    secrets_dir: Path | None = None,
+    credential_env: dict[str, str] | None = None,
+) -> dict[str, Any]:
+    """Human-GO live Cursor cloud pilot; pauses at AWAITING_APPROVAL."""
+    if not human_go_live_cursor:
+        raise PilotError(
+            "PILOT_HUMAN_GO_REQUIRED",
+            "provider_id=cursor-cloud-api requires human_go_live_cursor=True",
+        )
+    if auto_create_pr and not human_go_live_cursor:
+        raise PilotError(
+            "PILOT_HUMAN_GO_REQUIRED",
+            "auto_create_pr requires human_go_live_cursor=True",
+        )
+
+    root = repo_root or REPO_ROOT
+    steps: list[dict[str, Any]] = []
+    limitations = list(LIVE_LIMITATIONS)
+    # Live polling must observe wall-clock; FrozenClock is for offline digests only.
+    clock = SystemClock()
+    run_id: str | None = resume_run_id
+    attempt: int | None = None
+    contract_digest: str | None = None
+    evidence_refs: list[dict[str, Any]] = []
+    approval_digest: str | None = None
+    approval_rec: str | None = None
+    blocked = False
+    hold = False
+    fail = False
+    unknown = False
+    evidence_ok = False
+    provider_calls = 0
+    head_sha = str(manifest["head_sha"])
+    base_raw = manifest.get("base_sha")
+    base_sha = str(base_raw) if isinstance(base_raw, str) else None
+    agent_id = str(manifest["agent_id"])
+    skip_approval = bool(manifest.get("skip_approval"))
+    skip_evidence = bool(manifest.get("skip_evidence"))
+    registry_root = _resolve(
+        root, manifest.get("registry_root") or str(DEFAULT_CONFIG_ROOT)
+    )
+    expected_repo = _live_expected_repo(manifest)
+    allowlist = list(manifest.get("delivery_path_allowlist") or [])
+    att_path = environment_attestation_path
+    if att_path is None and manifest.get("environment_attestation_path"):
+        att_path = _resolve(root, manifest["environment_attestation_path"])
+    raw_poll = manifest.get("poll_interval_seconds")
+    poll_interval = float(15.0 if raw_poll is None else raw_poll)
+    raw_max = manifest.get("max_polls")
+    max_polls = int(240 if raw_max is None else raw_max)
+    sleep_fn: Callable[[float], None] | None = None
+    if callable(manifest.get("_test_sleep_fn")):
+        sleep_fn = manifest["_test_sleep_fn"]  # type: ignore[assignment]
+    elif poll_interval <= 0:
+        sleep_fn = lambda _s: None  # noqa: E731 — offline recorded tests
+        poll_interval = 0.0
+
+    # Credential presence before any driver/network construction.
+    presence = cursor_api_key_present(env=credential_env, secrets_dir=secrets_dir)
+    if not presence.present:
+        steps.append(
+            _step(
+                "credential_precondition",
+                "BLOCKED",
+                detail={
+                    "code": "PRECONDITION_BLOCKED",
+                    "credential": presence.name,
+                    "source": presence.source,
+                },
+            )
+        )
+        blocked = True
+        steps.append(
+            _step(
+                "approval_context",
+                "SKIP",
+                detail={"reason": "short_circuit_after_precondition_block"},
+            )
+        )
+        steps.append(
+            _step(
+                "authority_boundary",
+                "PASS",
+                detail={"authority_limits": AUTHORITY_LIMITS, "provider_calls": 0},
+            )
+        )
+        return _finalize(
+            manifest,
+            steps,
+            None,
+            None,
+            head_sha,
+            base_sha,
+            {},
+            0,
+            [],
+            None,
+            None,
+            blocked,
+            hold,
+            fail,
+            unknown,
+            False,
+            limitations,
+            None,
+        )
+
+    steps.append(
+        _step(
+            "credential_precondition",
+            "PASS",
+            detail={"credential": presence.name, "source": presence.source},
+        )
+    )
+
+    if state_path is not None:
+        run_store: Any = JsonFileRunStore(Path(state_path))
+    else:
+        run_store = InMemoryRunStore()
+
+    transports: dict[str, Any] = {"human_go_live": True}
+    if http_transport is not None:
+        transports["http"] = http_transport
+    if sse_transport is not None:
+        transports["sse"] = sse_transport
+    provider = build_provider(
+        "cursor-cloud-api",
+        allow_live=True,
+        transports=transports,
+    )
+
+    # --- Contract ---
+    try:
+        contract_path = _resolve(root, manifest["contract_path"])
+        contract = _load_verified_contract(_load_json(contract_path))
+        contract_digest = (contract.get("integrity") or {}).get("digest")
+        steps.append(
+            _step(
+                "load_contract",
+                "PASS",
+                detail={
+                    "contract_id": contract.get("contract_id"),
+                    "contract_digest": contract_digest,
+                },
+            )
+        )
+    except Exception as exc:  # noqa: BLE001
+        steps.append(_step("load_contract", "FAIL", detail={"error": str(exc)}))
+        fail = True
+        return _finalize(
+            manifest,
+            steps,
+            run_id,
+            attempt,
+            head_sha,
+            base_sha,
+            {},
+            0,
+            [],
+            None,
+            None,
+            blocked,
+            hold,
+            fail,
+            unknown,
+            False,
+            limitations,
+            contract_digest,
+        )
+
+    try:
+        registry = load_registry_document(registry_root)
+        steps.append(
+            _step(
+                "resolve_registry",
+                "PASS",
+                detail={"agent_id": agent_id, "registry_root": str(registry_root)},
+            )
+        )
+    except Exception as exc:  # noqa: BLE001
+        steps.append(_step("resolve_registry", "FAIL", detail={"error": str(exc)}))
+        fail = True
+        return _finalize(
+            manifest,
+            steps,
+            run_id,
+            attempt,
+            head_sha,
+            base_sha,
+            {"contract_digest": contract_digest},
+            0,
+            [],
+            None,
+            None,
+            blocked,
+            hold,
+            fail,
+            unknown,
+            False,
+            limitations,
+            contract_digest,
+        )
+
+    allow_recorded = att_path is not None
+    # Load prompt from working tree for Human-GO / fixture tests so source_commit
+    # history is not required (operator may still bind a real commit in manifests).
+    prompt_override: str | None = None
+    work_order = (
+        contract.get("provider_work_order") if isinstance(contract, dict) else None
+    )
+    if isinstance(work_order, dict) and work_order.get("prompt_ref"):
+        prompt_path = _resolve(root, str(work_order["prompt_ref"]))
+        if prompt_path.is_file():
+            prompt_override = prompt_path.read_text(encoding="utf-8")
+
+    run: dict[str, Any] | None = None
+    try:
+        if resume_run_id:
+            run = run_store.get(resume_run_id)
+            if run is None:
+                raise PilotError(
+                    "PILOT_RESUME_NOT_FOUND",
+                    f"resume_run_id not in store: {resume_run_id}",
+                )
+            run_id = run.get("run_id")
+            attempt = run.get("attempt")
+            steps.append(
+                _step(
+                    "preflight_dispatch",
+                    "PASS",
+                    detail={
+                        "state": run.get("state"),
+                        "run_id": run_id,
+                        "resume": True,
+                        "provider_run_id": run.get("provider_run_id"),
+                    },
+                )
+            )
+        else:
+            result = dispatch_run(
+                contract,
+                registry,
+                agent_id,
+                run_store,
+                dry_run=False,
+                allow_mock_dispatch=False,
+                allow_live_cursor=True,
+                human_go_live_cursor=True,
+                allow_recorded_cursor=allow_recorded,
+                auto_create_pr=auto_create_pr,
+                provider=provider,
+                clock=clock,
+                environment_attestation_path=att_path,
+                prompt_text_override=prompt_override,
+            )
+            run = result["run"]
+            run_id = run.get("run_id")
+            attempt = run.get("attempt")
+            provider_calls = int(getattr(provider, "dispatch_calls", 0) or 0)
+            state = run.get("state")
+            code = run.get("terminal_code")
+            if state in {"BLOCKED", "HOLD"} or code:
+                blocked = state == "BLOCKED"
+                hold = state == "HOLD"
+                steps.append(
+                    _step(
+                        "preflight_dispatch",
+                        "BLOCKED" if blocked else "HOLD",
+                        detail={
+                            "state": state,
+                            "terminal_code": code,
+                            "provider_call_count": provider_calls,
+                        },
+                    )
+                )
+            else:
+                steps.append(
+                    _step(
+                        "preflight_dispatch",
+                        "PASS",
+                        detail={
+                            "state": state,
+                            "run_id": run_id,
+                            "provider_call_count": provider_calls,
+                            "provider_run_id": run.get("provider_run_id"),
+                        },
+                    )
+                )
+
+        # Create may already be terminal ERROR/FAILED (no CREATING poll window).
+        if (
+            run_id
+            and run
+            and run.get("state") == "FAILED"
+            and not any(s["step"] == "provider_terminal" for s in steps)
+        ):
+            refs_now = run.get("result_refs") or {}
+            git_info = normalize_cursor_git_branches(refs_now)
+            claimed = (
+                refs_now.get("claimed_delivery")
+                if isinstance(refs_now.get("claimed_delivery"), dict)
+                else {
+                    "branch": git_info.get("branch"),
+                    "pr_url": git_info.get("pr_url"),
+                    "repo_url": git_info.get("repo_url"),
+                    "delivery_verified": False,
+                    "source": "run.git",
+                }
+            )
+            blocked = True
+            hold = True
+            fail = True
+            skip_approval = True
+            steps.append(
+                _step(
+                    "provider_terminal",
+                    "FAIL",
+                    detail={
+                        "normalized_status": "FAILED",
+                        "provider_run_id": run.get("provider_run_id"),
+                        "agent_id": refs_now.get("agent_id"),
+                        "claimed_delivery": claimed,
+                        "delivery_verified": False,
+                        "run_result_text": refs_now.get("run_result_text"),
+                        "run_error": refs_now.get("run_error"),
+                        "note": "terminal_on_create_no_delivery_verify",
+                    },
+                )
+            )
+
+        if run_id and run and run.get("state") not in {"BLOCKED", "HOLD", "FAILED"}:
+            # Official API returns CREATING without git; poll until terminal first.
+            try:
+                run = _poll_provider_until_terminal(
+                    provider,
+                    run_store,
+                    str(run_id),
+                    poll_interval_seconds=max(poll_interval, 0.0),
+                    max_polls=max_polls,
+                    sleep_fn=sleep_fn,
+                )
+                steps.append(
+                    _step(
+                        "provider_poll",
+                        "PASS",
+                        detail={
+                            "provider_run_id": run.get("provider_run_id"),
+                            "result_refs_agent_id": (run.get("result_refs") or {}).get(
+                                "agent_id"
+                            ),
+                            "normalized_hint": "terminal_reached",
+                        },
+                    )
+                )
+            except PilotError as exc:
+                blocked = True
+                steps.append(
+                    _step(
+                        "provider_poll",
+                        "BLOCKED",
+                        detail={"code": exc.code, "message": exc.message},
+                    )
+                )
+                skip_approval = True
+                hold = True
+                run = run_store.get(str(run_id)) or run
+
+            # Bind GitHub delivery from Cursor git refs after terminal poll.
+            git_info = normalize_cursor_git_branches(
+                (run or {}).get("result_refs") if run else None
+            )
+            pr_num = pr_number_from_url(
+                git_info.get("pr_url")
+                if isinstance(git_info.get("pr_url"), str)
+                else None
+            )
+            branch = git_info.get("branch")
+            if not isinstance(branch, str):
+                branch = None
+            # autoCreatePR: never fall back to fixture placeholder PR/branch.
+            if not auto_create_pr:
+                if pr_num is None and run:
+                    expected = run.get("expected_delivery") or {}
+                    raw_pr = expected.get("target_pr") or (run.get("route") or {}).get(
+                        "target_pr"
+                    )
+                    if isinstance(raw_pr, int) and not isinstance(raw_pr, bool):
+                        pr_num = raw_pr
+                if branch is None and run:
+                    branch = (run.get("expected_delivery") or {}).get(
+                        "target_branch"
+                    ) or (run.get("route") or {}).get("target_branch")
+                    if not isinstance(branch, str):
+                        branch = None
+
+            if run_id and run and run.get("state") not in {"BLOCKED", "HOLD", "FAILED"}:
+                provider_norm = str(run.get("last_provider_status") or "")
+                if provider_norm in {"FAILED", "CANCELLED"}:
+                    blocked = provider_norm == "FAILED"
+                    hold = True
+                    fail = provider_norm == "FAILED"
+                    refs_now = (run.get("result_refs") or {}) if run else {}
+                    claimed = (
+                        refs_now.get("claimed_delivery")
+                        if isinstance(refs_now.get("claimed_delivery"), dict)
+                        else {
+                            "branch": git_info.get("branch"),
+                            "pr_url": git_info.get("pr_url"),
+                            "repo_url": git_info.get("repo_url"),
+                            "delivery_verified": False,
+                            "source": "run.git",
+                        }
+                    )
+                    steps.append(
+                        _step(
+                            "provider_terminal",
+                            "FAIL" if provider_norm == "FAILED" else "HOLD",
+                            detail={
+                                "normalized_status": provider_norm,
+                                "provider_run_id": run.get("provider_run_id"),
+                                "agent_id": refs_now.get("agent_id"),
+                                "claimed_delivery": claimed,
+                                "delivery_verified": False,
+                                "run_result_text": refs_now.get("run_result_text"),
+                                "run_error": refs_now.get("run_error"),
+                                "stream_error": refs_now.get("stream_error"),
+                                "duration_ms": refs_now.get("duration_ms"),
+                                "raw_status": refs_now.get("raw_status"),
+                                "note": "no_delivery_verify_on_provider_failure",
+                            },
+                        )
+                    )
+                    skip_approval = True
+                else:
+                    try:
+                        delivery = verify_github_delivery(
+                            expected_repo=expected_repo,
+                            pr_number=pr_num,
+                            branch=branch if isinstance(branch, str) else None,
+                            expected_paths_prefix=allowlist or None,
+                            allow_empty=bool(manifest.get("delivery_allow_empty")),
+                            runner=gh_runner,
+                        )
+                    except DispatchError as exc:
+                        from tools.agent_control.delivery_verify import (
+                            DeliveryVerification,
+                        )
+
+                        delivery = DeliveryVerification(
+                            ok=False,
+                            head_sha=None,
+                            base_sha=None,
+                            pr_number=pr_num,
+                            branch=branch if isinstance(branch, str) else None,
+                            repo=expected_repo,
+                            changed_files=[],
+                            code=exc.code,
+                            message=exc.message,
+                        )
+                    if not delivery.ok:
+                        blocked = True
+                        steps.append(
+                            _step(
+                                "delivery_verify",
+                                "BLOCKED",
+                                detail={
+                                    "code": delivery.code,
+                                    "message": delivery.message,
+                                    "changed_files": delivery.changed_files,
+                                },
+                            )
+                        )
+                        skip_approval = True
+                        hold = True
+                    else:
+                        if delivery.head_sha:
+                            head_sha = delivery.head_sha
+                        if delivery.base_sha:
+                            base_sha = delivery.base_sha
+                        expected_status = (run.get("expected_delivery") or {}).get(
+                            "expected_status"
+                        ) or "DONE_SLICE_ADDED_TO_BATCH_PR"
+                        _inject_delivery_receipt(
+                            run_store,
+                            str(run_id),
+                            target_pr=delivery.pr_number or pr_num,
+                            target_branch=(
+                                delivery.branch
+                                if isinstance(delivery.branch, str)
+                                else branch
+                            ),
+                            commit=str(delivery.head_sha),
+                            expected_status=str(expected_status),
+                        )
+                        # Mark verified only after live GitHub evidence + head SHA.
+                        run_after = run_store.get(str(run_id)) or run
+                        refs_ok = dict(run_after.get("result_refs") or {})
+                        refs_ok["delivery_verified"] = True
+                        refs_ok["verified_delivery"] = {
+                            "branch": delivery.branch,
+                            "pr_number": delivery.pr_number,
+                            "head_sha": delivery.head_sha,
+                            "repo": delivery.repo,
+                        }
+                        rev_ok = int(run_after.get("revision") or 0)
+                        run_after["result_refs"] = sanitize_result_refs(refs_ok)
+                        run_after["revision"] = rev_ok + 1
+                        run_store.update_cas(str(run_id), rev_ok, run_after)
+                        run = run_store.get(str(run_id)) or run_after
+                        steps.append(
+                            _step(
+                                "delivery_verify",
+                                "PASS",
+                                detail={
+                                    "head_sha": delivery.head_sha,
+                                    "pr_number": delivery.pr_number,
+                                    "branch": delivery.branch,
+                                    "changed_files": delivery.changed_files,
+                                    "delivery_verified": True,
+                                },
+                            )
+                        )
+
+                        for _ in range(8):
+                            run = watch_run(
+                                str(run_id),
+                                run_store,
+                                provider=provider,
+                                clock=clock,
+                                auto_advance_success=False,
+                            )
+                            if run.get("state") in {
+                                "AWAITING_APPROVAL",
+                                "PASS",
+                                "HOLD",
+                                "BLOCKED",
+                                "FAILED",
+                                "CANCELLED",
+                            }:
+                                break
+                        terminal = run.get("state")
+                        if terminal == "AWAITING_APPROVAL":
+                            hold = True
+                            steps.append(
+                                _step(
+                                    "provider_watch",
+                                    "HOLD",
+                                    detail={
+                                        "state": terminal,
+                                        "provider_run_id": run.get("provider_run_id"),
+                                        "note": "awaiting_approval_operator_handoff",
+                                    },
+                                )
+                            )
+                        elif terminal == "PASS":
+                            steps.append(
+                                _step(
+                                    "provider_watch",
+                                    "PASS",
+                                    detail={
+                                        "state": terminal,
+                                        "provider_run_id": run.get("provider_run_id"),
+                                    },
+                                )
+                            )
+                        elif terminal in {"HOLD", "BLOCKED"}:
+                            hold = terminal == "HOLD"
+                            blocked = terminal == "BLOCKED"
+                            steps.append(
+                                _step(
+                                    "provider_watch",
+                                    terminal,
+                                    detail={
+                                        "state": terminal,
+                                        "terminal_code": run.get("terminal_code"),
+                                    },
+                                )
+                            )
+                        elif terminal == "FAILED":
+                            fail = True
+                            steps.append(
+                                _step(
+                                    "provider_watch",
+                                    "FAIL",
+                                    detail={"state": terminal},
+                                )
+                            )
+                        else:
+                            unknown = True
+                            steps.append(
+                                _step(
+                                    "provider_watch",
+                                    "UNKNOWN",
+                                    detail={"state": terminal},
+                                )
+                            )
+
+    except DispatchError as exc:
+        if exc.code in {
+            "DISPATCH_PROVIDER_MALFORMED",
+            "DISPATCH_DELIVERY_RECEIPT_MISSING",
+            "DISPATCH_DELIVERY_RECEIPT_MISMATCH",
+        }:
+            fail = True
+            steps.append(
+                _step(
+                    "provider_dispatch",
+                    "FAIL",
+                    detail={"code": exc.code, "message": exc.message},
+                )
+            )
+        else:
+            blocked = True
+            steps.append(
+                _step(
+                    "preflight_dispatch",
+                    "BLOCKED",
+                    detail={"code": exc.code, "message": exc.message},
+                )
+            )
+    except PilotError:
+        raise
+    except Exception as exc:  # noqa: BLE001
+        fail = True
+        steps.append(_step("preflight_dispatch", "FAIL", detail={"error": str(exc)}))
+
+    provider_calls = int(getattr(provider, "dispatch_calls", 0) or 0)
+
+    # Evidence: HOLD for non-terminal AWAITING_APPROVAL is OK.
+    if not skip_evidence and run_id and run_store.get(run_id) is not None:
+        try:
+            emitted = emit_evidence(run_id, run_store)
+            bundle = emitted["bundle"]
+            verified = verify_bundle(bundle)
+            evidence_ok = bool(verified.get("ok"))
+            ref = {
+                "evidence_id": bundle.get("evidence_id"),
+                "bundle_digest": bundle.get("bundle_digest"),
+                "verdict": emitted.get("verdict"),
+            }
+            evidence_refs.append(ref)
+            if store_path is not None:
+                store = EvidenceJsonlStore(store_path)
+                store.append_idempotent(bundle)
+                verify_store(store_path)
+            verdict = emitted.get("verdict")
+            step_status = "PASS" if evidence_ok and verdict == "PASS" else "HOLD"
+            if verdict == "BLOCKED":
+                step_status = "BLOCKED"
+                blocked = True
+            elif verdict == "HOLD":
+                hold = True
+            elif verdict == "UNKNOWN":
+                unknown = True
+                evidence_ok = False
+            steps.append(_step("run_evidence", step_status, detail=ref))
+        except EvidenceError as exc:
+            hold = True
+            evidence_ok = False
+            steps.append(
+                _step(
+                    "run_evidence",
+                    "HOLD",
+                    detail={"code": exc.code, "message": exc.message},
+                )
+            )
+        except Exception as exc:  # noqa: BLE001
+            fail = True
+            steps.append(_step("run_evidence", "FAIL", detail={"error": str(exc)}))
+    elif skip_evidence:
+        steps.append(_step("run_evidence", "SKIP", detail={"reason": "skip_evidence"}))
+
+    # Approval — reuse mock path semantics with bound head from delivery verify.
+    if not skip_approval and not blocked:
+        try:
+            snap_path = manifest.get("approval_snapshot_path")
+            if not snap_path:
+                raise PilotError(
+                    "PILOT_APPROVAL_SNAPSHOT_MISSING",
+                    "approval_snapshot_path required unless skip_approval",
+                )
+            snapshot = _load_json(_resolve(root, snap_path))
+            if not isinstance(snapshot, dict):
+                raise PilotError(
+                    "PILOT_APPROVAL_SNAPSHOT_INVALID", "snapshot must be object"
+                )
+            pr = dict(snapshot.get("pr") or {})
+            snap_head = pr.get("head_sha")
+            if manifest.get("force_approval_head_from_manifest", True):
+                pr["head_sha"] = head_sha
+                for check in snapshot.get("checks") or []:
+                    if isinstance(check, dict) and check.get("source_sha") == snap_head:
+                        check["source_sha"] = head_sha
+                snapshot["pr"] = pr
+            paths = default_repo_paths(root)
+            if manifest.get("approval_baseline_path"):
+                paths = RepoPaths(
+                    repo_root=paths.repo_root,
+                    policy_path=paths.policy_path,
+                    prompt_path=paths.prompt_path,
+                    baseline_path=_resolve(root, manifest["approval_baseline_path"]),
+                    schema_path=paths.schema_path,
+                )
+            envelope = build_approval_context(snapshot, paths)
+            approval_digest = envelope.get("context_digest")
+            approval_rec = envelope.get("recommendation")
+            appr_head = (envelope.get("subject") or {}).get("head_sha")
+            reason_codes = list(envelope.get("reason_codes") or [])
+            if approval_rec == "UNKNOWN":
+                unknown = True
+            step_status = "PASS"
+            if approval_rec != "APPROVE_RECOMMENDED":
+                step_status = "HOLD"
+                hold = True
+            steps.append(
+                _step(
+                    "approval_context",
+                    step_status,
+                    detail={
+                        "recommendation": approval_rec,
+                        "context_digest": approval_digest,
+                        "subject_head_sha": appr_head,
+                        "pilot_head_sha": head_sha,
+                        "reason_codes": reason_codes,
+                        "authority_limits": envelope.get("authority_limits"),
+                    },
+                )
+            )
+            limits = envelope.get("authority_limits") or {}
+            for key, val in APPROVAL_AUTHORITY.items():
+                if limits.get(key) is not val:
+                    fail = True
+                    steps.append(
+                        _step(
+                            "authority_boundary",
+                            "FAIL",
+                            detail={"key": key, "value": limits.get(key)},
+                        )
+                    )
+                    break
+            else:
+                steps.append(
+                    _step(
+                        "authority_boundary",
+                        "PASS",
+                        detail={"authority_limits": AUTHORITY_LIMITS},
+                    )
+                )
+        except Exception as exc:  # noqa: BLE001
+            code = getattr(exc, "code", "PILOT_APPROVAL_ERROR")
+            if code in {"APPROVAL_SECRET_DETECTED", "REASON_SECRET_DETECTED"}:
+                blocked = True
+            else:
+                hold = True
+            steps.append(
+                _step(
+                    "approval_context",
+                    "BLOCKED" if blocked else "HOLD",
+                    detail={"code": code, "error": str(exc)},
+                )
+            )
+    elif skip_approval:
+        steps.append(
+            _step("approval_context", "SKIP", detail={"reason": "skip_approval"})
+        )
+        if blocked:
+            steps.append(
+                _step(
+                    "authority_boundary",
+                    "PASS",
+                    detail={
+                        "authority_limits": AUTHORITY_LIMITS,
+                        "provider_calls": provider_calls,
+                    },
+                )
+            )
+
+    input_digests = {
+        "contract_digest": contract_digest,
+        "approval_context_digest": approval_digest,
+    }
+    return _finalize(
+        manifest,
+        steps,
+        run_id,
+        attempt,
+        head_sha,
+        base_sha,
+        input_digests,
+        provider_calls,
+        evidence_refs,
+        approval_digest,
+        approval_rec,
+        blocked,
+        hold,
+        fail,
+        unknown,
+        evidence_ok,
+        limitations,
+        contract_digest,
+    )
+
+
 def _finalize(
     manifest: dict[str, Any],
     steps: list[dict[str, Any]],
@@ -861,6 +1902,17 @@ def run_pilot_from_path(
     *,
     repo_root: Path | None = None,
     out_path: Path | None = None,
+    provider_id: str = "mock",
+    human_go_live_cursor: bool = False,
+    resume_run_id: str | None = None,
+    state_path: Path | None = None,
+    http_transport: HttpTransport | None = None,
+    sse_transport: SseTransport | None = None,
+    gh_runner: GhRunner | None = None,
+    auto_create_pr: bool = False,
+    environment_attestation_path: Path | None = None,
+    secrets_dir: Path | None = None,
+    credential_env: dict[str, str] | None = None,
 ) -> dict[str, Any]:
     root = repo_root or REPO_ROOT
     manifest = load_manifest(manifest_path, repo_root=root)
@@ -868,7 +1920,22 @@ def run_pilot_from_path(
     if manifest.get("evidence_store_path"):
         store_path = _resolve(root, manifest["evidence_store_path"])
         store_path.parent.mkdir(parents=True, exist_ok=True)
-    report = run_pilot(manifest, repo_root=root, store_path=store_path)
+    report = run_pilot(
+        manifest,
+        repo_root=root,
+        store_path=store_path,
+        provider_id=provider_id,
+        human_go_live_cursor=human_go_live_cursor,
+        resume_run_id=resume_run_id,
+        state_path=state_path,
+        http_transport=http_transport,
+        sse_transport=sse_transport,
+        gh_runner=gh_runner,
+        auto_create_pr=auto_create_pr,
+        environment_attestation_path=environment_attestation_path,
+        secrets_dir=secrets_dir,
+        credential_env=credential_env,
+    )
     verify_report(report)
     if out_path is not None:
         out_path.parent.mkdir(parents=True, exist_ok=True)
