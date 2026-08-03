@@ -10,7 +10,6 @@ from __future__ import annotations
 import hashlib
 import json
 import re
-import time
 from copy import deepcopy
 from datetime import datetime
 from pathlib import Path
@@ -63,31 +62,6 @@ _PII_KEYS = re.compile(
     r"(?i)^(useremail|userfirstname|userlastname|email|first_name|last_name|"
     r"userid|apikeyname)$"
 )
-
-# #region agent log
-_DEBUG_LOG = Path(__file__).resolve().parents[2] / "debug-45fdf8.log"
-
-
-def _agent_dbg(
-    hypothesis_id: str, location: str, message: str, data: dict[str, Any]
-) -> None:
-    try:
-        payload = {
-            "sessionId": "45fdf8",
-            "runId": "support-harden",
-            "hypothesisId": hypothesis_id,
-            "location": location,
-            "message": message,
-            "data": data,
-            "timestamp": int(time.time() * 1000),
-        }
-        with _DEBUG_LOG.open("a", encoding="utf-8") as fh:
-            fh.write(json.dumps(payload, sort_keys=True) + "\n")
-    except OSError:
-        pass
-
-
-# #endregion
 
 
 class SupportBundleError(DispatchError):
@@ -744,28 +718,6 @@ def build_support_bundle(
         "support_request_ready": True,
         "external_send_allowed": False,
     }
-
-    # #region agent log
-    dumped = json.dumps(bundle)
-    _agent_dbg(
-        "H_privacy",
-        "cursor_support_bundle.py:build_support_bundle",
-        "privacy_scan_after_build",
-        {
-            "has_userId": '"userId"' in dumped or "363812814" in dumped,
-            "has_apiKeyName": "apiKeyName" in dumped or "api.CDB" in dumped,
-            "has_usageUuid": "usageUuid" in dumped,
-            "has_cost": '"cost"' in dumped or "chargedCents" in dumped,
-            "has_sample_brain": "sample-brain" in dumped,
-            "has_gpt_mcp": "gpt-mcp-server" in dumped,
-            "has_redacted_states": "redacted_states" in dumped,
-            "has_datetime_now_import_path": False,
-            "primary": rc["primary_classification"],
-            "posts": bundle["safety"]["cursor_http_posts"],
-            "third_run": bundle["safety"]["third_run_started"],
-        },
-    )
-    # #endregion
 
     assert_no_secrets(bundle)
     return bundle
