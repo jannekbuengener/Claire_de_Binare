@@ -1,4 +1,4 @@
-#Requires -Version 5.1
+﻿#Requires -Version 5.1
 <#
 .SYNOPSIS
   Install/configure dedicated loopback OpenSSH + Tailscale Serve bridge (#4289).
@@ -8,7 +8,7 @@
   (live evidence 2026-08-03). Architecture:
 
   - sshd-hermes listens ONLY on 127.0.0.1:22 (and ::1).
-  - Tailscale Serve raw TCP forwarder: tailnet:22 → tcp://127.0.0.1:22 (--bg).
+  - Tailscale Serve raw TCP forwarder: tailnet:22 -> tcp://127.0.0.1:22 (--bg).
   - No inbound Windows Firewall allow for sshd (Serve is the only remote path).
   - Funnel is forbidden and must stay off.
   - Default system sshd Disabled; public OpenSSH-Server-In-TCP Disabled.
@@ -213,7 +213,7 @@ function Enable-TailscaleServeTcp {
     if ($fwd -notmatch '127\.0\.0\.1:' -and $fwd -notmatch '\[::1\]:') {
         throw "Serve TCPForward must target loopback (got redacted length=$($fwd.Length))"
     }
-    Write-Host "Tailscale Serve TCP/$Port → loopback READY (Funnel forbidden)"
+    Write-Host "Tailscale Serve TCP/$Port -> loopback READY (Funnel forbidden)"
 }
 
 function Ensure-AuthorizedKeysDir {

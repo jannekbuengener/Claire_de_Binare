@@ -1,4 +1,4 @@
-#Requires -Version 5.1
+﻿#Requires -Version 5.1
 <#
 .SYNOPSIS
   Create dedicated non-admin Windows user + Hermes workspace (#4289).
@@ -154,12 +154,12 @@ if ($bad) {
 }
 
 # Explicit deny: sibling Dev worktrees + personal profile trees (top-level only;
-# no deep /T recursion — that hangs on large trees). Fail-closed for Hermes.
+# no deep /T recursion - that hangs on large trees). Fail-closed for Hermes.
 function Set-HermesDenyTopLevel {
     param([string]$Path, [string]$UserName)
     if (-not (Test-Path -LiteralPath $Path)) { return }
     $acct = "$env:COMPUTERNAME\$UserName"
-    # (OI)(CI)(DENY)(F) on the directory itself — no /T
+    # (OI)(CI)(DENY)(F) on the directory itself - no /T
     & icacls.exe $Path /deny "${acct}:(OI)(CI)(F)" /C /Q *>$null
     Write-Host "Deny $UserName on $Path (top-level)"
 }
@@ -174,5 +174,5 @@ foreach ($dp in $denyPaths) {
 }
 
 Write-Host "Workspace ready: $WorkspaceRoot (user=$HermesUser rights=$rights)"
-Write-Host 'Next: .\infrastructure\hermes\windows\setup-sshd-hermes.ps1 (Serve→loopback sshd-hermes).'
+Write-Host 'Next: .\infrastructure\hermes\windows\setup-sshd-hermes.ps1 (Serve->loopback sshd-hermes).'
 Write-Host 'Kill-switch: infrastructure/hermes/windows/kill-switch.ps1 -Action Disable'

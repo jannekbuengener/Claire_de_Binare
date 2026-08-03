@@ -1,17 +1,17 @@
-#Requires -Version 5.1
+﻿#Requires -Version 5.1
 <#
 .SYNOPSIS
   Immediate Windows bridge kill-switch for Hermes (#4289 Phase B1).
 
 .DESCRIPTION
-  Architecture (Serve bridge — host TCP after Wintun does not SYN-ACK):
-    Tailscale Serve TCP/22 → 127.0.0.1:22 ← sshd-hermes (loopback-only)
+  Architecture (Serve bridge - host TCP after Wintun does not SYN-ACK):
+    Tailscale Serve TCP/22 -> 127.0.0.1:22 <- sshd-hermes (loopback-only)
 
   Disable:
     1) Remove Tailscale Serve TCP mapping for port 22
     2) Stop sshd-hermes
     3) StartupType Disabled
-    4) State DISABLED → WORKSTATION_UNAVAILABLE
+    4) State DISABLED -> WORKSTATION_UNAVAILABLE
     Remote TCP/SSH must fail immediately. Funnel must never be enabled.
 
   Enable (ordered, fail-closed):
@@ -23,9 +23,9 @@
        (optional remote SSH proof is operator-side; script stays fail-closed)
 
   Status:
-    Requires ALL of: Running sshd, Serve TCP/22 → loopback, local listener.
-    Any missing/contradictory condition → UNAVAILABLE.
-    Missing/empty/corrupt state file → UNAVAILABLE.
+    Requires ALL of: Running sshd, Serve TCP/22 -> loopback, local listener.
+    Any missing/contradictory condition -> UNAVAILABLE.
+    Missing/empty/corrupt state file -> UNAVAILABLE.
 
   Docs gate (Tailscale 1.98+):
     enable:  tailscale serve --bg --tcp=22 tcp://127.0.0.1:22
@@ -177,7 +177,7 @@ function Write-MachineStatus {
 
 function Resolve-LiveBridgeHealth {
     # Returns ENABLED only when service Running AND serve loopback AND local listener.
-    # Contradictions → UNAVAILABLE.
+    # Contradictions -> UNAVAILABLE.
     $svc = Get-Service -Name $ServiceName -ErrorAction SilentlyContinue
     if (-not $svc) {
         return @{
@@ -260,7 +260,7 @@ switch ($Action) {
     'Disable' {
         # 1) Clear Serve first so remote TCP fails immediately.
         # 2) Stop/disable sshd-hermes (needs elevation).
-        # Incomplete stop → UNAVAILABLE (fail-closed), never claim DISABLED.
+        # Incomplete stop -> UNAVAILABLE (fail-closed), never claim DISABLED.
         Disable-ServeTcpMapping
         $stopOk = $true
         try {
@@ -288,12 +288,12 @@ switch ($Action) {
             Write-MachineStatus -ServiceStatus "$($svcNow.Status)" `
                 -KillSwitch 'UNAVAILABLE' -Meaning 'WORKSTATION_UNAVAILABLE' `
                 -ServePresent:$serve.Present -LoopbackOk:$loop
-            Write-Host 'Kill-switch PARTIAL→UNAVAILABLE (Serve cleared; elevation needed for full Disable)'
+            Write-Host 'Kill-switch PARTIAL->UNAVAILABLE (Serve cleared; elevation needed for full Disable)'
             exit 3
         }
     }
     'Enable' {
-        # Ordered: sshd → loopback health → Serve → verify → ENABLED state.
+        # Ordered: sshd -> loopback health -> Serve -> verify -> ENABLED state.
         Set-Service -Name $ServiceName -StartupType Automatic
         Start-Service -Name $ServiceName
         Start-Sleep -Seconds 1
