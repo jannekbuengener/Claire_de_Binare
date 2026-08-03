@@ -1,0 +1,91 @@
+{
+  "schema_note": "Redacted recorded dual-run state for #4258 Run2. No auth headers, no tokens, no full prompt.",
+  "cdb_run_id": "adr-d97cf406ff9d486d",
+  "evidence_id": "are-48dbdce0fbaf7ff5654b23f4",
+  "agent_id": "bc-767ef75f-c948-5049-9bc2-0534fd6cf46f",
+  "run_id": "run-c2c3898b-af9e-4f73-ad91-830f600561b9",
+  "claimed_branch": "cloud-cursor/probe-4258-documentation-69b3",
+  "agent": {
+    "id": "bc-767ef75f-c948-5049-9bc2-0534fd6cf46f",
+    "name": "Probe 4258 documentation",
+    "status": "ACTIVE",
+    "env": { "type": "cloud" },
+    "repos": [
+      { "url": "https://github.com/jannekbuengener/Claire_de_Binare" }
+    ],
+    "autoCreatePR": true,
+    "workOnCurrentBranch": false,
+    "createdAt": "2026-08-03T02:29:44.901Z",
+    "updatedAt": "2026-08-03T02:29:52.742Z",
+    "latestRunId": "run-c2c3898b-af9e-4f73-ad91-830f600561b9"
+  },
+  "run": {
+    "id": "run-c2c3898b-af9e-4f73-ad91-830f600561b9",
+    "agentId": "bc-767ef75f-c948-5049-9bc2-0534fd6cf46f",
+    "status": "ERROR",
+    "createdAt": "2026-08-03T02:29:44.901Z",
+    "updatedAt": "2026-08-03T02:29:52.402Z",
+    "git": {
+      "branches": [
+        {
+          "repoUrl": "github.com/jannekbuengener/Claire_de_Binare",
+          "branch": "cloud-cursor/probe-4258-documentation-69b3"
+        }
+      ]
+    }
+  },
+  "usage": {
+    "totalUsage": {
+      "inputTokens": 625,
+      "outputTokens": 971,
+      "cacheWriteTokens": 0,
+      "cacheReadTokens": 0,
+      "totalTokens": 1596
+    },
+    "cost": { "rawCostCents": 0.2615, "chargedCents": 0.2615 },
+    "runs": [
+      {
+        "id": "run-c2c3898b-af9e-4f73-ad91-830f600561b9",
+        "usageUuid": "1f9bc746-2008-520a-8841-4f19fcebfbf8",
+        "usage": {
+          "inputTokens": 625,
+          "outputTokens": 971,
+          "cacheWriteTokens": 0,
+          "cacheReadTokens": 0,
+          "totalTokens": 1596
+        }
+      }
+    ]
+  },
+  "artifacts": { "items": [] },
+  "stream_events": [
+    {
+      "event": "status",
+      "data": {
+        "runId": "run-c2c3898b-af9e-4f73-ad91-830f600561b9",
+        "status": "ERROR"
+      }
+    },
+    {
+      "event": "result",
+      "data": {
+        "runId": "run-c2c3898b-af9e-4f73-ad91-830f600561b9",
+        "status": "ERROR",
+        "git": {
+          "branches": [
+            {
+              "repoUrl": "github.com/jannekbuengener/Claire_de_Binare",
+              "branch": "cloud-cursor/probe-4258-documentation-69b3"
+            }
+          ]
+        }
+      }
+    },
+    { "event": "done", "data": {} }
+  ],
+  "github_branch_lookup": { "status": 404, "message": "Not Found" },
+  "notes": [
+    "Second ERROR run with identical stream signature.",
+    "Evidence digest (external): sha256:9d6854c8040308a56bc379e8890605228cf5dd5f66003217e21b22a103c064da"
+  ]
+}

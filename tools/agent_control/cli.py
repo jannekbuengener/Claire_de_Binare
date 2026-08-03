@@ -19,6 +19,8 @@ Examples:
   python -m tools.agent_control pilot run --manifest <PATH> [--out <REPORT>]
   python -m tools.agent_control pilot verify --report <PATH>
   python -m tools.agent_control pilot cursor-preflight --repository owner/name
+  python -m tools.agent_control pilot cursor-support-bundle \\
+      --state-run1 <PATH> --state-run2 <PATH> --output <DIR>
 """
 
 from __future__ import annotations
@@ -651,6 +653,36 @@ def cmd_pilot_cursor_preflight(args: argparse.Namespace) -> int:
     return EXIT_OK if report.get("ready_for_live_run") is True else EXIT_HOLD
 
 
+def cmd_pilot_cursor_support_bundle(args: argparse.Namespace) -> int:
+    """Dual-run Cursor ERROR support bundle — recorded states; zero POSTs."""
+    from tools.agent_control.cursor_support_bundle import (
+        SupportBundleError,
+        run_support_bundle_from_states,
+    )
+    from tools.agent_control.paths import REPO_ROOT
+
+    root = Path(args.repo_root) if args.repo_root else REPO_ROOT
+    tracked = Path(args.tracked_summary) if args.tracked_summary else None
+    shared = Path(args.shared) if args.shared else None
+    try:
+        result = run_support_bundle_from_states(
+            state_run1_path=Path(args.state_run1),
+            state_run2_path=Path(args.state_run2),
+            shared_path=shared,
+            output_dir=Path(args.output),
+            repo_root=root,
+            write_tracked_summary=tracked,
+        )
+    except SupportBundleError as exc:
+        print(f"INVALID {exc.code}: {exc.message}", file=sys.stderr)
+        return EXIT_ERROR
+    except (OSError, json.JSONDecodeError) as exc:
+        print(f"INVALID BUNDLE_IO: {exc}", file=sys.stderr)
+        return EXIT_ERROR
+    _print_json(result)
+    return EXIT_OK
+
+
 def _approval_exit_code(recommendation: str) -> int:
     if recommendation == "APPROVE_RECOMMENDED":
         return EXIT_OK
@@ -1152,6 +1184,33 @@ def build_parser() -> argparse.ArgumentParser:
         default="run-d4d336e2-f7d5-4ab6-bbd8-1af94f9a094b",
     )
     p_pilot_pf.set_defaults(func=cmd_pilot_cursor_preflight)
+
+    p_pilot_sb = pilot_sub.add_parser(
+        "cursor-support-bundle",
+        help=(
+            "Dual-run Cursor ERROR support bundle (recorded states; zero POSTs; "
+            "Refs #4258)"
+        ),
+    )
+    p_pilot_sb.add_argument("--state-run1", required=True)
+    p_pilot_sb.add_argument("--state-run2", required=True)
+    p_pilot_sb.add_argument(
+        "--shared",
+        default=None,
+        help="Optional shared metadata JSON (/v1/me, repos listing flags)",
+    )
+    p_pilot_sb.add_argument(
+        "--output",
+        required=True,
+        help="Gitignored output directory for redacted bundle + support draft",
+    )
+    p_pilot_sb.add_argument(
+        "--tracked-summary",
+        default=None,
+        help="Optional tracked markdown summary path under docs/evidence/",
+    )
+    p_pilot_sb.add_argument("--repo-root", default=None)
+    p_pilot_sb.set_defaults(func=cmd_pilot_cursor_support_bundle)
 
     return parser
 
