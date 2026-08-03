@@ -4,6 +4,7 @@ from __future__ import annotations
 
 import hashlib
 import re
+import uuid
 from dataclasses import dataclass, field
 from typing import Any, Callable
 from urllib.parse import urlparse
@@ -21,7 +22,11 @@ HttpTransport = Callable[..., Any]
 SseTransport = Callable[..., Any]
 
 API_BASE = "https://api.cursor.com"
-_BC_ID = re.compile(r"^bc-[A-Za-z0-9_-]+$")
+_BC_ID = re.compile(
+    r"^bc-(?:[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-"
+    r"[0-9a-fA-F]{12}|[A-Za-z0-9_-]+-[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-"
+    r"[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12})$"
+)
 
 
 @dataclass
@@ -36,10 +41,8 @@ class _CloudState:
 def _stable_agent_id(request: ProviderRequest) -> str:
     """Client-supplied idempotent agent id (official ``bc-<uuid>`` shape)."""
     seed = f"{request.contract_digest}|{request.idempotency_key or request.run_id}"
-    digest = hashlib.sha256(seed.encode("utf-8")).hexdigest()
-    # Official docs show bc- + UUID; derive a stable UUID-shaped id (no randomness).
-    u = digest[:32]
-    return f"bc-{u[:8]}-{u[8:12]}-{u[12:16]}-{u[16:20]}-{u[20:32]}"
+    # uuid5 yields a parseable UUID; raw hex slices can fail API UUID validation.
+    return f"bc-{uuid.uuid5(uuid.NAMESPACE_URL, seed)}"
 
 
 class CursorCloudApiDriver:
@@ -94,10 +97,8 @@ class CursorCloudApiDriver:
                 "DISPATCH_PROVIDER_RUN_NOT_FOUND",
                 "rehydrate requires provider_run_id and agent_id",
             )
-        if not _BC_ID.match(agent_id) and not agent_id.startswith("bc-"):
-            # Allow test ids like bc-1
-            if not agent_id.startswith("bc-"):
-                raise DispatchError("PROVIDER_AGENT_ID_INVALID", agent_id)
+        if not (_BC_ID.match(agent_id) or agent_id.startswith("bc-")):
+            raise DispatchError("PROVIDER_AGENT_ID_INVALID", agent_id)
         state = self._agents.get(agent_id) or _CloudState(agent_id=agent_id)
         if provider_run_id not in state.runs:
             state.runs[provider_run_id] = {
@@ -206,6 +207,42 @@ class CursorCloudApiDriver:
             human_go_live=human_go,
         )
         agent_id_client = profile.get("agentId") or _stable_agent_id(request)
+        if not _BC_ID.match(str(agent_id_client)) and not str(
+            agent_id_client
+        ).startswith("bc-"):
+            raise DispatchError("PROVIDER_AGENT_ID_INVALID", str(agent_id_client))
+        # #region agent log
+        try:
+            import json
+            import time
+            from pathlib import Path
+
+            _dbg = Path(__file__).resolve().parents[3] / "debug-0f4913.log"
+            with _dbg.open("a", encoding="utf-8") as handle:
+                handle.write(
+                    json.dumps(
+                        {
+                            "sessionId": "0f4913",
+                            "runId": "live-create",
+                            "hypothesisId": "H2",
+                            "location": "cursor_cloud_api.py:dispatch",
+                            "message": "agentId_shape",
+                            "data": {
+                                "agent_id_len": len(str(agent_id_client)),
+                                "agent_id_prefix": str(agent_id_client)[:3],
+                                "has_uuid_dashes": str(agent_id_client).count("-") >= 5,
+                                "regex_ok": bool(_BC_ID.match(str(agent_id_client))),
+                                "auto_create": bool(auto_create),
+                            },
+                            "timestamp": int(time.time() * 1000),
+                        },
+                        separators=(",", ":"),
+                    )
+                    + "\n"
+                )
+        except OSError:
+            pass
+        # #endregion
         body: dict[str, Any] = {
             "prompt": {"text": request.prompt_text},
             "autoCreatePR": bool(auto_create),

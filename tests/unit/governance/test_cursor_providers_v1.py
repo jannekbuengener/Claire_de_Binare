@@ -231,6 +231,26 @@ def test_cli_force_and_write_blocked() -> None:
 
 
 @pytest.mark.unit
+def test_stable_agent_id_is_bc_uuid() -> None:
+    from tools.agent_control.providers.cursor_cloud_api import (
+        _BC_ID,
+        _stable_agent_id,
+    )
+
+    req = ProviderRequest(
+        run_id="adr-agentid",
+        contract_id="aec-x",
+        contract_digest="sha256:" + "4" * 64,
+        agent_id="a",
+        prompt_text=_prompt_text(),
+    )
+    aid = _stable_agent_id(req)
+    assert aid.startswith("bc-")
+    assert _BC_ID.match(aid)
+    assert _stable_agent_id(req) == aid
+
+
+@pytest.mark.unit
 def test_cloud_fake_http_sse_and_guards() -> None:
     posts: list[str] = []
 
