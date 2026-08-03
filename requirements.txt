@@ -25,5 +25,5 @@ python-dotenv==1.2.2
 python-json-logger==4.1.0
 numpy>=1.26.0
 prometheus_client==0.26.0
-redis==8.0.1
+redis==8.1.0
 requests==2.34.2
