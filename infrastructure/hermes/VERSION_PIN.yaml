@@ -1,23 +1,29 @@
-# Hermes runtime version pin for Hetzner bootstrap (#4289).
+# Hermes runtime version pin for Hetzner bootstrap (#4289 / #4327).
 # Live bootstrap REJECTS empty git_ref / sha256 / commit.
+# Floating CDN tip URLs are NOT acceptable for --require-pinned (#4327).
 
 schema_version: cdb.hermes.version_pin/v1
-issue: 4289
-pinned_at_utc: "2026-08-01T20:55:00Z"
+issue: 4327
+issue_lineage:
+  - 4289
+  - 4327
+pinned_at_utc: "2026-08-03T15:58:00Z"
 source_docs:
   - "https://hermes-agent.nousresearch.com/docs/getting-started/installation"
   - "https://github.com/NousResearch/hermes-agent/releases/tag/v2026.7.30"
+  - "https://raw.githubusercontent.com/NousResearch/hermes-agent/cc4cab2f592e60a197e796506de9168f74baf3ea/scripts/install.sh"
 
 hermes:
-  # Official installer (sha256 of bytes downloaded at pin time).
-  install_url: https://hermes-agent.nousresearch.com/install.sh
-  install_script_sha256: "f493957fc9700b8f05470fc620efade5122595ebdba0df455a8b5ebaa0558128"
+  # Commit-bound installer (immutable raw.githubusercontent.com bytes at pin time).
+  # Do NOT use https://hermes-agent.nousresearch.com/install.sh for live pins.
+  install_url: https://raw.githubusercontent.com/NousResearch/hermes-agent/cc4cab2f592e60a197e796506de9168f74baf3ea/scripts/install.sh
+  install_script_sha256: "ab3e6ae1a1bda828941df8911ae44ed5de68412805124f338f157aa0360eb660"
   # Official release tag + peeled commit (annotated tag object resolves to this SHA).
   git_ref: "v2026.7.30"
   git_commit: "cc4cab2f592e60a197e796506de9168f74baf3ea"
   release_name: "Hermes Agent v0.19.1 (v2026.7.30)"
   # Installer CLI flags that actually exist (verified by reading install.sh):
-  #   --dir / --hermes-home / --branch / --commit / --skip-browser / --non-interactive
+  #   --dir / --hermes-home / --branch / --commit / --skip-browser / --non-interactive / --skip-setup
   # HERMES_GIT_REF is NOT supported by the official installer.
   installer_supports:
     hermes_install_dir_env: true
@@ -28,11 +34,16 @@ hermes:
     cli_hermes_home: true
     cli_skip_browser: true
     cli_non_interactive: true
+    cli_skip_setup: true
   requires_min: ">=0.12.0"
   dashboard_command: "hermes dashboard"
   # hermes serve is NOT the official dashboard entrypoint for v0.19.1.
   serve_command_deprecated: true
-  provenance_note: "Pin verified 2026-08-01 against official install.sh + GitHub tag v2026.7.30."
+  provenance_note: >
+    Pin refreshed 2026-08-03 (#4327): commit-bound scripts/install.sh at
+    cc4cab2f592e60a197e796506de9168f74baf3ea (tag v2026.7.30). Floating CDN
+    tip hermes-agent.nousresearch.com/install.sh drifted from prior pin
+    f493957f… and is rejected by pin-check --require-pinned.
 
 os:
   image: ubuntu-24.04
@@ -45,6 +56,7 @@ hetzner:
   # Official price table (excl. IPv4): CPX21 = 11.99 EUR/mo in NBG/HEL after 2026-06-15 adjustment.
   # IPv4 Primary IP = 0.50 EUR/mo. Backups ≈ 20% of server ≈ 2.40 EUR/mo.
   # Planning ceiling: 11.99 + 0.50 + 2.40 = 14.89 EUR/mo < 15.00.
+  # Live provision defaults (ops): cx23/fsn1 ≈ 9.03 EUR/mo — see provision.sh / runbook.
   monthly_cost_eur_limit: 15
   monthly_cost_eur_estimate:
     server_cpx21_excl_ipv4: 11.99

@@ -5,9 +5,11 @@ from __future__ import annotations
 import argparse
 import json
 import os
+import re
 import stat
 import sys
 from pathlib import Path
+from urllib.parse import urlparse
 
 import yaml
 
@@ -159,6 +161,11 @@ def _cmd_mint_token(args: argparse.Namespace) -> int:
     return 0
 
 
+_FLOATING_INSTALL_HOST = "hermes-agent.nousresearch.com"
+_SHA256_RE = re.compile(r"^[0-9a-f]{64}$")
+_GIT_COMMIT_RE = re.compile(r"^[0-9a-f]{40}$")
+
+
 def _pin_fields_missing(pin: dict) -> list[str]:
     hermes = pin.get("hermes") or {}
     missing: list[str] = []
@@ -167,6 +174,55 @@ def _pin_fields_missing(pin: dict) -> list[str]:
         if val is None or (isinstance(val, str) and not val.strip()):
             missing.append(f"hermes.{key}")
     return missing
+
+
+def _pin_contract_errors(pin: dict) -> list[str]:
+    """Structural reproducibility checks for a live Hermes installer pin (#4327).
+
+    No network I/O. Rejects floating CDN tips and URL/commit mismatches.
+    """
+    hermes = pin.get("hermes") or {}
+    errors: list[str] = []
+    install_url = str(hermes.get("install_url") or "").strip()
+    install_sha = str(hermes.get("install_script_sha256") or "").strip()
+    git_commit = str(hermes.get("git_commit") or "").strip()
+    git_ref = str(hermes.get("git_ref") or "").strip()
+
+    if not git_ref:
+        errors.append("hermes.git_ref_empty")
+    if not _GIT_COMMIT_RE.fullmatch(git_commit):
+        errors.append("hermes.git_commit_malformed")
+    if not _SHA256_RE.fullmatch(install_sha):
+        errors.append("hermes.install_script_sha256_malformed")
+
+    if not install_url:
+        errors.append("hermes.install_url_empty")
+        return errors
+
+    if not install_url.lower().startswith("https://"):
+        errors.append("hermes.install_url_not_https")
+
+    try:
+        parsed = urlparse(install_url)
+    except ValueError:
+        errors.append("hermes.install_url_unparseable")
+        return errors
+
+    host = (parsed.hostname or "").lower()
+    path = parsed.path or ""
+    if host == _FLOATING_INSTALL_HOST and path.rstrip("/").endswith("/install.sh"):
+        errors.append("hermes.install_url_floating_cdn_forbidden")
+
+    if git_commit and git_commit not in install_url:
+        errors.append("hermes.install_url_missing_git_commit")
+    if not path.endswith("/scripts/install.sh"):
+        errors.append("hermes.install_url_not_commit_bound_scripts_install")
+    if any(
+        token in path.lower() for token in ("/main/", "/master/", "/latest/", "/HEAD/")
+    ):
+        errors.append("hermes.install_url_unbound_ref_path")
+
+    return errors
 
 
 def _cmd_hcloud_preflight(_: argparse.Namespace) -> int:
@@ -188,21 +244,32 @@ def _cmd_pin_check(args: argparse.Namespace) -> int:
         return 2
     pin = yaml.safe_load(pin_path.read_text(encoding="utf-8")) or {}
     missing = _pin_fields_missing(pin)
+    hermes = pin.get("hermes") or {}
+    install_url = str(hermes.get("install_url") or "").strip()
     require_pinned = bool(args.require_pinned)
-    # Default: report presence; with --require-pinned (live install): fail empty.
-    ok = not missing if require_pinned else True
+    contract_errors = _pin_contract_errors(pin) if require_pinned else []
+    # Default: report presence; with --require-pinned: fail empty OR non-reproducible.
+    ok = (not missing and not contract_errors) if require_pinned else True
+    if require_pinned and missing:
+        note = "Live install / bootstrap must pass pin-check --require-pinned."
+    elif require_pinned and contract_errors:
+        note = "Pin fields present but install URL/hash/commit contract failed."
+    elif missing:
+        note = "Pin fields incomplete (ok without --require-pinned)."
+    else:
+        note = "Pin fields present."
+        if require_pinned:
+            note = "Pin fields present and commit-bound installer contract OK."
     payload = {
         "ok": ok,
         "pin_file": str(pin_path),
         "require_pinned": require_pinned,
         "missing_fields": missing,
-        "git_ref": (pin.get("hermes") or {}).get("git_ref") or "",
-        "git_commit": (pin.get("hermes") or {}).get("git_commit") or "",
-        "note": (
-            "Live install / bootstrap must pass pin-check --require-pinned."
-            if missing
-            else "Pin fields present."
-        ),
+        "contract_errors": contract_errors,
+        "git_ref": hermes.get("git_ref") or "",
+        "git_commit": hermes.get("git_commit") or "",
+        "install_url": install_url,
+        "note": note,
     }
     print(json.dumps(payload, indent=2, sort_keys=True))
     return 0 if ok else 2
@@ -249,7 +316,10 @@ def build_parser() -> argparse.ArgumentParser:
     p_pin.add_argument(
         "--require-pinned",
         action="store_true",
-        help="Fail (exit 2) when git_ref/commit/sha256 are empty (live install gate)",
+        help=(
+            "Fail (exit 2) when pin fields are empty or the installer URL is not "
+            "commit-bound/reproducible (live install gate; #4327)"
+        ),
     )
     p_pin.set_defaults(func=_cmd_pin_check)
 

@@ -38,7 +38,10 @@ Installer env `HERMES_GIT_REF` is **not** supported; use `--branch` / `--commit`
    - Do not set `HCLOUD_TOKEN` from Object Storage credentials.
 2. `hcloud` CLI authenticated (`hcloud server list` succeeds).
 3. Tailscale (or equivalent private net) for Jannek ↔ Hetzner ↔ Windows.
-4. `infrastructure/hermes/VERSION_PIN.yaml` filled; `python -m tools.hermes_ops pin-check --require-pinned` exits 0.
+4. `infrastructure/hermes/VERSION_PIN.yaml` filled with a **commit-bound**
+   `install_url` (full 40-char `git_commit` in path, `…/scripts/install.sh`);
+   floating `hermes-agent.nousresearch.com/install.sh` is rejected.
+   `python -m tools.hermes_ops pin-check --require-pinned` exits 0.
 5. Dedicated GitHub App for Hermes write with minimal perms (see below).
    **Do not** expand App `4410232` (`cdb-local-ci`: `checks:write` + `metadata:read` only).
    Auth lineage [#4170](https://github.com/jannekbuengener/Claire_de_Binare/issues/4170) /  <!-- pragma: allowlist secret -->
