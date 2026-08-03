@@ -14,15 +14,20 @@ Sensitive host inventory stays outside the repository.
 
 ## Pin (verified)
 
+Authoritative live pin is `infrastructure/hermes/VERSION_PIN.yaml` (refreshed
+[#4327](https://github.com/jannekbuengener/Claire_de_Binare/issues/4327) after
+floating CDN drift blocked [#4289](https://github.com/jannekbuengener/Claire_de_Binare/issues/4289)
+Phase A). Historical 2026-08-02 floating-CDN values below are superseded.
+
 | Field | Value |
 |---|---|
 | git_ref | `v2026.7.30` |
 | git_commit | `cc4cab2f592e60a197e796506de9168f74baf3ea` |
 | release | Hermes Agent v0.19.1 |
-| install.sh sha256 | `f493957fc9700b8f05470fc620efade5122595ebdba0df455a8b5ebaa0558128` |
-| install URL | `https://hermes-agent.nousresearch.com/install.sh` |
+| install.sh sha256 | `ab3e6ae1a1bda828941df8911ae44ed5de68412805124f338f157aa0360eb660` |
+| install URL | commit-bound `…/cc4cab2f…/scripts/install.sh` (floating `hermes-agent.nousresearch.com/install.sh` forbidden for `--require-pinned`) |
 | dashboard entrypoint | `hermes dashboard --host 127.0.0.1 --port <N> --no-open --isolated` |
-| cost estimate | 14.89 EUR/mo (CPX21 + IPv4 + backups) |
+| cost estimate | 14.89 EUR/mo (CPX21 + IPv4 + backups); live provision default CX23≈9.03 EUR/mo |
 
 ## Session 2026-08-02 — CI root cause
 
