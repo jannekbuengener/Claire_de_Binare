@@ -66,14 +66,16 @@ def synthetic_capability() -> EffectiveConfigCapability:
     )
 
 
-def test_repo_preflight_blocked_without_effective_config() -> None:
-    """Current realistic repo state must be BLOCKED_EXPERIMENT_NOT_READY."""
+def test_repo_preflight_ready_with_effective_config() -> None:
+    """After #4151 Effective-Config capability, repo preflight must be READY."""
     report = run_repo_preflight(REPO_ROOT)
-    assert report["verdict"] == VERDICT_BLOCKED
-    assert report["gates"]["effective_config"]["status"] == "BLOCKED"
+    assert report["verdict"] == VERDICT_READY
+    assert report["gates"]["effective_config"]["status"] == "PASS"
     assert report["lr_status"] == "NO-GO"
+    assert report["evidence"]["effective_config_capability_available"] is True
+    assert report["evidence"]["effective_config_snapshot_fingerprint"]
     cap = discover_effective_config_capability(REPO_ROOT)
-    assert cap.available is False
+    assert cap.available is True
 
 
 def test_synthetic_ready_with_injected_capability(
@@ -231,9 +233,9 @@ def test_stage_a_gate_fingerprint_regression_stable() -> None:
     assert fp == "714b183b8219eb07050d99dab1caaa65797142d2671c1128f2036ac7213bdefc"
 
 
-def test_cli_repo_preflight_exits_blocked() -> None:
+def test_cli_repo_preflight_exits_ready() -> None:
     rc = main(["--repo-root", str(REPO_ROOT)])
-    assert rc == 2
+    assert rc == 0
 
 
 def test_no_secrets_in_readiness_report(valid_manifest: dict) -> None:

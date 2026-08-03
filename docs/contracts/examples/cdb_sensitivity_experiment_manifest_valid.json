@@ -87,7 +87,7 @@
       "binance_1m_month_2022_11"
     ]
   },
-  "effective_config_snapshot_fingerprint": "7116e10cdea8bcecbbfe81b3590e0c1f2c36a183c60f5bd3d8b3bf0de1971654",
+  "effective_config_snapshot_fingerprint": "eceb1fd68085b985c513e17b3b64aae6dbed2605041425a7008090d02f059dfe",
   "executable": false,
   "execution_economics_contract_version": "execution_economics_gross_to_net.v1",
   "explicit_bans": {
@@ -116,7 +116,7 @@
   },
   "issue_ref": "#4153",
   "lr_status": "NO-GO",
-  "manifest_fingerprint": "92f50839a176b02c44e92ec140e4fd9df1af6beb7cc9318d26521059817660dd",
+  "manifest_fingerprint": "9efd7cbe8490a8f809181adb704c4a286e752273d1e0db77a2ae18a2f6b82256",
   "parameter_control": {
     "policy_schema_version": "cdb.parameter_control_policy.register.v1",
     "register_fingerprint": "fdb449b05418d4a13813f7cf06c491f2160de8e96ce3d61480cc6ba55c02afa1"
