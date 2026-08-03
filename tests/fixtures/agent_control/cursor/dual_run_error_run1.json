@@ -1,0 +1,92 @@
+{
+  "schema_note": "Redacted recorded dual-run state for #4258 Run1. No auth headers, no tokens, no full prompt.",
+  "cdb_run_id": "adr-ee0a9384bc9940a9",
+  "evidence_id": "are-5ae1839fa8b0c71ad7e8b902",
+  "agent_id": "bc-d1ba82b5-db1a-5040-b50a-2007040a65c7",
+  "run_id": "run-d4d336e2-f7d5-4ab6-bbd8-1af94f9a094b",
+  "claimed_branch": "cloud-cursor/cursor-cloud-pilot-marker-3c10",
+  "agent": {
+    "id": "bc-d1ba82b5-db1a-5040-b50a-2007040a65c7",
+    "name": "Cursor cloud pilot marker",
+    "status": "ACTIVE",
+    "env": { "type": "cloud" },
+    "repos": [
+      { "url": "https://github.com/jannekbuengener/Claire_de_Binare" }
+    ],
+    "autoCreatePR": true,
+    "workOnCurrentBranch": false,
+    "createdAt": "2026-08-03T01:29:56.853Z",
+    "updatedAt": "2026-08-03T01:30:05.025Z",
+    "latestRunId": "run-d4d336e2-f7d5-4ab6-bbd8-1af94f9a094b"
+  },
+  "run": {
+    "id": "run-d4d336e2-f7d5-4ab6-bbd8-1af94f9a094b",
+    "agentId": "bc-d1ba82b5-db1a-5040-b50a-2007040a65c7",
+    "status": "ERROR",
+    "createdAt": "2026-08-03T01:29:56.853Z",
+    "updatedAt": "2026-08-03T01:30:04.677Z",
+    "git": {
+      "branches": [
+        {
+          "repoUrl": "github.com/jannekbuengener/Claire_de_Binare",
+          "branch": "cloud-cursor/cursor-cloud-pilot-marker-3c10"
+        }
+      ]
+    }
+  },
+  "usage": {
+    "totalUsage": {
+      "inputTokens": 587,
+      "outputTokens": 454,
+      "cacheWriteTokens": 0,
+      "cacheReadTokens": 0,
+      "totalTokens": 1041
+    },
+    "cost": { "rawCostCents": 0.13111, "chargedCents": 0.13111 },
+    "runs": [
+      {
+        "id": "run-d4d336e2-f7d5-4ab6-bbd8-1af94f9a094b",
+        "usageUuid": "156f951d-a147-534f-9137-7fbe9d14edc1",
+        "usage": {
+          "inputTokens": 587,
+          "outputTokens": 454,
+          "cacheWriteTokens": 0,
+          "cacheReadTokens": 0,
+          "totalTokens": 1041
+        }
+      }
+    ]
+  },
+  "artifacts": { "items": [] },
+  "stream_events": [
+    {
+      "event": "status",
+      "data": {
+        "runId": "run-d4d336e2-f7d5-4ab6-bbd8-1af94f9a094b",
+        "status": "ERROR"
+      }
+    },
+    {
+      "event": "result",
+      "data": {
+        "runId": "run-d4d336e2-f7d5-4ab6-bbd8-1af94f9a094b",
+        "status": "ERROR",
+        "git": {
+          "branches": [
+            {
+              "repoUrl": "github.com/jannekbuengener/Claire_de_Binare",
+              "branch": "cloud-cursor/cursor-cloud-pilot-marker-3c10"
+            }
+          ]
+        }
+      }
+    },
+    { "event": "done", "data": {} }
+  ],
+  "github_branch_lookup": { "status": 404, "message": "Not Found" },
+  "notes": [
+    "OpenAPI Run schema has no structured error field.",
+    "Usage fetched from documented /v1/agents/{id}/usage (not run-scoped).",
+    "Claimed branch remains unverified (GitHub 404)."
+  ]
+}

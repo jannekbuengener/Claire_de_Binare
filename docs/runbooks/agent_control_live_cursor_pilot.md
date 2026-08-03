@@ -37,6 +37,26 @@ python -m tools.agent_control pilot cursor-preflight \
   --out artifacts/agent_control/cursor-live-preflight.json
 ```
 
+### Dual-run ERROR support bundle (read-only)
+
+When existing Cursor runs terminate `ERROR` without a structured error object,
+build a redacted dual-run support package from recorded states (zero POSTs,
+no new agents/runs):
+
+```bash
+python -m tools.agent_control pilot cursor-support-bundle \
+  --state-run1 tests/fixtures/agent_control/cursor/dual_run_error_run1.json \
+  --state-run2 tests/fixtures/agent_control/cursor/dual_run_error_run2.json \
+  --shared tests/fixtures/agent_control/cursor/dual_run_shared_meta.json \
+  --output artifacts/agent_control/dual_run_4258_support \
+  --tracked-summary docs/evidence/agent_control/CURSOR_CLOUD_DUAL_RUN_FAILURE_4258.md
+```
+
+Documented usage/artifacts paths are agent-scoped (`GET /v1/agents/{id}/usage`,
+`GET /v1/agents/{id}/artifacts`). A 404 on run-scoped `/runs/{runId}/usage` is
+not evidence that usage is missing. Support drafts are ready-to-send but must
+not be mailed without a new explicit operator authorization.
+
 Canonical create binding for CDB: **`repos` + versioned `.cursor/environment.json`**
 (`--binding-mode repos_plus_repo_config`). Official API treats named `env` and
 `repos` as mutually exclusive. Named dashboard environments cannot be listed or

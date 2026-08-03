@@ -552,6 +552,21 @@ class CursorCloudApiDriver:
         state = self._agents.get(agent_id or "")
         if state is None:
             raise DispatchError("DISPATCH_PROVIDER_RUN_NOT_FOUND", provider_run_id)
+        # Documented v1 path is agent-scoped: GET /v1/agents/{id}/artifacts
+        # (NOT /runs/{runId}/artifacts — that route 404s and is not evidence).
+        if self._http is not None and agent_id:
+            body = self._request("GET", f"/v1/agents/{agent_id}/artifacts")
+            items = body.get("items") if isinstance(body, dict) else None
+            if isinstance(items, list):
+                state.artifacts = [
+                    {
+                        "path": item.get("path"),
+                        "size": item.get("sizeBytes") or item.get("size"),
+                        "digest": item.get("digest") or item.get("sha256"),
+                    }
+                    for item in items
+                    if isinstance(item, dict) and item.get("path")
+                ]
         out = []
         for item in state.artifacts:
             path = validate_artifact_path(item["path"])
@@ -574,6 +589,57 @@ class CursorCloudApiDriver:
         state = self._agents.get(agent_id or "")
         if state is None:
             raise DispatchError("DISPATCH_PROVIDER_RUN_NOT_FOUND", provider_run_id)
+        # Documented v1 path is agent-scoped: GET /v1/agents/{id}/usage
+        # Optional ?runId= filter. Run-scoped /runs/{id}/usage is NOT documented.
+        if self._http is not None and agent_id:
+            body = self._request(
+                "GET",
+                f"/v1/agents/{agent_id}/usage?runId={provider_run_id}",
+            )
+            usage: dict[str, Any] = {"cost": None}
+            if isinstance(body, dict):
+                runs = body.get("runs") if isinstance(body.get("runs"), list) else []
+                matched = None
+                for item in runs:
+                    if isinstance(item, dict) and item.get("id") == provider_run_id:
+                        matched = item
+                        break
+                if matched is None and runs:
+                    matched = runs[0] if isinstance(runs[0], dict) else None
+                if isinstance(matched, dict):
+                    u = (
+                        matched.get("usage")
+                        if isinstance(matched.get("usage"), dict)
+                        else {}
+                    )
+                    cost = (
+                        matched.get("cost")
+                        if isinstance(matched.get("cost"), dict)
+                        else {}
+                    )
+                    usage = {
+                        "cost": cost.get("chargedCents"),
+                        "input_tokens": u.get("inputTokens"),
+                        "output_tokens": u.get("outputTokens"),
+                        "total_tokens": u.get("totalTokens"),
+                        "usage_uuid": matched.get("usageUuid"),
+                        "source_path": f"/v1/agents/{agent_id}/usage",
+                    }
+                elif isinstance(body.get("totalUsage"), dict):
+                    tu = body["totalUsage"]
+                    usage = {
+                        "cost": (
+                            (body.get("cost") or {}).get("chargedCents")
+                            if isinstance(body.get("cost"), dict)
+                            else None
+                        ),
+                        "input_tokens": tu.get("inputTokens"),
+                        "output_tokens": tu.get("outputTokens"),
+                        "total_tokens": tu.get("totalTokens"),
+                        "source_path": f"/v1/agents/{agent_id}/usage",
+                    }
+            state.runs[provider_run_id]["usage"] = usage
+            return dict(usage)
         return dict(state.runs[provider_run_id].get("usage") or {"cost": None})
 
     def archive(self, provider_run_id: str) -> ProviderResult:
