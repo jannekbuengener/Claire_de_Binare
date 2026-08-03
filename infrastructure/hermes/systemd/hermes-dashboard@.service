@@ -34,8 +34,11 @@ LimitNOFILE=8192
 NoNewPrivileges=true
 PrivateTmp=true
 ProtectSystem=strict
-ProtectHome=true
+# ProtectHome=true (strict hide) blocked uv-managed CPython under the hermes
+# home-local uv tree (#4329). Use read-only instead of disabling ProtectHome.
+ProtectHome=read-only
 ReadWritePaths=/var/lib/hermes/profiles/%i /var/log/hermes
+ReadOnlyPaths=/home/hermes/.local/share/uv /opt/hermes /var/lib/hermes/_installer_home
 ProtectKernelTunables=true
 ProtectKernelModules=true
 ProtectControlGroups=true

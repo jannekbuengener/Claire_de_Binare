@@ -131,3 +131,19 @@ Classification: token is **not** read-only; server/volume create specifically de
 
 - #4287 / #4288 already CLOSED with “Permission-Probe, superseded by #4289.”
   Verified live; no re-open.
+
+## Session 2026-08-03 — bootstrap durability (#4329)
+
+Host runtime PASS on existing `cdb-hermes-01` closed [#4327](https://github.com/jannekbuengener/Claire_de_Binare/issues/4327)
+via constrained Rescue. Repo slice [#4329](https://github.com/jannekbuengener/Claire_de_Binare/issues/4329)
+persists the fail-closed host fixes into canonical `bootstrap.sh` + systemd unit:
+
+| Host failure | Durable fix |
+|---|---|
+| `verify_pin` stdout pollution | `log` → stderr |
+| install.sh `0600` under `sudo -u hermes` | `chmod 0644` after hash + EXIT trap cleanup |
+| `/etc/hermes` `root:root` | `chown root:$INSTALL_USER` + `0750` |
+| `ProtectHome=true` → 203/EXEC | `ProtectHome=read-only` + ReadOnlyPaths for uv/opt/installer |
+| missing web_dist / stamp / Node | `ensure_dashboard_runtime_assets` (installer Node only; no floating latest) |
+
+No host mutation in the #4329 repo slice. LR NO-GO unchanged.

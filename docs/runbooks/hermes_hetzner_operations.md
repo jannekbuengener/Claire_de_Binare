@@ -79,6 +79,13 @@ sudo bash infrastructure/hermes/hetzner/bootstrap.sh
 `provision.sh` is idempotent (no duplicate `cdb-hermes-01`).
 `bootstrap.sh` fails closed on empty pin, sha256 mismatch, or service start errors (no `|| true`).
 
+Durability contracts (#4329, host evidence from #4327):
+- `log` / progress output goes to **stderr**; `verify_pin` stdout is machine-only (`ref commit`).
+- Installer temp file is `chmod 0644` after hash PASS (readable by `hermes`, not writable).
+- `/etc/hermes` is `root:hermes` mode `0750`.
+- Unit uses `ProtectHome=read-only` plus `ReadOnlyPaths` for uv/opt/installer home (not `ProtectHome=true`).
+- After install, bootstrap builds `hermes_cli/web_dist` if needed, links installer-managed Node into each active profile `HERMES_HOME`, and writes `web-ui-build-stamp.json`. `validation-chief` stays `.DISABLED`.
+
 Ports (loopback only):
 
 | Profile | Port |
