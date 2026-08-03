@@ -187,6 +187,11 @@ def _poll_provider_until_terminal(
             run_id=str(run_id),
         )
         if last_status in _PROVIDER_TERMINAL:
+            record = run_store.get(run_id) or record
+            rev = int(record.get("revision") or 0)
+            record["last_provider_status"] = last_status
+            record["revision"] = rev + 1
+            run_store.update_cas(run_id, rev, record)
             return run_store.get(run_id) or record
         if last_status == "UNKNOWN":
             raise PilotError(
@@ -1347,132 +1352,175 @@ def _run_live_cursor_pilot(
             )
 
             if run_id and run and run.get("state") not in {"BLOCKED", "HOLD", "FAILED"}:
-                delivery = verify_github_delivery(
-                    expected_repo=expected_repo,
-                    pr_number=pr_num,
-                    branch=branch if isinstance(branch, str) else None,
-                    expected_paths_prefix=allowlist or None,
-                    allow_empty=bool(manifest.get("delivery_allow_empty")),
-                    runner=gh_runner,
-                )
-                if not delivery.ok:
-                    blocked = True
-                    steps.append(
-                        _step(
-                            "delivery_verify",
-                            "BLOCKED",
-                            detail={
-                                "code": delivery.code,
-                                "message": delivery.message,
-                                "changed_files": delivery.changed_files,
-                            },
-                        )
-                    )
-                    # N3/N5-style: do not allow approval PASS after delivery failure.
-                    skip_approval = True
+                provider_norm = str(run.get("last_provider_status") or "")
+                if provider_norm in {"FAILED", "CANCELLED"}:
+                    blocked = provider_norm == "FAILED"
                     hold = True
-                else:
-                    if delivery.head_sha:
-                        head_sha = delivery.head_sha
-                    if delivery.base_sha:
-                        base_sha = delivery.base_sha
-                    expected_status = (run.get("expected_delivery") or {}).get(
-                        "expected_status"
-                    ) or "DONE_SLICE_ADDED_TO_BATCH_PR"
-                    _inject_delivery_receipt(
-                        run_store,
-                        str(run_id),
-                        target_pr=delivery.pr_number or pr_num,
-                        target_branch=(
-                            delivery.branch
-                            if isinstance(delivery.branch, str)
-                            else branch
-                        ),
-                        commit=str(delivery.head_sha),
-                        expected_status=str(expected_status),
-                    )
+                    fail = provider_norm == "FAILED"
                     steps.append(
                         _step(
-                            "delivery_verify",
-                            "PASS",
+                            "provider_terminal",
+                            "FAIL" if provider_norm == "FAILED" else "HOLD",
                             detail={
-                                "head_sha": delivery.head_sha,
-                                "pr_number": delivery.pr_number,
-                                "branch": delivery.branch,
-                                "changed_files": delivery.changed_files,
+                                "normalized_status": provider_norm,
+                                "provider_run_id": run.get("provider_run_id"),
+                                "agent_id": (run.get("result_refs") or {}).get(
+                                    "agent_id"
+                                ),
+                                "git": git_info,
+                                "note": "no_delivery_verify_on_provider_failure",
                             },
                         )
                     )
-
-                    for _ in range(8):
-                        run = watch_run(
-                            str(run_id),
-                            run_store,
-                            provider=provider,
-                            clock=clock,
-                            auto_advance_success=False,
+                    skip_approval = True
+                else:
+                    try:
+                        delivery = verify_github_delivery(
+                            expected_repo=expected_repo,
+                            pr_number=pr_num,
+                            branch=branch if isinstance(branch, str) else None,
+                            expected_paths_prefix=allowlist or None,
+                            allow_empty=bool(manifest.get("delivery_allow_empty")),
+                            runner=gh_runner,
                         )
-                        if run.get("state") in {
-                            "AWAITING_APPROVAL",
-                            "PASS",
-                            "HOLD",
-                            "BLOCKED",
-                            "FAILED",
-                            "CANCELLED",
-                        }:
-                            break
-                    terminal = run.get("state")
-                    if terminal == "AWAITING_APPROVAL":
-                        hold = True
+                    except DispatchError as exc:
+                        from tools.agent_control.delivery_verify import (
+                            DeliveryVerification,
+                        )
+
+                        delivery = DeliveryVerification(
+                            ok=False,
+                            head_sha=None,
+                            base_sha=None,
+                            pr_number=pr_num,
+                            branch=branch if isinstance(branch, str) else None,
+                            repo=expected_repo,
+                            changed_files=[],
+                            code=exc.code,
+                            message=exc.message,
+                        )
+                    if not delivery.ok:
+                        blocked = True
                         steps.append(
                             _step(
-                                "provider_watch",
-                                "HOLD",
+                                "delivery_verify",
+                                "BLOCKED",
                                 detail={
-                                    "state": terminal,
-                                    "provider_run_id": run.get("provider_run_id"),
-                                    "note": "awaiting_approval_operator_handoff",
+                                    "code": delivery.code,
+                                    "message": delivery.message,
+                                    "changed_files": delivery.changed_files,
                                 },
                             )
                         )
-                    elif terminal == "PASS":
+                        skip_approval = True
+                        hold = True
+                    else:
+                        if delivery.head_sha:
+                            head_sha = delivery.head_sha
+                        if delivery.base_sha:
+                            base_sha = delivery.base_sha
+                        expected_status = (run.get("expected_delivery") or {}).get(
+                            "expected_status"
+                        ) or "DONE_SLICE_ADDED_TO_BATCH_PR"
+                        _inject_delivery_receipt(
+                            run_store,
+                            str(run_id),
+                            target_pr=delivery.pr_number or pr_num,
+                            target_branch=(
+                                delivery.branch
+                                if isinstance(delivery.branch, str)
+                                else branch
+                            ),
+                            commit=str(delivery.head_sha),
+                            expected_status=str(expected_status),
+                        )
                         steps.append(
                             _step(
-                                "provider_watch",
+                                "delivery_verify",
                                 "PASS",
                                 detail={
-                                    "state": terminal,
-                                    "provider_run_id": run.get("provider_run_id"),
+                                    "head_sha": delivery.head_sha,
+                                    "pr_number": delivery.pr_number,
+                                    "branch": delivery.branch,
+                                    "changed_files": delivery.changed_files,
                                 },
                             )
                         )
-                    elif terminal in {"HOLD", "BLOCKED"}:
-                        hold = terminal == "HOLD"
-                        blocked = terminal == "BLOCKED"
-                        steps.append(
-                            _step(
-                                "provider_watch",
-                                terminal,
-                                detail={
-                                    "state": terminal,
-                                    "terminal_code": run.get("terminal_code"),
-                                },
+
+                        for _ in range(8):
+                            run = watch_run(
+                                str(run_id),
+                                run_store,
+                                provider=provider,
+                                clock=clock,
+                                auto_advance_success=False,
                             )
-                        )
-                    elif terminal == "FAILED":
-                        fail = True
-                        steps.append(
-                            _step("provider_watch", "FAIL", detail={"state": terminal})
-                        )
-                    else:
-                        unknown = True
-                        steps.append(
-                            _step(
-                                "provider_watch",
-                                "UNKNOWN",
-                                detail={"state": terminal},
+                            if run.get("state") in {
+                                "AWAITING_APPROVAL",
+                                "PASS",
+                                "HOLD",
+                                "BLOCKED",
+                                "FAILED",
+                                "CANCELLED",
+                            }:
+                                break
+                        terminal = run.get("state")
+                        if terminal == "AWAITING_APPROVAL":
+                            hold = True
+                            steps.append(
+                                _step(
+                                    "provider_watch",
+                                    "HOLD",
+                                    detail={
+                                        "state": terminal,
+                                        "provider_run_id": run.get("provider_run_id"),
+                                        "note": "awaiting_approval_operator_handoff",
+                                    },
+                                )
                             )
-                        )
+                        elif terminal == "PASS":
+                            steps.append(
+                                _step(
+                                    "provider_watch",
+                                    "PASS",
+                                    detail={
+                                        "state": terminal,
+                                        "provider_run_id": run.get("provider_run_id"),
+                                    },
+                                )
+                            )
+                        elif terminal in {"HOLD", "BLOCKED"}:
+                            hold = terminal == "HOLD"
+                            blocked = terminal == "BLOCKED"
+                            steps.append(
+                                _step(
+                                    "provider_watch",
+                                    terminal,
+                                    detail={
+                                        "state": terminal,
+                                        "terminal_code": run.get("terminal_code"),
+                                    },
+                                )
+                            )
+                        elif terminal == "FAILED":
+                            fail = True
+                            steps.append(
+                                _step(
+                                    "provider_watch",
+                                    "FAIL",
+                                    detail={"state": terminal},
+                                )
+                            )
+                        else:
+                            unknown = True
+                            steps.append(
+                                _step(
+                                    "provider_watch",
+                                    "UNKNOWN",
+                                    detail={"state": terminal},
+                                )
+                            )
+
     except DispatchError as exc:
         if exc.code in {
             "DISPATCH_PROVIDER_MALFORMED",
