@@ -98,7 +98,7 @@ policy errors fall back to the full Fast-CI unit selector. Timing evidence:
 
 ### Black toolchain SSOT (#4206)
 
-- **Versionsquelle:** `requirements-dev.txt` (`black==26.5.1`, `ruff==0.16.0`). Keine unversionierte Zweitinstallation in `ci/Dockerfile` oder `.github/workflows/ci.yml`.
+- **Versionsquelle:** `requirements-dev.txt` (`black==26.5.1`, `ruff==0.16.1`). Keine unversionierte Zweitinstallation in `ci/Dockerfile` oder `.github/workflows/ci.yml`.
 - **Kanonischer Ausführungsweg:** `sys.executable -m black` (CI-Frontdoor-Interpreter), Config aus `pyproject.toml`, nur Changed-Files, `--workers 1`.
 - **Timeout:** Default `300` Sekunden aus `ci/config/resources.yaml` (`black_timeout_seconds`); Override `CDB_BLACK_TIMEOUT_SECONDS` (Cap `900`). Hang → Stage-**FAIL** mit `reason_code=BLACK_TIMEOUT` und Exit 124 — niemals SKIP/PASS. Timeout und Version stehen in der Lint-Evidence.
 - **Reason Codes:** `BLACK_TIMEOUT`, `BLACK_EXECUTABLE_MISSING`, `BLACK_EXECUTABLE_INVALID`, `BLACK_VERSION_MISMATCH`, `BLACK_EXECUTION_FAILED`.
