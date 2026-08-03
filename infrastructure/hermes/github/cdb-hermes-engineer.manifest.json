@@ -1,0 +1,20 @@
+{
+  "name": "cdb-hermes-engineer",
+  "url": "https://github.com/jannekbuengener/Claire_de_Binare/issues/4289",
+  "hook_attributes": {
+    "url": "https://example.com/unused-hermes-webhook",
+    "active": false
+  },
+  "redirect_url": "https://github.com/jannekbuengener/Claire_de_Binare/issues/4289",
+  "callback_urls": [],
+  "description": "Scoped write access for Hermes cdb-engineer profile only (#4289). Not cdb-local-ci.",
+  "public": false,
+  "default_events": [],
+  "default_permissions": {
+    "metadata": "read",
+    "contents": "write",
+    "pull_requests": "write",
+    "issues": "write"
+  },
+  "request_oauth_on_install": false
+}
