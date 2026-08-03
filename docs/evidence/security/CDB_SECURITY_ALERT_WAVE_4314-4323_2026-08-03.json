@@ -1,0 +1,290 @@
+{
+  "schema": "cdb.security_alert_wave.v1",
+  "wave_id": "security-alert-wave-2026-08-03",
+  "snapshot_date": "2026-08-03",
+  "base_sha": "a52a0e90b702cd2758736bfa4ed25e2b9fd382ab",
+  "base_ref": "origin/main",
+  "branch": "dedicated/security-alert-wave-2026-08-03",
+  "routing_decision": "CREATE_DEDICATED_PR",
+  "preferred_objective": "security-alert-wave-2026-08-03",
+  "merge_mode": false,
+  "merge_allowed": false,
+  "issue_closure_before_merge_allowed": false,
+  "alert_dismissal_allowed": false,
+  "trivyignore_growth_allowed": false,
+  "lr_verdict": "NO-GO",
+  "board_stage": "trade-capable",
+  "readout_run_id": 30803956049,
+  "readout_run_url": "https://github.com/jannekbuengener/Claire_de_Binare/actions/runs/30803956049",
+  "related_merged_prs": {
+    "4303": {
+      "title": "fix(security): reconcile open vulnerability backlog",
+      "merge_commit": "312d12e04ab312c14266ff579d09c3b694045f85",
+      "note": "Do not reuse dedicated/security-backlog-reconciliation-2513"
+    },
+    "4310": {
+      "title": "deps(docker-compose): bump prom/prometheus from v3.13.1 to v3.13.2",
+      "merge_commit": "c18fc695274d3045fae3831b228e6fc7a31632f9",
+      "note": "Partial pin: RED + prometheus-v3 overlay only before this wave"
+    },
+    "4162": {
+      "title": "deps(docker-compose): bump grafana/grafana from 13.0.3-ubuntu to 13.1.1-ubuntu",
+      "merge_commit": "4608aeff96ad9832a0335ab55676eea70021ae44",
+      "note": "RED runtime pin; GHSA-r277 not cleared on 13.1.1"
+    }
+  },
+  "prometheus_target_pin": "prom/prometheus:v3.13.2@sha256:508729e0e2d18e11fd742a5a5ca70e557b940a93948c3c95fd0123a6fd538b69",
+  "grafana_runtime_pin": "grafana/grafana:13.1.1-ubuntu@sha256:5a9df011defa8384ee01fc9b393854daecc6afb98132c66e2e658b3f564830e8",
+  "pin_surfaces_synced": [
+    "infrastructure/compose/base.yml",
+    ".github/workflows/security-scan.yml",
+    "knowledge/governance/SERVICE_CATALOG.md"
+  ],
+  "pin_surfaces_already_current_on_base": [
+    "infrastructure/compose/compose.red.yml",
+    "infrastructure/compose/compose.prometheus-v3.yml"
+  ],
+  "pin_surfaces_comment_only": [
+    "infrastructure/compose/compose.prometheus-v3.yml"
+  ],
+  "trivy_evidence": {
+    "tool_version": "0.72.0",
+    "db_updated_at": "2026-08-03",
+    "prometheus_v3_13_2": {
+      "image": "prom/prometheus:v3.13.2@sha256:508729e0e2d18e11fd742a5a5ca70e557b940a93948c3c95fd0123a6fd538b69",
+      "cve_2026_56852_hits": 0,
+      "high_critical_total": 0,
+      "bin_prometheus_cleared": true,
+      "bin_promtool_cleared": true
+    },
+    "prometheus_v3_13_1_contrast": {
+      "image": "prom/prometheus:v3.13.1@sha256:3c42b892cf723fa54d2f262c37a0e1f80aa8c8ddb1da7b9b0df9455a35a7f893",
+      "cve_2026_56852_hits": 2,
+      "targets": ["bin/prometheus", "bin/promtool"],
+      "installed_x_text": "v0.38.0",
+      "fixed_x_text": "0.39.0"
+    },
+    "grafana_13_1_1": {
+      "image": "grafana/grafana:13.1.1-ubuntu@sha256:5a9df011defa8384ee01fc9b393854daecc6afb98132c66e2e658b3f564830e8",
+      "ghsa_r277_hits": 1,
+      "kin_openapi_installed": "v0.140.0",
+      "kin_openapi_fixed": "0.144.0",
+      "cve_2026_56852_hits_on_grafana_binaries": 3,
+      "high_critical_total": 19,
+      "newer_supported_release_with_kin_openapi_gte_0_144_0": null
+    }
+  },
+  "perl_hold_evidence": {
+    "cve": "CVE-2026-57433",
+    "package": "perl-base",
+    "installed": "5.40.1-6",
+    "fixed_version_trivy": "",
+    "debian_trixie_status": "vulnerable",
+    "debian_forky_sid_fixed": "5.42.2-3",
+    "suite_native_fix_available": false,
+    "storable_usage_in_cdb_services": false,
+    "forbidden_actions": [
+      "no forky/sid mix into trixie",
+      "no alpine base migration",
+      "no trivyignore growth",
+      "no alert dismissal"
+    ],
+    "re_eval_date": "2026-09-03",
+    "canonical_tracker": 2932
+  },
+  "grafana_hold_evidence": {
+    "advisory": "GHSA-r277-6w6q-xmqw",
+    "alert": 5677,
+    "scanned_path_on_alert": "usr/share/grafana/bin/grafana",
+    "alert_installed_kin_openapi": "v0.133.0",
+    "runtime_pin_kin_openapi": "v0.140.0",
+    "required_fixed": "0.144.0",
+    "suite_native_fix_available": false,
+    "pin_sync_only": true,
+    "re_eval_date": "2026-09-03",
+    "canonical_tracker": 2933
+  },
+  "cap45_out_of_scope": {
+    "documented": true,
+    "note": "45 additional readout-cap candidates from Security Alert Readout 2026-08-03 remain out of scope for this wave; no issue mutation or remediation claimed."
+  },
+  "clusters": [
+    {
+      "cluster_id": "perl-storable-cve-2026-57433",
+      "issues": [4314, 4315, 4316, 4317, 4318, 4319, 4320, 4321],
+      "disposition": "HOLD_UPSTREAM_NO_FIXED_VERSION",
+      "canonical_tracker": 2932
+    },
+    {
+      "cluster_id": "grafana-kin-openapi-ghsa-r277",
+      "issues": [4322],
+      "disposition": "HOLD_UPSTREAM_NO_FIXED_VERSION",
+      "canonical_tracker": 2933
+    },
+    {
+      "cluster_id": "prometheus-x-text-cve-2026-56852",
+      "issues": [4323],
+      "disposition": "FIX_READY",
+      "canonical_tracker": 4323
+    }
+  ],
+  "allowed_dispositions": [
+    "FIX_READY",
+    "HOLD_UPSTREAM_NO_FIXED_VERSION",
+    "DUPLICATE_TRACKING",
+    "FALSE_POSITIVE_WITH_EVIDENCE",
+    "NEEDS_EVIDENCE"
+  ],
+  "issues": [
+    {
+      "issue": 4314,
+      "alert": 5580,
+      "component": "library/cdb_allocation",
+      "package": "perl-base",
+      "installed": "5.40.1-6",
+      "fixed_version": "",
+      "fingerprint": "ef063292d083a91b",
+      "runtime_reachability": "package_present_no_cdb_storable_callpath",
+      "codex_verdict": "confirmed",
+      "cdb_disposition": "HOLD_UPSTREAM_NO_FIXED_VERSION",
+      "duplicate_of_cluster": true,
+      "canonical_tracker": 2932,
+      "closure_condition": "Suite-native FixedVersion for perl-base CVE-2026-57433 on pinned Trixie image + rebuild/scan clears alert 5580; do not close as duplicate alone"
+    },
+    {
+      "issue": 4315,
+      "alert": 5571,
+      "component": "library/cdb_db_writer",
+      "package": "perl-base",
+      "installed": "5.40.1-6",
+      "fixed_version": "",
+      "fingerprint": "cabce4d818688770",
+      "runtime_reachability": "package_present_no_cdb_storable_callpath",
+      "codex_verdict": "confirmed",
+      "cdb_disposition": "DUPLICATE_TRACKING",
+      "duplicate_of_cluster": true,
+      "canonical_tracker": 2932,
+      "closure_condition": "Same as #4314 / #2932 suite-native FixedVersion + scan clear for alert 5571; mark duplicate only, do not close before clear"
+    },
+    {
+      "issue": 4316,
+      "alert": 5583,
+      "component": "library/cdb_execution",
+      "package": "perl-base",
+      "installed": "5.40.1-6",
+      "fixed_version": "",
+      "fingerprint": "9b5a2caf0f4c84ad",
+      "runtime_reachability": "package_present_no_cdb_storable_callpath",
+      "codex_verdict": "confirmed",
+      "cdb_disposition": "DUPLICATE_TRACKING",
+      "duplicate_of_cluster": true,
+      "canonical_tracker": 2932,
+      "closure_condition": "Suite-native FixedVersion + scan clear for alert 5583; no premature close"
+    },
+    {
+      "issue": 4317,
+      "alert": 5574,
+      "component": "library/cdb_market",
+      "package": "perl-base",
+      "installed": "5.40.1-6",
+      "fixed_version": "",
+      "fingerprint": "bb8ffd00d7850e16",
+      "runtime_reachability": "package_present_no_cdb_storable_callpath",
+      "codex_verdict": "confirmed",
+      "cdb_disposition": "DUPLICATE_TRACKING",
+      "duplicate_of_cluster": true,
+      "canonical_tracker": 2932,
+      "closure_condition": "Suite-native FixedVersion + scan clear for alert 5574; no premature close"
+    },
+    {
+      "issue": 4318,
+      "alert": 5536,
+      "component": "library/cdb_regime",
+      "package": "perl-base",
+      "installed": "5.40.1-6",
+      "fixed_version": "",
+      "fingerprint": "748dff5ab77026f0",
+      "runtime_reachability": "package_present_no_cdb_storable_callpath",
+      "codex_verdict": "confirmed",
+      "cdb_disposition": "DUPLICATE_TRACKING",
+      "duplicate_of_cluster": true,
+      "canonical_tracker": 2932,
+      "closure_condition": "Suite-native FixedVersion + scan clear for alert 5536; no premature close"
+    },
+    {
+      "issue": 4319,
+      "alert": 5530,
+      "component": "library/cdb_risk",
+      "package": "perl-base",
+      "installed": "5.40.1-6",
+      "fixed_version": "",
+      "fingerprint": "d63ba2fc042e9fe7",
+      "runtime_reachability": "package_present_no_cdb_storable_callpath",
+      "codex_verdict": "confirmed",
+      "cdb_disposition": "DUPLICATE_TRACKING",
+      "duplicate_of_cluster": true,
+      "canonical_tracker": 2932,
+      "closure_condition": "Suite-native FixedVersion + scan clear for alert 5530; no premature close"
+    },
+    {
+      "issue": 4320,
+      "alert": 5533,
+      "component": "library/cdb_signal",
+      "package": "perl-base",
+      "installed": "5.40.1-6",
+      "fixed_version": "",
+      "fingerprint": "5f0d96a8e36636c5",
+      "runtime_reachability": "package_present_no_cdb_storable_callpath",
+      "codex_verdict": "confirmed",
+      "cdb_disposition": "DUPLICATE_TRACKING",
+      "duplicate_of_cluster": true,
+      "canonical_tracker": 2932,
+      "closure_condition": "Suite-native FixedVersion + scan clear for alert 5533; no premature close"
+    },
+    {
+      "issue": 4321,
+      "alert": 5577,
+      "component": "library/cdb_ws",
+      "package": "perl-base",
+      "installed": "5.40.1-6",
+      "fixed_version": "",
+      "fingerprint": "358a4ae5131baf18",
+      "runtime_reachability": "package_present_no_cdb_storable_callpath",
+      "codex_verdict": "confirmed",
+      "cdb_disposition": "DUPLICATE_TRACKING",
+      "duplicate_of_cluster": true,
+      "canonical_tracker": 2932,
+      "closure_condition": "Suite-native FixedVersion + scan clear for alert 5577; no premature close"
+    },
+    {
+      "issue": 4322,
+      "alert": 5677,
+      "component": "usr/share/grafana/bin/grafana",
+      "package": "github.com/getkin/kin-openapi",
+      "installed": "v0.133.0 (alert) / v0.140.0 (13.1.1 runtime pin)",
+      "fixed_version": "0.144.0",
+      "fingerprint": "12d747eb0eea75e0",
+      "runtime_reachability": "bundled_in_upstream_grafana_binary",
+      "codex_verdict": "confirmed",
+      "cdb_disposition": "HOLD_UPSTREAM_NO_FIXED_VERSION",
+      "duplicate_of_cluster": false,
+      "canonical_tracker": 2933,
+      "closure_condition": "Upstream grafana/grafana release with kin-openapi>=0.144.0 scan-clears alert 5677 on pinned digest; re-eval by 2026-09-03; no source vendoring"
+    },
+    {
+      "issue": 4323,
+      "alert": 5585,
+      "component": "bin/prometheus",
+      "package": "golang.org/x/text",
+      "installed": "v0.38.0 (v3.13.1 alert) / cleared on v3.13.2",
+      "fixed_version": "0.39.0",
+      "fingerprint": "91b27a2a006ede02",
+      "runtime_reachability": "bundled_in_prometheus_binary",
+      "codex_verdict": "confirmed",
+      "cdb_disposition": "FIX_READY",
+      "duplicate_of_cluster": false,
+      "canonical_tracker": 4323,
+      "closure_condition": "After this PR merges to main AND post-merge Trivy/code-scanning recount shows alert 5585 fixed/absent for CVE-2026-56852 on bin/prometheus and bin/promtool"
+    }
+  ]
+}
