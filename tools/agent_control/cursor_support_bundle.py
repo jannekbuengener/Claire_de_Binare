@@ -10,10 +10,11 @@ import hashlib
 import json
 import re
 from copy import deepcopy
-from datetime import datetime, timezone
+from datetime import datetime
 from pathlib import Path
 from typing import Any, Callable
 
+from tools.agent_control.clock import SystemClock
 from tools.agent_control.cursor_preflight import (
     HttpGet,
     default_cursor_http_get,
@@ -45,7 +46,8 @@ class SupportBundleError(DispatchError):
 
 def _utc_now() -> str:
     return (
-        datetime.now(timezone.utc)
+        SystemClock()
+        .now()
         .replace(microsecond=0)
         .isoformat()
         .replace("+00:00", "Z")
