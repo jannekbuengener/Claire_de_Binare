@@ -1,0 +1,19 @@
+{
+  "create_prs": "Always",
+  "routing_rule_repository": "jannekbuengener/Claire_de_Binare",
+  "network_access": "Allow All Network Access",
+  "ambiguity": "two active environments with the same visible name",
+  "environments": [
+    {
+      "repository": "jannekbuengener/Claire_de_Binare",
+      "status": "Active",
+      "age_observed": "recent"
+    },
+    {
+      "repository": "jannekbuengener/Claire_de_Binare",
+      "status": "Active",
+      "age_observed": "older"
+    }
+  ],
+  "note": "Supporting operator observations only — not machine truth for preflight PASS"
+}

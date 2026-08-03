@@ -1,0 +1,133 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://claire-de-binare.local/contracts/cdb_cursor_live_preflight.v1.schema.json",
+  "title": "cdb.cursor_live_preflight.v1",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "schema_id",
+    "schema_version",
+    "repository",
+    "cursor_account",
+    "credential_present",
+    "environment_requested",
+    "environment_resolved",
+    "environment_version",
+    "environment_selection_status",
+    "repo_config_status",
+    "github_app_status",
+    "github_permissions",
+    "existing_run_status",
+    "public_api_gaps",
+    "manual_consent_boundaries",
+    "ready_for_live_run",
+    "limitations",
+    "checks"
+  ],
+  "properties": {
+    "schema_id": {
+      "type": "string",
+      "const": "cdb.cursor_live_preflight.v1"
+    },
+    "schema_version": {
+      "type": "string",
+      "const": "1.0.0"
+    },
+    "repository": { "type": "string", "minLength": 3 },
+    "cursor_account": {
+      "type": "object",
+      "additionalProperties": true
+    },
+    "credential_present": { "type": "boolean" },
+    "environment_requested": {
+      "type": ["object", "null"],
+      "additionalProperties": true
+    },
+    "environment_resolved": {
+      "type": ["object", "null"],
+      "additionalProperties": true
+    },
+    "environment_version": {
+      "type": ["string", "null"]
+    },
+    "environment_selection_status": {
+      "type": "string",
+      "enum": ["PASS", "PARTIAL", "BLOCKED", "UNKNOWN"]
+    },
+    "repo_config_status": {
+      "type": "string",
+      "enum": ["PASS", "PARTIAL", "BLOCKED", "UNKNOWN"]
+    },
+    "github_app_status": {
+      "type": "string",
+      "enum": ["PASS", "PARTIAL", "BLOCKED", "UNKNOWN"]
+    },
+    "github_permissions": {
+      "type": "object",
+      "additionalProperties": true
+    },
+    "existing_run_status": {
+      "type": "string",
+      "enum": ["PASS", "PARTIAL", "BLOCKED", "UNKNOWN"]
+    },
+    "public_api_gaps": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "required": ["id", "surface", "impact"],
+        "additionalProperties": true,
+        "properties": {
+          "id": { "type": "string" },
+          "surface": { "type": "string" },
+          "impact": { "type": "string" },
+          "evidence": { "type": "string" }
+        }
+      }
+    },
+    "manual_consent_boundaries": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "required": ["id", "boundary"],
+        "additionalProperties": true,
+        "properties": {
+          "id": { "type": "string" },
+          "boundary": { "type": "string" },
+          "why_not_automatable": { "type": "string" }
+        }
+      }
+    },
+    "ready_for_live_run": { "type": "boolean" },
+    "limitations": {
+      "type": "array",
+      "items": { "type": "string" }
+    },
+    "checks": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "required": ["id", "status"],
+        "additionalProperties": true,
+        "properties": {
+          "id": { "type": "string" },
+          "status": {
+            "type": "string",
+            "enum": ["PASS", "PARTIAL", "BLOCKED", "UNKNOWN"]
+          },
+          "detail": { "type": "object", "additionalProperties": true }
+        }
+      }
+    },
+    "binding_mode": {
+      "type": "string",
+      "enum": ["named_cloud_env", "repos_plus_repo_config", "unknown"]
+    },
+    "cursor_http_gets": { "type": "integer", "minimum": 0 },
+    "cursor_http_posts": { "type": "integer", "minimum": 0 },
+    "github_writes": { "type": "integer", "minimum": 0 },
+    "dashboard_observations": {
+      "type": ["object", "null"],
+      "additionalProperties": true
+    }
+  }
+}

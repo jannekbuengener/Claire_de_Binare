@@ -31,6 +31,7 @@ def run_environment_preflight(
     repo_root: Path | None = None,
     execute: bool = False,
     allow_recorded: bool = False,
+    allow_live: bool = False,
 ) -> EnvironmentPreflightResult:
     """Shared environment preflight for dry-run and execute paths.
 
@@ -67,6 +68,14 @@ def run_environment_preflight(
         result.execute_ready = False
         result.reason_codes = list(result.reason_codes) + [
             "ENVIRONMENT_EXECUTE_NOT_READY"
+        ]
+        return result
+
+    # Human-GO live cursor: mock/offline-class pilot envs may execute under flags.
+    if allow_live and result.verdict == VERDICT_READY_OFFLINE_ONLY:
+        result.execute_ready = True
+        result.limitations = list(result.limitations) + [
+            "human_go_live_cursor_offline_env"
         ]
         return result
 
