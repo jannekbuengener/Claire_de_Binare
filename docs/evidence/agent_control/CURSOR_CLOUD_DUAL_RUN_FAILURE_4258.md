@@ -1,11 +1,12 @@
 # Cursor Cloud Dual-Run Failure Evidence (#4258)
 
-- Generated: `2026-08-03T02:51:10Z`
-- Bundle digest: `sha256:fa2f925903d2908f0a191f377cfd05e53532a7ae183a18c53767e78060a4cae0`
-- Schema: `cdb.cursor_dual_run_support_bundle.v1` `1.0.0`
+- Generated: `2026-08-03T03:32:49Z`
+- Bundle digest: `sha256:c8b4766cc4121e394eb952250a5ccaa0be7468c85cb0aff9f3a7db4e6b9ec871`
+- Schema: `cdb.cursor_dual_run_support_bundle.v1` `1.1.0`
 - Issue: #4258 (remains OPEN)
 - Third Cursor run: **not started**
 - `cursor_http_posts`: 0
+- `external_send_allowed`: false
 
 ## Direct evidence
 
@@ -15,6 +16,8 @@
 | Evidence | `are-5ae1839fa8b0c71ad7e8b902` | `are-48dbdce0fbaf7ff5654b23f4` |
 | Agent | `bc-d1ba82b5-db1a-5040-b50a-2007040a65c7` | `bc-767ef75f-c948-5049-9bc2-0534fd6cf46f` |
 | Run | `run-d4d336e2-f7d5-4ab6-bbd8-1af94f9a094b` | `run-c2c3898b-af9e-4f73-ad91-830f600561b9` |
+| created_at (UTC) | `2026-08-03T01:29:56.853Z` | `2026-08-03T02:29:44.901Z` |
+| terminal_at (UTC) | `2026-08-03T01:30:04.677Z` | `2026-08-03T02:29:52.402Z` |
 | Status | `ERROR` | `ERROR` |
 | Duration ms | 7824 | 7501 |
 | Tokens | 1041 | 1596 |
@@ -23,11 +26,22 @@
 | Structured error | False | False |
 | Artifacts empty | True | True |
 
+## Create / config
+
+- Binding: `repos_plus_repo_config`
+- `startingRef=main`, `autoCreatePR=true`, `workOnCurrentBranch=false`
+- Named environment: absent
+- `branchName`: absent
+- Repo config: `.cursor/environment.json` digest `sha256:e05855dfea663d49b4f143440677c9962f39117d6fae1af59259922fe039b314`
+- Exactly one accepted Create per documented run; earlier HTTP 400 created no resource
+
 ## Failure phases
 
 - Last proven successful: `AGENT_REASONING`
 - First failed/missing: `GIT_PUSH`
 - Git push attempt proven: `False`
+- Commit attempt proven: `False`
+- PR create attempt proven: `False`
 
 ## Root-cause classification
 
@@ -55,6 +69,12 @@ A 404 on run-scoped `/runs/{runId}/usage` is **not** evidence that usage is miss
 PR #4295 / `cloud-cursor/area-entry-link-canon-4a6a` includes `cursoragent` commits.
 This proves GitHub write capability on some path; it does **not** prove the failed
 API runs used the same workspace binding.
+
+## Privacy
+
+Numeric Cursor account ids, API key display names, unrelated repositories, usage UUIDs,
+cost data, full prompts, and credential presence metadata are omitted from the
+external package.
 
 ## Limitations
 
