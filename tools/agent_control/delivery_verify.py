@@ -211,6 +211,15 @@ def normalize_cursor_git_branches(
 ) -> dict[str, Any]:
     """Extract branch/prUrl from Cursor result_refs without inventing commits."""
     refs = result_refs or {}
+    claimed = refs.get("claimed_delivery")
+    if isinstance(claimed, dict) and (
+        claimed.get("branch") or claimed.get("pr_url") or claimed.get("repo_url")
+    ):
+        return {
+            "branch": claimed.get("branch"),
+            "pr_url": claimed.get("pr_url"),
+            "repo_url": claimed.get("repo_url"),
+        }
     git = refs.get("git") if isinstance(refs.get("git"), dict) else {}
     branches = git.get("branches") if isinstance(git.get("branches"), list) else []
     out: dict[str, Any] = {"branch": None, "pr_url": None, "repo_url": None}
@@ -223,6 +232,35 @@ def normalize_cursor_git_branches(
     out["pr_url"] = first.get("prUrl") or first.get("pr_url")
     out["repo_url"] = first.get("repoUrl") or first.get("repo_url")
     return out
+
+
+def claimed_delivery_from_git(git: dict[str, Any] | None) -> dict[str, Any]:
+    """Cursor-claimed git snapshot only — never implies GitHub verification."""
+    git = git if isinstance(git, dict) else {}
+    branches = git.get("branches") if isinstance(git.get("branches"), list) else []
+    out: dict[str, Any] = {
+        "branch": None,
+        "pr_url": None,
+        "repo_url": None,
+        "source": "run.git",
+        "delivery_verified": False,
+    }
+    if not branches or not isinstance(branches[0], dict):
+        return out
+    first = branches[0]
+    out["branch"] = first.get("branch")
+    out["pr_url"] = first.get("prUrl") or first.get("pr_url")
+    out["repo_url"] = first.get("repoUrl") or first.get("repo_url")
+    return out
+
+
+def truncate_run_result_text(value: Any, *, limit: int = 2000) -> str | None:
+    if not isinstance(value, str) or not value.strip():
+        return None
+    text = value.strip()
+    if len(text) <= limit:
+        return text
+    return text[:limit] + "...[truncated]"
 
 
 def pr_number_from_url(pr_url: str | None) -> int | None:

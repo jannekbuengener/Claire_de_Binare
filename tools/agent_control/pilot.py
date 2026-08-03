@@ -36,6 +36,7 @@ from tools.agent_control.approval.context import (
 from tools.agent_control.clock import FrozenClock, SystemClock
 from tools.agent_control.credentials import cursor_api_key_present
 from tools.agent_control.delivery_verify import (
+    claimed_delivery_from_git,
     normalize_cursor_git_branches,
     pr_number_from_url,
     verify_github_delivery,
@@ -91,9 +92,8 @@ LIVE_LIMITATIONS = [
 
 GhRunner = Callable[[list[str]], dict[str, Any]]
 HttpTransport = Callable[..., Any]
+SseTransport = Callable[..., Any]
 
-# Debug-mode NDJSON sink (session 0f4913); never logs secrets.
-_DEBUG_LOG_PATH = Path(__file__).resolve().parents[2] / "debug-0f4913.log"
 _PROVIDER_TERMINAL = frozenset({"SUCCEEDED", "FAILED", "CANCELLED"})
 
 
@@ -101,30 +101,45 @@ class PilotError(AgentControlError):
     """Pilot harness fail-closed error."""
 
 
-def _agent_debug_log(
+def _enrich_terminal_diagnostics(
+    provider: Any,
+    run_store: Any,
+    run_id: str,
     *,
-    hypothesis_id: str,
-    location: str,
-    message: str,
-    data: dict[str, Any],
-    run_id: str = "pre-live",
+    provider_run_id: str,
 ) -> None:
-    # #region agent log
+    """Read-only stream snapshot for FAILED runs; never creates or follows up."""
+    if not hasattr(provider, "read_stream_diagnostics"):
+        return
+    record = run_store.get(run_id)
+    if record is None:
+        return
     try:
-        payload = {
-            "sessionId": "0f4913",
-            "runId": run_id,
-            "hypothesisId": hypothesis_id,
-            "location": location,
-            "message": message,
-            "data": data,
-            "timestamp": int(time.time() * 1000),
+        diag = provider.read_stream_diagnostics(str(provider_run_id))
+    except DispatchError:
+        return
+    except Exception:  # noqa: BLE001 — diagnostics must never abort pilot
+        return
+    refs = dict(record.get("result_refs") or {})
+    if isinstance(diag.get("result_text"), str) and not refs.get("run_result_text"):
+        refs["run_result_text"] = diag["result_text"]
+    if isinstance(diag.get("stream_error"), dict):
+        refs["stream_error"] = {
+            "code": diag["stream_error"].get("code"),
+            "message": diag["stream_error"].get("message"),
         }
-        with _DEBUG_LOG_PATH.open("a", encoding="utf-8") as handle:
-            handle.write(json.dumps(payload, separators=(",", ":")) + "\n")
-    except OSError:
-        pass
-    # #endregion
+    events = diag.get("events")
+    if isinstance(events, list) and events:
+        refs["stream_event_summary"] = events[:20]
+    if isinstance(diag.get("git"), dict) and not refs.get("git"):
+        refs["git"] = diag["git"]
+        refs["claimed_delivery"] = claimed_delivery_from_git(diag["git"])
+    refs["delivery_verified"] = False
+    rev = int(record.get("revision") or 0)
+    record["result_refs"] = sanitize_result_refs(refs)
+    record["updated_at"] = SystemClock().now().isoformat().replace("+00:00", "Z")
+    record["revision"] = rev + 1
+    run_store.update_cas(run_id, rev, record)
 
 
 def _poll_provider_until_terminal(
@@ -171,27 +186,19 @@ def _poll_provider_until_terminal(
         record["updated_at"] = SystemClock().now().isoformat().replace("+00:00", "Z")
         record["revision"] = rev + 1
         run_store.update_cas(run_id, rev, record)
-        git_info = normalize_cursor_git_branches(record.get("result_refs"))
-        _agent_debug_log(
-            hypothesis_id="H1",
-            location="pilot.py:_poll_provider_until_terminal",
-            message="provider_poll_tick",
-            data={
-                "poll_index": i,
-                "normalized_status": last_status,
-                "has_branch": bool(git_info.get("branch")),
-                "has_pr_url": bool(git_info.get("pr_url")),
-                "provider_run_id": str(provider_run_id),
-                "agent_id": str(agent_ref) if agent_ref else None,
-            },
-            run_id=str(run_id),
-        )
         if last_status in _PROVIDER_TERMINAL:
             record = run_store.get(run_id) or record
             rev = int(record.get("revision") or 0)
             record["last_provider_status"] = last_status
             record["revision"] = rev + 1
             run_store.update_cas(run_id, rev, record)
+            if last_status == "FAILED":
+                _enrich_terminal_diagnostics(
+                    provider,
+                    run_store,
+                    run_id,
+                    provider_run_id=str(provider_run_id),
+                )
             return run_store.get(run_id) or record
         if last_status == "UNKNOWN":
             raise PilotError(
@@ -333,6 +340,7 @@ def run_pilot(
     resume_run_id: str | None = None,
     state_path: Path | None = None,
     http_transport: HttpTransport | None = None,
+    sse_transport: SseTransport | None = None,
     gh_runner: GhRunner | None = None,
     auto_create_pr: bool = False,
     environment_attestation_path: Path | None = None,
@@ -353,6 +361,7 @@ def run_pilot(
             resume_run_id=resume_run_id,
             state_path=state_path,
             http_transport=http_transport,
+            sse_transport=sse_transport,
             gh_runner=gh_runner,
             auto_create_pr=auto_create_pr,
             environment_attestation_path=environment_attestation_path,
@@ -983,6 +992,7 @@ def _run_live_cursor_pilot(
     resume_run_id: str | None = None,
     state_path: Path | None = None,
     http_transport: HttpTransport | None = None,
+    sse_transport: SseTransport | None = None,
     gh_runner: GhRunner | None = None,
     auto_create_pr: bool = False,
     environment_attestation_path: Path | None = None,
@@ -1109,6 +1119,8 @@ def _run_live_cursor_pilot(
     transports: dict[str, Any] = {"human_go_live": True}
     if http_transport is not None:
         transports["http"] = http_transport
+    if sse_transport is not None:
+        transports["sse"] = sse_transport
     provider = build_provider(
         "cursor-cloud-api",
         allow_live=True,
@@ -1273,6 +1285,47 @@ def _run_live_cursor_pilot(
                     )
                 )
 
+        # Create may already be terminal ERROR/FAILED (no CREATING poll window).
+        if (
+            run_id
+            and run
+            and run.get("state") == "FAILED"
+            and not any(s["step"] == "provider_terminal" for s in steps)
+        ):
+            refs_now = run.get("result_refs") or {}
+            git_info = normalize_cursor_git_branches(refs_now)
+            claimed = (
+                refs_now.get("claimed_delivery")
+                if isinstance(refs_now.get("claimed_delivery"), dict)
+                else {
+                    "branch": git_info.get("branch"),
+                    "pr_url": git_info.get("pr_url"),
+                    "repo_url": git_info.get("repo_url"),
+                    "delivery_verified": False,
+                    "source": "run.git",
+                }
+            )
+            blocked = True
+            hold = True
+            fail = True
+            skip_approval = True
+            steps.append(
+                _step(
+                    "provider_terminal",
+                    "FAIL",
+                    detail={
+                        "normalized_status": "FAILED",
+                        "provider_run_id": run.get("provider_run_id"),
+                        "agent_id": refs_now.get("agent_id"),
+                        "claimed_delivery": claimed,
+                        "delivery_verified": False,
+                        "run_result_text": refs_now.get("run_result_text"),
+                        "run_error": refs_now.get("run_error"),
+                        "note": "terminal_on_create_no_delivery_verify",
+                    },
+                )
+            )
+
         if run_id and run and run.get("state") not in {"BLOCKED", "HOLD", "FAILED"}:
             # Official API returns CREATING without git; poll until terminal first.
             try:
@@ -1338,25 +1391,24 @@ def _run_live_cursor_pilot(
                     if not isinstance(branch, str):
                         branch = None
 
-            _agent_debug_log(
-                hypothesis_id="H1",
-                location="pilot.py:delivery_verify_pre",
-                message="delivery_targets_from_git",
-                data={
-                    "auto_create_pr": bool(auto_create_pr),
-                    "pr_num": pr_num,
-                    "branch": branch,
-                    "has_git_pr_url": bool(git_info.get("pr_url")),
-                },
-                run_id=str(run_id),
-            )
-
             if run_id and run and run.get("state") not in {"BLOCKED", "HOLD", "FAILED"}:
                 provider_norm = str(run.get("last_provider_status") or "")
                 if provider_norm in {"FAILED", "CANCELLED"}:
                     blocked = provider_norm == "FAILED"
                     hold = True
                     fail = provider_norm == "FAILED"
+                    refs_now = (run.get("result_refs") or {}) if run else {}
+                    claimed = (
+                        refs_now.get("claimed_delivery")
+                        if isinstance(refs_now.get("claimed_delivery"), dict)
+                        else {
+                            "branch": git_info.get("branch"),
+                            "pr_url": git_info.get("pr_url"),
+                            "repo_url": git_info.get("repo_url"),
+                            "delivery_verified": False,
+                            "source": "run.git",
+                        }
+                    )
                     steps.append(
                         _step(
                             "provider_terminal",
@@ -1364,10 +1416,14 @@ def _run_live_cursor_pilot(
                             detail={
                                 "normalized_status": provider_norm,
                                 "provider_run_id": run.get("provider_run_id"),
-                                "agent_id": (run.get("result_refs") or {}).get(
-                                    "agent_id"
-                                ),
-                                "git": git_info,
+                                "agent_id": refs_now.get("agent_id"),
+                                "claimed_delivery": claimed,
+                                "delivery_verified": False,
+                                "run_result_text": refs_now.get("run_result_text"),
+                                "run_error": refs_now.get("run_error"),
+                                "stream_error": refs_now.get("stream_error"),
+                                "duration_ms": refs_now.get("duration_ms"),
+                                "raw_status": refs_now.get("raw_status"),
                                 "note": "no_delivery_verify_on_provider_failure",
                             },
                         )
@@ -1434,6 +1490,21 @@ def _run_live_cursor_pilot(
                             commit=str(delivery.head_sha),
                             expected_status=str(expected_status),
                         )
+                        # Mark verified only after live GitHub evidence + head SHA.
+                        run_after = run_store.get(str(run_id)) or run
+                        refs_ok = dict(run_after.get("result_refs") or {})
+                        refs_ok["delivery_verified"] = True
+                        refs_ok["verified_delivery"] = {
+                            "branch": delivery.branch,
+                            "pr_number": delivery.pr_number,
+                            "head_sha": delivery.head_sha,
+                            "repo": delivery.repo,
+                        }
+                        rev_ok = int(run_after.get("revision") or 0)
+                        run_after["result_refs"] = sanitize_result_refs(refs_ok)
+                        run_after["revision"] = rev_ok + 1
+                        run_store.update_cas(str(run_id), rev_ok, run_after)
+                        run = run_store.get(str(run_id)) or run_after
                         steps.append(
                             _step(
                                 "delivery_verify",
@@ -1443,6 +1514,7 @@ def _run_live_cursor_pilot(
                                     "pr_number": delivery.pr_number,
                                     "branch": delivery.branch,
                                     "changed_files": delivery.changed_files,
+                                    "delivery_verified": True,
                                 },
                             )
                         )
@@ -1835,6 +1907,7 @@ def run_pilot_from_path(
     resume_run_id: str | None = None,
     state_path: Path | None = None,
     http_transport: HttpTransport | None = None,
+    sse_transport: SseTransport | None = None,
     gh_runner: GhRunner | None = None,
     auto_create_pr: bool = False,
     environment_attestation_path: Path | None = None,
@@ -1856,6 +1929,7 @@ def run_pilot_from_path(
         resume_run_id=resume_run_id,
         state_path=state_path,
         http_transport=http_transport,
+        sse_transport=sse_transport,
         gh_runner=gh_runner,
         auto_create_pr=auto_create_pr,
         environment_attestation_path=environment_attestation_path,

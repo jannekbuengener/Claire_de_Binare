@@ -9,6 +9,10 @@ from dataclasses import dataclass, field
 from typing import Any, Callable
 from urllib.parse import urlparse
 
+from tools.agent_control.delivery_verify import (
+    claimed_delivery_from_git,
+    truncate_run_result_text,
+)
 from tools.agent_control.errors import DispatchError
 from tools.agent_control.provider import ProviderRequest, ProviderResult
 from tools.agent_control.providers.cursor_common import (
@@ -211,38 +215,6 @@ class CursorCloudApiDriver:
             agent_id_client
         ).startswith("bc-"):
             raise DispatchError("PROVIDER_AGENT_ID_INVALID", str(agent_id_client))
-        # #region agent log
-        try:
-            import json
-            import time
-            from pathlib import Path
-
-            _dbg = Path(__file__).resolve().parents[3] / "debug-0f4913.log"
-            with _dbg.open("a", encoding="utf-8") as handle:
-                handle.write(
-                    json.dumps(
-                        {
-                            "sessionId": "0f4913",
-                            "runId": "live-create",
-                            "hypothesisId": "H2",
-                            "location": "cursor_cloud_api.py:dispatch",
-                            "message": "agentId_shape",
-                            "data": {
-                                "agent_id_len": len(str(agent_id_client)),
-                                "agent_id_prefix": str(agent_id_client)[:3],
-                                "has_uuid_dashes": str(agent_id_client).count("-") >= 5,
-                                "regex_ok": bool(_BC_ID.match(str(agent_id_client))),
-                                "auto_create": bool(auto_create),
-                            },
-                            "timestamp": int(time.time() * 1000),
-                        },
-                        separators=(",", ":"),
-                    )
-                    + "\n"
-                )
-        except OSError:
-            pass
-        # #endregion
         body: dict[str, Any] = {
             "prompt": {"text": request.prompt_text},
             "autoCreatePR": bool(auto_create),
@@ -331,12 +303,21 @@ class CursorCloudApiDriver:
                 "agent_id": agent_id,
                 "api": "v1",
                 "git": git_meta,
+                "claimed_delivery": claimed_delivery_from_git(git_meta),
+                "delivery_verified": False,
+                "raw_status": status,
             },
             delivery_receipt=request.delivery_receipt,
+            error_code=(
+                "PROVIDER_RUN_ERROR" if str(status).upper() == "ERROR" else None
+            ),
         )
 
     def watch(self, provider_run_id: str) -> ProviderResult:
         agent_id, state = self._resolve_agent(provider_run_id)
+        run_result_text: str | None = None
+        duration_ms: int | None = None
+        stream_error: dict[str, Any] | None = None
         if self._http is not None:
             body = self._request(
                 "GET",
@@ -347,15 +328,104 @@ class CursorCloudApiDriver:
             state.runs[provider_run_id]["status"] = status
             if isinstance(body.get("git"), dict):
                 state.runs[provider_run_id]["git"] = body["git"]
+            if isinstance(body.get("result"), str):
+                run_result_text = body["result"]
+                state.runs[provider_run_id]["result"] = run_result_text
+            if isinstance(body.get("durationMs"), int):
+                duration_ms = body["durationMs"]
+                state.runs[provider_run_id]["duration_ms"] = duration_ms
+            # OpenAPI Run has no structured error field; capture if present anyway.
+            if isinstance(body.get("error"), dict):
+                state.runs[provider_run_id]["error"] = body["error"]
         status = state.runs[provider_run_id]["status"]
         git_meta = state.runs[provider_run_id].get("git") or {}
+        if run_result_text is None and isinstance(
+            state.runs[provider_run_id].get("result"), str
+        ):
+            run_result_text = state.runs[provider_run_id]["result"]
+        if duration_ms is None and isinstance(
+            state.runs[provider_run_id].get("duration_ms"), int
+        ):
+            duration_ms = state.runs[provider_run_id]["duration_ms"]
+        err = state.runs[provider_run_id].get("error")
+        claimed = claimed_delivery_from_git(
+            git_meta if isinstance(git_meta, dict) else None
+        )
+        refs: dict[str, Any] = {
+            "agent_id": agent_id,
+            "api": "v1",
+            "git": git_meta,
+            "claimed_delivery": claimed,
+            "delivery_verified": False,
+            "raw_status": status,
+        }
+        truncated = truncate_run_result_text(run_result_text)
+        if truncated is not None:
+            refs["run_result_text"] = truncated
+        if duration_ms is not None:
+            refs["duration_ms"] = duration_ms
+        if isinstance(err, dict):
+            refs["run_error"] = {
+                "code": err.get("code"),
+                "message": err.get("message"),
+            }
+        if stream_error:
+            refs["stream_error"] = stream_error
+        error_code = None
+        if str(status).upper() == "ERROR":
+            error_code = (
+                isinstance(err, dict) and err.get("code")
+            ) or "PROVIDER_RUN_ERROR"
         return build_provider_result(
             provider_id=self.provider_id,
             provider_run_id=provider_run_id,
             raw_status=status,
             usage=state.runs[provider_run_id].get("usage"),
-            result_refs={"agent_id": agent_id, "git": git_meta},
+            result_refs=refs,
+            error_code=str(error_code) if error_code else None,
         )
+
+    def read_stream_diagnostics(self, provider_run_id: str) -> dict[str, Any]:
+        """Read-only SSE snapshot for an existing run (no follow-up / no create)."""
+        agent_id, state = self._resolve_agent(provider_run_id)
+        events = self.stream(provider_run_id)
+        out: dict[str, Any] = {
+            "agent_id": agent_id,
+            "provider_run_id": provider_run_id,
+            "events": [],
+            "result_text": None,
+            "stream_error": None,
+            "git": None,
+            "terminal_status": None,
+        }
+        for event in events:
+            if not isinstance(event, dict):
+                continue
+            name = event.get("event")
+            data = event.get("data") if isinstance(event.get("data"), dict) else {}
+            compact = {"event": name}
+            if name == "error":
+                compact["code"] = data.get("code")
+                compact["message"] = data.get("message")
+                out["stream_error"] = {
+                    "code": data.get("code"),
+                    "message": data.get("message"),
+                }
+            elif name == "result":
+                compact["status"] = data.get("status")
+                out["terminal_status"] = data.get("status")
+                if isinstance(data.get("text"), str):
+                    out["result_text"] = truncate_run_result_text(data.get("text"))
+                if isinstance(data.get("git"), dict):
+                    out["git"] = data.get("git")
+                    state.runs.setdefault(provider_run_id, {})["git"] = data["git"]
+            elif name == "status":
+                compact["status"] = data.get("status")
+                out["terminal_status"] = data.get("status") or out["terminal_status"]
+            out["events"].append(compact)
+            if len(out["events"]) >= 50:
+                break
+        return out
 
     def cancel(self, provider_run_id: str, reason: str) -> ProviderResult:
         del reason
