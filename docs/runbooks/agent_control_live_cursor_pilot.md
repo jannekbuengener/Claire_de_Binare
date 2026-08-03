@@ -22,6 +22,50 @@ Refs: `#4258` only — never Closes, never merge, never `cdb-local-ci` publish
 | Provider profile | `cursor-cloud-api.v1` (`live_dispatch: false`) |
 | Environment profile | `cursor-live-pilot.v1` (`runtime_class: mock` for CI doctor; live only via Human-GO flags) |
 
+## Operator Bootstrap Preflight (before second Live-GO)
+
+Do **not** start a second Cursor create until this checklist is green.
+Read-only API checks alone are **not** sufficient after a terminal `ERROR`
+with claimed-but-missing GitHub delivery.
+
+### A) API-readable (agent may verify; no Create/Follow-up)
+
+| Check | How | Pass criterion |
+| --- | --- | --- |
+| Credential presence | `CURSOR_API.txt` / `CURSOR_API_KEY` present | `credential_present=true` (never print value) |
+| Auth identity | `GET /v1/me` | HTTP 200 |
+| Models catalog | `GET /v1/models` | HTTP 200, ≥1 model |
+| GitHub App repo scope | `GET /v1/repositories` (strict rate limit) | `https://github.com/jannekbuengener/Claire_de_Binare` listed |
+| Prior run immutable | `GET /v1/agents/{id}` + `.../runs/{runId}` | Existing ERROR run readable; **no** new create |
+
+### B) Dashboard-only (Jannek / operator; agent cannot complete)
+
+Open [Cloud Agents → Environments](https://cursor.com/dashboard/cloud-agents#environments)
+and the GitHub App installation for the Cursor account that owns the API key.
+
+| Check | Pass criterion |
+| --- | --- |
+| GitHub connection | Cursor GitHub App installed for `jannekbuengener`; not only read-clone |
+| Repository freigabe | `Claire_de_Binare` explicitly allowed for Cloud Agents |
+| Push / PR permission | App can push branches **and** open PRs on this repo |
+| Cloud Environment health | Environment for this repo shows last successful setup/snapshot (not failed install) |
+| Resolution path | Confirm whether run uses repo `.cursor/environment.json` and/or a named saved environment |
+| Expected delivery path | Decide: `autoCreatePR=true` + `startingRef=main` **or** work on an existing PR URL; document the expected branch/PR shape |
+| Secrets / install | Any required install secrets present in dashboard (not in repo); install script expected to succeed |
+
+### C) Repo-backed environment hint (evidence, not a green light)
+
+- Repo has `.cursor/environment.json` (on `main`) with Dockerfile `../ci/Dockerfile` + pip install.
+- Official resolution order: repo `environment.json` → personal saved env → team saved env.
+- A broken Cloud Environment bootstrap can produce an opaque API `ERROR` with claimed `git.branches` and **no** GitHub object — treat dashboard Environment health as mandatory before the next Human-GO.
+
+### D) Gate for exactly one second live create
+
+Only after A+B are green, issue a **new** explicit Human-GO for **one** create.
+Use a **new** state file / run id; keep the failed run
+`run-d4d336e2-f7d5-4ab6-bbd8-1af94f9a094b` as immutable evidence.
+Still: no merge, no `cdb-local-ci`, Refs `#4258` only, issue stays open.
+
 ## Credential bootstrap (MANUAL_BOOTSTRAP_ONLY)
 
 1. Obtain a Cursor API key outside the agent session.
