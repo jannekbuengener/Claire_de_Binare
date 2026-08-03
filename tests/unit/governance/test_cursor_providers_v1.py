@@ -254,7 +254,11 @@ def test_cloud_fake_http_sse_and_guards() -> None:
         if method == "POST" and url.endswith("/unarchive"):
             return {"status": 200, "json": {}}
         if method == "POST" and url.endswith("/runs"):
-            return {"status": 200, "json": {"id": "run-2", "status": "FINISHED"}}
+            # Official Cloud Agents API v1 follow-up shape.
+            return {
+                "status": 200,
+                "json": {"run": {"id": "run-2", "status": "FINISHED"}},
+            }
         raise AssertionError((method, url))
 
     def sse(*, url, last_event_id=None):
@@ -286,6 +290,18 @@ def test_cloud_fake_http_sse_and_guards() -> None:
     result = driver.dispatch(req)
     assert result.normalized_status == "SUCCEEDED"
     assert driver.mutating_posts == 1
+    fu = driver.follow_up(
+        result.provider_run_id,
+        ProviderRequest(
+            run_id="adr-cloud",
+            contract_id="aec-x",
+            contract_digest="sha256:" + "3" * 64,
+            agent_id="a",
+            prompt_text="follow up",
+        ),
+    )
+    assert fu.provider_run_id == "run-2"
+    assert fu.result_refs.get("follow_up") is True
     events = driver.stream(result.provider_run_id, last_event_id="1")
     assert len(events) == 1
     events2 = driver.stream(result.provider_run_id, last_event_id="expired")

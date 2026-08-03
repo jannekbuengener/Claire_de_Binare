@@ -113,7 +113,7 @@
   },
   "integrity": {
     "canonicalization": "RFC8785",
-    "digest": "sha256:800159427aa91b9b331ae71353072b2f7c41e34e38f4bd08667cb7f497d9dd25",
+    "digest": "sha256:84e7fb6cbdadc0817fd94524e539b77b0669792b6c0b677e55854a08c358590e",
     "digest_algorithm": "sha256",
     "digest_encoding": "sha256:<lowercase-hex>"
   },
@@ -145,8 +145,8 @@
     "policy_id": "cdb-pr-routing-v1"
   },
   "provider_work_order": {
-    "prompt_digest": "sha256:850bc9495f0de2f3d72ec9f3e308308e070bd4656e6999770ffb38b96e74fb56",
-    "prompt_ref": "tests/fixtures/agent_control/cursor/prompt_ok.txt",
+    "prompt_digest": "sha256:74738b4af1f0bc0d8bd34c38bea43c651ffe87bc4f580616f44c8334b67e2da4",
+    "prompt_ref": "tests/fixtures/agent_control/cursor/prompt_live_4258.txt",
     "source_commit": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"
   },
   "route": {

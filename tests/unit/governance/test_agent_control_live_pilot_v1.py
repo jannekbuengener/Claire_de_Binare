@@ -48,8 +48,11 @@ def _live_manifest(**overrides: object) -> dict:
             "config/agent-control",
             "tests/unit/governance",
             "tests/fixtures/agent_control",
+            "knowledge/logs/sessions",
         ],
         "subject": {"repo": "jannekbuengener/Claire_de_Binare", "pr_number": 9999},
+        # Offline recorded path: no wall-clock sleep between provider polls.
+        "poll_interval_seconds": 0,
     }
     data.update(overrides)
     return data
@@ -269,6 +272,65 @@ def test_delivery_empty_blocks_approval_pass(tmp_path: Path) -> None:
         if s["step"] == "delivery_verify"
     ]
     assert "DELIVERY_EMPTY" in codes
+    blob = json.dumps(report)
+    assert FAKE_KEY not in blob
+
+
+@pytest.mark.unit
+def test_poll_before_delivery_handles_creating_then_finished(tmp_path: Path) -> None:
+    """Official API: create returns CREATING without git; poll until FINISHED."""
+    calls = {"n": 0}
+
+    def http(*, method, url, json=None, headers=None):
+        del headers
+        if method == "POST" and str(url).endswith("/v1/agents"):
+            return {
+                "status": 200,
+                "json": {
+                    "agent": {"id": json["agentId"]},
+                    "run": {"id": "run-live-poll", "status": "CREATING"},
+                },
+            }
+        if method == "GET" and "/runs/" in str(url):
+            calls["n"] += 1
+            if calls["n"] < 3:
+                return {"status": 200, "json": {"status": "RUNNING"}}
+            return {
+                "status": 200,
+                "json": {
+                    "status": "FINISHED",
+                    "git": {
+                        "branches": [
+                            {
+                                "repoUrl": "github.com/jannekbuengener/Claire_de_Binare",
+                                "branch": "batch/agent-skills-issue-4258",
+                                "prUrl": (
+                                    "https://github.com/jannekbuengener/"
+                                    "Claire_de_Binare/pull/9999"
+                                ),
+                            }
+                        ]
+                    },
+                },
+            }
+        raise AssertionError(f"unexpected http call {method} {url}")
+
+    report = run_pilot(
+        _live_manifest(scenario_id="LIVE_POLL"),
+        repo_root=REPO_ROOT,
+        provider_id="cursor-cloud-api",
+        human_go_live_cursor=True,
+        state_path=tmp_path / "state.json",
+        http_transport=http,
+        gh_runner=_gh_ok,
+        credential_env={"CURSOR_API_KEY": FAKE_KEY},
+    )
+    assert report["final_status"] in {"PASS", "HOLD"}
+    poll = [s for s in report["step_results"] if s["step"] == "provider_poll"]
+    assert poll and poll[0]["status"] == "PASS"
+    assert calls["n"] >= 3
+    delivery = [s for s in report["step_results"] if s["step"] == "delivery_verify"]
+    assert delivery and delivery[0]["status"] == "PASS"
     blob = json.dumps(report)
     assert FAKE_KEY not in blob
 

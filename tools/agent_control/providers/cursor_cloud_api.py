@@ -34,10 +34,12 @@ class _CloudState:
 
 
 def _stable_agent_id(request: ProviderRequest) -> str:
-    """Client-supplied idempotent agent id from contract digest + attempt key."""
+    """Client-supplied idempotent agent id (official ``bc-<uuid>`` shape)."""
     seed = f"{request.contract_digest}|{request.idempotency_key or request.run_id}"
-    digest = hashlib.sha256(seed.encode("utf-8")).hexdigest()[:20]
-    return f"bc-{digest}"
+    digest = hashlib.sha256(seed.encode("utf-8")).hexdigest()
+    # Official docs show bc- + UUID; derive a stable UUID-shaped id (no randomness).
+    u = digest[:32]
+    return f"bc-{u[:8]}-{u[8:12]}-{u[12:16]}-{u[16:20]}-{u[20:32]}"
 
 
 class CursorCloudApiDriver:
@@ -211,6 +213,9 @@ class CursorCloudApiDriver:
             "agentId": agent_id_client,
         }
         starting_ref = route.get("starting_ref") or route.get("startingRef")
+        if not starting_ref and auto_create:
+            # Official API: omit or set startingRef; default to main for autoCreatePR.
+            starting_ref = "main"
         if pr_url and repo_url:
             body["repos"] = [{"url": repo_url, "prUrl": pr_url}]
         elif repo_url:
@@ -379,8 +384,10 @@ class CursorCloudApiDriver:
                 f"/v1/agents/{agent_id}/runs",
                 json_body={"prompt": {"text": request.prompt_text or ""}},
             )
-            new_run = body["id"]
-            status = body.get("status", "CREATING")
+            # Official v1: {"run": {"id": "...", "status": "..."}}; accept legacy flat id.
+            run_obj = body.get("run") if isinstance(body.get("run"), dict) else body
+            new_run = str(run_obj.get("id") or body.get("id") or new_run)
+            status = str(run_obj.get("status") or body.get("status") or "CREATING")
         else:
             status = "FINISHED"
         state.runs[new_run] = {"status": status, "usage": {"cost": None}}

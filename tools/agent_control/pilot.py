@@ -20,6 +20,7 @@ from __future__ import annotations
 import copy
 import json
 import re
+import time
 from datetime import datetime, timezone
 from pathlib import Path
 from typing import Any, Callable
@@ -32,7 +33,7 @@ from tools.agent_control.approval.context import (
     build_approval_context,
     default_repo_paths,
 )
-from tools.agent_control.clock import FrozenClock
+from tools.agent_control.clock import FrozenClock, SystemClock
 from tools.agent_control.credentials import cursor_api_key_present
 from tools.agent_control.delivery_verify import (
     normalize_cursor_git_branches,
@@ -42,6 +43,7 @@ from tools.agent_control.delivery_verify import (
 from tools.agent_control.dispatch import dispatch_run, watch_run
 from tools.agent_control.errors import AgentControlError, DispatchError, EvidenceError
 from tools.agent_control.evidence.emit import emit_evidence
+from tools.agent_control.evidence.redact import sanitize_result_refs
 from tools.agent_control.evidence.store import EvidenceJsonlStore
 from tools.agent_control.evidence.verify import verify_bundle, verify_store
 from tools.agent_control.load import load_registry_document
@@ -90,9 +92,112 @@ LIVE_LIMITATIONS = [
 GhRunner = Callable[[list[str]], dict[str, Any]]
 HttpTransport = Callable[..., Any]
 
+# Debug-mode NDJSON sink (session 0f4913); never logs secrets.
+_DEBUG_LOG_PATH = Path(__file__).resolve().parents[2] / "debug-0f4913.log"
+_PROVIDER_TERMINAL = frozenset({"SUCCEEDED", "FAILED", "CANCELLED"})
+
 
 class PilotError(AgentControlError):
     """Pilot harness fail-closed error."""
+
+
+def _agent_debug_log(
+    *,
+    hypothesis_id: str,
+    location: str,
+    message: str,
+    data: dict[str, Any],
+    run_id: str = "pre-live",
+) -> None:
+    # #region agent log
+    try:
+        payload = {
+            "sessionId": "0f4913",
+            "runId": run_id,
+            "hypothesisId": hypothesis_id,
+            "location": location,
+            "message": message,
+            "data": data,
+            "timestamp": int(time.time() * 1000),
+        }
+        with _DEBUG_LOG_PATH.open("a", encoding="utf-8") as handle:
+            handle.write(json.dumps(payload, separators=(",", ":")) + "\n")
+    except OSError:
+        pass
+    # #endregion
+
+
+def _poll_provider_until_terminal(
+    provider: Any,
+    run_store: Any,
+    run_id: str,
+    *,
+    poll_interval_seconds: float = 15.0,
+    max_polls: int = 240,
+    sleep_fn: Callable[[float], None] | None = None,
+) -> dict[str, Any]:
+    """Poll provider.watch until terminal status; update result_refs only.
+
+    Does not advance lifecycle (receipt must be bound before watch_run).
+    """
+    sleeper = sleep_fn or time.sleep
+    record = run_store.get(run_id)
+    if record is None:
+        raise PilotError("PILOT_RESUME_NOT_FOUND", f"run missing for poll: {run_id}")
+    provider_run_id = record.get("provider_run_id")
+    if not provider_run_id:
+        raise PilotError("PILOT_PROVIDER_RUN_MISSING", "no provider_run_id to poll")
+    refs = record.get("result_refs") or {}
+    agent_ref = refs.get("agent_id")
+    if agent_ref and hasattr(provider, "rehydrate"):
+        try:
+            provider.rehydrate(
+                provider_run_id=str(provider_run_id),
+                agent_id=str(agent_ref),
+                status="RUNNING",
+            )
+        except DispatchError:
+            pass
+
+    last_status = "UNKNOWN"
+    for i in range(max_polls):
+        result = provider.watch(str(provider_run_id))
+        last_status = str(result.normalized_status or "UNKNOWN")
+        record = run_store.get(run_id)
+        assert record is not None
+        rev = int(record.get("revision") or 0)
+        if result.result_refs:
+            record["result_refs"] = sanitize_result_refs(result.result_refs)
+        record["updated_at"] = SystemClock().now().isoformat().replace("+00:00", "Z")
+        record["revision"] = rev + 1
+        run_store.update_cas(run_id, rev, record)
+        git_info = normalize_cursor_git_branches(record.get("result_refs"))
+        _agent_debug_log(
+            hypothesis_id="H1",
+            location="pilot.py:_poll_provider_until_terminal",
+            message="provider_poll_tick",
+            data={
+                "poll_index": i,
+                "normalized_status": last_status,
+                "has_branch": bool(git_info.get("branch")),
+                "has_pr_url": bool(git_info.get("pr_url")),
+                "provider_run_id": str(provider_run_id),
+                "agent_id": str(agent_ref) if agent_ref else None,
+            },
+            run_id=str(run_id),
+        )
+        if last_status in _PROVIDER_TERMINAL:
+            return run_store.get(run_id) or record
+        if last_status == "UNKNOWN":
+            raise PilotError(
+                "PILOT_PROVIDER_STATUS_UNKNOWN",
+                "provider returned UNKNOWN during live poll",
+            )
+        sleeper(poll_interval_seconds)
+    raise PilotError(
+        "PILOT_POLL_TIMEOUT",
+        f"provider still {last_status} after {max_polls} polls",
+    )
 
 
 def _load_json(path: Path) -> Any:
@@ -847,6 +952,19 @@ def _inject_delivery_receipt(
         "delivery_status": expected_status,
         "observation_source": "github_delivery_verify",
     }
+    # Bind observed Cursor/GitHub delivery onto sealed expectations so
+    # autoCreatePR heads are not rejected against fixture placeholders (9999).
+    expected = dict(record.get("expected_delivery") or {})
+    route = dict(record.get("route") or {})
+    if target_pr is not None:
+        expected["target_pr"] = target_pr
+        route["target_pr"] = target_pr
+    if isinstance(target_branch, str) and target_branch:
+        expected["target_branch"] = target_branch
+        route["target_branch"] = target_branch
+    route["target_provenance"] = "cursor_git+github_delivery_verify"
+    record["expected_delivery"] = expected
+    record["route"] = route
     record["revision"] = rev + 1
     run_store.update_cas(run_id, rev, record)
 
@@ -881,7 +999,8 @@ def _run_live_cursor_pilot(
     root = repo_root or REPO_ROOT
     steps: list[dict[str, Any]] = []
     limitations = list(LIVE_LIMITATIONS)
-    clock = FrozenClock(datetime(2026, 8, 3, 0, 0, tzinfo=timezone.utc))
+    # Live polling must observe wall-clock; FrozenClock is for offline digests only.
+    clock = SystemClock()
     run_id: str | None = resume_run_id
     attempt: int | None = None
     contract_digest: str | None = None
@@ -908,6 +1027,16 @@ def _run_live_cursor_pilot(
     att_path = environment_attestation_path
     if att_path is None and manifest.get("environment_attestation_path"):
         att_path = _resolve(root, manifest["environment_attestation_path"])
+    raw_poll = manifest.get("poll_interval_seconds")
+    poll_interval = float(15.0 if raw_poll is None else raw_poll)
+    raw_max = manifest.get("max_polls")
+    max_polls = int(240 if raw_max is None else raw_max)
+    sleep_fn: Callable[[float], None] | None = None
+    if callable(manifest.get("_test_sleep_fn")):
+        sleep_fn = manifest["_test_sleep_fn"]  # type: ignore[assignment]
+    elif poll_interval <= 0:
+        sleep_fn = lambda _s: None  # noqa: E731 — offline recorded tests
+        poll_interval = 0.0
 
     # Credential presence before any driver/network construction.
     presence = cursor_api_key_present(env=credential_env, secrets_dir=secrets_dir)
@@ -1140,146 +1269,210 @@ def _run_live_cursor_pilot(
                 )
 
         if run_id and run and run.get("state") not in {"BLOCKED", "HOLD", "FAILED"}:
-            # Bind GitHub delivery from Cursor git refs before watch advances.
-            git_info = normalize_cursor_git_branches(run.get("result_refs"))
+            # Official API returns CREATING without git; poll until terminal first.
+            try:
+                run = _poll_provider_until_terminal(
+                    provider,
+                    run_store,
+                    str(run_id),
+                    poll_interval_seconds=max(poll_interval, 0.0),
+                    max_polls=max_polls,
+                    sleep_fn=sleep_fn,
+                )
+                steps.append(
+                    _step(
+                        "provider_poll",
+                        "PASS",
+                        detail={
+                            "provider_run_id": run.get("provider_run_id"),
+                            "result_refs_agent_id": (run.get("result_refs") or {}).get(
+                                "agent_id"
+                            ),
+                            "normalized_hint": "terminal_reached",
+                        },
+                    )
+                )
+            except PilotError as exc:
+                blocked = True
+                steps.append(
+                    _step(
+                        "provider_poll",
+                        "BLOCKED",
+                        detail={"code": exc.code, "message": exc.message},
+                    )
+                )
+                skip_approval = True
+                hold = True
+                run = run_store.get(str(run_id)) or run
+
+            # Bind GitHub delivery from Cursor git refs after terminal poll.
+            git_info = normalize_cursor_git_branches(
+                (run or {}).get("result_refs") if run else None
+            )
             pr_num = pr_number_from_url(
                 git_info.get("pr_url")
                 if isinstance(git_info.get("pr_url"), str)
                 else None
             )
-            if pr_num is None:
-                expected = run.get("expected_delivery") or {}
-                raw_pr = expected.get("target_pr") or (run.get("route") or {}).get(
-                    "target_pr"
-                )
-                if isinstance(raw_pr, int) and not isinstance(raw_pr, bool):
-                    pr_num = raw_pr
             branch = git_info.get("branch")
             if not isinstance(branch, str):
-                branch = (run.get("expected_delivery") or {}).get("target_branch") or (
-                    run.get("route") or {}
-                ).get("target_branch")
+                branch = None
+            # autoCreatePR: never fall back to fixture placeholder PR/branch.
+            if not auto_create_pr:
+                if pr_num is None and run:
+                    expected = run.get("expected_delivery") or {}
+                    raw_pr = expected.get("target_pr") or (run.get("route") or {}).get(
+                        "target_pr"
+                    )
+                    if isinstance(raw_pr, int) and not isinstance(raw_pr, bool):
+                        pr_num = raw_pr
+                if branch is None and run:
+                    branch = (run.get("expected_delivery") or {}).get(
+                        "target_branch"
+                    ) or (run.get("route") or {}).get("target_branch")
+                    if not isinstance(branch, str):
+                        branch = None
 
-            delivery = verify_github_delivery(
-                expected_repo=expected_repo,
-                pr_number=pr_num,
-                branch=branch if isinstance(branch, str) else None,
-                expected_paths_prefix=allowlist or None,
-                allow_empty=bool(manifest.get("delivery_allow_empty")),
-                runner=gh_runner,
+            _agent_debug_log(
+                hypothesis_id="H1",
+                location="pilot.py:delivery_verify_pre",
+                message="delivery_targets_from_git",
+                data={
+                    "auto_create_pr": bool(auto_create_pr),
+                    "pr_num": pr_num,
+                    "branch": branch,
+                    "has_git_pr_url": bool(git_info.get("pr_url")),
+                },
+                run_id=str(run_id),
             )
-            if not delivery.ok:
-                blocked = True
-                steps.append(
-                    _step(
-                        "delivery_verify",
-                        "BLOCKED",
-                        detail={
-                            "code": delivery.code,
-                            "message": delivery.message,
-                            "changed_files": delivery.changed_files,
-                        },
-                    )
-                )
-                # N3/N5-style: do not allow approval PASS after delivery failure.
-                skip_approval = True
-                hold = True
-            else:
-                if delivery.head_sha:
-                    head_sha = delivery.head_sha
-                if delivery.base_sha:
-                    base_sha = delivery.base_sha
-                expected_status = (run.get("expected_delivery") or {}).get(
-                    "expected_status"
-                ) or "DONE_SLICE_ADDED_TO_BATCH_PR"
-                _inject_delivery_receipt(
-                    run_store,
-                    str(run_id),
-                    target_pr=delivery.pr_number or pr_num,
-                    target_branch=(
-                        delivery.branch if isinstance(delivery.branch, str) else branch
-                    ),
-                    commit=str(delivery.head_sha),
-                    expected_status=str(expected_status),
-                )
-                steps.append(
-                    _step(
-                        "delivery_verify",
-                        "PASS",
-                        detail={
-                            "head_sha": delivery.head_sha,
-                            "pr_number": delivery.pr_number,
-                            "branch": delivery.branch,
-                            "changed_files": delivery.changed_files,
-                        },
-                    )
-                )
 
-                for _ in range(8):
-                    run = watch_run(
-                        str(run_id),
-                        run_store,
-                        provider=provider,
-                        clock=clock,
-                        auto_advance_success=False,
-                    )
-                    if run.get("state") in {
-                        "AWAITING_APPROVAL",
-                        "PASS",
-                        "HOLD",
-                        "BLOCKED",
-                        "FAILED",
-                        "CANCELLED",
-                    }:
-                        break
-                terminal = run.get("state")
-                if terminal == "AWAITING_APPROVAL":
-                    hold = True
+            if run_id and run and run.get("state") not in {"BLOCKED", "HOLD", "FAILED"}:
+                delivery = verify_github_delivery(
+                    expected_repo=expected_repo,
+                    pr_number=pr_num,
+                    branch=branch if isinstance(branch, str) else None,
+                    expected_paths_prefix=allowlist or None,
+                    allow_empty=bool(manifest.get("delivery_allow_empty")),
+                    runner=gh_runner,
+                )
+                if not delivery.ok:
+                    blocked = True
                     steps.append(
                         _step(
-                            "provider_watch",
-                            "HOLD",
+                            "delivery_verify",
+                            "BLOCKED",
                             detail={
-                                "state": terminal,
-                                "provider_run_id": run.get("provider_run_id"),
-                                "note": "awaiting_approval_operator_handoff",
+                                "code": delivery.code,
+                                "message": delivery.message,
+                                "changed_files": delivery.changed_files,
                             },
                         )
                     )
-                elif terminal == "PASS":
+                    # N3/N5-style: do not allow approval PASS after delivery failure.
+                    skip_approval = True
+                    hold = True
+                else:
+                    if delivery.head_sha:
+                        head_sha = delivery.head_sha
+                    if delivery.base_sha:
+                        base_sha = delivery.base_sha
+                    expected_status = (run.get("expected_delivery") or {}).get(
+                        "expected_status"
+                    ) or "DONE_SLICE_ADDED_TO_BATCH_PR"
+                    _inject_delivery_receipt(
+                        run_store,
+                        str(run_id),
+                        target_pr=delivery.pr_number or pr_num,
+                        target_branch=(
+                            delivery.branch
+                            if isinstance(delivery.branch, str)
+                            else branch
+                        ),
+                        commit=str(delivery.head_sha),
+                        expected_status=str(expected_status),
+                    )
                     steps.append(
                         _step(
-                            "provider_watch",
+                            "delivery_verify",
                             "PASS",
                             detail={
-                                "state": terminal,
-                                "provider_run_id": run.get("provider_run_id"),
+                                "head_sha": delivery.head_sha,
+                                "pr_number": delivery.pr_number,
+                                "branch": delivery.branch,
+                                "changed_files": delivery.changed_files,
                             },
                         )
                     )
-                elif terminal in {"HOLD", "BLOCKED"}:
-                    hold = terminal == "HOLD"
-                    blocked = terminal == "BLOCKED"
-                    steps.append(
-                        _step(
-                            "provider_watch",
-                            terminal,
-                            detail={
-                                "state": terminal,
-                                "terminal_code": run.get("terminal_code"),
-                            },
+
+                    for _ in range(8):
+                        run = watch_run(
+                            str(run_id),
+                            run_store,
+                            provider=provider,
+                            clock=clock,
+                            auto_advance_success=False,
                         )
-                    )
-                elif terminal == "FAILED":
-                    fail = True
-                    steps.append(
-                        _step("provider_watch", "FAIL", detail={"state": terminal})
-                    )
-                else:
-                    unknown = True
-                    steps.append(
-                        _step("provider_watch", "UNKNOWN", detail={"state": terminal})
-                    )
+                        if run.get("state") in {
+                            "AWAITING_APPROVAL",
+                            "PASS",
+                            "HOLD",
+                            "BLOCKED",
+                            "FAILED",
+                            "CANCELLED",
+                        }:
+                            break
+                    terminal = run.get("state")
+                    if terminal == "AWAITING_APPROVAL":
+                        hold = True
+                        steps.append(
+                            _step(
+                                "provider_watch",
+                                "HOLD",
+                                detail={
+                                    "state": terminal,
+                                    "provider_run_id": run.get("provider_run_id"),
+                                    "note": "awaiting_approval_operator_handoff",
+                                },
+                            )
+                        )
+                    elif terminal == "PASS":
+                        steps.append(
+                            _step(
+                                "provider_watch",
+                                "PASS",
+                                detail={
+                                    "state": terminal,
+                                    "provider_run_id": run.get("provider_run_id"),
+                                },
+                            )
+                        )
+                    elif terminal in {"HOLD", "BLOCKED"}:
+                        hold = terminal == "HOLD"
+                        blocked = terminal == "BLOCKED"
+                        steps.append(
+                            _step(
+                                "provider_watch",
+                                terminal,
+                                detail={
+                                    "state": terminal,
+                                    "terminal_code": run.get("terminal_code"),
+                                },
+                            )
+                        )
+                    elif terminal == "FAILED":
+                        fail = True
+                        steps.append(
+                            _step("provider_watch", "FAIL", detail={"state": terminal})
+                        )
+                    else:
+                        unknown = True
+                        steps.append(
+                            _step(
+                                "provider_watch",
+                                "UNKNOWN",
+                                detail={"state": terminal},
+                            )
+                        )
     except DispatchError as exc:
         if exc.code in {
             "DISPATCH_PROVIDER_MALFORMED",

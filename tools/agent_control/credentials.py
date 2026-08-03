@@ -33,6 +33,8 @@ def cursor_api_key_present(
         for candidate in (
             secrets_dir / "CURSOR_API_KEY",
             secrets_dir / "CURSOR_API_KEY.txt",
+            # Operator alias used on Windows secret store (load into env before live).
+            secrets_dir / "CURSOR_API.txt",
         ):
             if candidate.is_file() and candidate.stat().st_size > 0:
                 return CredentialPresence(
