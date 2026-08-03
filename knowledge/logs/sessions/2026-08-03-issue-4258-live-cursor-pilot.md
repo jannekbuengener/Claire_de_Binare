@@ -2,47 +2,58 @@
 
 Date: 2026-08-03  
 Branch: `dedicated/agent-skills-issue-4258`  
-Base: `origin/main` @ `abf997d5` (PR #4301 foundation)  
-Mode: Delivery (Plan-GO) — no merge, no `cdb-local-ci` publish
+PR: #4302 @ `2163e1ac`  
+Mode: Controlled live pilot (Plan-GO) — no merge, no `cdb-local-ci` publish
 
 ## Brain Evidence
 
 - brain_source: repo-only / not-used (Context tools available, no enrichment records)
 - repo_fallback_reason: insufficient_evidence
+- context_tool_status: available
 
-## Delivered
+## Official API Audit
 
-- Human-GO live gates on dispatch/preflight (`allow_live_cursor` + `human_go_live_cursor`)
-- `CursorCloudApiDriver`: agentId idempotency, optional autoCreatePR under GO, live urllib transport, watch rehydrate
-- Pilot/CLI: `--provider cursor-cloud-api --human-go-live-cursor --state --resume --auto-create-pr`
-- Credential presence check (no secret values)
-- GitHub delivery verify + scope allowlist
-- Lifecycle pause at `AWAITING_APPROVAL` (no auto merge)
-- Registry agent `acp-live-cursor-pilot` + env `cursor-live-pilot.v1`
-- Runbook `docs/runbooks/agent_control_live_cursor_pilot.md`
-- Offline unit tests (live pilot + mock regression + cursor providers)
+- Source: https://cursor.com/docs/cloud-agent/api/endpoints (Cloud Agents API v1 public beta)
+- Auth: Basic `base64(api_key:)` — ALIGNED
+- Create: POST `/v1/agents` returns `{agent, run}` — ALIGNED
+- agentId must be `bc-<uuid>` or `bc-<string>-<uuid>` — FIXED (uuid5)
+- No `branchName`; use `repos[].startingRef` / auto branch — ALIGNED
+- Follow-up response `{run:{id,status}}` — FIXED
+- Poll before delivery verify — FIXED
+- Skip delivery verify on provider FAILED — FIXED
 
-## Controlled live attempt
+## Controlled live run (exactly one successful create)
 
-- Human-GO: yes (Plan-GO)
-- `CURSOR_API_KEY` present: **false**
-- Result: `final_status=BLOCKED`, `provider_call_count=0`, no network
-- Evidence: `artifacts/agent-control/pilot/live-20260803-precondition/` (local; redacted)
+| Field | Value |
+| --- | --- |
+| CDB run_id | `adr-ee0a9384bc9940a9` |
+| Cursor agent_id | `bc-d1ba82b5-db1a-5040-b50a-2007040a65c7` |
+| Cursor run_id | `run-d4d336e2-f7d5-4ab6-bbd8-1af94f9a094b` |
+| Cursor terminal | `ERROR` / normalized `FAILED` |
+| Claimed branch | `cloud-cursor/cursor-cloud-pilot-marker-3c10` (not on GitHub; 404) |
+| PR from Cursor | none |
+| provider_call_count (create) | 1 |
+| Resume provider_call_count | 0 |
+| credential_present | true (env; value never logged) |
+| Approval | SKIP (no delivery head) |
+| Authority limits | all false |
+
+Prior HTTP 400 attempt (`Invalid bcId format`) created **zero** Cursor resources; corrected create is the sole live agent/run.
 
 ## Validation
 
-- `pytest` live+mock+cursor provider suites: 47 passed (Windows pytest tmp cleanup noise ignored)
-- `ruff check` on touched Python: pass
-- `black --check` after format: pass
-- `python -m tools.agent_control registry validate`: VALID
+- Offline unit suites PASS after API alignment fixes
+- Live: create+poll verified; delivery not on GitHub
+- No second Cursor create; resume-only after ERROR
 
 ## Boundaries
 
 - LR NO-GO unchanged
 - Refs #4258 only (not Closes)
-- No merge / no cdb-local-ci publish / no branch protection change
-- Cursor Approval Agents: MANUAL_BOOTSTRAP_ONLY
+- No merge / no cdb-local-ci / no branch protection
+- Approval Agents: MANUAL_BOOTSTRAP_ONLY / unproven
+- Zero-Click: NOT fully proven (Cursor ERROR, no delivery PR)
 
-## Follow-up for Issue closure
+## Status
 
-Operator must bootstrap `CURSOR_API_KEY`, re-run Human-GO live pilot once, capture provider_run_id + GitHub head + AWAITING_APPROVAL evidence, then allow `Closes #4258` in a later merge session.
+`HOLD_SCOPE_BLOCKER` — live Cursor run evidenced, but GitHub delivery missing (phantom branch / provider ERROR).
