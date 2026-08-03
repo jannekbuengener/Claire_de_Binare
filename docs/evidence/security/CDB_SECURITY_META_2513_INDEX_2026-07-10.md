@@ -4,6 +4,10 @@
 **Purpose:** Canonical cluster index for upstream-blocked Trivy residuals (issue-body supplement via comment + repo SSOT)  
 **LR:** NO-GO
 
+**2026-08-03 backlog reconciliation:** full open `type:security` disposition matrix lives in
+[`CDB_SECURITY_BACKLOG_RECONCILIATION_2026-08-03.md`](CDB_SECURITY_BACKLOG_RECONCILIATION_2026-08-03.md)
+(+ JSON). This index remains the residual-cluster view; it does not replace the reconciliation snapshot.
+
 ---
 
 ## Active clusters (6)
