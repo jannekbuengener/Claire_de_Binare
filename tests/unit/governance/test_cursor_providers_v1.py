@@ -267,6 +267,51 @@ def test_cloud_fake_http_sse_and_guards() -> None:
             }
         if method == "POST" and url.endswith("/cancel"):
             return {"status": 200, "json": {"status": "CANCELLED"}}
+        # Documented agent-scoped usage (NOT /runs/{id}/usage).
+        if (
+            method == "GET"
+            and "/agents/" in url
+            and url.rstrip("/").split("?")[0].endswith("/usage")
+        ):
+            path_only = url.split("?")[0]
+            assert "/runs/" not in path_only
+            return {
+                "status": 200,
+                "json": {
+                    "totalUsage": {
+                        "totalTokens": 10,
+                        "inputTokens": 6,
+                        "outputTokens": 4,
+                    },
+                    "cost": {"chargedCents": 0.1},
+                    "runs": [
+                        {
+                            "id": "run-1",
+                            "usageUuid": "u-1",
+                            "usage": {
+                                "totalTokens": 10,
+                                "inputTokens": 6,
+                                "outputTokens": 4,
+                            },
+                            "cost": {"chargedCents": 0.1},
+                        }
+                    ],
+                },
+            }
+        if method == "GET" and url.endswith("/artifacts"):
+            assert "/runs/" not in url
+            return {
+                "status": 200,
+                "json": {
+                    "items": [
+                        {
+                            "path": "artifacts/log.txt",
+                            "sizeBytes": 10,
+                            "digest": "sha256:" + "a" * 64,
+                        }
+                    ]
+                },
+            }
         if method == "GET" and "/runs/" in url:
             return {"status": 200, "json": {"status": "FINISHED"}}
         if method == "POST" and url.endswith("/archive"):
@@ -329,7 +374,9 @@ def test_cloud_fake_http_sse_and_guards() -> None:
     arts = driver.list_artifacts(result.provider_run_id)
     assert arts[0]["path"].startswith("artifacts/")
     usage = driver.get_usage(result.provider_run_id)
-    assert usage.get("cost") is None
+    assert usage.get("total_tokens") == 10
+    assert usage.get("source_path", "").endswith("/usage")
+    assert not any("/runs/" in u and u.endswith("/usage") for u in posts)
     driver.archive(result.provider_run_id)
     driver.unarchive(result.provider_run_id)
     with pytest.raises(DispatchError):
