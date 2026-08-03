@@ -58,8 +58,12 @@ def test_kill_switch_enable_requires_loopback_before_serve_and_state() -> None:
     assert "Enable-ServeTcpMapping" in enable
     assert "Test-LiveBridgeTriple" in enable
     # State ENABLED must come after Serve enable (ordering contract).
-    assert enable.index("Enable-ServeTcpMapping") < enable.index("Write-State 'ENABLED'")
-    assert enable.index("Test-LoopbackListener") < enable.index("Enable-ServeTcpMapping")
+    assert enable.index("Enable-ServeTcpMapping") < enable.index(
+        "Write-State 'ENABLED'"
+    )
+    assert enable.index("Test-LoopbackListener") < enable.index(
+        "Enable-ServeTcpMapping"
+    )
     # Must not use Resolve-LiveBridgeHealth mid-enable (DISABLED file false-negative).
     assert "Resolve-LiveBridgeHealth" not in enable
 
@@ -139,7 +143,7 @@ def test_setup_sshd_hermes_loopback_and_serve_not_public_fw() -> None:
     # Serve raw TCP, never Funnel
     assert "tailscale serve --bg" in text
     assert "--tcp=$Port" in text or "--tcp=" in text
-    assert "tcp://127.0.0.1:$Port" in text or 'tcp://127.0.0.1:$Port' in text
+    assert "tcp://127.0.0.1:$Port" in text or "tcp://127.0.0.1:$Port" in text
     assert "Enable-TailscaleServeTcp" in text
     assert "Assert-FunnelOff" in text
     assert "funnel" in text.lower()
