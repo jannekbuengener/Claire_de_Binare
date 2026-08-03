@@ -7,9 +7,14 @@ SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 REPO_HERMES_ROOT="$(cd "${SCRIPT_DIR}/.." && pwd)"
 PIN_FILE="${HERMES_VERSION_PIN:-${REPO_HERMES_ROOT}/VERSION_PIN.yaml}"
 INSTALL_USER="${HERMES_LINUX_USER:-hermes}"
+declare -A PROFILE_LINUX_USERS=(
+  [jannek-assistant]=hermes-jannek-assistant
+  [cdb-engineer]=hermes-cdb-engineer
+)
 HERMES_BASE="${HERMES_BASE_DIR:-/var/lib/hermes}"
 OPT_DIR="${HERMES_OPT_DIR:-/opt/hermes}"
 INSTALLER_HOME="${HERMES_INSTALLER_HOME:-/var/lib/hermes/_installer_home}"
+LOG_BASE="${HERMES_LOG_DIR:-/var/log/hermes}"
 SYSTEMD_SRC="${REPO_HERMES_ROOT}/systemd"
 ENV_SRC="${SYSTEMD_SRC}/env"
 PROFILES_SRC="${CDB_HERMES_PROFILES:-${REPO_HERMES_ROOT}/../../config/hermes/profiles}"
@@ -39,28 +44,45 @@ yaml_get() {
   ' "$file"
 }
 
+ensure_profile_linux_users() {
+  local profile user
+  for profile in jannek-assistant cdb-engineer; do
+    user="${PROFILE_LINUX_USERS[${profile}]}"
+    if ! id -u "${user}" >/dev/null 2>&1; then
+      useradd --system --user-group --create-home=no --shell /usr/sbin/nologin "${user}" \
+        || die "failed to create ${user}"
+      log "created system user ${user}"
+    fi
+  done
+}
+
 install_systemd_units() {
   local unit_src="${SYSTEMD_SRC}/hermes-dashboard@.service"
+  local broker_src="${SYSTEMD_SRC}/hermes-github-token.service"
   [[ -f "${unit_src}" ]] || die "missing systemd unit: ${unit_src}"
   install -m 0644 "${unit_src}" /etc/systemd/system/hermes-dashboard@.service
+  if [[ -f "${broker_src}" ]]; then
+    install -m 0644 "${broker_src}" /etc/systemd/system/hermes-github-token.service
+  fi
   # Remove legacy misnamed unit if present (hermes serve is not official).
   rm -f /etc/systemd/system/hermes-serve@.service
   systemctl daemon-reload
-  log "installed systemd template hermes-dashboard@.service"
+  log "installed systemd template hermes-dashboard@.service (+ broker if present)"
 }
 
 install_profile_env_files() {
   mkdir -p /etc/hermes
-  chmod 0750 /etc/hermes
-  # Group must be INSTALL_USER so hermes can probe /etc/hermes/.env existence
-  # without PermissionError; directory stays root-owned (#4329).
-  chown root:"${INSTALL_USER}" /etc/hermes
-  local profile port
+  chmod 0751 /etc/hermes
+  # Directory root-owned; each env file is root:profile-user 0640 (B2.0).
+  # No shared hermes group mediates cross-profile secret/env access.
+  chown root:root /etc/hermes
+  local profile port user
   declare -A PORTS=(
     [jannek-assistant]=9119
     [cdb-engineer]=9120
   )
   for profile in "${!PORTS[@]}"; do
+    user="${PROFILE_LINUX_USERS[${profile}]}"
     local dest="/etc/hermes/${profile}.env"
     if [[ ! -f "${dest}" ]]; then
       if [[ -f "${ENV_SRC}/${profile}.env.example" ]]; then
@@ -69,14 +91,14 @@ install_profile_env_files() {
         printf 'HERMES_PORT=%s\n' "${PORTS[$profile]}" >"${dest}"
         chmod 0640 "${dest}"
       fi
-      chown root:"${INSTALL_USER}" "${dest}"
+      chown "root:${user}" "${dest}"
       log "created ${dest}"
     else
       # Ensure HERMES_PORT present for concurrent profiles.
       if ! grep -q '^HERMES_PORT=' "${dest}"; then
         die "${dest} missing HERMES_PORT — refuse ambiguous bind"
       fi
-      chown root:"${INSTALL_USER}" "${dest}"
+      chown "root:${user}" "${dest}"
       chmod 0640 "${dest}"
       log "env present: ${dest}"
     fi
@@ -84,13 +106,19 @@ install_profile_env_files() {
 }
 
 ensure_profile_homes() {
-  local profile
+  local profile user home logdir
+  mkdir -p "${LOG_BASE}"
+  chmod 0751 "${LOG_BASE}"
   for profile in jannek-assistant cdb-engineer; do
-    local home="${HERMES_BASE}/profiles/${profile}"
+    user="${PROFILE_LINUX_USERS[${profile}]}"
+    home="${HERMES_BASE}/profiles/${profile}"
+    logdir="${LOG_BASE}/${profile}"
     mkdir -p "${home}"/{memories,sessions,skills,logs,backups}
-    chown -R "${INSTALL_USER}:${INSTALL_USER}" "${home}"
+    mkdir -p "${logdir}"
+    chown -R "${user}:${user}" "${home}" "${logdir}"
     chmod 0700 "${home}"
     chmod 0700 "${home}/memories" "${home}/sessions" "${home}/logs"
+    chmod 0700 "${logdir}"
     if [[ -d "${PROFILES_SRC}/${profile}" ]]; then
       rsync -a --ignore-existing \
         --exclude '.env' \
@@ -99,16 +127,15 @@ ensure_profile_homes() {
         --exclude 'state.db*' \
         --exclude 'logs/' \
         "${PROFILES_SRC}/${profile}/" "${home}/"
-      chown -R "${INSTALL_USER}:${INSTALL_USER}" "${home}"
+      chown -R "${user}:${user}" "${home}"
     fi
-    # Sync port into profile config.yaml server.port if present.
-    log "profile home ready: ${profile} -> ${home}"
+    log "profile home ready: ${profile} -> ${home} (uid ${user})"
   done
   mkdir -p "${HERMES_BASE}/profiles/validation-chief"
-  chown -R "${INSTALL_USER}:${INSTALL_USER}" "${HERMES_BASE}/profiles/validation-chief"
   chmod 0700 "${HERMES_BASE}/profiles/validation-chief"
   touch "${HERMES_BASE}/profiles/validation-chief/.DISABLED"
-  chown "${INSTALL_USER}:${INSTALL_USER}" "${HERMES_BASE}/profiles/validation-chief/.DISABLED"
+  chown root:root "${HERMES_BASE}/profiles/validation-chief" \
+    "${HERMES_BASE}/profiles/validation-chief/.DISABLED"
 }
 
 verify_pin() {
@@ -205,14 +232,15 @@ ensure_dashboard_runtime_assets() {
   fi
 
   for profile in jannek-assistant cdb-engineer; do
+    local user="${PROFILE_LINUX_USERS[${profile}]}"
     home="${HERMES_BASE}/profiles/${profile}"
     [[ -d "${home}" ]] || die "profile home missing: ${home}"
     # Hermes resolves managed Node under \$HERMES_HOME/node.
     ln -sfn "${node_root}" "${home}/node"
-    chown -h "${INSTALL_USER}:${INSTALL_USER}" "${home}/node" || true
+    chown -h "${user}:${user}" "${home}/node" || true
     # Write upstream-compatible stamp so dashboard boot skips rebuild without npm
     # in a hardened unit PATH. Uses hermes_cli helpers from the pinned checkout.
-    sudo -u "${INSTALL_USER}" env \
+    sudo -u "${user}" env \
       HERMES_HOME="${home}" \
       PATH="${home}/node/bin:${node_bin}:${PATH}" \
       "${code_dir}/venv/bin/python" - <<'PY'
@@ -254,12 +282,15 @@ enable_services() {
 harden_sudoers_after_bootstrap() {
   local limited="/etc/sudoers.d/99-cdb-hermes"
   cat >"${limited}" <<'EOF'
-# Post-bootstrap: service control only — no general root shell (#4289).
+# Post-bootstrap: service control only — no general root shell (#4289 B2.0).
+# Shared hermes may restart dashboards; must NOT start the GitHub token broker.
 hermes ALL=(root) NOPASSWD: /bin/systemctl start hermes-dashboard@*, /bin/systemctl stop hermes-dashboard@*, /bin/systemctl restart hermes-dashboard@*, /bin/systemctl status hermes-dashboard@*, /bin/systemctl is-active hermes-dashboard@*
+hermes-jannek-assistant ALL=(root) NOPASSWD: /bin/systemctl status hermes-dashboard@jannek-assistant.service, /bin/systemctl is-active hermes-dashboard@jannek-assistant.service
+hermes-cdb-engineer ALL=(root) NOPASSWD: /bin/systemctl status hermes-dashboard@cdb-engineer.service, /bin/systemctl is-active hermes-dashboard@cdb-engineer.service, /bin/systemctl start hermes-github-token.service, /bin/systemctl status hermes-github-token.service
 EOF
   chmod 0440 "${limited}"
   if visudo -cf "${limited}" >/dev/null 2>&1; then
-    log "sudoers hardened to service-only NOPASSWD"
+    log "sudoers hardened (broker start: hermes-cdb-engineer only)"
   else
     die "sudoers harden failed validation — refuse leaving bootstrap ALL in place without check"
   fi
@@ -273,6 +304,7 @@ main() {
   pin_pair="$(verify_pin)"
   git_ref="${pin_pair%% *}"
   git_commit="${pin_pair##* }"
+  ensure_profile_linux_users
   install_systemd_units
   install_profile_env_files
   ensure_profile_homes

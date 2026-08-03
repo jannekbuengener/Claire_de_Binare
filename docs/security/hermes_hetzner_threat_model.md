@@ -36,6 +36,8 @@ SYN-ACK for peer traffic (`HOLD_WINDOWS_HOST_TCP_STACK`). Remote entry is
 **only** private Tailscale Serve TCP → `127.0.0.1:22` (`sshd-hermes`
 loopback-only). Funnel forbidden; no public sshd firewall allow.
 
+OS trust boundary: each dashboard runs as a dedicated nologin UID (`hermes-jannek-assistant` / `hermes-cdb-engineer`). Shared `User=hermes` is forbidden for profile processes — `HERMES_HOME` alone is not isolation.
+
 App `4410232` (`cdb-local-ci`) is **not** the Hermes write App unless live
 permissions prove `contents`/`pull_requests`/`issues` write without `checks:write`.
 

@@ -20,5 +20,7 @@ Claire de Binare engineering profile for Hermes on Hetzner (#4289).
 - Auth lineage: #4170 / #4195 — reuse App credentials; do not create a second authenticator.
 
 ## Secrets
-- PEM/App credentials live outside agent-readable workspaces.
+- PEM/App credentials live outside agent-readable workspaces (`/etc/hermes/secrets/`, root `0600`).
 - Use `python -m tools.hermes_ops mint-token` — never embed tokens in prompts/memory.
+- OS identity: this profile runs as Linux user `hermes-cdb-engineer` (not shared `hermes`).
+- Tokens only under `/run/hermes/cdb-engineer/` (`0700`/`0600`); never under profile homes.
