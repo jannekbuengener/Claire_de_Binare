@@ -9,6 +9,7 @@
     "report_id",
     "dataset_id",
     "dataset_fingerprint",
+    "content_fingerprint",
     "generated_at",
     "symbol",
     "timeframe",

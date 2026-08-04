@@ -3,6 +3,7 @@
 Uses Binance Data Vision monthly kline archives with official .CHECKSUM files.
 Cross-venue research evidence only — not MEXC same-venue execution evidence.
 """
+
 # ruff: noqa: E402
 
 from __future__ import annotations
@@ -35,6 +36,7 @@ from tools.market_data.historical_common import (
     HttpFetcher,
     NormalizedCandle,
     arvp_load_smoke,
+    assert_dq_content_binding,
     build_quality_report,
     detect_timestamp_unit,
     decimal_str,
@@ -115,9 +117,7 @@ def monthly_archive_url(
     month: int,
 ) -> str:
     filename = monthly_archive_filename(symbol, interval, year, month)
-    return (
-        f"{base.rstrip('/')}/data/spot/monthly/klines/{symbol}/{interval}/{filename}"
-    )
+    return f"{base.rstrip('/')}/data/spot/monthly/klines/{symbol}/{interval}/{filename}"
 
 
 def monthly_checksum_url(
@@ -128,9 +128,12 @@ def monthly_checksum_url(
     year: int,
     month: int,
 ) -> str:
-    return monthly_archive_url(
-        base, symbol=symbol, interval=interval, year=year, month=month
-    ) + ".CHECKSUM"
+    return (
+        monthly_archive_url(
+            base, symbol=symbol, interval=interval, year=year, month=month
+        )
+        + ".CHECKSUM"
+    )
 
 
 def discover_source(
@@ -214,7 +217,9 @@ def parse_binance_kline_csv(
         raise HistoricalProbeError("Binance CSV archive has no data rows")
 
     open_unit = detect_timestamp_unit(data_rows[0][0])
-    close_unit = detect_timestamp_unit(data_rows[0][6]) if len(data_rows[0]) > 6 else open_unit
+    close_unit = (
+        detect_timestamp_unit(data_rows[0][6]) if len(data_rows[0]) > 6 else open_unit
+    )
 
     candles: list[NormalizedCandle] = []
     for row in data_rows:
@@ -239,8 +244,12 @@ def parse_binance_kline_csv(
                 source_type="binance_public_data",
                 source_file_sha256=source_file_sha256,
                 close_ts_ms=close_ts_ms,
-                taker_buy_base_volume=decimal_str(row[9]) if len(row) > 9 and row[9] else None,
-                taker_buy_quote_volume=decimal_str(row[10]) if len(row) > 10 and row[10] else None,
+                taker_buy_base_volume=(
+                    decimal_str(row[9]) if len(row) > 9 and row[9] else None
+                ),
+                taker_buy_quote_volume=(
+                    decimal_str(row[10]) if len(row) > 10 and row[10] else None
+                ),
                 extra_fields=tuple(BINANCE_KLINE_COLUMNS),
             )
         )
@@ -513,7 +522,9 @@ def run_probe(
     checksum_path = raw_dir / f"{archive_name}.CHECKSUM"
 
     checksum_text = fetcher.fetch_text(checksum_url)
-    official_checksum = parse_official_checksum(checksum_text, expected_filename=archive_name)
+    official_checksum = parse_official_checksum(
+        checksum_text, expected_filename=archive_name
+    )
     if not checksum_path.exists():
         checksum_path.write_text(checksum_text, encoding="utf-8")
 
@@ -543,6 +554,9 @@ def run_probe(
         step_ms=ONE_MINUTE_MS,
         source_hash=norm_hash,
         second_parse_hash=second_parse_hash,
+    )
+    assert_dq_content_binding(
+        quality, content_fingerprint=quality["content_fingerprint"]
     )
 
     normalized_dir = (
@@ -725,7 +739,9 @@ def run_probe(
 
 
 def main() -> int:
-    parser = argparse.ArgumentParser(description="Binance historical source probe (#3990)")
+    parser = argparse.ArgumentParser(
+        description="Binance historical source probe (#3990)"
+    )
     parser.add_argument("--symbol", default="BTCUSDT")
     parser.add_argument("--interval", default="1m")
     parser.add_argument("--month", default="2026-06")

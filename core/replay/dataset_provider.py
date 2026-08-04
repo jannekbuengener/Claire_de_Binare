@@ -34,6 +34,7 @@ from pathlib import Path
 from typing import Protocol, Sequence
 
 from core.replay.dataset_identity import content_fingerprint, request_fingerprint
+from core.replay.dataset_integrity_rules import assert_replay_integrity
 from core.replay.dataset_spec import (
     DatasetSpec,
     DatasetSpecError as DatasetSpecError,
@@ -149,6 +150,21 @@ class DatasetProvider(Protocol):
         pass
 
 
+def _enforce_replay_integrity(candles: list[dict], source_label: str) -> None:
+    """Fail-closed Gap/Dup/OOO/Cadence gate with machine-readable codes (CDB-051)."""
+    if not candles:
+        raise DatasetLoadError(f"No candles in dataset: {source_label}")
+    try:
+        assert_replay_integrity(
+            candles,
+            start_ts_ms=int(candles[0]["ts_ms"]),
+            end_ts_ms=int(candles[-1]["ts_ms"]),
+            step_ms=_ONE_MINUTE_MS,
+        )
+    except ValueError as exc:
+        raise DatasetLoadError(f"{exc} Source: {source_label}") from exc
+
+
 def _validate_candle_series(candles: list[dict], source_label: str) -> None:
     """Validate a candle series for shape, ordering, and 1-minute cadence.
 
@@ -240,6 +256,7 @@ class FileBackedDatasetProvider:
         candles = self._parse(raw, file_path)
         source_label = str(file_path)
         _validate_candle_series(candles, source_label)
+        _enforce_replay_integrity(candles, source_label)
 
         if is_file_discover_window(spec):
             # Discover path: shape/cadence/warmup-length only; no window claim.
@@ -403,6 +420,7 @@ class DBBackedDatasetProvider:
 
         source_label = f"db:{spec.symbol}"
         _validate_candle_series(candles, source_label=source_label)
+        _enforce_replay_integrity(candles, source_label)
         enforce_exact_window(candles, spec, source_label)
 
         loaded = tuple(dict(c) for c in candles)

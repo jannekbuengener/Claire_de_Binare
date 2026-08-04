@@ -3,6 +3,7 @@
   "report_id": "dq-primary-breakout-v1-btcusdt-001",
   "dataset_id": "dataset-primary-breakout-v1-reference-20260418",
   "dataset_fingerprint": "sha256:01f30b10fb3e7712a2c0e8b8122ce1789ee9e669ff04d6cfbb9fc7034edcdb12",
+  "content_fingerprint": "01f30b10fb3e7712a2c0e8b8122ce1789ee9e669ff04d6cfbb9fc7034edcdb12",
   "generated_at": "2026-06-06T00:00:00Z",
   "symbol": "BTCUSDT",
   "timeframe": "1m",
