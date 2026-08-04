@@ -34,9 +34,7 @@ from .metric_contract import (
 SCHEMA_VERSION = "arvp_strategy_metrics.v1"
 EVIDENCE_CLASS = "historical_cross_venue_research"
 VENUE = "binance"
-ALLOWED_SCENARIOS = frozenset(
-    {"baseline", "pessimistic_execution", "feed_gap"}
-)
+ALLOWED_SCENARIOS = frozenset({"baseline", "pessimistic_execution", "feed_gap"})
 
 REQUIRED_METRIC_FIELDS = (
     "gross_pnl_quote",
@@ -315,6 +313,7 @@ def extract_scenario_record(
         "rankable": rankable,
         "not_rankable_reasons": not_rankable_reasons,
         "data_quality_flags": sorted(set(data_quality_flags)),
+        "rankability_blocking_flags": list(candle.rankability_blocking_flags),
     }
 
     for field in REQUIRED_METRIC_FIELDS + OPTIONAL_METRIC_FIELDS:
@@ -362,11 +361,17 @@ def extract_campaign_metrics(
     canonical_job_count = len(canonical_jobs)
     excluded_superseded = queue_record_count - canonical_job_count
 
-    if canonical_job_count != CANONICAL_JOB_COUNT and queue_record_count == QUEUE_RECORD_COUNT:
+    if (
+        canonical_job_count != CANONICAL_JOB_COUNT
+        and queue_record_count == QUEUE_RECORD_COUNT
+    ):
         raise StrategyMetricExtractionError(
             f"expected {CANONICAL_JOB_COUNT} canonical jobs, got {canonical_job_count}"
         )
-    if excluded_superseded != SUPERSEDED_JOB_COUNT and queue_record_count == QUEUE_RECORD_COUNT:
+    if (
+        excluded_superseded != SUPERSEDED_JOB_COUNT
+        and queue_record_count == QUEUE_RECORD_COUNT
+    ):
         raise StrategyMetricExtractionError(
             f"expected {SUPERSEDED_JOB_COUNT} superseded exclusions, got {excluded_superseded}"
         )

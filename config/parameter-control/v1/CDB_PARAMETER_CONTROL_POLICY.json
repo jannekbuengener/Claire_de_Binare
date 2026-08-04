@@ -73,7 +73,7 @@
   },
   "rule_count": 56,
   "unresolved_count": 0,
-  "register_fingerprint": "81d99cc8a768be4bb7b8f96b57839890b5d8e685e362e416b12e514e436a82b6",
+  "register_fingerprint": "bfbfc042698797a28f7081fe348e5dd89aa9e167b5bfc6de4827dcd555361ba2",
   "rules": [
     {
       "parameter_id": "CDB-001",
@@ -4668,21 +4668,24 @@
         "derivation": "system_area=ARVP; SERVICE_CATALOG/path ownership convention",
         "evidence": [
           "tools/arvp_vacation/candle_rankability.py",
-          "tests/unit/arvp/test_candle_rankability.py",
-          "tools/market_data/binance_window_bank.py"
+          "tools/arvp_vacation/batch_a_gate_common.py",
+          "tools/arvp_vacation/sensitivity_campaign_preflight.py",
+          "tests/unit/arvp/test_candle_rankability.py"
         ]
       },
       "repository_paths": [
         "tools/arvp_vacation/candle_rankability.py",
-        "tests/unit/arvp/test_candle_rankability.py",
-        "tools/market_data/binance_window_bank.py",
-        "core/replay/binance_window_bank_adapter.py"
+        "tools/arvp_vacation/batch_a_gate_common.py",
+        "tools/arvp_vacation/strategy_metric_extraction.py",
+        "tools/arvp_vacation/sensitivity_campaign_preflight.py",
+        "tests/unit/arvp/test_candle_rankability.py"
       ],
       "consumers": [
-        "Stage A/B"
+        "Stage A/B scorers",
+        "sensitivity_campaign_preflight"
       ],
       "effective_default": {
-        "value": "fail-closed bei Missing/Mismatch; kein stiller Manifest-Fallback",
+        "value": "fail-closed Rankability/Warmup-Provenance; kein stiller Manifest-Fallback; Scorer nur nach Provenance-PASS; RESEARCH_ALLOWED != Promotion/Live",
         "source_commit": "224cfd49398b329b315781372658fab1fbf15362",
         "verification": "historical_extract; paths re-verified on origin/main",
         "main_path_status": "paths_resolved"
@@ -4727,13 +4730,13 @@
       "analysis": {
         "source_commit": "224cfd49398b329b315781372658fab1fbf15362",
         "effect": "Rankability verlangt aktuelle Warmup- und Content-Provenance; stiller Manifest-Fallback ist blockiert.",
-        "finding": "geschlossen via #4336 — fail-closed Rankability/Warmup Provenance",
+        "finding": "CDB-052 Forward-Fix in flight via #4336 — rankability/warmup provenance fail-closed, scorer wiring, preflight gate; not closed on main until merge. RESEARCH_ALLOWED is not promotion/paper/live/echtgeld authorization.",
         "dependencies": [
           "Stage A/B"
         ],
         "change_risk": "mittel",
         "suitability": "niedrig",
-        "compact_decision": "CLOSED_CORRECTNESS",
+        "compact_decision": "CORRECTNESS_FIX_ONLY",
         "blocked_by_issues": [
           4336
         ],
@@ -4741,7 +4744,11 @@
           "stale-manifest negative tests",
           "Warmup-Provenance",
           "Content-Fingerprint",
-          "stale_manifest_fallback_blocked"
+          "stale_manifest_fallback_blocked",
+          "enforce_rankability_provenance",
+          "record_is_rankable requires rankable is True",
+          "cdb052_rankability_provenance preflight gate",
+          "RESEARCH_ALLOWED != promotion/live"
         ],
         "name_drift": null,
         "may_change_compact": true

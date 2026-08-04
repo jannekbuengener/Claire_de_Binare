@@ -9,15 +9,20 @@ from statistics import median
 from typing import Any, Mapping, Sequence
 
 from core.replay.canonical_json import canonical_hash
-from tools.arvp_vacation.metric_contract import is_rankable_job_metrics, metric_is_missing
+from tools.arvp_vacation.candle_rankability import (
+    RankabilityProvenanceError,
+    enforce_rankability_provenance,
+)
+from tools.arvp_vacation.metric_contract import (
+    is_rankable_job_metrics,
+    metric_is_missing,
+)
 from tools.arvp_vacation.strategy_metric_extraction import PROFIT_FACTOR_INFINITY_TOKEN
 
 PROJECT_ROOT = Path(__file__).resolve().parents[2]
 CONTRACTS_DIR = PROJECT_ROOT / "docs" / "contracts"
 
-STAGE_A_GATE_CONTRACT_PATH = (
-    CONTRACTS_DIR / "batch_a_stage_a_gate_contract.v1.json"
-)
+STAGE_A_GATE_CONTRACT_PATH = CONTRACTS_DIR / "batch_a_stage_a_gate_contract.v1.json"
 STAGE_B_CONFIRMATION_CONTRACT_PATH = (
     CONTRACTS_DIR / "batch_a_stage_b_confirmation_contract.v1.json"
 )
@@ -62,7 +67,16 @@ def _as_int(value: object) -> int | None:
 
 
 def record_is_rankable(record: Mapping[str, Any]) -> bool:
-    if record.get("rankable") is False:
+    """Fail-closed rankability gate for Stage-A/B scorers (CDB-052).
+
+    Requires an explicit ``rankable is True`` (missing/None is not rankable) and
+    bound warmup/content provenance. Scorers must not invent missing provenance.
+    """
+    if record.get("rankable") is not True:
+        return False
+    try:
+        enforce_rankability_provenance(record=record)
+    except RankabilityProvenanceError:
         return False
     metrics = {
         "closed_trades_total": record.get("closed_trades_total"),
@@ -121,7 +135,10 @@ def profit_factor_gate_value(
         if isinstance(raw, str) and raw.strip().lower() == PROFIT_FACTOR_INFINITY_TOKEN:
             infinity_seen = True
             continue
-        if isinstance(raw, str) and raw.strip().lower() == PROFIT_FACTOR_NEGATIVE_INFINITY_TOKEN:
+        if (
+            isinstance(raw, str)
+            and raw.strip().lower() == PROFIT_FACTOR_NEGATIVE_INFINITY_TOKEN
+        ):
             return PROFIT_FACTOR_NEGATIVE_INFINITY_TOKEN
         parsed = _as_float(raw)
         if parsed is not None:

@@ -40,7 +40,7 @@ preflight should return:
 
 when every mandatory gate PASSes (parameter-control, regime/signal anchors,
 execution-economics, dataset provenance, effective-config, frozen boundaries,
-holdout isolation).
+holdout isolation, and CDB-052 rankability/warmup provenance).
 
 Missing, incomplete, secret-bearing, or fingerprint-mismatched Effective-Config
 evidence still fails closed as `BLOCKED_EXPERIMENT_NOT_READY`.

@@ -116,10 +116,10 @@
   },
   "issue_ref": "#4153",
   "lr_status": "NO-GO",
-  "manifest_fingerprint": "b930b4f83707318886bbafa9e01f6e2718833d5e89412a7f965995aa729a3c95",
+  "manifest_fingerprint": "9f3dc995f1795b8a5d77d78fd24d8862dad5a8c214a301d68ded2b9effb1df59",
   "parameter_control": {
     "policy_schema_version": "cdb.parameter_control_policy.register.v1",
-    "register_fingerprint": "81d99cc8a768be4bb7b8f96b57839890b5d8e685e362e416b12e514e436a82b6"
+    "register_fingerprint": "bfbfc042698797a28f7081fe348e5dd89aa9e167b5bfc6de4827dcd555361ba2"
   },
   "parameter_families": [
     {
