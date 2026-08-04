@@ -38,17 +38,24 @@ from core.replay.dataset_spec import DatasetSpec
 _BASE_START_MS = 1_700_000_000_000
 
 
-def _file_candles(count: int = 5) -> list[dict]:
+def _file_candles(count: int = 5, *, warmup: int = 0) -> list[dict]:
+    """Exact-window series: optional warmup bars before live ``_BASE_START_MS``.
+
+    Live span remains ``[_BASE_START_MS, _BASE_START_MS + (count-1)*60_000]`` so
+    default count=5 ends at ``_BASE_START_MS + 240_000`` (matches ``_file_spec``).
+    """
+    first = _BASE_START_MS - warmup * 60_000
+    total = count + warmup
     return [
         {
-            "ts_ms": _BASE_START_MS + i * 60_000,
+            "ts_ms": first + i * 60_000,
             "open": 50_000.0 + i,
             "high": 50_001.0 + i,
             "low": 49_999.0 + i,
             "close": 50_000.5 + i,
             "volume": 10.5 + i,
         }
-        for i in range(count)
+        for i in range(total)
     ]
 
 
@@ -113,7 +120,7 @@ def test_changed_candle_yields_different_hash() -> None:
 def test_different_file_paths_same_content_keep_content_hash(
     tmp_path: Path,
 ) -> None:
-    candles = _file_candles()
+    candles = _file_candles(warmup=1)
     path_a = tmp_path / "a" / "data.json"
     path_b = tmp_path / "b" / "other.json"
     path_a.parent.mkdir()
@@ -134,7 +141,7 @@ def test_different_file_paths_same_content_keep_content_hash(
 def test_file_and_db_same_content_same_content_hash(tmp_path: Path) -> None:
     # warmup=0 so File and DB load the same [start, end] series without
     # extra DB warmup rows ahead of the file content.
-    candles = _file_candles()
+    candles = _file_candles(warmup=0)
     path = tmp_path / "parity.json"
     path.write_text(json.dumps(candles), encoding="utf-8")
 
@@ -158,7 +165,7 @@ def test_file_and_db_same_content_same_content_hash(tmp_path: Path) -> None:
 def test_request_and_content_hashes_are_semantically_separated(
     tmp_path: Path,
 ) -> None:
-    candles = _file_candles()
+    candles = _file_candles(warmup=1)
     path = tmp_path / "sep.json"
     path.write_text(json.dumps(candles), encoding="utf-8")
     spec = _file_spec(str(path))
