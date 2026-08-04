@@ -69,7 +69,11 @@ def test_broker_unit_is_root_oneshot_with_isolated_runtime_dir() -> None:
         line.strip() == "NoNewPrivileges=true" for line in text.splitlines()
     )
     assert "User=root" in text
-    assert TOKEN_RUNTIME_DIR in text or "RuntimeDirectory=hermes/cdb-engineer" in text
+    assert "ExecStartPre=+/bin/mkdir -p /run/hermes/cdb-engineer" in text
+    assert not any(
+        line.strip().startswith("RuntimeDirectory=") for line in text.splitlines()
+    )
+    assert TOKEN_RUNTIME_DIR in text
     assert PEM_HOST_PATH in text or "cdb-hermes-engineer.pem" in text
 
 

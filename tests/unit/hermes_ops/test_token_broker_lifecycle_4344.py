@@ -33,6 +33,11 @@ def test_broker_unit_remain_after_exit_keeps_token_until_stop() -> None:
     assert "--token-file /run/hermes/cdb-engineer/token" in text
     assert "ExecStopPost=+/bin/rm -f /run/hermes/cdb-engineer/token" in text
     assert "ExecStartPost=+/bin/chown -R hermes-cdb-engineer:hermes-cdb-engineer" in text
+    assert "ExecStartPre=+/bin/mkdir -p /run/hermes/cdb-engineer" in text
+    assert not any(
+        line.strip().startswith("RuntimeDirectory=") for line in text.splitlines()
+    )
+    assert "PrivateTmp=true" not in text
     assert "ProtectSystem=" not in text
     assert not any(
         line.strip() == "NoNewPrivileges=true" for line in text.splitlines()
