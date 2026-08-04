@@ -29,7 +29,8 @@ ExecStartPost=+/bin/chmod 0700 /run/hermes/cdb-engineer
 ExecStartPost=+/bin/chmod 0600 /run/hermes/cdb-engineer/token
 # Drop token on explicit stop (RemainAfterExit keeps it through mint success).
 ExecStopPost=+/bin/rm -f /run/hermes/cdb-engineer/token
-NoNewPrivileges=true
+# Root oneshot must retain CAP_CHOWN to hand /run token to hermes-cdb-engineer.
+# NoNewPrivileges would block both mint-time chown and plain ExecStartPost.
 ProtectSystem=strict
 ProtectHome=true
 PrivateTmp=true
