@@ -1211,6 +1211,7 @@ def _build_replay_report_input(
     runner_run_id: str | None = None,
     execution_provenance_id: str | None = None,
     dataset_fingerprint: str | None = None,
+    content_fingerprint: str | None = None,
 ) -> ReplayReportInput:
     """Bridge a backtest runner report to a ReplayReportInput.
 
@@ -1219,6 +1220,9 @@ def _build_replay_report_input(
     replay_report.v1 contract (from #1806 / replay_contracts.py).
 
     No metrics are recalculated; all values are derived from the backtest report.
+
+    ``dataset_fingerprint`` remains the request identity (compat).
+    ``content_fingerprint`` is the actual loaded content identity (CDB-050).
     """
     execution_run_id: str = (
         execution_provenance_id or backtest_report["run_metadata"]["run_id"]
@@ -1227,6 +1231,9 @@ def _build_replay_report_input(
     dataset: dict[str, Any] = dict(backtest_report["dataset_summary"])
     if dataset_fingerprint is not None:
         dataset["dataset_fingerprint"] = dataset_fingerprint
+        dataset["request_fingerprint"] = dataset_fingerprint
+    if content_fingerprint is not None:
+        dataset["content_fingerprint"] = content_fingerprint
     if scheduler_metadata is not None:
         dataset["scheduler"] = dict(scheduler_metadata)
     metrics: dict[str, Any] = backtest_report["metrics"]
@@ -1237,6 +1244,9 @@ def _build_replay_report_input(
     }
     if dataset_fingerprint is not None:
         run_spec_metadata["dataset_fingerprint"] = dataset_fingerprint
+        run_spec_metadata["request_fingerprint"] = dataset_fingerprint
+    if content_fingerprint is not None:
+        run_spec_metadata["content_fingerprint"] = content_fingerprint
 
     run_spec = ReplayRunSpec(
         replay_run_id=run_id,
@@ -1522,6 +1532,7 @@ def run_arvp_replay(config: ARVPReplayConfig) -> int:
             runner_run_id=run_id,
             execution_provenance_id=execution_provenance_id,
             dataset_fingerprint=dataset_result.fingerprint,
+            content_fingerprint=dataset_result.content_fingerprint,
         )
     except Exception as exc:
         try:
@@ -1711,6 +1722,8 @@ def run_arvp_replay(config: ARVPReplayConfig) -> int:
     print(f"  mode={_DEFAULT_REPLAY_MODE}")
     print(f"  execution_provenance_id={execution_provenance_id}")
     print(f"  dataset_fingerprint={dataset_result.fingerprint}")
+    print(f"  request_fingerprint={dataset_result.request_fingerprint}")
+    print(f"  content_fingerprint={dataset_result.content_fingerprint}")
     print(f"  scheduler_profile={config.speedup_profile}")
     print(f"  gate_result={gate_status or 'UNKNOWN'}")
     print(f"  deterministic_replay_ok={deterministic_replay_ok}")
