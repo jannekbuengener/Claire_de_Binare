@@ -40,6 +40,11 @@ AUTHORIZING_OWNER_ALLOWLIST = frozenset({"jannekbuengener"})
 GO_FENCE_START = "```cdb.sensitivity_campaign_execution_authorization.v1"
 GO_FENCE_END = "```"
 
+# Sentinel marker documenting an explicit revocation of the fenced GO block by
+# the authorizing owner. Presence anywhere in the comment body (case-sensitive)
+# fails the parse fail-closed even if a fenced block is still present.
+REVOKE_MARKER = "REVOKED_CAMPAIGN_EXECUTION_CONTRACT_DEFECT"
+
 ABSOLUTE_BAN_KEYS = frozenset(
     {
         "campaign_execution_auto_start",
@@ -174,33 +179,105 @@ def validate_authorization_payload(
     _assert_expires_at_valid(payload.get("expires_at_utc"), now_utc=now_utc)
 
 
+def _parse_expires_at(raw: Any) -> datetime | None:
+    """Parse ``expires_at_utc``. Returns None when null; raises on malformed input."""
+    if raw is None:
+        return None
+    if not isinstance(raw, str) or not raw.strip():
+        raise SensitivityAuthorizationError("AUTH_EXPIRES_AT_INVALID", "non-string")
+    value = raw.strip()
+    try:
+        if value.endswith("Z"):
+            exp = datetime.fromisoformat(value[:-1] + "+00:00")
+        else:
+            exp = datetime.fromisoformat(value)
+    except ValueError as exc:
+        raise SensitivityAuthorizationError(
+            "AUTH_EXPIRES_AT_INVALID", str(exc)
+        ) from exc
+    if exp.tzinfo is None:
+        raise SensitivityAuthorizationError("AUTH_EXPIRES_AT_NOT_TIMEZONE_AWARE", value)
+    return exp
+
+
 def _assert_expires_at_valid(
     expires_at_utc: Any,
     *,
     now_utc: datetime | None = None,
 ) -> None:
     """Clock source: core.utils.clock.utcnow unless injected for tests."""
-    if expires_at_utc is None:
+    exp = _parse_expires_at(expires_at_utc)
+    if exp is None:
         return
-    if not isinstance(expires_at_utc, str) or not expires_at_utc.strip():
-        raise SensitivityAuthorizationError("AUTH_EXPIRES_AT_INVALID", "non-string")
-    raw = expires_at_utc.strip()
-    try:
-        if raw.endswith("Z"):
-            exp = datetime.fromisoformat(raw[:-1] + "+00:00")
-        else:
-            exp = datetime.fromisoformat(raw)
-    except ValueError as exc:
-        raise SensitivityAuthorizationError(
-            "AUTH_EXPIRES_AT_INVALID", str(exc)
-        ) from exc
-    if exp.tzinfo is None:
-        raise SensitivityAuthorizationError("AUTH_EXPIRES_AT_NOT_TIMEZONE_AWARE", raw)
     now = now_utc if now_utc is not None else cdb_utcnow()
     if now.tzinfo is None:
         now = now.replace(tzinfo=UTC)
     if now.astimezone(UTC) >= exp.astimezone(UTC):
-        raise SensitivityAuthorizationError("AUTH_GO_EXPIRED", raw)
+        raise SensitivityAuthorizationError("AUTH_GO_EXPIRED", str(expires_at_utc))
+
+
+def assert_authorization_not_expired_for_next_attempt(
+    expires_at_utc: Any,
+    *,
+    now_utc: datetime | None = None,
+) -> None:
+    """Fail-closed pre-attempt gate: refuse to start a new run when expired.
+
+    Called before every primary / retry / reproduction attempt so a long-running
+    campaign cannot cross a live expiry mid-flight. ``null`` expiry is allowed.
+    """
+    exp = _parse_expires_at(expires_at_utc)
+    if exp is None:
+        return
+    now = now_utc if now_utc is not None else cdb_utcnow()
+    if now.tzinfo is None:
+        now = now.replace(tzinfo=UTC)
+    if now.astimezone(UTC) >= exp.astimezone(UTC):
+        raise SensitivityAuthorizationError(
+            "AUTHORIZATION_EXPIRED_BEFORE_NEXT_ATTEMPT",
+            str(expires_at_utc),
+        )
+
+
+def assert_authorization_lifetime_covers_budget(
+    expires_at_utc: Any,
+    resource_budget: Mapping[str, Any],
+    *,
+    now_utc: datetime | None = None,
+) -> None:
+    """Assert remaining GO lifetime >= campaign_wall + run_wall seconds.
+
+    A campaign whose GO expiry cannot cover the configured budget is refused
+    fail-closed before any side effects. ``null`` expiry is refused for a
+    campaign path (finite lifetime required to bound the human gate).
+    """
+    if resource_budget is None:
+        raise SensitivityAuthorizationError("AUTH_LIFETIME_BUDGET_MISSING")
+    body = dict(resource_budget)
+    try:
+        campaign_wall = int(body["max_campaign_wall_time_seconds"])
+        run_wall = int(body["max_run_wall_time_seconds"])
+    except (KeyError, TypeError, ValueError) as exc:
+        raise SensitivityAuthorizationError(
+            "AUTH_LIFETIME_BUDGET_INVALID", str(exc)
+        ) from exc
+    required = campaign_wall + run_wall
+    if expires_at_utc is None:
+        raise SensitivityAuthorizationError(
+            "AUTH_EXPIRES_AT_REQUIRED_FOR_CAMPAIGN",
+            "finite expires_at_utc required to bound campaign execution",
+        )
+    exp = _parse_expires_at(expires_at_utc)
+    assert exp is not None  # narrows for type checker; None handled above
+    now = now_utc if now_utc is not None else cdb_utcnow()
+    if now.tzinfo is None:
+        now = now.replace(tzinfo=UTC)
+    remaining = int((exp.astimezone(UTC) - now.astimezone(UTC)).total_seconds())
+    if remaining < required:
+        raise SensitivityAuthorizationError(
+            "AUTH_LIFETIME_INSUFFICIENT_FOR_BUDGET",
+            f"remaining={remaining}s required={required}s",
+        )
 
 
 def fingerprint_authorization_payload(payload: Mapping[str, Any]) -> str:
@@ -214,12 +291,22 @@ def fingerprint_authorization_payload(payload: Mapping[str, Any]) -> str:
 
 
 def parse_go_payload_from_comment_body(body: str) -> dict[str, Any]:
-    """Extract exactly one fenced authorization JSON block from a comment body."""
+    """Extract exactly one fenced authorization JSON block from a comment body.
+
+    A body containing the explicit revocation sentinel is rejected fail-closed
+    before any JSON parsing.
+    """
+    raw = body or ""
+    if REVOKE_MARKER in raw:
+        raise SensitivityAuthorizationError(
+            "AUTH_GO_REVOKED",
+            "comment body carries REVOKED_CAMPAIGN_EXECUTION_CONTRACT_DEFECT sentinel",
+        )
     pattern = re.compile(
         r"```cdb\.sensitivity_campaign_execution_authorization\.v1\s*\n" r"(.*?)\n```",
         re.DOTALL,
     )
-    matches = pattern.findall(body or "")
+    matches = pattern.findall(raw)
     if not matches:
         raise SensitivityAuthorizationError(
             "AUTH_GO_BLOCK_MISSING",
@@ -470,6 +557,7 @@ def verify_owner_go_comment(
         "github_comment_id": comment_id,
         "authorizing_github_login": live_author,
         "comment_updated_at": comment.updated_at,
+        "expires_at_utc": payload.get("expires_at_utc"),
         "reason_code": "AUTH_GO_VALID",
         "clock_source": "core.utils.clock.utcnow",
     }

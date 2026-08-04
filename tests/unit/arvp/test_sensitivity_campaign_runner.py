@@ -24,9 +24,15 @@ from tools.arvp_vacation.sensitivity_campaign_authorization import (
     SensitivityAuthorizationError,
 )
 from tools.arvp_vacation.sensitivity_campaign_budget import SensitivityBudgetError
-from tools.arvp_vacation.sensitivity_campaign_executor import FakeExecutor
+from tools.arvp_vacation.sensitivity_campaign_executor import (
+    ATTEMPT_KIND_PRIMARY,
+    ATTEMPT_KIND_REPRODUCTION,
+    FakeExecutor,
+    StrategyReplayCampaignExecutor,
+)
 from tools.arvp_vacation.sensitivity_campaign_runner import (
     SensitivityRunnerError,
+    _bind_executor_dataset_root,
     build_parser,
     execute_campaign,
     plan_campaign,
@@ -215,6 +221,24 @@ def test_execute_missing_budget_blocks(
     assert "BUDGET_MISSING" in str(exc.value)
 
 
+def _fast_plan_from(manifest: dict[str, Any], *, primary_count: int = 2):
+    """Build a consistent small campaign plan for FakeExecutor tests.
+
+    Only ``runs``, ``run_keys`` and ``run_count`` are trimmed; reproduction_policy
+    is left untouched so the authorized GO payload's ``reproduction_policy``
+    remains identical to the plan's.
+    """
+    plan = build_run_plan(manifest, main_sha=MAIN_SHA)
+    trimmed_runs = plan.runs[:primary_count]
+    trimmed_keys = [r.run_key for r in trimmed_runs]
+    return replace(
+        plan,
+        runs=trimmed_runs,
+        run_keys=trimmed_keys,
+        run_count=primary_count,
+    )
+
+
 def test_execute_fake_executor_full_envelope(
     manifest: dict[str, Any], surface_probe, tmp_path: Path
 ) -> None:
@@ -225,8 +249,7 @@ def test_execute_fake_executor_full_envelope(
         surface_fp=surface_probe.surface_capability_fingerprint,
         budget=budget,
     )
-    plan = build_run_plan(manifest, main_sha=MAIN_SHA)
-    fast_plan = replace(plan, runs=plan.runs[:2])
+    fast_plan = _fast_plan_from(manifest, primary_count=2)
     fake = FakeExecutor()
 
     with patch(
@@ -249,9 +272,14 @@ def test_execute_fake_executor_full_envelope(
         )
 
     assert result["status"] == "COMPLETED"
+    assert result["campaign_phase"] == "COMPLETED"
     assert result["succeeded"] == 2
     assert result["failed"] == 0
-    assert len(fake.calls) == 2
+    # 2 primary + reproduction (baseline+sample from default policy over 2 keys).
+    primary_calls = [c for c in fake.calls if c.attempt_kind == "PRIMARY"]
+    repro_calls = [c for c in fake.calls if c.attempt_kind == "REPRODUCTION"]
+    assert len(primary_calls) == 2
+    assert repro_calls, "reproduction must run under default reproduction policy"
     env = fake.calls[0]
     required = (
         "run_key",
@@ -276,6 +304,9 @@ def test_execute_fake_executor_full_envelope(
         assert getattr(env, field) not in (None, ""), field
     assert env.parameters
     assert env.attempt == 1
+    assert env.attempt_kind == "PRIMARY"
+    assert env.reproduction_attempt == 0
+    assert result["reproduction"]["enabled"] is True
     assert (tmp_path / "artifacts" / "arvp_sensitivity" / "4153").exists()
 
 
@@ -329,3 +360,305 @@ def test_manifest_preflight_still_ready_campaign(manifest: dict[str, Any]) -> No
     assert repo["verdict"] == VERDICT_READY
     man = run_manifest_preflight(manifest, REPO_ROOT)
     assert man["verdict"] == VERDICT_READY_CAMPAIGN
+
+
+class _DivergentMetricsExecutor:
+    """Primary and reproduction return different ``net_pnl`` — forces mismatch."""
+
+    def __init__(self) -> None:
+        self.calls: list[Any] = []
+
+    def execute(self, envelope):
+        from tools.arvp_vacation.sensitivity_campaign_executor import RunResult
+
+        self.calls.append(envelope)
+        base = {
+            "gate_reason": "OK",
+            "regime_distribution": {"TREND": 1},
+            "trade_count": 0,
+            "turnover": "0",
+            "fees": "0",
+            "spread": "0",
+            "slippage": "0",
+            "gross_pnl": "0",
+            "net_pnl": "0",
+            "profit_factor": "0",
+            "expectancy": "0",
+            "drawdown": "0",
+            "main_effect": None,
+            "interaction_effect": None,
+            "overfitting_risk_flag": False,
+        }
+        if envelope.attempt_kind == ATTEMPT_KIND_REPRODUCTION:
+            base = {**base, "net_pnl": "1"}
+        return RunResult(exit_code=0, metrics=base, detail="fake_ok")
+
+
+def test_execute_blocks_on_reproduction_mismatch(
+    manifest: dict[str, Any], surface_probe, tmp_path: Path
+) -> None:
+    """Reproduction returning a different comparable field blocks the campaign."""
+    budget = _sample_budget()
+    budget["minimum_free_disk_bytes"] = 1
+    auth = build_valid_auth_payload(
+        manifest=manifest,
+        surface_fp=surface_probe.surface_capability_fingerprint,
+        budget=budget,
+    )
+    fast_plan = _fast_plan_from(manifest, primary_count=2)
+    divergent = _DivergentMetricsExecutor()
+
+    with patch(
+        "tools.arvp_vacation.sensitivity_campaign_runner.build_run_plan",
+        return_value=fast_plan,
+    ):
+        result = execute_campaign(
+            manifest_path=CANONICAL_MANIFEST,
+            go_comment_id=COMMENT_ID,
+            executor=divergent,
+            repo_root=REPO_ROOT,
+            artifacts_base=tmp_path,
+            main_sha=MAIN_SHA,
+            authorizing_github_login=AUTHOR,
+            surface_id=SURFACE_ID,
+            surface_capability_fingerprint=surface_probe.surface_capability_fingerprint,
+            resource_budget=budget,
+            fetcher=make_fetcher(auth),
+            stream=io.StringIO(),
+        )
+
+    assert result["status"] == "BLOCKED"
+    assert result["campaign_phase"] == "BLOCKED"
+    assert result["reason_code"] == "REPRODUCTION_RESULT_MISMATCH"
+
+
+def test_execute_never_completes_after_primary_alone(
+    manifest: dict[str, Any], surface_probe, tmp_path: Path
+) -> None:
+    """Reproduction enabled => COMPLETED must come after reproduction, not primary."""
+    budget = _sample_budget()
+    budget["minimum_free_disk_bytes"] = 1
+    auth = build_valid_auth_payload(
+        manifest=manifest,
+        surface_fp=surface_probe.surface_capability_fingerprint,
+        budget=budget,
+    )
+    fast_plan = _fast_plan_from(manifest, primary_count=2)
+    fake = FakeExecutor()
+
+    with patch(
+        "tools.arvp_vacation.sensitivity_campaign_runner.build_run_plan",
+        return_value=fast_plan,
+    ):
+        result = execute_campaign(
+            manifest_path=CANONICAL_MANIFEST,
+            go_comment_id=COMMENT_ID,
+            executor=fake,
+            repo_root=REPO_ROOT,
+            artifacts_base=tmp_path,
+            main_sha=MAIN_SHA,
+            authorizing_github_login=AUTHOR,
+            surface_id=SURFACE_ID,
+            surface_capability_fingerprint=surface_probe.surface_capability_fingerprint,
+            resource_budget=budget,
+            fetcher=make_fetcher(auth),
+            stream=io.StringIO(),
+        )
+    assert result["status"] == "COMPLETED"
+    assert result["reproduction"]["enabled"] is True
+    assert result["reproduction"]["phase_outcome"] == "REPRODUCTION_COMPLETE"
+    # Reproduction was actually executed under FakeExecutor.
+    assert any(c.attempt_kind == ATTEMPT_KIND_REPRODUCTION for c in fake.calls)
+
+
+def test_execute_blocks_when_auth_lifetime_insufficient(
+    manifest: dict[str, Any], surface_probe, tmp_path: Path
+) -> None:
+    """Live GO with too-short expires_at vs budget is refused fail-closed."""
+    from datetime import UTC, datetime, timedelta
+
+    budget = _sample_budget()
+    budget["minimum_free_disk_bytes"] = 1
+    # Set expires_at only 5 minutes in the future — remaining <
+    # max_campaign_wall_time_seconds (86400) + max_run_wall_time_seconds (600).
+    now = datetime(2026, 8, 4, tzinfo=UTC)
+    tight = (now + timedelta(minutes=5)).isoformat().replace("+00:00", "Z")
+    auth = build_valid_auth_payload(
+        manifest=manifest,
+        surface_fp=surface_probe.surface_capability_fingerprint,
+        budget=budget,
+        expires_at_utc=tight,
+    )
+
+    with pytest.raises(SensitivityAuthorizationError) as exc:
+        execute_campaign(
+            manifest_path=CANONICAL_MANIFEST,
+            go_comment_id=COMMENT_ID,
+            executor=FakeExecutor(),
+            repo_root=REPO_ROOT,
+            artifacts_base=tmp_path,
+            main_sha=MAIN_SHA,
+            authorizing_github_login=AUTHOR,
+            surface_id=SURFACE_ID,
+            surface_capability_fingerprint=surface_probe.surface_capability_fingerprint,
+            resource_budget=budget,
+            fetcher=make_fetcher(auth),
+            stream=io.StringIO(),
+            now_utc_provider=lambda: now,
+        )
+    assert exc.value.reason_code == "AUTH_LIFETIME_INSUFFICIENT_FOR_BUDGET"
+
+
+def test_execute_blocks_when_authorization_expires_before_attempt(
+    manifest: dict[str, Any], surface_probe, tmp_path: Path
+) -> None:
+    """Pre-attempt expiry gate blocks the first primary run when time has passed."""
+    from datetime import UTC, datetime, timedelta
+
+    budget = _sample_budget()
+    budget["minimum_free_disk_bytes"] = 1
+
+    lifetime_start = datetime(2026, 8, 4, 0, 0, tzinfo=UTC)
+    # Expiry far enough in the future to satisfy lifetime coverage but still
+    # before the per-attempt clock jump below.
+    expires_at = (
+        (lifetime_start + timedelta(days=30)).isoformat().replace("+00:00", "Z")
+    )
+    auth = build_valid_auth_payload(
+        manifest=manifest,
+        surface_fp=surface_probe.surface_capability_fingerprint,
+        budget=budget,
+        expires_at_utc=expires_at,
+    )
+    fast_plan = _fast_plan_from(manifest, primary_count=2)
+
+    # Two lifetime clock calls at start, then jump past expiry for the
+    # per-attempt guard.
+    calls = {"n": 0}
+
+    def _now_provider():
+        i = calls["n"]
+        calls["n"] += 1
+        if i < 2:
+            return lifetime_start  # verify + lifetime check
+        return lifetime_start + timedelta(days=60)  # past expiry
+
+    with patch(
+        "tools.arvp_vacation.sensitivity_campaign_runner.build_run_plan",
+        return_value=fast_plan,
+    ):
+        with pytest.raises(SensitivityAuthorizationError) as exc:
+            execute_campaign(
+                manifest_path=CANONICAL_MANIFEST,
+                go_comment_id=COMMENT_ID,
+                executor=FakeExecutor(),
+                repo_root=REPO_ROOT,
+                artifacts_base=tmp_path,
+                main_sha=MAIN_SHA,
+                authorizing_github_login=AUTHOR,
+                surface_id=SURFACE_ID,
+                surface_capability_fingerprint=surface_probe.surface_capability_fingerprint,
+                resource_budget=budget,
+                fetcher=make_fetcher(auth),
+                stream=io.StringIO(),
+                now_utc_provider=_now_provider,
+            )
+    assert exc.value.reason_code == "AUTHORIZATION_EXPIRED_BEFORE_NEXT_ATTEMPT"
+
+
+def test_bind_executor_dataset_root_rebinds_unbound_strategy_adapter(
+    tmp_path: Path,
+) -> None:
+    bank = (tmp_path / "window_bank").resolve()
+    bank.mkdir()
+    unbound = StrategyReplayCampaignExecutor()
+    assert unbound.window_bank_root is None
+    bound = _bind_executor_dataset_root(executor=unbound, resolved_bank_root=bank)
+    assert isinstance(bound, StrategyReplayCampaignExecutor)
+    assert bound.window_bank_root == bank
+
+
+def test_bind_executor_dataset_root_mismatch_raises(tmp_path: Path) -> None:
+    bank_a = (tmp_path / "a").resolve()
+    bank_b = (tmp_path / "b").resolve()
+    bank_a.mkdir()
+    bank_b.mkdir()
+    executor = StrategyReplayCampaignExecutor(window_bank_root=bank_a)
+    with pytest.raises(SensitivityRunnerError) as exc:
+        _bind_executor_dataset_root(executor=executor, resolved_bank_root=bank_b)
+    assert exc.value.reason_code == "RUNNER_DATASET_EXECUTOR_ROOT_MISMATCH"
+
+
+def test_bind_executor_none_creates_strategy_adapter(tmp_path: Path) -> None:
+    bank = (tmp_path / "window_bank").resolve()
+    bank.mkdir()
+    bound = _bind_executor_dataset_root(executor=None, resolved_bank_root=bank)
+    assert isinstance(bound, StrategyReplayCampaignExecutor)
+    assert bound.window_bank_root == bank
+
+
+def test_execute_resume_from_reproduction_running_does_not_reenter_primary(
+    manifest: dict[str, Any], surface_probe, tmp_path: Path
+) -> None:
+    """Resume after primary must not force PRIMARY_RUNNING (illegal transition)."""
+    from tools.arvp_vacation.sensitivity_campaign_state import (
+        CAMPAIGN_PHASE_REPRODUCTION_RUNNING,
+        read_json,
+    )
+
+    budget = _sample_budget()
+    budget["minimum_free_disk_bytes"] = 1
+    auth = build_valid_auth_payload(
+        manifest=manifest,
+        surface_fp=surface_probe.surface_capability_fingerprint,
+        budget=budget,
+    )
+    fast_plan = _fast_plan_from(manifest, primary_count=2)
+    fake = FakeExecutor()
+
+    with patch(
+        "tools.arvp_vacation.sensitivity_campaign_runner.build_run_plan",
+        return_value=fast_plan,
+    ):
+        result1 = execute_campaign(
+            manifest_path=CANONICAL_MANIFEST,
+            go_comment_id=COMMENT_ID,
+            executor=fake,
+            repo_root=REPO_ROOT,
+            artifacts_base=tmp_path,
+            main_sha=MAIN_SHA,
+            authorizing_github_login=AUTHOR,
+            surface_id=SURFACE_ID,
+            surface_capability_fingerprint=surface_probe.surface_capability_fingerprint,
+            resource_budget=budget,
+            fetcher=make_fetcher(auth),
+            stream=io.StringIO(),
+        )
+        assert result1["status"] == "COMPLETED"
+
+        evidence_root = Path(str(result1["evidence_root"]))
+        env_path = evidence_root / "campaign_envelope.json"
+        body = read_json(env_path)
+        # Simulate crash mid-reproduction: drop terminal COMPLETED back to
+        # REPRODUCTION_RUNNING so resume continues without re-entering primary.
+        body["campaign_phase"] = CAMPAIGN_PHASE_REPRODUCTION_RUNNING
+        env_path.write_text(json.dumps(body, indent=2) + "\n", encoding="utf-8")
+
+        fake2 = FakeExecutor()
+        result2 = execute_campaign(
+            manifest_path=CANONICAL_MANIFEST,
+            go_comment_id=COMMENT_ID,
+            executor=fake2,
+            repo_root=REPO_ROOT,
+            artifacts_base=tmp_path,
+            main_sha=MAIN_SHA,
+            authorizing_github_login=AUTHOR,
+            surface_id=SURFACE_ID,
+            surface_capability_fingerprint=surface_probe.surface_capability_fingerprint,
+            resource_budget=budget,
+            fetcher=make_fetcher(auth),
+            stream=io.StringIO(),
+        )
+        assert result2["status"] == "COMPLETED"
+        primary_calls = [c for c in fake2.calls if c.attempt_kind == "PRIMARY"]
+        assert primary_calls == []

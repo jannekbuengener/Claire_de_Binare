@@ -339,6 +339,14 @@ class ARVPReplayConfig:
     binance_window_id: str | None = None
     """Binance window-bank id when dataset_source='binance_window'."""
 
+    window_bank_root: str | None = None
+    """Optional absolute window-bank root for binance_window datasets.
+
+    When set, overrides the repo-local default under artifacts/market_data.
+    Used by the #4153 sensitivity campaign so detached worktrees can bind an
+    authorized external dataset root without copying data.
+    """
+
     strategy_id: str = _DEFAULT_STRATEGY_ID
     """Strategy identifier. Must be in _SUPPORTED_STRATEGY_IDS."""
 
@@ -892,10 +900,12 @@ def _load_dataset_result(
 
     if dataset_source == "binance_window":
         window_id = str(config.binance_window_id).strip()
+        bank_root = Path(config.window_bank_root) if config.window_bank_root else None
         try:
             dataset = load_binance_window_dataset(
                 window_id,
                 warmup_candles=warmup_count,
+                window_bank_root=bank_root,
             )
         except BinanceWindowBankAdapterError as exc:
             _reraise_as_runner_error(exc)

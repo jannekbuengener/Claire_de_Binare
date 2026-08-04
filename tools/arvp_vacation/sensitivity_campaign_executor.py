@@ -20,6 +20,10 @@ DEFAULT_ADAPTER_ID = "primary_breakout_runner_v1"
 DEFAULT_SYMBOL = "BTCUSDT"
 DEFAULT_SPEEDUP = "instant"
 
+ATTEMPT_KIND_PRIMARY = "PRIMARY"
+ATTEMPT_KIND_REPRODUCTION = "REPRODUCTION"
+ALLOWED_ATTEMPT_KINDS = frozenset({ATTEMPT_KIND_PRIMARY, ATTEMPT_KIND_REPRODUCTION})
+
 
 @dataclass(frozen=True, slots=True)
 class RunEnvelope:
@@ -42,6 +46,7 @@ class RunEnvelope:
     authorization_fingerprint: str
     attempt: int = 1
     reproduction_attempt: int = 0
+    attempt_kind: str = ATTEMPT_KIND_PRIMARY
 
     def as_dict(self) -> dict[str, Any]:
         return {
@@ -66,6 +71,7 @@ class RunEnvelope:
             "authorization_fingerprint": self.authorization_fingerprint,
             "attempt": self.attempt,
             "reproduction_attempt": self.reproduction_attempt,
+            "attempt_kind": self.attempt_kind,
         }
 
 
@@ -203,6 +209,11 @@ class StrategyReplayCampaignExecutor:
     ``dataset_source=binance_window`` and envelope parameters. Does not touch
     paper supervisors, exchange APIs, or order paths.
 
+    An optional ``window_bank_root`` (aka ``dataset_root``) may be supplied so
+    the underlying binance window-bank adapter resolves data under the given
+    root. When set, the value is stored and made available for downstream
+    invocations; the executor never mutates dataset files.
+
     Execution remains blocked upstream without a live-verified Owner-GO.
     """
 
@@ -214,14 +225,27 @@ class StrategyReplayCampaignExecutor:
         adapter_id: str = DEFAULT_ADAPTER_ID,
         symbol: str = DEFAULT_SYMBOL,
         speedup_profile: str = DEFAULT_SPEEDUP,
+        window_bank_root: Path | None = None,
+        dataset_root: Path | None = None,
     ) -> None:
         self._replay_invoker = replay_invoker
         self._metrics_loader = metrics_loader or _default_metrics_loader
         self._adapter_id = adapter_id
         self._symbol = symbol
         self._speedup_profile = speedup_profile
+        # ``dataset_root`` is accepted as an alias for backward-compatibility
+        # with runner call sites that resolve a dataset root from the manifest
+        # and hand the derived window-bank path down.
+        resolved_bank = window_bank_root or dataset_root
+        self._window_bank_root: Path | None = (
+            Path(resolved_bank) if resolved_bank is not None else None
+        )
         self.calls: list[RunEnvelope] = []
         self.last_config: Any | None = None
+
+    @property
+    def window_bank_root(self) -> Path | None:
+        return self._window_bank_root
 
     def _resolve_invoker(self) -> ReplayInvoker:
         if self._replay_invoker is not None:
@@ -263,9 +287,15 @@ class StrategyReplayCampaignExecutor:
             json.dumps(envelope.as_dict(), indent=2, sort_keys=True) + "\n",
             encoding="utf-8",
         )
+        bank_root = (
+            str(self._window_bank_root.resolve())
+            if self._window_bank_root is not None
+            else None
+        )
         return ARVPReplayConfig(
             dataset_source="binance_window",
             binance_window_id=str(envelope.window_id),
+            window_bank_root=bank_root,
             strategy_id=str(envelope.strategy_id),
             adapter_id=self._adapter_id,
             symbol=self._symbol,
