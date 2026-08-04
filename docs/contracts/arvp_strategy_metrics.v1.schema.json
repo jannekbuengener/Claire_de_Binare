@@ -181,6 +181,11 @@
           "type": "array",
           "items": { "type": "string" }
         },
+        "rankability_blocking_flags": {
+          "type": "array",
+          "items": { "type": "string" },
+          "description": "CDB-052 machine-readable rankability provenance blocking flags"
+        },
         "data_quality_flags": {
           "type": "array",
           "items": { "type": "string" }

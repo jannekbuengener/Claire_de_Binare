@@ -19,6 +19,26 @@ from tools.market_data.stage_b_window_selector import (
 pytestmark = [pytest.mark.unit, pytest.mark.contract]
 
 CANDIDATE = "donchian_breakout_v1"
+_CONTENT_FP = "b" * 64
+
+
+def _bound_provenance() -> dict:
+    return {
+        "warmup_bars": 10,
+        "source": "dataset_summary.warmup_candles",
+        "manifest_ref": None,
+        "parameter_fingerprint": "test-param",
+        "campaign_source_sha": "test-sha",
+        "manifest_warmup_verified": False,
+        "strategy_id": CANDIDATE,
+        "content_fingerprint": _CONTENT_FP,
+        "dq_content_fingerprint": None,
+        "request_fingerprint": None,
+        "silent_manifest_fallback": False,
+        "window_id": None,
+        "start_ts_ms": None,
+        "end_ts_ms": None,
+    }
 
 
 def _record(slice_name: str, idx: int, *, net_pnl: float = 50.0) -> dict:
@@ -39,6 +59,10 @@ def _record(slice_name: str, idx: int, *, net_pnl: float = 50.0) -> dict:
         "net_pnl_quote": net_pnl,
         "closed_trades_total": 4,
         "dataset_quality_verdict": "PASS",
+        "rankable": True,
+        "not_rankable_reasons": [],
+        "rankability_blocking_flags": [],
+        "warmup_provenance": _bound_provenance(),
     }
 
 

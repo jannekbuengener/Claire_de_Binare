@@ -128,6 +128,7 @@ ALLOWED_CLAIMS = (
     "Experiment manifest contract is versioned and deterministically fingerprintable.",
     "Frozen boundaries and holdout access are technically blocked.",
     "Effective-Config snapshot capability is present and secret-safe (#4151).",
+    "CDB-052 rankability/warmup provenance fail-closed gate is modeled.",
     "Repo preflight may reach READY_FOR_REPLAY_SENSITIVITY when all gates PASS.",
 )
 
@@ -139,6 +140,7 @@ FORBIDDEN_CLAIMS = (
     "Replay evidence proves paper, live, or echtgeld readiness.",
     "Historical #4151 ACs for window-parity, DQ-verdict binding, gap/OOO, "
     "and rankability provenance are fully closed by Effective-Config alone.",
+    "RESEARCH_ALLOWED is a promotion, paper, live, or echtgeld authorization.",
 )
 
 
@@ -389,6 +391,166 @@ def check_dataset_provenance_capability(repo_root: Path) -> GateResult:
         "Dataset request/content fingerprint capability present",
         "core/replay/dataset_identity.py",
         f"identity_schema:{CONTENT_IDENTITY_SCHEMA_VERSION}",
+    )
+
+
+def check_cdb052_rankability_provenance(repo_root: Path) -> GateResult:
+    """CDB-052 technical readiness: rankability/warmup provenance fail-closed.
+
+    Does not run campaigns, score parameters, or claim CDB-049..051 work.
+    """
+    module_rel = Path("tools/arvp_vacation/candle_rankability.py")
+    gate_rel = Path("tools/arvp_vacation/batch_a_gate_common.py")
+    test_rel = Path("tests/unit/arvp/test_candle_rankability.py")
+    module_path = repo_root / module_rel
+    gate_path = repo_root / gate_rel
+    test_path = repo_root / test_rel
+    missing = [
+        str(p.as_posix())
+        for p in (module_rel, gate_rel, test_rel)
+        if not (repo_root / p).exists()
+    ]
+    if missing:
+        return _gate_blocked(
+            "CDB-052 rankability surfaces missing: " + ", ".join(missing),
+            *missing,
+        )
+
+    required_symbols = (
+        "FLAG_STALE_MANIFEST_FALLBACK_BLOCKED",
+        "FLAG_MANIFEST_MISSING",
+        "FLAG_RANKABILITY_PROVENANCE_MISSING",
+        "enforce_rankability_provenance",
+        "assert_rankability_provenance",
+        "resolve_candle_rankability",
+    )
+    module_text = module_path.read_text(encoding="utf-8")
+    absent = [name for name in required_symbols if name not in module_text]
+    if absent:
+        return _gate_blocked(
+            "CDB-052 candle_rankability missing symbols: " + ", ".join(absent),
+            str(module_rel.as_posix()),
+        )
+
+    gate_text = gate_path.read_text(encoding="utf-8")
+    if "enforce_rankability_provenance" not in gate_text:
+        return _gate_blocked(
+            "record_is_rankable does not wire enforce_rankability_provenance",
+            str(gate_rel.as_posix()),
+        )
+    if "is not True" not in gate_text:
+        return _gate_blocked(
+            "record_is_rankable missing explicit rankable is True fail-closed check",
+            str(gate_rel.as_posix()),
+        )
+
+    test_text = test_path.read_text(encoding="utf-8")
+    for anchor in (
+        "FLAG_STALE_MANIFEST_FALLBACK_BLOCKED",
+        "stale_manifest",
+        "content_fingerprint",
+        "warmup",
+    ):
+        if anchor not in test_text:
+            return _gate_blocked(
+                f"CDB-052 negative-test anchor missing: {anchor}",
+                str(test_rel.as_posix()),
+            )
+
+    try:
+        from tools.arvp_vacation.batch_a_gate_common import record_is_rankable
+        from tools.arvp_vacation.candle_rankability import (
+            FLAG_STALE_MANIFEST_FALLBACK_BLOCKED,
+            enforce_rankability_provenance,
+            resolve_candle_rankability,
+        )
+    except Exception as exc:  # noqa: BLE001
+        return _gate_blocked(f"CDB-052 modules not importable: {exc}")
+
+    # Behavioral: absent rankable / missing provenance must not pass scorer gate.
+    if record_is_rankable({"closed_trades_total": 5}):
+        return _gate_blocked(
+            "record_is_rankable still treats missing rankable as truthy"
+        )
+    if record_is_rankable(
+        {
+            "rankable": True,
+            "closed_trades_total": 5,
+            # no warmup_provenance
+        }
+    ):
+        return _gate_blocked(
+            "record_is_rankable accepts rankable=true without provenance"
+        )
+
+    # Behavioral: silent manifest fallback remains blocked.
+    blocked = resolve_candle_rankability(
+        dataset_summary={
+            "candles_total": 100,
+            "candles_live": 66,
+            "content_fingerprint": "a" * 64,
+        },
+        strategy_id="breakout_volatility_filter_v1",
+        campaign_id="batch_a_stage_a_d0a4e72d_20260713",
+        parameter_fingerprint="abc",
+        campaign_source_sha="d0a4e72d10fced72a5fb2d2edf1e40f3c80f417a",
+        repo_root=repo_root,
+    )
+    if FLAG_STALE_MANIFEST_FALLBACK_BLOCKED not in blocked.rankability_blocking_flags:
+        return _gate_blocked(
+            "stale manifest fallback is not blocked for Batch-A campaign"
+        )
+    if blocked.warmup_provenance.get("silent_manifest_fallback") is not False:
+        return _gate_blocked("silent_manifest_fallback must be explicitly False")
+
+    # Positive bound fixture: fully bound provenance must enforce cleanly.
+    bound = resolve_candle_rankability(
+        dataset_summary={
+            "candles_total": 44640,
+            "candles_live": 44606,
+            "warmup_candles": 34,
+            "content_fingerprint": "a" * 64,
+        },
+        strategy_id="breakout_volatility_filter_v1",
+        campaign_id="batch_a_stage_a_d0a4e72d_20260713",
+        parameter_fingerprint="abc",
+        campaign_source_sha="d0a4e72d10fced72a5fb2d2edf1e40f3c80f417a",
+        repo_root=repo_root,
+    )
+    if bound.rankability_blocking_flags:
+        return _gate_blocked(
+            "bound CDB-052 fixture unexpectedly blocking: "
+            + ",".join(bound.rankability_blocking_flags)
+        )
+    try:
+        enforce_rankability_provenance(
+            current={
+                "content_fingerprint": "a" * 64,
+                "warmup_bars": 34,
+                "parameter_fingerprint": "abc",
+                "campaign_source_sha": "d0a4e72d10fced72a5fb2d2edf1e40f3c80f417a",
+            },
+            evidence=bound.warmup_provenance,
+        )
+    except Exception as exc:  # noqa: BLE001
+        return _gate_blocked(f"bound provenance enforce failed: {exc}")
+
+    if not record_is_rankable(
+        {
+            "rankable": True,
+            "closed_trades_total": 5,
+            "warmup_provenance": bound.warmup_provenance,
+            "rankability_blocking_flags": [],
+            "not_rankable_reasons": [],
+        }
+    ):
+        return _gate_blocked("scorer rejects valid bound rankability provenance")
+
+    return _gate_pass(
+        "CDB-052 rankability/warmup provenance fail-closed and wired",
+        str(module_rel.as_posix()),
+        str(gate_rel.as_posix()),
+        str(test_rel.as_posix()),
     )
 
 
@@ -737,6 +899,11 @@ def validate_manifest_against_repo(
     else:
         gates["dataset_capability"] = ds_cap
 
+    cdb052 = check_cdb052_rankability_provenance(repo_root)
+    gates["cdb052_rankability_provenance"] = cdb052
+    if cdb052.status != "PASS":
+        blocking.append("cdb052_rankability_not_ready")
+
     if blocking:
         # Prefer specific verdicts already returned; else blocked.
         if any(g.status == "INVALID" for g in gates.values()):
@@ -764,6 +931,7 @@ def run_repo_preflight(
         "regime_signal": check_regime_signal_correctness(root),
         "execution_economics": check_execution_economics(root),
         "dataset_provenance": check_dataset_provenance_capability(root),
+        "cdb052_rankability_provenance": check_cdb052_rankability_provenance(root),
         "effective_config": check_effective_config_provenance(
             root,
             capability=cap,

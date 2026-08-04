@@ -71,6 +71,7 @@ def test_repo_preflight_ready_with_effective_config() -> None:
     report = run_repo_preflight(REPO_ROOT)
     assert report["verdict"] == VERDICT_READY
     assert report["gates"]["effective_config"]["status"] == "PASS"
+    assert report["gates"]["cdb052_rankability_provenance"]["status"] == "PASS"
     assert report["lr_status"] == "NO-GO"
     assert report["evidence"]["effective_config_capability_available"] is True
     assert report["evidence"]["effective_config_snapshot_fingerprint"]
@@ -236,6 +237,18 @@ def test_stage_a_gate_fingerprint_regression_stable() -> None:
 def test_cli_repo_preflight_exits_ready() -> None:
     rc = main(["--repo-root", str(REPO_ROOT)])
     assert rc == 0
+
+
+def test_cdb052_rankability_gate_is_required_for_ready() -> None:
+    from tools.arvp_vacation.sensitivity_campaign_preflight import (
+        check_cdb052_rankability_provenance,
+    )
+
+    gate = check_cdb052_rankability_provenance(REPO_ROOT)
+    assert gate.status == "PASS"
+    report = run_repo_preflight(REPO_ROOT)
+    assert "cdb052_rankability_provenance" in report["gates"]
+    assert report["gates"]["cdb052_rankability_provenance"]["status"] == "PASS"
 
 
 def test_no_secrets_in_readiness_report(valid_manifest: dict) -> None:
