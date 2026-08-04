@@ -14,6 +14,7 @@ SCRIPTS = (
     "backup.sh",
     "bootstrap.sh",
     "destroy.sh",
+    "migrate-profile-uids.sh",
     "provision.sh",
     "restore.sh",
     "rollback.sh",

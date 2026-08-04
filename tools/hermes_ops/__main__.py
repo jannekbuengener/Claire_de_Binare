@@ -23,6 +23,7 @@ from tools.hermes_ops.secret_scan import scan_paths
 from tools.hermes_ops.systemd_contract import validate_unit
 from tools.hermes_ops.token_broker import (
     assert_app_compatible_for_hermes_write,
+    assert_token_file_path_allowed,
     credential_paths_outside_workspace,
     metadata_only,
     mint_profile_token,
@@ -125,17 +126,22 @@ def _cmd_mint_token(args: argparse.Namespace) -> int:
             )
         )
         return 2
-    # Fail-closed App compatibility gate (cdb-local-ci App is not Hermes write).
+    # Fail-closed: path isolation + App compatibility (no 4410232; Hermes env only).
     try:
+        assert_token_file_path_allowed(args.token_file)
         assert_app_compatible_for_hermes_write()
     except Exception as exc:  # noqa: BLE001
+        hold = "HOLD_SCOPE_BLOCKER"
+        detail = str(exc)
+        if "TOKEN_DELIVERY" in detail or "token file" in detail.lower():
+            hold = "HOLD_TOKEN_DELIVERY_ISOLATION"
         print(
             json.dumps(
                 {
                     "ok": False,
                     "error": type(exc).__name__,
-                    "detail": str(exc),
-                    "hold": "HOLD_SCOPE_BLOCKER",
+                    "detail": detail,
+                    "hold": hold,
                 },
                 indent=2,
                 sort_keys=True,

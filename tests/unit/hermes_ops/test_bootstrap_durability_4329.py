@@ -111,12 +111,15 @@ def test_installer_temp_cleanup_trap_present() -> None:
     assert 'rm -f "${tmp}"' in text
 
 
-def test_etc_hermes_chown_to_install_user_group() -> None:
+def test_etc_hermes_dir_is_root_owned_not_world_writable() -> None:
     text = _bootstrap_text()
-    assert 'chown root:"${INSTALL_USER}" /etc/hermes' in text
-    assert "chmod 0750 /etc/hermes" in text
+    # B2.0: /etc/hermes is root:root; each profile env is root:<profile-user> 0640.
+    assert "chown root:root /etc/hermes" in text
+    assert 'chown "root:${user}" "${dest}"' in text or "chown root:" in text
     assert "chmod 0777 /etc/hermes" not in text
     assert "chmod 0775 /etc/hermes" not in text
+    assert "hermes-cdb-engineer" in text
+    assert "hermes-jannek-assistant" in text
 
 
 def test_systemd_protect_home_is_read_only_not_true() -> None:
