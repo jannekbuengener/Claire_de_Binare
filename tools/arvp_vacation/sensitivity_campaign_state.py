@@ -31,7 +31,7 @@ def _now_utc_iso() -> str:
 
 
 def atomic_write_json(path: Path, payload: Mapping[str, Any]) -> None:
-    """Temp-file + fsync + os.replace (atomic on same filesystem)."""
+    """Temp-file + fsync + os.replace (+ parent dir fsync when supported)."""
     path.parent.mkdir(parents=True, exist_ok=True)
     data = json.dumps(dict(payload), indent=2, sort_keys=True) + "\n"
     fd, tmp_name = tempfile.mkstemp(
@@ -43,12 +43,85 @@ def atomic_write_json(path: Path, payload: Mapping[str, Any]) -> None:
             handle.flush()
             os.fsync(handle.fileno())
         os.replace(tmp_name, path)
+        # Best-effort parent-directory durability (POSIX). Windows may no-op.
+        try:
+            dir_fd = os.open(str(path.parent), os.O_RDONLY)
+            try:
+                os.fsync(dir_fd)
+            finally:
+                os.close(dir_fd)
+        except OSError:
+            pass
     finally:
         if os.path.exists(tmp_name):
             try:
                 os.unlink(tmp_name)
             except OSError:
                 pass
+
+
+def acquire_campaign_lock(
+    root: Path,
+    *,
+    holder_token: str,
+    pid: int | None = None,
+) -> Path:
+    """Exclusive campaign-level claim via O_EXCL create (fail-closed).
+
+    PID alone is not ownership proof — holder_token (auth fingerprint) is required.
+    """
+    root.mkdir(parents=True, exist_ok=True)
+    lock_path = root / ".campaign.lock"
+    token = str(holder_token or "").strip()
+    if not token:
+        raise SensitivityStateError("STATE_LOCK_TOKEN_REQUIRED")
+    payload = {
+        "schema_version": STATE_SCHEMA_VERSION,
+        "holder_token": token,
+        "pid": int(pid if pid is not None else os.getpid()),
+        "acquired_at_utc": _now_utc_iso(),
+    }
+    flags = os.O_CREAT | os.O_EXCL | os.O_WRONLY
+    try:
+        fd = os.open(str(lock_path), flags)
+    except FileExistsError as exc:
+        existing = {}
+        try:
+            existing = json.loads(lock_path.read_text(encoding="utf-8"))
+        except (OSError, json.JSONDecodeError):
+            pass
+        if existing.get("holder_token") == token:
+            # Same authorization may re-enter (resume) — still exclusive per token.
+            return lock_path
+        raise SensitivityStateError("STATE_CAMPAIGN_LOCK_HELD") from exc
+    try:
+        with os.fdopen(fd, "w", encoding="utf-8") as handle:
+            handle.write(json.dumps(payload, indent=2, sort_keys=True) + "\n")
+            handle.flush()
+            os.fsync(handle.fileno())
+    except Exception:
+        try:
+            os.unlink(str(lock_path))
+        except OSError:
+            pass
+        raise
+    return lock_path
+
+
+def release_campaign_lock(root: Path, *, holder_token: str) -> None:
+    lock_path = root / ".campaign.lock"
+    if not lock_path.exists():
+        return
+    try:
+        existing = json.loads(lock_path.read_text(encoding="utf-8"))
+    except (OSError, json.JSONDecodeError) as exc:
+        raise SensitivityStateError("STATE_LOCK_MALFORMED") from exc
+    if existing.get("holder_token") != holder_token:
+        raise SensitivityStateError("STATE_LOCK_OWNERSHIP_MISMATCH")
+    try:
+        os.unlink(str(lock_path))
+    except OSError as exc:
+        raise SensitivityStateError("STATE_LOCK_RELEASE_FAILED") from exc
 
 
 def read_json(path: Path) -> dict[str, Any]:

@@ -7,8 +7,8 @@ CLI:
   python -m tools.arvp_vacation.sensitivity_campaign_runner probe-surface ...
 
 ``plan`` and ``validate-authorization`` are write-free.
-``execute`` requires a live-verified Owner-GO and an injected executor; the
-default production executor refuses real replays in this contract slice.
+``execute`` requires a live-verified Owner-GO. Default executor is the real
+``StrategyReplayCampaignExecutor`` (still auth-gated; no GO ⇒ no runs).
 """
 
 from __future__ import annotations
@@ -32,6 +32,7 @@ from tools.arvp_vacation.sensitivity_campaign_authorization import (
     RUNNER_CONTRACT_VERSION,
     SensitivityAuthorizationError,
     assert_absolute_bans_intact,
+    assert_author_in_owner_allowlist,
     campaign_execution_requires_owner_go,
     verify_owner_go_comment,
 )
@@ -43,8 +44,8 @@ from tools.arvp_vacation.sensitivity_campaign_budget import (
 )
 from tools.arvp_vacation.sensitivity_campaign_executor import (
     CampaignRunExecutor,
-    RefusingRealExecutor,
     RunEnvelope,
+    StrategyReplayCampaignExecutor,
 )
 from tools.arvp_vacation.sensitivity_campaign_grid import (
     EXPECTED_RUN_COUNT,
@@ -66,12 +67,16 @@ from tools.arvp_vacation.sensitivity_campaign_run_plan import (
 from tools.arvp_vacation.sensitivity_campaign_state import (
     CampaignBindings,
     SensitivityStateError,
+    acquire_campaign_lock,
     assert_namespace_startable,
     commit_successful_result,
     evidence_root_for,
     inspect_run_for_resume,
+    read_json,
+    release_campaign_lock,
     write_campaign_envelope,
     write_run_envelope,
+    CAMPAIGN_ENVELOPE_NAME,
 )
 from tools.arvp_vacation.sensitivity_campaign_surface import (
     SensitivitySurfaceError,
@@ -260,14 +265,17 @@ def validate_authorization_command(
         "resume_policy": plan.resume_policy,
         "reproduction_policy": plan.reproduction_policy,
     }
-    if authorizing_github_login:
-        expected["authorizing_github_login"] = authorizing_github_login
+    if not authorizing_github_login:
+        raise SensitivityAuthorizationError("AUTH_EXPECTED_LOGIN_REQUIRED")
+    expected["authorizing_github_login"] = assert_author_in_owner_allowlist(
+        authorizing_github_login
+    )
     if surface_id:
         expected["execution_surface_id"] = surface_id
     if surface_capability_fingerprint:
         expected["surface_capability_fingerprint"] = surface_capability_fingerprint
     if resource_budget is not None:
-        expected["resource_budget"] = dict(resource_budget)
+        expected["resource_budget"] = dict(validate_resource_budget(resource_budget))
 
     try:
         result = verify_owner_go_comment(
@@ -326,7 +334,7 @@ def execute_campaign(
     stream: TextIO | None = None,
     max_runs_override: int | None = None,
 ) -> dict[str, Any]:
-    """Execute only with valid Owner-GO + budget + surface. Default executor refuses."""
+    """Execute only with valid Owner-GO + budget + surface. Default: real adapter."""
     root = repo_root or PROJECT_ROOT
     out = stream or sys.stdout
     if max_runs_override is not None and max_runs_override != EXPECTED_RUN_COUNT:
@@ -336,8 +344,15 @@ def execute_campaign(
             "RUNNER_RUN_COUNT_OVERRIDE_FORBIDDEN", str(max_runs_override)
         )
 
+    # Allowlist gate before any side effects (independent of payload self-claim).
+    authorizing_github_login = assert_author_in_owner_allowlist(
+        authorizing_github_login
+    )
+
     # Hard reject generic force pathways (no such flags accepted by argparse).
-    active_executor = executor if executor is not None else RefusingRealExecutor()
+    active_executor = (
+        executor if executor is not None else StrategyReplayCampaignExecutor()
+    )
 
     manifest = load_manifest(manifest_path)
     validate_manifest(manifest)
@@ -429,6 +444,7 @@ def execute_campaign(
     )
     auth_fp = str(auth["authorization_fingerprint"])
     auth_id = auth_fp[:16]
+    comment_updated_at = str(auth["comment_updated_at"])
 
     base = artifacts_base if artifacts_base is not None else root
     evidence_root = evidence_root_for(
@@ -450,138 +466,170 @@ def execute_campaign(
         bindings=bindings,
         allow_resume=bool(plan.resume_policy.get("allow_resume")),
     )
-    write_campaign_envelope(
-        evidence_root,
-        bindings=bindings,
-        run_count=plan.run_count,
-        extra={"namespace_mode": mode, "github_comment_id": go_comment_id},
-    )
-
-    consecutive_failures = 0
-    total_failures = 0
-    succeeded = 0
-    skipped = 0
-    failed = 0
-    eff_fp = str(manifest.get("effective_config_snapshot_fingerprint") or "")
-
-    # Parallelism is hard-capped; this slice runs sequentially but enforces the
-    # configured max_parallelism as an upper bound (no fan-out above budget).
-    if int(budget["max_parallelism"]) < 1:
-        raise SensitivityRunnerError("RUNNER_PARALLELISM_INVALID")
-
-    for planned in plan.runs:
-        try:
-            action = inspect_run_for_resume(
-                evidence_root,
-                run_key=planned.run_key,
-                bindings=bindings,
-                max_attempts=int(budget["max_attempts_per_run"]),
-                retry_failed=bool(plan.resume_policy.get("retry_failed")),
+    if mode == "resume":
+        existing_env = read_json(evidence_root / CAMPAIGN_ENVELOPE_NAME)
+        bound_updated = str(existing_env.get("comment_updated_at") or "")
+        # Mutated Owner-GO comment invalidates resume.
+        verify_owner_go_comment(
+            comment_id=go_comment_id,
+            expected=expected,
+            repository=repository,
+            issue=ISSUE_NUMBER,
+            fetcher=fetcher,
+            expected_comment_updated_at=bound_updated or None,
+        )
+        if bound_updated and bound_updated != comment_updated_at:
+            raise SensitivityRunnerError(
+                "RUNNER_AUTH_COMMENT_MUTATED",
+                f"bound={bound_updated} live={comment_updated_at}",
             )
-        except SensitivityStateError as exc:
-            raise SensitivityRunnerError("RUNNER_RESUME_BLOCKED", str(exc)) from exc
 
-        if action == "skip":
-            skipped += 1
-            continue
-
-        attempt = 1
-        env_path = evidence_root / "runs" / planned.run_key / "run_envelope.json"
-        if env_path.exists() and action == "retry":
-            prev = json.loads(env_path.read_text(encoding="utf-8"))
-            attempt = int(prev.get("attempt") or 0) + 1
-
-        envelope = RunEnvelope(
-            run_key=planned.run_key,
-            campaign_id=plan.campaign_id,
-            manifest_fingerprint=plan.manifest_fingerprint,
-            execution_sha=sha,
-            window_id=planned.window_id,
-            strategy_id=planned.strategy_id,
-            parameters=dict(planned.param_set),
-            slot_id=planned.slot_id,
-            phase=planned.phase,
-            label=planned.label,
-            physical_parameter_set_fingerprint=(
-                planned.physical_parameter_set_fingerprint
-            ),
-            effective_config_fingerprint=eff_fp,
-            dataset_content_fingerprint=_window_content_fp(manifest, planned.window_id),
-            seed=_seed_for(plan.campaign_id, planned.window_id, planned.slot_id),
-            output_dir=str(evidence_root / "runs" / planned.run_key),
-            run_plan_fingerprint=plan.run_plan_fingerprint,
-            authorization_fingerprint=auth_fp,
-            attempt=attempt,
-            reproduction_attempt=0,
-        )
-        write_run_envelope(
+    lock_held = False
+    acquire_campaign_lock(evidence_root, holder_token=auth_fp)
+    lock_held = True
+    try:
+        write_campaign_envelope(
             evidence_root,
-            run_key=planned.run_key,
             bindings=bindings,
-            status="RUNNING",
-            attempt=attempt,
-            envelope=envelope.as_dict(),
+            run_count=plan.run_count,
+            extra={
+                "namespace_mode": mode,
+                "github_comment_id": go_comment_id,
+                "comment_updated_at": comment_updated_at,
+                "authorizing_github_login": authorizing_github_login,
+            },
         )
-        result = active_executor.execute(envelope)
-        if result.exit_code != 0:
-            failed += 1
-            consecutive_failures += 1
-            total_failures += 1
+
+        consecutive_failures = 0
+        total_failures = 0
+        succeeded = 0
+        skipped = 0
+        failed = 0
+        eff_fp = str(manifest.get("effective_config_snapshot_fingerprint") or "")
+
+        # Parallelism is hard-capped; this slice runs sequentially but enforces the
+        # configured max_parallelism as an upper bound (no fan-out above budget).
+        if int(budget["max_parallelism"]) < 1:
+            raise SensitivityRunnerError("RUNNER_PARALLELISM_INVALID")
+
+        for planned in plan.runs:
+            try:
+                action = inspect_run_for_resume(
+                    evidence_root,
+                    run_key=planned.run_key,
+                    bindings=bindings,
+                    max_attempts=int(budget["max_attempts_per_run"]),
+                    retry_failed=bool(plan.resume_policy.get("retry_failed")),
+                )
+            except SensitivityStateError as exc:
+                raise SensitivityRunnerError("RUNNER_RESUME_BLOCKED", str(exc)) from exc
+
+            if action == "skip":
+                skipped += 1
+                continue
+
+            attempt = 1
+            env_path = evidence_root / "runs" / planned.run_key / "run_envelope.json"
+            if env_path.exists() and action == "retry":
+                prev = json.loads(env_path.read_text(encoding="utf-8"))
+                attempt = int(prev.get("attempt") or 0) + 1
+
+            envelope = RunEnvelope(
+                run_key=planned.run_key,
+                campaign_id=plan.campaign_id,
+                manifest_fingerprint=plan.manifest_fingerprint,
+                execution_sha=sha,
+                window_id=planned.window_id,
+                strategy_id=planned.strategy_id,
+                parameters=dict(planned.param_set),
+                slot_id=planned.slot_id,
+                phase=planned.phase,
+                label=planned.label,
+                physical_parameter_set_fingerprint=(
+                    planned.physical_parameter_set_fingerprint
+                ),
+                effective_config_fingerprint=eff_fp,
+                dataset_content_fingerprint=_window_content_fp(
+                    manifest, planned.window_id
+                ),
+                seed=_seed_for(plan.campaign_id, planned.window_id, planned.slot_id),
+                output_dir=str(evidence_root / "runs" / planned.run_key),
+                run_plan_fingerprint=plan.run_plan_fingerprint,
+                authorization_fingerprint=auth_fp,
+                attempt=attempt,
+                reproduction_attempt=0,
+            )
             write_run_envelope(
                 evidence_root,
                 run_key=planned.run_key,
                 bindings=bindings,
-                status="FAILED",
+                status="RUNNING",
                 attempt=attempt,
                 envelope=envelope.as_dict(),
-                exit_code=result.exit_code,
             )
-            try:
-                assert_failure_thresholds(
-                    budget=budget,
-                    consecutive_failures=consecutive_failures,
-                    total_failures=total_failures,
+            result = active_executor.execute(envelope)
+            if result.exit_code != 0:
+                failed += 1
+                consecutive_failures += 1
+                total_failures += 1
+                write_run_envelope(
+                    evidence_root,
+                    run_key=planned.run_key,
+                    bindings=bindings,
+                    status="FAILED",
+                    attempt=attempt,
+                    envelope=envelope.as_dict(),
+                    exit_code=result.exit_code,
                 )
-            except SensitivityBudgetError as exc:
-                payload = {
-                    "command": "execute",
-                    "status": "BLOCKED",
-                    "reason_code": str(exc),
-                    "succeeded": succeeded,
-                    "failed": failed,
-                    "skipped": skipped,
-                    "lr_status": "NO-GO",
-                }
-                _emit(payload, out)
-                return payload
-            continue
+                try:
+                    assert_failure_thresholds(
+                        budget=budget,
+                        consecutive_failures=consecutive_failures,
+                        total_failures=total_failures,
+                    )
+                except SensitivityBudgetError as exc:
+                    payload = {
+                        "command": "execute",
+                        "status": "BLOCKED",
+                        "reason_code": str(exc),
+                        "succeeded": succeeded,
+                        "failed": failed,
+                        "skipped": skipped,
+                        "lr_status": "NO-GO",
+                    }
+                    _emit(payload, out)
+                    return payload
+                continue
 
-        consecutive_failures = 0
-        commit_successful_result(
-            evidence_root,
-            run_key=planned.run_key,
-            bindings=bindings,
-            attempt=attempt,
-            envelope=envelope.as_dict(),
-            result=result.metrics,
-            exit_code=0,
-        )
-        succeeded += 1
+            consecutive_failures = 0
+            commit_successful_result(
+                evidence_root,
+                run_key=planned.run_key,
+                bindings=bindings,
+                attempt=attempt,
+                envelope=envelope.as_dict(),
+                result=result.metrics,
+                exit_code=0,
+            )
+            succeeded += 1
 
-    payload = {
-        "command": "execute",
-        "status": "COMPLETED" if failed == 0 else "COMPLETED_WITH_FAILURES",
-        "succeeded": succeeded,
-        "failed": failed,
-        "skipped": skipped,
-        "run_count": plan.run_count,
-        "evidence_root": str(evidence_root),
-        "authorization_fingerprint": auth_fp,
-        "run_plan_fingerprint": plan.run_plan_fingerprint,
-        "lr_status": "NO-GO",
-    }
-    _emit(payload, out)
-    return payload
+        payload = {
+            "command": "execute",
+            "status": "COMPLETED" if failed == 0 else "COMPLETED_WITH_FAILURES",
+            "succeeded": succeeded,
+            "failed": failed,
+            "skipped": skipped,
+            "run_count": plan.run_count,
+            "evidence_root": str(evidence_root),
+            "authorization_fingerprint": auth_fp,
+            "run_plan_fingerprint": plan.run_plan_fingerprint,
+            "lr_status": "NO-GO",
+        }
+        _emit(payload, out)
+        return payload
+    finally:
+        if lock_held:
+            release_campaign_lock(evidence_root, holder_token=auth_fp)
 
 
 def probe_surface_command(
@@ -691,11 +739,12 @@ def main(argv: Sequence[str] | None = None) -> int:
             return 0 if result.get("valid") else 2
         if args.command == "execute":
             budget = json.loads(args.resource_budget_json)
-            # Production CLI uses refusing executor — no real campaign in this slice.
+            # Production CLI uses the real strategy-replay adapter; Owner-GO still
+            # blocks execution when missing/invalid.
             execute_campaign(
                 manifest_path=args.manifest,
                 go_comment_id=args.go_comment_id,
-                executor=RefusingRealExecutor(),
+                executor=StrategyReplayCampaignExecutor(),
                 repository=args.repository,
                 authorizing_github_login=args.authorizing_github_login,
                 surface_id=args.surface_id,

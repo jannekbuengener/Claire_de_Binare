@@ -11,6 +11,7 @@ import re
 import subprocess
 from copy import deepcopy
 from dataclasses import dataclass
+from datetime import UTC, datetime
 from pathlib import Path
 from typing import Any, Callable, Mapping, Sequence
 
@@ -29,6 +30,10 @@ DEFAULT_REPO = "jannekbuengener/Claire_de_Binare"
 ISSUE_NUMBER = 4153
 MANIFEST_PATH = "config/arvp/sensitivity_campaign_4153_v1.json"
 MANIFEST_ID = "arvp-sensitivity-4153-v1"
+
+# Canonical Owner allowlist (repository governance / human gate). Case-sensitive
+# exact match after rejecting non-ASCII / confusable logins.
+AUTHORIZING_OWNER_ALLOWLIST = frozenset({"jannekbuengener"})
 
 # Fenced JSON marker for GitHub Owner-GO comments.
 GO_FENCE_START = "```cdb.sensitivity_campaign_execution_authorization.v1"
@@ -56,6 +61,11 @@ ABSOLUTE_BAN_KEYS = frozenset(
     }
 )
 CONDITIONALLY_AUTHORIZABLE = frozenset({"campaign_execution"})
+
+_ISSUE_URL_RE = re.compile(
+    r"^https://api\.github\.com/repos/[^/\s]+/[^/\s]+/issues/(\d+)$"
+)
+_ASCII_LOGIN_RE = re.compile(r"^[A-Za-z0-9](?:[A-Za-z0-9-]{0,38})$")
 
 try:
     import jsonschema
@@ -95,22 +105,101 @@ def load_authorization_schema(path: Path | None = None) -> dict[str, Any]:
     return payload
 
 
+def _reject_duplicate_object_pairs(
+    pairs: Sequence[tuple[str, Any]],
+) -> dict[str, Any]:
+    seen: dict[str, Any] = {}
+    for key, value in pairs:
+        if key in seen:
+            raise SensitivityAuthorizationError(
+                "AUTH_GO_BLOCK_DUPLICATE_KEY", f"duplicate JSON key {key!r}"
+            )
+        seen[key] = value
+    return seen
+
+
+def _strict_json_loads(raw: str) -> Any:
+    """Parse JSON fail-closed: reject duplicate keys and non-object roots later."""
+    try:
+        return json.loads(raw, object_pairs_hook=_reject_duplicate_object_pairs)
+    except SensitivityAuthorizationError:
+        raise
+    except json.JSONDecodeError as exc:
+        raise SensitivityAuthorizationError(
+            "AUTH_GO_BLOCK_JSON_INVALID", str(exc)
+        ) from exc
+
+
 def validate_authorization_payload(
     payload: Mapping[str, Any],
     *,
     schema: Mapping[str, Any] | None = None,
+    now_utc: datetime | None = None,
 ) -> None:
     if jsonschema is None:
         raise SensitivityAuthorizationError(
             "AUTH_SCHEMA_ENGINE_MISSING", "jsonschema required"
         )
     resolved = dict(schema) if schema is not None else load_authorization_schema()
+    format_checker = getattr(jsonschema, "FormatChecker", None)
+    checker = format_checker() if format_checker is not None else None
     try:
-        jsonschema.validate(instance=dict(payload), schema=resolved)
+        if checker is not None:
+            jsonschema.validate(
+                instance=dict(payload),
+                schema=resolved,
+                format_checker=checker,
+            )
+        else:
+            jsonschema.validate(instance=dict(payload), schema=resolved)
     except jsonschema.ValidationError as exc:  # type: ignore[union-attr]
         raise SensitivityAuthorizationError(
             "AUTH_PAYLOAD_SCHEMA_INVALID", exc.message
         ) from exc
+
+    # Schema defaults must not authorize; require explicit capability/ban fields.
+    if "granted_capabilities" not in payload:
+        raise SensitivityAuthorizationError("AUTH_GRANTED_CAPABILITIES_MISSING")
+    granted = payload.get("granted_capabilities")
+    if granted != ["campaign_execution"]:
+        raise SensitivityAuthorizationError(
+            "AUTH_GRANTED_CAPABILITIES_INVALID", str(granted)
+        )
+    if "absolute_bans_unchanged" not in payload:
+        raise SensitivityAuthorizationError("AUTH_ABSOLUTE_BANS_FIELD_MISSING")
+    if payload.get("absolute_bans_unchanged") is not True:
+        raise SensitivityAuthorizationError("AUTH_ABSOLUTE_BANS_RELAXED")
+
+    _assert_expires_at_valid(payload.get("expires_at_utc"), now_utc=now_utc)
+
+
+def _assert_expires_at_valid(
+    expires_at_utc: Any,
+    *,
+    now_utc: datetime | None = None,
+) -> None:
+    """Clock source: datetime.now(tz=UTC) unless injected for tests."""
+    if expires_at_utc is None:
+        return
+    if not isinstance(expires_at_utc, str) or not expires_at_utc.strip():
+        raise SensitivityAuthorizationError("AUTH_EXPIRES_AT_INVALID", "non-string")
+    raw = expires_at_utc.strip()
+    try:
+        if raw.endswith("Z"):
+            exp = datetime.fromisoformat(raw[:-1] + "+00:00")
+        else:
+            exp = datetime.fromisoformat(raw)
+    except ValueError as exc:
+        raise SensitivityAuthorizationError(
+            "AUTH_EXPIRES_AT_INVALID", str(exc)
+        ) from exc
+    if exp.tzinfo is None:
+        raise SensitivityAuthorizationError("AUTH_EXPIRES_AT_NOT_TIMEZONE_AWARE", raw)
+    now = now_utc if now_utc is not None else datetime.now(tz=UTC)
+    if now.tzinfo is None:
+        now = now.replace(tzinfo=UTC)
+    if now.astimezone(UTC) >= exp.astimezone(UTC):
+        raise SensitivityAuthorizationError("AUTH_GO_EXPIRED", raw)
 
 
 def fingerprint_authorization_payload(payload: Mapping[str, Any]) -> str:
@@ -139,17 +228,70 @@ def parse_go_payload_from_comment_body(body: str) -> dict[str, Any]:
         raise SensitivityAuthorizationError(
             "AUTH_GO_BLOCK_AMBIGUOUS", "multiple GO fences in comment"
         )
-    try:
-        payload = json.loads(matches[0])
-    except json.JSONDecodeError as exc:
+    # Reject nested fences / trailing payload inside the captured block.
+    inner = matches[0]
+    if "```" in inner:
         raise SensitivityAuthorizationError(
-            "AUTH_GO_BLOCK_JSON_INVALID", str(exc)
-        ) from exc
+            "AUTH_GO_BLOCK_NESTED_FENCE", "nested markdown fence inside GO block"
+        )
+    payload = _strict_json_loads(inner)
     if not isinstance(payload, dict):
         raise SensitivityAuthorizationError(
             "AUTH_GO_BLOCK_JSON_INVALID", "root must be object"
         )
     return payload
+
+
+def normalize_authorizing_login(login: str) -> str:
+    """Reject Unicode/confusable logins; require ASCII GitHub login shape."""
+    value = str(login or "")
+    if not value or not _ASCII_LOGIN_RE.fullmatch(value):
+        raise SensitivityAuthorizationError("AUTH_AUTHOR_LOGIN_INVALID", repr(login))
+    return value
+
+
+def assert_author_in_owner_allowlist(login: str) -> str:
+    normalized = normalize_authorizing_login(login)
+    # Exact allowlist match (case-sensitive) — bots/apps/collabs cannot authorize.
+    if normalized not in AUTHORIZING_OWNER_ALLOWLIST:
+        raise SensitivityAuthorizationError("AUTH_AUTHOR_NOT_ALLOWLISTED", normalized)
+    return normalized
+
+
+def build_owner_go_comment_body(payload: Mapping[str, Any]) -> str:
+    """Render the canonical fenced GO body for a fully bound payload."""
+    body = json.dumps(dict(payload), indent=2, sort_keys=True)
+    return (
+        "Owner GO for #4153 sensitivity campaign.\n\n"
+        f"{GO_FENCE_START}\n{body}\n{GO_FENCE_END}\n"
+    )
+
+
+def draft_owner_go_placeholder_body(*, comment_id_placeholder: int = 0) -> str:
+    """Non-authorizing draft body used only to obtain a GitHub comment id.
+
+    The placeholder must not validate as a live Owner-GO (comment_id 0 / incomplete).
+    Atomic finalize flow:
+      1) create comment with this draft
+      2) read comment id
+      3) build full payload including github_comment_id
+      4) update the *same* comment exactly once
+      5) live-verify body, updated_at, payload fingerprint, comment id
+      6) only the final payload may authorize
+    """
+    return (
+        "DRAFT — not an Owner-GO. Placeholder pending comment-id bind "
+        f"(placeholder_id={comment_id_placeholder}).\n"
+    )
+
+
+def parse_issue_number_from_issue_url(issue_url: str) -> int:
+    match = _ISSUE_URL_RE.fullmatch(str(issue_url or "").strip())
+    if not match:
+        raise SensitivityAuthorizationError(
+            "AUTH_COMMENT_ISSUE_URL_INVALID", repr(issue_url)
+        )
+    return int(match.group(1))
 
 
 def default_gh_comment_fetcher(
@@ -177,10 +319,16 @@ def default_gh_comment_fetcher(
             "AUTH_COMMENT_FETCH_FAILED", "non-json gh response"
         ) from exc
     author = ((data.get("user") or {}).get("login")) or ""
-    # Issue number is not always on comment payload; bind caller-supplied issue.
+    issue_url = str(data.get("issue_url") or "")
+    live_issue = parse_issue_number_from_issue_url(issue_url)
+    if live_issue != issue:
+        raise SensitivityAuthorizationError(
+            "AUTH_ISSUE_MISMATCH",
+            f"fetched_issue={live_issue} expected={issue}",
+        )
     return GitHubComment(
         comment_id=int(data.get("id") or 0),
-        issue_number=issue,
+        issue_number=live_issue,
         author_login=str(author),
         body=str(data.get("body") or ""),
         updated_at=str(data.get("updated_at") or ""),
@@ -195,6 +343,8 @@ def verify_owner_go_comment(
     repository: str = DEFAULT_REPO,
     issue: int = ISSUE_NUMBER,
     fetcher: CommentFetcher | None = None,
+    now_utc: datetime | None = None,
+    expected_comment_updated_at: str | None = None,
 ) -> dict[str, Any]:
     """Load and verify a structured Owner-GO GitHub comment.
 
@@ -218,17 +368,34 @@ def verify_owner_go_comment(
             "AUTH_REPO_MISMATCH",
             f"fetched={comment.repository} expected={repository}",
         )
+    if not comment.updated_at:
+        raise SensitivityAuthorizationError("AUTH_COMMENT_UPDATED_AT_MISSING")
+    if (
+        expected_comment_updated_at is not None
+        and comment.updated_at != expected_comment_updated_at
+    ):
+        raise SensitivityAuthorizationError(
+            "AUTH_COMMENT_MUTATED",
+            f"live={comment.updated_at} bound={expected_comment_updated_at}",
+        )
 
     payload = parse_go_payload_from_comment_body(comment.body)
-    validate_authorization_payload(payload)
+    validate_authorization_payload(payload, now_utc=now_utc)
 
-    expected_login = str(expected.get("authorizing_github_login") or "")
-    if expected_login and comment.author_login != expected_login:
+    live_author = assert_author_in_owner_allowlist(comment.author_login)
+    expected_login_raw = str(expected.get("authorizing_github_login") or "")
+    if not expected_login_raw:
+        raise SensitivityAuthorizationError("AUTH_EXPECTED_LOGIN_REQUIRED")
+    expected_login = assert_author_in_owner_allowlist(expected_login_raw)
+    if live_author != expected_login:
         raise SensitivityAuthorizationError(
             "AUTH_AUTHOR_MISMATCH",
-            f"comment_author={comment.author_login} expected={expected_login}",
+            f"comment_author={live_author} expected={expected_login}",
         )
-    if payload.get("authorizing_github_login") != comment.author_login:
+    payload_login = assert_author_in_owner_allowlist(
+        str(payload.get("authorizing_github_login") or "")
+    )
+    if payload_login != live_author:
         raise SensitivityAuthorizationError(
             "AUTH_AUTHOR_PAYLOAD_MISMATCH",
             "payload authorizing_github_login != comment author",
@@ -294,23 +461,16 @@ def verify_owner_go_comment(
         ):
             raise SensitivityAuthorizationError("AUTH_REPRODUCTION_POLICY_MISMATCH")
 
-    granted = list(payload.get("granted_capabilities") or ["campaign_execution"])
-    if granted != ["campaign_execution"]:
-        raise SensitivityAuthorizationError(
-            "AUTH_GRANTED_CAPABILITIES_INVALID", str(granted)
-        )
-    if payload.get("absolute_bans_unchanged") is False:
-        raise SensitivityAuthorizationError("AUTH_ABSOLUTE_BANS_RELAXED")
-
     auth_fp = fingerprint_authorization_payload(payload)
     return {
         "valid": True,
         "payload": payload,
         "authorization_fingerprint": auth_fp,
         "github_comment_id": comment_id,
-        "authorizing_github_login": comment.author_login,
+        "authorizing_github_login": live_author,
         "comment_updated_at": comment.updated_at,
         "reason_code": "AUTH_GO_VALID",
+        "clock_source": "datetime.now(tz=UTC)",
     }
 
 
@@ -342,9 +502,11 @@ def authorization_policy_defaults() -> dict[str, Any]:
         "authorization_schema": AUTH_SCHEMA_VERSION,
         "conditionally_authorizable_capabilities": sorted(CONDITIONALLY_AUTHORIZABLE),
         "absolute_bans": sorted(ABSOLUTE_BAN_KEYS),
+        "authorizing_owner_allowlist": sorted(AUTHORIZING_OWNER_ALLOWLIST),
         "notes": (
             "explicit_bans.*=true means forbidden. campaign_execution may be "
             "released only by a live-verified Owner-GO matching "
-            f"{AUTH_SCHEMA_VERSION}; absolute bans cannot be relaxed."
+            f"{AUTH_SCHEMA_VERSION}; absolute bans cannot be relaxed. "
+            "Owner allowlist is enforced independently of payload self-claims."
         ),
     }

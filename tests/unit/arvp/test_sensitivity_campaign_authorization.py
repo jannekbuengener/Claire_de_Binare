@@ -228,7 +228,7 @@ def test_verify_valid_mocked_go_no_writes(
     [
         (
             lambda p: {**p, "authorizing_github_login": "not-jannek"},
-            "AUTH_AUTHOR_PAYLOAD_MISMATCH",
+            "AUTH_AUTHOR_NOT_ALLOWLISTED",
         ),
         (
             lambda p: {**p, "bound_main_sha": "c" * 40},
@@ -289,18 +289,122 @@ def test_wrong_comment_author(valid_payload: dict[str, Any]) -> None:
             expected={"authorizing_github_login": AUTHOR},
             fetcher=make_fetcher(valid_payload, author="impostor"),
         )
-    assert exc.value.reason_code == "AUTH_AUTHOR_MISMATCH"
+    assert exc.value.reason_code == "AUTH_AUTHOR_NOT_ALLOWLISTED"
 
 
 def test_wrong_issue_on_comment(valid_payload: dict[str, Any]) -> None:
     with pytest.raises(SensitivityAuthorizationError) as exc:
         verify_owner_go_comment(
             comment_id=COMMENT_ID,
-            expected={},
+            expected={"authorizing_github_login": AUTHOR},
             issue=4153,
             fetcher=make_fetcher(valid_payload, issue=1, assert_fetch_issue=4153),
         )
     assert exc.value.reason_code == "AUTH_ISSUE_MISMATCH"
+
+
+def test_duplicate_json_keys_rejected(valid_payload: dict[str, Any]) -> None:
+    body = (
+        "Owner GO\n\n"
+        f"{GO_FENCE_START}\n"
+        '{\n  "granted_capabilities": ["campaign_execution"],\n'
+        '  "granted_capabilities": ["paper"]\n}\n'
+        f"{GO_FENCE_END}\n"
+    )
+    with pytest.raises(SensitivityAuthorizationError) as exc:
+        parse_go_payload_from_comment_body(body)
+    assert exc.value.reason_code == "AUTH_GO_BLOCK_DUPLICATE_KEY"
+
+
+def test_missing_granted_capabilities_rejected(valid_payload: dict[str, Any]) -> None:
+    bad = copy.deepcopy(valid_payload)
+    del bad["granted_capabilities"]
+    with pytest.raises(SensitivityAuthorizationError) as exc:
+        validate_authorization_payload(bad)
+    assert exc.value.reason_code in {
+        "AUTH_GRANTED_CAPABILITIES_MISSING",
+        "AUTH_PAYLOAD_SCHEMA_INVALID",
+    }
+
+
+def test_missing_absolute_bans_field_rejected(valid_payload: dict[str, Any]) -> None:
+    bad = copy.deepcopy(valid_payload)
+    del bad["absolute_bans_unchanged"]
+    with pytest.raises(SensitivityAuthorizationError) as exc:
+        validate_authorization_payload(bad)
+    assert exc.value.reason_code in {
+        "AUTH_ABSOLUTE_BANS_FIELD_MISSING",
+        "AUTH_PAYLOAD_SCHEMA_INVALID",
+    }
+
+
+def test_extra_capability_rejected(valid_payload: dict[str, Any]) -> None:
+    bad = copy.deepcopy(valid_payload)
+    bad["granted_capabilities"] = ["campaign_execution", "paper"]
+    with pytest.raises(SensitivityAuthorizationError) as exc:
+        validate_authorization_payload(bad)
+    assert exc.value.reason_code in {
+        "AUTH_PAYLOAD_SCHEMA_INVALID",
+        "AUTH_GRANTED_CAPABILITIES_INVALID",
+    }
+
+
+def test_expired_go_rejected(valid_payload: dict[str, Any]) -> None:
+    from datetime import UTC, datetime
+
+    bad = copy.deepcopy(valid_payload)
+    bad["expires_at_utc"] = "2020-01-01T00:00:00Z"
+    with pytest.raises(SensitivityAuthorizationError) as exc:
+        validate_authorization_payload(bad, now_utc=datetime(2026, 8, 4, tzinfo=UTC))
+    assert exc.value.reason_code == "AUTH_GO_EXPIRED"
+
+
+def test_non_allowlisted_author_rejected(valid_payload: dict[str, Any]) -> None:
+    with pytest.raises(SensitivityAuthorizationError) as exc:
+        verify_owner_go_comment(
+            comment_id=COMMENT_ID,
+            expected={"authorizing_github_login": "random-collaborator"},
+            fetcher=make_fetcher(valid_payload, author="random-collaborator"),
+        )
+    assert exc.value.reason_code == "AUTH_AUTHOR_NOT_ALLOWLISTED"
+
+
+def test_comment_mutation_detected(valid_payload: dict[str, Any]) -> None:
+    with pytest.raises(SensitivityAuthorizationError) as exc:
+        verify_owner_go_comment(
+            comment_id=COMMENT_ID,
+            expected={"authorizing_github_login": AUTHOR},
+            fetcher=make_fetcher(valid_payload),
+            expected_comment_updated_at="2020-01-01T00:00:00Z",
+        )
+    assert exc.value.reason_code == "AUTH_COMMENT_MUTATED"
+
+
+def test_draft_placeholder_is_not_authorizing() -> None:
+    from tools.arvp_vacation.sensitivity_campaign_authorization import (
+        draft_owner_go_placeholder_body,
+    )
+
+    body = draft_owner_go_placeholder_body()
+    with pytest.raises(SensitivityAuthorizationError) as exc:
+        parse_go_payload_from_comment_body(body)
+    assert exc.value.reason_code == "AUTH_GO_BLOCK_MISSING"
+
+
+def test_issue_url_parser() -> None:
+    from tools.arvp_vacation.sensitivity_campaign_authorization import (
+        parse_issue_number_from_issue_url,
+    )
+
+    assert (
+        parse_issue_number_from_issue_url(
+            "https://api.github.com/repos/jannekbuengener/Claire_de_Binare/issues/4153"
+        )
+        == 4153
+    )
+    with pytest.raises(SensitivityAuthorizationError) as exc:
+        parse_issue_number_from_issue_url("https://example.com/not-an-issue")
+    assert exc.value.reason_code == "AUTH_COMMENT_ISSUE_URL_INVALID"
 
 
 def test_absolute_bans_and_policy_defaults() -> None:
@@ -312,3 +416,4 @@ def test_absolute_bans_and_policy_defaults() -> None:
     assert "campaign_execution" in policy["conditionally_authorizable_capabilities"]
     assert "paper" in policy["absolute_bans"]
     assert "live" in policy["absolute_bans"]
+    assert "jannekbuengener" in policy["authorizing_owner_allowlist"]
