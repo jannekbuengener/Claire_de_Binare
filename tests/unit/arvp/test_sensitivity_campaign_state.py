@@ -294,6 +294,17 @@ def test_reproduction_resume_success_skips(tmp_path: Path) -> None:
         envelope={"run_key": "rk1", "reproduction_attempt": 1},
         result={"gate_reason": "OK", "trade_count": 0},
     )
+    write_comparison_evidence(
+        root,
+        run_key="rk1",
+        reproduction_attempt=1,
+        comparison={
+            "status": "PASS",
+            "reason_code": "REPRODUCTION_EXACT_MATCH",
+            "mismatched_fields": [],
+            "comparison_fingerprint": "e" * 64,
+        },
+    )
     assert reproduction_completion_marker_path(root, "rk1", 1).exists()
     action = inspect_reproduction_for_resume(
         root,
@@ -304,6 +315,76 @@ def test_reproduction_resume_success_skips(tmp_path: Path) -> None:
         retry_failed=True,
     )
     assert action == "skip"
+
+
+def test_reproduction_resume_success_without_comparison_blocks(tmp_path: Path) -> None:
+    root = tmp_path / "ns"
+    write_campaign_envelope(root, bindings=BINDINGS, run_count=1)
+    commit_successful_reproduction_result(
+        root,
+        run_key="rk1",
+        reproduction_attempt=1,
+        bindings=BINDINGS,
+        attempt=1,
+        envelope={"run_key": "rk1", "reproduction_attempt": 1},
+        result={"gate_reason": "OK", "trade_count": 0},
+    )
+    with pytest.raises(SensitivityStateError) as exc:
+        inspect_reproduction_for_resume(
+            root,
+            run_key="rk1",
+            reproduction_attempt=1,
+            bindings=BINDINGS,
+            max_attempts=3,
+            retry_failed=True,
+        )
+    assert "STATE_REPRO_COMPARISON_MISSING" in str(exc.value)
+
+
+def test_reproduction_resume_running_with_pass_comparison_finalizes(
+    tmp_path: Path,
+) -> None:
+    root = tmp_path / "ns"
+    write_reproduction_envelope(
+        root,
+        run_key="rk1",
+        reproduction_attempt=1,
+        bindings=BINDINGS,
+        status="RUNNING",
+        attempt=1,
+        envelope={"run_key": "rk1", "reproduction_attempt": 1},
+    )
+    from tools.arvp_vacation.sensitivity_campaign_state import (
+        persist_reproduction_result,
+    )
+
+    persist_reproduction_result(
+        root,
+        run_key="rk1",
+        reproduction_attempt=1,
+        bindings=BINDINGS,
+        result={"gate_reason": "OK", "trade_count": 0},
+    )
+    write_comparison_evidence(
+        root,
+        run_key="rk1",
+        reproduction_attempt=1,
+        comparison={
+            "status": "PASS",
+            "reason_code": "REPRODUCTION_EXACT_MATCH",
+            "mismatched_fields": [],
+            "comparison_fingerprint": "e" * 64,
+        },
+    )
+    action = inspect_reproduction_for_resume(
+        root,
+        run_key="rk1",
+        reproduction_attempt=1,
+        bindings=BINDINGS,
+        max_attempts=3,
+        retry_failed=True,
+    )
+    assert action == "finalize"
 
 
 def test_reproduction_resume_partial_blocks(tmp_path: Path) -> None:

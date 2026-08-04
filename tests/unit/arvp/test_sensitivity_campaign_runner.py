@@ -28,9 +28,11 @@ from tools.arvp_vacation.sensitivity_campaign_executor import (
     ATTEMPT_KIND_PRIMARY,
     ATTEMPT_KIND_REPRODUCTION,
     FakeExecutor,
+    StrategyReplayCampaignExecutor,
 )
 from tools.arvp_vacation.sensitivity_campaign_runner import (
     SensitivityRunnerError,
+    _bind_executor_dataset_root,
     build_parser,
     execute_campaign,
     plan_campaign,
@@ -562,3 +564,101 @@ def test_execute_blocks_when_authorization_expires_before_attempt(
                 now_utc_provider=_now_provider,
             )
     assert exc.value.reason_code == "AUTHORIZATION_EXPIRED_BEFORE_NEXT_ATTEMPT"
+
+
+def test_bind_executor_dataset_root_rebinds_unbound_strategy_adapter(
+    tmp_path: Path,
+) -> None:
+    bank = (tmp_path / "window_bank").resolve()
+    bank.mkdir()
+    unbound = StrategyReplayCampaignExecutor()
+    assert unbound.window_bank_root is None
+    bound = _bind_executor_dataset_root(executor=unbound, resolved_bank_root=bank)
+    assert isinstance(bound, StrategyReplayCampaignExecutor)
+    assert bound.window_bank_root == bank
+
+
+def test_bind_executor_dataset_root_mismatch_raises(tmp_path: Path) -> None:
+    bank_a = (tmp_path / "a").resolve()
+    bank_b = (tmp_path / "b").resolve()
+    bank_a.mkdir()
+    bank_b.mkdir()
+    executor = StrategyReplayCampaignExecutor(window_bank_root=bank_a)
+    with pytest.raises(SensitivityRunnerError) as exc:
+        _bind_executor_dataset_root(executor=executor, resolved_bank_root=bank_b)
+    assert exc.value.reason_code == "RUNNER_DATASET_EXECUTOR_ROOT_MISMATCH"
+
+
+def test_bind_executor_none_creates_strategy_adapter(tmp_path: Path) -> None:
+    bank = (tmp_path / "window_bank").resolve()
+    bank.mkdir()
+    bound = _bind_executor_dataset_root(executor=None, resolved_bank_root=bank)
+    assert isinstance(bound, StrategyReplayCampaignExecutor)
+    assert bound.window_bank_root == bank
+
+
+def test_execute_resume_from_reproduction_running_does_not_reenter_primary(
+    manifest: dict[str, Any], surface_probe, tmp_path: Path
+) -> None:
+    """Resume after primary must not force PRIMARY_RUNNING (illegal transition)."""
+    from tools.arvp_vacation.sensitivity_campaign_state import (
+        CAMPAIGN_PHASE_REPRODUCTION_RUNNING,
+        read_json,
+    )
+
+    budget = _sample_budget()
+    budget["minimum_free_disk_bytes"] = 1
+    auth = build_valid_auth_payload(
+        manifest=manifest,
+        surface_fp=surface_probe.surface_capability_fingerprint,
+        budget=budget,
+    )
+    fast_plan = _fast_plan_from(manifest, primary_count=2)
+    fake = FakeExecutor()
+
+    with patch(
+        "tools.arvp_vacation.sensitivity_campaign_runner.build_run_plan",
+        return_value=fast_plan,
+    ):
+        result1 = execute_campaign(
+            manifest_path=CANONICAL_MANIFEST,
+            go_comment_id=COMMENT_ID,
+            executor=fake,
+            repo_root=REPO_ROOT,
+            artifacts_base=tmp_path,
+            main_sha=MAIN_SHA,
+            authorizing_github_login=AUTHOR,
+            surface_id=SURFACE_ID,
+            surface_capability_fingerprint=surface_probe.surface_capability_fingerprint,
+            resource_budget=budget,
+            fetcher=make_fetcher(auth),
+            stream=io.StringIO(),
+        )
+        assert result1["status"] == "COMPLETED"
+
+        evidence_root = Path(str(result1["evidence_root"]))
+        env_path = evidence_root / "campaign_envelope.json"
+        body = read_json(env_path)
+        # Simulate crash mid-reproduction: drop terminal COMPLETED back to
+        # REPRODUCTION_RUNNING so resume continues without re-entering primary.
+        body["campaign_phase"] = CAMPAIGN_PHASE_REPRODUCTION_RUNNING
+        env_path.write_text(json.dumps(body, indent=2) + "\n", encoding="utf-8")
+
+        fake2 = FakeExecutor()
+        result2 = execute_campaign(
+            manifest_path=CANONICAL_MANIFEST,
+            go_comment_id=COMMENT_ID,
+            executor=fake2,
+            repo_root=REPO_ROOT,
+            artifacts_base=tmp_path,
+            main_sha=MAIN_SHA,
+            authorizing_github_login=AUTHOR,
+            surface_id=SURFACE_ID,
+            surface_capability_fingerprint=surface_probe.surface_capability_fingerprint,
+            resource_budget=budget,
+            fetcher=make_fetcher(auth),
+            stream=io.StringIO(),
+        )
+        assert result2["status"] == "COMPLETED"
+        primary_calls = [c for c in fake2.calls if c.attempt_kind == "PRIMARY"]
+        assert primary_calls == []

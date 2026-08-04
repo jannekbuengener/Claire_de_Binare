@@ -583,17 +583,19 @@ def write_reproduction_envelope(
     return path
 
 
-def commit_successful_reproduction_result(
+def persist_reproduction_result(
     root: Path,
     *,
     run_key: str,
     reproduction_attempt: int,
     bindings: CampaignBindings,
-    attempt: int,
-    envelope: Mapping[str, Any],
     result: Mapping[str, Any],
-    exit_code: int = 0,
 ) -> str:
+    """Atomically persist reproduction ``result.json`` without success markers.
+
+    Callers must write ``comparison.json`` and only then call
+    :func:`commit_successful_reproduction_result` after a PASS comparison.
+    """
     result_fp = canonical_hash(dict(result))
     rpath = reproduction_result_path(root, run_key, reproduction_attempt)
     atomic_write_json(
@@ -608,6 +610,28 @@ def commit_successful_reproduction_result(
             "authorization_fingerprint": bindings.authorization_fingerprint,
             "result": dict(result),
         },
+    )
+    return result_fp
+
+
+def commit_successful_reproduction_result(
+    root: Path,
+    *,
+    run_key: str,
+    reproduction_attempt: int,
+    bindings: CampaignBindings,
+    attempt: int,
+    envelope: Mapping[str, Any],
+    result: Mapping[str, Any],
+    exit_code: int = 0,
+) -> str:
+    """Mark reproduction SUCCEEDED only after result (+ comparison) is durable."""
+    result_fp = persist_reproduction_result(
+        root,
+        run_key=run_key,
+        reproduction_attempt=reproduction_attempt,
+        bindings=bindings,
+        result=result,
     )
     write_reproduction_envelope(
         root,
@@ -692,8 +716,34 @@ def inspect_reproduction_for_resume(
             bindings.authorization_fingerprint
         ):
             raise SensitivityStateError("STATE_REPRO_RESULT_AUTH_MISMATCH")
+        # Completion is gated on an exact-equality PASS comparison.
+        cmp_path = reproduction_comparison_path(root, run_key, reproduction_attempt)
+        if not cmp_path.exists():
+            raise SensitivityStateError("STATE_REPRO_COMPARISON_MISSING")
+        cmp_body = read_json(cmp_path)
+        comparison = dict(cmp_body.get("comparison") or {})
+        if str(comparison.get("status") or "") != "PASS":
+            raise SensitivityStateError(
+                f"STATE_REPRO_COMPARISON_NOT_PASS:{comparison.get('status')}"
+            )
         return "skip"
     if status == "RUNNING":
+        # Crash window: result + PASS comparison persisted, success marker not yet.
+        # Resume may finalize without re-executing; bare RUNNING remains blocked.
+        rpath = reproduction_result_path(root, run_key, reproduction_attempt)
+        cmp_path = reproduction_comparison_path(root, run_key, reproduction_attempt)
+        if rpath.exists() and cmp_path.exists():
+            result_body = read_json(rpath)
+            if result_body.get("manifest_fingerprint") != bindings.manifest_fingerprint:
+                raise SensitivityStateError("STATE_REPRO_RESULT_MANIFEST_MISMATCH")
+            if result_body.get("authorization_fingerprint") != (
+                bindings.authorization_fingerprint
+            ):
+                raise SensitivityStateError("STATE_REPRO_RESULT_AUTH_MISMATCH")
+            cmp_body = read_json(cmp_path)
+            comparison = dict(cmp_body.get("comparison") or {})
+            if str(comparison.get("status") or "") == "PASS":
+                return "finalize"
         raise SensitivityStateError("STATE_REPRO_RUNNING_WITHOUT_COMPLETION")
     if status == "FAILED":
         if not retry_failed:

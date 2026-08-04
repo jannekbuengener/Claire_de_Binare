@@ -79,7 +79,9 @@ from tools.arvp_vacation.sensitivity_campaign_state import (
     CAMPAIGN_ENVELOPE_NAME,
     CAMPAIGN_PHASE_BLOCKED,
     CAMPAIGN_PHASE_COMPLETED,
+    CAMPAIGN_PHASE_PLANNED,
     CAMPAIGN_PHASE_PRIMARY_COMPLETE,
+    CAMPAIGN_PHASE_PRIMARY_PLANNED,
     CAMPAIGN_PHASE_PRIMARY_RUNNING,
     CAMPAIGN_PHASE_REPRODUCTION_COMPLETE,
     CAMPAIGN_PHASE_REPRODUCTION_PLANNED,
@@ -94,6 +96,8 @@ from tools.arvp_vacation.sensitivity_campaign_state import (
     evidence_root_for,
     inspect_reproduction_for_resume,
     inspect_run_for_resume,
+    persist_reproduction_result,
+    read_campaign_phase,
     read_json,
     release_campaign_lock,
     reproduction_dir,
@@ -124,6 +128,41 @@ class SensitivityRunnerError(ValueError):
     def __init__(self, reason_code: str, detail: str = "") -> None:
         self.reason_code = reason_code
         super().__init__(reason_code if not detail else f"{reason_code}: {detail}")
+
+
+def _bind_executor_dataset_root(
+    *,
+    executor: CampaignRunExecutor | None,
+    resolved_bank_root: Path | None,
+) -> CampaignRunExecutor:
+    """Ensure the production replay adapter consumes the verified dataset root.
+
+    CLI historically constructed ``StrategyReplayCampaignExecutor()`` before
+    ``dataset_root`` resolution; without rebinding, surface identity would
+    reflect the external root while replays still used the repo-local bank.
+    """
+    if executor is None:
+        return StrategyReplayCampaignExecutor(window_bank_root=resolved_bank_root)
+    if resolved_bank_root is None:
+        return executor
+    if isinstance(executor, StrategyReplayCampaignExecutor):
+        existing = executor.window_bank_root
+        if existing is None:
+            return StrategyReplayCampaignExecutor(
+                replay_invoker=executor._replay_invoker,
+                metrics_loader=executor._metrics_loader,
+                adapter_id=executor._adapter_id,
+                symbol=executor._symbol,
+                speedup_profile=executor._speedup_profile,
+                window_bank_root=resolved_bank_root,
+            )
+        if Path(existing).resolve() != Path(resolved_bank_root).resolve():
+            raise SensitivityRunnerError(
+                "RUNNER_DATASET_EXECUTOR_ROOT_MISMATCH",
+                f"executor={existing} verified={resolved_bank_root}",
+            )
+        return executor
+    return executor
 
 
 def _git_head_sha(repo_root: Path) -> str:
@@ -536,6 +575,29 @@ def _run_reproduction_loop(
             repro_skipped += 1
             continue
 
+        if action == "finalize":
+            # Crash window after PASS comparison, before success marker.
+            env_path = (
+                reproduction_dir(evidence_root, run_key, repro_attempt)
+                / "run_envelope.json"
+            )
+            prev = json.loads(env_path.read_text(encoding="utf-8"))
+            repro_result_body = read_json(
+                reproduction_dir(evidence_root, run_key, repro_attempt) / "result.json"
+            )
+            commit_successful_reproduction_result(
+                evidence_root,
+                run_key=run_key,
+                reproduction_attempt=repro_attempt,
+                bindings=bindings,
+                attempt=int(prev.get("attempt") or 1),
+                envelope=dict(prev.get("envelope") or {}),
+                result=dict(repro_result_body.get("result") or {}),
+                exit_code=0,
+            )
+            repro_succeeded += 1
+            continue
+
         # Pre-attempt expiry gate.
         assert_authorization_not_expired_for_next_attempt(
             auth_expiry, now_utc=now_utc_provider()
@@ -609,15 +671,13 @@ def _run_reproduction_loop(
                 }
             continue
 
-        commit_successful_reproduction_result(
+        # Persist result while still RUNNING; SUCCEEDED only after PASS comparison.
+        persist_reproduction_result(
             evidence_root,
             run_key=run_key,
             reproduction_attempt=repro_attempt,
             bindings=bindings,
-            attempt=attempt,
-            envelope=envelope.as_dict(),
             result=result.metrics,
-            exit_code=0,
         )
 
         # Load primary and compare, with bindings validation.
@@ -658,6 +718,16 @@ def _run_reproduction_loop(
         )
 
         if comparison["status"] == "MISMATCH":
+            write_reproduction_envelope(
+                evidence_root,
+                run_key=run_key,
+                reproduction_attempt=repro_attempt,
+                bindings=bindings,
+                status="FAILED",
+                attempt=attempt,
+                envelope=envelope.as_dict(),
+                exit_code=0,
+            )
             mismatches.append(
                 {
                     "run_key": run_key,
@@ -675,8 +745,19 @@ def _run_reproduction_loop(
                     "skipped": repro_skipped,
                     "mismatches": mismatches,
                 }
-        else:
-            repro_succeeded += 1
+            continue
+
+        commit_successful_reproduction_result(
+            evidence_root,
+            run_key=run_key,
+            reproduction_attempt=repro_attempt,
+            bindings=bindings,
+            attempt=attempt,
+            envelope=envelope.as_dict(),
+            result=result.metrics,
+            exit_code=0,
+        )
+        repro_succeeded += 1
 
     return {
         "phase_outcome": "REPRODUCTION_COMPLETE",
@@ -792,10 +873,9 @@ def execute_campaign(
             ) from exc
         resolved_bank_root = Path(dataset_identity.window_bank_root)
 
-    active_executor = (
-        executor
-        if executor is not None
-        else (StrategyReplayCampaignExecutor(window_bank_root=resolved_bank_root))
+    active_executor = _bind_executor_dataset_root(
+        executor=executor,
+        resolved_bank_root=resolved_bank_root,
     )
 
     probe = probe_execution_surface(
@@ -922,116 +1002,38 @@ def execute_campaign(
             extra=envelope_extra,
         )
 
-        # Enter primary phase.
-        update_campaign_phase(
-            evidence_root,
-            bindings=bindings,
-            phase=CAMPAIGN_PHASE_PRIMARY_RUNNING,
-        )
-
-        primary_outcome = _run_primary_loop(
-            plan=plan,
-            evidence_root=evidence_root,
-            bindings=bindings,
-            budget=budget,
-            active_executor=active_executor,
-            manifest=manifest,
-            auth_fp=auth_fp,
-            sha=sha,
-            auth_expiry=auth_expiry,
-            now_utc_provider=now_provider,
-        )
-        primary_succeeded = int(primary_outcome.get("succeeded", 0))
-        primary_failed = int(primary_outcome.get("failed", 0))
-        primary_skipped = int(primary_outcome.get("skipped", 0))
-
-        if primary_outcome["phase_outcome"] == "BLOCKED":
-            update_campaign_phase(
-                evidence_root,
-                bindings=bindings,
-                phase=CAMPAIGN_PHASE_BLOCKED,
-                extra={"blocked_reason": primary_outcome.get("reason_code")},
-            )
+        current_phase = read_campaign_phase(evidence_root)
+        if current_phase in {CAMPAIGN_PHASE_COMPLETED, CAMPAIGN_PHASE_BLOCKED}:
             payload = {
                 "command": "execute",
-                "status": "BLOCKED",
-                "reason_code": str(primary_outcome.get("reason_code")),
-                "campaign_phase": CAMPAIGN_PHASE_BLOCKED,
-                "succeeded": primary_succeeded,
-                "failed": primary_failed,
-                "skipped": primary_skipped,
+                "status": current_phase,
+                "campaign_phase": current_phase,
+                "reason_code": f"RUNNER_ALREADY_{current_phase}",
                 "lr_status": "NO-GO",
             }
             _emit(payload, out)
             return payload
 
-        # All primary attempts must have SUCCEEDED before we move forward.
-        confirmed_primary = count_primary_succeeded(
-            evidence_root,
-            bindings=bindings,
-            expected_run_keys=list(plan.run_keys),
-        )
-        if confirmed_primary != plan.run_count:
-            update_campaign_phase(
-                evidence_root,
-                bindings=bindings,
-                phase=CAMPAIGN_PHASE_BLOCKED,
-                extra={
-                    "blocked_reason": "PRIMARY_SUCCESS_COUNT_MISMATCH",
-                    "expected_run_count": plan.run_count,
-                    "confirmed_primary": confirmed_primary,
-                },
-            )
-            payload = {
-                "command": "execute",
-                "status": "BLOCKED",
-                "reason_code": "PRIMARY_SUCCESS_COUNT_MISMATCH",
-                "campaign_phase": CAMPAIGN_PHASE_BLOCKED,
-                "succeeded": primary_succeeded,
-                "failed": primary_failed,
-                "skipped": primary_skipped,
-                "confirmed_primary": confirmed_primary,
-                "lr_status": "NO-GO",
-            }
-            _emit(payload, out)
-            return payload
+        primary_succeeded = 0
+        primary_failed = 0
+        primary_skipped = 0
+        run_primary = current_phase in {
+            CAMPAIGN_PHASE_PLANNED,
+            CAMPAIGN_PHASE_PRIMARY_PLANNED,
+            CAMPAIGN_PHASE_PRIMARY_RUNNING,
+        }
 
-        update_campaign_phase(
-            evidence_root,
-            bindings=bindings,
-            phase=CAMPAIGN_PHASE_PRIMARY_COMPLETE,
-        )
+        if run_primary:
+            # Fresh start or mid-primary resume — never re-enter from later phases.
+            if current_phase != CAMPAIGN_PHASE_PRIMARY_RUNNING:
+                update_campaign_phase(
+                    evidence_root,
+                    bindings=bindings,
+                    phase=CAMPAIGN_PHASE_PRIMARY_RUNNING,
+                )
 
-        reproduction_enabled = bool(plan.reproduction_policy.get("enabled"))
-        reproduction_summary: dict[str, Any] = {"enabled": reproduction_enabled}
-
-        if reproduction_enabled:
-            update_campaign_phase(
-                evidence_root,
-                bindings=bindings,
-                phase=CAMPAIGN_PHASE_REPRODUCTION_PLANNED,
-            )
-            reproduction_plan = build_reproduction_plan(
-                run_keys=list(plan.run_keys),
-                policy=plan.reproduction_policy,
-            )
-            update_campaign_phase(
-                evidence_root,
-                bindings=bindings,
-                phase=CAMPAIGN_PHASE_REPRODUCTION_RUNNING,
-                extra={
-                    "reproduction_plan_fingerprint": reproduction_plan.get(
-                        "reproduction_plan_fingerprint"
-                    ),
-                    "reproduction_item_count": len(
-                        reproduction_plan.get("reproduction_items", [])
-                    ),
-                },
-            )
-
-            repro_outcome = _run_reproduction_loop(
+            primary_outcome = _run_primary_loop(
                 plan=plan,
-                reproduction_plan=reproduction_plan,
                 evidence_root=evidence_root,
                 bindings=bindings,
                 budget=budget,
@@ -1042,31 +1044,55 @@ def execute_campaign(
                 auth_expiry=auth_expiry,
                 now_utc_provider=now_provider,
             )
-            reproduction_summary.update(repro_outcome)
+            primary_succeeded = int(primary_outcome.get("succeeded", 0))
+            primary_failed = int(primary_outcome.get("failed", 0))
+            primary_skipped = int(primary_outcome.get("skipped", 0))
 
-            if repro_outcome["phase_outcome"] == "BLOCKED":
+            if primary_outcome["phase_outcome"] == "BLOCKED":
+                update_campaign_phase(
+                    evidence_root,
+                    bindings=bindings,
+                    phase=CAMPAIGN_PHASE_BLOCKED,
+                    extra={"blocked_reason": primary_outcome.get("reason_code")},
+                )
+                payload = {
+                    "command": "execute",
+                    "status": "BLOCKED",
+                    "reason_code": str(primary_outcome.get("reason_code")),
+                    "campaign_phase": CAMPAIGN_PHASE_BLOCKED,
+                    "succeeded": primary_succeeded,
+                    "failed": primary_failed,
+                    "skipped": primary_skipped,
+                    "lr_status": "NO-GO",
+                }
+                _emit(payload, out)
+                return payload
+
+            confirmed_primary = count_primary_succeeded(
+                evidence_root,
+                bindings=bindings,
+                expected_run_keys=list(plan.run_keys),
+            )
+            if confirmed_primary != plan.run_count:
                 update_campaign_phase(
                     evidence_root,
                     bindings=bindings,
                     phase=CAMPAIGN_PHASE_BLOCKED,
                     extra={
-                        "blocked_reason": repro_outcome.get("reason_code"),
-                        "reproduction_mismatches": repro_outcome.get("mismatches"),
+                        "blocked_reason": "PRIMARY_SUCCESS_COUNT_MISMATCH",
+                        "expected_run_count": plan.run_count,
+                        "confirmed_primary": confirmed_primary,
                     },
                 )
                 payload = {
                     "command": "execute",
                     "status": "BLOCKED",
-                    "reason_code": str(repro_outcome.get("reason_code")),
+                    "reason_code": "PRIMARY_SUCCESS_COUNT_MISMATCH",
                     "campaign_phase": CAMPAIGN_PHASE_BLOCKED,
                     "succeeded": primary_succeeded,
                     "failed": primary_failed,
                     "skipped": primary_skipped,
-                    "reproduction": reproduction_summary,
-                    "run_count": plan.run_count,
-                    "evidence_root": str(evidence_root),
-                    "authorization_fingerprint": auth_fp,
-                    "run_plan_fingerprint": plan.run_plan_fingerprint,
+                    "confirmed_primary": confirmed_primary,
                     "lr_status": "NO-GO",
                 }
                 _emit(payload, out)
@@ -1075,8 +1101,142 @@ def execute_campaign(
             update_campaign_phase(
                 evidence_root,
                 bindings=bindings,
-                phase=CAMPAIGN_PHASE_REPRODUCTION_COMPLETE,
+                phase=CAMPAIGN_PHASE_PRIMARY_COMPLETE,
             )
+        else:
+            # Resume past primary: require a complete primary ledger.
+            confirmed_primary = count_primary_succeeded(
+                evidence_root,
+                bindings=bindings,
+                expected_run_keys=list(plan.run_keys),
+            )
+            if confirmed_primary != plan.run_count:
+                update_campaign_phase(
+                    evidence_root,
+                    bindings=bindings,
+                    phase=CAMPAIGN_PHASE_BLOCKED,
+                    extra={
+                        "blocked_reason": "PRIMARY_SUCCESS_COUNT_MISMATCH",
+                        "expected_run_count": plan.run_count,
+                        "confirmed_primary": confirmed_primary,
+                    },
+                )
+                payload = {
+                    "command": "execute",
+                    "status": "BLOCKED",
+                    "reason_code": "PRIMARY_SUCCESS_COUNT_MISMATCH",
+                    "campaign_phase": CAMPAIGN_PHASE_BLOCKED,
+                    "confirmed_primary": confirmed_primary,
+                    "lr_status": "NO-GO",
+                }
+                _emit(payload, out)
+                return payload
+            primary_succeeded = confirmed_primary
+
+        reproduction_enabled = bool(plan.reproduction_policy.get("enabled"))
+        reproduction_summary: dict[str, Any] = {"enabled": reproduction_enabled}
+        current_phase = read_campaign_phase(evidence_root)
+
+        if reproduction_enabled:
+            if current_phase == CAMPAIGN_PHASE_REPRODUCTION_COMPLETE:
+                reproduction_summary["phase_outcome"] = "REPRODUCTION_COMPLETE"
+                reproduction_summary["resumed_complete"] = True
+            else:
+                if current_phase == CAMPAIGN_PHASE_PRIMARY_COMPLETE:
+                    update_campaign_phase(
+                        evidence_root,
+                        bindings=bindings,
+                        phase=CAMPAIGN_PHASE_REPRODUCTION_PLANNED,
+                    )
+                    current_phase = CAMPAIGN_PHASE_REPRODUCTION_PLANNED
+
+                reproduction_plan = build_reproduction_plan(
+                    run_keys=list(plan.run_keys),
+                    policy=plan.reproduction_policy,
+                )
+                if current_phase == CAMPAIGN_PHASE_REPRODUCTION_PLANNED:
+                    update_campaign_phase(
+                        evidence_root,
+                        bindings=bindings,
+                        phase=CAMPAIGN_PHASE_REPRODUCTION_RUNNING,
+                        extra={
+                            "reproduction_plan_fingerprint": reproduction_plan.get(
+                                "reproduction_plan_fingerprint"
+                            ),
+                            "reproduction_item_count": len(
+                                reproduction_plan.get("reproduction_items", [])
+                            ),
+                        },
+                    )
+                elif current_phase == CAMPAIGN_PHASE_REPRODUCTION_RUNNING:
+                    # Idempotent resume into reproduction.
+                    update_campaign_phase(
+                        evidence_root,
+                        bindings=bindings,
+                        phase=CAMPAIGN_PHASE_REPRODUCTION_RUNNING,
+                        extra={
+                            "reproduction_plan_fingerprint": reproduction_plan.get(
+                                "reproduction_plan_fingerprint"
+                            ),
+                            "reproduction_item_count": len(
+                                reproduction_plan.get("reproduction_items", [])
+                            ),
+                        },
+                    )
+                else:
+                    raise SensitivityRunnerError(
+                        "RUNNER_PHASE_UNSUPPORTED_RESUME",
+                        current_phase,
+                    )
+
+                repro_outcome = _run_reproduction_loop(
+                    plan=plan,
+                    reproduction_plan=reproduction_plan,
+                    evidence_root=evidence_root,
+                    bindings=bindings,
+                    budget=budget,
+                    active_executor=active_executor,
+                    manifest=manifest,
+                    auth_fp=auth_fp,
+                    sha=sha,
+                    auth_expiry=auth_expiry,
+                    now_utc_provider=now_provider,
+                )
+                reproduction_summary.update(repro_outcome)
+
+                if repro_outcome["phase_outcome"] == "BLOCKED":
+                    update_campaign_phase(
+                        evidence_root,
+                        bindings=bindings,
+                        phase=CAMPAIGN_PHASE_BLOCKED,
+                        extra={
+                            "blocked_reason": repro_outcome.get("reason_code"),
+                            "reproduction_mismatches": repro_outcome.get("mismatches"),
+                        },
+                    )
+                    payload = {
+                        "command": "execute",
+                        "status": "BLOCKED",
+                        "reason_code": str(repro_outcome.get("reason_code")),
+                        "campaign_phase": CAMPAIGN_PHASE_BLOCKED,
+                        "succeeded": primary_succeeded,
+                        "failed": primary_failed,
+                        "skipped": primary_skipped,
+                        "reproduction": reproduction_summary,
+                        "run_count": plan.run_count,
+                        "evidence_root": str(evidence_root),
+                        "authorization_fingerprint": auth_fp,
+                        "run_plan_fingerprint": plan.run_plan_fingerprint,
+                        "lr_status": "NO-GO",
+                    }
+                    _emit(payload, out)
+                    return payload
+
+                update_campaign_phase(
+                    evidence_root,
+                    bindings=bindings,
+                    phase=CAMPAIGN_PHASE_REPRODUCTION_COMPLETE,
+                )
 
         update_campaign_phase(
             evidence_root,
@@ -1217,7 +1377,7 @@ def main(argv: Sequence[str] | None = None) -> int:
             execute_campaign(
                 manifest_path=args.manifest,
                 go_comment_id=args.go_comment_id,
-                executor=StrategyReplayCampaignExecutor(),
+                executor=None,
                 repository=args.repository,
                 authorizing_github_login=args.authorizing_github_login,
                 surface_id=args.surface_id,
