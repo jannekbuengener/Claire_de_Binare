@@ -119,7 +119,7 @@
   "manifest_fingerprint": "9efd7cbe8490a8f809181adb704c4a286e752273d1e0db77a2ae18a2f6b82256",
   "parameter_control": {
     "policy_schema_version": "cdb.parameter_control_policy.register.v1",
-    "register_fingerprint": "fdb449b05418d4a13813f7cf06c491f2160de8e96ce3d61480cc6ba55c02afa1"
+    "register_fingerprint": "fec8a7f5baf3c801aae943079ee443fd30dda6d4e0274ee628b712e218d40a5a"
   },
   "parameter_families": [
     {
