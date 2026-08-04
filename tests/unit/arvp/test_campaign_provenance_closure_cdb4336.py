@@ -53,7 +53,9 @@ def test_campaign_provenance_ready_cdb049_to_052(tmp_path_factory, repo_root=Non
     ]
     enforce_exact_window(candles, spec, "file:closure")
 
-    # CDB-050
+    # CDB-050 — independent content fingerprint (never copy from report object)
+    from tools.market_data.historical_common import content_fingerprint_for_normalized
+
     rows = [
         NormalizedCandle(
             ts_ms=_BASE + i * 60_000,
@@ -79,7 +81,8 @@ def test_campaign_provenance_ready_cdb049_to_052(tmp_path_factory, repo_root=Non
         step_ms=60_000,
         source_hash="e" * 64,
     )
-    assert_dq_content_binding(report, content_fingerprint=report["content_fingerprint"])
+    independent_fp = content_fingerprint_for_normalized(rows)
+    assert_dq_content_binding(report, content_fingerprint=independent_fp)
 
     # CDB-051
     assert (

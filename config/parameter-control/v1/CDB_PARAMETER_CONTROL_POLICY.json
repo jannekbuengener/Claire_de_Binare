@@ -73,7 +73,7 @@
   },
   "rule_count": 56,
   "unresolved_count": 0,
-  "register_fingerprint": "fec8a7f5baf3c801aae943079ee443fd30dda6d4e0274ee628b712e218d40a5a",
+  "register_fingerprint": "772823d0bc0401ec4adfc82dddb7c70f023c74bc506695366fca4fd9453833a7",
   "rules": [
     {
       "parameter_id": "CDB-001",
@@ -4463,17 +4463,25 @@
         "derivation": "system_area=Import/Replay; SERVICE_CATALOG/path ownership convention",
         "evidence": [
           "core/replay/dataset_spec.py",
-          "tools/market_data/historical_common.py"
+          "tools/market_data/historical_common.py",
+          "core/replay/binance_window_bank_adapter.py",
+          "services/validation/strategy_replay_runner.py"
         ]
       },
       "repository_paths": [
         "core/replay/dataset_spec.py",
-        "tools/market_data/historical_common.py"
+        "tools/market_data/historical_common.py",
+        "tools/market_data/binance_window_bank.py",
+        "core/replay/binance_window_bank_adapter.py",
+        "services/validation/strategy_replay_runner.py",
+        "tools/market_data/binance_historical_probe.py",
+        "tools/market_data/binance_full_archive_import.py"
       ],
       "consumers": [
         "Provenance",
         "Rankability",
-        "Window Bank"
+        "Window Bank",
+        "Strategy Replay Runner"
       ],
       "effective_default": {
         "value": "Hash der Anfrage; STRICT_COMPLETE nur ohne Kernfehler",
@@ -4520,8 +4528,8 @@
       "lifecycle_status": "implicit",
       "analysis": {
         "source_commit": "224cfd49398b329b315781372658fab1fbf15362",
-        "effect": "DQ-Verdict bindet an content_fingerprint der geprüften Candle-Serie; Request-Hash allein reicht nicht.",
-        "finding": "geschlossen via #4336 — DQ content binding fail-closed",
+        "effect": "DQ-Verdict bindet an content_fingerprint der geprüften Candle-Serie; Request-Hash allein reicht nicht. Consumer (Runner, Window-Bank, Probes) erzwingen Binding fail-closed.",
+        "finding": "CDB-050 consumer-binding Forward-Fix in flight via #4336 — enforce_dq_content_binding on Runner/Window-Bank/Probes; not closed on main until merge",
         "dependencies": [
           "Provenance",
           "Rankability",
@@ -4529,14 +4537,17 @@
         ],
         "change_risk": "hoch",
         "suitability": "keine direkte Optimierung",
-        "compact_decision": "CLOSED_CORRECTNESS",
+        "compact_decision": "CORRECTNESS_FIX_ONLY",
         "blocked_by_issues": [
           4336
         ],
         "evidence_notes": [
           "Content-Hash-Reconciliation",
           "DQ-Bindung an tatsächliche Daten",
-          "assert_dq_content_binding"
+          "assert_dq_content_binding",
+          "enforce_dq_content_binding",
+          "binance_window_bank_adapter._enforce_window_dq_content_binding",
+          "strategy_replay_runner._enforce_replay_dq_sidecar_binding"
         ],
         "name_drift": null,
         "may_change_compact": true

@@ -38,6 +38,7 @@ from tools.market_data.historical_common import (
     arvp_load_smoke,
     assert_dq_content_binding,
     build_quality_report,
+    content_fingerprint_for_normalized,
     detect_timestamp_unit,
     decimal_str,
     extract_zip_csv,
@@ -555,8 +556,10 @@ def run_probe(
         source_hash=norm_hash,
         second_parse_hash=second_parse_hash,
     )
+    # CDB-050: expected FP must be derived independently of the report object.
     assert_dq_content_binding(
-        quality, content_fingerprint=quality["content_fingerprint"]
+        quality,
+        content_fingerprint=content_fingerprint_for_normalized(candles),
     )
 
     normalized_dir = (
