@@ -39,6 +39,8 @@ def test_broker_unit_remain_after_exit_keeps_token_until_stop() -> None:
     )
     assert validate_broker_unit() == []
 
+
+def test_broker_validator_requires_remain_after_exit(tmp_path: Path) -> None:
     raw = UNIT.read_text(encoding="utf-8").replace("RemainAfterExit=yes\n", "")
     bad = tmp_path / "hermes-github-token.service"
     bad.write_text(raw, encoding="utf-8")
@@ -83,6 +85,5 @@ def test_metadata_and_unit_never_embed_live_token_values() -> None:
     unit = UNIT.read_text(encoding="utf-8")
     assert "ghs_" not in unit
     assert "BEGIN " not in unit
-    # Journal must carry redacted marker path only via mint CLI contract.
     assert preview.get("token_file") == "/run/hermes/cdb-engineer/token"
     assert preview.get("reuse_cdb_local_ci_app") is False
