@@ -5,7 +5,7 @@ canonical:
   path: config/parameter-control/v1/CDB_PARAMETER_CONTROL_POLICY.json
   format: json
   json_is_yaml_1_2_compatible: true
-  canonical_json_sha256: 4670f5e97a12a4194cce301c1eb25b20a1f7f5b4218ecb523909237607f89159
+  canonical_json_sha256: dd3e83858ba14be91d3fe6841ba74ffa0e59edce5108310bb8db2ef083f5b981
   register_fingerprint: fec8a7f5baf3c801aae943079ee443fd30dda6d4e0274ee628b712e218d40a5a
 schema:
   path: config/parameter-control/v1/CDB_PARAMETER_CONTROL_POLICY.schema.json
