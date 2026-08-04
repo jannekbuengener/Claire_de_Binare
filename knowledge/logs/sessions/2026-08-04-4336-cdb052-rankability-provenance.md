@@ -52,4 +52,7 @@ CDB-049..051 not regressively redesigned.
 
 ## Status
 
-`DONE_CDB052_RANKABILITY_PROVENANCE_ADDED_TO_BATCH_PR` (after PR open)
+`DONE_CDB052_RANKABILITY_PROVENANCE_ADDED_TO_BATCH_PR`
+
+**PR:** https://github.com/jannekbuengener/Claire_de_Binare/pull/4341  
+**Head:** `7d73792c69c6346bc1174fdaa3d7e7eaa0573882`
