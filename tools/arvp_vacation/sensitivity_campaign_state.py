@@ -6,11 +6,12 @@ import json
 import os
 import tempfile
 from dataclasses import dataclass
-from datetime import UTC, datetime
+from datetime import UTC
 from pathlib import Path
 from typing import Any, Mapping
 
 from core.replay.canonical_json import canonical_hash
+from core.utils.clock import utcnow as cdb_utcnow
 
 STATE_SCHEMA_VERSION = "cdb.sensitivity_campaign_state.v1"
 CAMPAIGN_ENVELOPE_NAME = "campaign_envelope.json"
@@ -27,7 +28,10 @@ class SensitivityStateError(ValueError):
 
 
 def _now_utc_iso() -> str:
-    return datetime.now(tz=UTC).isoformat().replace("+00:00", "Z")
+    now = cdb_utcnow()
+    if now.tzinfo is None:
+        now = now.replace(tzinfo=UTC)
+    return now.astimezone(UTC).isoformat().replace("+00:00", "Z")
 
 
 def atomic_write_json(path: Path, payload: Mapping[str, Any]) -> None:

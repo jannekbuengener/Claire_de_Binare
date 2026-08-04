@@ -16,6 +16,7 @@ from pathlib import Path
 from typing import Any, Callable, Mapping, Sequence
 
 from core.replay.canonical_json import canonical_hash
+from core.utils.clock import utcnow as cdb_utcnow
 
 PROJECT_ROOT = Path(__file__).resolve().parents[2]
 CONTRACTS_DIR = PROJECT_ROOT / "docs" / "contracts"
@@ -178,7 +179,7 @@ def _assert_expires_at_valid(
     *,
     now_utc: datetime | None = None,
 ) -> None:
-    """Clock source: datetime.now(tz=UTC) unless injected for tests."""
+    """Clock source: core.utils.clock.utcnow unless injected for tests."""
     if expires_at_utc is None:
         return
     if not isinstance(expires_at_utc, str) or not expires_at_utc.strip():
@@ -195,7 +196,7 @@ def _assert_expires_at_valid(
         ) from exc
     if exp.tzinfo is None:
         raise SensitivityAuthorizationError("AUTH_EXPIRES_AT_NOT_TIMEZONE_AWARE", raw)
-    now = now_utc if now_utc is not None else datetime.now(tz=UTC)
+    now = now_utc if now_utc is not None else cdb_utcnow()
     if now.tzinfo is None:
         now = now.replace(tzinfo=UTC)
     if now.astimezone(UTC) >= exp.astimezone(UTC):
@@ -470,7 +471,7 @@ def verify_owner_go_comment(
         "authorizing_github_login": live_author,
         "comment_updated_at": comment.updated_at,
         "reason_code": "AUTH_GO_VALID",
-        "clock_source": "datetime.now(tz=UTC)",
+        "clock_source": "core.utils.clock.utcnow",
     }
 
 

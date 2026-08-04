@@ -77,7 +77,7 @@ verifier). Schema defaults are not applied. Exact values:
 ### Expiry
 
 `expires_at_utc` may be `null` or an ISO-8601 timezone-aware timestamp.
-Clock source: `datetime.now(tz=UTC)`. Expired GO → `AUTH_GO_EXPIRED`.
+Clock source: `core.utils.clock.utcnow`. Expired GO → `AUTH_GO_EXPIRED`.
 
 Required bindings also include (non-exhaustive):
 
