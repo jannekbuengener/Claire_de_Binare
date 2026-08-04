@@ -1,0 +1,217 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://claire-de-binare/docs/contracts/cdb_sensitivity_campaign_execution_authorization.v1.schema.json",
+  "title": "CDB Sensitivity Campaign Execution Authorization v1",
+  "description": "Machine-readable Owner-GO for the #4153 replay-only sensitivity campaign. Does not authorize paper, live, echtgeld, orders, or auto-start. Must be embedded as a fenced JSON block in a GitHub issue comment and verified live.",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "schema_version",
+    "status",
+    "repository",
+    "issue",
+    "github_comment_id",
+    "authorizing_github_login",
+    "bound_main_sha",
+    "manifest_path",
+    "manifest_id",
+    "manifest_fingerprint",
+    "correctness_baseline_sha",
+    "run_plan_fingerprint",
+    "runner_contract_version",
+    "strategy_set",
+    "selection_sha256",
+    "window_count",
+    "matrix_slots",
+    "run_keys",
+    "expected_run_count",
+    "max_run_count",
+    "execution_surface_id",
+    "surface_capability_fingerprint",
+    "resource_budget",
+    "evidence_namespace",
+    "resume_policy",
+    "reproduction_policy",
+    "analyzer_contract_version",
+    "granted_capabilities",
+    "absolute_bans_unchanged",
+    "lr_status"
+  ],
+  "properties": {
+    "schema_version": {
+      "const": "cdb.sensitivity_campaign_execution_authorization.v1"
+    },
+    "status": {
+      "const": "GO_REPLAY_SENSITIVITY_CAMPAIGN_READY"
+    },
+    "repository": {
+      "type": "string",
+      "minLength": 3,
+      "pattern": "^[^\\s/]+/[^\\s/]+$"
+    },
+    "issue": {
+      "const": 4153
+    },
+    "github_comment_id": {
+      "type": "integer",
+      "minimum": 1
+    },
+    "authorizing_github_login": {
+      "type": "string",
+      "minLength": 1
+    },
+    "bound_main_sha": {
+      "type": "string",
+      "pattern": "^[0-9a-f]{40}$"
+    },
+    "manifest_path": {
+      "const": "config/arvp/sensitivity_campaign_4153_v1.json"
+    },
+    "manifest_id": {
+      "const": "arvp-sensitivity-4153-v1"
+    },
+    "manifest_fingerprint": {
+      "type": "string",
+      "pattern": "^[0-9a-f]{64}$"
+    },
+    "correctness_baseline_sha": {
+      "type": "string",
+      "pattern": "^[0-9a-f]{40}$"
+    },
+    "run_plan_fingerprint": {
+      "type": "string",
+      "pattern": "^[0-9a-f]{64}$"
+    },
+    "runner_contract_version": {
+      "const": "cdb.sensitivity_campaign_runner.v1"
+    },
+    "strategy_set": {
+      "type": "array",
+      "minItems": 1,
+      "maxItems": 1,
+      "items": { "const": "primary_breakout_v1" }
+    },
+    "selection_sha256": {
+      "type": "string",
+      "pattern": "^[0-9a-f]{64}$"
+    },
+    "window_count": { "const": 39 },
+    "matrix_slots": { "const": 21 },
+    "run_keys": { "const": 819 },
+    "expected_run_count": { "const": 819 },
+    "max_run_count": { "const": 819 },
+    "execution_surface_id": {
+      "type": "string",
+      "minLength": 1
+    },
+    "surface_capability_fingerprint": {
+      "type": "string",
+      "pattern": "^[0-9a-f]{64}$"
+    },
+    "resource_budget": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "max_parallelism",
+        "max_in_flight_runs",
+        "max_attempts_per_run",
+        "max_run_wall_time_seconds",
+        "max_campaign_wall_time_seconds",
+        "max_artifact_bytes",
+        "minimum_free_disk_bytes",
+        "max_consecutive_failures",
+        "max_total_failures",
+        "log_retention_days"
+      ],
+      "properties": {
+        "max_parallelism": { "type": "integer", "minimum": 1, "maximum": 8 },
+        "max_in_flight_runs": { "type": "integer", "minimum": 1, "maximum": 8 },
+        "max_attempts_per_run": { "type": "integer", "minimum": 1, "maximum": 3 },
+        "max_run_wall_time_seconds": { "type": "integer", "minimum": 1 },
+        "max_campaign_wall_time_seconds": { "type": "integer", "minimum": 1 },
+        "max_artifact_bytes": { "type": "integer", "minimum": 1 },
+        "minimum_free_disk_bytes": { "type": "integer", "minimum": 1 },
+        "ram_high_water_mark_bytes": {
+          "type": ["integer", "null"],
+          "minimum": 1
+        },
+        "max_consecutive_failures": { "type": "integer", "minimum": 1 },
+        "max_total_failures": { "type": "integer", "minimum": 1 },
+        "log_retention_days": { "type": "integer", "minimum": 1 }
+      }
+    },
+    "evidence_namespace": {
+      "type": "string",
+      "minLength": 1,
+      "pattern": "^artifacts/arvp_sensitivity/4153(/.*)?$"
+    },
+    "resume_policy": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "allow_resume",
+        "skip_succeeded_identical_bindings",
+        "retry_failed",
+        "refuse_running_without_completion",
+        "refuse_binding_mismatch"
+      ],
+      "properties": {
+        "allow_resume": { "type": "boolean" },
+        "skip_succeeded_identical_bindings": { "const": true },
+        "retry_failed": { "type": "boolean" },
+        "refuse_running_without_completion": { "const": true },
+        "refuse_binding_mismatch": { "const": true }
+      }
+    },
+    "reproduction_policy": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "enabled",
+        "max_reproduction_attempts_per_key",
+        "comparison_mode",
+        "baseline_run_key_count",
+        "sample_run_key_count",
+        "on_mismatch"
+      ],
+      "properties": {
+        "enabled": { "type": "boolean" },
+        "max_reproduction_attempts_per_key": {
+          "type": "integer",
+          "minimum": 1,
+          "maximum": 3
+        },
+        "comparison_mode": {
+          "type": "string",
+          "enum": ["exact_equality"]
+        },
+        "baseline_run_key_count": { "type": "integer", "minimum": 0 },
+        "sample_run_key_count": { "type": "integer", "minimum": 0 },
+        "compared_result_fields": {
+          "type": "array",
+          "items": { "type": "string", "minLength": 1 }
+        },
+        "on_mismatch": {
+          "type": "string",
+          "enum": ["block_campaign_completion"]
+        }
+      }
+    },
+    "analyzer_contract_version": {
+      "const": "cdb.sensitivity_campaign_analyzer.v1"
+    },
+    "granted_capabilities": {
+      "type": "array",
+      "minItems": 1,
+      "maxItems": 1,
+      "items": { "const": "campaign_execution" }
+    },
+    "absolute_bans_unchanged": { "const": true },
+    "expires_at_utc": {
+      "type": ["string", "null"],
+      "format": "date-time"
+    },
+    "lr_status": { "const": "NO-GO" },
+    "notes": { "type": "string" }
+  }
+}

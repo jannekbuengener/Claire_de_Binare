@@ -16,6 +16,34 @@
     "interaction_effect",
     "overfitting_risk_flag"
   ],
+  "authorization_policy": {
+    "absolute_bans": [
+      "balance_usage",
+      "campaign_execution_auto_start",
+      "echtgeld",
+      "exchange_execution",
+      "holdout",
+      "kill_switch_mutation",
+      "live",
+      "oos",
+      "orders",
+      "paper",
+      "position_mutation",
+      "promotion",
+      "risk_limit_mutation",
+      "stage_b",
+      "stop_loss_mutation",
+      "stress",
+      "testnet_orders"
+    ],
+    "authorization_schema": "cdb.sensitivity_campaign_execution_authorization.v1",
+    "conditionally_authorizable_capabilities": [
+      "campaign_execution"
+    ],
+    "notes": "explicit_bans.*=true means forbidden. campaign_execution may be released only by a live-verified Owner-GO matching cdb.sensitivity_campaign_execution_authorization.v1; absolute bans cannot be relaxed.",
+    "requires_external_owner_go": true,
+    "schema_version": "cdb.sensitivity_campaign_authorization_policy.v1"
+  },
   "baseline": {
     "label": "owner-ratified-pb1-baseline",
     "notes": "Owner Grid Ratification comment 5175526900; replay-only.",
@@ -203,11 +231,11 @@
   },
   "issue_ref": "#4153",
   "lr_status": "NO-GO",
-  "manifest_fingerprint": "449e7a5c6bfa4ca35308b5e123f534241979ccbacaebb952969e824dc8cf5b40",
+  "manifest_fingerprint": "7126f60033205d8012976376e217999e8702a83266a059f1d4c628cf4ba208da",
   "output_contract": {
-    "artifact_root_template": "artifacts/arvp_sensitivity/4153/{campaign_id}",
+    "artifact_root_template": "artifacts/arvp_sensitivity/4153/{campaign_id}/{manifest_fingerprint}/{authorization_id}",
     "evidence_namespace": "artifacts/arvp_sensitivity/4153",
-    "notes": "Namespace reserved for a future Owner Campaign-GO session; this slice does not create run artifacts."
+    "notes": "Namespace isolates campaign_id, manifest_fingerprint, and authorization_id. Reserved until a live-verified Owner-GO; this slice does not create run artifacts."
   },
   "owner_ratification": {
     "correctness_baseline_sha": "301bc757be7cb4162db6db114a5c445f2aca392f",
