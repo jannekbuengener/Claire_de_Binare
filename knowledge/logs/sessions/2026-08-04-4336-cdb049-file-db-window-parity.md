@@ -4,6 +4,8 @@
 - **Base**: `origin/main` @ `09f60faa9c6a07ac2edb66cf7641329877919b15`
 - **Branch**: `batch/validation-research-issue-4336`
 - **Worktree**: `D:\Dev\Workspaces\Repos\cdb-wt-4336-cdb049`
+- **Commit**: `82e8507e`
+- **PR**: [#4338](https://github.com/jannekbuengener/Claire_de_Binare/pull/4338) open
 
 ## Delivered (CDB-049 only)
 
