@@ -1889,3 +1889,176 @@ class TestMainArgParse:
             with patch("sys.argv", ["prog", "--input-candles", str(f)]):
                 result = main()
         assert result == 2
+
+
+# ---------------------------------------------------------------------------
+# #4335 — runner retains request/content fingerprints after DatasetResult wrap
+# ---------------------------------------------------------------------------
+@pytest.mark.unit
+class TestLoadDatasetResultFingerprints4335:
+    """Regression: file/binance_window wrappers must not drop identity fields."""
+
+    def _candles_file(self, tmp_path: Path, count: int = 20) -> Path:
+        candles = [
+            {
+                "ts_ms": 1_000_000 + i * 60_000,
+                "open": 100.0,
+                "high": 101.0,
+                "low": 99.0,
+                "close": 100.5,
+                "volume": 10.0,
+            }
+            for i in range(count)
+        ]
+        path = tmp_path / "candles.json"
+        path.write_text(json.dumps(candles), encoding="utf-8")
+        return path
+
+    def test_file_path_retains_non_none_request_and_content_fingerprints(
+        self, tmp_path: Path
+    ):
+        from core.replay.dataset_identity import (
+            content_fingerprint as compute_content_fp,
+            request_fingerprint as compute_request_fp,
+        )
+        from services.validation.strategy_replay_runner import _load_dataset_result
+
+        path = self._candles_file(tmp_path, count=20)
+        warmup = 5
+        cfg = ARVPReplayConfig(
+            dataset_source="file",
+            input_candles_file=str(path),
+            output_directory=str(tmp_path / "out"),
+            entry_lookback_minutes=warmup,
+            exit_lookback_minutes=2,
+        )
+
+        result = _load_dataset_result(cfg, warmup_count=warmup)
+
+        assert result.request_fingerprint is not None
+        assert result.content_fingerprint is not None
+        assert len(result.request_fingerprint) == 64
+        assert len(result.content_fingerprint) == 64
+        assert result.fingerprint == result.request_fingerprint
+        assert result.request_fingerprint == compute_request_fp(result.spec)
+        assert result.content_fingerprint == compute_content_fp(result.candles)
+        # Request (spec window) and content (candle bytes) are distinct hashes.
+        assert result.request_fingerprint != result.content_fingerprint
+
+    def test_binance_window_path_propagates_provider_fingerprints(self, tmp_path: Path):
+        from core.replay.binance_window_bank_adapter import BinanceWindowDataset
+        from core.replay.dataset_provider import DatasetResult
+        from core.replay.dataset_spec import DatasetSpec
+        from services.validation.strategy_replay_runner import _load_dataset_result
+
+        warmup = 3
+        spec = DatasetSpec(
+            symbol="BTCUSDT",
+            timeframe="1m",
+            start_ts_ms=1_000_000,
+            end_ts_ms=1_000_000 + 9 * 60_000,
+            warmup_candles=warmup,
+            source="file",
+            file_path="virtual.jsonl",
+        )
+        candles = tuple(
+            {
+                "ts_ms": 1_000_000 + i * 60_000,
+                "open": 1.0,
+                "high": 2.0,
+                "low": 0.5,
+                "close": 1.5,
+                "volume": 3.0,
+            }
+            for i in range(10)
+        )
+        provider_result = DatasetResult(
+            spec=spec,
+            candles=candles,
+            fingerprint="a" * 64,
+            warmup_count=warmup,
+            effective_candle_count=7,
+            request_fingerprint="b" * 64,
+            content_fingerprint="c" * 64,
+        )
+        mock_dataset = MagicMock(spec=BinanceWindowDataset)
+        mock_dataset.dataset_result = provider_result
+
+        cfg = ARVPReplayConfig(
+            dataset_source="binance_window",
+            binance_window_id="binance_1m_month_2021_01",
+            output_directory=str(tmp_path / "out"),
+            entry_lookback_minutes=warmup,
+            exit_lookback_minutes=2,
+        )
+
+        with patch(
+            "services.validation.strategy_replay_runner.load_binance_window_dataset",
+            return_value=mock_dataset,
+        ):
+            result = _load_dataset_result(cfg, warmup_count=warmup)
+
+        assert result.request_fingerprint == "b" * 64
+        assert result.content_fingerprint == "c" * 64
+        assert result.fingerprint == "b" * 64
+
+    def test_binance_window_recomputes_when_provider_omits_fingerprints(
+        self, tmp_path: Path
+    ):
+        from core.replay.dataset_identity import (
+            content_fingerprint as compute_content_fp,
+            request_fingerprint as compute_request_fp,
+        )
+        from core.replay.dataset_provider import DatasetResult
+        from core.replay.dataset_spec import DatasetSpec
+        from services.validation.strategy_replay_runner import _load_dataset_result
+
+        warmup = 2
+        spec = DatasetSpec(
+            symbol="BTCUSDT",
+            timeframe="1m",
+            start_ts_ms=1_000_000,
+            end_ts_ms=1_000_000 + 5 * 60_000,
+            warmup_candles=warmup,
+            source="file",
+            file_path="virtual.jsonl",
+        )
+        candles = tuple(
+            {
+                "ts_ms": 1_000_000 + i * 60_000,
+                "open": 1.0,
+                "high": 2.0,
+                "low": 0.5,
+                "close": 1.5,
+                "volume": 3.0,
+            }
+            for i in range(6)
+        )
+        # Legacy wrap: identity fields omitted (the pre-#4335 failure mode).
+        provider_result = DatasetResult(
+            spec=spec,
+            candles=candles,
+            fingerprint=spec.fingerprint(),
+            warmup_count=warmup,
+            effective_candle_count=4,
+        )
+        mock_dataset = MagicMock()
+        mock_dataset.dataset_result = provider_result
+
+        cfg = ARVPReplayConfig(
+            dataset_source="binance_window",
+            binance_window_id="legacy_window",
+            output_directory=str(tmp_path / "out"),
+            entry_lookback_minutes=warmup,
+            exit_lookback_minutes=1,
+        )
+
+        with patch(
+            "services.validation.strategy_replay_runner.load_binance_window_dataset",
+            return_value=mock_dataset,
+        ):
+            result = _load_dataset_result(cfg, warmup_count=warmup)
+
+        assert result.request_fingerprint == compute_request_fp(spec)
+        assert result.content_fingerprint == compute_content_fp(candles)
+        assert result.fingerprint == result.request_fingerprint

@@ -2,6 +2,7 @@
 
 Cross-venue research corpus only — not MEXC same-venue execution evidence.
 """
+
 # ruff: noqa: E402
 
 from __future__ import annotations
@@ -36,6 +37,11 @@ from tools.market_data.historical_common import (
     ONE_MINUTE_MS,
     HistoricalProbeError,
     HttpFetcher,
+    assert_dq_content_binding,
+    content_fingerprint_for_candle_rows,
+    content_fingerprint_for_normalized,
+    enforce_dq_content_binding,
+    load_dq_report_sidecar,
     month_bounds,
     parse_year_month,
     sha256_file,
@@ -133,7 +139,9 @@ def import_range(
 ) -> dict[str, Any]:
     """Import all months in range with manifest and coverage report."""
     if not skip_storage_guard:
-        from tools.market_data.market_data_storage_guard import enforce_market_data_storage
+        from tools.market_data.market_data_storage_guard import (
+            enforce_market_data_storage,
+        )
 
         enforce_market_data_storage(
             repo_root=repo_root,
@@ -223,9 +231,7 @@ def import_range(
                     )
                     record.regime_status = "complete"
                     enriched_path = _enriched_dir(repo_root, month) / "candles.jsonl"
-                    record.local_enriched_path = str(enriched_path).replace(
-                        "\\", "/"
-                    )
+                    record.local_enriched_path = str(enriched_path).replace("\\", "/")
                     record.enriched_hash = enriched_hash
                     _append_plausibility_sample(
                         plausibility_sample,
@@ -269,7 +275,8 @@ def import_range(
     failed = sum(
         1
         for r in records
-        if r.quality_verdict in {"SOURCE_INVALID", "CHECKSUM_FAILED", "SOURCE_UNAVAILABLE"}
+        if r.quality_verdict
+        in {"SOURCE_INVALID", "CHECKSUM_FAILED", "SOURCE_UNAVAILABLE"}
     )
     if complete == len(months):
         manifest["import_status"] = "FULL_IMPORT_PASS"
@@ -414,14 +421,27 @@ def _month_already_complete(repo_root: Path, month: str) -> bool:
     ).exists()
 
 
-def _load_cached_month_record(
-    repo_root: Path, month: str
-) -> MonthImportRecord | None:
+def _load_cached_month_record(repo_root: Path, month: str) -> MonthImportRecord | None:
     norm = _normalized_dir(repo_root, month)
     quality_path = norm / "quality_report.json"
     if not quality_path.exists():
         return None
-    quality = json.loads(quality_path.read_text(encoding="utf-8"))
+    quality = load_dq_report_sidecar(quality_path)
+    if quality is None:
+        return None
+    candles_path = norm / "candles.jsonl"
+    if not candles_path.exists():
+        raise HistoricalProbeError(
+            f"Cached month {month} has quality_report.json but missing candles.jsonl"
+        )
+    # CDB-050: reuse is only valid when the stored DQ verdict still binds to
+    # the on-disk candle content (independent recompute — no self-compare).
+    candle_rows: list[dict[str, Any]] = []
+    with candles_path.open(encoding="utf-8") as handle:
+        for line in handle:
+            if line.strip():
+                candle_rows.append(json.loads(line))
+    enforce_dq_content_binding(report=quality, candles=candle_rows)
     raw_zip = _raw_dir(repo_root, month)
     zip_files = list(raw_zip.glob("BTCUSDT-1m-*.zip"))
     record = MonthImportRecord(
@@ -432,7 +452,7 @@ def _load_cached_month_record(
         regime_status="complete",
         quality_verdict=str(quality.get("verdict", "SOURCE_INVALID")),
         local_raw_path=str(zip_files[0]).replace("\\", "/") if zip_files else None,
-        local_normalized_path=str(norm / "candles.jsonl").replace("\\", "/"),
+        local_normalized_path=str(candles_path).replace("\\", "/"),
         local_enriched_path=str(
             (_enriched_dir(repo_root, month) / "candles.jsonl")
         ).replace("\\", "/"),
@@ -447,6 +467,14 @@ def _load_cached_month_record(
             fp = spec.get("fingerprint") or spec.get("candles_sha256")
             if isinstance(fp, str):
                 record.normalized_hash = fp
+            content_fp = spec.get("content_fingerprint")
+            if isinstance(content_fp, str) and content_fp.strip():
+                assert_dq_content_binding(
+                    {"content_fingerprint": content_fp},
+                    content_fingerprint=content_fingerprint_for_candle_rows(
+                        candle_rows
+                    ),
+                )
         if not record.normalized_hash:
             record.normalized_hash = hash_jsonl_file(Path(record.local_normalized_path))
     if record.local_enriched_path and Path(record.local_enriched_path).exists():
@@ -599,6 +627,7 @@ def _import_single_month(
         source_file_sha256=download_sha,
     )
     from tools.market_data.historical_common import (
+        assert_dq_content_binding,
         build_quality_report,
         write_jsonl_and_hash,
     )
@@ -617,6 +646,12 @@ def _import_single_month(
         step_ms=ONE_MINUTE_MS,
         source_hash=file_hash,
         second_parse_hash=file_hash,
+    )
+    # CDB-050: expected FP derived independently from the live candle series.
+    independent_content_fp = content_fingerprint_for_normalized(candles)
+    assert_dq_content_binding(
+        quality,
+        content_fingerprint=independent_content_fp,
     )
     del candles
     write_json(norm_dir / "quality_report.json", quality)
@@ -637,6 +672,7 @@ def _import_single_month(
             ),
             "fingerprint": file_hash,
             "candles_sha256": file_hash,
+            "content_fingerprint": independent_content_fp,
             "month": month,
         },
     )
@@ -689,7 +725,12 @@ def build_coverage_report(
         r
         for r in records
         if r.quality_verdict
-        not in {"STRICT_COMPLETE", "SOURCE_INVALID", "CHECKSUM_FAILED", "SOURCE_UNAVAILABLE"}
+        not in {
+            "STRICT_COMPLETE",
+            "SOURCE_INVALID",
+            "CHECKSUM_FAILED",
+            "SOURCE_UNAVAILABLE",
+        }
     ]
     failed = [r for r in records if r not in strict and r not in partial]
     total_candles = sum(r.candle_count for r in records)
@@ -789,7 +830,11 @@ def run_smoke_replays(
         "primary_breakout_v1",
     ):
         enriched = _enriched_dir(repo_root, month) / "candles.jsonl"
-        candles_path = enriched if strategy_id == "primary_breakout_v1" and enriched.exists() else jsonl
+        candles_path = (
+            enriched
+            if strategy_id == "primary_breakout_v1" and enriched.exists()
+            else jsonl
+        )
         results.append(
             probe.run_replay_probe(
                 candles_path=candles_path,

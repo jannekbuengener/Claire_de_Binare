@@ -1,0 +1,160 @@
+{
+  "allowed_result_fields": [
+    "gate_reason",
+    "regime_distribution",
+    "trade_count",
+    "turnover",
+    "fees",
+    "spread",
+    "slippage",
+    "gross_pnl",
+    "net_pnl",
+    "profit_factor",
+    "expectancy",
+    "drawdown",
+    "main_effect",
+    "interaction_effect",
+    "overfitting_risk_flag"
+  ],
+  "baseline": {
+    "label": "synthetic-non-executable-baseline",
+    "scenario_id": "baseline",
+    "strategy_id": "primary_breakout_v1"
+  },
+  "campaign_id": "arvp-sensitivity-4153-synth-v1",
+  "dataset_identity": {
+    "content_fingerprint": "fdff517d655d763a3e09b11e99eb4dd136c49a38e36b1e0a4229d7f989b5dc33",
+    "dataset_ref": "synthetic:fixture-only",
+    "identity_schema_version": "cdb.dataset_content_identity.v1",
+    "request_fingerprint": "0a242b8496486a91f3e661b9920b5b059e902b816fb0468b02119429c7c303c9"
+  },
+  "design": {
+    "interaction_groups": [
+      {
+        "family_ids": [
+          "pb1_lookback",
+          "pb1_buffer_cooldown"
+        ],
+        "group_id": "pb1_lookback_buffer"
+      }
+    ],
+    "one_factor_at_a_time": true
+  },
+  "development_windows": {
+    "purpose": "development",
+    "selection_sha256": "3e9ed68736b51fecb299d228c856be80a597cb1dc72fcba595453b856b58bd52",
+    "window_bank_identity": "binance/spot/BTCUSDT/1m",
+    "window_count": 39,
+    "window_ids": [
+      "binance_1m_month_2017_10",
+      "binance_1m_month_2017_11",
+      "binance_1m_month_2018_03",
+      "binance_1m_month_2018_04",
+      "binance_1m_month_2018_05",
+      "binance_1m_month_2018_08",
+      "binance_1m_month_2018_09",
+      "binance_1m_month_2018_12",
+      "binance_1m_month_2019_01",
+      "binance_1m_month_2019_02",
+      "binance_1m_month_2019_04",
+      "binance_1m_month_2019_07",
+      "binance_1m_month_2019_09",
+      "binance_1m_month_2019_10",
+      "binance_1m_month_2019_12",
+      "binance_1m_month_2020_01",
+      "binance_1m_month_2020_05",
+      "binance_1m_month_2020_07",
+      "binance_1m_month_2020_08",
+      "binance_1m_month_2020_09",
+      "binance_1m_month_2020_10",
+      "binance_1m_month_2021_01",
+      "binance_1m_month_2021_05",
+      "binance_1m_month_2021_06",
+      "binance_1m_month_2021_07",
+      "binance_1m_month_2021_10",
+      "binance_1m_month_2021_11",
+      "binance_1m_month_2021_12",
+      "binance_1m_month_2022_01",
+      "binance_1m_month_2022_02",
+      "binance_1m_month_2022_03",
+      "binance_1m_month_2022_04",
+      "binance_1m_month_2022_05",
+      "binance_1m_month_2022_06",
+      "binance_1m_month_2022_07",
+      "binance_1m_month_2022_08",
+      "binance_1m_month_2022_09",
+      "binance_1m_month_2022_10",
+      "binance_1m_month_2022_11"
+    ]
+  },
+  "effective_config_snapshot_fingerprint": "eceb1fd68085b985c513e17b3b64aae6dbed2605041425a7008090d02f059dfe",
+  "executable": false,
+  "execution_economics_contract_version": "execution_economics_gross_to_net.v1",
+  "explicit_bans": {
+    "campaign_execution": true,
+    "echtgeld": true,
+    "live": true,
+    "paper": true,
+    "promotion": true
+  },
+  "frozen_boundaries": {
+    "risk_and_live_boundaries": "frozen",
+    "stage_a_b_oos_stress_gates": "frozen",
+    "stage_a_gate_contract_sha256": "714b183b8219eb07050d99dab1caaa65797142d2671c1128f2036ac7213bdefc",
+    "stage_b_confirmation_contract_sha256": "ddfaf06a1ed1d0b8c2d7ffa77a4aa87ca68cd64f1b4c3a7d511e9437550c6a96"
+  },
+  "holdout_denylist": {
+    "excluded_overlap_classes": [
+      "quarterly",
+      "yearly"
+    ],
+    "excluded_purposes": [
+      "validation",
+      "out_of_sample",
+      "stress"
+    ]
+  },
+  "issue_ref": "#4153",
+  "lr_status": "NO-GO",
+  "manifest_fingerprint": "9efd7cbe8490a8f809181adb704c4a286e752273d1e0db77a2ae18a2f6b82256",
+  "parameter_control": {
+    "policy_schema_version": "cdb.parameter_control_policy.register.v1",
+    "register_fingerprint": "fdb449b05418d4a13813f7cf06c491f2160de8e96ce3d61480cc6ba55c02afa1"
+  },
+  "parameter_families": [
+    {
+      "change_authority": "RESEARCH_ALLOWED",
+      "family_id": "pb1_lookback",
+      "parameter_ids": [
+        "CDB-002"
+      ],
+      "step": 30,
+      "value_range": {
+        "max": 240,
+        "min": 60,
+        "unit": "minutes"
+      }
+    },
+    {
+      "change_authority": "RESEARCH_ALLOWED",
+      "family_id": "pb1_buffer_cooldown",
+      "parameter_ids": [
+        "CDB-003"
+      ],
+      "step": 0.005,
+      "value_range": {
+        "max": 0.02,
+        "min": 0.0,
+        "unit": "ratio"
+      }
+    }
+  ],
+  "parent_issue_ref": "#4147",
+  "schema_version": "cdb.sensitivity_experiment_manifest.v1",
+  "seed_rules": {
+    "deterministic": true,
+    "seed_formula": "sha256(campaign_id|window_id|family_id|step_index)",
+    "seed_namespace": "cdb.sensitivity.4153.v1"
+  },
+  "source_commit": "f2805f472980fdd077d5c4039c7c47d0c2b68af4"
+}

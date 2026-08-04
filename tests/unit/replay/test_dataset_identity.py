@@ -36,12 +36,21 @@ from core.replay.dataset_provider import (
 from core.replay.dataset_spec import DatasetSpec
 
 _BASE_START_MS = 1_700_000_000_000
+_BASE_END_MS = _BASE_START_MS + 240_000
+_ONE_MINUTE_MS = 60_000
 
 
-def _file_candles(count: int = 5) -> list[dict]:
+def _file_candles(*, warmup: int = 1) -> list[dict]:
+    """Exact-window candle series: warmup prefix + live bars through end_ts.
+
+    CDB-049: first candle must be at ``start_ts_ms - warmup * 1m``; last at
+    ``end_ts_ms``. Default matches ``_file_spec`` / ``_db_spec`` bounds.
+    """
+    first = _BASE_START_MS - int(warmup) * _ONE_MINUTE_MS
+    count = ((_BASE_END_MS - first) // _ONE_MINUTE_MS) + 1
     return [
         {
-            "ts_ms": _BASE_START_MS + i * 60_000,
+            "ts_ms": first + i * _ONE_MINUTE_MS,
             "open": 50_000.0 + i,
             "high": 50_001.0 + i,
             "low": 49_999.0 + i,
@@ -74,7 +83,7 @@ def _file_spec(path: str, *, warmup: int = 1) -> DatasetSpec:
         symbol="BTCUSDT",
         timeframe="1m",
         start_ts_ms=_BASE_START_MS,
-        end_ts_ms=_BASE_START_MS + 240_000,
+        end_ts_ms=_BASE_END_MS,
         warmup_candles=warmup,
         source="file",
         file_path=path,
@@ -82,7 +91,7 @@ def _file_spec(path: str, *, warmup: int = 1) -> DatasetSpec:
 
 
 def _db_spec(*, warmup: int = 1) -> DatasetSpec:
-    end = _BASE_START_MS + 240_000
+    end = _BASE_END_MS
     return DatasetSpec(
         symbol="BTCUSDT",
         timeframe="1m",
@@ -134,7 +143,7 @@ def test_different_file_paths_same_content_keep_content_hash(
 def test_file_and_db_same_content_same_content_hash(tmp_path: Path) -> None:
     # warmup=0 so File and DB load the same [start, end] series without
     # extra DB warmup rows ahead of the file content.
-    candles = _file_candles()
+    candles = _file_candles(warmup=0)
     path = tmp_path / "parity.json"
     path.write_text(json.dumps(candles), encoding="utf-8")
 

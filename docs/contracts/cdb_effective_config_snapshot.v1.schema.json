@@ -1,0 +1,78 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://claire-de-binare/docs/contracts/cdb_effective_config_snapshot.v1.schema.json",
+  "title": "CDB Effective Config Snapshot v1",
+  "description": "Resolved, secret-safe Effective-Config snapshot after defaults/overrides for ARVP provenance (#4151). Not a raw source hash. Does not authorize live/echtgeld.",
+  "type": "object",
+  "additionalProperties": true,
+  "required": [
+    "schema_version",
+    "compose",
+    "environment_redacted",
+    "risk",
+    "allocation",
+    "regime",
+    "signal",
+    "execution",
+    "override_order",
+    "snapshot_fingerprint"
+  ],
+  "properties": {
+    "schema_version": {
+      "const": "cdb.effective_config_snapshot.v1"
+    },
+    "compose": {
+      "type": "object",
+      "minProperties": 1,
+      "additionalProperties": true
+    },
+    "environment_redacted": {
+      "type": "object",
+      "additionalProperties": {
+        "type": ["string", "number", "boolean", "null"]
+      }
+    },
+    "risk": {
+      "type": "object",
+      "minProperties": 1,
+      "additionalProperties": true
+    },
+    "allocation": {
+      "type": "object",
+      "minProperties": 1,
+      "additionalProperties": true
+    },
+    "regime": {
+      "type": "object",
+      "minProperties": 1,
+      "additionalProperties": true
+    },
+    "signal": {
+      "type": "object",
+      "minProperties": 1,
+      "additionalProperties": true
+    },
+    "execution": {
+      "type": "object",
+      "minProperties": 1,
+      "additionalProperties": true
+    },
+    "override_order": {
+      "type": "array",
+      "minItems": 1,
+      "items": { "type": "string" }
+    },
+    "snapshot_fingerprint": {
+      "type": "string",
+      "pattern": "^[0-9a-f]{64}$"
+    },
+    "sources": {
+      "type": "object",
+      "additionalProperties": true
+    },
+    "evidence_links": {
+      "type": "object",
+      "additionalProperties": true
+    }
+  }
+}

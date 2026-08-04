@@ -64,7 +64,7 @@ import sys
 from dataclasses import dataclass
 from datetime import timezone
 from pathlib import Path
-from typing import Any, Callable
+from typing import Any, Callable, Mapping, Sequence
 
 from core.replay.batch_a_strategy_registry import (
     BATCH_A_STRATEGY_REGISTRY,
@@ -76,6 +76,7 @@ from core.replay.binance_window_bank_adapter import (
     load_binance_window_dataset,
 )
 from core.replay.canonical_json import canonical_hash, canonical_json_dumps
+from core.replay.dataset_identity import content_fingerprint, request_fingerprint
 from core.replay.execution_economics_v1 import (
     ExecutionEconomicsError,
     resolve_scenario_overrides,
@@ -85,6 +86,8 @@ from core.replay.dataset_provider import (
     DatasetLoadError,
     DatasetResult,
     FileBackedDatasetProvider,
+    enforce_exact_window,
+    enforce_replay_integrity,
 )
 from core.replay.dataset_spec import DatasetSpec, DatasetSpecError
 from core.replay.historical_bridge import (
@@ -145,6 +148,11 @@ from core.replay.replay_report_builder import (
 )
 from core.utils.clock import utcnow
 from core.utils.postgres_client import create_postgres_connection
+from tools.market_data.historical_common import (
+    HistoricalProbeError,
+    enforce_dq_content_binding,
+    load_dq_report_sidecar,
+)
 from services.validation.replay_reporter import ReplayReporter, ReplayReporterError
 from scripts.profitability.run_momentum_capture_pipeline_3166 import (
     WARMUP_CANDLES as MOMENTUM_WARMUP_CANDLES,
@@ -302,7 +310,14 @@ _SAFE_ENV_KEYS: frozenset[str] = frozenset(
 # Errors
 # ---------------------------------------------------------------------------
 class ReplayRunnerError(RuntimeError):
-    """Raised when the replay runner cannot proceed (maps to exit code 2)."""
+    """Raised when the replay runner cannot proceed (maps to exit code 2).
+
+    Optional ``code`` preserves CDB-051 integrity / DQ root causes.
+    """
+
+    def __init__(self, message: str, *, code: str | None = None) -> None:
+        super().__init__(message)
+        self.code = code
 
 
 # ---------------------------------------------------------------------------
@@ -737,6 +752,37 @@ def _build_provenance_config_snapshot(
     }
 
 
+def _enforce_replay_dq_sidecar_binding(
+    *,
+    candles_path: Path,
+    candles: Sequence[Mapping[str, Any]],
+) -> None:
+    """CDB-050: if a quality_report.json sidecar exists, bind before replay.
+
+    Absence of a sidecar means this load path does not consume a DQ verdict
+    and is therefore not a CDB-050 DQ consumer for that run.
+    """
+    sidecar = candles_path if candles_path.is_dir() else candles_path.parent
+    report = load_dq_report_sidecar(sidecar / "quality_report.json")
+    if report is None:
+        return
+    try:
+        enforce_dq_content_binding(report=report, candles=candles)
+    except HistoricalProbeError as exc:
+        code = getattr(exc, "code", None)
+        raise ReplayRunnerError(
+            "DQ content binding failed for file dataset"
+            + (f" [{code}]" if code else "")
+            + f": {exc}"
+        ) from exc
+
+
+def _reraise_as_runner_error(exc: Exception) -> None:
+    """Re-raise load failures as ``ReplayRunnerError``, preserving ``.code``."""
+    code = getattr(exc, "code", None)
+    raise ReplayRunnerError(str(exc), code=code) from exc
+
+
 def _load_dataset_result(
     config: ARVPReplayConfig,
     *,
@@ -758,7 +804,7 @@ def _load_dataset_result(
         try:
             temp_result = FileBackedDatasetProvider().load(temp_spec)
         except (DatasetLoadError, DatasetSpecError) as exc:
-            raise ReplayRunnerError(str(exc)) from exc
+            _reraise_as_runner_error(exc)
 
         candles = list(temp_result.candles)
         try:
@@ -766,7 +812,8 @@ def _load_dataset_result(
             end_ts_ms = int(candles[-1]["ts_ms"])
         except (KeyError, TypeError, ValueError, IndexError) as exc:
             raise ReplayRunnerError(
-                "dataset requires numeric ts_ms on the first live candle and last candle"
+                "dataset requires numeric ts_ms on the first live candle and last candle",
+                code="INCOMPLETE_WINDOW",
             ) from exc
 
         spec = DatasetSpec(
@@ -783,12 +830,36 @@ def _load_dataset_result(
         except DatasetSpecError as exc:
             raise ReplayRunnerError(f"dataset spec validation failed: {exc}") from exc
 
+        # Discover rebound: prove CDB-049 exact-window parity on the final live bounds.
+        try:
+            enforce_exact_window(candles, spec, str(input_path))
+        except DatasetLoadError as exc:
+            _reraise_as_runner_error(exc)
+
+        # CDB-051: re-bind integrity to the final rebound DatasetSpec window.
+        try:
+            enforce_replay_integrity(candles, str(input_path), spec=spec)
+        except DatasetLoadError as exc:
+            _reraise_as_runner_error(exc)
+
+        # CDB-050: bind DQ sidecar (if present) to independently loaded content.
+        _enforce_replay_dq_sidecar_binding(candles_path=input_path, candles=candles)
+
+        # Request identity follows the *final* windowed spec (not temp start/end=0).
+        # Content identity is the loaded candle series (propagate or recompute).
+        req_fp = request_fingerprint(spec)
+        content_fp = temp_result.content_fingerprint
+        if content_fp is None:
+            content_fp = content_fingerprint(temp_result.candles)
+
         return DatasetResult(
             spec=spec,
             candles=temp_result.candles,
-            fingerprint=spec.fingerprint(),
+            fingerprint=req_fp,
             warmup_count=warmup_count,
             effective_candle_count=len(candles) - warmup_count,
+            request_fingerprint=req_fp,
+            content_fingerprint=content_fp,
         )
 
     if dataset_source == "db":
@@ -810,7 +881,7 @@ def _load_dataset_result(
         try:
             return DBBackedDatasetProvider(conn).load(spec)
         except (DatasetLoadError, DatasetSpecError) as exc:
-            raise ReplayRunnerError(str(exc)) from exc
+            _reraise_as_runner_error(exc)
         finally:
             try:
                 conn.close()
@@ -827,13 +898,22 @@ def _load_dataset_result(
                 warmup_candles=warmup_count,
             )
         except BinanceWindowBankAdapterError as exc:
-            raise ReplayRunnerError(str(exc)) from exc
+            _reraise_as_runner_error(exc)
+        inner = dataset.dataset_result
+        req_fp = inner.request_fingerprint
+        if req_fp is None:
+            req_fp = request_fingerprint(inner.spec)
+        content_fp = inner.content_fingerprint
+        if content_fp is None:
+            content_fp = content_fingerprint(inner.candles)
         return DatasetResult(
-            spec=dataset.dataset_result.spec,
-            candles=dataset.dataset_result.candles,
-            fingerprint=dataset.dataset_result.fingerprint,
+            spec=inner.spec,
+            candles=inner.candles,
+            fingerprint=req_fp,
             warmup_count=warmup_count,
-            effective_candle_count=dataset.dataset_result.effective_candle_count,
+            effective_candle_count=inner.effective_candle_count,
+            request_fingerprint=req_fp,
+            content_fingerprint=content_fp,
         )
 
     raise ReplayRunnerError(f"unsupported dataset_source: {config.dataset_source!r}")
@@ -1185,6 +1265,7 @@ def _build_replay_report_input(
     runner_run_id: str | None = None,
     execution_provenance_id: str | None = None,
     dataset_fingerprint: str | None = None,
+    content_fingerprint: str | None = None,
 ) -> ReplayReportInput:
     """Bridge a backtest runner report to a ReplayReportInput.
 
@@ -1193,6 +1274,9 @@ def _build_replay_report_input(
     replay_report.v1 contract (from #1806 / replay_contracts.py).
 
     No metrics are recalculated; all values are derived from the backtest report.
+
+    ``dataset_fingerprint`` remains the request identity (compat).
+    ``content_fingerprint`` is the actual loaded content identity (CDB-050).
     """
     execution_run_id: str = (
         execution_provenance_id or backtest_report["run_metadata"]["run_id"]
@@ -1201,6 +1285,9 @@ def _build_replay_report_input(
     dataset: dict[str, Any] = dict(backtest_report["dataset_summary"])
     if dataset_fingerprint is not None:
         dataset["dataset_fingerprint"] = dataset_fingerprint
+        dataset["request_fingerprint"] = dataset_fingerprint
+    if content_fingerprint is not None:
+        dataset["content_fingerprint"] = content_fingerprint
     if scheduler_metadata is not None:
         dataset["scheduler"] = dict(scheduler_metadata)
     metrics: dict[str, Any] = backtest_report["metrics"]
@@ -1211,6 +1298,9 @@ def _build_replay_report_input(
     }
     if dataset_fingerprint is not None:
         run_spec_metadata["dataset_fingerprint"] = dataset_fingerprint
+        run_spec_metadata["request_fingerprint"] = dataset_fingerprint
+    if content_fingerprint is not None:
+        run_spec_metadata["content_fingerprint"] = content_fingerprint
 
     run_spec = ReplayRunSpec(
         replay_run_id=run_id,
@@ -1496,6 +1586,7 @@ def run_arvp_replay(config: ARVPReplayConfig) -> int:
             runner_run_id=run_id,
             execution_provenance_id=execution_provenance_id,
             dataset_fingerprint=dataset_result.fingerprint,
+            content_fingerprint=dataset_result.content_fingerprint,
         )
     except Exception as exc:
         try:
@@ -1685,6 +1776,8 @@ def run_arvp_replay(config: ARVPReplayConfig) -> int:
     print(f"  mode={_DEFAULT_REPLAY_MODE}")
     print(f"  execution_provenance_id={execution_provenance_id}")
     print(f"  dataset_fingerprint={dataset_result.fingerprint}")
+    print(f"  request_fingerprint={dataset_result.request_fingerprint}")
+    print(f"  content_fingerprint={dataset_result.content_fingerprint}")
     print(f"  scheduler_profile={config.speedup_profile}")
     print(f"  gate_result={gate_status or 'UNKNOWN'}")
     print(f"  deterministic_replay_ok={deterministic_replay_ok}")

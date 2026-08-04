@@ -1,0 +1,33 @@
+{
+  "allocation": {
+    "mode": "shadow"
+  },
+  "compose": {
+    "blue": "compose.blue.yml",
+    "red": "compose.red.yml"
+  },
+  "environment_redacted": {
+    "LOG_LEVEL": "INFO",
+    "MOCK_TRADING": "true"
+  },
+  "execution": {
+    "mock_trading": true
+  },
+  "override_order": [
+    "code_default",
+    "compose",
+    "env"
+  ],
+  "regime": {
+    "adx_period": 14
+  },
+  "risk": {
+    "kill_switch": "FROZEN",
+    "max_position": "FROZEN"
+  },
+  "schema_version": "cdb.effective_config_snapshot.v1",
+  "signal": {
+    "strategy_id": "primary_breakout_v1"
+  },
+  "snapshot_fingerprint": "eceb1fd68085b985c513e17b3b64aae6dbed2605041425a7008090d02f059dfe"
+}

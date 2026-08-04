@@ -18,19 +18,30 @@ from core.replay.dataset_provider import (
     _validate_candle_series,
 )
 from core.replay.dataset_spec import DatasetSpec
-from tools.market_data.binance_window_bank import IMPORT_REPO, _resolve_bank_candles_path
+from tools.market_data.binance_window_bank import (
+    IMPORT_REPO,
+    _resolve_bank_candles_path,
+)
 from tools.market_data.development_window_selector import (
     DevelopmentSelectionError,
     resolve_window_candles_path,
 )
-
-BATCH_A_WINDOW_BANK_ROOT = (
-    "artifacts/market_data/window_bank/binance/spot/BTCUSDT/1m"
+from tools.market_data.historical_common import (
+    HistoricalProbeError,
+    dq_report_from_dataset_spec,
+    enforce_dq_content_binding,
+    load_dq_report_sidecar,
 )
+
+BATCH_A_WINDOW_BANK_ROOT = "artifacts/market_data/window_bank/binance/spot/BTCUSDT/1m"
 
 
 class BinanceWindowBankAdapterError(ValueError):
-    """Fail-closed Binance window-bank adapter error."""
+    """Fail-closed Binance window-bank adapter error (optional CDB-051/050 code)."""
+
+    def __init__(self, message: str, *, code: str | None = None) -> None:
+        super().__init__(message)
+        self.code = code
 
 
 @dataclass(frozen=True, slots=True)
@@ -99,9 +110,7 @@ def resolve_window_bank_paths(
 
     return BinanceWindowDatasetRef(
         window_id=window_id,
-        spec_path=_repo_relative(repo_root, spec_path)
-        if spec_path.exists()
-        else "",
+        spec_path=_repo_relative(repo_root, spec_path) if spec_path.exists() else "",
         candles_path=_repo_relative(repo_root, candles_path),
         dataset_fingerprint=None,
         purpose=None,
@@ -161,6 +170,34 @@ def load_window_candles_jsonl(candles_path: Path) -> list[dict[str, Any]]:
     return candles
 
 
+def _enforce_window_dq_content_binding(
+    *,
+    window_id: str,
+    meta: Mapping[str, Any],
+    candles: Sequence[Mapping[str, Any]],
+    candles_path: Path,
+) -> None:
+    """Fail-closed CDB-050 bind when the window claims a DQ verdict."""
+    dq_report = dq_report_from_dataset_spec(meta)
+    if dq_report is None:
+        # Spec does not claim a DQ verdict — not a DQ consumer for this load.
+        return
+    evidence = load_dq_report_sidecar(candles_path.parent / "quality_report.json")
+    try:
+        enforce_dq_content_binding(
+            report=dq_report,
+            candles=candles,
+            evidence=evidence,
+        )
+    except HistoricalProbeError as exc:
+        raise BinanceWindowBankAdapterError(
+            f"window {window_id!r} DQ content binding failed"
+            + (f" [{exc.code}]" if getattr(exc, "code", None) else "")
+            + f": {exc}",
+            code=getattr(exc, "code", None),
+        ) from exc
+
+
 def load_binance_window_dataset(
     window_id: str,
     *,
@@ -168,20 +205,31 @@ def load_binance_window_dataset(
     repo_root: Path = IMPORT_REPO,
     window_bank_root: Path | None = None,
 ) -> BinanceWindowDataset:
-    """Load a single Binance window-bank dataset for replay runners."""
+    """Load a single Binance window-bank dataset for replay runners.
+
+    Builds a ``DatasetSpec`` under the shared CDB-049 contract:
+    ``start_ts_ms`` / ``end_ts_ms`` are the *live* window. The candle series
+    must include the warmup prefix before ``start_ts_ms``. Window-bank JSON
+    metadata that stores the series-first timestamp as ``start_ts_ms`` is
+    rebound to the live start when ``warmup_candles > 0``.
+
+    CDB-050: when ``data_quality_verdict`` is present on the window spec, the
+    loaded candle content must match the bound ``content_fingerprint`` before
+    the dataset is returned to any consumer.
+    """
     ref = resolve_window_bank_paths(
         window_id,
         repo_root=repo_root,
         window_bank_root=window_bank_root,
     )
     candles_path = repo_root / ref.candles_path
-    spec: dict[str, Any]
+    meta: dict[str, Any]
     if ref.spec_path:
         spec_path = repo_root / ref.spec_path
-        spec = load_dataset_spec(spec_path)
+        meta = load_dataset_spec(spec_path)
     else:
         candles = load_window_candles_jsonl(candles_path)
-        spec = {
+        meta = {
             "window_id": window_id,
             "symbol": "BTCUSDT",
             "timeframe": "1m",
@@ -190,12 +238,50 @@ def load_binance_window_dataset(
         }
 
     candles = load_window_candles_jsonl(candles_path)
+    warmup = max(0, int(warmup_candles))
+    if len(candles) <= warmup:
+        raise BinanceWindowBankAdapterError(
+            f"Insufficient candles for window {window_id!r}: {len(candles)} total, "
+            f"{warmup} warmup required."
+        )
+
+    series_first = int(candles[0]["ts_ms"])
+    series_last = int(candles[-1]["ts_ms"])
+    live_start = int(candles[warmup]["ts_ms"])
+    live_end = series_last
+    declared_start = int(meta["start_ts_ms"])
+    declared_end = int(meta["end_ts_ms"])
+
+    if declared_end != series_last:
+        raise BinanceWindowBankAdapterError(
+            f"window {window_id!r} end mismatch: dataset_spec end_ts_ms={declared_end} "
+            f"!= last candle ts_ms={series_last}"
+        )
+    if declared_start not in (series_first, live_start):
+        raise BinanceWindowBankAdapterError(
+            f"window {window_id!r} start mismatch: dataset_spec start_ts_ms={declared_start} "
+            f"matches neither series_first={series_first} nor live_start={live_start}"
+        )
+    if declared_start == live_start and series_first != live_start - warmup * 60_000:
+        raise BinanceWindowBankAdapterError(
+            f"window {window_id!r} missing warmup prefix: expected first candle "
+            f"ts_ms={live_start - warmup * 60_000}, got {series_first}"
+        )
+
+    # CDB-050 consumer bind: before provider load / return.
+    _enforce_window_dq_content_binding(
+        window_id=window_id,
+        meta=meta,
+        candles=candles,
+        candles_path=candles_path,
+    )
+
     dataset_spec = DatasetSpec(
-        symbol=str(spec["symbol"]),
-        timeframe=str(spec["timeframe"]),
-        start_ts_ms=int(spec["start_ts_ms"]),
-        end_ts_ms=int(spec["end_ts_ms"]),
-        warmup_candles=max(0, warmup_candles),
+        symbol=str(meta["symbol"]),
+        timeframe=str(meta["timeframe"]),
+        start_ts_ms=live_start,
+        end_ts_ms=live_end,
+        warmup_candles=warmup,
         source="file",
         file_path=str(candles_path),
     )
@@ -204,11 +290,11 @@ def load_binance_window_dataset(
     try:
         dataset_result = provider.load(dataset_spec)
     except DatasetLoadError as exc:
-        raise BinanceWindowBankAdapterError(str(exc)) from exc
+        raise BinanceWindowBankAdapterError(str(exc), code=exc.code) from exc
 
     return BinanceWindowDataset(
         ref=ref,
-        spec=spec,
+        spec=meta,
         candles=tuple(candles),
         dataset_result=dataset_result,
     )

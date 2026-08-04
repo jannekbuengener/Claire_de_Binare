@@ -19,6 +19,26 @@ pytestmark = [pytest.mark.unit, pytest.mark.contract]
 CANDIDATE = "donchian_breakout_v1"
 BASELINE = "baseline"
 PESSIMISTIC = "pessimistic_execution"
+_CONTENT_FP = "a" * 64
+
+
+def _bound_provenance(*, warmup_bars: int = 34) -> dict:
+    return {
+        "warmup_bars": warmup_bars,
+        "source": "dataset_summary.warmup_candles",
+        "manifest_ref": None,
+        "parameter_fingerprint": "test-param",
+        "campaign_source_sha": "test-sha",
+        "manifest_warmup_verified": False,
+        "strategy_id": CANDIDATE,
+        "content_fingerprint": _CONTENT_FP,
+        "dq_content_fingerprint": None,
+        "request_fingerprint": None,
+        "silent_manifest_fallback": False,
+        "window_id": None,
+        "start_ts_ms": None,
+        "end_ts_ms": None,
+    }
 
 
 def _record(
@@ -29,6 +49,7 @@ def _record(
     closed_trades: int = 5,
     profit_factor: float | str = 1.2,
     max_drawdown_r: float = 0.1,
+    rankable: bool = True,
 ) -> dict:
     return {
         "candidate_id": CANDIDATE,
@@ -41,6 +62,10 @@ def _record(
         "max_drawdown_r": max_drawdown_r,
         "dataset_quality_verdict": "PASS",
         "job_status": "completed",
+        "rankable": rankable,
+        "not_rankable_reasons": [],
+        "rankability_blocking_flags": [],
+        "warmup_provenance": _bound_provenance(),
     }
 
 
@@ -48,9 +73,7 @@ def _paired_survivor_records() -> list[dict]:
     records: list[dict] = []
     for window_id in LOCKED_BATCH_A_DEVELOPMENT_WINDOW_IDS:
         records.append(_record(window_id, BASELINE, net_pnl=120.0, closed_trades=3))
-        records.append(
-            _record(window_id, PESSIMISTIC, net_pnl=80.0, closed_trades=3)
-        )
+        records.append(_record(window_id, PESSIMISTIC, net_pnl=80.0, closed_trades=3))
     return records
 
 
