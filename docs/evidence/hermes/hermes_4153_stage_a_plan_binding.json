@@ -1,0 +1,21 @@
+{
+  "writes": false,
+  "window_count": 39,
+  "run_count": 819,
+  "stage_b_runs": 0,
+  "stress_runs": 0,
+  "oos_runs": 0,
+  "run_plan_fingerprint": "7971335597a97c1a8ceed8062a6b06dad46cbe9172e0e794d8f4dd74a4adc88c",
+  "manifest_fingerprint": "7126f60033205d8012976376e217999e8702a83266a059f1d4c628cf4ba208da",
+  "resume_policy": {
+    "allow_resume": true,
+    "refuse_binding_mismatch": true,
+    "refuse_running_without_completion": true,
+    "retry_failed": true,
+    "skip_succeeded_identical_bindings": true
+  },
+  "execution_mode": null,
+  "strategy_set": [
+    "primary_breakout_v1"
+  ]
+}
