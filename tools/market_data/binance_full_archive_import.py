@@ -2,6 +2,7 @@
 
 Cross-venue research corpus only — not MEXC same-venue execution evidence.
 """
+
 # ruff: noqa: E402
 
 from __future__ import annotations
@@ -133,7 +134,9 @@ def import_range(
 ) -> dict[str, Any]:
     """Import all months in range with manifest and coverage report."""
     if not skip_storage_guard:
-        from tools.market_data.market_data_storage_guard import enforce_market_data_storage
+        from tools.market_data.market_data_storage_guard import (
+            enforce_market_data_storage,
+        )
 
         enforce_market_data_storage(
             repo_root=repo_root,
@@ -223,9 +226,7 @@ def import_range(
                     )
                     record.regime_status = "complete"
                     enriched_path = _enriched_dir(repo_root, month) / "candles.jsonl"
-                    record.local_enriched_path = str(enriched_path).replace(
-                        "\\", "/"
-                    )
+                    record.local_enriched_path = str(enriched_path).replace("\\", "/")
                     record.enriched_hash = enriched_hash
                     _append_plausibility_sample(
                         plausibility_sample,
@@ -269,7 +270,8 @@ def import_range(
     failed = sum(
         1
         for r in records
-        if r.quality_verdict in {"SOURCE_INVALID", "CHECKSUM_FAILED", "SOURCE_UNAVAILABLE"}
+        if r.quality_verdict
+        in {"SOURCE_INVALID", "CHECKSUM_FAILED", "SOURCE_UNAVAILABLE"}
     )
     if complete == len(months):
         manifest["import_status"] = "FULL_IMPORT_PASS"
@@ -414,9 +416,7 @@ def _month_already_complete(repo_root: Path, month: str) -> bool:
     ).exists()
 
 
-def _load_cached_month_record(
-    repo_root: Path, month: str
-) -> MonthImportRecord | None:
+def _load_cached_month_record(repo_root: Path, month: str) -> MonthImportRecord | None:
     norm = _normalized_dir(repo_root, month)
     quality_path = norm / "quality_report.json"
     if not quality_path.exists():
@@ -599,6 +599,7 @@ def _import_single_month(
         source_file_sha256=download_sha,
     )
     from tools.market_data.historical_common import (
+        assert_dq_content_binding,
         build_quality_report,
         write_jsonl_and_hash,
     )
@@ -617,6 +618,9 @@ def _import_single_month(
         step_ms=ONE_MINUTE_MS,
         source_hash=file_hash,
         second_parse_hash=file_hash,
+    )
+    assert_dq_content_binding(
+        quality, content_fingerprint=quality["content_fingerprint"]
     )
     del candles
     write_json(norm_dir / "quality_report.json", quality)
@@ -689,7 +693,12 @@ def build_coverage_report(
         r
         for r in records
         if r.quality_verdict
-        not in {"STRICT_COMPLETE", "SOURCE_INVALID", "CHECKSUM_FAILED", "SOURCE_UNAVAILABLE"}
+        not in {
+            "STRICT_COMPLETE",
+            "SOURCE_INVALID",
+            "CHECKSUM_FAILED",
+            "SOURCE_UNAVAILABLE",
+        }
     ]
     failed = [r for r in records if r not in strict and r not in partial]
     total_candles = sum(r.candle_count for r in records)
@@ -789,7 +798,11 @@ def run_smoke_replays(
         "primary_breakout_v1",
     ):
         enriched = _enriched_dir(repo_root, month) / "candles.jsonl"
-        candles_path = enriched if strategy_id == "primary_breakout_v1" and enriched.exists() else jsonl
+        candles_path = (
+            enriched
+            if strategy_id == "primary_breakout_v1" and enriched.exists()
+            else jsonl
+        )
         results.append(
             probe.run_replay_probe(
                 candles_path=candles_path,

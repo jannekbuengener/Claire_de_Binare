@@ -136,7 +136,19 @@ def test_cdb052_missing_content_fingerprint_is_not_rankable() -> None:
     assert FLAG_REQUEST_FINGERPRINT_ONLY in result.rankability_blocking_flags
 
 
-def test_cdb052_dq_content_mismatch_is_not_rankable() -> None:
+def test_cdb052_dq_content_binding_missing_is_not_rankable() -> None:
+    result = resolve_candle_rankability(
+        dataset_summary=_summary(dq_verdict="STRICT_COMPLETE"),
+        strategy_id="breakout_volatility_filter_v1",
+        campaign_id="batch_a_stage_a_d0a4e72d_20260713",
+        parameter_fingerprint="abc123",
+        campaign_source_sha="d0a4e72d10fced72a5fb2d2edf1e40f3c80f417a",
+        repo_root=REPO_ROOT,
+    )
+    from tools.arvp_vacation.candle_rankability import FLAG_DQ_CONTENT_BINDING_MISSING
+
+    assert FLAG_DQ_CONTENT_BINDING_MISSING in result.rankability_blocking_flags
+
     result = resolve_candle_rankability(
         dataset_summary=_summary(
             dq_content_fingerprint="c" * 64,

@@ -1043,6 +1043,26 @@ def run_probe(
         source_hash=normalized_hash(candles),
         second_parse_hash=second_parse_hash,
     )
+    bound_fp = quality.get("content_fingerprint")
+    if not isinstance(bound_fp, str) or not bound_fp.strip():
+        raise MexcHistoricalProbeError("DQ report missing content_fingerprint binding")
+    recomputed = compute_content_fingerprint(
+        [
+            {
+                "ts_ms": c.ts_ms,
+                "open": c.open,
+                "high": c.high,
+                "low": c.low,
+                "close": c.close,
+                "volume": c.volume,
+            }
+            for c in candles
+        ]
+    )
+    if bound_fp != recomputed:
+        raise MexcHistoricalProbeError(
+            "DQ verdict content_fingerprint is stale or mismatched"
+        )
     norm_dir = (
         repo_root
         / "artifacts"

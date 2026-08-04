@@ -122,6 +122,7 @@ def _make_valid_dq(**overrides: Any) -> dict[str, Any]:
         "report_id": "dq-test-001",
         "dataset_id": "ds-test-001",
         "dataset_fingerprint": "sha256:abcdef1234567890abcdef1234567890abcdef1234567890abcdef1234567890",
+        "content_fingerprint": "abcdef1234567890abcdef1234567890abcdef1234567890abcdef1234567890",
         "generated_at": "2026-06-22T12:00:00Z",
         "symbol": "BTCUSDT",
         "timeframe": "1h",
