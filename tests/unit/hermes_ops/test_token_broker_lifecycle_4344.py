@@ -31,7 +31,8 @@ def test_broker_unit_remain_after_exit_keeps_token_until_stop() -> None:
     assert "RemainAfterExit=yes" in text
     assert "ExecStart=" in text and "mint-token" in text
     assert "--token-file /run/hermes/cdb-engineer/token" in text
-    assert "ExecStopPost=/bin/rm -f /run/hermes/cdb-engineer/token" in text
+    assert "ExecStopPost=+/bin/rm -f /run/hermes/cdb-engineer/token" in text
+    assert "ExecStartPost=+/bin/chown hermes-cdb-engineer:hermes-cdb-engineer" in text
     assert validate_broker_unit() == []
 
 
@@ -45,7 +46,7 @@ def test_broker_validator_requires_remain_after_exit(tmp_path: Path) -> None:
 
 def test_broker_validator_requires_exec_stop_post_token_rm(tmp_path: Path) -> None:
     raw = UNIT.read_text(encoding="utf-8").replace(
-        "ExecStopPost=/bin/rm -f /run/hermes/cdb-engineer/token\n",
+        "ExecStopPost=+/bin/rm -f /run/hermes/cdb-engineer/token\n",
         "",
     )
     bad = tmp_path / "hermes-github-token.service"

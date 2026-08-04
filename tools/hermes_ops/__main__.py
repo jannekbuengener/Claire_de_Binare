@@ -88,6 +88,23 @@ def _cmd_policy_check(args: argparse.Namespace) -> int:
     return 0 if payload["ok"] else 2
 
 
+def _deliver_token_ownership(path: Path) -> None:
+    """When minting as root, hand directory+file to hermes-cdb-engineer only."""
+    if os.name != "posix" or hasattr(os, "geteuid") is False or os.geteuid() != 0:
+        return
+    try:
+        import grp
+        import pwd
+    except ImportError:  # pragma: no cover - non-posix
+        return
+    user = pwd.getpwnam("hermes-cdb-engineer")
+    group = grp.getgrnam("hermes-cdb-engineer")
+    os.chown(path.parent, user.pw_uid, group.gr_gid)
+    os.chmod(path.parent, 0o700)
+    os.chown(path, user.pw_uid, group.gr_gid)
+    os.chmod(path, 0o600)
+
+
 def _write_token_file(path: Path, token: str) -> None:
     """Write token with mode 0600. Never print raw token to stdout/stderr."""
     path.parent.mkdir(parents=True, exist_ok=True)
@@ -104,6 +121,7 @@ def _write_token_file(path: Path, token: str) -> None:
     if mode != 0o600:
         path.unlink(missing_ok=True)
         raise PermissionError(f"token file mode must be 0600, got {oct(mode)}")
+    _deliver_token_ownership(path)
 
 
 def _cmd_mint_token(args: argparse.Namespace) -> int:

@@ -62,7 +62,8 @@ def test_broker_unit_is_root_oneshot_with_isolated_runtime_dir() -> None:
     )
     assert "Type=oneshot" in text
     assert "RemainAfterExit=yes" in text
-    assert "ExecStopPost=/bin/rm -f /run/hermes/cdb-engineer/token" in text
+    assert "ExecStopPost=+/bin/rm -f /run/hermes/cdb-engineer/token" in text
+    assert "ExecStartPost=+/bin/chown hermes-cdb-engineer:hermes-cdb-engineer" in text
     assert "User=root" in text
     assert TOKEN_RUNTIME_DIR in text or "RuntimeDirectory=hermes/cdb-engineer" in text
     assert PEM_HOST_PATH in text or "cdb-hermes-engineer.pem" in text
