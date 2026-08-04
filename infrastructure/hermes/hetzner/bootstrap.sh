@@ -105,9 +105,43 @@ install_profile_env_files() {
   done
 }
 
+# Parent/opt/home traverse for dedicated profile UIDs (B2.0 live cutover).
+# Profiles stay 0700; parents must be 0751 so systemd WorkingDirectory/ENV work.
+# Mirrors migrate-profile-uids.sh migrate_ownership — idempotent.
+apply_dedicated_uid_traverse_perms() {
+  mkdir -p "${HERMES_BASE}" "${LOG_BASE}"
+  chmod 0751 "${HERMES_BASE}"
+  chmod 0751 "${LOG_BASE}"
+  if [[ -d /etc/hermes ]]; then
+    chmod 0751 /etc/hermes
+  fi
+  # Shared install tree may remain under hermes (binary only — no tokens/PEM).
+  # Profile UIDs must execute the binary (o+rx); never share secrets here.
+  if [[ -d "${OPT_DIR}" ]]; then
+    if id -u "${INSTALL_USER}" >/dev/null 2>&1; then
+      chown -R "${INSTALL_USER}:${INSTALL_USER}" "${OPT_DIR}"
+    fi
+    chmod 0755 "${OPT_DIR}"
+    find "${OPT_DIR}" -type d -exec chmod a+rx {} +
+    find "${OPT_DIR}" -type f -executable -exec chmod a+rx {} +
+  fi
+  # uv-managed interpreter path used with ProtectHome=read-only (#4329).
+  if [[ -d /home/hermes ]]; then
+    chmod 0751 /home/hermes
+  fi
+  if [[ -d /home/hermes/.local/share/uv ]]; then
+    chmod -R a+rX /home/hermes/.local/share/uv
+  fi
+  if [[ -d "${INSTALLER_HOME}" ]]; then
+    chmod -R a+rX "${INSTALLER_HOME}"
+  fi
+  log "dedicated-UID traverse perms applied (parents 0751, opt execute, uv read)"
+}
+
 ensure_profile_homes() {
   local profile user home logdir
-  mkdir -p "${LOG_BASE}"
+  mkdir -p "${HERMES_BASE}" "${LOG_BASE}"
+  chmod 0751 "${HERMES_BASE}"
   chmod 0751 "${LOG_BASE}"
   for profile in jannek-assistant cdb-engineer; do
     user="${PROFILE_LINUX_USERS[${profile}]}"
@@ -136,6 +170,7 @@ ensure_profile_homes() {
   touch "${HERMES_BASE}/profiles/validation-chief/.DISABLED"
   chown root:root "${HERMES_BASE}/profiles/validation-chief" \
     "${HERMES_BASE}/profiles/validation-chief/.DISABLED"
+  apply_dedicated_uid_traverse_perms
 }
 
 verify_pin() {
@@ -309,6 +344,8 @@ main() {
   install_profile_env_files
   ensure_profile_homes
   install_hermes_pinned "${git_ref}" "${git_commit}"
+  # Re-apply after install: opt tree + uv path exist only post-pin install.
+  apply_dedicated_uid_traverse_perms
   ensure_dashboard_runtime_assets
   enable_services
   harden_sudoers_after_bootstrap

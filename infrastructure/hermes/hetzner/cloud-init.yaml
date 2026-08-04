@@ -90,6 +90,8 @@ runcmd:
   - ufw --force enable
   - mkdir -p /opt/hermes /var/lib/hermes /var/log/hermes /etc/hermes
   - chown -R hermes:hermes /opt/hermes /var/lib/hermes /var/log/hermes
-  - chmod 0750 /opt/hermes /var/lib/hermes /var/log/hermes /etc/hermes
+  # 0751 parents: dedicated profile UIDs must traverse; profiles stay 0700 (B2.0).
+  # bootstrap.sh re-applies opt execute + uv read after pinned install.
+  - chmod 0751 /opt/hermes /var/lib/hermes /var/log/hermes /etc/hermes
 
 final_message: "CDB Hermes cloud-init baseline complete. Run infrastructure/hermes/hetzner/bootstrap.sh next."

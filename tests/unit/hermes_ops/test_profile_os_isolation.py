@@ -122,3 +122,24 @@ def test_bootstrap_uses_per_profile_linux_users() -> None:
     assert "User=hermes-%i" in Path(
         "infrastructure/hermes/systemd/hermes-dashboard@.service"
     ).read_text(encoding="utf-8")
+
+
+def test_bootstrap_mirrors_migrate_traverse_perms_for_dedicated_uids() -> None:
+    """Greenfield bootstrap must encode live B2.0 traverse fixes (not migrate-only)."""
+    bootstrap = Path("infrastructure/hermes/hetzner/bootstrap.sh").read_text(
+        encoding="utf-8"
+    )
+    migrate = Path("infrastructure/hermes/hetzner/migrate-profile-uids.sh").read_text(
+        encoding="utf-8"
+    )
+    cloud_init = Path("infrastructure/hermes/hetzner/cloud-init.yaml").read_text(
+        encoding="utf-8"
+    )
+    assert "apply_dedicated_uid_traverse_perms" in bootstrap
+    assert 'chmod 0751 "${HERMES_BASE}"' in bootstrap
+    assert "chmod 0751 /home/hermes" in bootstrap
+    assert "find" in bootstrap and "a+rx" in bootstrap
+    assert "/home/hermes/.local/share/uv" in bootstrap
+    assert 'chmod 0751 "${HERMES_BASE}"' in migrate
+    assert "chmod 0751" in cloud_init
+    assert "chmod 0750 /opt/hermes /var/lib/hermes" not in cloud_init
