@@ -71,7 +71,7 @@ def validate_unit(path: Path | None = None) -> list[str]:
 
 
 def validate_broker_unit(path: Path | None = None) -> list[str]:
-    """Broker is root oneshot; PEM root-only; token RuntimeDirectory isolated."""
+    """Broker is root oneshot; PEM root-only; explicit /run token handoff."""
     unit = path or BROKER_UNIT_PATH
     errors: list[str] = []
     if not unit.is_file():
@@ -79,13 +79,15 @@ def validate_broker_unit(path: Path | None = None) -> list[str]:
     text = unit.read_text(encoding="utf-8")
     required = (
         "Type=oneshot",
+        "RemainAfterExit=yes",
         "User=root",
-        "RuntimeDirectory=hermes/cdb-engineer",
-        "RuntimeDirectoryMode=0700",
+        "ExecStartPre=+/bin/mkdir -p /run/hermes/cdb-engineer",
         "cdb-hermes-engineer.pem",
         "hermes-cdb-engineer",
         "mint-token",
         "--profile cdb-engineer",
+        "ExecStopPost=+/bin/rm -f /run/hermes/cdb-engineer/token",
+        "ExecStartPost=+/bin/chown -R hermes-cdb-engineer:hermes-cdb-engineer",
     )
     for snippet in required:
         if snippet not in text:
@@ -95,8 +97,19 @@ def validate_broker_unit(path: Path | None = None) -> list[str]:
         "User=hermes-jannek-assistant",
         "Group=hermes\n",
         "/var/lib/hermes/profiles",
+        # RuntimeDirectory directive + User=root kept host path root:root 0700 (#4344).
+        "PrivateTmp=true",
     )
     for snippet in forbidden:
         if snippet in text:
             errors.append(f"broker forbidden snippet present: {snippet!r}")
+    # Match active unit keys only (comments may mention RuntimeDirectory).
+    for line in text.splitlines():
+        stripped = line.strip()
+        if stripped.startswith("RuntimeDirectory=") or stripped.startswith(
+            "RuntimeDirectoryMode="
+        ):
+            errors.append(
+                f"broker forbidden snippet present: {stripped.split('=', 1)[0]}="
+            )
     return errors

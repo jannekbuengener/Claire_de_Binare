@@ -141,6 +141,14 @@ SSH tunnel or host loopback. Non-loopback binds require Hermes auth providers;
 
 ## GitHub token mint
 
+Lifecycle (`hermes-github-token.service`): `Type=oneshot` + `RemainAfterExit=yes`.
+Explicit `ExecStartPre` mkdir for `/run/hermes/cdb-engineer` (no systemd
+RuntimeDirectory / no PrivateTmp) so `ExecStartPost` chown to
+`hermes-cdb-engineer` sticks on the host path. Token file remains until explicit
+`systemctl stop hermes-github-token.service` (`ExecStopPost` removes it).
+
+
+
 Minimal dedicated App permission set (repo `jannekbuengener/Claire_de_Binare` only):
 
 - `contents: write`
