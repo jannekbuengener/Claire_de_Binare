@@ -16,7 +16,12 @@ from .batch_a_stage_a_survivor_scorer import (
     PESSIMISTIC_SCENARIO,
     score_stage_a_candidates,
 )
-from .batch_a_gate_common import median_of_field, positive_share, profit_factor_gate_value
+from .batch_a_gate_common import (
+    median_of_field,
+    positive_share,
+    profit_factor_gate_value,
+    record_is_rankable,
+)
 
 SCHEMA_VERSION = "batch_a_stage_a_failure_report.v1"
 
@@ -63,7 +68,9 @@ def _data_quality_status(records: Sequence[Mapping[str, Any]]) -> str:
     for record in records:
         for flag in record.get("data_quality_flags") or []:
             flags[str(flag)] += 1
-    if flags.get("warmup_provenance_missing") or flags.get("candles_evaluated_mismatch"):
+    if flags.get("warmup_provenance_missing") or flags.get(
+        "candles_evaluated_mismatch"
+    ):
         return "blocked"
     if flags.get("warmup_trim_applied"):
         return "warmup_trim_ok"
@@ -106,8 +113,9 @@ def _candidate_report(
         for pair in indexed.values()
         if PESSIMISTIC_SCENARIO in pair
     ]
-    rankable_baseline = sum(1 for r in baseline_rows if r.get("rankable"))
-    rankable_pessimistic = sum(1 for r in pessimistic_rows if r.get("rankable"))
+    # CDB-052: count only explicit rankable=True + bound provenance (no truthy soft-pass).
+    rankable_baseline = sum(1 for r in baseline_rows if record_is_rankable(r))
+    rankable_pessimistic = sum(1 for r in pessimistic_rows if record_is_rankable(r))
 
     coverage = scorer_result.get("coverage") or {}
     gate_results = scorer_result.get("gate_results") or {}
@@ -137,10 +145,14 @@ def _candidate_report(
         "pessimistic_rankable_share": coverage.get("pessimistic_rankable_share"),
         "rankable_baseline_windows": rankable_baseline,
         "rankable_pessimistic_windows": rankable_pessimistic,
-        "trade_count_total": sum(int(r.get("closed_trades_total") or 0) for r in baseline_rows),
+        "trade_count_total": sum(
+            int(r.get("closed_trades_total") or 0) for r in baseline_rows
+        ),
         "median_net_pnl_baseline": _median_net_pnl(baseline_rows),
         "median_net_pnl_pessimistic": _median_net_pnl(pessimistic_rows),
-        "positive_window_share_baseline": positive_share(baseline_rows, "net_pnl_quote"),
+        "positive_window_share_baseline": positive_share(
+            baseline_rows, "net_pnl_quote"
+        ),
         "positive_window_share_pessimistic": positive_share(
             pessimistic_rows, "net_pnl_quote"
         ),
@@ -198,7 +210,9 @@ def build_failure_report(
         for cid, result in sorted(scorer.items())
     ]
 
-    survivors = sum(1 for row in candidate_reports if row["final_status"] == "STAGE_A_SURVIVOR")
+    survivors = sum(
+        1 for row in candidate_reports if row["final_status"] == "STAGE_A_SURVIVOR"
+    )
     gate_fail_freq: Counter[str] = Counter()
     multi_cause = 0
     for row in candidate_reports:
@@ -246,7 +260,9 @@ def build_failure_report(
 
 
 def _parse_args(argv: Sequence[str] | None = None) -> argparse.Namespace:
-    parser = argparse.ArgumentParser(description="Batch-A Stage-A failure report (#4065)")
+    parser = argparse.ArgumentParser(
+        description="Batch-A Stage-A failure report (#4065)"
+    )
     parser.add_argument("--metrics", required=True)
     parser.add_argument("--before-summary", default=None)
     parser.add_argument("--before-hash", default=None)
@@ -289,10 +305,17 @@ def main(argv: Sequence[str] | None = None) -> int:
         metrics_content_hash_before=args.before_hash,
     )
     Path(args.output_json).parent.mkdir(parents=True, exist_ok=True)
-    Path(args.output_json).write_text(canonical_json_dumps(report) + "\n", encoding="utf-8")
+    Path(args.output_json).write_text(
+        canonical_json_dumps(report) + "\n", encoding="utf-8"
+    )
     if args.output_md:
         Path(args.output_md).write_text(_render_md(report), encoding="utf-8")
-    print(json.dumps({"exit_gate": report["exit_gate"], "content_hash": report["content_hash"]}, indent=2))
+    print(
+        json.dumps(
+            {"exit_gate": report["exit_gate"], "content_hash": report["content_hash"]},
+            indent=2,
+        )
+    )
     return 0
 
 

@@ -16,9 +16,7 @@ from tools.arvp_vacation.batch_a_stage_a_failure_report import (
 pytestmark = pytest.mark.unit
 
 REPO_ROOT = Path(__file__).resolve().parents[3]
-SCHEMA_PATH = (
-    REPO_ROOT / "docs/contracts/batch_a_stage_a_failure_report.v1.schema.json"
-)
+SCHEMA_PATH = REPO_ROOT / "docs/contracts/batch_a_stage_a_failure_report.v1.schema.json"
 BEFORE_SUMMARY = (
     REPO_ROOT / "docs/evidence/arvp_batch_a_stage_a_survivor_summary_4032.v1.json"
 )
@@ -45,6 +43,15 @@ def test_failure_report_has_ten_candidates(schema_validator: Draft7Validator) ->
     assert report["schema_version"] == SCHEMA_VERSION
     assert len(report["candidates"]) == 10
     assert report["survivor_count_after_fix"] == 0
-    assert report["aggregate"]["status_changed_by_4065_count"] >= 1
+    # CDB-052: historical recompute rows lack bound rankability provenance, so the
+    # scorer fail-closes uniformly to INSUFFICIENT_EVIDENCE. That can match the
+    # pre-#4065 summary and yield status_changed_by_4065_count == 0; the #4065
+    # delta is no longer a required observable under provenance enforcement.
+    assert "status_changed_by_4065_count" in report["aggregate"]
+    assert all(
+        row["final_status"] == "INSUFFICIENT_EVIDENCE" for row in report["candidates"]
+    )
+    assert all(row["rankable_baseline_windows"] == 0 for row in report["candidates"])
+    assert all(row["rankable_pessimistic_windows"] == 0 for row in report["candidates"])
     errors = list(schema_validator.iter_errors(report))
     assert not errors, [error.message for error in errors]
