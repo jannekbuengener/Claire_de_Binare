@@ -102,6 +102,12 @@ binding when used as a campaign manifest.
 - No paper / runtime / live / echtgeld paths
 - Closing `#4153` requires the full campaign acceptance criteria, not preflight alone
 
+## Execution contract (follow-on)
+
+Separate Owner-GO + runner contract: docs/strategy/CDB_SENSITIVITY_CAMPAIGN_EXECUTION_CONTRACT_V1.md.
+CLI: python -m tools.arvp_vacation.sensitivity_campaign_runner plan|validate-authorization|execute.
+Manifest READY ≠ Campaign-GO. Authorization schema: cdb.sensitivity_campaign_execution_authorization.v1.
+
 ## Related
 
 - Parent: `#4147`

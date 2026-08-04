@@ -31,6 +31,7 @@
     "holdout_denylist",
     "explicit_bans",
     "execution_mode",
+    "authorization_policy",
     "output_contract",
     "owner_ratification",
     "lr_status",
@@ -521,6 +522,38 @@
       }
     },
     "execution_mode": { "const": "replay_only" },
+    "authorization_policy": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "schema_version",
+        "requires_external_owner_go",
+        "authorization_schema",
+        "conditionally_authorizable_capabilities",
+        "absolute_bans"
+      ],
+      "properties": {
+        "schema_version": {
+          "const": "cdb.sensitivity_campaign_authorization_policy.v1"
+        },
+        "requires_external_owner_go": { "const": true },
+        "authorization_schema": {
+          "const": "cdb.sensitivity_campaign_execution_authorization.v1"
+        },
+        "conditionally_authorizable_capabilities": {
+          "type": "array",
+          "minItems": 1,
+          "maxItems": 1,
+          "items": { "const": "campaign_execution" }
+        },
+        "absolute_bans": {
+          "type": "array",
+          "minItems": 1,
+          "items": { "type": "string", "minLength": 1 }
+        },
+        "notes": { "type": "string" }
+      }
+    },
     "output_contract": {
       "type": "object",
       "additionalProperties": false,
@@ -530,7 +563,7 @@
           "const": "artifacts/arvp_sensitivity/4153"
         },
         "artifact_root_template": {
-          "const": "artifacts/arvp_sensitivity/4153/{campaign_id}"
+          "const": "artifacts/arvp_sensitivity/4153/{campaign_id}/{manifest_fingerprint}/{authorization_id}"
         },
         "notes": { "type": "string" }
       }

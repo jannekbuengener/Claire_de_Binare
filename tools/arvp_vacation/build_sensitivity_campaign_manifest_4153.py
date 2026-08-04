@@ -13,6 +13,9 @@ from tools.arvp_vacation.batch_a_gate_common import (
     compute_gate_contract_sha256,
     load_json_contract,
 )
+from tools.arvp_vacation.sensitivity_campaign_authorization import (
+    authorization_policy_defaults,
+)
 from tools.arvp_vacation.sensitivity_campaign_grid import (
     EXPECTED_RUN_COUNT,
     EXPECTED_UNIQUE_VARIANTS,
@@ -234,11 +237,16 @@ def main() -> int:
             "campaign_execution": True,
         },
         "execution_mode": "replay_only",
+        "authorization_policy": authorization_policy_defaults(),
         "output_contract": {
             "evidence_namespace": "artifacts/arvp_sensitivity/4153",
-            "artifact_root_template": "artifacts/arvp_sensitivity/4153/{campaign_id}",
+            "artifact_root_template": (
+                "artifacts/arvp_sensitivity/4153/{campaign_id}/"
+                "{manifest_fingerprint}/{authorization_id}"
+            ),
             "notes": (
-                "Namespace reserved for a future Owner Campaign-GO session; "
+                "Namespace isolates campaign_id, manifest_fingerprint, and "
+                "authorization_id. Reserved until a live-verified Owner-GO; "
                 "this slice does not create run artifacts."
             ),
         },
