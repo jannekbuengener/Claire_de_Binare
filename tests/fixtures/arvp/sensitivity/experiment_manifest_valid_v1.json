@@ -116,7 +116,7 @@
   },
   "issue_ref": "#4153",
   "lr_status": "NO-GO",
-  "manifest_fingerprint": "9efd7cbe8490a8f809181adb704c4a286e752273d1e0db77a2ae18a2f6b82256",
+  "manifest_fingerprint": "b930b4f83707318886bbafa9e01f6e2718833d5e89412a7f965995aa729a3c95",
   "parameter_control": {
     "policy_schema_version": "cdb.parameter_control_policy.register.v1",
     "register_fingerprint": "81d99cc8a768be4bb7b8f96b57839890b5d8e685e362e416b12e514e436a82b6"
