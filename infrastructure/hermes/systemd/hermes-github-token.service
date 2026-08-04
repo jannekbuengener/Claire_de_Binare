@@ -22,17 +22,14 @@ Environment=HERMES_GH_APP_PRIVATE_KEY_PATH=/etc/hermes/secrets/cdb-hermes-engine
 EnvironmentFile=-/etc/hermes/cdb-engineer.env
 # Mint writes ONLY to the isolated runtime path; never stdout, never profiles.
 ExecStart=/usr/bin/python3 -m tools.hermes_ops mint-token --profile cdb-engineer --token-file /run/hermes/cdb-engineer/token
-# Belt-and-suspenders ownership (mint also chowns when euid==0). "+" bypasses
-# NoNewPrivileges/sandbox limits that blocked plain ExecStartPost chown.
-ExecStartPost=+/bin/chown hermes-cdb-engineer:hermes-cdb-engineer /run/hermes/cdb-engineer /run/hermes/cdb-engineer/token
+# Full-privilege ownership handoff (sandbox would keep root:root 0700 otherwise).
+ExecStartPost=+/bin/chown -R hermes-cdb-engineer:hermes-cdb-engineer /run/hermes/cdb-engineer
 ExecStartPost=+/bin/chmod 0700 /run/hermes/cdb-engineer
 ExecStartPost=+/bin/chmod 0600 /run/hermes/cdb-engineer/token
 # Drop token on explicit stop (RemainAfterExit keeps it through mint success).
 ExecStopPost=+/bin/rm -f /run/hermes/cdb-engineer/token
-# Root oneshot must retain CAP_CHOWN to hand /run token to hermes-cdb-engineer.
-# NoNewPrivileges would block both mint-time chown and plain ExecStartPost.
-ProtectSystem=strict
-ProtectHome=true
+# Intentionally not using NoNewPrivileges/ProtectSystem: root mint must CAP_CHOWN
+# the /run token to hermes-cdb-engineer. PEM stays root:root 0600 via path mode.
 PrivateTmp=true
 ReadOnlyPaths=/etc/hermes/secrets
 ReadWritePaths=/run/hermes/cdb-engineer

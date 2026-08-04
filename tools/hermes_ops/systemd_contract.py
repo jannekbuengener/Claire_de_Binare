@@ -88,7 +88,7 @@ def validate_broker_unit(path: Path | None = None) -> list[str]:
         "mint-token",
         "--profile cdb-engineer",
         "ExecStopPost=+/bin/rm -f /run/hermes/cdb-engineer/token",
-        "ExecStartPost=+/bin/chown hermes-cdb-engineer:hermes-cdb-engineer",
+        "ExecStartPost=+/bin/chown -R hermes-cdb-engineer:hermes-cdb-engineer",
     )
     for snippet in required:
         if snippet not in text:
