@@ -35,7 +35,13 @@
     },
     "dataset_fingerprint": {
       "type": "string",
-      "pattern": "^sha256:[a-f0-9]{64}$"
+      "pattern": "^sha256:[a-f0-9]{64}$",
+      "description": "Legacy report field. Prefer content_fingerprint for DQ reuse (CDB-050)."
+    },
+    "content_fingerprint": {
+      "type": "string",
+      "pattern": "^[a-f0-9]{64}$",
+      "description": "SHA-256 hex of actual dataset content identity (cdb.dataset_content_identity.v1)."
     },
     "generated_at": {
       "type": "string",

@@ -17,8 +17,11 @@ from dataclasses import dataclass
 from datetime import UTC, datetime
 from decimal import Decimal, InvalidOperation
 from pathlib import Path
-from typing import Any, Callable, Sequence
+from typing import Any, Callable, Mapping, Sequence
 
+from core.replay.dataset_identity import (
+    content_fingerprint as compute_content_fingerprint,
+)
 from core.replay.dataset_provider import FileBackedDatasetProvider
 from core.replay.dataset_spec import DatasetSpec
 from core.utils.clock import Clock, utcnow
@@ -252,14 +255,10 @@ class HttpFetcher:
         body, headers = self._fetch(url)
         content_type = headers.get("Content-Type")
         if content_type and "text/html" in content_type.lower():
-            raise HistoricalProbeError(
-                f"Refusing HTML market-data payload from {url}"
-            )
+            raise HistoricalProbeError(f"Refusing HTML market-data payload from {url}")
         text_probe = body[:512].decode("utf-8", errors="ignore")
         if _looks_like_html(text_probe) or _looks_like_login(text_probe):
-            raise HistoricalProbeError(
-                f"Refusing non-market-data payload from {url}"
-            )
+            raise HistoricalProbeError(f"Refusing non-market-data payload from {url}")
 
         digest = hashlib.sha256()
         partial.parent.mkdir(parents=True, exist_ok=True)
@@ -436,6 +435,46 @@ def detect_gaps(
     }
 
 
+def content_fingerprint_for_normalized(
+    candles: Sequence[NormalizedCandle],
+) -> str:
+    """Content identity for NormalizedCandle rows (CDB-050)."""
+    rows = [
+        {
+            "ts_ms": c.ts_ms,
+            "open": c.open,
+            "high": c.high,
+            "low": c.low,
+            "close": c.close,
+            "volume": c.volume,
+        }
+        for c in candles
+    ]
+    return compute_content_fingerprint(rows)
+
+
+def assert_dq_content_binding(
+    report: Mapping[str, Any],
+    *,
+    content_fingerprint: str,
+) -> None:
+    """Fail-closed: DQ verdict must bind to the actual content identity (CDB-050)."""
+    if not isinstance(content_fingerprint, str) or not content_fingerprint.strip():
+        raise HistoricalProbeError(
+            "DQ content binding requires a non-empty content_fingerprint"
+        )
+    bound = report.get("content_fingerprint")
+    if not isinstance(bound, str) or not bound.strip():
+        raise HistoricalProbeError(
+            "DQ verdict missing content_fingerprint binding; not applicable"
+        )
+    if bound != content_fingerprint:
+        raise HistoricalProbeError(
+            "DQ verdict content_fingerprint is stale or mismatched; "
+            "verdict is not applicable to this dataset content"
+        )
+
+
 def build_quality_report(
     candles: Sequence[NormalizedCandle],
     *,
@@ -444,7 +483,19 @@ def build_quality_report(
     step_ms: int,
     source_hash: str,
     second_parse_hash: str | None = None,
+    content_fingerprint: str | None = None,
 ) -> dict[str, Any]:
+    """Build DQ report bound to actual content identity (CDB-050).
+
+    ``source_hash`` remains the import/source-bytes hash. Rankability and
+    reuse must bind via ``content_fingerprint`` of the examined candle content.
+    Request fingerprints alone are never sufficient.
+    """
+    computed_content_fp = content_fingerprint_for_normalized(candles)
+    if content_fingerprint is not None and content_fingerprint != computed_content_fp:
+        raise HistoricalProbeError(
+            "provided content_fingerprint does not match examined candle content"
+        )
     dupes = detect_duplicates(candles)
     gaps = detect_gaps(
         candles, start_ts_ms=start_ts_ms, end_ts_ms=end_ts_ms, step_ms=step_ms
@@ -453,8 +504,7 @@ def build_quality_report(
     now_ms = int(Clock.now() * 1000)
     future_rows = [c.ts_ms for c in candles if c.ts_ms > now_ms]
     monotonic = all(
-        candles[idx].ts_ms < candles[idx + 1].ts_ms
-        for idx in range(len(candles) - 1)
+        candles[idx].ts_ms < candles[idx + 1].ts_ms for idx in range(len(candles) - 1)
     )
     verdict = "SOURCE_INVALID"
     if candles and monotonic and not future_rows:
@@ -478,6 +528,8 @@ def build_quality_report(
         "source_hash": source_hash,
         "second_parse_hash": second_parse_hash,
         "hash_stable": second_parse_hash is None or second_parse_hash == source_hash,
+        "content_fingerprint": computed_content_fp,
+        "content_binding_schema": "cdb.dq_content_binding.v1",
     }
     if verdict not in QUALITY_VERDICTS:
         raise HistoricalProbeError(f"Invalid quality verdict: {verdict}")
@@ -608,7 +660,11 @@ def rest_crosscheck(
                         str(raw[7]) if len(raw) > 7 else "",
                     ),
                     "trade_count": _compare_field(
-                        str(archive.trade_count) if archive.trade_count is not None else "",
+                        (
+                            str(archive.trade_count)
+                            if archive.trade_count is not None
+                            else ""
+                        ),
                         str(raw[8]) if len(raw) > 8 else "",
                     ),
                 }

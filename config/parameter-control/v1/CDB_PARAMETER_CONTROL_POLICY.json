@@ -73,7 +73,7 @@
   },
   "rule_count": 56,
   "unresolved_count": 0,
-  "register_fingerprint": "fdb449b05418d4a13813f7cf06c491f2160de8e96ce3d61480cc6ba55c02afa1",
+  "register_fingerprint": "fec8a7f5baf3c801aae943079ee443fd30dda6d4e0274ee628b712e218d40a5a",
   "rules": [
     {
       "parameter_id": "CDB-001",
@@ -4428,22 +4428,22 @@
       "analysis": {
         "source_commit": "224cfd49398b329b315781372658fab1fbf15362",
         "effect": "Begrenzt und validiert Replay-Dataset; File Provider prueft angeforderten Zeitraum nicht selbst.",
-        "finding": "aktiv plus File-Window-Luecke",
+        "finding": "geschlossen via #4336 / PR #4338 — File/DB exact-window, warmup, cadence fail-closed",
         "dependencies": [
           "Strategie-Warmup",
           "Scheduler"
         ],
         "change_risk": "hoch",
         "suitability": "mittel",
-        "compact_decision": "CONDITIONAL_AFTER_EVIDENCE",
+        "compact_decision": "CLOSED_CORRECTNESS",
         "blocked_by_issues": [
-          4151,
-          4153
+          4336
         ],
         "evidence_notes": [
           "Window-Manifest",
           "File-/DB-Parität",
-          "Content-Fingerprint"
+          "Content-Fingerprint",
+          "enforce_exact_window"
         ],
         "name_drift": null,
         "may_change_compact": true
@@ -4520,8 +4520,8 @@
       "lifecycle_status": "implicit",
       "analysis": {
         "source_commit": "224cfd49398b329b315781372658fab1fbf15362",
-        "effect": "Request-Hash kann trotz veraenderter Datei gleich bleiben; hash_stable beeinflusst den DQ-Verdict nicht.",
-        "finding": "Kontrollluecke",
+        "effect": "DQ-Verdict bindet an content_fingerprint der geprüften Candle-Serie; Request-Hash allein reicht nicht.",
+        "finding": "geschlossen via #4336 — DQ content binding fail-closed",
         "dependencies": [
           "Provenance",
           "Rankability",
@@ -4529,13 +4529,14 @@
         ],
         "change_risk": "hoch",
         "suitability": "keine direkte Optimierung",
-        "compact_decision": "CORRECTNESS_FIX_ONLY",
+        "compact_decision": "CLOSED_CORRECTNESS",
         "blocked_by_issues": [
-          4151
+          4336
         ],
         "evidence_notes": [
           "Content-Hash-Reconciliation",
-          "DQ-Bindung an tatsächliche Daten"
+          "DQ-Bindung an tatsächliche Daten",
+          "assert_dq_content_binding"
         ],
         "name_drift": null,
         "may_change_compact": true
@@ -4614,8 +4615,8 @@
       "lifecycle_status": "implicit",
       "analysis": {
         "source_commit": "224cfd49398b329b315781372658fab1fbf15362",
-        "effect": "Out-of-order Tick kann OHLC aendern; fehlende Minuten werden nicht erzeugt; Replay ersetzt Missing Regime durch TREND.",
-        "finding": "Runtime permissiver; Regime-Fallback divergiert",
+        "effect": "Replay fail-closed fuer Gap/Dup/OOO/Cadence; Runtime-Candles-Asymmetrie versioniert dokumentiert ohne Runtime-Mutation.",
+        "finding": "geschlossen via #4336 — Integrity-Rules + Replay-vs-Runtime Vertrag",
         "dependencies": [
           "Signal",
           "Regime",
@@ -4623,15 +4624,15 @@
         ],
         "change_risk": "hoch",
         "suitability": "keine",
-        "compact_decision": "CORRECTNESS_FIX_ONLY",
+        "compact_decision": "CLOSED_CORRECTNESS",
         "blocked_by_issues": [
-          4149,
-          4151
+          4336
         ],
         "evidence_notes": [
           "Out-of-order-Tests",
           "Gap-Tests",
-          "Replay-vs-Runtime-Parität"
+          "Replay-vs-Runtime-Parität",
+          "cdb.dataset_integrity_rules.v1"
         ],
         "name_drift": null,
         "may_change_compact": true
@@ -4664,7 +4665,7 @@
         "Stage A/B"
       ],
       "effective_default": {
-        "value": "fail-closed bei Missing/Mismatch; Manifest-Fallback vorhanden",
+        "value": "fail-closed bei Missing/Mismatch; kein stiller Manifest-Fallback",
         "source_commit": "224cfd49398b329b315781372658fab1fbf15362",
         "verification": "historical_extract; paths re-verified on origin/main",
         "main_path_status": "paths_resolved"
@@ -4679,7 +4680,7 @@
       "allowed_range": "fest",
       "main_class": "DATA_QUALITY_CONTROL",
       "technical_adjustability": "CONFIG_ONLY",
-      "change_authority": "FROZEN_UNTIL_CONTRACT",
+      "change_authority": "RESEARCH_ALLOWED",
       "context_validity": {
         "allowed": [
           "docs",
@@ -4708,24 +4709,25 @@
       "lifecycle_status": "active",
       "analysis": {
         "source_commit": "224cfd49398b329b315781372658fab1fbf15362",
-        "effect": "Entscheidet, ob ein Fenster gerankt werden darf.",
-        "finding": "aktiv",
+        "effect": "Rankability verlangt aktuelle Warmup- und Content-Provenance; stiller Manifest-Fallback ist blockiert.",
+        "finding": "geschlossen via #4336 — fail-closed Rankability/Warmup Provenance",
         "dependencies": [
           "Stage A/B"
         ],
         "change_risk": "mittel",
         "suitability": "niedrig",
-        "compact_decision": "FROZEN_UNTIL_CONTRACT",
+        "compact_decision": "CLOSED_CORRECTNESS",
         "blocked_by_issues": [
-          4151
+          4336
         ],
         "evidence_notes": [
           "stale-manifest negative tests",
           "Warmup-Provenance",
-          "Content-Fingerprint"
+          "Content-Fingerprint",
+          "stale_manifest_fallback_blocked"
         ],
         "name_drift": null,
-        "may_change_compact": false
+        "may_change_compact": true
       }
     },
     {
