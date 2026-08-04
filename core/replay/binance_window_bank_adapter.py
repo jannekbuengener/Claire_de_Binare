@@ -37,7 +37,11 @@ BATCH_A_WINDOW_BANK_ROOT = "artifacts/market_data/window_bank/binance/spot/BTCUS
 
 
 class BinanceWindowBankAdapterError(ValueError):
-    """Fail-closed Binance window-bank adapter error."""
+    """Fail-closed Binance window-bank adapter error (optional CDB-051/050 code)."""
+
+    def __init__(self, message: str, *, code: str | None = None) -> None:
+        super().__init__(message)
+        self.code = code
 
 
 @dataclass(frozen=True, slots=True)
@@ -189,7 +193,8 @@ def _enforce_window_dq_content_binding(
         raise BinanceWindowBankAdapterError(
             f"window {window_id!r} DQ content binding failed"
             + (f" [{exc.code}]" if getattr(exc, "code", None) else "")
-            + f": {exc}"
+            + f": {exc}",
+            code=getattr(exc, "code", None),
         ) from exc
 
 
@@ -285,7 +290,7 @@ def load_binance_window_dataset(
     try:
         dataset_result = provider.load(dataset_spec)
     except DatasetLoadError as exc:
-        raise BinanceWindowBankAdapterError(str(exc)) from exc
+        raise BinanceWindowBankAdapterError(str(exc), code=exc.code) from exc
 
     return BinanceWindowDataset(
         ref=ref,

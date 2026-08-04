@@ -34,7 +34,10 @@ from pathlib import Path
 from typing import Protocol, Sequence
 
 from core.replay.dataset_identity import content_fingerprint, request_fingerprint
-from core.replay.dataset_integrity_rules import assert_replay_integrity
+from core.replay.dataset_integrity_rules import (
+    IntegrityError,
+    assert_replay_integrity,
+)
 from core.replay.dataset_spec import (
     DatasetSpec,
     DatasetSpecError as DatasetSpecError,
@@ -50,6 +53,7 @@ __all__ = [
     "is_file_discover_window",
     "warmup_start_ms",
     "enforce_exact_window",
+    "enforce_replay_integrity",
 ]
 
 _REQUIRED_CANDLE_FIELDS: frozenset[str] = frozenset({"ts_ms", "high", "low", "close"})
@@ -114,7 +118,14 @@ def enforce_exact_window(
 
 
 class DatasetLoadError(ValueError):
-    """Raised when a dataset cannot be loaded or fails data-shape validation."""
+    """Raised when a dataset cannot be loaded or fails data-shape validation.
+
+    Optional ``code`` preserves CDB-051 integrity root causes through consumers.
+    """
+
+    def __init__(self, message: str, *, code: str | None = None) -> None:
+        super().__init__(message)
+        self.code = code
 
 
 @dataclass(frozen=True, slots=True)
@@ -150,35 +161,65 @@ class DatasetProvider(Protocol):
         pass
 
 
-def _enforce_replay_integrity(candles: list[dict], source_label: str) -> None:
-    """Fail-closed Gap/Dup/OOO/Cadence gate with machine-readable codes (CDB-051)."""
+def enforce_replay_integrity(
+    candles: list[dict],
+    source_label: str,
+    *,
+    spec: DatasetSpec | None = None,
+) -> None:
+    """Public CDB-051 integrity gate (delegates to shared fail-closed helper)."""
+    _enforce_replay_integrity(candles, source_label, spec=spec)
+
+
+def _enforce_replay_integrity(
+    candles: list[dict],
+    source_label: str,
+    *,
+    spec: DatasetSpec | None = None,
+) -> None:
+    """Fail-closed Gap/Dup/OOO/Cadence gate with machine-readable codes (CDB-051).
+
+    When ``spec`` is provided and is not the file-discover sentinel, gap /
+    incomplete-window checks bind to the final warmup→end window from the spec
+    (CDB-049 live window + warmup prefix). Otherwise the contiguous series
+    bounds are used (discover path).
+    """
     if not candles:
-        raise DatasetLoadError(f"No candles in dataset: {source_label}")
+        raise DatasetLoadError(
+            f"No candles in dataset: {source_label}",
+            code="EMPTY_SERIES",
+        )
+    if spec is not None and not is_file_discover_window(spec):
+        start_ts_ms = warmup_start_ms(spec)
+        end_ts_ms = int(spec.end_ts_ms)
+    else:
+        start_ts_ms = int(candles[0]["ts_ms"])
+        end_ts_ms = int(candles[-1]["ts_ms"])
     try:
         assert_replay_integrity(
             candles,
-            start_ts_ms=int(candles[0]["ts_ms"]),
-            end_ts_ms=int(candles[-1]["ts_ms"]),
+            start_ts_ms=start_ts_ms,
+            end_ts_ms=end_ts_ms,
             step_ms=_ONE_MINUTE_MS,
         )
-    except ValueError as exc:
-        raise DatasetLoadError(f"{exc} Source: {source_label}") from exc
+    except IntegrityError as exc:
+        raise DatasetLoadError(
+            f"{exc} Source: {source_label}",
+            code=exc.code,
+        ) from exc
 
 
 def _validate_candle_series(candles: list[dict], source_label: str) -> None:
-    """Validate a candle series for shape, ordering, and 1-minute cadence.
+    """Validate required candle fields (shape only).
 
-    Shared by all providers. ``source_label`` is included in error messages
-    for diagnostic clarity (e.g. ``str(file_path)`` or ``"db:BTCUSDT"``).
-
-    Checks (in order):
-      - Non-empty series
-      - All ``_REQUIRED_CANDLE_FIELDS`` present and non-None in every row
-      - ``ts_ms`` strictly increasing across consecutive rows
-      - Exactly ``_ONE_MINUTE_MS`` (60 000 ms) gap between consecutive rows
+    Ordering, duplicates, gaps, and cadence are owned by CDB-051
+    ``_enforce_replay_integrity`` so root-cause codes stay machine-readable.
     """
     if not candles:
-        raise DatasetLoadError(f"No candles in dataset: {source_label}")
+        raise DatasetLoadError(
+            f"No candles in dataset: {source_label}",
+            code="EMPTY_SERIES",
+        )
 
     for idx, candle in enumerate(candles):
         missing = _REQUIRED_CANDLE_FIELDS - candle.keys()
@@ -193,23 +234,6 @@ def _validate_candle_series(candles: list[dict], source_label: str) -> None:
                     f"Candle at index {idx} has None value for required field "
                     f"{key!r}: {candle!r}"
                 )
-
-    for idx in range(1, len(candles)):
-        prev_ts = candles[idx - 1]["ts_ms"]
-        curr_ts = candles[idx]["ts_ms"]
-        if curr_ts <= prev_ts:
-            raise DatasetLoadError(
-                f"ts_ms must be strictly increasing: "
-                f"candle[{idx - 1}]={prev_ts}, candle[{idx}]={curr_ts}. "
-                f"Source: {source_label}"
-            )
-        delta = curr_ts - prev_ts
-        if delta != _ONE_MINUTE_MS:
-            raise DatasetLoadError(
-                f"1m cadence violation: expected {_ONE_MINUTE_MS}ms gap, "
-                f"got {delta}ms between candle[{idx - 1}] (ts={prev_ts}) "
-                f"and candle[{idx}] (ts={curr_ts}). Source: {source_label}"
-            )
 
 
 class FileBackedDatasetProvider:
@@ -256,6 +280,7 @@ class FileBackedDatasetProvider:
         candles = self._parse(raw, file_path)
         source_label = str(file_path)
         _validate_candle_series(candles, source_label)
+        # CDB-051 series-local (OOO/dup/cadence) before CDB-049 edge equality.
         _enforce_replay_integrity(candles, source_label)
 
         if is_file_discover_window(spec):
@@ -264,10 +289,13 @@ class FileBackedDatasetProvider:
                 raise DatasetLoadError(
                     f"Insufficient candles: {len(candles)} total, "
                     f"{spec.warmup_candles} warmup required. "
-                    f"Need at least {spec.warmup_candles + 1} candles."
+                    f"Need at least {spec.warmup_candles + 1} candles.",
+                    code="INCOMPLETE_WINDOW",
                 )
         else:
             enforce_exact_window(candles, spec, source_label)
+            # CDB-051 Spec-window gap/incomplete bind after CDB-049 edges pass.
+            _enforce_replay_integrity(candles, source_label, spec=spec)
 
         loaded = tuple(dict(c) for c in candles)
         req_fp = request_fingerprint(spec)
@@ -422,6 +450,7 @@ class DBBackedDatasetProvider:
         _validate_candle_series(candles, source_label=source_label)
         _enforce_replay_integrity(candles, source_label)
         enforce_exact_window(candles, spec, source_label)
+        _enforce_replay_integrity(candles, source_label, spec=spec)
 
         loaded = tuple(dict(c) for c in candles)
         req_fp = request_fingerprint(spec)

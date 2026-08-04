@@ -400,7 +400,7 @@ def test_file_backed_missing_ts_ms_field_raises(tmp_path: object) -> None:
 
 @pytest.mark.unit
 def test_file_backed_duplicate_ts_ms_raises(tmp_path: object) -> None:
-    """Duplicate ts_ms values violate strictly-increasing invariant."""
+    """Duplicate ts_ms values violate CDB-051 integrity (root code preserved)."""
     candles = _make_candles(5)
     candles[3]["ts_ms"] = candles[2][
         "ts_ms"
@@ -408,8 +408,9 @@ def test_file_backed_duplicate_ts_ms_raises(tmp_path: object) -> None:
     f = tmp_path / "data.json"
     f.write_text(json.dumps(candles), encoding="utf-8")
     spec = _make_spec(file_path=str(f))
-    with pytest.raises(DatasetLoadError, match="strictly increasing"):
+    with pytest.raises(DatasetLoadError, match="DUPLICATE") as excinfo:
         FileBackedDatasetProvider().load(spec)
+    assert excinfo.value.code in {"DUPLICATE_IDENTICAL", "DUPLICATE_CONFLICTING"}
 
 
 @pytest.mark.unit
@@ -419,8 +420,9 @@ def test_file_backed_non_1m_cadence_raises(tmp_path: object) -> None:
     f = tmp_path / "data.json"
     f.write_text(json.dumps(candles), encoding="utf-8")
     spec = _make_spec(file_path=str(f))
-    with pytest.raises(DatasetLoadError, match="1m cadence"):
+    with pytest.raises(DatasetLoadError, match="CADENCE_VIOLATION|GAP") as excinfo:
         FileBackedDatasetProvider().load(spec)
+    assert excinfo.value.code in {"CADENCE_VIOLATION", "GAP", "INCOMPLETE_WINDOW"}
 
 
 @pytest.mark.unit
@@ -585,8 +587,9 @@ def test_db_backed_cadence_violation_raises() -> None:
     rows = rows[:5] + [tuple(broken)] + rows[6:]
     conn = _make_mock_conn(rows)
     spec = _make_db_spec()
-    with pytest.raises(DatasetLoadError, match="1m cadence"):
+    with pytest.raises(DatasetLoadError, match="CADENCE_VIOLATION|GAP") as excinfo:
         DBBackedDatasetProvider(conn).load(spec)
+    assert excinfo.value.code in {"CADENCE_VIOLATION", "GAP", "INCOMPLETE_WINDOW"}
 
 
 @pytest.mark.unit

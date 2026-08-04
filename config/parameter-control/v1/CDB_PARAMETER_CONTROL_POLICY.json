@@ -73,7 +73,7 @@
   },
   "rule_count": 56,
   "unresolved_count": 0,
-  "register_fingerprint": "772823d0bc0401ec4adfc82dddb7c70f023c74bc506695366fca4fd9453833a7",
+  "register_fingerprint": "81d99cc8a768be4bb7b8f96b57839890b5d8e685e362e416b12e514e436a82b6",
   "rules": [
     {
       "parameter_id": "CDB-001",
@@ -4567,21 +4567,25 @@
         "id": "domain:replay",
         "derivation": "system_area=Runtime/Replay; SERVICE_CATALOG/path ownership convention",
         "evidence": [
-          "services/candles/service.py",
-          "services/candles/config.py",
-          "services/market/service.py"
+          "core/replay/dataset_integrity_rules.py",
+          "core/replay/dataset_provider.py",
+          "services/validation/strategy_replay_runner.py"
         ]
       },
       "repository_paths": [
-        "services/candles/service.py",
-        "services/candles/config.py",
-        "services/market/service.py",
-        "core/replay/dataset_provider.py"
+        "core/replay/dataset_integrity_rules.py",
+        "core/replay/dataset_provider.py",
+        "core/replay/binance_window_bank_adapter.py",
+        "services/validation/strategy_replay_runner.py",
+        "docs/contracts/REPLAY_VS_RUNTIME_DATASET_INTEGRITY_CDB051.md",
+        "tests/unit/replay/test_dataset_integrity_rules_cdb051.py"
       ],
       "consumers": [
         "Signal",
         "Regime",
-        "Risk"
+        "Risk",
+        "Strategy Replay Runner",
+        "Dataset Provider"
       ],
       "effective_default": {
         "value": "wie genannt",
@@ -4626,8 +4630,8 @@
       "lifecycle_status": "implicit",
       "analysis": {
         "source_commit": "224cfd49398b329b315781372658fab1fbf15362",
-        "effect": "Replay fail-closed fuer Gap/Dup/OOO/Cadence; Runtime-Candles-Asymmetrie versioniert dokumentiert ohne Runtime-Mutation.",
-        "finding": "geschlossen via #4336 — Integrity-Rules + Replay-vs-Runtime Vertrag",
+        "effect": "Replay fail-closed Gap/Dup/OOO/Cadence/Incomplete-Window with preserved root reason codes bound to final DatasetSpec window; Runtime asymmetry versioned (no parity claim) via cdb.replay_vs_runtime_data_rules.v1.",
+        "finding": "CDB-051 Forward-Fix in flight via #4336 — IntegrityError/DatasetLoadError.code propagation + Spec-window binding + executable asymmetry tests; not closed on main until merge",
         "dependencies": [
           "Signal",
           "Regime",
@@ -4635,15 +4639,17 @@
         ],
         "change_risk": "hoch",
         "suitability": "keine",
-        "compact_decision": "CLOSED_CORRECTNESS",
+        "compact_decision": "CORRECTNESS_FIX_ONLY",
         "blocked_by_issues": [
           4336
         ],
         "evidence_notes": [
-          "Out-of-order-Tests",
-          "Gap-Tests",
-          "Replay-vs-Runtime-Parität",
-          "cdb.dataset_integrity_rules.v1"
+          "assert_replay_integrity / IntegrityError.code",
+          "enforce_replay_integrity Spec-window binding",
+          "ReplayRunnerError.code / BinanceWindowBankAdapterError.code",
+          "ROOT_CAUSE_PRIORITY",
+          "test_cdb051_executable_runtime_asymmetry_ooo",
+          "cdb.replay_vs_runtime_data_rules.v1 asymmetric"
         ],
         "name_drift": null,
         "may_change_compact": true
