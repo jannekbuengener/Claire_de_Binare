@@ -70,3 +70,11 @@ Target status: DONE_HERMES_GITHUB_APP_CANARY_PR_OPEN
 - LR remains NO-GO
 - App 4480891 is not Live/Echtgeld/merge-bypass/CI publisher
 - App 4410232 remains cdb-local-ci only
+
+## Follow-up hop (PR #4344 lifecycle)
+
+- Broker unit: `RemainAfterExit=yes` + `ExecStopPost` token rm (token stays for work session; cleared on explicit stop)
+- Unit tests: `tests/unit/hermes_ops/test_token_broker_lifecycle_4344.py`
+- Live App installation `repository_selection`: still **`all`** → `HOLD_HERMES_REPOSITORY_SELECTION`
+  - Owner manual step: GitHub → Settings → Applications → Installed GitHub Apps → **app.HERMES** → Configure → Repository access → **Only select repositories** → select only `Claire_de_Binare` → Save
+  - Install URL shortcut: https://github.com/settings/installations/151136371

@@ -79,6 +79,7 @@ def validate_broker_unit(path: Path | None = None) -> list[str]:
     text = unit.read_text(encoding="utf-8")
     required = (
         "Type=oneshot",
+        "RemainAfterExit=yes",
         "User=root",
         "RuntimeDirectory=hermes/cdb-engineer",
         "RuntimeDirectoryMode=0700",
@@ -86,6 +87,7 @@ def validate_broker_unit(path: Path | None = None) -> list[str]:
         "hermes-cdb-engineer",
         "mint-token",
         "--profile cdb-engineer",
+        "ExecStopPost=/bin/rm -f /run/hermes/cdb-engineer/token",
     )
     for snippet in required:
         if snippet not in text:

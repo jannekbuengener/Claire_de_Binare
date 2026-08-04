@@ -8,6 +8,9 @@ ConditionPathExists=/etc/hermes/secrets/cdb-hermes-engineer.pem
 
 [Service]
 Type=oneshot
+# Keep the unit active after mint so RuntimeDirectory and /run token remain
+# available for the Hermes work session until an explicit systemctl stop.
+RemainAfterExit=yes
 User=root
 Group=root
 # Ephemeral runtime dir; lost on reboot. Ownership forced to engineer UID after mint.
@@ -23,7 +26,7 @@ ExecStart=/usr/bin/python3 -m tools.hermes_ops mint-token --profile cdb-engineer
 ExecStartPost=/bin/chown hermes-cdb-engineer:hermes-cdb-engineer /run/hermes/cdb-engineer /run/hermes/cdb-engineer/token
 ExecStartPost=/bin/chmod 0700 /run/hermes/cdb-engineer
 ExecStartPost=/bin/chmod 0600 /run/hermes/cdb-engineer/token
-# Drop token on stop.
+# Drop token on explicit stop (RemainAfterExit keeps it through mint success).
 ExecStopPost=/bin/rm -f /run/hermes/cdb-engineer/token
 NoNewPrivileges=true
 ProtectSystem=strict
