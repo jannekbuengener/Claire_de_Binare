@@ -8,29 +8,32 @@ ConditionPathExists=/etc/hermes/secrets/cdb-hermes-engineer.pem
 
 [Service]
 Type=oneshot
+# Keep the unit active after mint so /run token remains available for the
+# Hermes work session until an explicit systemctl stop.
+RemainAfterExit=yes
 User=root
 Group=root
-# Ephemeral runtime dir; lost on reboot. Ownership forced to engineer UID after mint.
-RuntimeDirectory=hermes/cdb-engineer
-RuntimeDirectoryMode=0700
+# Do NOT use systemd RuntimeDirectory with User=root: the dir stays
+# root:root 0700, and PrivateTmp/PrivateMounts made ExecStartPost chown
+# report success while the host path stayed root-only (engineer EACCES).
+# Manage /run explicitly so ownership handoff is visible on the real path.
+ExecStartPre=+/bin/mkdir -p /run/hermes/cdb-engineer
+ExecStartPre=+/bin/chmod 0755 /run/hermes
+ExecStartPre=+/bin/chmod 0700 /run/hermes/cdb-engineer
 WorkingDirectory=/opt/cdb-hermes-bundle
 Environment=PYTHONPATH=/opt/cdb-hermes-bundle
 Environment=HERMES_GH_APP_PRIVATE_KEY_PATH=/etc/hermes/secrets/cdb-hermes-engineer.pem
 EnvironmentFile=-/etc/hermes/cdb-engineer.env
 # Mint writes ONLY to the isolated runtime path; never stdout, never profiles.
 ExecStart=/usr/bin/python3 -m tools.hermes_ops mint-token --profile cdb-engineer --token-file /run/hermes/cdb-engineer/token
-# Enforce token delivery ownership after mint (PEM stays root:root 0600).
-ExecStartPost=/bin/chown hermes-cdb-engineer:hermes-cdb-engineer /run/hermes/cdb-engineer /run/hermes/cdb-engineer/token
-ExecStartPost=/bin/chmod 0700 /run/hermes/cdb-engineer
-ExecStartPost=/bin/chmod 0600 /run/hermes/cdb-engineer/token
-# Drop token on stop.
-ExecStopPost=/bin/rm -f /run/hermes/cdb-engineer/token
-NoNewPrivileges=true
-ProtectSystem=strict
-ProtectHome=true
-PrivateTmp=true
+# Ownership handoff must hit the real /run (no PrivateTmp / ReadWritePaths bind).
+ExecStartPost=+/bin/chown -R hermes-cdb-engineer:hermes-cdb-engineer /run/hermes/cdb-engineer
+ExecStartPost=+/bin/chmod 0700 /run/hermes/cdb-engineer
+ExecStartPost=+/bin/chmod 0600 /run/hermes/cdb-engineer/token
+# Drop token on explicit stop (RemainAfterExit keeps it through mint success).
+ExecStopPost=+/bin/rm -f /run/hermes/cdb-engineer/token
+# PEM stays root:root 0600 via path mode; no PrivateTmp (PrivateMounts).
 ReadOnlyPaths=/etc/hermes/secrets
-ReadWritePaths=/run/hermes/cdb-engineer
 UMask=0077
 StandardOutput=journal
 StandardError=journal
