@@ -86,6 +86,7 @@ from core.replay.dataset_provider import (
     DatasetLoadError,
     DatasetResult,
     FileBackedDatasetProvider,
+    enforce_exact_window,
 )
 from core.replay.dataset_spec import DatasetSpec, DatasetSpecError
 from core.replay.historical_bridge import (
@@ -783,6 +784,12 @@ def _load_dataset_result(
             spec.validate()
         except DatasetSpecError as exc:
             raise ReplayRunnerError(f"dataset spec validation failed: {exc}") from exc
+
+        # Discover rebound: prove CDB-049 exact-window parity on the final live bounds.
+        try:
+            enforce_exact_window(candles, spec, str(input_path))
+        except DatasetLoadError as exc:
+            raise ReplayRunnerError(str(exc)) from exc
 
         # Request identity follows the *final* windowed spec (not temp start/end=0).
         # Content identity is the loaded candle series (propagate or recompute).
