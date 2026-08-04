@@ -73,7 +73,7 @@
   },
   "rule_count": 56,
   "unresolved_count": 0,
-  "register_fingerprint": "bfbfc042698797a28f7081fe348e5dd89aa9e167b5bfc6de4827dcd555361ba2",
+  "register_fingerprint": "464caa6d3d4e9a28740c6b1dd45c5d2c0bc26dde40e1951db4bbfb6539e76f5e",
   "rules": [
     {
       "parameter_id": "CDB-001",
@@ -4436,9 +4436,7 @@
         "change_risk": "hoch",
         "suitability": "mittel",
         "compact_decision": "CLOSED_CORRECTNESS",
-        "blocked_by_issues": [
-          4336
-        ],
+        "blocked_by_issues": [],
         "evidence_notes": [
           "Window-Manifest",
           "File-/DB-Parität",
@@ -4529,7 +4527,7 @@
       "analysis": {
         "source_commit": "224cfd49398b329b315781372658fab1fbf15362",
         "effect": "DQ-Verdict bindet an content_fingerprint der geprüften Candle-Serie; Request-Hash allein reicht nicht. Consumer (Runner, Window-Bank, Probes) erzwingen Binding fail-closed.",
-        "finding": "CDB-050 consumer-binding Forward-Fix in flight via #4336 — enforce_dq_content_binding on Runner/Window-Bank/Probes; not closed on main until merge",
+        "finding": "geschlossen via #4336 / PR #4339 — DQ content-binding fail-closed on Runner/Window-Bank/Probe consumers",
         "dependencies": [
           "Provenance",
           "Rankability",
@@ -4537,17 +4535,13 @@
         ],
         "change_risk": "hoch",
         "suitability": "keine direkte Optimierung",
-        "compact_decision": "CORRECTNESS_FIX_ONLY",
-        "blocked_by_issues": [
-          4336
-        ],
+        "compact_decision": "CLOSED_CORRECTNESS",
+        "blocked_by_issues": [],
         "evidence_notes": [
-          "Content-Hash-Reconciliation",
-          "DQ-Bindung an tatsächliche Daten",
-          "assert_dq_content_binding",
           "enforce_dq_content_binding",
-          "binance_window_bank_adapter._enforce_window_dq_content_binding",
-          "strategy_replay_runner._enforce_replay_dq_sidecar_binding"
+          "assert_dq_content_binding",
+          "consumer binding Runner/Window-Bank/Probe",
+          "merged PR #4339"
         ],
         "name_drift": null,
         "may_change_compact": true
@@ -4631,7 +4625,7 @@
       "analysis": {
         "source_commit": "224cfd49398b329b315781372658fab1fbf15362",
         "effect": "Replay fail-closed Gap/Dup/OOO/Cadence/Incomplete-Window with preserved root reason codes bound to final DatasetSpec window; Runtime asymmetry versioned (no parity claim) via cdb.replay_vs_runtime_data_rules.v1.",
-        "finding": "CDB-051 Forward-Fix in flight via #4336 — IntegrityError/DatasetLoadError.code propagation + Spec-window binding + executable asymmetry tests; not closed on main until merge",
+        "finding": "geschlossen via #4336 / PR #4340 — Integrity reason propagation + replay/runtime asymmetry contract",
         "dependencies": [
           "Signal",
           "Regime",
@@ -4639,17 +4633,13 @@
         ],
         "change_risk": "hoch",
         "suitability": "keine",
-        "compact_decision": "CORRECTNESS_FIX_ONLY",
-        "blocked_by_issues": [
-          4336
-        ],
+        "compact_decision": "CLOSED_CORRECTNESS",
+        "blocked_by_issues": [],
         "evidence_notes": [
-          "assert_replay_integrity / IntegrityError.code",
-          "enforce_replay_integrity Spec-window binding",
-          "ReplayRunnerError.code / BinanceWindowBankAdapterError.code",
+          "dataset_integrity_rules",
           "ROOT_CAUSE_PRIORITY",
-          "test_cdb051_executable_runtime_asymmetry_ooo",
-          "cdb.replay_vs_runtime_data_rules.v1 asymmetric"
+          "replay_vs_runtime asymmetric parity_claim",
+          "merged PR #4340"
         ],
         "name_drift": null,
         "may_change_compact": true
@@ -4730,25 +4720,23 @@
       "analysis": {
         "source_commit": "224cfd49398b329b315781372658fab1fbf15362",
         "effect": "Rankability verlangt aktuelle Warmup- und Content-Provenance; stiller Manifest-Fallback ist blockiert.",
-        "finding": "CDB-052 Forward-Fix in flight via #4336 — rankability/warmup provenance fail-closed, scorer wiring, preflight gate; not closed on main until merge. RESEARCH_ALLOWED is not promotion/paper/live/echtgeld authorization.",
+        "finding": "geschlossen via #4336 / PR #4341 — Rankability/Warmup provenance fail-closed; scorer wiring; preflight gate. RESEARCH_ALLOWED is not promotion/paper/live/echtgeld.",
         "dependencies": [
           "Stage A/B"
         ],
         "change_risk": "mittel",
         "suitability": "niedrig",
-        "compact_decision": "CORRECTNESS_FIX_ONLY",
-        "blocked_by_issues": [
-          4336
-        ],
+        "compact_decision": "CLOSED_CORRECTNESS",
+        "blocked_by_issues": [],
         "evidence_notes": [
-          "stale-manifest negative tests",
-          "Warmup-Provenance",
-          "Content-Fingerprint",
-          "stale_manifest_fallback_blocked",
           "enforce_rankability_provenance",
+          "assert_rankability_provenance",
           "record_is_rankable requires rankable is True",
           "cdb052_rankability_provenance preflight gate",
-          "RESEARCH_ALLOWED != promotion/live"
+          "stale_manifest_fallback_blocked",
+          "manifest_missing",
+          "RESEARCH_ALLOWED != promotion/live",
+          "PR #4341"
         ],
         "name_drift": null,
         "may_change_compact": true
