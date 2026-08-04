@@ -1,0 +1,566 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://claire-de-binare/docs/contracts/cdb_sensitivity_experiment_manifest.v1.1.schema.json",
+  "title": "CDB Replay-only Sensitivity Experiment Manifest v1.1 (executable)",
+  "description": "Executable, once-bound replay-only sensitivity campaign manifest for #4153. Does not start runs; does not authorize paper, live, or echtgeld. Non-executable readiness fixtures remain on schema v1.",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "schema_version",
+    "campaign_id",
+    "campaign_version",
+    "issue_ref",
+    "parent_issue_ref",
+    "correctness_baseline_sha",
+    "baseline",
+    "strategies",
+    "parameter_families",
+    "parameter_grid",
+    "design",
+    "expansion",
+    "run_key_contract",
+    "development_windows",
+    "window_bindings",
+    "dataset_identity",
+    "effective_config_snapshot_fingerprint",
+    "parameter_control",
+    "execution_economics_contract_version",
+    "frozen_boundaries",
+    "seed_rules",
+    "allowed_result_fields",
+    "holdout_denylist",
+    "explicit_bans",
+    "execution_mode",
+    "output_contract",
+    "owner_ratification",
+    "lr_status",
+    "executable",
+    "manifest_fingerprint"
+  ],
+  "properties": {
+    "schema_version": {
+      "const": "cdb.sensitivity_experiment_manifest.v1.1"
+    },
+    "campaign_id": {
+      "type": "string",
+      "minLength": 1,
+      "pattern": "^[a-z0-9][a-z0-9._-]{2,127}$"
+    },
+    "campaign_version": {
+      "type": "string",
+      "minLength": 1
+    },
+    "issue_ref": { "const": "#4153" },
+    "parent_issue_ref": { "const": "#4147" },
+    "correctness_baseline_sha": {
+      "type": "string",
+      "pattern": "^[0-9a-f]{40}$",
+      "description": "Immutable Correctness baseline (CDB-049..052). Must be an ancestor of any later execution SHA. Not a self-referential manifest commit."
+    },
+    "source_commit": {
+      "type": "string",
+      "pattern": "^[0-9a-f]{40}$",
+      "description": "Optional alias of correctness_baseline_sha for tooling compatibility."
+    },
+    "baseline": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["strategy_id", "scenario_id", "label"],
+      "properties": {
+        "strategy_id": { "const": "primary_breakout_v1" },
+        "scenario_id": { "const": "baseline" },
+        "label": { "type": "string", "minLength": 1 },
+        "notes": { "type": "string" },
+        "parameters": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": [
+            "entry_lookback_minutes",
+            "exit_lookback_minutes",
+            "breakout_buffer",
+            "min_minutes_between_entries"
+          ],
+          "properties": {
+            "entry_lookback_minutes": { "const": 240 },
+            "exit_lookback_minutes": { "const": 120 },
+            "breakout_buffer": { "const": 0.0005 },
+            "min_minutes_between_entries": { "const": 60 }
+          }
+        }
+      }
+    },
+    "strategies": {
+      "type": "array",
+      "minItems": 1,
+      "maxItems": 1,
+      "items": { "const": "primary_breakout_v1" }
+    },
+    "parameter_families": {
+      "type": "array",
+      "minItems": 4,
+      "maxItems": 4,
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "family_id",
+          "parameter_ids",
+          "value_range",
+          "step",
+          "change_authority"
+        ],
+        "properties": {
+          "family_id": { "type": "string", "minLength": 1 },
+          "parameter_ids": {
+            "type": "array",
+            "minItems": 1,
+            "items": {
+              "type": "string",
+              "pattern": "^CDB-00[23]$"
+            }
+          },
+          "value_range": {
+            "type": "object",
+            "additionalProperties": false,
+            "required": ["min", "max"],
+            "properties": {
+              "min": { "type": ["number", "string"] },
+              "max": { "type": ["number", "string"] },
+              "unit": { "type": "string" }
+            }
+          },
+          "step": { "type": ["number", "string"] },
+          "change_authority": {
+            "type": "string",
+            "enum": ["RESEARCH_ALLOWED", "CONDITIONAL_AFTER_EVIDENCE"]
+          },
+          "notes": { "type": "string" }
+        }
+      }
+    },
+    "parameter_grid": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["cdb_021", "dimensions", "owner_ratification_comment_id"],
+      "properties": {
+        "cdb_021": { "const": "OUT" },
+        "owner_ratification_comment_id": { "const": 5175526900 },
+        "dimensions": {
+          "type": "array",
+          "minItems": 4,
+          "maxItems": 4,
+          "items": {
+            "type": "object",
+            "additionalProperties": false,
+            "required": [
+              "family_id",
+              "parameter_ids",
+              "field",
+              "unit",
+              "value_type",
+              "baseline",
+              "values",
+              "change_authority",
+              "ofat"
+            ],
+            "properties": {
+              "family_id": { "type": "string", "minLength": 1 },
+              "parameter_ids": {
+                "type": "array",
+                "minItems": 1,
+                "items": { "type": "string", "pattern": "^CDB-00[23]$" }
+              },
+              "field": { "type": "string", "minLength": 1 },
+              "unit": { "type": "string", "minLength": 1 },
+              "value_type": { "type": "string", "enum": ["int", "float"] },
+              "baseline": { "type": ["number", "string"] },
+              "values": {
+                "type": "array",
+                "minItems": 1,
+                "items": { "type": ["number", "string"] }
+              },
+              "change_authority": {
+                "enum": ["RESEARCH_ALLOWED", "CONDITIONAL_AFTER_EVIDENCE"]
+              },
+              "ofat": { "const": true }
+            }
+          }
+        }
+      }
+    },
+    "design": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["one_factor_at_a_time", "interaction_groups"],
+      "properties": {
+        "one_factor_at_a_time": { "const": true },
+        "interaction_groups": {
+          "type": "array",
+          "minItems": 2,
+          "maxItems": 2,
+          "items": {
+            "type": "object",
+            "additionalProperties": false,
+            "required": ["group_id", "family_ids", "fields", "combos"],
+            "properties": {
+              "group_id": { "type": "string", "minLength": 1 },
+              "family_ids": {
+                "type": "array",
+                "minItems": 2,
+                "maxItems": 2,
+                "items": { "type": "string", "minLength": 1 }
+              },
+              "fields": {
+                "type": "array",
+                "minItems": 2,
+                "maxItems": 2,
+                "items": { "type": "string", "minLength": 1 }
+              },
+              "combos": {
+                "type": "array",
+                "minItems": 4,
+                "maxItems": 4,
+                "items": {
+                  "type": "array",
+                  "minItems": 2,
+                  "maxItems": 2,
+                  "items": { "type": ["number", "string"] }
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "expansion": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "mode",
+        "unique_variant_count",
+        "expected_run_count",
+        "max_run_count",
+        "window_count",
+        "strategy_count"
+      ],
+      "properties": {
+        "mode": {
+          "const": "BASELINE_PLUS_OFAT_WITH_BOUNDED_INTERACTIONS"
+        },
+        "unique_variant_count": { "const": 21 },
+        "expected_run_count": { "const": 819 },
+        "max_run_count": { "const": 819 },
+        "window_count": { "const": 39 },
+        "strategy_count": { "const": 1 },
+        "formula": { "type": "string" },
+        "duplicate_policy": { "type": "string" }
+      }
+    },
+    "run_key_contract": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["algorithm", "formula"],
+      "properties": {
+        "algorithm": { "const": "sha256" },
+        "formula": {
+          "const": "sha256(campaign_id|window_id|strategy_id|canonical_json(full_param_set)|scenario_id|phase|label)"
+        }
+      }
+    },
+    "development_windows": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "window_count",
+        "window_ids",
+        "selection_sha256",
+        "purpose"
+      ],
+      "properties": {
+        "window_count": { "const": 39 },
+        "window_ids": {
+          "type": "array",
+          "minItems": 39,
+          "maxItems": 39,
+          "uniqueItems": true,
+          "items": {
+            "type": "string",
+            "pattern": "^binance_1m_month_[0-9]{4}_[0-9]{2}$"
+          }
+        },
+        "selection_sha256": {
+          "type": "string",
+          "pattern": "^[0-9a-f]{64}$"
+        },
+        "purpose": { "const": "development" },
+        "window_bank_identity": { "type": "string", "minLength": 1 },
+        "symbol": { "const": "BTCUSDT" },
+        "timeframe": { "const": "1m" },
+        "warmup_policy": { "type": "string", "minLength": 1 }
+      }
+    },
+    "window_bindings": {
+      "type": "array",
+      "minItems": 39,
+      "maxItems": 39,
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "window_id",
+          "symbol",
+          "timeframe",
+          "start_ts_ms",
+          "end_ts_ms",
+          "content_fingerprint",
+          "purpose",
+          "overlap_class",
+          "quality_verdict"
+        ],
+        "properties": {
+          "window_id": {
+            "type": "string",
+            "pattern": "^binance_1m_month_[0-9]{4}_[0-9]{2}$"
+          },
+          "symbol": { "const": "BTCUSDT" },
+          "timeframe": { "const": "1m" },
+          "start_ts_ms": { "type": "integer" },
+          "end_ts_ms": { "type": "integer" },
+          "content_fingerprint": {
+            "type": "string",
+            "pattern": "^[0-9a-f]{64}$"
+          },
+          "purpose": { "const": "development" },
+          "overlap_class": { "const": "monthly" },
+          "quality_verdict": { "type": "string", "minLength": 1 },
+          "candle_count": { "type": "integer", "minimum": 1 }
+        }
+      }
+    },
+    "dataset_identity": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "request_fingerprint",
+        "content_fingerprint",
+        "identity_schema_version"
+      ],
+      "properties": {
+        "request_fingerprint": {
+          "type": "string",
+          "pattern": "^[0-9a-f]{64}$"
+        },
+        "content_fingerprint": {
+          "type": "string",
+          "pattern": "^[0-9a-f]{64}$"
+        },
+        "identity_schema_version": {
+          "const": "cdb.dataset_content_identity.v1"
+        },
+        "dataset_ref": { "type": "string", "minLength": 1 }
+      }
+    },
+    "effective_config_snapshot_fingerprint": {
+      "type": "string",
+      "pattern": "^[0-9a-f]{64}$"
+    },
+    "parameter_control": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "policy_schema_version",
+        "register_fingerprint",
+        "canonical_json_sha256"
+      ],
+      "properties": {
+        "policy_schema_version": {
+          "const": "cdb.parameter_control_policy.register.v1"
+        },
+        "register_fingerprint": {
+          "type": "string",
+          "pattern": "^[0-9a-f]{64}$"
+        },
+        "canonical_json_sha256": {
+          "type": "string",
+          "pattern": "^[0-9a-f]{64}$"
+        }
+      }
+    },
+    "execution_economics_contract_version": {
+      "const": "execution_economics_gross_to_net.v1"
+    },
+    "frozen_boundaries": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "stage_a_gate_contract_sha256",
+        "stage_b_confirmation_contract_sha256",
+        "stage_a_b_oos_stress_gates",
+        "risk_and_live_boundaries"
+      ],
+      "properties": {
+        "stage_a_gate_contract_sha256": {
+          "type": "string",
+          "pattern": "^[0-9a-f]{64}$"
+        },
+        "stage_b_confirmation_contract_sha256": {
+          "type": "string",
+          "pattern": "^[0-9a-f]{64}$"
+        },
+        "stage_a_b_oos_stress_gates": { "const": "frozen" },
+        "risk_and_live_boundaries": { "const": "frozen" }
+      }
+    },
+    "seed_rules": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["deterministic", "seed_namespace"],
+      "properties": {
+        "deterministic": { "const": true },
+        "seed_namespace": { "type": "string", "minLength": 1 },
+        "seed_formula": { "type": "string" }
+      }
+    },
+    "allowed_result_fields": {
+      "type": "array",
+      "minItems": 1,
+      "uniqueItems": true,
+      "items": {
+        "type": "string",
+        "enum": [
+          "gate_reason",
+          "regime_distribution",
+          "trade_count",
+          "turnover",
+          "fees",
+          "spread",
+          "slippage",
+          "gross_pnl",
+          "net_pnl",
+          "profit_factor",
+          "expectancy",
+          "drawdown",
+          "main_effect",
+          "interaction_effect",
+          "overfitting_risk_flag"
+        ]
+      }
+    },
+    "holdout_denylist": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["excluded_purposes", "excluded_overlap_classes"],
+      "properties": {
+        "excluded_purposes": {
+          "type": "array",
+          "minItems": 3,
+          "uniqueItems": true,
+          "items": {
+            "type": "string",
+            "enum": ["validation", "out_of_sample", "stress"]
+          }
+        },
+        "excluded_overlap_classes": {
+          "type": "array",
+          "minItems": 2,
+          "uniqueItems": true,
+          "items": {
+            "type": "string",
+            "enum": ["quarterly", "yearly"]
+          }
+        }
+      }
+    },
+    "explicit_bans": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "promotion",
+        "paper",
+        "live",
+        "echtgeld",
+        "orders",
+        "exchange_execution",
+        "testnet_orders",
+        "balance_usage",
+        "position_mutation",
+        "risk_limit_mutation",
+        "kill_switch_mutation",
+        "stop_loss_mutation",
+        "stage_b",
+        "oos",
+        "stress",
+        "holdout",
+        "campaign_execution_auto_start"
+      ],
+      "properties": {
+        "promotion": { "const": true },
+        "paper": { "const": true },
+        "live": { "const": true },
+        "echtgeld": { "const": true },
+        "orders": { "const": true },
+        "exchange_execution": { "const": true },
+        "testnet_orders": { "const": true },
+        "balance_usage": { "const": true },
+        "position_mutation": { "const": true },
+        "risk_limit_mutation": { "const": true },
+        "kill_switch_mutation": { "const": true },
+        "stop_loss_mutation": { "const": true },
+        "stage_b": { "const": true },
+        "oos": { "const": true },
+        "stress": { "const": true },
+        "holdout": { "const": true },
+        "campaign_execution_auto_start": {
+          "const": true,
+          "description": "Preflight/manifest never auto-starts the campaign; separate Owner Campaign-GO required."
+        },
+        "campaign_execution": {
+          "type": "boolean",
+          "description": "Legacy alias; must remain true (banned) for this manifest-only slice semantics when present."
+        }
+      }
+    },
+    "execution_mode": { "const": "replay_only" },
+    "output_contract": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["evidence_namespace", "artifact_root_template"],
+      "properties": {
+        "evidence_namespace": {
+          "const": "artifacts/arvp_sensitivity/4153"
+        },
+        "artifact_root_template": {
+          "const": "artifacts/arvp_sensitivity/4153/{campaign_id}"
+        },
+        "notes": { "type": "string" }
+      }
+    },
+    "owner_ratification": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "issue_comment_id",
+        "url",
+        "status",
+        "correctness_baseline_sha"
+      ],
+      "properties": {
+        "issue_comment_id": { "const": 5175526900 },
+        "url": {
+          "const": "https://github.com/jannekbuengener/Claire_de_Binare/issues/4153#issuecomment-5175526900"
+        },
+        "status": { "const": "DONE_4153_PARAMETER_GRID_RATIFIED" },
+        "correctness_baseline_sha": {
+          "type": "string",
+          "pattern": "^[0-9a-f]{40}$"
+        }
+      }
+    },
+    "lr_status": { "const": "NO-GO" },
+    "executable": { "const": true },
+    "manifest_fingerprint": {
+      "type": "string",
+      "pattern": "^[0-9a-f]{64}$"
+    }
+  }
+}

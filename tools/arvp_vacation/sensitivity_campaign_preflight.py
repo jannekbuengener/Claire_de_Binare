@@ -32,9 +32,22 @@ from tools.arvp_vacation.batch_a_gate_common import (
     compute_gate_contract_sha256,
     load_json_contract,
 )
+from tools.arvp_vacation.sensitivity_campaign_grid import (
+    EXPECTED_RUN_COUNT,
+    EXPECTED_UNIQUE_VARIANTS,
+    MAX_RUN_COUNT,
+    STRATEGY_ID,
+    SensitivityGridError,
+    assert_manifest_matches_ratified_grid,
+    expand_runs,
+    expand_variants,
+    variant_breakdown,
+)
 from tools.arvp_vacation.sensitivity_experiment_manifest import (
     MANIFEST_SCHEMA_VERSION,
+    MANIFEST_SCHEMA_VERSION_V11,
     SensitivityManifestError,
+    assert_executable_consistency,
     assert_manifest_secret_safe,
     fingerprint_manifest,
     load_manifest,
@@ -49,6 +62,7 @@ from tools.market_data.development_window_selector import (
 from tools.validate_parameter_control_policy import (
     POLICY_PATH,
     SCHEMA_PATH as POLICY_SCHEMA_PATH,
+    compute_canonical_json_sha256,
     compute_register_fingerprint,
     validate as validate_parameter_control_policy,
 )
@@ -56,10 +70,13 @@ from tools.validate_parameter_control_policy import (
 PROJECT_ROOT = Path(__file__).resolve().parents[2]
 
 VERDICT_READY = "READY_FOR_REPLAY_SENSITIVITY"
+VERDICT_READY_CAMPAIGN = "READY_FOR_REPLAY_SENSITIVITY_CAMPAIGN"
 VERDICT_BLOCKED = "BLOCKED_EXPERIMENT_NOT_READY"
 VERDICT_INVALID = "INVALID_EXPERIMENT_MANIFEST"
 VERDICT_FROZEN = "FROZEN_BOUNDARY_VIOLATION"
 VERDICT_HOLDOUT = "HOLDOUT_ACCESS_BLOCKED"
+
+CORRECTNESS_BASELINE_SHA_DEFAULT = "301bc757be7cb4162db6db114a5c445f2aca392f"
 
 READINESS_SCHEMA_VERSION = "cdb.sensitivity_campaign_readiness.v1"
 
@@ -676,10 +693,14 @@ def validate_manifest_against_repo(
     try:
         validate_manifest_schema(manifest)
         assert_manifest_secret_safe(manifest)
+        assert_executable_consistency(manifest)
         gates["schema"] = _gate_pass("Manifest schema valid")
     except SensitivityManifestError as exc:
         gates["schema"] = _gate_invalid(str(exc))
         return VERDICT_INVALID, gates, [str(exc)]
+
+    executable = manifest.get("executable") is True
+    schema_version = manifest.get("schema_version")
 
     # Dataset provenance in manifest
     dataset = manifest.get("dataset_identity") or {}
@@ -711,7 +732,11 @@ def validate_manifest_against_repo(
     policy_path = repo_root / POLICY_PATH.relative_to(PROJECT_ROOT)
     policy = json.loads(policy_path.read_text(encoding="utf-8"))
     expected_fp = compute_register_fingerprint(policy)
+    expected_canonical = compute_canonical_json_sha256(policy_path)
     declared_pc = (manifest.get("parameter_control") or {}).get("register_fingerprint")
+    declared_canonical = (manifest.get("parameter_control") or {}).get(
+        "canonical_json_sha256"
+    )
     if declared_pc != expected_fp:
         gates["parameter_control"] = _gate_blocked(
             "Manifest parameter_control.register_fingerprint does not match policy",
@@ -719,6 +744,17 @@ def validate_manifest_against_repo(
             f"declared:{declared_pc}",
         )
         blocking.append("parameter_control_fingerprint_mismatch")
+    elif (
+        executable
+        and declared_canonical is not None
+        and declared_canonical != expected_canonical
+    ):
+        gates["parameter_control"] = _gate_blocked(
+            "Manifest parameter_control.canonical_json_sha256 does not match policy",
+            f"expected:{expected_canonical}",
+            f"declared:{declared_canonical}",
+        )
+        blocking.append("parameter_control_canonical_mismatch")
     else:
         bad_rules: list[str] = []
         unknown: list[str] = []
@@ -882,6 +918,17 @@ def validate_manifest_against_repo(
         )
         if gates["effective_config"].status != "PASS":
             blocking.append("effective_config_not_ready")
+        elif (
+            isinstance(effective_config_snapshot, Mapping)
+            and effective_config_snapshot.get("snapshot_fingerprint") != efc_fp
+        ):
+            gates["effective_config"] = _gate_blocked(
+                "Manifest effective_config_snapshot_fingerprint does not match "
+                "live snapshot",
+                f"declared:{efc_fp}",
+                f"live:{effective_config_snapshot.get('snapshot_fingerprint')}",
+            )
+            blocking.append("effective_config_fingerprint_mismatch")
 
     # Regime / economics / dataset capability still required for READY
     gates["regime_signal"] = check_regime_signal_correctness(repo_root)
@@ -904,12 +951,230 @@ def validate_manifest_against_repo(
     if cdb052.status != "PASS":
         blocking.append("cdb052_rankability_not_ready")
 
+    if executable and schema_version == MANIFEST_SCHEMA_VERSION_V11:
+        _apply_executable_campaign_gates(
+            manifest,
+            repo_root,
+            gates=gates,
+            blocking=blocking,
+        )
+
     if blocking:
         # Prefer specific verdicts already returned; else blocked.
         if any(g.status == "INVALID" for g in gates.values()):
             return VERDICT_INVALID, gates, blocking
         return VERDICT_BLOCKED, gates, blocking
+    if executable and schema_version == MANIFEST_SCHEMA_VERSION_V11:
+        return VERDICT_READY_CAMPAIGN, gates, []
     return VERDICT_READY, gates, []
+
+
+def _git_is_ancestor(repo_root: Path, ancestor_sha: str, descendant_sha: str) -> bool:
+    import subprocess
+
+    try:
+        proc = subprocess.run(
+            [
+                "git",
+                "-C",
+                str(repo_root),
+                "merge-base",
+                "--is-ancestor",
+                ancestor_sha,
+                descendant_sha,
+            ],
+            check=False,
+            capture_output=True,
+            text=True,
+        )
+    except OSError:
+        return False
+    return proc.returncode == 0
+
+
+def _git_head_sha(repo_root: Path) -> str | None:
+    import subprocess
+
+    try:
+        proc = subprocess.run(
+            ["git", "-C", str(repo_root), "rev-parse", "HEAD"],
+            check=False,
+            capture_output=True,
+            text=True,
+        )
+    except OSError:
+        return None
+    if proc.returncode != 0:
+        return None
+    sha = proc.stdout.strip()
+    return sha if len(sha) == 40 else None
+
+
+def _apply_executable_campaign_gates(
+    manifest: Mapping[str, Any],
+    repo_root: Path,
+    *,
+    gates: dict[str, GateResult],
+    blocking: list[str],
+) -> None:
+    """Additional fail-closed gates for executable v1.1 campaign manifests."""
+    try:
+        assert_manifest_matches_ratified_grid(manifest)
+        gates["ratified_grid"] = _gate_pass(
+            "Manifest matches Owner grid ratification 5175526900"
+        )
+    except SensitivityGridError as exc:
+        gates["ratified_grid"] = _gate_blocked(str(exc))
+        blocking.append("ratified_grid_mismatch")
+
+    baseline_sha = str(manifest.get("correctness_baseline_sha") or "")
+    head_sha = _git_head_sha(repo_root)
+    if len(baseline_sha) != 40:
+        gates["correctness_baseline"] = _gate_blocked(
+            "correctness_baseline_sha missing or malformed"
+        )
+        blocking.append("correctness_baseline_missing")
+    elif head_sha is None:
+        gates["correctness_baseline"] = _gate_blocked(
+            "Unable to resolve HEAD for correctness baseline ancestry check"
+        )
+        blocking.append("correctness_baseline_head_unresolved")
+    elif not _git_is_ancestor(repo_root, baseline_sha, head_sha):
+        gates["correctness_baseline"] = _gate_blocked(
+            "correctness_baseline_sha is not an ancestor of HEAD",
+            f"baseline:{baseline_sha}",
+            f"head:{head_sha}",
+        )
+        blocking.append("correctness_baseline_not_ancestor")
+    else:
+        gates["correctness_baseline"] = _gate_pass(
+            "Correctness baseline is ancestor of HEAD",
+            f"baseline:{baseline_sha}",
+            f"head:{head_sha}",
+        )
+
+    strategies = list(manifest.get("strategies") or [])
+    if strategies != [STRATEGY_ID]:
+        gates["strategy_set"] = _gate_blocked(
+            f"strategies must be exactly [{STRATEGY_ID}]"
+        )
+        blocking.append("strategy_set_mismatch")
+    else:
+        gates["strategy_set"] = _gate_pass(f"Strategy set exact: {STRATEGY_ID}")
+
+    # Window bindings provenance
+    bindings = list(manifest.get("window_bindings") or [])
+    windows = manifest.get("development_windows") or {}
+    window_ids = tuple(windows.get("window_ids") or ())
+    if len(bindings) != 39:
+        gates["window_bindings"] = _gate_blocked(
+            f"window_bindings count {len(bindings)} != 39"
+        )
+        blocking.append("window_bindings_count")
+    else:
+        binding_ids = [str(b.get("window_id")) for b in bindings]
+        if tuple(binding_ids) != tuple(window_ids):
+            gates["window_bindings"] = _gate_blocked(
+                "window_bindings order/ids must match development_windows.window_ids"
+            )
+            blocking.append("window_bindings_order")
+        elif any(
+            not str(b.get("content_fingerprint") or "")
+            or len(str(b.get("content_fingerprint"))) != 64
+            for b in bindings
+        ):
+            gates["window_bindings"] = _gate_blocked(
+                "each window_binding requires 64-hex content_fingerprint"
+            )
+            blocking.append("window_bindings_content_fp")
+        elif any(b.get("purpose") != "development" for b in bindings):
+            gates["window_bindings"] = _gate_blocked(
+                "window_bindings purpose must be development"
+            )
+            blocking.append("window_bindings_purpose")
+        else:
+            gates["window_bindings"] = _gate_pass(
+                "39 window bindings present with content fingerprints"
+            )
+
+    # Expansion determinism
+    try:
+        variants = expand_variants()
+        breakdown = variant_breakdown(variants)
+        runs = expand_runs(
+            campaign_id=str(manifest.get("campaign_id")),
+            window_ids=list(window_ids),
+        )
+        if breakdown["unique_total"] != EXPECTED_UNIQUE_VARIANTS:
+            raise SensitivityGridError(
+                f"unique variants {breakdown['unique_total']} != 21"
+            )
+        if len(runs) != EXPECTED_RUN_COUNT:
+            raise SensitivityGridError(f"runs {len(runs)} != 819")
+        expansion = manifest.get("expansion") or {}
+        if expansion.get("expected_run_count") != EXPECTED_RUN_COUNT:
+            raise SensitivityGridError("expected_run_count manifest mismatch")
+        if expansion.get("max_run_count") != MAX_RUN_COUNT:
+            raise SensitivityGridError("max_run_count manifest mismatch")
+        gates["run_expansion"] = _gate_pass(
+            "Deterministic expansion yields 21 variants / 819 runs",
+            f"breakdown:{breakdown}",
+        )
+    except SensitivityGridError as exc:
+        gates["run_expansion"] = _gate_blocked(str(exc))
+        blocking.append("run_expansion_mismatch")
+
+    # Manifest fingerprint self-check
+    declared_fp = manifest.get("manifest_fingerprint")
+    computed_fp = fingerprint_manifest(manifest)
+    if declared_fp != computed_fp:
+        gates["manifest_fingerprint"] = _gate_blocked(
+            "Embedded manifest_fingerprint mismatch",
+            f"declared:{declared_fp}",
+            f"computed:{computed_fp}",
+        )
+        blocking.append("manifest_fingerprint_mismatch")
+    else:
+        gates["manifest_fingerprint"] = _gate_pass(
+            "Manifest fingerprint matches canonical body hash",
+            f"manifest_fingerprint:{computed_fp}",
+        )
+
+    bans = manifest.get("explicit_bans") or {}
+    for key in (
+        "holdout",
+        "oos",
+        "stress",
+        "stage_b",
+        "paper",
+        "live",
+        "echtgeld",
+        "orders",
+        "campaign_execution_auto_start",
+    ):
+        if bans.get(key) is not True:
+            gates["replay_boundaries"] = _gate_blocked(
+                f"explicit_bans.{key} must be true"
+            )
+            blocking.append(f"boundary_{key}")
+            break
+    else:
+        if manifest.get("execution_mode") != "replay_only":
+            gates["replay_boundaries"] = _gate_blocked(
+                "execution_mode must be replay_only"
+            )
+            blocking.append("execution_mode")
+        else:
+            gates["replay_boundaries"] = _gate_pass(
+                "Replay-only boundaries and capital/safety bans enforced"
+            )
+
+    output = manifest.get("output_contract") or {}
+    if not output.get("evidence_namespace") or not output.get("artifact_root_template"):
+        gates["output_contract"] = _gate_blocked("output_contract incomplete")
+        blocking.append("output_contract")
+    else:
+        gates["output_contract"] = _gate_pass("Output/evidence contract present")
 
 
 def run_repo_preflight(
@@ -978,11 +1243,17 @@ def run_manifest_preflight(
     effective_config_snapshot: Mapping[str, Any] | None = None,
 ) -> dict[str, Any]:
     root = repo_root or PROJECT_ROOT
+    cap = capability or discover_effective_config_capability(root)
+    resolved_snapshot = _resolve_repo_effective_config_snapshot(
+        root,
+        capability=cap,
+        snapshot=effective_config_snapshot,
+    )
     verdict, gates, blocking = validate_manifest_against_repo(
         manifest,
         root,
-        capability=capability,
-        effective_config_snapshot=effective_config_snapshot,
+        capability=cap,
+        effective_config_snapshot=resolved_snapshot,
     )
     try:
         mfp = fingerprint_manifest(manifest)
@@ -991,8 +1262,13 @@ def run_manifest_preflight(
     evidence = {
         "execution_economics_contract_version": ECONOMICS_CONTRACT_VERSION,
         "locked_development_selection_sha256": LOCKED_DEVELOPMENT_SELECTION_SHA256,
-        "manifest_schema_version": MANIFEST_SCHEMA_VERSION,
+        "manifest_schema_version": manifest.get("schema_version")
+        or MANIFEST_SCHEMA_VERSION,
     }
+    if isinstance(resolved_snapshot, Mapping):
+        live_fp = resolved_snapshot.get("snapshot_fingerprint")
+        if isinstance(live_fp, str):
+            evidence["effective_config_snapshot_fingerprint"] = live_fp
     return build_readiness_report(
         verdict=verdict,
         gates=gates,
@@ -1075,7 +1351,7 @@ def main(argv: Sequence[str] | None = None) -> int:
         print(f"lr_status={report['lr_status']}")
         print("claims: readiness-preflight-only; no campaign execution")
 
-    return 0 if report["verdict"] == VERDICT_READY else 2
+    return 0 if report["verdict"] in {VERDICT_READY, VERDICT_READY_CAMPAIGN} else 2
 
 
 if __name__ == "__main__":
