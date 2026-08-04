@@ -24,6 +24,18 @@ REASON_DUPLICATE_CONFLICTING = "DUPLICATE_CONFLICTING"
 REASON_OUT_OF_ORDER = "OUT_OF_ORDER"
 REASON_CADENCE_VIOLATION = "CADENCE_VIOLATION"
 REASON_EMPTY = "EMPTY_SERIES"
+REASON_INCOMPLETE_WINDOW = "INCOMPLETE_WINDOW"
+
+# Deterministic root-cause priority when multiple findings exist (lowest index wins).
+ROOT_CAUSE_PRIORITY: tuple[str, ...] = (
+    REASON_EMPTY,
+    REASON_OUT_OF_ORDER,
+    REASON_DUPLICATE_CONFLICTING,
+    REASON_DUPLICATE_IDENTICAL,
+    REASON_INCOMPLETE_WINDOW,
+    REASON_GAP,
+    REASON_CADENCE_VIOLATION,
+)
 
 _ONE_MINUTE_MS = 60_000
 
@@ -31,11 +43,13 @@ _ONE_MINUTE_MS = 60_000
 # Do not mutate services/candles without an explicit runtime GO.
 REPLAY_VS_RUNTIME_CONTRACT: dict[str, Any] = {
     "schema_version": REPLAY_VS_RUNTIME_CONTRACT_VERSION,
+    "parity_claim": "asymmetric",
     "replay": {
         "gaps": "fail_closed",
         "duplicates": "fail_closed",
         "out_of_order": "fail_closed",
         "cadence": "exact_60000_ms",
+        "window_binding": "final_dataset_spec_warmup_to_end",
         "normalization": "content_fingerprint_may_sort_with_evidence_only",
     },
     "runtime_candles": {
@@ -61,6 +75,7 @@ class IntegrityAssessment:
     ok_for_replay: bool
     findings: tuple[IntegrityFinding, ...]
     reason_codes: tuple[str, ...]
+    primary_reason_code: str | None
     normalization_evidence: dict[str, Any]
 
 
@@ -72,6 +87,33 @@ class NormalizationEvidence:
     input_count: int
     output_count: int
     order_changed: bool
+
+
+class IntegrityError(ValueError):
+    """Fail-closed integrity fault with a preserved machine-readable reason code."""
+
+    def __init__(
+        self,
+        message: str,
+        *,
+        code: str,
+        assessment: IntegrityAssessment | None = None,
+    ) -> None:
+        super().__init__(message)
+        self.code = code
+        self.assessment = assessment
+
+
+def primary_reason_code(reason_codes: Sequence[str]) -> str | None:
+    """Return the highest-priority root cause from ``ROOT_CAUSE_PRIORITY``."""
+    if not reason_codes:
+        return None
+    present = set(reason_codes)
+    for code in ROOT_CAUSE_PRIORITY:
+        if code in present:
+            return code
+    # Unknown codes: stable lexicographic fallback.
+    return sorted(present)[0]
 
 
 def _ts(row: Mapping[str, Any]) -> int:
@@ -116,11 +158,13 @@ def classify_candle_integrity(
         findings.append(
             IntegrityFinding(reason_code=REASON_EMPTY, detail="empty candle series")
         )
+        codes = (REASON_EMPTY,)
         return IntegrityAssessment(
             schema_version=INTEGRITY_RULES_SCHEMA_VERSION,
             ok_for_replay=False,
             findings=tuple(findings),
-            reason_codes=(REASON_EMPTY,),
+            reason_codes=codes,
+            primary_reason_code=REASON_EMPTY,
             normalization_evidence={
                 "schema_version": INTEGRITY_RULES_SCHEMA_VERSION,
                 "normalization_applied": [],
@@ -192,6 +236,7 @@ def classify_candle_integrity(
         expected = set(range(int(start_ts_ms), int(end_ts_ms) + 1, int(step_ms)))
         actual = {_ts(row) for row in candles}
         missing = sorted(expected - actual)
+        extra = sorted(actual - expected)
         if missing:
             findings.append(
                 IntegrityFinding(
@@ -203,15 +248,42 @@ def classify_candle_integrity(
                     ts_ms=missing[0],
                 )
             )
+        if extra:
+            findings.append(
+                IntegrityFinding(
+                    reason_code=REASON_INCOMPLETE_WINDOW,
+                    detail=(
+                        f"{len(extra)} candle(s) outside bound window "
+                        f"[{start_ts_ms}, {end_ts_ms}]; first_extra={extra[0]}"
+                    ),
+                    ts_ms=extra[0],
+                )
+            )
+        # Warmup/live incomplete: series ends before declared end or starts late.
+        if candles:
+            first = _ts(candles[0])
+            last = _ts(candles[-1])
+            if first > int(start_ts_ms) or last < int(end_ts_ms):
+                findings.append(
+                    IntegrityFinding(
+                        reason_code=REASON_INCOMPLETE_WINDOW,
+                        detail=(
+                            f"series bounds [{first}, {last}] do not cover "
+                            f"declared window [{start_ts_ms}, {end_ts_ms}]"
+                        ),
+                        ts_ms=first if first > int(start_ts_ms) else last,
+                    )
+                )
 
     codes = tuple(sorted({f.reason_code for f in findings}))
-    # Identical duplicates and OOO / gaps / cadence / conflicting are not replay-ok.
+    primary = primary_reason_code(codes)
     ok = len(findings) == 0
     return IntegrityAssessment(
         schema_version=INTEGRITY_RULES_SCHEMA_VERSION,
         ok_for_replay=ok,
         findings=tuple(findings),
         reason_codes=codes,
+        primary_reason_code=primary,
         normalization_evidence={
             "schema_version": norm_evidence.schema_version,
             "normalization_applied": list(norm_evidence.normalization_applied),
@@ -230,7 +302,10 @@ def assert_replay_integrity(
     end_ts_ms: int | None = None,
     step_ms: int = _ONE_MINUTE_MS,
 ) -> IntegrityAssessment:
-    """Fail-closed gate for replay datasets (CDB-051)."""
+    """Fail-closed gate for replay datasets (CDB-051).
+
+    Raises ``IntegrityError`` with ``.code`` set to the primary root cause.
+    """
     assessment = classify_candle_integrity(
         candles,
         start_ts_ms=start_ts_ms,
@@ -238,8 +313,11 @@ def assert_replay_integrity(
         step_ms=step_ms,
     )
     if not assessment.ok_for_replay:
-        codes = ",".join(assessment.reason_codes) or "UNKNOWN"
-        raise ValueError(
-            f"replay integrity blocked ({INTEGRITY_RULES_SCHEMA_VERSION}): {codes}"
+        code = assessment.primary_reason_code or "UNKNOWN"
+        codes = ",".join(assessment.reason_codes) or code
+        raise IntegrityError(
+            f"replay integrity blocked ({INTEGRITY_RULES_SCHEMA_VERSION}): {codes}",
+            code=code,
+            assessment=assessment,
         )
     return assessment

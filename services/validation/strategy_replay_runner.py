@@ -87,6 +87,7 @@ from core.replay.dataset_provider import (
     DatasetResult,
     FileBackedDatasetProvider,
     enforce_exact_window,
+    enforce_replay_integrity,
 )
 from core.replay.dataset_spec import DatasetSpec, DatasetSpecError
 from core.replay.historical_bridge import (
@@ -309,7 +310,14 @@ _SAFE_ENV_KEYS: frozenset[str] = frozenset(
 # Errors
 # ---------------------------------------------------------------------------
 class ReplayRunnerError(RuntimeError):
-    """Raised when the replay runner cannot proceed (maps to exit code 2)."""
+    """Raised when the replay runner cannot proceed (maps to exit code 2).
+
+    Optional ``code`` preserves CDB-051 integrity / DQ root causes.
+    """
+
+    def __init__(self, message: str, *, code: str | None = None) -> None:
+        super().__init__(message)
+        self.code = code
 
 
 # ---------------------------------------------------------------------------
@@ -769,6 +777,12 @@ def _enforce_replay_dq_sidecar_binding(
         ) from exc
 
 
+def _reraise_as_runner_error(exc: Exception) -> None:
+    """Re-raise load failures as ``ReplayRunnerError``, preserving ``.code``."""
+    code = getattr(exc, "code", None)
+    raise ReplayRunnerError(str(exc), code=code) from exc
+
+
 def _load_dataset_result(
     config: ARVPReplayConfig,
     *,
@@ -790,7 +804,7 @@ def _load_dataset_result(
         try:
             temp_result = FileBackedDatasetProvider().load(temp_spec)
         except (DatasetLoadError, DatasetSpecError) as exc:
-            raise ReplayRunnerError(str(exc)) from exc
+            _reraise_as_runner_error(exc)
 
         candles = list(temp_result.candles)
         try:
@@ -798,7 +812,8 @@ def _load_dataset_result(
             end_ts_ms = int(candles[-1]["ts_ms"])
         except (KeyError, TypeError, ValueError, IndexError) as exc:
             raise ReplayRunnerError(
-                "dataset requires numeric ts_ms on the first live candle and last candle"
+                "dataset requires numeric ts_ms on the first live candle and last candle",
+                code="INCOMPLETE_WINDOW",
             ) from exc
 
         spec = DatasetSpec(
@@ -819,7 +834,13 @@ def _load_dataset_result(
         try:
             enforce_exact_window(candles, spec, str(input_path))
         except DatasetLoadError as exc:
-            raise ReplayRunnerError(str(exc)) from exc
+            _reraise_as_runner_error(exc)
+
+        # CDB-051: re-bind integrity to the final rebound DatasetSpec window.
+        try:
+            enforce_replay_integrity(candles, str(input_path), spec=spec)
+        except DatasetLoadError as exc:
+            _reraise_as_runner_error(exc)
 
         # CDB-050: bind DQ sidecar (if present) to independently loaded content.
         _enforce_replay_dq_sidecar_binding(candles_path=input_path, candles=candles)
@@ -860,7 +881,7 @@ def _load_dataset_result(
         try:
             return DBBackedDatasetProvider(conn).load(spec)
         except (DatasetLoadError, DatasetSpecError) as exc:
-            raise ReplayRunnerError(str(exc)) from exc
+            _reraise_as_runner_error(exc)
         finally:
             try:
                 conn.close()
@@ -877,7 +898,7 @@ def _load_dataset_result(
                 warmup_candles=warmup_count,
             )
         except BinanceWindowBankAdapterError as exc:
-            raise ReplayRunnerError(str(exc)) from exc
+            _reraise_as_runner_error(exc)
         inner = dataset.dataset_result
         req_fp = inner.request_fingerprint
         if req_fp is None:
