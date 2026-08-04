@@ -26,6 +26,12 @@ from tools.market_data.development_window_selector import (
     DevelopmentSelectionError,
     resolve_window_candles_path,
 )
+from tools.market_data.historical_common import (
+    HistoricalProbeError,
+    dq_report_from_dataset_spec,
+    enforce_dq_content_binding,
+    load_dq_report_sidecar,
+)
 
 BATCH_A_WINDOW_BANK_ROOT = "artifacts/market_data/window_bank/binance/spot/BTCUSDT/1m"
 
@@ -160,6 +166,33 @@ def load_window_candles_jsonl(candles_path: Path) -> list[dict[str, Any]]:
     return candles
 
 
+def _enforce_window_dq_content_binding(
+    *,
+    window_id: str,
+    meta: Mapping[str, Any],
+    candles: Sequence[Mapping[str, Any]],
+    candles_path: Path,
+) -> None:
+    """Fail-closed CDB-050 bind when the window claims a DQ verdict."""
+    dq_report = dq_report_from_dataset_spec(meta)
+    if dq_report is None:
+        # Spec does not claim a DQ verdict — not a DQ consumer for this load.
+        return
+    evidence = load_dq_report_sidecar(candles_path.parent / "quality_report.json")
+    try:
+        enforce_dq_content_binding(
+            report=dq_report,
+            candles=candles,
+            evidence=evidence,
+        )
+    except HistoricalProbeError as exc:
+        raise BinanceWindowBankAdapterError(
+            f"window {window_id!r} DQ content binding failed"
+            + (f" [{exc.code}]" if getattr(exc, "code", None) else "")
+            + f": {exc}"
+        ) from exc
+
+
 def load_binance_window_dataset(
     window_id: str,
     *,
@@ -174,6 +207,10 @@ def load_binance_window_dataset(
     must include the warmup prefix before ``start_ts_ms``. Window-bank JSON
     metadata that stores the series-first timestamp as ``start_ts_ms`` is
     rebound to the live start when ``warmup_candles > 0``.
+
+    CDB-050: when ``data_quality_verdict`` is present on the window spec, the
+    loaded candle content must match the bound ``content_fingerprint`` before
+    the dataset is returned to any consumer.
     """
     ref = resolve_window_bank_paths(
         window_id,
@@ -225,6 +262,14 @@ def load_binance_window_dataset(
             f"window {window_id!r} missing warmup prefix: expected first candle "
             f"ts_ms={live_start - warmup * 60_000}, got {series_first}"
         )
+
+    # CDB-050 consumer bind: before provider load / return.
+    _enforce_window_dq_content_binding(
+        window_id=window_id,
+        meta=meta,
+        candles=candles,
+        candles_path=candles_path,
+    )
 
     dataset_spec = DatasetSpec(
         symbol=str(meta["symbol"]),

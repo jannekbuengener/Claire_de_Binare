@@ -91,7 +91,17 @@ def test_select_stress_chunk_rejects_then_picks_next_deterministically() -> None
 @pytest.mark.unit
 def test_build_stress_windows_single_month_no_gap(tmp_path: Path) -> None:
     month = "2020-01"
-    enriched = tmp_path / "artifacts" / "market_data" / "enriched" / "binance" / "spot" / "BTCUSDT" / "1m" / month
+    enriched = (
+        tmp_path
+        / "artifacts"
+        / "market_data"
+        / "enriched"
+        / "binance"
+        / "spot"
+        / "BTCUSDT"
+        / "1m"
+        / month
+    )
     enriched.mkdir(parents=True)
     candles = _contiguous_block(1_578_441_600_000, 20_000)
     (enriched / "candles.jsonl").write_text(
@@ -101,7 +111,13 @@ def test_build_stress_windows_single_month_no_gap(tmp_path: Path) -> None:
     manifest = {
         "months": [{"month": month, "quality_verdict": "STRICT_COMPLETE"}],
     }
-    manifest_path = tmp_path / "artifacts" / "market_data" / "manifests" / "binance_btcusdt_1m_full_import.json"
+    manifest_path = (
+        tmp_path
+        / "artifacts"
+        / "market_data"
+        / "manifests"
+        / "binance_btcusdt_1m_full_import.json"
+    )
     manifest_path.parent.mkdir(parents=True)
     manifest_path.write_text(json.dumps(manifest), encoding="utf-8")
 
@@ -116,7 +132,17 @@ def test_build_stress_windows_single_month_no_gap(tmp_path: Path) -> None:
 @pytest.mark.unit
 def test_extract_stress_window_candles_no_interpolation(tmp_path: Path) -> None:
     month = "2020-01"
-    enriched = tmp_path / "artifacts" / "market_data" / "enriched" / "binance" / "spot" / "BTCUSDT" / "1m" / month
+    enriched = (
+        tmp_path
+        / "artifacts"
+        / "market_data"
+        / "enriched"
+        / "binance"
+        / "spot"
+        / "BTCUSDT"
+        / "1m"
+        / month
+    )
     enriched.mkdir(parents=True)
     candles = _contiguous_block(0, 20)
     (enriched / "candles.jsonl").write_text(
@@ -138,14 +164,33 @@ def test_extract_stress_window_candles_no_interpolation(tmp_path: Path) -> None:
 @pytest.mark.unit
 def test_rebuild_stress_v2_writes_new_fingerprints(tmp_path: Path) -> None:
     month = "2020-01"
-    enriched = tmp_path / "artifacts" / "market_data" / "enriched" / "binance" / "spot" / "BTCUSDT" / "1m" / month
+    enriched = (
+        tmp_path
+        / "artifacts"
+        / "market_data"
+        / "enriched"
+        / "binance"
+        / "spot"
+        / "BTCUSDT"
+        / "1m"
+        / month
+    )
     enriched.mkdir(parents=True)
     candles = _contiguous_block(1_578_441_600_000, 20_000)
     (enriched / "candles.jsonl").write_text(
         "\n".join(json.dumps(c) for c in candles),
         encoding="utf-8",
     )
-    bank_root = tmp_path / "artifacts" / "market_data" / "window_bank" / "binance" / "spot" / "BTCUSDT" / "1m"
+    bank_root = (
+        tmp_path
+        / "artifacts"
+        / "market_data"
+        / "window_bank"
+        / "binance"
+        / "spot"
+        / "BTCUSDT"
+        / "1m"
+    )
     old_id = "binance_1m_stress_max_drawdown"
     old_dir = bank_root / old_id
     old_dir.mkdir(parents=True)
@@ -162,7 +207,13 @@ def test_rebuild_stress_v2_writes_new_fingerprints(tmp_path: Path) -> None:
         "months": [{"month": month, "quality_verdict": "STRICT_COMPLETE"}],
         "source_sha": "abc123",
     }
-    manifest_path = tmp_path / "artifacts" / "market_data" / "manifests" / "binance_btcusdt_1m_full_import.json"
+    manifest_path = (
+        tmp_path
+        / "artifacts"
+        / "market_data"
+        / "manifests"
+        / "binance_btcusdt_1m_full_import.json"
+    )
     manifest_path.parent.mkdir(parents=True)
     manifest_path.write_text(json.dumps(manifest), encoding="utf-8")
 
@@ -203,7 +254,16 @@ def test_rebuild_stress_v2_writes_new_fingerprints(tmp_path: Path) -> None:
 
 @pytest.mark.unit
 def test_stress_rerun_manifest_schedules_exactly_six_jobs(tmp_path: Path) -> None:
-    bank_root = tmp_path / "artifacts" / "market_data" / "window_bank" / "binance" / "spot" / "BTCUSDT" / "1m"
+    bank_root = (
+        tmp_path
+        / "artifacts"
+        / "market_data"
+        / "window_bank"
+        / "binance"
+        / "spot"
+        / "BTCUSDT"
+        / "1m"
+    )
     for idx, wid in enumerate(
         ("binance_1m_stress_max_drawdown_v2", "binance_1m_stress_max_volatility_v2")
     ):
@@ -233,7 +293,13 @@ def test_stress_rerun_manifest_schedules_exactly_six_jobs(tmp_path: Path) -> Non
         }
         (d / "dataset_spec.json").write_text(json.dumps(spec), encoding="utf-8")
 
-    import_path = tmp_path / "artifacts" / "market_data" / "manifests" / "binance_btcusdt_1m_full_import.json"
+    import_path = (
+        tmp_path
+        / "artifacts"
+        / "market_data"
+        / "manifests"
+        / "binance_btcusdt_1m_full_import.json"
+    )
     import_path.parent.mkdir(parents=True)
     import_path.write_text(json.dumps({"source_sha": "deadbeef"}), encoding="utf-8")
 
@@ -261,14 +327,33 @@ def test_assert_no_legacy_market_data_path_rejects_e_drive() -> None:
 @pytest.mark.unit
 def test_rebuild_stress_v2_skips_when_existing_valid(tmp_path: Path) -> None:
     month = "2021-05"
-    enriched = tmp_path / "artifacts" / "market_data" / "enriched" / "binance" / "spot" / "BTCUSDT" / "1m" / month
+    enriched = (
+        tmp_path
+        / "artifacts"
+        / "market_data"
+        / "enriched"
+        / "binance"
+        / "spot"
+        / "BTCUSDT"
+        / "1m"
+        / month
+    )
     enriched.mkdir(parents=True)
     candles = _contiguous_block(1_620_885_600_000, 20_000)
     (enriched / "candles.jsonl").write_text(
         "\n".join(json.dumps(c) for c in candles),
         encoding="utf-8",
     )
-    bank_root = tmp_path / "artifacts" / "market_data" / "window_bank" / "binance" / "spot" / "BTCUSDT" / "1m"
+    bank_root = (
+        tmp_path
+        / "artifacts"
+        / "market_data"
+        / "window_bank"
+        / "binance"
+        / "spot"
+        / "BTCUSDT"
+        / "1m"
+    )
     for wid, start in (
         ("binance_1m_stress_max_drawdown_v2", 1_620_885_600_000),
         ("binance_1m_stress_max_volatility_v2", 1_621_339_200_000),
@@ -279,11 +364,17 @@ def test_rebuild_stress_v2_skips_when_existing_valid(tmp_path: Path) -> None:
         cp = d / "candles.jsonl"
         cp.write_text("\n".join(json.dumps(c) for c in chunk), encoding="utf-8")
         fp = wb.sha256_file(cp)
+        from tools.market_data.historical_common import (
+            content_fingerprint_for_candle_rows,
+        )
+
+        content_fp = content_fingerprint_for_candle_rows(chunk)
         spec = {
             "dataset_id": wid,
             "window_id": wid,
             "fingerprint": fp,
             "candles_sha256": fp,
+            "content_fingerprint": content_fp,
             "file_path": str(cp.resolve()).replace("\\", "/"),
             "symbol": "BTCUSDT",
             "timeframe": "1m",
@@ -298,10 +389,18 @@ def test_rebuild_stress_v2_skips_when_existing_valid(tmp_path: Path) -> None:
         }
         (d / "dataset_spec.json").write_text(json.dumps(spec), encoding="utf-8")
 
-    import_path = tmp_path / "artifacts" / "market_data" / "manifests" / "binance_btcusdt_1m_full_import.json"
+    import_path = (
+        tmp_path
+        / "artifacts"
+        / "market_data"
+        / "manifests"
+        / "binance_btcusdt_1m_full_import.json"
+    )
     import_path.parent.mkdir(parents=True)
     import_path.write_text(
-        json.dumps({"months": [{"month": month, "quality_verdict": "STRICT_COMPLETE"}]}),
+        json.dumps(
+            {"months": [{"month": month, "quality_verdict": "STRICT_COMPLETE"}]}
+        ),
         encoding="utf-8",
     )
     (bank_root / "window_bank_manifest.json").write_text("{}", encoding="utf-8")

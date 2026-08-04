@@ -2,6 +2,7 @@
 
 Cross-venue research windows only — not MEXC same-venue evidence.
 """
+
 # ruff: noqa: E402
 
 from __future__ import annotations
@@ -31,6 +32,9 @@ from tools.market_data.binance_full_archive_import import (
 from tools.market_data.historical_common import (
     ONE_MINUTE_MS,
     HistoricalProbeError,
+    content_fingerprint_for_candle_rows,
+    dq_report_from_dataset_spec,
+    enforce_dq_content_binding,
     month_bounds,
     parse_year_month,
     sha256_file,
@@ -46,9 +50,7 @@ EXCLUDED_VERDICTS = frozenset(
 OVERLAP_CLASSES = frozenset(
     {"monthly", "quarterly", "yearly", "stress", "smoke", "pilot"}
 )
-PURPOSES = frozenset(
-    {"development", "validation", "out_of_sample", "stress"}
-)
+PURPOSES = frozenset({"development", "validation", "out_of_sample", "stress"})
 
 
 @dataclass(frozen=True, slots=True)
@@ -94,7 +96,14 @@ def resolve_build_months(repo_root: Path = IMPORT_REPO) -> list[str]:
     manifest = load_import_manifest(repo_root)
     by_month = {str(entry["month"]): entry for entry in manifest.get("months") or []}
     enriched_base = (
-        repo_root / "artifacts" / "market_data" / "enriched" / "binance" / "spot" / "BTCUSDT" / "1m"
+        repo_root
+        / "artifacts"
+        / "market_data"
+        / "enriched"
+        / "binance"
+        / "spot"
+        / "BTCUSDT"
+        / "1m"
     )
     months: list[str] = []
     if enriched_base.is_dir():
@@ -118,8 +127,14 @@ def resolve_build_months(repo_root: Path = IMPORT_REPO) -> list[str]:
     return strict_complete_months(manifest)
 
 
-def _load_month_candles(repo_root: Path, month: str, *, enriched: bool = True) -> list[dict[str, Any]]:
-    base = _enriched_dir(repo_root, month) if enriched else _normalized_dir(repo_root, month)
+def _load_month_candles(
+    repo_root: Path, month: str, *, enriched: bool = True
+) -> list[dict[str, Any]]:
+    base = (
+        _enriched_dir(repo_root, month)
+        if enriched
+        else _normalized_dir(repo_root, month)
+    )
     path = base / "candles.jsonl"
     if not path.exists():
         raise HistoricalProbeError(f"Missing candles: {path}")
@@ -267,7 +282,9 @@ def _month_candle_bounds(
     return int(candles[0]["ts_ms"]), int(candles[-1]["ts_ms"]), len(candles), contiguous
 
 
-def _cross_month_segments(months: Sequence[str], repo_root: Path) -> list[tuple[str, ...]]:
+def _cross_month_segments(
+    months: Sequence[str], repo_root: Path
+) -> list[tuple[str, ...]]:
     """Group consecutive months whose boundary timestamps are contiguous."""
     ordered = sorted(months)
     if not ordered:
@@ -332,12 +349,22 @@ def _update_metric_best(
             value = _window_metrics(chunk)[metric_field]
             current = best.get(metric_key)
             if current is None:
-                best[metric_key] = (value, int(chunk[0]["ts_ms"]), chunk, segment_months)
+                best[metric_key] = (
+                    value,
+                    int(chunk[0]["ts_ms"]),
+                    chunk,
+                    segment_months,
+                )
                 continue
             cur_val, cur_start, _, _ = current
             better = value > cur_val if reverse else value < cur_val
             if better or (value == cur_val and int(chunk[0]["ts_ms"]) < cur_start):
-                best[metric_key] = (value, int(chunk[0]["ts_ms"]), chunk, segment_months)
+                best[metric_key] = (
+                    value,
+                    int(chunk[0]["ts_ms"]),
+                    chunk,
+                    segment_months,
+                )
 
 
 def _window_metrics(chunk: Sequence[dict[str, Any]]) -> dict[str, float]:
@@ -453,6 +480,8 @@ def _write_window_dataset(
         for row in candles:
             handle.write(json.dumps(row, ensure_ascii=False) + "\n")
     fingerprint = sha256_file(jsonl_path)
+    # CDB-050: content identity of the written series (independent of file SHA).
+    content_fp = content_fingerprint_for_candle_rows(candles)
     spec = {
         "schema_version": "dataset_spec.v2",
         "dataset_id": window.window_id,
@@ -470,6 +499,7 @@ def _write_window_dataset(
         "timeframe": "1m",
         "fingerprint": fingerprint,
         "candles_sha256": fingerprint,
+        "content_fingerprint": content_fp,
         "data_quality_verdict": window.quality_verdict,
         "regime_enriched": True,
         "overlap_class": window.overlap_class,
@@ -488,6 +518,11 @@ def _write_window_dataset(
         "lr_status": "NO-GO",
         "issue": "#3990",
     }
+    # Bind the stamped DQ verdict to the written content before accepting the
+    # window as STRICT/usable for downstream consumers.
+    dq_report = dq_report_from_dataset_spec(spec)
+    if dq_report is not None:
+        enforce_dq_content_binding(report=dq_report, candles=candles)
     spec_path = window_dir / "dataset_spec.json"
     write_json(spec_path, spec)
     return spec_path
@@ -685,7 +720,9 @@ def build_stress_windows(
         _value, start_ts, chunk, _segment = entry
         if reject.get(wid_base) == start_ts:
             # pick next-best deterministically within already ranked scan
-            candidates: list[tuple[float, int, list[dict[str, Any]], tuple[str, ...]]] = []
+            candidates: list[
+                tuple[float, int, list[dict[str, Any]], tuple[str, ...]]
+            ] = []
             for segment in _cross_month_segments(months, repo_root):
                 segment_candles = _load_segment_candles(repo_root, segment)
                 for island in _contiguous_islands(segment_candles):
@@ -705,9 +742,7 @@ def build_stress_windows(
                         candidates.append(
                             (metric, int(subchunk[0]["ts_ms"]), subchunk, segment)
                         )
-            candidates = [
-                c for c in candidates if c[1] != reject.get(wid_base, -1)
-            ]
+            candidates = [c for c in candidates if c[1] != reject.get(wid_base, -1)]
             if not candidates:
                 continue
             if metric_key in {"min_vol", "max_downtrend"}:
@@ -940,6 +975,13 @@ def verify_stress_v2_window(
 
     if spec.get("data_quality_verdict") != "STRICT_COMPLETE":
         raise HistoricalProbeError(f"{window_id}: quality verdict not STRICT_COMPLETE")
+    # CDB-050: file SHA alone is insufficient — bind DQ content identity.
+    dq_report = dq_report_from_dataset_spec(spec)
+    if dq_report is None:
+        raise HistoricalProbeError(
+            f"{window_id}: missing data_quality_verdict for DQ content binding"
+        )
+    enforce_dq_content_binding(report=dq_report, candles=candles)
     if spec.get("venue") != "binance":
         raise HistoricalProbeError(f"{window_id}: venue must be binance")
     if spec.get("evidence_subclass") != "historical_cross_venue_research":
@@ -1348,7 +1390,9 @@ def merge_stress_v2_into_campaign(
     from tools.arvp_vacation.queue_store import QUEUE_STATE_FILENAME
     from tools.arvp_vacation.summary import write_summary
 
-    orig_state_path = (repo_root / original_campaign_dir).resolve() / QUEUE_STATE_FILENAME
+    orig_state_path = (
+        repo_root / original_campaign_dir
+    ).resolve() / QUEUE_STATE_FILENAME
     rerun_state_path = (repo_root / rerun_campaign_dir).resolve() / QUEUE_STATE_FILENAME
     rerun_rel = (
         rerun_campaign_dir.as_posix()
@@ -1364,7 +1408,9 @@ def merge_stress_v2_into_campaign(
     rerun_state = json.loads(rerun_state_path.read_text(encoding="utf-8"))
 
     orig_jobs = list(orig_state.get("jobs") or [])
-    base_jobs = [j for j in orig_jobs if isinstance(j, dict) and not _is_stress_v2_job(j)]
+    base_jobs = [
+        j for j in orig_jobs if isinstance(j, dict) and not _is_stress_v2_job(j)
+    ]
     rerun_jobs = [j for j in rerun_state.get("jobs") or [] if isinstance(j, dict)]
     if len(rerun_jobs) != 6:
         raise HistoricalProbeError(
@@ -1410,7 +1456,10 @@ def merge_stress_v2_into_campaign(
     }
     write_json(orig_state_path, merged_state)
 
-    manifest_path = repo_root / "artifacts/arvp_vacation/manifests/binance_historical_campaign_3990.yaml"
+    manifest_path = (
+        repo_root
+        / "artifacts/arvp_vacation/manifests/binance_historical_campaign_3990.yaml"
+    )
     manifest = load_manifest(manifest_path)
     write_summary(manifest, merged_state, repo_root)
 
@@ -1470,10 +1519,7 @@ def build_vacation_manifest(
 
     if smoke_only:
         payload["dataset_roots"] = [
-            str(
-                Path(bank_root)
-                / "binance_1m_month_2026_06"
-            ).replace("\\", "/")
+            str(Path(bank_root) / "binance_1m_month_2026_06").replace("\\", "/")
         ]
     elif pilot_only:
         pilot_ids = []
@@ -1562,7 +1608,9 @@ def main() -> int:
 
         if args.merge_stress_v2:
             if not args.original_campaign_dir or not args.rerun_campaign_dir:
-                parser.error("--merge-stress-v2 requires --original-campaign-dir and --rerun-campaign-dir")
+                parser.error(
+                    "--merge-stress-v2 requires --original-campaign-dir and --rerun-campaign-dir"
+                )
             merge_result = merge_stress_v2_into_campaign(
                 original_campaign_dir=Path(args.original_campaign_dir),
                 rerun_campaign_dir=Path(args.rerun_campaign_dir),
@@ -1596,8 +1644,21 @@ def main() -> int:
                     / "BTCUSDT"
                     / "1m"
                 ).replace("\\", "/"),
-                "windows": json.loads(
-                    (
+                "windows": (
+                    json.loads(
+                        (
+                            REPO_ROOT
+                            / "artifacts"
+                            / "market_data"
+                            / "window_bank"
+                            / "binance"
+                            / "spot"
+                            / "BTCUSDT"
+                            / "1m"
+                            / "window_bank_manifest.json"
+                        ).read_text(encoding="utf-8")
+                    ).get("windows", [])
+                    if (
                         REPO_ROOT
                         / "artifacts"
                         / "market_data"
@@ -1607,20 +1668,9 @@ def main() -> int:
                         / "BTCUSDT"
                         / "1m"
                         / "window_bank_manifest.json"
-                    ).read_text(encoding="utf-8")
-                ).get("windows", [])
-                if (
-                    REPO_ROOT
-                    / "artifacts"
-                    / "market_data"
-                    / "window_bank"
-                    / "binance"
-                    / "spot"
-                    / "BTCUSDT"
-                    / "1m"
-                    / "window_bank_manifest.json"
-                ).exists()
-                else [],
+                    ).exists()
+                    else []
+                ),
             }
             path = build_vacation_manifest(
                 bank_stub,
@@ -1631,12 +1681,16 @@ def main() -> int:
             return 0
 
         if args.run_campaign:
-            mpath = Path(args.manifest_path) if args.manifest_path else (
-                REPO_ROOT
-                / "artifacts"
-                / "arvp_vacation"
-                / "manifests"
-                / "binance_historical_campaign_3990.yaml"
+            mpath = (
+                Path(args.manifest_path)
+                if args.manifest_path
+                else (
+                    REPO_ROOT
+                    / "artifacts"
+                    / "arvp_vacation"
+                    / "manifests"
+                    / "binance_historical_campaign_3990.yaml"
+                )
             )
             result = run_vacation_campaign(mpath)
             print(json.dumps(result, indent=2))

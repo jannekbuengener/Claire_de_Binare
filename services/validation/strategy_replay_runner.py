@@ -64,7 +64,7 @@ import sys
 from dataclasses import dataclass
 from datetime import timezone
 from pathlib import Path
-from typing import Any, Callable
+from typing import Any, Callable, Mapping, Sequence
 
 from core.replay.batch_a_strategy_registry import (
     BATCH_A_STRATEGY_REGISTRY,
@@ -147,6 +147,11 @@ from core.replay.replay_report_builder import (
 )
 from core.utils.clock import utcnow
 from core.utils.postgres_client import create_postgres_connection
+from tools.market_data.historical_common import (
+    HistoricalProbeError,
+    enforce_dq_content_binding,
+    load_dq_report_sidecar,
+)
 from services.validation.replay_reporter import ReplayReporter, ReplayReporterError
 from scripts.profitability.run_momentum_capture_pipeline_3166 import (
     WARMUP_CANDLES as MOMENTUM_WARMUP_CANDLES,
@@ -739,6 +744,31 @@ def _build_provenance_config_snapshot(
     }
 
 
+def _enforce_replay_dq_sidecar_binding(
+    *,
+    candles_path: Path,
+    candles: Sequence[Mapping[str, Any]],
+) -> None:
+    """CDB-050: if a quality_report.json sidecar exists, bind before replay.
+
+    Absence of a sidecar means this load path does not consume a DQ verdict
+    and is therefore not a CDB-050 DQ consumer for that run.
+    """
+    sidecar = candles_path if candles_path.is_dir() else candles_path.parent
+    report = load_dq_report_sidecar(sidecar / "quality_report.json")
+    if report is None:
+        return
+    try:
+        enforce_dq_content_binding(report=report, candles=candles)
+    except HistoricalProbeError as exc:
+        code = getattr(exc, "code", None)
+        raise ReplayRunnerError(
+            "DQ content binding failed for file dataset"
+            + (f" [{code}]" if code else "")
+            + f": {exc}"
+        ) from exc
+
+
 def _load_dataset_result(
     config: ARVPReplayConfig,
     *,
@@ -790,6 +820,9 @@ def _load_dataset_result(
             enforce_exact_window(candles, spec, str(input_path))
         except DatasetLoadError as exc:
             raise ReplayRunnerError(str(exc)) from exc
+
+        # CDB-050: bind DQ sidecar (if present) to independently loaded content.
+        _enforce_replay_dq_sidecar_binding(candles_path=input_path, candles=candles)
 
         # Request identity follows the *final* windowed spec (not temp start/end=0).
         # Content identity is the loaded candle series (propagate or recompute).

@@ -43,8 +43,22 @@ QUALITY_VERDICTS = frozenset(
 )
 
 
+# CDB-050 machine-readable DQ content-binding error codes.
+DQ_CONTENT_FINGERPRINT_MISSING = "DQ_CONTENT_FINGERPRINT_MISSING"
+DQ_CONTENT_FINGERPRINT_MISMATCH = "DQ_CONTENT_FINGERPRINT_MISMATCH"
+DQ_EVIDENCE_CONTENT_MISMATCH = "DQ_EVIDENCE_CONTENT_MISMATCH"
+
+
 class HistoricalProbeError(ValueError):
-    """Fail-closed historical probe error."""
+    """Fail-closed historical probe error.
+
+    Optional ``code`` carries a stable machine-readable CDB-050 binding class
+    when the failure is a DQ content-identity violation.
+    """
+
+    def __init__(self, message: str, *, code: str | None = None) -> None:
+        super().__init__(message)
+        self.code = code
 
 
 @dataclass(frozen=True, slots=True)
@@ -453,26 +467,155 @@ def content_fingerprint_for_normalized(
     return compute_content_fingerprint(rows)
 
 
+def content_fingerprint_for_candle_rows(
+    candles: Sequence[Mapping[str, Any]],
+) -> str:
+    """Content identity for mapping candle rows (CDB-050 consumer path)."""
+    return compute_content_fingerprint(candles)
+
+
+def _extract_content_fingerprint(payload: Mapping[str, Any] | None) -> str | None:
+    if not isinstance(payload, Mapping):
+        return None
+    raw = payload.get("content_fingerprint")
+    if isinstance(raw, str) and raw.strip():
+        return raw.strip()
+    return None
+
+
 def assert_dq_content_binding(
     report: Mapping[str, Any],
     *,
     content_fingerprint: str,
+    evidence: Mapping[str, Any] | None = None,
 ) -> None:
-    """Fail-closed: DQ verdict must bind to the actual content identity (CDB-050)."""
+    """Fail-closed: DQ verdict must bind to the actual content identity (CDB-050).
+
+    ``content_fingerprint`` MUST be derived independently from the dataset the
+    consumer is about to use — never copied from ``report`` or ``evidence``.
+    Optional ``evidence`` (e.g. sidecar quality evidence) must agree with both
+    the verdict and the live content identity.
+    """
     if not isinstance(content_fingerprint, str) or not content_fingerprint.strip():
         raise HistoricalProbeError(
-            "DQ content binding requires a non-empty content_fingerprint"
+            "DQ content binding requires a non-empty content_fingerprint",
+            code=DQ_CONTENT_FINGERPRINT_MISSING,
         )
-    bound = report.get("content_fingerprint")
-    if not isinstance(bound, str) or not bound.strip():
+    actual = content_fingerprint.strip()
+    bound = _extract_content_fingerprint(report)
+    if bound is None:
         raise HistoricalProbeError(
-            "DQ verdict missing content_fingerprint binding; not applicable"
+            "DQ verdict missing content_fingerprint binding; not applicable",
+            code=DQ_CONTENT_FINGERPRINT_MISSING,
         )
-    if bound != content_fingerprint:
+    if bound != actual:
         raise HistoricalProbeError(
             "DQ verdict content_fingerprint is stale or mismatched; "
-            "verdict is not applicable to this dataset content"
+            "verdict is not applicable to this dataset content",
+            code=DQ_CONTENT_FINGERPRINT_MISMATCH,
         )
+    if evidence is not None:
+        evidence_fp = _extract_content_fingerprint(evidence)
+        if evidence_fp is None:
+            raise HistoricalProbeError(
+                "DQ evidence missing content_fingerprint binding; not applicable",
+                code=DQ_CONTENT_FINGERPRINT_MISSING,
+            )
+        if evidence_fp != bound or evidence_fp != actual:
+            raise HistoricalProbeError(
+                "DQ evidence content_fingerprint disagrees with verdict or "
+                "current dataset content",
+                code=DQ_EVIDENCE_CONTENT_MISMATCH,
+            )
+
+
+def enforce_dq_content_binding(
+    *,
+    report: Mapping[str, Any],
+    content_fingerprint: str | None = None,
+    candles: Sequence[NormalizedCandle] | Sequence[Mapping[str, Any]] | None = None,
+    evidence: Mapping[str, Any] | None = None,
+) -> str:
+    """Single fail-closed CDB-050 enforcement point for all DQ consumers.
+
+    Prefer passing ``candles`` so the actual content fingerprint is computed
+    independently of the verdict/evidence objects. A precomputed fingerprint
+    is accepted only when the caller derived it from a separate source.
+    """
+    if content_fingerprint is not None and candles is not None:
+        # Still allow both; candles win as the independent actual identity.
+        if candles and isinstance(candles[0], NormalizedCandle):
+            actual = content_fingerprint_for_normalized(
+                candles  # type: ignore[arg-type]
+            )
+        else:
+            actual = content_fingerprint_for_candle_rows(
+                candles  # type: ignore[arg-type]
+            )
+        if content_fingerprint.strip() != actual:
+            # Caller-supplied fingerprint disagreed with candle-derived actual:
+            # treat as mismatch against the live dataset (not a rewrite).
+            raise HistoricalProbeError(
+                "provided content_fingerprint does not match examined candle content",
+                code=DQ_CONTENT_FINGERPRINT_MISMATCH,
+            )
+    elif candles is not None:
+        if candles and isinstance(candles[0], NormalizedCandle):
+            actual = content_fingerprint_for_normalized(
+                candles  # type: ignore[arg-type]
+            )
+        elif candles:
+            actual = content_fingerprint_for_candle_rows(
+                candles  # type: ignore[arg-type]
+            )
+        else:
+            actual = content_fingerprint_for_candle_rows([])
+    elif content_fingerprint is not None:
+        actual = content_fingerprint
+    else:
+        raise HistoricalProbeError(
+            "DQ content binding requires candles or content_fingerprint",
+            code=DQ_CONTENT_FINGERPRINT_MISSING,
+        )
+    assert_dq_content_binding(report, content_fingerprint=actual, evidence=evidence)
+    return actual
+
+
+def load_dq_report_sidecar(path: Path) -> dict[str, Any] | None:
+    """Load a ``quality_report.json`` sidecar if present; else ``None``."""
+    if not path.is_file():
+        return None
+    try:
+        payload = json.loads(path.read_text(encoding="utf-8"))
+    except (OSError, json.JSONDecodeError) as exc:
+        raise HistoricalProbeError(
+            f"Failed to load DQ quality report sidecar: {path}: {exc}",
+            code=DQ_CONTENT_FINGERPRINT_MISSING,
+        ) from exc
+    if not isinstance(payload, Mapping):
+        raise HistoricalProbeError(
+            f"DQ quality report sidecar is not an object: {path}",
+            code=DQ_CONTENT_FINGERPRINT_MISSING,
+        )
+    return dict(payload)
+
+
+def dq_report_from_dataset_spec(spec: Mapping[str, Any]) -> dict[str, Any] | None:
+    """Build a minimal DQ verdict mapping from a window/dataset spec.
+
+    Returns ``None`` when the spec does not claim a DQ verdict (consumer is
+    then not a DQ consumer for CDB-050 purposes).
+    """
+    verdict = spec.get("data_quality_verdict")
+    if verdict is None or (isinstance(verdict, str) and not verdict.strip()):
+        return None
+    report: dict[str, Any] = {
+        "verdict": str(verdict).strip(),
+    }
+    fp = _extract_content_fingerprint(spec)
+    if fp is not None:
+        report["content_fingerprint"] = fp
+    return report
 
 
 def build_quality_report(
@@ -494,7 +637,8 @@ def build_quality_report(
     computed_content_fp = content_fingerprint_for_normalized(candles)
     if content_fingerprint is not None and content_fingerprint != computed_content_fp:
         raise HistoricalProbeError(
-            "provided content_fingerprint does not match examined candle content"
+            "provided content_fingerprint does not match examined candle content",
+            code=DQ_CONTENT_FINGERPRINT_MISMATCH,
         )
     dupes = detect_duplicates(candles)
     gaps = detect_gaps(
