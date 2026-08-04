@@ -1,0 +1,75 @@
+{
+  "absolute_bans_unchanged": true,
+  "analyzer_contract_version": "cdb.sensitivity_campaign_analyzer.v1",
+  "authorizing_github_login": "jannekbuengener",
+  "bound_main_sha": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+  "correctness_baseline_sha": "301bc757be7cb4162db6db114a5c445f2aca392f",
+  "evidence_namespace": "artifacts/arvp_sensitivity/4153",
+  "execution_surface_id": "test-surface-local-v1",
+  "expected_run_count": 819,
+  "expires_at_utc": null,
+  "github_comment_id": 999000001,
+  "granted_capabilities": [
+    "campaign_execution"
+  ],
+  "issue": 4153,
+  "lr_status": "NO-GO",
+  "manifest_fingerprint": "7126f60033205d8012976376e217999e8702a83266a059f1d4c628cf4ba208da",
+  "manifest_id": "arvp-sensitivity-4153-v1",
+  "manifest_path": "config/arvp/sensitivity_campaign_4153_v1.json",
+  "matrix_slots": 21,
+  "max_run_count": 819,
+  "notes": "Fixture GO payload for unit tests only; not a live Owner-GO.",
+  "repository": "jannekbuengener/Claire_de_Binare",
+  "reproduction_policy": {
+    "baseline_run_key_count": 1,
+    "compared_result_fields": [
+      "gate_reason",
+      "trade_count",
+      "turnover",
+      "fees",
+      "spread",
+      "slippage",
+      "gross_pnl",
+      "net_pnl",
+      "profit_factor",
+      "expectancy",
+      "drawdown"
+    ],
+    "comparison_mode": "exact_equality",
+    "enabled": true,
+    "max_reproduction_attempts_per_key": 1,
+    "on_mismatch": "block_campaign_completion",
+    "sample_run_key_count": 5
+  },
+  "resource_budget": {
+    "log_retention_days": 30,
+    "max_artifact_bytes": 53687091200,
+    "max_attempts_per_run": 2,
+    "max_campaign_wall_time_seconds": 86400,
+    "max_consecutive_failures": 5,
+    "max_in_flight_runs": 2,
+    "max_parallelism": 2,
+    "max_run_wall_time_seconds": 600,
+    "max_total_failures": 50,
+    "minimum_free_disk_bytes": 1
+  },
+  "resume_policy": {
+    "allow_resume": true,
+    "refuse_binding_mismatch": true,
+    "refuse_running_without_completion": true,
+    "retry_failed": true,
+    "skip_succeeded_identical_bindings": true
+  },
+  "run_keys": 819,
+  "run_plan_fingerprint": "5e2f13203dd6b49895168e4f099001312d0477dd9572fd06b28d30e1cc82f0ce",
+  "runner_contract_version": "cdb.sensitivity_campaign_runner.v1",
+  "schema_version": "cdb.sensitivity_campaign_execution_authorization.v1",
+  "selection_sha256": "3e9ed68736b51fecb299d228c856be80a597cb1dc72fcba595453b856b58bd52",
+  "status": "GO_REPLAY_SENSITIVITY_CAMPAIGN_READY",
+  "strategy_set": [
+    "primary_breakout_v1"
+  ],
+  "surface_capability_fingerprint": "1c316de8d57990115750d75191f020d51282070d54f1b507dbbbbebf7795093d",
+  "window_count": 39
+}

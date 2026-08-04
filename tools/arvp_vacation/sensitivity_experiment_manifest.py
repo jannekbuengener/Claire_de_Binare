@@ -154,7 +154,32 @@ def assert_executable_consistency(manifest: Mapping[str, Any]) -> None:
         if "campaign_execution" in bans and bans.get("campaign_execution") is not True:
             raise SensitivityManifestError(
                 "explicit_bans.campaign_execution alias must stay true "
-                "(auto-start banned; separate Owner Campaign-GO required)"
+                "(banned without external Owner-GO; "
+                "see authorization_policy)"
+            )
+        policy = manifest.get("authorization_policy") or {}
+        if policy.get("requires_external_owner_go") is not True:
+            raise SensitivityManifestError(
+                "authorization_policy.requires_external_owner_go must be true"
+            )
+        if policy.get("authorization_schema") != (
+            "cdb.sensitivity_campaign_execution_authorization.v1"
+        ):
+            raise SensitivityManifestError(
+                "authorization_policy.authorization_schema mismatch"
+            )
+        conditional = set(policy.get("conditionally_authorizable_capabilities") or [])
+        if conditional != {"campaign_execution"}:
+            raise SensitivityManifestError(
+                "conditionally_authorizable_capabilities must be "
+                "exactly [campaign_execution]"
+            )
+        absolute = set(policy.get("absolute_bans") or [])
+        required_absolute = set(required_true)
+        if not required_absolute.issubset(absolute):
+            missing = sorted(required_absolute - absolute)
+            raise SensitivityManifestError(
+                "authorization_policy.absolute_bans missing: " + ", ".join(missing)
             )
         return
 
