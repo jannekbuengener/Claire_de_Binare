@@ -82,7 +82,7 @@ sudo bash infrastructure/hermes/hetzner/bootstrap.sh
 Durability contracts (#4329, host evidence from #4327):
 - `log` / progress output goes to **stderr**; `verify_pin` stdout is machine-only (`ref commit`).
 - Installer temp file is `chmod 0644` after hash PASS (readable by `hermes`, not writable).
-- `/etc/hermes` is `root:hermes` mode `0750`.
+- `/etc/hermes` is root-owned; each profile env is `root:<profile-user>` mode `0640`.
 - Unit uses `ProtectHome=read-only` plus `ReadOnlyPaths` for uv/opt/installer home (not `ProtectHome=true`).
 - After install, bootstrap builds `hermes_cli/web_dist` if needed, links installer-managed Node into each active profile `HERMES_HOME`, and writes `web-ui-build-stamp.json`. `validation-chief` stays `.DISABLED`.
 
@@ -104,13 +104,35 @@ Ports (loopback only):
 
 Each profile has its own `HERMES_HOME` under `/var/lib/hermes/profiles/<name>/`.
 
+### OS identity isolation (B2.0 gate)
+
+Dashboards must not share `User=hermes`. Required mapping:
+
+| Profile | Linux user | Primary group |
+|---|---|---|
+| `jannek-assistant` | `hermes-jannek-assistant` | same |
+| `cdb-engineer` | `hermes-cdb-engineer` | same |
+
+systemd template uses `User=hermes-%i` / `Group=hermes-%i`. Migrate existing hosts with:
+
+```bash
+sudo HERMES_SYSTEMD_SRC=/path/to/bundle/infrastructure/hermes/systemd \
+  bash infrastructure/hermes/hetzner/migrate-profile-uids.sh
+```
+
+Token broker (`hermes-github-token.service`) is root oneshot; PEM at
+`/etc/hermes/secrets/cdb-hermes-engineer.pem` (`root:root` `0600`); token only under
+`/run/hermes/cdb-engineer/` (`0700`/`0600`, owner `hermes-cdb-engineer`).
+No live mint / App create until isolation PASS.
+
+
 ## Start / Stop / Status
 
 ```bash
 sudo systemctl start hermes-dashboard@jannek-assistant
 sudo systemctl start hermes-dashboard@cdb-engineer
 sudo systemctl status 'hermes-dashboard@*'
-sudo -u hermes HERMES_HOME=/var/lib/hermes/profiles/cdb-engineer /opt/hermes/bin/hermes doctor
+sudo -u hermes-cdb-engineer HERMES_HOME=/var/lib/hermes/profiles/cdb-engineer /opt/hermes/bin/hermes doctor
 ```
 
 Unit binds `127.0.0.1:${HERMES_PORT}` with `--no-open --isolated`. Reach via Tailscale
@@ -133,7 +155,7 @@ python -m tools.hermes_ops mint-token --profile cdb-engineer --dry-run
 
 # Live mint — token ONLY to a 0600 file (never stdout)
 python -m tools.hermes_ops mint-token --profile cdb-engineer \
-  --token-file /run/hermes/cdb-engineer.token
+  --token-file /run/hermes/cdb-engineer/token
 ```
 
 Forbidden: `cdb-local-ci` publish, admin merge, branch-protection edits,

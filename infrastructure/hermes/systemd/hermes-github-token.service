@@ -1,0 +1,41 @@
+[Unit]
+Description=CDB Hermes GitHub App token mint (cdb-engineer only) (#4289)
+Documentation=https://github.com/jannekbuengener/Claire_de_Binare/issues/4289
+After=network-online.target
+Wants=network-online.target
+# Fail closed until OS isolation migration created the dedicated engineer user.
+ConditionPathExists=/etc/hermes/secrets/cdb-hermes-engineer.pem
+
+[Service]
+Type=oneshot
+User=root
+Group=root
+# Ephemeral runtime dir; lost on reboot. Ownership forced to engineer UID after mint.
+RuntimeDirectory=hermes/cdb-engineer
+RuntimeDirectoryMode=0700
+WorkingDirectory=/opt/cdb-hermes-bundle
+Environment=PYTHONPATH=/opt/cdb-hermes-bundle
+Environment=HERMES_GH_APP_PRIVATE_KEY_PATH=/etc/hermes/secrets/cdb-hermes-engineer.pem
+EnvironmentFile=-/etc/hermes/cdb-engineer.env
+# Mint writes ONLY to the isolated runtime path; never stdout, never profiles.
+ExecStart=/usr/bin/python3 -m tools.hermes_ops mint-token --profile cdb-engineer --token-file /run/hermes/cdb-engineer/token
+# Enforce token delivery ownership after mint (PEM stays root:root 0600).
+ExecStartPost=/bin/chown hermes-cdb-engineer:hermes-cdb-engineer /run/hermes/cdb-engineer /run/hermes/cdb-engineer/token
+ExecStartPost=/bin/chmod 0700 /run/hermes/cdb-engineer
+ExecStartPost=/bin/chmod 0600 /run/hermes/cdb-engineer/token
+# Drop token on stop.
+ExecStopPost=/bin/rm -f /run/hermes/cdb-engineer/token
+NoNewPrivileges=true
+ProtectSystem=strict
+ProtectHome=true
+PrivateTmp=true
+ReadOnlyPaths=/etc/hermes/secrets
+ReadWritePaths=/run/hermes/cdb-engineer
+UMask=0077
+StandardOutput=journal
+StandardError=journal
+SyslogIdentifier=hermes-github-token
+
+[Install]
+# On-demand only — do not WantedBy multi-user by default.
+WantedBy=

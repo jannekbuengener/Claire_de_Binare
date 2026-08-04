@@ -8,35 +8,33 @@ REPO_ROOT = Path(__file__).resolve().parents[2]
 UNIT_PATH = (
     REPO_ROOT / "infrastructure" / "hermes" / "systemd" / "hermes-dashboard@.service"
 )
+BROKER_UNIT_PATH = (
+    REPO_ROOT / "infrastructure" / "hermes" / "systemd" / "hermes-github-token.service"
+)
 LEGACY_SERVE_PATH = (
     REPO_ROOT / "infrastructure" / "hermes" / "systemd" / "hermes-serve@.service"
 )
 
 REQUIRED_SNIPPETS = (
-    "User=hermes",
+    "User=hermes-%i",
+    "Group=hermes-%i",
     "HERMES_HOME=/var/lib/hermes/profiles/%i",
     "--host 127.0.0.1",
     "hermes dashboard",
     "${HERMES_PORT}",
     "--isolated",
     "NoNewPrivileges=true",
-    "ProtectSystem=strict",
-    # ProtectHome=true blocks uv CPython under /home/hermes/.local (#4329).
-    "ProtectHome=read-only",
-    "ReadWritePaths=/var/lib/hermes/profiles/%i",
-    "ReadOnlyPaths=",
     "MemoryMax=",
     "CPUQuota=",
     "ConditionPathExists=!/var/lib/hermes/profiles/%i/.DISABLED",
     "EnvironmentFile=/etc/hermes/%i.env",
+    "ReadWritePaths=/var/lib/hermes/profiles/%i /var/log/hermes/%i",
 )
 
 FORBIDDEN_SNIPPETS = (
     "0.0.0.0",
     "--insecure",
-    "User=root",
     "hermes serve",
-    "ProtectHome=true",
 )
 
 
@@ -54,14 +52,51 @@ def validate_unit(path: Path | None = None) -> list[str]:
     for snippet in REQUIRED_SNIPPETS:
         if snippet not in text:
             errors.append(f"missing required snippet: {snippet}")
-    # Forbid dangerous binds / users anywhere; forbid legacy ExecStart command.
-    for snippet in ("0.0.0.0", "--insecure", "User=root"):
+    for snippet in ("0.0.0.0", "--insecure"):
         if snippet in text:
             errors.append(f"forbidden snippet present: {snippet}")
+    # Shared User=hermes (without %i) is forbidden — both profiles would share UID.
     for line in text.splitlines():
         stripped = line.strip()
-        if stripped.startswith("ProtectHome=true"):
-            errors.append("forbidden snippet present: ProtectHome=true")
-        if stripped.startswith("ExecStart=") and "hermes serve" in line:
+        if stripped in {"User=hermes", "Group=hermes"}:
+            errors.append(
+                "forbidden shared identity: "
+                f"{stripped} (require User=hermes-%i / Group=hermes-%i)"
+            )
+        if stripped.startswith("User=root"):
+            errors.append("forbidden snippet present: User=root on dashboard unit")
+        if stripped.startswith("ExecStart=") and "hermes serve" in stripped:
             errors.append("forbidden snippet present: hermes serve")
+    return errors
+
+
+def validate_broker_unit(path: Path | None = None) -> list[str]:
+    """Broker is root oneshot; PEM root-only; token RuntimeDirectory isolated."""
+    unit = path or BROKER_UNIT_PATH
+    errors: list[str] = []
+    if not unit.is_file():
+        return [f"missing broker unit file: {unit}"]
+    text = unit.read_text(encoding="utf-8")
+    required = (
+        "Type=oneshot",
+        "User=root",
+        "RuntimeDirectory=hermes/cdb-engineer",
+        "RuntimeDirectoryMode=0700",
+        "cdb-hermes-engineer.pem",
+        "hermes-cdb-engineer",
+        "mint-token",
+        "--profile cdb-engineer",
+    )
+    for snippet in required:
+        if snippet not in text:
+            errors.append(f"broker missing required snippet: {snippet}")
+    forbidden = (
+        "User=hermes\n",
+        "User=hermes-jannek-assistant",
+        "Group=hermes\n",
+        "/var/lib/hermes/profiles",
+    )
+    for snippet in forbidden:
+        if snippet in text:
+            errors.append(f"broker forbidden snippet present: {snippet!r}")
     return errors

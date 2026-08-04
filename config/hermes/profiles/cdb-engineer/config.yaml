@@ -44,7 +44,12 @@ ssh_targets:
 
 github:
   auth_mode: app_installation_token
-  token_broker: python -m tools.hermes_ops mint-token --profile cdb-engineer --token-file /run/hermes/cdb-engineer.token
+  token_broker: python -m tools.hermes_ops mint-token --profile cdb-engineer --token-file /run/hermes/cdb-engineer/token
+  linux_user: hermes-cdb-engineer
+  credential_env:
+    - HERMES_GH_APP_ID
+    - HERMES_GH_APP_INSTALLATION_ID
+    - HERMES_GH_APP_PRIVATE_KEY_PATH
   allowed_repositories:
     - jannekbuengener/Claire_de_Binare  # pragma: allowlist secret
   forbidden_actions:
