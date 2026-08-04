@@ -366,9 +366,14 @@ targets.
 
 - Canonical CI command: `pytest -q -k "not test_mcp_time_server_runtime"` (5126+ tests).
 - `make test-unit` alone fails without MCP deps; use the CI filter or install
-  `requirements-mcp.txt` first.
+ `requirements-mcp.txt` first.
 - Equivalently: `make test` after MCP deps are installed.
 - For coverage: `make test-coverage` (80% threshold)
+- A few unit tests shell out to the `docker` binary (e.g.
+ `test_docker_compose_config_merge_is_valid`) and fail with
+ `FileNotFoundError: 'docker'` when Docker is not installed. This is expected in
+ a no-Docker Cloud session and is not a code regression — skip it or install
+ Docker per the one-time setup above if you need it.
 
 ### Linting
 
