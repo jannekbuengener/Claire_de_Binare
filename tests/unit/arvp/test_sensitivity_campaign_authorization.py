@@ -26,8 +26,11 @@ from tools.arvp_vacation.sensitivity_campaign_authorization import (
     GO_STATUS,
     GitHubComment,
     ISSUE_NUMBER,
+    REVOKE_MARKER,
     SensitivityAuthorizationError,
     assert_absolute_bans_intact,
+    assert_authorization_lifetime_covers_budget,
+    assert_authorization_not_expired_for_next_attempt,
     authorization_policy_defaults,
     campaign_execution_requires_owner_go,
     fingerprint_authorization_payload,
@@ -113,7 +116,10 @@ def build_valid_auth_payload(
         "analyzer_contract_version": "cdb.sensitivity_campaign_analyzer.v1",
         "granted_capabilities": ["campaign_execution"],
         "absolute_bans_unchanged": True,
-        "expires_at_utc": None,
+        # A finite future expiry is required for campaign execute path per
+        # ``assert_authorization_lifetime_covers_budget``. Far-future default
+        # keeps historical tests independent of clock injection.
+        "expires_at_utc": "2099-12-31T23:59:59Z",
         "lr_status": "NO-GO",
         "notes": "unit-test GO payload",
     }
@@ -417,3 +423,112 @@ def test_absolute_bans_and_policy_defaults() -> None:
     assert "paper" in policy["absolute_bans"]
     assert "live" in policy["absolute_bans"]
     assert "jannekbuengener" in policy["authorizing_owner_allowlist"]
+
+
+def test_revoke_marker_blocks_go_parse_even_with_fence(
+    valid_payload: dict[str, Any],
+) -> None:
+    """A body carrying the revoke sentinel fails before JSON parsing."""
+    body = build_go_comment_body(valid_payload) + "\n" + REVOKE_MARKER + "\n"
+    with pytest.raises(SensitivityAuthorizationError) as exc:
+        parse_go_payload_from_comment_body(body)
+    assert exc.value.reason_code == "AUTH_GO_REVOKED"
+
+
+def test_revoke_marker_blocks_verify_owner_go(valid_payload: dict[str, Any]) -> None:
+    """End-to-end verify fails when the fetched body contains the revoke sentinel."""
+    body = build_go_comment_body(valid_payload) + "\n" + REVOKE_MARKER + "\n"
+    with pytest.raises(SensitivityAuthorizationError) as exc:
+        verify_owner_go_comment(
+            comment_id=COMMENT_ID,
+            expected={"authorizing_github_login": AUTHOR},
+            fetcher=make_fetcher(valid_payload, body=body),
+        )
+    assert exc.value.reason_code == "AUTH_GO_REVOKED"
+
+
+def test_assert_authorization_not_expired_null_is_ok() -> None:
+    from datetime import UTC, datetime
+
+    assert (
+        assert_authorization_not_expired_for_next_attempt(
+            None, now_utc=datetime(2026, 8, 4, tzinfo=UTC)
+        )
+        is None
+    )
+
+
+def test_assert_authorization_not_expired_raises_when_past() -> None:
+    from datetime import UTC, datetime
+
+    with pytest.raises(SensitivityAuthorizationError) as exc:
+        assert_authorization_not_expired_for_next_attempt(
+            "2020-01-01T00:00:00Z", now_utc=datetime(2026, 8, 4, tzinfo=UTC)
+        )
+    assert exc.value.reason_code == "AUTHORIZATION_EXPIRED_BEFORE_NEXT_ATTEMPT"
+
+
+def test_authorization_lifetime_null_expiry_blocks_campaign() -> None:
+    """Fail-closed: campaigns require a finite expiry bounding the human gate."""
+    from datetime import UTC, datetime
+
+    budget = _sample_budget()
+    with pytest.raises(SensitivityAuthorizationError) as exc:
+        assert_authorization_lifetime_covers_budget(
+            None, budget, now_utc=datetime(2026, 8, 4, tzinfo=UTC)
+        )
+    assert exc.value.reason_code == "AUTH_EXPIRES_AT_REQUIRED_FOR_CAMPAIGN"
+
+
+def test_authorization_lifetime_insufficient_raises() -> None:
+    """Remaining lifetime < campaign_wall+run_wall fails fail-closed."""
+    from datetime import UTC, datetime, timedelta
+
+    budget = _sample_budget()
+    # campaign_wall=86400s, run_wall=600s -> require 87000s remaining.
+    now = datetime(2026, 8, 4, tzinfo=UTC)
+    short = (now + timedelta(seconds=100)).isoformat().replace("+00:00", "Z")
+    with pytest.raises(SensitivityAuthorizationError) as exc:
+        assert_authorization_lifetime_covers_budget(short, budget, now_utc=now)
+    assert exc.value.reason_code == "AUTH_LIFETIME_INSUFFICIENT_FOR_BUDGET"
+
+
+def test_authorization_lifetime_sufficient_ok() -> None:
+    """Remaining lifetime >= campaign_wall+run_wall passes silently."""
+    from datetime import UTC, datetime, timedelta
+
+    budget = _sample_budget()
+    now = datetime(2026, 8, 4, tzinfo=UTC)
+    ok = (now + timedelta(days=7)).isoformat().replace("+00:00", "Z")
+    # Silent no-op on success.
+    assert_authorization_lifetime_covers_budget(ok, budget, now_utc=now)
+
+
+def test_authorization_lifetime_budget_missing_raises() -> None:
+    """None budget is rejected before other lifetime checks."""
+    from datetime import UTC, datetime
+
+    with pytest.raises(SensitivityAuthorizationError) as exc:
+        assert_authorization_lifetime_covers_budget(
+            None, None, now_utc=datetime(2026, 8, 4, tzinfo=UTC)  # type: ignore[arg-type]
+        )
+    assert exc.value.reason_code == "AUTH_LIFETIME_BUDGET_MISSING"
+
+
+def test_verify_owner_go_returns_expires_at_utc(
+    valid_payload: dict[str, Any],
+) -> None:
+    """``verify_owner_go_comment`` surfaces ``expires_at_utc`` for the runner."""
+    from datetime import UTC, datetime, timedelta
+
+    now = datetime(2026, 8, 4, tzinfo=UTC)
+    future = (now + timedelta(days=1)).isoformat().replace("+00:00", "Z")
+    payload = copy.deepcopy(valid_payload)
+    payload["expires_at_utc"] = future
+    result = verify_owner_go_comment(
+        comment_id=COMMENT_ID,
+        expected={"authorizing_github_login": AUTHOR},
+        fetcher=make_fetcher(payload),
+        now_utc=now,
+    )
+    assert result["expires_at_utc"] == future

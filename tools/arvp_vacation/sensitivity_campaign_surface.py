@@ -11,6 +11,11 @@ from pathlib import Path
 from typing import Any, Mapping
 
 from core.replay.canonical_json import canonical_hash
+from tools.arvp_vacation.sensitivity_campaign_dataset_root import (
+    DatasetRootIdentity,
+    SensitivityDatasetRootError,
+    resolve_and_verify_dataset_root,
+)
 
 SURFACE_CONTRACT_VERSION = "cdb.sensitivity_campaign_execution_surface.v1"
 
@@ -36,6 +41,20 @@ def _disk_free_bytes(path: Path) -> int:
     return int(usage.free)
 
 
+def _coerce_dataset_identity(
+    value: DatasetRootIdentity | Mapping[str, Any] | None,
+) -> dict[str, Any] | None:
+    if value is None:
+        return None
+    if isinstance(value, DatasetRootIdentity):
+        return value.as_dict()
+    if isinstance(value, Mapping):
+        return dict(value)
+    raise SensitivitySurfaceError(
+        "SURFACE_DATASET_IDENTITY_INVALID: expected DatasetRootIdentity or mapping"
+    )
+
+
 def probe_execution_surface(
     *,
     repo_root: Path,
@@ -45,8 +64,22 @@ def probe_execution_surface(
     network_mode: str = "offline_replay_only",
     exchange_credentials_present: bool = False,
     window_availability: Mapping[str, Any] | None = None,
+    manifest: Mapping[str, Any] | None = None,
+    dataset_identity: DatasetRootIdentity | Mapping[str, Any] | None = None,
 ) -> SurfaceProbeResult:
-    """Read-only capability probe. Must not create files or mutate state."""
+    """Read-only capability probe. Must not create files or mutate state.
+
+    When ``dataset_root`` is provided together with ``manifest`` the resolver
+    verifies every window binding under the canonical window-bank layout and
+    the resulting :class:`DatasetRootIdentity` is bound into the fingerprint.
+
+    A caller may pass a precomputed ``dataset_identity`` (e.g. from a prior
+    resolver call) to avoid double-resolving; in that case ``manifest`` is
+    optional. When only ``dataset_root`` is supplied without a manifest we
+    fall back to the lightweight path identity (path name + existence) — this
+    path is only used by ``plan`` / ``probe-surface``. The execute path must
+    always pass ``manifest`` so the full binding is fingerprinted.
+    """
     if network_mode != "offline_replay_only":
         raise SensitivitySurfaceError(
             f"network_mode must be offline_replay_only, got {network_mode!r}"
@@ -57,7 +90,6 @@ def probe_execution_surface(
         )
 
     cpu_count = os.cpu_count() or 1
-    # Approximate RAM via optional platform hooks; None if unreliable.
     ram_bytes: int | None
     try:
         import psutil  # type: ignore
@@ -67,12 +99,29 @@ def probe_execution_surface(
         ram_bytes = None
 
     free_bytes = _disk_free_bytes(repo_root if repo_root.exists() else Path.cwd())
-    dataset_identity = None
+
+    identity_body: dict[str, Any] | None = None
     if dataset_root is not None:
-        dataset_identity = {
-            "path_exists": dataset_root.exists(),
-            "path_name": dataset_root.name,
-        }
+        precomputed = _coerce_dataset_identity(dataset_identity)
+        if precomputed is not None:
+            identity_body = precomputed
+        elif manifest is not None:
+            try:
+                resolved = resolve_and_verify_dataset_root(
+                    dataset_root=dataset_root,
+                    manifest=manifest,
+                    repo_root=repo_root,
+                )
+            except SensitivityDatasetRootError as exc:
+                raise SensitivitySurfaceError(
+                    f"SURFACE_DATASET_ROOT_{exc.reason_code}: {exc}"
+                ) from exc
+            identity_body = resolved.as_dict()
+        else:
+            identity_body = {
+                "path_exists": dataset_root.exists(),
+                "path_name": dataset_root.name,
+            }
 
     windows = dict(window_availability or {})
     surface = {
@@ -84,7 +133,7 @@ def probe_execution_surface(
         "python_version": platform.python_version(),
         "python_implementation": platform.python_implementation(),
         "repository_sha_binding_required": True,
-        "dataset_root_identity": dataset_identity,
+        "dataset_root_identity": identity_body,
         "window_availability": windows,
         "cpu_count": cpu_count,
         "ram_bytes": ram_bytes,

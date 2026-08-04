@@ -123,6 +123,27 @@ def test_strategy_replay_adapter_builds_config_and_invokes(tmp_path: Path) -> No
     assert (tmp_path / "run" / "bound_run_envelope.json").exists()
 
 
+def test_strategy_replay_adapter_binds_window_bank_root(tmp_path: Path) -> None:
+    seen = []
+    bank = (tmp_path / "window_bank").resolve()
+    bank.mkdir()
+
+    def invoker(config):
+        seen.append(config)
+        return 0
+
+    executor = StrategyReplayCampaignExecutor(
+        replay_invoker=invoker,
+        metrics_loader=lambda _p: {"gate_reason": "OK", "trade_count": 0},
+        window_bank_root=bank,
+    )
+    result = executor.execute(_sample_envelope(tmp_path))
+    assert result.exit_code == 0
+    assert len(seen) == 1
+    assert seen[0].window_bank_root == str(bank)
+    assert executor.window_bank_root == bank
+
+
 def test_strategy_replay_adapter_rejects_missing_auth_fp(tmp_path: Path) -> None:
     env = _sample_envelope(tmp_path)
     env = RunEnvelope(**{**env.as_dict(), "authorization_fingerprint": ""})

@@ -33,6 +33,8 @@ from tools.arvp_vacation.sensitivity_campaign_authorization import (
     SensitivityAuthorizationError,
     assert_absolute_bans_intact,
     assert_author_in_owner_allowlist,
+    assert_authorization_lifetime_covers_budget,
+    assert_authorization_not_expired_for_next_attempt,
     campaign_execution_requires_owner_go,
     verify_owner_go_comment,
 )
@@ -42,7 +44,14 @@ from tools.arvp_vacation.sensitivity_campaign_budget import (
     assert_failure_thresholds,
     validate_resource_budget,
 )
+from tools.arvp_vacation.sensitivity_campaign_dataset_root import (
+    DatasetRootIdentity,
+    SensitivityDatasetRootError,
+    resolve_and_verify_dataset_root,
+)
 from tools.arvp_vacation.sensitivity_campaign_executor import (
+    ATTEMPT_KIND_PRIMARY,
+    ATTEMPT_KIND_REPRODUCTION,
     CampaignRunExecutor,
     RunEnvelope,
     StrategyReplayCampaignExecutor,
@@ -58,25 +67,42 @@ from tools.arvp_vacation.sensitivity_campaign_preflight import (
     run_repo_preflight,
 )
 from tools.arvp_vacation.sensitivity_campaign_reproduction import (
+    SensitivityReproductionError,
     build_reproduction_plan,
+    compare_reproduction_results,
 )
 from tools.arvp_vacation.sensitivity_campaign_run_plan import (
     EVIDENCE_NAMESPACE_ROOT,
     build_run_plan,
 )
 from tools.arvp_vacation.sensitivity_campaign_state import (
+    CAMPAIGN_ENVELOPE_NAME,
+    CAMPAIGN_PHASE_BLOCKED,
+    CAMPAIGN_PHASE_COMPLETED,
+    CAMPAIGN_PHASE_PRIMARY_COMPLETE,
+    CAMPAIGN_PHASE_PRIMARY_RUNNING,
+    CAMPAIGN_PHASE_REPRODUCTION_COMPLETE,
+    CAMPAIGN_PHASE_REPRODUCTION_PLANNED,
+    CAMPAIGN_PHASE_REPRODUCTION_RUNNING,
     CampaignBindings,
     SensitivityStateError,
     acquire_campaign_lock,
     assert_namespace_startable,
+    commit_successful_reproduction_result,
     commit_successful_result,
+    count_primary_succeeded,
     evidence_root_for,
+    inspect_reproduction_for_resume,
     inspect_run_for_resume,
     read_json,
     release_campaign_lock,
+    reproduction_dir,
+    result_path,
+    update_campaign_phase,
     write_campaign_envelope,
+    write_comparison_evidence,
+    write_reproduction_envelope,
     write_run_envelope,
-    CAMPAIGN_ENVELOPE_NAME,
 )
 from tools.arvp_vacation.sensitivity_campaign_surface import (
     SensitivitySurfaceError,
@@ -85,7 +111,6 @@ from tools.arvp_vacation.sensitivity_campaign_surface import (
 )
 from tools.arvp_vacation.sensitivity_experiment_manifest import (
     SensitivityManifestError,
-    fingerprint_manifest,
     load_manifest,
     validate_manifest,
 )
@@ -316,6 +341,352 @@ def validate_authorization_command(
     return payload
 
 
+def _load_primary_result(evidence_root: Path, run_key: str) -> dict[str, Any]:
+    """Load the persisted primary result for a run key.
+
+    Fail-closed if the marker/result is missing (partial success would already
+    have been rejected during ``count_primary_succeeded``).
+    """
+    rpath = result_path(evidence_root, run_key)
+    if not rpath.exists():
+        raise SensitivityRunnerError("RUNNER_PRIMARY_RESULT_MISSING", f"{rpath}")
+    body = read_json(rpath)
+    if not isinstance(body.get("result"), Mapping):
+        raise SensitivityRunnerError("RUNNER_PRIMARY_RESULT_MALFORMED", str(rpath))
+    return dict(body["result"])
+
+
+def _run_primary_loop(
+    *,
+    plan: Any,
+    evidence_root: Path,
+    bindings: CampaignBindings,
+    budget: Mapping[str, Any],
+    active_executor: CampaignRunExecutor,
+    manifest: Mapping[str, Any],
+    auth_fp: str,
+    sha: str,
+    auth_expiry: Any,
+    now_utc_provider: Any,
+) -> dict[str, Any]:
+    consecutive_failures = 0
+    total_failures = 0
+    succeeded = 0
+    skipped = 0
+    failed = 0
+    eff_fp = str(manifest.get("effective_config_snapshot_fingerprint") or "")
+
+    for planned in plan.runs:
+        try:
+            action = inspect_run_for_resume(
+                evidence_root,
+                run_key=planned.run_key,
+                bindings=bindings,
+                max_attempts=int(budget["max_attempts_per_run"]),
+                retry_failed=bool(plan.resume_policy.get("retry_failed")),
+            )
+        except SensitivityStateError as exc:
+            raise SensitivityRunnerError("RUNNER_RESUME_BLOCKED", str(exc)) from exc
+
+        if action == "skip":
+            skipped += 1
+            continue
+
+        # Pre-attempt authorization expiry gate.
+        assert_authorization_not_expired_for_next_attempt(
+            auth_expiry, now_utc=now_utc_provider()
+        )
+
+        attempt = 1
+        env_path = evidence_root / "runs" / planned.run_key / "run_envelope.json"
+        if env_path.exists() and action == "retry":
+            prev = json.loads(env_path.read_text(encoding="utf-8"))
+            attempt = int(prev.get("attempt") or 0) + 1
+
+        envelope = RunEnvelope(
+            run_key=planned.run_key,
+            campaign_id=plan.campaign_id,
+            manifest_fingerprint=plan.manifest_fingerprint,
+            execution_sha=sha,
+            window_id=planned.window_id,
+            strategy_id=planned.strategy_id,
+            parameters=dict(planned.param_set),
+            slot_id=planned.slot_id,
+            phase=planned.phase,
+            label=planned.label,
+            physical_parameter_set_fingerprint=(
+                planned.physical_parameter_set_fingerprint
+            ),
+            effective_config_fingerprint=eff_fp,
+            dataset_content_fingerprint=_window_content_fp(manifest, planned.window_id),
+            seed=_seed_for(plan.campaign_id, planned.window_id, planned.slot_id),
+            output_dir=str(evidence_root / "runs" / planned.run_key),
+            run_plan_fingerprint=plan.run_plan_fingerprint,
+            authorization_fingerprint=auth_fp,
+            attempt=attempt,
+            reproduction_attempt=0,
+            attempt_kind=ATTEMPT_KIND_PRIMARY,
+        )
+        write_run_envelope(
+            evidence_root,
+            run_key=planned.run_key,
+            bindings=bindings,
+            status="RUNNING",
+            attempt=attempt,
+            envelope=envelope.as_dict(),
+        )
+        result = active_executor.execute(envelope)
+        if result.exit_code != 0:
+            failed += 1
+            consecutive_failures += 1
+            total_failures += 1
+            write_run_envelope(
+                evidence_root,
+                run_key=planned.run_key,
+                bindings=bindings,
+                status="FAILED",
+                attempt=attempt,
+                envelope=envelope.as_dict(),
+                exit_code=result.exit_code,
+            )
+            try:
+                assert_failure_thresholds(
+                    budget=budget,
+                    consecutive_failures=consecutive_failures,
+                    total_failures=total_failures,
+                )
+            except SensitivityBudgetError as exc:
+                return {
+                    "phase_outcome": "BLOCKED",
+                    "reason_code": str(exc),
+                    "succeeded": succeeded,
+                    "failed": failed,
+                    "skipped": skipped,
+                }
+            continue
+
+        consecutive_failures = 0
+        commit_successful_result(
+            evidence_root,
+            run_key=planned.run_key,
+            bindings=bindings,
+            attempt=attempt,
+            envelope=envelope.as_dict(),
+            result=result.metrics,
+            exit_code=0,
+        )
+        succeeded += 1
+
+    return {
+        "phase_outcome": "PRIMARY_COMPLETE",
+        "succeeded": succeeded,
+        "failed": failed,
+        "skipped": skipped,
+    }
+
+
+def _find_planned_run(plan: Any, run_key: str) -> Any:
+    for planned in plan.runs:
+        if planned.run_key == run_key:
+            return planned
+    raise SensitivityRunnerError("RUNNER_REPRO_RUN_KEY_UNKNOWN", run_key)
+
+
+def _run_reproduction_loop(
+    *,
+    plan: Any,
+    reproduction_plan: Mapping[str, Any],
+    evidence_root: Path,
+    bindings: CampaignBindings,
+    budget: Mapping[str, Any],
+    active_executor: CampaignRunExecutor,
+    manifest: Mapping[str, Any],
+    auth_fp: str,
+    sha: str,
+    auth_expiry: Any,
+    now_utc_provider: Any,
+) -> dict[str, Any]:
+    eff_fp = str(manifest.get("effective_config_snapshot_fingerprint") or "")
+    repro_succeeded = 0
+    repro_failed = 0
+    repro_skipped = 0
+    mismatches: list[dict[str, Any]] = []
+    on_mismatch = str(reproduction_plan.get("on_mismatch") or "")
+    compared_fields = list(reproduction_plan.get("compared_result_fields") or [])
+
+    for item in reproduction_plan.get("reproduction_items", []):
+        run_key = str(item["run_key"])
+        repro_attempt = int(item["reproduction_attempt"])
+
+        try:
+            action = inspect_reproduction_for_resume(
+                evidence_root,
+                run_key=run_key,
+                reproduction_attempt=repro_attempt,
+                bindings=bindings,
+                max_attempts=int(budget["max_attempts_per_run"]),
+                retry_failed=bool(plan.resume_policy.get("retry_failed")),
+            )
+        except SensitivityStateError as exc:
+            raise SensitivityRunnerError(
+                "RUNNER_REPRO_RESUME_BLOCKED", str(exc)
+            ) from exc
+
+        if action == "skip":
+            repro_skipped += 1
+            continue
+
+        # Pre-attempt expiry gate.
+        assert_authorization_not_expired_for_next_attempt(
+            auth_expiry, now_utc=now_utc_provider()
+        )
+
+        planned = _find_planned_run(plan, run_key)
+        attempt = 1
+        env_path = (
+            reproduction_dir(evidence_root, run_key, repro_attempt)
+            / "run_envelope.json"
+        )
+        if env_path.exists() and action == "retry":
+            prev = json.loads(env_path.read_text(encoding="utf-8"))
+            attempt = int(prev.get("attempt") or 0) + 1
+
+        envelope = RunEnvelope(
+            run_key=run_key,
+            campaign_id=plan.campaign_id,
+            manifest_fingerprint=plan.manifest_fingerprint,
+            execution_sha=sha,
+            window_id=planned.window_id,
+            strategy_id=planned.strategy_id,
+            parameters=dict(planned.param_set),
+            slot_id=planned.slot_id,
+            phase=planned.phase,
+            label=planned.label,
+            physical_parameter_set_fingerprint=(
+                planned.physical_parameter_set_fingerprint
+            ),
+            effective_config_fingerprint=eff_fp,
+            dataset_content_fingerprint=_window_content_fp(manifest, planned.window_id),
+            seed=_seed_for(plan.campaign_id, planned.window_id, planned.slot_id),
+            output_dir=str(reproduction_dir(evidence_root, run_key, repro_attempt)),
+            run_plan_fingerprint=plan.run_plan_fingerprint,
+            authorization_fingerprint=auth_fp,
+            attempt=attempt,
+            reproduction_attempt=repro_attempt,
+            attempt_kind=ATTEMPT_KIND_REPRODUCTION,
+        )
+        write_reproduction_envelope(
+            evidence_root,
+            run_key=run_key,
+            reproduction_attempt=repro_attempt,
+            bindings=bindings,
+            status="RUNNING",
+            attempt=attempt,
+            envelope=envelope.as_dict(),
+        )
+
+        result = active_executor.execute(envelope)
+        if result.exit_code != 0:
+            repro_failed += 1
+            write_reproduction_envelope(
+                evidence_root,
+                run_key=run_key,
+                reproduction_attempt=repro_attempt,
+                bindings=bindings,
+                status="FAILED",
+                attempt=attempt,
+                envelope=envelope.as_dict(),
+                exit_code=result.exit_code,
+            )
+            if on_mismatch == "block_campaign_completion":
+                return {
+                    "phase_outcome": "BLOCKED",
+                    "reason_code": "REPRODUCTION_EXECUTION_FAILED",
+                    "succeeded": repro_succeeded,
+                    "failed": repro_failed,
+                    "skipped": repro_skipped,
+                    "mismatches": mismatches,
+                }
+            continue
+
+        commit_successful_reproduction_result(
+            evidence_root,
+            run_key=run_key,
+            reproduction_attempt=repro_attempt,
+            bindings=bindings,
+            attempt=attempt,
+            envelope=envelope.as_dict(),
+            result=result.metrics,
+            exit_code=0,
+        )
+
+        # Load primary and compare, with bindings validation.
+        primary_result_body = read_json(result_path(evidence_root, run_key))
+        primary_result = dict(primary_result_body.get("result") or {})
+        # Bindings comparison uses the envelope-level identifiers already
+        # written by both primary and reproduction paths.
+        primary_bindings = {
+            "run_key": run_key,
+            "manifest_fingerprint": primary_result_body.get("manifest_fingerprint"),
+            "run_plan_fingerprint": primary_result_body.get("run_plan_fingerprint"),
+            "authorization_fingerprint": (
+                primary_result_body.get("authorization_fingerprint")
+            ),
+        }
+        reproduction_bindings = {
+            "run_key": run_key,
+            "manifest_fingerprint": bindings.manifest_fingerprint,
+            "run_plan_fingerprint": bindings.run_plan_fingerprint,
+            "authorization_fingerprint": bindings.authorization_fingerprint,
+        }
+        try:
+            comparison = compare_reproduction_results(
+                primary={**primary_result, **primary_bindings},
+                reproduction={**dict(result.metrics), **reproduction_bindings},
+                compared_fields=compared_fields,
+                bindings=True,
+            )
+        except SensitivityReproductionError as exc:
+            raise SensitivityRunnerError(
+                "RUNNER_REPRO_STRUCTURAL_FAILURE", str(exc)
+            ) from exc
+        write_comparison_evidence(
+            evidence_root,
+            run_key=run_key,
+            reproduction_attempt=repro_attempt,
+            comparison=comparison,
+        )
+
+        if comparison["status"] == "MISMATCH":
+            mismatches.append(
+                {
+                    "run_key": run_key,
+                    "reproduction_attempt": repro_attempt,
+                    "reason_code": comparison["reason_code"],
+                    "mismatched_fields": comparison["mismatched_fields"],
+                }
+            )
+            if on_mismatch == "block_campaign_completion":
+                return {
+                    "phase_outcome": "BLOCKED",
+                    "reason_code": "REPRODUCTION_RESULT_MISMATCH",
+                    "succeeded": repro_succeeded,
+                    "failed": repro_failed,
+                    "skipped": repro_skipped,
+                    "mismatches": mismatches,
+                }
+        else:
+            repro_succeeded += 1
+
+    return {
+        "phase_outcome": "REPRODUCTION_COMPLETE",
+        "succeeded": repro_succeeded,
+        "failed": repro_failed,
+        "skipped": repro_skipped,
+        "mismatches": mismatches,
+    }
+
+
 def execute_campaign(
     *,
     manifest_path: Path,
@@ -333,8 +704,15 @@ def execute_campaign(
     fetcher: Any = None,
     stream: TextIO | None = None,
     max_runs_override: int | None = None,
+    now_utc_provider: Any = None,
 ) -> dict[str, Any]:
-    """Execute only with valid Owner-GO + budget + surface. Default: real adapter."""
+    """Execute only with valid Owner-GO + budget + surface. Default: real adapter.
+
+    Reproduction is executed as part of this call when the campaign policy
+    enables it. Completion is gated on all-primary succeeded plus all
+    reproduction attempts PASSing exact-equality comparison against the bound
+    primary results.
+    """
     root = repo_root or PROJECT_ROOT
     out = stream or sys.stdout
     if max_runs_override is not None and max_runs_override != EXPECTED_RUN_COUNT:
@@ -344,14 +722,12 @@ def execute_campaign(
             "RUNNER_RUN_COUNT_OVERRIDE_FORBIDDEN", str(max_runs_override)
         )
 
-    # Allowlist gate before any side effects (independent of payload self-claim).
+    from core.utils.clock import utcnow as _cdb_utcnow
+
+    now_provider = now_utc_provider or _cdb_utcnow
+
     authorizing_github_login = assert_author_in_owner_allowlist(
         authorizing_github_login
-    )
-
-    # Hard reject generic force pathways (no such flags accepted by argparse).
-    active_executor = (
-        executor if executor is not None else StrategyReplayCampaignExecutor()
     )
 
     manifest = load_manifest(manifest_path)
@@ -377,25 +753,59 @@ def execute_campaign(
     _preflight_ready(root, manifest)
     sha = main_sha or _git_head_sha(root)
     plan = build_run_plan(manifest, main_sha=sha)
-    if plan.run_count != 819 or len(plan.run_keys) != 819:
-        raise SensitivityRunnerError("RUNNER_RUN_COUNT_INVALID", str(plan.run_count))
+    # Internal consistency of the plan (not a duplicate of the manifest guard,
+    # which is enforced in build_run_plan against EXPECTED_RUN_COUNT).
+    if plan.run_count != len(plan.run_keys) or plan.run_count != len(plan.runs):
+        raise SensitivityRunnerError(
+            "RUNNER_RUN_COUNT_INVALID",
+            (
+                f"run_count={plan.run_count} run_keys={len(plan.run_keys)} "
+                f"runs={len(plan.runs)}"
+            ),
+        )
     if "CDB-021" in str(manifest.get("strategies")) or (
         (manifest.get("parameter_grid") or {}).get("cdb_021") not in (None, "OUT")
         and (manifest.get("parameter_grid") or {}).get("cdb_021") != "OUT"
     ):
-        # CDB-021 must remain OUT.
         pg = manifest.get("parameter_grid") or {}
         if pg.get("cdb_021") != "OUT":
             raise SensitivityRunnerError("RUNNER_CDB021_NOT_OUT")
 
     budget = validate_resource_budget(resource_budget)
+    if int(budget["max_parallelism"]) < 1:
+        raise SensitivityRunnerError("RUNNER_PARALLELISM_INVALID")
+
+    # Resolve and verify the dataset root once; bind identity into probe surface
+    # and forward the resolved window-bank root into the real replay adapter.
+    dataset_identity: DatasetRootIdentity | None = None
+    resolved_bank_root: Path | None = None
+    if dataset_root is not None:
+        try:
+            dataset_identity = resolve_and_verify_dataset_root(
+                dataset_root=Path(dataset_root),
+                manifest=manifest,
+                repo_root=root,
+            )
+        except SensitivityDatasetRootError as exc:
+            raise SensitivityRunnerError(
+                f"RUNNER_DATASET_{exc.reason_code}", str(exc)
+            ) from exc
+        resolved_bank_root = Path(dataset_identity.window_bank_root)
+
+    active_executor = (
+        executor
+        if executor is not None
+        else (StrategyReplayCampaignExecutor(window_bank_root=resolved_bank_root))
+    )
 
     probe = probe_execution_surface(
         repo_root=root,
-        dataset_root=dataset_root,
+        dataset_root=Path(dataset_root) if dataset_root is not None else None,
         surface_id=surface_id,
         exchange_credentials_present=False,
         window_availability={"expected_windows": 39},
+        manifest=manifest if dataset_root is not None else None,
+        dataset_identity=dataset_identity,
     )
     expected_fp = surface_capability_fingerprint or probe.surface_capability_fingerprint
     assert_surface_matches_authorization(
@@ -441,10 +851,19 @@ def execute_campaign(
         repository=repository,
         issue=ISSUE_NUMBER,
         fetcher=fetcher,
+        now_utc=now_provider(),
     )
     auth_fp = str(auth["authorization_fingerprint"])
     auth_id = auth_fp[:16]
     comment_updated_at = str(auth["comment_updated_at"])
+    auth_expiry = auth.get("expires_at_utc")
+
+    # Lifetime vs budget check applies before any evidence writes.
+    # A campaign always requires a finite expiry (see
+    # ``assert_authorization_lifetime_covers_budget``); null is refused.
+    assert_authorization_lifetime_covers_budget(
+        auth_expiry, budget, now_utc=now_provider()
+    )
 
     base = artifacts_base if artifacts_base is not None else root
     evidence_root = evidence_root_for(
@@ -469,7 +888,6 @@ def execute_campaign(
     if mode == "resume":
         existing_env = read_json(evidence_root / CAMPAIGN_ENVELOPE_NAME)
         bound_updated = str(existing_env.get("comment_updated_at") or "")
-        # Mutated Owner-GO comment invalidates resume.
         verify_owner_go_comment(
             comment_id=go_comment_id,
             expected=expected,
@@ -488,137 +906,192 @@ def execute_campaign(
     acquire_campaign_lock(evidence_root, holder_token=auth_fp)
     lock_held = True
     try:
+        envelope_extra: dict[str, Any] = {
+            "namespace_mode": mode,
+            "github_comment_id": go_comment_id,
+            "comment_updated_at": comment_updated_at,
+            "authorizing_github_login": authorizing_github_login,
+            "expires_at_utc": auth_expiry,
+        }
+        if dataset_identity is not None:
+            envelope_extra["dataset_root_identity"] = dataset_identity.as_dict()
         write_campaign_envelope(
             evidence_root,
             bindings=bindings,
             run_count=plan.run_count,
-            extra={
-                "namespace_mode": mode,
-                "github_comment_id": go_comment_id,
-                "comment_updated_at": comment_updated_at,
-                "authorizing_github_login": authorizing_github_login,
-            },
+            extra=envelope_extra,
         )
 
-        consecutive_failures = 0
-        total_failures = 0
-        succeeded = 0
-        skipped = 0
-        failed = 0
-        eff_fp = str(manifest.get("effective_config_snapshot_fingerprint") or "")
+        # Enter primary phase.
+        update_campaign_phase(
+            evidence_root,
+            bindings=bindings,
+            phase=CAMPAIGN_PHASE_PRIMARY_RUNNING,
+        )
 
-        # Parallelism is hard-capped; this slice runs sequentially but enforces the
-        # configured max_parallelism as an upper bound (no fan-out above budget).
-        if int(budget["max_parallelism"]) < 1:
-            raise SensitivityRunnerError("RUNNER_PARALLELISM_INVALID")
+        primary_outcome = _run_primary_loop(
+            plan=plan,
+            evidence_root=evidence_root,
+            bindings=bindings,
+            budget=budget,
+            active_executor=active_executor,
+            manifest=manifest,
+            auth_fp=auth_fp,
+            sha=sha,
+            auth_expiry=auth_expiry,
+            now_utc_provider=now_provider,
+        )
+        primary_succeeded = int(primary_outcome.get("succeeded", 0))
+        primary_failed = int(primary_outcome.get("failed", 0))
+        primary_skipped = int(primary_outcome.get("skipped", 0))
 
-        for planned in plan.runs:
-            try:
-                action = inspect_run_for_resume(
-                    evidence_root,
-                    run_key=planned.run_key,
-                    bindings=bindings,
-                    max_attempts=int(budget["max_attempts_per_run"]),
-                    retry_failed=bool(plan.resume_policy.get("retry_failed")),
-                )
-            except SensitivityStateError as exc:
-                raise SensitivityRunnerError("RUNNER_RESUME_BLOCKED", str(exc)) from exc
-
-            if action == "skip":
-                skipped += 1
-                continue
-
-            attempt = 1
-            env_path = evidence_root / "runs" / planned.run_key / "run_envelope.json"
-            if env_path.exists() and action == "retry":
-                prev = json.loads(env_path.read_text(encoding="utf-8"))
-                attempt = int(prev.get("attempt") or 0) + 1
-
-            envelope = RunEnvelope(
-                run_key=planned.run_key,
-                campaign_id=plan.campaign_id,
-                manifest_fingerprint=plan.manifest_fingerprint,
-                execution_sha=sha,
-                window_id=planned.window_id,
-                strategy_id=planned.strategy_id,
-                parameters=dict(planned.param_set),
-                slot_id=planned.slot_id,
-                phase=planned.phase,
-                label=planned.label,
-                physical_parameter_set_fingerprint=(
-                    planned.physical_parameter_set_fingerprint
-                ),
-                effective_config_fingerprint=eff_fp,
-                dataset_content_fingerprint=_window_content_fp(
-                    manifest, planned.window_id
-                ),
-                seed=_seed_for(plan.campaign_id, planned.window_id, planned.slot_id),
-                output_dir=str(evidence_root / "runs" / planned.run_key),
-                run_plan_fingerprint=plan.run_plan_fingerprint,
-                authorization_fingerprint=auth_fp,
-                attempt=attempt,
-                reproduction_attempt=0,
-            )
-            write_run_envelope(
+        if primary_outcome["phase_outcome"] == "BLOCKED":
+            update_campaign_phase(
                 evidence_root,
-                run_key=planned.run_key,
                 bindings=bindings,
-                status="RUNNING",
-                attempt=attempt,
-                envelope=envelope.as_dict(),
+                phase=CAMPAIGN_PHASE_BLOCKED,
+                extra={"blocked_reason": primary_outcome.get("reason_code")},
             )
-            result = active_executor.execute(envelope)
-            if result.exit_code != 0:
-                failed += 1
-                consecutive_failures += 1
-                total_failures += 1
-                write_run_envelope(
-                    evidence_root,
-                    run_key=planned.run_key,
-                    bindings=bindings,
-                    status="FAILED",
-                    attempt=attempt,
-                    envelope=envelope.as_dict(),
-                    exit_code=result.exit_code,
-                )
-                try:
-                    assert_failure_thresholds(
-                        budget=budget,
-                        consecutive_failures=consecutive_failures,
-                        total_failures=total_failures,
-                    )
-                except SensitivityBudgetError as exc:
-                    payload = {
-                        "command": "execute",
-                        "status": "BLOCKED",
-                        "reason_code": str(exc),
-                        "succeeded": succeeded,
-                        "failed": failed,
-                        "skipped": skipped,
-                        "lr_status": "NO-GO",
-                    }
-                    _emit(payload, out)
-                    return payload
-                continue
+            payload = {
+                "command": "execute",
+                "status": "BLOCKED",
+                "reason_code": str(primary_outcome.get("reason_code")),
+                "campaign_phase": CAMPAIGN_PHASE_BLOCKED,
+                "succeeded": primary_succeeded,
+                "failed": primary_failed,
+                "skipped": primary_skipped,
+                "lr_status": "NO-GO",
+            }
+            _emit(payload, out)
+            return payload
 
-            consecutive_failures = 0
-            commit_successful_result(
+        # All primary attempts must have SUCCEEDED before we move forward.
+        confirmed_primary = count_primary_succeeded(
+            evidence_root,
+            bindings=bindings,
+            expected_run_keys=list(plan.run_keys),
+        )
+        if confirmed_primary != plan.run_count:
+            update_campaign_phase(
                 evidence_root,
-                run_key=planned.run_key,
                 bindings=bindings,
-                attempt=attempt,
-                envelope=envelope.as_dict(),
-                result=result.metrics,
-                exit_code=0,
+                phase=CAMPAIGN_PHASE_BLOCKED,
+                extra={
+                    "blocked_reason": "PRIMARY_SUCCESS_COUNT_MISMATCH",
+                    "expected_run_count": plan.run_count,
+                    "confirmed_primary": confirmed_primary,
+                },
             )
-            succeeded += 1
+            payload = {
+                "command": "execute",
+                "status": "BLOCKED",
+                "reason_code": "PRIMARY_SUCCESS_COUNT_MISMATCH",
+                "campaign_phase": CAMPAIGN_PHASE_BLOCKED,
+                "succeeded": primary_succeeded,
+                "failed": primary_failed,
+                "skipped": primary_skipped,
+                "confirmed_primary": confirmed_primary,
+                "lr_status": "NO-GO",
+            }
+            _emit(payload, out)
+            return payload
+
+        update_campaign_phase(
+            evidence_root,
+            bindings=bindings,
+            phase=CAMPAIGN_PHASE_PRIMARY_COMPLETE,
+        )
+
+        reproduction_enabled = bool(plan.reproduction_policy.get("enabled"))
+        reproduction_summary: dict[str, Any] = {"enabled": reproduction_enabled}
+
+        if reproduction_enabled:
+            update_campaign_phase(
+                evidence_root,
+                bindings=bindings,
+                phase=CAMPAIGN_PHASE_REPRODUCTION_PLANNED,
+            )
+            reproduction_plan = build_reproduction_plan(
+                run_keys=list(plan.run_keys),
+                policy=plan.reproduction_policy,
+            )
+            update_campaign_phase(
+                evidence_root,
+                bindings=bindings,
+                phase=CAMPAIGN_PHASE_REPRODUCTION_RUNNING,
+                extra={
+                    "reproduction_plan_fingerprint": reproduction_plan.get(
+                        "reproduction_plan_fingerprint"
+                    ),
+                    "reproduction_item_count": len(
+                        reproduction_plan.get("reproduction_items", [])
+                    ),
+                },
+            )
+
+            repro_outcome = _run_reproduction_loop(
+                plan=plan,
+                reproduction_plan=reproduction_plan,
+                evidence_root=evidence_root,
+                bindings=bindings,
+                budget=budget,
+                active_executor=active_executor,
+                manifest=manifest,
+                auth_fp=auth_fp,
+                sha=sha,
+                auth_expiry=auth_expiry,
+                now_utc_provider=now_provider,
+            )
+            reproduction_summary.update(repro_outcome)
+
+            if repro_outcome["phase_outcome"] == "BLOCKED":
+                update_campaign_phase(
+                    evidence_root,
+                    bindings=bindings,
+                    phase=CAMPAIGN_PHASE_BLOCKED,
+                    extra={
+                        "blocked_reason": repro_outcome.get("reason_code"),
+                        "reproduction_mismatches": repro_outcome.get("mismatches"),
+                    },
+                )
+                payload = {
+                    "command": "execute",
+                    "status": "BLOCKED",
+                    "reason_code": str(repro_outcome.get("reason_code")),
+                    "campaign_phase": CAMPAIGN_PHASE_BLOCKED,
+                    "succeeded": primary_succeeded,
+                    "failed": primary_failed,
+                    "skipped": primary_skipped,
+                    "reproduction": reproduction_summary,
+                    "run_count": plan.run_count,
+                    "evidence_root": str(evidence_root),
+                    "authorization_fingerprint": auth_fp,
+                    "run_plan_fingerprint": plan.run_plan_fingerprint,
+                    "lr_status": "NO-GO",
+                }
+                _emit(payload, out)
+                return payload
+
+            update_campaign_phase(
+                evidence_root,
+                bindings=bindings,
+                phase=CAMPAIGN_PHASE_REPRODUCTION_COMPLETE,
+            )
+
+        update_campaign_phase(
+            evidence_root,
+            bindings=bindings,
+            phase=CAMPAIGN_PHASE_COMPLETED,
+        )
 
         payload = {
             "command": "execute",
-            "status": "COMPLETED" if failed == 0 else "COMPLETED_WITH_FAILURES",
-            "succeeded": succeeded,
-            "failed": failed,
-            "skipped": skipped,
+            "status": "COMPLETED",
+            "campaign_phase": CAMPAIGN_PHASE_COMPLETED,
+            "succeeded": primary_succeeded,
+            "failed": primary_failed,
+            "skipped": primary_skipped,
+            "reproduction": reproduction_summary,
             "run_count": plan.run_count,
             "evidence_root": str(evidence_root),
             "authorization_fingerprint": auth_fp,
