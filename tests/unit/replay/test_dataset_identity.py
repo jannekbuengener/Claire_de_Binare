@@ -36,26 +36,28 @@ from core.replay.dataset_provider import (
 from core.replay.dataset_spec import DatasetSpec
 
 _BASE_START_MS = 1_700_000_000_000
+_BASE_END_MS = _BASE_START_MS + 240_000
+_ONE_MINUTE_MS = 60_000
 
 
-def _file_candles(count: int = 5, *, warmup: int = 0) -> list[dict]:
-    """Exact-window series: optional warmup bars before live ``_BASE_START_MS``.
+def _file_candles(*, warmup: int = 1) -> list[dict]:
+    """Exact-window candle series: warmup prefix + live bars through end_ts.
 
-    Live span remains ``[_BASE_START_MS, _BASE_START_MS + (count-1)*60_000]`` so
-    default count=5 ends at ``_BASE_START_MS + 240_000`` (matches ``_file_spec``).
+    CDB-049: first candle must be at ``start_ts_ms - warmup * 1m``; last at
+    ``end_ts_ms``. Default matches ``_file_spec`` / ``_db_spec`` bounds.
     """
-    first = _BASE_START_MS - warmup * 60_000
-    total = count + warmup
+    first = _BASE_START_MS - int(warmup) * _ONE_MINUTE_MS
+    count = ((_BASE_END_MS - first) // _ONE_MINUTE_MS) + 1
     return [
         {
-            "ts_ms": first + i * 60_000,
+            "ts_ms": first + i * _ONE_MINUTE_MS,
             "open": 50_000.0 + i,
             "high": 50_001.0 + i,
             "low": 49_999.0 + i,
             "close": 50_000.5 + i,
             "volume": 10.5 + i,
         }
-        for i in range(total)
+        for i in range(count)
     ]
 
 
@@ -81,7 +83,7 @@ def _file_spec(path: str, *, warmup: int = 1) -> DatasetSpec:
         symbol="BTCUSDT",
         timeframe="1m",
         start_ts_ms=_BASE_START_MS,
-        end_ts_ms=_BASE_START_MS + 240_000,
+        end_ts_ms=_BASE_END_MS,
         warmup_candles=warmup,
         source="file",
         file_path=path,
@@ -89,7 +91,7 @@ def _file_spec(path: str, *, warmup: int = 1) -> DatasetSpec:
 
 
 def _db_spec(*, warmup: int = 1) -> DatasetSpec:
-    end = _BASE_START_MS + 240_000
+    end = _BASE_END_MS
     return DatasetSpec(
         symbol="BTCUSDT",
         timeframe="1m",
@@ -120,7 +122,7 @@ def test_changed_candle_yields_different_hash() -> None:
 def test_different_file_paths_same_content_keep_content_hash(
     tmp_path: Path,
 ) -> None:
-    candles = _file_candles(warmup=1)
+    candles = _file_candles()
     path_a = tmp_path / "a" / "data.json"
     path_b = tmp_path / "b" / "other.json"
     path_a.parent.mkdir()
@@ -165,7 +167,7 @@ def test_file_and_db_same_content_same_content_hash(tmp_path: Path) -> None:
 def test_request_and_content_hashes_are_semantically_separated(
     tmp_path: Path,
 ) -> None:
-    candles = _file_candles(warmup=1)
+    candles = _file_candles()
     path = tmp_path / "sep.json"
     path.write_text(json.dumps(candles), encoding="utf-8")
     spec = _file_spec(str(path))
