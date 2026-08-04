@@ -5,6 +5,7 @@ Read-only probe against MEXC's official historical download surface
 
 Safety: no secrets, no DB writes, no trading scope.
 """
+
 # ruff: noqa: E402
 
 from __future__ import annotations
@@ -33,6 +34,9 @@ REPO_ROOT = Path(__file__).resolve().parents[2]
 if str(REPO_ROOT) not in sys.path:
     sys.path.insert(0, str(REPO_ROOT))
 
+from core.replay.dataset_identity import (
+    content_fingerprint as compute_content_fingerprint,
+)
 from core.replay.dataset_provider import FileBackedDatasetProvider
 from core.replay.dataset_spec import DatasetSpec
 from core.utils.clock import Clock, utcnow
@@ -273,9 +277,7 @@ class HttpFetcher:
         try:
             return json.loads(text)
         except json.JSONDecodeError as exc:
-            raise MexcHistoricalProbeError(
-                f"Invalid JSON from {url}: {exc}"
-            ) from exc
+            raise MexcHistoricalProbeError(f"Invalid JSON from {url}: {exc}") from exc
 
     def download(
         self,
@@ -360,7 +362,7 @@ class HttpFetcher:
             except urllib.error.HTTPError as exc:
                 last_error = exc
                 if exc.code in {429, 500, 502, 503, 504} and attempt < self.max_retries:
-                    time.sleep(min(2 ** attempt, 8))
+                    time.sleep(min(2**attempt, 8))
                     continue
                 raise MexcHistoricalProbeError(
                     f"HTTP {exc.code} while fetching {url}"
@@ -368,14 +370,12 @@ class HttpFetcher:
             except (urllib.error.URLError, OSError) as exc:
                 last_error = exc
                 if attempt < self.max_retries:
-                    time.sleep(min(2 ** attempt, 8))
+                    time.sleep(min(2**attempt, 8))
                     continue
                 raise MexcHistoricalProbeError(
                     f"Network error while fetching {url}: {exc}"
                 ) from exc
-        raise MexcHistoricalProbeError(
-            f"Failed to fetch {url}: {last_error}"
-        )
+        raise MexcHistoricalProbeError(f"Failed to fetch {url}: {last_error}")
 
 
 def list_directory(
@@ -467,21 +467,21 @@ def discover_source(
             "no_purchase_required": "proven",
         },
         not_proven_fields={
-            "1m_archive_support": "not_proven"
-            if requested_available
-            else "blocked",
+            "1m_archive_support": "not_proven" if requested_available else "blocked",
             "trade_count_field": "not_proven",
             "checksum_files": "not_proven",
             "redistribution_rights": "not_proven",
         },
-        blocked_fields={}
-        if requested_available
-        else {
-            "requested_timeframe": (
-                f"Official archive has no {timeframe} ({requested_dir}) partition; "
-                f"finest proven={finest or 'unknown'}"
-            )
-        },
+        blocked_fields=(
+            {}
+            if requested_available
+            else {
+                "requested_timeframe": (
+                    f"Official archive has no {timeframe} ({requested_dir}) partition; "
+                    f"finest proven={finest or 'unknown'}"
+                )
+            }
+        ),
     )
 
 
@@ -500,7 +500,9 @@ def resolve_monthly_download(
     if not interval_dir:
         raise MexcHistoricalProbeError(f"Unsupported timeframe: {timeframe}")
     listing_path = f"SPOT2/kline/{symbol_id}/monthly/{interval_dir}/"
-    entries = list_directory(fetcher, file_svc_base=file_svc_base, file_path=listing_path)
+    entries = list_directory(
+        fetcher, file_svc_base=file_svc_base, file_path=listing_path
+    )
     target_name = mexc_monthly_filename(symbol, interval_dir, year, month)
     for entry in entries:
         if isinstance(entry, dict):
@@ -562,14 +564,23 @@ def parse_historical_rows(
     fieldnames = [name.strip() for name in reader.fieldnames]
     rows: list[NormalizedCandle] = []
     for row in reader:
-        cleaned = {key.strip(): (value.strip() if value is not None else "") for key, value in row.items()}
-        ts_raw = cleaned.get("open_time") or cleaned.get("openTime") or cleaned.get("timestamp")
+        cleaned = {
+            key.strip(): (value.strip() if value is not None else "")
+            for key, value in row.items()
+        }
+        ts_raw = (
+            cleaned.get("open_time")
+            or cleaned.get("openTime")
+            or cleaned.get("timestamp")
+        )
         if ts_raw is None:
             raise MexcHistoricalProbeError(f"Missing timestamp field in row: {cleaned}")
         ts_ms = normalize_timestamp_ms(ts_raw)
         quote_volume = cleaned.get("amount") or cleaned.get("quote_volume")
         trade_count_raw = cleaned.get("trade_count") or cleaned.get("count")
-        trade_count = int(trade_count_raw) if trade_count_raw not in (None, "") else None
+        trade_count = (
+            int(trade_count_raw) if trade_count_raw not in (None, "") else None
+        )
         rows.append(
             NormalizedCandle(
                 ts_ms=ts_ms,
@@ -587,11 +598,25 @@ def parse_historical_rows(
                 source_file_sha256=source_file_sha256,
             )
         )
-    unknown = sorted(set(fieldnames) - {
-        "open_time", "openTime", "timestamp", "open", "high", "low", "close",
-        "volume", "amount", "quote_volume", "trade_count", "count", "close_time",
-        "closeTime",
-    })
+    unknown = sorted(
+        set(fieldnames)
+        - {
+            "open_time",
+            "openTime",
+            "timestamp",
+            "open",
+            "high",
+            "low",
+            "close",
+            "volume",
+            "amount",
+            "quote_volume",
+            "trade_count",
+            "count",
+            "close_time",
+            "closeTime",
+        }
+    )
     if rows and unknown:
         # Preserve unknown fields in provenance via manifest, not silently drop.
         pass
@@ -693,7 +718,24 @@ def build_quality_report(
     step_ms: int,
     source_hash: str,
     second_parse_hash: str | None = None,
+    content_fingerprint: str | None = None,
 ) -> dict[str, Any]:
+    rows = [
+        {
+            "ts_ms": c.ts_ms,
+            "open": c.open,
+            "high": c.high,
+            "low": c.low,
+            "close": c.close,
+            "volume": c.volume,
+        }
+        for c in candles
+    ]
+    computed_content_fp = compute_content_fingerprint(rows)
+    if content_fingerprint is not None and content_fingerprint != computed_content_fp:
+        raise MexcHistoricalProbeError(
+            "provided content_fingerprint does not match examined candle content"
+        )
     dupes = detect_duplicates(candles)
     gaps = detect_gaps(
         candles, start_ts_ms=start_ts_ms, end_ts_ms=end_ts_ms, step_ms=step_ms
@@ -702,8 +744,7 @@ def build_quality_report(
     now_ms = int(Clock.now() * 1000)
     future_rows = [c.ts_ms for c in candles if c.ts_ms > now_ms]
     monotonic = all(
-        candles[idx].ts_ms < candles[idx + 1].ts_ms
-        for idx in range(len(candles) - 1)
+        candles[idx].ts_ms < candles[idx + 1].ts_ms for idx in range(len(candles) - 1)
     )
     verdict = "SOURCE_INVALID"
     if candles and monotonic and not future_rows:
@@ -727,6 +768,8 @@ def build_quality_report(
         "source_hash": source_hash,
         "second_parse_hash": second_parse_hash,
         "hash_stable": second_parse_hash is None or second_parse_hash == source_hash,
+        "content_fingerprint": computed_content_fp,
+        "content_binding_schema": "cdb.dq_content_binding.v1",
     }
     if verdict not in QUALITY_VERDICTS:
         raise MexcHistoricalProbeError(f"Invalid quality verdict: {verdict}")
@@ -1000,6 +1043,26 @@ def run_probe(
         source_hash=normalized_hash(candles),
         second_parse_hash=second_parse_hash,
     )
+    bound_fp = quality.get("content_fingerprint")
+    if not isinstance(bound_fp, str) or not bound_fp.strip():
+        raise MexcHistoricalProbeError("DQ report missing content_fingerprint binding")
+    recomputed = compute_content_fingerprint(
+        [
+            {
+                "ts_ms": c.ts_ms,
+                "open": c.open,
+                "high": c.high,
+                "low": c.low,
+                "close": c.close,
+                "volume": c.volume,
+            }
+            for c in candles
+        ]
+    )
+    if bound_fp != recomputed:
+        raise MexcHistoricalProbeError(
+            "DQ verdict content_fingerprint is stale or mismatched"
+        )
     norm_dir = (
         repo_root
         / "artifacts"

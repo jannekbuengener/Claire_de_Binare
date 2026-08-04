@@ -23,6 +23,9 @@ from core.replay.dataset_provider import (
     DatasetLoadError,
     DatasetResult,
     FileBackedDatasetProvider,
+    enforce_exact_window,
+    is_file_discover_window,
+    warmup_start_ms,
 )
 from core.replay.dataset_spec import DatasetSpec, DatasetSpecError
 
@@ -66,6 +69,23 @@ def _make_candles(count: int, start_ts_ms: int = _BASE_START_MS) -> list[dict]:
         }
         for i in range(count)
     ]
+
+
+def _make_window_candles(spec: DatasetSpec) -> list[dict]:
+    """Candles that satisfy CDB-049 exact-window bounds for ``spec``."""
+    first = warmup_start_ms(spec)
+    count = (spec.end_ts_ms - first) // 60_000 + 1
+    return _make_candles(count, start_ts_ms=first)
+
+
+def _make_discover_spec(*, file_path: str, warmup_candles: int = 3) -> DatasetSpec:
+    """Runner file-discover sentinel (no exact-window claim until rebound)."""
+    return _make_spec(
+        file_path=file_path,
+        start_ts_ms=0,
+        end_ts_ms=0,
+        warmup_candles=warmup_candles,
+    )
 
 
 def _make_db_rows(count: int, start_ts_ms: int = _BASE_START_MS) -> list[tuple]:
@@ -238,57 +258,59 @@ def test_fingerprint_is_64_char_lowercase_hex() -> None:
 
 @pytest.mark.unit
 def test_file_backed_loads_json_array(tmp_path: object) -> None:
-    candles = _make_candles(10)
+    spec = _make_spec(file_path=str(tmp_path / "data.json"), warmup_candles=3)
+    candles = _make_window_candles(spec)
     f = tmp_path / "data.json"
     f.write_text(json.dumps(candles), encoding="utf-8")
 
-    spec = _make_spec(file_path=str(f), warmup_candles=3)
     result = FileBackedDatasetProvider().load(spec)
 
     assert isinstance(result, DatasetResult)
-    assert len(result.candles) == 10
+    assert len(result.candles) == len(candles)
     assert result.warmup_count == 3
-    assert result.effective_candle_count == 7
+    assert result.effective_candle_count == len(candles) - 3
     assert result.fingerprint == spec.fingerprint()
     assert result.request_fingerprint == spec.fingerprint()
     assert result.content_fingerprint is not None
     assert len(result.content_fingerprint) == 64
     assert result.content_fingerprint != result.request_fingerprint
     assert result.spec is spec
+    assert result.candles[0]["ts_ms"] == warmup_start_ms(spec)
+    assert result.candles[-1]["ts_ms"] == spec.end_ts_ms
 
 
 @pytest.mark.unit
 def test_file_backed_loads_jsonl(tmp_path: object) -> None:
-    candles = _make_candles(5)
+    spec = _make_spec(file_path=str(tmp_path / "data.jsonl"), warmup_candles=2)
+    candles = _make_window_candles(spec)
     f = tmp_path / "data.jsonl"
     f.write_text("\n".join(json.dumps(c) for c in candles), encoding="utf-8")
 
-    spec = _make_spec(file_path=str(f), warmup_candles=2)
     result = FileBackedDatasetProvider().load(spec)
 
-    assert len(result.candles) == 5
-    assert result.effective_candle_count == 3
+    assert len(result.candles) == len(candles)
+    assert result.effective_candle_count == len(candles) - 2
 
 
 @pytest.mark.unit
 def test_file_backed_jsonl_with_blank_lines_ignored(tmp_path: object) -> None:
-    candles = _make_candles(4)
+    spec = _make_spec(file_path=str(tmp_path / "data.jsonl"), warmup_candles=1)
+    candles = _make_window_candles(spec)
     lines = [json.dumps(c) for c in candles]
     content = "\n\n".join(lines) + "\n"
     f = tmp_path / "data.jsonl"
     f.write_text(content, encoding="utf-8")
 
-    spec = _make_spec(file_path=str(f), warmup_candles=1)
     result = FileBackedDatasetProvider().load(spec)
-    assert len(result.candles) == 4
+    assert len(result.candles) == len(candles)
 
 
 @pytest.mark.unit
 def test_file_backed_result_is_deterministic(tmp_path: object) -> None:
-    candles = _make_candles(5)
+    spec = _make_spec(file_path=str(tmp_path / "data.json"), warmup_candles=1)
+    candles = _make_window_candles(spec)
     f = tmp_path / "data.json"
     f.write_text(json.dumps(candles), encoding="utf-8")
-    spec = _make_spec(file_path=str(f), warmup_candles=1)
 
     provider = FileBackedDatasetProvider()
     r1 = provider.load(spec)
@@ -296,17 +318,20 @@ def test_file_backed_result_is_deterministic(tmp_path: object) -> None:
     assert r1.candles == r2.candles
     assert r1.fingerprint == r2.fingerprint
     assert r1.effective_candle_count == r2.effective_candle_count
+    assert r1.content_fingerprint == r2.content_fingerprint
 
 
 @pytest.mark.unit
 def test_file_backed_zero_warmup_accepted(tmp_path: object) -> None:
-    candles = _make_candles(3)
+    spec = _make_spec(file_path=str(tmp_path / "data.json"), warmup_candles=0)
+    candles = _make_window_candles(spec)
     f = tmp_path / "data.json"
     f.write_text(json.dumps(candles), encoding="utf-8")
-    spec = _make_spec(file_path=str(f), warmup_candles=0)
     result = FileBackedDatasetProvider().load(spec)
     assert result.warmup_count == 0
-    assert result.effective_candle_count == 3
+    assert result.effective_candle_count == len(candles)
+    assert result.candles[0]["ts_ms"] == spec.start_ts_ms
+    assert result.candles[-1]["ts_ms"] == spec.end_ts_ms
 
 
 # ---------------------------------------------------------------------------
@@ -404,7 +429,8 @@ def test_file_backed_warmup_equals_candle_count_raises(tmp_path: object) -> None
     candles = _make_candles(3)
     f = tmp_path / "data.json"
     f.write_text(json.dumps(candles), encoding="utf-8")
-    spec = _make_spec(file_path=str(f), warmup_candles=3)  # equal, not strictly greater
+    # Discover sentinel: exercise length check without exact-window bounds.
+    spec = _make_discover_spec(file_path=str(f), warmup_candles=3)
     with pytest.raises(DatasetLoadError, match="Insufficient candles"):
         FileBackedDatasetProvider().load(spec)
 
@@ -414,7 +440,7 @@ def test_file_backed_warmup_exceeds_candle_count_raises(tmp_path: object) -> Non
     candles = _make_candles(2)
     f = tmp_path / "data.json"
     f.write_text(json.dumps(candles), encoding="utf-8")
-    spec = _make_spec(file_path=str(f), warmup_candles=5)
+    spec = _make_discover_spec(file_path=str(f), warmup_candles=5)
     with pytest.raises(DatasetLoadError, match="Insufficient candles"):
         FileBackedDatasetProvider().load(spec)
 
@@ -585,7 +611,7 @@ def test_db_backed_missing_warmup_start_raises() -> None:
     rows = _make_db_rows(14, _DB_WARMUP_START_MS + 60_000)
     conn = _make_mock_conn(rows)
     spec = _make_db_spec()
-    with pytest.raises(DatasetLoadError, match="warmup data"):
+    with pytest.raises(DatasetLoadError, match="exact-window violation"):
         DBBackedDatasetProvider(conn).load(spec)
 
 
@@ -647,3 +673,89 @@ def test_db_backed_db_exception_raises_dataset_load_error() -> None:
     spec = _make_db_spec()
     with pytest.raises(DatasetLoadError, match="DB query failed"):
         DBBackedDatasetProvider(conn).load(spec)
+
+
+# ---------------------------------------------------------------------------
+# CDB-049 — File/DB exact-window parity
+# ---------------------------------------------------------------------------
+
+
+@pytest.mark.unit
+def test_cdb049_file_and_db_exact_window_parity(tmp_path: object) -> None:
+    """File and DB accept the same exact-window series for an identical Spec."""
+    spec_file = _make_spec(file_path=str(tmp_path / "data.json"), warmup_candles=3)
+    candles = _make_window_candles(spec_file)
+    (tmp_path / "data.json").write_text(json.dumps(candles), encoding="utf-8")
+
+    file_result = FileBackedDatasetProvider().load(spec_file)
+
+    rows = _make_db_rows(len(candles), warmup_start_ms(spec_file))
+    db_spec = _make_db_spec()
+    db_result = DBBackedDatasetProvider(_make_mock_conn(rows)).load(db_spec)
+
+    assert [c["ts_ms"] for c in file_result.candles] == [
+        c["ts_ms"] for c in db_result.candles
+    ]
+    assert file_result.candles[0]["ts_ms"] == warmup_start_ms(spec_file)
+    assert file_result.candles[-1]["ts_ms"] == spec_file.end_ts_ms
+    assert db_result.candles[0]["ts_ms"] == warmup_start_ms(db_spec)
+    assert db_result.candles[-1]["ts_ms"] == db_spec.end_ts_ms
+
+
+@pytest.mark.unit
+def test_cdb049_file_extra_candle_before_window_raises(tmp_path: object) -> None:
+    spec = _make_spec(file_path=str(tmp_path / "data.json"), warmup_candles=2)
+    candles = _make_window_candles(spec)
+    early = {
+        "ts_ms": candles[0]["ts_ms"] - 60_000,
+        "high": 1.0,
+        "low": 1.0,
+        "close": 1.0,
+    }
+    (tmp_path / "data.json").write_text(json.dumps([early, *candles]), encoding="utf-8")
+    with pytest.raises(DatasetLoadError, match="exact-window violation"):
+        FileBackedDatasetProvider().load(spec)
+
+
+@pytest.mark.unit
+def test_cdb049_file_extra_candle_after_window_raises(tmp_path: object) -> None:
+    spec = _make_spec(file_path=str(tmp_path / "data.json"), warmup_candles=2)
+    candles = _make_window_candles(spec)
+    late = {
+        "ts_ms": candles[-1]["ts_ms"] + 60_000,
+        "high": 1.0,
+        "low": 1.0,
+        "close": 1.0,
+    }
+    (tmp_path / "data.json").write_text(json.dumps([*candles, late]), encoding="utf-8")
+    with pytest.raises(DatasetLoadError, match="exact-window violation"):
+        FileBackedDatasetProvider().load(spec)
+
+
+@pytest.mark.unit
+def test_cdb049_file_missing_end_boundary_raises(tmp_path: object) -> None:
+    spec = _make_spec(file_path=str(tmp_path / "data.json"), warmup_candles=2)
+    candles = _make_window_candles(spec)[:-1]
+    (tmp_path / "data.json").write_text(json.dumps(candles), encoding="utf-8")
+    with pytest.raises(DatasetLoadError, match="exact-window violation"):
+        FileBackedDatasetProvider().load(spec)
+
+
+@pytest.mark.unit
+def test_cdb049_discover_sentinel_skips_exact_window(tmp_path: object) -> None:
+    candles = _make_candles(8)  # not aligned to default start/end
+    f = tmp_path / "data.json"
+    f.write_text(json.dumps(candles), encoding="utf-8")
+    spec = _make_discover_spec(file_path=str(f), warmup_candles=2)
+    assert is_file_discover_window(spec)
+    result = FileBackedDatasetProvider().load(spec)
+    assert len(result.candles) == 8
+    assert result.warmup_count == 2
+
+
+@pytest.mark.unit
+def test_cdb049_enforce_exact_window_deterministic() -> None:
+    spec = _make_spec(warmup_candles=1)
+    candles = _make_window_candles(spec)
+    enforce_exact_window(candles, spec, "test")
+    enforce_exact_window(candles, spec, "test")  # repeatable

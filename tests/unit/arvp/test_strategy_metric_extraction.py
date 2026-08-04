@@ -160,6 +160,7 @@ def test_candles_total_preserves_producer_input_total() -> None:
             "candles_total": 44640,
             "candles_live": 44606,
             "warmup_candles": 34,
+            "content_fingerprint": "a" * 64,
         },
         strategy_id="breakout_volatility_filter_v1",
         campaign_id="batch_a_stage_a_d0a4e72d_20260713",
