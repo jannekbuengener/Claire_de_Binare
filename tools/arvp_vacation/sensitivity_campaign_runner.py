@@ -865,14 +865,15 @@ def execute_campaign(
         raise SensitivityRunnerError("RUNNER_PARALLELISM_INVALID")
 
     # Surface probe for Owner-GO binding must match the fingerprint captured at
-    # GO issuance (typically without dataset-identity binding). Dataset resolve
-    # for the replay adapter is deferred until after adoption/resume gates.
+    # GO issuance (lightweight dataset path identity, not full content binding).
+    # Full dataset resolve for the replay adapter is deferred until after
+    # adoption/resume gates.
     dataset_identity: DatasetRootIdentity | None = None
     resolved_bank_root: Path | None = None
 
     probe = probe_execution_surface(
         repo_root=root,
-        dataset_root=None,
+        dataset_root=Path(dataset_root) if dataset_root is not None else None,
         surface_id=surface_id,
         exchange_credentials_present=False,
         window_availability={"expected_windows": 39},
