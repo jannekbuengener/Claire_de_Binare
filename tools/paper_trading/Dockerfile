@@ -17,7 +17,7 @@ WORKDIR /app
 RUN pip install --upgrade pip==26.1.2
 
 # Fix CVE-2026-23949 (jaraco.context), CVE-2026-24049 (wheel)
-RUN python -m pip install --no-cache-dir --upgrade setuptools==82.0.0 wheel==0.46.2
+RUN python -m pip install --no-cache-dir --upgrade setuptools==83.0.0 wheel==0.46.2
 
 # Copy requirements first (for layer caching)
 COPY tools/paper_trading/requirements.txt /app/tools/paper_trading/

@@ -10,7 +10,7 @@ RUN apt-get update \
 
 # Security pin (#4095): pip 26.1.2 fixes CVE-2026-8643, supersedes the CVE-2025-8869 pin
 RUN pip install --upgrade pip==26.1.2
-RUN python -m pip install --no-cache-dir --upgrade setuptools==82.0.0 wheel==0.46.2
+RUN python -m pip install --no-cache-dir --upgrade setuptools==83.0.0 wheel==0.46.2
 
 # System dependencies
 RUN apt-get update && apt-get install -y \
