@@ -192,6 +192,7 @@ def test_campaign_phases_frozenset_membership() -> None:
     for expected in (
         "PRIMARY_PLANNED",
         "PRIMARY_RUNNING",
+        "PRIMARY_EVIDENCE_COMPLETE",
         "PRIMARY_COMPLETE",
         "REPRODUCTION_PLANNED",
         "REPRODUCTION_RUNNING",

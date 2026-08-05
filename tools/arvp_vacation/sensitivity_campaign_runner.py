@@ -3,10 +3,12 @@
 CLI:
   python -m tools.arvp_vacation.sensitivity_campaign_runner plan --manifest PATH
   python -m tools.arvp_vacation.sensitivity_campaign_runner validate-authorization ...
+  python -m tools.arvp_vacation.sensitivity_campaign_runner adopt-primary-evidence ...
   python -m tools.arvp_vacation.sensitivity_campaign_runner execute ...
   python -m tools.arvp_vacation.sensitivity_campaign_runner probe-surface ...
 
 ``plan`` and ``validate-authorization`` are write-free.
+``adopt-primary-evidence`` writes inventory + phase only (no primary rewrite).
 ``execute`` requires a live-verified Owner-GO. Default executor is the real
 ``StrategyReplayCampaignExecutor`` (still auth-gated; no GO ⇒ no runs).
 """
@@ -23,6 +25,10 @@ from typing import Any, Mapping, Sequence, TextIO
 
 from tools.arvp_vacation.sensitivity_campaign_analyzer_contract import (
     classify_overlap_slots,
+)
+from tools.arvp_vacation.sensitivity_campaign_analyzer import (
+    SensitivityAnalyzerError,
+    analyze_campaign,
 )
 from tools.arvp_vacation.sensitivity_campaign_authorization import (
     DEFAULT_REPO,
@@ -66,6 +72,11 @@ from tools.arvp_vacation.sensitivity_campaign_preflight import (
     run_manifest_preflight,
     run_repo_preflight,
 )
+from tools.arvp_vacation.sensitivity_campaign_primary_adoption import (
+    SensitivityAdoptionError,
+    adopt_primary_evidence,
+    assert_adoption_inventory_allows_reproduction,
+)
 from tools.arvp_vacation.sensitivity_campaign_reproduction import (
     SensitivityReproductionError,
     build_reproduction_plan,
@@ -81,6 +92,7 @@ from tools.arvp_vacation.sensitivity_campaign_state import (
     CAMPAIGN_PHASE_COMPLETED,
     CAMPAIGN_PHASE_PLANNED,
     CAMPAIGN_PHASE_PRIMARY_COMPLETE,
+    CAMPAIGN_PHASE_PRIMARY_EVIDENCE_COMPLETE,
     CAMPAIGN_PHASE_PRIMARY_PLANNED,
     CAMPAIGN_PHASE_PRIMARY_RUNNING,
     CAMPAIGN_PHASE_REPRODUCTION_COMPLETE,
@@ -856,27 +868,12 @@ def execute_campaign(
     if int(budget["max_parallelism"]) < 1:
         raise SensitivityRunnerError("RUNNER_PARALLELISM_INVALID")
 
-    # Resolve and verify the dataset root once; bind identity into probe surface
-    # and forward the resolved window-bank root into the real replay adapter.
+    # Surface probe for Owner-GO binding must match the fingerprint captured at
+    # GO issuance (lightweight dataset path identity, not full content binding).
+    # Full dataset resolve for the replay adapter is deferred until after
+    # adoption/resume gates.
     dataset_identity: DatasetRootIdentity | None = None
     resolved_bank_root: Path | None = None
-    if dataset_root is not None:
-        try:
-            dataset_identity = resolve_and_verify_dataset_root(
-                dataset_root=Path(dataset_root),
-                manifest=manifest,
-                repo_root=root,
-            )
-        except SensitivityDatasetRootError as exc:
-            raise SensitivityRunnerError(
-                f"RUNNER_DATASET_{exc.reason_code}", str(exc)
-            ) from exc
-        resolved_bank_root = Path(dataset_identity.window_bank_root)
-
-    active_executor = _bind_executor_dataset_root(
-        executor=executor,
-        resolved_bank_root=resolved_bank_root,
-    )
 
     probe = probe_execution_surface(
         repo_root=root,
@@ -884,8 +881,8 @@ def execute_campaign(
         surface_id=surface_id,
         exchange_credentials_present=False,
         window_availability={"expected_windows": 39},
-        manifest=manifest if dataset_root is not None else None,
-        dataset_identity=dataset_identity,
+        manifest=None,
+        dataset_identity=None,
     )
     expected_fp = surface_capability_fingerprint or probe.surface_capability_fingerprint
     assert_surface_matches_authorization(
@@ -938,13 +935,6 @@ def execute_campaign(
     comment_updated_at = str(auth["comment_updated_at"])
     auth_expiry = auth.get("expires_at_utc")
 
-    # Lifetime vs budget check applies before any evidence writes.
-    # A campaign always requires a finite expiry (see
-    # ``assert_authorization_lifetime_covers_budget``); null is refused.
-    assert_authorization_lifetime_covers_budget(
-        auth_expiry, budget, now_utc=now_provider()
-    )
-
     base = artifacts_base if artifacts_base is not None else root
     evidence_root = evidence_root_for(
         base=base,
@@ -982,6 +972,52 @@ def execute_campaign(
                 f"bound={bound_updated} live={comment_updated_at}",
             )
 
+    # Lifetime vs budget: fresh campaigns require finite expiry. Resume of
+    # adopted primary evidence produced under null-expiry Owner-GO may continue
+    # when adoption inventory verifies (adoption contract v1).
+    if mode == "resume" and auth_expiry is None:
+        try:
+            assert_adoption_inventory_allows_reproduction(
+                evidence_root, bindings=bindings
+            )
+        except SensitivityAdoptionError:
+            assert_authorization_lifetime_covers_budget(
+                auth_expiry, budget, now_utc=now_provider()
+            )
+    else:
+        assert_authorization_lifetime_covers_budget(
+            auth_expiry, budget, now_utc=now_provider()
+        )
+
+    trust_manifest_fps = False
+    if mode == "resume":
+        try:
+            assert_adoption_inventory_allows_reproduction(
+                evidence_root, bindings=bindings
+            )
+            trust_manifest_fps = True
+        except SensitivityAdoptionError:
+            trust_manifest_fps = False
+
+    if dataset_root is not None:
+        try:
+            dataset_identity = resolve_and_verify_dataset_root(
+                dataset_root=Path(dataset_root),
+                manifest=manifest,
+                repo_root=root,
+                trust_manifest_content_fingerprints=trust_manifest_fps,
+            )
+        except SensitivityDatasetRootError as exc:
+            raise SensitivityRunnerError(
+                f"RUNNER_DATASET_{exc.reason_code}", str(exc)
+            ) from exc
+        resolved_bank_root = Path(dataset_identity.window_bank_root)
+
+    active_executor = _bind_executor_dataset_root(
+        executor=executor,
+        resolved_bank_root=resolved_bank_root,
+    )
+
     lock_held = False
     acquire_campaign_lock(evidence_root, holder_token=auth_fp)
     lock_held = True
@@ -992,6 +1028,7 @@ def execute_campaign(
             "comment_updated_at": comment_updated_at,
             "authorizing_github_login": authorizing_github_login,
             "expires_at_utc": auth_expiry,
+            "dataset_trust_manifest_content_fingerprints": trust_manifest_fps,
         }
         if dataset_identity is not None:
             envelope_extra["dataset_root_identity"] = dataset_identity.as_dict()
@@ -1132,6 +1169,17 @@ def execute_campaign(
                 _emit(payload, out)
                 return payload
             primary_succeeded = confirmed_primary
+            # Adopted primary evidence lands in PRIMARY_EVIDENCE_COMPLETE;
+            # promote to PRIMARY_COMPLETE before reproduction.
+            if current_phase == CAMPAIGN_PHASE_PRIMARY_EVIDENCE_COMPLETE:
+                assert_adoption_inventory_allows_reproduction(
+                    evidence_root, bindings=bindings
+                )
+                update_campaign_phase(
+                    evidence_root,
+                    bindings=bindings,
+                    phase=CAMPAIGN_PHASE_PRIMARY_COMPLETE,
+                )
 
         reproduction_enabled = bool(plan.reproduction_policy.get("enabled"))
         reproduction_summary: dict[str, Any] = {"enabled": reproduction_enabled}
@@ -1286,6 +1334,95 @@ def probe_surface_command(
     return payload
 
 
+def adopt_primary_evidence_command(
+    *,
+    evidence_root: Path,
+    manifest_path: Path | str = MANIFEST_PATH,
+    main_sha: str | None = None,
+    authorization_fingerprint: str,
+    reproduction_code_sha: str | None = None,
+    promote_to_primary_complete: bool = True,
+    power_off_recovery_json: str | None = None,
+    repo_root: Path | None = None,
+    stream: TextIO | None = None,
+) -> dict[str, Any]:
+    """Adopt audited primary evidence into the phase machine (no primary rewrite)."""
+    root = repo_root or PROJECT_ROOT
+    out = stream or sys.stdout
+    sha = main_sha or _git_head_sha(root)
+    code_sha = reproduction_code_sha or _git_head_sha(root)
+    manifest = load_manifest(manifest_path)
+    validate_manifest(manifest)
+    plan = build_run_plan(manifest, main_sha=sha)
+    env = read_json(Path(evidence_root) / CAMPAIGN_ENVELOPE_NAME)
+    bindings = CampaignBindings(
+        campaign_id=str(env.get("campaign_id") or plan.campaign_id),
+        manifest_fingerprint=str(env.get("manifest_fingerprint") or ""),
+        run_plan_fingerprint=str(env.get("run_plan_fingerprint") or ""),
+        authorization_fingerprint=str(
+            env.get("authorization_fingerprint") or authorization_fingerprint
+        ),
+        execution_sha=str(env.get("execution_sha") or sha),
+        main_sha=str(env.get("main_sha") or sha),
+    )
+    if bindings.authorization_fingerprint != authorization_fingerprint:
+        raise SensitivityAdoptionError(
+            "ADOPT_AUTH_FP_CLI_MISMATCH",
+            "CLI --authorization-fingerprint must match campaign envelope",
+        )
+    if bindings.manifest_fingerprint != plan.manifest_fingerprint:
+        raise SensitivityAdoptionError(
+            "ADOPT_MANIFEST_FP_MISMATCH",
+            "recomputed manifest fingerprint != envelope",
+        )
+    if bindings.run_plan_fingerprint != plan.run_plan_fingerprint:
+        raise SensitivityAdoptionError(
+            "ADOPT_RUN_PLAN_FP_MISMATCH",
+            "recomputed run-plan fingerprint != envelope "
+            "(pass the frozen --main-sha used for primary)",
+        )
+    recovery = {}
+    if power_off_recovery_json:
+        recovery = json.loads(power_off_recovery_json)
+    payload = adopt_primary_evidence(
+        evidence_root=Path(evidence_root),
+        expected_run_keys=list(plan.run_keys),
+        bindings=bindings,
+        reproduction_code_sha=code_sha,
+        promote_to_primary_complete=promote_to_primary_complete,
+        power_off_recovery=recovery,
+    )
+    _emit(payload, out)
+    return payload
+
+
+def analyze_campaign_command(
+    *,
+    evidence_root: Path,
+    manifest_path: Path | str = MANIFEST_PATH,
+    main_sha: str | None = None,
+    repo_root: Path | None = None,
+    stream: TextIO | None = None,
+) -> dict[str, Any]:
+    """Run deterministic analyzer against an adopted+reproduced evidence namespace."""
+    root = repo_root or PROJECT_ROOT
+    out = stream or sys.stdout
+    sha = main_sha or _git_head_sha(root)
+    manifest = load_manifest(manifest_path)
+    validate_manifest(manifest)
+    plan = build_run_plan(manifest, main_sha=sha)
+    env = read_json(Path(evidence_root) / CAMPAIGN_ENVELOPE_NAME)
+    payload = analyze_campaign(
+        evidence_root=Path(evidence_root),
+        expected_run_keys=list(plan.run_keys),
+        manifest_fingerprint=str(env.get("manifest_fingerprint") or ""),
+        run_plan_fingerprint=str(env.get("run_plan_fingerprint") or ""),
+        authorization_fingerprint=str(env.get("authorization_fingerprint") or ""),
+    )
+    _emit(payload, out)
+    return payload
+
+
 def build_parser() -> argparse.ArgumentParser:
     parser = argparse.ArgumentParser(
         prog="python -m tools.arvp_vacation.sensitivity_campaign_runner",
@@ -1342,6 +1479,49 @@ def build_parser() -> argparse.ArgumentParser:
     p_probe.add_argument("--surface-id", required=True)
     p_probe.add_argument("--dataset-root", type=Path, default=None)
 
+    p_adopt = sub.add_parser(
+        "adopt-primary-evidence",
+        help=(
+            "Write primary evidence inventory and transition PLANNED → "
+            "PRIMARY_EVIDENCE_COMPLETE → PRIMARY_COMPLETE (no primary rewrite)"
+        ),
+    )
+    p_adopt.add_argument("--evidence-root", type=Path, required=True)
+    p_adopt.add_argument("--manifest", type=Path, default=Path(MANIFEST_PATH))
+    p_adopt.add_argument(
+        "--main-sha",
+        required=True,
+        help="Frozen primary bound_main_sha / execution SHA",
+    )
+    p_adopt.add_argument("--authorization-fingerprint", required=True)
+    p_adopt.add_argument(
+        "--reproduction-code-sha",
+        default=None,
+        help="Git SHA of reproduction tooling (defaults to HEAD)",
+    )
+    p_adopt.add_argument(
+        "--no-promote-primary-complete",
+        action="store_true",
+        help="Stop at PRIMARY_EVIDENCE_COMPLETE without promoting",
+    )
+    p_adopt.add_argument(
+        "--power-off-recovery-json",
+        default=None,
+        help="Optional JSON operator note for interrupt recovery history",
+    )
+
+    p_analyze = sub.add_parser(
+        "analyze",
+        help="Deterministic campaign analyzer (requires COMPLETED + reproduction)",
+    )
+    p_analyze.add_argument("--evidence-root", type=Path, required=True)
+    p_analyze.add_argument("--manifest", type=Path, default=Path(MANIFEST_PATH))
+    p_analyze.add_argument(
+        "--main-sha",
+        required=True,
+        help="Frozen primary bound_main_sha used for run-plan expansion",
+    )
+
     return parser
 
 
@@ -1355,6 +1535,24 @@ def main(argv: Sequence[str] | None = None) -> int:
         if args.command == "probe-surface":
             probe_surface_command(
                 surface_id=args.surface_id, dataset_root=args.dataset_root
+            )
+            return 0
+        if args.command == "adopt-primary-evidence":
+            adopt_primary_evidence_command(
+                evidence_root=args.evidence_root,
+                manifest_path=args.manifest,
+                main_sha=args.main_sha,
+                authorization_fingerprint=args.authorization_fingerprint,
+                reproduction_code_sha=args.reproduction_code_sha,
+                promote_to_primary_complete=not args.no_promote_primary_complete,
+                power_off_recovery_json=args.power_off_recovery_json,
+            )
+            return 0
+        if args.command == "analyze":
+            analyze_campaign_command(
+                evidence_root=args.evidence_root,
+                manifest_path=args.manifest,
+                main_sha=args.main_sha,
             )
             return 0
         if args.command == "validate-authorization":
@@ -1393,6 +1591,8 @@ def main(argv: Sequence[str] | None = None) -> int:
     except (
         SensitivityRunnerError,
         SensitivityAuthorizationError,
+        SensitivityAdoptionError,
+        SensitivityAnalyzerError,
         SensitivityBudgetError,
         SensitivitySurfaceError,
         SensitivityStateError,

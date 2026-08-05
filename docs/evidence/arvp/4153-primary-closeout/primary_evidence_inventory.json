@@ -1,0 +1,53 @@
+{
+  "adoption_verdict": "REPRODUCTION_MAY_RUN_AGAINST_EXISTING_PRIMARY_NAMESPACE",
+  "allowed_evidence_namespace": "artifacts/arvp_sensitivity/4153/arvp-sensitivity-4153-v1/7126f60033205d8012976376e217999e8702a83266a059f1d4c628cf4ba208da/39d448530462b31a",
+  "attempt_hist": {
+    "1": 818,
+    "2": 1
+  },
+  "authorization_fingerprint": "39d448530462b31a6481727f6090c2c5fdb897b3b1f1371bd18f2ce422884b6d",
+  "binding_mismatch_count": 0,
+  "bound_execution_sha": "43401302857ff9bfc6fd81a55b6373dd6437ac49",
+  "bound_main_sha": "43401302857ff9bfc6fd81a55b6373dd6437ac49",
+  "campaign_id": "arvp-sensitivity-4153-v1",
+  "created_at_utc": "2026-08-05T17:57:16.867736+02:00",
+  "disk_run_dirs": 819,
+  "expected_run_count": 819,
+  "extra_key_count": 0,
+  "forbidden_mixes": [
+    "rewrite_primary_result_json",
+    "commit_all_819_raw_runs_as_evidence_substitute",
+    "foreign_authorization_namespace",
+    "claim_campaign_completed_from_primary_cli_only",
+    "full_primary_rerun_without_adoption_failure",
+    "bind_new_main_sha_without_new_owner_go"
+  ],
+  "inventory_fingerprint": "5c6116d0e02cf9fbb7db553be1f778264d78de351e2c03dae327fa900bc8bf9b",
+  "lr_status": "NO-GO",
+  "manifest_fingerprint": "7126f60033205d8012976376e217999e8702a83266a059f1d4c628cf4ba208da",
+  "missing_completed_count": 0,
+  "missing_key_count": 0,
+  "observed_run_count": 819,
+  "power_off_recovery": {
+    "attempt_1": {
+      "exit_code": 130,
+      "note": "power_off_orphan_operator_recovery",
+      "status": "FAILED"
+    },
+    "attempt_2": {
+      "exit_code": 0,
+      "status": "SUCCEEDED"
+    },
+    "ledger_note": "attempt_1_not_retained_on_disk",
+    "run_key": "846ec07c3c541bd92b073f3d7f4f653a8cc40afd8725267ca3ce58d8054a46c7"
+  },
+  "primary_verdict": "PRIMARY_EVIDENCE_COMPLETE",
+  "reclassified_cli_completed": "PRIMARY_EVIDENCE_COMPLETE_NOT_CAMPAIGN_PHASE_COMPLETED",
+  "reproduction_code_sha": "41b8ccaf9876988266a3cc3575d737a6445766d4",
+  "run_key_digest": "0822c8e28a38c0302c59e50f42afab958be6759cec20064456de1b8ea20f87c5",
+  "run_plan_fingerprint": "7971335597a97c1a8ceed8062a6b06dad46cbe9172e0e794d8f4dd74a4adc88c",
+  "schema_version": "cdb.sensitivity_campaign_primary_evidence_adoption.v1",
+  "status_counts": {
+    "SUCCEEDED": 819
+  }
+}

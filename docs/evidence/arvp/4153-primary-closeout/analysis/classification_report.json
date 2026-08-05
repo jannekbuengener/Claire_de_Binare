@@ -1,0 +1,10 @@
+{
+  "classification": "INCONCLUSIVE",
+  "classification_fingerprint": "3e7238811b5d027e534b75ee117af321553348efe80ffe3511e0217cc0488e6a",
+  "lr_status": "NO-GO",
+  "no_automatic_promotion": true,
+  "reasons": [
+    "insufficient_signal_for_promising_or_rejected"
+  ],
+  "schema_version": "cdb.sensitivity_campaign_classification.v1"
+}

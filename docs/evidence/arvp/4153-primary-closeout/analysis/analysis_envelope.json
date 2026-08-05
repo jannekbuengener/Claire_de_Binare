@@ -1,0 +1,15 @@
+{
+  "analysis_envelope_fingerprint": "140c0ea9e448b45ef9e4bb251526bdbd17c11a65a142e78e91e80ac24032efad",
+  "analyzer_contract_version": "cdb.sensitivity_campaign_analyzer.v1",
+  "campaign_phase": "COMPLETED",
+  "classification": "INCONCLUSIVE",
+  "classification_fingerprint": "3e7238811b5d027e534b75ee117af321553348efe80ffe3511e0217cc0488e6a",
+  "created_at_utc": "2026-08-05T18:05:15.119823+02:00",
+  "input_inventory_fingerprint": "e87e8aec3f45f33c79496214a1169bd210628ace38d554f79429cd90d33ffd1b",
+  "interaction_effects_fingerprint": "a1d77336a99343094903dd72a0f65d6066ceddf669e77066aec960cc13c34f88",
+  "lr_status": "NO-GO",
+  "main_effects_fingerprint": "e20c996d2528e5e9e1d84d02d0e199ec4408ea243956c2097fbece5309a9c585",
+  "reproduction_comparison_set_fingerprint": "98fd1a4dff90e778646d491a81c9005040d7e58ffae9bf9208bab805bffcf0c4",
+  "schema_version": "cdb.sensitivity_campaign_analysis_envelope.v1",
+  "writes_primary_results": false
+}
