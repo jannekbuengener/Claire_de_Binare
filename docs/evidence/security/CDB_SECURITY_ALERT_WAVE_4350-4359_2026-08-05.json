@@ -1,0 +1,366 @@
+{
+  "schema": "cdb.security_alert_wave.v1",
+  "wave_id": "security-alert-wave-2026-08-05",
+  "snapshot_date": "2026-08-05",
+  "base_sha": "42b9703c276c5f49810247ceea6b1442a6158ee2",
+  "base_ref": "origin/main",
+  "branch": "dedicated/security-alert-wave-2026-08-05",
+  "routing_decision": "CREATE_DEDICATED_PR",
+  "preferred_objective": "security-alert-wave-2026-08-05",
+  "merge_mode": false,
+  "merge_allowed": false,
+  "issue_closure_before_merge_allowed": false,
+  "alert_dismissal_allowed": false,
+  "trivyignore_growth_allowed": false,
+  "lr_verdict": "NO-GO",
+  "board_stage": "trade-capable",
+  "readout_run_id": 30990577816,
+  "readout_run_url": "https://github.com/jannekbuengener/Claire_de_Binare/actions/runs/30990577816",
+  "readout_head_sha": "ca27adeee28d7d63ba457ee627274704e89da990",
+  "alerts_generated_from_scan_commit": "71900c6302bb96ba523a56affd64912d9d736a29",
+  "related_merged_prs": {
+    "4162": {
+      "title": "deps(docker-compose): bump grafana/grafana from 13.0.3-ubuntu to 13.1.1-ubuntu",
+      "merge_commit": "4608aeff96ad9832a0335ab55676eea70021ae44",
+      "note": "Prior RED runtime pin bump; did not clear the ten wave CVEs"
+    },
+    "4310": {
+      "title": "deps(docker-compose): bump prom/prometheus from v3.13.1 to v3.13.2",
+      "merge_commit": "c18fc695274d3045fae3831b228e6fc7a31632f9",
+      "note": "Unrelated to this wave; kept for lineage"
+    }
+  },
+  "prior_evidence": [
+    "docs/evidence/security/CDB_SECURITY_BATCH_MATRIX_3065-3070-CVE-42504_2026-06-08.md",
+    "docs/evidence/security/CDB_SECURITY_GRAFANA_3764_CVE-42504_VERIFY_2026-07-06.md",
+    "docs/evidence/security/CDB_SECURITY_ALERT_WAVE_4314-4323_2026-08-03.md"
+  ],
+  "grafana_baseline_pin": "grafana/grafana:13.1.1-ubuntu@sha256:5a9df011defa8384ee01fc9b393854daecc6afb98132c66e2e658b3f564830e8",
+  "grafana_target_pin": "grafana/grafana:13.1.2-ubuntu@sha256:dbbf39afd3040b86fc6d2d9a6f0ce3dab9c18039af9af7f6404ba71e56be6c45",
+  "pin_alignment_before_wave": {
+    "note": "All three surfaces (base.yml, compose.red.yml, security-scan.yml) were already aligned on the 13.1.1 manifest-list digest before this wave. The stale plan-hint (`13.0.3-ubuntu@sha256:7c1acd...`) reflects an older workflow revision that no longer exists on origin/main; verified by rg 2026-08-05.",
+    "base_yml_pin": "13.1.1-ubuntu",
+    "compose_red_yml_pin": "13.1.1-ubuntu",
+    "security_scan_yml_pin": "13.1.1-ubuntu",
+    "service_catalog_md_pin": "13.1.1-ubuntu"
+  },
+  "pin_surfaces_synced": [
+    "infrastructure/compose/base.yml",
+    "infrastructure/compose/compose.red.yml",
+    ".github/workflows/security-scan.yml",
+    "knowledge/governance/SERVICE_CATALOG.md"
+  ],
+  "trivy_evidence": {
+    "tool_version_local": "0.73.0",
+    "tool_version_github_alerts": "0.70.0",
+    "db_updated_at_local": "2026-08-03",
+    "grafana_13_1_1_baseline": {
+      "image": "grafana/grafana:13.1.1-ubuntu@sha256:5a9df011defa8384ee01fc9b393854daecc6afb98132c66e2e658b3f564830e8",
+      "high_total": 18,
+      "critical_total": 1,
+      "target_cve_hits": 13,
+      "wave_alert_reproducibility": {
+        "cve_2026_25681_zipkin": {"hits": 1, "installed": "golang.org/x/net v0.49.0", "fixed": "0.55.0"},
+        "cve_2026_27136_zipkin": {"hits": 1, "installed": "golang.org/x/net v0.49.0", "fixed": "0.55.0"},
+        "cve_2026_27145_zipkin": {"hits": 1, "installed": "stdlib v1.26.3", "fixed": "1.25.11, 1.26.4"},
+        "cve_2026_33814_zipkin": {"hits": 1, "installed": "golang.org/x/net v0.49.0", "fixed": "0.53.0"},
+        "cve_2026_39821_zipkin": {"hits": 1, "installed": "golang.org/x/net v0.49.0", "fixed": "0.55.0"},
+        "cve_2026_39822_zipkin": {"hits": 1, "installed": "stdlib v1.26.3", "fixed": "1.25.12, 1.26.5, 1.27.0-rc.2"},
+        "cve_2026_42504_zipkin": {"hits": 1, "installed": "stdlib v1.26.3", "fixed": "1.25.11, 1.26.4"},
+        "cve_2026_56852_grafana_bin": {"hits": 1, "installed": "golang.org/x/text v0.37.0", "fixed": "0.39.0"},
+        "cve_2026_56852_elasticsearch": {"hits": 1, "installed": "golang.org/x/text v0.37.0", "fixed": "0.39.0"},
+        "cve_2026_56852_zipkin": {"hits": 1, "installed": "golang.org/x/text v0.33.0", "fixed": "0.39.0"}
+      }
+    },
+    "grafana_13_1_2_candidate": {
+      "image": "grafana/grafana:13.1.2-ubuntu@sha256:dbbf39afd3040b86fc6d2d9a6f0ce3dab9c18039af9af7f6404ba71e56be6c45",
+      "amd64_manifest_digest": "sha256:1098ce10e68b3e331389258075351d2d05df00c132a2897c276045766bbd0918",
+      "high_total": 14,
+      "critical_total": 0,
+      "target_cve_hits": 11,
+      "grafana_bin_cleared": true,
+      "elasticsearch_x_text_cleared": true,
+      "zipkin_findings_unchanged": true,
+      "delta_from_baseline": {
+        "high_reduced": 4,
+        "critical_reduced": 1,
+        "cleared_wave_issues": [4357, 4358],
+        "still_present_wave_issues": [4350, 4351, 4352, 4353, 4354, 4355, 4356, 4359]
+      }
+    }
+  },
+  "cve_family_analysis": {
+    "cve_2026_56852_common_origin": "golang.org/x/text < 0.39.0 (Grafana bin + ES plugin ship v0.37.0; Zipkin plugin ships v0.33.0). 13.1.2 rebuilt grafana bin + ES plugin against x/text >= 0.39.0 but Zipkin plugin still ships v0.33.0.",
+    "zipkin_path_root_cause": "Bundled zipkin datasource statically embeds an older Go stdlib (v1.26.3) and older x/net (v0.49.0) / x/text (v0.33.0). Not fixed by upstream in 13.1.2. Upstream Grafana rebuild required.",
+    "elasticsearch_plugin_partial_progress": "13.1.2 rebuilt the ES plugin against x/text 0.39.0 (clears CVE-2026-56852) but stdlib remains 1.26.3, so CVE-2026-27145 / CVE-2026-39822 / CVE-2026-42504 remain HIGH on the ES plugin (out of wave scope; already tracked under #2933).",
+    "prior_evidence_confirmation": {
+      "cve_2026_42504": "Confirmed still present in 13.1.2 on both ES and Zipkin plugins; matches CDB_SECURITY_BATCH_MATRIX_3065-3070-CVE-42504_2026-06-08 verdict UPSTREAM_BLOCKED.",
+      "cve_2026_27145": "Confirmed still present in 13.1.2 on both plugins; installed stdlib v1.26.3 on both bundled plugin binaries; upstream Go stdlib rebuild required."
+    }
+  },
+  "clusters": [
+    {
+      "cluster_id": "grafana-zipkin-plugin-go-family",
+      "issues": [4350, 4351, 4352, 4353, 4354, 4355, 4356, 4359],
+      "disposition": "HOLD_UPSTREAM_NO_FIXED_VERSION",
+      "canonical_tracker": 2933,
+      "root_cause": "Zipkin bundled datasource statically embeds Go stdlib 1.26.3 + old golang.org/x/net + golang.org/x/text; upstream Grafana rebuild required to bump these transitive dependencies",
+      "verified_still_present_on_13_1_2": true
+    },
+    {
+      "cluster_id": "grafana-bin-cve-2026-56852",
+      "issues": [4357],
+      "disposition": "FIX_READY",
+      "canonical_tracker": 4357,
+      "closure_condition": "After this PR merges to main AND post-merge Trivy/code-scanning recount shows alert 5601 fixed/absent for CVE-2026-56852 on usr/share/grafana/bin/grafana",
+      "verified_cleared_on_13_1_2": true
+    },
+    {
+      "cluster_id": "grafana-elasticsearch-cve-2026-56852",
+      "issues": [4358],
+      "disposition": "FIX_READY",
+      "canonical_tracker": 4358,
+      "closure_condition": "After this PR merges to main AND post-merge Trivy/code-scanning recount shows alert 5603 fixed/absent for CVE-2026-56852 on the elasticsearch bundled plugin path",
+      "verified_cleared_on_13_1_2": true
+    }
+  ],
+  "allowed_dispositions": [
+    "FIX_READY",
+    "HOLD_UPSTREAM_NO_FIXED_VERSION",
+    "DUPLICATE_TRACKING",
+    "FALSE_POSITIVE_WITH_EVIDENCE",
+    "NEEDS_EVIDENCE"
+  ],
+  "issues": [
+    {
+      "issue": 4350,
+      "alert": 5539,
+      "cve": "CVE-2026-25681",
+      "component": "usr/share/grafana/data/plugins-bundled/zipkin/gpx_grafana-zipkin-datasource_linux_amd64",
+      "package": "golang.org/x/net",
+      "installed": "v0.49.0",
+      "fixed_version": "0.55.0",
+      "fingerprint": "abd5ff85d7f65a8d",
+      "runtime_reachability": "bundled_zipkin_datasource_plugin_binary",
+      "codex_verdict": "confirmed",
+      "cdb_disposition": "HOLD_UPSTREAM_NO_FIXED_VERSION",
+      "duplicate_of_cluster": true,
+      "canonical_tracker": 2933,
+      "verified_still_present_on_13_1_2": true,
+      "closure_condition": "Upstream Grafana release rebuilds the zipkin bundled plugin against golang.org/x/net >= 0.55.0; scan-verified clear on alert 5539; consolidate under #2933 until then"
+    },
+    {
+      "issue": 4351,
+      "alert": 5540,
+      "cve": "CVE-2026-27136",
+      "component": "usr/share/grafana/data/plugins-bundled/zipkin/gpx_grafana-zipkin-datasource_linux_amd64",
+      "package": "golang.org/x/net",
+      "installed": "v0.49.0",
+      "fixed_version": "0.55.0",
+      "fingerprint": "770d48eac638ba0a",
+      "runtime_reachability": "bundled_zipkin_datasource_plugin_binary",
+      "codex_verdict": "confirmed",
+      "cdb_disposition": "DUPLICATE_TRACKING",
+      "duplicate_of_cluster": true,
+      "canonical_tracker": 2933,
+      "verified_still_present_on_13_1_2": true,
+      "closure_condition": "Same as #4350 / #2933 (upstream x/net rebuild in zipkin plugin) scan-clears alert 5540"
+    },
+    {
+      "issue": 4352,
+      "alert": 5548,
+      "cve": "CVE-2026-27145",
+      "component": "usr/share/grafana/data/plugins-bundled/zipkin/gpx_grafana-zipkin-datasource_linux_amd64",
+      "package": "stdlib",
+      "installed": "v1.26.3",
+      "fixed_version": "1.25.11, 1.26.4",
+      "fingerprint": "f7705c66f59b11b5",
+      "runtime_reachability": "bundled_zipkin_datasource_plugin_binary",
+      "codex_verdict": "confirmed",
+      "cdb_disposition": "DUPLICATE_TRACKING",
+      "duplicate_of_cluster": true,
+      "canonical_tracker": 2933,
+      "verified_still_present_on_13_1_2": true,
+      "closure_condition": "Upstream Grafana release rebuilds zipkin plugin against Go stdlib >= 1.25.11 / >= 1.26.4; scan-clear on alert 5548 (same Go stdlib family as historical CVE-2026-42504 batch #3065-#3070)"
+    },
+    {
+      "issue": 4353,
+      "alert": 5541,
+      "cve": "CVE-2026-33814",
+      "component": "usr/share/grafana/data/plugins-bundled/zipkin/gpx_grafana-zipkin-datasource_linux_amd64",
+      "package": "golang.org/x/net",
+      "installed": "v0.49.0",
+      "fixed_version": "0.53.0",
+      "fingerprint": "945d6efdac69e714",
+      "runtime_reachability": "bundled_zipkin_datasource_plugin_binary",
+      "codex_verdict": "confirmed",
+      "cdb_disposition": "DUPLICATE_TRACKING",
+      "duplicate_of_cluster": true,
+      "canonical_tracker": 2933,
+      "verified_still_present_on_13_1_2": true,
+      "closure_condition": "Upstream x/net rebuild in zipkin plugin scan-clears alert 5541"
+    },
+    {
+      "issue": 4354,
+      "alert": 5542,
+      "cve": "CVE-2026-39821",
+      "component": "usr/share/grafana/data/plugins-bundled/zipkin/gpx_grafana-zipkin-datasource_linux_amd64",
+      "package": "golang.org/x/net",
+      "installed": "v0.49.0",
+      "fixed_version": "0.55.0",
+      "fingerprint": "dc15b05faedce243",
+      "runtime_reachability": "bundled_zipkin_datasource_plugin_binary",
+      "codex_verdict": "confirmed",
+      "cdb_disposition": "DUPLICATE_TRACKING",
+      "duplicate_of_cluster": true,
+      "canonical_tracker": 2933,
+      "verified_still_present_on_13_1_2": true,
+      "closure_condition": "Upstream x/net rebuild in zipkin plugin scan-clears alert 5542"
+    },
+    {
+      "issue": 4355,
+      "alert": 5555,
+      "cve": "CVE-2026-39822",
+      "component": "usr/share/grafana/data/plugins-bundled/zipkin/gpx_grafana-zipkin-datasource_linux_amd64",
+      "package": "stdlib",
+      "installed": "v1.26.3",
+      "fixed_version": "1.25.12, 1.26.5, 1.27.0-rc.2",
+      "fingerprint": "c7c0700b54dd4247",
+      "runtime_reachability": "bundled_zipkin_datasource_plugin_binary",
+      "codex_verdict": "confirmed",
+      "cdb_disposition": "DUPLICATE_TRACKING",
+      "duplicate_of_cluster": true,
+      "canonical_tracker": 2933,
+      "verified_still_present_on_13_1_2": true,
+      "closure_condition": "Upstream Go stdlib rebuild in zipkin plugin scan-clears alert 5555"
+    },
+    {
+      "issue": 4356,
+      "alert": 5558,
+      "cve": "CVE-2026-42504",
+      "component": "usr/share/grafana/data/plugins-bundled/zipkin/gpx_grafana-zipkin-datasource_linux_amd64",
+      "package": "stdlib",
+      "installed": "v1.26.3",
+      "fixed_version": "1.25.11, 1.26.4",
+      "fingerprint": "bc5498d4bd0877d8",
+      "runtime_reachability": "bundled_zipkin_datasource_plugin_binary",
+      "codex_verdict": "confirmed",
+      "cdb_disposition": "DUPLICATE_TRACKING",
+      "duplicate_of_cluster": true,
+      "canonical_tracker": 2933,
+      "verified_still_present_on_13_1_2": true,
+      "closure_condition": "Upstream Go stdlib >= 1.25.11 / >= 1.26.4 rebuild in zipkin plugin scan-clears alert 5558; extends cluster from historical batch #3065-#3070 to zipkin path"
+    },
+    {
+      "issue": 4357,
+      "alert": 5601,
+      "cve": "CVE-2026-56852",
+      "component": "usr/share/grafana/bin/grafana",
+      "package": "golang.org/x/text",
+      "installed_baseline": "v0.37.0",
+      "installed_candidate": "cleared on 13.1.2",
+      "fixed_version": "0.39.0",
+      "fingerprint": "a1f0fd9ec5ada7c9",
+      "runtime_reachability": "grafana_server_binary",
+      "codex_verdict": "confirmed",
+      "cdb_disposition": "FIX_READY",
+      "duplicate_of_cluster": false,
+      "canonical_tracker": 4357,
+      "verified_cleared_on_13_1_2": true,
+      "closure_condition": "After this PR merges to main AND post-merge Trivy/code-scanning recount shows alert 5601 fixed/absent for CVE-2026-56852 on usr/share/grafana/bin/grafana; do not premature-close"
+    },
+    {
+      "issue": 4358,
+      "alert": 5603,
+      "cve": "CVE-2026-56852",
+      "component": "usr/share/grafana/data/plugins-bundled/elasticsearch/gpx_grafana_elasticsearch_datasource_linux_amd64",
+      "package": "golang.org/x/text",
+      "installed_baseline": "v0.37.0",
+      "installed_candidate": "cleared on 13.1.2",
+      "fixed_version": "0.39.0",
+      "fingerprint": "60635624058c73e7",
+      "runtime_reachability": "bundled_elasticsearch_datasource_plugin_binary",
+      "codex_verdict": "confirmed",
+      "cdb_disposition": "FIX_READY",
+      "duplicate_of_cluster": false,
+      "canonical_tracker": 4358,
+      "verified_cleared_on_13_1_2": true,
+      "closure_condition": "After this PR merges to main AND post-merge Trivy/code-scanning recount shows alert 5603 fixed/absent for CVE-2026-56852 on the elasticsearch bundled plugin path"
+    },
+    {
+      "issue": 4359,
+      "alert": 5696,
+      "cve": "CVE-2026-56852",
+      "component": "usr/share/grafana/data/plugins-bundled/zipkin/gpx_grafana-zipkin-datasource_linux_amd64",
+      "package": "golang.org/x/text",
+      "installed": "v0.33.0",
+      "fixed_version": "0.39.0",
+      "fingerprint": "8a70b82a5a2364ab",
+      "runtime_reachability": "bundled_zipkin_datasource_plugin_binary",
+      "codex_verdict": "confirmed",
+      "cdb_disposition": "DUPLICATE_TRACKING",
+      "duplicate_of_cluster": true,
+      "canonical_tracker": 2933,
+      "verified_still_present_on_13_1_2": true,
+      "closure_condition": "Upstream Grafana rebuild bumps zipkin plugin from x/text v0.33.0 (older than grafana bin's v0.37.0) to >= 0.39.0; scan-clear on alert 5696"
+    }
+  ],
+  "grafana_hold_evidence": {
+    "canonical_tracker": 2933,
+    "consolidation_scope": "eight of ten wave issues (all zipkin plugin CVEs)",
+    "root_cause_class": "Grafana bundled zipkin datasource plugin ships older transitive Go modules (stdlib 1.26.3, x/net v0.49.0, x/text v0.33.0); upstream rebuild required",
+    "re_eval_date": "2026-11-05",
+    "forbidden_actions": [
+      "no alert dismissal",
+      "no trivyignore growth",
+      "no vendoring of grafana source",
+      "no plugin-only patch commit"
+    ]
+  },
+  "grafana_fix_evidence": {
+    "trigger": "grafana/grafana:13.1.2-ubuntu released 2026-08-04 (upstream security bump)",
+    "verified_via": "Trivy 0.73.0 image scan (docker buildx imagetools verified manifest list digest)",
+    "cleared_wave_issues": [4357, 4358],
+    "scope": "grafana server binary + elasticsearch bundled plugin path only; zipkin plugin still bundles older transitive Go modules",
+    "closure_gate": "post-merge alert recount on main tip; #4357 and #4358 stay open until alerts 5601/5603 clear on the exact main-tip scan"
+  },
+  "cap13_out_of_scope": {
+    "documented": true,
+    "note": "13 additional Security Alert Readout capped candidates from 2026-08-05 remain OUT OF SCOPE for this wave; no issue mutation or remediation claimed. See workflow_run 30990577816 for the readout cap boundary."
+  },
+  "safety_boundaries": {
+    "lr_verdict": "NO-GO",
+    "board_stage_orthogonal_to_lr": true,
+    "live_authorization": false,
+    "runtime_mutation": false,
+    "productive_db_write": false,
+    "mcp_mutation": false,
+    "blue_red_boundary_bypass": false,
+    "admin_merge_used": false
+  },
+  "brain_evidence": {
+    "brain_source": "repo-only",
+    "brain_status": "not-used",
+    "context_brain_attempted": true,
+    "context_brain_used": false,
+    "context_available": false,
+    "repo_fallback_used": true,
+    "repo_fallback_reason": "insufficient_evidence",
+    "context_tool_status": "available",
+    "context_trust_level": "none",
+    "records_found": "none",
+    "tools_or_queries": [
+      "GetMcpTools project-0-Claire_de_Binare-cdb_context",
+      "cdb_context_briefing task_id=cdb-briefing-4350-4359-security-wave",
+      "gh api code-scanning/alerts (tool_name=Trivy,state=open)",
+      "gh issue view 4350..4359,2513,2933,2292",
+      "gh run view 30990577816",
+      "trivy image (0.73.0) baseline 5a9df011 + candidate dbbf39af"
+    ],
+    "records_or_results": [
+      "code-scanning: 965 open Trivy alerts on main; 17 hits for target CVE set; 10 exact wave matches by fingerprint",
+      "trivy baseline 13.1.1: 18 HIGH + 1 CRITICAL, 13 target-CVE hits including 10 wave paths",
+      "trivy candidate 13.1.2: 14 HIGH + 0 CRITICAL, 11 target-CVE hits; wave issues 4357 + 4358 cleared, others unchanged"
+    ]
+  }
+}
