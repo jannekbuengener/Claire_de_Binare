@@ -27,12 +27,20 @@ from tools.arvp_vacation.sensitivity_campaign_state import (
 )
 
 ORCHESTRATOR_SCHEMA = "cdb.sensitivity_campaign_to_pr_orchestrator.v1"
+HANDOFF_SCHEMA = "cdb.sensitivity_campaign_to_pr_delivery_handoff.v1"
 CONTRACT_DOC = "docs/strategy/CDB_SENSITIVITY_CAMPAIGN_TO_PR_ORCHESTRATOR_V1.md"
+HANDOFF_CONTRACT_DOC = (
+    "docs/strategy/CDB_SENSITIVITY_CAMPAIGN_TO_PR_DELIVERY_HANDOFF_V1.md"
+)
+HANDOFF_FILENAME = "delivery_handoff.json"
+DEFAULT_HANDOFF_SUBDIR = "campaign_to_pr"
 
 CLASSIFICATIONS = frozenset({"PROMISING", "INCONCLUSIVE", "REJECTED", "BLOCKED"})
 
 VERDICT_DRY_RUN_PASS = "ORCHESTRATOR_DRY_RUN_PASS"
 VERDICT_PREPARE_PASS = "ORCHESTRATOR_PREPARE_PASS"
+HANDOFF_READY = "HANDOFF_READY_FOR_EXTERNAL_PR_WRITE"
+VERDICT_PR_READY = "PR_READY"
 HOLD_PHASE = "HOLD_CAMPAIGN_PHASE_NOT_COMPLETED"
 HOLD_CLASS_MISSING = "HOLD_CLASSIFICATION_MISSING"
 HOLD_CLASS_INVALID = "HOLD_CLASSIFICATION_INVALID"
@@ -41,6 +49,22 @@ HOLD_ANALYSIS = "HOLD_ANALYSIS_MISSING"
 HOLD_RAW = "HOLD_RAW_RUN_TREE_REJECT"
 HOLD_TOKEN = "HOLD_FORBIDDEN_TOKEN"
 HOLD_ABS_PATH = "HOLD_ABSOLUTE_PATH_LEAK"
+HOLD_HANDOFF_MISSING = "HOLD_HANDOFF_MISSING"
+HOLD_OBSERVED = "HOLD_OBSERVED_FACTS_INVALID"
+HOLD_BRANCH = "HOLD_BRANCH_MISMATCH"
+HOLD_HEAD_PR = "HOLD_HEAD_PR_MISMATCH"
+HOLD_FP = "HOLD_EVIDENCE_FINGERPRINT_MISMATCH"
+HOLD_PATHS = "HOLD_COMMIT_PATHS_INCOMPLETE"
+HOLD_FORBIDDEN_PATH = "HOLD_FORBIDDEN_PATH_IN_COMMIT"
+HOLD_ANALYSIS_UNVERIFIED = "HOLD_ANALYSIS_UNVERIFIED"
+
+FORBIDDEN_HANDOFF_ACTIONS = (
+    "gh_pr_create",
+    "gh_pr_merge",
+    "cdb_local_ci_publish",
+    "admin_merge",
+)
+_SHA40_RE = re.compile(r"^[0-9a-f]{40}$")
 
 SLIM_ALLOWLIST: tuple[str, ...] = (
     "CLOSEOUT_CARD.md",
@@ -497,6 +521,269 @@ def run_orchestrator(
     return report
 
 
+def _package_fingerprint(output_dir: Path, written: Sequence[str]) -> str:
+    parts: list[str] = []
+    root = Path(output_dir)
+    for rel in sorted(set(written)):
+        if rel == HANDOFF_FILENAME:
+            continue
+        path = root / rel
+        if not path.is_file():
+            continue
+        digest = canonical_hash({"path": rel, "bytes": path.read_bytes().hex()})
+        parts.append(f"{rel}:{digest}")
+    return canonical_hash({"files": parts})
+
+
+def build_delivery_handoff(
+    *,
+    issue_number: int,
+    inventory: Mapping[str, Any],
+    classification: str,
+    prepare_report: Mapping[str, Any],
+    output_dir: Path,
+    written: Sequence[str],
+    batch_key: str,
+    output_rel: str,
+) -> dict[str, Any]:
+    pkg_fp = _package_fingerprint(output_dir, written)
+    expected_commit_paths = sorted(
+        {rel for rel in written if rel != HANDOFF_FILENAME}
+        | {
+            f"{output_rel.rstrip('/')}/{rel}"
+            for rel in written
+            if rel != HANDOFF_FILENAME
+        }
+    )
+    body: dict[str, Any] = {
+        "schema_version": HANDOFF_SCHEMA,
+        "handoff_status": HANDOFF_READY,
+        "contract_doc": HANDOFF_CONTRACT_DOC,
+        "orchestrator_schema": ORCHESTRATOR_SCHEMA,
+        "issue_number": int(issue_number),
+        "campaign_id": inventory.get("campaign_id"),
+        "classification": classification,
+        "inventory_fingerprint": inventory.get("inventory_fingerprint"),
+        "run_key_digest": inventory.get("run_key_digest"),
+        "manifest_fingerprint": inventory.get("manifest_fingerprint"),
+        "authorization_fingerprint": inventory.get("authorization_fingerprint"),
+        "bound_main_sha": inventory.get("bound_main_sha"),
+        "slim_package": {
+            "output_dir": str(Path(output_dir)),
+            "output_rel": output_rel,
+            "written": sorted(set(written)),
+            "package_fingerprint": pkg_fp,
+        },
+        "pr_body_relpath": "pr_body.md",
+        "orchestrator_report_fingerprint": prepare_report.get("report_fingerprint"),
+        "routing_hints": {
+            "batch_key": batch_key,
+            "lane": "validation-research",
+            "validation_profile": "validation-research-v1",
+            "note": "live cdb-pr-router decision wins; do not resurrect deleted branches",
+            "anti_repush": True,
+        },
+        "forbidden_actions": list(FORBIDDEN_HANDOFF_ACTIONS),
+        "expected_commit_paths": expected_commit_paths,
+        "expected_package_relative_paths": sorted(
+            rel for rel in written if rel != HANDOFF_FILENAME
+        ),
+        "verification_protocol": "verify-delivery",
+        "github_write_owner": "external_agent_or_control_plane",
+        "lr_status": "NO-GO",
+        "no_automatic_promotion": True,
+        "created_at_utc": _utcnow_iso(),
+    }
+    body["handoff_fingerprint"] = canonical_hash(
+        {k: v for k, v in body.items() if k != "handoff_fingerprint"}
+    )
+    return body
+
+
+def prepare_delivery(
+    *,
+    evidence_root: Path,
+    output_dir: Path,
+    pins: BindingPins | None = None,
+    issue_number: int = 4366,
+    batch_key: str = "validation-research",
+    commit_sha: str = "0" * 40,
+    output_rel: str = "docs/evidence/arvp/campaign-to-pr/",
+) -> dict[str, Any]:
+    """Verify analysis, write slim package + machine-readable delivery handoff.
+
+    Does not call ``gh``. Does not create PRs.
+    """
+    root = Path(evidence_root)
+    pins = pins or BindingPins()
+    # Fail closed if analysis/classification cannot be verified.
+    try:
+        classification_body = load_classification(root)
+        present = assert_required_analysis(root)
+    except CampaignToPrError as exc:
+        if exc.reason_code in {
+            HOLD_CLASS_MISSING,
+            HOLD_CLASS_INVALID,
+            HOLD_ANALYSIS,
+        }:
+            raise CampaignToPrError(HOLD_ANALYSIS_UNVERIFIED, str(exc)) from exc
+        raise
+    classification = str(classification_body["classification"])
+    inventory = load_inventory(root)
+    assert_bindings(inventory, pins)
+
+    prepare = run_orchestrator(
+        evidence_root=root,
+        mode="prepare-pr-inputs",
+        output_dir=Path(output_dir),
+        pins=pins,
+        issue_number=issue_number,
+        batch_key=batch_key,
+        commit_sha=commit_sha,
+        output_rel=output_rel,
+    )
+    written = list(prepare.get("written") or [])
+    handoff = build_delivery_handoff(
+        issue_number=issue_number,
+        inventory=inventory,
+        classification=classification,
+        prepare_report=prepare,
+        output_dir=Path(output_dir),
+        written=written,
+        batch_key=batch_key,
+        output_rel=output_rel,
+    )
+    handoff_path = Path(output_dir) / HANDOFF_FILENAME
+    handoff_path.write_text(
+        json.dumps(handoff, indent=2, sort_keys=True) + "\n", encoding="utf-8"
+    )
+    written.append(HANDOFF_FILENAME)
+    return {
+        "schema_version": ORCHESTRATOR_SCHEMA,
+        "verdict": HANDOFF_READY,
+        "classification": classification,
+        "present_allowlist": sorted(present),
+        "prepare": prepare,
+        "handoff": handoff,
+        "handoff_path": str(handoff_path),
+        "written": sorted(set(written)),
+        "lr_status": "NO-GO",
+        "forbidden_actions": list(FORBIDDEN_HANDOFF_ACTIONS),
+    }
+
+
+def load_handoff(path: Path) -> dict[str, Any]:
+    if not Path(path).is_file():
+        raise CampaignToPrError(HOLD_HANDOFF_MISSING, str(path))
+    body = _load_json(Path(path))
+    if body.get("schema_version") != HANDOFF_SCHEMA:
+        raise CampaignToPrError(
+            HOLD_HANDOFF_MISSING, f"schema={body.get('schema_version')!r}"
+        )
+    if body.get("handoff_status") != HANDOFF_READY:
+        raise CampaignToPrError(
+            HOLD_HANDOFF_MISSING, f"handoff_status={body.get('handoff_status')!r}"
+        )
+    return body
+
+
+def verify_delivery(
+    *,
+    handoff_path: Path,
+    observed_facts: Mapping[str, Any],
+) -> dict[str, Any]:
+    """Verify agent-supplied observed git/PR facts against handoff → PR_READY.
+
+    Never invokes ``gh``. Observed facts must be supplied by the external agent.
+    """
+    handoff = load_handoff(handoff_path)
+    obs = dict(observed_facts)
+
+    branch = str(obs.get("branch_name") or "").strip()
+    if not branch:
+        raise CampaignToPrError(HOLD_BRANCH, "branch_name empty")
+    if branch == "batch/validation-research-issue-4366":
+        # Anti-repush: resurrecting the squash-deleted foundation branch is forbidden.
+        raise CampaignToPrError(
+            HOLD_BRANCH,
+            "anti-repush: do not resurrect deleted branch "
+            "batch/validation-research-issue-4366",
+        )
+
+    head = str(obs.get("head_sha") or "").strip().lower()
+    pr_head = str(obs.get("pr_head_sha") or "").strip().lower()
+    if not _SHA40_RE.fullmatch(head) or not _SHA40_RE.fullmatch(pr_head):
+        raise CampaignToPrError(HOLD_OBSERVED, "head_sha/pr_head_sha must be 40-hex")
+    if head != pr_head:
+        raise CampaignToPrError(HOLD_HEAD_PR, f"head={head} pr_head={pr_head}")
+
+    try:
+        pr_number = int(obs.get("pr_number"))
+    except (TypeError, ValueError) as exc:
+        raise CampaignToPrError(HOLD_OBSERVED, "pr_number invalid") from exc
+    if pr_number <= 0:
+        raise CampaignToPrError(HOLD_OBSERVED, "pr_number must be positive")
+
+    pr_base = str(obs.get("pr_base") or "").strip()
+    if pr_base != "main":
+        raise CampaignToPrError(HOLD_OBSERVED, f"pr_base={pr_base!r} (want main)")
+
+    paths_raw = obs.get("commit_paths")
+    if not isinstance(paths_raw, list) or not paths_raw:
+        raise CampaignToPrError(HOLD_OBSERVED, "commit_paths missing")
+    commit_paths = {str(p).replace("\\", "/").lstrip("./") for p in paths_raw}
+    assert_no_raw_run_staging(sorted(commit_paths))
+    for p in commit_paths:
+        if p == "runs" or p.startswith("runs/"):
+            raise CampaignToPrError(HOLD_FORBIDDEN_PATH, p)
+
+    expected = {
+        str(p).replace("\\", "/")
+        for p in (handoff.get("expected_package_relative_paths") or [])
+    }
+    # Accept either package-relative or output_rel-prefixed paths.
+    output_rel = str(
+        (handoff.get("slim_package") or {}).get("output_rel") or ""
+    ).rstrip("/")
+    missing: list[str] = []
+    for rel in sorted(expected):
+        prefixed = f"{output_rel}/{rel}" if output_rel else rel
+        if rel not in commit_paths and prefixed not in commit_paths:
+            missing.append(rel)
+    if missing:
+        raise CampaignToPrError(HOLD_PATHS, ",".join(missing))
+
+    observed_fp = str(obs.get("slim_package_fingerprint") or "").strip()
+    expected_fp = str(
+        (handoff.get("slim_package") or {}).get("package_fingerprint") or ""
+    )
+    if not observed_fp or observed_fp != expected_fp:
+        raise CampaignToPrError(
+            HOLD_FP, f"expected={expected_fp} observed={observed_fp}"
+        )
+
+    result = {
+        "schema_version": HANDOFF_SCHEMA,
+        "verdict": VERDICT_PR_READY,
+        "handoff_fingerprint": handoff.get("handoff_fingerprint"),
+        "issue_number": handoff.get("issue_number"),
+        "pr_number": pr_number,
+        "branch_name": branch,
+        "head_sha": head,
+        "pr_head_sha": pr_head,
+        "classification": handoff.get("classification"),
+        "inventory_fingerprint": handoff.get("inventory_fingerprint"),
+        "slim_package_fingerprint": expected_fp,
+        "forbidden_actions": list(FORBIDDEN_HANDOFF_ACTIONS),
+        "lr_status": "NO-GO",
+        "verified_at_utc": _utcnow_iso(),
+    }
+    result["verification_fingerprint"] = canonical_hash(
+        {k: v for k, v in result.items() if k != "verification_fingerprint"}
+    )
+    return result
+
+
 def _emit(payload: Mapping[str, Any], stream: TextIO) -> None:
     stream.write(json.dumps(payload, indent=2, sort_keys=True) + "\n")
 
@@ -534,6 +821,37 @@ def build_parser() -> argparse.ArgumentParser:
         "--output-rel",
         default="docs/evidence/arvp/campaign-to-pr/",
         help="Repo-relative path recorded in PR body draft",
+    )
+
+    p_del = sub.add_parser(
+        "prepare-delivery",
+        help=(
+            "Verify analysis + write slim package + delivery_handoff.json "
+            "(no gh pr create)"
+        ),
+    )
+    add_common(p_del)
+    p_del.add_argument("--output-dir", type=Path, required=True)
+    p_del.add_argument("--batch-key", default="validation-research")
+    p_del.add_argument("--commit-sha", default="0" * 40)
+    p_del.add_argument(
+        "--output-rel",
+        default="docs/evidence/arvp/campaign-to-pr/",
+    )
+
+    p_ver = sub.add_parser(
+        "verify-delivery",
+        help=(
+            "Verify agent-supplied observed git/PR facts against handoff → PR_READY "
+            "(no gh calls)"
+        ),
+    )
+    p_ver.add_argument("--handoff", type=Path, required=True)
+    p_ver.add_argument(
+        "--observed-json",
+        type=Path,
+        required=True,
+        help="Agent-produced observed facts JSON (branch/head/pr/paths/fingerprint)",
     )
     return parser
 
@@ -573,12 +891,38 @@ def main(argv: Sequence[str] | None = None) -> int:
             )
             _emit(payload, sys.stdout)
             return 0
+        if args.command == "prepare-delivery":
+            payload = prepare_delivery(
+                evidence_root=args.evidence_root,
+                output_dir=args.output_dir,
+                pins=_pins_from_args(args),
+                issue_number=args.issue,
+                batch_key=args.batch_key,
+                commit_sha=args.commit_sha,
+                output_rel=args.output_rel,
+            )
+            _emit(payload, sys.stdout)
+            return 0
+        if args.command == "verify-delivery":
+            observed = json.loads(Path(args.observed_json).read_text(encoding="utf-8"))
+            if not isinstance(observed, dict):
+                raise CampaignToPrError(HOLD_OBSERVED, "observed-json must be object")
+            payload = verify_delivery(
+                handoff_path=args.handoff, observed_facts=observed
+            )
+            _emit(payload, sys.stdout)
+            return 0
         parser.error(f"unknown command {args.command!r}")
         return 2
     except CampaignToPrError as exc:
+        schema = (
+            HANDOFF_SCHEMA
+            if getattr(args, "command", "") in {"prepare-delivery", "verify-delivery"}
+            else ORCHESTRATOR_SCHEMA
+        )
         _emit(
             {
-                "schema_version": ORCHESTRATOR_SCHEMA,
+                "schema_version": schema,
                 "verdict": exc.reason_code,
                 "ok": False,
                 "detail": str(exc),

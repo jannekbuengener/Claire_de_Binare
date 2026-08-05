@@ -30,6 +30,11 @@ from tools.arvp_vacation.sensitivity_campaign_analyzer import (
     SensitivityAnalyzerError,
     analyze_campaign,
 )
+from tools.arvp_vacation.sensitivity_campaign_to_pr import (
+    CampaignToPrError,
+    DEFAULT_HANDOFF_SUBDIR,
+    prepare_delivery,
+)
 from tools.arvp_vacation.sensitivity_campaign_authorization import (
     DEFAULT_REPO,
     ISSUE_NUMBER,
@@ -798,6 +803,8 @@ def execute_campaign(
     stream: TextIO | None = None,
     max_runs_override: int | None = None,
     now_utc_provider: Any = None,
+    skip_campaign_to_pr_handoff: bool = False,
+    campaign_to_pr_issue: int = 4366,
 ) -> dict[str, Any]:
     """Execute only with valid Owner-GO + budget + surface. Default: real adapter.
 
@@ -805,6 +812,9 @@ def execute_campaign(
     enables it. Completion is gated on all-primary succeeded plus all
     reproduction attempts PASSing exact-equality comparison against the bound
     primary results.
+
+    After ``COMPLETED``, prepare-delivery handoff runs by default (no ``gh``).
+    Opt out with ``skip_campaign_to_pr_handoff=True``.
     """
     root = repo_root or PROJECT_ROOT
     out = stream or sys.stdout
@@ -1306,6 +1316,49 @@ def execute_campaign(
             "run_plan_fingerprint": plan.run_plan_fingerprint,
             "lr_status": "NO-GO",
         }
+        if not skip_campaign_to_pr_handoff:
+            handoff_dir = Path(evidence_root) / DEFAULT_HANDOFF_SUBDIR
+            try:
+                if handoff_dir.exists():
+                    # Idempotent re-entry: require empty or reuse only if absent.
+                    # Fail closed on non-empty leftover from a partial prior attempt.
+                    if any(handoff_dir.iterdir()):
+                        raise CampaignToPrError(
+                            "HOLD_RAW_RUN_TREE_REJECT",
+                            f"handoff output_dir not empty: {handoff_dir}",
+                        )
+                delivery = prepare_delivery(
+                    evidence_root=Path(evidence_root),
+                    output_dir=handoff_dir,
+                    issue_number=int(campaign_to_pr_issue),
+                    batch_key="validation-research",
+                    commit_sha=str(bindings.execution_sha),
+                    output_rel="docs/evidence/arvp/campaign-to-pr/",
+                )
+                payload["campaign_to_pr"] = {
+                    "verdict": delivery.get("verdict"),
+                    "handoff_path": delivery.get("handoff_path"),
+                    "handoff_fingerprint": (delivery.get("handoff") or {}).get(
+                        "handoff_fingerprint"
+                    ),
+                    "classification": delivery.get("classification"),
+                    "forbidden_actions": delivery.get("forbidden_actions"),
+                    "lr_status": "NO-GO",
+                }
+            except CampaignToPrError as exc:
+                # COMPLETED stands; handoff is HOLD for the external agent.
+                payload["campaign_to_pr"] = {
+                    "verdict": exc.reason_code,
+                    "ok": False,
+                    "detail": str(exc),
+                    "lr_status": "NO-GO",
+                }
+        else:
+            payload["campaign_to_pr"] = {
+                "verdict": "SKIPPED",
+                "reason_code": "SKIP_CAMPAIGN_TO_PR_HANDOFF",
+                "lr_status": "NO-GO",
+            }
         _emit(payload, out)
         return payload
     finally:
@@ -1473,6 +1526,17 @@ def build_parser() -> argparse.ArgumentParser:
     p_exec.add_argument("--dataset-root", type=Path, default=None)
     p_exec.add_argument("--artifacts-base", type=Path, default=None)
     p_exec.add_argument("--main-sha", default=None)
+    p_exec.add_argument(
+        "--skip-campaign-to-pr-handoff",
+        action="store_true",
+        help="Do not auto-run prepare-delivery after COMPLETED (default: wire-on)",
+    )
+    p_exec.add_argument(
+        "--campaign-to-pr-issue",
+        type=int,
+        default=4366,
+        help="Issue number recorded in delivery handoff",
+    )
     # Intentionally NO --force / --yes / --admin / --resume-anyway flags.
 
     p_probe = sub.add_parser("probe-surface", help="Read-only surface capability probe")
@@ -1584,6 +1648,8 @@ def main(argv: Sequence[str] | None = None) -> int:
                 dataset_root=args.dataset_root,
                 artifacts_base=args.artifacts_base,
                 main_sha=args.main_sha,
+                skip_campaign_to_pr_handoff=bool(args.skip_campaign_to_pr_handoff),
+                campaign_to_pr_issue=int(args.campaign_to_pr_issue),
             )
             return 0
         parser.error(f"unknown command {args.command}")

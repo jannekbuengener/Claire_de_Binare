@@ -107,3 +107,8 @@ Defaults:
 - Adoption: `CDB_SENSITIVITY_CAMPAIGN_PRIMARY_EVIDENCE_ADOPTION_V1.md`
 - Execution: `CDB_SENSITIVITY_CAMPAIGN_EXECUTION_CONTRACT_V1.md`
 - Analyzer artifacts are inputs; this orchestrator does not replace analysis science
+
+## Follow-on (slice 2)
+
+Post-`COMPLETED` auto-handoff and `PR_READY` verification:
+`CDB_SENSITIVITY_CAMPAIGN_TO_PR_DELIVERY_HANDOFF_V1.md`.
