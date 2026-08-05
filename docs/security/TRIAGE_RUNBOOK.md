@@ -162,7 +162,10 @@ Gruppierung nach:
 ### Zweck
 
 Das Workflow `.github/workflows/security-alert-readout.yml` läuft automatisch
-**Mo / Mi / Fr um 06:15 UTC** und kann jederzeit manuell ausgelöst werden.  
+**am 1. jedes Monats um 06:15 UTC** und kann jederzeit manuell ausgelöst werden.
+Die Kadenz wurde nach der Grafana-Alert-Welle #4350–#4359 (PR #4363, gemergt
+als `ee2a5c81`) von 3x/Woche auf monatlich reduziert — die Readout-Kadenz
+folgt Triage-/Backlog-Rhythmus, nicht Wochentakt.  
 Es kombiniert zwei Read-only-Skripte:
 
 | Skript | Zweck |
