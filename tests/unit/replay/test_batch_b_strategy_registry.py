@@ -29,8 +29,10 @@ def test_executable_registry_is_subset_of_manifest_and_field_aligned() -> None:
     from pathlib import Path
 
     manifest = json.loads(
-        (Path(__file__).resolve().parents[3] / "docs/contracts/batch_b_funnel_manifest.v1.json")
-        .read_text(encoding="utf-8")
+        (
+            Path(__file__).resolve().parents[3]
+            / "docs/contracts/batch_b_funnel_manifest.v1.json"
+        ).read_text(encoding="utf-8")
     )
     by_id = {row["strategy_id"]: row for row in manifest["candidates"]}
     for strategy_id in executable_batch_b_strategy_ids():
