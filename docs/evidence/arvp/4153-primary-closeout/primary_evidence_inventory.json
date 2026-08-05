@@ -1,6 +1,6 @@
 {
   "adoption_verdict": "REPRODUCTION_MAY_RUN_AGAINST_EXISTING_PRIMARY_NAMESPACE",
-  "allowed_evidence_namespace": "D:\\Dev\\Workspaces\\Repos\\cdb-wt-4153-hermes-work-start\\artifacts\\arvp_sensitivity\\4153\\arvp-sensitivity-4153-v1\\7126f60033205d8012976376e217999e8702a83266a059f1d4c628cf4ba208da\\39d448530462b31a",
+  "allowed_evidence_namespace": "artifacts/arvp_sensitivity/4153/arvp-sensitivity-4153-v1/7126f60033205d8012976376e217999e8702a83266a059f1d4c628cf4ba208da/39d448530462b31a",
   "attempt_hist": {
     "1": 818,
     "2": 1
@@ -22,7 +22,7 @@
     "full_primary_rerun_without_adoption_failure",
     "bind_new_main_sha_without_new_owner_go"
   ],
-  "inventory_fingerprint": "a8bdc9383d1d7e3c4e82dcb23622b0d2fdcfa913f4cc0270b630479d43cdb041",
+  "inventory_fingerprint": "5c6116d0e02cf9fbb7db553be1f778264d78de351e2c03dae327fa900bc8bf9b",
   "lr_status": "NO-GO",
   "manifest_fingerprint": "7126f60033205d8012976376e217999e8702a83266a059f1d4c628cf4ba208da",
   "missing_completed_count": 0,

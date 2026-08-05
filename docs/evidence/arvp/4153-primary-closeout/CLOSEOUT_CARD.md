@@ -24,3 +24,7 @@ Status: `DONE_ANALYSIS_EVIDENCE_ADDED_TO_PR` (slice delivery; no merge)
 ## PR
 - Transition/closeout: #4362
 - Work-start (unchanged objective): #4347
+
+## Packaging note
+- `allowed_evidence_namespace` in the committed inventory is repo-relative (local absolute path redacted for PR hygiene).
+
