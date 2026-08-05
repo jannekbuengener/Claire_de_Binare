@@ -23,6 +23,25 @@ def test_batch_b_registry_contains_only_implemented_hh_hl() -> None:
     assert "hh_hl_continuation" in (record.runner_module or "")
 
 
+def test_executable_registry_is_subset_of_manifest_and_field_aligned() -> None:
+    """Guard against parallel-registry drift vs the Batch-B identity lock."""
+    import json
+    from pathlib import Path
+
+    manifest = json.loads(
+        (Path(__file__).resolve().parents[3] / "docs/contracts/batch_b_funnel_manifest.v1.json")
+        .read_text(encoding="utf-8")
+    )
+    by_id = {row["strategy_id"]: row for row in manifest["candidates"]}
+    for strategy_id in executable_batch_b_strategy_ids():
+        assert strategy_id in by_id
+        row = by_id[strategy_id]
+        record = get_batch_b_strategy(strategy_id)
+        assert row["implementation_status"] == "implemented"
+        assert row["runner_module"] == record.runner_module
+        assert row.get("parameter_source") == record.parameter_source
+
+
 def test_unknown_batch_b_strategy_raises() -> None:
     with pytest.raises(KeyError):
         get_batch_b_strategy("not_a_batch_b_strategy")

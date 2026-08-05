@@ -12,8 +12,8 @@
 | Item | Value |
 |---|---|
 | Spec path | `docs/evidence/arvp_hh_hl_continuation_v1_spec_4372.md` |
-| Spec SHA-256 | `67af97491a031ca8673a5ca17e3f7ec17ffe7ece5e4125db24cf45a29339fcc3` |
-| Registry digest | `9709328df38aab623e0812a796a096d2a117fb4c119663eff76453285b290445` |
+| Spec SHA-256 (git blob, LF) | `67af97491a031ca8673a5ca17e3f7ec17ffe7ece5e4125db24cf45a29339fcc3` |
+| Registry digest (canonical JSON of executable record fields, not file SHA) | `9709328df38aab623e0812a796a096d2a117fb4c119663eff76453285b290445` |
 | Result digest (canonical trades/metrics) | `939ef5355c180d17dc9fa308bcb23a43387279be212796790ef0644dea81e542` |
 | Execution provenance id | `bt-fe453d1f676db2e1` |
 | Dataset file SHA-256 | `3be2430b5e30845b1db8d3330fc5e6b5d2b322dabf834db4bc2efaad379b30a7` |
@@ -62,7 +62,7 @@
 - `adapter_id`: `batch_b_shadow_runner_v1`
 - CLI: `python -m services.validation.strategy_replay_runner --dataset-source file --input-candles <dataset> --strategy-id hh_hl_continuation_v1 --adapter-id batch_b_shadow_runner_v1 --symbol BTCUSDT --speedup-profile instant`
 - Exit code: `0` (twice)
-- Descriptive metrics only: `closed_trades_total=197`, `gate_result=NOT_RANKING_READY`
+- Descriptive metrics only: `closed_trades_total=197` (**executability proof only — not quality, not ranking, not Stage-A evidence**), `gate_result=NOT_RANKING_READY`
 - Two independent runs: identical canonical result digest `939ef535…`
 - Local bundle dirs under `artifacts/replay_reports/hh_hl_4372_run{1,2}/` — **not committed**
 

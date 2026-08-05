@@ -93,8 +93,7 @@ def test_mean_reversion_lane_excludes_bollinger_near_duplicate(
     manifest: dict,
 ) -> None:
     resolutions = {
-        row["strategy_id"]: row["decision"]
-        for row in manifest["dedupe_resolutions"]
+        row["strategy_id"]: row["decision"] for row in manifest["dedupe_resolutions"]
     }
     assert resolutions["bollinger_mean_reversion_v1"] == "EXCLUDED_NEAR_DUPLICATE"
     assert "range_bound_reversion_v1" in EXPECTED_IDS

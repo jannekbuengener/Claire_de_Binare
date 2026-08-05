@@ -251,9 +251,7 @@ def _resolve_candles_path(
     return candidate
 
 
-def parse_dataset_spec(
-    spec_path: Path, repo_root: Path | None = None
-) -> DatasetRecord:
+def parse_dataset_spec(spec_path: Path, repo_root: Path | None = None) -> DatasetRecord:
     root = repo_root or _repo_root()
     if not spec_path.exists():
         raise VacationContractError(f"dataset spec missing: {spec_path}")
@@ -386,9 +384,7 @@ def build_scenario_group_id(strategy_id: str, job_fingerprint: str) -> str:
     prefix = fp[:_SCENARIO_GROUP_FINGERPRINT_CHARS]
     group_id = f"vac_{slug}_{prefix}"
     if len(group_id) > 64 or not SCENARIO_GROUP_ID_RE.match(group_id):
-        raise VacationContractError(
-            f"derived scenario_group_id invalid: {group_id!r}"
-        )
+        raise VacationContractError(f"derived scenario_group_id invalid: {group_id!r}")
     return group_id
 
 
@@ -427,7 +423,9 @@ def backfill_scenario_group_ids(state: Mapping[str, Any]) -> dict[str, Any]:
     return updated
 
 
-def campaign_artifact_dir(manifest: VacationManifest, repo_root: Path | None = None) -> Path:
+def campaign_artifact_dir(
+    manifest: VacationManifest, repo_root: Path | None = None
+) -> Path:
     root = repo_root or _repo_root()
     return root / manifest.artifact_root / manifest.campaign_id
 
@@ -448,7 +446,9 @@ def git_head_sha(repo_root: Path | None = None) -> str:
     return result.stdout.strip()
 
 
-def resolve_source_sha(manifest: VacationManifest, repo_root: Path | None = None) -> str:
+def resolve_source_sha(
+    manifest: VacationManifest, repo_root: Path | None = None
+) -> str:
     raw = (manifest.source_sha or "").strip()
     if not raw or raw.upper() in {"RUNTIME_RESOLVE", "AUTO"}:
         return git_head_sha(repo_root)
