@@ -17,6 +17,8 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
     make \
     && rm -rf /var/lib/apt/lists/*
 
+# COPY sources must remain allowed by the repo-root .dockerignore — this image is
+# also the Cursor Cloud environment build target (`.cursor/environment.json`, #4360).
 COPY requirements.txt requirements-dev.txt requirements-mcp.txt pyproject.toml ./
 RUN python -m pip install --upgrade pip \
     && pip install --no-cache-dir -r requirements.txt -r requirements-dev.txt -r requirements-mcp.txt
