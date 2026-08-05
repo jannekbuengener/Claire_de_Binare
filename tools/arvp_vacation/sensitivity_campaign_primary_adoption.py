@@ -238,9 +238,7 @@ def assert_adoption_inventory_allows_reproduction(
         ("bound_main_sha", bindings.main_sha),
     ):
         if inv.get(field) != expected:
-            raise SensitivityAdoptionError(
-                "ADOPT_INVENTORY_BINDING_MISMATCH", field
-            )
+            raise SensitivityAdoptionError("ADOPT_INVENTORY_BINDING_MISMATCH", field)
     return inv
 
 
@@ -318,9 +316,7 @@ def adopt_primary_evidence(
         # Idempotent: inventory refreshed; do not regress phase.
         pass
     else:
-        raise SensitivityAdoptionError(
-            "ADOPT_PHASE_UNSUPPORTED", current
-        )
+        raise SensitivityAdoptionError("ADOPT_PHASE_UNSUPPORTED", current)
 
     final_phase = current
     if promote_to_primary_complete and current == (

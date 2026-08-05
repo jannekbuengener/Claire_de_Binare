@@ -35,9 +35,7 @@ from tools.arvp_vacation.sensitivity_campaign_state import (
 )
 
 ANALYSIS_DIRNAME = "analysis"
-CLASSIFICATIONS = frozenset(
-    {"PROMISING", "INCONCLUSIVE", "REJECTED", "BLOCKED"}
-)
+CLASSIFICATIONS = frozenset({"PROMISING", "INCONCLUSIVE", "REJECTED", "BLOCKED"})
 
 
 class SensitivityAnalyzerError(ValueError):
@@ -77,9 +75,7 @@ def load_primary_result_rows(
         rpath = result_path(root, run_key)
         epath = run_envelope_path(root, run_key)
         if not rpath.exists() or not epath.exists():
-            raise SensitivityAnalyzerError(
-                "ANALYZER_PRIMARY_RESULT_MISSING", run_key
-            )
+            raise SensitivityAnalyzerError("ANALYZER_PRIMARY_RESULT_MISSING", run_key)
         result_body = read_json(rpath)
         env_body = read_json(epath)
         metrics = dict(result_body.get("result") or {})
@@ -129,9 +125,7 @@ def load_reproduction_summary(evidence_root: Path) -> dict[str, Any]:
                 "run_key": path.parts[-4] if len(path.parts) >= 4 else None,
             }
         )
-    mismatch_count = sum(
-        1 for c in comparisons if c.get("mismatched_fields")
-    )
+    mismatch_count = sum(1 for c in comparisons if c.get("mismatched_fields"))
     fps = sorted(
         str(c["comparison_fingerprint"])
         for c in comparisons
@@ -199,9 +193,7 @@ def _aggregate_slot_metrics(
         # Window stability: stdev of net_pnl across windows (population).
         nets = [
             v
-            for v in (
-                _to_float((i.get("metrics") or {}).get("net_pnl")) for i in items
-            )
+            for v in (_to_float((i.get("metrics") or {}).get("net_pnl")) for i in items)
             if v is not None
         ]
         if len(nets) >= 2:
