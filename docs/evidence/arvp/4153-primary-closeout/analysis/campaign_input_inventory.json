@@ -1,0 +1,33 @@
+{
+  "allowed_result_fields": [
+    "gate_reason",
+    "regime_distribution",
+    "trade_count",
+    "turnover",
+    "fees",
+    "spread",
+    "slippage",
+    "gross_pnl",
+    "net_pnl",
+    "profit_factor",
+    "expectancy",
+    "drawdown",
+    "main_effect",
+    "interaction_effect",
+    "overfitting_risk_flag"
+  ],
+  "analyzer_contract_version": "cdb.sensitivity_campaign_analyzer.v1",
+  "authorization_fingerprint": "39d448530462b31a6481727f6090c2c5fdb897b3b1f1371bd18f2ce422884b6d",
+  "campaign_phase": "COMPLETED",
+  "expected_run_count": 819,
+  "input_inventory_fingerprint": "ae2a4e7cfa0a8fef3a4022c9c8b62928acedca0758b1bcd9b3649ffbfac41937",
+  "manifest_fingerprint": "7126f60033205d8012976376e217999e8702a83266a059f1d4c628cf4ba208da",
+  "matrix_slots": 21,
+  "observed_run_count": 819,
+  "overlaps": 2,
+  "physical_parameter_sets": 19,
+  "primary_inventory_fingerprint": "a8bdc9383d1d7e3c4e82dcb23622b0d2fdcfa913f4cc0270b630479d43cdb041",
+  "run_key_digest": "0822c8e28a38c0302c59e50f42afab958be6759cec20064456de1b8ea20f87c5",
+  "run_plan_fingerprint": "7971335597a97c1a8ceed8062a6b06dad46cbe9172e0e794d8f4dd74a4adc88c",
+  "schema_version": "cdb.sensitivity_campaign_analysis_input.v1"
+}

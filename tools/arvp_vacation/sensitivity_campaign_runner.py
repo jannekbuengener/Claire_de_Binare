@@ -26,6 +26,10 @@ from typing import Any, Mapping, Sequence, TextIO
 from tools.arvp_vacation.sensitivity_campaign_analyzer_contract import (
     classify_overlap_slots,
 )
+from tools.arvp_vacation.sensitivity_campaign_analyzer import (
+    SensitivityAnalyzerError,
+    analyze_campaign,
+)
 from tools.arvp_vacation.sensitivity_campaign_authorization import (
     DEFAULT_REPO,
     ISSUE_NUMBER,
@@ -1392,6 +1396,33 @@ def adopt_primary_evidence_command(
     return payload
 
 
+def analyze_campaign_command(
+    *,
+    evidence_root: Path,
+    manifest_path: Path | str = MANIFEST_PATH,
+    main_sha: str | None = None,
+    repo_root: Path | None = None,
+    stream: TextIO | None = None,
+) -> dict[str, Any]:
+    """Run deterministic analyzer against an adopted+reproduced evidence namespace."""
+    root = repo_root or PROJECT_ROOT
+    out = stream or sys.stdout
+    sha = main_sha or _git_head_sha(root)
+    manifest = load_manifest(manifest_path)
+    validate_manifest(manifest)
+    plan = build_run_plan(manifest, main_sha=sha)
+    env = read_json(Path(evidence_root) / CAMPAIGN_ENVELOPE_NAME)
+    payload = analyze_campaign(
+        evidence_root=Path(evidence_root),
+        expected_run_keys=list(plan.run_keys),
+        manifest_fingerprint=str(env.get("manifest_fingerprint") or ""),
+        run_plan_fingerprint=str(env.get("run_plan_fingerprint") or ""),
+        authorization_fingerprint=str(env.get("authorization_fingerprint") or ""),
+    )
+    _emit(payload, out)
+    return payload
+
+
 def build_parser() -> argparse.ArgumentParser:
     parser = argparse.ArgumentParser(
         prog="python -m tools.arvp_vacation.sensitivity_campaign_runner",
@@ -1479,6 +1510,18 @@ def build_parser() -> argparse.ArgumentParser:
         help="Optional JSON operator note for interrupt recovery history",
     )
 
+    p_analyze = sub.add_parser(
+        "analyze",
+        help="Deterministic campaign analyzer (requires COMPLETED + reproduction)",
+    )
+    p_analyze.add_argument("--evidence-root", type=Path, required=True)
+    p_analyze.add_argument("--manifest", type=Path, default=Path(MANIFEST_PATH))
+    p_analyze.add_argument(
+        "--main-sha",
+        required=True,
+        help="Frozen primary bound_main_sha used for run-plan expansion",
+    )
+
     return parser
 
 
@@ -1503,6 +1546,13 @@ def main(argv: Sequence[str] | None = None) -> int:
                 reproduction_code_sha=args.reproduction_code_sha,
                 promote_to_primary_complete=not args.no_promote_primary_complete,
                 power_off_recovery_json=args.power_off_recovery_json,
+            )
+            return 0
+        if args.command == "analyze":
+            analyze_campaign_command(
+                evidence_root=args.evidence_root,
+                manifest_path=args.manifest,
+                main_sha=args.main_sha,
             )
             return 0
         if args.command == "validate-authorization":
@@ -1542,6 +1592,7 @@ def main(argv: Sequence[str] | None = None) -> int:
         SensitivityRunnerError,
         SensitivityAuthorizationError,
         SensitivityAdoptionError,
+        SensitivityAnalyzerError,
         SensitivityBudgetError,
         SensitivitySurfaceError,
         SensitivityStateError,
