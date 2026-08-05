@@ -20,6 +20,17 @@ bleiben getrennt.
 | Doctor / Preflight | `tools/agent_control/environment/` | Shared gate for dry-run + execute |
 | CLI | `python -m tools.agent_control environment ...` | Validate / offline doctor |
 
+## Build-context invariant (#4360)
+
+`.cursor/environment.json` builds `ci/Dockerfile` with repo-root context (`..`).
+Every local `COPY`/`ADD` source in that Dockerfile MUST exist under the context
+and MUST NOT be excluded by the context-root `.dockerignore`.
+
+In particular, `requirements-dev.txt` is required by `ci/Dockerfile` (toolchain
+SSOT) and must remain visible to the Cursor saved-environment build. Contract
+enforcement: `tools/agent_control/environment/dockerfile_context.py` and
+`tests/unit/infra/test_cursor_environment_dockerfile_context.py`.
+
 ## Governed profile IDs
 
 - `cdb-docs-readonly.v1`

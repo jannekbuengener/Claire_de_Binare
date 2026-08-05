@@ -82,5 +82,8 @@ test_*.py
 pytest.ini
 .coveragerc
 
-# Requirements (install from specific file, not all)
-requirements-dev.txt
+# Do NOT ignore requirements-dev.txt here.
+# `.cursor/environment.json` builds `ci/Dockerfile` with repo-root context; that
+# Dockerfile COPY/installs requirements-dev.txt (toolchain SSOT #4206 / #4360).
+# Service images still COPY only their own requirements.txt — presence in the
+# build context does not install the file.
