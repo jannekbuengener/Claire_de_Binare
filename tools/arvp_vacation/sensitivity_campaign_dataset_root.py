@@ -159,12 +159,19 @@ def resolve_and_verify_dataset_root(
     dataset_root: Path,
     manifest: Mapping[str, Any],
     repo_root: Path,
+    trust_manifest_content_fingerprints: bool = False,
 ) -> DatasetRootIdentity:
     """Resolve the dataset root and verify all manifest bindings.
 
     Returns a :class:`DatasetRootIdentity` with a stable, path-independent
     ``dataset_identity_fingerprint`` derived from the sorted list of
     ``(window_id, content_fingerprint)`` pairs.
+
+    When ``trust_manifest_content_fingerprints`` is True (governed adoption
+    resume only), window directories must still exist, but on-disk
+    ``dataset_spec.json`` fingerprints that drifted after primary execution are
+    not allowed to block resume. The manifest binding remains the SSOT for the
+    identity hash (matching primary run envelopes).
     """
     if dataset_root is None:
         raise SensitivityDatasetRootError(
@@ -207,7 +214,11 @@ def resolve_and_verify_dataset_root(
                 f"window {window_id!r} escapes bank root",
             ) from exc
         actual_fp = _load_window_content_fingerprint(bank_root, window_id)
-        if actual_fp is not None and actual_fp != expected_fp:
+        if (
+            actual_fp is not None
+            and actual_fp != expected_fp
+            and not trust_manifest_content_fingerprints
+        ):
             raise SensitivityDatasetRootError(
                 "DATASET_CONTENT_FINGERPRINT_MISMATCH",
                 (

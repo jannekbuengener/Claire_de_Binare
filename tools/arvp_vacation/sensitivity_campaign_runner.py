@@ -864,36 +864,20 @@ def execute_campaign(
     if int(budget["max_parallelism"]) < 1:
         raise SensitivityRunnerError("RUNNER_PARALLELISM_INVALID")
 
-    # Resolve and verify the dataset root once; bind identity into probe surface
-    # and forward the resolved window-bank root into the real replay adapter.
+    # Surface probe for Owner-GO binding must match the fingerprint captured at
+    # GO issuance (typically without dataset-identity binding). Dataset resolve
+    # for the replay adapter is deferred until after adoption/resume gates.
     dataset_identity: DatasetRootIdentity | None = None
     resolved_bank_root: Path | None = None
-    if dataset_root is not None:
-        try:
-            dataset_identity = resolve_and_verify_dataset_root(
-                dataset_root=Path(dataset_root),
-                manifest=manifest,
-                repo_root=root,
-            )
-        except SensitivityDatasetRootError as exc:
-            raise SensitivityRunnerError(
-                f"RUNNER_DATASET_{exc.reason_code}", str(exc)
-            ) from exc
-        resolved_bank_root = Path(dataset_identity.window_bank_root)
-
-    active_executor = _bind_executor_dataset_root(
-        executor=executor,
-        resolved_bank_root=resolved_bank_root,
-    )
 
     probe = probe_execution_surface(
         repo_root=root,
-        dataset_root=Path(dataset_root) if dataset_root is not None else None,
+        dataset_root=None,
         surface_id=surface_id,
         exchange_credentials_present=False,
         window_availability={"expected_windows": 39},
-        manifest=manifest if dataset_root is not None else None,
-        dataset_identity=dataset_identity,
+        manifest=None,
+        dataset_identity=None,
     )
     expected_fp = surface_capability_fingerprint or probe.surface_capability_fingerprint
     assert_surface_matches_authorization(
@@ -1000,6 +984,35 @@ def execute_campaign(
             auth_expiry, budget, now_utc=now_provider()
         )
 
+    trust_manifest_fps = False
+    if mode == "resume":
+        try:
+            assert_adoption_inventory_allows_reproduction(
+                evidence_root, bindings=bindings
+            )
+            trust_manifest_fps = True
+        except SensitivityAdoptionError:
+            trust_manifest_fps = False
+
+    if dataset_root is not None:
+        try:
+            dataset_identity = resolve_and_verify_dataset_root(
+                dataset_root=Path(dataset_root),
+                manifest=manifest,
+                repo_root=root,
+                trust_manifest_content_fingerprints=trust_manifest_fps,
+            )
+        except SensitivityDatasetRootError as exc:
+            raise SensitivityRunnerError(
+                f"RUNNER_DATASET_{exc.reason_code}", str(exc)
+            ) from exc
+        resolved_bank_root = Path(dataset_identity.window_bank_root)
+
+    active_executor = _bind_executor_dataset_root(
+        executor=executor,
+        resolved_bank_root=resolved_bank_root,
+    )
+
     lock_held = False
     acquire_campaign_lock(evidence_root, holder_token=auth_fp)
     lock_held = True
@@ -1010,6 +1023,7 @@ def execute_campaign(
             "comment_updated_at": comment_updated_at,
             "authorizing_github_login": authorizing_github_login,
             "expires_at_utc": auth_expiry,
+            "dataset_trust_manifest_content_fingerprints": trust_manifest_fps,
         }
         if dataset_identity is not None:
             envelope_extra["dataset_root_identity"] = dataset_identity.as_dict()

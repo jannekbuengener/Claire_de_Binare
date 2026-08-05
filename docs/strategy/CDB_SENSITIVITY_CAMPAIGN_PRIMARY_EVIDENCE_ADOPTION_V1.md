@@ -92,6 +92,19 @@ when:
 
 This does **not** authorize fresh campaigns with null expiry.
 
+## Resume / dataset_spec fingerprint drift
+
+Post-primary updates to on-disk `dataset_spec.json` `content_fingerprint`
+fields must not force a full primary rerun when:
+
+1. adoption inventory verifies, and
+2. primary run envelopes already bind the frozen manifest
+   `content_fingerprint` values.
+
+In that case `resolve_and_verify_dataset_root(..., trust_manifest_content_fingerprints=True)`
+keeps the manifest binding as SSOT for identity while still requiring every
+window directory to exist.
+
 ## Forbidden mixes
 
 - Rewriting or normalizing primary `result.json`
