@@ -24,8 +24,11 @@ or promotion.
 | `sensitivity_campaign_surface.py` | Read-only capability probe + bound dataset identity |
 | `sensitivity_campaign_dataset_root.py` | Canonical dataset-root resolver (fail-closed) |
 | `sensitivity_campaign_analyzer_contract.py` | 21 slots / 19 physical sets / 2 overlaps |
+| `sensitivity_campaign_primary_adoption.py` | Primary evidence inventory + adopt transition (`PRIMARY_EVIDENCE_COMPLETE`) |
 | `sensitivity_campaign_reproduction.py` | Executed double-run comparison contract (no new run keys) |
 | `sensitivity_campaign_executor.py` | `FakeExecutor` / `StrategyReplayCampaignExecutor` (`attempt_kind: PRIMARY | REPRODUCTION`) |
+
+Adoption SSOT: `docs/strategy/CDB_SENSITIVITY_CAMPAIGN_PRIMARY_EVIDENCE_ADOPTION_V1.md`
 
 ## Owner-GO
 
@@ -117,7 +120,11 @@ campaign envelope (`campaign_phase` is transitioned via `update_campaign_phase`
 with a fail-closed legal-transition table):
 
 1. `PLANNED` / `PRIMARY_PLANNED` → `PRIMARY_RUNNING`
+   - **or** governed adoption: `PLANNED` → `PRIMARY_EVIDENCE_COMPLETE` →
+     `PRIMARY_COMPLETE` via `adopt-primary-evidence` when an audited primary
+     ledger already exists (see adoption contract; no primary rewrite).
 2. Run all primary keys (`attempt_kind = "PRIMARY"`, `reproduction_attempt=0`).
+   Skipped when resuming from `PRIMARY_EVIDENCE_COMPLETE` / later phases.
 3. `count_primary_succeeded` must equal `plan.run_count`; otherwise → `BLOCKED`
    with `PRIMARY_SUCCESS_COUNT_MISMATCH`.
 4. `PRIMARY_RUNNING` → `PRIMARY_COMPLETE`.
