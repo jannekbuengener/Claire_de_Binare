@@ -2,7 +2,8 @@ name: Security Alert Readout
 
 # Generates a machine-readable GitHub security alert readout (code_scanning,
 # dependabot, secret_scanning) and computes a delta against the most recent
-# previous readout.  Runs Mon/Wed/Fri; always available for manual dispatch.
+# previous readout.  Runs monthly (1st of month, 06:15 UTC); always available
+# for manual dispatch.
 #
 # Artifacts-only mode (default): readout and delta are uploaded as GitHub Actions
 # artifacts (retention: 30 days).  No direct commit to main is attempted.
@@ -13,6 +14,11 @@ name: Security Alert Readout
 # failed with GH006 (protected branch — changes must be made via PR).  See
 # fix/security-readout-disable-direct-publish-2289 for details.
 #
+# Schedule history: originally scheduled 3x/week (Mon/Wed/Fri 06:15 UTC).
+# Reduced to monthly cadence after the Grafana security alert wave
+# #4350–#4359 was processed in PR #4363 (merged as ee2a5c81) — the readout
+# cadence should follow triage/backlog pace, not repeat weekly.
+#
 # Refs: #2289 (security alert monitoring epic)
 # Related scripts:
 #   scripts/audit/github_security_quality_readout.py  (read-only fetcher)
@@ -20,9 +26,7 @@ name: Security Alert Readout
 
 on:
   schedule:
-    - cron: "15 6 * * 1"  # Monday   06:15 UTC
-    - cron: "15 6 * * 3"  # Wednesday 06:15 UTC
-    - cron: "15 6 * * 5"  # Friday   06:15 UTC
+    - cron: "15 6 1 * *"  # Monthly on the 1st, 06:15 UTC
   workflow_dispatch:
     inputs:
       publish_mode:
