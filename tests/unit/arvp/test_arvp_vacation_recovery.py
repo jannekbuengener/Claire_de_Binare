@@ -16,19 +16,33 @@ from tools.arvp_vacation.queue_store import QUEUE_STATE_FILENAME, read_queue_sta
 from tools.arvp_vacation.summary import write_summary
 
 
-def _write_dataset(root: Path, rel_dir: str, *, dataset_id: str, fingerprint: str) -> None:
+def _write_dataset(
+    root: Path,
+    rel_dir: str,
+    *,
+    dataset_id: str,
+    fingerprint: str,
+    window_index: int = 0,
+) -> None:
+    """Write a lab dataset_spec with a stable unique time window.
+
+    Do not use ``hash(dataset_id)`` for timestamps: PYTHONHASHSEED is randomized
+    per process, so ``% 1000`` windows can collide across datasets and drop jobs
+    in ``discover_datasets`` (CI flake: assert len(jobs) >= 6 saw 5).
+    """
     base = root / rel_dir
     base.mkdir(parents=True, exist_ok=True)
     candles = base / "candles.jsonl"
     candles.write_text('{"ts_ms":1,"open":1,"high":1,"low":1,"close":1,"volume":1}\n')
+    start_ts_ms = 1_000_000 + int(window_index) * 10_000
     spec = {
         "dataset_id": dataset_id,
         "source": "file",
         "file_path": f"{rel_dir}/candles.jsonl".replace("\\", "/"),
         "symbol": "BTCUSDT",
         "fingerprint": fingerprint,
-        "start_ts_ms": 1000 + hash(dataset_id) % 1000,
-        "end_ts_ms": 2000 + hash(dataset_id) % 1000,
+        "start_ts_ms": start_ts_ms,
+        "end_ts_ms": start_ts_ms + 999,
         "evidence_class": "controlled_lab_evidence",
     }
     (base / "dataset_spec.json").write_text(json.dumps(spec), encoding="utf-8")
@@ -87,6 +101,7 @@ def test_recovery_orphan_running_without_double_pass(tmp_path: Path) -> None:
             rel,
             dataset_id=f"w{i}",
             fingerprint=f"{i:064d}",
+            window_index=i,
         )
     manifest_path = tmp_path / "manifest.yaml"
     manifest_path.write_text(_manifest_yaml(roots), encoding="utf-8")
@@ -140,6 +155,7 @@ def test_acceptance_drill_six_jobs_summary(tmp_path: Path) -> None:
             rel,
             dataset_id=f"ds{i}",
             fingerprint=f"{i+10:064d}",
+            window_index=i,
         )
     manifest_path = tmp_path / "manifest.yaml"
     manifest_path.write_text(_manifest_yaml(roots), encoding="utf-8")
@@ -152,7 +168,9 @@ def test_acceptance_drill_six_jobs_summary(tmp_path: Path) -> None:
     manifest = load_manifest(manifest_path)
     write_summary(manifest, state, tmp_path)
     assert len(state["jobs"]) >= 6
-    assert (tmp_path / "artifacts/arvp_vacation/vac_recovery/vacation_summary.json").exists()
+    assert (
+        tmp_path / "artifacts/arvp_vacation/vac_recovery/vacation_summary.json"
+    ).exists()
     assert calls["count"] >= 1
 
 
@@ -164,6 +182,7 @@ def test_recovery_preserves_scenario_group_id(tmp_path: Path) -> None:
             rel,
             dataset_id=f"w{i}",
             fingerprint=f"{i+20:064d}",
+            window_index=i,
         )
     manifest_path = tmp_path / "manifest.yaml"
     manifest_path.write_text(_manifest_yaml(roots), encoding="utf-8")
