@@ -26,7 +26,7 @@ COPY services/execution/requirements.txt ./
 # image path — Security pin (#4095): pip 26.1.2 fixes CVE-2026-8643.
 RUN python -m venv /venv \
     && /venv/bin/pip install --upgrade pip==26.1.2 \
-    && /venv/bin/pip install --no-cache-dir --upgrade setuptools==82.0.0 wheel==0.46.2 \
+    && /venv/bin/pip install --no-cache-dir --upgrade setuptools==83.0.0 wheel==0.46.2 \
     && /venv/bin/pip install --no-cache-dir -r requirements.txt
 
 FROM python:3.14-slim-trixie@sha256:cea0e6040540fb2b965b6e7fb5ffa00871e632eef63719f0ea54bca189ce14a6
@@ -48,7 +48,7 @@ RUN apt-get update \
         curl \
     && rm -rf /var/lib/apt/lists/*
 
-RUN python -m pip install --no-cache-dir --upgrade setuptools==82.0.0 wheel==0.46.2
+RUN python -m pip install --no-cache-dir --upgrade setuptools==83.0.0 wheel==0.46.2
 # Security pin (#4095): pip 26.1.2 fixes CVE-2026-8643 (global runtime pip)
 RUN pip install --upgrade pip==26.1.2
 
