@@ -154,6 +154,49 @@ def test_arvp_config_accepts_hh_hl() -> None:
     cfg.validate()
 
 
+def test_hh_hl_scenario_group_is_fail_closed() -> None:
+    """HARDEN_PR_4373_BEFORE_MERGE — no scenario-group / stress / campaign for Batch-B."""
+    cfg = ARVPReplayConfig(
+        strategy_id=HH_HL_CONTINUATION_STRATEGY_ID,
+        adapter_id=BATCH_B_SHADOW_ADAPTER_ID,
+        symbol="BTCUSDT",
+        dataset_source="file",
+        input_candles_file="artifacts/backtests/primary_breakout_v1/20260418-212643/dataset.candles.json",
+        scenario_ids=("baseline",),
+    )
+    with pytest.raises(ValueError, match="does not support scenario-group"):
+        cfg.validate()
+
+    cfg_group_id = ARVPReplayConfig(
+        strategy_id=HH_HL_CONTINUATION_STRATEGY_ID,
+        adapter_id=BATCH_B_SHADOW_ADAPTER_ID,
+        symbol="BTCUSDT",
+        dataset_source="file",
+        input_candles_file="artifacts/backtests/primary_breakout_v1/20260418-212643/dataset.candles.json",
+        scenario_group_id="sg-batch-b-forbidden",
+    )
+    with pytest.raises(ValueError, match="does not support scenario-group"):
+        cfg_group_id.validate()
+
+
+def test_registered_batch_b_without_dispatch_does_not_fall_through_to_pb1(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    """HARDEN_PR_4373_BEFORE_MERGE — registry hit without runner must error, not PB1."""
+    from services.validation import strategy_replay_runner as srr
+
+    monkeypatch.setattr(srr, "_batch_b_runner_dispatch", lambda: {})
+    cfg = ARVPReplayConfig(
+        strategy_id=HH_HL_CONTINUATION_STRATEGY_ID,
+        adapter_id=BATCH_B_SHADOW_ADAPTER_ID,
+        symbol="BTCUSDT",
+        dataset_source="file",
+        input_candles_file="x.json",
+    )
+    with pytest.raises(ValueError, match="refusing primary_breakout fallthrough"):
+        srr._run_strategy_backtest(cfg, [], code_commit="4372harden")
+
+
 def test_confirmed_swing_high_and_low() -> None:
     candles = _hh_hl_structure_candles()
     highs = [float(c["high"]) for c in candles]

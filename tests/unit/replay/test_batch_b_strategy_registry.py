@@ -4,6 +4,7 @@ from __future__ import annotations
 
 import pytest
 
+from core.replay.batch_a_strategy_registry import batch_a_strategy_ids
 from core.replay.batch_b_strategy_registry import (
     BATCH_B_STRATEGY_REGISTRY,
     batch_b_strategy_ids,
@@ -21,6 +22,12 @@ def test_batch_b_registry_contains_only_implemented_hh_hl() -> None:
     record = get_batch_b_strategy(HH_HL_CONTINUATION_STRATEGY_ID)
     assert record.implementation_status.value == "implemented"
     assert "hh_hl_continuation" in (record.runner_module or "")
+
+
+def test_batch_a_and_batch_b_strategy_ids_are_disjoint() -> None:
+    """G3 / HARDEN_PR_4373_BEFORE_MERGE — no shared strategy_id across funnels."""
+    overlap = set(batch_a_strategy_ids()) & set(batch_b_strategy_ids())
+    assert overlap == set()
 
 
 def test_executable_registry_is_subset_of_manifest_and_field_aligned() -> None:

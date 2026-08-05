@@ -539,6 +539,16 @@ class ARVPReplayConfig:
                 "would overwrite the same trace file). Run scenarios individually to use tracing."
             )
 
+        # Batch-B Slice 1: single-run only — no scenario-group / stress / campaign.
+        if self.strategy_id in BATCH_B_STRATEGY_REGISTRY and (
+            self.scenario_ids is not None or self.scenario_group_id
+        ):
+            raise ValueError(
+                f"Batch-B strategy {self.strategy_id!r} does not support scenario-group, "
+                "stress, or campaign runs in this slice; single-run only "
+                "(HARDEN_PR_4373_BEFORE_MERGE)."
+            )
+
         # Scenario group validation
         if self.scenario_ids is not None:
             if not self.scenario_ids:
@@ -588,6 +598,24 @@ def _validate_strategy_adapter_pair(strategy_id: str, adapter_id: str) -> None:
 
 def _is_batch_a_strategy(strategy_id: str) -> bool:
     return strategy_id in BATCH_A_STRATEGY_REGISTRY
+
+
+def _is_batch_b_strategy(strategy_id: str) -> bool:
+    return strategy_id in BATCH_B_STRATEGY_REGISTRY
+
+
+def _require_batch_b_runner(
+    strategy_id: str,
+) -> Callable[..., dict[str, Any]]:
+    """Fail-closed Batch-B single-run dispatch (never fall through to PB1)."""
+    runner = _batch_b_runner_dispatch().get(strategy_id)
+    if runner is None:
+        raise ValueError(
+            f"Batch-B strategy {strategy_id!r} is registered but has no runner in "
+            "the single-run dispatch map; refusing primary_breakout fallthrough "
+            "(HARDEN_PR_4373_BEFORE_MERGE)."
+        )
+    return runner
 
 
 def _parse_db_dataset_window(db_dataset_window: str) -> tuple[int, int]:
@@ -1256,8 +1284,8 @@ def _run_strategy_backtest(
             code_commit=code_commit,
             run_id=run_id,
         )
-    batch_b_runner = _batch_b_runner_dispatch().get(config.strategy_id)
-    if batch_b_runner is not None:
+    if config.strategy_id in BATCH_B_STRATEGY_REGISTRY:
+        batch_b_runner = _require_batch_b_runner(config.strategy_id)
         return batch_b_runner(
             candles,
             simulator_config=simulator_config,
@@ -1523,8 +1551,16 @@ def run_arvp_replay(config: ARVPReplayConfig) -> int:
     # Strategy-aware warmup count
     warmup_count = _strategy_warmup_count(config)
 
-    # Scenario group path (supported for all strategies)
+    # Scenario group path (Batch-B explicitly unsupported — fail-closed).
     if config.scenario_ids:
+        if _is_batch_b_strategy(config.strategy_id):
+            print(
+                "ERROR: Batch-B strategies do not support scenario-group, stress, "
+                "or campaign runs in this slice "
+                f"(strategy_id={config.strategy_id!r}; HARDEN_PR_4373_BEFORE_MERGE).",
+                file=sys.stderr,
+            )
+            return 1
         return _run_scenario_group_path_with_candles(config, warmup_count=warmup_count)
 
     # Single-run path: strategy-aware dispatch
@@ -2275,6 +2311,15 @@ def _run_scenario_group_path(
     candles: list[dict[str, Any]],
 ) -> int:
     """Run scenario group via harness."""
+    if _is_batch_b_strategy(config.strategy_id):
+        print(
+            "ERROR: Batch-B strategies do not support scenario-group, stress, "
+            "or campaign runs in this slice "
+            f"(strategy_id={config.strategy_id!r}; HARDEN_PR_4373_BEFORE_MERGE).",
+            file=sys.stderr,
+        )
+        return 1
+
     output_dir = Path(config.output_directory)
     code_commit = _get_code_commit()
 

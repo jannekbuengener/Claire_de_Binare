@@ -81,3 +81,4 @@
 - Remaining Batch-B candidates still `spec_required`
 - Stage-A Dual-GO / campaign authorization still false
 - No Campaign-to-PR for this strategy yet
+- HARDEN_PR_4373_BEFORE_MERGE: Batch-B scenario-group/stress/campaign fail-closed; registry without dispatch refuses PB1 fallthrough; Batch-A∩Batch-B IDs disjoint
