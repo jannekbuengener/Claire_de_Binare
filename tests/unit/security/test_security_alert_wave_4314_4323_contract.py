@@ -39,6 +39,10 @@ GRAFANA_PIN = (
     "grafana/grafana:13.1.1-ubuntu@"
     "sha256:5a9df011defa8384ee01fc9b393854daecc6afb98132c66e2e658b3f564830e8"
 )
+CURRENT_GRAFANA_PIN = (
+    "grafana/grafana:13.1.2-ubuntu@"
+    "sha256:dbbf39afd3040b86fc6d2d9a6f0ce3dab9c18039af9af7f6404ba71e56be6c45"
+)
 STALE_PROM = "prom/prometheus:v3.13.1@sha256:3c42b892cf723fa54d2f262c37a0e1f80aa8c8ddb1da7b9b0df9455a35a7f893"
 
 EXPECTED_ISSUES = frozenset(range(4314, 4324))
@@ -150,7 +154,8 @@ def test_prometheus_and_grafana_pins_synced_no_stale_prom() -> None:
             "security-scan.yml",
             "SERVICE_CATALOG.md",
         }:
-            assert GRAFANA_PIN in text, f"missing grafana 13.1.1 pin in {path}"
+            assert CURRENT_GRAFANA_PIN in text, f"missing current grafana pin in {path}"
+            assert GRAFANA_PIN not in text, f"stale grafana 13.1.1 pin still in {path}"
 
 
 def test_trivy_evidence_claims_are_internally_consistent() -> None:
