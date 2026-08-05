@@ -71,6 +71,12 @@ from core.replay.batch_a_strategy_registry import (
     batch_a_strategy_ids,
     get_batch_a_strategy,
 )
+from core.replay.batch_b_strategy_registry import (
+    BATCH_B_STRATEGY_REGISTRY,
+    batch_b_strategy_ids,
+    get_batch_b_strategy,
+)
+from core.replay.hh_hl_continuation_common import BATCH_B_SHADOW_ADAPTER_ID
 from core.replay.binance_window_bank_adapter import (
     BinanceWindowBankAdapterError,
     load_binance_window_dataset,
@@ -199,6 +205,9 @@ from services.validation.atr_expansion_backtest_runner import (
 from services.validation.ema_trend_follow_backtest_runner import (
     run_ema_trend_follow_backtest,
 )
+from services.validation.hh_hl_continuation_backtest_runner import (
+    run_hh_hl_continuation_backtest,
+)
 from services.validation.ma_crossover_backtest_runner import (
     run_ma_crossover_backtest,
 )
@@ -219,6 +228,7 @@ from services.validation.strategy_backtest_runner import (
 # Supported constants (fail-closed validation anchors)
 # ---------------------------------------------------------------------------
 _BATCH_A_SHADOW_ADAPTER_ID = "batch_a_shadow_runner_v1"
+_BATCH_B_SHADOW_ADAPTER_ID = BATCH_B_SHADOW_ADAPTER_ID
 _BINANCE_WINDOW_DATASET_STRATEGIES: frozenset[str] = frozenset(
     {
         RANGE_MEAN_REVERSION_STRATEGY_ID,
@@ -243,6 +253,13 @@ def _batch_a_runner_dispatch() -> dict[str, Callable[..., dict[str, Any]]]:
     }
 
 
+def _batch_b_runner_dispatch() -> dict[str, Callable[..., dict[str, Any]]]:
+    """Resolve Batch-B runners at call time so tests can patch module bindings."""
+    return {
+        "hh_hl_continuation_v1": run_hh_hl_continuation_backtest,
+    }
+
+
 def _batch_a_adapter_ids() -> frozenset[str]:
     adapter_ids = {_BATCH_A_SHADOW_ADAPTER_ID}
     for record in BATCH_A_STRATEGY_REGISTRY.values():
@@ -251,12 +268,24 @@ def _batch_a_adapter_ids() -> frozenset[str]:
     return frozenset(adapter_ids)
 
 
-_SUPPORTED_STRATEGY_IDS: frozenset[str] = frozenset(batch_a_strategy_ids()) | frozenset(
-    {
-        PRIMARY_BREAKOUT_STRATEGY_ID,
-        DONCHIAN_BREAKOUT_STRATEGY_ID,
-        BREAKOUT_TREND_FILTER_STRATEGY_ID,
-    }
+def _batch_b_adapter_ids() -> frozenset[str]:
+    adapter_ids = {_BATCH_B_SHADOW_ADAPTER_ID}
+    for record in BATCH_B_STRATEGY_REGISTRY.values():
+        if record.adapter_id:
+            adapter_ids.add(record.adapter_id)
+    return frozenset(adapter_ids)
+
+
+_SUPPORTED_STRATEGY_IDS: frozenset[str] = (
+    frozenset(batch_a_strategy_ids())
+    | frozenset(batch_b_strategy_ids())
+    | frozenset(
+        {
+            PRIMARY_BREAKOUT_STRATEGY_ID,
+            DONCHIAN_BREAKOUT_STRATEGY_ID,
+            BREAKOUT_TREND_FILTER_STRATEGY_ID,
+        }
+    )
 )
 _SUPPORTED_SYMBOLS: frozenset[str] = frozenset(
     {
@@ -265,12 +294,16 @@ _SUPPORTED_SYMBOLS: frozenset[str] = frozenset(
         MOMENTUM_CAPTURE_SYMBOL,
     }
 )
-_SUPPORTED_ADAPTER_IDS: frozenset[str] = _batch_a_adapter_ids() | frozenset(
-    {
-        "primary_breakout_runner_v1",
-        "donchian_breakout_runner_v1",
-        "breakout_trend_filter_runner_v1",
-    }
+_SUPPORTED_ADAPTER_IDS: frozenset[str] = (
+    _batch_a_adapter_ids()
+    | _batch_b_adapter_ids()
+    | frozenset(
+        {
+            "primary_breakout_runner_v1",
+            "donchian_breakout_runner_v1",
+            "breakout_trend_filter_runner_v1",
+        }
+    )
 )
 
 _DEFAULT_OUTPUT_DIR = "artifacts/replay_reports"
@@ -506,6 +539,16 @@ class ARVPReplayConfig:
                 "would overwrite the same trace file). Run scenarios individually to use tracing."
             )
 
+        # Batch-B Slice 1: single-run only — no scenario-group / stress / campaign.
+        if self.strategy_id in BATCH_B_STRATEGY_REGISTRY and (
+            self.scenario_ids is not None or self.scenario_group_id
+        ):
+            raise ValueError(
+                f"Batch-B strategy {self.strategy_id!r} does not support scenario-group, "
+                "stress, or campaign runs in this slice; single-run only "
+                "(HARDEN_PR_4373_BEFORE_MERGE)."
+            )
+
         # Scenario group validation
         if self.scenario_ids is not None:
             if not self.scenario_ids:
@@ -522,25 +565,57 @@ _DB_DATASET_WINDOW_RE = re.compile(r"^(?P<start>\d+):(?P<end>\d+)$")
 
 
 def _validate_strategy_adapter_pair(strategy_id: str, adapter_id: str) -> None:
-    if strategy_id not in BATCH_A_STRATEGY_REGISTRY:
-        return
-    record = get_batch_a_strategy(strategy_id)
-    if record.adapter_id:
-        if adapter_id != record.adapter_id:
+    if strategy_id in BATCH_A_STRATEGY_REGISTRY:
+        record = get_batch_a_strategy(strategy_id)
+        if record.adapter_id:
+            if adapter_id != record.adapter_id:
+                raise ValueError(
+                    f"adapter_id {adapter_id!r} does not match registry for "
+                    f"{strategy_id!r}: expected {record.adapter_id!r}"
+                )
+            return
+        if adapter_id != _BATCH_A_SHADOW_ADAPTER_ID:
             raise ValueError(
-                f"adapter_id {adapter_id!r} does not match registry for "
-                f"{strategy_id!r}: expected {record.adapter_id!r}"
+                f"adapter_id {adapter_id!r} invalid for {strategy_id!r}; "
+                f"expected {_BATCH_A_SHADOW_ADAPTER_ID!r}"
             )
         return
-    if adapter_id != _BATCH_A_SHADOW_ADAPTER_ID:
-        raise ValueError(
-            f"adapter_id {adapter_id!r} invalid for {strategy_id!r}; "
-            f"expected {_BATCH_A_SHADOW_ADAPTER_ID!r}"
-        )
+    if strategy_id in BATCH_B_STRATEGY_REGISTRY:
+        record = get_batch_b_strategy(strategy_id)
+        if record.adapter_id:
+            if adapter_id != record.adapter_id:
+                raise ValueError(
+                    f"adapter_id {adapter_id!r} does not match registry for "
+                    f"{strategy_id!r}: expected {record.adapter_id!r}"
+                )
+            return
+        if adapter_id != _BATCH_B_SHADOW_ADAPTER_ID:
+            raise ValueError(
+                f"adapter_id {adapter_id!r} invalid for {strategy_id!r}; "
+                f"expected {_BATCH_B_SHADOW_ADAPTER_ID!r}"
+            )
 
 
 def _is_batch_a_strategy(strategy_id: str) -> bool:
     return strategy_id in BATCH_A_STRATEGY_REGISTRY
+
+
+def _is_batch_b_strategy(strategy_id: str) -> bool:
+    return strategy_id in BATCH_B_STRATEGY_REGISTRY
+
+
+def _require_batch_b_runner(
+    strategy_id: str,
+) -> Callable[..., dict[str, Any]]:
+    """Fail-closed Batch-B single-run dispatch (never fall through to PB1)."""
+    runner = _batch_b_runner_dispatch().get(strategy_id)
+    if runner is None:
+        raise ValueError(
+            f"Batch-B strategy {strategy_id!r} is registered but has no runner in "
+            "the single-run dispatch map; refusing primary_breakout fallthrough "
+            "(HARDEN_PR_4373_BEFORE_MERGE)."
+        )
+    return runner
 
 
 def _parse_db_dataset_window(db_dataset_window: str) -> tuple[int, int]:
@@ -701,6 +776,16 @@ def _build_provenance_config_snapshot(
 ) -> dict[str, Any]:
     if config.strategy_id in BATCH_A_STRATEGY_REGISTRY:
         record = get_batch_a_strategy(config.strategy_id)
+        snapshot = {
+            "order_size": config.order_size,
+            "order_book_depth_multiplier": config.order_book_depth_multiplier,
+            **dict(record.frozen_parameters),
+        }
+        if record.warmup_bars is not None:
+            snapshot["warmup_bars"] = record.warmup_bars
+        return snapshot
+    if config.strategy_id in BATCH_B_STRATEGY_REGISTRY:
+        record = get_batch_b_strategy(config.strategy_id)
         snapshot = {
             "order_size": config.order_size,
             "order_book_depth_multiplier": config.order_book_depth_multiplier,
@@ -1088,6 +1173,10 @@ def _strategy_warmup_count(config: ARVPReplayConfig) -> int:
         record = get_batch_a_strategy(config.strategy_id)
         if record.warmup_bars is not None:
             return record.warmup_bars
+    if config.strategy_id in BATCH_B_STRATEGY_REGISTRY:
+        record = get_batch_b_strategy(config.strategy_id)
+        if record.warmup_bars is not None:
+            return record.warmup_bars
     if config.strategy_id == RANGE_MEAN_REVERSION_STRATEGY_ID:
         return RMR_WARMUP_CANDLES
     if config.strategy_id == MOMENTUM_CAPTURE_STRATEGY_ID:
@@ -1101,6 +1190,8 @@ def _strategy_warmup_count(config: ARVPReplayConfig) -> int:
 
 def _is_no_two_pass_determinism_strategy(strategy_id: str) -> bool:
     if strategy_id in BATCH_A_STRATEGY_REGISTRY:
+        return True
+    if strategy_id in BATCH_B_STRATEGY_REGISTRY:
         return True
     return strategy_id in {
         RANGE_MEAN_REVERSION_STRATEGY_ID,
@@ -1118,6 +1209,14 @@ def _build_execution_provenance_id_for_config(
 ) -> str:
     if config.strategy_id in BATCH_A_STRATEGY_REGISTRY:
         record = get_batch_a_strategy(config.strategy_id)
+        return _build_pack_a_execution_provenance_id(
+            candles,
+            strategy_id=config.strategy_id,
+            code_commit=code_commit,
+            config_payload=dict(record.frozen_parameters),
+        )
+    if config.strategy_id in BATCH_B_STRATEGY_REGISTRY:
+        record = get_batch_b_strategy(config.strategy_id)
         return _build_pack_a_execution_provenance_id(
             candles,
             strategy_id=config.strategy_id,
@@ -1180,6 +1279,14 @@ def _run_strategy_backtest(
     batch_a_runner = _batch_a_runner_dispatch().get(config.strategy_id)
     if batch_a_runner is not None:
         return batch_a_runner(
+            candles,
+            simulator_config=simulator_config,
+            code_commit=code_commit,
+            run_id=run_id,
+        )
+    if config.strategy_id in BATCH_B_STRATEGY_REGISTRY:
+        batch_b_runner = _require_batch_b_runner(config.strategy_id)
+        return batch_b_runner(
             candles,
             simulator_config=simulator_config,
             code_commit=code_commit,
@@ -1444,8 +1551,16 @@ def run_arvp_replay(config: ARVPReplayConfig) -> int:
     # Strategy-aware warmup count
     warmup_count = _strategy_warmup_count(config)
 
-    # Scenario group path (supported for all strategies)
+    # Scenario group path (Batch-B explicitly unsupported — fail-closed).
     if config.scenario_ids:
+        if _is_batch_b_strategy(config.strategy_id):
+            print(
+                "ERROR: Batch-B strategies do not support scenario-group, stress, "
+                "or campaign runs in this slice "
+                f"(strategy_id={config.strategy_id!r}; HARDEN_PR_4373_BEFORE_MERGE).",
+                file=sys.stderr,
+            )
+            return 1
         return _run_scenario_group_path_with_candles(config, warmup_count=warmup_count)
 
     # Single-run path: strategy-aware dispatch
@@ -2196,6 +2311,15 @@ def _run_scenario_group_path(
     candles: list[dict[str, Any]],
 ) -> int:
     """Run scenario group via harness."""
+    if _is_batch_b_strategy(config.strategy_id):
+        print(
+            "ERROR: Batch-B strategies do not support scenario-group, stress, "
+            "or campaign runs in this slice "
+            f"(strategy_id={config.strategy_id!r}; HARDEN_PR_4373_BEFORE_MERGE).",
+            file=sys.stderr,
+        )
+        return 1
+
     output_dir = Path(config.output_directory)
     code_commit = _get_code_commit()
 

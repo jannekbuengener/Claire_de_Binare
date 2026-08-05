@@ -13,6 +13,11 @@ from core.replay.batch_a_strategy_registry import (
     BATCH_A_STRATEGY_REGISTRY,
     executable_batch_a_strategy_ids,
 )
+from core.replay.batch_b_strategy_registry import (
+    BATCH_B_STRATEGY_REGISTRY,
+    executable_batch_b_strategy_ids,
+)
+from core.replay.hh_hl_continuation_common import BATCH_B_SHADOW_ADAPTER_ID
 
 MANIFEST_SCHEMA_VERSION = "1.0"
 QUEUE_STATE_SCHEMA_VERSION = "1.0"
@@ -48,6 +53,7 @@ _LEGACY_STRATEGY_IDS: frozenset[str] = frozenset(
     }
 )
 _BATCH_A_SHADOW_ADAPTER_ID = "batch_a_shadow_runner_v1"
+_BATCH_B_SHADOW_ADAPTER_ID = BATCH_B_SHADOW_ADAPTER_ID
 
 
 def batch_a_strategy_adapters() -> dict[str, str]:
@@ -58,8 +64,18 @@ def batch_a_strategy_adapters() -> dict[str, str]:
     return adapters
 
 
+def batch_b_strategy_adapters() -> dict[str, str]:
+    adapters: dict[str, str] = {}
+    for strategy_id in sorted(executable_batch_b_strategy_ids()):
+        record = BATCH_B_STRATEGY_REGISTRY[strategy_id]
+        adapters[strategy_id] = record.adapter_id or _BATCH_B_SHADOW_ADAPTER_ID
+    return adapters
+
+
 ALLOWED_STRATEGIES: frozenset[str] = (
-    _LEGACY_STRATEGY_IDS | executable_batch_a_strategy_ids()
+    _LEGACY_STRATEGY_IDS
+    | executable_batch_a_strategy_ids()
+    | executable_batch_b_strategy_ids()
 )
 
 STRATEGY_ADAPTERS: dict[str, str] = {
@@ -67,6 +83,7 @@ STRATEGY_ADAPTERS: dict[str, str] = {
     "breakout_trend_filter_v1": "breakout_trend_filter_runner_v1",
     "primary_breakout_v1": "primary_breakout_runner_v1",
     **batch_a_strategy_adapters(),
+    **batch_b_strategy_adapters(),
 }
 
 ALLOWED_SCENARIOS: frozenset[str] = frozenset(
@@ -80,6 +97,7 @@ _STRATEGY_SLUGS: dict[str, str] = {
     "donchian_breakout_v1": "donchian",
     "breakout_trend_filter_v1": "btf",
     "primary_breakout_v1": "pbo",
+    "hh_hl_continuation_v1": "hhhl",
 }
 
 
@@ -233,9 +251,7 @@ def _resolve_candles_path(
     return candidate
 
 
-def parse_dataset_spec(
-    spec_path: Path, repo_root: Path | None = None
-) -> DatasetRecord:
+def parse_dataset_spec(spec_path: Path, repo_root: Path | None = None) -> DatasetRecord:
     root = repo_root or _repo_root()
     if not spec_path.exists():
         raise VacationContractError(f"dataset spec missing: {spec_path}")
@@ -368,9 +384,7 @@ def build_scenario_group_id(strategy_id: str, job_fingerprint: str) -> str:
     prefix = fp[:_SCENARIO_GROUP_FINGERPRINT_CHARS]
     group_id = f"vac_{slug}_{prefix}"
     if len(group_id) > 64 or not SCENARIO_GROUP_ID_RE.match(group_id):
-        raise VacationContractError(
-            f"derived scenario_group_id invalid: {group_id!r}"
-        )
+        raise VacationContractError(f"derived scenario_group_id invalid: {group_id!r}")
     return group_id
 
 
@@ -409,7 +423,9 @@ def backfill_scenario_group_ids(state: Mapping[str, Any]) -> dict[str, Any]:
     return updated
 
 
-def campaign_artifact_dir(manifest: VacationManifest, repo_root: Path | None = None) -> Path:
+def campaign_artifact_dir(
+    manifest: VacationManifest, repo_root: Path | None = None
+) -> Path:
     root = repo_root or _repo_root()
     return root / manifest.artifact_root / manifest.campaign_id
 
@@ -430,7 +446,9 @@ def git_head_sha(repo_root: Path | None = None) -> str:
     return result.stdout.strip()
 
 
-def resolve_source_sha(manifest: VacationManifest, repo_root: Path | None = None) -> str:
+def resolve_source_sha(
+    manifest: VacationManifest, repo_root: Path | None = None
+) -> str:
     raw = (manifest.source_sha or "").strip()
     if not raw or raw.upper() in {"RUNTIME_RESOLVE", "AUTO"}:
         return git_head_sha(repo_root)
