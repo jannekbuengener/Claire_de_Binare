@@ -1,0 +1,216 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "cdb.cursor_delivery_adoption.v1",
+  "title": "CDB Cursor Delivery Adoption Receipt v1",
+  "description": "Fail-closed receipt for adopting an externally verified Cursor Cloud GitHub delivery into the ACP pilot (#4258). Read-only; never creates Cursor runs or mutates the source PR.",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "schema_version",
+    "schema_id",
+    "adoption_id",
+    "issue_number",
+    "repository",
+    "source_type",
+    "cursor_agent_id",
+    "source_pr_number",
+    "source_branch",
+    "source_head_sha",
+    "commit_provenance",
+    "delivery_verified",
+    "provider_dispatch_proven",
+    "evidence_boundaries",
+    "authority_limits",
+    "github_verification",
+    "canonical_digest",
+    "limitations",
+    "adoption_verdict",
+    "delivery_classification"
+  ],
+  "properties": {
+    "schema_id": {
+      "type": "string",
+      "const": "cdb.cursor_delivery_adoption.v1"
+    },
+    "schema_version": {
+      "type": "string",
+      "const": "1.0.0"
+    },
+    "adoption_id": {
+      "type": "string",
+      "pattern": "^cad-[a-f0-9]{24}$"
+    },
+    "issue_number": {
+      "type": "integer",
+      "minimum": 1
+    },
+    "repository": {
+      "type": "string",
+      "pattern": "^[^/\\s]+/[^/\\s]+$"
+    },
+    "source_type": {
+      "type": "string",
+      "const": "external_cursor_cloud_github_delivery"
+    },
+    "cursor_agent_id": {
+      "type": "string",
+      "pattern": "^bc-[0-9a-fA-F-]{36}$"
+    },
+    "source_pr_number": {
+      "type": "integer",
+      "minimum": 1
+    },
+    "source_branch": {
+      "type": "string",
+      "minLength": 1
+    },
+    "source_head_sha": {
+      "type": "string",
+      "pattern": "^[a-f0-9]{40}$"
+    },
+    "original_cdb_run_ids": {
+      "type": "array",
+      "items": { "type": "string" },
+      "description": "Prior CDB/Cursor run IDs kept separate; never rewritten as this adoption."
+    },
+    "adopted_delivery_id": {
+      "type": "string",
+      "minLength": 1
+    },
+    "commit_provenance": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "cursor_author_login",
+        "cursor_author_email",
+        "pr_body_agent_ref_present",
+        "commit_agent_author_match"
+      ],
+      "properties": {
+        "cursor_author_login": { "type": "string" },
+        "cursor_author_email": { "type": "string" },
+        "owner_coauthor_login": { "type": ["string", "null"] },
+        "pr_body_agent_ref_present": { "type": "boolean" },
+        "commit_agent_author_match": { "type": "boolean" },
+        "footer_only_insufficient": { "type": "boolean" }
+      }
+    },
+    "delivery_verified": { "type": "boolean" },
+    "provider_dispatch_proven": {
+      "type": "boolean",
+      "description": "True only when this delivery is proven to originate from a CDB ACP create. External adoptions must be false."
+    },
+    "evidence_boundaries": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "binds_repository",
+        "binds_agent_id",
+        "binds_branch",
+        "binds_commit",
+        "binds_pr",
+        "no_phantom_branch",
+        "claimed_equals_verified"
+      ],
+      "properties": {
+        "binds_repository": { "type": "boolean" },
+        "binds_agent_id": { "type": "boolean" },
+        "binds_branch": { "type": "boolean" },
+        "binds_commit": { "type": "boolean" },
+        "binds_pr": { "type": "boolean" },
+        "no_phantom_branch": { "type": "boolean" },
+        "claimed_equals_verified": { "type": "boolean" },
+        "hosted_checks_classification": {
+          "type": "string",
+          "const": "github_snapshot_not_final_head_merge_evidence"
+        }
+      }
+    },
+    "authority_limits": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "merge",
+        "approval",
+        "live",
+        "runtime_mutation",
+        "github_delivery_create",
+        "cursor_http_posts",
+        "publish_cdb_local_ci"
+      ],
+      "properties": {
+        "merge": { "type": "boolean", "const": false },
+        "approval": { "type": "boolean", "const": false },
+        "live": { "type": "boolean", "const": false },
+        "runtime_mutation": { "type": "boolean", "const": false },
+        "github_delivery_create": { "type": "boolean", "const": false },
+        "cursor_http_posts": { "type": "boolean", "const": false },
+        "publish_cdb_local_ci": { "type": "boolean", "const": false }
+      }
+    },
+    "github_verification": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "branch_exists",
+        "commit_exists",
+        "pr_exists",
+        "pr_head_matches_expected",
+        "branch_tip_matches_expected"
+      ],
+      "properties": {
+        "branch_exists": { "type": "boolean" },
+        "commit_exists": { "type": "boolean" },
+        "pr_exists": { "type": "boolean" },
+        "pr_head_matches_expected": { "type": "boolean" },
+        "branch_tip_matches_expected": { "type": "boolean" },
+        "pr_state": { "type": "string" },
+        "hosted_checks_snapshot": { "type": ["string", "null"] }
+      }
+    },
+    "canonical_digest": {
+      "type": "string",
+      "pattern": "^sha256:[a-f0-9]{64}$"
+    },
+    "integrity": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "canonicalization": { "type": "string" },
+        "digest_algorithm": { "type": "string" },
+        "digest_encoding": { "type": "string" },
+        "digest": { "type": "string" }
+      }
+    },
+    "limitations": {
+      "type": "array",
+      "items": { "type": "string" },
+      "minItems": 1
+    },
+    "adoption_verdict": {
+      "type": "string",
+      "enum": [
+        "EXISTING_CURSOR_DELIVERY_ADOPTABLE",
+        "ADOPTABLE_WITH_EXPLICIT_RECONCILIATION_RECEIPT",
+        "PARTIAL_EVIDENCE_ONLY_NEW_DISPATCH_REQUIRED",
+        "HOLD_ADOPTION_CONTRACT_MISSING",
+        "HOLD_PROVIDER_IDENTITY_NOT_BOUND",
+        "HOLD_FULL_E2E_CHAIN_NOT_RECONCILABLE",
+        "HOLD_CURSOR_DELIVERY_PROVENANCE_INSUFFICIENT"
+      ]
+    },
+    "delivery_classification": {
+      "type": "string",
+      "enum": [
+        "VERIFIED_CURSOR_CLOUD_GITHUB_DELIVERY",
+        "PARTIAL_CURSOR_DELIVERY_EVIDENCE",
+        "HOLD_CURSOR_DELIVERY_PROVENANCE_INSUFFICIENT"
+      ]
+    },
+    "metadata": {
+      "type": "object",
+      "description": "Non-digest wall-clock and operator notes.",
+      "additionalProperties": true
+    }
+  }
+}
