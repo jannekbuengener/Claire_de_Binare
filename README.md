@@ -73,14 +73,14 @@ Stage und LR sind orthogonale Systeme: `trade-capable` autorisiert kein Live-Tra
 <!-- cdb:live-claim type=main_sha value=43401302 -->
 <!-- cdb:live-claim type=issue_state issue=4289 state=closed -->
 <!-- cdb:live-claim type=issue_state issue=4257 state=closed -->
-<!-- cdb:live-claim type=issue_state issue=4258 state=open -->
+<!-- cdb:live-claim type=issue_state issue=4258 state=closed -->
 <!-- cdb:live-claim type=issue_state issue=2513 state=open -->
 <!-- cdb:live-claim type=issue_state issue=4293 state=closed -->
 Auf `origin/main` (`43401302`) sind die juengsten relevanten Merge-Cluster u. a.:
 
 - **Hermes app mint/write-path ([#4289](https://github.com/jannekbuengener/Claire_de_Binare/issues/4289) / PR [#4344](https://github.com/jannekbuengener/Claire_de_Binare/pull/4344)):** **MERGED** @ `43401302`. Issue `#4289` **CLOSED**.  <!-- pragma: allowlist secret -->
 - **Security Backlog Reconciliation ([#2513](https://github.com/jannekbuengener/Claire_de_Binare/issues/2513) / PR [#4303](https://github.com/jannekbuengener/Claire_de_Binare/pull/4303)):** **MERGED** @ `312d12e0` (ancestor of tip). Offene Security-Issues bleiben Upstream-HOLDs (geparkt bis FixedVersion). Meta `#2513` bleibt Tracker.
-- **ACP E2E Pilot Foundation ([#4258](https://github.com/jannekbuengener/Claire_de_Binare/issues/4258) / PR [#4301](https://github.com/jannekbuengener/Claire_de_Binare/pull/4301)):** **MERGED** @ `abf997d5` (mock-first). Live Cursor Human-GO path in dedicated PR [#4302](https://github.com/jannekbuengener/Claire_de_Binare/pull/4302) (`Refs` only; issue remains open until real cloud evidence; kein zweiter Create ohne neues Human-GO).
+- **ACP E2E Pilot Foundation ([#4258](https://github.com/jannekbuengener/Claire_de_Binare/issues/4258) / PR [#4301](https://github.com/jannekbuengener/Claire_de_Binare/pull/4301)):** **MERGED** @ `abf997d5` (mock-first). Issue `#4258` **CLOSED** (live GitHub). Dedicated PR [#4302](https://github.com/jannekbuengener/Claire_de_Binare/pull/4302) remains historical delivery evidence (`Refs` only; kein zweiter Cursor-Create ohne neues Human-GO).
 - **PR Approval Context ([#4257](https://github.com/jannekbuengener/Claire_de_Binare/issues/4257) / PR [#4300](https://github.com/jannekbuengener/Claire_de_Binare/pull/4300)):** **MERGED** @ `a4cfb8a8` (ancestor of tip).
 - **ACP dispatcher residuals ([#4293](https://github.com/jannekbuengener/Claire_de_Binare/issues/4293) / PR [#4297](https://github.com/jannekbuengener/Claire_de_Binare/pull/4297)):** **MERGED** @ `d4704025` (ancestor of tip).
 - **Area Entry Link Canon ([#4294](https://github.com/jannekbuengener/Claire_de_Binare/issues/4294)/[#4296](https://github.com/jannekbuengener/Claire_de_Binare/issues/4296) / PR [#4295](https://github.com/jannekbuengener/Claire_de_Binare/pull/4295)):** **MERGED** — README Area Entry Link Rule + active README reconcile @ `365f50b9`.
