@@ -3,7 +3,6 @@
   "status": "GO_HH_HL_CAMPAIGN_EXECUTION",
   "repository": "jannekbuengener/Claire_de_Binare",
   "issue": 4374,
-  "github_comment_id": "<FILL_AFTER_OWNER_COMMENT>",
   "authorizing_github_login": "jannekbuengener",
   "bound_main_sha": "<FILL_AT_RATIFICATION>",
   "execution_sha": "<FILL_AT_EXECUTE_SESSION>",
@@ -64,5 +63,5 @@
     "promotion",
     "merge"
   ],
-  "notes": "Requires prior GO_HH_HL_CAMPAIGN_DESIGN. Implementation GO from #4372 must not be reused. Agents must not forge this GO."
+  "notes": "Requires prior GO_HH_HL_CAMPAIGN_DESIGN. Implementation GO from #4372 must not be reused. Agents must not forge this GO. github_comment_id is host metadata only (bound by the verifier from the fetched comment) and must not appear in this signed payload."
 }

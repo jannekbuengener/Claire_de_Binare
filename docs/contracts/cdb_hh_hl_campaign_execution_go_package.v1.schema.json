@@ -2,7 +2,7 @@
   "$schema": "https://json-schema.org/draft/2020-12/schema",
   "$id": "https://claire-de-binare/docs/contracts/cdb_hh_hl_campaign_execution_go_package.v1.schema.json",
   "title": "CDB hh_hl Campaign Execution-GO v1 (pre-post package)",
-  "description": "Generator-side pre-post package body for the hh_hl Execution-GO #4374. Identical to the live posted schema except github_comment_id MAY be null (it is filled only after the Owner actually posts the fenced comment). Assembling or validating this package never authorizes execution: campaign_execution_authorized stays false and no run is started. Once posted, the body must also satisfy the live schema (github_comment_id integer >= 1).",
+  "description": "Generator-side pre-post package body for the hh_hl Execution-GO #4374. The signed Owner payload is identical to the live posted schema: github_comment_id MUST NOT appear (it is host/transport metadata bound only after live comment verification). Host wrappers may keep expected_comment_id/github_comment_id=null outside this payload. Assembling or validating this package never authorizes execution: campaign_execution_authorized stays false and no run is started.",
   "type": "object",
   "additionalProperties": false,
   "required": [
@@ -10,7 +10,6 @@
     "status",
     "repository",
     "issue",
-    "github_comment_id",
     "authorizing_github_login",
     "bound_main_sha",
     "execution_sha",
@@ -49,9 +48,6 @@
     "status": { "const": "GO_HH_HL_CAMPAIGN_EXECUTION" },
     "repository": { "type": "string", "pattern": "^[^\\s/]+/[^\\s/]+$" },
     "issue": { "const": 4374 },
-    "github_comment_id": {
-      "anyOf": [{ "type": "null" }, { "type": "integer", "minimum": 1 }]
-    },
     "authorizing_github_login": { "const": "jannekbuengener" },
     "bound_main_sha": { "type": "string", "pattern": "^[0-9a-f]{40}$" },
     "execution_sha": { "type": "string", "pattern": "^[0-9a-f]{40}$" },
