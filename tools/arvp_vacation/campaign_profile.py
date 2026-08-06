@@ -26,8 +26,14 @@ PROFILES_DIR = PROJECT_ROOT / "config" / "arvp" / "campaign_profiles"
 
 LEGACY_4153_PROFILE_ID = "legacy_4153_pb1"
 HH_HL_PREP_PROFILE_ID = "hh_hl_continuation_prep_v1"
+HH_HL_REPLAY_PROFILE_ID = "hh_hl_continuation_replay_v1"
 
-KNOWN_PROFILE_IDS = frozenset({LEGACY_4153_PROFILE_ID, HH_HL_PREP_PROFILE_ID})
+# hh_hl profiles that share the same strategy/adapter/grid/dataset binding.
+HH_HL_PROFILE_IDS = frozenset({HH_HL_PREP_PROFILE_ID, HH_HL_REPLAY_PROFILE_ID})
+
+KNOWN_PROFILE_IDS = frozenset(
+    {LEGACY_4153_PROFILE_ID, HH_HL_PREP_PROFILE_ID, HH_HL_REPLAY_PROFILE_ID}
+)
 
 REQUIRED_PROFILE_FIELDS = (
     "profile_schema_version",
@@ -166,8 +172,24 @@ def validate_profile_payload(payload: Mapping[str, Any]) -> None:
         if bans.get(key) is not False:
             raise CampaignProfileError(f"PROFILE_ABSOLUTE_BAN_VIOLATION:{key}")
 
+    # Repo profiles are never self-authorizing, regardless of execution_enabled.
+    if bool(payload.get("campaign_authorized", False)):
+        raise CampaignProfileError(
+            f"PROFILE_MUST_NOT_SELF_AUTHORIZE_CAMPAIGN:{profile_id}"
+        )
+
+    # Planning must always be enabled; the prep-only check is preserved for both
+    # prep and replay profiles (planning_enabled is required, not execution).
     if not payload.get("planning_enabled"):
         raise CampaignProfileError("PROFILE_PLANNING_MUST_BE_ENABLED_FOR_PREP")
+
+    # The hh_hl *prep* profile stays planning-only; execution_enabled=true is a
+    # profile defect there. The replay profile (and legacy #4153) may declare
+    # execution_enabled=true but remain structurally non-authorized
+    # (campaign_authorized=false enforced above) and still require a live Owner
+    # Execution-GO to actually run.
+    if bool(payload.get("execution_enabled")) and profile_id == HH_HL_PREP_PROFILE_ID:
+        raise CampaignProfileError(f"PROFILE_PREP_MUST_BE_PLANNING_ONLY:{profile_id}")
 
 
 def _assert_strategy_adapter_binding(payload: Mapping[str, Any]) -> None:
@@ -186,7 +208,7 @@ def _assert_strategy_adapter_binding(payload: Mapping[str, Any]) -> None:
             )
         return
 
-    if profile_id == HH_HL_PREP_PROFILE_ID:
+    if profile_id in HH_HL_PROFILE_IDS:
         if strategy_id != HH_HL_CONTINUATION_STRATEGY_ID:
             raise CampaignProfileError(
                 f"PROFILE_STRATEGY_MISMATCH:{profile_id}:{strategy_id}"
