@@ -12,7 +12,7 @@ import hashlib
 import json
 import os
 from dataclasses import dataclass
-from datetime import UTC, datetime
+from datetime import UTC
 from pathlib import Path
 from typing import Any, Mapping, Sequence
 
@@ -26,6 +26,7 @@ from core.replay.dataset_identity import (
     collect_forbidden_evidence_keys,
     content_fingerprint,
 )
+from core.utils.clock import utcnow as cdb_utcnow
 from tools.arvp_vacation.sensitivity_campaign_dataset_root import (
     SensitivityDatasetRootError,
     _pick_window_bank_root,
@@ -277,7 +278,10 @@ def prove_local_dataset(
             ) from exc
 
     digest = _digest_from_pairs(ordered, fps)
-    ts = datetime.now(UTC).replace(microsecond=0).isoformat().replace("+00:00", "Z")
+    now = cdb_utcnow()
+    if now.tzinfo is None:
+        now = now.replace(tzinfo=UTC)
+    ts = now.astimezone(UTC).replace(microsecond=0).isoformat().replace("+00:00", "Z")
     receipt = DatasetBindingReceipt(
         schema_version=PROOF_SCHEMA_VERSION,
         dataset_contract_version=DATASET_CONTRACT_VERSION,

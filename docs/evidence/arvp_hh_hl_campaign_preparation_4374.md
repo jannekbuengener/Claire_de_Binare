@@ -48,10 +48,10 @@ python -m tools.arvp_vacation.hh_hl_campaign_plan plan \
 
 - `writes=false`, `replays=false`, `execution_sha=null`
 - `campaign_execution_authorized=false`
-- `manifest_fingerprint=4e5532b33ccbb838f2302f1e0e3592c3d8d12f6929f5feb27cf91071cda5172e`
+- `manifest_fingerprint=ab095923a795445ff41d319b1b3941412c9429d38128a5edd2256f4a777afa80`
 - `run_plan_fingerprint` binds `planning_sha` of delivery head (see PR head after push)
 - Dataset HOLD removed; Grid HOLD remains
-- `proof_code_sha=503f6bf6f1ef8e133f1ae24402ba88b258c993175d4ee848141af108af13f26c`
+- `proof_code_sha=05dd807b08538fa21481e962f610cec6561221fc431339cc4d9a1109df6a07df`
 ## Remaining Holds
 
 - `HOLD_CAMPAIGN_GRID_OWNER_RATIFICATION_REQUIRED`

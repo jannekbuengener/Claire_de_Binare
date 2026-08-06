@@ -108,8 +108,8 @@
       "binance_1m_month_2022_11": "8d8c1805217ab9d0f6d86bf9a37d526b36a4d0586654ebef8871366056dd324a"
     },
     "proof_algorithm": "cdb.dataset_identity.content_fingerprint.v1+ordered_window_pairs",
-    "proof_code_sha": "503f6bf6f1ef8e133f1ae24402ba88b258c993175d4ee848141af108af13f26c",
-    "proof_timestamp": "2026-08-06T07:48:25Z",
+    "proof_code_sha": "05dd807b08538fa21481e962f610cec6561221fc431339cc4d9a1109df6a07df",
+    "proof_timestamp": "2026-08-06T08:00:23Z",
     "quality_gate_status": "DATASET_BINDING_LOCAL_PROOF_PASS",
     "schema_version": "cdb.hh_hl_dataset_local_proof.v1",
     "selection_sha256": "3e9ed68736b51fecb299d228c856be80a597cb1dc72fcba595453b856b58bd52",
@@ -161,7 +161,7 @@
   ],
   "live": false,
   "lr_status": "NO-GO",
-  "manifest_fingerprint": "4e5532b33ccbb838f2302f1e0e3592c3d8d12f6929f5feb27cf91071cda5172e",
+  "manifest_fingerprint": "ab095923a795445ff41d319b1b3941412c9429d38128a5edd2256f4a777afa80",
   "manifest_path": "config/arvp/hh_hl_campaign_4374_draft_v1.json",
   "non_executable_reasons": [
     "HOLD_CAMPAIGN_GRID_OWNER_RATIFICATION_REQUIRED",
