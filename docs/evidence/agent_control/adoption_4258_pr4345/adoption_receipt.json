@@ -1,0 +1,76 @@
+{
+  "adopted_delivery_id": "add-fd086cb733452b9156e33d06",
+  "adoption_id": "cad-fd086cb733452b9156e33d06",
+  "adoption_verdict": "ADOPTABLE_WITH_EXPLICIT_RECONCILIATION_RECEIPT",
+  "authority_limits": {
+    "approval": false,
+    "cursor_http_posts": false,
+    "github_delivery_create": false,
+    "live": false,
+    "merge": false,
+    "publish_cdb_local_ci": false,
+    "runtime_mutation": false
+  },
+  "canonical_digest": "sha256:8ed468aa4a29546625256e94b13b5457f14b210ea45a8d1a988674b46e58f8e1",
+  "commit_provenance": {
+    "commit_agent_author_match": true,
+    "cursor_author_email": "cursoragent@cursor.com",
+    "cursor_author_login": "cursoragent",
+    "footer_only_insufficient": true,
+    "owner_coauthor_login": "jannekbuengener",
+    "pr_body_agent_ref_present": true
+  },
+  "cursor_agent_id": "bc-1d8c87d1-249a-46ab-a5b0-5734f8fe1519",
+  "delivery_classification": "VERIFIED_CURSOR_CLOUD_GITHUB_DELIVERY",
+  "delivery_verified": true,
+  "evidence_boundaries": {
+    "binds_agent_id": true,
+    "binds_branch": true,
+    "binds_commit": true,
+    "binds_pr": true,
+    "binds_repository": true,
+    "claimed_equals_verified": true,
+    "hosted_checks_classification": "github_snapshot_not_final_head_merge_evidence",
+    "no_phantom_branch": true
+  },
+  "github_verification": {
+    "branch_exists": true,
+    "branch_tip_matches_expected": true,
+    "commit_exists": true,
+    "hosted_checks_snapshot": "all_success",
+    "pr_exists": true,
+    "pr_head_matches_expected": true,
+    "pr_state": "OPEN"
+  },
+  "integrity": {
+    "canonicalization": "RFC8785",
+    "digest": "sha256:8ed468aa4a29546625256e94b13b5457f14b210ea45a8d1a988674b46e58f8e1",
+    "digest_algorithm": "sha256",
+    "digest_encoding": "sha256:<lowercase-hex>"
+  },
+  "issue_number": 4258,
+  "limitations": [
+    "external_delivery_not_cdb_dispatch",
+    "provider_dispatch_proven_false",
+    "not_full_e2e_chain",
+    "not_issue_closure",
+    "not_final_ci",
+    "not_merge_authority",
+    "not_approval_authority",
+    "hosted_checks_are_github_snapshot_only",
+    "refs_4258_not_closes",
+    "lr_no_go"
+  ],
+  "original_cdb_run_ids": [
+    "run-d4d336e2-f7d5-4ab6-bbd8-1af94f9a094b",
+    "run-c2c3898b-af9e-4f73-ad91-830f600561b9"
+  ],
+  "provider_dispatch_proven": false,
+  "repository": "jannekbuengener/Claire_de_Binare",
+  "schema_id": "cdb.cursor_delivery_adoption.v1",
+  "schema_version": "1.0.0",
+  "source_branch": "cloud-cursor/dev-env-setup-1519",
+  "source_head_sha": "01a65ae6e1b55648da1cf62c3de8a4ec2e3a926b",
+  "source_pr_number": 4345,
+  "source_type": "external_cursor_cloud_github_delivery"
+}

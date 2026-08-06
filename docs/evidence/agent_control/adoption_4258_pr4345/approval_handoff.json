@@ -1,0 +1,40 @@
+{
+  "authority_limits": {
+    "approval": false,
+    "cursor_http_posts": false,
+    "github_delivery_create": false,
+    "live": false,
+    "merge": false,
+    "publish_cdb_local_ci": false,
+    "runtime_mutation": false
+  },
+  "bindings": {
+    "adoption_digest": "sha256:8ed468aa4a29546625256e94b13b5457f14b210ea45a8d1a988674b46e58f8e1",
+    "adoption_id": "cad-fd086cb733452b9156e33d06",
+    "approval_context_digest": "sha256:044024ab7f4d9c209b29c661afdbb378346c5c43d46277628ce44665072e5cae",
+    "approval_recommendation": "UNKNOWN",
+    "head_sha": "01a65ae6e1b55648da1cf62c3de8a4ec2e3a926b",
+    "issue_number": 4258,
+    "pr_number": 4345
+  },
+  "desired_state": "READY_FOR_APPROVAL_AGENT_HANDOFF",
+  "limitations": [
+    "advisory_read_only",
+    "approval_agents_manual_bootstrap_only",
+    "no_github_review_mutation",
+    "no_merge",
+    "no_cdb_local_ci_publish",
+    "external_delivery_adoption_not_cdb_dispatch"
+  ],
+  "schema_id": "cdb.cursor_adoption_approval_handoff.v1",
+  "schema_version": "1.0.0",
+  "surface": {
+    "cdb_local_ci_bypass": false,
+    "completeness_bypass": false,
+    "cursor_approval_agents": "MANUAL_BOOTSTRAP_ONLY",
+    "final_ci_bypass": false,
+    "github_review_mutation": false,
+    "merge_execution": false
+  },
+  "verdict": "APPROVAL_HANDOFF_PREPARED_NOT_EXECUTED"
+}
