@@ -1,0 +1,142 @@
+{
+  "absolute_bans": {
+    "echtgeld": false,
+    "exchange_execution": false,
+    "live": false,
+    "oos": false,
+    "orders": false,
+    "paper": false,
+    "promotion": false,
+    "stage_b": false,
+    "stress": false
+  },
+  "adapter_id": "batch_b_shadow_runner_v1",
+  "artifact_root_template": "artifacts/arvp_campaign/hh_hl_continuation/4374/{campaign_id}/{manifest_fingerprint}/{authorization_id}",
+  "campaign_execution_authorized": false,
+  "campaign_id": "arvp-hh-hl-continuation-4374-prep-v1",
+  "dataset_binding": {
+    "content_fingerprint_digest": null,
+    "dataset_contract_version": "cdb.hh_hl_campaign_dataset_binding.v1",
+    "dataset_root_kind": "binance_window_bank:locked_batch_a_development_39",
+    "known_limitations": [
+      "Batch-A 39-window bank is identity-bound for planning only; hh_hl eligibility still requires Design-GO ratification.",
+      "Physical content fingerprints are not asserted without local proof.",
+      "Single-run #4372 dataset must not be auto-promoted to campaign dataset."
+    ],
+    "local_proof_command": "python -m tools.arvp_vacation.hh_hl_campaign_plan prove-dataset --dataset-root <LOCAL_WINDOW_BANK_ROOT>",
+    "local_proof_required": true,
+    "ordered_window_ids": [
+      "binance_1m_month_2017_10",
+      "binance_1m_month_2017_11",
+      "binance_1m_month_2018_03",
+      "binance_1m_month_2018_04",
+      "binance_1m_month_2018_05",
+      "binance_1m_month_2018_08",
+      "binance_1m_month_2018_09",
+      "binance_1m_month_2018_12",
+      "binance_1m_month_2019_01",
+      "binance_1m_month_2019_02",
+      "binance_1m_month_2019_04",
+      "binance_1m_month_2019_07",
+      "binance_1m_month_2019_09",
+      "binance_1m_month_2019_10",
+      "binance_1m_month_2019_12",
+      "binance_1m_month_2020_01",
+      "binance_1m_month_2020_05",
+      "binance_1m_month_2020_07",
+      "binance_1m_month_2020_08",
+      "binance_1m_month_2020_09",
+      "binance_1m_month_2020_10",
+      "binance_1m_month_2021_01",
+      "binance_1m_month_2021_05",
+      "binance_1m_month_2021_06",
+      "binance_1m_month_2021_07",
+      "binance_1m_month_2021_10",
+      "binance_1m_month_2021_11",
+      "binance_1m_month_2021_12",
+      "binance_1m_month_2022_01",
+      "binance_1m_month_2022_02",
+      "binance_1m_month_2022_03",
+      "binance_1m_month_2022_04",
+      "binance_1m_month_2022_05",
+      "binance_1m_month_2022_06",
+      "binance_1m_month_2022_07",
+      "binance_1m_month_2022_08",
+      "binance_1m_month_2022_09",
+      "binance_1m_month_2022_10",
+      "binance_1m_month_2022_11"
+    ],
+    "quality_gate_status": "HOLD_DATASET_BINDING_LOCAL_PROOF_REQUIRED",
+    "selection_sha256": "3e9ed68736b51fecb299d228c856be80a597cb1dc72fcba595453b856b58bd52",
+    "symbol": "BTCUSDT",
+    "timeframe": "1m",
+    "venue": "binance",
+    "window_count": 39
+  },
+  "echtgeld": false,
+  "evidence_namespace": "artifacts/arvp_campaign/hh_hl_continuation/4374",
+  "execution_enabled": false,
+  "grid_draft": {
+    "design_go_template_name": "GO_HH_HL_CAMPAIGN_DESIGN",
+    "forbidden_variants": [
+      "ofat_sweep",
+      "interaction_combos",
+      "copy_4153_21_slot_grid",
+      "result_driven_parameter_selection",
+      "optimization"
+    ],
+    "variant_count": 1,
+    "variants": [
+      {
+        "label": "spec_frozen_baseline",
+        "param_set": {
+          "min_minutes_between_entries": 60,
+          "swing_left_bars": 2,
+          "swing_right_bars": 2,
+          "trade_side_mode": "long_only"
+        },
+        "phase": "BASELINE",
+        "physical_parameter_set_fingerprint": "9067cd6aa48ad2cc2a7932af50e990888048b8f912b8f3e3ad0dd5b318d1c0a4",
+        "rationale": "Spec (#4372) freezes all parameters; first pilot admits only the baseline physical set. No OFAT/interactions without GO_HH_HL_CAMPAIGN_DESIGN.",
+        "scenario_id": "baseline",
+        "slot_id": "hh_hl_baseline_001"
+      }
+    ]
+  },
+  "grid_provider_id": "hh_hl_baseline_only_grid_v1",
+  "grid_status": "HOLD_CAMPAIGN_GRID_OWNER_RATIFICATION_REQUIRED",
+  "issue_number": 4374,
+  "issue_ref": "#4374",
+  "lineage_issues": [
+    4372,
+    4374
+  ],
+  "lineage_prs": [
+    4373
+  ],
+  "live": false,
+  "lr_status": "NO-GO",
+  "manifest_fingerprint": "cb7360f96d5bd6eac965e30c47089f6f3525ad7015ecbd8a541d26d942ff0a53",
+  "manifest_path": "config/arvp/hh_hl_campaign_4374_draft_v1.json",
+  "non_executable_reasons": [
+    "HOLD_CAMPAIGN_GRID_OWNER_RATIFICATION_REQUIRED",
+    "HOLD_DATASET_BINDING_LOCAL_PROOF_REQUIRED",
+    "campaign_execution_authorized=false",
+    "execution_enabled=false",
+    "missing Owner Design-GO and Execution-GO"
+  ],
+  "oos": false,
+  "paper": false,
+  "parent_issue": 1900,
+  "planning_enabled": true,
+  "profile_id": "hh_hl_continuation_prep_v1",
+  "promotion": false,
+  "requires_external_owner_go": true,
+  "schema_version": "cdb.hh_hl_campaign_manifest.v1.draft",
+  "stage_b": false,
+  "strategy_set": [
+    "hh_hl_continuation_v1"
+  ],
+  "strategy_version": "cdb.batch_b.hh_hl_continuation_v1.spec.1",
+  "stress": false
+}

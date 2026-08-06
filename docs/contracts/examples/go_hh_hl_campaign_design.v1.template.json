@@ -1,0 +1,42 @@
+{
+  "schema_version": "cdb.hh_hl_campaign_design_go.v1.draft",
+  "status": "GO_HH_HL_CAMPAIGN_DESIGN",
+  "repository": "jannekbuengener/Claire_de_Binare",
+  "issue": 4374,
+  "authorizing_github_login": "jannekbuengener",
+  "bound_main_sha": "<FILL_AT_RATIFICATION>",
+  "profile_id": "hh_hl_continuation_prep_v1",
+  "campaign_id": "arvp-hh-hl-continuation-4374-prep-v1",
+  "manifest_path": "config/arvp/hh_hl_campaign_4374_draft_v1.json",
+  "manifest_fingerprint": "<FILL_FROM_DRY_PLAN>",
+  "strategy_set": ["hh_hl_continuation_v1"],
+  "grid": {
+    "grid_provider_id": "hh_hl_baseline_only_grid_v1",
+    "variant_count": 1,
+    "slots": ["hh_hl_baseline_001"],
+    "rationale": "Spec-frozen parameters; baseline-only pilot"
+  },
+  "dataset": {
+    "dataset_root_kind": "binance_window_bank:locked_batch_a_development_39",
+    "window_count": 39,
+    "selection_sha256": "3e9ed68736b51fecb299d228c856be80a597cb1dc72fcba595453b856b58bd52",
+    "content_fingerprint_digest": "<FILL_AFTER_LOCAL_PROOF>"
+  },
+  "authorizes": [
+    "exact_grid_definition",
+    "dataset_selection",
+    "manifest_and_run_plan_freeze"
+  ],
+  "does_not_authorize": [
+    "campaign_execute",
+    "paper",
+    "live",
+    "echtgeld",
+    "promotion",
+    "stage_b",
+    "oos",
+    "stress"
+  ],
+  "lr_status": "NO-GO",
+  "notes": "Owner posts this as a GitHub comment. Agents must not forge this GO."
+}
