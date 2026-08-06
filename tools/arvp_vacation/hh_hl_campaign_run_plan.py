@@ -225,6 +225,8 @@ def build_hh_hl_run_plan(
         "variant_count": len(variants),
         "window_count": receipt.window_count,
         "selection_sha256": receipt.selection_sha256,
+        "content_fingerprint_digest": receipt.content_fingerprint_digest,
+        "dataset_status": receipt.quality_gate_status,
         "evidence_namespace": prof.evidence_namespace,
         "grid_provider_id": GRID_PROVIDER_ID,
         "run_plan_provider_id": RUN_PLAN_PROVIDER_ID,

@@ -1,68 +1,64 @@
-# hh_hl_continuation_v1 Campaign Preparation Evidence (#4374)
+# hh_hl_continuation_v1 Campaign Preparation Evidence (#4374 / PR #4375)
 
-**Status:** preparation slice (planning-only)  
-**Issue:** #4374  
-**Lineage:** #4372 / PR #4373  
-**Parent:** #1900  
+**Status:** preparation slice hardened with physical dataset proof
+**Issue:** #4374 OPEN
+**PR:** #4375 DRAFT
+**Lineage:** #4372 / PR #4373
+**Parent:** #1900
 **LR:** NO-GO · `campaign_authorized=false` · no Campaign Execute
 
 ## Architecture Verdict
 
 `PROFILE_DRIVEN_EXTENSION_SAFE`
 
-- Frozen #4153 stack remains untouched (`legacy_4153_pb1` profile binds identity only).
-- New `cdb.campaign_profile.v1` sits beside the legacy chain.
-- hh_hl uses `hh_hl_continuation_prep_v1` with `execution_enabled=false`.
+## Dataset Wiring Map
 
-## Dry-Plan (write-free)
+| Need | Canonical place | Reuse |
+|---|---|---|
+| Root validation | `sensitivity_campaign_dataset_root._pick_window_bank_root` | yes |
+| Candle load | `binance_window_bank_adapter.load_window_candles_jsonl` + `load_dataset_spec` | yes |
+| Content hash | `core.replay.dataset_identity.content_fingerprint` | yes |
+| Window lock | `LOCKED_BATCH_A_DEVELOPMENT_WINDOW_IDS` + selection SHA | yes |
 
-Command:
+## Physical local proof
 
 ```text
-python -m tools.arvp_vacation.hh_hl_campaign_plan plan
+python -m tools.arvp_vacation.hh_hl_campaign_plan prove-dataset \
+  --dataset-root <LOCAL_WINDOW_BANK_ROOT> \
+  [--receipt-out docs/evidence/arvp_hh_hl_dataset_local_proof_receipt_4374.json]
 ```
 
-Observed fields (planning session):
+Observed PASS:
 
-- `writes=false`, `replays=false`
+- `quality_gate_status=DATASET_BINDING_LOCAL_PROOF_PASS`
+- `local_proof_required=false`
+- `window_count=39`
+- `selection_sha256=3e9ed68736b51fecb299d228c856be80a597cb1dc72fcba595453b856b58bd52`
+- `content_fingerprint_digest=10f94c34e32db28a9393c38f944db4968b42e87d9ed223397e3637ff44323af9`
+- Receipt: `docs/evidence/arvp_hh_hl_dataset_local_proof_receipt_4374.json`
+- Repeat proof digest match: true
+- No absolute paths in receipt
+
+## Dry-Plan with receipt
+
+```text
+python -m tools.arvp_vacation.hh_hl_campaign_plan plan \
+  --dataset-receipt docs/evidence/arvp_hh_hl_dataset_local_proof_receipt_4374.json
+```
+
+- `writes=false`, `replays=false`, `execution_sha=null`
 - `campaign_execution_authorized=false`
-- `strategy_id=hh_hl_continuation_v1`
-- `variant_count=1`, `window_count=39`, `expected_run_count=39`
-- `grid_status=HOLD_CAMPAIGN_GRID_OWNER_RATIFICATION_REQUIRED`
-- `dataset_binding_status=HOLD_DATASET_BINDING_LOCAL_PROOF_REQUIRED`
-- missing gates: `GO_HH_HL_CAMPAIGN_DESIGN`, `GO_HH_HL_CAMPAIGN_EXECUTION`
+- `manifest_fingerprint=4e5532b33ccbb838f2302f1e0e3592c3d8d12f6929f5feb27cf91071cda5172e`
+- `run_plan_fingerprint` binds `planning_sha` of delivery head (see PR head after push)
+- Dataset HOLD removed; Grid HOLD remains
+- `proof_code_sha=503f6bf6f1ef8e133f1ae24402ba88b258c993175d4ee848141af108af13f26c`
+## Remaining Holds
 
-## Local dataset proof command
+- `HOLD_CAMPAIGN_GRID_OWNER_RATIFICATION_REQUIRED`
+- missing `GO_HH_HL_CAMPAIGN_DESIGN` / `GO_HH_HL_CAMPAIGN_EXECUTION`
+- `execution_enabled=false`
 
-```text
-python -m tools.arvp_vacation.hh_hl_campaign_plan prove-dataset --dataset-root <LOCAL_WINDOW_BANK_ROOT>
-```
+## Allowed / forbidden claims
 
-Do not invent content fingerprints from cloud.
-
-## Owner-GO packages (copyable templates)
-
-- `docs/contracts/examples/go_hh_hl_campaign_design.v1.template.json`
-- `docs/contracts/examples/go_hh_hl_campaign_execution.v1.template.json`
-
-Agents must not post Owner-GO in Jannek's name.
-
-## Allowed claims
-
-- Campaign-core is profile-bound for preparation.
-- #4153 behavior remains regression-protected.
-- hh_hl has a planning-only campaign profile.
-- Manifest/run-plan are deterministically prepared (non-executable).
-- Dataset binding is precisely locally blocked pending proof.
-- Owner-GO packages are prepared.
-- No campaign was executed.
-
-## Forbidden claims
-
-- Campaign ready without full dataset+grid binding
-- Campaign authorized without Owner-GO
-- Campaign started / Primary complete / Reproduction PASS
-- Analyzer result from a real campaign
-- Stage A passed / strategy profitable / promotable
-- Paper/Live/Echtgeld clearance
-- Merge candidate from targeted tests alone
+Allowed: physical dataset proof PASS · #4153 regression intact · planning-only · no execute.
+Forbidden: Campaign authorized · Campaign started · Grid ratified · Design/Execution GO posted · Merge candidate.

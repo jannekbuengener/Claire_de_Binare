@@ -8,7 +8,7 @@
   "profile_id": "hh_hl_continuation_prep_v1",
   "campaign_id": "arvp-hh-hl-continuation-4374-prep-v1",
   "manifest_path": "config/arvp/hh_hl_campaign_4374_draft_v1.json",
-  "manifest_fingerprint": "<FILL_FROM_DRY_PLAN>",
+  "manifest_fingerprint": "4e5532b33ccbb838f2302f1e0e3592c3d8d12f6929f5feb27cf91071cda5172e",
   "strategy_set": ["hh_hl_continuation_v1"],
   "grid": {
     "grid_provider_id": "hh_hl_baseline_only_grid_v1",
@@ -20,7 +20,7 @@
     "dataset_root_kind": "binance_window_bank:locked_batch_a_development_39",
     "window_count": 39,
     "selection_sha256": "3e9ed68736b51fecb299d228c856be80a597cb1dc72fcba595453b856b58bd52",
-    "content_fingerprint_digest": "<FILL_AFTER_LOCAL_PROOF>"
+    "content_fingerprint_digest": "10f94c34e32db28a9393c38f944db4968b42e87d9ed223397e3637ff44323af9"
   },
   "authorizes": [
     "exact_grid_definition",
@@ -38,5 +38,5 @@
     "stress"
   ],
   "lr_status": "NO-GO",
-  "notes": "Owner posts this as a GitHub comment. Agents must not forge this GO."
+  "notes": "Owner posts this as a GitHub comment after Preparation PR merges onto main. bound_main_sha must be the post-merge main tip — never a draft-head. Agents must not forge this GO."
 }

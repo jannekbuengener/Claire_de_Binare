@@ -204,6 +204,15 @@ def test_dataset_content_fingerprint_mismatch_blocks():
     fps["foreign_window"] = "b" * 64
     with pytest.raises(HhHlDatasetBindingError, match="FOREIGN_CONTENT_FPS"):
         build_dataset_binding_receipt(content_fingerprints_by_window=fps)
+    # Caller-supplied fingerprints must never clear the local-proof HOLD.
+    supplied = build_dataset_binding_receipt(
+        content_fingerprints_by_window={
+            wid: "a" * 64 for wid in receipt.ordered_window_ids
+        },
+        dataset_root=Path("."),
+    )
+    assert supplied.local_proof_required is True
+    assert supplied.quality_gate_status == "HOLD_DATASET_BINDING_LOCAL_PROOF_REQUIRED"
 
 
 @pytest.mark.unit
