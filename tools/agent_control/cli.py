@@ -21,6 +21,9 @@ Examples:
   python -m tools.agent_control pilot cursor-preflight --repository owner/name
   python -m tools.agent_control pilot cursor-support-bundle \\
       --state-run1 <PATH> --state-run2 <PATH> --output <DIR>
+  python -m tools.agent_control pilot cursor-adopt-delivery \\
+      --issue 4258 --repository owner/name --cursor-agent-id bc-<uuid> \\
+      --delivery-pr <N> --expected-head <40-hex>
 """
 
 from __future__ import annotations
@@ -683,6 +686,43 @@ def cmd_pilot_cursor_support_bundle(args: argparse.Namespace) -> int:
     return EXIT_OK
 
 
+def cmd_pilot_cursor_adopt_delivery(args: argparse.Namespace) -> int:
+    """Adopt external Cursor Cloud GitHub delivery — zero Cursor POSTs."""
+    from tools.agent_control.cursor_adopt_delivery import (
+        CursorAdoptError,
+        adopt_cursor_delivery,
+    )
+    from tools.agent_control.paths import REPO_ROOT
+
+    root = Path(args.repo_root) if args.repo_root else REPO_ROOT
+    out_dir = Path(args.out) if args.out else None
+    try:
+        result = adopt_cursor_delivery(
+            issue_number=int(args.issue),
+            repository=str(args.repository),
+            cursor_agent_id=str(args.cursor_agent_id),
+            delivery_pr=int(args.delivery_pr),
+            expected_head=str(args.expected_head).lower(),
+            expected_branch=args.expected_branch or None,
+            base_sha=str(args.base_sha).lower() if args.base_sha else None,
+            out_dir=out_dir,
+            repo_root=root,
+            build_approval=not bool(args.skip_approval),
+        )
+    except CursorAdoptError as exc:
+        print(f"INVALID {exc.code}: {exc.message}", file=sys.stderr)
+        return EXIT_HOLD if str(exc.code).startswith("HOLD_") else EXIT_ERROR
+    except (OSError, json.JSONDecodeError, AgentControlError) as exc:
+        code = getattr(exc, "code", "ADOPT_ERROR")
+        message = getattr(exc, "message", str(exc))
+        print(f"INVALID {code}: {message}", file=sys.stderr)
+        return EXIT_ERROR
+    _print_json(result)
+    if result.get("http_posts_to_cursor") != 0 or result.get("github_writes") != 0:
+        return EXIT_ERROR
+    return EXIT_OK
+
+
 def _approval_exit_code(recommendation: str) -> int:
     if recommendation == "APPROVE_RECOMMENDED":
         return EXIT_OK
@@ -1211,6 +1251,45 @@ def build_parser() -> argparse.ArgumentParser:
     )
     p_pilot_sb.add_argument("--repo-root", default=None)
     p_pilot_sb.set_defaults(func=cmd_pilot_cursor_support_bundle)
+
+    p_pilot_adopt = pilot_sub.add_parser(
+        "cursor-adopt-delivery",
+        help=(
+            "Adopt an existing Cursor Cloud GitHub delivery into ACP pilot "
+            "(read-only gh verify; zero Cursor POSTs; Refs #4258)"
+        ),
+    )
+    p_pilot_adopt.add_argument("--issue", type=int, required=True)
+    p_pilot_adopt.add_argument(
+        "--repository",
+        default="jannekbuengener/Claire_de_Binare",
+        help="owner/name repository",
+    )
+    p_pilot_adopt.add_argument("--cursor-agent-id", required=True)
+    p_pilot_adopt.add_argument("--delivery-pr", type=int, required=True)
+    p_pilot_adopt.add_argument("--expected-head", required=True)
+    p_pilot_adopt.add_argument(
+        "--expected-branch",
+        default=None,
+        help="Optional exact branch name; defaults to PR headRefName",
+    )
+    p_pilot_adopt.add_argument(
+        "--base-sha",
+        default=None,
+        help="Optional base SHA for approval context binding",
+    )
+    p_pilot_adopt.add_argument(
+        "--out",
+        default=None,
+        help="Optional directory for receipt/approval/handoff JSON artifacts",
+    )
+    p_pilot_adopt.add_argument("--repo-root", default=None)
+    p_pilot_adopt.add_argument(
+        "--skip-approval",
+        action="store_true",
+        help="Verify+receipt only; skip approval context/handoff",
+    )
+    p_pilot_adopt.set_defaults(func=cmd_pilot_cursor_adopt_delivery)
 
     return parser
 

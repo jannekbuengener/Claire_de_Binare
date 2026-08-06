@@ -1,0 +1,25 @@
+{
+  "L1_provider_api_path": {
+    "immutable_failed_runs": [
+      "run-d4d336e2-f7d5-4ab6-bbd8-1af94f9a094b",
+      "run-c2c3898b-af9e-4f73-ad91-830f600561b9"
+    ],
+    "note": "Prior CDB creates executed and ended ERROR; PR delivery was not produced by those runs.",
+    "status": "PARTIAL"
+  },
+  "L2_github_delivery": {
+    "classification": "VERIFIED_CURSOR_CLOUD_GITHUB_DELIVERY",
+    "evidence_pr": 4345,
+    "head_sha": "01a65ae6e1b55648da1cf62c3de8a4ec2e3a926b",
+    "status": "PROVEN"
+  },
+  "L3_approval_context_handoff": {
+    "approval_recommendation": "UNKNOWN",
+    "context_digest": "sha256:044024ab7f4d9c209b29c661afdbb378346c5c43d46277628ce44665072e5cae",
+    "desired_state": "READY_FOR_APPROVAL_AGENT_HANDOFF",
+    "note": "Approval context bound; Approval-Agent surface remains MANUAL_BOOTSTRAP_ONLY; no GitHub review mutation.",
+    "status": "PREPARED",
+    "verdict": "APPROVAL_HANDOFF_PREPARED_NOT_EXECUTED"
+  },
+  "final_verdict": "PARTIAL_4258_ACCEPTANCE_L2_L3_PROVEN"
+}
