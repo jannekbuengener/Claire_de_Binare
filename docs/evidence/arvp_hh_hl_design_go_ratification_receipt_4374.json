@@ -1,0 +1,32 @@
+{
+  "authorizing_github_login": "jannekbuengener",
+  "body_fingerprint": "415400720d28c998dad6b311c71f9107395e3dd17528d4137d097918d682887d",
+  "bound_main_sha": "7875651ba3c907a1e5cc815f974085e42a1807bc",
+  "comment_id": 5206657394,
+  "created_at_utc": "2026-08-06T15:08:54Z",
+  "dataset_content_fingerprint_digest": "10f94c34e32db28a9393c38f944db4968b42e87d9ed223397e3637ff44323af9",
+  "dataset_selection_sha256": "3e9ed68736b51fecb299d228c856be80a597cb1dc72fcba595453b856b58bd52",
+  "does_not_authorize": [
+    "campaign_execute",
+    "echtgeld",
+    "live",
+    "oos",
+    "paper",
+    "promotion",
+    "stage_b",
+    "stress"
+  ],
+  "grid_provider_id": "hh_hl_baseline_only_grid_v1",
+  "issue": 4374,
+  "lr_status": "NO-GO",
+  "repository": "jannekbuengener/Claire_de_Binare",
+  "schema_version": "cdb.hh_hl_campaign_design_ratification.v1",
+  "slots": [
+    "hh_hl_baseline_001"
+  ],
+  "source_manifest_fingerprint": "ab095923a795445ff41d319b1b3941412c9429d38128a5edd2256f4a777afa80",
+  "source_manifest_path": "config/arvp/hh_hl_campaign_4374_draft_v1.json",
+  "status": "GO_HH_HL_CAMPAIGN_DESIGN",
+  "updated_at_utc": "2026-08-06T15:08:54Z",
+  "variant_count": 1
+}

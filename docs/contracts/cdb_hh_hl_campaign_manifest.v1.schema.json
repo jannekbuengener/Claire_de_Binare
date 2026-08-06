@@ -1,0 +1,138 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://claire-de-binare/docs/contracts/cdb_hh_hl_campaign_manifest.v1.schema.json",
+  "title": "CDB hh_hl Final Campaign Manifest v1",
+  "description": "Frozen, Design-GO-ratified final hh_hl campaign manifest (#4374). Execution-capable (execution_enabled=true) but never execution-authorized (campaign_execution_authorized=false). Carries no Execution-GO data and no local absolute paths. LR remains NO-GO.",
+  "type": "object",
+  "additionalProperties": true,
+  "required": [
+    "schema_version",
+    "campaign_id",
+    "issue_number",
+    "profile_id",
+    "manifest_path",
+    "source_manifest_path",
+    "source_manifest_fingerprint",
+    "strategy_set",
+    "strategy_version",
+    "adapter_id",
+    "execution_mode",
+    "planning_enabled",
+    "execution_enabled",
+    "campaign_execution_authorized",
+    "requires_external_owner_go",
+    "authorization_schema",
+    "expected_window_count",
+    "expected_variant_count",
+    "expected_run_count",
+    "design_ratification",
+    "grid",
+    "dataset_binding",
+    "output_contract",
+    "resume_policy",
+    "reproduction_policy",
+    "analyzer_profile_id",
+    "resource_budget_contract",
+    "evidence_namespace",
+    "absolute_bans",
+    "lr_status",
+    "manifest_fingerprint"
+  ],
+  "properties": {
+    "schema_version": { "const": "cdb.hh_hl_campaign_manifest.v1" },
+    "campaign_id": { "type": "string", "minLength": 1 },
+    "issue_number": { "const": 4374 },
+    "profile_id": { "const": "hh_hl_continuation_replay_v1" },
+    "manifest_path": { "const": "config/arvp/hh_hl_campaign_4374_v1.json" },
+    "source_manifest_path": {
+      "const": "config/arvp/hh_hl_campaign_4374_draft_v1.json"
+    },
+    "source_manifest_fingerprint": { "type": "string", "pattern": "^[0-9a-f]{64}$" },
+    "strategy_set": {
+      "type": "array",
+      "minItems": 1,
+      "maxItems": 1,
+      "items": { "const": "hh_hl_continuation_v1" }
+    },
+    "strategy_version": { "type": "string", "minLength": 1 },
+    "adapter_id": { "const": "batch_b_shadow_runner_v1" },
+    "execution_mode": { "const": "offline_replay_only" },
+    "planning_enabled": { "const": true },
+    "execution_enabled": { "const": true },
+    "campaign_execution_authorized": { "const": false },
+    "requires_external_owner_go": { "const": true },
+    "authorization_schema": {
+      "const": "cdb.hh_hl_campaign_execution_authorization.v1"
+    },
+    "expected_window_count": { "const": 39 },
+    "expected_variant_count": { "const": 1 },
+    "expected_run_count": { "const": 39 },
+    "design_ratification": {
+      "type": "object",
+      "required": [
+        "status",
+        "comment_id",
+        "authorizing_github_login",
+        "bound_main_sha",
+        "source_manifest_fingerprint",
+        "body_fingerprint"
+      ],
+      "properties": {
+        "status": { "const": "GO_HH_HL_CAMPAIGN_DESIGN" },
+        "authorizing_github_login": { "const": "jannekbuengener" }
+      }
+    },
+    "grid": {
+      "type": "object",
+      "required": ["grid_provider_id", "status", "variant_count", "variants"],
+      "properties": {
+        "grid_provider_id": { "const": "hh_hl_baseline_only_grid_v1" },
+        "status": { "const": "CAMPAIGN_GRID_OWNER_RATIFIED" },
+        "variant_count": { "const": 1 }
+      }
+    },
+    "dataset_binding": {
+      "type": "object",
+      "required": [
+        "quality_gate_status",
+        "selection_sha256",
+        "content_fingerprint_digest",
+        "window_count",
+        "local_proof_required"
+      ],
+      "properties": {
+        "quality_gate_status": { "const": "DATASET_BINDING_LOCAL_PROOF_PASS" },
+        "local_proof_required": { "const": false },
+        "window_count": { "const": 39 }
+      }
+    },
+    "output_contract": { "type": "object" },
+    "resume_policy": { "type": "object" },
+    "reproduction_policy": { "type": "object" },
+    "analyzer_profile_id": { "type": "string", "minLength": 1 },
+    "resource_budget_contract": {
+      "type": "object",
+      "required": [
+        "max_parallelism",
+        "max_in_flight_runs",
+        "max_attempts_per_run",
+        "max_run_wall_time_seconds",
+        "max_campaign_wall_time_seconds",
+        "max_artifact_bytes",
+        "minimum_free_disk_bytes",
+        "max_consecutive_failures",
+        "max_total_failures",
+        "log_retention_days"
+      ]
+    },
+    "evidence_namespace": {
+      "const": "artifacts/arvp_campaign/hh_hl_continuation/4374"
+    },
+    "absolute_bans": {
+      "type": "object",
+      "additionalProperties": { "const": false }
+    },
+    "lr_status": { "const": "NO-GO" },
+    "manifest_fingerprint": { "type": "string", "pattern": "^[0-9a-f]{64}$" }
+  }
+}

@@ -1,0 +1,150 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://claire-de-binare/docs/contracts/cdb_hh_hl_campaign_execution_authorization.v1.schema.json",
+  "title": "CDB hh_hl Campaign Execution-GO v1 (live posted)",
+  "description": "External Owner Execution-GO granting exactly one capability (campaign_execution_replay_only) for the frozen final hh_hl manifest #4374. Bound to final manifest fingerprint, run-plan fingerprint, dataset digests, execution surface capability fingerprint, resource budget, and a finite future expiry. Fail-closed: additionalProperties is false, authorizes is exactly [exactly_bound_replay_only_campaign_execution], and does_not_authorize must list stage_b/oos/stress/paper/live/echtgeld/promotion/merge. Does not authorize paper/live/echtgeld/orders/promotion/merge. Must be posted as a fenced ```cdb.hh_hl_campaign_execution_authorization.v1 JSON block and verified live; the posted GO requires a real github_comment_id (the null placeholder is only valid in the pre-post package schema).",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "schema_version",
+    "status",
+    "repository",
+    "issue",
+    "github_comment_id",
+    "authorizing_github_login",
+    "bound_main_sha",
+    "execution_sha",
+    "manifest_path",
+    "manifest_id",
+    "manifest_fingerprint",
+    "design_go_comment_id",
+    "design_go_body_fingerprint",
+    "campaign_id",
+    "strategy_set",
+    "strategy_version",
+    "adapter_id",
+    "dataset_selection_sha256",
+    "dataset_content_fingerprint_digest",
+    "window_count",
+    "variant_count",
+    "run_plan_fingerprint",
+    "expected_run_count",
+    "max_run_count",
+    "execution_surface_id",
+    "surface_capability_fingerprint",
+    "resource_budget",
+    "evidence_namespace",
+    "resume_policy",
+    "reproduction_policy",
+    "analyzer_profile_id",
+    "granted_capabilities",
+    "absolute_bans_unchanged",
+    "expires_at_utc",
+    "lr_status",
+    "authorizes",
+    "does_not_authorize"
+  ],
+  "properties": {
+    "schema_version": { "const": "cdb.hh_hl_campaign_execution_authorization.v1" },
+    "status": { "const": "GO_HH_HL_CAMPAIGN_EXECUTION" },
+    "repository": { "type": "string", "pattern": "^[^\\s/]+/[^\\s/]+$" },
+    "issue": { "const": 4374 },
+    "github_comment_id": { "type": "integer", "minimum": 1 },
+    "authorizing_github_login": { "const": "jannekbuengener" },
+    "bound_main_sha": { "type": "string", "pattern": "^[0-9a-f]{40}$" },
+    "execution_sha": { "type": "string", "pattern": "^[0-9a-f]{40}$" },
+    "manifest_path": { "type": "string", "minLength": 1 },
+    "manifest_id": { "type": "string", "minLength": 1 },
+    "manifest_fingerprint": { "type": "string", "pattern": "^[0-9a-f]{64}$" },
+    "design_go_comment_id": { "type": "integer", "minimum": 1 },
+    "design_go_body_fingerprint": { "type": "string", "pattern": "^[0-9a-f]{64}$" },
+    "campaign_id": { "type": "string", "minLength": 1 },
+    "strategy_set": {
+      "type": "array",
+      "minItems": 1,
+      "maxItems": 1,
+      "items": { "const": "hh_hl_continuation_v1" }
+    },
+    "strategy_version": { "type": "string", "minLength": 1 },
+    "adapter_id": { "const": "batch_b_shadow_runner_v1" },
+    "dataset_selection_sha256": { "type": "string", "pattern": "^[0-9a-f]{64}$" },
+    "dataset_content_fingerprint_digest": {
+      "type": "string",
+      "pattern": "^[0-9a-f]{64}$"
+    },
+    "window_count": { "const": 39 },
+    "variant_count": { "const": 1 },
+    "run_plan_fingerprint": { "type": "string", "pattern": "^[0-9a-f]{64}$" },
+    "expected_run_count": { "const": 39 },
+    "max_run_count": { "type": "integer", "minimum": 39, "maximum": 39 },
+    "execution_surface_id": { "type": "string", "minLength": 1 },
+    "surface_capability_fingerprint": {
+      "type": "string",
+      "pattern": "^[0-9a-f]{64}$"
+    },
+    "resource_budget": {
+      "type": "object",
+      "required": [
+        "max_parallelism",
+        "max_in_flight_runs",
+        "max_attempts_per_run",
+        "max_run_wall_time_seconds",
+        "max_campaign_wall_time_seconds",
+        "max_artifact_bytes",
+        "minimum_free_disk_bytes",
+        "max_consecutive_failures",
+        "max_total_failures",
+        "log_retention_days"
+      ],
+      "properties": {
+        "max_parallelism": { "type": "integer", "minimum": 1 },
+        "max_in_flight_runs": { "type": "integer", "minimum": 1 },
+        "max_attempts_per_run": { "type": "integer", "minimum": 1 },
+        "max_run_wall_time_seconds": { "type": "integer", "minimum": 1 },
+        "max_campaign_wall_time_seconds": { "type": "integer", "minimum": 1 },
+        "max_artifact_bytes": { "type": "integer", "minimum": 1 },
+        "minimum_free_disk_bytes": { "type": "integer", "minimum": 1 },
+        "max_consecutive_failures": { "type": "integer", "minimum": 1 },
+        "max_total_failures": { "type": "integer", "minimum": 1 },
+        "log_retention_days": { "type": "integer", "minimum": 1 }
+      }
+    },
+    "evidence_namespace": {
+      "type": "string",
+      "pattern": "^artifacts/arvp_campaign/hh_hl_continuation/4374"
+    },
+    "resume_policy": { "type": "object" },
+    "reproduction_policy": { "type": "string", "minLength": 1 },
+    "analyzer_profile_id": { "type": "string", "minLength": 1 },
+    "granted_capabilities": {
+      "type": "array",
+      "minItems": 1,
+      "maxItems": 1,
+      "items": { "const": "campaign_execution_replay_only" }
+    },
+    "absolute_bans_unchanged": { "const": true },
+    "expires_at_utc": { "type": "string", "minLength": 1 },
+    "lr_status": { "const": "NO-GO" },
+    "authorizes": {
+      "type": "array",
+      "minItems": 1,
+      "maxItems": 1,
+      "items": { "const": "exactly_bound_replay_only_campaign_execution" }
+    },
+    "does_not_authorize": {
+      "type": "array",
+      "items": { "type": "string" },
+      "allOf": [
+        { "contains": { "const": "stage_b" } },
+        { "contains": { "const": "oos" } },
+        { "contains": { "const": "stress" } },
+        { "contains": { "const": "paper" } },
+        { "contains": { "const": "live" } },
+        { "contains": { "const": "echtgeld" } },
+        { "contains": { "const": "promotion" } },
+        { "contains": { "const": "merge" } }
+      ]
+    },
+    "notes": { "type": "string" }
+  }
+}
