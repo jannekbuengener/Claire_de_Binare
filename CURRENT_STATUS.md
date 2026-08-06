@@ -3,14 +3,14 @@
 **Status Class**: Claire de Binare repository / Engineering Status
 **Authority**: Current repo/main/test/dependency snapshot; not the canonical live-readiness or Echtgeld Go/No-Go source.
 **Operational Canon**: `docs/live-readiness/LR-AUDIT-STATUS-2026-03-05.md`
-<!-- cdb:status-freshness header-date=2026-08-04 -->
-**Last Updated**: 2026-08-04
+<!-- cdb:status-freshness header-date=2026-08-06 -->
+**Last Updated**: 2026-08-06
 **GitHub Boundary**: The live commit and PR state is tracked in GitHub (UI/API or `gh`); this file is a curated repo/engineering ledger, not a live mirror.
 **Freshness Guard**: Only the newest dated block below is a live claim. Everything from the previous dated block onward is marked `historical as of` and is append-only. Marker convention: [`docs/meta/REPOSITORY_CANON.md`](docs/meta/REPOSITORY_CANON.md); validator: `python -m tools.validate_status_freshness`.
 
 ---
 
-## Repo / Engineering Status (2026-08-04)
+## Repo / Engineering Status (2026-08-06)
 
 <!-- cdb:live-claim type=main_sha value=43401302 -->
 - **Confirmed main state**: `origin/main` @ `43401302` — tip after Hermes app mint/write-path verify squash-merge [#4344](https://github.com/jannekbuengener/Claire_de_Binare/pull/4344) (supersedes Security Backlog tip `312d12e0` and ACP foundation tip `abf997d5`).

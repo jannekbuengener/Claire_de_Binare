@@ -68,8 +68,8 @@ Stage und LR sind orthogonale Systeme: `trade-capable` autorisiert kein Live-Tra
 
 ## Current-main Snapshot
 
-<!-- cdb:status-freshness header-date=2026-08-04 -->
-**Stand 2026-08-04.**
+<!-- cdb:status-freshness header-date=2026-08-06 -->
+**Stand 2026-08-06.**
 <!-- cdb:live-claim type=main_sha value=43401302 -->
 <!-- cdb:live-claim type=issue_state issue=4289 state=closed -->
 <!-- cdb:live-claim type=issue_state issue=4257 state=closed -->
