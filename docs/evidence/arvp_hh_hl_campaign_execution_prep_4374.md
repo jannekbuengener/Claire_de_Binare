@@ -134,20 +134,31 @@ Subcommands: `verify-design-go`, `build-final-manifest`, `finalize-plan`
 
 ## 10. Validation
 
-- `pytest tests/unit/arvp/test_hh_hl_campaign_execution_prep.py` → 24 passed.
-- Full `tests/unit/arvp` (`-k "not physical and not live"`) → 519 passed,
-  8 skipped, 14 deselected. #4153 regression green
-  (`test_sensitivity_campaign_authorization`, `_grid`, `_runner`, `_state`,
-  `_to_pr`, `_executor_budget`, `_reproduction`), hh_hl prep + dataset proof
-  green.
-- `ruff check` clean; `black --check` clean; `git diff --check` clean.
+- `pytest tests/unit/arvp/test_hh_hl_campaign_final_bindings.py` → 19 passed
+  (no public `--skip-live-git-gate` / `--run-plan-fingerprint` override;
+  injection-only SHA resolver; PRE_FINAL/fixture never Owner-GO-eligible;
+  foreign planning/manifest/run-plan/dataset/budget/probe bindings block;
+  physical disk/root/content-drift HOLDs; full post-merge receipt accepted;
+  negatives emit no GO package and no replay).
+- `pytest tests/unit/arvp/test_hh_hl_campaign_execution_prep.py` +
+  `test_hh_hl_campaign_execution_hardening.py` + final-bindings → **83 passed**
+  on head `9e48b917`.
+- `ruff check` / `black --check` / `git diff --check` clean on touched surfaces.
+- Hosted (head `9e48b917`): Repository Canon Guard SUCCESS, Docs Conflict Guard
+  SUCCESS (workflow_dispatch). Full `pull_request` `ci`/`policy-gate` may still
+  be pending on the same tip.
 
 ## 11. HOLDs left intentionally (require a separate, GO-gated session)
 
-- `HOLD_POST_MERGE_MAIN_SHA_REQUIRED` — a real post-merge `main` SHA is needed
-  for the `FINAL` plan and the Execution-GO package.
-- `HOLD_EXECUTION_SURFACE_PROOF_REQUIRED` — a live surface-capability receipt
-  is required to assemble the Execution-GO package.
+- `HOLD_POST_MERGE_MAIN_SHA_REQUIRED` / live `origin/main` inequality —
+  FINAL plan and Execution-GO package need a real post-merge main tip (gate is
+  always on; no public skip flag).
+- `HOLD_EXECUTION_SURFACE_BINDING_MISMATCH` — surface receipt must bind the
+  exact FINAL plan/manifest/dataset/budget/surface/probe contract.
+- `HOLD_EXECUTION_DATASET_SURFACE_PROOF_REQUIRED` /
+  `HOLD_EXECUTION_SURFACE_DATASET_ROOT_REQUIRED` /
+  `HOLD_EXECUTION_RESOURCE_BUDGET_INVALID` — non-fixture Owner-GO eligibility
+  needs physical local proof (39 windows, content digest `10f94c34…`, disk).
 - `HOLD_EXECUTION_OWNER_GO_REQUIRED` — no run without a verified live Owner
   `GO_HH_HL_CAMPAIGN_EXECUTION`.
 
