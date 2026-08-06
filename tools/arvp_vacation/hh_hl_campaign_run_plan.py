@@ -6,7 +6,6 @@ Write-free; never starts replays.
 
 from __future__ import annotations
 
-import re
 from dataclasses import dataclass
 from typing import Any, Mapping, Sequence
 
@@ -20,6 +19,12 @@ from tools.arvp_vacation.campaign_profile import (
     CampaignProfileError,
     assert_profile_manifest_bind,
     load_profile,
+)
+from tools.arvp_vacation.hh_hl_campaign_sha_gate import (
+    GitShaResolver,
+    HhHlShaGateError,
+    assert_planning_sha_format_and_distinct,
+    assert_planning_sha_is_live_main,
 )
 from tools.arvp_vacation.hh_hl_campaign_dataset import (
     DatasetBindingReceipt,
@@ -41,12 +46,6 @@ ANALYZER_PROFILE_ID = "hh_hl_analyzer_prep_v1"
 
 FINAL_RUN_PLAN_STATUS = "FINAL"
 PRE_FINAL_RUN_PLAN_STATUS = "PRE_FINALIZATION"
-
-_SHA40_RE = re.compile(r"^[0-9a-f]{40}$")
-
-
-def _is_post_merge_sha(value: str) -> bool:
-    return bool(_SHA40_RE.fullmatch(str(value or "")))
 
 
 @dataclass(frozen=True, slots=True)
@@ -356,12 +355,19 @@ def build_hh_hl_final_run_plan(
     planning_sha: str,
     pre_final: bool = False,
     profile: CampaignProfile | None = None,
+    live_main_resolver: GitShaResolver | None = None,
 ) -> HhHlFinalRunPlan:
     """Build a FINAL (post-merge) or PRE_FINALIZATION (PR) run plan.
 
     FINAL requires a real post-merge ``main`` SHA that is not the pre-merge base
     the design was ratified against. For the PR deliverable use ``pre_final=True``
     which never claims a post-merge final fingerprint.
+
+    When ``live_main_resolver`` is supplied (CLI/production default), FINAL also
+    enforces the live-main gate: ``planning_sha`` must be an existing commit that
+    equals the current ``origin/main`` tip. Without a resolver only the
+    format/distinct checks run (pure planning unit tests); the CLI always injects
+    a resolver unless ``--skip-live-git-gate`` is set for fixtures.
     """
     prof = profile or load_profile(HH_HL_REPLAY_PROFILE_ID)
     if prof.profile_id != HH_HL_REPLAY_PROFILE_ID:
@@ -385,12 +391,23 @@ def build_hh_hl_final_run_plan(
         raise CampaignProfileError("HH_HL_FINAL_DESIGN_SOURCE_FP_MISMATCH")
 
     # Planning-SHA discipline: FINAL must bind a real post-merge main SHA that is
-    # distinct from the pre-merge base. Otherwise require pre_final.
+    # distinct from the pre-merge base. With a live resolver it must equal the
+    # current origin/main tip. Otherwise require pre_final.
     if not pre_final:
-        if not _is_post_merge_sha(planning_sha):
-            raise CampaignProfileError("HOLD_POST_MERGE_MAIN_SHA_REQUIRED")
-        if planning_sha == design_bound_main_sha:
-            raise CampaignProfileError("HOLD_POST_MERGE_MAIN_SHA_REQUIRED")
+        try:
+            if live_main_resolver is not None:
+                assert_planning_sha_is_live_main(
+                    planning_sha,
+                    resolver=live_main_resolver,
+                    design_bound_main_sha=design_bound_main_sha,
+                )
+            else:
+                assert_planning_sha_format_and_distinct(
+                    planning_sha,
+                    design_bound_main_sha=design_bound_main_sha,
+                )
+        except HhHlShaGateError as exc:
+            raise CampaignProfileError(exc.reason_code) from exc
 
     if isinstance(dataset_receipt, DatasetBindingReceipt):
         receipt = validate_pass_receipt(dataset_receipt.as_dict())

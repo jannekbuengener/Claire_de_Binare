@@ -1,0 +1,65 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://claire-de-binare/docs/contracts/cdb_hh_hl_campaign_surface_receipt.v1.schema.json",
+  "title": "CDB hh_hl Campaign Surface-Capability Receipt v1",
+  "description": "Consumable, tamper-evident receipt describing the single-run execution surface probed for the frozen hh_hl campaign #4374. Binds the exact execution surface id, a recomputable capability fingerprint (canonical_hash of the body without the fingerprint field), the deterministic probe-code identity, planning/manifest/run-plan/dataset fingerprints, provider reachability, resource budget, and free disk. Never authorizes execution: replays and campaign_artifacts_written are always false, and fixture receipts are never owner-GO eligible. This is not an Owner Execution-GO.",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "schema_version",
+    "execution_surface_id",
+    "surface_capability_fingerprint",
+    "probe_code_sha",
+    "planning_sha",
+    "manifest_fingerprint",
+    "run_plan_fingerprint",
+    "dataset_selection_sha256",
+    "dataset_content_fingerprint_digest",
+    "strategy_id",
+    "adapter_id",
+    "run_plan_loadable",
+    "single_run_provider_reachable",
+    "reproduction_provider_reachable",
+    "analyzer_provider_reachable",
+    "expected_run_count",
+    "resource_budget",
+    "free_disk_bytes",
+    "fixture",
+    "owner_go_package_eligible",
+    "replays",
+    "campaign_artifacts_written"
+  ],
+  "properties": {
+    "schema_version": { "const": "cdb.hh_hl_campaign_surface_receipt.v1" },
+    "execution_surface_id": {
+      "const": "services.validation.strategy_replay_runner.single_run"
+    },
+    "surface_capability_fingerprint": {
+      "type": "string",
+      "pattern": "^[0-9a-f]{64}$"
+    },
+    "probe_code_sha": { "type": "string", "pattern": "^[0-9a-f]{64}$" },
+    "planning_sha": { "type": "string" },
+    "manifest_fingerprint": { "type": "string", "pattern": "^[0-9a-f]{64}$" },
+    "run_plan_fingerprint": { "type": "string", "pattern": "^[0-9a-f]{64}$" },
+    "dataset_selection_sha256": { "type": "string", "pattern": "^[0-9a-f]{64}$" },
+    "dataset_content_fingerprint_digest": {
+      "type": "string",
+      "pattern": "^[0-9a-f]{64}$"
+    },
+    "strategy_id": { "const": "hh_hl_continuation_v1" },
+    "adapter_id": { "const": "batch_b_shadow_runner_v1" },
+    "run_plan_loadable": { "type": "boolean" },
+    "single_run_provider_reachable": { "type": "boolean" },
+    "reproduction_provider_reachable": { "type": "boolean" },
+    "analyzer_provider_reachable": { "type": "boolean" },
+    "expected_run_count": { "const": 39 },
+    "resource_budget": { "type": "object" },
+    "free_disk_bytes": { "type": "integer", "minimum": 0 },
+    "fixture": { "type": "boolean" },
+    "owner_go_package_eligible": { "type": "boolean" },
+    "replays": { "const": false },
+    "campaign_artifacts_written": { "const": false },
+    "probed_at_utc": { "type": "string" }
+  }
+}

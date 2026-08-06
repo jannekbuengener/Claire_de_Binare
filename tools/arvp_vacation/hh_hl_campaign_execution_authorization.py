@@ -29,8 +29,26 @@ CONTRACTS_DIR = PROJECT_ROOT / "docs" / "contracts"
 AUTH_SCHEMA_PATH = (
     CONTRACTS_DIR / "cdb_hh_hl_campaign_execution_authorization.v1.schema.json"
 )
+AUTH_GO_PACKAGE_SCHEMA_PATH = (
+    CONTRACTS_DIR / "cdb_hh_hl_campaign_execution_go_package.v1.schema.json"
+)
 AUTH_SCHEMA_VERSION = "cdb.hh_hl_campaign_execution_authorization.v1"
 GO_STATUS = "GO_HH_HL_CAMPAIGN_EXECUTION"
+
+# Exactly-one authorized action; anything else is a fail-closed HOLD.
+AUTHORIZES_EXACT = ("exactly_bound_replay_only_campaign_execution",)
+# The Execution-GO must explicitly disclaim every one of these escalations.
+REQUIRED_DOES_NOT_AUTHORIZE = (
+    "stage_b",
+    "oos",
+    "stress",
+    "paper",
+    "live",
+    "echtgeld",
+    "promotion",
+    "merge",
+)
+MAX_RUN_COUNT = 39
 
 DEFAULT_REPO = "jannekbuengener/Claire_de_Binare"
 ISSUE_NUMBER = 4374
@@ -152,6 +170,15 @@ class AuthorizationContext:
 
     def binds_manifest(self, manifest_fingerprint: str) -> bool:
         return self.manifest_fingerprint == manifest_fingerprint
+
+    def assert_not_expired(self, now_utc: datetime | None = None) -> datetime:
+        """Fail-closed re-check of the bound finite expiry at execute entry.
+
+        Must be called on *every* campaign start/resume and immediately before a
+        single run is dispatched, so a context that lapses between GO verification
+        and execution can never reach the run surface.
+        """
+        return assert_expiry_finite_and_future(self.expires_at_utc, now_utc=now_utc)
 
     def as_public_dict(self) -> dict[str, Any]:
         return {
@@ -357,6 +384,31 @@ def _validate_budget(budget: Any) -> None:
         )
 
 
+def _assert_authorizes_scope(payload: Mapping[str, Any]) -> None:
+    """``authorizes``/``does_not_authorize`` must be present and exact.
+
+    ``authorizes`` must be exactly the single replay-only capability, and
+    ``does_not_authorize`` must explicitly list every escalation in
+    :data:`REQUIRED_DOES_NOT_AUTHORIZE`. A missing or truncated disclaimer is a
+    HOLD, never an implicit allow.
+    """
+    authorizes = payload.get("authorizes")
+    if list(authorizes or []) != list(AUTHORIZES_EXACT):
+        raise HhHlExecutionAuthorizationError(
+            "HOLD_EXECUTION_GO_AUTHORIZES_INVALID", str(authorizes)
+        )
+    dna = payload.get("does_not_authorize")
+    if not isinstance(dna, (list, tuple)):
+        raise HhHlExecutionAuthorizationError(
+            "HOLD_EXECUTION_GO_DOES_NOT_AUTHORIZE_MISSING", str(dna)
+        )
+    missing = [k for k in REQUIRED_DOES_NOT_AUTHORIZE if k not in dna]
+    if missing:
+        raise HhHlExecutionAuthorizationError(
+            "HOLD_EXECUTION_GO_DOES_NOT_AUTHORIZE_INCOMPLETE", str(missing)
+        )
+
+
 def validate_execution_go_payload(
     payload: Mapping[str, Any],
     *,
@@ -411,6 +463,8 @@ def validate_execution_go_payload(
             "HOLD_EXECUTION_GO_EVIDENCE_NAMESPACE_INVALID", ns
         )
 
+    _assert_authorizes_scope(payload)
+
     _validate_budget(payload.get("resource_budget"))
     assert_lifetime_covers_budget(
         payload.get("expires_at_utc"),
@@ -426,6 +480,125 @@ def validate_execution_go_payload(
             except jsonschema.ValidationError as exc:  # type: ignore[union-attr]
                 raise HhHlExecutionAuthorizationError(
                     "HOLD_EXECUTION_GO_SCHEMA_VALIDATION_FAILED", exc.message
+                ) from exc
+
+
+def load_execution_go_package_schema(
+    path: Path | None = None,
+) -> dict[str, Any] | None:
+    schema_path = path or AUTH_GO_PACKAGE_SCHEMA_PATH
+    if not schema_path.exists():
+        return None
+    payload = json.loads(schema_path.read_text(encoding="utf-8"))
+    if not isinstance(payload, dict):
+        raise HhHlExecutionAuthorizationError(
+            "HOLD_EXECUTION_GO_PACKAGE_SCHEMA_INVALID", "root not object"
+        )
+    return payload
+
+
+def validate_execution_go_package(
+    package: Mapping[str, Any],
+    *,
+    now_utc: datetime | None = None,
+) -> None:
+    """Validate a *pre-post* Execution-GO package body (generator side).
+
+    Identical structural discipline to :func:`validate_execution_go_payload`
+    except ``github_comment_id`` MAY be ``null`` (it is filled only once the
+    Owner has posted the fenced comment). Fail-closed on: wrong schema/status,
+    relaxed absolute bans, missing/short ``authorizes``/``does_not_authorize``,
+    missing package-only required fields (``strategy_version``,
+    ``max_run_count``, ``design_go_comment_id``, ``design_go_body_fingerprint``,
+    ``reproduction_policy``, ``analyzer_profile_id``), a non-finite/lapsed expiry,
+    or a budget the lifetime cannot cover. This never authorizes execution.
+    """
+    status = str(package.get("status") or "")
+    if status in FORBIDDEN_STATUSES:
+        raise HhHlExecutionAuthorizationError("HOLD_EXECUTION_GO_WRONG_GO_TYPE", status)
+    if package.get("schema_version") != AUTH_SCHEMA_VERSION:
+        raise HhHlExecutionAuthorizationError(
+            "HOLD_EXECUTION_GO_SCHEMA_INVALID", str(package.get("schema_version"))
+        )
+    if status != GO_STATUS:
+        raise HhHlExecutionAuthorizationError(
+            "HOLD_EXECUTION_GO_STATUS_INVALID", status
+        )
+    if package.get("lr_status") != "NO-GO":
+        raise HhHlExecutionAuthorizationError("HOLD_EXECUTION_GO_LR_NOT_NO_GO")
+    if package.get("absolute_bans_unchanged") is not True:
+        raise HhHlExecutionAuthorizationError("HOLD_EXECUTION_GO_ABSOLUTE_BANS_RELAXED")
+
+    granted = package.get("granted_capabilities")
+    if granted != [GRANTED_CAPABILITY]:
+        raise HhHlExecutionAuthorizationError(
+            "HOLD_EXECUTION_GO_GRANTED_CAPABILITIES_INVALID", str(granted)
+        )
+
+    for key, pat in (
+        ("bound_main_sha", _SHA40_RE),
+        ("execution_sha", _SHA40_RE),
+        ("manifest_fingerprint", _SHA64_RE),
+        ("run_plan_fingerprint", _SHA64_RE),
+        ("surface_capability_fingerprint", _SHA64_RE),
+        ("design_go_body_fingerprint", _SHA64_RE),
+    ):
+        if not pat.fullmatch(str(package.get(key) or "")):
+            raise HhHlExecutionAuthorizationError(
+                "HOLD_EXECUTION_GO_FIELD_INVALID", key
+            )
+
+    for key in (
+        "strategy_version",
+        "reproduction_policy",
+        "analyzer_profile_id",
+    ):
+        if not str(package.get(key) or "").strip():
+            raise HhHlExecutionAuthorizationError(
+                "HOLD_EXECUTION_GO_PACKAGE_FIELD_REQUIRED", key
+            )
+    if int(package.get("design_go_comment_id") or 0) <= 0:
+        raise HhHlExecutionAuthorizationError(
+            "HOLD_EXECUTION_GO_PACKAGE_FIELD_REQUIRED", "design_go_comment_id"
+        )
+    if int(package.get("max_run_count") or 0) != MAX_RUN_COUNT:
+        raise HhHlExecutionAuthorizationError(
+            "HOLD_EXECUTION_GO_MAX_RUN_COUNT_INVALID", str(package.get("max_run_count"))
+        )
+
+    # Defense-in-depth: same identity checks as the live-posted validator so a
+    # missing jsonschema dependency cannot silently accept drifted packages.
+    if list(package.get("strategy_set") or []) != [STRATEGY_ID]:
+        raise HhHlExecutionAuthorizationError("HOLD_EXECUTION_GO_STRATEGY_SET_INVALID")
+    if str(package.get("adapter_id") or "") != ADAPTER_ID:
+        raise HhHlExecutionAuthorizationError("HOLD_EXECUTION_GO_ADAPTER_INVALID")
+    if int(package.get("expected_run_count") or 0) != 39:
+        raise HhHlExecutionAuthorizationError(
+            "HOLD_EXECUTION_GO_EXPECTED_RUN_COUNT_INVALID"
+        )
+    ns = str(package.get("evidence_namespace") or "")
+    if not ns.startswith(EVIDENCE_NAMESPACE):
+        raise HhHlExecutionAuthorizationError(
+            "HOLD_EXECUTION_GO_EVIDENCE_NAMESPACE_INVALID", ns
+        )
+
+    _assert_authorizes_scope(package)
+
+    _validate_budget(package.get("resource_budget"))
+    assert_lifetime_covers_budget(
+        package.get("expires_at_utc"),
+        dict(package.get("resource_budget") or {}),
+        now_utc=now_utc,
+    )
+
+    if jsonschema is not None:
+        schema = load_execution_go_package_schema()
+        if schema is not None:
+            try:
+                jsonschema.validate(instance=dict(package), schema=schema)
+            except jsonschema.ValidationError as exc:  # type: ignore[union-attr]
+                raise HhHlExecutionAuthorizationError(
+                    "HOLD_EXECUTION_GO_PACKAGE_SCHEMA_VALIDATION_FAILED", exc.message
                 ) from exc
 
 

@@ -44,11 +44,14 @@ from tools.arvp_vacation.hh_hl_campaign_design_authorization import (
 from tools.arvp_vacation.hh_hl_campaign_execution_authorization import (
     ADAPTER_ID,
     AUTH_SCHEMA_VERSION,
+    AUTHORIZES_EXACT,
     CAMPAIGN_ID,
     EVIDENCE_NAMESPACE,
     GO_STATUS,
     GRANTED_CAPABILITY,
     MANIFEST_ID,
+    MAX_RUN_COUNT,
+    REQUIRED_DOES_NOT_AUTHORIZE,
     STRATEGY_ID,
     AuthorizationContext,
     HhHlExecutionAuthorizationError,
@@ -71,6 +74,7 @@ from tools.arvp_vacation.hh_hl_campaign_lifecycle import (
     validate_primary_run_keys,
 )
 from tools.arvp_vacation.hh_hl_campaign_run_plan import build_hh_hl_final_run_plan
+from tools.arvp_vacation.hh_hl_campaign_surface import probe_hh_hl_surface
 from tools.arvp_vacation.sensitivity_campaign_executor import RunEnvelope, RunResult
 from tools.arvp_vacation.sensitivity_campaign_state import (
     CampaignBindings,
@@ -169,6 +173,7 @@ def _exec_payload(
 ) -> dict:
     manifest = _load_manifest()
     binding = manifest["dataset_binding"]
+    design = manifest["design_ratification"]
     payload = {
         "schema_version": AUTH_SCHEMA_VERSION,
         "status": GO_STATUS,
@@ -181,8 +186,11 @@ def _exec_payload(
         "manifest_path": manifest["manifest_path"],
         "manifest_id": MANIFEST_ID,
         "manifest_fingerprint": manifest["manifest_fingerprint"],
+        "design_go_comment_id": int(design["comment_id"]),
+        "design_go_body_fingerprint": design["body_fingerprint"],
         "campaign_id": CAMPAIGN_ID,
         "strategy_set": [STRATEGY_ID],
+        "strategy_version": manifest["strategy_version"],
         "adapter_id": ADAPTER_ID,
         "dataset_selection_sha256": binding["selection_sha256"],
         "dataset_content_fingerprint_digest": binding["content_fingerprint_digest"],
@@ -190,15 +198,22 @@ def _exec_payload(
         "variant_count": 1,
         "run_plan_fingerprint": run_plan_fp,
         "expected_run_count": 39,
+        "max_run_count": MAX_RUN_COUNT,
         "execution_surface_id": HhHlSingleRunReplayProvider.SURFACE_ID,
         "surface_capability_fingerprint": surface_fp,
         "resource_budget": dict(DEFAULT_RESOURCE_BUDGET),
         "evidence_namespace": EVIDENCE_NAMESPACE,
         "resume_policy": dict(DEFAULT_RESUME_POLICY),
+        "reproduction_policy": manifest["reproduction_policy"][
+            "reproduction_policy_id"
+        ],
+        "analyzer_profile_id": manifest["analyzer_profile_id"],
         "granted_capabilities": [GRANTED_CAPABILITY],
         "absolute_bans_unchanged": True,
         "expires_at_utc": expires,
         "lr_status": "NO-GO",
+        "authorizes": list(AUTHORIZES_EXACT),
+        "does_not_authorize": list(REQUIRED_DOES_NOT_AUTHORIZE),
     }
     payload.update(over)
     return payload
@@ -291,6 +306,37 @@ def _run_envelope(ctx: AuthorizationContext, **over) -> RunEnvelope:
 def _capture(capsys) -> dict:
     out = capsys.readouterr().out.strip()
     return json.loads(out)
+
+
+def _full_surface_receipt(**over) -> dict:
+    """A complete, fingerprint-bound, owner-GO-eligible surface receipt.
+
+    Non-fixture + run_plan_loadable + all providers reachable →
+    ``owner_go_package_eligible`` is true, so it can legitimately back a
+    prepare-execution-go package. ``over`` mutates fields *after* the
+    fingerprint is computed (used by negative tests to force a tamper).
+    """
+    receipt = probe_hh_hl_surface(
+        fixture=False,
+        manifest_fingerprint="a" * 64,
+        run_plan_fingerprint="b" * 64,
+        planning_sha=POST_MERGE_SHA,
+        dataset_selection_sha256="c" * 64,
+        dataset_content_fingerprint_digest="d" * 64,
+        run_plan_loadable=True,
+        resource_budget=dict(DEFAULT_RESOURCE_BUDGET),
+        reachability={"single_run": True, "reproduction": True, "analyzer": True},
+        free_disk_bytes=21474836480,
+    )
+    receipt.update(over)
+    return receipt
+
+
+def _write_surface_receipt(path: Path, **over) -> Path:
+    path.write_text(
+        json.dumps(_full_surface_receipt(**over), sort_keys=True), encoding="utf-8"
+    )
+    return path
 
 
 # --------------------------------------------------------------------------- #
@@ -738,6 +784,10 @@ def test_cli_finalize_plan_pre_final_and_final(capsys):
     assert out["execution_sha"] is None
     assert out["writes"] is False
 
+    # FINAL with --skip-live-git-gate: offline fixtures use the format/distinct
+    # gate (a synthetic post-merge SHA distinct from the design-bound base is
+    # accepted). Production (no skip) would additionally require the live
+    # origin/main equality.
     rc = cli.main(
         [
             "--repo-root",
@@ -745,12 +795,15 @@ def test_cli_finalize_plan_pre_final_and_final(capsys):
             "finalize-plan",
             "--planning-sha",
             POST_MERGE_SHA,
+            "--skip-live-git-gate",
         ]
     )
     out = _capture(capsys)
     assert rc == 0
     assert out["status"] == "FINAL"
 
+    # Re-using the design-bound pre-merge base as "final" is refused even with
+    # the live gate skipped.
     rc = cli.main(
         [
             "--repo-root",
@@ -758,6 +811,7 @@ def test_cli_finalize_plan_pre_final_and_final(capsys):
             "finalize-plan",
             "--planning-sha",
             BASE_SHA,
+            "--skip-live-git-gate",
         ]
     )
     out = _capture(capsys)
@@ -784,16 +838,9 @@ def test_cli_prepare_execution_go_surface_required_then_ok(tmp_path: Path, capsy
     assert rc == 1
     assert out["reason_code"] == "HOLD_EXECUTION_SURFACE_PROOF_REQUIRED"
 
-    surface = tmp_path / "surface.json"
-    surface.write_text(
-        json.dumps(
-            {
-                "execution_surface_id": HhHlSingleRunReplayProvider.SURFACE_ID,
-                "surface_capability_fingerprint": SURFACE_FP,
-            }
-        ),
-        encoding="utf-8",
-    )
+    # A complete, fingerprint-bound, owner-GO-eligible surface receipt (a bare
+    # {surface_id, fingerprint} stub is rejected — see the hardening suite).
+    surface = _write_surface_receipt(tmp_path / "surface.json")
     rc = cli.main(
         [
             "--repo-root",
@@ -807,6 +854,7 @@ def test_cli_prepare_execution_go_surface_required_then_ok(tmp_path: Path, capsy
             str(surface),
             "--expires-at-utc",
             FAR_FUTURE,
+            "--skip-live-git-gate",
         ]
     )
     out = _capture(capsys)
@@ -815,22 +863,20 @@ def test_cli_prepare_execution_go_surface_required_then_ok(tmp_path: Path, capsy
     assert out["campaign_execution_authorized"] is False
     assert out["github_comment_id"] is None
     assert out["execution_go_payload"]["expected_run_count"] == 39
+    # The assembled pre-post package carries the full hardened contract.
+    payload = out["execution_go_payload"]
+    assert payload["authorizes"] == list(AUTHORIZES_EXACT)
+    assert set(REQUIRED_DOES_NOT_AUTHORIZE).issubset(payload["does_not_authorize"])
+    assert payload["max_run_count"] == MAX_RUN_COUNT
+    assert payload["github_comment_id"] is None
 
 
 @pytest.mark.unit
 def test_cli_prepare_execution_go_holds_without_post_merge_sha(tmp_path: Path, capsys):
-    surface = tmp_path / "surface.json"
-    surface.write_text(
-        json.dumps(
-            {
-                "execution_surface_id": HhHlSingleRunReplayProvider.SURFACE_ID,
-                "surface_capability_fingerprint": SURFACE_FP,
-            }
-        ),
-        encoding="utf-8",
-    )
-    # Surface proof present, but re-using the pre-merge base SHA as "final" is
-    # refused → the post-merge SHA HOLD is the reached failure.
+    # A full, valid, owner-GO-eligible surface receipt so the surface gate
+    # passes and the *post-merge SHA* gate is the reached failure: re-using the
+    # design-bound pre-merge base SHA as "final" is refused.
+    surface = _write_surface_receipt(tmp_path / "surface.json")
     rc = cli.main(
         [
             "--repo-root",
@@ -844,6 +890,7 @@ def test_cli_prepare_execution_go_holds_without_post_merge_sha(tmp_path: Path, c
             str(surface),
             "--expires-at-utc",
             FAR_FUTURE,
+            "--skip-live-git-gate",
         ]
     )
     out = _capture(capsys)

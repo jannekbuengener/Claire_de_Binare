@@ -7,6 +7,7 @@ Never opens Batch-B scenario-group paths.
 
 from __future__ import annotations
 
+from datetime import datetime
 from typing import Any, Callable, Mapping
 
 from core.replay.hh_hl_continuation_common import (
@@ -113,32 +114,54 @@ class HhHlSingleRunReplayProvider:
         authorization_context: AuthorizationContext,
         envelope: RunEnvelope,
     ) -> None:
+        """Fail closed unless the envelope is *exactly* bound to the context.
+
+        Every binding must be present AND exactly equal — an empty string or
+        ``None`` is a HOLD, never a skip. Truthy-guarded ``if x and x != y``
+        shortcuts are forbidden here: a blank envelope field can no longer slip
+        past a binding check.
+        """
         ctx = authorization_context
         if not isinstance(ctx, AuthorizationContext):
             raise CampaignProfileError("HOLD_EXECUTION_OWNER_GO_REQUIRED")
         if ctx.granted_capabilities != ("campaign_execution_replay_only",):
             raise CampaignProfileError("HOLD_EXECUTION_CAPABILITY_INVALID")
+        # Campaign id: non-empty, equal to the context AND the bound profile.
+        if not envelope.campaign_id or envelope.campaign_id != ctx.campaign_id:
+            raise CampaignProfileError("HOLD_EXECUTION_CAMPAIGN_MISMATCH")
         if ctx.campaign_id != self.profile.campaign_id:
             raise CampaignProfileError("HOLD_EXECUTION_CAMPAIGN_MISMATCH")
+        # Strategy/adapter are bound via the context here; the envelope-level
+        # strategy match (incl. explicit PB1 refusal) stays in
+        # build_single_run_request so its specific reason codes are preserved.
         if HH_HL_CONTINUATION_STRATEGY_ID not in ctx.strategy_set:
             raise CampaignProfileError("HOLD_EXECUTION_STRATEGY_MISMATCH")
         if ctx.adapter_id != BATCH_B_SHADOW_ADAPTER_ID:
             raise CampaignProfileError("HOLD_EXECUTION_ADAPTER_MISMATCH")
-        if envelope.manifest_fingerprint and not ctx.binds_manifest(
+        # Fingerprint bindings: present AND exact (empty string rejects).
+        if not envelope.manifest_fingerprint or not ctx.binds_manifest(
             envelope.manifest_fingerprint
         ):
             raise CampaignProfileError("HOLD_EXECUTION_MANIFEST_MISMATCH")
-        if envelope.run_plan_fingerprint and not ctx.binds_run_plan(
+        if not envelope.run_plan_fingerprint or not ctx.binds_run_plan(
             envelope.run_plan_fingerprint
         ):
             raise CampaignProfileError("HOLD_EXECUTION_RUN_PLAN_MISMATCH")
         if (
-            envelope.authorization_fingerprint
-            and envelope.authorization_fingerprint != ctx.authorization_fingerprint
+            not envelope.authorization_fingerprint
+            or envelope.authorization_fingerprint != ctx.authorization_fingerprint
         ):
             raise CampaignProfileError(
                 "HOLD_EXECUTION_AUTHORIZATION_FINGERPRINT_MISMATCH"
             )
+        # Execution SHA: present AND exactly the authorized commit.
+        if not envelope.execution_sha or envelope.execution_sha != ctx.execution_sha:
+            raise CampaignProfileError("HOLD_EXECUTION_EXECUTION_SHA_MISMATCH")
+        # Non-empty run addressing.
+        if not envelope.run_key:
+            raise CampaignProfileError("HOLD_EXECUTION_RUN_KEY_REQUIRED")
+        if not envelope.window_id:
+            raise CampaignProfileError("HOLD_EXECUTION_WINDOW_ID_REQUIRED")
 
     def _resolve_single_run_callable(self) -> SingleRunCallable:
         if self._single_run_callable is not None:
@@ -149,6 +172,8 @@ class HhHlSingleRunReplayProvider:
         self,
         envelope: RunEnvelope,
         authorization_context: AuthorizationContext | None = None,
+        *,
+        now_utc: datetime | None = None,
     ) -> RunResult:
         self.calls.append(envelope)
         # Fail closed *first* on missing Owner-GO — profile/manifest flags alone
@@ -163,7 +188,16 @@ class HhHlSingleRunReplayProvider:
             raise CampaignProfileError(
                 f"HOLD_EXECUTION_AUTHORIZATION_INVALID:{exc.reason_code}"
             ) from exc
+        # Envelope/param shape gate (strategy match, PB1 refusal, scenario-group
+        # ban) — all before any callable is resolved.
         request = self.build_single_run_request(envelope)
+        # Re-check the finite expiry on *every* dispatch, immediately before the
+        # callable: a context that lapsed between GO verification and execution
+        # must never reach the single-run surface (0 callable invocations).
+        try:
+            authorization_context.assert_not_expired(now_utc=now_utc)
+        except HhHlExecutionAuthorizationError as exc:
+            raise CampaignProfileError(exc.reason_code) from exc
         single_run = self._resolve_single_run_callable()
         result = single_run(request)
         if not isinstance(result, RunResult):
