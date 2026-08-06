@@ -17,8 +17,9 @@ from __future__ import annotations
 import importlib.util
 import re
 import shutil
+from dataclasses import dataclass
 from pathlib import Path
-from typing import Any, Mapping
+from typing import Any, Callable, Mapping
 
 from core.replay.canonical_json import canonical_hash, sha256_hex
 
@@ -32,6 +33,14 @@ PROBE_CODE_SHA = sha256_hex(PROBE_CODE_CONTRACT_VERSION.encode("utf-8"))
 HH_HL_STRATEGY_ID = "hh_hl_continuation_v1"
 HH_HL_ADAPTER_ID = "batch_b_shadow_runner_v1"
 EXPECTED_RUN_COUNT = 39
+
+# Final-binding + physical-eligibility HOLD reason codes. Any of these keeps a
+# surface receipt from backing an Owner Execution-GO package (fail-closed).
+HOLD_SURFACE_BINDING_MISMATCH = "HOLD_EXECUTION_SURFACE_BINDING_MISMATCH"
+HOLD_SURFACE_DATASET_ROOT_REQUIRED = "HOLD_EXECUTION_SURFACE_DATASET_ROOT_REQUIRED"
+HOLD_DATASET_SURFACE_PROOF_REQUIRED = "HOLD_EXECUTION_DATASET_SURFACE_PROOF_REQUIRED"
+HOLD_RESOURCE_BUDGET_INVALID = "HOLD_EXECUTION_RESOURCE_BUDGET_INVALID"
+HOLD_PROBE_CODE_MISMATCH = "HOLD_SURFACE_RECEIPT_PROBE_CODE_MISMATCH"
 
 SINGLE_RUN_PROVIDER_MODULE = "services.validation.strategy_replay_runner"
 REPRODUCTION_PROVIDER_MODULE = "tools.arvp_vacation.hh_hl_campaign_reproduction"
@@ -116,6 +125,124 @@ def _free_disk_bytes(repo_root: Path | None) -> int:
         return 0
 
 
+def measure_free_disk_bytes(repo_root: Path | None = None) -> int:
+    """Public free-disk probe for the physical eligibility gate."""
+    return _free_disk_bytes(repo_root)
+
+
+@dataclass(frozen=True)
+class PhysicalDatasetProof:
+    """Result of the physical local dataset proof for owner-go eligibility."""
+
+    passed: bool
+    content_fingerprint_digest: str
+    window_count: int
+    free_disk_bytes: int
+    detail: str = ""
+
+
+# Injectable physical-proof surface: unit tests without a real window bank pass a
+# callable returning a PASS/FAIL :class:`PhysicalDatasetProof`; production resolves
+# a real bank root and physically fingerprints the locked 39 windows.
+PhysicalProofFn = Callable[[], PhysicalDatasetProof]
+
+
+def assert_physical_local_eligibility(
+    *,
+    dataset_root: Path | None,
+    expected_content_digest: str,
+    resource_budget: Mapping[str, Any],
+    free_disk_bytes: int | None = None,
+    repo_root: Path | None = None,
+    physical_proof_fn: PhysicalProofFn | None = None,
+) -> PhysicalDatasetProof:
+    """Fail-closed physical eligibility gate for a non-fixture owner-go probe.
+
+    Verifies, in order: sufficient free disk against the resource budget, then a
+    physical dataset proof (all locked windows present, recomputed content digest
+    equal to ``expected_content_digest``). Never starts a replay and never writes
+    a campaign artifact. Returns a passing :class:`PhysicalDatasetProof`; raises
+    :class:`HhHlSurfaceReceiptError` with the exact HOLD code on any failure.
+
+    Tests inject ``physical_proof_fn`` (and/or ``free_disk_bytes``) so no real
+    window bank is required; production resolves a real ``dataset_root``.
+    """
+    disk = (
+        int(free_disk_bytes)
+        if free_disk_bytes is not None
+        else _free_disk_bytes(repo_root)
+    )
+    min_disk = int((resource_budget or {}).get("minimum_free_disk_bytes") or 0)
+    if disk < min_disk:
+        raise HhHlSurfaceReceiptError(
+            HOLD_RESOURCE_BUDGET_INVALID,
+            f"free_disk_bytes={disk} < minimum_free_disk_bytes={min_disk}",
+        )
+
+    expected = str(expected_content_digest or "")
+    if not _SHA64_RE.fullmatch(expected):
+        raise HhHlSurfaceReceiptError(
+            HOLD_DATASET_SURFACE_PROOF_REQUIRED,
+            f"expected content digest not 64-hex: {expected!r}",
+        )
+
+    if physical_proof_fn is not None:
+        proof = physical_proof_fn()
+        if not isinstance(proof, PhysicalDatasetProof):
+            raise HhHlSurfaceReceiptError(
+                HOLD_DATASET_SURFACE_PROOF_REQUIRED, "physical_proof_fn bad result"
+            )
+        proof = PhysicalDatasetProof(
+            passed=bool(proof.passed),
+            content_fingerprint_digest=str(proof.content_fingerprint_digest or ""),
+            window_count=int(proof.window_count),
+            free_disk_bytes=int(disk),
+            detail=str(proof.detail or ""),
+        )
+    else:
+        if dataset_root is None:
+            raise HhHlSurfaceReceiptError(
+                HOLD_SURFACE_DATASET_ROOT_REQUIRED,
+                "non-fixture owner-go probe requires a local dataset root",
+            )
+        # Lazy import: keep the receipt builder free of the dataset/bank surface.
+        from tools.arvp_vacation.hh_hl_campaign_dataset import (
+            DATASET_STATUS_PASS,
+            HhHlDatasetBindingError,
+            prove_local_dataset,
+        )
+
+        try:
+            receipt = prove_local_dataset(Path(dataset_root), repo_root=repo_root)
+        except HhHlDatasetBindingError as exc:
+            raise HhHlSurfaceReceiptError(
+                HOLD_DATASET_SURFACE_PROOF_REQUIRED, str(exc)
+            ) from exc
+        proof = PhysicalDatasetProof(
+            passed=(receipt.quality_gate_status == DATASET_STATUS_PASS),
+            content_fingerprint_digest=str(receipt.content_fingerprint_digest or ""),
+            window_count=int(receipt.window_count),
+            free_disk_bytes=int(disk),
+        )
+
+    if not proof.passed:
+        raise HhHlSurfaceReceiptError(
+            HOLD_DATASET_SURFACE_PROOF_REQUIRED,
+            proof.detail or "physical dataset proof not PASS",
+        )
+    if proof.content_fingerprint_digest != expected:
+        raise HhHlSurfaceReceiptError(
+            HOLD_DATASET_SURFACE_PROOF_REQUIRED,
+            f"content digest drift: {proof.content_fingerprint_digest} != {expected}",
+        )
+    if int(proof.window_count) != EXPECTED_RUN_COUNT:
+        raise HhHlSurfaceReceiptError(
+            HOLD_DATASET_SURFACE_PROOF_REQUIRED,
+            f"window_count={proof.window_count} != {EXPECTED_RUN_COUNT}",
+        )
+    return proof
+
+
 def build_surface_receipt(
     *,
     execution_surface_id: str,
@@ -136,14 +263,24 @@ def build_surface_receipt(
     expected_run_count: int = EXPECTED_RUN_COUNT,
     owner_go_package_eligible: bool | None = None,
     probe_code_sha: str | None = None,
+    pre_final: bool = False,
+    physical_dataset_proof_passed: bool | None = None,
     probed_at_utc: str | None = None,
 ) -> dict[str, Any]:
-    """Build a full, fingerprint-bound surface receipt (never authorizes runs)."""
+    """Build a full, fingerprint-bound surface receipt (never authorizes runs).
+
+    Owner-go eligibility is fail-closed: a fixture, a ``pre_final`` (PRE_FINAL)
+    plan, an unloadable run plan, an unreachable provider, or a missing/failed
+    physical dataset proof all force ``owner_go_package_eligible=False``. A
+    non-fixture FINAL receipt is only eligible when ``physical_dataset_proof_passed``
+    is explicitly ``True``.
+    """
     if execution_surface_id != ALLOWED_EXECUTION_SURFACE_ID:
         raise HhHlSurfaceReceiptError(
             "HOLD_SURFACE_RECEIPT_SURFACE_ID_INVALID", str(execution_surface_id)
         )
     fixture = bool(fixture)
+    pre_final = bool(pre_final)
     reachable = (
         bool(single_run_provider_reachable)
         and bool(reproduction_provider_reachable)
@@ -151,10 +288,17 @@ def build_surface_receipt(
     )
     if owner_go_package_eligible is None:
         owner_go_package_eligible = (
-            (not fixture) and bool(run_plan_loadable) and reachable
+            (not fixture)
+            and (not pre_final)
+            and bool(run_plan_loadable)
+            and reachable
+            and (physical_dataset_proof_passed is True)
         )
-    # A fixture receipt is structurally incapable of authorizing a package.
-    if fixture:
+    # Fail-closed overrides: caller-supplied eligible=True cannot bypass fixture,
+    # PRE_FINAL, or a missing/failed physical dataset proof.
+    if fixture or pre_final:
+        owner_go_package_eligible = False
+    if physical_dataset_proof_passed is not True:
         owner_go_package_eligible = False
 
     receipt: dict[str, Any] = {
@@ -204,9 +348,17 @@ def probe_hh_hl_surface(
     repo_root: Path | None = None,
     free_disk_bytes: int | None = None,
     reachability: Mapping[str, bool] | None = None,
+    pre_final: bool = False,
+    physical_dataset_proof_passed: bool | None = None,
+    probe_code_sha: str | None = None,
     probed_at_utc: str | None = None,
 ) -> dict[str, Any]:
-    """Probe the single-run surface and emit a consumable receipt (no replays)."""
+    """Probe the single-run surface and emit a consumable receipt (no replays).
+
+    ``pre_final`` and ``physical_dataset_proof_passed`` gate owner-go
+    eligibility (see :func:`build_surface_receipt`): a non-fixture FINAL probe is
+    only eligible when the physical dataset proof passed.
+    """
     reach = (
         dict(reachability)
         if reachability is not None
@@ -234,8 +386,107 @@ def probe_hh_hl_surface(
         strategy_id=strategy_id,
         adapter_id=adapter_id,
         expected_run_count=expected_run_count,
+        pre_final=pre_final,
+        physical_dataset_proof_passed=physical_dataset_proof_passed,
+        probe_code_sha=probe_code_sha,
         probed_at_utc=probed_at_utc,
     )
+
+
+def assert_surface_receipt_binds_final(
+    receipt: Mapping[str, Any],
+    *,
+    planning_sha: str,
+    manifest: Mapping[str, Any],
+    plan: Any,
+) -> None:
+    """Exact-match a loaded surface receipt to the FINAL plan + final manifest.
+
+    Every binding must match exactly and no bound identifier may be empty. Any
+    divergence raises ``HhHlSurfaceReceiptError(HOLD_EXECUTION_SURFACE_BINDING_MISMATCH,
+    detail=<field>)`` so a receipt built against a foreign plan, manifest, or
+    dataset can never back an Owner Execution-GO package. ``plan`` is the FINAL
+    :class:`HhHlFinalRunPlan` built for the same ``planning_sha``.
+    """
+    dataset_binding = dict(manifest.get("dataset_binding") or {})
+    resource_budget = dict(manifest.get("resource_budget_contract") or {})
+    manifest_fp = str(manifest.get("manifest_fingerprint") or "")
+    plan_planning = str(getattr(plan, "planning_sha", "") or "")
+    plan_manifest_fp = str(getattr(plan, "manifest_fingerprint", "") or "")
+    plan_rpf = str(getattr(plan, "run_plan_fingerprint", "") or "")
+
+    def _need(field: str, got: Any, expected: Any) -> None:
+        if isinstance(expected, str) and expected == "":
+            raise HhHlSurfaceReceiptError(
+                HOLD_SURFACE_BINDING_MISMATCH, f"{field}:empty-expected"
+            )
+        if isinstance(got, str) and got == "":
+            raise HhHlSurfaceReceiptError(
+                HOLD_SURFACE_BINDING_MISMATCH, f"{field}:empty"
+            )
+        if got != expected:
+            raise HhHlSurfaceReceiptError(HOLD_SURFACE_BINDING_MISMATCH, field)
+
+    ps = str(planning_sha or "")
+    _need("planning_sha", str(receipt.get("planning_sha") or ""), ps)
+    _need("planning_sha_plan", plan_planning, ps)
+
+    _need(
+        "manifest_fingerprint",
+        str(receipt.get("manifest_fingerprint") or ""),
+        manifest_fp,
+    )
+    _need("manifest_fingerprint_plan", plan_manifest_fp, manifest_fp)
+
+    _need(
+        "run_plan_fingerprint", str(receipt.get("run_plan_fingerprint") or ""), plan_rpf
+    )
+
+    _need(
+        "dataset_selection_sha256",
+        str(receipt.get("dataset_selection_sha256") or ""),
+        str(dataset_binding.get("selection_sha256") or ""),
+    )
+    _need(
+        "dataset_content_fingerprint_digest",
+        str(receipt.get("dataset_content_fingerprint_digest") or ""),
+        str(dataset_binding.get("content_fingerprint_digest") or ""),
+    )
+
+    _need("strategy_id", str(receipt.get("strategy_id") or ""), HH_HL_STRATEGY_ID)
+    _need("adapter_id", str(receipt.get("adapter_id") or ""), HH_HL_ADAPTER_ID)
+
+    if int(receipt.get("expected_run_count") or 0) != EXPECTED_RUN_COUNT:
+        raise HhHlSurfaceReceiptError(
+            HOLD_SURFACE_BINDING_MISMATCH, "expected_run_count"
+        )
+
+    if not resource_budget:
+        raise HhHlSurfaceReceiptError(
+            HOLD_SURFACE_BINDING_MISMATCH, "resource_budget:empty-expected"
+        )
+    if dict(receipt.get("resource_budget") or {}) != resource_budget:
+        raise HhHlSurfaceReceiptError(HOLD_SURFACE_BINDING_MISMATCH, "resource_budget")
+
+    _need(
+        "execution_surface_id",
+        str(receipt.get("execution_surface_id") or ""),
+        ALLOWED_EXECUTION_SURFACE_ID,
+    )
+    _need("probe_code_sha", str(receipt.get("probe_code_sha") or ""), PROBE_CODE_SHA)
+
+    if receipt.get("owner_go_package_eligible") is not True:
+        raise HhHlSurfaceReceiptError(
+            HOLD_SURFACE_BINDING_MISMATCH, "owner_go_package_eligible"
+        )
+    if receipt.get("fixture") is not False:
+        raise HhHlSurfaceReceiptError(HOLD_SURFACE_BINDING_MISMATCH, "fixture")
+    if receipt.get("replays") is not False:
+        raise HhHlSurfaceReceiptError(HOLD_SURFACE_BINDING_MISMATCH, "replays")
+    if receipt.get("campaign_artifacts_written") is not False:
+        raise HhHlSurfaceReceiptError(
+            HOLD_SURFACE_BINDING_MISMATCH, "campaign_artifacts_written"
+        )
 
 
 def _load_surface_schema() -> dict[str, Any] | None:
@@ -315,6 +566,13 @@ def load_and_validate_surface_receipt(
             "HOLD_SURFACE_RECEIPT_FIXTURE_ELIGIBILITY_INVALID",
             "fixture receipt marked owner_go_package_eligible",
         )
+    # A receipt that claims owner-go eligibility must carry the canonical probe
+    # code identity: a manipulated probe_code_sha can never back a package.
+    if eligible and str(data.get("probe_code_sha") or "") != PROBE_CODE_SHA:
+        raise HhHlSurfaceReceiptError(
+            HOLD_PROBE_CODE_MISMATCH,
+            f"probe_code_sha={data.get('probe_code_sha')!r} != {PROBE_CODE_SHA}",
+        )
     if not allow_fixture_for_owner_go:
         if fixture:
             raise HhHlSurfaceReceiptError(
@@ -325,6 +583,11 @@ def load_and_validate_surface_receipt(
             raise HhHlSurfaceReceiptError(
                 "HOLD_SURFACE_RECEIPT_NOT_OWNER_GO_ELIGIBLE",
                 "owner_go_package_eligible is false",
+            )
+        if str(data.get("probe_code_sha") or "") != PROBE_CODE_SHA:
+            raise HhHlSurfaceReceiptError(
+                HOLD_PROBE_CODE_MISMATCH,
+                f"probe_code_sha={data.get('probe_code_sha')!r} != {PROBE_CODE_SHA}",
             )
 
     if jsonschema is not None:

@@ -173,6 +173,7 @@ def _full_receipt(**over) -> dict:
         resource_budget=dict(DEFAULT_RESOURCE_BUDGET),
         reachability={"single_run": True, "reproduction": True, "analyzer": True},
         free_disk_bytes=21474836480,
+        physical_dataset_proof_passed=True,
     )
     receipt.update(over)
     return receipt
@@ -421,6 +422,46 @@ def test_surface_full_receipt_loads_and_binds_surface_id():
     assert loaded["owner_go_package_eligible"] is True
     assert loaded["replays"] is False
     assert loaded["campaign_artifacts_written"] is False
+
+
+@pytest.mark.unit
+def test_surface_forced_eligible_without_physical_proof_is_false():
+    """Caller-supplied eligible=True cannot bypass a missing physical proof."""
+    receipt = probe_hh_hl_surface(
+        fixture=False,
+        manifest_fingerprint="a" * 64,
+        run_plan_fingerprint="b" * 64,
+        planning_sha=POST_MERGE_SHA,
+        dataset_selection_sha256="c" * 64,
+        dataset_content_fingerprint_digest="d" * 64,
+        run_plan_loadable=True,
+        resource_budget=dict(DEFAULT_RESOURCE_BUDGET),
+        reachability={"single_run": True, "reproduction": True, "analyzer": True},
+        free_disk_bytes=21474836480,
+        physical_dataset_proof_passed=None,
+    )
+    # Build path defaults eligible=None; force True via build_surface_receipt.
+    from tools.arvp_vacation.hh_hl_campaign_surface import build_surface_receipt
+
+    forced = build_surface_receipt(
+        execution_surface_id=ALLOWED_EXECUTION_SURFACE_ID,
+        planning_sha=POST_MERGE_SHA,
+        manifest_fingerprint="a" * 64,
+        run_plan_fingerprint="b" * 64,
+        dataset_selection_sha256="c" * 64,
+        dataset_content_fingerprint_digest="d" * 64,
+        run_plan_loadable=True,
+        single_run_provider_reachable=True,
+        reproduction_provider_reachable=True,
+        analyzer_provider_reachable=True,
+        resource_budget=dict(DEFAULT_RESOURCE_BUDGET),
+        free_disk_bytes=21474836480,
+        fixture=False,
+        owner_go_package_eligible=True,
+        physical_dataset_proof_passed=None,
+    )
+    assert receipt["owner_go_package_eligible"] is False
+    assert forced["owner_go_package_eligible"] is False
 
 
 # --------------------------------------------------------------------------- #

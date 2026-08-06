@@ -113,6 +113,36 @@ def default_git_sha_resolver(repo_root: Path | str) -> GitShaResolver:
     )
 
 
+# Test-only resolver override. Production ALWAYS resolves via
+# ``default_git_sha_resolver``; this module-level hook lets offline unit tests
+# inject a fake :class:`GitShaResolver` without any public CLI skip flag. It is
+# never wired to argparse and must never be set from a production path.
+_TEST_SHA_RESOLVER_OVERRIDE: GitShaResolver | None = None
+
+
+def _test_set_sha_resolver_override(resolver: GitShaResolver | None) -> None:
+    """Install (or clear with ``None``) a test-only resolver override.
+
+    Intended purely so CLI-level unit tests can exercise the always-on FINAL git
+    gate offline. There is no CLI surface for this; production code paths must
+    never call it.
+    """
+    global _TEST_SHA_RESOLVER_OVERRIDE
+    _TEST_SHA_RESOLVER_OVERRIDE = resolver
+
+
+def resolve_live_git_sha_resolver(repo_root: Path | str) -> GitShaResolver:
+    """Return the active FINAL-gate resolver (fail-closed, no skip path).
+
+    Returns the test override when one is installed, otherwise a real
+    subprocess-backed resolver. A missing override means the live ``origin/main``
+    gate runs for real — there is no way to disable it from the CLI.
+    """
+    if _TEST_SHA_RESOLVER_OVERRIDE is not None:
+        return _TEST_SHA_RESOLVER_OVERRIDE
+    return default_git_sha_resolver(repo_root)
+
+
 def assert_planning_sha_format_and_distinct(
     planning_sha: str,
     *,

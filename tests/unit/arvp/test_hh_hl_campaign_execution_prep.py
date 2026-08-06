@@ -73,7 +73,9 @@ from tools.arvp_vacation.hh_hl_campaign_lifecycle import (
     plan_resume_actions,
     validate_primary_run_keys,
 )
+from tools.arvp_vacation import hh_hl_campaign_sha_gate as sha_gate
 from tools.arvp_vacation.hh_hl_campaign_run_plan import build_hh_hl_final_run_plan
+from tools.arvp_vacation.hh_hl_campaign_sha_gate import GitShaResolver
 from tools.arvp_vacation.hh_hl_campaign_surface import probe_hh_hl_surface
 from tools.arvp_vacation.sensitivity_campaign_executor import RunEnvelope, RunResult
 from tools.arvp_vacation.sensitivity_campaign_state import (
@@ -308,25 +310,55 @@ def _capture(capsys) -> dict:
     return json.loads(out)
 
 
+def _fake_live_main_resolver(
+    *,
+    main_tip: str = POST_MERGE_SHA,
+    extra_commits: tuple[str, ...] = (EXECUTION_SHA,),
+) -> GitShaResolver:
+    """Offline FINAL live-main resolver (no public CLI skip path)."""
+    known = {main_tip: "commit", **{sha: "commit" for sha in extra_commits}}
+    return GitShaResolver(
+        fetch=lambda: None,
+        resolve_main_tip=lambda: main_tip,
+        object_type=lambda sha: known.get(sha),
+        head=lambda: main_tip,
+    )
+
+
+@pytest.fixture(autouse=True)
+def _clear_test_gate_overrides():
+    """Ensure private FINAL/physical test hooks never leak across tests."""
+    sha_gate._test_set_sha_resolver_override(None)
+    cli._test_set_physical_proof_override(None)
+    cli._test_set_free_disk_override(None)
+    yield
+    sha_gate._test_set_sha_resolver_override(None)
+    cli._test_set_physical_proof_override(None)
+    cli._test_set_free_disk_override(None)
+
+
 def _full_surface_receipt(**over) -> dict:
     """A complete, fingerprint-bound, owner-GO-eligible surface receipt.
 
-    Non-fixture + run_plan_loadable + all providers reachable →
-    ``owner_go_package_eligible`` is true, so it can legitimately back a
-    prepare-execution-go package. ``over`` mutates fields *after* the
-    fingerprint is computed (used by negative tests to force a tamper).
+    Bound exactly to the FINAL plan + final manifest for ``POST_MERGE_SHA`` so
+    ``prepare-execution-go`` binding checks pass. ``over`` mutates fields
+    *after* the fingerprint is computed (negative fingerprint-tamper cases).
     """
+    plan = _final_plan(POST_MERGE_SHA)
+    manifest = _load_manifest()
+    binding = manifest["dataset_binding"]
     receipt = probe_hh_hl_surface(
         fixture=False,
-        manifest_fingerprint="a" * 64,
-        run_plan_fingerprint="b" * 64,
+        manifest_fingerprint=str(manifest["manifest_fingerprint"]),
+        run_plan_fingerprint=plan.run_plan_fingerprint,
         planning_sha=POST_MERGE_SHA,
-        dataset_selection_sha256="c" * 64,
-        dataset_content_fingerprint_digest="d" * 64,
+        dataset_selection_sha256=str(binding["selection_sha256"]),
+        dataset_content_fingerprint_digest=str(binding["content_fingerprint_digest"]),
         run_plan_loadable=True,
-        resource_budget=dict(DEFAULT_RESOURCE_BUDGET),
+        resource_budget=dict(manifest["resource_budget_contract"]),
         reachability={"single_run": True, "reproduction": True, "analyzer": True},
         free_disk_bytes=21474836480,
+        physical_dataset_proof_passed=True,
     )
     receipt.update(over)
     return receipt
@@ -354,6 +386,85 @@ def test_design_go_valid_and_body_fingerprint_matches_manifest():
     assert (
         result["body_fingerprint"]
         == manifest["design_ratification"]["body_fingerprint"]
+    )
+    ref = build_reference_design_receipt(repo_root=PROJECT_ROOT)
+    assert result["body_fingerprint"] == ref.body_fingerprint
+
+
+@pytest.mark.unit
+def test_design_go_live_shaped_body_fingerprint_matches_reference_binding_view():
+    """Owner-comment extras (.draft, notes, rationale) must not drift the FP."""
+    # Shape mirrors live comment 5206657394 (bindings identical; extras present).
+    live_shaped = {
+        "schema_version": "cdb.hh_hl_campaign_design_go.v1.draft",
+        "status": "GO_HH_HL_CAMPAIGN_DESIGN",
+        "repository": REPO,
+        "issue": 4374,
+        "authorizing_github_login": "jannekbuengener",
+        "bound_main_sha": BASE_SHA,
+        "profile_id": "hh_hl_continuation_prep_v1",
+        "campaign_id": "arvp-hh-hl-continuation-4374-prep-v1",
+        "manifest_path": "config/arvp/hh_hl_campaign_4374_draft_v1.json",
+        "manifest_fingerprint": (
+            "ab095923a795445ff41d319b1b3941412c9429d38128a5edd2256f4a777afa80"
+        ),
+        "strategy_set": ["hh_hl_continuation_v1"],
+        "grid": {
+            "grid_provider_id": "hh_hl_baseline_only_grid_v1",
+            "variant_count": 1,
+            "slots": ["hh_hl_baseline_001"],
+            "rationale": "Spec-frozen parameters; baseline-only pilot",
+        },
+        "dataset": {
+            "dataset_root_kind": "binance_window_bank:locked_batch_a_development_39",
+            "window_count": 39,
+            "selection_sha256": (
+                "3e9ed68736b51fecb299d228c856be80a597cb1dc72fcba595453b856b58bd52"
+            ),
+            "content_fingerprint_digest": (
+                "10f94c34e32db28a9393c38f944db4968b42e87d9ed223397e3637ff44323af9"
+            ),
+        },
+        "authorizes": [
+            "exact_grid_definition",
+            "dataset_selection",
+            "manifest_and_run_plan_freeze",
+        ],
+        "does_not_authorize": [
+            "campaign_execute",
+            "paper",
+            "live",
+            "echtgeld",
+            "promotion",
+            "stage_b",
+            "oos",
+            "stress",
+        ],
+        "notes": (
+            "Design ratified after Preparation PR #4375 merged. Campaign "
+            "execution requires a separate, fully bound Owner Execution-GO."
+        ),
+        "lr_status": "NO-GO",
+    }
+    comment = DesignGoComment(
+        comment_id=VERIFIED_DESIGN_GO_COMMENT_ID,
+        issue_number=4374,
+        author_login="jannekbuengener",
+        body="```json\n" + json.dumps(live_shaped) + "\n```",
+        created_at="2026-08-06T15:08:54Z",
+        updated_at="2026-08-06T15:08:54Z",
+        repository=REPO,
+    )
+    live = verify_design_go_comment(
+        comment_id=VERIFIED_DESIGN_GO_COMMENT_ID,
+        fetcher=_design_fetcher(comment),
+        repo_root=PROJECT_ROOT,
+    )
+    ref = build_reference_design_receipt(repo_root=PROJECT_ROOT)
+    assert live["body_fingerprint"] == ref.body_fingerprint
+    assert (
+        live["body_fingerprint"]
+        == _load_manifest()["design_ratification"]["body_fingerprint"]
     )
 
 
@@ -784,10 +895,9 @@ def test_cli_finalize_plan_pre_final_and_final(capsys):
     assert out["execution_sha"] is None
     assert out["writes"] is False
 
-    # FINAL with --skip-live-git-gate: offline fixtures use the format/distinct
-    # gate (a synthetic post-merge SHA distinct from the design-bound base is
-    # accepted). Production (no skip) would additionally require the live
-    # origin/main equality.
+    # FINAL always runs the live-main gate. Offline tests inject a private
+    # resolver (no public CLI skip flag) so planning_sha == origin/main tip.
+    sha_gate._test_set_sha_resolver_override(_fake_live_main_resolver())
     rc = cli.main(
         [
             "--repo-root",
@@ -795,15 +905,17 @@ def test_cli_finalize_plan_pre_final_and_final(capsys):
             "finalize-plan",
             "--planning-sha",
             POST_MERGE_SHA,
-            "--skip-live-git-gate",
         ]
     )
     out = _capture(capsys)
     assert rc == 0
     assert out["status"] == "FINAL"
 
-    # Re-using the design-bound pre-merge base as "final" is refused even with
-    # the live gate skipped.
+    # Re-using the design-bound pre-merge base as "final" is refused by the
+    # always-on live-main gate (format/distinct + tip mismatch).
+    sha_gate._test_set_sha_resolver_override(
+        _fake_live_main_resolver(main_tip=POST_MERGE_SHA)
+    )
     rc = cli.main(
         [
             "--repo-root",
@@ -811,7 +923,6 @@ def test_cli_finalize_plan_pre_final_and_final(capsys):
             "finalize-plan",
             "--planning-sha",
             BASE_SHA,
-            "--skip-live-git-gate",
         ]
     )
     out = _capture(capsys)
@@ -841,6 +952,7 @@ def test_cli_prepare_execution_go_surface_required_then_ok(tmp_path: Path, capsy
     # A complete, fingerprint-bound, owner-GO-eligible surface receipt (a bare
     # {surface_id, fingerprint} stub is rejected — see the hardening suite).
     surface = _write_surface_receipt(tmp_path / "surface.json")
+    sha_gate._test_set_sha_resolver_override(_fake_live_main_resolver())
     rc = cli.main(
         [
             "--repo-root",
@@ -854,7 +966,6 @@ def test_cli_prepare_execution_go_surface_required_then_ok(tmp_path: Path, capsy
             str(surface),
             "--expires-at-utc",
             FAR_FUTURE,
-            "--skip-live-git-gate",
         ]
     )
     out = _capture(capsys)
@@ -877,6 +988,9 @@ def test_cli_prepare_execution_go_holds_without_post_merge_sha(tmp_path: Path, c
     # passes and the *post-merge SHA* gate is the reached failure: re-using the
     # design-bound pre-merge base SHA as "final" is refused.
     surface = _write_surface_receipt(tmp_path / "surface.json")
+    sha_gate._test_set_sha_resolver_override(
+        _fake_live_main_resolver(main_tip=POST_MERGE_SHA)
+    )
     rc = cli.main(
         [
             "--repo-root",
@@ -890,7 +1004,6 @@ def test_cli_prepare_execution_go_holds_without_post_merge_sha(tmp_path: Path, c
             str(surface),
             "--expires-at-utc",
             FAR_FUTURE,
-            "--skip-live-git-gate",
         ]
     )
     out = _capture(capsys)

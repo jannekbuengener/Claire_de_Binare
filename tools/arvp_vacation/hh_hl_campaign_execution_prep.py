@@ -39,6 +39,7 @@ from tools.arvp_vacation.campaign_profile import (
 from tools.arvp_vacation.hh_hl_campaign_dataset import (
     HhHlDatasetBindingError,
     load_pass_receipt,
+    resolve_default_dataset_root,
 )
 from tools.arvp_vacation.hh_hl_campaign_design_authorization import (
     DEFAULT_REPO,
@@ -75,14 +76,19 @@ from tools.arvp_vacation.hh_hl_campaign_run_plan import (
     build_hh_hl_final_run_plan,
 )
 from tools.arvp_vacation.hh_hl_campaign_sha_gate import (
+    GitShaResolver,
     HhHlShaGateError,
     assert_execution_sha_exists,
-    default_git_sha_resolver,
+    resolve_live_git_sha_resolver,
 )
 from tools.arvp_vacation.hh_hl_campaign_surface import (
     ALLOWED_EXECUTION_SURFACE_ID,
     EXPECTED_RUN_COUNT,
     HhHlSurfaceReceiptError,
+    PhysicalDatasetProof,
+    PhysicalProofFn,
+    assert_physical_local_eligibility,
+    assert_surface_receipt_binds_final,
     load_and_validate_surface_receipt,
     probe_hh_hl_surface,
 )
@@ -94,9 +100,44 @@ DEFAULT_DATASET_RECEIPT_REL = (
 DEFAULT_DESIGN_GO_COMMENT_ID = 5206657394
 SINGLE_RUN_SURFACE_ID = HhHlSingleRunReplayProvider.SURFACE_ID
 
+# Design-GO-bound expected physical dataset content digest for the locked 39
+# Batch-A windows. Used as a defensive cross-check so a swapped manifest cannot
+# silently redefine the "expected" digest the physical proof must match.
+EXPECTED_DATASET_CONTENT_DIGEST = (
+    "10f94c34e32db28a9393c38f944db4968b42e87d9ed223397e3637ff44323af9"
+)
+
+# Test-only overrides for the CLI probe/finalize physical + git surface. Never
+# wired to argparse; production always uses the real resolvers/proof. Offline
+# unit tests install these to drive the always-on gates without a live git
+# remote or a real window bank.
+_TEST_PHYSICAL_PROOF_OVERRIDE: PhysicalProofFn | None = None
+_TEST_FREE_DISK_OVERRIDE: int | None = None
+
+
+def _test_set_physical_proof_override(fn: PhysicalProofFn | None) -> None:
+    """Install/clear a test-only physical dataset-proof callable for the CLI.
+
+    Production leaves this ``None`` and resolves a real window-bank proof; tests
+    inject a PASS/FAIL :class:`PhysicalDatasetProof` factory. Not a CLI surface.
+    """
+    global _TEST_PHYSICAL_PROOF_OVERRIDE
+    _TEST_PHYSICAL_PROOF_OVERRIDE = fn
+
+
+def _test_set_free_disk_override(free_disk_bytes: int | None) -> None:
+    """Install/clear a test-only free-disk value for the CLI physical gate.
+
+    Lets offline tests deterministically drive the disk-budget branch without
+    depending on the host's real free space. Not a CLI surface.
+    """
+    global _TEST_FREE_DISK_OVERRIDE
+    _TEST_FREE_DISK_OVERRIDE = free_disk_bytes
+
 
 def _emit(payload: Mapping[str, Any]) -> None:
     sys.stdout.write(json.dumps(dict(payload), indent=2, sort_keys=True) + "\n")
+    sys.stdout.flush()
 
 
 def _repo_root(args: argparse.Namespace) -> Path:
@@ -248,17 +289,36 @@ def cmd_build_final_manifest(args: argparse.Namespace) -> int:
     return 0
 
 
-def _live_main_resolver_for(args: argparse.Namespace, repo_root: Path):
-    """Build the production live-main resolver unless a fixture skip is set.
+def _assert_no_skip_gate_remnant(args: argparse.Namespace) -> None:
+    """Defensive: fail closed if any removed skip-gate remnant is invoked.
 
-    Returns ``None`` (format/distinct checks only) when ``--skip-live-git-gate``
-    is passed — the only escape hatch for fixture/offline tests. Production
-    default is the real subprocess-backed resolver, so FINAL binds a live
-    ``origin/main`` tip.
+    The public ``--skip-live-git-gate`` flag was deleted. This guard ensures no
+    programmatic caller can re-introduce a FINAL live-main bypass via a stray
+    ``skip_live_git_gate`` attribute — it raises ``HOLD_EXECUTION_SHA_GATE_BYPASS``
+    rather than silently downgrading the gate.
     """
     if getattr(args, "skip_live_git_gate", False):
-        return None
-    return default_git_sha_resolver(repo_root)
+        raise HhHlShaGateError(
+            "HOLD_EXECUTION_SHA_GATE_BYPASS",
+            "skip-live-git-gate path removed; FINAL live-main gate is mandatory",
+        )
+
+
+def _final_git_sha_resolver(repo_root: Path) -> GitShaResolver:
+    """Resolve the always-on FINAL live-main git resolver (no skip path).
+
+    Production returns a real subprocess-backed resolver; offline tests receive
+    the module-level test override installed in ``hh_hl_campaign_sha_gate``.
+    There is no CLI flag to disable the gate: if a resolver can somehow not be
+    produced, fail closed with ``HOLD_EXECUTION_SHA_GATE_BYPASS``.
+    """
+    resolver = resolve_live_git_sha_resolver(repo_root)
+    if resolver is None:  # pragma: no cover - defensive
+        raise HhHlShaGateError(
+            "HOLD_EXECUTION_SHA_GATE_BYPASS",
+            "FINAL git resolver missing (skip path removed)",
+        )
+    return resolver
 
 
 def cmd_finalize_plan(args: argparse.Namespace) -> int:
@@ -266,14 +326,16 @@ def cmd_finalize_plan(args: argparse.Namespace) -> int:
     planning_sha = str(args.planning_sha or "").strip()
     pre_final = bool(args.pre_final)
     try:
+        _assert_no_skip_gate_remnant(args)
         design_receipt, design_fp = _resolve_design_receipt(args)
         dataset_receipt = load_pass_receipt(
             repo_root / (args.dataset_receipt or DEFAULT_DATASET_RECEIPT_REL)
         )
         manifest = _load_json(repo_root / (args.manifest or DEFAULT_MANIFEST_REL))
-        # FINAL binds the live origin/main tip; --pre-final and
-        # --skip-live-git-gate (fixtures) fall back to format/distinct only.
-        resolver = None if pre_final else _live_main_resolver_for(args, repo_root)
+        # FINAL always binds the live origin/main tip via the mandatory resolver
+        # (real in production, injected test override offline). --pre-final uses
+        # format/distinct checks only and never claims a post-merge final SHA.
+        resolver = None if pre_final else _final_git_sha_resolver(repo_root)
         plan = build_hh_hl_final_run_plan(
             final_manifest=manifest,
             design_receipt=design_receipt,
@@ -342,6 +404,7 @@ def cmd_prepare_execution_go(args: argparse.Namespace) -> int:
     planning_sha = str(args.planning_sha or "").strip()
     execution_sha = str(args.execution_sha or "").strip()
     try:
+        _assert_no_skip_gate_remnant(args)
         design_receipt, design_fp = _resolve_design_receipt(args)
         dataset_receipt = load_pass_receipt(
             repo_root / (args.dataset_receipt or DEFAULT_DATASET_RECEIPT_REL)
@@ -352,10 +415,11 @@ def cmd_prepare_execution_go(args: argparse.Namespace) -> int:
                 "HOLD_EXECUTION_SURFACE_PROOF_REQUIRED", "no --surface-receipt"
             )
         surface = _load_surface_receipt(Path(args.surface_receipt))
-        # FINAL plan enforces a real post-merge main SHA. With the live resolver
-        # (production default) planning_sha must equal the current origin/main
-        # tip; --skip-live-git-gate downgrades to format/distinct only (fixtures).
-        resolver = _live_main_resolver_for(args, repo_root)
+        # FINAL plan always enforces a real post-merge main SHA: planning_sha must
+        # be an existing commit equal to the current origin/main tip. The resolver
+        # is mandatory (real in production, injected test override offline) — there
+        # is no skip path.
+        resolver = _final_git_sha_resolver(repo_root)
         plan = build_hh_hl_final_run_plan(
             final_manifest=manifest,
             design_receipt=design_receipt,
@@ -364,17 +428,18 @@ def cmd_prepare_execution_go(args: argparse.Namespace) -> int:
             pre_final=False,
             live_main_resolver=resolver,
         )
-        # execution_sha must be a real commit. With the live resolver we assert
-        # the git object type; without it (fixtures) we fall back to a strict
-        # 40-hex format check.
-        if resolver is not None:
-            assert_execution_sha_exists(execution_sha, resolver=resolver)
-        elif len(execution_sha) != 40 or any(
-            c not in "0123456789abcdef" for c in execution_sha
-        ):
-            raise HhHlShaGateError(
-                "HOLD_EXECUTION_SHA_INVALID", "execution_sha missing/not 40-hex"
-            )
+        # execution_sha must always be a real existing commit object (live gate).
+        assert_execution_sha_exists(execution_sha, resolver=resolver)
+        # Exact-bind the loaded surface receipt to THIS FINAL plan + manifest
+        # before assembling anything. A receipt built against a foreign plan,
+        # manifest, dataset, or with a manipulated probe-code / ineligibility can
+        # never back the package (HOLD_EXECUTION_SURFACE_BINDING_MISMATCH).
+        assert_surface_receipt_binds_final(
+            surface,
+            planning_sha=planning_sha,
+            manifest=manifest,
+            plan=plan,
+        )
         payload = _assemble_execution_go_payload(
             manifest=manifest,
             plan=plan,
@@ -497,48 +562,102 @@ def _assemble_execution_go_payload(
 def cmd_probe_surface(args: argparse.Namespace) -> int:
     """Read-only single-run surface probe. Emits a full receipt; no replays.
 
-    Both fixture and non-fixture probes emit a complete, fingerprint-bound
-    surface receipt. ``--fixture`` forces ``fixture=true`` and
-    ``owner_go_package_eligible=false`` (never eligible for an Owner
-    Execution-GO). Non-fixture derives run-plan loadability by building a
-    PRE_FINALIZATION plan (dataset *receipt* only — the physical dataset root is
-    never touched and no replay is started) and import-checks the three
-    providers. ``--run-plan-fingerprint`` overrides the bound fingerprint;
-    ``--out`` writes the receipt. ``replays`` and ``campaign_artifacts_written``
-    stay constant ``false``.
+    ``--fixture`` forces ``fixture=true`` and ``owner_go_package_eligible=false``
+    (never eligible) and derives its fingerprint from a PRE_FINALIZATION plan
+    (placeholder only — no live git gate, no physical proof).
+
+    A non-fixture probe is fail-closed owner-go eligible ONLY when all hold:
+    it builds a FINAL plan whose ``run_plan_fingerprint`` derives from a
+    live-verified ``origin/main`` ``--planning-sha`` (no PRE_FINAL fingerprint may
+    back eligibility), the three providers import, and the physical local dataset
+    proof passes (all 39 locked windows present, recomputed content digest equal
+    to the Design-GO-bound digest) with sufficient free disk. ``--dataset-root``
+    (or the resolved default bank) supplies the physical proof; the window bank is
+    read but never mutated and no replay is started. ``replays`` and
+    ``campaign_artifacts_written`` stay constant ``false``.
     """
     repo_root = _repo_root(args)
     fixture = bool(args.fixture)
     planning_sha = str(getattr(args, "planning_sha", "") or "").strip()
-    provided_rpf = str(getattr(args, "run_plan_fingerprint", "") or "").strip()
+    dataset_root_arg = getattr(args, "dataset_root", None)
+    physical_proof: PhysicalDatasetProof | None = None
     try:
+        _assert_no_skip_gate_remnant(args)
         manifest = _load_json(repo_root / (args.manifest or DEFAULT_MANIFEST_REL))
         dataset_binding = dict(manifest.get("dataset_binding") or {})
         resource_budget = dict(manifest.get("resource_budget_contract") or {})
         manifest_fp = str(manifest.get("manifest_fingerprint") or "")
-        # Derive run-plan loadability + fingerprint from a PRE_FINALIZATION plan
-        # (never FINAL: no post-merge SHA claim, no live git gate). This reads
-        # only the dataset receipt file and never the physical window bank.
         design_receipt, _ = _resolve_design_receipt(args)
         dataset_receipt = load_pass_receipt(
             repo_root / (args.dataset_receipt or DEFAULT_DATASET_RECEIPT_REL)
         )
-        plan = build_hh_hl_final_run_plan(
-            final_manifest=manifest,
-            design_receipt=design_receipt,
-            dataset_receipt=dataset_receipt,
-            planning_sha=planning_sha,
-            pre_final=True,
-        )
+
+        if fixture:
+            # Never eligible. Build a PRE_FINALIZATION plan only to derive a
+            # structurally valid run_plan_fingerprint (no live git gate, no
+            # post-merge SHA claim, no physical proof, dataset receipt only).
+            plan = build_hh_hl_final_run_plan(
+                final_manifest=manifest,
+                design_receipt=design_receipt,
+                dataset_receipt=dataset_receipt,
+                planning_sha=planning_sha,
+                pre_final=True,
+            )
+        else:
+            # FINAL plan with the mandatory live-main gate: run_plan_fingerprint
+            # derives ONLY from a live-verified origin/main planning_sha.
+            if not planning_sha:
+                raise HhHlShaGateError(
+                    "HOLD_POST_MERGE_MAIN_SHA_REQUIRED",
+                    "non-fixture probe-surface requires --planning-sha (live main)",
+                )
+            resolver = _final_git_sha_resolver(repo_root)
+            plan = build_hh_hl_final_run_plan(
+                final_manifest=manifest,
+                design_receipt=design_receipt,
+                dataset_receipt=dataset_receipt,
+                planning_sha=planning_sha,
+                pre_final=False,
+                live_main_resolver=resolver,
+            )
+            # Defensive manifest-swap guard: the manifest's bound content digest
+            # must equal the Design-GO-bound expected digest before it becomes the
+            # physical-proof target.
+            manifest_digest = str(
+                dataset_binding.get("content_fingerprint_digest") or ""
+            )
+            if manifest_digest != EXPECTED_DATASET_CONTENT_DIGEST:
+                raise HhHlSurfaceReceiptError(
+                    "HOLD_EXECUTION_DATASET_SURFACE_PROOF_REQUIRED",
+                    f"manifest content digest {manifest_digest!r} != Design-GO",
+                )
+            # Physical local eligibility (disk budget + real 39-window dataset
+            # proof). Tests inject a proof/disk override; production resolves a
+            # real bank root (explicit --dataset-root or the default bank).
+            dataset_root = None
+            if dataset_root_arg:
+                dataset_root = Path(dataset_root_arg)
+            elif _TEST_PHYSICAL_PROOF_OVERRIDE is None:
+                dataset_root = resolve_default_dataset_root()
+            physical_proof = assert_physical_local_eligibility(
+                dataset_root=dataset_root,
+                expected_content_digest=EXPECTED_DATASET_CONTENT_DIGEST,
+                resource_budget=resource_budget,
+                free_disk_bytes=_TEST_FREE_DISK_OVERRIDE,
+                repo_root=repo_root,
+                physical_proof_fn=_TEST_PHYSICAL_PROOF_OVERRIDE,
+            )
+
         run_plan_loadable = (
             plan.expected_run_count == EXPECTED_RUN_COUNT
             and len(plan.run_keys) == EXPECTED_RUN_COUNT
         )
-        run_plan_fingerprint = provided_rpf or plan.run_plan_fingerprint
+        run_plan_fingerprint = plan.run_plan_fingerprint
     except (
         HhHlDesignAuthorizationError,
         HhHlDatasetBindingError,
         HhHlShaGateError,
+        HhHlSurfaceReceiptError,
         CampaignProfileError,
         ValueError,
     ) as exc:
@@ -565,6 +684,15 @@ def cmd_probe_surface(args: argparse.Namespace) -> int:
         run_plan_loadable=run_plan_loadable,
         resource_budget=resource_budget,
         repo_root=repo_root,
+        pre_final=fixture,
+        physical_dataset_proof_passed=(
+            None if fixture else bool(physical_proof and physical_proof.passed)
+        ),
+        free_disk_bytes=(
+            physical_proof.free_disk_bytes
+            if (not fixture and physical_proof is not None)
+            else None
+        ),
     )
     wrote_to: str | None = None
     if getattr(args, "out", None):
@@ -705,11 +833,6 @@ def build_parser() -> argparse.ArgumentParser:
     p_final.add_argument("--planning-sha", default="")
     p_final.add_argument("--pre-final", action="store_true")
     p_final.add_argument("--live", action="store_true")
-    p_final.add_argument(
-        "--skip-live-git-gate",
-        action="store_true",
-        help="fixtures/offline only: skip the live origin/main FINAL gate",
-    )
     p_final.add_argument("--out", default=None)
     p_final.set_defaults(func=cmd_finalize_plan)
 
@@ -725,11 +848,6 @@ def build_parser() -> argparse.ArgumentParser:
     p_prep.add_argument("--surface-receipt", default=None)
     p_prep.add_argument("--expires-at-utc", default="")
     p_prep.add_argument("--live", action="store_true")
-    p_prep.add_argument(
-        "--skip-live-git-gate",
-        action="store_true",
-        help="fixtures/offline only: skip the live origin/main + execution-sha gate",
-    )
     p_prep.add_argument("--out", default=None)
     p_prep.set_defaults(func=cmd_prepare_execution_go)
 
@@ -743,9 +861,9 @@ def build_parser() -> argparse.ArgumentParser:
     p_surface.add_argument("--design-go-fixture-json", default=None)
     p_surface.add_argument("--planning-sha", default="")
     p_surface.add_argument(
-        "--run-plan-fingerprint",
-        default="",
-        help="override the receipt's run_plan_fingerprint (else pre-final derived)",
+        "--dataset-root",
+        default=None,
+        help="local window-bank root for the non-fixture physical dataset proof",
     )
     p_surface.add_argument("--out", default=None, help="write receipt JSON to path")
     p_surface.set_defaults(func=cmd_probe_surface)

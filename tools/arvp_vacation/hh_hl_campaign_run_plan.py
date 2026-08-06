@@ -367,7 +367,8 @@ def build_hh_hl_final_run_plan(
     enforces the live-main gate: ``planning_sha`` must be an existing commit that
     equals the current ``origin/main`` tip. Without a resolver only the
     format/distinct checks run (pure planning unit tests); the CLI always injects
-    a resolver unless ``--skip-live-git-gate`` is set for fixtures.
+    a live resolver (production) or an injected test resolver (offline unit tests).
+    There is no public CLI skip path for the FINAL live-main gate.
     """
     prof = profile or load_profile(HH_HL_REPLAY_PROFILE_ID)
     if prof.profile_id != HH_HL_REPLAY_PROFILE_ID:

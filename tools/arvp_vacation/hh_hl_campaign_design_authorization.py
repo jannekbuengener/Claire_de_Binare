@@ -6,11 +6,14 @@ module ratifies *design only* — it never authorizes campaign execution, paper,
 live, echtgeld, or promotion. Execution needs a separate Owner Execution-GO
 (``hh_hl_campaign_execution_authorization``).
 
-Body fingerprint contract: ``body_fingerprint = canonical_hash(parsed_payload)``
-over the strictly parsed Design-GO JSON object (not the raw markdown body).
-``verify_design_go_comment`` recomputes it from the live parsed payload so a
-materialized ratification receipt and a live comment agree iff their payload
-field/value sets agree.
+Body fingerprint contract: ``body_fingerprint = canonical_hash(binding_view)``
+where ``binding_view`` is the normalized binding-relevant projection of the
+parsed Design-GO JSON (not the raw markdown body). Extra Owner-comment fields
+(``notes``, ``authorizes``, ``grid.rationale``, ``dataset_root_kind``,
+``window_count``) and a ``.draft`` schema suffix do not participate.
+``github_comment_id`` is taken from the verified comment when the live payload
+omits it. Live verify and ``build_reference_design_receipt`` therefore share one
+fingerprint for the same ratified bindings.
 """
 
 from __future__ import annotations
@@ -208,9 +211,69 @@ def parse_design_go_payload_from_body(body: str) -> dict[str, Any]:
     return payload
 
 
-def fingerprint_design_go_payload(payload: Mapping[str, Any]) -> str:
-    """Canonical hash over the parsed Design-GO payload (documented contract)."""
-    return canonical_hash(dict(payload))
+def normalize_design_go_payload_for_fingerprint(
+    payload: Mapping[str, Any],
+    *,
+    comment_id: int | None = None,
+) -> dict[str, Any]:
+    """Project any valid Design-GO payload onto the binding fingerprint view.
+
+    Live Owner comments may carry advisory extras and ``schema_version``
+    ``*.draft``; those must not drift the fingerprint away from the reference
+    receipt built from the same bindings. ``comment_id`` supplies
+    ``github_comment_id`` when the live payload omits it.
+    """
+    grid = payload.get("grid") or {}
+    dataset = payload.get("dataset") or {}
+    cid = comment_id
+    if cid is None:
+        raw = payload.get("github_comment_id")
+        if raw is None or raw == "":
+            raise HhHlDesignAuthorizationError(
+                "HOLD_DESIGN_GO_COMMENT_ID_MISMATCH",
+                "github_comment_id required for fingerprint",
+            )
+        cid = int(raw)
+    return {
+        "schema_version": "cdb.hh_hl_campaign_design_go.v1",
+        "status": str(payload.get("status") or ""),
+        "repository": str(payload.get("repository") or ""),
+        "issue": int(payload.get("issue") or 0),
+        "authorizing_github_login": str(payload.get("authorizing_github_login") or ""),
+        "github_comment_id": int(cid),
+        "bound_main_sha": str(payload.get("bound_main_sha") or ""),
+        "profile_id": str(payload.get("profile_id") or ""),
+        "campaign_id": str(payload.get("campaign_id") or ""),
+        "manifest_path": str(payload.get("manifest_path") or ""),
+        "manifest_fingerprint": str(payload.get("manifest_fingerprint") or ""),
+        "strategy_set": [str(x) for x in (payload.get("strategy_set") or [])],
+        "grid": {
+            "grid_provider_id": str(grid.get("grid_provider_id") or ""),
+            "variant_count": int(grid.get("variant_count") or 0),
+            "slots": _grid_slots(payload),
+        },
+        "dataset": {
+            "selection_sha256": str(dataset.get("selection_sha256") or ""),
+            "content_fingerprint_digest": str(
+                dataset.get("content_fingerprint_digest") or ""
+            ),
+        },
+        "does_not_authorize": sorted(
+            str(x) for x in (payload.get("does_not_authorize") or [])
+        ),
+        "lr_status": str(payload.get("lr_status") or ""),
+    }
+
+
+def fingerprint_design_go_payload(
+    payload: Mapping[str, Any],
+    *,
+    comment_id: int | None = None,
+) -> str:
+    """Canonical hash over the binding fingerprint view (documented contract)."""
+    return canonical_hash(
+        normalize_design_go_payload_for_fingerprint(payload, comment_id=comment_id)
+    )
 
 
 def normalize_authorizing_login(login: str) -> str:
@@ -386,7 +449,9 @@ def _receipt_from_payload(
             str(x) for x in (payload.get("does_not_authorize") or [])
         ),
         lr_status="NO-GO",
-        body_fingerprint=fingerprint_design_go_payload(payload),
+        body_fingerprint=fingerprint_design_go_payload(
+            payload, comment_id=comment.comment_id
+        ),
     )
 
 
