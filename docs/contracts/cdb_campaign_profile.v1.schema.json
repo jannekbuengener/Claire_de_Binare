@@ -1,0 +1,146 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "cdb.campaign_profile.v1",
+  "title": "CDB Campaign Profile v1",
+  "description": "Immutable, fail-closed campaign-instance profile. Does not authorize execution. LR remains NO-GO.",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "profile_schema_version",
+    "profile_id",
+    "issue_number",
+    "campaign_id",
+    "manifest_path",
+    "manifest_schema_version",
+    "strategy_id",
+    "strategy_version",
+    "adapter_id",
+    "grid_provider_id",
+    "run_plan_provider_id",
+    "executor_provider_id",
+    "analyzer_profile_id",
+    "evidence_namespace",
+    "artifact_root_template",
+    "authorization_schema",
+    "reproduction_policy_id",
+    "execution_enabled",
+    "planning_enabled",
+    "absolute_bans",
+    "lr_status"
+  ],
+  "properties": {
+    "profile_schema_version": {
+      "type": "string",
+      "const": "cdb.campaign_profile.v1"
+    },
+    "profile_id": {
+      "type": "string",
+      "minLength": 1,
+      "maxLength": 128,
+      "pattern": "^[a-z0-9][a-z0-9_.-]*$"
+    },
+    "issue_number": {
+      "type": "integer",
+      "minimum": 1
+    },
+    "campaign_id": {
+      "type": "string",
+      "minLength": 1,
+      "maxLength": 128,
+      "pattern": "^[a-z0-9][a-z0-9_.-]*$"
+    },
+    "manifest_path": {
+      "type": "string",
+      "minLength": 1,
+      "pattern": "^config/arvp/[a-zA-Z0-9_./-]+\\.json$"
+    },
+    "manifest_schema_version": {
+      "type": "string",
+      "minLength": 1
+    },
+    "strategy_id": {
+      "type": "string",
+      "minLength": 1
+    },
+    "strategy_version": {
+      "type": "string",
+      "minLength": 1
+    },
+    "adapter_id": {
+      "type": "string",
+      "minLength": 1
+    },
+    "grid_provider_id": {
+      "type": "string",
+      "minLength": 1
+    },
+    "run_plan_provider_id": {
+      "type": "string",
+      "minLength": 1
+    },
+    "executor_provider_id": {
+      "type": "string",
+      "minLength": 1
+    },
+    "analyzer_profile_id": {
+      "type": "string",
+      "minLength": 1
+    },
+    "evidence_namespace": {
+      "type": "string",
+      "minLength": 1,
+      "pattern": "^artifacts/[a-z0-9_./-]+$"
+    },
+    "artifact_root_template": {
+      "type": "string",
+      "minLength": 1
+    },
+    "authorization_schema": {
+      "type": "string",
+      "minLength": 1
+    },
+    "reproduction_policy_id": {
+      "type": "string",
+      "minLength": 1
+    },
+    "execution_enabled": {
+      "type": "boolean"
+    },
+    "planning_enabled": {
+      "type": "boolean"
+    },
+    "campaign_authorized": {
+      "type": "boolean",
+      "default": false
+    },
+    "requires_external_owner_go": {
+      "type": "boolean",
+      "default": true
+    },
+    "absolute_bans": {
+      "type": "object",
+      "additionalProperties": {
+        "type": "boolean",
+        "const": false
+      },
+      "required": [
+        "stage_b",
+        "oos",
+        "stress",
+        "paper",
+        "live",
+        "echtgeld",
+        "promotion",
+        "orders",
+        "exchange_execution"
+      ]
+    },
+    "lr_status": {
+      "type": "string",
+      "const": "NO-GO"
+    },
+    "notes": {
+      "type": "string"
+    }
+  }
+}
