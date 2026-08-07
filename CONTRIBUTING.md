@@ -174,10 +174,13 @@ docs(onboarding): reconcile zero-context developer setup
 5. Push to the assigned PR and update its ledger plus the Issue handoff.
 6. Default close status is `DONE_SLICE_ADDED_TO_BATCH_PR`; do not merge or close
    the Issue.
-7. Before Merge Mode, run `cdb-pr-completeness-review`; only a schema-valid
+7. Before Final-Head, run `cdb-pr-completeness-review`; only a schema-valid
    `MERGE_CANDIDATE` may proceed. Then `cdb-batch-merge-conductor` freezes,
-   integrates main, runs Full Fast-CI, publishes exact-SHA `cdb-local-ci`, and
-   may regular-squash-merge. Never bypass Completeness; never `--admin`.
+   integrates main, runs Full Fast-CI, publishes exact-SHA App Check Run
+   `cdb-local-ci` (`app_id=4410232`), and hands off
+   `FINAL_HEAD_READY_FOR_APPROVAL`. PR Reviewer
+   (`cdb_final_head_pr_approval_gate`) APPROVEs the exact head; Merge Agent
+   (`cdb_final_head_merge_executor`) performs regular squash-merge. Never bypass Completeness; never `--admin`.
 
 **PR Title Format:** Same as commit message format.
 **PR Templates:** Dedicated PRs use `.github/pull_request_template.md`; Batch

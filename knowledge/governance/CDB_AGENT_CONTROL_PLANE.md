@@ -119,7 +119,8 @@ Agent Run Evidence ◄────────────── Approval Agent 
 Delivery Slice in routed PR
     │
     ▼  (separate Merge session)
-Completeness Review → Batch Merge Conductor → Final CI / cdb-local-ci → Merge
+Completeness Review → Batch Merge Conductor (Final-Head prep) →
+cdb-local-ci App Check Run → PR Reviewer APPROVE → Merge Agent → session-close
 ```
 
 Regeln:
@@ -152,19 +153,21 @@ Für jede Komponente gilt genau eine primäre Verantwortung. Spalten:
 | **Dispatcher** | Run-Start und erlaubte Lifecycle-Übergänge | Provider-Dispatch gemäß Contract + Route + Environment | Preflight (Contract/Route/Env) | HOLD/BLOCKED/FAILED bei Preflight- oder Lauf-Fehler | Merge, Approval ersetzen, Final-CI vortäuschen |
 | **Provider Adapter** | Provider-spezifische Aufrufabbildung | Provider-API/CLI/SDK laut öffentlicher Capability | Capability Probe / Drift gegen Registry | STOP wenn Capability fehlt oder Drift kritisch | Private API / UI-Scraping als Kern; Merge; Secrets speichern |
 | **Cursor** | nichts in CDB-Authority | Zugewiesene Delivery-Arbeit im Provider-Environment | Provider-lokale Logs/Status an Adapter | Provider-seitiger Abbruch melden | Merge, `cdb-local-ci`, Issue-Close, Live-Go, Governance-Override |
-| **Approval Agent** | Review-Verdict (approve / request changes / abstain) im Review-Kontext | Review-Artefakte gemäß Policy | Diff/Evidence gegen Contract und Safety | HOLD bei Policy-/Safety-Findings | Mergefreigabe, Final-CI, Branch Protection, Live-Go |
+| **PR Reviewer (`cdb_final_head_pr_approval_gate`)** | GitHub APPROVE gebunden an exakten Final-Head SHA | APPROVE-Review gemäß Final-Head Pipeline | Diff/Evidence/`cdb-local-ci` Check Run gegen Contract und Safety | HOLD bei Policy-/Safety-/Drift-Findings | Merge, Code ändern, Final-CI publishen, Branch Protection, Live-Go |
 | **Agent Run Evidence** | nichts | Evidence-Bundle schreiben (Schema später `#4256`) | Vollständigkeit/Integrität des Run-Bundles | BLOCKED bei fehlender Pflicht-Evidence | Brain-Evidence ersetzen; Final-CI vortäuschen; Merge |
 | **Final CI / `cdb-local-ci`** | Merge-relevante App-Check-Run-Wahrheit (`cdb-local-ci`, `app_id=4410232`) auf exaktem Head; SSOT [`docs/runbooks/merge_policy_ci_gate.md`](../../docs/runbooks/merge_policy_ci_gate.md) | Check-Run-Publish nur durch autorisierten Publisher (Legacy Commit Status erfüllt Branch Protection nicht) | Fast-CI/Evidence-Bindung an Head SHA | BLOCKED_REQUIRED_STATUS bei missing/red/stale | Slice-Validation als Final-CI zählen; Admin-Bypass; gleichnamigen Commit Status als Merge-Gate zählen |
 | **Completeness Review** | `MERGE_CANDIDATE` / Nicht-Kandidat (read-only Aggregat) | nichts | Acht Dimensionen der PR-Completeness | HOLD bei Lücken/Scope-/Wiring-Findings | Merge ausführen; Delivery-Session ersetzen |
-| **Batch Merge Conductor** | Freeze, Final-Validation-Orchestrierung, regular squash-merge wenn Capability-Gate erfüllt | Freeze, Rebase/Integrate nach Canon, Merge-Befehl bei Gate | Final-Head-Evidence, Main-Drift | HOLD bei Drift/Capability-/Gate-Fehlern | Delivery-Slice mergen ohne Freeze; `--admin` als Bypass; Fake-Green |
+| **Batch Merge Conductor** | Freeze, Final-Validation-Orchestrierung, `FINAL_HEAD_READY_FOR_APPROVAL` | Freeze, Rebase/Integrate nach Canon, `cdb-local-ci` Publish/Verify | Final-Head-Evidence, Main-Drift | HOLD bei Drift/Capability-/Gate-Fehlern | APPROVE; Merge; Delivery-Slice mergen ohne Freeze; `--admin`; Fake-Green |
+| **Merge Agent (`cdb_final_head_merge_executor`)** | Regular Merge nach HEAD-gebundenem APPROVE | `gh pr merge --squash --delete-branch` nach Re-Verify | Approval-HEAD, Drift, required Check Run, Mergeability | HOLD/Re-Review bei Drift/stale Approval | APPROVE; Code ändern; `--admin`; Fake-Green |
 
 ### 4.1 Kurzform Authority
 
 - **CDB entscheidet.** Router weist zu. Contract beschreibt. Dispatcher startet.
-  Provider führt aus. Approval prüft. Completeness bewertet Merge-Reife.
-  Conductor merged nur nach Final-CI auf exaktem Head.
-- **Approval ist Review, keine Mergefreigabe.**
-- **Cursor und Delivery-Agenten dürfen nicht mergen.**
+  Provider führt aus. Completeness bewertet Merge-Reife. Conductor bereitet
+  Final Head vor. PR Reviewer APPROVEd den exakten Head. Merge Agent mergt.
+- **PR Reviewer APPROVE ≠ Mergefreigabe durch Conductor/Delivery.**
+- **Delivery-Agenten und Conductor dürfen nicht mergen.** Nur
+  `cdb_final_head_merge_executor` mergt.
 - **`cdb-local-ci` bleibt der einzige merge-relevante Required Context**
   (SSOT: [`docs/runbooks/merge_policy_ci_gate.md`](../../docs/runbooks/merge_policy_ci_gate.md)).
 
@@ -203,7 +206,9 @@ Merge-Pfad (separate Session, nicht Teil des Delivery-Runs):
 
 ```text
 DELIVERED/PASS (open PR) → Completeness MERGE_CANDIDATE → FROZEN
-  → Final CI SUCCESS on exact head → regular squash-merge
+  → Final CI SUCCESS on exact head → FINAL_HEAD_READY_FOR_APPROVAL
+  → PR Reviewer APPROVE(HEAD_SHA) → Merge Agent regular squash-merge
+  → session-close
 ```
 
 Ein Delivery-Run darf Completeness/Conductor/Final-CI **referenzieren**, aber

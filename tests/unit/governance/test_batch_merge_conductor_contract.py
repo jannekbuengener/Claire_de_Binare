@@ -1,4 +1,4 @@
-"""Contract tests for cdb-batch-merge-conductor (#4210)."""
+"""Contract tests for cdb-batch-merge-conductor (#4210 / #4411)."""
 
 from __future__ import annotations
 
@@ -18,7 +18,7 @@ PHASES = [
     "FREEZE",
     "MAIN_INTEGRATION",
     "FINAL_VALIDATION",
-    "MERGE",
+    "HANDOFF_APPROVAL",
     "HANDOFF_SESSION_CLOSE",
 ]
 BLOCKCODES = [
@@ -33,7 +33,6 @@ BLOCKCODES = [
 DELEGATES = [
     "cdb-pr-completeness-review",
     "cdb-ci-cd-guard",
-    "cdb-session-close",
 ]
 
 
@@ -52,23 +51,25 @@ def _skill() -> str:
 def test_no_separate_merge_go_or_human_authority_fields() -> None:
     text = _skill()
     assert "human_merge_authorization" in text
-    assert "No field `human_merge_authorization`" in text or (
-        "No field `human_merge_authorization`" in text
-    )
+    assert "No field `human_merge_authorization`" in text
     assert "BLOCKED_HUMAN_AUTHORITY" in text
     assert "No status `BLOCKED_HUMAN_AUTHORITY`" in text
-    assert "No separate Human-/Merge-GO" in text or "No separate Human" in text
-    # Must not introduce those as allowed statuses/fields
+    assert "No separate Human" in text
     assert "allowed status `BLOCKED_HUMAN_AUTHORITY`" not in text
     assert "requires human_merge_authorization" not in text.lower()
 
 
-def test_scope_plus_capability_based_merge() -> None:
+def test_final_head_ready_not_merge_executor() -> None:
     text = _skill()
-    assert "capability-based" in text or "capability" in text.lower()
+    assert "FINAL_HEAD_READY_FOR_APPROVAL" in text
+    assert "cdb_final_head_pr_approval_gate" in text
     assert "merge_policy_ci_gate.md" in text
     assert "DONE_PR_OPEN_MERGE_HANDOFF" in text
     assert "--admin" in text
+    # Conductor must not execute merge itself
+    assert "Execute regular squash-merge" not in text
+    assert "4. `MERGE`" not in text
+    assert "merge_executed" not in text
 
 
 def test_freeze_prevents_new_slices() -> None:
@@ -91,8 +92,8 @@ def test_app_check_run_publish_and_no_admin() -> None:
     assert "cdb-local-ci" in text
     assert "Check Run" in text
     assert "4410232" in text
-    assert "never `--admin`" in text or "never `--admin`" in text or "--admin" in text
-    assert "Fake-Green" in text or "Fake-Green" in text
+    assert "--admin" in text
+    assert "Fake-Green" in text
 
 
 def test_missing_capability_handoff_not_admin() -> None:
@@ -102,6 +103,8 @@ def test_missing_capability_handoff_not_admin() -> None:
     forbidden = _policy()["delegation_matrix"]["cdb-batch-merge-conductor"]["forbidden"]
     assert "admin_merge" in forbidden
     assert "human_merge_authorization_field" in forbidden
+    assert "merge_execution" in forbidden
+    assert "approve_pr" in forbidden
 
 
 def test_no_closure_of_undelivered_ledger_rows() -> None:
@@ -111,13 +114,21 @@ def test_no_closure_of_undelivered_ledger_rows() -> None:
     assert "cdb-session-close" in text
 
 
-def test_delegation_to_ci_guard_and_session_close() -> None:
+def test_delegation_to_ci_guard_not_session_close_as_merge_owner() -> None:
     policy = _policy()
     text = _skill()
     delegates = policy["delegation_matrix"]["cdb-batch-merge-conductor"]["delegates_to"]
     assert delegates == DELEGATES
     for name in DELEGATES:
         assert name in text
+    assert (
+        policy["delegation_matrix"]["cdb-batch-merge-conductor"]["success_decision"]
+        == "FINAL_HEAD_READY_FOR_APPROVAL"
+    )
+    assert (
+        policy["delegation_matrix"]["cdb-batch-merge-conductor"]["handoff_role"]
+        == "cdb_final_head_pr_approval_gate"
+    )
 
 
 def test_phases_and_blockcodes_parity_policy_schema_skill() -> None:
@@ -125,6 +136,7 @@ def test_phases_and_blockcodes_parity_policy_schema_skill() -> None:
     schema = _schema()
     text = _skill()
     assert policy["conductor_blockcodes"] == BLOCKCODES
+    assert policy["conductor_phases"] == PHASES
     phase_enum = schema["$defs"]["BatchMergeConductorResult"]["properties"]["phase"][
         "enum"
     ]
@@ -139,6 +151,9 @@ def test_phases_and_blockcodes_parity_policy_schema_skill() -> None:
     assert block_enum == BLOCKCODES
     assert "HOLD_SCOPE_OR_REVIEW" in text
     assert "HOLD_MAIN_OR_HEAD_DRIFT" in text
+    assert "merge_executed" not in schema["$defs"]["BatchMergeConductorResult"][
+        "properties"
+    ]
 
 
 def test_canonical_header_present() -> None:

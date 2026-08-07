@@ -2,12 +2,17 @@
 Canonical Skill Source: docs/skills/cdb-batch-merge-conductor/SKILL.md
 Surface: cursor
 Sync Status: mirrored-from-canon
-Last Verified: 2026-07-30
+Last Verified: 2026-08-08
 Drift Policy: Surface-Adapter duerfen nur mit dokumentierter Begruendung abweichen.
 -->
 ---
 name: cdb-batch-merge-conductor
-description: 'Orchestration skill that freezes a MERGE_CANDIDATE PR, integrates main, delegates final validation, publishes cdb-local-ci, and performs capability-based regular squash-merge. No separate human merge GO field; never --admin.'
+description: >
+  Final-Head Preparation Conductor for a MERGE_CANDIDATE PR. Freezes slices,
+  integrates main, binds final head/base, delegates Final Validation, publishes
+  or verifies App-bound cdb-local-ci (app_id=4410232), and hands off
+  FINAL_HEAD_READY_FOR_APPROVAL to cdb_final_head_pr_approval_gate. Does not
+  approve or merge. Never --admin.
 disable-model-invocation: true
 ---
 
@@ -16,11 +21,14 @@ disable-model-invocation: true
 ## Purpose
 
 Orchestration skill of the PR-Acceptance Skill Family v1. Own freeze, main
-integration, final head/base capture, delegation of final checks, required-status
-verification, regular squash-merge, and handoff to `cdb-session-close`.
+integration, final head/base capture, delegation of final checks, and
+required-status readiness for the Final-Head approval pipeline. Success ends at
+`FINAL_HEAD_READY_FOR_APPROVAL` with handoff to
+`cdb_final_head_pr_approval_gate` (Cursor display: PR Reviewer).
 
 Policy: `config/governance/pr-acceptance-policy.v1.yaml` (`cdb-pr-acceptance-v1`)
 Schema: `docs/contracts/pr_acceptance_skill_family.v1.schema.json`
+Pipeline contract: `docs/contracts/final_head_merge_pipeline.v1.md`
 Evidence marker: `<!-- cdb-pr-acceptance:v1 -->`
 
 ## Ownership
@@ -30,35 +38,44 @@ Evidence marker: `<!-- cdb-pr-acceptance:v1 -->`
 - Main-Integration
 - Final-Head- und Base-Erfassung
 - Delegation der finalen Prüfungen
-- Required-Status-Verifikation
-- regulärer Squash-Merge
-- Übergabe an `cdb-session-close`
+- Required-Status-Verifikation (`cdb-local-ci` App Check Run)
+- Handoff `FINAL_HEAD_READY_FOR_APPROVAL` → `cdb_final_head_pr_approval_gate`
+- Deferred closure ledger rows for later `cdb-session-close` (after Merge Agent)
 
 ## Does not own
 
+- GitHub APPROVE (`cdb_final_head_pr_approval_gate` only)
+- Regular merge execution (`cdb_final_head_merge_executor` only; that role runs
+  `gh pr merge --squash --delete-branch`)
+- Issue closure
 - eigene CI-Implementierung
 - eigene Review-Taxonomie
 - eigene Routing-Engine
 - eigene Gap-Klassifikation
 - eigene Evidence-Taxonomie
-- eigene Issue-Closeout-Logik
 
 ## Authorization contract
 
-- No separate Human-/Merge-GO micro-approval after an authorized Conductor phase.
+- No separate Human-/Merge-GO micro-approval field after an authorized Conductor
+  phase.
 - No field `human_merge_authorization`.
 - No status `BLOCKED_HUMAN_AUTHORITY`.
-- Merge remains capability-based: every gate in
-  `docs/runbooks/merge_policy_ci_gate.md` must be proven on the exact final head.
-- Missing technical capability → `DONE_PR_OPEN_MERGE_HANDOFF`, never `--admin`.
+- Conductor readiness is gate-based against
+  `docs/runbooks/merge_policy_ci_gate.md` for Final-Head / `cdb-local-ci`
+  readiness only — not merge execution authority.
+- Missing publisher/auth capability before handoff →
+  `DONE_PR_OPEN_MERGE_HANDOFF` (Final Head not ready), never `--admin`.
+- After successful Final-Head readiness, stop. Do not approve. Do not merge.
 
 ## Phases
 
-1. `FREEZE` — set acceptance lifecycle `FROZEN`; no further slices
+1. `FREEZE` — set acceptance lifecycle `FROZEN`; no further slices; reject new slices
 2. `MAIN_INTEGRATION` — integrate current `origin/main`; rebind head/base
 3. `FINAL_VALIDATION` — delegate Full Fast-CI, policy-gate mirror, `cdb-local-ci`
-4. `MERGE` — regular `gh pr merge <PR> --squash --delete-branch` only
-5. `HANDOFF_SESSION_CLOSE` — pass only `SLICE_DELIVERED` ledger rows to close
+4. `HANDOFF_APPROVAL` — emit `FINAL_HEAD_READY_FOR_APPROVAL` to
+   `cdb_final_head_pr_approval_gate`
+5. `HANDOFF_SESSION_CLOSE` — after Merge Agent live merge only, pass
+   `SLICE_DELIVERED` ledger rows to `cdb-session-close`
 
 Any conflict resolution, new commit, or semantic change after Completeness
 invalidates the old Completeness bundle and forces a fresh
@@ -68,20 +85,23 @@ invalidates the old Completeness bundle and forces a fresh
 
 1. Read current `MERGE_CANDIDATE` acceptance bundle.
 2. Verify live PR, reviews, locks, head, and base.
-3. Verify task scope and merge capability.
+3. Verify task scope and Final-Head preparation capability.
 4. Set acceptance state to `FROZEN`; reject new slices.
-5. Integrate current main.
+5. Integrate current main (`origin/main`).
 6. Recapture final head and base SHAs.
 7. On drift/semantic change: re-run Completeness Review.
 8. Re-check combined diff and closure claims.
 9. Delegate final validation path to existing skills (`cdb-ci-cd-guard`, etc.).
 10. Run Full Fast-CI once on the exact final head.
 11. Run local policy-gate mirror.
-12. Publish `cdb-local-ci` as an App-bound Check Run (`app_id=4410232`) on exactly that head.
-13. Re-check head, base, reviews, mergeability immediately before merge.
-14. Execute regular squash-merge only.
-15. Verify merge SHA, PR state, and main live.
-16. Hand only ledger rows with `SLICE_DELIVERED` to `cdb-session-close`.
+12. Publish or verify `cdb-local-ci` as an App-bound Check Run (`app_id=4410232`)
+    on exactly that head.
+13. Re-check head, base, reviews, and required Check Run immediately before
+    handoff.
+14. Set lifecycle to `FINAL_HEAD_READY_FOR_APPROVAL` and hand off to
+    `cdb_final_head_pr_approval_gate`. Do not approve. Do not merge.
+15. When Merge Agent has live-verified MERGED, hand only ledger rows with
+    `SLICE_DELIVERED` to `cdb-session-close`.
 
 ## Block codes
 
@@ -90,23 +110,27 @@ invalidates the old Completeness bundle and forces a fresh
 - `BLOCKED_LOCAL_VALIDATION`
 - `BLOCKED_REQUIRED_STATUS`
 - `BLOCKED_AUTH_PUBLISHER`
-- `BLOCKED_MERGE_METHOD`
+- `BLOCKED_MERGE_METHOD` (observed merge-method conflict during readiness; Conductor still does not merge)
 - `BLOCKED_ISSUE_CLOSEOUT`
 
-Missing technical capability maps to `DONE_PR_OPEN_MERGE_HANDOFF`.
+Missing technical capability for Final-Head readiness maps to
+`DONE_PR_OPEN_MERGE_HANDOFF`.
 
 ## Forbidden
 
 - `--admin`
 - Fake-Green
 - stale slice evidence as final evidence
-- merge retry without a new hypothesis
+- approve or merge from this skill
+- merge retry loops (merge is not owned here)
 - closing undelivered issues
 - reviving a remote branch after merge
 - inventing `human_merge_authorization` or `BLOCKED_HUMAN_AUTHORITY`
 - opening a post-merge `CURRENT_STATUS-only` / `ledger-only` Nachlauf-PR
   after squash-merge (Issue `#4218`); ledger/status lines belong
   **vor dem Freeze** in this PR or later in a `docs-governance` batch
+- capability-based autonomous merge that bypasses
+  PR Reviewer → Merge Agent
 
 ## Required envelope fields
 
@@ -123,10 +147,20 @@ Common envelope:
 - `lifecycle`, `decision`, `findings`, `evidence`, `limitations`, `handoff`
 - `result.phase`
 - `result.block_codes`
-- `result.merge_executed` (optional boolean)
-- `result.closure_eligible_issues` (optional issue numbers)
+- `result.final_head_ready` (optional boolean)
+- `result.success_decision` — `FINAL_HEAD_READY_FOR_APPROVAL` when ready
+- `result.handoff_role` — `cdb_final_head_pr_approval_gate`
+- `result.closure_eligible_issues` (optional issue numbers; close only after merge)
 
 ## Handoff
 
-After live-verified merge, hand `SLICE_DELIVERED` closure-eligible issues to
-`cdb-session-close`. Do not close undelivered ledger rows.
+On Final-Head readiness:
+
+```text
+decision: FINAL_HEAD_READY_FOR_APPROVAL
+next_role: cdb_final_head_pr_approval_gate
+```
+
+After Merge Agent live-verified merge, hand `SLICE_DELIVERED`
+closure-eligible issues to `cdb-session-close`. Do not close undelivered ledger
+rows. Do not close issues from the Conductor itself.

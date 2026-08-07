@@ -2,9 +2,9 @@
   "adapter_id": "cursor-approval-dashboard",
   "baseline_id": "approval-dashboard-export.redacted.v1",
   "capability_fingerprint": "sha256:e95ccd3ca7e0e7aa22e878c4f65f8e33e752aadfffcbd36c28f7a2b2402c8f0b",
-  "expected_policy_content_sha256": "sha256:2597528b687b901cad20791371b884a18cd8c1b693c801cbb111a8773eff0472",
+  "expected_policy_content_sha256": "sha256:3f9e2438de7f46215a880618b5d155bdac16cd49f4ff831dcbcbf46551f79aa6",
   "expected_policy_version": "1.0.0",
-  "expected_prompt_content_sha256": "sha256:a59c8d22a802ebe4894702be3873f31e5f3f58126d4f2ecb908f00ea971f3c21",
+  "expected_prompt_content_sha256": "sha256:83c1c9469eb23f3d28e9b2309a45a64ef04d70cd1daaa45ac875ca8be4d2814e",
   "expected_prompt_version": "1.0.0",
   "limitations": [
     "redacted export only",

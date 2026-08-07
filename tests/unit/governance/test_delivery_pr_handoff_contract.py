@@ -119,8 +119,15 @@ def test_acceptance_and_merge_skills_stay_available_on_every_surface() -> None:
             assert path.is_file(), template.format(name=name)
     conductor = _read("docs/skills/cdb-batch-merge-conductor/SKILL.md")
     completeness = _read("docs/skills/cdb-pr-completeness-review/SKILL.md")
+    pipeline = _read("docs/contracts/final_head_merge_pipeline.v1.md")
     assert "MERGE_CANDIDATE" in completeness
-    assert "--squash --delete-branch" in conductor
+    assert "FINAL_HEAD_READY_FOR_APPROVAL" in conductor
+    assert "cdb_final_head_merge_executor" in pipeline
+    assert "--squash --delete-branch" in pipeline or (
+        "gh pr merge" in pipeline and "squash" in pipeline
+    )
+    # Conductor must not own merge execution
+    assert "Execute regular squash-merge" not in conductor
 
 
 def test_root_pointer_states_the_delivery_merge_separation() -> None:

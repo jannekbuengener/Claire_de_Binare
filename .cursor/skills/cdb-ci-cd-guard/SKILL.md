@@ -2,7 +2,7 @@
 Canonical Skill Source: docs/skills/cdb-ci-cd-guard/SKILL.md
 Surface: cursor
 Sync Status: mirrored-from-canon
-Last Verified: 2026-07-30
+Last Verified: 2026-08-08
 Drift Policy: Surface-Adapter duerfen nur mit dokumentierter Begruendung abweichen.
 -->
 ---
@@ -37,14 +37,17 @@ disable-model-invocation: true
 - No silent stub or mock path on protected refs.
 - Missing critical secrets on protected refs must fail closed.
 - Without explicit approval, default to audit plus fix plan rather than mutation.
-- The sole live merge-relevant required context is `cdb-local-ci` (an App-bound Check Run
-  Status, not a Check Run). Verify live with `gh api`; do not hardcode a
+- The sole live merge-relevant required context is `cdb-local-ci`, an
+  App-bound **Check Run** (`app_id=4410232`), not a Commit Status. Verify
+  live with `gh api` on `/commits/<sha>/check-runs`; do not hardcode a
   required-checks list from memory. Hosted Actions check-runs are
   advisory/safety-relevant only (migration #4169).
-- Autonomous squash merge is capability-based (see
-  `docs/runbooks/merge_policy_ci_gate.md` § Capability-based autonomous
-  merge), not agent-type-based. `--admin` is never a valid bypass for a
-  missing/red `cdb-local-ci`.
+- This skill validates and helps publish Final-Head CI evidence. It does
+  **not** own approval or merge. Regular merge is owned only by
+  `cdb_final_head_merge_executor` after HEAD-bound APPROVE from
+  `cdb_final_head_pr_approval_gate` (see
+  `docs/contracts/final_head_merge_pipeline.v1.md`). `--admin` is never a
+  valid bypass for a missing/red `cdb-local-ci`.
 - CI PASS / green Hosted Actions does **not** authorize blind local post-merge
   cleanup. After `--delete-branch`, remote absence is expected; local
   worktree/branch removal remains evidence-based
@@ -101,4 +104,7 @@ This skill audits CI/CD tooling with external documentation dependencies:
 - Slice-Validation ist **kein** Ersatz für Final-Head-Evidence.
 
 Check Runs und Commit Status sind getrennte GitHub-Typen. Ein namensgleicher
-Check Run erfüllt den Required Commit Status nicht.
+**Commit Status** erfüllt den required App Check Run `cdb-local-ci`
+(`app_id=4410232`) nicht. Cloud Approval/Merge agents only consume the
+published Check Run; they do not fabricate local CI. Slice Validation never
+becomes Final-Head Evidence.

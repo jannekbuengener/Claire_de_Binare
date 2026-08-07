@@ -2,7 +2,7 @@
 Canonical Skill Source: docs/skills/cdb-session-start/SKILL.md
 Surface: cursor
 Sync Status: mirrored-from-canon
-Last Verified: 2026-07-30
+Last Verified: 2026-08-08
 Drift Policy: Surface-Adapter duerfen nur mit dokumentierter Begruendung abweichen.
 -->
 ---
@@ -191,14 +191,14 @@ Establish a verified, fail-closed starting state before any repo work begins.
    - Expected close state named up front: `DONE_SLICE_ADDED_TO_BATCH_PR`. A
      delivery session ends when the issue is delivered into the routed PR;
      PR and issue both stay open.
-   - A delivery session never plans a merge, a full final-head Fast-CI, a
-     `cdb-local-ci` publish, an acceptance-chain run
+   - A delivery session never plans a merge, approve, a full final-head
+     Fast-CI, a `cdb-local-ci` publish, an acceptance-chain run
      (`cdb-integration-wiring-audit`, `cdb-pr-gap-classifier`,
      `cdb-pr-completeness-review`, `cdb-batch-merge-conductor`), or an issue
-     closure. Those belong to a separately started merge session, where the
-     capability gate in `docs/runbooks/merge_policy_ci_gate.md`
-     § Capability-based autonomous merge is evaluated and a missing capability
-     maps to `DONE_PR_OPEN_MERGE_HANDOFF`.
+     closure.      Those belong to a separately started merge session covering Final-Head
+     prep, Approval, and Merge Agent per
+     `docs/contracts/final_head_merge_pipeline.v1.md`. Cloud
+     Reviewer/Merger are repo-only and must not require local `cdb_context`.
 
 ## Fail-Closed Rules
 
@@ -272,8 +272,9 @@ If no internet/browsing is available, report `EXTERNAL_DOCS_UNVERIFIED` instead 
 - Do not start work on a dirty worktree without identifying the changes.
 - Do not use `git add .` at any point during session start.
 - Do not mark the gate as `go` when any of the fail-closed conditions is unresolved.
-- Do not invent reviewer, approver, or merge-authority roles; this is a
-  solo-maintainer repo.
+- Do not invent ad-hoc reviewer chains. The only Final-Head approval/merge
+  role ids are `cdb_final_head_pr_approval_gate` and
+  `cdb_final_head_merge_executor`.
 - Do not treat repo presence of MCP files, registry entries, or `tools/mcp/server.py`
   as proof that a tool is callable through the active MCP surface.
 

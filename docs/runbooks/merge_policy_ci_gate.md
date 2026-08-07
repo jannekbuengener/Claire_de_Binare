@@ -24,9 +24,13 @@ Transport-`steward_state=merge_candidate` startet die Acceptance-Phase
 `COMPLETENESS_REVIEW` (`cdb-pr-completeness-review`). Nur ein schema-valides
 Completeness-Verdikt `MERGE_CANDIDATE` darf in die Conductor-Phase
 (`cdb-batch-merge-conductor`: Freeze → Main-Integration → Final Validation →
-regulärer Squash-Merge). Slice-Evidence darf nie als Final-Head-Evidence
-wiederverwendet werden. Der finale Nachweis bindet sowohl PR-Head als auch den
-integrierten Base-SHA. Head-/Base-Drift erzwingt erneute Completeness Review.
+`FINAL_HEAD_READY_FOR_APPROVAL`). Conductor mergt nicht. Danach folgen
+HEAD-gebundenes APPROVE durch `cdb_final_head_pr_approval_gate` und regulärer
+Merge durch `cdb_final_head_merge_executor`
+(SSOT: `docs/contracts/final_head_merge_pipeline.v1.md`). Slice-Evidence darf
+nie als Final-Head-Evidence wiederverwendet werden. Der finale Nachweis bindet
+sowohl PR-Head als auch den integrierten Base-SHA. Head-/Base-Drift erzwingt
+erneute Completeness Review und invalidiert Approval.
 
 ## Verbindlicher Vertrag
 
@@ -100,41 +104,41 @@ prüfen, erzeugt selbst aber keinen merge-relevanten Ersatzcheck.
 4. Publisher-Evidence und Policy-Mirror-Fail prüfen.
 5. Erst nach erfolgreichem aktuellem App-Check-Run `cdb-local-ci` mergen.
 
-## Capability-based Autonomous Merge
+## Final-Head Approval and Merge Pipeline
 
-Autonomous squash merge is **capability-based, not agent-type-based**. Any
-session (local or cloud) may autonomously run
-`gh pr merge <PR> --squash --delete-branch` once all of the following are
-proven true for the exact PR head SHA:
+There is exactly one canonical final merge executor:
+`cdb_final_head_merge_executor` (Cursor display: Merge Agent).
+Capability alone does **not** authorize any session to bypass
+PR Reviewer → Merge Agent.
 
-1. PR is a frozen `merge_candidate` and
-   `autonomous_regular_merge_allowed` applies to this task scope.
-2. PR fully in approved scope, not draft, mergeable.
-3. No blocking reviews / unresolved scope or governance blockers.
-4. Full local Fast-CI PASS for the exact PR head.
-5. Evidence bound to the exact PR head (no stale/other-SHA evidence).
-6. Validated `main` unchanged since validation (no drift since evidence).
-7. `cdb-local-ci` SUCCESS as App Check Run (`app_id=4410232`) on the exact
-   PR head SHA (live via `gh api`). Same-named Commit Status is not enough.
-8. The session can perform the regular squash merge itself (has merge
-   permission) and can publish `cdb-local-ci` via `--publisher-backend
-   check-run` / App auto-mint if it is still missing and the session holds
-   bound evidence to do so.
+Required sequence after Completeness `MERGE_CANDIDATE`:
+
+1. `cdb-batch-merge-conductor` prepares Final Head (freeze, integrate main,
+   Full Fast-CI, publish/verify App Check Run `cdb-local-ci` /
+   `app_id=4410232`) and stops at `FINAL_HEAD_READY_FOR_APPROVAL`.
+2. `cdb_final_head_pr_approval_gate` (PR Reviewer) issues GitHub APPROVE
+   bound to the exact final `HEAD_SHA` (Risk LOW, no blockers). Cannot merge.
+3. `cdb_final_head_merge_executor` re-verifies approval HEAD binding, drift,
+   required Check Run, reviews, and mergeability, then runs
+   `gh pr merge <PR> --squash --delete-branch`. Cannot approve. Never `--admin`.
+4. `cdb-session-close` verifies live MERGED and closes only eligible
+   `SLICE_DELIVERED` issues.
+
+Cloud Reviewer/Merger are repo-only; they consume published Check Run
+evidence and must not require local `cdb_context` or fabricate CI.
 
 `--admin` is **never** a bypass for a missing/red/stale `cdb-local-ci`.
 Fake-green claims and merging an untested head are forbidden.
 
-### Honest handoff when capability is missing
+### Honest handoff when Final-Head readiness is missing
 
-If a session lacks any gate above (no App Check Run publish capability,
-no verifiable identity, evidence not bound to the exact head, publisher
-auth blocked):
+If Conductor cannot publish/verify `cdb-local-ci` or Final-Head gates fail:
 leave the PR open, do not use `--admin`, do not loop the same blocked
 attempt, and report `DONE_PR_OPEN_MERGE_HANDOFF` with the exact missing
-capability and the next command for a capable session/human. See
-`.cursor/rules/CDB-Checks-and-Merge-Rule.mdc` for the full status taxonomy
-(`DONE_MERGED_CLOSED`, `DONE_PR_OPEN_MERGE_HANDOFF`, `BLOCKED_REQUIRED_STATUS`,
-`BLOCKED_AUTH_PUBLISHER`, `HOLD_SCOPE_OR_REVIEW`, `HOLD_MAIN_OR_HEAD_DRIFT`).
+capability. See `.cursor/rules/CDB-Checks-and-Merge-Rule.mdc` for the status
+taxonomy (`DONE_MERGED_CLOSED`, `DONE_PR_OPEN_MERGE_HANDOFF`,
+`BLOCKED_REQUIRED_STATUS`, `BLOCKED_AUTH_PUBLISHER`, `HOLD_SCOPE_OR_REVIEW`,
+`HOLD_MAIN_OR_HEAD_DRIFT`).
 
 ### Auth token override for the publisher
 

@@ -9,21 +9,21 @@ Lokale, Docker-fähige CI-Ausführungsschicht für Claire_de_Binare.
   Status-Publisher (`ci/publisher/`) den Required App Check Run `cdb-local-ci`
   (`app_id=4410232`, `--publisher-backend check-run`).
   Siehe [docs/ci/local-status-publisher.md](../docs/ci/local-status-publisher.md).
-- **#4170 Phase A:** Explizites Check-Run-Backend
-  (`--publisher-backend check-run`) ist code-ready; Branch Protection und der
-  Default-Pfad bleiben Commit Status bis zum externen Cutover.
+- **#4170 Phase D (live):** Default publisher path is App-bound Check Run
+  (`--publisher-backend check-run`, `app_id=4410232`). Commit Status remains
+  legacy/debug only and does **not** satisfy Branch Protection.
   Siehe [docs/runbooks/cdb_local_ci_app_check_run_cutover.md](../docs/runbooks/cdb_local_ci_app_check_run_cutover.md).
-- Lokale Evidence allein autorisiert keinen Merge; der published Status
+- Lokale Evidence allein autorisiert keinen Merge; der published App Check Run
   `cdb-local-ci` ist der live Required Context.
 - `policy-gate.yml` bleibt als Workflow-Safety-Gate; der lokale Mirror
   (`tools/ci/policy_gate_local.py`) ist Publish-Pflicht für `cdb-local-ci`.
 - Lokales CodeQL/SARIF ersetzt **nicht** den GitHub Security-Tab.
 - LR bleibt **NO-GO**. Kein BLUE/RED als Default-CI. Kein GHCR-Push.
-- Autonomous merge is capability-based (any session, not agent-type-based):
-  see [`docs/runbooks/merge_policy_ci_gate.md`](../docs/runbooks/merge_policy_ci_gate.md)
-  § Capability-based Autonomous Merge. `cdb-local-ci` SUCCESS on the exact PR
-  head SHA is the required merge context; missing capability → honest
-  `DONE_PR_OPEN_MERGE_HANDOFF`, never `--admin`.
+- Merge follows Final-Head → PR Reviewer → Merge Agent
+  ([`docs/contracts/final_head_merge_pipeline.v1.md`](../docs/contracts/final_head_merge_pipeline.v1.md)).
+  `cdb-local-ci` SUCCESS on the exact PR head SHA is required Final-Head
+  evidence; missing readiness → honest `DONE_PR_OPEN_MERGE_HANDOFF`, never
+  `--admin`.
 
 ## Preferred Windows front door
 
@@ -187,7 +187,7 @@ GitHub Actions (ci.yml job ci):
   checkout/setup/pip/surreal → python ci/scripts/run.py --profile fast
 
 optional:
-pwsh/make → ci.publisher → GitHub Commit Status (exact SHA; fail-closed)
+pwsh/make → ci.publisher → GitHub App Check Run `cdb-local-ci` (exact SHA; fail-closed)
 ```
 
 GitHub status writes are `gh api` only. Direct Python HTTP writes are forbidden;

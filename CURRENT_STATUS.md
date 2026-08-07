@@ -3,38 +3,32 @@
 **Status Class**: Claire de Binare repository / Engineering Status
 **Authority**: Current repo/main/test/dependency snapshot; not the canonical live-readiness or Echtgeld Go/No-Go source.
 **Operational Canon**: `docs/live-readiness/LR-AUDIT-STATUS-2026-03-05.md`
-<!-- cdb:status-freshness header-date=2026-08-06 -->
-**Last Updated**: 2026-08-06
+<!-- cdb:status-freshness header-date=2026-08-08 -->
+**Last Updated**: 2026-08-08
 **GitHub Boundary**: The live commit and PR state is tracked in GitHub (UI/API or `gh`); this file is a curated repo/engineering ledger, not a live mirror.
 **Freshness Guard**: Only the newest dated block below is a live claim. Everything from the previous dated block onward is marked `historical as of` and is append-only. Marker convention: [`docs/meta/REPOSITORY_CANON.md`](docs/meta/REPOSITORY_CANON.md); validator: `python -m tools.validate_status_freshness`.
 
 ---
 
-## Repo / Engineering Status (2026-08-06)
+## Repo / Engineering Status (2026-08-08)
 
-<!-- cdb:live-claim type=main_sha value=43401302 -->
-- **Confirmed main state**: `origin/main` @ `43401302` — tip after Hermes app mint/write-path verify squash-merge [#4344](https://github.com/jannekbuengener/Claire_de_Binare/pull/4344) (supersedes Security Backlog tip `312d12e0` and ACP foundation tip `abf997d5`).
+<!-- cdb:live-claim type=main_sha value=6fcc8afc -->
+- **Confirmed main state**: `origin/main` @ `6fcc8afcead23f42ce13259bc3fab916ea43f0a2` — tip after [#4407](https://github.com/jannekbuengener/Claire_de_Binare/pull/4407) campaign_summary persistence (supersedes prior ledger tip `43401302`).
 
-<!-- cdb:live-claim type=issue_state issue=4258 state=closed -->
-<!-- cdb:live-claim type=issue_state issue=4257 state=closed -->
-<!-- cdb:live-claim type=issue_state issue=4289 state=closed -->
-<!-- cdb:live-claim type=issue_state issue=2513 state=open -->
-- **#2513 Security backlog reconciliation**: **DONE_MERGED_CLOSED** via PR [#4303](https://github.com/jannekbuengener/Claire_de_Binare/pull/4303) @ `312d12e0` (meta issue stays open as canonical tracker). Remaining open `type:security` issues are **Upstream HOLDs** — parked until suite-native `FixedVersion` evidence; no remediation slice without live FixedVersion. Duplicate/pip trackers closed post-merge. LR **NO-GO** unchanged.
+<!-- cdb:live-claim type=issue_state issue=4411 state=open -->
+- **#4411 Final-Head PR Reviewer → Merge Agent skill reconciliation**: Delivery slice on `batch/agent-skills-issue-4411` — governance/skills/policies aligned to Completeness → Conductor Final-Head prep → Cloud PR Reviewer APPROVE → Merge Agent → session-close. PR left open for Approval/Merge pipeline (no self-merge). LR **NO-GO** unchanged.
 
-- **#4258 Live Cursor Pilot / ACP E2E**: **CLOSED** (live GitHub `2026-08-06`). Delivery PR [#4302](https://github.com/jannekbuengener/Claire_de_Binare/pull/4302) / foundation PR [#4301](https://github.com/jannekbuengener/Claire_de_Binare/pull/4301) remain historical delivery evidence; no further Cursor create without a new Human-GO. LR **NO-GO** unchanged.
-
-- **#4289 Hermes**: **CLOSED** after live mint/write-path verify via PR [#4344](https://github.com/jannekbuengener/Claire_de_Binare/pull/4344) @ `43401302`. LR **NO-GO** unchanged.
-
-- **#4257 PR Approval Context**: **DONE_MERGED_CLOSED** via PR [#4300](https://github.com/jannekbuengener/Claire_de_Binare/pull/4300) @ `a4cfb8a8`. LR **NO-GO** unchanged.
-
-- **#4258 ACP E2E Pilot Foundation (mock-first)**: **DONE_MERGED_CLOSED** via PR [#4301](https://github.com/jannekbuengener/Claire_de_Binare/pull/4301) @ `abf997d5`. Issue `#4258` is **CLOSED**. LR **NO-GO** unchanged.
-
-<!-- cdb:historical-as-of date=2026-08-02 -->
-> Historical as of 2026-08-02 — append-only ledger. Entries below record the
+<!-- cdb:historical-as-of date=2026-08-06 -->
+> Historical as of 2026-08-06 — append-only ledger. Entries below record the
 > state at their own date and are intentionally not rewritten when reality
 > moves on. They are exempt from live freshness verification.
 
-> Note: older 2026-08-03 lines that claimed tip `312d12e0` / `abf997d5` / `a4cfb8a8` or `#4289` still open are superseded by the live tip claim above (`43401302`) and `#4289` closed.
+## Repo / Engineering Status (2026-08-06)
+
+- **Confirmed main state (historical)**: previously claimed `origin/main` @ `43401302` after Hermes [#4344](https://github.com/jannekbuengener/Claire_de_Binare/pull/4344); superseded by live tip `6fcc8afc` on 2026-08-08.
+- **#2513 / #4257 / #4258 / #4289**: historical closed/open claims from 2026-08-06 remain append-only evidence; see prior session logs. LR **NO-GO** unchanged.
+
+> Note: older 2026-08-03 lines that claimed tip `312d12e0` / `abf997d5` / `a4cfb8a8` or `#4289` still open are superseded by later tips.
 
 ## Repo / Engineering Status (2026-08-02)
 

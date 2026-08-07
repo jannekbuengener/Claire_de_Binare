@@ -2,7 +2,7 @@
 Canonical Skill Source: docs/skills/cdb-session-close/SKILL.md
 Surface: claude
 Sync Status: mirrored-from-canon
-Last Verified: 2026-07-30
+Last Verified: 2026-08-08
 Drift Policy: Surface-Adapter duerfen nur mit dokumentierter Begruendung abweichen.
 -->
 ---
@@ -84,15 +84,19 @@ Close a working session so the repo, git state, and issue thread reflect reality
      start the acceptance chain (`cdb-integration-wiring-audit`,
      `cdb-pr-gap-classifier`, `cdb-pr-completeness-review`,
      `cdb-batch-merge-conductor`).
-   - Merge outcomes below apply only to a separately started merge session.
-     If a PR was merged during this session, proceed to step 6. If no PR
-     exists: skip steps 6–7. If the PR is still open because that merge
-     session could not prove the autonomous-merge capability gate (missing
-     `statuses:write`, unbound evidence, auth/publisher block): record
-     `DONE_PR_OPEN_MERGE_HANDOFF` with the exact missing capability and
-     skip steps 6–7. Do not use `--admin` and do not loop retries.
-6. Verify remote merge delivery — only when a PR was merged in this session
-   (or when closing after a known merge of this session's PR):
+   - Merge outcomes below apply to a separately started merge session.
+     Merge may have been executed asynchronously by
+     `cdb_final_head_merge_executor` (Merge Agent) rather than by this
+     working session. Session Close verifies live delivery; it must not
+     require the implementation session itself to have executed the merge.
+   - If a PR is live MERGED (by Merge Agent or otherwise), proceed to step 6.
+     If no PR exists: skip steps 6–7. If the PR is still open awaiting
+     Final-Head readiness, APPROVE, or Merge Agent execution: record the
+     honest handoff status (`FINAL_HEAD_READY_FOR_APPROVAL`,
+     `DONE_PR_OPEN_MERGE_HANDOFF`, or waiting-for-Merge-Agent) and skip
+     steps 6–7. Do not use `--admin` and do not loop retries.
+6. Verify remote merge delivery — when the PR is live MERGED (including
+   merges executed asynchronously by the Merge Agent):
 
    ```bash
    git fetch origin --prune
@@ -284,7 +288,10 @@ Close a working session so the repo, git state, and issue thread reflect reality
 - Use `bereit fuer Claude Code` only when there is a concrete handoff reason that another agent should continue from.
 - Use `erledigt` only when the issue-facing work is actually verified and the claimed git or GitHub state is real.
 - Do not imply LR uplift, live approval, or a Board-stage interpretation from a successful session close.
-- Respect solo-maintainer reality; do not invent reviewer, approver, or handoff ceremonies.
+- Respect solo-maintainer reality; do not invent ad-hoc reviewer chains.
+  Canonical Cloud roles `cdb_final_head_pr_approval_gate` and
+  `cdb_final_head_merge_executor` are required Final-Head pipeline roles
+  (see `docs/contracts/final_head_merge_pipeline.v1.md`).
 - Do not auto-start more than one follow-up issue per session close (step 8
   auto-start hop). Step 9 may create or link **multiple deduplicated** residual
   follow-up issues when rest points are independent.
@@ -562,8 +569,9 @@ Pflicht sind targeted Tests, betroffener Lint/Format-Scope, `git diff --check`,
 Commit, Push, PR-Ledger-Update, Issue-Handoff und dokumentierte
 Restunsicherheit. Der Issue bleibt bis zum verifizierten Merge offen.
 
-Nur nach schema-validem Completeness-Verdikt `MERGE_CANDIDATE` von
-`cdb-pr-completeness-review` und Conductor-Freeze (`cdb-batch-merge-conductor`)
-wechselt der PR in den separaten Merge-Steward-Flow mit Full Fast-CI und
-`cdb-local-ci` auf exakt dem finalen Head. Schließe nur Ledger-Zeilen mit
+Nur nach schema-validem Completeness-Verdikt `MERGE_CANDIDATE`, Conductor
+Final-Head Preparation (`FINAL_HEAD_READY_FOR_APPROVAL`), HEAD-bound APPROVE
+durch `cdb_final_head_pr_approval_gate` und regular merge durch
+`cdb_final_head_merge_executor` gilt der PR als live MERGED. Session Close
+verifiziert diesen Zustand und schließt nur Ledger-Zeilen mit
 `SLICE_DELIVERED`.

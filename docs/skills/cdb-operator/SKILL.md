@@ -1,6 +1,6 @@
 ---
 name: cdb-operator
-description: Enforces Claire de Binare operator workflow with router-first slice delivery as the default. Merge is a separate mode only for a frozen merge_candidate after the final integrated head/base capability gate is proven; otherwise honest DONE_PR_OPEN_MERGE_HANDOFF, never --admin.
+description: Enforces Claire de Binare operator workflow with router-first slice delivery as the default. Final-Head prep, Cloud PR Reviewer APPROVE, and Merge Agent regular merge are separate phases; delivery never merges; never --admin.
 compatibility: opencode
 metadata:
   project: claire-de-binare
@@ -25,18 +25,11 @@ Use this skill when working on Claire_de_Binare with OpenCode.
 7. Produce only Lage, Befund, Plan, Dry-Run, Validierung, Restunsicherheiten.
 8. Do not write, commit, push, comment, label, or close without explicit human GO.
 9. Delivery is the default after Plan-GO: route first, deliver the scoped slice,
-   update ledger and Issue handoff, then stop without merge or Issue closure.
-   A squash merge (`gh pr merge <PR> --squash --delete-branch`) is considered
-   only in a separately authorized Merge Mode after the PR is frozen as
-   `merge_candidate` and every capability gate in
-   `docs/runbooks/merge_policy_ci_gate.md` § Capability-based autonomous
-   merge is proven for the exact final PR head (task explicitly allows merge, PR
-   in scope/mergeable/no blocking reviews, local Fast-CI PASS bound to head,
-   main unchanged since validation, `cdb-local-ci` SUCCESS on exact head,
-   session can perform the merge). `--admin` is never a substitute for a
-   missing `cdb-local-ci`. If any gate is unproven: report
-   `DONE_PR_OPEN_MERGE_HANDOFF` with the exact missing capability; do not
-   loop or force.
+   update ledger and Issue handoff, then stop without merge, approve, or Issue
+   closure. Regular merge is never a Delivery Mode action and must not bypass
+   the Final-Head pipeline in
+   `docs/contracts/final_head_merge_pipeline.v1.md`.
+   `--admin` is never a substitute for a missing `cdb-local-ci`.
 10. After a live-verified merge, local post-merge cleanup is
     evidence-based only (`cdb-session-close` § Safe Post-Merge Cleanup):
     never discard unsaved changes, never `branch -D` without tree/patch
@@ -46,28 +39,31 @@ Use this skill when working on Claire_de_Binare with OpenCode.
 ## Stop conditions
 
 Stop immediately on missing bootloader, unclear scope, unexpected diff, failed
-targeted slice validation, or scope growth. In Merge Mode also stop on red
-`cdb-local-ci` for the exact final head (the sole required merge context;
-Hosted Actions red is advisory) or any unproven merge capability. Also stop on
-live-readiness/echtgeld implication, or a cleanup request that would
-discard unsaved/unmerged local work.
+targeted slice validation, or scope growth. In Final-Head preparation also stop
+on red `cdb-local-ci` for the exact final head (the sole required merge
+context; Hosted Actions red is advisory). Delivery sessions must not attempt
+merge. Also stop on live-readiness/echtgeld implication, or a cleanup request
+that would discard unsaved/unmerged local work.
 
-## Delivery Mode versus Merge Mode
+## Delivery versus Final-Head pipeline
 
 - **Delivery Mode:** Router ausführen, Slice in den zugewiesenen PR liefern,
-  targeted Validation, Ledger-/Issue-Handoff, kein Merge.
-- **Acceptance gate (required before Merge Mode):** run
-  `cdb-pr-completeness-review` (eight dimensions; delegates wiring audit,
-  gap classifier, gatekeeper, test-first, shadow-validation, CI guard,
-  drift-reconcile). Only a schema-valid `MERGE_CANDIDATE` verdict may enter
-  Merge Mode. Do not bypass Completeness via a direct merge path.
-- **Merge Mode:** only after Completeness `MERGE_CANDIDATE`; orchestrate via
-  `cdb-batch-merge-conductor` (freeze → main integrate → Full Fast-CI →
-  exact-SHA `cdb-local-ci` → regular squash-merge). No
-  `human_merge_authorization` field; capability gates still required; never
-  `--admin`.
+  targeted Validation, Ledger-/Issue-Handoff, kein Approve, kein Merge.
+- **Acceptance gate:** run `cdb-pr-completeness-review`. Only a schema-valid
+  `MERGE_CANDIDATE` may enter Final-Head preparation. `MERGE_CANDIDATE` alone
+  never authorizes approve or merge.
+- **Final-Head Preparation:** `cdb-batch-merge-conductor` freezes, integrates
+  main, runs Full Fast-CI, publishes/verifies exact-SHA App Check Run
+  `cdb-local-ci` (`app_id=4410232`), and stops at
+  `FINAL_HEAD_READY_FOR_APPROVAL`. Conductor does not approve or merge.
+- **Approval:** `cdb_final_head_pr_approval_gate` (PR Reviewer) issues GitHub
+  APPROVE bound to the exact final `HEAD_SHA`. Cannot merge.
+- **Merge execution:** `cdb_final_head_merge_executor` (Merge Agent) runs
+  regular `gh pr merge <PR> --squash --delete-branch` after re-verify. Cannot
+  approve. Never `--admin`.
+- **Close:** `cdb-session-close` verifies live MERGED (may be async).
 
-Ein Merge-Trigger ist kein Human-GO und keine Merge-Autorisierung. Head- oder
-Base-Drift invalidiert die Final-Evidence und erzwingt erneute Completeness
-Review.
+Ein Merge-Trigger ist kein Approval und keine Merge-Autorisierung. Head- oder
+Base-Drift invalidiert Final-Evidence und Approval und erzwingt erneute
+Completeness Review.
 

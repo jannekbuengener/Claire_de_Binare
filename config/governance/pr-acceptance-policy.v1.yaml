@@ -17,6 +17,7 @@
       "MERGE_CANDIDATE",
       "FROZEN",
       "FINAL_VALIDATION",
+      "FINAL_HEAD_READY_FOR_APPROVAL",
       "MERGED",
       "BLOCKED"
     ],
@@ -54,7 +55,7 @@
         "BLOCKED"
       ],
       "FINAL_VALIDATION": [
-        "MERGED",
+        "FINAL_HEAD_READY_FOR_APPROVAL",
         "FROZEN",
         "COMPLETENESS_REVIEW",
         "BLOCKED"
@@ -64,16 +65,18 @@
         "ACCEPTING_SLICES",
         "SLICE_IN_REVIEW",
         "COMPLETENESS_REVIEW"
+      ],
+      "FINAL_HEAD_READY_FOR_APPROVAL": [
+        "MERGED",
+        "FINAL_VALIDATION",
+        "COMPLETENESS_REVIEW",
+        "BLOCKED"
       ]
     },
     "forbidden_transitions": [
       [
         "ACCEPTING_SLICES",
-        "MERGE_CANDIDATE"
-      ],
-      [
-        "ACCEPTING_SLICES",
-        "FROZEN"
+        "FINAL_HEAD_READY_FOR_APPROVAL"
       ],
       [
         "ACCEPTING_SLICES",
@@ -81,34 +84,46 @@
       ],
       [
         "ACCEPTING_SLICES",
+        "FROZEN"
+      ],
+      [
+        "ACCEPTING_SLICES",
         "MERGED"
       ],
       [
-        "SLICE_IN_REVIEW",
+        "ACCEPTING_SLICES",
         "MERGE_CANDIDATE"
       ],
       [
-        "SLICE_IN_REVIEW",
-        "FROZEN"
+        "COMPLETENESS_REVIEW",
+        "FINAL_HEAD_READY_FOR_APPROVAL"
       ],
       [
-        "SLICE_IN_REVIEW",
+        "COMPLETENESS_REVIEW",
         "FINAL_VALIDATION"
       ],
       [
-        "SLICE_IN_REVIEW",
+        "COMPLETENESS_REVIEW",
+        "FROZEN"
+      ],
+      [
+        "COMPLETENESS_REVIEW",
         "MERGED"
       ],
       [
-        "COMPLETENESS_REVIEW",
-        "FROZEN"
+        "EXTENSION_REQUIRED",
+        "FINAL_HEAD_READY_FOR_APPROVAL"
       ],
       [
-        "COMPLETENESS_REVIEW",
+        "EXTENSION_REQUIRED",
         "FINAL_VALIDATION"
       ],
       [
-        "COMPLETENESS_REVIEW",
+        "EXTENSION_REQUIRED",
+        "FROZEN"
+      ],
+      [
+        "EXTENSION_REQUIRED",
         "MERGED"
       ],
       [
@@ -116,48 +131,44 @@
         "MERGE_CANDIDATE"
       ],
       [
-        "EXTENSION_REQUIRED",
-        "FROZEN"
-      ],
-      [
-        "EXTENSION_REQUIRED",
-        "FINAL_VALIDATION"
-      ],
-      [
-        "EXTENSION_REQUIRED",
-        "MERGED"
-      ],
-      [
-        "MERGE_CANDIDATE",
+        "FINAL_HEAD_READY_FOR_APPROVAL",
         "ACCEPTING_SLICES"
       ],
       [
-        "MERGE_CANDIDATE",
-        "MERGED"
-      ],
-      [
-        "FROZEN",
-        "ACCEPTING_SLICES"
-      ],
-      [
-        "FROZEN",
-        "MERGED"
+        "FINAL_HEAD_READY_FOR_APPROVAL",
+        "MERGE_CANDIDATE"
       ],
       [
         "FINAL_VALIDATION",
         "ACCEPTING_SLICES"
       ],
       [
+        "FINAL_VALIDATION",
+        "MERGED"
+      ],
+      [
+        "FROZEN",
+        "ACCEPTING_SLICES"
+      ],
+      [
+        "FROZEN",
+        "FINAL_HEAD_READY_FOR_APPROVAL"
+      ],
+      [
+        "FROZEN",
+        "MERGED"
+      ],
+      [
         "MERGED",
         "ACCEPTING_SLICES"
       ],
       [
         "MERGED",
-        "MERGE_CANDIDATE"
+        "BLOCKED"
       ],
       [
         "MERGED",
-        "FROZEN"
+        "FINAL_HEAD_READY_FOR_APPROVAL"
       ],
       [
         "MERGED",
@@ -165,10 +176,46 @@
       ],
       [
         "MERGED",
-        "BLOCKED"
+        "FROZEN"
+      ],
+      [
+        "MERGED",
+        "MERGE_CANDIDATE"
+      ],
+      [
+        "MERGE_CANDIDATE",
+        "ACCEPTING_SLICES"
+      ],
+      [
+        "MERGE_CANDIDATE",
+        "FINAL_HEAD_READY_FOR_APPROVAL"
+      ],
+      [
+        "MERGE_CANDIDATE",
+        "MERGED"
+      ],
+      [
+        "SLICE_IN_REVIEW",
+        "FINAL_HEAD_READY_FOR_APPROVAL"
+      ],
+      [
+        "SLICE_IN_REVIEW",
+        "FINAL_VALIDATION"
+      ],
+      [
+        "SLICE_IN_REVIEW",
+        "FROZEN"
+      ],
+      [
+        "SLICE_IN_REVIEW",
+        "MERGED"
+      ],
+      [
+        "SLICE_IN_REVIEW",
+        "MERGE_CANDIDATE"
       ]
     ],
-    "trigger_semantics": "A routing merge trigger sets transport steward_state=merge_candidate, but acceptance lifecycle starts at COMPLETENESS_REVIEW. Only a green completeness verdict promotes acceptance state to MERGE_CANDIDATE."
+    "trigger_semantics": "A routing merge trigger sets transport steward_state=merge_candidate, but acceptance lifecycle starts at COMPLETENESS_REVIEW. Only a green completeness verdict promotes acceptance state to MERGE_CANDIDATE. Conductor promotes FINAL_VALIDATION to FINAL_HEAD_READY_FOR_APPROVAL after Final-Head validation and cdb-local-ci readiness. MERGE_CANDIDATE and FINAL_HEAD_READY_FOR_APPROVAL never authorize merge by themselves. Regular merge is owned only by cdb_final_head_merge_executor after HEAD-bound APPROVE from cdb_final_head_pr_approval_gate."
   },
   "steward_acceptance_mapping": {
     "accepting_slices": [
@@ -182,7 +229,8 @@
     ],
     "frozen": [
       "FROZEN",
-      "FINAL_VALIDATION"
+      "FINAL_VALIDATION",
+      "FINAL_HEAD_READY_FOR_APPROVAL"
     ],
     "live_verified": [
       "MERGED"
@@ -213,11 +261,14 @@
     "DONE_CONDUCTOR_SLICE_ADDED": [
       "FROZEN",
       "FINAL_VALIDATION",
-      "MERGED",
+      "FINAL_HEAD_READY_FOR_APPROVAL",
       "BLOCKED"
     ],
     "DONE_PR_ACCEPTANCE_SKILL_FAMILY_MERGED": [
       "MERGED"
+    ],
+    "DONE_FINAL_HEAD_READY_FOR_APPROVAL": [
+      "FINAL_HEAD_READY_FOR_APPROVAL"
     ]
   },
   "dimension_states": [
@@ -379,7 +430,8 @@
       "forbidden": [
         "merge_execution",
         "issue_closure",
-        "writes"
+        "writes",
+        "approve_pr"
       ]
     },
     "cdb-batch-merge-conductor": {
@@ -391,21 +443,53 @@
       ],
       "delegates_to": [
         "cdb-pr-completeness-review",
-        "cdb-ci-cd-guard",
-        "cdb-session-close"
+        "cdb-ci-cd-guard"
       ],
       "forbidden": [
         "human_merge_authorization_field",
         "admin_merge",
+        "merge_execution",
+        "approve_pr",
+        "issue_closure",
         "stale_evidence",
         "own_ci_logic",
         "own_routing_logic"
-      ]
+      ],
+      "success_decision": "FINAL_HEAD_READY_FOR_APPROVAL",
+      "handoff_role": "cdb_final_head_pr_approval_gate"
     }
   },
   "sha_rules": {
     "head_sha_pattern": "^[a-f0-9]{40}$",
     "base_sha_pattern": "^[a-f0-9]{40}$",
     "lowercase_hex_only": true
-  }
+  },
+  "final_head_roles": {
+    "pr_approval_gate": {
+      "role_id": "cdb_final_head_pr_approval_gate",
+      "cursor_display_name": "PR Reviewer",
+      "approve_pr": true,
+      "merge_pr": false,
+      "modify_code": false,
+      "success_mutation": "APPROVE",
+      "context_mode": "repo-only"
+    },
+    "merge_executor": {
+      "role_id": "cdb_final_head_merge_executor",
+      "cursor_display_name": "Merge Agent",
+      "approve_pr": false,
+      "merge_pr": true,
+      "modify_code": false,
+      "success_mutation": "regular_merge",
+      "admin_bypass": false,
+      "context_mode": "repo-only"
+    }
+  },
+  "conductor_phases": [
+    "FREEZE",
+    "MAIN_INTEGRATION",
+    "FINAL_VALIDATION",
+    "HANDOFF_APPROVAL",
+    "HANDOFF_SESSION_CLOSE"
+  ]
 }
