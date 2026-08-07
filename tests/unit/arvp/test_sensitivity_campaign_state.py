@@ -527,3 +527,71 @@ def test_count_primary_succeeded_partial_blocks(tmp_path: Path) -> None:
     with pytest.raises(SensitivityStateError) as exc:
         count_primary_succeeded(root, bindings=BINDINGS, expected_run_keys=["rk1"])
     assert "STATE_PARTIAL_SUCCESS_BLOCKED" in str(exc.value)
+
+
+def test_fs_dirname_for_run_key_strips_windows_illegal_chars() -> None:
+    from tools.arvp_vacation.sensitivity_campaign_state import (
+        fs_dirname_for_run_key,
+        run_key_needs_fs_mapping,
+    )
+
+    key = (
+        "arvp-hh-hl-continuation-4374-prep-v1|binance_1m_month_2017_10|"
+        "hh_hl_baseline_001|hh_hl_continuation_v1|ec40ba4f7fd61294"
+    )
+    assert run_key_needs_fs_mapping(key) is True
+    dirname = fs_dirname_for_run_key(key)
+    assert dirname.startswith("rk_")
+    assert "|" not in dirname
+    assert all(ch not in dirname for ch in '<>:"/\\|?*')
+    # Deterministic
+    assert fs_dirname_for_run_key(key) == dirname
+
+
+def test_pipe_run_key_write_and_resume_roundtrip(tmp_path: Path) -> None:
+    from tools.arvp_vacation.sensitivity_campaign_state import (
+        LOGICAL_RUN_KEY_SIDECAR,
+        fs_dirname_for_run_key,
+        run_dir,
+    )
+
+    root = tmp_path / "ns"
+    key = "camp|window|slot|strategy|deadbeef"
+    write_campaign_envelope(root, bindings=BINDINGS, run_count=1)
+    envelope = {"run_key": key, "seed": "x"}
+    commit_successful_result(
+        root,
+        run_key=key,
+        bindings=BINDINGS,
+        attempt=1,
+        envelope=envelope,
+        result={"gate_reason": "OK", "trade_count": 0},
+    )
+    run_path = run_dir(root, key)
+    assert run_path.name == fs_dirname_for_run_key(key)
+    assert "|" not in run_path.name
+    sidecar = run_path / LOGICAL_RUN_KEY_SIDECAR
+    assert sidecar.read_text(encoding="utf-8").strip() == key
+    action = inspect_run_for_resume(
+        root,
+        run_key=key,
+        bindings=BINDINGS,
+        max_attempts=1,
+        retry_failed=True,
+    )
+    assert action == "skip"
+    # Logical key preserved in envelope payload
+    env = (run_path / "run_envelope.json").read_text(encoding="utf-8")
+    assert key in env
+
+
+def test_legacy_raw_run_dir_still_readable(tmp_path: Path) -> None:
+    """Pre-#4384 Linux trees used the raw run_key as the directory name."""
+    from tools.arvp_vacation.sensitivity_campaign_state import run_dir
+
+    root = tmp_path / "ns"
+    legacy_key = "legacy_safe_key"
+    legacy_dir = root / "runs" / legacy_key
+    legacy_dir.mkdir(parents=True)
+    (legacy_dir / "run_envelope.json").write_text("{}", encoding="utf-8")
+    assert run_dir(root, legacy_key) == legacy_dir

@@ -90,6 +90,7 @@ from tools.arvp_vacation.sensitivity_campaign_executor import (
 from tools.arvp_vacation.sensitivity_campaign_state import (
     SensitivityStateError,
     commit_successful_result,
+    run_dir,
     write_campaign_envelope,
     write_run_envelope,
 )
@@ -829,7 +830,7 @@ def cmd_execute(args: argparse.Namespace) -> int:
                 effective_config_fingerprint=ctx.manifest_fingerprint,
                 dataset_content_fingerprint=window_fp,
                 seed=_seed_for(ctx.campaign_id, planned.window_id, planned.slot_id),
-                output_dir=str(evidence_root / "runs" / planned.run_key),
+                output_dir=str(run_dir(evidence_root, planned.run_key)),
                 run_plan_fingerprint=ctx.run_plan_fingerprint,
                 authorization_fingerprint=ctx.authorization_fingerprint,
                 attempt=attempt,

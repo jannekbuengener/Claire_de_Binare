@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import hashlib
 import json
 import os
 import tempfile
@@ -17,6 +18,53 @@ STATE_SCHEMA_VERSION = "cdb.sensitivity_campaign_state.v1"
 CAMPAIGN_ENVELOPE_NAME = "campaign_envelope.json"
 RUNS_DIRNAME = "runs"
 REPRODUCTION_DIRNAME = "reproduction"
+LOGICAL_RUN_KEY_SIDECAR = "logical_run_key.txt"
+# Windows NTFS forbidden filename characters (and path separators).
+_FS_UNSAFE_CHARS = frozenset('<>:"/\\|?*')
+_FS_DIRNAME_PREFIX = "rk_"
+
+
+def fs_dirname_for_run_key(run_key: str) -> str:
+    """Deterministic Windows-safe directory name for a logical run_key.
+
+    The logical ``run_key`` (may contain ``|``) is unchanged in envelopes and
+    fingerprints. On-disk directories use ``rk_<sha256>`` so NTFS/Win32 paths
+    never embed illegal characters (#4384).
+    """
+    digest = hashlib.sha256(str(run_key).encode("utf-8")).hexdigest()
+    return f"{_FS_DIRNAME_PREFIX}{digest}"
+
+
+def run_key_needs_fs_mapping(run_key: str) -> bool:
+    text = str(run_key)
+    return any(ch in _FS_UNSAFE_CHARS for ch in text) or text in {".", ".."} or not text
+
+
+def run_dir(root: Path, run_key: str) -> Path:
+    """Resolve the on-disk run directory for ``run_key``.
+
+    Prefers the deterministic safe dirname. Falls back to a legacy raw-key
+    directory when it already exists (Linux evidence created before #4384).
+    New writes always target the safe path.
+    """
+    safe = Path(root) / RUNS_DIRNAME / fs_dirname_for_run_key(run_key)
+    if safe.exists():
+        return safe
+    legacy = Path(root) / RUNS_DIRNAME / str(run_key)
+    # Only accept legacy dirs that Windows could never have created with
+    # unsafe chars as a *new* target; existing Linux trees remain readable.
+    if legacy.exists():
+        return legacy
+    return safe
+
+
+def write_logical_run_key_sidecar(run_directory: Path, run_key: str) -> Path:
+    """Persist the logical run_key next to run artifacts (human/ops index)."""
+    run_directory.mkdir(parents=True, exist_ok=True)
+    path = run_directory / LOGICAL_RUN_KEY_SIDECAR
+    path.write_text(str(run_key) + "\n", encoding="utf-8")
+    return path
+
 
 RUN_STATES = frozenset(
     {"PLANNED", "RUNNING", "SUCCEEDED", "FAILED", "BLOCKED", "CANCELLED"}
@@ -286,15 +334,15 @@ def _assert_same_bindings(
 
 
 def run_envelope_path(root: Path, run_key: str) -> Path:
-    return root / RUNS_DIRNAME / run_key / "run_envelope.json"
+    return run_dir(root, run_key) / "run_envelope.json"
 
 
 def result_path(root: Path, run_key: str) -> Path:
-    return root / RUNS_DIRNAME / run_key / "result.json"
+    return run_dir(root, run_key) / "result.json"
 
 
 def completion_marker_path(root: Path, run_key: str) -> Path:
-    return root / RUNS_DIRNAME / run_key / "COMPLETED"
+    return run_dir(root, run_key) / "COMPLETED"
 
 
 def write_run_envelope(
@@ -311,6 +359,7 @@ def write_run_envelope(
     if status not in RUN_STATES:
         raise SensitivityStateError(f"STATE_INVALID_RUN_STATUS:{status}")
     path = run_envelope_path(root, run_key)
+    write_logical_run_key_sidecar(path.parent, run_key)
     payload = {
         "schema_version": STATE_SCHEMA_VERSION,
         "run_key": run_key,
@@ -522,9 +571,7 @@ def reproduction_dir(root: Path, run_key: str, reproduction_attempt: int) -> Pat
     if reproduction_attempt < 1:
         raise SensitivityStateError("STATE_REPRO_ATTEMPT_INVALID")
     return (
-        root
-        / RUNS_DIRNAME
-        / run_key
+        run_dir(root, run_key)
         / REPRODUCTION_DIRNAME
         / str(int(reproduction_attempt))
     )

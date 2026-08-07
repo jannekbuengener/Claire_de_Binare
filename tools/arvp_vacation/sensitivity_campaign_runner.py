@@ -119,6 +119,7 @@ from tools.arvp_vacation.sensitivity_campaign_state import (
     release_campaign_lock,
     reproduction_dir,
     result_path,
+    run_dir,
     update_campaign_phase,
     write_campaign_envelope,
     write_comparison_evidence,
@@ -454,7 +455,7 @@ def _run_primary_loop(
         )
 
         attempt = 1
-        env_path = evidence_root / "runs" / planned.run_key / "run_envelope.json"
+        env_path = run_dir(evidence_root, planned.run_key) / "run_envelope.json"
         if env_path.exists() and action == "retry":
             prev = json.loads(env_path.read_text(encoding="utf-8"))
             attempt = int(prev.get("attempt") or 0) + 1
@@ -476,7 +477,7 @@ def _run_primary_loop(
             effective_config_fingerprint=eff_fp,
             dataset_content_fingerprint=_window_content_fp(manifest, planned.window_id),
             seed=_seed_for(plan.campaign_id, planned.window_id, planned.slot_id),
-            output_dir=str(evidence_root / "runs" / planned.run_key),
+            output_dir=str(run_dir(evidence_root, planned.run_key)),
             run_plan_fingerprint=plan.run_plan_fingerprint,
             authorization_fingerprint=auth_fp,
             attempt=attempt,
