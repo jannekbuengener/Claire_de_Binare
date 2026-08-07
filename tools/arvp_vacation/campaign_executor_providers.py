@@ -26,6 +26,9 @@ from tools.arvp_vacation.hh_hl_campaign_execution_authorization import (
     AuthorizationContext,
     HhHlExecutionAuthorizationError,
 )
+from tools.arvp_vacation.hh_hl_single_run_callable import (
+    build_production_single_run_callable,
+)
 from tools.arvp_vacation.sensitivity_campaign_executor import (
     CampaignRunExecutor,
     RunEnvelope,
@@ -97,13 +100,21 @@ class HhHlSingleRunReplayProvider:
         params = dict(envelope.parameters or {})
         if "scenario_group_id" in params or "scenario_ids" in params:
             raise CampaignProfileError("HH_HL_SCENARIO_GROUP_FORBIDDEN")
+        if not envelope.output_dir:
+            raise CampaignProfileError("HOLD_EXECUTION_OUTPUT_DIR_REQUIRED")
+        if not envelope.dataset_content_fingerprint:
+            raise CampaignProfileError(
+                "HOLD_EXECUTION_DATASET_CONTENT_FINGERPRINT_REQUIRED"
+            )
         return {
-            "dataset_source": "file_or_bound_window",
+            "dataset_source": "binance_window",
             "strategy_id": HH_HL_CONTINUATION_STRATEGY_ID,
             "adapter_id": BATCH_B_SHADOW_ADAPTER_ID,
             "window_id": envelope.window_id,
             "run_key": envelope.run_key,
             "parameters": params,
+            "output_dir": envelope.output_dir,
+            "dataset_content_fingerprint": envelope.dataset_content_fingerprint,
             "scenario_group_id": None,
             "scenario_ids": None,
             "surface": self.SURFACE_ID,
@@ -233,7 +244,13 @@ def resolve_campaign_executor(profile: CampaignProfile) -> CampaignRunExecutor:
         return StrategyReplayCampaignExecutor(adapter_id=profile.adapter_id)
 
     if profile.executor_provider_id == HH_HL_EXECUTOR_PROVIDER_ID:
-        return HhHlSingleRunReplayProvider(profile)
+        # Production path: wire the real strategy_replay_runner single-run
+        # callable. Tests may still construct HhHlSingleRunReplayProvider with an
+        # injected fake callable; resolve_campaign_executor never leaves it unset.
+        return HhHlSingleRunReplayProvider(
+            profile,
+            single_run_callable=build_production_single_run_callable(),
+        )
 
     raise CampaignProfileError(
         f"HOLD_REGISTRY_PROVIDER_MISSING:{profile.executor_provider_id}"
