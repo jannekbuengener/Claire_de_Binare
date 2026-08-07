@@ -336,7 +336,9 @@ def assert_per_run_pre_dispatch(
             "scenario_group_id": None,
             "scenario_ids": None,
         },
-        window_bank_root=_production_window_bank_root(repo_root),
+        # Shape / frozen-param gate only — do not require a physical bank here.
+        # Production bank availability is asserted in preflight/status/execute.
+        window_bank_root=_TEST_WINDOW_BANK_ROOT,
     )
 
 
