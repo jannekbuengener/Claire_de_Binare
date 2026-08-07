@@ -45,10 +45,14 @@ def test_control_plane_unit_register_paths_exist() -> None:
 
 
 def test_control_plane_unit_register_remains_partial_by_design() -> None:
-    payload = json.loads(helpers.CONTROL_PLANE_REGISTER_JSON.read_text(encoding="utf-8"))
+    payload = json.loads(
+        helpers.CONTROL_PLANE_REGISTER_JSON.read_text(encoding="utf-8")
+    )
     assert payload.get("coverage") == "partial"
     assert payload.get("catalog_scope") == "control-plane-sprint1"
-    assert payload.get("unit_count", 0) < len(helpers.list_workflow_yaml_files(helpers.WORKFLOWS_DIR))
+    assert payload.get("unit_count", 0) < len(
+        helpers.list_workflow_yaml_files(helpers.WORKFLOWS_DIR)
+    )
 
 
 @pytest.mark.parametrize(
@@ -60,8 +64,13 @@ def test_control_plane_unit_register_remains_partial_by_design() -> None:
         ("surrealdb-memory-proof.yml", "manual-only"),
     ],
 )
-def test_register_classifies_current_workflows(filename: str, expected_status: str) -> None:
-    assert helpers.parse_register_status_map(helpers.WORKFLOW_REGISTER_MD)[filename] == expected_status
+def test_register_classifies_current_workflows(
+    filename: str, expected_status: str
+) -> None:
+    assert (
+        helpers.parse_register_status_map(helpers.WORKFLOW_REGISTER_MD)[filename]
+        == expected_status
+    )
 
 
 def test_canonical_ci_is_active() -> None:
@@ -75,8 +84,10 @@ def test_canonical_ci_is_active() -> None:
 def test_fixture_detects_unregistered_workflow_drift() -> None:
     scan = helpers.scan_workflow_inventory(
         workflows_dir=_fixture_dir("inventory_drift"),
-        register_md_path=_fixture_dir("inventory_drift") / "GITHUB_WORKFLOW_REGISTER.md",
-        control_plane_json_path=_fixture_dir("inventory_drift") / "workflow-register.json",
+        register_md_path=_fixture_dir("inventory_drift")
+        / "GITHUB_WORKFLOW_REGISTER.md",
+        control_plane_json_path=_fixture_dir("inventory_drift")
+        / "workflow-register.json",
     )
     assert scan.unregistered_on_disk == ("orphan.yml",)
 
@@ -84,7 +95,9 @@ def test_fixture_detects_unregistered_workflow_drift() -> None:
 def test_fixture_detects_register_missing_file_drift() -> None:
     scan = helpers.scan_workflow_inventory(
         workflows_dir=_fixture_dir("register_missing_file"),
-        register_md_path=_fixture_dir("register_missing_file") / "GITHUB_WORKFLOW_REGISTER.md",
-        control_plane_json_path=_fixture_dir("register_missing_file") / "workflow-register.json",
+        register_md_path=_fixture_dir("register_missing_file")
+        / "GITHUB_WORKFLOW_REGISTER.md",
+        control_plane_json_path=_fixture_dir("register_missing_file")
+        / "workflow-register.json",
     )
     assert scan.missing_on_disk == ("ghost.yml",)
