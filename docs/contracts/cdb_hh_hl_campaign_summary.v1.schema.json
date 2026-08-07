@@ -1,0 +1,72 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://claire-de-binare/docs/contracts/cdb_hh_hl_campaign_summary.v1.schema.json",
+  "title": "CDB hh_hl Campaign Summary v1",
+  "description": "Campaign-level provenance summary written after a successful primary hh_hl offline replay campaign (#4404). No analyzer/profitability fields. LR remains NO-GO.",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "schema_version",
+    "campaign_id",
+    "campaign_phase",
+    "lifecycle_status",
+    "terminal_completion_status",
+    "authorization_fingerprint",
+    "execution_sha",
+    "main_sha",
+    "manifest_fingerprint",
+    "run_plan_fingerprint",
+    "dataset_selection_sha256",
+    "dataset_content_fingerprint_digest",
+    "strategy_id",
+    "adapter_id",
+    "variant_slot_id",
+    "physical_parameter_set_fingerprint",
+    "expected_run_count",
+    "succeeded_count",
+    "resumed_skipped_count",
+    "failed_count",
+    "blocked_count",
+    "evidence_root",
+    "lr_status",
+    "summary_fingerprint"
+  ],
+  "properties": {
+    "schema_version": { "const": "cdb.hh_hl_campaign_summary.v1" },
+    "campaign_id": { "type": "string", "minLength": 1 },
+    "campaign_phase": { "const": "PRIMARY_COMPLETE" },
+    "lifecycle_status": { "const": "PRIMARY_COMPLETE" },
+    "terminal_completion_status": { "const": "PRIMARY_COMPLETE" },
+    "authorization_fingerprint": {
+      "type": "string",
+      "pattern": "^[0-9a-f]{64}$"
+    },
+    "execution_sha": { "type": "string", "minLength": 7 },
+    "main_sha": { "type": "string", "minLength": 7 },
+    "manifest_fingerprint": { "type": "string", "pattern": "^[0-9a-f]{64}$" },
+    "run_plan_fingerprint": { "type": "string", "pattern": "^[0-9a-f]{64}$" },
+    "dataset_selection_sha256": { "type": "string", "pattern": "^[0-9a-f]{64}$" },
+    "dataset_content_fingerprint_digest": {
+      "type": "string",
+      "pattern": "^[0-9a-f]{64}$"
+    },
+    "strategy_id": { "type": "string", "minLength": 1 },
+    "adapter_id": { "type": "string", "minLength": 1 },
+    "variant_slot_id": { "type": "string", "minLength": 1 },
+    "physical_parameter_set_fingerprint": {
+      "type": "string",
+      "pattern": "^[0-9a-f]{64}$"
+    },
+    "expected_run_count": { "const": 39 },
+    "succeeded_count": { "type": "integer", "minimum": 0, "maximum": 39 },
+    "resumed_skipped_count": { "type": "integer", "minimum": 0, "maximum": 39 },
+    "failed_count": { "const": 0 },
+    "blocked_count": { "const": 0 },
+    "evidence_root": { "type": "string", "minLength": 1 },
+    "lr_status": { "const": "NO-GO" },
+    "summary_fingerprint": { "type": "string", "pattern": "^[0-9a-f]{64}$" },
+    "github_comment_id": { "type": "integer", "minimum": 1 },
+    "authorizing_github_login": { "type": "string", "minLength": 1 },
+    "owner_go_status": { "type": "string", "minLength": 1 }
+  }
+}
