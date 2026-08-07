@@ -111,7 +111,21 @@ def normalize_for_compare(path: Path | str) -> str:
 
 
 def is_path_under_root(path: Path | str, root: Path | str) -> bool:
-    """True if path is equal to root or a descendant."""
+    """True if path is equal to root or a descendant.
+
+    Drive-letter paths always use ``PureWindowsPath`` semantics so Linux CI
+    hosts evaluate ``Y:\\...`` containment correctly (POSIX ``os.sep`` must
+    not decide Windows worktree policy).
+    """
+    if windows_drive_letter(path) is not None or windows_drive_letter(root) is not None:
+        win_path = PureWindowsPath(str(path))
+        win_root = PureWindowsPath(str(root))
+        try:
+            win_path.relative_to(win_root)
+            return True
+        except ValueError:
+            return False
+
     norm_path = normalize_for_compare(path)
     norm_root = normalize_for_compare(root)
     if norm_path == norm_root:

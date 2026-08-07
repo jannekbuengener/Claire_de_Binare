@@ -7,7 +7,11 @@ from pathlib import Path
 import pytest
 
 from tools.worktrees import codes
-from tools.worktrees.resolve import build_worktree_path, resolve_worktree_root
+from tools.worktrees.resolve import (
+    build_worktree_path,
+    is_path_under_root,
+    resolve_worktree_root,
+)
 
 
 @pytest.mark.unit
@@ -47,3 +51,15 @@ def test_build_worktree_path_ok() -> None:
 def test_build_worktree_path_rejects_traversal() -> None:
     with pytest.raises(ValueError):
         build_worktree_path(Path(r"Y:\Worktrees"), "Claire_de_Binare", "../escape")
+
+
+@pytest.mark.unit
+def test_is_path_under_root_windows_drive_semantics() -> None:
+    """Containment must not depend on host os.sep (Linux CI regression guard)."""
+    assert is_path_under_root(
+        r"Y:\Worktrees\Claire_de_Binare\foo",
+        r"Y:\Worktrees",
+    )
+    assert is_path_under_root(r"Y:\Worktrees", r"Y:\Worktrees")
+    assert not is_path_under_root(r"Y:\Other\foo", r"Y:\Worktrees")
+    assert not is_path_under_root(r"D:\Worktrees\foo", r"Y:\Worktrees")
