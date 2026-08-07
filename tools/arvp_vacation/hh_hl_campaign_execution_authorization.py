@@ -8,6 +8,11 @@ does not grant paper/live/echtgeld/orders/auto-start and never executes runs.
 An :class:`AuthorizationContext` can be constructed *only* from a live-verified
 GO via :func:`authorization_context_from_verified_go`; manifest/profile flags
 alone are structurally incapable of producing one.
+
+``github_comment_id`` is host/transport metadata: it is *not* part of the signed
+Owner payload (so Owners can post a complete fence without knowing the comment
+id in advance). The verifier binds the fetched comment id into the
+:class:`AuthorizationContext` after identity and mutation checks.
 """
 
 from __future__ import annotations
@@ -409,12 +414,22 @@ def _assert_authorizes_scope(payload: Mapping[str, Any]) -> None:
         )
 
 
+def _assert_no_host_comment_id_in_payload(payload: Mapping[str, Any]) -> None:
+    """``github_comment_id`` is host metadata — never part of the signed body."""
+    if "github_comment_id" in payload:
+        raise HhHlExecutionAuthorizationError(
+            "HOLD_EXECUTION_GO_HOST_METADATA_IN_PAYLOAD",
+            "github_comment_id must not appear in the signed Owner payload",
+        )
+
+
 def validate_execution_go_payload(
     payload: Mapping[str, Any],
     *,
     now_utc: datetime | None = None,
 ) -> None:
     """Structural fail-closed validation independent of expected bindings."""
+    _assert_no_host_comment_id_in_payload(payload)
     status = str(payload.get("status") or "")
     if status in FORBIDDEN_STATUSES:
         raise HhHlExecutionAuthorizationError("HOLD_EXECUTION_GO_WRONG_GO_TYPE", status)
@@ -504,15 +519,17 @@ def validate_execution_go_package(
 ) -> None:
     """Validate a *pre-post* Execution-GO package body (generator side).
 
-    Identical structural discipline to :func:`validate_execution_go_payload`
-    except ``github_comment_id`` MAY be ``null`` (it is filled only once the
-    Owner has posted the fenced comment). Fail-closed on: wrong schema/status,
-    relaxed absolute bans, missing/short ``authorizes``/``does_not_authorize``,
-    missing package-only required fields (``strategy_version``,
-    ``max_run_count``, ``design_go_comment_id``, ``design_go_body_fingerprint``,
+    Identical structural discipline to :func:`validate_execution_go_payload`:
+    the signed Owner payload must not carry ``github_comment_id`` (host metadata
+    lives only on the wrapper / in :class:`AuthorizationContext` after live
+    verification). Fail-closed on: wrong schema/status, relaxed absolute bans,
+    missing/short ``authorizes``/``does_not_authorize``, missing package-only
+    required fields (``strategy_version``, ``max_run_count``,
+    ``design_go_comment_id``, ``design_go_body_fingerprint``,
     ``reproduction_policy``, ``analyzer_profile_id``), a non-finite/lapsed expiry,
     or a budget the lifetime cannot cover. This never authorizes execution.
     """
+    _assert_no_host_comment_id_in_payload(package)
     status = str(package.get("status") or "")
     if status in FORBIDDEN_STATUSES:
         raise HhHlExecutionAuthorizationError("HOLD_EXECUTION_GO_WRONG_GO_TYPE", status)
@@ -708,10 +725,10 @@ def verify_owner_execution_go_comment(
         raise HhHlExecutionAuthorizationError(
             "HOLD_EXECUTION_GO_AUTHOR_PAYLOAD_MISMATCH"
         )
-    if int(payload.get("github_comment_id") or 0) != comment_id:
-        raise HhHlExecutionAuthorizationError(
-            "HOLD_EXECUTION_GO_COMMENT_ID_PAYLOAD_MISMATCH"
-        )
+    # github_comment_id is host metadata: identity is the verifier input +
+    # fetched comment.comment_id (already checked). A smuggled self-ID in the
+    # signed payload is rejected by validate_execution_go_payload /
+    # additionalProperties=false — never compared here.
     if int(payload.get("issue") or 0) != issue:
         raise HhHlExecutionAuthorizationError(
             "HOLD_EXECUTION_GO_ISSUE_PAYLOAD_MISMATCH"
@@ -736,7 +753,7 @@ def verify_owner_execution_go_comment(
         "reason_code": "EXECUTION_GO_VALID",
         "payload": payload,
         "authorization_fingerprint": auth_fp,
-        "github_comment_id": comment_id,
+        "github_comment_id": int(comment.comment_id),
         "authorizing_github_login": live_author,
         "comment_updated_at": comment.updated_at,
         "expires_at_utc": payload.get("expires_at_utc"),
@@ -757,13 +774,21 @@ def authorization_context_from_verified_go(
         raise HhHlExecutionAuthorizationError(
             "HOLD_EXECUTION_GO_CONTEXT_PAYLOAD_MISSING"
         )
+    # Host comment id comes from the verified OwnerGoComment metadata, never
+    # from the signed JSON payload (which must omit the field).
+    host_comment_id = int(verified.get("github_comment_id") or 0)
+    if host_comment_id <= 0:
+        raise HhHlExecutionAuthorizationError(
+            "HOLD_EXECUTION_GO_COMMENT_ID_MISMATCH",
+            "verified github_comment_id missing",
+        )
     return AuthorizationContext(
         _AUTH_CTX_TOKEN,
         schema_version=str(payload["schema_version"]),
         status=str(payload["status"]),
         repository=str(payload["repository"]),
         issue=int(payload["issue"]),
-        github_comment_id=int(payload["github_comment_id"]),
+        github_comment_id=host_comment_id,
         authorizing_github_login=str(payload["authorizing_github_login"]),
         bound_main_sha=str(payload["bound_main_sha"]),
         execution_sha=str(payload["execution_sha"]),

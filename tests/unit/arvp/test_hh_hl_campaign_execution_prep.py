@@ -181,7 +181,6 @@ def _exec_payload(
         "status": GO_STATUS,
         "repository": REPO,
         "issue": 4374,
-        "github_comment_id": comment_id,
         "authorizing_github_login": "jannekbuengener",
         "bound_main_sha": bound,
         "execution_sha": exec_sha,
@@ -224,6 +223,7 @@ def _exec_payload(
 def _exec_comment(
     payload: dict,
     *,
+    comment_id: int = 987654321,
     created="2026-08-06T16:00:00Z",
     updated=None,
     author="jannekbuengener",
@@ -234,7 +234,7 @@ def _exec_comment(
         + "\n```"
     )
     return OwnerGoComment(
-        comment_id=int(payload["github_comment_id"]),
+        comment_id=int(comment_id),
         issue_number=4374,
         author_login=author,
         body=body,
@@ -273,7 +273,7 @@ def _expected_from_payload(payload: dict) -> dict:
 def _verified_context(run_plan_fp: str) -> AuthorizationContext:
     payload = _exec_payload(run_plan_fp=run_plan_fp)
     verified = verify_owner_execution_go_comment(
-        comment_id=int(payload["github_comment_id"]),
+        comment_id=987654321,
         expected=_expected_from_payload(payload),
         fetcher=_exec_fetcher(_exec_comment(payload)),
         now_utc=FIXED_NOW,
@@ -579,7 +579,7 @@ def test_execution_go_valid_mints_authorization_context():
     plan = _final_plan(POST_MERGE_SHA)
     payload = _exec_payload(run_plan_fp=plan.run_plan_fingerprint)
     verified = verify_owner_execution_go_comment(
-        comment_id=int(payload["github_comment_id"]),
+        comment_id=987654321,
         expected=_expected_from_payload(payload),
         fetcher=_exec_fetcher(_exec_comment(payload)),
         now_utc=FIXED_NOW,
@@ -603,7 +603,7 @@ def test_execution_go_rejects_wrong_go_type_mutation_and_expiry():
         HhHlExecutionAuthorizationError, match="HOLD_EXECUTION_GO_WRONG_GO_TYPE"
     ):
         verify_owner_execution_go_comment(
-            comment_id=int(impl["github_comment_id"]),
+            comment_id=987654321,
             expected=_expected_from_payload(impl),
             fetcher=_exec_fetcher(_exec_comment(impl)),
             now_utc=FIXED_NOW,
@@ -614,7 +614,7 @@ def test_execution_go_rejects_wrong_go_type_mutation_and_expiry():
         HhHlExecutionAuthorizationError, match="HOLD_EXECUTION_GO_COMMENT_MUTATED"
     ):
         verify_owner_execution_go_comment(
-            comment_id=int(ok["github_comment_id"]),
+            comment_id=987654321,
             expected=_expected_from_payload(ok),
             fetcher=_exec_fetcher(_exec_comment(ok, updated="2026-08-06T16:05:00Z")),
             now_utc=FIXED_NOW,
@@ -627,7 +627,7 @@ def test_execution_go_rejects_wrong_go_type_mutation_and_expiry():
         HhHlExecutionAuthorizationError, match="HOLD_EXECUTION_GO_EXPIRED"
     ):
         verify_owner_execution_go_comment(
-            comment_id=int(expired["github_comment_id"]),
+            comment_id=987654321,
             expected=_expected_from_payload(expired),
             fetcher=_exec_fetcher(_exec_comment(expired)),
             now_utc=FIXED_NOW,
@@ -979,7 +979,7 @@ def test_cli_prepare_execution_go_surface_required_then_ok(tmp_path: Path, capsy
     assert payload["authorizes"] == list(AUTHORIZES_EXACT)
     assert set(REQUIRED_DOES_NOT_AUTHORIZE).issubset(payload["does_not_authorize"])
     assert payload["max_run_count"] == MAX_RUN_COUNT
-    assert payload["github_comment_id"] is None
+    assert "github_comment_id" not in payload
 
 
 @pytest.mark.unit

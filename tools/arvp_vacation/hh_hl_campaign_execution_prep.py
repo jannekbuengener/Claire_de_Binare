@@ -452,8 +452,8 @@ def cmd_prepare_execution_go(args: argparse.Namespace) -> int:
         # discipline (authorizes/does_not_authorize, all required fields, finite
         # future expiry covering the budget) via the package validator. Live
         # comment-id/author verification happens only once the owner has posted
-        # the GO (github_comment_id stays a null placeholder here). This does NOT
-        # authorize execution.
+        # the GO (github_comment_id is host metadata, absent from the signed
+        # payload). This does NOT authorize execution.
         validate_execution_go_package(payload)
     except (
         HhHlDesignAuthorizationError,
@@ -519,7 +519,6 @@ def _assemble_execution_go_payload(
         "status": GO_STATUS,
         "repository": DEFAULT_REPO,
         "issue": ISSUE_NUMBER,
-        "github_comment_id": None,
         "authorizing_github_login": "jannekbuengener",
         "bound_main_sha": planning_sha,
         "execution_sha": execution_sha,

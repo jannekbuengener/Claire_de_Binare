@@ -59,6 +59,7 @@ from tools.arvp_vacation.hh_hl_campaign_execution_authorization import (
     HhHlExecutionAuthorizationError,
     OwnerGoComment,
     authorization_context_from_verified_go,
+    fingerprint_execution_authorization_payload,
     validate_execution_go_package,
     validate_execution_go_payload,
     verify_owner_execution_go_comment,
@@ -180,7 +181,8 @@ def _full_receipt(**over) -> dict:
 
 
 def _live_payload(*, run_plan_fp: str, comment_id: int = 987654321, **over) -> dict:
-    """A complete, schema-valid *live* Execution-GO payload (comment_id int)."""
+    """A complete, schema-valid *live* Execution-GO payload (no host comment id)."""
+    _ = comment_id  # host metadata only; bound via OwnerGoComment
     manifest = _manifest()
     binding = manifest["dataset_binding"]
     design = manifest["design_ratification"]
@@ -189,7 +191,6 @@ def _live_payload(*, run_plan_fp: str, comment_id: int = 987654321, **over) -> d
         "status": GO_STATUS,
         "repository": REPO,
         "issue": 4374,
-        "github_comment_id": comment_id,
         "authorizing_github_login": "jannekbuengener",
         "bound_main_sha": POST_MERGE_SHA,
         "execution_sha": EXECUTION_SHA,
@@ -232,6 +233,7 @@ def _live_payload(*, run_plan_fp: str, comment_id: int = 987654321, **over) -> d
 def _exec_comment(
     payload: dict,
     *,
+    comment_id: int = 987654321,
     created: str = "2026-08-06T16:00:00Z",
     updated: str | None = None,
 ) -> OwnerGoComment:
@@ -241,7 +243,7 @@ def _exec_comment(
         + "\n```"
     )
     return OwnerGoComment(
-        comment_id=int(payload["github_comment_id"]),
+        comment_id=int(comment_id),
         issue_number=4374,
         author_login="jannekbuengener",
         body=body,
@@ -280,7 +282,7 @@ def _fetcher(comment: OwnerGoComment):
 def _verified_context(run_plan_fp: str) -> AuthorizationContext:
     payload = _live_payload(run_plan_fp=run_plan_fp)
     verified = verify_owner_execution_go_comment(
-        comment_id=int(payload["github_comment_id"]),
+        comment_id=987654321,
         expected=_expected(payload),
         fetcher=_fetcher(_exec_comment(payload)),
         now_utc=FIXED_NOW,
@@ -641,7 +643,7 @@ def test_resume_reverify_ok_returns_context():
     payload = _live_payload(run_plan_fp=plan.run_plan_fingerprint)
     comment = _exec_comment(payload)
     ctx = reverify_owner_go_for_resume_or_start(
-        comment_id=int(payload["github_comment_id"]),
+        comment_id=987654321,
         expected=_expected(payload),
         fetcher=_fetcher(comment),
         bound_comment_updated_at=comment.updated_at,
@@ -664,7 +666,7 @@ def test_resume_reverify_blocks_on_updated_at_drift_vs_bound():
         HhHlExecutionAuthorizationError, match="HOLD_EXECUTION_GO_COMMENT_MUTATED"
     ):
         reverify_owner_go_for_resume_or_start(
-            comment_id=int(payload["github_comment_id"]),
+            comment_id=987654321,
             expected=_expected(payload),
             fetcher=_fetcher(mutated),
             bound_comment_updated_at="2026-08-06T16:00:00Z",
@@ -681,7 +683,7 @@ def test_resume_reverify_blocks_on_edited_comment():
         HhHlExecutionAuthorizationError, match="HOLD_EXECUTION_GO_COMMENT_MUTATED"
     ):
         reverify_owner_go_for_resume_or_start(
-            comment_id=int(payload["github_comment_id"]),
+            comment_id=987654321,
             expected=_expected(payload),
             fetcher=_fetcher(edited),
             bound_comment_updated_at="2026-08-06T16:00:00Z",
@@ -725,11 +727,118 @@ def test_generator_payload_matches_live_schema_and_template_keys():
 
 
 @pytest.mark.unit
-def test_complete_pre_post_package_validates_with_null_comment_id():
+def test_complete_pre_post_package_validates_without_comment_id():
     payload = _assembled_package()
-    assert payload["github_comment_id"] is None
-    # Must not raise: full structural discipline with a null comment id allowed.
+    assert "github_comment_id" not in payload
+    # Must not raise: signed Owner payload is postable without a self-ID.
     validate_execution_go_package(payload)
+    # Live schema accepts the same body (no host comment id).
+    validate_execution_go_payload(payload, now_utc=FIXED_NOW)
+
+
+@pytest.mark.unit
+def test_fresh_unedited_owner_comment_without_payload_comment_id_accepted():
+    plan = _build_final(POST_MERGE_SHA)
+    payload = _live_payload(run_plan_fp=plan.run_plan_fingerprint)
+    assert "github_comment_id" not in payload
+    verified = verify_owner_execution_go_comment(
+        comment_id=987654321,
+        expected=_expected(payload),
+        fetcher=_fetcher(_exec_comment(payload, comment_id=987654321)),
+        now_utc=FIXED_NOW,
+    )
+    assert verified["valid"] is True
+    assert verified["github_comment_id"] == 987654321
+    assert "github_comment_id" not in verified["payload"]
+    ctx = authorization_context_from_verified_go(verified)
+    assert ctx.github_comment_id == 987654321
+    assert ctx.comment_updated_at == "2026-08-06T16:00:00Z"
+    assert ctx.authorization_fingerprint == verified["authorization_fingerprint"]
+
+
+@pytest.mark.unit
+def test_smuggled_github_comment_id_in_payload_blocked():
+    payload = _live_payload(run_plan_fp="f" * 64, github_comment_id=987654321)
+    assert "github_comment_id" in payload
+    with pytest.raises(
+        HhHlExecutionAuthorizationError,
+        match="HOLD_EXECUTION_GO_HOST_METADATA_IN_PAYLOAD|HOLD_EXECUTION_GO_SCHEMA_VALIDATION_FAILED|HOLD_EXECUTION_GO_PACKAGE_SCHEMA_VALIDATION_FAILED",
+    ):
+        validate_execution_go_payload(payload, now_utc=FIXED_NOW)
+    with pytest.raises(
+        HhHlExecutionAuthorizationError,
+        match="HOLD_EXECUTION_GO_HOST_METADATA_IN_PAYLOAD|HOLD_EXECUTION_GO_PACKAGE_SCHEMA_VALIDATION_FAILED",
+    ):
+        validate_execution_go_package(payload)
+
+
+@pytest.mark.unit
+def test_wrong_requested_comment_id_blocks():
+    plan = _build_final(POST_MERGE_SHA)
+    payload = _live_payload(run_plan_fp=plan.run_plan_fingerprint)
+    comment = _exec_comment(payload, comment_id=111111111)
+
+    def _fetch(repository, issue, comment_id):
+        # Fetcher returns a different id than requested → identity HOLD.
+        return comment
+
+    with pytest.raises(
+        HhHlExecutionAuthorizationError, match="HOLD_EXECUTION_GO_COMMENT_ID_MISMATCH"
+    ):
+        verify_owner_execution_go_comment(
+            comment_id=999999999,
+            expected=_expected(payload),
+            fetcher=_fetch,
+            now_utc=FIXED_NOW,
+        )
+
+
+@pytest.mark.unit
+def test_wrong_author_blocks_without_reaching_replay():
+    plan = _build_final(POST_MERGE_SHA)
+    payload = _live_payload(run_plan_fp=plan.run_plan_fingerprint)
+    provider, calls = _provider_with_counter()
+    with pytest.raises(
+        HhHlExecutionAuthorizationError,
+        match="HOLD_EXECUTION_GO_AUTHOR_NOT_ALLOWLISTED|HOLD_EXECUTION_GO_AUTHOR_LOGIN_INVALID",
+    ):
+        verify_owner_execution_go_comment(
+            comment_id=987654321,
+            expected=_expected(payload),
+            fetcher=_fetcher(
+                OwnerGoComment(
+                    comment_id=987654321,
+                    issue_number=4374,
+                    author_login="not-the-owner",
+                    body=(
+                        "```cdb.hh_hl_campaign_execution_authorization.v1\n"
+                        + json.dumps(payload)
+                        + "\n```"
+                    ),
+                    created_at="2026-08-06T16:00:00Z",
+                    updated_at="2026-08-06T16:00:00Z",
+                    repository=REPO,
+                )
+            ),
+            now_utc=FIXED_NOW,
+        )
+    assert calls == []
+
+
+@pytest.mark.unit
+def test_authorization_fingerprint_deterministic_without_comment_id():
+    plan = _build_final(POST_MERGE_SHA)
+    payload = _live_payload(run_plan_fp=plan.run_plan_fingerprint)
+    fp1 = fingerprint_execution_authorization_payload(payload)
+    fp2 = fingerprint_execution_authorization_payload(dict(payload))
+    assert fp1 == fp2
+    assert len(fp1) == 64
+    # Injecting host metadata must not be silently ignored by the fingerprint
+    # path used after validation — validation rejects first.
+    smuggled = dict(payload)
+    smuggled["github_comment_id"] = 1
+    with pytest.raises(HhHlExecutionAuthorizationError):
+        validate_execution_go_payload(smuggled, now_utc=FIXED_NOW)
 
 
 @pytest.mark.unit
