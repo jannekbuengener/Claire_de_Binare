@@ -15,7 +15,7 @@ import argparse
 import json
 import sys
 from collections.abc import Callable
-from datetime import datetime, timezone
+from datetime import datetime
 from pathlib import Path
 from typing import Any, Mapping
 
@@ -25,6 +25,7 @@ from core.replay.hh_hl_continuation_common import (
     HH_HL_CONTINUATION_STRATEGY_ID,
     frozen_hh_hl_parameters,
 )
+from core.utils.clock import utcnow as cdb_utcnow
 from tools.arvp_vacation.campaign_executor_providers import (
     HhHlSingleRunReplayProvider,
     resolve_campaign_executor,
@@ -183,7 +184,7 @@ def _load_json(path: Path) -> dict[str, Any]:
 def _now_utc() -> datetime:
     if _TEST_NOW_UTC is not None:
         return _TEST_NOW_UTC
-    return datetime.now(timezone.utc)
+    return cdb_utcnow()
 
 
 def _owner_go_fetcher(_args: argparse.Namespace | None = None) -> OwnerGoFetcher:
