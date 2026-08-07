@@ -1384,10 +1384,104 @@ class RiskManager:
         allocation = self._get_allocation_state(strategy_id)
         return 0 < allocation.allocation_pct <= self.config.early_live_max_alloc
 
+    def _apply_regime_state(self, regime: str) -> None:
+        """Update module regime state with fail-closed UNKNOWN handling."""
+        global current_regime, risk_off_active
+        normalized = (regime or "UNKNOWN").strip() or "UNKNOWN"
+        current_regime = normalized
+        # Fail-closed: unknown or chaotic keeps risk_off asserted.
+        risk_off_active = normalized in {"HIGH_VOL_CHAOTIC", "UNKNOWN"}
+
+    def _fail_closed_unknown_regime(self, reason: str) -> None:
+        """Assert risk_off when current regime cannot be proven."""
+        global current_regime, risk_off_active
+        current_regime = "UNKNOWN"
+        risk_off_active = True
+        logger.error("Regime state unknown — fail-closed risk_off=True (%s)", reason)
+
+    def _resubscribe_signal_pubsub(self) -> bool:
+        """Recreate and resubscribe the signal pubsub after a disconnect."""
+        if not self.redis_client:
+            logger.error("Signal PubSub resubscribe failed: no redis client")
+            return False
+        try:
+            if self.pubsub is not None:
+                try:
+                    self.pubsub.close()
+                except Exception:  # noqa: BLE001
+                    logger.debug("Prior signal pubsub close failed", exc_info=True)
+            self.pubsub = self.redis_client.pubsub()
+            self.pubsub.subscribe(self.config.input_topic)
+            logger.info(
+                "Signal PubSub resubscribed to topic: %s", self.config.input_topic
+            )
+            return True
+        except Exception as err:  # noqa: BLE001
+            logger.error("Signal PubSub resubscribe failed: %s", err)
+            return False
+
+    def _resubscribe_order_results_pubsub(self) -> bool:
+        """Recreate and resubscribe the order-results pubsub after a disconnect."""
+        if not self.redis_client:
+            logger.error("Order-Result PubSub resubscribe failed: no redis client")
+            return False
+        try:
+            if self.pubsub_results is not None:
+                try:
+                    self.pubsub_results.close()
+                except Exception:  # noqa: BLE001
+                    logger.debug(
+                        "Prior order-results pubsub close failed", exc_info=True
+                    )
+            self.pubsub_results = self.redis_client.pubsub()
+            self.pubsub_results.subscribe(self.config.input_topic_order_results)
+            logger.info(
+                "Order-Result PubSub resubscribed to topic: %s",
+                self.config.input_topic_order_results,
+            )
+            return True
+        except Exception as err:  # noqa: BLE001
+            logger.error("Order-Result PubSub resubscribe failed: %s", err)
+            return False
+
     def _listen_regime_stream(self):
-        if not self.redis_client or not self.config.regime_stream:
+        if not self.config.regime_stream:
             return
-        last_id = "0-0"
+        if not self.redis_client:
+            self._fail_closed_unknown_regime("regime stream configured without redis")
+            return
+
+        # Fail-closed until bootstrap proves a concrete non-unknown regime.
+        # Prevents missing an already-active HIGH_VOL_CHAOTIC after restart.
+        global current_regime, risk_off_active
+        current_regime = "UNKNOWN"
+        risk_off_active = True
+        last_id = "$"
+        try:
+            recent = self.redis_client.xrevrange(
+                self.config.regime_stream, "+", "-", count=1
+            )
+            if recent:
+                entry_id, payload = recent[0]
+                last_id = entry_id
+                regime = payload.get("regime", "UNKNOWN")
+                self._apply_regime_state(regime)
+                logger.info(
+                    "Bootstrap Regime: %s (risk_off=%s)",
+                    current_regime,
+                    risk_off_active,
+                )
+            else:
+                self._fail_closed_unknown_regime(
+                    "regime stream empty at bootstrap; waiting for next event"
+                )
+                last_id = "$"
+        except Exception as err:  # noqa: BLE001
+            self._fail_closed_unknown_regime(
+                f"regime bootstrap xrevrange failed: {err}"
+            )
+            last_id = "$"
+
         while self.running:
             try:
                 response = self.redis_client.xread(
@@ -1399,13 +1493,14 @@ class RiskManager:
                     for entry_id, payload in entries:
                         last_id = entry_id
                         regime = payload.get("regime", "UNKNOWN")
-                        global current_regime, risk_off_active
-                        current_regime = regime
-                        risk_off_active = regime == "HIGH_VOL_CHAOTIC"
+                        self._apply_regime_state(regime)
                         logger.info(
-                            "Regime-Update: %s (risk_off=%s)", regime, risk_off_active
+                            "Regime-Update: %s (risk_off=%s)",
+                            current_regime,
+                            risk_off_active,
                         )
             except Exception as err:  # noqa: BLE001
+                # Keep last known fail-closed posture; do not clear risk_off on errors.
                 logger.error("Regime-Stream Fehler: %s", err)
                 time.sleep(1)
 
@@ -2725,17 +2820,30 @@ class RiskManager:
             )
 
     def listen_order_results(self):
-        """Hintergrund-Listener für order_result Topic"""
+        """Hintergrund-Listener für order_result Topic.
+
+        Uses get_message(timeout=...) like execution so idle socket_timeout
+        from create_redis_client does not kill the thread / process (#4382).
+        """
         if not self.pubsub_results:
             return
 
         logger.info("Order-Result Listener aktiv")
 
         try:
-            for message in self.pubsub_results.listen():
-                if not self.running:
-                    break
-                if message.get("type") != "message":
+            while self.running:
+                try:
+                    message = self.pubsub_results.get_message(timeout=1.0)
+                except redis.TimeoutError as err:
+                    logger.debug("Order-Result PubSub idle timeout: %s", err)
+                    continue
+                except redis.ConnectionError as err:
+                    logger.error("Order-Result PubSub connection error: %s", err)
+                    if not self._resubscribe_order_results_pubsub():
+                        time.sleep(1)
+                    continue
+
+                if not message or message.get("type") != "message":
                     continue
                 try:
                     payload = json.loads(message["data"])
@@ -2761,7 +2869,11 @@ class RiskManager:
             logger.info("Order-Result Listener beendet")
 
     def run(self):
-        """Hauptschleife"""
+        """Hauptschleife.
+
+        Uses get_message(timeout=...) like execution so blocking pubsub.listen()
+        cannot turn create_redis_client socket_timeout=5.0 into a crash-loop (#4382).
+        """
         self.running = True
         stats["status"] = "running"
         stats["started_at"] = utcnow().isoformat()
@@ -2801,11 +2913,25 @@ class RiskManager:
             logger.info("Shutdown-Stream Listener Thread gestartet")
 
         try:
-            for message in self.pubsub.listen():
-                if not self.running:
+            while self.running:
+                try:
+                    message = self.pubsub.get_message(timeout=1.0)
+                except redis.TimeoutError as err:
+                    logger.debug("Signal PubSub idle timeout: %s", err)
+                    continue
+                except redis.ConnectionError as err:
+                    logger.error("Signal PubSub connection error: %s", err)
+                    if not self._resubscribe_signal_pubsub():
+                        time.sleep(1)
+                    continue
+                except KeyboardInterrupt:
+                    logger.info("Shutdown via Keyboard")
                     break
 
-                if message["type"] == "message":
+                if not message:
+                    continue
+
+                if message.get("type") == "message":
                     try:
                         data = json.loads(message["data"])
                         signal = Signal.from_dict(data)
@@ -2831,8 +2957,6 @@ class RiskManager:
                             "orders_skipped"
                         ] += 1  # Silent drop: Signal parsing error
 
-        except KeyboardInterrupt:
-            logger.info("Shutdown via Keyboard")
         finally:
             self.shutdown()
 
