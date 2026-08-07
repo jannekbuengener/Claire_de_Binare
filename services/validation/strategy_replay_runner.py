@@ -76,7 +76,10 @@ from core.replay.batch_b_strategy_registry import (
     batch_b_strategy_ids,
     get_batch_b_strategy,
 )
-from core.replay.hh_hl_continuation_common import BATCH_B_SHADOW_ADAPTER_ID
+from core.replay.hh_hl_continuation_common import (
+    BATCH_B_SHADOW_ADAPTER_ID,
+    HH_HL_CONTINUATION_STRATEGY_ID,
+)
 from core.replay.binance_window_bank_adapter import (
     BinanceWindowBankAdapterError,
     load_binance_window_dataset,
@@ -233,6 +236,7 @@ _BINANCE_WINDOW_DATASET_STRATEGIES: frozenset[str] = frozenset(
     {
         RANGE_MEAN_REVERSION_STRATEGY_ID,
         MOMENTUM_CAPTURE_STRATEGY_ID,
+        HH_HL_CONTINUATION_STRATEGY_ID,
     }
 )
 
@@ -1539,6 +1543,40 @@ def _write_supplementary_artifacts(
 # ---------------------------------------------------------------------------
 # Orchestration
 # ---------------------------------------------------------------------------
+# ---------------------------------------------------------------------------
+# Typed single-run outcome (CLI keeps int exit codes)
+# ---------------------------------------------------------------------------
+@dataclass(frozen=True, slots=True)
+class ArvpReplayOutcome:
+    """Structured result for a single ARVP replay orchestration."""
+
+    exit_code: int
+    run_id: str | None = None
+    artifact_root: str | None = None
+    gate_result: dict[str, Any] | None = None
+    metrics: dict[str, Any] | None = None
+    content_fingerprint: str | None = None
+    detail: str = ""
+
+
+def _metrics_subset_from_backtest(backtest_report: Mapping[str, Any]) -> dict[str, Any]:
+    raw_metrics = (
+        backtest_report.get("metrics") if isinstance(backtest_report, Mapping) else None
+    )
+    metrics = dict(raw_metrics) if isinstance(raw_metrics, Mapping) else {}
+    out: dict[str, Any] = {}
+    for key in (
+        "closed_trades_total",
+        "fees_total_quote",
+        "net_pnl_quote",
+        "expectancy_r",
+        "max_drawdown_r",
+    ):
+        if key in metrics:
+            out[key] = metrics[key]
+    return out
+
+
 def run_arvp_replay(config: ARVPReplayConfig) -> int:
     """Orchestrate a full ARVP replay run (baseline or scenario group).
 
@@ -1547,6 +1585,18 @@ def run_arvp_replay(config: ARVPReplayConfig) -> int:
 
     Returns:
         Exit code integer: 0 success, 1 config error, 2 runtime/input error.
+    """
+    return int(run_arvp_replay_detailed(config).exit_code)
+
+
+def run_arvp_replay_detailed(config: ARVPReplayConfig) -> ArvpReplayOutcome:
+    """Orchestrate a full ARVP replay run (baseline or scenario group).
+
+    Args:
+        config: Validated ARVPReplayConfig instance.
+
+    Returns:
+        ArvpReplayOutcome with exit_code 0/1/2 and optional metrics bindings.
     """
     # Strategy-aware warmup count
     warmup_count = _strategy_warmup_count(config)
@@ -1560,15 +1610,18 @@ def run_arvp_replay(config: ARVPReplayConfig) -> int:
                 f"(strategy_id={config.strategy_id!r}; HARDEN_PR_4373_BEFORE_MERGE).",
                 file=sys.stderr,
             )
-            return 1
-        return _run_scenario_group_path_with_candles(config, warmup_count=warmup_count)
+            return ArvpReplayOutcome(exit_code=1)
+        sg_code = int(
+            _run_scenario_group_path_with_candles(config, warmup_count=warmup_count)
+        )
+        return ArvpReplayOutcome(exit_code=sg_code, detail="scenario_group_path")
 
     # Single-run path: strategy-aware dispatch
     try:
         dataset_result = _load_dataset_result(config, warmup_count=warmup_count)
     except ReplayRunnerError as exc:
         print(f"ERROR: {exc}", file=sys.stderr)
-        return 2
+        return ArvpReplayOutcome(exit_code=2)
 
     candles: list[dict[str, Any]] = [dict(candle) for candle in dataset_result.candles]
 
@@ -1577,7 +1630,7 @@ def run_arvp_replay(config: ARVPReplayConfig) -> int:
             "DRY-RUN: config valid, dataset loaded. "
             f"source={config.dataset_source!r}, candles_total={len(candles)}."
         )
-        return 0
+        return ArvpReplayOutcome(exit_code=0)
 
     output_dir = Path(config.output_directory)
     code_commit = _get_code_commit()
@@ -1622,7 +1675,7 @@ def run_arvp_replay(config: ARVPReplayConfig) -> int:
         )
     except (ReplayRunnerError, RunRegistryError) as exc:
         print(f"ERROR: {exc}", file=sys.stderr)
-        return 2
+        return ArvpReplayOutcome(exit_code=2)
 
     started_at_utc = _utc_now_iso()
     artifact_root = str(output_dir / run_id)
@@ -1644,7 +1697,7 @@ def run_arvp_replay(config: ARVPReplayConfig) -> int:
         )
     except RunRegistryError as exc:
         print(f"ERROR: Failed to write running run record: {exc}", file=sys.stderr)
-        return 2
+        return ArvpReplayOutcome(exit_code=2)
 
     # Delegate to the strategy-specific backtest surface
     try:
@@ -1676,7 +1729,7 @@ def run_arvp_replay(config: ARVPReplayConfig) -> int:
                 file=sys.stderr,
             )
         print(f"ERROR: Replay execution failed: {exc}", file=sys.stderr)
-        return 2
+        return ArvpReplayOutcome(exit_code=2)
     except Exception as exc:
         try:
             _append_failed_record(
@@ -1698,7 +1751,7 @@ def run_arvp_replay(config: ARVPReplayConfig) -> int:
                 file=sys.stderr,
             )
         print(f"ERROR: Unexpected runtime failure: {exc}", file=sys.stderr)
-        return 2
+        return ArvpReplayOutcome(exit_code=2)
 
     # Bridge backtest report → replay contract shape
     try:
@@ -1734,7 +1787,7 @@ def run_arvp_replay(config: ARVPReplayConfig) -> int:
                 file=sys.stderr,
             )
         print(f"ERROR: Failed to build replay report input: {exc}", file=sys.stderr)
-        return 2
+        return ArvpReplayOutcome(exit_code=2)
 
     # Write artifact bundle via reporter (#1805 surface)
     reporter = ReplayReporter()
@@ -1761,7 +1814,7 @@ def run_arvp_replay(config: ARVPReplayConfig) -> int:
                 file=sys.stderr,
             )
         print(f"ERROR: Replay reporter failed: {exc}", file=sys.stderr)
-        return 2
+        return ArvpReplayOutcome(exit_code=2)
 
     # Write supplementary artifacts (CLI layer, not part of canonical hash)
     artifact_root = str(bundle_dir)
@@ -1788,7 +1841,7 @@ def run_arvp_replay(config: ARVPReplayConfig) -> int:
                 file=sys.stderr,
             )
         print(f"ERROR: Failed to write supplementary artifacts: {exc}", file=sys.stderr)
-        return 2
+        return ArvpReplayOutcome(exit_code=2)
 
     # Determinism check
     gate_status = (backtest_report.get("gate_result") or {}).get("status")
@@ -1847,7 +1900,7 @@ def run_arvp_replay(config: ARVPReplayConfig) -> int:
                 "ERROR: --deterministic-verify is set; aborting with exit code 2.",
                 file=sys.stderr,
             )
-            return 2
+            return ArvpReplayOutcome(exit_code=2)
 
     completed_record = ReplayRunRecord(
         run_id=run_id,
@@ -1868,7 +1921,7 @@ def run_arvp_replay(config: ARVPReplayConfig) -> int:
         registry.append(completed_record)
     except RunRegistryError as exc:
         print(f"ERROR: Failed to write completed run record: {exc}", file=sys.stderr)
-        return 2
+        return ArvpReplayOutcome(exit_code=2)
 
     try:
         _write_operator_summary_artifact(bundle_dir, completed_record)
@@ -1894,7 +1947,7 @@ def run_arvp_replay(config: ARVPReplayConfig) -> int:
                 file=sys.stderr,
             )
         print(f"ERROR: Failed to write operator summary: {exc}", file=sys.stderr)
-        return 2
+        return ArvpReplayOutcome(exit_code=2)
 
     print(f"Shadow replay complete: run_id={run_id}")
     print("  status=completed")
@@ -1907,7 +1960,22 @@ def run_arvp_replay(config: ARVPReplayConfig) -> int:
     print(f"  gate_result={gate_status or 'UNKNOWN'}")
     print(f"  deterministic_replay_ok={deterministic_replay_ok}")
     print(f"  bundle_dir={bundle_dir}")
-    return 0
+    return ArvpReplayOutcome(
+        exit_code=0,
+        run_id=run_id,
+        artifact_root=str(bundle_dir),
+        gate_result=(
+            dict(backtest_report.get("gate_result") or {})
+            if isinstance(backtest_report.get("gate_result"), Mapping)
+            else {"status": gate_status}
+        ),
+        metrics=_metrics_subset_from_backtest(backtest_report),
+        content_fingerprint=(
+            str(dataset_result.content_fingerprint)
+            if dataset_result.content_fingerprint is not None
+            else None
+        ),
+    )
 
 
 # ---------------------------------------------------------------------------
