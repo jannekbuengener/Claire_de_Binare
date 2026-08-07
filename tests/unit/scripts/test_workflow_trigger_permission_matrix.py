@@ -37,8 +37,11 @@ def test_trigger_matrix_is_complete() -> None:
 @pytest.mark.parametrize(
     "filename,expected_triggers",
     [
-        ("ci.yml", ("pull_request", "push")),
+        ("ci.yml", ("push", "workflow_dispatch")),
         ("policy-gate.yml", ("pull_request",)),
+        ("docs-conflict-guard.yml", ("push", "workflow_dispatch")),
+        ("repository-canon-guard.yml", ("push", "workflow_dispatch")),
+        ("codeql-python.yml", ("push", "schedule", "workflow_dispatch")),
         ("required-checks-audit.yml", ("workflow_dispatch",)),
         ("project_reconcile_daily.yml", ("schedule", "workflow_dispatch")),
     ],

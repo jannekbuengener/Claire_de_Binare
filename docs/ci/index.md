@@ -34,13 +34,14 @@ verifizierbar via `gh api` Check Runs — nicht via Commit Status.
 
 | Workflow | Rolle | Trigger |
 |---|---|---|
-| [`ci.yml`](../../.github/workflows/ci.yml) | Hosted Actions, advisory | `pull_request`, gefilterter `push` |
-| [`policy-gate.yml`](../../.github/workflows/policy-gate.yml) | Hosted Actions, advisory | `pull_request` |
+| [`ci.yml`](../../.github/workflows/ci.yml) | Hosted Fast-CI mirror, advisory (#4401: kein PR) | gefilterter `push`, `workflow_dispatch` |
+| [`policy-gate.yml`](../../.github/workflows/policy-gate.yml) | Hosted lightweight PR policy gate | `pull_request` |
 
 `ci.yml` und `policy-gate.yml` sind seit Migration #4169 **nicht mehr**
-branch-protection-required. Sie bleiben als Workflow-Inhalt / Safety-Gates
-nützlich (Hosted-Actions-Signal), ersetzen aber nicht `cdb-local-ci`. Ein
-rotes/blockiertes Hosted-Actions-Billing-/Runner-Lock ist eine
+branch-protection-required. Ab #4401 startet die breite hosted Fast-CI nicht
+mehr auf jedem PR — Final-Head-Evidence ist lokale Fast-CI + App Check Run
+`cdb-local-ci`. `policy-gate` bleibt als leichter hosted Safety-Gate.
+Ein rotes/blockiertes Hosted-Actions-Billing-/Runner-Lock ist eine
 Infrastruktur-Bedingung, kein Code-Fehler, und darf nicht mit einem
 fehlenden/roten `cdb-local-ci` verwechselt werden.
 

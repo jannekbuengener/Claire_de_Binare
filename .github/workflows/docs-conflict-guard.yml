@@ -1,11 +1,10 @@
 name: Docs Conflict Guard
 
-# NOISE-FREEZE (#2613): auto-triggers disabled due to billing/account-locked
-# RESTORED (#3659): billing recovery complete, triggers re-enabled
+# #4401: PR trigger removed — equivalent coverage is in local Fast-CI docs stage
+# (`python -m tools.ci.docs_conflict_guard` via ci/stages/docs.py → cdb-local-ci).
+# Retained: push-to-main (post-squash tip) + manual dispatch.
 on:
   push:
-    branches: [main]
-  pull_request:
     branches: [main]
   workflow_dispatch:
 

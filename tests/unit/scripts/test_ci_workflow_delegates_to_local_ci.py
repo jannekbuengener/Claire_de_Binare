@@ -44,9 +44,11 @@ def test_ci_workflow_identity_stable() -> None:
     payload = _load_ci()
     assert payload.get("name") == "ci"
     triggers = helpers.extract_on_triggers(payload)
-    assert triggers == {"pull_request", "push"}
+    # #4401: PR trigger removed; push-to-main + workflow_dispatch retained.
+    assert triggers == {"push", "workflow_dispatch"}
     text = CI_WORKFLOW.read_text(encoding="utf-8")
     assert "branches: [ main ]" in text or "branches: [main]" in text
+    assert "pull_request" not in helpers.extract_on_triggers(payload)
     row = helpers.build_trigger_permission_row(CI_WORKFLOW)
     assert row.write_permissions == ()
     permissions = helpers.extract_top_level_permissions(payload)
@@ -120,3 +122,35 @@ def test_policy_gate_remains_github_native() -> None:
     assert ORCHESTRATOR not in content
     assert "actions/github-script@" in content
     assert "full policy-gate parity" not in content.lower()
+
+
+def test_hosted_pr_triggers_removed_when_local_fast_ci_covers() -> None:
+    """#4401: drop PR triggers for Fast-CI-covered hosted mirrors; keep policy-gate."""
+    covered_by_fast_ci = (
+        "ci.yml",
+        "docs-conflict-guard.yml",
+        "repository-canon-guard.yml",
+    )
+    for name in covered_by_fast_ci:
+        triggers = helpers.extract_on_triggers(
+            helpers.load_workflow_yaml(helpers.WORKFLOWS_DIR / name)
+        )
+        assert "pull_request" not in triggers, name
+        assert "push" in triggers or "workflow_dispatch" in triggers
+    # CodeQL is not Fast-CI-equivalent; PR trigger removed for cost, push+schedule kept.
+    codeql = helpers.extract_on_triggers(
+        helpers.load_workflow_yaml(helpers.WORKFLOWS_DIR / "codeql-python.yml")
+    )
+    assert "pull_request" not in codeql
+    assert {"push", "schedule", "workflow_dispatch"} <= codeql
+    policy = helpers.extract_on_triggers(
+        helpers.load_workflow_yaml(helpers.WORKFLOWS_DIR / "policy-gate.yml")
+    )
+    assert "pull_request" in policy
+    docs_stage = (helpers.REPO_ROOT / "ci" / "stages" / "docs.py").read_text(
+        encoding="utf-8"
+    )
+    assert "tools.ci.docs_conflict_guard" in docs_stage
+    assert "tools.ci.repository_canon_guard" in docs_stage
+    run_text = _joined_run_scripts(_ci_job_steps(_load_ci()))
+    assert ORCHESTRATOR in run_text and "--profile fast" in run_text

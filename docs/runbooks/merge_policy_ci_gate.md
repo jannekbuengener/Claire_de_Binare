@@ -39,8 +39,11 @@ Für Pull Requests auf `main` gilt genau ein merge-relevanter Required Context
 
 Die früheren Required Checks `ci (Unit/Integration + Lint gesammelt)` und
 `policy-gate` sind **nicht mehr** branch-protection-required (Migration #4169).
-`ci.yml` und `policy-gate.yml` bleiben als Workflow-Inhalt / Safety-Gates
-nützlich, ersetzen aber den Required Context nicht.
+Ab #4401 startet die breite hosted Fast-CI (`ci.yml`) **nicht** mehr auf
+jedem `pull_request` — sie bleibt als post-merge/`workflow_dispatch`-Mirror
+für den Squash-Tip auf `main`. `policy-gate.yml` bleibt ein leichter
+hosted PR-Safety-Gate (Labels/Scope/Workflow-Permissions). Beide ersetzen
+den Required Context `cdb-local-ci` nicht.
 
 **Post-#4170 Phase D (live):** Branch Protection akzeptiert `cdb-local-ci`
 ausschließlich als Check Run der GitHub App `4410232`. Ein gleichnamiger

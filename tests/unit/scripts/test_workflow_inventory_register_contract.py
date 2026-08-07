@@ -67,7 +67,9 @@ def test_register_classifies_current_workflows(filename: str, expected_status: s
 def test_canonical_ci_is_active() -> None:
     workflow_path = helpers.WORKFLOWS_DIR / helpers.ACTIVE_CANONICAL_CI_WORKFLOW
     triggers = helpers.extract_on_triggers(helpers.load_workflow_yaml(workflow_path))
-    assert {"pull_request", "push"} <= triggers
+    # #4401: hosted Fast-CI mirror is post-merge + manual; PR path is cdb-local-ci.
+    assert {"push", "workflow_dispatch"} <= triggers
+    assert "pull_request" not in triggers
 
 
 def test_fixture_detects_unregistered_workflow_drift() -> None:

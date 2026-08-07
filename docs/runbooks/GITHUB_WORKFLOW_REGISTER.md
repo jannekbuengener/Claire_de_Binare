@@ -1,7 +1,7 @@
 # GitHub Workflow Register
 
 **Repo:** Claire de Binare  
-**Stand:** 2026-07-16  
+**Stand:** 2026-08-07 (#4401 hosted-PR trigger reduction)
 **Workflow-Dateien:** 57  
 **Entfernungs-Scope:** 13 Workflow-Dateien plus 5 exklusive Support-Dateien  
 **Daten-Datei im Workflow-Ordner:** `labels.json` (kein Workflow)
@@ -32,13 +32,15 @@ dieser Tabelle.
 
 | Workflow | Rolle |
 |---|---|
-| `ci.yml` | Hosted Actions, advisory (nicht branch-protection-required) |
-| `policy-gate.yml` | Hosted Actions, advisory (nicht branch-protection-required) |
+| `ci.yml` | Hosted Actions, advisory; post-merge/manual mirror (#4401, nicht PR) |
+| `policy-gate.yml` | Hosted Actions, advisory lightweight PR policy gate |
 
 `ci.yml` und `policy-gate.yml` sind seit Migration #4169 keine
-Branch-Protection-Required-Checks mehr. Andere Workflows liefern
-ergänzende Prüfungen, Reports oder Automatisierung, ersetzen aber ebenfalls
-nicht `cdb-local-ci`.
+Branch-Protection-Required-Checks mehr. Ab #4401 startet die breite
+hosted Fast-CI (`ci.yml`) nicht mehr auf jedem PR — Final-Head-Evidence
+kommt aus lokaler Fast-CI + App Check Run `cdb-local-ci`. Andere Workflows
+liefern ergänzende Prüfungen, Reports oder Automatisierung, ersetzen aber
+ebenfalls nicht `cdb-local-ci`.
 
 ## Vollständiges Inventar
 
@@ -59,8 +61,8 @@ nicht `cdb-local-ci`.
 | `cdb-dependabot-autopilot.yml` | aktiv | schedule, workflow_dispatch | read-only | low |
 | `cdb-post-merge-followup-scanner.yml` | aktiv | pull_request, workflow_dispatch | issues:write | medium |
 | `cdb-weekly-control-hygiene-classifier.yml` | aktiv | schedule, workflow_dispatch | issues:write | medium |
-| `ci.yml` | aktiv | pull_request, push | read-only | low |
-| `codeql-python.yml` | aktiv | pull_request, push, schedule, workflow_dispatch | read-only | low |
+| `ci.yml` | aktiv | push, workflow_dispatch | read-only | low |
+| `codeql-python.yml` | aktiv | push, schedule, workflow_dispatch | read-only | low |
 | `contracts.yml` | aktiv | push, schedule, workflow_dispatch | read-only | low |
 | `control_board_upsert.yml` | aktiv | schedule, workflow_dispatch | read-only | low |
 | `copilot-housekeeping.yml` | aktiv | schedule, workflow_dispatch | issues:write, pull-requests:write | medium |
@@ -68,8 +70,8 @@ nicht `cdb-local-ci`.
 | `core-guard.yml` | aktiv | push, schedule, workflow_dispatch | read-only | low |
 | `delivery-gate.yml` | aktiv | schedule, workflow_dispatch | read-only | low |
 | `docker-publish.yml` | aktiv | push, workflow_dispatch | read-only | low |
-| `docs-conflict-guard.yml` | aktiv | pull_request, push, workflow_dispatch | read-only | low |
-| `repository-canon-guard.yml` | aktiv | pull_request, push, workflow_dispatch | read-only | low |
+| `docs-conflict-guard.yml` | aktiv | push, workflow_dispatch | read-only | low |
+| `repository-canon-guard.yml` | aktiv | push, workflow_dispatch | read-only | low |
 | `e2e-happy-path.yaml` | aktiv | schedule, workflow_dispatch | read-only | low |
 | `e2e-tests.yml` | aktiv | schedule, workflow_dispatch | issues:write | medium |
 | `e2e.yml` | aktiv | push, schedule, workflow_dispatch | read-only | low |
