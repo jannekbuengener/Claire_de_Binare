@@ -1,0 +1,2103 @@
+{
+  "count": 95,
+  "counts": {
+    "NEEDED_FOLLOWUP_ISSUE": 52,
+    "NEEDED_QUICK_FINISH": 1,
+    "OBSOLETE_REMOVE": 12,
+    "UNCLEAR_HOLD": 30
+  },
+  "enrich": true,
+  "results": [
+    {
+      "classification": "UNCLEAR_HOLD",
+      "facts": {
+        "active_issue": null,
+        "branch": null,
+        "dirty": true,
+        "head": "ba6b1d94c6da480b77fa3ffcb7d46bba6f0d42a2",
+        "is_main_checkout": true,
+        "locked": null,
+        "merged_into_base": true,
+        "on_windows_legacy_drive": true,
+        "path": "D:/Dev/Workspaces/Repos/Claire_de_Binare",
+        "path_exists": true,
+        "prunable": false,
+        "unpushed": false
+      },
+      "notes": "Main checkout is allowed on D:; not a legacy migration target.",
+      "path": "D:/Dev/Workspaces/Repos/Claire_de_Binare",
+      "reason_codes": [
+        "MAIN_CHECKOUT_ALLOWED"
+      ]
+    },
+    {
+      "classification": "UNCLEAR_HOLD",
+      "facts": {
+        "active_issue": null,
+        "branch": null,
+        "dirty": null,
+        "head": "850b2c25770e6c220704965b1c09d37796049dd9",
+        "is_main_checkout": false,
+        "locked": null,
+        "merged_into_base": null,
+        "on_windows_legacy_drive": true,
+        "path": "C:/Users/janne/AppData/Local/Temp/cdb-main-unit-check",
+        "path_exists": false,
+        "prunable": true,
+        "unpushed": null
+      },
+      "notes": "Path missing; do not delete without evidence.",
+      "path": "C:/Users/janne/AppData/Local/Temp/cdb-main-unit-check",
+      "reason_codes": [
+        "UNCLEAR_HOLD"
+      ]
+    },
+    {
+      "classification": "NEEDED_FOLLOWUP_ISSUE",
+      "facts": {
+        "active_issue": "2513",
+        "branch": "security-backlog-reconciliation-2513",
+        "dirty": false,
+        "head": "401dd294a52db510d8e6ebb979601c6472600b42",
+        "is_main_checkout": false,
+        "locked": null,
+        "merged_into_base": false,
+        "on_windows_legacy_drive": true,
+        "path": "D:/Dev/Workspaces/Repos/cdb-wt-2513-security-backlog",
+        "path_exists": true,
+        "prunable": false,
+        "unpushed": true
+      },
+      "notes": "Unpushed work with known issue; capture follow-up before cleanup.",
+      "path": "D:/Dev/Workspaces/Repos/cdb-wt-2513-security-backlog",
+      "reason_codes": [
+        "NEEDED_FOLLOWUP_ISSUE"
+      ]
+    },
+    {
+      "classification": "NEEDED_FOLLOWUP_ISSUE",
+      "facts": {
+        "active_issue": "2513",
+        "branch": "runtime-risk-issue-2513",
+        "dirty": false,
+        "head": "e6fb19591464249bb972ed1e0075089c266d79eb",
+        "is_main_checkout": false,
+        "locked": null,
+        "merged_into_base": false,
+        "on_windows_legacy_drive": true,
+        "path": "D:/Dev/Workspaces/Repos/cdb-wt-2513-security-recon-20260805",
+        "path_exists": true,
+        "prunable": false,
+        "unpushed": true
+      },
+      "notes": "Unpushed work with known issue; capture follow-up before cleanup.",
+      "path": "D:/Dev/Workspaces/Repos/cdb-wt-2513-security-recon-20260805",
+      "reason_codes": [
+        "NEEDED_FOLLOWUP_ISSUE"
+      ]
+    },
+    {
+      "classification": "NEEDED_FOLLOWUP_ISSUE",
+      "facts": {
+        "active_issue": "4032",
+        "branch": "4032-stage-a-evidence",
+        "dirty": false,
+        "head": "8c5af7ecfb5a30a78675d52ce99f22e03c54a98c",
+        "is_main_checkout": false,
+        "locked": null,
+        "merged_into_base": false,
+        "on_windows_legacy_drive": true,
+        "path": "D:/Dev/Workspaces/Repos/cdb-wt-4032-campaign",
+        "path_exists": true,
+        "prunable": false,
+        "unpushed": true
+      },
+      "notes": "Unpushed work with known issue; capture follow-up before cleanup.",
+      "path": "D:/Dev/Workspaces/Repos/cdb-wt-4032-campaign",
+      "reason_codes": [
+        "NEEDED_FOLLOWUP_ISSUE"
+      ]
+    },
+    {
+      "classification": "NEEDED_FOLLOWUP_ISSUE",
+      "facts": {
+        "active_issue": "4032",
+        "branch": "4032-batch-a-stage-a-gate",
+        "dirty": false,
+        "head": "5fae0460d688802b3c42c7db4c8ab9962eb30203",
+        "is_main_checkout": false,
+        "locked": null,
+        "merged_into_base": false,
+        "on_windows_legacy_drive": true,
+        "path": "D:/Dev/Workspaces/Repos/cdb-wt-4032-gate",
+        "path_exists": true,
+        "prunable": false,
+        "unpushed": true
+      },
+      "notes": "Unpushed work with known issue; capture follow-up before cleanup.",
+      "path": "D:/Dev/Workspaces/Repos/cdb-wt-4032-gate",
+      "reason_codes": [
+        "NEEDED_FOLLOWUP_ISSUE"
+      ]
+    },
+    {
+      "classification": "NEEDED_FOLLOWUP_ISSUE",
+      "facts": {
+        "active_issue": "4034",
+        "branch": "4034-wp5-no-survivors-closeout",
+        "dirty": false,
+        "head": "78960411a60e9fe0ecd38a92759a59a96aea5f1d",
+        "is_main_checkout": false,
+        "locked": null,
+        "merged_into_base": false,
+        "on_windows_legacy_drive": true,
+        "path": "D:/Dev/Workspaces/Repos/cdb-wt-4034-wp5-closeout",
+        "path_exists": true,
+        "prunable": false,
+        "unpushed": true
+      },
+      "notes": "Unpushed work with known issue; capture follow-up before cleanup.",
+      "path": "D:/Dev/Workspaces/Repos/cdb-wt-4034-wp5-closeout",
+      "reason_codes": [
+        "NEEDED_FOLLOWUP_ISSUE"
+      ]
+    },
+    {
+      "classification": "NEEDED_FOLLOWUP_ISSUE",
+      "facts": {
+        "active_issue": "4080",
+        "branch": "runtime-risk-issue-4080",
+        "dirty": false,
+        "head": "da3df28d85c4ebaa1750cea59db6d9eb69f3a235",
+        "is_main_checkout": false,
+        "locked": null,
+        "merged_into_base": false,
+        "on_windows_legacy_drive": true,
+        "path": "D:/Dev/Workspaces/Repos/cdb-wt-4080-curl-hold",
+        "path_exists": true,
+        "prunable": false,
+        "unpushed": true
+      },
+      "notes": "Unpushed work with known issue; capture follow-up before cleanup.",
+      "path": "D:/Dev/Workspaces/Repos/cdb-wt-4080-curl-hold",
+      "reason_codes": [
+        "NEEDED_FOLLOWUP_ISSUE"
+      ]
+    },
+    {
+      "classification": "OBSOLETE_REMOVE",
+      "facts": {
+        "active_issue": "4153",
+        "branch": null,
+        "dirty": false,
+        "head": "ec663f4f542827775721f077b255b678bd205894",
+        "is_main_checkout": false,
+        "locked": null,
+        "merged_into_base": true,
+        "on_windows_legacy_drive": true,
+        "path": "D:/Dev/Workspaces/Repos/cdb-wt-4153-campaign-execute",
+        "path_exists": true,
+        "prunable": false,
+        "unpushed": false
+      },
+      "notes": "Clean and merged/prunable; candidate for controlled removal.",
+      "path": "D:/Dev/Workspaces/Repos/cdb-wt-4153-campaign-execute",
+      "reason_codes": [
+        "OBSOLETE_REMOVE"
+      ]
+    },
+    {
+      "classification": "OBSOLETE_REMOVE",
+      "facts": {
+        "active_issue": "4153",
+        "branch": null,
+        "dirty": false,
+        "head": "ca27adeee28d7d63ba457ee627274704e89da990",
+        "is_main_checkout": false,
+        "locked": null,
+        "merged_into_base": true,
+        "on_windows_legacy_drive": true,
+        "path": "D:/Dev/Workspaces/Repos/cdb-wt-4153-campaign-execute-v2",
+        "path_exists": true,
+        "prunable": false,
+        "unpushed": false
+      },
+      "notes": "Clean and merged/prunable; candidate for controlled removal.",
+      "path": "D:/Dev/Workspaces/Repos/cdb-wt-4153-campaign-execute-v2",
+      "reason_codes": [
+        "OBSOLETE_REMOVE"
+      ]
+    },
+    {
+      "classification": "OBSOLETE_REMOVE",
+      "facts": {
+        "active_issue": "4153",
+        "branch": null,
+        "dirty": false,
+        "head": "ec663f4f542827775721f077b255b678bd205894",
+        "is_main_checkout": false,
+        "locked": null,
+        "merged_into_base": true,
+        "on_windows_legacy_drive": true,
+        "path": "D:/Dev/Workspaces/Repos/cdb-wt-4153-campaign-go-audit",
+        "path_exists": true,
+        "prunable": false,
+        "unpushed": false
+      },
+      "notes": "Clean and merged/prunable; candidate for controlled removal.",
+      "path": "D:/Dev/Workspaces/Repos/cdb-wt-4153-campaign-go-audit",
+      "reason_codes": [
+        "OBSOLETE_REMOVE"
+      ]
+    },
+    {
+      "classification": "NEEDED_FOLLOWUP_ISSUE",
+      "facts": {
+        "active_issue": "4153",
+        "branch": "validation-research-issue-4153-campaign-manifest",
+        "dirty": false,
+        "head": "eb8efbdf9ec1a847ac30250210a33a353d9a8a1f",
+        "is_main_checkout": false,
+        "locked": null,
+        "merged_into_base": false,
+        "on_windows_legacy_drive": true,
+        "path": "D:/Dev/Workspaces/Repos/cdb-wt-4153-campaign-manifest",
+        "path_exists": true,
+        "prunable": false,
+        "unpushed": true
+      },
+      "notes": "Unpushed work with known issue; capture follow-up before cleanup.",
+      "path": "D:/Dev/Workspaces/Repos/cdb-wt-4153-campaign-manifest",
+      "reason_codes": [
+        "NEEDED_FOLLOWUP_ISSUE"
+      ]
+    },
+    {
+      "classification": "NEEDED_FOLLOWUP_ISSUE",
+      "facts": {
+        "active_issue": "4153",
+        "branch": "validation-research-issue-4153-execution-contract",
+        "dirty": false,
+        "head": "e746bba6c72fc815f6d71738f8f569dadeaf31e4",
+        "is_main_checkout": false,
+        "locked": null,
+        "merged_into_base": false,
+        "on_windows_legacy_drive": true,
+        "path": "D:/Dev/Workspaces/Repos/cdb-wt-4153-execution-contract",
+        "path_exists": true,
+        "prunable": false,
+        "unpushed": true
+      },
+      "notes": "Unpushed work with known issue; capture follow-up before cleanup.",
+      "path": "D:/Dev/Workspaces/Repos/cdb-wt-4153-execution-contract",
+      "reason_codes": [
+        "NEEDED_FOLLOWUP_ISSUE"
+      ]
+    },
+    {
+      "classification": "NEEDED_FOLLOWUP_ISSUE",
+      "facts": {
+        "active_issue": "4153",
+        "branch": "validation-research-issue-4153-hermes-work-start",
+        "dirty": false,
+        "head": "18c411e74add5b0ba6b91de070ea6ae9fcd38ce0",
+        "is_main_checkout": false,
+        "locked": null,
+        "merged_into_base": false,
+        "on_windows_legacy_drive": true,
+        "path": "D:/Dev/Workspaces/Repos/cdb-wt-4153-hermes-work-start",
+        "path_exists": true,
+        "prunable": false,
+        "unpushed": true
+      },
+      "notes": "Unpushed work with known issue; capture follow-up before cleanup.",
+      "path": "D:/Dev/Workspaces/Repos/cdb-wt-4153-hermes-work-start",
+      "reason_codes": [
+        "NEEDED_FOLLOWUP_ISSUE"
+      ]
+    },
+    {
+      "classification": "NEEDED_FOLLOWUP_ISSUE",
+      "facts": {
+        "active_issue": "4153",
+        "branch": "validation-research-issue-4153-primary-adoption",
+        "dirty": false,
+        "head": "d28786fb4ef8a2a942998c31c93cdd55c7545ae1",
+        "is_main_checkout": false,
+        "locked": null,
+        "merged_into_base": false,
+        "on_windows_legacy_drive": true,
+        "path": "D:/Dev/Workspaces/Repos/cdb-wt-4153-primary-adoption",
+        "path_exists": true,
+        "prunable": false,
+        "unpushed": true
+      },
+      "notes": "Unpushed work with known issue; capture follow-up before cleanup.",
+      "path": "D:/Dev/Workspaces/Repos/cdb-wt-4153-primary-adoption",
+      "reason_codes": [
+        "NEEDED_FOLLOWUP_ISSUE"
+      ]
+    },
+    {
+      "classification": "UNCLEAR_HOLD",
+      "facts": {
+        "active_issue": "4153",
+        "branch": "validation-research-issue-4153-reproduction-execution-fix",
+        "dirty": true,
+        "head": "6d7ba761041b8a7872bbdf60d7ea6fab91bbd6e8",
+        "is_main_checkout": false,
+        "locked": null,
+        "merged_into_base": false,
+        "on_windows_legacy_drive": true,
+        "path": "D:/Dev/Workspaces/Repos/cdb-wt-4153-reproduction-execution-fix",
+        "path_exists": true,
+        "prunable": false,
+        "unpushed": true
+      },
+      "notes": "Dirty worktree; STOP.",
+      "path": "D:/Dev/Workspaces/Repos/cdb-wt-4153-reproduction-execution-fix",
+      "reason_codes": [
+        "UNCLEAR_HOLD"
+      ]
+    },
+    {
+      "classification": "UNCLEAR_HOLD",
+      "facts": {
+        "active_issue": "4153",
+        "branch": "validation-research-issue-4153-campaign",
+        "dirty": true,
+        "head": "10ddcc099a978be3435dd0da376c1196a0aaa452",
+        "is_main_checkout": false,
+        "locked": null,
+        "merged_into_base": true,
+        "on_windows_legacy_drive": true,
+        "path": "D:/Dev/Workspaces/Repos/cdb-wt-4153-sensitivity-campaign",
+        "path_exists": true,
+        "prunable": false,
+        "unpushed": false
+      },
+      "notes": "Dirty worktree; STOP.",
+      "path": "D:/Dev/Workspaces/Repos/cdb-wt-4153-sensitivity-campaign",
+      "reason_codes": [
+        "UNCLEAR_HOLD"
+      ]
+    },
+    {
+      "classification": "NEEDED_QUICK_FINISH",
+      "facts": {
+        "active_issue": "4153",
+        "branch": "validation-research-issue-4153",
+        "dirty": false,
+        "head": "d643ce90fec6591af89eee8dbc45c41efdb77271",
+        "is_main_checkout": false,
+        "locked": null,
+        "merged_into_base": false,
+        "on_windows_legacy_drive": true,
+        "path": "D:/Dev/Workspaces/Repos/cdb-wt-4153-sensitivity-exec",
+        "path_exists": true,
+        "prunable": false,
+        "unpushed": false
+      },
+      "notes": "Clean, unmerged, active issue ù consider quick finish then cleanup.",
+      "path": "D:/Dev/Workspaces/Repos/cdb-wt-4153-sensitivity-exec",
+      "reason_codes": [
+        "NEEDED_QUICK_FINISH"
+      ]
+    },
+    {
+      "classification": "OBSOLETE_REMOVE",
+      "facts": {
+        "active_issue": "4164",
+        "branch": "main",
+        "dirty": false,
+        "head": "91411735635db698e767a7135b0e4ba336c4cd5d",
+        "is_main_checkout": false,
+        "locked": null,
+        "merged_into_base": true,
+        "on_windows_legacy_drive": true,
+        "path": "D:/Dev/Workspaces/Repos/cdb-wt-4164-publisher",
+        "path_exists": true,
+        "prunable": false,
+        "unpushed": false
+      },
+      "notes": "Clean and merged/prunable; candidate for controlled removal.",
+      "path": "D:/Dev/Workspaces/Repos/cdb-wt-4164-publisher",
+      "reason_codes": [
+        "OBSOLETE_REMOVE"
+      ]
+    },
+    {
+      "classification": "NEEDED_FOLLOWUP_ISSUE",
+      "facts": {
+        "active_issue": "4166",
+        "branch": null,
+        "dirty": false,
+        "head": "30fc491b75f6836e0c3bcab115253d4bbc4f5d97",
+        "is_main_checkout": false,
+        "locked": null,
+        "merged_into_base": false,
+        "on_windows_legacy_drive": true,
+        "path": "D:/Dev/Workspaces/Repos/cdb-wt-4166-final-validation",
+        "path_exists": true,
+        "prunable": false,
+        "unpushed": true
+      },
+      "notes": "Unpushed work with known issue; capture follow-up before cleanup.",
+      "path": "D:/Dev/Workspaces/Repos/cdb-wt-4166-final-validation",
+      "reason_codes": [
+        "NEEDED_FOLLOWUP_ISSUE"
+      ]
+    },
+    {
+      "classification": "OBSOLETE_REMOVE",
+      "facts": {
+        "active_issue": "4166",
+        "branch": null,
+        "dirty": false,
+        "head": "224cfd49398b329b315781372658fab1fbf15362",
+        "is_main_checkout": false,
+        "locked": null,
+        "merged_into_base": true,
+        "on_windows_legacy_drive": true,
+        "path": "D:/Dev/Workspaces/Repos/cdb-wt-4166-main-cmp",
+        "path_exists": true,
+        "prunable": false,
+        "unpushed": false
+      },
+      "notes": "Clean and merged/prunable; candidate for controlled removal.",
+      "path": "D:/Dev/Workspaces/Repos/cdb-wt-4166-main-cmp",
+      "reason_codes": [
+        "OBSOLETE_REMOVE"
+      ]
+    },
+    {
+      "classification": "NEEDED_FOLLOWUP_ISSUE",
+      "facts": {
+        "active_issue": "4169",
+        "branch": "local-ci-status-publisher-migration",
+        "dirty": false,
+        "head": "f542353df3cf8895fb39d352db36f4f99c30b227",
+        "is_main_checkout": false,
+        "locked": null,
+        "merged_into_base": false,
+        "on_windows_legacy_drive": true,
+        "path": "D:/Dev/Workspaces/Repos/cdb-wt-4169-migration",
+        "path_exists": true,
+        "prunable": false,
+        "unpushed": true
+      },
+      "notes": "Unpushed work with known issue; capture follow-up before cleanup.",
+      "path": "D:/Dev/Workspaces/Repos/cdb-wt-4169-migration",
+      "reason_codes": [
+        "NEEDED_FOLLOWUP_ISSUE"
+      ]
+    },
+    {
+      "classification": "OBSOLETE_REMOVE",
+      "facts": {
+        "active_issue": "4170",
+        "branch": "github-app-check-run-publisher",
+        "dirty": false,
+        "head": "8de11bd713c5cdc4720e2c152238fe00a5c9d2d6",
+        "is_main_checkout": false,
+        "locked": null,
+        "merged_into_base": true,
+        "on_windows_legacy_drive": true,
+        "path": "D:/Dev/Workspaces/Repos/cdb-wt-4170-github-app",
+        "path_exists": true,
+        "prunable": false,
+        "unpushed": false
+      },
+      "notes": "Clean and merged/prunable; candidate for controlled removal.",
+      "path": "D:/Dev/Workspaces/Repos/cdb-wt-4170-github-app",
+      "reason_codes": [
+        "OBSOLETE_REMOVE"
+      ]
+    },
+    {
+      "classification": "NEEDED_FOLLOWUP_ISSUE",
+      "facts": {
+        "active_issue": "4170",
+        "branch": "4170-bp-cutover-20260801141013",
+        "dirty": false,
+        "head": "33ecefa14e2b80ea6a1d7b52b7e66a602349223b",
+        "is_main_checkout": false,
+        "locked": null,
+        "merged_into_base": false,
+        "on_windows_legacy_drive": true,
+        "path": "D:/Dev/Workspaces/Repos/cdb-wt-4170-phase-d",
+        "path_exists": true,
+        "prunable": false,
+        "unpushed": true
+      },
+      "notes": "Unpushed work with known issue; capture follow-up before cleanup.",
+      "path": "D:/Dev/Workspaces/Repos/cdb-wt-4170-phase-d",
+      "reason_codes": [
+        "NEEDED_FOLLOWUP_ISSUE"
+      ]
+    },
+    {
+      "classification": "NEEDED_FOLLOWUP_ISSUE",
+      "facts": {
+        "active_issue": "4150",
+        "branch": "4150-execution-economics-contract",
+        "dirty": false,
+        "head": "f6f9a917b9d8e65f52c0f7d53515f5d0b1615c0a",
+        "is_main_checkout": false,
+        "locked": null,
+        "merged_into_base": false,
+        "on_windows_legacy_drive": true,
+        "path": "D:/Dev/Workspaces/Repos/cdb-wt-4191-economics",
+        "path_exists": true,
+        "prunable": false,
+        "unpushed": true
+      },
+      "notes": "Unpushed work with known issue; capture follow-up before cleanup.",
+      "path": "D:/Dev/Workspaces/Repos/cdb-wt-4191-economics",
+      "reason_codes": [
+        "NEEDED_FOLLOWUP_ISSUE"
+      ]
+    },
+    {
+      "classification": "NEEDED_FOLLOWUP_ISSUE",
+      "facts": {
+        "active_issue": "4122",
+        "branch": "4122-skill-mirror-assets",
+        "dirty": false,
+        "head": "d21856aeedd5cdc46b628b9367afe80d0bbff0e3",
+        "is_main_checkout": false,
+        "locked": null,
+        "merged_into_base": false,
+        "on_windows_legacy_drive": true,
+        "path": "D:/Dev/Workspaces/Repos/cdb-wt-4192-skill-mirror",
+        "path_exists": true,
+        "prunable": false,
+        "unpushed": true
+      },
+      "notes": "Unpushed work with known issue; capture follow-up before cleanup.",
+      "path": "D:/Dev/Workspaces/Repos/cdb-wt-4192-skill-mirror",
+      "reason_codes": [
+        "NEEDED_FOLLOWUP_ISSUE"
+      ]
+    },
+    {
+      "classification": "NEEDED_FOLLOWUP_ISSUE",
+      "facts": {
+        "active_issue": "4121",
+        "branch": "4121-decommission-gitlab-path-wt",
+        "dirty": false,
+        "head": "3ab1138c62c408c699349dd536b03055ad20c4ad",
+        "is_main_checkout": false,
+        "locked": null,
+        "merged_into_base": false,
+        "on_windows_legacy_drive": true,
+        "path": "D:/Dev/Workspaces/Repos/cdb-wt-4194-gitlab-clean",
+        "path_exists": true,
+        "prunable": false,
+        "unpushed": true
+      },
+      "notes": "Unpushed work with known issue; capture follow-up before cleanup.",
+      "path": "D:/Dev/Workspaces/Repos/cdb-wt-4194-gitlab-clean",
+      "reason_codes": [
+        "NEEDED_FOLLOWUP_ISSUE"
+      ]
+    },
+    {
+      "classification": "NEEDED_FOLLOWUP_ISSUE",
+      "facts": {
+        "active_issue": "4205",
+        "branch": "ci-tooling-issue-4205",
+        "dirty": false,
+        "head": "67736bbb22f83468744e6f86ddbcddc6a7560281",
+        "is_main_checkout": false,
+        "locked": null,
+        "merged_into_base": false,
+        "on_windows_legacy_drive": true,
+        "path": "D:/Dev/Workspaces/Repos/cdb-wt-4205-temp-preflight",
+        "path_exists": true,
+        "prunable": false,
+        "unpushed": true
+      },
+      "notes": "Unpushed work with known issue; capture follow-up before cleanup.",
+      "path": "D:/Dev/Workspaces/Repos/cdb-wt-4205-temp-preflight",
+      "reason_codes": [
+        "NEEDED_FOLLOWUP_ISSUE"
+      ]
+    },
+    {
+      "classification": "NEEDED_FOLLOWUP_ISSUE",
+      "facts": {
+        "active_issue": "4206",
+        "branch": "ci-tooling-issue-4206",
+        "dirty": false,
+        "head": "398c2dd948d2c6606a4a01096ca6640d5cbef1d0",
+        "is_main_checkout": false,
+        "locked": null,
+        "merged_into_base": false,
+        "on_windows_legacy_drive": true,
+        "path": "D:/Dev/Workspaces/Repos/cdb-wt-4206-black-portable",
+        "path_exists": true,
+        "prunable": false,
+        "unpushed": true
+      },
+      "notes": "Unpushed work with known issue; capture follow-up before cleanup.",
+      "path": "D:/Dev/Workspaces/Repos/cdb-wt-4206-black-portable",
+      "reason_codes": [
+        "NEEDED_FOLLOWUP_ISSUE"
+      ]
+    },
+    {
+      "classification": "NEEDED_FOLLOWUP_ISSUE",
+      "facts": {
+        "active_issue": "4170",
+        "branch": "4170-app-bound-check-runs",
+        "dirty": false,
+        "head": "13726464226198f764b7e5eb313ae05cfc833393",
+        "is_main_checkout": false,
+        "locked": null,
+        "merged_into_base": false,
+        "on_windows_legacy_drive": true,
+        "path": "D:/Dev/Workspaces/Repos/cdb-wt-4214-app-bound",
+        "path_exists": true,
+        "prunable": false,
+        "unpushed": true
+      },
+      "notes": "Unpushed work with known issue; capture follow-up before cleanup.",
+      "path": "D:/Dev/Workspaces/Repos/cdb-wt-4214-app-bound",
+      "reason_codes": [
+        "NEEDED_FOLLOWUP_ISSUE"
+      ]
+    },
+    {
+      "classification": "UNCLEAR_HOLD",
+      "facts": {
+        "active_issue": "4220",
+        "branch": null,
+        "dirty": true,
+        "head": "850b2c25770e6c220704965b1c09d37796049dd9",
+        "is_main_checkout": false,
+        "locked": null,
+        "merged_into_base": true,
+        "on_windows_legacy_drive": true,
+        "path": "D:/Dev/Workspaces/Repos/cdb-wt-4220-reviewability",
+        "path_exists": true,
+        "prunable": false,
+        "unpushed": false
+      },
+      "notes": "Dirty worktree; STOP.",
+      "path": "D:/Dev/Workspaces/Repos/cdb-wt-4220-reviewability",
+      "reason_codes": [
+        "UNCLEAR_HOLD"
+      ]
+    },
+    {
+      "classification": "NEEDED_FOLLOWUP_ISSUE",
+      "facts": {
+        "active_issue": "7967",
+        "branch": "delivery-pr-handoff-contract-7967",
+        "dirty": false,
+        "head": "9befe05245f986a2ae3f51fdb563a073206a9359",
+        "is_main_checkout": false,
+        "locked": null,
+        "merged_into_base": false,
+        "on_windows_legacy_drive": true,
+        "path": "D:/Dev/Workspaces/Repos/cdb-wt-4230-merge",
+        "path_exists": true,
+        "prunable": false,
+        "unpushed": true
+      },
+      "notes": "Unpushed work with known issue; capture follow-up before cleanup.",
+      "path": "D:/Dev/Workspaces/Repos/cdb-wt-4230-merge",
+      "reason_codes": [
+        "NEEDED_FOLLOWUP_ISSUE"
+      ]
+    },
+    {
+      "classification": "UNCLEAR_HOLD",
+      "facts": {
+        "active_issue": "4250",
+        "branch": "agent-skills-issue-4250",
+        "dirty": true,
+        "head": "a501f2202fb255b4fb28136ca2006b6c2e1c94a4",
+        "is_main_checkout": false,
+        "locked": null,
+        "merged_into_base": false,
+        "on_windows_legacy_drive": true,
+        "path": "D:/Dev/Workspaces/Repos/cdb-wt-4250-acp-canon",
+        "path_exists": true,
+        "prunable": false,
+        "unpushed": true
+      },
+      "notes": "Dirty worktree; STOP.",
+      "path": "D:/Dev/Workspaces/Repos/cdb-wt-4250-acp-canon",
+      "reason_codes": [
+        "UNCLEAR_HOLD"
+      ]
+    },
+    {
+      "classification": "NEEDED_FOLLOWUP_ISSUE",
+      "facts": {
+        "active_issue": "4256",
+        "branch": "4256-run-evidence-20260802154101",
+        "dirty": false,
+        "head": "ada4eaacfb81a9a4b835cdd980962579f357367e",
+        "is_main_checkout": false,
+        "locked": null,
+        "merged_into_base": false,
+        "on_windows_legacy_drive": true,
+        "path": "D:/Dev/Workspaces/Repos/cdb-wt-4256-run-evidence-20260802154101",
+        "path_exists": true,
+        "prunable": false,
+        "unpushed": true
+      },
+      "notes": "Unpushed work with known issue; capture follow-up before cleanup.",
+      "path": "D:/Dev/Workspaces/Repos/cdb-wt-4256-run-evidence-20260802154101",
+      "reason_codes": [
+        "NEEDED_FOLLOWUP_ISSUE"
+      ]
+    },
+    {
+      "classification": "UNCLEAR_HOLD",
+      "facts": {
+        "active_issue": "4257",
+        "branch": "docs-governance-issue-4257",
+        "dirty": true,
+        "head": "458783e5ffc1e6474866847c3f4dec42c4c8cd8a",
+        "is_main_checkout": false,
+        "locked": null,
+        "merged_into_base": false,
+        "on_windows_legacy_drive": true,
+        "path": "D:/Dev/Workspaces/Repos/cdb-wt-4257-approval-context",
+        "path_exists": true,
+        "prunable": false,
+        "unpushed": true
+      },
+      "notes": "Dirty worktree; STOP.",
+      "path": "D:/Dev/Workspaces/Repos/cdb-wt-4257-approval-context",
+      "reason_codes": [
+        "UNCLEAR_HOLD"
+      ]
+    },
+    {
+      "classification": "NEEDED_FOLLOWUP_ISSUE",
+      "facts": {
+        "active_issue": "012",
+        "branch": "blue-012-wiring-4261-f7b2",
+        "dirty": false,
+        "head": "516994dbfc4f7ea8649b54b80772c0e2b5a7506e",
+        "is_main_checkout": false,
+        "locked": null,
+        "merged_into_base": false,
+        "on_windows_legacy_drive": true,
+        "path": "D:/Dev/Workspaces/Repos/cdb-wt-4262-blue-012",
+        "path_exists": true,
+        "prunable": false,
+        "unpushed": true
+      },
+      "notes": "Unpushed work with known issue; capture follow-up before cleanup.",
+      "path": "D:/Dev/Workspaces/Repos/cdb-wt-4262-blue-012",
+      "reason_codes": [
+        "NEEDED_FOLLOWUP_ISSUE"
+      ]
+    },
+    {
+      "classification": "UNCLEAR_HOLD",
+      "facts": {
+        "active_issue": "4270",
+        "branch": "validation-research-issue-4270",
+        "dirty": true,
+        "head": "04e8f5687d619ce2be0b6b32f4dc7c1a3539da64",
+        "is_main_checkout": false,
+        "locked": null,
+        "merged_into_base": false,
+        "on_windows_legacy_drive": true,
+        "path": "D:/Dev/Workspaces/Repos/cdb-wt-4270-hermes-orchestration",
+        "path_exists": true,
+        "prunable": false,
+        "unpushed": true
+      },
+      "notes": "Dirty worktree; STOP.",
+      "path": "D:/Dev/Workspaces/Repos/cdb-wt-4270-hermes-orchestration",
+      "reason_codes": [
+        "UNCLEAR_HOLD"
+      ]
+    },
+    {
+      "classification": "UNCLEAR_HOLD",
+      "facts": {
+        "active_issue": "4272",
+        "branch": "validation-research-issue-4272",
+        "dirty": true,
+        "head": "222965b46df099024e88acb679925687180f5cff",
+        "is_main_checkout": false,
+        "locked": null,
+        "merged_into_base": false,
+        "on_windows_legacy_drive": true,
+        "path": "D:/Dev/Workspaces/Repos/cdb-wt-4272-pilot",
+        "path_exists": true,
+        "prunable": false,
+        "unpushed": true
+      },
+      "notes": "Dirty worktree; STOP.",
+      "path": "D:/Dev/Workspaces/Repos/cdb-wt-4272-pilot",
+      "reason_codes": [
+        "UNCLEAR_HOLD"
+      ]
+    },
+    {
+      "classification": "NEEDED_FOLLOWUP_ISSUE",
+      "facts": {
+        "active_issue": "4275",
+        "branch": "ci-tooling-issue-4275",
+        "dirty": false,
+        "head": "36eb651793a58bdd40ca8f55373c75d7bd241d52",
+        "is_main_checkout": false,
+        "locked": null,
+        "merged_into_base": false,
+        "on_windows_legacy_drive": true,
+        "path": "D:/Dev/Workspaces/Repos/cdb-wt-4275-security-cadence",
+        "path_exists": true,
+        "prunable": false,
+        "unpushed": true
+      },
+      "notes": "Unpushed work with known issue; capture follow-up before cleanup.",
+      "path": "D:/Dev/Workspaces/Repos/cdb-wt-4275-security-cadence",
+      "reason_codes": [
+        "NEEDED_FOLLOWUP_ISSUE"
+      ]
+    },
+    {
+      "classification": "UNCLEAR_HOLD",
+      "facts": {
+        "active_issue": "4280",
+        "branch": "ci-tooling-issue-4280",
+        "dirty": true,
+        "head": "ee582b27d9307b11afd3d05f5abeb84465c433c8",
+        "is_main_checkout": false,
+        "locked": null,
+        "merged_into_base": false,
+        "on_windows_legacy_drive": true,
+        "path": "D:/Dev/Workspaces/Repos/cdb-wt-4280-canon-sync",
+        "path_exists": true,
+        "prunable": false,
+        "unpushed": true
+      },
+      "notes": "Dirty worktree; STOP.",
+      "path": "D:/Dev/Workspaces/Repos/cdb-wt-4280-canon-sync",
+      "reason_codes": [
+        "UNCLEAR_HOLD"
+      ]
+    },
+    {
+      "classification": "NEEDED_FOLLOWUP_ISSUE",
+      "facts": {
+        "active_issue": "4283",
+        "branch": "validation-research-issue-4283",
+        "dirty": false,
+        "head": "41ba3625caddff5988eea3cf24ec7d8e581a4fd4",
+        "is_main_checkout": false,
+        "locked": null,
+        "merged_into_base": false,
+        "on_windows_legacy_drive": true,
+        "path": "D:/Dev/Workspaces/Repos/cdb-wt-4283-g01-g04",
+        "path_exists": true,
+        "prunable": false,
+        "unpushed": true
+      },
+      "notes": "Unpushed work with known issue; capture follow-up before cleanup.",
+      "path": "D:/Dev/Workspaces/Repos/cdb-wt-4283-g01-g04",
+      "reason_codes": [
+        "NEEDED_FOLLOWUP_ISSUE"
+      ]
+    },
+    {
+      "classification": "NEEDED_FOLLOWUP_ISSUE",
+      "facts": {
+        "active_issue": "4286",
+        "branch": null,
+        "dirty": false,
+        "head": "899cefd87b7bd9fc22c68e484fb54057a225a525",
+        "is_main_checkout": false,
+        "locked": null,
+        "merged_into_base": false,
+        "on_windows_legacy_drive": true,
+        "path": "D:/Dev/Workspaces/Repos/cdb-wt-4286-merge-check",
+        "path_exists": true,
+        "prunable": false,
+        "unpushed": true
+      },
+      "notes": "Unpushed work with known issue; capture follow-up before cleanup.",
+      "path": "D:/Dev/Workspaces/Repos/cdb-wt-4286-merge-check",
+      "reason_codes": [
+        "NEEDED_FOLLOWUP_ISSUE"
+      ]
+    },
+    {
+      "classification": "OBSOLETE_REMOVE",
+      "facts": {
+        "active_issue": "4289",
+        "branch": null,
+        "dirty": false,
+        "head": "43401302857ff9bfc6fd81a55b6373dd6437ac49",
+        "is_main_checkout": false,
+        "locked": null,
+        "merged_into_base": true,
+        "on_windows_legacy_drive": true,
+        "path": "D:/Dev/Workspaces/Repos/cdb-wt-4289-hermes-canary",
+        "path_exists": true,
+        "prunable": false,
+        "unpushed": false
+      },
+      "notes": "Clean and merged/prunable; candidate for controlled removal.",
+      "path": "D:/Dev/Workspaces/Repos/cdb-wt-4289-hermes-canary",
+      "reason_codes": [
+        "OBSOLETE_REMOVE"
+      ]
+    },
+    {
+      "classification": "OBSOLETE_REMOVE",
+      "facts": {
+        "active_issue": "4289",
+        "branch": null,
+        "dirty": false,
+        "head": "a52a0e90b702cd2758736bfa4ed25e2b9fd382ab",
+        "is_main_checkout": false,
+        "locked": null,
+        "merged_into_base": true,
+        "on_windows_legacy_drive": true,
+        "path": "D:/Dev/Workspaces/Repos/cdb-wt-4289-hermes-phase-a",
+        "path_exists": true,
+        "prunable": false,
+        "unpushed": false
+      },
+      "notes": "Clean and merged/prunable; candidate for controlled removal.",
+      "path": "D:/Dev/Workspaces/Repos/cdb-wt-4289-hermes-phase-a",
+      "reason_codes": [
+        "OBSOLETE_REMOVE"
+      ]
+    },
+    {
+      "classification": "UNCLEAR_HOLD",
+      "facts": {
+        "active_issue": "4293",
+        "branch": "agent-skills-issue-4293",
+        "dirty": true,
+        "head": "3b16e83cae13b681c996e7dd9f59a0118b3a578f",
+        "is_main_checkout": false,
+        "locked": null,
+        "merged_into_base": false,
+        "on_windows_legacy_drive": true,
+        "path": "D:/Dev/Workspaces/Repos/cdb-wt-4293-dispatcher-residuals",
+        "path_exists": true,
+        "prunable": false,
+        "unpushed": true
+      },
+      "notes": "Dirty worktree; STOP.",
+      "path": "D:/Dev/Workspaces/Repos/cdb-wt-4293-dispatcher-residuals",
+      "reason_codes": [
+        "UNCLEAR_HOLD"
+      ]
+    },
+    {
+      "classification": "NEEDED_FOLLOWUP_ISSUE",
+      "facts": {
+        "active_issue": "4327",
+        "branch": "hermes-version-pin-4327",
+        "dirty": false,
+        "head": "793fbf3e13e20021c4649bf7f2c265d161f844f8",
+        "is_main_checkout": false,
+        "locked": null,
+        "merged_into_base": false,
+        "on_windows_legacy_drive": true,
+        "path": "D:/Dev/Workspaces/Repos/cdb-wt-4327-hermes-pin",
+        "path_exists": true,
+        "prunable": false,
+        "unpushed": true
+      },
+      "notes": "Unpushed work with known issue; capture follow-up before cleanup.",
+      "path": "D:/Dev/Workspaces/Repos/cdb-wt-4327-hermes-pin",
+      "reason_codes": [
+        "NEEDED_FOLLOWUP_ISSUE"
+      ]
+    },
+    {
+      "classification": "OBSOLETE_REMOVE",
+      "facts": {
+        "active_issue": "4327",
+        "branch": null,
+        "dirty": false,
+        "head": "9a366048d7da9e3eccc008a815b5a7ca3f602e89",
+        "is_main_checkout": false,
+        "locked": null,
+        "merged_into_base": true,
+        "on_windows_legacy_drive": true,
+        "path": "D:/Dev/Workspaces/Repos/cdb-wt-4327-runtime-resume",
+        "path_exists": true,
+        "prunable": false,
+        "unpushed": false
+      },
+      "notes": "Clean and merged/prunable; candidate for controlled removal.",
+      "path": "D:/Dev/Workspaces/Repos/cdb-wt-4327-runtime-resume",
+      "reason_codes": [
+        "OBSOLETE_REMOVE"
+      ]
+    },
+    {
+      "classification": "NEEDED_FOLLOWUP_ISSUE",
+      "facts": {
+        "active_issue": "4336",
+        "branch": "validation-research-issue-4336-cdb051",
+        "dirty": false,
+        "head": "ec14dc2da5f483192a838e242e0355b08f3f2e71",
+        "is_main_checkout": false,
+        "locked": null,
+        "merged_into_base": false,
+        "on_windows_legacy_drive": true,
+        "path": "D:/Dev/Workspaces/Repos/cdb-wt-4336-cdb051",
+        "path_exists": true,
+        "prunable": false,
+        "unpushed": true
+      },
+      "notes": "Unpushed work with known issue; capture follow-up before cleanup.",
+      "path": "D:/Dev/Workspaces/Repos/cdb-wt-4336-cdb051",
+      "reason_codes": [
+        "NEEDED_FOLLOWUP_ISSUE"
+      ]
+    },
+    {
+      "classification": "UNCLEAR_HOLD",
+      "facts": {
+        "active_issue": "4338",
+        "branch": "4338-cdb049-only",
+        "dirty": true,
+        "head": "896f5de4f44b253d87acebbc1a5a9b15c5a171ca",
+        "is_main_checkout": false,
+        "locked": null,
+        "merged_into_base": false,
+        "on_windows_legacy_drive": true,
+        "path": "D:/Dev/Workspaces/Repos/cdb-wt-4338-cdb049-restore",
+        "path_exists": true,
+        "prunable": false,
+        "unpushed": true
+      },
+      "notes": "Dirty worktree; STOP.",
+      "path": "D:/Dev/Workspaces/Repos/cdb-wt-4338-cdb049-restore",
+      "reason_codes": [
+        "UNCLEAR_HOLD"
+      ]
+    },
+    {
+      "classification": "UNCLEAR_HOLD",
+      "facts": {
+        "active_issue": "4338",
+        "branch": null,
+        "dirty": true,
+        "head": "655e7059a3caeb7d554d16a027898d707d3fb5bb",
+        "is_main_checkout": false,
+        "locked": null,
+        "merged_into_base": true,
+        "on_windows_legacy_drive": true,
+        "path": "D:/Dev/Workspaces/Repos/cdb-wt-4338-postmerge-audit",
+        "path_exists": true,
+        "prunable": false,
+        "unpushed": false
+      },
+      "notes": "Dirty worktree; STOP.",
+      "path": "D:/Dev/Workspaces/Repos/cdb-wt-4338-postmerge-audit",
+      "reason_codes": [
+        "UNCLEAR_HOLD"
+      ]
+    },
+    {
+      "classification": "UNCLEAR_HOLD",
+      "facts": {
+        "active_issue": "4360",
+        "branch": "ci-tooling-issue-4360",
+        "dirty": true,
+        "head": "242fafd5d5eb6dcdaa61ed96393f6a6e7c45fa78",
+        "is_main_checkout": false,
+        "locked": null,
+        "merged_into_base": false,
+        "on_windows_legacy_drive": true,
+        "path": "D:/Dev/Workspaces/Repos/cdb-wt-4360-cursor-env-build",
+        "path_exists": true,
+        "prunable": false,
+        "unpushed": true
+      },
+      "notes": "Dirty worktree; STOP.",
+      "path": "D:/Dev/Workspaces/Repos/cdb-wt-4360-cursor-env-build",
+      "reason_codes": [
+        "UNCLEAR_HOLD"
+      ]
+    },
+    {
+      "classification": "NEEDED_FOLLOWUP_ISSUE",
+      "facts": {
+        "active_issue": "4366",
+        "branch": "validation-research-issue-4366",
+        "dirty": false,
+        "head": "0eb1d5c0a86bd58528a4e3d13541cef28d4f54b0",
+        "is_main_checkout": false,
+        "locked": null,
+        "merged_into_base": false,
+        "on_windows_legacy_drive": true,
+        "path": "D:/Dev/Workspaces/Repos/cdb-wt-4366-campaign-to-pr",
+        "path_exists": true,
+        "prunable": false,
+        "unpushed": true
+      },
+      "notes": "Unpushed work with known issue; capture follow-up before cleanup.",
+      "path": "D:/Dev/Workspaces/Repos/cdb-wt-4366-campaign-to-pr",
+      "reason_codes": [
+        "NEEDED_FOLLOWUP_ISSUE"
+      ]
+    },
+    {
+      "classification": "NEEDED_FOLLOWUP_ISSUE",
+      "facts": {
+        "active_issue": "4366",
+        "branch": "validation-research-issue-4366-pr-ready",
+        "dirty": false,
+        "head": "29af6e7238dbbfdd8b04cba8b82a89f4fa7e62b4",
+        "is_main_checkout": false,
+        "locked": null,
+        "merged_into_base": false,
+        "on_windows_legacy_drive": true,
+        "path": "D:/Dev/Workspaces/Repos/cdb-wt-4366-pr-ready",
+        "path_exists": true,
+        "prunable": false,
+        "unpushed": true
+      },
+      "notes": "Unpushed work with known issue; capture follow-up before cleanup.",
+      "path": "D:/Dev/Workspaces/Repos/cdb-wt-4366-pr-ready",
+      "reason_codes": [
+        "NEEDED_FOLLOWUP_ISSUE"
+      ]
+    },
+    {
+      "classification": "NEEDED_FOLLOWUP_ISSUE",
+      "facts": {
+        "active_issue": "4372",
+        "branch": "validation-research-issue-4372",
+        "dirty": false,
+        "head": "10e0a6e3e64657a1f1ab1f3af890f584eb3c6ffd",
+        "is_main_checkout": false,
+        "locked": null,
+        "merged_into_base": false,
+        "on_windows_legacy_drive": true,
+        "path": "D:/Dev/Workspaces/Repos/cdb-wt-4372-hh-hl",
+        "path_exists": true,
+        "prunable": false,
+        "unpushed": true
+      },
+      "notes": "Unpushed work with known issue; capture follow-up before cleanup.",
+      "path": "D:/Dev/Workspaces/Repos/cdb-wt-4372-hh-hl",
+      "reason_codes": [
+        "NEEDED_FOLLOWUP_ISSUE"
+      ]
+    },
+    {
+      "classification": "OBSOLETE_REMOVE",
+      "facts": {
+        "active_issue": "4194",
+        "branch": null,
+        "dirty": false,
+        "head": "dae2c5485dbacfe5ddf2b65580aa25eb35c785a7",
+        "is_main_checkout": false,
+        "locked": null,
+        "merged_into_base": true,
+        "on_windows_legacy_drive": true,
+        "path": "D:/Dev/Workspaces/Repos/cdb-wt-main-check-4194",
+        "path_exists": true,
+        "prunable": false,
+        "unpushed": false
+      },
+      "notes": "Clean and merged/prunable; candidate for controlled removal.",
+      "path": "D:/Dev/Workspaces/Repos/cdb-wt-main-check-4194",
+      "reason_codes": [
+        "OBSOLETE_REMOVE"
+      ]
+    },
+    {
+      "classification": "NEEDED_FOLLOWUP_ISSUE",
+      "facts": {
+        "active_issue": "2026",
+        "branch": "security-pip-crypto-aiohttp-2026-08-05",
+        "dirty": false,
+        "head": "081b19378abc280f460a1627c146962cc1eb6e77",
+        "is_main_checkout": false,
+        "locked": null,
+        "merged_into_base": false,
+        "on_windows_legacy_drive": true,
+        "path": "D:/Dev/Workspaces/Repos/cdb-wt-pip-crypto-aiohttp-20260805",
+        "path_exists": true,
+        "prunable": false,
+        "unpushed": true
+      },
+      "notes": "Unpushed work with known issue; capture follow-up before cleanup.",
+      "path": "D:/Dev/Workspaces/Repos/cdb-wt-pip-crypto-aiohttp-20260805",
+      "reason_codes": [
+        "NEEDED_FOLLOWUP_ISSUE"
+      ]
+    },
+    {
+      "classification": "NEEDED_FOLLOWUP_ISSUE",
+      "facts": {
+        "active_issue": "4304",
+        "branch": "ruff-0.16.1",
+        "dirty": false,
+        "head": "3b61561db6012a82976090809d017b14cae396b5",
+        "is_main_checkout": false,
+        "locked": null,
+        "merged_into_base": false,
+        "on_windows_legacy_drive": true,
+        "path": "D:/Dev/Workspaces/Repos/cdb-wt-pr-4304-queue",
+        "path_exists": true,
+        "prunable": false,
+        "unpushed": true
+      },
+      "notes": "Unpushed work with known issue; capture follow-up before cleanup.",
+      "path": "D:/Dev/Workspaces/Repos/cdb-wt-pr-4304-queue",
+      "reason_codes": [
+        "NEEDED_FOLLOWUP_ISSUE"
+      ]
+    },
+    {
+      "classification": "NEEDED_FOLLOWUP_ISSUE",
+      "facts": {
+        "active_issue": "4306",
+        "branch": "redis-8.1.0",
+        "dirty": false,
+        "head": "2d7ca5e7ab1fbd3abf7605371ee87f147dcdf173",
+        "is_main_checkout": false,
+        "locked": null,
+        "merged_into_base": false,
+        "on_windows_legacy_drive": true,
+        "path": "D:/Dev/Workspaces/Repos/cdb-wt-pr-4306-queue",
+        "path_exists": true,
+        "prunable": false,
+        "unpushed": true
+      },
+      "notes": "Unpushed work with known issue; capture follow-up before cleanup.",
+      "path": "D:/Dev/Workspaces/Repos/cdb-wt-pr-4306-queue",
+      "reason_codes": [
+        "NEEDED_FOLLOWUP_ISSUE"
+      ]
+    },
+    {
+      "classification": "NEEDED_FOLLOWUP_ISSUE",
+      "facts": {
+        "active_issue": "4307",
+        "branch": "codeql-action-432e0d4de6",
+        "dirty": false,
+        "head": "5f4db4e31a65e717a56762cb2dc3002bfdf0280d",
+        "is_main_checkout": false,
+        "locked": null,
+        "merged_into_base": false,
+        "on_windows_legacy_drive": true,
+        "path": "D:/Dev/Workspaces/Repos/cdb-wt-pr-4307-queue",
+        "path_exists": true,
+        "prunable": false,
+        "unpushed": true
+      },
+      "notes": "Unpushed work with known issue; capture follow-up before cleanup.",
+      "path": "D:/Dev/Workspaces/Repos/cdb-wt-pr-4307-queue",
+      "reason_codes": [
+        "NEEDED_FOLLOWUP_ISSUE"
+      ]
+    },
+    {
+      "classification": "NEEDED_FOLLOWUP_ISSUE",
+      "facts": {
+        "active_issue": "4308",
+        "branch": "login-action-4.6.0",
+        "dirty": false,
+        "head": "c9fe293085c1ec83044d81c6f0d1aca46651d17b",
+        "is_main_checkout": false,
+        "locked": null,
+        "merged_into_base": false,
+        "on_windows_legacy_drive": true,
+        "path": "D:/Dev/Workspaces/Repos/cdb-wt-pr-4308-queue",
+        "path_exists": true,
+        "prunable": false,
+        "unpushed": true
+      },
+      "notes": "Unpushed work with known issue; capture follow-up before cleanup.",
+      "path": "D:/Dev/Workspaces/Repos/cdb-wt-pr-4308-queue",
+      "reason_codes": [
+        "NEEDED_FOLLOWUP_ISSUE"
+      ]
+    },
+    {
+      "classification": "NEEDED_FOLLOWUP_ISSUE",
+      "facts": {
+        "active_issue": "4309",
+        "branch": "stale-11.0.0",
+        "dirty": false,
+        "head": "476c8c6608394338dbb669367f3c1cb54fcb6fa8",
+        "is_main_checkout": false,
+        "locked": null,
+        "merged_into_base": false,
+        "on_windows_legacy_drive": true,
+        "path": "D:/Dev/Workspaces/Repos/cdb-wt-pr-4309-queue",
+        "path_exists": true,
+        "prunable": false,
+        "unpushed": true
+      },
+      "notes": "Unpushed work with known issue; capture follow-up before cleanup.",
+      "path": "D:/Dev/Workspaces/Repos/cdb-wt-pr-4309-queue",
+      "reason_codes": [
+        "NEEDED_FOLLOWUP_ISSUE"
+      ]
+    },
+    {
+      "classification": "NEEDED_FOLLOWUP_ISSUE",
+      "facts": {
+        "active_issue": "4310",
+        "branch": "prometheus-v3.13.2",
+        "dirty": false,
+        "head": "c7ea776aa16ce91d4bbdafbf0358a59d639e158a",
+        "is_main_checkout": false,
+        "locked": null,
+        "merged_into_base": false,
+        "on_windows_legacy_drive": true,
+        "path": "D:/Dev/Workspaces/Repos/cdb-wt-pr-4310-queue",
+        "path_exists": true,
+        "prunable": false,
+        "unpushed": true
+      },
+      "notes": "Unpushed work with known issue; capture follow-up before cleanup.",
+      "path": "D:/Dev/Workspaces/Repos/cdb-wt-pr-4310-queue",
+      "reason_codes": [
+        "NEEDED_FOLLOWUP_ISSUE"
+      ]
+    },
+    {
+      "classification": "NEEDED_FOLLOWUP_ISSUE",
+      "facts": {
+        "active_issue": "4311",
+        "branch": "redis-8.10.0-alpine",
+        "dirty": false,
+        "head": "49ccbe7b5d1aef2f66f67c86cfe2915b01c25a2d",
+        "is_main_checkout": false,
+        "locked": null,
+        "merged_into_base": false,
+        "on_windows_legacy_drive": true,
+        "path": "D:/Dev/Workspaces/Repos/cdb-wt-pr-4311-queue",
+        "path_exists": true,
+        "prunable": false,
+        "unpushed": true
+      },
+      "notes": "Unpushed work with known issue; capture follow-up before cleanup.",
+      "path": "D:/Dev/Workspaces/Repos/cdb-wt-pr-4311-queue",
+      "reason_codes": [
+        "NEEDED_FOLLOWUP_ISSUE"
+      ]
+    },
+    {
+      "classification": "NEEDED_FOLLOWUP_ISSUE",
+      "facts": {
+        "active_issue": "4207",
+        "branch": "agent-skills-issue-4207",
+        "dirty": false,
+        "head": "a8927fa28d34b59a8732f435205c11514317ff38",
+        "is_main_checkout": false,
+        "locked": null,
+        "merged_into_base": false,
+        "on_windows_legacy_drive": true,
+        "path": "D:/Dev/Workspaces/Repos/cdb-wt-pr-acceptance-batch1",
+        "path_exists": true,
+        "prunable": false,
+        "unpushed": true
+      },
+      "notes": "Unpushed work with known issue; capture follow-up before cleanup.",
+      "path": "D:/Dev/Workspaces/Repos/cdb-wt-pr-acceptance-batch1",
+      "reason_codes": [
+        "NEEDED_FOLLOWUP_ISSUE"
+      ]
+    },
+    {
+      "classification": "NEEDED_FOLLOWUP_ISSUE",
+      "facts": {
+        "active_issue": "2026",
+        "branch": "security-alert-wave-2026-08-03",
+        "dirty": false,
+        "head": "d5205b2c3b94386f7d2d40581027ab2ba0d88359",
+        "is_main_checkout": false,
+        "locked": null,
+        "merged_into_base": false,
+        "on_windows_legacy_drive": true,
+        "path": "D:/Dev/Workspaces/Repos/cdb-wt-security-wave-4314",
+        "path_exists": true,
+        "prunable": false,
+        "unpushed": true
+      },
+      "notes": "Unpushed work with known issue; capture follow-up before cleanup.",
+      "path": "D:/Dev/Workspaces/Repos/cdb-wt-security-wave-4314",
+      "reason_codes": [
+        "NEEDED_FOLLOWUP_ISSUE"
+      ]
+    },
+    {
+      "classification": "NEEDED_FOLLOWUP_ISSUE",
+      "facts": {
+        "active_issue": "2026",
+        "branch": "security-setuptools-83-2026-08-05",
+        "dirty": false,
+        "head": "14ae7651798a4680e37321a9a56a99206a61f209",
+        "is_main_checkout": false,
+        "locked": null,
+        "merged_into_base": false,
+        "on_windows_legacy_drive": true,
+        "path": "D:/Dev/Workspaces/Repos/cdb-wt-setuptools-83-20260805",
+        "path_exists": true,
+        "prunable": false,
+        "unpushed": true
+      },
+      "notes": "Unpushed work with known issue; capture follow-up before cleanup.",
+      "path": "D:/Dev/Workspaces/Repos/cdb-wt-setuptools-83-20260805",
+      "reason_codes": [
+        "NEEDED_FOLLOWUP_ISSUE"
+      ]
+    },
+    {
+      "classification": "OBSOLETE_REMOVE",
+      "facts": {
+        "active_issue": null,
+        "branch": null,
+        "dirty": false,
+        "head": "10ac6f95c2e4d5f9b3ce2530d2c5ad36aff3794e",
+        "is_main_checkout": false,
+        "locked": null,
+        "merged_into_base": true,
+        "on_windows_legacy_drive": true,
+        "path": "D:/Dev/Workspaces/Repos/cdb-wt-supervised-pilot-hold",
+        "path_exists": true,
+        "prunable": false,
+        "unpushed": false
+      },
+      "notes": "Clean and merged/prunable; candidate for controlled removal.",
+      "path": "D:/Dev/Workspaces/Repos/cdb-wt-supervised-pilot-hold",
+      "reason_codes": [
+        "OBSOLETE_REMOVE"
+      ]
+    },
+    {
+      "classification": "OBSOLETE_REMOVE",
+      "facts": {
+        "active_issue": "4374",
+        "branch": null,
+        "dirty": false,
+        "head": "b23ac5c948c4e97a10cc7bd5941ba69f3f8c0133",
+        "is_main_checkout": false,
+        "locked": null,
+        "merged_into_base": true,
+        "on_windows_legacy_drive": true,
+        "path": "D:/Dev/Workspaces/Repos/Claire_de_Binare/.worktrees/4374-campaign-exec",
+        "path_exists": true,
+        "prunable": false,
+        "unpushed": false
+      },
+      "notes": "Clean and merged/prunable; candidate for controlled removal.",
+      "path": "D:/Dev/Workspaces/Repos/Claire_de_Binare/.worktrees/4374-campaign-exec",
+      "reason_codes": [
+        "OBSOLETE_REMOVE"
+      ]
+    },
+    {
+      "classification": "UNCLEAR_HOLD",
+      "facts": {
+        "active_issue": "4374",
+        "branch": "validation-research-issue-4374-comment-id-fix",
+        "dirty": true,
+        "head": "aca10a687bc4d7e8d6e1686ed6dd3f57d0e48d34",
+        "is_main_checkout": false,
+        "locked": null,
+        "merged_into_base": false,
+        "on_windows_legacy_drive": true,
+        "path": "D:/Dev/Workspaces/Repos/Claire_de_Binare/.worktrees/4374-comment-id-fix",
+        "path_exists": true,
+        "prunable": false,
+        "unpushed": true
+      },
+      "notes": "Dirty worktree; STOP.",
+      "path": "D:/Dev/Workspaces/Repos/Claire_de_Binare/.worktrees/4374-comment-id-fix",
+      "reason_codes": [
+        "UNCLEAR_HOLD"
+      ]
+    },
+    {
+      "classification": "UNCLEAR_HOLD",
+      "facts": {
+        "active_issue": "4374",
+        "branch": null,
+        "dirty": true,
+        "head": "f03564c77182cea957595b36f5512103d5062258",
+        "is_main_checkout": false,
+        "locked": null,
+        "merged_into_base": true,
+        "on_windows_legacy_drive": true,
+        "path": "D:/Dev/Workspaces/Repos/Claire_de_Binare/.worktrees/4374-exec-go-prep",
+        "path_exists": true,
+        "prunable": false,
+        "unpushed": false
+      },
+      "notes": "Dirty worktree; STOP.",
+      "path": "D:/Dev/Workspaces/Repos/Claire_de_Binare/.worktrees/4374-exec-go-prep",
+      "reason_codes": [
+        "UNCLEAR_HOLD"
+      ]
+    },
+    {
+      "classification": "UNCLEAR_HOLD",
+      "facts": {
+        "active_issue": "4374",
+        "branch": null,
+        "dirty": true,
+        "head": "84060194876750d107a5886d37680195d9696c96",
+        "is_main_checkout": false,
+        "locked": null,
+        "merged_into_base": false,
+        "on_windows_legacy_drive": true,
+        "path": "D:/Dev/Workspaces/Repos/Claire_de_Binare/.worktrees/4374-exec-wiring",
+        "path_exists": true,
+        "prunable": false,
+        "unpushed": true
+      },
+      "notes": "Dirty worktree; STOP.",
+      "path": "D:/Dev/Workspaces/Repos/Claire_de_Binare/.worktrees/4374-exec-wiring",
+      "reason_codes": [
+        "UNCLEAR_HOLD"
+      ]
+    },
+    {
+      "classification": "UNCLEAR_HOLD",
+      "facts": {
+        "active_issue": "4374",
+        "branch": null,
+        "dirty": true,
+        "head": "b23ac5c948c4e97a10cc7bd5941ba69f3f8c0133",
+        "is_main_checkout": false,
+        "locked": null,
+        "merged_into_base": true,
+        "on_windows_legacy_drive": true,
+        "path": "D:/Dev/Workspaces/Repos/Claire_de_Binare/.worktrees/4374-postmerge-go",
+        "path_exists": true,
+        "prunable": false,
+        "unpushed": false
+      },
+      "notes": "Dirty worktree; STOP.",
+      "path": "D:/Dev/Workspaces/Repos/Claire_de_Binare/.worktrees/4374-postmerge-go",
+      "reason_codes": [
+        "UNCLEAR_HOLD"
+      ]
+    },
+    {
+      "classification": "UNCLEAR_HOLD",
+      "facts": {
+        "active_issue": "4374",
+        "branch": null,
+        "dirty": true,
+        "head": "3154efe218d1f1b8101768e365859c0e91cb4906",
+        "is_main_checkout": false,
+        "locked": null,
+        "merged_into_base": true,
+        "on_windows_legacy_drive": true,
+        "path": "D:/Dev/Workspaces/Repos/Claire_de_Binare/.worktrees/4374-rebind-3154efe",
+        "path_exists": true,
+        "prunable": false,
+        "unpushed": false
+      },
+      "notes": "Dirty worktree; STOP.",
+      "path": "D:/Dev/Workspaces/Repos/Claire_de_Binare/.worktrees/4374-rebind-3154efe",
+      "reason_codes": [
+        "UNCLEAR_HOLD"
+      ]
+    },
+    {
+      "classification": "NEEDED_FOLLOWUP_ISSUE",
+      "facts": {
+        "active_issue": "4384",
+        "branch": "validation-research-issue-4384",
+        "dirty": false,
+        "head": "089e635b0189292cc5b97f3b327ac50b0c87d6ab",
+        "is_main_checkout": false,
+        "locked": null,
+        "merged_into_base": false,
+        "on_windows_legacy_drive": true,
+        "path": "D:/Dev/Workspaces/Repos/Claire_de_Binare/.worktrees/4384-run-key-path",
+        "path_exists": true,
+        "prunable": false,
+        "unpushed": true
+      },
+      "notes": "Unpushed work with known issue; capture follow-up before cleanup.",
+      "path": "D:/Dev/Workspaces/Repos/Claire_de_Binare/.worktrees/4384-run-key-path",
+      "reason_codes": [
+        "NEEDED_FOLLOWUP_ISSUE"
+      ]
+    },
+    {
+      "classification": "NEEDED_FOLLOWUP_ISSUE",
+      "facts": {
+        "active_issue": "4374",
+        "branch": "validation-research-issue-4374",
+        "dirty": false,
+        "head": "67ac1abc1d9a18d47da86981d017813edc0bdd78",
+        "is_main_checkout": false,
+        "locked": null,
+        "merged_into_base": false,
+        "on_windows_legacy_drive": true,
+        "path": "D:/Dev/Workspaces/Repos/Claire_de_Binare/.worktrees/batch-validation-research-issue-4374-exec-prep",
+        "path_exists": true,
+        "prunable": false,
+        "unpushed": true
+      },
+      "notes": "Unpushed work with known issue; capture follow-up before cleanup.",
+      "path": "D:/Dev/Workspaces/Repos/Claire_de_Binare/.worktrees/batch-validation-research-issue-4374-exec-prep",
+      "reason_codes": [
+        "NEEDED_FOLLOWUP_ISSUE"
+      ]
+    },
+    {
+      "classification": "NEEDED_FOLLOWUP_ISSUE",
+      "facts": {
+        "active_issue": "4152",
+        "branch": null,
+        "dirty": false,
+        "head": "1bdd34bd2b67ff1e61770624c5b042c87141bfb6",
+        "is_main_checkout": false,
+        "locked": null,
+        "merged_into_base": false,
+        "on_windows_legacy_drive": true,
+        "path": "D:/Dev/Workspaces/Repos/Claire_de_Binare/.worktrees/fix-4152-risk-fail-closed-safety",
+        "path_exists": true,
+        "prunable": false,
+        "unpushed": true
+      },
+      "notes": "Unpushed work with known issue; capture follow-up before cleanup.",
+      "path": "D:/Dev/Workspaces/Repos/Claire_de_Binare/.worktrees/fix-4152-risk-fail-closed-safety",
+      "reason_codes": [
+        "NEEDED_FOLLOWUP_ISSUE"
+      ]
+    },
+    {
+      "classification": "NEEDED_FOLLOWUP_ISSUE",
+      "facts": {
+        "active_issue": "4182",
+        "branch": "4182-stop-loss-e2e-kill-unwind-drill",
+        "dirty": false,
+        "head": "0d7244e5e7249d93c8d20b156195414eff0fbc14",
+        "is_main_checkout": false,
+        "locked": null,
+        "merged_into_base": false,
+        "on_windows_legacy_drive": true,
+        "path": "D:/Dev/Workspaces/Repos/Claire_de_Binare/.worktrees/fix-4182-stop-loss-e2e-kill-unwind-drill",
+        "path_exists": true,
+        "prunable": false,
+        "unpushed": true
+      },
+      "notes": "Unpushed work with known issue; capture follow-up before cleanup.",
+      "path": "D:/Dev/Workspaces/Repos/Claire_de_Binare/.worktrees/fix-4182-stop-loss-e2e-kill-unwind-drill",
+      "reason_codes": [
+        "NEEDED_FOLLOWUP_ISSUE"
+      ]
+    },
+    {
+      "classification": "UNCLEAR_HOLD",
+      "facts": {
+        "active_issue": "4184",
+        "branch": "4184-reduce-only-unwind-contract",
+        "dirty": true,
+        "head": "d00e2d7ffb2643392814176d3b72b282f7c8bb00",
+        "is_main_checkout": false,
+        "locked": null,
+        "merged_into_base": false,
+        "on_windows_legacy_drive": true,
+        "path": "D:/Dev/Workspaces/Repos/Claire_de_Binare/.worktrees/fix-4184-reduce-only-unwind-contract",
+        "path_exists": true,
+        "prunable": false,
+        "unpushed": true
+      },
+      "notes": "Dirty worktree; STOP.",
+      "path": "D:/Dev/Workspaces/Repos/Claire_de_Binare/.worktrees/fix-4184-reduce-only-unwind-contract",
+      "reason_codes": [
+        "UNCLEAR_HOLD"
+      ]
+    },
+    {
+      "classification": "NEEDED_FOLLOWUP_ISSUE",
+      "facts": {
+        "active_issue": "4196",
+        "branch": "4196-disable-main-force-pushes",
+        "dirty": false,
+        "head": "2848eeb28aa74ae47c3cafb807771c747cc6034d",
+        "is_main_checkout": false,
+        "locked": null,
+        "merged_into_base": false,
+        "on_windows_legacy_drive": true,
+        "path": "D:/Dev/Workspaces/Repos/Claire_de_Binare/.worktrees/fix-4196-disable-main-force-pushes",
+        "path_exists": true,
+        "prunable": false,
+        "unpushed": true
+      },
+      "notes": "Unpushed work with known issue; capture follow-up before cleanup.",
+      "path": "D:/Dev/Workspaces/Repos/Claire_de_Binare/.worktrees/fix-4196-disable-main-force-pushes",
+      "reason_codes": [
+        "NEEDED_FOLLOWUP_ISSUE"
+      ]
+    },
+    {
+      "classification": "NEEDED_FOLLOWUP_ISSUE",
+      "facts": {
+        "active_issue": "4382",
+        "branch": "runtime-risk-issue-4382",
+        "dirty": false,
+        "head": "09841d49c5fe9d47a693da000b9cf28baf4977cf",
+        "is_main_checkout": false,
+        "locked": null,
+        "merged_into_base": false,
+        "on_windows_legacy_drive": true,
+        "path": "D:/Dev/Workspaces/Repos/Claire_de_Binare/.worktrees/fix-4382-risk-pubsub-timeout",
+        "path_exists": true,
+        "prunable": false,
+        "unpushed": true
+      },
+      "notes": "Unpushed work with known issue; capture follow-up before cleanup.",
+      "path": "D:/Dev/Workspaces/Repos/Claire_de_Binare/.worktrees/fix-4382-risk-pubsub-timeout",
+      "reason_codes": [
+        "NEEDED_FOLLOWUP_ISSUE"
+      ]
+    },
+    {
+      "classification": "UNCLEAR_HOLD",
+      "facts": {
+        "active_issue": "4148",
+        "branch": "4148-parameter-control-policy",
+        "dirty": true,
+        "head": "f1a2e3b18ba338e8ca7940e80f55a0a2942f918a",
+        "is_main_checkout": false,
+        "locked": null,
+        "merged_into_base": false,
+        "on_windows_legacy_drive": true,
+        "path": "D:/Dev/Workspaces/Repos/Claire_de_Binare/.worktrees/pr-4154-parameter-control-v2",
+        "path_exists": true,
+        "prunable": false,
+        "unpushed": true
+      },
+      "notes": "Dirty worktree; STOP.",
+      "path": "D:/Dev/Workspaces/Repos/Claire_de_Binare/.worktrees/pr-4154-parameter-control-v2",
+      "reason_codes": [
+        "UNCLEAR_HOLD"
+      ]
+    },
+    {
+      "classification": "NEEDED_FOLLOWUP_ISSUE",
+      "facts": {
+        "active_issue": "4154",
+        "branch": "pr-queue-a-4154",
+        "dirty": false,
+        "head": "7368b5c96f48d80a06a588289dffb4de1e32c1a2",
+        "is_main_checkout": false,
+        "locked": null,
+        "merged_into_base": false,
+        "on_windows_legacy_drive": true,
+        "path": "D:/Dev/Workspaces/Repos/Claire_de_Binare/.worktrees/pr-queue-a-4154",
+        "path_exists": true,
+        "prunable": false,
+        "unpushed": true
+      },
+      "notes": "Unpushed work with known issue; capture follow-up before cleanup.",
+      "path": "D:/Dev/Workspaces/Repos/Claire_de_Binare/.worktrees/pr-queue-a-4154",
+      "reason_codes": [
+        "NEEDED_FOLLOWUP_ISSUE"
+      ]
+    },
+    {
+      "classification": "UNCLEAR_HOLD",
+      "facts": {
+        "active_issue": null,
+        "branch": "deps-actions-patch-b1",
+        "dirty": false,
+        "head": "46eb05196b3d2f026d745f2ac36126afbe49004e",
+        "is_main_checkout": false,
+        "locked": null,
+        "merged_into_base": false,
+        "on_windows_legacy_drive": true,
+        "path": "D:/Dev/Workspaces/Repos/Claire_de_Binare/.worktrees/pr-queue-b1-actions-patch",
+        "path_exists": true,
+        "prunable": false,
+        "unpushed": true
+      },
+      "notes": "Unpushed commits without clear ownership; STOP.",
+      "path": "D:/Dev/Workspaces/Repos/Claire_de_Binare/.worktrees/pr-queue-b1-actions-patch",
+      "reason_codes": [
+        "UNCLEAR_HOLD"
+      ]
+    },
+    {
+      "classification": "UNCLEAR_HOLD",
+      "facts": {
+        "active_issue": null,
+        "branch": "deps-actions-major-b2",
+        "dirty": false,
+        "head": "21f23d65989fdb22488cc6f1a1299b41775e56b0",
+        "is_main_checkout": false,
+        "locked": null,
+        "merged_into_base": false,
+        "on_windows_legacy_drive": true,
+        "path": "D:/Dev/Workspaces/Repos/Claire_de_Binare/.worktrees/pr-queue-b2-actions-major",
+        "path_exists": true,
+        "prunable": false,
+        "unpushed": true
+      },
+      "notes": "Unpushed commits without clear ownership; STOP.",
+      "path": "D:/Dev/Workspaces/Repos/Claire_de_Binare/.worktrees/pr-queue-b2-actions-major",
+      "reason_codes": [
+        "UNCLEAR_HOLD"
+      ]
+    },
+    {
+      "classification": "UNCLEAR_HOLD",
+      "facts": {
+        "active_issue": null,
+        "branch": "deps-python-c1",
+        "dirty": false,
+        "head": "0647a61acdb6b7772d1f846dbb38d718a2f8bcd9",
+        "is_main_checkout": false,
+        "locked": null,
+        "merged_into_base": false,
+        "on_windows_legacy_drive": true,
+        "path": "D:/Dev/Workspaces/Repos/Claire_de_Binare/.worktrees/pr-queue-c-python-deps",
+        "path_exists": true,
+        "prunable": false,
+        "unpushed": true
+      },
+      "notes": "Unpushed commits without clear ownership; STOP.",
+      "path": "D:/Dev/Workspaces/Repos/Claire_de_Binare/.worktrees/pr-queue-c-python-deps",
+      "reason_codes": [
+        "UNCLEAR_HOLD"
+      ]
+    },
+    {
+      "classification": "UNCLEAR_HOLD",
+      "facts": {
+        "active_issue": null,
+        "branch": "deps-python-digest-d1-cea0e60",
+        "dirty": true,
+        "head": "3b137c4d6a7749af0073abcc0e0c52c33ed9b12b",
+        "is_main_checkout": false,
+        "locked": null,
+        "merged_into_base": false,
+        "on_windows_legacy_drive": true,
+        "path": "D:/Dev/Workspaces/Repos/Claire_de_Binare/.worktrees/pr-queue-d1-python-cea0e60",
+        "path_exists": true,
+        "prunable": false,
+        "unpushed": true
+      },
+      "notes": "Dirty worktree; STOP.",
+      "path": "D:/Dev/Workspaces/Repos/Claire_de_Binare/.worktrees/pr-queue-d1-python-cea0e60",
+      "reason_codes": [
+        "UNCLEAR_HOLD"
+      ]
+    },
+    {
+      "classification": "UNCLEAR_HOLD",
+      "facts": {
+        "active_issue": null,
+        "branch": "deps-python-digest-d2-86f975a",
+        "dirty": false,
+        "head": "75bd7fd489bbe12eb35de149c1faedf3dc8ebbfc",
+        "is_main_checkout": false,
+        "locked": null,
+        "merged_into_base": false,
+        "on_windows_legacy_drive": true,
+        "path": "D:/Dev/Workspaces/Repos/Claire_de_Binare/.worktrees/pr-queue-d2-python-86f975a",
+        "path_exists": true,
+        "prunable": false,
+        "unpushed": true
+      },
+      "notes": "Unpushed commits without clear ownership; STOP.",
+      "path": "D:/Dev/Workspaces/Repos/Claire_de_Binare/.worktrees/pr-queue-d2-python-86f975a",
+      "reason_codes": [
+        "UNCLEAR_HOLD"
+      ]
+    },
+    {
+      "classification": "UNCLEAR_HOLD",
+      "facts": {
+        "active_issue": null,
+        "branch": "deps-redis-8.8.1",
+        "dirty": false,
+        "head": "4f714b4a728803f6fc2acb2918beb4e9cbb9e2a7",
+        "is_main_checkout": false,
+        "locked": null,
+        "merged_into_base": false,
+        "on_windows_legacy_drive": true,
+        "path": "D:/Dev/Workspaces/Repos/Claire_de_Binare/.worktrees/pr-queue-e1-redis",
+        "path_exists": true,
+        "prunable": false,
+        "unpushed": true
+      },
+      "notes": "Unpushed commits without clear ownership; STOP.",
+      "path": "D:/Dev/Workspaces/Repos/Claire_de_Binare/.worktrees/pr-queue-e1-redis",
+      "reason_codes": [
+        "UNCLEAR_HOLD"
+      ]
+    },
+    {
+      "classification": "UNCLEAR_HOLD",
+      "facts": {
+        "active_issue": null,
+        "branch": "deps-grafana-13.1.1",
+        "dirty": true,
+        "head": "3018a8b194c1b16b42ea0dd360c11f0429946e8b",
+        "is_main_checkout": false,
+        "locked": null,
+        "merged_into_base": false,
+        "on_windows_legacy_drive": true,
+        "path": "D:/Dev/Workspaces/Repos/Claire_de_Binare/.worktrees/pr-queue-e2-grafana",
+        "path_exists": true,
+        "prunable": false,
+        "unpushed": true
+      },
+      "notes": "Dirty worktree; STOP.",
+      "path": "D:/Dev/Workspaces/Repos/Claire_de_Binare/.worktrees/pr-queue-e2-grafana",
+      "reason_codes": [
+        "UNCLEAR_HOLD"
+      ]
+    },
+    {
+      "classification": "NEEDED_FOLLOWUP_ISSUE",
+      "facts": {
+        "active_issue": "2026",
+        "branch": "pr-queue-reconcile-2026-07-28",
+        "dirty": false,
+        "head": "696dcfb5d263557dde25ce3797630db6357a29a2",
+        "is_main_checkout": false,
+        "locked": null,
+        "merged_into_base": false,
+        "on_windows_legacy_drive": true,
+        "path": "D:/Dev/Workspaces/Repos/Claire_de_Binare/.worktrees/pr-queue-ledger",
+        "path_exists": true,
+        "prunable": false,
+        "unpushed": true
+      },
+      "notes": "Unpushed work with known issue; capture follow-up before cleanup.",
+      "path": "D:/Dev/Workspaces/Repos/Claire_de_Binare/.worktrees/pr-queue-ledger",
+      "reason_codes": [
+        "NEEDED_FOLLOWUP_ISSUE"
+      ]
+    },
+    {
+      "classification": "NEEDED_FOLLOWUP_ISSUE",
+      "facts": {
+        "active_issue": "2026",
+        "branch": "pr-queue-final-reconcile-2026-07-28",
+        "dirty": false,
+        "head": "b4adbe76430eaa9e8f61c69c7c45fcfb891c1ca7",
+        "is_main_checkout": false,
+        "locked": null,
+        "merged_into_base": false,
+        "on_windows_legacy_drive": true,
+        "path": "D:/Dev/Workspaces/Repos/Claire_de_Binare/.worktrees/pr-queue-ledger2",
+        "path_exists": true,
+        "prunable": false,
+        "unpushed": true
+      },
+      "notes": "Unpushed work with known issue; capture follow-up before cleanup.",
+      "path": "D:/Dev/Workspaces/Repos/Claire_de_Binare/.worktrees/pr-queue-ledger2",
+      "reason_codes": [
+        "NEEDED_FOLLOWUP_ISSUE"
+      ]
+    },
+    {
+      "classification": "NEEDED_FOLLOWUP_ISSUE",
+      "facts": {
+        "active_issue": "4065",
+        "branch": "arvp-4065-regime-stats-schema-ref",
+        "dirty": false,
+        "head": "54bea593f29705738e95dc4527dc09bd6fa62644",
+        "is_main_checkout": false,
+        "locked": null,
+        "merged_into_base": false,
+        "on_windows_legacy_drive": true,
+        "path": "D:/Dev/Workspaces/Repos/Claire_de_Binare-4065",
+        "path_exists": true,
+        "prunable": false,
+        "unpushed": true
+      },
+      "notes": "Unpushed work with known issue; capture follow-up before cleanup.",
+      "path": "D:/Dev/Workspaces/Repos/Claire_de_Binare-4065",
+      "reason_codes": [
+        "NEEDED_FOLLOWUP_ISSUE"
+      ]
+    },
+    {
+      "classification": "NEEDED_FOLLOWUP_ISSUE",
+      "facts": {
+        "active_issue": "4289",
+        "branch": "ci-tooling-issue-4289",
+        "dirty": false,
+        "head": "d472e50a07add68d585a5c3a0939f0c854312b65",
+        "is_main_checkout": false,
+        "locked": null,
+        "merged_into_base": false,
+        "on_windows_legacy_drive": true,
+        "path": "D:/Dev/Workspaces/Repos/Claire_de_Binare-wt-4289-b1",
+        "path_exists": true,
+        "prunable": false,
+        "unpushed": true
+      },
+      "notes": "Unpushed work with known issue; capture follow-up before cleanup.",
+      "path": "D:/Dev/Workspaces/Repos/Claire_de_Binare-wt-4289-b1",
+      "reason_codes": [
+        "NEEDED_FOLLOWUP_ISSUE"
+      ]
+    },
+    {
+      "classification": "UNCLEAR_HOLD",
+      "facts": {
+        "active_issue": "4329",
+        "branch": null,
+        "dirty": true,
+        "head": "a0ca789aab9118e05eff6f056df47b3cdd334dc9",
+        "is_main_checkout": false,
+        "locked": null,
+        "merged_into_base": false,
+        "on_windows_legacy_drive": true,
+        "path": "D:/Dev/Workspaces/Repos/Claire_de_Binare-wt-4329",
+        "path_exists": true,
+        "prunable": false,
+        "unpushed": true
+      },
+      "notes": "Dirty worktree; STOP.",
+      "path": "D:/Dev/Workspaces/Repos/Claire_de_Binare-wt-4329",
+      "reason_codes": [
+        "UNCLEAR_HOLD"
+      ]
+    },
+    {
+      "classification": "UNCLEAR_HOLD",
+      "facts": {
+        "active_issue": "4393",
+        "branch": "ci-tooling-issue-4393",
+        "dirty": true,
+        "head": "59dfbc6753d166ca0e3e40c8007dd4b7b0705b1f",
+        "is_main_checkout": false,
+        "locked": null,
+        "merged_into_base": true,
+        "on_windows_legacy_drive": false,
+        "path": "Y:/Worktrees/Claire_de_Binare/issue-4393",
+        "path_exists": true,
+        "prunable": false,
+        "unpushed": false
+      },
+      "notes": "Dirty worktree; STOP.",
+      "path": "Y:/Worktrees/Claire_de_Binare/issue-4393",
+      "reason_codes": [
+        "UNCLEAR_HOLD"
+      ]
+    }
+  ],
+  "status": "PASS"
+}
