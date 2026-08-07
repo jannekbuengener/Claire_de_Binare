@@ -25,6 +25,9 @@ from core.replay.hh_hl_continuation_common import (
     HH_HL_CONTINUATION_STRATEGY_ID,
     frozen_hh_hl_parameters,
 )
+from tools.arvp_vacation.hh_hl_campaign_grid import (
+    _physical_fingerprint as _hh_hl_grid_physical_fingerprint,
+)
 from tools.arvp_vacation.hh_hl_campaign_lifecycle import HH_HL_EXPECTED_RUN_COUNT
 from tools.arvp_vacation.sensitivity_campaign_state import (
     CAMPAIGN_ENVELOPE_NAME,
@@ -91,7 +94,14 @@ def campaign_summary_path(root: Path) -> Path:
 
 
 def physical_parameter_set_fingerprint() -> str:
-    return canonical_hash(dict(frozen_hh_hl_parameters()))
+    """Bind to the same strategy_id+param_set hash as grid / bound_run_envelope.
+
+    Historical #4374 evidence and ``hh_hl_campaign_grid._physical_fingerprint``
+    use ``canonical_hash({strategy_id, param_set})``. Hashing only the param
+    dict diverges (``76036390…`` vs historical ``9067cd6a…``) and must not be
+    reintroduced (#4410 / #4409).
+    """
+    return _hh_hl_grid_physical_fingerprint(frozen_hh_hl_parameters())
 
 
 def _assert_bindings_match(
