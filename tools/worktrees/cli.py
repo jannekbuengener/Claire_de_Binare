@@ -16,8 +16,8 @@ from tools.worktrees.policy import (
     validate_new_worktree_path,
 )
 from tools.worktrees.reconcile import (
-    classify_legacy_worktree,
-    inventory_from_porcelain,
+    DEFAULT_MAIN_CHECKOUT,
+    reconcile_inventory,
 )
 from tools.worktrees.resolve import build_worktree_path, resolve_worktree_root
 
@@ -105,9 +105,10 @@ def cmd_create(args: argparse.Namespace) -> int:
 
 
 def cmd_reconcile(args: argparse.Namespace) -> int:
-    if args.from_git:
-        import subprocess
+    import subprocess
 
+    porcelain_text: str | None = None
+    if args.from_git:
         completed = subprocess.run(
             ["git", "worktree", "list", "--porcelain"],
             capture_output=True,
@@ -124,22 +125,47 @@ def cmd_reconcile(args: argparse.Namespace) -> int:
                 }
             )
             return HOLD
-        facts_list = inventory_from_porcelain(completed.stdout)
+        porcelain_text = completed.stdout
     elif args.inventory:
-        text = Path(args.inventory).read_text(encoding="utf-8")
-        facts_list = inventory_from_porcelain(text)
-    else:
+        porcelain_text = Path(args.inventory).read_text(encoding="utf-8")
+    elif not args.scan_roots:
         _emit(
             {
                 "status": "FAIL",
                 "reason_codes": ["USAGE"],
-                "error": "need --from-git or --inventory",
+                "error": "need --from-git, --inventory, and/or --scan-roots",
             }
         )
         return USAGE
 
-    rows = [asdict(classify_legacy_worktree(f)) for f in facts_list]
-    _emit({"status": "PASS", "count": len(rows), "results": rows})
+    scan_roots = list(args.scan_roots) if args.scan_roots else None
+    include_fs = bool(args.scan_roots)
+    facts_list, classified = reconcile_inventory(
+        porcelain_text=porcelain_text,
+        scan_roots=scan_roots,
+        enrich=bool(args.enrich),
+        main_checkout=args.main_checkout,
+        base_ref=args.base_ref,
+        include_fs_scan=include_fs,
+    )
+    rows = []
+    for fact, result in zip(facts_list, classified, strict=True):
+        row = asdict(result)
+        row["facts"] = asdict(fact)
+        rows.append(row)
+    counts: dict[str, int] = {}
+    for row in rows:
+        key = str(row.get("classification") or "UNKNOWN")
+        counts[key] = counts.get(key, 0) + 1
+    _emit(
+        {
+            "status": "PASS",
+            "count": len(rows),
+            "counts": counts,
+            "enrich": bool(args.enrich),
+            "results": rows,
+        }
+    )
     return SUCCESS
 
 
@@ -184,6 +210,27 @@ def build_parser() -> argparse.ArgumentParser:
     p_rec.add_argument("--from-git", action="store_true")
     p_rec.add_argument("--inventory", default=None)
     p_rec.add_argument("--repo-dir", default=None)
+    p_rec.add_argument(
+        "--enrich",
+        action="store_true",
+        help="Probe dirty/unpushed/merged/drive (still read-only; no delete)",
+    )
+    p_rec.add_argument(
+        "--scan-roots",
+        nargs="*",
+        default=None,
+        help="Also discover legacy FS paths under these roots (e.g. D:\\Dev\\Workspaces\\Repos)",
+    )
+    p_rec.add_argument(
+        "--main-checkout",
+        default=DEFAULT_MAIN_CHECKOUT,
+        help="Path treated as main checkout (never OBSOLETE_REMOVE)",
+    )
+    p_rec.add_argument(
+        "--base-ref",
+        default="origin/main",
+        help="Base ref for merged/unpushed probes",
+    )
     p_rec.set_defaults(func=cmd_reconcile)
 
     return parser

@@ -1,0 +1,71 @@
+{
+  "candidate_count": 12,
+  "execute": true,
+  "outcomes": [
+    {
+      "action": "REMOVED",
+      "detail": "worktree_remove_ok",
+      "path": "D:/Dev/Workspaces/Repos/cdb-wt-4153-campaign-execute"
+    },
+    {
+      "action": "REMOVED",
+      "detail": "worktree_remove_ok",
+      "path": "D:/Dev/Workspaces/Repos/cdb-wt-4153-campaign-execute-v2"
+    },
+    {
+      "action": "REMOVED",
+      "detail": "worktree_remove_ok",
+      "path": "D:/Dev/Workspaces/Repos/cdb-wt-4153-campaign-go-audit"
+    },
+    {
+      "action": "SKIP_PROTECTED",
+      "detail": "protected_branch:main",
+      "path": "D:/Dev/Workspaces/Repos/cdb-wt-4164-publisher"
+    },
+    {
+      "action": "REMOVED",
+      "detail": "worktree_remove_ok",
+      "path": "D:/Dev/Workspaces/Repos/cdb-wt-4166-main-cmp"
+    },
+    {
+      "action": "REMOVED",
+      "detail": "worktree_remove_ok",
+      "path": "D:/Dev/Workspaces/Repos/cdb-wt-4170-github-app"
+    },
+    {
+      "action": "REMOVED",
+      "detail": "worktree_remove_ok",
+      "path": "D:/Dev/Workspaces/Repos/cdb-wt-4289-hermes-canary"
+    },
+    {
+      "action": "BLOCKED_REMOVE",
+      "detail": "remove_failed:error: failed to delete 'D:/Dev/Workspaces/Repos/cdb-wt-4289-hermes-phase-a': Directory not empty",
+      "path": "D:/Dev/Workspaces/Repos/cdb-wt-4289-hermes-phase-a"
+    },
+    {
+      "action": "REMOVED",
+      "detail": "worktree_remove_ok",
+      "path": "D:/Dev/Workspaces/Repos/cdb-wt-4327-runtime-resume"
+    },
+    {
+      "action": "REMOVED",
+      "detail": "worktree_remove_ok",
+      "path": "D:/Dev/Workspaces/Repos/cdb-wt-main-check-4194"
+    },
+    {
+      "action": "REMOVED",
+      "detail": "worktree_remove_ok",
+      "path": "D:/Dev/Workspaces/Repos/cdb-wt-supervised-pilot-hold"
+    },
+    {
+      "action": "REMOVED",
+      "detail": "worktree_remove_ok",
+      "path": "D:/Dev/Workspaces/Repos/Claire_de_Binare/.worktrees/4374-campaign-exec"
+    }
+  ],
+  "summary": {
+    "BLOCKED_REMOVE": 1,
+    "REMOVED": 10,
+    "SKIP_PROTECTED": 1
+  }
+}
