@@ -77,6 +77,10 @@ from tools.arvp_vacation.hh_hl_campaign_sha_gate import (
     resolve_live_git_sha_resolver,
 )
 from tools.arvp_vacation.hh_hl_campaign_surface import measure_free_disk_bytes
+from tools.arvp_vacation.hh_hl_execution_window_bank import (
+    HhHlExecutionWindowBankError,
+    assert_execution_window_bank_available,
+)
 from tools.arvp_vacation.sensitivity_campaign_budget import (
     SensitivityBudgetError,
     assert_failure_thresholds,
@@ -228,6 +232,18 @@ def _current_free_disk_bytes(repo_root: Path) -> int:
     return int(measure_free_disk_bytes(repo_root))
 
 
+def _production_window_bank_root(repo_root: Path) -> Path | None:
+    """Resolve the physical bank for production execute / preflight.
+
+    Unit tests may inject ``_TEST_WINDOW_BANK_ROOT``. Production fail-closes via
+    :func:`assert_execution_window_bank_available` (local junction, parent
+    checkout, or env) — never silently falls back to a missing worktree path.
+    """
+    if _TEST_WINDOW_BANK_ROOT is not None:
+        return Path(_TEST_WINDOW_BANK_ROOT)
+    return assert_execution_window_bank_available(repo_root).window_bank_root
+
+
 def assert_free_disk_meets_budget(
     *,
     budget: Mapping[str, Any],
@@ -320,6 +336,8 @@ def assert_per_run_pre_dispatch(
             "scenario_group_id": None,
             "scenario_ids": None,
         },
+        # Shape / frozen-param gate only — do not require a physical bank here.
+        # Production bank availability is asserted in preflight/status/execute.
         window_bank_root=_TEST_WINDOW_BANK_ROOT,
     )
 
@@ -605,6 +623,9 @@ def cmd_preflight(args: argparse.Namespace) -> int:
         final_plan, run_plan, _per_window = _rebuild_bound_plans(
             repo_root=repo_root, args=args, ctx=ctx
         )
+        # Physical bank must be readable on this execution surface before ok=true.
+        # Closes the #4395 gap where receipt digests passed but worktree paths missing.
+        window_bank = assert_execution_window_bank_available(repo_root)
         bindings = bindings_from_authorization(ctx)
         evidence_root = _evidence_root_for(ctx, repo_root)
         startable = assert_startable(
@@ -626,6 +647,7 @@ def cmd_preflight(args: argparse.Namespace) -> int:
         HhHlDatasetBindingError,
         HhHlDesignAuthorizationError,
         HhHlShaGateError,
+        HhHlExecutionWindowBankError,
         CampaignProfileError,
         SensitivityBudgetError,
         SensitivityStateError,
@@ -660,6 +682,7 @@ def cmd_preflight(args: argparse.Namespace) -> int:
             "startable": startable,
             "resume_actions": actions,
             "verified_reason_code": verified.get("reason_code"),
+            "window_bank": window_bank.as_dict(),
         }
     )
     return 0
@@ -672,6 +695,7 @@ def cmd_status(args: argparse.Namespace) -> int:
         final_plan, _run_plan, _per_window = _rebuild_bound_plans(
             repo_root=repo_root, args=args, ctx=ctx
         )
+        window_bank = assert_execution_window_bank_available(repo_root)
         bindings = bindings_from_authorization(ctx)
         evidence_root = _evidence_root_for(ctx, repo_root)
         startable = assert_startable(
@@ -693,6 +717,7 @@ def cmd_status(args: argparse.Namespace) -> int:
         HhHlDatasetBindingError,
         HhHlDesignAuthorizationError,
         HhHlShaGateError,
+        HhHlExecutionWindowBankError,
         CampaignProfileError,
         SensitivityBudgetError,
         SensitivityStateError,
@@ -717,6 +742,7 @@ def cmd_status(args: argparse.Namespace) -> int:
             "startable": startable,
             "action_counts": counts,
             "resume_actions": actions,
+            "window_bank": window_bank.as_dict(),
         }
     )
     return 0
@@ -773,7 +799,7 @@ def cmd_execute(args: argparse.Namespace) -> int:
             provider = HhHlSingleRunReplayProvider(
                 profile,
                 single_run_callable=build_production_single_run_callable(
-                    window_bank_root=_TEST_WINDOW_BANK_ROOT
+                    window_bank_root=_production_window_bank_root(repo_root)
                 ),
             )
 
@@ -903,6 +929,7 @@ def cmd_execute(args: argparse.Namespace) -> int:
         HhHlDatasetBindingError,
         HhHlDesignAuthorizationError,
         HhHlShaGateError,
+        HhHlExecutionWindowBankError,
         CampaignProfileError,
         SensitivityBudgetError,
         SensitivityStateError,
