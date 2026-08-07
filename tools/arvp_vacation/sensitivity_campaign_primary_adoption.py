@@ -23,8 +23,10 @@ from tools.arvp_vacation.sensitivity_campaign_state import (
     CampaignBindings,
     atomic_write_json,
     count_primary_succeeded,
+    fs_dirname_for_run_key,
     read_campaign_phase,
     read_json,
+    run_dir,
     update_campaign_phase,
 )
 
@@ -76,7 +78,6 @@ def build_primary_evidence_inventory(
     """Read-only inventory. Does not mutate primary results."""
     root = Path(evidence_root)
     expected = [str(k) for k in expected_run_keys]
-    expected_set = set(expected)
     runs_dir = root / "runs"
     disk_dirs = (
         sorted(p.name for p in runs_dir.iterdir() if p.is_dir())
@@ -84,8 +85,17 @@ def build_primary_evidence_inventory(
         else []
     )
     disk_set = set(disk_dirs)
-    missing = sorted(expected_set - disk_set)
-    extra = sorted(disk_set - expected_set)
+    # Accept both fs-safe hash dirs and legacy raw-key dirs as expected.
+    expected_dir_names: set[str] = set()
+    for key in expected:
+        expected_dir_names.add(fs_dirname_for_run_key(key))
+        expected_dir_names.add(key)
+    missing = sorted(
+        key
+        for key in expected
+        if not (run_dir(root, key) / "run_envelope.json").exists()
+    )
+    extra = sorted(disk_set - expected_dir_names)
 
     status_counts: dict[str, int] = {}
     attempt_hist: dict[str, int] = {}
@@ -93,10 +103,10 @@ def build_primary_evidence_inventory(
     missing_completed = 0
     primary_results = 0
 
-    for key in disk_dirs:
-        env_path = runs_dir / key / "run_envelope.json"
+    for key in expected:
+        run_path = run_dir(root, key)
+        env_path = run_path / "run_envelope.json"
         if not env_path.exists():
-            binding_mismatches += 1
             continue
         env = read_json(env_path)
         st = str(env.get("status") or "")
@@ -112,7 +122,7 @@ def build_primary_evidence_inventory(
         ):
             if env.get(field) != expected_val:
                 binding_mismatches += 1
-        rpath = runs_dir / key / "result.json"
+        rpath = run_path / "result.json"
         if rpath.exists():
             primary_results += 1
             result = read_json(rpath)
@@ -123,8 +133,15 @@ def build_primary_evidence_inventory(
             ):
                 if result.get(field) != expected_val:
                     binding_mismatches += 1
-        if not (runs_dir / key / "COMPLETED").exists():
+        if not (run_path / "COMPLETED").exists():
             missing_completed += 1
+
+    # Foreign/orphan dirs still contribute to mismatch accounting when they
+    # contain envelopes that are not part of the expected logical key set.
+    for dirname in extra:
+        env_path = runs_dir / dirname / "run_envelope.json"
+        if env_path.exists():
+            binding_mismatches += 1
 
     primary_verdict = VERDICT_PRIMARY_COMPLETE
     if missing or extra or primary_results != len(expected):
