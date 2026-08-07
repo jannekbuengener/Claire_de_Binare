@@ -36,9 +36,12 @@ python -m tools.worktrees validate-path --purpose main_checkout --path 'D:\Dev\W
 python -m tools.worktrees create --repository Claire_de_Binare --name issue-4386 --branch dedicated/ci-tooling-issue-4386
 # add --execute only after dry-run PASS
 python -m tools.worktrees reconcile --from-git
+python -m tools.worktrees reconcile --from-git --enrich --scan-roots D:\Dev\Workspaces\Repos
 ```
 
 Dry-run is the default for `create`.
+`reconcile` is always read-only (classify only). `--enrich` probes
+dirty/unpushed/merged/drive; without it most rows stay `UNCLEAR_HOLD`.
 
 ## Reason codes (selected)
 
