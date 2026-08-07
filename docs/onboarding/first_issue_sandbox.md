@@ -118,12 +118,21 @@ git switch -c docs/<short-scope>-<issue>
 
 Example: `docs/first-issue-sandbox-3251` or `docs/glossary-clarify-XXXX`.
 
-If you prefer a dedicated worktree:
+If you prefer a dedicated worktree on the local Windows operator host, use the
+governed entry (canonical root `Y:\Worktrees`):
 
-```bash
-git worktree add ../cdb-sandbox-<issue> origin/main
-cd ../cdb-sandbox-<issue>
+```powershell
+python -m tools.worktrees create `
+  --repository Claire_de_Binare `
+  --name cdb-sandbox-<issue> `
+  --branch docs/sandbox-<issue> `
+  --execute
+cd Y:\Worktrees\Claire_de_Binare\cdb-sandbox-<issue>
 ```
+
+Do **not** create new additional worktrees on `C:` or `D:`. The main checkout
+may remain on `D:`. See `docs/runbooks/windows_worktree_y_root.md`.
+On Linux/CI, Windows drive policy does not apply.
 
 Verify:
 
