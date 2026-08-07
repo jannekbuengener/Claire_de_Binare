@@ -6,10 +6,10 @@ name: CodeQL Python
 on:
   push:
     branches: [main]
-  pull_request:
-    branches: [main]
-  # NOISE-FREEZE (#2613): push and pull_request auto-triggers disabled due to billing/account-locked
-  # RESTORED (#3659): billing recovery complete, triggers re-enabled
+  # #4401: PR trigger removed to cut hosted runner minutes on every synchronize.
+  # Independent security value retained on every land-to-main + weekly schedule +
+  # manual dispatch. Not equivalent to Fast-CI unit/lint (not moved to local).
+  # NOISE-FREEZE (#2613) / RESTORED (#3659) history preserved above for audit.
   schedule:
     - cron: "21 3 * * 1"
   workflow_dispatch:

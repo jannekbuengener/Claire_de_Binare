@@ -37,8 +37,11 @@ def test_trigger_matrix_is_complete() -> None:
 @pytest.mark.parametrize(
     "filename,expected_triggers",
     [
-        ("ci.yml", ("pull_request", "push")),
+        ("ci.yml", ("push", "workflow_dispatch")),
         ("policy-gate.yml", ("pull_request",)),
+        ("docs-conflict-guard.yml", ("push", "workflow_dispatch")),
+        ("repository-canon-guard.yml", ("push", "workflow_dispatch")),
+        ("codeql-python.yml", ("push", "schedule", "workflow_dispatch")),
         ("required-checks-audit.yml", ("workflow_dispatch",)),
         ("project_reconcile_daily.yml", ("schedule", "workflow_dispatch")),
     ],
@@ -57,7 +60,9 @@ def test_known_triggers(filename: str, expected_triggers: tuple[str, ...]) -> No
         ("cdb-daily-delta-triage.yml", ("issues:write",)),
     ],
 )
-def test_known_write_permissions(filename: str, expected_permissions: tuple[str, ...]) -> None:
+def test_known_write_permissions(
+    filename: str, expected_permissions: tuple[str, ...]
+) -> None:
     row = helpers.build_trigger_permission_row(helpers.WORKFLOWS_DIR / filename)
     assert row.write_permissions == expected_permissions
 
@@ -68,12 +73,16 @@ def test_write_permissions_use_canonical_tokens() -> None:
 
 
 def test_fixture_flags_pull_request_target() -> None:
-    row = helpers.build_trigger_permission_row(FIXTURES_ROOT / "forbidden_trigger" / "bad.yml")
+    row = helpers.build_trigger_permission_row(
+        FIXTURES_ROOT / "forbidden_trigger" / "bad.yml"
+    )
     assert row.forbidden_triggers == ("pull_request_target",)
 
 
 def test_fixture_surfaces_missing_permissions() -> None:
-    row = helpers.build_trigger_permission_row(FIXTURES_ROOT / "missing_permissions" / "implicit.yml")
+    row = helpers.build_trigger_permission_row(
+        FIXTURES_ROOT / "missing_permissions" / "implicit.yml"
+    )
     assert row.has_explicit_permissions is False
 
 

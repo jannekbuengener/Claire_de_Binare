@@ -1,12 +1,12 @@
-# Canonical PR gate (advisory workflow content; not BP-required).
-# Validation logic is delegated to the local CI orchestrator (Issue #4163).
-# Required merge context remains App-bound Check Run `cdb-local-ci` (`app_id=4410232`) (see merge_policy_ci_gate.md).
+# Hosted Fast-CI mirror (advisory; not BP-required).
+# PR-path duplication removed in #4401: Final-Head evidence is local
+# `python ci/scripts/run.py --profile fast` published as App Check Run
+# `cdb-local-ci` (`app_id=4410232`). See merge_policy_ci_gate.md.
+# Retained: push-to-main (post-squash tip differs from PR head) + manual dispatch.
 # This workflow is not the Docker CI lab baseline; 431B baseline is base.yml + test.yml.
 name: ci
 
 on:
-  pull_request:
-    branches: [ main ]
   push:
     branches: [ main ]
     paths:
@@ -17,6 +17,7 @@ on:
       - '.github/workflows/**'
       - 'requirements*.txt'
       - 'pyproject.toml'
+  workflow_dispatch:
 
 concurrency:
   group: ${{ github.workflow }}-${{ github.ref }}
@@ -34,7 +35,10 @@ jobs:
   surrealdb-validate:
     name: surrealdb-validate
     runs-on: ubuntu-latest
-    if: github.event_name == 'pull_request' || (github.event_name == 'push' && contains(github.event.head_commit.modified, 'infrastructure/surrealdb/'))
+    if: >
+      github.event_name == 'workflow_dispatch' ||
+      (github.event_name == 'push' &&
+       contains(toJSON(github.event.commits.*.modified), 'infrastructure/surrealdb/'))
     steps:
       - name: Checkout
         uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1
