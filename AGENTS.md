@@ -256,6 +256,21 @@ Siehe [`docs/onboarding/AGENT_ROOT_SURFACE_MATRIX.md`](docs/onboarding/AGENT_ROO
 | `.opencode/` | OpenCode CLI — Session-Skills |
 | `.vscode/` | VS Code — Helper-Surface (keine Autorität) |
 
+## Local Windows worktrees (Y:-only)
+
+On the local Windows operator host, newly created **additional** Git worktrees
+MUST use the governed entry and canonical root:
+
+```powershell
+python -m tools.worktrees create --repository Claire_de_Binare --name <wt-name> ...
+```
+
+- Root: `Y:\Worktrees\<repository>\<worktree-name>` (`CDB_WORKTREE_ROOT`)
+- New worktrees on `C:` / `D:` are forbidden; missing/unwritable `Y:` fails closed
+- The main checkout may remain on `D:`
+- Linux / CI / Hermes are not bound to a Windows drive letter
+- SSOT: [`docs/runbooks/windows_worktree_y_root.md`](docs/runbooks/windows_worktree_y_root.md)
+
 ## Selected repo skills (not exhaustive)
 
 Codex skill surface: `.codex/cdb_skills/`
