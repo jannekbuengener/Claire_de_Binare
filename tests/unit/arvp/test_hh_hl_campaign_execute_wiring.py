@@ -28,13 +28,22 @@ from tools.arvp_vacation.campaign_executor_providers import (
 )
 from tools.arvp_vacation.campaign_profile import CampaignProfileError, load_profile
 from tools.arvp_vacation.hh_hl_campaign_execute import (
+    HOLD_FREE_DISK_BELOW_MINIMUM,
+    HhHlCampaignExecuteError,
+    _owner_go_fetcher,
+    _test_set_free_disk_bytes,
     _test_set_git_sha_resolver,
     _test_set_now_utc,
     _test_set_owner_go_fetcher,
     _test_set_single_run_callable,
+    assert_free_disk_meets_budget,
+    build_parser,
     main as execute_main,
 )
-from tools.arvp_vacation.hh_hl_campaign_execution_authorization import OwnerGoComment
+from tools.arvp_vacation.hh_hl_campaign_execution_authorization import (
+    OwnerGoComment,
+    default_gh_comment_fetcher,
+)
 from tools.arvp_vacation.hh_hl_campaign_sha_gate import GitShaResolver
 from tools.arvp_vacation.hh_hl_single_run_callable import (
     HOLD_DATASET_CONTENT_MISMATCH,
@@ -55,6 +64,8 @@ DATASET_DIGEST = "10f94c34e32db28a9393c38f944db4968b42e87d9ed223397e3637ff44323a
 SURFACE_FP = "43f67ae4ae420bb7c474c5bcc47333f7933bcc302e2128086ad2b7db023046cf"
 DESIGN_BODY_FP = "415400720d28c998dad6b311c71f9107395e3dd17528d4137d097918d682887d"
 WINDOW_FP = "3e7fc8e8024972405eb0e53c2f483e8d5999dda1d9d56fda44b3c40b9f966d5c"
+REPO_ROOT = Path(__file__).resolve().parents[3]
+MIN_FREE_DISK = 21474836480
 
 
 def _budget() -> dict[str, int]:
@@ -68,7 +79,7 @@ def _budget() -> dict[str, int]:
         "max_parallelism": 1,
         "max_run_wall_time_seconds": 3600,
         "max_total_failures": 5,
-        "minimum_free_disk_bytes": 21474836480,
+        "minimum_free_disk_bytes": MIN_FREE_DISK,
     }
 
 
@@ -99,7 +110,7 @@ def _go_payload(**overrides: Any) -> dict[str, Any]:
         "execution_sha": EXEC_SHA,
         "execution_surface_id": "services.validation.strategy_replay_runner.single_run",
         "expected_run_count": 39,
-        "expires_at_utc": (datetime.now(timezone.utc) + timedelta(days=2))
+        "expires_at_utc": (datetime.now(timezone.utc) + timedelta(days=7))
         .replace(microsecond=0)
         .isoformat()
         .replace("+00:00", "Z"),
@@ -162,11 +173,43 @@ def _clear_test_hooks():
     _test_set_git_sha_resolver(None)
     _test_set_now_utc(None)
     _test_set_single_run_callable(None)
+    _test_set_free_disk_bytes(None)
     yield
     _test_set_owner_go_fetcher(None)
     _test_set_git_sha_resolver(None)
     _test_set_now_utc(None)
     _test_set_single_run_callable(None)
+    _test_set_free_disk_bytes(None)
+
+
+def _install_valid_go_and_sha(
+    *, free_disk_bytes: int | None = MIN_FREE_DISK
+) -> list[Any]:
+    """Private-injection seams only (never CLI fixtures). Returns hit_count list."""
+    hits: list[Any] = []
+    comment = _owner_comment()
+
+    def _fetch(repository: str, issue: int, comment_id: int) -> OwnerGoComment:
+        hits.append(("fetch", repository, issue, comment_id))
+        return comment
+
+    def _fake_callable(req: dict[str, Any]) -> RunResult:
+        hits.append(("callable", req))
+        return RunResult(exit_code=0, metrics={})
+
+    _test_set_owner_go_fetcher(_fetch)
+    _test_set_git_sha_resolver(
+        GitShaResolver(
+            fetch=lambda: None,
+            resolve_main_tip=lambda: EXEC_SHA,
+            object_type=lambda sha: "commit",
+            head=lambda: EXEC_SHA,
+        )
+    )
+    if free_disk_bytes is not None:
+        _test_set_free_disk_bytes(free_disk_bytes)
+    _test_set_single_run_callable(_fake_callable)
+    return hits
 
 
 def test_resolve_campaign_executor_wires_production_callable():
@@ -375,6 +418,156 @@ def test_invalid_fence_go_hold(tmp_path: Path, capsys):
     assert code == 1
     out = capsys.readouterr().out
     assert "HOLD_EXECUTION_GO_BLOCK_MISSING" in out or "HOLD_EXECUTION_GO" in out
+
+
+def test_public_cli_rejects_fixture_json():
+    parser = build_parser()
+    with pytest.raises(SystemExit) as exc:
+        parser.parse_args(
+            ["--execution-go-comment-id", "1", "--fixture-json", "x.json", "preflight"]
+        )
+    assert exc.value.code == 2
+
+
+def test_public_cli_rejects_design_go_fixture_json():
+    parser = build_parser()
+    with pytest.raises(SystemExit) as exc:
+        parser.parse_args(
+            [
+                "--execution-go-comment-id",
+                "1",
+                "--design-go-fixture-json",
+                "x.json",
+                "preflight",
+            ]
+        )
+    assert exc.value.code == 2
+
+
+def test_production_owner_go_fetcher_is_live_when_no_injection():
+    assert _owner_go_fetcher(None) is default_gh_comment_fetcher
+
+
+def test_private_owner_go_injection_still_usable():
+    seen: list[int] = []
+
+    def _fetch(repository: str, issue: int, comment_id: int) -> OwnerGoComment:
+        seen.append(comment_id)
+        return _owner_comment()
+
+    _test_set_owner_go_fetcher(_fetch)
+    assert _owner_go_fetcher(None) is _fetch
+    _owner_go_fetcher(None)("jannekbuengener/Claire_de_Binare", 4374, 42)
+    assert seen == [42]
+
+
+def test_fabricated_owner_go_cannot_mint_context_via_cli(tmp_path: Path, capsys):
+    """Local JSON + --fixture-json must not be a production path."""
+    fabricated = tmp_path / "fake_owner_go.json"
+    fabricated.write_text(
+        json.dumps(
+            {
+                "id": 1,
+                "issue_number": 4374,
+                "user": {"login": "jannekbuengener"},
+                "body": _fence_body(_go_payload()),
+                "created_at": "2026-08-07T07:36:48Z",
+                "updated_at": "2026-08-07T07:36:48Z",
+            }
+        ),
+        encoding="utf-8",
+    )
+    with pytest.raises(SystemExit):
+        build_parser().parse_args(
+            [
+                "--repo-root",
+                str(REPO_ROOT),
+                "--execution-go-comment-id",
+                "1",
+                "--fixture-json",
+                str(fabricated),
+                "preflight",
+            ]
+        )
+
+
+def test_assert_free_disk_below_minimum_hold():
+    with pytest.raises(HhHlCampaignExecuteError) as exc:
+        assert_free_disk_meets_budget(
+            budget=_budget(),
+            free_disk_bytes=1,
+        )
+    assert exc.value.reason_code == HOLD_FREE_DISK_BELOW_MINIMUM
+
+
+def test_assert_free_disk_equal_or_above_minimum_pass():
+    assert (
+        assert_free_disk_meets_budget(
+            budget=_budget(),
+            free_disk_bytes=MIN_FREE_DISK,
+        )
+        == MIN_FREE_DISK
+    )
+    assert (
+        assert_free_disk_meets_budget(
+            budget=_budget(),
+            free_disk_bytes=MIN_FREE_DISK + 1,
+        )
+        == MIN_FREE_DISK + 1
+    )
+
+
+def test_preflight_free_disk_below_minimum_before_callable(capsys):
+    hits = _install_valid_go_and_sha(free_disk_bytes=1)
+    code = execute_main(
+        [
+            "--repo-root",
+            str(REPO_ROOT),
+            "--execution-go-comment-id",
+            "999001",
+            "preflight",
+        ]
+    )
+    assert code == 1
+    out = capsys.readouterr().out
+    assert HOLD_FREE_DISK_BELOW_MINIMUM in out
+    assert not any(h[0] == "callable" for h in hits)
+
+
+def test_execute_free_disk_below_minimum_replay_hit_count_zero(capsys):
+    hits = _install_valid_go_and_sha(free_disk_bytes=1)
+    code = execute_main(
+        [
+            "--repo-root",
+            str(REPO_ROOT),
+            "--execution-go-comment-id",
+            "999001",
+            "execute",
+        ]
+    )
+    assert code == 1
+    out = capsys.readouterr().out
+    assert HOLD_FREE_DISK_BELOW_MINIMUM in out
+    assert not any(h[0] == "callable" for h in hits)
+
+
+def test_preflight_free_disk_at_minimum_passes_disk_gate(capsys):
+    """Disk gate PASS when free >= minimum; later gates may still HOLD (no real GO/plan)."""
+    hits = _install_valid_go_and_sha(free_disk_bytes=MIN_FREE_DISK)
+    code = execute_main(
+        [
+            "--repo-root",
+            str(REPO_ROOT),
+            "--execution-go-comment-id",
+            "999001",
+            "preflight",
+        ]
+    )
+    out = capsys.readouterr().out
+    assert HOLD_FREE_DISK_BELOW_MINIMUM not in out
+    assert not any(h[0] == "callable" for h in hits)
+    # Preflight never dispatches callables; success or non-disk HOLD both OK here.
+    assert code in (0, 1)
 
 
 def test_execute_serial_loop_with_fake_callable(tmp_path: Path, monkeypatch, capsys):

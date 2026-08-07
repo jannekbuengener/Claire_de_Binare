@@ -40,7 +40,6 @@ from tools.arvp_vacation.hh_hl_campaign_dataset import (
 from tools.arvp_vacation.hh_hl_campaign_design_authorization import (
     HhHlDesignAuthorizationError,
     build_reference_design_receipt,
-    verify_design_go_comment,
 )
 from tools.arvp_vacation.hh_hl_campaign_execution_authorization import (
     CAMPAIGN_ID,
@@ -48,7 +47,6 @@ from tools.arvp_vacation.hh_hl_campaign_execution_authorization import (
     ISSUE_NUMBER,
     AuthorizationContext,
     HhHlExecutionAuthorizationError,
-    OwnerGoComment,
     OwnerGoFetcher,
     authorization_context_from_verified_go,
     default_gh_comment_fetcher,
@@ -76,6 +74,7 @@ from tools.arvp_vacation.hh_hl_campaign_sha_gate import (
     assert_execution_sha_exists,
     resolve_live_git_sha_resolver,
 )
+from tools.arvp_vacation.hh_hl_campaign_surface import measure_free_disk_bytes
 from tools.arvp_vacation.sensitivity_campaign_budget import (
     SensitivityBudgetError,
     assert_failure_thresholds,
@@ -98,12 +97,16 @@ DEFAULT_DATASET_RECEIPT_REL = (
 )
 DEFAULT_DESIGN_GO_COMMENT_ID = 5206657394
 
-# Injectable test surfaces (never argparse). Production leaves these None.
+# Injectable test surfaces (never argparse / never env). Production leaves these
+# None. Private Python test seams only — not a production CLI surface.
 _TEST_OWNER_GO_FETCHER: OwnerGoFetcher | None = None
 _TEST_GIT_SHA_RESOLVER: GitShaResolver | None = None
 _TEST_NOW_UTC: datetime | None = None
 _TEST_WINDOW_BANK_ROOT: Path | None = None
 _TEST_SINGLE_RUN_CALLABLE = None
+_TEST_FREE_DISK_BYTES: int | None = None
+
+HOLD_FREE_DISK_BELOW_MINIMUM = "HOLD_EXECUTION_FREE_DISK_BELOW_MINIMUM"
 
 
 class HhHlCampaignExecuteError(ValueError):
@@ -137,6 +140,11 @@ def _test_set_single_run_callable(callable_) -> None:
     _TEST_SINGLE_RUN_CALLABLE = callable_
 
 
+def _test_set_free_disk_bytes(free_disk_bytes: int | None) -> None:
+    global _TEST_FREE_DISK_BYTES
+    _TEST_FREE_DISK_BYTES = free_disk_bytes
+
+
 def _emit(payload: Mapping[str, Any]) -> None:
     sys.stdout.write(json.dumps(dict(payload), indent=2, sort_keys=True) + "\n")
     sys.stdout.flush()
@@ -160,29 +168,15 @@ def _now_utc() -> datetime:
     return datetime.now(timezone.utc)
 
 
-def _owner_go_fetcher(args: argparse.Namespace) -> OwnerGoFetcher:
+def _owner_go_fetcher(_args: argparse.Namespace | None = None) -> OwnerGoFetcher:
+    """Resolve the Owner-GO fetcher.
+
+    Production always uses ``default_gh_comment_fetcher``. The only non-live
+    substitution is the private ``_test_set_owner_go_fetcher`` seam used by unit
+    tests — never argparse, never environment variables.
+    """
     if _TEST_OWNER_GO_FETCHER is not None:
         return _TEST_OWNER_GO_FETCHER
-    fixture = getattr(args, "fixture_json", None)
-    if fixture:
-        data = _load_json(Path(fixture))
-
-        def _fetch(repository: str, issue: int, comment_id: int) -> OwnerGoComment:
-            return OwnerGoComment(
-                comment_id=int(data.get("id") or comment_id),
-                issue_number=int(data.get("issue_number") or issue),
-                author_login=str(
-                    (data.get("user") or {}).get("login")
-                    or data.get("author_login")
-                    or ""
-                ),
-                body=str(data.get("body") or ""),
-                created_at=str(data.get("created_at") or ""),
-                updated_at=str(data.get("updated_at") or ""),
-                repository=str(data.get("repository") or repository or DEFAULT_REPO),
-            )
-
-        return _fetch
     return default_gh_comment_fetcher
 
 
@@ -195,44 +189,34 @@ def _git_resolver(repo_root: Path) -> GitShaResolver:
 def _load_design_receipt(
     repo_root: Path, args: argparse.Namespace
 ) -> Mapping[str, Any]:
-    """Resolve Design-GO ratification receipt (reference by default; fixture optional)."""
+    """Resolve the frozen Design-GO ratification receipt (no CLI fixture path)."""
     comment_id = int(
         getattr(args, "design_go_comment_id", None) or DEFAULT_DESIGN_GO_COMMENT_ID
     )
-    design_fixture = getattr(args, "design_go_fixture_json", None)
-    if design_fixture:
-        from tools.arvp_vacation.hh_hl_campaign_design_authorization import (
-            DesignGoComment,
-        )
-
-        data = _load_json(Path(design_fixture))
-
-        def _fetch(repository: str, issue: int, cid: int) -> DesignGoComment:
-            return DesignGoComment(
-                comment_id=int(data.get("id") or cid),
-                issue_number=int(data.get("issue_number") or issue),
-                author_login=str(
-                    (data.get("user") or {}).get("login")
-                    or data.get("author_login")
-                    or ""
-                ),
-                body=str(data.get("body") or ""),
-                created_at=str(data.get("created_at") or ""),
-                updated_at=str(data.get("updated_at") or ""),
-                repository=str(data.get("repository") or repository or DEFAULT_REPO),
-            )
-
-        result = verify_design_go_comment(
-            comment_id=comment_id,
-            repository=DEFAULT_REPO,
-            issue=ISSUE_NUMBER,
-            fetcher=_fetch,
-            repo_root=repo_root,
-        )
-        receipt = result["receipt"]
-        return receipt.as_dict() if hasattr(receipt, "as_dict") else dict(receipt)
     receipt = build_reference_design_receipt(comment_id=comment_id, repo_root=repo_root)
     return receipt.as_dict()
+
+
+def _current_free_disk_bytes(repo_root: Path) -> int:
+    if _TEST_FREE_DISK_BYTES is not None:
+        return int(_TEST_FREE_DISK_BYTES)
+    return int(measure_free_disk_bytes(repo_root))
+
+
+def assert_free_disk_meets_budget(
+    *,
+    budget: Mapping[str, Any],
+    free_disk_bytes: int,
+) -> int:
+    """Fresh runtime free-disk gate (threshold check, not receipt byte-equality)."""
+    minimum = int(budget.get("minimum_free_disk_bytes") or 0)
+    free = int(free_disk_bytes)
+    if free < minimum:
+        raise HhHlCampaignExecuteError(
+            HOLD_FREE_DISK_BELOW_MINIMUM,
+            f"free_disk_bytes={free} < minimum_free_disk_bytes={minimum}",
+        )
+    return free
 
 
 def _verify_execution_go(
@@ -317,17 +301,24 @@ def _rebuild_bound_plans(
         ctx.payload.get("dataset_content_fingerprint_digest") or ""
     ):
         raise HhHlCampaignExecuteError("HOLD_EXECUTION_DATASET_DRIFT", "content_digest")
+    # Live surface identity: authorized execution_surface_id must match the
+    # production provider surface. surface_capability_fingerprint on the
+    # AuthorizationContext remains the Owner-authorized *historical*
+    # post-merge surface-receipt binding — it is retained on ctx and must not
+    # be treated as proof of the current physical execution surface (a
+    # payload↔ctx self-compare would be tautological).
     if (
         str(ctx.payload.get("execution_surface_id") or "")
         != HhHlSingleRunReplayProvider.SURFACE_ID
     ):
         raise HhHlCampaignExecuteError("HOLD_EXECUTION_SURFACE_BINDING_MISMATCH")
-    if str(ctx.payload.get("surface_capability_fingerprint") or "") != str(
-        ctx.surface_capability_fingerprint
-    ):
-        raise HhHlCampaignExecuteError("HOLD_EXECUTION_SURFACE_BINDING_MISMATCH", "fp")
 
     budget = validate_resource_budget(ctx.resource_budget)
+    # Fresh free-disk threshold check (not byte-equality to a past receipt).
+    assert_free_disk_meets_budget(
+        budget=budget,
+        free_disk_bytes=_current_free_disk_bytes(repo_root),
+    )
     if int(budget["max_parallelism"]) != 1 or int(budget["max_in_flight_runs"]) != 1:
         raise HhHlCampaignExecuteError(
             "HOLD_EXECUTION_RESOURCE_BUDGET_INVALID", "parallelism"
@@ -725,14 +716,14 @@ def build_parser() -> argparse.ArgumentParser:
         default=None,
         help="Required for preflight/execute/status (Owner Execution-GO comment id).",
     )
-    parser.add_argument(
-        "--fixture-json", default=None, help="Test-only Owner-GO fixture"
-    )
     parser.add_argument("--expected-bindings-json", default=None)
     parser.add_argument(
         "--design-go-comment-id", type=int, default=DEFAULT_DESIGN_GO_COMMENT_ID
     )
-    parser.add_argument("--design-go-fixture-json", default=None)
+    # Intentionally absent from the public production CLI:
+    # --fixture-json, --design-go-fixture-json, --skip-*, --offline, --fake-*,
+    # and any env-based Owner-GO bypass. Unit tests inject via
+    # _test_set_owner_go_fetcher / _test_set_free_disk_bytes only.
     sub = parser.add_subparsers(dest="command", required=True)
 
     p_pre = sub.add_parser("preflight", help="Verify GO/wiring/plan/state; 0 replays")
