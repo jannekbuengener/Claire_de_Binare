@@ -1397,9 +1397,7 @@ class RiskManager:
         global current_regime, risk_off_active
         current_regime = "UNKNOWN"
         risk_off_active = True
-        logger.error(
-            "Regime state unknown — fail-closed risk_off=True (%s)", reason
-        )
+        logger.error("Regime state unknown — fail-closed risk_off=True (%s)", reason)
 
     def _resubscribe_signal_pubsub(self) -> bool:
         """Recreate and resubscribe the signal pubsub after a disconnect."""
