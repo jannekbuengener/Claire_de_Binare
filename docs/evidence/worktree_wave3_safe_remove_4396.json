@@ -1,0 +1,217 @@
+{
+  "issue": 4396,
+  "wave": 3,
+  "observed_at": "2026-08-07T22:01:45.879214+00:00",
+  "main_sha": "8cea1ffd442a1f76cf8908bea4be1f77b9c6f95a",
+  "inventory_before_registered": 84,
+  "inventory_after_registered": 67,
+  "removed_count": 16,
+  "removed": [
+    {
+      "path": "D:/Dev/Workspaces/Repos/cdb-wt-2513-security-backlog",
+      "branch": "security-backlog-reconciliation-2513",
+      "head": "401dd294a52db510d8e6ebb979601c6472600b42",
+      "method": "git_worktree_remove",
+      "path_gone": true,
+      "detail": "ancestor=False; ahead=1; cherry+=0; issue_open_but_no_unique_commits=#2513",
+      "dedupe_class": "SUPERSEDED",
+      "remote_branch_deleted": false,
+      "note": "Remote branches intentionally retained (not separately proven obsolete).",
+      "husk_cleanup": "removed leftover .venv junction then empty directory"
+    },
+    {
+      "path": "D:/Dev/Workspaces/Repos/cdb-wt-4032-campaign",
+      "branch": "4032-stage-a-evidence",
+      "head": "8c5af7ecfb5a30a78675d52ce99f22e03c54a98c",
+      "method": "git_worktree_remove",
+      "path_gone": true,
+      "detail": "ancestor=False; ahead=1; cherry+=0; issue_closed=#4032",
+      "dedupe_class": "CLOSED_WORK_DELIVERED",
+      "remote_branch_deleted": false,
+      "note": "Remote branches intentionally retained (not separately proven obsolete)."
+    },
+    {
+      "path": "D:/Dev/Workspaces/Repos/cdb-wt-4034-wp5-closeout",
+      "branch": "4034-wp5-no-survivors-closeout",
+      "head": "78960411a60e9fe0ecd38a92759a59a96aea5f1d",
+      "method": "git_worktree_remove",
+      "path_gone": true,
+      "detail": "ancestor=False; ahead=1; cherry+=0; issue_closed=#4034",
+      "dedupe_class": "CLOSED_WORK_DELIVERED",
+      "remote_branch_deleted": false,
+      "note": "Remote branches intentionally retained (not separately proven obsolete)."
+    },
+    {
+      "path": "D:/Dev/Workspaces/Repos/cdb-wt-4153-campaign-manifest",
+      "branch": "validation-research-issue-4153-campaign-manifest",
+      "head": "eb8efbdf9ec1a847ac30250210a33a353d9a8a1f",
+      "method": "git_worktree_remove",
+      "path_gone": true,
+      "detail": "ancestor=False; ahead=1; cherry+=0; issue_closed=#4153",
+      "dedupe_class": "CLOSED_WORK_DELIVERED",
+      "remote_branch_deleted": false,
+      "note": "Remote branches intentionally retained (not separately proven obsolete)."
+    },
+    {
+      "path": "D:/Dev/Workspaces/Repos/cdb-wt-4192-skill-mirror",
+      "branch": "4122-skill-mirror-assets",
+      "head": "d21856aeedd5cdc46b628b9367afe80d0bbff0e3",
+      "method": "git_worktree_remove",
+      "path_gone": true,
+      "detail": "ancestor=False; ahead=1; cherry+=0; issue_closed=#4122",
+      "dedupe_class": "CLOSED_WORK_DELIVERED",
+      "remote_branch_deleted": false,
+      "note": "Remote branches intentionally retained (not separately proven obsolete)."
+    },
+    {
+      "path": "D:/Dev/Workspaces/Repos/cdb-wt-4214-app-bound",
+      "branch": "4170-app-bound-check-runs",
+      "head": "13726464226198f764b7e5eb313ae05cfc833393",
+      "method": "git_worktree_remove",
+      "path_gone": true,
+      "detail": "ancestor=False; ahead=1; cherry+=0; issue_closed=#4170",
+      "dedupe_class": "CLOSED_WORK_DELIVERED",
+      "remote_branch_deleted": false,
+      "note": "Remote branches intentionally retained (not separately proven obsolete)."
+    },
+    {
+      "path": "D:/Dev/Workspaces/Repos/cdb-wt-4283-g01-g04",
+      "branch": "validation-research-issue-4283",
+      "head": "41ba3625caddff5988eea3cf24ec7d8e581a4fd4",
+      "method": "git_worktree_remove",
+      "path_gone": true,
+      "detail": "ancestor=False; ahead=1; cherry+=0; issue_closed=#4283",
+      "dedupe_class": "CLOSED_WORK_DELIVERED",
+      "remote_branch_deleted": false,
+      "note": "Remote branches intentionally retained (not separately proven obsolete)."
+    },
+    {
+      "path": "D:/Dev/Workspaces/Repos/cdb-wt-4366-campaign-to-pr",
+      "branch": "validation-research-issue-4366",
+      "head": "0eb1d5c0a86bd58528a4e3d13541cef28d4f54b0",
+      "method": "git_worktree_remove",
+      "path_gone": true,
+      "detail": "ancestor=False; ahead=1; cherry+=0; issue_closed=#4366",
+      "dedupe_class": "CLOSED_WORK_DELIVERED",
+      "remote_branch_deleted": false,
+      "note": "Remote branches intentionally retained (not separately proven obsolete)."
+    },
+    {
+      "path": "D:/Dev/Workspaces/Repos/cdb-wt-4366-pr-ready",
+      "branch": "validation-research-issue-4366-pr-ready",
+      "head": "29af6e7238dbbfdd8b04cba8b82a89f4fa7e62b4",
+      "method": "git_worktree_remove",
+      "path_gone": true,
+      "detail": "ancestor=False; ahead=2; cherry+=0; issue_closed=#4366",
+      "dedupe_class": "CLOSED_WORK_DELIVERED",
+      "remote_branch_deleted": false,
+      "note": "Remote branches intentionally retained (not separately proven obsolete)."
+    },
+    {
+      "path": "D:/Dev/Workspaces/Repos/cdb-wt-pip-crypto-aiohttp-20260805",
+      "branch": "security-pip-crypto-aiohttp-2026-08-05",
+      "head": "081b19378abc280f460a1627c146962cc1eb6e77",
+      "method": "git_worktree_remove",
+      "path_gone": true,
+      "detail": "ancestor=False; ahead=1; cherry+=0; issue_closed=#2026",
+      "dedupe_class": "CLOSED_WORK_DELIVERED",
+      "remote_branch_deleted": false,
+      "note": "Remote branches intentionally retained (not separately proven obsolete)."
+    },
+    {
+      "path": "D:/Dev/Workspaces/Repos/Claire_de_Binare/.worktrees/pr-queue-b1-actions-patch",
+      "branch": "deps-actions-patch-b1",
+      "head": "46eb05196b3d2f026d745f2ac36126afbe49004e",
+      "method": "git_worktree_remove",
+      "path_gone": true,
+      "detail": "ancestor=False; ahead=1; cherry+=0; no_issue_clean_ancestor",
+      "dedupe_class": "NOT_RELATED",
+      "remote_branch_deleted": false,
+      "note": "Remote branches intentionally retained (not separately proven obsolete)."
+    },
+    {
+      "path": "D:/Dev/Workspaces/Repos/Claire_de_Binare/.worktrees/pr-queue-b2-actions-major",
+      "branch": "deps-actions-major-b2",
+      "head": "21f23d65989fdb22488cc6f1a1299b41775e56b0",
+      "method": "git_worktree_remove",
+      "path_gone": true,
+      "detail": "ancestor=False; ahead=1; cherry+=0; no_issue_clean_ancestor",
+      "dedupe_class": "NOT_RELATED",
+      "remote_branch_deleted": false,
+      "note": "Remote branches intentionally retained (not separately proven obsolete)."
+    },
+    {
+      "path": "D:/Dev/Workspaces/Repos/Claire_de_Binare/.worktrees/pr-queue-c-python-deps",
+      "branch": "deps-python-c1",
+      "head": "0647a61acdb6b7772d1f846dbb38d718a2f8bcd9",
+      "method": "git_worktree_remove",
+      "path_gone": true,
+      "detail": "ancestor=False; ahead=1; cherry+=0; no_issue_clean_ancestor",
+      "dedupe_class": "NOT_RELATED",
+      "remote_branch_deleted": false,
+      "note": "Remote branches intentionally retained (not separately proven obsolete)."
+    },
+    {
+      "path": "D:/Dev/Workspaces/Repos/Claire_de_Binare/.worktrees/pr-queue-ledger",
+      "branch": "pr-queue-reconcile-2026-07-28",
+      "head": "696dcfb5d263557dde25ce3797630db6357a29a2",
+      "method": "git_worktree_remove",
+      "path_gone": true,
+      "detail": "ancestor=False; ahead=1; cherry+=0; issue_closed=#2026",
+      "dedupe_class": "CLOSED_WORK_DELIVERED",
+      "remote_branch_deleted": false,
+      "note": "Remote branches intentionally retained (not separately proven obsolete)."
+    },
+    {
+      "path": "D:/Dev/Workspaces/Repos/Claire_de_Binare/.worktrees/pr-queue-ledger2",
+      "branch": "pr-queue-final-reconcile-2026-07-28",
+      "head": "b4adbe76430eaa9e8f61c69c7c45fcfb891c1ca7",
+      "method": "git_worktree_remove",
+      "path_gone": true,
+      "detail": "ancestor=False; ahead=1; cherry+=0; issue_closed=#2026",
+      "dedupe_class": "CLOSED_WORK_DELIVERED",
+      "remote_branch_deleted": false,
+      "note": "Remote branches intentionally retained (not separately proven obsolete)."
+    },
+    {
+      "path": "D:/Dev/Workspaces/Repos/Claire_de_Binare-4065",
+      "branch": "arvp-4065-regime-stats-schema-ref",
+      "head": "54bea593f29705738e95dc4527dc09bd6fa62644",
+      "method": "git_worktree_remove",
+      "path_gone": true,
+      "detail": "ancestor=False; ahead=2; cherry+=0; issue_closed=#4065",
+      "dedupe_class": "CLOSED_WORK_DELIVERED",
+      "remote_branch_deleted": false,
+      "note": "Remote branches intentionally retained (not separately proven obsolete)."
+    }
+  ],
+  "skipped": [],
+  "errors": [
+    {
+      "path": "D:/Dev/Workspaces/Repos/cdb-wt-4327-hermes-pin",
+      "stderr": "error: failed to delete 'D:/Dev/Workspaces/Repos/cdb-wt-4327-hermes-pin': Directory not empty\nfatal: 'D:/Dev/Workspaces/Repos/cdb-wt-4327-hermes-pin' is not a working tree\n",
+      "stdout": ""
+    }
+  ],
+  "prune_stderr": "",
+  "prune_stdout": "",
+  "protections_verified": {
+    "main_checkout_intact": true,
+    "sensitivity_exec_intact": true,
+    "publisher_main_wt_intact": true
+  },
+  "no_blind_delete": true,
+  "no_remote_branch_deletes": true,
+  "errors_resolved": [],
+  "orphan_husks": [
+    {
+      "path": "D:/Dev/Workspaces/Repos/cdb-wt-4327-hermes-pin",
+      "disposition": "HOLD_UNKNOWN",
+      "detail": "worktree deregistered; directory remains without .git; not mass-deleted",
+      "registered": false
+    }
+  ],
+  "husk_cleanups": [
+    "D:/Dev/Workspaces/Repos/cdb-wt-2513-security-backlog"
+  ]
+}

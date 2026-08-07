@@ -1,0 +1,242 @@
+{
+  "issue": 4396,
+  "wave": 3,
+  "observed_at": "2026-08-07T22:02:31.721513+00:00",
+  "policy": "No 52 mechanical issues; dedupe first; focused residuals only",
+  "reused_existing_issues": [
+    {
+      "number": 4399,
+      "role": "Protect cdb-wt-4153-sensitivity-exec unmerged commits; KEEP",
+      "state": "OPEN"
+    },
+    {
+      "number": 4396,
+      "role": "Parent residual tracker remains open for HOLD_DIRTY / further waves",
+      "state": "OPEN"
+    }
+  ],
+  "new_issues_planned": [
+    {
+      "title": "[OPS][WORKTREE] Closed-issue worktrees with unique commits still not on main (Wave-3 residual)",
+      "purpose": "Single focused tracker for CLOSED_BUT_UNMERGED_RESIDUAL cluster; decide land vs abandon per WT",
+      "candidate_count": 23,
+      "candidates": [
+        {
+          "path": "D:/Dev/Workspaces/Repos/cdb-wt-4032-gate",
+          "branch": "4032-batch-a-stage-a-gate",
+          "head": "5fae0460d688802b3c42c7db4c8ab9962eb30203",
+          "cherry_plus": 3,
+          "issue_guess": "4032",
+          "detail": "cherry+=3; issue closed without matching open PR"
+        },
+        {
+          "path": "D:/Dev/Workspaces/Repos/cdb-wt-4153-execution-contract",
+          "branch": "validation-research-issue-4153-execution-contract",
+          "head": "e746bba6c72fc815f6d71738f8f569dadeaf31e4",
+          "cherry_plus": 1,
+          "issue_guess": "4153",
+          "detail": "cherry+=1; issue closed without matching open PR"
+        },
+        {
+          "path": "D:/Dev/Workspaces/Repos/cdb-wt-4153-hermes-work-start",
+          "branch": "validation-research-issue-4153-hermes-work-start",
+          "head": "18c411e74add5b0ba6b91de070ea6ae9fcd38ce0",
+          "cherry_plus": 2,
+          "issue_guess": "4153",
+          "detail": "cherry+=2; issue closed without matching open PR"
+        },
+        {
+          "path": "D:/Dev/Workspaces/Repos/cdb-wt-4153-primary-adoption",
+          "branch": "validation-research-issue-4153-primary-adoption",
+          "head": "d28786fb4ef8a2a942998c31c93cdd55c7545ae1",
+          "cherry_plus": 6,
+          "issue_guess": "4153",
+          "detail": "cherry+=6; issue closed without matching open PR"
+        },
+        {
+          "path": "D:/Dev/Workspaces/Repos/cdb-wt-4169-migration",
+          "branch": "local-ci-status-publisher-migration",
+          "head": "f542353df3cf8895fb39d352db36f4f99c30b227",
+          "cherry_plus": 8,
+          "issue_guess": "4169",
+          "detail": "cherry+=8; issue closed without matching open PR"
+        },
+        {
+          "path": "D:/Dev/Workspaces/Repos/cdb-wt-4170-phase-d",
+          "branch": "4170-bp-cutover-20260801141013",
+          "head": "33ecefa14e2b80ea6a1d7b52b7e66a602349223b",
+          "cherry_plus": 1,
+          "issue_guess": "4170",
+          "detail": "cherry+=1; issue closed without matching open PR"
+        },
+        {
+          "path": "D:/Dev/Workspaces/Repos/cdb-wt-4191-economics",
+          "branch": "4150-execution-economics-contract",
+          "head": "f6f9a917b9d8e65f52c0f7d53515f5d0b1615c0a",
+          "cherry_plus": 2,
+          "issue_guess": "4150",
+          "detail": "cherry+=2; issue closed without matching open PR"
+        },
+        {
+          "path": "D:/Dev/Workspaces/Repos/cdb-wt-4194-gitlab-clean",
+          "branch": "4121-decommission-gitlab-path-wt",
+          "head": "3ab1138c62c408c699349dd536b03055ad20c4ad",
+          "cherry_plus": 2,
+          "issue_guess": "4121",
+          "detail": "cherry+=2; issue closed without matching open PR"
+        },
+        {
+          "path": "D:/Dev/Workspaces/Repos/cdb-wt-4205-temp-preflight",
+          "branch": "ci-tooling-issue-4205",
+          "head": "67736bbb22f83468744e6f86ddbcddc6a7560281",
+          "cherry_plus": 2,
+          "issue_guess": "4205",
+          "detail": "cherry+=2; issue closed without matching open PR"
+        },
+        {
+          "path": "D:/Dev/Workspaces/Repos/cdb-wt-4206-black-portable",
+          "branch": "ci-tooling-issue-4206",
+          "head": "398c2dd948d2c6606a4a01096ca6640d5cbef1d0",
+          "cherry_plus": 3,
+          "issue_guess": "4206",
+          "detail": "cherry+=3; issue closed without matching open PR"
+        },
+        {
+          "path": "D:/Dev/Workspaces/Repos/cdb-wt-4256-run-evidence-20260802154101",
+          "branch": "4256-run-evidence-20260802154101",
+          "head": "ada4eaacfb81a9a4b835cdd980962579f357367e",
+          "cherry_plus": 19,
+          "issue_guess": "4256",
+          "detail": "cherry+=19; issue closed without matching open PR"
+        },
+        {
+          "path": "D:/Dev/Workspaces/Repos/cdb-wt-4275-security-cadence",
+          "branch": "ci-tooling-issue-4275",
+          "head": "36eb651793a58bdd40ca8f55373c75d7bd241d52",
+          "cherry_plus": 2,
+          "issue_guess": "4275",
+          "detail": "cherry+=2; issue closed without matching open PR"
+        },
+        {
+          "path": "D:/Dev/Workspaces/Repos/cdb-wt-4336-cdb051",
+          "branch": "validation-research-issue-4336-cdb051",
+          "head": "ec14dc2da5f483192a838e242e0355b08f3f2e71",
+          "cherry_plus": 1,
+          "issue_guess": "4336",
+          "detail": "cherry+=1; issue closed without matching open PR"
+        },
+        {
+          "path": "D:/Dev/Workspaces/Repos/cdb-wt-4372-hh-hl",
+          "branch": "validation-research-issue-4372",
+          "head": "10e0a6e3e64657a1f1ab1f3af890f584eb3c6ffd",
+          "cherry_plus": 4,
+          "issue_guess": "4372",
+          "detail": "cherry+=4; issue closed without matching open PR"
+        },
+        {
+          "path": "D:/Dev/Workspaces/Repos/cdb-wt-pr-acceptance-batch1",
+          "branch": "agent-skills-issue-4207",
+          "head": "a8927fa28d34b59a8732f435205c11514317ff38",
+          "cherry_plus": 2,
+          "issue_guess": "4207",
+          "detail": "cherry+=2; issue closed without matching open PR"
+        },
+        {
+          "path": "D:/Dev/Workspaces/Repos/cdb-wt-security-wave-4314",
+          "branch": "security-alert-wave-2026-08-03",
+          "head": "d5205b2c3b94386f7d2d40581027ab2ba0d88359",
+          "cherry_plus": 2,
+          "issue_guess": "2026",
+          "detail": "cherry+=2; issue closed without matching open PR"
+        },
+        {
+          "path": "D:/Dev/Workspaces/Repos/cdb-wt-setuptools-83-20260805",
+          "branch": "security-setuptools-83-2026-08-05",
+          "head": "14ae7651798a4680e37321a9a56a99206a61f209",
+          "cherry_plus": 2,
+          "issue_guess": "2026",
+          "detail": "cherry+=2; issue closed without matching open PR"
+        },
+        {
+          "path": "D:/Dev/Workspaces/Repos/Claire_de_Binare/.worktrees/4384-run-key-path",
+          "branch": "validation-research-issue-4384",
+          "head": "089e635b0189292cc5b97f3b327ac50b0c87d6ab",
+          "cherry_plus": 2,
+          "issue_guess": "4384",
+          "detail": "cherry+=2; issue closed without matching open PR"
+        },
+        {
+          "path": "D:/Dev/Workspaces/Repos/Claire_de_Binare/.worktrees/4395-market-data-wiring",
+          "branch": "validation-research-issue-4395",
+          "head": "e952693627c8c1f243f270eccb652fd7ce2b3b6d",
+          "cherry_plus": 2,
+          "issue_guess": "4395",
+          "detail": "cherry+=2; issue closed without matching open PR"
+        },
+        {
+          "path": "D:/Dev/Workspaces/Repos/Claire_de_Binare/.worktrees/fix-4182-stop-loss-e2e-kill-unwind-drill",
+          "branch": "4182-stop-loss-e2e-kill-unwind-drill",
+          "head": "0d7244e5e7249d93c8d20b156195414eff0fbc14",
+          "cherry_plus": 5,
+          "issue_guess": "4182",
+          "detail": "cherry+=5; issue closed without matching open PR"
+        },
+        {
+          "path": "D:/Dev/Workspaces/Repos/Claire_de_Binare/.worktrees/fix-4196-disable-main-force-pushes",
+          "branch": "4196-disable-main-force-pushes",
+          "head": "2848eeb28aa74ae47c3cafb807771c747cc6034d",
+          "cherry_plus": 2,
+          "issue_guess": "4196",
+          "detail": "cherry+=2; issue closed without matching open PR"
+        },
+        {
+          "path": "D:/Dev/Workspaces/Repos/Claire_de_Binare/.worktrees/fix-4382-risk-pubsub-timeout",
+          "branch": "runtime-risk-issue-4382",
+          "head": "09841d49c5fe9d47a693da000b9cf28baf4977cf",
+          "cherry_plus": 3,
+          "issue_guess": "4382",
+          "detail": "cherry+=3; issue closed without matching open PR"
+        },
+        {
+          "path": "D:/Dev/Workspaces/Repos/Claire_de_Binare-wt-4289-b1",
+          "branch": "ci-tooling-issue-4289",
+          "head": "d472e50a07add68d585a5c3a0939f0c854312b65",
+          "cherry_plus": 7,
+          "issue_guess": "4289",
+          "detail": "cherry+=7; issue closed without matching open PR"
+        }
+      ],
+      "created_issue": 4405,
+      "url": "https://github.com/jannekbuengener/Claire_de_Binare/issues/4405"
+    }
+  ],
+  "not_created": [
+    "No per-worktree mechanical issues",
+    "No storage-offload epic",
+    "No #4399 implementation in Wave-3"
+  ],
+  "acl_hold": {
+    "path": "D:\\Dev\\Workspaces\\Repos\\cdb-wt-4289-hermes-phase-a",
+    "disposition": "HOLD_ACL",
+    "outcome": "RETAINED",
+    "detail": "no .git; .pytest_cache ACL deny persists; no aggressive ACL escalation",
+    "exists": true,
+    "has_git": false,
+    "listdir_ok": true,
+    "pytest_cache_ok": false
+  },
+  "orphan_husk_4327": {
+    "path": "D:/Dev/Workspaces/Repos/cdb-wt-4327-hermes-pin",
+    "disposition": "HOLD_UNKNOWN",
+    "detail": "worktree deregistered; directory remains without .git; not mass-deleted",
+    "registered": false
+  },
+  "new_issues_created": [
+    {
+      "number": 4405,
+      "title": "[OPS][WORKTREE] Closed-issue worktrees with unique commits still not on main (Wave-3 residual)",
+      "url": "https://github.com/jannekbuengener/Claire_de_Binare/issues/4405",
+      "candidate_count": 23
+    }
+  ]
+}
