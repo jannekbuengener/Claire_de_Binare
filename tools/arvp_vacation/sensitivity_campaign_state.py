@@ -571,9 +571,7 @@ def reproduction_dir(root: Path, run_key: str, reproduction_attempt: int) -> Pat
     if reproduction_attempt < 1:
         raise SensitivityStateError("STATE_REPRO_ATTEMPT_INVALID")
     return (
-        run_dir(root, run_key)
-        / REPRODUCTION_DIRNAME
-        / str(int(reproduction_attempt))
+        run_dir(root, run_key) / REPRODUCTION_DIRNAME / str(int(reproduction_attempt))
     )
 
 

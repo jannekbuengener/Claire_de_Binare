@@ -461,8 +461,10 @@ def test_reproduction_resume_retry_limit(tmp_path: Path) -> None:
 
 
 def test_reproduction_dir_layout(tmp_path: Path) -> None:
+    from tools.arvp_vacation.sensitivity_campaign_state import fs_dirname_for_run_key
+
     d = reproduction_dir(tmp_path, "rk1", 1)
-    assert d.parts[-3:] == ("rk1", "reproduction", "1")
+    assert d.parts[-3:] == (fs_dirname_for_run_key("rk1"), "reproduction", "1")
     env = reproduction_envelope_path(tmp_path, "rk1", 1)
     assert env.name == "run_envelope.json"
     assert env.parent == d
