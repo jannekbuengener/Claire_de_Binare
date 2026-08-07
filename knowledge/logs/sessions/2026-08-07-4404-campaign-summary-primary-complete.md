@@ -1,7 +1,7 @@
 # Session — #4404 campaign_summary + PRIMARY_COMPLETE
 
-Date: 2026-08-07  
-Surface: Cursor (local worktree)  
+Date: 2026-08-07
+Surface: Cursor (local worktree)
 Result: `DONE_SLICE_ADDED_TO_BATCH_PR`
 
 ## Brain Evidence
