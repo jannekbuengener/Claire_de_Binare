@@ -70,10 +70,14 @@ Wenn `agents/GEMINI.md` existiert, MUSS es ebenfalls gelesen werden.
 Regeln:
 
 - Haupt-Working-Tree NICHT anfassen, wenn er nicht auf `main` ist.
-- Pro Slice genau ein isolierter Worktree unter `.worktrees/`.
-- Branch-Naming: `feat/<issue>-<short-slug>`.
-- Worktree-Naming: `.worktrees/feat-<issue>-<short-slug>`.
+- Pro Slice genau ein isolierter Worktree über den governed Entry
+  `python -m tools.worktrees create ...`.
+- Local Windows: Pfad unter `Y:\Worktrees\<repository>\<worktree-name>`
+  (kein neues Worktree auf `C:`/`D:`; Hauptcheckout auf `D:` bleibt erlaubt).
+- Branch-Naming: `feat/<issue>-<short-slug>` (oder Lane-konformes Dedicated-/Batch-Naming).
 - Basis ist immer `origin/main`.
+- Linux/CI: keine Windows-Y:-Drive-Policy.
+- SSOT: `docs/runbooks/windows_worktree_y_root.md`.
 
 Start-Gate (vor Beginn eines Slices):
 

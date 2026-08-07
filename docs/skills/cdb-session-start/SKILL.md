@@ -283,3 +283,18 @@ Die Session dokumentiert Ziel-PR, Zielbranch, Lane, Validation Profile,
 Lock-State und Reason Codes. Bei `HOLD_*`, unvollständigem Inventar oder fremdem
 Lock endet der Start fail-closed. Ein neuer Branch ist nur nach
 `CREATE_NEW_BATCH_PR` oder `CREATE_DEDICATED_PR` zulässig.
+
+## Local Windows worktree creation (Y:-only)
+
+Before creating an **additional** Git worktree on the local Windows operator
+host, use the governed entry (do not invent `C:`/`D:` paths):
+
+```powershell
+python -m tools.worktrees create --repository Claire_de_Binare --name <wt-name> ...
+```
+
+- Canonical root: `Y:\Worktrees\<repository>\<worktree-name>`
+- Fail closed if `Y:` is missing or not writable; no fallback
+- Main checkout on `D:` remains allowed
+- Linux/CI/Hermes: Windows drive policy does not apply
+- SSOT: `docs/runbooks/windows_worktree_y_root.md`

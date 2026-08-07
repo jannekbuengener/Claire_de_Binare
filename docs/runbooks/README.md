@@ -13,6 +13,13 @@ Index für operator- und agent-nahe Runbooks im Claire de Binare repository. **K
 
 Stage `trade-capable` autorisiert kein Live-Trading.
 
+## Local Windows / Worktrees
+
+| Runbook | Thema |
+|---|---|
+| [`windows_worktree_y_root.md`](windows_worktree_y_root.md) | Y:-only worktree root contract (`#4386`) |
+| [`../ops/worktree_path_consumer_map.md`](../ops/worktree_path_consumer_map.md) | Consumer map audit (`#4388`) |
+
 ## Control / GitHub / CI
 
 | Runbook | Thema |
