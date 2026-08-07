@@ -922,3 +922,37 @@ def test_hard_crash_running_without_completion_still_blocks_resume(tmp_path: Pat
             retry_failed=True,
         )
     assert "STATE_RUNNING_WITHOUT_COMPLETION" in str(exc.value)
+
+
+def test_preflight_fail_closed_when_window_bank_unavailable(monkeypatch, capsys):
+    """#4395: receipt digests alone must not yield ok=true without a physical bank."""
+    from tools.arvp_vacation.hh_hl_execution_window_bank import (
+        HOLD_WINDOW_BANK_UNAVAILABLE,
+        HhHlExecutionWindowBankError,
+    )
+
+    hits = _install_valid_go_and_sha(free_disk_bytes=MIN_FREE_DISK)
+
+    def _missing(_repo_root=None):
+        raise HhHlExecutionWindowBankError(
+            HOLD_WINDOW_BANK_UNAVAILABLE, "synthetic_missing_bank"
+        )
+
+    monkeypatch.setattr(
+        "tools.arvp_vacation.hh_hl_campaign_execute.assert_execution_window_bank_available",
+        _missing,
+    )
+    code = execute_main(
+        [
+            "--repo-root",
+            str(REPO_ROOT),
+            "--execution-go-comment-id",
+            "999001",
+            "preflight",
+        ]
+    )
+    assert code == 1
+    out = capsys.readouterr().out
+    assert HOLD_WINDOW_BANK_UNAVAILABLE in out
+    assert '"ok": false' in out.lower() or '"ok": false' in out
+    assert not any(h[0] == "callable" for h in hits)
