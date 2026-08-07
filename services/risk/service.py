@@ -1387,7 +1387,26 @@ class RiskManager:
     def _listen_regime_stream(self):
         if not self.redis_client or not self.config.regime_stream:
             return
-        last_id = "0-0"
+        global current_regime, risk_off_active
+        # Bootstrap latest regime, then continue from that ID — avoid replaying
+        # the full stream on every restart (amplifier for #4382 crash-loop).
+        last_id = "$"
+        try:
+            recent = self.redis_client.xrevrange(
+                self.config.regime_stream, "+", "-", count=1
+            )
+            if recent:
+                entry_id, payload = recent[0]
+                last_id = entry_id
+                regime = payload.get("regime", "UNKNOWN")
+                current_regime = regime
+                risk_off_active = regime == "HIGH_VOL_CHAOTIC"
+                logger.info(
+                    "Bootstrap Regime: %s (risk_off=%s)", regime, risk_off_active
+                )
+        except Exception as err:  # noqa: BLE001
+            logger.warning("Regime bootstrap failed, starting from $: %s", err)
+            last_id = "$"
         while self.running:
             try:
                 response = self.redis_client.xread(
@@ -1399,7 +1418,6 @@ class RiskManager:
                     for entry_id, payload in entries:
                         last_id = entry_id
                         regime = payload.get("regime", "UNKNOWN")
-                        global current_regime, risk_off_active
                         current_regime = regime
                         risk_off_active = regime == "HIGH_VOL_CHAOTIC"
                         logger.info(
@@ -2725,17 +2743,29 @@ class RiskManager:
             )
 
     def listen_order_results(self):
-        """Hintergrund-Listener für order_result Topic"""
+        """Hintergrund-Listener für order_result Topic.
+
+        Uses get_message(timeout=...) like execution so idle socket_timeout
+        from create_redis_client does not kill the thread / process (#4382).
+        """
         if not self.pubsub_results:
             return
 
         logger.info("Order-Result Listener aktiv")
 
         try:
-            for message in self.pubsub_results.listen():
-                if not self.running:
-                    break
-                if message.get("type") != "message":
+            while self.running:
+                try:
+                    message = self.pubsub_results.get_message(timeout=1.0)
+                except redis.TimeoutError as err:
+                    logger.debug("Order-Result PubSub idle timeout: %s", err)
+                    continue
+                except redis.ConnectionError as err:
+                    logger.error("Order-Result PubSub connection error: %s", err)
+                    time.sleep(1)
+                    continue
+
+                if not message or message.get("type") != "message":
                     continue
                 try:
                     payload = json.loads(message["data"])
@@ -2761,7 +2791,11 @@ class RiskManager:
             logger.info("Order-Result Listener beendet")
 
     def run(self):
-        """Hauptschleife"""
+        """Hauptschleife.
+
+        Uses get_message(timeout=...) like execution so blocking pubsub.listen()
+        cannot turn create_redis_client socket_timeout=5.0 into a crash-loop (#4382).
+        """
         self.running = True
         stats["status"] = "running"
         stats["started_at"] = utcnow().isoformat()
@@ -2801,11 +2835,24 @@ class RiskManager:
             logger.info("Shutdown-Stream Listener Thread gestartet")
 
         try:
-            for message in self.pubsub.listen():
-                if not self.running:
+            while self.running:
+                try:
+                    message = self.pubsub.get_message(timeout=1.0)
+                except redis.TimeoutError as err:
+                    logger.debug("Signal PubSub idle timeout: %s", err)
+                    continue
+                except redis.ConnectionError as err:
+                    logger.error("Signal PubSub connection error: %s", err)
+                    time.sleep(1)
+                    continue
+                except KeyboardInterrupt:
+                    logger.info("Shutdown via Keyboard")
                     break
 
-                if message["type"] == "message":
+                if not message:
+                    continue
+
+                if message.get("type") == "message":
                     try:
                         data = json.loads(message["data"])
                         signal = Signal.from_dict(data)
@@ -2831,8 +2878,6 @@ class RiskManager:
                             "orders_skipped"
                         ] += 1  # Silent drop: Signal parsing error
 
-        except KeyboardInterrupt:
-            logger.info("Shutdown via Keyboard")
         finally:
             self.shutdown()
 
