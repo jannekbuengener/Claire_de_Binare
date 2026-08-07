@@ -11,7 +11,10 @@ from pathlib import Path
 from typing import Any, Sequence
 
 from tools.worktrees.create import create_worktree, plan_worktree_create
-from tools.worktrees.policy import validate_main_checkout_path, validate_new_worktree_path
+from tools.worktrees.policy import (
+    validate_main_checkout_path,
+    validate_new_worktree_path,
+)
 from tools.worktrees.reconcile import (
     classify_legacy_worktree,
     inventory_from_porcelain,
@@ -126,7 +129,13 @@ def cmd_reconcile(args: argparse.Namespace) -> int:
         text = Path(args.inventory).read_text(encoding="utf-8")
         facts_list = inventory_from_porcelain(text)
     else:
-        _emit({"status": "FAIL", "reason_codes": ["USAGE"], "error": "need --from-git or --inventory"})
+        _emit(
+            {
+                "status": "FAIL",
+                "reason_codes": ["USAGE"],
+                "error": "need --from-git or --inventory",
+            }
+        )
         return USAGE
 
     rows = [asdict(classify_legacy_worktree(f)) for f in facts_list]

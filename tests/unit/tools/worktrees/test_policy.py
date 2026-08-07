@@ -7,7 +7,11 @@ from pathlib import Path
 import pytest
 
 from tools.worktrees import codes
-from tools.worktrees.policy import FsProbe, validate_main_checkout_path, validate_new_worktree_path
+from tools.worktrees.policy import (
+    FsProbe,
+    validate_main_checkout_path,
+    validate_new_worktree_path,
+)
 
 
 def _probe(*, writable: bool = True, exists: bool = True) -> FsProbe:
