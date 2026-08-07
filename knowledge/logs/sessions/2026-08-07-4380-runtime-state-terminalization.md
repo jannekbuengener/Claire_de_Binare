@@ -1,8 +1,8 @@
 # Session — PR #4380 Per-Run Runtime Gate + State Terminalization (#4374)
 
-Date: 2026-08-07  
-Branch: `batch/validation-research-issue-4374-exec-wiring`  
-PR: https://github.com/jannekbuengener/Claire_de_Binare/pull/4380  
+Date: 2026-08-07
+Branch: `batch/validation-research-issue-4374-exec-wiring`
+PR: https://github.com/jannekbuengener/Claire_de_Binare/pull/4380
 LR: NO-GO · Campaign execute: none · Owner-GO: none · Merge: none
 
 ## Delivered

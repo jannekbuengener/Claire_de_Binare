@@ -1,9 +1,9 @@
 # Session — PR #4380 Auth/Runtime-Gate Hardening (#4374)
 
-Date: 2026-08-07  
-Branch: `batch/validation-research-issue-4374-exec-wiring`  
-PR: https://github.com/jannekbuengener/Claire_de_Binare/pull/4380  
-Head: `d60c8316f1ee36a8257b332b1e96d93adfc02c5e`  
+Date: 2026-08-07
+Branch: `batch/validation-research-issue-4374-exec-wiring`
+PR: https://github.com/jannekbuengener/Claire_de_Binare/pull/4380
+Head: `d60c8316f1ee36a8257b332b1e96d93adfc02c5e`
 LR: NO-GO · Campaign execute: none · Owner-GO: none · Merge: none
 
 ## Delivered
