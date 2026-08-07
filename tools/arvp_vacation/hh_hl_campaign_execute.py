@@ -76,6 +76,10 @@ from tools.arvp_vacation.hh_hl_campaign_sha_gate import (
     assert_execution_sha_exists,
     resolve_live_git_sha_resolver,
 )
+from tools.arvp_vacation.hh_hl_campaign_summary import (
+    HhHlCampaignSummaryError,
+    persist_hh_hl_primary_completion,
+)
 from tools.arvp_vacation.hh_hl_campaign_surface import measure_free_disk_bytes
 from tools.arvp_vacation.hh_hl_execution_window_bank import (
     HhHlExecutionWindowBankError,
@@ -92,9 +96,13 @@ from tools.arvp_vacation.sensitivity_campaign_executor import (
     RunResult,
 )
 from tools.arvp_vacation.sensitivity_campaign_state import (
+    CAMPAIGN_PHASE_PRIMARY_COMPLETE,
+    CAMPAIGN_PHASE_PRIMARY_RUNNING,
     SensitivityStateError,
     commit_successful_result,
+    read_campaign_phase,
     run_dir,
+    update_campaign_phase,
     write_campaign_envelope,
     write_run_envelope,
 )
@@ -813,6 +821,18 @@ def cmd_execute(args: argparse.Namespace) -> int:
                 "phase": "PRIMARY",
             },
         )
+        # Lifecycle: PLANNED → PRIMARY_RUNNING before any run dispatch / resume.
+        # Idempotent when already PRIMARY_RUNNING / PRIMARY_COMPLETE.
+        current_phase = read_campaign_phase(evidence_root)
+        if current_phase == CAMPAIGN_PHASE_PRIMARY_COMPLETE:
+            # All runs should already be skippable; still allow finalize idempotency.
+            pass
+        elif current_phase != CAMPAIGN_PHASE_PRIMARY_RUNNING:
+            update_campaign_phase(
+                evidence_root,
+                bindings=bindings,
+                phase=CAMPAIGN_PHASE_PRIMARY_RUNNING,
+            )
 
         planned_by_key = {r.run_key: r for r in run_plan.runs}
         succeeded = 0
@@ -821,6 +841,7 @@ def cmd_execute(args: argparse.Namespace) -> int:
         consecutive_failures = 0
         total_failures = 0
         dispatched = 0
+        skipped_keys: list[str] = []
 
         for run_key in final_plan.run_keys:
             if dispatched >= HH_HL_EXPECTED_RUN_COUNT:
@@ -828,6 +849,7 @@ def cmd_execute(args: argparse.Namespace) -> int:
             action = actions[run_key]
             if action == "skip":
                 skipped += 1
+                skipped_keys.append(run_key)
                 continue
 
             planned = planned_by_key[run_key]
@@ -903,12 +925,39 @@ def cmd_execute(args: argparse.Namespace) -> int:
             raise HhHlCampaignExecuteError("HOLD_SCOPE_GROWTH", "extra_runs")
 
         complete = succeeded + skipped == HH_HL_EXPECTED_RUN_COUNT and failed == 0
+        persistence: dict[str, Any] | None = None
+        if complete:
+            persistence = persist_hh_hl_primary_completion(
+                evidence_root,
+                bindings=bindings,
+                expected_run_keys=list(final_plan.run_keys),
+                skipped_run_keys=skipped_keys,
+                dataset_selection_sha256=str(
+                    ctx.payload.get("dataset_selection_sha256") or ""
+                ),
+                dataset_content_fingerprint_digest=str(
+                    ctx.payload.get("dataset_content_fingerprint_digest") or ""
+                ),
+                github_comment_id=int(ctx.github_comment_id),
+                authorizing_github_login=str(ctx.authorizing_github_login),
+                owner_go_status=str(ctx.status),
+            )
         _emit(
             {
                 "ok": complete,
                 "command": "execute",
                 "phase_outcome": (
                     "PRIMARY_COMPLETE" if complete else "PRIMARY_INCOMPLETE"
+                ),
+                "campaign_phase": (
+                    CAMPAIGN_PHASE_PRIMARY_COMPLETE
+                    if complete
+                    else read_campaign_phase(evidence_root)
+                ),
+                "campaign_summary_path": (
+                    None
+                    if persistence is None
+                    else persistence.get("campaign_summary_path")
                 ),
                 "authorization_fingerprint": ctx.authorization_fingerprint,
                 "evidence_root": evidence_root.as_posix(),
@@ -924,6 +973,7 @@ def cmd_execute(args: argparse.Namespace) -> int:
         return 0 if complete else 1
     except (
         HhHlCampaignExecuteError,
+        HhHlCampaignSummaryError,
         HhHlExecutionAuthorizationError,
         HhHlLifecycleError,
         HhHlDatasetBindingError,
