@@ -1,0 +1,136 @@
+{
+  "execute": true,
+  "outcomes": [
+    {
+      "action": "SKIP",
+      "detail": "not_ancestor_of_main",
+      "path": "D:/Dev/Workspaces/Repos/cdb-wt-4153-reproduction-execution-fix"
+    },
+    {
+      "action": "REMOVED",
+      "detail": "worktree_remove_ok",
+      "path": "D:/Dev/Workspaces/Repos/cdb-wt-4153-sensitivity-campaign",
+      "rescued": [
+        "copied:knowledge/logs/sessions/2026-08-04-4153-sensitivity-campaign-blocked.md"
+      ]
+    },
+    {
+      "action": "REMOVED",
+      "detail": "worktree_remove_ok",
+      "path": "D:/Dev/Workspaces/Repos/cdb-wt-4220-reviewability",
+      "rescued": [
+        "copied:knowledge/logs/sessions/2026-07-30-merge-acceptance-4221.md"
+      ]
+    },
+    {
+      "action": "SKIP",
+      "detail": "not_ancestor_of_main",
+      "path": "D:/Dev/Workspaces/Repos/cdb-wt-4250-acp-canon"
+    },
+    {
+      "action": "SKIP",
+      "detail": "not_ancestor_of_main",
+      "path": "D:/Dev/Workspaces/Repos/cdb-wt-4257-approval-context"
+    },
+    {
+      "action": "SKIP",
+      "detail": "not_ancestor_of_main",
+      "path": "D:/Dev/Workspaces/Repos/cdb-wt-4270-hermes-orchestration"
+    },
+    {
+      "action": "SKIP",
+      "detail": "not_ancestor_of_main",
+      "path": "D:/Dev/Workspaces/Repos/cdb-wt-4272-pilot"
+    },
+    {
+      "action": "SKIP",
+      "detail": "not_ancestor_of_main",
+      "path": "D:/Dev/Workspaces/Repos/cdb-wt-4280-canon-sync"
+    },
+    {
+      "action": "SKIP",
+      "detail": "not_ancestor_of_main",
+      "path": "D:/Dev/Workspaces/Repos/cdb-wt-4293-dispatcher-residuals"
+    },
+    {
+      "action": "SKIP",
+      "detail": "not_ancestor_of_main",
+      "path": "D:/Dev/Workspaces/Repos/cdb-wt-4338-cdb049-restore"
+    },
+    {
+      "action": "REMOVED",
+      "detail": "worktree_remove_ok_after_pytest_basetemp_rmdir",
+      "path": "D:/Dev/Workspaces/Repos/cdb-wt-4338-postmerge-audit",
+      "rescued": []
+    },
+    {
+      "action": "SKIP",
+      "detail": "not_ancestor_of_main",
+      "path": "D:/Dev/Workspaces/Repos/cdb-wt-4360-cursor-env-build"
+    },
+    {
+      "action": "SKIP",
+      "detail": "not_ancestor_of_main",
+      "path": "D:/Dev/Workspaces/Repos/Claire_de_Binare/.worktrees/4374-comment-id-fix"
+    },
+    {
+      "action": "SKIP",
+      "detail": "non_disposable_untracked",
+      "path": "D:/Dev/Workspaces/Repos/Claire_de_Binare/.worktrees/4374-exec-go-prep",
+      "sample": [
+        "docs/evidence/arvp_hh_hl_dataset_reproof_4374_post_merge.json",
+        "docs/evidence/arvp_hh_hl_final_plan_4374_post_merge.json",
+        "docs/evidence/arvp_hh_hl_negative_controls_4374_post_merge.json",
+        "docs/evidence/arvp_hh_hl_owner_execution_go_body_4374_copyable.md",
+        "docs/evidence/arvp_hh_hl_owner_execution_go_package_4374_post_merge.json"
+      ]
+    },
+    {
+      "action": "SKIP",
+      "detail": "non_disposable_untracked",
+      "path": "D:/Dev/Workspaces/Repos/Claire_de_Binare/.worktrees/4374-postmerge-go",
+      "sample": [
+        "docs/evidence/arvp_hh_hl_final_run_plan_4374_b23ac5c9.json",
+        "docs/evidence/arvp_hh_hl_owner_execution_go_comment_body_4374_b23ac5c9.txt",
+        "docs/evidence/arvp_hh_hl_owner_execution_go_package_4374_b23ac5c9.json",
+        "docs/evidence/arvp_hh_hl_surface_receipt_4374_b23ac5c9.json",
+        "knowledge/logs/sessions/2026-08-07-4374-postmerge-execution-go-finalization.md"
+      ]
+    },
+    {
+      "action": "SKIP",
+      "detail": "non_disposable_untracked",
+      "path": "D:/Dev/Workspaces/Repos/Claire_de_Binare/.worktrees/4374-rebind-3154efe",
+      "sample": [
+        "docs/evidence/arvp_hh_hl_final_run_plan_4374_3154efe2.json",
+        "docs/evidence/arvp_hh_hl_owner_execution_go_comment_4374_3154efe2.md",
+        "docs/evidence/arvp_hh_hl_owner_execution_go_package_4374_3154efe2.json",
+        "docs/evidence/arvp_hh_hl_surface_receipt_4374_3154efe2.json"
+      ]
+    },
+    {
+      "action": "SKIP",
+      "detail": "not_ancestor_of_main",
+      "path": "D:/Dev/Workspaces/Repos/Claire_de_Binare/.worktrees/fix-4184-reduce-only-unwind-contract"
+    },
+    {
+      "action": "SKIP",
+      "detail": "not_ancestor_of_main",
+      "path": "D:/Dev/Workspaces/Repos/Claire_de_Binare/.worktrees/pr-4154-parameter-control-v2"
+    },
+    {
+      "action": "SKIP",
+      "detail": "not_ancestor_of_main",
+      "path": "D:/Dev/Workspaces/Repos/Claire_de_Binare/.worktrees/pr-queue-d1-python-cea0e60"
+    },
+    {
+      "action": "SKIP",
+      "detail": "not_ancestor_of_main",
+      "path": "D:/Dev/Workspaces/Repos/Claire_de_Binare/.worktrees/pr-queue-e2-grafana"
+    }
+  ],
+  "summary": {
+    "REMOVED": 3,
+    "SKIP": 17
+  }
+}
