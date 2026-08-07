@@ -14,6 +14,7 @@ from __future__ import annotations
 import argparse
 import json
 import sys
+from collections.abc import Callable
 from datetime import datetime, timezone
 from pathlib import Path
 from typing import Any, Mapping
@@ -83,6 +84,7 @@ from tools.arvp_vacation.sensitivity_campaign_budget import (
 from tools.arvp_vacation.sensitivity_campaign_executor import (
     ATTEMPT_KIND_PRIMARY,
     RunEnvelope,
+    RunResult,
 )
 from tools.arvp_vacation.sensitivity_campaign_state import (
     SensitivityStateError,
@@ -104,9 +106,23 @@ _TEST_GIT_SHA_RESOLVER: GitShaResolver | None = None
 _TEST_NOW_UTC: datetime | None = None
 _TEST_WINDOW_BANK_ROOT: Path | None = None
 _TEST_SINGLE_RUN_CALLABLE = None
-_TEST_FREE_DISK_BYTES: int | None = None
+_TEST_FREE_DISK_BYTES: int | Callable[[], int] | None = None
 
 HOLD_FREE_DISK_BELOW_MINIMUM = "HOLD_EXECUTION_FREE_DISK_BELOW_MINIMUM"
+_TERMINAL_REASON_MAX_LEN = 480
+
+# Provider / surface safety HOLDs → terminal BLOCKED (not FAILED).
+_SAFETY_HOLD_MARKERS = (
+    "HOLD_EXECUTION_",
+    "HOLD_AUTHORIZATION",
+    "HH_HL_",
+    "HOLD_FROZEN",
+    "HOLD_DATASET",
+    "HOLD_PB1",
+    "HOLD_SCENARIO",
+    "HOLD_STRATEGY",
+    "HOLD_ADAPTER",
+)
 
 
 class HhHlCampaignExecuteError(ValueError):
@@ -140,7 +156,9 @@ def _test_set_single_run_callable(callable_) -> None:
     _TEST_SINGLE_RUN_CALLABLE = callable_
 
 
-def _test_set_free_disk_bytes(free_disk_bytes: int | None) -> None:
+def _test_set_free_disk_bytes(
+    free_disk_bytes: int | Callable[[], int] | None,
+) -> None:
     global _TEST_FREE_DISK_BYTES
     _TEST_FREE_DISK_BYTES = free_disk_bytes
 
@@ -199,7 +217,12 @@ def _load_design_receipt(
 
 def _current_free_disk_bytes(repo_root: Path) -> int:
     if _TEST_FREE_DISK_BYTES is not None:
-        return int(_TEST_FREE_DISK_BYTES)
+        value = (
+            _TEST_FREE_DISK_BYTES()
+            if callable(_TEST_FREE_DISK_BYTES)
+            else _TEST_FREE_DISK_BYTES
+        )
+        return int(value)
     return int(measure_free_disk_bytes(repo_root))
 
 
@@ -217,6 +240,209 @@ def assert_free_disk_meets_budget(
             f"free_disk_bytes={free} < minimum_free_disk_bytes={minimum}",
         )
     return free
+
+
+def _sanitize_terminal_reason(raw: str) -> str:
+    text = " ".join(str(raw or "").split())
+    if len(text) > _TERMINAL_REASON_MAX_LEN:
+        return text[: _TERMINAL_REASON_MAX_LEN - 3] + "..."
+    return text
+
+
+def _exception_reason_code(exc: BaseException) -> str:
+    code = getattr(exc, "reason_code", None)
+    if code:
+        return str(code)
+    return str(exc)
+
+
+def _is_safety_hold_exception(exc: BaseException) -> bool:
+    """Controlled provider/surface safety HOLDs terminalize as BLOCKED."""
+    if isinstance(
+        exc,
+        (
+            CampaignProfileError,
+            HhHlExecutionAuthorizationError,
+            HhHlCampaignExecuteError,
+            HhHlDatasetBindingError,
+        ),
+    ):
+        marker = _exception_reason_code(exc)
+        return any(token in marker for token in _SAFETY_HOLD_MARKERS)
+    return False
+
+
+def assert_per_run_pre_dispatch(
+    *,
+    ctx: AuthorizationContext,
+    repo_root: Path,
+    budget: Mapping[str, Any],
+    envelope: RunEnvelope,
+) -> None:
+    """Non-mutating gates immediately before RUNNING / replay artifacts.
+
+    Campaign-start free-disk remains in ``_rebuild_bound_plans``; this is the
+    fresh per-run threshold check. ``surface_capability_fingerprint`` is not
+    re-checked here (historical Owner binding only).
+    """
+    ctx.assert_not_expired(now_utc=_now_utc())
+    assert_free_disk_meets_budget(
+        budget=budget,
+        free_disk_bytes=_current_free_disk_bytes(repo_root),
+    )
+    if not envelope.window_id or ".." in str(envelope.window_id):
+        raise HhHlCampaignExecuteError(
+            "HOLD_EXECUTION_WINDOW_ID_REQUIRED", str(envelope.window_id)
+        )
+    if not str(envelope.dataset_content_fingerprint or "").strip():
+        raise HhHlCampaignExecuteError(
+            "HOLD_EXECUTION_DATASET_CONTENT_FINGERPRINT_REQUIRED"
+        )
+    if envelope.strategy_id != HH_HL_CONTINUATION_STRATEGY_ID:
+        raise HhHlCampaignExecuteError(
+            "HOLD_EXECUTION_STRATEGY_MISMATCH", str(envelope.strategy_id)
+        )
+    # Shape / frozen-param / PB1 / scenario-group bans (no dataset load yet).
+    from tools.arvp_vacation.hh_hl_single_run_callable import (
+        build_hh_hl_arvp_replay_config,
+    )
+
+    build_hh_hl_arvp_replay_config(
+        {
+            "strategy_id": envelope.strategy_id,
+            "adapter_id": BATCH_B_SHADOW_ADAPTER_ID,
+            "window_id": envelope.window_id,
+            "parameters": envelope.parameters,
+            "output_dir": envelope.output_dir,
+            "dataset_content_fingerprint": envelope.dataset_content_fingerprint,
+            "scenario_group_id": None,
+            "scenario_ids": None,
+        },
+        window_bank_root=_TEST_WINDOW_BANK_ROOT,
+    )
+
+
+def _write_terminal_run_envelope(
+    *,
+    evidence_root: Path,
+    run_key: str,
+    bindings: Any,
+    attempt: int,
+    envelope: RunEnvelope,
+    status: str,
+    reason: str,
+    exit_code: int | None = None,
+) -> None:
+    payload = dict(envelope.as_dict())
+    payload["terminal_reason"] = _sanitize_terminal_reason(reason)
+    write_run_envelope(
+        evidence_root,
+        run_key=run_key,
+        bindings=bindings,
+        status=status,
+        attempt=attempt,
+        envelope=payload,
+        exit_code=exit_code,
+    )
+
+
+def dispatch_run_with_terminalization(
+    *,
+    provider: Any,
+    ctx: AuthorizationContext,
+    envelope: RunEnvelope,
+    evidence_root: Path,
+    bindings: Any,
+    run_key: str,
+    attempt: int,
+    repo_root: Path,
+    budget: Mapping[str, Any],
+) -> RunResult:
+    """Pre-dispatch gates → RUNNING → provider → always terminal on controlled paths.
+
+    ``STATE_RUNNING_WITHOUT_COMPLETION`` remains for real process crashes; this
+    helper only closes controlled Python exception paths.
+    """
+    assert_per_run_pre_dispatch(
+        ctx=ctx,
+        repo_root=repo_root,
+        budget=budget,
+        envelope=envelope,
+    )
+
+    out_dir = Path(envelope.output_dir)
+    out_dir.mkdir(parents=True, exist_ok=True)
+    (out_dir / "bound_run_envelope.json").write_text(
+        json.dumps(envelope.as_dict(), indent=2, sort_keys=True) + "\n",
+        encoding="utf-8",
+    )
+    write_run_envelope(
+        evidence_root,
+        run_key=run_key,
+        bindings=bindings,
+        status="RUNNING",
+        attempt=attempt,
+        envelope=envelope.as_dict(),
+    )
+
+    try:
+        result = provider.execute(
+            envelope, authorization_context=ctx, now_utc=_now_utc()
+        )
+    except BaseException as exc:
+        # KeyboardInterrupt / SystemExit: do not swallow; RUNNING may remain
+        # (crash semantics). Controlled exceptions must terminalize.
+        if isinstance(exc, (KeyboardInterrupt, SystemExit)):
+            raise
+        if _is_safety_hold_exception(exc):
+            _write_terminal_run_envelope(
+                evidence_root=evidence_root,
+                run_key=run_key,
+                bindings=bindings,
+                attempt=attempt,
+                envelope=envelope,
+                status="BLOCKED",
+                reason=_exception_reason_code(exc),
+            )
+            raise
+        _write_terminal_run_envelope(
+            evidence_root=evidence_root,
+            run_key=run_key,
+            bindings=bindings,
+            attempt=attempt,
+            envelope=envelope,
+            status="FAILED",
+            reason=f"UNEXPECTED:{type(exc).__name__}:{_sanitize_terminal_reason(str(exc))}",
+            exit_code=1,
+        )
+        raise HhHlCampaignExecuteError(
+            "HOLD_EXECUTION_PROVIDER_UNEXPECTED",
+            type(exc).__name__,
+        ) from exc
+
+    if not isinstance(result, RunResult):
+        _write_terminal_run_envelope(
+            evidence_root=evidence_root,
+            run_key=run_key,
+            bindings=bindings,
+            attempt=attempt,
+            envelope=envelope,
+            status="BLOCKED",
+            reason="HH_HL_SINGLE_RUN_RESULT_INVALID",
+        )
+        raise CampaignProfileError("HH_HL_SINGLE_RUN_RESULT_INVALID")
+
+    if int(result.exit_code) != 0:
+        write_run_envelope(
+            evidence_root,
+            run_key=run_key,
+            bindings=bindings,
+            status="FAILED",
+            attempt=attempt,
+            envelope=envelope.as_dict(),
+            exit_code=int(result.exit_code),
+        )
+    return result
 
 
 def _verify_execution_go(
@@ -576,7 +802,6 @@ def cmd_execute(args: argparse.Namespace) -> int:
                 skipped += 1
                 continue
 
-            ctx.assert_not_expired(now_utc=_now_utc())
             planned = planned_by_key[run_key]
             window_fp = str(per_window.get(planned.window_id) or "")
             if not window_fp:
@@ -610,38 +835,23 @@ def cmd_execute(args: argparse.Namespace) -> int:
                 reproduction_attempt=0,
                 attempt_kind=ATTEMPT_KIND_PRIMARY,
             )
-            # Persist bound envelope beside the run for audit.
-            out_dir = Path(envelope.output_dir)
-            out_dir.mkdir(parents=True, exist_ok=True)
-            (out_dir / "bound_run_envelope.json").write_text(
-                json.dumps(envelope.as_dict(), indent=2, sort_keys=True) + "\n",
-                encoding="utf-8",
-            )
-            write_run_envelope(
-                evidence_root,
-                run_key=run_key,
+            result = dispatch_run_with_terminalization(
+                provider=provider,
+                ctx=ctx,
+                envelope=envelope,
+                evidence_root=evidence_root,
                 bindings=bindings,
-                status="RUNNING",
+                run_key=run_key,
                 attempt=attempt,
-                envelope=envelope.as_dict(),
+                repo_root=repo_root,
+                budget=budget,
             )
             dispatched += 1
-            result = provider.execute(
-                envelope, authorization_context=ctx, now_utc=_now_utc()
-            )
             if result.exit_code != 0:
                 failed += 1
                 consecutive_failures += 1
                 total_failures += 1
-                write_run_envelope(
-                    evidence_root,
-                    run_key=run_key,
-                    bindings=bindings,
-                    status="FAILED",
-                    attempt=attempt,
-                    envelope=envelope.as_dict(),
-                    exit_code=result.exit_code,
-                )
+                # FAILED envelope already persisted by dispatch_run_with_terminalization.
                 assert_failure_thresholds(
                     budget=budget,
                     consecutive_failures=consecutive_failures,

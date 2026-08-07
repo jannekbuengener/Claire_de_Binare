@@ -75,6 +75,28 @@ Status: `DONE_PR_4380_AUTH_RUNTIME_GATES_HARDENED` candidate evidence.
 
 `NO_PRODUCTION_TEST_BYPASS`
 
+## Per-run runtime gate + state terminalization (PR #4380)
+
+Status: `DONE_PR_4380_RUNTIME_STATE_HARDENED` candidate evidence.
+
+### Per-run free-disk
+
+- Campaign-start free-disk check retained in `_rebuild_bound_plans`.
+- Fresh threshold check in `assert_per_run_pre_dispatch` immediately before
+  every dispatch (before RUNNING + before bound_run_envelope / replay artifacts).
+- Semantics: `current_free >= minimum_free_disk_bytes` (never byte-equality to
+  a past surface receipt).
+- Failure: `HOLD_EXECUTION_FREE_DISK_BELOW_MINIMUM`.
+
+### State terminalization
+
+- `dispatch_run_with_terminalization` persists RUNNING only after pre-dispatch PASS.
+- Controlled provider/safety HOLDs (`CampaignProfileError` / auth / binding /
+  dataset / PB1 / scenario) → terminal `BLOCKED`, then fail-closed re-raise.
+- Non-zero `exit_code` → terminal `FAILED` (failure-budget unchanged).
+- Unexpected exceptions → terminal `FAILED` + `HOLD_EXECUTION_PROVIDER_UNEXPECTED`.
+- `STATE_RUNNING_WITHOUT_COMPLETION` unchanged for real process crashes.
+
 ## Next gate (post-merge, separate session)
 
 1. Rebuild FINAL plan + surface receipt on new main SHA

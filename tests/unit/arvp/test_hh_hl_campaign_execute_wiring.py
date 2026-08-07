@@ -37,13 +37,18 @@ from tools.arvp_vacation.hh_hl_campaign_execute import (
     _test_set_owner_go_fetcher,
     _test_set_single_run_callable,
     assert_free_disk_meets_budget,
+    assert_per_run_pre_dispatch,
     build_parser,
+    dispatch_run_with_terminalization,
     main as execute_main,
 )
 from tools.arvp_vacation.hh_hl_campaign_execution_authorization import (
     OwnerGoComment,
+    authorization_context_from_verified_go,
     default_gh_comment_fetcher,
+    verify_owner_execution_go_comment,
 )
+from tools.arvp_vacation.hh_hl_campaign_lifecycle import bindings_from_authorization
 from tools.arvp_vacation.hh_hl_campaign_sha_gate import GitShaResolver
 from tools.arvp_vacation.hh_hl_single_run_callable import (
     HOLD_DATASET_CONTENT_MISMATCH,
@@ -54,7 +59,15 @@ from tools.arvp_vacation.hh_hl_single_run_callable import (
     build_hh_hl_arvp_replay_config,
     build_production_single_run_callable,
 )
+from tools.arvp_vacation.campaign_profile import CampaignProfileError
 from tools.arvp_vacation.sensitivity_campaign_executor import RunEnvelope, RunResult
+from tools.arvp_vacation.sensitivity_campaign_state import (
+    SensitivityStateError,
+    commit_successful_result,
+    inspect_run_for_resume,
+    run_envelope_path,
+    write_run_envelope,
+)
 
 EXEC_SHA = "ba6b1d94c6da480b77fa3ffcb7d46bba6f0d42a2"
 MANIFEST_FP = "1b1165b8b049099324cfc97c0858919f7f04fab985584cff54ad7161ecfcfc07"
@@ -587,3 +600,325 @@ def test_execute_serial_loop_with_fake_callable(tmp_path: Path, monkeypatch, cap
         load_profile("hh_hl_continuation_replay_v1"), single_run_callable=_fake
     )
     assert override._resolve_single_run_callable() is _fake
+
+
+def _mint_auth_ctx():
+    comment = _owner_comment()
+
+    def _fetch(repository: str, issue: int, comment_id: int) -> OwnerGoComment:
+        return comment
+
+    verified = verify_owner_execution_go_comment(
+        comment_id=999001,
+        expected={},
+        repository="jannekbuengener/Claire_de_Binare",
+        issue=4374,
+        fetcher=_fetch,
+        now_utc=datetime.now(timezone.utc),
+    )
+    return authorization_context_from_verified_go(verified)
+
+
+def _make_envelope(tmp_path: Path, *, ctx=None, run_key: str = "rk1") -> RunEnvelope:
+    auth_fp = ctx.authorization_fingerprint if ctx is not None else ("a" * 64)
+    return RunEnvelope(
+        run_key=run_key,
+        campaign_id="arvp-hh-hl-continuation-4374-prep-v1",
+        manifest_fingerprint=MANIFEST_FP,
+        execution_sha=EXEC_SHA,
+        window_id="binance_1m_month_2017_10",
+        strategy_id=HH_HL_CONTINUATION_STRATEGY_ID,
+        parameters=frozen_hh_hl_parameters(),
+        slot_id="hh_hl_baseline_001",
+        phase="BASELINE",
+        label="spec_frozen_baseline",
+        physical_parameter_set_fingerprint="p" * 64,
+        effective_config_fingerprint=MANIFEST_FP,
+        dataset_content_fingerprint=WINDOW_FP,
+        seed="s",
+        output_dir=str(tmp_path / "runs" / run_key),
+        run_plan_fingerprint=RUN_PLAN_FP,
+        authorization_fingerprint=auth_fp,
+        attempt=1,
+    )
+
+
+def test_per_run_disk_drop_before_second_dispatch_no_running(tmp_path: Path):
+    """Campaign-start disk OK; second per-run check fails before RUNNING/callable."""
+    ctx = _mint_auth_ctx()
+    bindings = bindings_from_authorization(ctx)
+    evidence_root = tmp_path / "evidence"
+    hits: list[str] = []
+    disk_reads = {"n": 0}
+
+    def _disk() -> int:
+        disk_reads["n"] += 1
+        # First per-run gate OK; second drops below minimum.
+        return MIN_FREE_DISK if disk_reads["n"] == 1 else 1
+
+    _test_set_free_disk_bytes(_disk)
+
+    def _ok(req: dict[str, Any]) -> RunResult:
+        hits.append("ok")
+        return RunResult(exit_code=0, metrics={})
+
+    provider = HhHlSingleRunReplayProvider(
+        load_profile("hh_hl_continuation_replay_v1"), single_run_callable=_ok
+    )
+    budget = _budget()
+
+    r1 = dispatch_run_with_terminalization(
+        provider=provider,
+        ctx=ctx,
+        envelope=_make_envelope(tmp_path, ctx=ctx, run_key="rk1"),
+        evidence_root=evidence_root,
+        bindings=bindings,
+        run_key="rk1",
+        attempt=1,
+        repo_root=REPO_ROOT,
+        budget=budget,
+    )
+    commit_successful_result(
+        evidence_root,
+        run_key="rk1",
+        bindings=bindings,
+        attempt=1,
+        envelope=_make_envelope(tmp_path, ctx=ctx, run_key="rk1").as_dict(),
+        result=r1.metrics,
+        exit_code=0,
+    )
+    assert hits == ["ok"]
+    assert json.loads(run_envelope_path(evidence_root, "rk1").read_text())[
+        "status"
+    ] == ("SUCCEEDED")
+
+    with pytest.raises(HhHlCampaignExecuteError) as exc:
+        dispatch_run_with_terminalization(
+            provider=provider,
+            ctx=ctx,
+            envelope=_make_envelope(tmp_path, ctx=ctx, run_key="rk2"),
+            evidence_root=evidence_root,
+            bindings=bindings,
+            run_key="rk2",
+            attempt=1,
+            repo_root=REPO_ROOT,
+            budget=budget,
+        )
+    assert exc.value.reason_code == HOLD_FREE_DISK_BELOW_MINIMUM
+    assert hits == ["ok"]
+    assert not run_envelope_path(evidence_root, "rk2").exists()
+
+
+def test_per_run_disk_equal_minimum_passes(tmp_path: Path):
+    ctx = _mint_auth_ctx()
+    bindings = bindings_from_authorization(ctx)
+    _test_set_free_disk_bytes(MIN_FREE_DISK)
+    envelope = _make_envelope(tmp_path, ctx=ctx)
+    assert_per_run_pre_dispatch(
+        ctx=ctx,
+        repo_root=REPO_ROOT,
+        budget=_budget(),
+        envelope=envelope,
+    )
+
+
+def test_provider_campaign_profile_error_terminals_blocked(tmp_path: Path):
+    ctx = _mint_auth_ctx()
+    bindings = bindings_from_authorization(ctx)
+    evidence_root = tmp_path / "evidence"
+    _test_set_free_disk_bytes(MIN_FREE_DISK)
+
+    def _raise(req: dict[str, Any]) -> RunResult:
+        raise CampaignProfileError("HOLD_EXECUTION_DATASET_CONTENT_MISMATCH")
+
+    provider = HhHlSingleRunReplayProvider(
+        load_profile("hh_hl_continuation_replay_v1"), single_run_callable=_raise
+    )
+    with pytest.raises(CampaignProfileError):
+        dispatch_run_with_terminalization(
+            provider=provider,
+            ctx=ctx,
+            envelope=_make_envelope(tmp_path, ctx=ctx),
+            evidence_root=evidence_root,
+            bindings=bindings,
+            run_key="rk1",
+            attempt=1,
+            repo_root=REPO_ROOT,
+            budget=_budget(),
+        )
+    env = json.loads(
+        run_envelope_path(evidence_root, "rk1").read_text(encoding="utf-8")
+    )
+    assert env["status"] == "BLOCKED"
+    assert (
+        "HOLD_EXECUTION_DATASET_CONTENT_MISMATCH" in env["envelope"]["terminal_reason"]
+    )
+
+
+def test_provider_auth_expiry_terminals_blocked_zero_hits(tmp_path: Path):
+    ctx = _mint_auth_ctx()
+    bindings = bindings_from_authorization(ctx)
+    evidence_root = tmp_path / "evidence"
+    _test_set_free_disk_bytes(MIN_FREE_DISK)
+    hits: list[Any] = []
+
+    def _never(req: dict[str, Any]) -> RunResult:
+        hits.append(req)
+        return RunResult(exit_code=0, metrics={})
+
+    provider = HhHlSingleRunReplayProvider(
+        load_profile("hh_hl_continuation_replay_v1"), single_run_callable=_never
+    )
+    # Force expiry at provider boundary via past now_utc injection on context check:
+    # mutate by wrapping execute to raise auth HOLD.
+    original = provider.execute
+
+    def _expired(envelope, authorization_context=None, *, now_utc=None):
+        raise CampaignProfileError("HOLD_EXECUTION_GO_EXPIRED")
+
+    provider.execute = _expired  # type: ignore[method-assign]
+    with pytest.raises(CampaignProfileError):
+        dispatch_run_with_terminalization(
+            provider=provider,
+            ctx=ctx,
+            envelope=_make_envelope(tmp_path, ctx=ctx),
+            evidence_root=evidence_root,
+            bindings=bindings,
+            run_key="rk1",
+            attempt=1,
+            repo_root=REPO_ROOT,
+            budget=_budget(),
+        )
+    assert hits == []
+    env = json.loads(
+        run_envelope_path(evidence_root, "rk1").read_text(encoding="utf-8")
+    )
+    assert env["status"] == "BLOCKED"
+    del original
+
+
+def test_provider_nonzero_exit_terminals_failed(tmp_path: Path):
+    ctx = _mint_auth_ctx()
+    bindings = bindings_from_authorization(ctx)
+    evidence_root = tmp_path / "evidence"
+    _test_set_free_disk_bytes(MIN_FREE_DISK)
+
+    def _fail(req: dict[str, Any]) -> RunResult:
+        return RunResult(exit_code=7, metrics={"err": True})
+
+    provider = HhHlSingleRunReplayProvider(
+        load_profile("hh_hl_continuation_replay_v1"), single_run_callable=_fail
+    )
+    result = dispatch_run_with_terminalization(
+        provider=provider,
+        ctx=ctx,
+        envelope=_make_envelope(tmp_path, ctx=ctx),
+        evidence_root=evidence_root,
+        bindings=bindings,
+        run_key="rk1",
+        attempt=1,
+        repo_root=REPO_ROOT,
+        budget=_budget(),
+    )
+    assert result.exit_code == 7
+    env = json.loads(
+        run_envelope_path(evidence_root, "rk1").read_text(encoding="utf-8")
+    )
+    assert env["status"] == "FAILED"
+    assert env["exit_code"] == 7
+
+
+def test_unexpected_provider_exception_terminals_failed_and_stops(tmp_path: Path):
+    ctx = _mint_auth_ctx()
+    bindings = bindings_from_authorization(ctx)
+    evidence_root = tmp_path / "evidence"
+    _test_set_free_disk_bytes(MIN_FREE_DISK)
+
+    def _boom(req: dict[str, Any]) -> RunResult:
+        raise RuntimeError("boom-side-effect")
+
+    provider = HhHlSingleRunReplayProvider(
+        load_profile("hh_hl_continuation_replay_v1"), single_run_callable=_boom
+    )
+    with pytest.raises(HhHlCampaignExecuteError) as exc:
+        dispatch_run_with_terminalization(
+            provider=provider,
+            ctx=ctx,
+            envelope=_make_envelope(tmp_path, ctx=ctx),
+            evidence_root=evidence_root,
+            bindings=bindings,
+            run_key="rk1",
+            attempt=1,
+            repo_root=REPO_ROOT,
+            budget=_budget(),
+        )
+    assert exc.value.reason_code == "HOLD_EXECUTION_PROVIDER_UNEXPECTED"
+    env = json.loads(
+        run_envelope_path(evidence_root, "rk1").read_text(encoding="utf-8")
+    )
+    assert env["status"] == "FAILED"
+    assert "UNEXPECTED:RuntimeError" in env["envelope"]["terminal_reason"]
+
+
+def test_successful_dispatch_then_commit_succeeded(tmp_path: Path):
+    ctx = _mint_auth_ctx()
+    bindings = bindings_from_authorization(ctx)
+    evidence_root = tmp_path / "evidence"
+    _test_set_free_disk_bytes(MIN_FREE_DISK)
+
+    def _ok(req: dict[str, Any]) -> RunResult:
+        return RunResult(exit_code=0, metrics={"closed_trades_total": 0})
+
+    provider = HhHlSingleRunReplayProvider(
+        load_profile("hh_hl_continuation_replay_v1"), single_run_callable=_ok
+    )
+    envelope = _make_envelope(tmp_path, ctx=ctx)
+    result = dispatch_run_with_terminalization(
+        provider=provider,
+        ctx=ctx,
+        envelope=envelope,
+        evidence_root=evidence_root,
+        bindings=bindings,
+        run_key="rk1",
+        attempt=1,
+        repo_root=REPO_ROOT,
+        budget=_budget(),
+    )
+    fp = commit_successful_result(
+        evidence_root,
+        run_key="rk1",
+        bindings=bindings,
+        attempt=1,
+        envelope=envelope.as_dict(),
+        result=result.metrics,
+        exit_code=0,
+    )
+    assert fp
+    env = json.loads(
+        run_envelope_path(evidence_root, "rk1").read_text(encoding="utf-8")
+    )
+    assert env["status"] == "SUCCEEDED"
+
+
+def test_hard_crash_running_without_completion_still_blocks_resume(tmp_path: Path):
+    """Do not weaken STATE_RUNNING_WITHOUT_COMPLETION for real crashes."""
+    ctx = _mint_auth_ctx()
+    bindings = bindings_from_authorization(ctx)
+    evidence_root = tmp_path / "evidence"
+    write_run_envelope(
+        evidence_root,
+        run_key="rk_crash",
+        bindings=bindings,
+        status="RUNNING",
+        attempt=1,
+        envelope={"run_key": "rk_crash"},
+    )
+    with pytest.raises(SensitivityStateError) as exc:
+        inspect_run_for_resume(
+            evidence_root,
+            run_key="rk_crash",
+            bindings=bindings,
+            max_attempts=1,
+            retry_failed=True,
+        )
+    assert "STATE_RUNNING_WITHOUT_COMPLETION" in str(exc.value)
