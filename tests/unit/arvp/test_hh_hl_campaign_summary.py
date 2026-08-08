@@ -3,7 +3,7 @@
 test_id: tc_hh_hl_campaign_summary_001
 test_type: schutz|bauteil|contract
 cdb_area: arvp/validation-research
-issue_ref: #4404
+issue_ref: #4404 #4410
 security_relevant: true
 live_relevant: false
 profitability_relevant: false
@@ -16,6 +16,7 @@ Protects:
 - idempotent re-finalize
 - run evidence immutability
 - summary write failure leaves non-success lifecycle
+- summary physical_parameter_set_fingerprint == grid/historical binding (#4410)
 """
 
 from __future__ import annotations
@@ -26,6 +27,7 @@ from typing import Any
 
 import pytest
 
+from tools.arvp_vacation.hh_hl_campaign_grid import expand_hh_hl_variants
 from tools.arvp_vacation.hh_hl_campaign_lifecycle import HH_HL_EXPECTED_RUN_COUNT
 from tools.arvp_vacation.hh_hl_campaign_summary import (
     CAMPAIGN_SUMMARY_NAME,
@@ -34,6 +36,7 @@ from tools.arvp_vacation.hh_hl_campaign_summary import (
     campaign_summary_path,
     inspect_primary_run_counts,
     persist_hh_hl_primary_completion,
+    physical_parameter_set_fingerprint,
     read_campaign_summary,
 )
 from tools.arvp_vacation.sensitivity_campaign_state import (
@@ -116,6 +119,21 @@ def _snapshot_run_tree(root: Path) -> dict[str, str]:
     return snap
 
 
+HISTORICAL_BASELINE_PARAMETER_FP = (
+    "9067cd6aa48ad2cc2a7932af50e990888048b8f912b8f3e3ad0dd5b318d1c0a4"
+)
+
+
+def test_summary_parameter_fp_matches_grid_and_historical_binding() -> None:
+    """#4410: summary must use grid strategy_id+param_set semantics (9067cd6a…)."""
+    grid_fp = expand_hh_hl_variants()[0].physical_parameter_set_fingerprint
+    summary_fp = physical_parameter_set_fingerprint()
+    assert summary_fp == grid_fp
+    assert summary_fp == HISTORICAL_BASELINE_PARAMETER_FP
+    # Guard against params-only hash regression (76036390…).
+    assert not summary_fp.startswith("76036390")
+
+
 def test_39_of_39_success_writes_summary_and_primary_complete(tmp_path: Path) -> None:
     root = tmp_path / "evidence"
     _seed_envelope(root)
@@ -150,6 +168,9 @@ def test_39_of_39_success_writes_summary_and_primary_complete(tmp_path: Path) ->
     assert summary["run_plan_fingerprint"] == BINDINGS.run_plan_fingerprint
     assert summary["dataset_selection_sha256"] == DATASET_SEL
     assert summary["dataset_content_fingerprint_digest"] == DATASET_DIGEST
+    assert summary["physical_parameter_set_fingerprint"] == (
+        HISTORICAL_BASELINE_PARAMETER_FP
+    )
     assert summary["lr_status"] == "NO-GO"
     assert (root / CAMPAIGN_SUMMARY_NAME).exists()
     assert before == _snapshot_run_tree(root)
