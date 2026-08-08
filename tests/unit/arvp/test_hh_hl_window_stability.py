@@ -27,7 +27,9 @@ from tools.arvp_vacation.hh_hl_window_stability import (
 )
 
 PROJECT_ROOT = Path(__file__).resolve().parents[3]
-SCHEMA_PATH = PROJECT_ROOT / "docs" / "contracts" / "cdb_hh_hl_window_stability.v1.schema.json"
+SCHEMA_PATH = (
+    PROJECT_ROOT / "docs" / "contracts" / "cdb_hh_hl_window_stability.v1.schema.json"
+)
 
 
 def _fp(seed: str) -> str:

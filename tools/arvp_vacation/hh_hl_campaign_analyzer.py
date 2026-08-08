@@ -46,18 +46,14 @@ FORBIDDEN_STATEMENTS = (
 
 REASON_BLOCKED_REPRODUCTION = "ANALYZER_BLOCKED_REPRODUCTION_NOT_PASS"
 REASON_BLOCKED_COMPLETENESS = "ANALYZER_BLOCKED_FIXTURE_INCOMPLETE"
-REASON_INCONCLUSIVE_STABILITY_ABSENT = (
-    "ANALYZER_INCONCLUSIVE_WINDOW_STABILITY_ABSENT"
-)
+REASON_INCONCLUSIVE_STABILITY_ABSENT = "ANALYZER_INCONCLUSIVE_WINDOW_STABILITY_ABSENT"
 REASON_INCONCLUSIVE_THRESHOLD_POLICY_ABSENT = (
     "ANALYZER_INCONCLUSIVE_THRESHOLD_POLICY_ABSENT"
 )
 REASON_INCONCLUSIVE_POLICY_NOT_RATIFIED = (
     "ANALYZER_INCONCLUSIVE_THRESHOLD_POLICY_NOT_RATIFIED"
 )
-REASON_INCONCLUSIVE_INSUFFICIENT_SIGNAL = (
-    "ANALYZER_INCONCLUSIVE_INSUFFICIENT_SIGNAL"
-)
+REASON_INCONCLUSIVE_INSUFFICIENT_SIGNAL = "ANALYZER_INCONCLUSIVE_INSUFFICIENT_SIGNAL"
 REASON_REJECTED_UNIFORM_NEGATIVE_SIGN = "ANALYZER_REJECTED_UNIFORM_NEGATIVE_SIGN"
 
 UNIFORM_NEGATIVE_SIGN_REJECT_RULE_ID = "uniform_negative_sign_reject_v1"
@@ -195,7 +191,9 @@ def build_threshold_policy(
     return {**body, "policy_fingerprint": fingerprint_threshold_policy(body)}
 
 
-def build_uniform_negative_sign_reject_policy_draft(*, issue: int = 4374) -> dict[str, Any]:
+def build_uniform_negative_sign_reject_policy_draft(
+    *, issue: int = 4374
+) -> dict[str, Any]:
     """Draft Owner-ratifiable policy: sign-consistency REJECTED only; PROMISING empty."""
     return build_threshold_policy(
         policy_id=UNIFORM_NEGATIVE_SIGN_REJECT_RULE_ID,
@@ -233,14 +231,25 @@ def _uniform_negative_sign_reject_fires(stability: Mapping[str, Any]) -> bool:
     sign = metrics.get("sign_shares")
     if not isinstance(sign, Mapping):
         return False
-    net = sign.get("net_pnl_quote") if isinstance(sign.get("net_pnl_quote"), Mapping) else {}
-    exp = sign.get("expectancy_r") if isinstance(sign.get("expectancy_r"), Mapping) else {}
+    net = (
+        sign.get("net_pnl_quote")
+        if isinstance(sign.get("net_pnl_quote"), Mapping)
+        else {}
+    )
+    exp = (
+        sign.get("expectancy_r")
+        if isinstance(sign.get("expectancy_r"), Mapping)
+        else {}
+    )
     if net.get("negative_share") != 1.0 or exp.get("negative_share") != 1.0:
         return False
     hist = metrics.get("gate_status_histogram")
     if not isinstance(hist, Mapping) or not hist:
         return False
-    return set(hist.keys()) == {"NOT_RANKING_READY"} and sum(int(v) for v in hist.values()) == n_total
+    return (
+        set(hist.keys()) == {"NOT_RANKING_READY"}
+        and sum(int(v) for v in hist.values()) == n_total
+    )
 
 
 def _apply_rejected_rules(
@@ -307,9 +316,7 @@ def classify_hh_hl_campaign(
         # Recompute if caller passed profile body without fingerprint.
         rebuilt = build_hh_hl_analyzer_profile(
             expected_run_keys=list(
-                analyzer_profile.get("expected_run_keys")
-                or expected_run_keys
-                or []
+                analyzer_profile.get("expected_run_keys") or expected_run_keys or []
             ),
             reproduction_pass_required=bool(
                 analyzer_profile.get("reproduction_pass_required", True)
@@ -490,7 +497,8 @@ def classify_hh_hl_campaign(
             {
                 **base,
                 "classification": "PROMISING",
-                "reason_code": promising_reason or "ANALYZER_PROMISING_RESEARCH_FOLLOWUP",
+                "reason_code": promising_reason
+                or "ANALYZER_PROMISING_RESEARCH_FOLLOWUP",
                 "fired_rules": fired,
                 "reproduction_pass": True,
                 "note": "PROMISING means research follow-up only; no promotion.",

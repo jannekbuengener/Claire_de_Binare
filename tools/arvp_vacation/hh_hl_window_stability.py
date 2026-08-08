@@ -190,7 +190,9 @@ def _normalize_window_record(record: Mapping[str, Any]) -> dict[str, Any]:
     if not window_id:
         raise HhHlWindowStabilityError("WINDOW_STABILITY_MISSING_WINDOW_ID")
 
-    payload = record.get("result") if isinstance(record.get("result"), Mapping) else record
+    payload = (
+        record.get("result") if isinstance(record.get("result"), Mapping) else record
+    )
     if not isinstance(payload, Mapping):
         raise HhHlWindowStabilityError(
             "WINDOW_STABILITY_MISSING_REQUIRED_METRIC",
@@ -212,10 +214,14 @@ def _normalize_window_record(record: Mapping[str, Any]) -> dict[str, Any]:
     return {
         "window_id": window_id,
         "net_pnl_quote": _to_float(
-            _as_decimal(payload.get("net_pnl_quote"), field="net_pnl_quote", window_id=window_id)
+            _as_decimal(
+                payload.get("net_pnl_quote"), field="net_pnl_quote", window_id=window_id
+            )
         ),
         "expectancy_r": _to_float(
-            _as_decimal(payload.get("expectancy_r"), field="expectancy_r", window_id=window_id)
+            _as_decimal(
+                payload.get("expectancy_r"), field="expectancy_r", window_id=window_id
+            )
         ),
         "max_drawdown_r": _to_float(
             _as_decimal(
@@ -514,7 +520,11 @@ def _cli(argv: Sequence[str] | None = None) -> int:
     if args.command == "validate":
         raw = json.loads(Path(args.artifact).read_text(encoding="utf-8"))
         validated = validate_window_stability_artifact(raw)
-        print(json.dumps({"ok": True, "evidence_fingerprint": validated["evidence_fingerprint"]}))
+        print(
+            json.dumps(
+                {"ok": True, "evidence_fingerprint": validated["evidence_fingerprint"]}
+            )
+        )
         return 0
 
     bindings = json.loads(Path(args.bindings_json).read_text(encoding="utf-8"))
