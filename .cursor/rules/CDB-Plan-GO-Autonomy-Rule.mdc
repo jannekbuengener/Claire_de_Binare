@@ -57,7 +57,7 @@ This is not a blank check. Productive DB writes, MCP mutations, BLUE/RED runtime
 
 Merge authority is granted only to `cdb_final_head_merge_executor` after
 HEAD-bound APPROVE from `cdb_final_head_pr_approval_gate` and live Final-Head
-gates in `CDB-Checks-and-Merge-Rule.mdc` / 
+gates in `CDB-Checks-and-Merge-Rule.mdc` /
 `docs/contracts/final_head_merge_pipeline.v1.md`. It is never granted merely
 because a session can prove technical capability.
 

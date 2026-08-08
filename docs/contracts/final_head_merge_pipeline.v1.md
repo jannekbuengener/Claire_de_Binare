@@ -1,7 +1,7 @@
 # CDB Final-Head Merge Pipeline v1
 
-Status: Canonical  
-Issue: `#4411`  
+Status: Canonical
+Issue: `#4411`
 Related: `config/governance/pr-acceptance-policy.v1.yaml`,
 `docs/runbooks/merge_policy_ci_gate.md`,
 `docs/runbooks/PR_ROUTING_AND_BATCH_MERGE_POLICY.md`,
