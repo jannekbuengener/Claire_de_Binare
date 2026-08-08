@@ -1,0 +1,35 @@
+{
+  "schema_version": "cdb.hh_hl_classifier_threshold_policy_authorization.v1.draft",
+  "status": "AWAITING_OWNER_GO",
+  "repository": "jannekbuengener/Claire_de_Binare",
+  "issue": 4374,
+  "lr_status": "NO-GO",
+  "policy_draft_path": "docs/contracts/examples/hh_hl_classifier_threshold_policy_uniform_negative_sign_reject_v1.draft.json",
+  "policy_id": "uniform_negative_sign_reject_v1",
+  "policy_status_required": "OWNER_RATIFIED",
+  "authorizes": [
+    "ratify_hh_hl_classifier_threshold_policy_uniform_negative_sign_reject_v1"
+  ],
+  "does_not_authorize": [
+    "stage_b",
+    "oos",
+    "stress",
+    "paper",
+    "live",
+    "echtgeld",
+    "promotion",
+    "primary_mutation",
+    "new_replay_runs",
+    "capital_allocation",
+    "ml_rl"
+  ],
+  "policy_semantics": {
+    "rejected_rule": "uniform_negative_sign_reject_v1",
+    "rejected_means": "sign-consistency across all traded windows; not a free profitability percentage cutoff",
+    "promising_rules": [],
+    "promising_means": "only research follow-up, no promotion",
+    "auto_promotion": false,
+    "pnl_only_ranking_forbidden": true
+  },
+  "notes": "Owner must post a fenced ratification comment on #4374 setting policy_status=OWNER_RATIFIED with login + timestamp. Agents must not forge Owner ratification. DRAFT policy alone cannot produce REJECTED/PROMISING."
+}

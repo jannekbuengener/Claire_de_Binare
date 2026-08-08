@@ -1,0 +1,73 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://claire-de-binare/docs/contracts/cdb_hh_hl_classifier_threshold_policy.v1.schema.json",
+  "title": "CDB hh_hl Classifier Threshold Policy v1",
+  "description": "Owner-ratifiable threshold policy for the durable hh_hl analyzer classifier (#4374). Separated from descriptive window_stability evidence. Does not authorize Paper/Live/Echtgeld/promotion. PROMISING means research follow-up only. No free percentage cutoffs; v1 REJECTED rule is sign-consistency only.",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "schema_version",
+    "policy_id",
+    "policy_status",
+    "issue",
+    "auto_promotion",
+    "pnl_only_ranking_forbidden",
+    "promising_means",
+    "rejected_rules",
+    "promising_rules",
+    "policy_fingerprint"
+  ],
+  "properties": {
+    "schema_version": { "const": "cdb.hh_hl_classifier_threshold_policy.v1" },
+    "policy_id": { "type": "string", "minLength": 1 },
+    "policy_status": {
+      "type": "string",
+      "enum": ["DRAFT", "OWNER_RATIFIED"]
+    },
+    "issue": { "type": "integer", "minimum": 1 },
+    "auto_promotion": { "const": false },
+    "pnl_only_ranking_forbidden": { "const": true },
+    "promising_means": {
+      "const": "only research follow-up, no promotion"
+    },
+    "rejected_rules": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": ["rule_id", "reason_code"],
+        "properties": {
+          "rule_id": { "type": "string" },
+          "reason_code": { "type": "string" },
+          "requires": {
+            "type": "object",
+            "additionalProperties": true
+          }
+        }
+      }
+    },
+    "promising_rules": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": ["rule_id", "reason_code"],
+        "properties": {
+          "rule_id": { "type": "string" },
+          "reason_code": { "type": "string" },
+          "requires": {
+            "type": "object",
+            "additionalProperties": true
+          }
+        }
+      }
+    },
+    "owner_ratified_at_utc": { "type": ["string", "null"] },
+    "owner_github_login": { "type": ["string", "null"] },
+    "policy_fingerprint": {
+      "type": "string",
+      "pattern": "^[0-9a-f]{64}$"
+    },
+    "notes": { "type": "string" }
+  }
+}
