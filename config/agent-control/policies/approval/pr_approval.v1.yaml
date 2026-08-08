@@ -10,6 +10,13 @@ authority:
   execute_live_agent: false
   live_go: false
   real_money_go: false
+final_head_roles:
+  pr_approval_gate_role_id: cdb_final_head_pr_approval_gate
+  merge_executor_role_id: cdb_final_head_merge_executor
+  github_approve_mutation_role: cdb_final_head_pr_approval_gate
+  github_merge_mutation_role: cdb_final_head_merge_executor
+  context_mode: repo-only
+  local_cdb_context_required: false
 rules:
   require_head_sha_binding: true
   require_typed_required_checks: true
@@ -17,6 +24,8 @@ rules:
   drift_blocks_approve_recommended: true
   unknown_never_approves: true
   stale_head_is_reason_code: true
+  merge_candidate_alone_never_authorizes_merge: true
+  approval_invalid_on_new_commit: true
 recommendation:
   approve_requires:
     - all_required_checks_match_protection
@@ -24,3 +33,19 @@ recommendation:
     - no_changes_requested
     - no_blocking_threads
     - drift_status_none
+    - final_head_ready_for_approval
+    - exact_head_sha_binding
+github_approve_mutation:
+  # Consumed by cdb_final_head_pr_approval_gate; recommendation ≠ merge.
+  required_fields:
+    - DECISION
+    - RISK
+    - HEAD_SHA
+    - COMPLETENESS_VERDICT
+    - BLOCKERS
+    - REQUIRED_NEXT_ACTION
+  decision_value: APPROVE
+  risk_value: LOW
+  completeness_verdict_value: MERGE_CANDIDATE
+  blockers_value: NONE
+  required_next_action_value: HANDOFF_TO_MERGE_AGENT

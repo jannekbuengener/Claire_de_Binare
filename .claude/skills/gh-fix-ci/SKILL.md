@@ -2,7 +2,7 @@
 Canonical Skill Source: docs/skills/gh-fix-ci/SKILL.md
 Surface: claude
 Sync Status: mirrored-from-canon
-Last Verified: 2026-07-30
+Last Verified: 2026-08-08
 Drift Policy: Surface-Adapter duerfen nur mit dokumentierter Begruendung abweichen.
 -->
 # gh-fix-ci - GitHub CI Failure Inspector
@@ -97,9 +97,9 @@ to be "8/8 present" for merge eligibility.
 
 ### Failure classification (used by this skill)
 
-- `MERGE_READY` — `cdb-local-ci` SUCCESS on the exact PR head SHA. PR is
-  merge-eligible regardless of Hosted Actions state (surface Hosted Actions
-  findings as advisory only).
+- `MERGE_READY` — `cdb-local-ci` App Check Run SUCCESS (`app_id=4410232`) on
+  the exact PR head SHA. Means Final-Head CI readiness only — **not** merge
+  authority and **not** APPROVE. Hosted Actions findings remain advisory.
 - `REQUIRED_STATUS_MISSING` — `cdb-local-ci` absent or stale for the exact
   head SHA. Not merge-eligible; needs a local Fast-CI run + publish, or a
   capable session to do so.
@@ -130,12 +130,16 @@ Before relying on any check result, verify the identity/token can actually
 read live status:
 
 1. `gh auth status` — confirm an authenticated identity.
-2. `gh api repos/<owner>/<repo>/commits/<head_sha>/status` — confirm
-   `cdb-local-ci` is readable for the exact PR head SHA (billing/lock
-   conditions on Hosted Actions do not affect this read).
+2. `gh api repos/<owner>/<repo>/commits/<head_sha>/check-runs` — confirm
+   App-bound Check Run `cdb-local-ci` (`app_id=4410232`) is readable for the
+   exact PR head SHA. A same-named Commit Status via `/status` is not
+   sufficient (billing/lock on Hosted Actions does not affect this read).
 3. If step 2 fails with an auth/permission error, classify as
    `AUTH_PUBLISHER_BLOCK`, not `REQUIRED_STATUS_MISSING` — these have
    different remediations (fix auth vs. run+publish local CI).
+
+Fixing a red check never authorizes Approval or Merge. After any commit
+produced by a CI fix, stale Final-Head Evidence and Approval are invalid.
 
 ---
 

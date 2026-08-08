@@ -5,10 +5,11 @@ alwaysApply: true
 ## Batch-routing boundary
 
 Plan-GO authorizes only the routed Delivery-Slice unless the plan explicitly
-defines a final Merge-Steward phase. It does not authorize a new PR when a
-compatible Batch-PR exists and does not turn a Merge Trigger into merge
-authority. Full Fast-CI, `cdb-local-ci` publish and merge apply only to a frozen
-`merge_candidate` on its exact final Head and integrated Base.
+defines a Final-Head / Approval / Merge-Agent phase. It does not authorize a
+new PR when a compatible Batch-PR exists and does not turn a Merge Trigger into
+approval or merge authority. Full Fast-CI and `cdb-local-ci` publish apply only
+to a frozen `merge_candidate` on its exact final Head and integrated Base.
+Regular merge remains owned solely by `cdb_final_head_merge_executor`.
 
 When Jannek approves a plan, that approval covers all explicitly described steps inside that plan scope.
 
@@ -41,25 +42,27 @@ Allowed after Plan-GO, if explicitly inside scope:
 - resolve review threads
 - post comments
 - apply or remove labels
-- close issues
-- merge PRs autonomously when the capability gate in
-  `CDB-Checks-and-Merge-Rule.mdc` is fully satisfied
+- close issues after live MERGED verification when in scope
+- hand off Final Head to `cdb_final_head_pr_approval_gate` / Merge Agent
+  when the plan explicitly includes that pipeline
 - create deduplicated follow-up issues
 - report final status
 
+Plan-GO does **not** authorize Delivery or Conductor sessions to bypass the
+PR Reviewer → Merge Agent pipeline with a direct `gh pr merge`.
+
 This is not a blank check. Productive DB writes, MCP mutations, BLUE/RED runtime changes, LR/live/echtgeld actions, secret handling, and scope expansion still require their own explicit scope or gate.
 
-## Merge capability, not agent type
+## Merge authority is role-bound
 
-Plan-GO authorizes autonomous merge for **any** session — local or cloud —
-that proves the full capability gate defined in
-`CDB-Checks-and-Merge-Rule.mdc` (scope, no blockers, `cdb-local-ci` SUCCESS
-on exact head, unchanged validated `main`, and the ability to perform the
-merge itself). Merge authority is never granted or withheld based on which
-agent surface is running; it is granted only when the gate is proven.
+Merge authority is granted only to `cdb_final_head_merge_executor` after
+HEAD-bound APPROVE from `cdb_final_head_pr_approval_gate` and live Final-Head
+gates in `CDB-Checks-and-Merge-Rule.mdc` /
+`docs/contracts/final_head_merge_pipeline.v1.md`. It is never granted merely
+because a session can prove technical capability.
 
-If a session lacks a capability (e.g. no `statuses:write`, no verifiable
-identity, evidence not bound to the exact head): do not use `--admin` as a
+If a session lacks Final-Head readiness (e.g. no App Check Run publish
+capability, evidence not bound to the exact head): do not use `--admin` as a
 substitute, and do not loop the same blocked attempt. Report
 `DONE_PR_OPEN_MERGE_HANDOFF` with the exact missing capability and the next
 command for a capable session/human, then continue other approved,

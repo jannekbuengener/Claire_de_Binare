@@ -94,7 +94,10 @@ python -m tools.pr_routing merge-readiness --body-file <BODY_FILE>
 - Never infer an unknown lane or validation profile.
 - Never accept malformed markers, ledgers or locks.
 - Never auto-take over a stale lock.
-- Never route new slices to `merge_candidate` or `frozen`.
+- Never route new slices to `merge_candidate`, `frozen`, or
+  `FINAL_HEAD_READY_FOR_APPROVAL` / approval-pending Final-Head states.
+- A merge trigger starts Acceptance only; it is not approval and not merge
+  authorization.
 - An inventory that reaches the configured PR limit is incomplete and HOLD.
 - Never recommend or create an immediate post-merge `CURRENT_STATUS-only` /
   `ledger-only`-**Nachlauf-PR**. Status-/Ledger-Nachpflege gehört in den

@@ -2,7 +2,7 @@
 Canonical Skill Source: docs/skills/cdb-issue-to-session-plan/SKILL.md
 Surface: codex
 Sync Status: mirrored-from-canon
-Last Verified: 2026-07-30
+Last Verified: 2026-08-08
 Drift Policy: Surface-Adapter duerfen nur mit dokumentierter Begruendung abweichen.
 -->
 ---
@@ -54,14 +54,13 @@ Use this after `cdb-control-intake` when the next concrete unit of work is one s
      issue is delivered into a compatible open PR, that PR stays open, and the
      issue stays open until a verified merge. A compatible open PR always has
      priority over a new PR.
-   - Never plan a merge, a full final-head Fast-CI, a `cdb-local-ci` publish,
-     an acceptance-chain run (`cdb-integration-wiring-audit`,
+   - Never plan a merge, approve, a full final-head Fast-CI, a `cdb-local-ci`
+     publish, an acceptance-chain run (`cdb-integration-wiring-audit`,
      `cdb-pr-gap-classifier`, `cdb-pr-completeness-review`,
      `cdb-batch-merge-conductor`), or an issue closure into a delivery
-     session. Merge planning — including merge waves, rebase-and-revalidate
-     sequencing, and the capability gate in
-     `docs/runbooks/merge_policy_ci_gate.md` § Capability-based autonomous
-     merge — belongs to a separately started merge session.
+     session.      Final-Head prep, Cloud PR Reviewer APPROVE, and Merge Agent
+     execution belong to a separately started merge session per
+     `docs/contracts/final_head_merge_pipeline.v1.md`.
    - Mark all unresolved assumptions as unconfirmed.
 
 ## Interpretation Rules

@@ -110,4 +110,9 @@ No merge.
 - Board stage `trade-capable` is not Live-Go
 - No productive DB/MCP writes
 - No secrets in inputs or outputs
-- Approval recommendation ≠ merge authority
+- Approval recommendation ≠ merge authority. For the Final-Head pipeline
+(`#4411`), GitHub APPROVE mutation is owned by
+`cdb_final_head_pr_approval_gate` and regular merge by
+`cdb_final_head_merge_executor`
+(see `../final_head_merge_pipeline.v1.md`). This recommendation envelope
+remains read-only and may be consumed by the PR Reviewer.

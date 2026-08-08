@@ -2,7 +2,7 @@
 Canonical Skill Source: docs/skills/cdb-github-api-ops/SKILL.md
 Surface: opencode
 Sync Status: mirrored-from-canon
-Last Verified: 2026-07-30
+Last Verified: 2026-08-08
 Drift Policy: Surface-Adapter duerfen nur mit dokumentierter Begruendung abweichen.
 -->
 ---
@@ -160,7 +160,8 @@ collection_errors:
 | Create issue/PR | Only if Plan-GO explicitly allows it |
 | Label/milestone changes | Only if Plan-GO explicitly allows it |
 | Rebase/push | Only if Plan-GO explicitly allows it |
-| Squash merge (`gh pr merge --squash --delete-branch`) | Never a normal slice-close action. Only in separately authorized Merge Mode after the PR is frozen as `merge_candidate` and every capability gate in `docs/runbooks/merge_policy_ci_gate.md` is proven for the exact final head and integrated base (no blocking reviews, full Fast-CI PASS, latest `cdb-local-ci` App-bound Check Run SUCCESS (`app_id=4410232`), unchanged head/base). `--admin` is never a substitute. If any gate is unproven: `DONE_PR_OPEN_MERGE_HANDOFF`; do not loop or force. |
+| Squash merge (`gh pr merge --squash --delete-branch`) | Never a Delivery Mode or Conductor action. Only `cdb_final_head_merge_executor` (Merge Agent) may execute regular merge after HEAD-bound APPROVE from `cdb_final_head_pr_approval_gate`, with Final-Head gates re-verified (`FINAL_HEAD_READY_FOR_APPROVAL`, exact head/base, App Check Run `cdb-local-ci` SUCCESS `app_id=4410232`). Read/write capability is not governance authority. `--admin` is never a substitute. |
+| GitHub APPROVE review | Only `cdb_final_head_pr_approval_gate` (PR Reviewer) on the exact final `HEAD_SHA`. Cannot merge. |
 | Repo settings/admin | Separate scope, never automatic |
 | Branch protection changes | Separate scope, never automatic |
 
@@ -171,9 +172,9 @@ When a write seems necessary but no approved scope exists:
 3. Propose the write as a follow-up with explicit Human-GO.
 4. Do NOT execute the write.
 
-For the merge row specifically: an unproven capability gate is a
-`DONE_PR_OPEN_MERGE_HANDOFF` report, not a STOP-and-ask — the PR stays open
-and the missing capability is named for the next session/human to close.
+For Final-Head readiness specifically: if Conductor cannot publish/verify
+`cdb-local-ci`, report `DONE_PR_OPEN_MERGE_HANDOFF` (Final Head not ready).
+Delivery sessions and Conductor must not execute merge.
 
 ## Hard rules
 

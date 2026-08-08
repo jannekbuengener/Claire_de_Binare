@@ -32,9 +32,10 @@ Status rules:
   clean tree, squash equivalence, worktree/branch removal, main ff-only,
   anti-repush). Report only after final git verification.
 - `DONE_PR_OPEN_MERGE_HANDOFF` is the honest result when the PR is
-  ready/near-ready but this session could not prove the full autonomous-merge
-  capability gate (see `CDB-Checks-and-Merge-Rule.mdc`). State the exact
-  missing capability and the next command for a capable session/human.
+  ready/near-ready for Final-Head / Approval / Merge Agent but this session
+  could not complete the next gate (see `CDB-Checks-and-Merge-Rule.mdc` and
+  `docs/contracts/final_head_merge_pipeline.v1.md`). State the exact missing
+  capability and the next command for a capable session/human.
   `--admin` is never used to convert this into `DONE_MERGED_CLOSED`.
 - `BLOCKED_REQUIRED_STATUS` means `cdb-local-ci` is missing/red/stale on the
   exact PR head SHA — the only merge-relevant required context.

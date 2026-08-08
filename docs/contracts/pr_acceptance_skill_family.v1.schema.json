@@ -2,7 +2,7 @@
   "$schema": "https://json-schema.org/draft/2020-12/schema",
   "$id": "https://claire-de-binare.local/contracts/pr_acceptance_skill_family.v1.schema.json",
   "title": "CDB PR Acceptance Skill Family v1",
-  "description": "Common envelope and specialized result contracts for the four PR-acceptance producers. Evidence comments use marker <!-- cdb-pr-acceptance:v1 -->.",
+  "description": "Common envelope and specialized result contracts for the four PR-acceptance producers. Evidence comments use marker <!-- cdb-pr-acceptance:v1 -->. Final-Head pipeline (#4411): conductor ends at FINAL_HEAD_READY_FOR_APPROVAL; merge owned by cdb_final_head_merge_executor after HEAD-bound APPROVE.",
   "oneOf": [
     {
       "$ref": "#/$defs/WiringAuditEnvelope"
@@ -64,6 +64,7 @@
             "MERGE_CANDIDATE",
             "FROZEN",
             "FINAL_VALIDATION",
+            "FINAL_HEAD_READY_FOR_APPROVAL",
             "MERGED",
             "BLOCKED"
           ]
@@ -77,6 +78,7 @@
             "MERGE_CANDIDATE",
             "FROZEN",
             "FINAL_VALIDATION",
+            "FINAL_HEAD_READY_FOR_APPROVAL",
             "MERGED",
             "BLOCKED"
           ]
@@ -622,7 +624,7 @@
             "FREEZE",
             "MAIN_INTEGRATION",
             "FINAL_VALIDATION",
-            "MERGE",
+            "HANDOFF_APPROVAL",
             "HANDOFF_SESSION_CLOSE"
           ]
         },
@@ -640,14 +642,26 @@
             ]
           }
         },
-        "merge_executed": {
-          "type": "boolean"
-        },
         "closure_eligible_issues": {
           "type": "array",
           "items": {
             "type": "integer"
           }
+        },
+        "final_head_ready": {
+          "type": "boolean"
+        },
+        "success_decision": {
+          "type": "string",
+          "enum": [
+            "FINAL_HEAD_READY_FOR_APPROVAL"
+          ]
+        },
+        "handoff_role": {
+          "type": "string",
+          "enum": [
+            "cdb_final_head_pr_approval_gate"
+          ]
         }
       }
     },

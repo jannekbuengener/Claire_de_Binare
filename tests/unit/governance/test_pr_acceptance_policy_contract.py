@@ -29,6 +29,7 @@ LIFECYCLE_STATES = [
     "MERGE_CANDIDATE",
     "FROZEN",
     "FINAL_VALIDATION",
+    "FINAL_HEAD_READY_FOR_APPROVAL",
     "MERGED",
     "BLOCKED",
 ]
@@ -93,8 +94,19 @@ def test_steward_acceptance_mapping() -> None:
         "EXTENSION_REQUIRED",
         "MERGE_CANDIDATE",
     ]
-    assert mapping["frozen"] == ["FROZEN", "FINAL_VALIDATION"]
+    assert mapping["frozen"] == [
+        "FROZEN",
+        "FINAL_VALIDATION",
+        "FINAL_HEAD_READY_FOR_APPROVAL",
+    ]
     assert mapping["live_verified"] == ["MERGED"]
+    assert ("FINAL_VALIDATION", "MERGED") in {
+        tuple(p) for p in _policy()["lifecycle"]["forbidden_transitions"]
+    }
+    assert (
+        "FINAL_HEAD_READY_FOR_APPROVAL"
+        in _policy()["lifecycle"]["allowed_transitions"]["FINAL_VALIDATION"]
+    )
 
 
 def test_producers_and_dimension_states() -> None:
@@ -219,6 +231,14 @@ def test_delegation_matrix_lists_all_producers() -> None:
         in matrix["cdb-pr-completeness-review"]["delegates_to"]
     )
     assert "admin_merge" in matrix["cdb-batch-merge-conductor"]["forbidden"]
+    assert "merge_execution" in matrix["cdb-batch-merge-conductor"]["forbidden"]
+    assert "approve_pr" in matrix["cdb-batch-merge-conductor"]["forbidden"]
+    roles = _policy()["final_head_roles"]
+    assert roles["pr_approval_gate"]["role_id"] == "cdb_final_head_pr_approval_gate"
+    assert roles["merge_executor"]["role_id"] == "cdb_final_head_merge_executor"
+    assert roles["pr_approval_gate"]["merge_pr"] is False
+    assert roles["merge_executor"]["approve_pr"] is False
+    assert roles["merge_executor"]["admin_bypass"] is False
 
 
 def test_session_status_mappings_present() -> None:

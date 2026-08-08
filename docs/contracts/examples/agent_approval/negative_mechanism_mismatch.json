@@ -25,7 +25,7 @@
     "not_cdb_local_ci_publisher"
   ],
   "policy": {
-    "content_sha256": "sha256:2597528b687b901cad20791371b884a18cd8c1b693c801cbb111a8773eff0472",
+    "content_sha256": "sha256:3f9e2438de7f46215a880618b5d155bdac16cd49f4ff831dcbcbf46551f79aa6",
     "source_path": "config/agent-control/policies/approval/pr_approval.v1.yaml",
     "version": "1.0.0"
   },
@@ -35,7 +35,7 @@
     "review_decision": "APPROVED"
   },
   "prompt": {
-    "content_sha256": "sha256:a59c8d22a802ebe4894702be3873f31e5f3f58126d4f2ecb908f00ea971f3c21",
+    "content_sha256": "sha256:83c1c9469eb23f3d28e9b2309a45a64ef04d70cd1daaa45ac875ca8be4d2814e",
     "source_path": "config/agent-control/prompts/approval/pr_approval.v1.md",
     "version": "1.0.0"
   },

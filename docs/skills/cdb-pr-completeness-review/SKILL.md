@@ -32,7 +32,10 @@ Evidence marker: `<!-- cdb-pr-acceptance:v1 -->`
 ## Do NOT use this skill when
 
 - implementation or GitHub writes are requested
-- merge execution is requested (use `cdb-batch-merge-conductor`)
+- merge or approve is requested (Final-Head prep uses
+  `cdb-batch-merge-conductor`; APPROVE uses
+  `cdb_final_head_pr_approval_gate`; merge uses
+  `cdb_final_head_merge_executor`)
 - findings still need leaf discovery without aggregation
 
 ## Exactly eight dimensions (fixed order)
@@ -121,5 +124,6 @@ Common envelope:
 ## Handoff
 
 On `MERGE_CANDIDATE`, hand the schema-valid bundle to
-`cdb-batch-merge-conductor`. Otherwise return the blocking verdict and classified
-residuals; do not merge.
+`cdb-batch-merge-conductor` for Final-Head preparation only.
+`MERGE_CANDIDATE` alone never authorizes APPROVE or merge. Do not approve.
+Do not merge. Otherwise return the blocking verdict and classified residuals.

@@ -195,7 +195,10 @@ If a field exists somewhere but producer, owner, unit, or meaning is unclear:
 - `trade-capable` is a stage label, not live-capital authorization
 - `LR-050` remaining `NO-GO` is orthogonal to stage ratification
 - Grafana is not automatically a gate surface
-- Solo-maintainer reality applies; do not invent teams, reviewers, or escalation chains
+- Solo-maintainer reality applies; do not invent ad-hoc teams or escalation
+  chains. Canonical Final-Head roles
+  `cdb_final_head_pr_approval_gate` and `cdb_final_head_merge_executor` are
+  allowed and required when the Final-Head pipeline applies.
 - evidence beats storytelling
 - non-blocking residuals must remain explicit instead of disappearing into comments
 - the Claire de Binare repository is canon
