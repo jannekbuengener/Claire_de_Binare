@@ -151,9 +151,10 @@ def test_phases_and_blockcodes_parity_policy_schema_skill() -> None:
     assert block_enum == BLOCKCODES
     assert "HOLD_SCOPE_OR_REVIEW" in text
     assert "HOLD_MAIN_OR_HEAD_DRIFT" in text
-    assert "merge_executed" not in schema["$defs"]["BatchMergeConductorResult"][
-        "properties"
-    ]
+    assert (
+        "merge_executed"
+        not in schema["$defs"]["BatchMergeConductorResult"]["properties"]
+    )
 
 
 def test_canonical_header_present() -> None:

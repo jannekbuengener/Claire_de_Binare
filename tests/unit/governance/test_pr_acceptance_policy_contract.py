@@ -103,9 +103,10 @@ def test_steward_acceptance_mapping() -> None:
     assert ("FINAL_VALIDATION", "MERGED") in {
         tuple(p) for p in _policy()["lifecycle"]["forbidden_transitions"]
     }
-    assert "FINAL_HEAD_READY_FOR_APPROVAL" in _policy()["lifecycle"][
-        "allowed_transitions"
-    ]["FINAL_VALIDATION"]
+    assert (
+        "FINAL_HEAD_READY_FOR_APPROVAL"
+        in _policy()["lifecycle"]["allowed_transitions"]["FINAL_VALIDATION"]
+    )
 
 
 def test_producers_and_dimension_states() -> None:

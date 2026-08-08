@@ -12,7 +12,9 @@ pytestmark = [pytest.mark.unit, pytest.mark.contract]
 
 ROOT = Path(__file__).resolve().parents[3]
 POLICY = ROOT / "config" / "governance" / "pr-acceptance-policy.v1.yaml"
-APPROVAL = ROOT / "config" / "agent-control" / "policies" / "approval" / "pr_approval.v1.yaml"
+APPROVAL = (
+    ROOT / "config" / "agent-control" / "policies" / "approval" / "pr_approval.v1.yaml"
+)
 PIPELINE = ROOT / "docs" / "contracts" / "final_head_merge_pipeline.v1.md"
 CONDUCTOR = ROOT / "docs" / "skills" / "cdb-batch-merge-conductor" / "SKILL.md"
 MERGE_GATE = ROOT / "docs" / "runbooks" / "merge_policy_ci_gate.md"
