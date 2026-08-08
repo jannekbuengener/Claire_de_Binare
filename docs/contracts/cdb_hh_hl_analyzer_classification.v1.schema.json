@@ -1,0 +1,96 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://claire-de-binare/docs/contracts/cdb_hh_hl_analyzer_classification.v1.schema.json",
+  "title": "CDB hh_hl Durable Analyzer Classification v1",
+  "description": "Durable, fingerprinted analyzer classification for hh_hl campaigns (#4374). Binds stability evidence and optional Owner-ratified threshold policy. PROMISING is research follow-up only; never promotion/Paper/Live.",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "schema_version",
+    "classifier_code_version",
+    "analyzer_profile_id",
+    "analyzer_profile_fingerprint",
+    "classification",
+    "reason_code",
+    "fired_rules",
+    "reproduction_pass",
+    "auto_promotion",
+    "pnl_only_ranking_forbidden",
+    "promising_means",
+    "forbidden_statements",
+    "input_fingerprints",
+    "classification_fingerprint"
+  ],
+  "properties": {
+    "schema_version": { "const": "cdb.hh_hl_analyzer_classification.v1" },
+    "classifier_code_version": {
+      "const": "hh_hl_durable_classifier.v1"
+    },
+    "analyzer_profile_id": { "const": "hh_hl_analyzer_prep_v1" },
+    "analyzer_profile_fingerprint": {
+      "type": "string",
+      "pattern": "^[0-9a-f]{64}$"
+    },
+    "policy_id": { "type": ["string", "null"] },
+    "policy_version": { "type": ["string", "null"] },
+    "policy_fingerprint": { "type": ["string", "null"] },
+    "policy_status": {
+      "type": ["string", "null"],
+      "enum": ["DRAFT", "OWNER_RATIFIED", null]
+    },
+    "classification": {
+      "type": "string",
+      "enum": ["PROMISING", "INCONCLUSIVE", "REJECTED", "BLOCKED"]
+    },
+    "reason_code": { "type": "string", "minLength": 1 },
+    "fired_rules": {
+      "type": "array",
+      "items": { "type": "string" }
+    },
+    "reproduction_pass": { "type": "boolean" },
+    "window_stability_present": { "type": "boolean" },
+    "auto_promotion": { "const": false },
+    "pnl_only_ranking_forbidden": { "const": true },
+    "promising_means": {
+      "const": "only research follow-up, no promotion"
+    },
+    "forbidden_statements": {
+      "type": "array",
+      "items": { "type": "string" }
+    },
+    "input_fingerprints": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "campaign_summary_fingerprint",
+        "reproduction_summary_fingerprint",
+        "window_stability_fingerprint",
+        "threshold_policy_fingerprint",
+        "analyzer_profile_fingerprint"
+      ],
+      "properties": {
+        "campaign_summary_fingerprint": {
+          "type": ["string", "null"]
+        },
+        "reproduction_summary_fingerprint": {
+          "type": ["string", "null"]
+        },
+        "window_stability_fingerprint": {
+          "type": ["string", "null"]
+        },
+        "threshold_policy_fingerprint": {
+          "type": ["string", "null"]
+        },
+        "analyzer_profile_fingerprint": {
+          "type": "string",
+          "pattern": "^[0-9a-f]{64}$"
+        }
+      }
+    },
+    "note": { "type": "string" },
+    "classification_fingerprint": {
+      "type": "string",
+      "pattern": "^[0-9a-f]{64}$"
+    }
+  }
+}

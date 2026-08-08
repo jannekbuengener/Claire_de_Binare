@@ -1,0 +1,100 @@
+{
+  "authorization_fingerprint": "6870e4cd7a0cf4589f3aabb3e91a7c3f2b0f54032b43680e7f1d0bddd6238295",
+  "calculation_version": "hh_hl_window_stability_calc.v1",
+  "campaign_id": "arvp-hh-hl-continuation-4374-prep-v1",
+  "campaign_summary_fingerprint": "ec0b7fc3f5e8c2806007d2cf8568983a354ff3f8a953d1761c55f9103dd51b97",
+  "dataset_content_fingerprint_digest": "422959eef889b23d671a96d3bc94e2e8192bdfc3eb2a20cb87c850b40cb43d26",
+  "dataset_selection_sha256": "15c2b9da3d48ff1f0541981ca7c4ee00cd117d530f5bb52536a14962949ae9f6",
+  "derived_from": "primary",
+  "evidence_fingerprint": "09b93f9a127500e666f73e9de462513d0624e027f11118107d197fa37eaed9fb",
+  "execution_sha": "79b150d452a6bebddc5a8f1b0db39c77ebbfe1c3",
+  "issue": 4374,
+  "manifest_fingerprint": "1e18c986fbea93aac8a896c5d9804c8563d32e649020601b9af215c292d24973",
+  "metrics": {
+    "concentration": {
+      "denominator_zero": false,
+      "top1_abs_pnl_share": 0.5714285714285714,
+      "top3_abs_pnl_share": 1.0
+    },
+    "gate_status_histogram": {
+      "NOT_RANKING_READY": 3
+    },
+    "n_total": 3,
+    "n_traded": 3,
+    "n_zero_trade": 0,
+    "series": {
+      "closed_trades_total": {
+        "maximum": 10.0,
+        "median": 10.0,
+        "minimum": 10.0,
+        "n": 3,
+        "q25": 10.0,
+        "q75": 10.0
+      },
+      "expectancy_r": {
+        "maximum": -0.005,
+        "median": -0.01,
+        "minimum": -0.02,
+        "n": 3,
+        "q25": -0.015,
+        "q75": -0.0075
+      },
+      "fees_total_quote": {
+        "maximum": 10.0,
+        "median": 10.0,
+        "minimum": 10.0,
+        "n": 3,
+        "q25": 10.0,
+        "q75": 10.0
+      },
+      "max_drawdown_r": {
+        "maximum": 0.5,
+        "median": 0.5,
+        "minimum": 0.5,
+        "n": 3,
+        "q25": 0.5,
+        "q75": 0.5
+      },
+      "net_pnl_quote": {
+        "maximum": -50.0,
+        "median": -100.0,
+        "minimum": -200.0,
+        "n": 3,
+        "q25": -150.0,
+        "q75": -75.0
+      }
+    },
+    "sign_shares": {
+      "expectancy_r": {
+        "n_traded": 3,
+        "negative_share": 1.0,
+        "positive_share": 0.0,
+        "zero_share": 0.0
+      },
+      "net_pnl_quote": {
+        "n_traded": 3,
+        "negative_share": 1.0,
+        "positive_share": 0.0,
+        "zero_share": 0.0
+      }
+    }
+  },
+  "overlap_policy": "descriptive_non_iid",
+  "physical_parameter_set_fingerprint": "536293274fcc36b8287b0143a4724d64d8085344945ce674482f14d5fe29c2bb",
+  "raw_metrics_used": [
+    "net_pnl_quote",
+    "expectancy_r",
+    "max_drawdown_r",
+    "closed_trades_total",
+    "fees_total_quote",
+    "gate_result.status"
+  ],
+  "run_plan_fingerprint": "1f8c80868939423c6815dcf1fa95e771e08c05468500072e98f5312118d46fa0",
+  "schema_version": "cdb.hh_hl_window_stability.v1",
+  "source_run_count": 3,
+  "window_ids": [
+    "w_a",
+    "w_b",
+    "w_c"
+  ]
+}

@@ -1,0 +1,192 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://claire-de-binare/docs/contracts/cdb_hh_hl_window_stability.v1.schema.json",
+  "title": "CDB hh_hl Window Stability Evidence v1",
+  "description": "Derived, descriptive cross-window stability evidence for hh_hl campaigns (#4374). Computed read-only from immutable primary Pack-A per-window metrics. Does not authorize PROMISING/REJECTED thresholds, Stage B, Paper, Live, or promotion. overlap_policy is always descriptive_non_iid.",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "schema_version",
+    "calculation_version",
+    "campaign_id",
+    "issue",
+    "authorization_fingerprint",
+    "execution_sha",
+    "manifest_fingerprint",
+    "run_plan_fingerprint",
+    "dataset_selection_sha256",
+    "dataset_content_fingerprint_digest",
+    "physical_parameter_set_fingerprint",
+    "campaign_summary_fingerprint",
+    "source_run_count",
+    "window_ids",
+    "raw_metrics_used",
+    "overlap_policy",
+    "derived_from",
+    "metrics",
+    "evidence_fingerprint"
+  ],
+  "properties": {
+    "schema_version": { "const": "cdb.hh_hl_window_stability.v1" },
+    "calculation_version": { "const": "hh_hl_window_stability_calc.v1" },
+    "campaign_id": { "type": "string", "minLength": 1 },
+    "issue": { "type": "integer", "minimum": 1 },
+    "authorization_fingerprint": {
+      "type": "string",
+      "pattern": "^[0-9a-f]{64}$"
+    },
+    "execution_sha": {
+      "type": "string",
+      "pattern": "^[0-9a-f]{7,40}$"
+    },
+    "manifest_fingerprint": {
+      "type": "string",
+      "pattern": "^[0-9a-f]{64}$"
+    },
+    "run_plan_fingerprint": {
+      "type": "string",
+      "pattern": "^[0-9a-f]{64}$"
+    },
+    "dataset_selection_sha256": {
+      "type": "string",
+      "pattern": "^[0-9a-f]{64}$"
+    },
+    "dataset_content_fingerprint_digest": {
+      "type": "string",
+      "pattern": "^[0-9a-f]{64}$"
+    },
+    "physical_parameter_set_fingerprint": {
+      "type": "string",
+      "pattern": "^[0-9a-f]{64}$"
+    },
+    "campaign_summary_fingerprint": {
+      "type": "string",
+      "pattern": "^[0-9a-f]{64}$"
+    },
+    "source_run_count": { "type": "integer", "minimum": 1 },
+    "window_ids": {
+      "type": "array",
+      "minItems": 1,
+      "items": { "type": "string", "minLength": 1 },
+      "uniqueItems": true
+    },
+    "raw_metrics_used": {
+      "type": "array",
+      "minItems": 1,
+      "items": {
+        "type": "string",
+        "enum": [
+          "net_pnl_quote",
+          "expectancy_r",
+          "max_drawdown_r",
+          "closed_trades_total",
+          "fees_total_quote",
+          "gate_result.status"
+        ]
+      }
+    },
+    "overlap_policy": { "const": "descriptive_non_iid" },
+    "derived_from": { "const": "primary" },
+    "metrics": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "n_total",
+        "n_traded",
+        "n_zero_trade",
+        "series",
+        "sign_shares",
+        "concentration",
+        "gate_status_histogram"
+      ],
+      "properties": {
+        "n_total": { "type": "integer", "minimum": 0 },
+        "n_traded": { "type": "integer", "minimum": 0 },
+        "n_zero_trade": { "type": "integer", "minimum": 0 },
+        "series": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": [
+            "net_pnl_quote",
+            "expectancy_r",
+            "max_drawdown_r",
+            "fees_total_quote",
+            "closed_trades_total"
+          ],
+          "properties": {
+            "net_pnl_quote": { "$ref": "#/$defs/series_stats" },
+            "expectancy_r": { "$ref": "#/$defs/series_stats" },
+            "max_drawdown_r": { "$ref": "#/$defs/series_stats" },
+            "fees_total_quote": { "$ref": "#/$defs/series_stats" },
+            "closed_trades_total": { "$ref": "#/$defs/series_stats" }
+          }
+        },
+        "sign_shares": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": ["net_pnl_quote", "expectancy_r"],
+          "properties": {
+            "net_pnl_quote": { "$ref": "#/$defs/sign_shares" },
+            "expectancy_r": { "$ref": "#/$defs/sign_shares" }
+          }
+        },
+        "concentration": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": [
+            "top1_abs_pnl_share",
+            "top3_abs_pnl_share",
+            "denominator_zero"
+          ],
+          "properties": {
+            "top1_abs_pnl_share": { "type": ["number", "null"] },
+            "top3_abs_pnl_share": { "type": ["number", "null"] },
+            "denominator_zero": { "type": "boolean" }
+          }
+        },
+        "gate_status_histogram": {
+          "type": "object",
+          "additionalProperties": {
+            "type": "integer",
+            "minimum": 0
+          }
+        }
+      }
+    },
+    "evidence_fingerprint": {
+      "type": "string",
+      "pattern": "^[0-9a-f]{64}$"
+    }
+  },
+  "$defs": {
+    "series_stats": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["median", "minimum", "maximum", "q25", "q75", "n"],
+      "properties": {
+        "median": { "type": ["number", "null"] },
+        "minimum": { "type": ["number", "null"] },
+        "maximum": { "type": ["number", "null"] },
+        "q25": { "type": ["number", "null"] },
+        "q75": { "type": ["number", "null"] },
+        "n": { "type": "integer", "minimum": 0 }
+      }
+    },
+    "sign_shares": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "positive_share",
+        "negative_share",
+        "zero_share",
+        "n_traded"
+      ],
+      "properties": {
+        "positive_share": { "type": ["number", "null"] },
+        "negative_share": { "type": ["number", "null"] },
+        "zero_share": { "type": ["number", "null"] },
+        "n_traded": { "type": "integer", "minimum": 0 }
+      }
+    }
+  }
+}

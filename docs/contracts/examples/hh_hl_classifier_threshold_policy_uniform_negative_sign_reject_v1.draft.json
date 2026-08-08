@@ -1,0 +1,27 @@
+{
+  "auto_promotion": false,
+  "issue": 4374,
+  "notes": "DRAFT only. Not active until policy_status=OWNER_RATIFIED. PROMISING rules intentionally empty.",
+  "owner_github_login": null,
+  "owner_ratified_at_utc": null,
+  "pnl_only_ranking_forbidden": true,
+  "policy_fingerprint": "1cdae92d424dd31678917b5b13b0e0a548e07a488edd5ed36d947fb4e3165810",
+  "policy_id": "uniform_negative_sign_reject_v1",
+  "policy_status": "DRAFT",
+  "promising_means": "only research follow-up, no promotion",
+  "promising_rules": [],
+  "rejected_rules": [
+    {
+      "reason_code": "ANALYZER_REJECTED_UNIFORM_NEGATIVE_SIGN",
+      "requires": {
+        "all_gates_not_ranking_ready": true,
+        "n_total_gt_zero": true,
+        "n_traded_equals_n_total": true,
+        "negative_share_expectancy_r": 1.0,
+        "negative_share_net_pnl_quote": 1.0
+      },
+      "rule_id": "uniform_negative_sign_reject_v1"
+    }
+  ],
+  "schema_version": "cdb.hh_hl_classifier_threshold_policy.v1"
+}
