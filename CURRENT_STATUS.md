@@ -12,11 +12,11 @@
 
 ## Repo / Engineering Status (2026-08-08)
 
-<!-- cdb:live-claim type=main_sha value=6fcc8afc -->
-- **Confirmed main state**: `origin/main` @ `6fcc8afcead23f42ce13259bc3fab916ea43f0a2` — tip after [#4407](https://github.com/jannekbuengener/Claire_de_Binare/pull/4407) campaign_summary persistence (supersedes prior ledger tip `43401302`).
+<!-- cdb:live-claim type=main_sha value=d0e9b871 -->
+- **Confirmed main state**: `origin/main` @ `d0e9b8718fbfdfa90f4b169b0b5fc80b3c1c71f6` — tip after [#4413](https://github.com/jannekbuengener/Claire_de_Binare/pull/4413) Final-Head skill reconciliation (supersedes prior ledger tip `6fcc8afc`).
 
-<!-- cdb:live-claim type=issue_state issue=4411 state=open -->
-- **#4411 Final-Head PR Reviewer → Merge Agent skill reconciliation**: Delivery slice on `batch/agent-skills-issue-4411` — governance/skills/policies aligned to Completeness → Conductor Final-Head prep → Cloud PR Reviewer APPROVE → Merge Agent → session-close. PR left open for Approval/Merge pipeline (no self-merge). LR **NO-GO** unchanged.
+<!-- cdb:live-claim type=issue_state issue=4411 state=closed -->
+- **#4411 Final-Head PR Reviewer → Merge Agent skill reconciliation**: **DONE_MERGED_CLOSED** via PR [#4413](https://github.com/jannekbuengener/Claire_de_Binare/pull/4413) @ `d0e9b871`. LR **NO-GO** unchanged.
 
 <!-- cdb:historical-as-of date=2026-08-06 -->
 > Historical as of 2026-08-06 — append-only ledger. Entries below record the
@@ -25,7 +25,7 @@
 
 ## Repo / Engineering Status (2026-08-06)
 
-- **Confirmed main state (historical)**: previously claimed `origin/main` @ `43401302` after Hermes [#4344](https://github.com/jannekbuengener/Claire_de_Binare/pull/4344); superseded by live tip `6fcc8afc` on 2026-08-08.
+- **Confirmed main state (historical)**: previously claimed `origin/main` @ `43401302` after Hermes [#4344](https://github.com/jannekbuengener/Claire_de_Binare/pull/4344); later tip `6fcc8afc` superseded by `d0e9b871` on 2026-08-08.
 - **#2513 / #4257 / #4258 / #4289**: historical closed/open claims from 2026-08-06 remain append-only evidence; see prior session logs. LR **NO-GO** unchanged.
 
 > Note: older 2026-08-03 lines that claimed tip `312d12e0` / `abf997d5` / `a4cfb8a8` or `#4289` still open are superseded by later tips.
