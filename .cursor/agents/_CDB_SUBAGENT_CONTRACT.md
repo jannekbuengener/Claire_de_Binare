@@ -270,6 +270,7 @@ Return:
 
 | `readonly` | Agent | May edit files after GO + session-start + LOCK |
 | --- | --- | --- |
+| `true` | `cdb-audit-priority-gatekeeper` | No |
 | `true` | `cdb-code-reviewer` | No |
 | `true` | `cdb-control-orchestrator` | No |
 | `true` | `cdb-governance-gatekeeper` | No |
