@@ -1,0 +1,170 @@
+{
+  "bound_main_sha": "d4f60f9a1cd6f65a73f4827c3ce1e063ff27f187",
+  "checks": {
+    "files_present": true,
+    "q1_binding_equivalence": {
+      "equal": true,
+      "mismatched_keys": [],
+      "n_binding_keys": 11,
+      "stability_campaign_id": "arvp-hh-hl-continuation-4374-prep-v1",
+      "stability_execution_sha": "79b150d452a6bebddc5a8f1b0db39c77ebbfe1c3",
+      "stability_summary_fingerprint": "e5faae11041706e8668252387808f3bd193bdb24c8505d6ba1a7e162413adf28"
+    },
+    "q1_fresh_sha256": {
+      "campaign_envelope": "74add420f8224a40ab88695f759c532be5bbbba28195ca339939553e91a8e4d7",
+      "campaign_summary": "dcd41f4caaabaa560638582f4f759659499d5defd90989be565cd752ae15431c",
+      "envelope_match": true,
+      "expected_envelope": "74add420f8224a40ab88695f759c532be5bbbba28195ca339939553e91a8e4d7",
+      "expected_summary": "dcd41f4caaabaa560638582f4f759659499d5defd90989be565cd752ae15431c",
+      "summary_match": true
+    },
+    "q1_schema": {
+      "equal": true,
+      "expected": "cdb.hh_hl_window_stability.v1",
+      "schema_version": "cdb.hh_hl_window_stability.v1"
+    },
+    "q1_validation": {
+      "evidence_fingerprint": "c0e0e36c2c68014a664cb5c237e6f1d581bc10ec0e7386e5de4b1565bf7798da",
+      "fingerprint_matches_expected": true,
+      "ok": true
+    },
+    "q1b_stability_occurrences": [
+      {
+        "path": "artifacts\\arvp_campaign\\hh_hl_continuation\\4374\\arvp-hh-hl-continuation-4374-prep-v1\\1b1165b8b049099324cfc97c0858919f7f04fab985584cff54ad7161ecfcfc07\\0d8f3b8d88ffdb1dd890923f13d1d5e69e0acb7b0577f119b4b26dbd39c3123f\\window_stability.json",
+        "sha256": "a7a9afd32e31ac8cc300d4bf7b301442a5766532e6a1e9f5b0912df178ffbd99"
+      }
+    ],
+    "q1c_prior_classification_artifacts": [
+      {
+        "classification": "INCONCLUSIVE",
+        "file": "arvp_hh_hl_analyzer_classification_4374_5223567140.json",
+        "reason_code": "ANALYZER_INCONCLUSIVE_WINDOW_STABILITY_ABSENT",
+        "reproduction_pass": true,
+        "window_stability_present": false
+      },
+      {
+        "classification": "REJECTED",
+        "file": "arvp_hh_hl_analyzer_classification_4374_5223963804.json",
+        "reason_code": "ANALYZER_REJECTED_UNIFORM_NEGATIVE_SIGN",
+        "reproduction_pass": true,
+        "window_stability_present": true
+      }
+    ],
+    "q2_new": {
+      "classification": "REJECTED",
+      "reason_code": "ANALYZER_REJECTED_UNIFORM_NEGATIVE_SIGN",
+      "reproduction_pass": true,
+      "window_stability_present": true
+    },
+    "q2_prior": {
+      "classification": "INCONCLUSIVE",
+      "reason_code": "ANALYZER_INCONCLUSIVE_WINDOW_STABILITY_ABSENT",
+      "reproduction_pass": true,
+      "window_stability_present": false
+    },
+    "q2_verdict_transition": {
+      "consistent": true,
+      "new_is_rejected": true,
+      "note": "INCONCLUSIVE was the only admissible verdict while window_stability was absent; REJECTED is the derived verdict once validated stability and the Owner-ratified threshold policy are bound.",
+      "prior_was_inconclusive": true
+    },
+    "q3_39er_facts": {
+      "consistent": true,
+      "facts": {
+        "expectancy_r_max": -0.000745014291717325,
+        "expectancy_r_negative_share": 1.0,
+        "expectancy_r_positive_share": 0.0,
+        "gate_NOT_RANKING_READY": 39,
+        "n_total": 39,
+        "n_traded": 39,
+        "n_zero_trade": 0,
+        "net_pnl_quote_max": -3751.09433417439,
+        "net_pnl_quote_negative_share": 1.0,
+        "net_pnl_quote_positive_share": 0.0
+      }
+    },
+    "q4_no_duplicate_revalidation_file": {
+      "exists_before_this_run": true,
+      "files": [
+        "arvp_hh_hl_revalidation_4374_5223963804.json"
+      ]
+    },
+    "q4_report_comment_status": {
+      "created_at_utc": "2026-08-09T10:39:00Z",
+      "id": 5230582817,
+      "note": "Execute report posted before revalidation; kept, revalidation is follow-up evidence.",
+      "url": "https://github.com/jannekbuengener/Claire_de_Binare/issues/4374#issuecomment-5230582817"
+    },
+    "q5_deterministic_recompute": {
+      "artifact_input_fingerprints": {
+        "analyzer_profile_fingerprint": "b71efebd42f8691c598ea22aa1ca9506f4e151acd7520cd562dcb92e7e75d247",
+        "campaign_summary_fingerprint": "e5faae11041706e8668252387808f3bd193bdb24c8505d6ba1a7e162413adf28",
+        "reproduction_summary_fingerprint": "4687218b9d91a61522aca319e0b42ff7b081693421d69b7bbd4ba578b50a2162",
+        "threshold_policy_fingerprint": "20b2c0a866c0e192d582ab74b7f8201778e0ca370e1a1afc1b4643f24292918b",
+        "window_stability_fingerprint": "c0e0e36c2c68014a664cb5c237e6f1d581bc10ec0e7386e5de4b1565bf7798da"
+      },
+      "matches": true,
+      "no_new_replays": true,
+      "no_reproduction_rerun": true,
+      "policy_fingerprint_verified": "20b2c0a866c0e192d582ab74b7f8201778e0ca370e1a1afc1b4643f24292918b",
+      "policy_matches_ratified": true,
+      "recomputed_classification": "REJECTED",
+      "recomputed_classification_fingerprint": "23e7afcdf87f354953c6d456d589a1bcd7edf496cb0390e4e127040ddb4a2d7d",
+      "recomputed_input_fingerprints": {
+        "analyzer_profile_fingerprint": "b71efebd42f8691c598ea22aa1ca9506f4e151acd7520cd562dcb92e7e75d247",
+        "campaign_summary_fingerprint": "e5faae11041706e8668252387808f3bd193bdb24c8505d6ba1a7e162413adf28",
+        "reproduction_summary_fingerprint": "4687218b9d91a61522aca319e0b42ff7b081693421d69b7bbd4ba578b50a2162",
+        "threshold_policy_fingerprint": "20b2c0a866c0e192d582ab74b7f8201778e0ca370e1a1afc1b4643f24292918b",
+        "window_stability_fingerprint": "c0e0e36c2c68014a664cb5c237e6f1d581bc10ec0e7386e5de4b1565bf7798da"
+      },
+      "recomputed_reason_code": "ANALYZER_REJECTED_UNIFORM_NEGATIVE_SIGN"
+    },
+    "q5_run_keys": {
+      "count": 39,
+      "expected": 39
+    },
+    "q6_no_duplicate_post": {
+      "no_new_report_comment_created": true,
+      "revalidation_posts_nothing": true
+    }
+  },
+  "created_at_utc": "2026-08-09T08:38:19Z",
+  "execute_go_comment_id": 5223963804,
+  "file_sha256": {
+    "campaign_envelope": "74add420f8224a40ab88695f759c532be5bbbba28195ca339939553e91a8e4d7",
+    "campaign_summary": "dcd41f4caaabaa560638582f4f759659499d5defd90989be565cd752ae15431c",
+    "new_classification_5223963804": "d8a8de93f9f683da7bdee753c343fd7715597dff8275349a4d3d760d58cc2b79",
+    "prior_classification_5223567140": "2e7505a7553b13f2a2bafc432b213bb83a9ee17587588454720aa04d889d33a1",
+    "reproduction_execute_summary": "163a767d81e2edef20348e37856e664f3b0b70ef83e29233989b90c4a15fe60e",
+    "reproduction_summary": "163a767d81e2edef20348e37856e664f3b0b70ef83e29233989b90c4a15fe60e",
+    "window_stability": "a7a9afd32e31ac8cc300d4bf7b301442a5766532e6a1e9f5b0912df178ffbd99"
+  },
+  "issue": 4374,
+  "purpose": "Fresh independent revalidation of window_stability + classification verdict. Deterministic and reproducible; bound code d4f60f9a.",
+  "revalidation_fingerprint": "af7df1d121e2ac2c36a5a4b3401f04877a5743e6e5c80f604b062951704b0f5f",
+  "revalidation_id": "arvp_hh_hl_revalidation_4374_5223963804",
+  "run_tree": {
+    "inventory_fingerprint": "298e42f6afb0d6ac0576667e9137ec20ae958b6ed7233ae3c18076040e741e48",
+    "note": "Full SHA256 inventory of runs tree captured in temp working set; immutable.",
+    "run_dirs": 39
+  },
+  "schema_version": "cdb.hh_hl_revalidation.v1",
+  "summary_answers": {
+    "q1_binding_equivalence": true,
+    "q1_identical_stability_elsewhere": true,
+    "q1_validation_ok": true,
+    "q2_new_determination": "REJECTED",
+    "q2_prior_determination": "INCONCLUSIVE",
+    "q2_verdict_transition_consistent": true,
+    "q3_39er_facts_consistent": true,
+    "q4_report_comment_posted": true,
+    "q5_derivation_complete_and_deterministic": true,
+    "q6_no_duplicate_post": true
+  },
+  "threshold_policy_owner_comment_id": 5223949649,
+  "verdict": {
+    "classification": "REJECTED",
+    "derived_exclusively_from_bound_evidence": true,
+    "reason_code": "ANALYZER_REJECTED_UNIFORM_NEGATIVE_SIGN"
+  }
+}
