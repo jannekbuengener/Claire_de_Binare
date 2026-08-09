@@ -10,7 +10,7 @@ synchron gehalten werden.
 **Aenderungen an Skills starten hier.** Surface-Adapter werden daraus gespiegelt
 (`Sync Status: mirrored-from-canon`, Last Verified 2026-07-01, Issue #3639).
 
-## Kanonische Skill-Dateien (32 aktive CDB-Repo-Skills)
+## Kanonische Skill-Dateien (34 aktive CDB-Repo-Skills)
 
 | Skill | Pfad | Surfaces |
 |---|---|---|
