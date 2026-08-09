@@ -113,6 +113,7 @@ jobs:
 
           content=""
           provider_error=""
+          review_response_error=""
           if [ "$reviewer" = "CLAUDE" ]; then
             response=$(curl -sS https://api.anthropic.com/v1/messages \
               -H "x-api-key: $secret_value" \
@@ -149,6 +150,17 @@ jobs:
               content=$(echo "$response" | jq -r '.candidates[0].content.parts[0].text // empty')
               if [ -z "$content" ]; then
                 provider_error="Gemini provider error: HTTP $http_status status=EMPTY_SUCCESS_RESPONSE message=no candidate content"
+              elif [ "$(echo "$response" | jq -r '.candidates[0].finishReason // empty')" != "STOP" ]; then
+                review_response_error="INVALID_OR_INCOMPLETE_REVIEW_RESPONSE: finishReason is not STOP"
+              elif ! echo "$content" | grep -Eq '^AI_REVIEW:[[:space:]]*(PASS|FAIL)$' || \
+                   ! echo "$content" | grep -Eq '^Reviewer:[[:space:]]*GEMINI$' || \
+                   ! echo "$content" | grep -Eq '^Top Issues:$' || \
+                   ! echo "$content" | grep -Eq '^1\. .+$' || \
+                   ! echo "$content" | grep -Eq '^2\. .+$' || \
+                   ! echo "$content" | grep -Eq '^3\. .+$' || \
+                   ! echo "$content" | grep -Eq '^4\. .+$' || \
+                   ! echo "$content" | grep -Eq '^5\. .+$'; then
+                review_response_error="INVALID_OR_INCOMPLETE_REVIEW_RESPONSE: response does not match the required review format"
               fi
             fi
           fi
@@ -162,6 +174,23 @@ jobs:
               "" \
               "### Top Issues" \
               "1. $provider_error" \
+              "2. none" \
+              "3. none" \
+              "4. none" \
+              "5. none")
+            post_or_patch_comment "$comment_body"
+            exit 1
+          fi
+
+          if [ -n "$review_response_error" ]; then
+            comment_body=$(printf '%s\n' \
+              "## 🤖 Jules Review" \
+              "" \
+              "**Reviewer:** $reviewer" \
+              "**AI_REVIEW:** ❌ FAIL" \
+              "" \
+              "### Top Issues" \
+              "1. $review_response_error" \
               "2. none" \
               "3. none" \
               "4. none" \

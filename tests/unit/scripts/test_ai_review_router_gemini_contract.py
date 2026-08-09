@@ -46,6 +46,16 @@ def test_gemini_empty_success_response_is_explicitly_failed() -> None:
     assert "message=no candidate content" in workflow
 
 
+def test_gemini_incomplete_or_schema_invalid_response_is_failed() -> None:
+    workflow = _workflow_text()
+
+    assert ".candidates[0].finishReason" in workflow
+    assert '!= "STOP"' in workflow
+    assert "INVALID_OR_INCOMPLETE_REVIEW_RESPONSE" in workflow
+    assert "^Reviewer:[[:space:]]*GEMINI$" in workflow
+    assert "^5\\. .+$" in workflow
+
+
 def test_gemini_key_is_header_only_and_never_in_the_endpoint() -> None:
     workflow = _workflow_text()
 
