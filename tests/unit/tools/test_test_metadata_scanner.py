@@ -230,8 +230,7 @@ class TestScanFile:
     def test_actual_pilot001_is_export_ready(self):
         result = scan_file(PILOT_METADATA_FILE, repo_root=PROJECT_ROOT)
         assert result["file"] == (
-            "tests/unit/validation/"
-            "test_profitability_evidence_packet_assembler.py"
+            "tests/unit/validation/" "test_profitability_evidence_packet_assembler.py"
         )
         assert len(result["blocks"]) == 1
         assert result["validation_errors"] == []
