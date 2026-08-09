@@ -64,6 +64,12 @@ Invocation: `/cdb-<name>` (e.g. `/cdb-governance-gatekeeper`).
 der Parent einen Branch, Worktree oder PR erzeugt. Er besitzt den PR nicht und
 führt keine Writes aus.
 
+`/cdb-audit-priority-gatekeeper` ist der read-only Prioritäts- und
+Eskalationsberater für bereits untersuchte Audit-Findings. Er erzeugt keine
+Issues, mutiert weder Repo noch GitHub und empfiehlt eine Owner-Unterbrechung
+nur bei `P0_INTERRUPT`. Der Audit Agent bleibt Orchestrator und finale
+Autorität.
+
 Related surfaces (not subagents): `.cursor/skills/` (session skills),
 `.opencode/skills/` (OpenCode), `.claude/skills/` (Claude Code), `.codex/cdb_skills/` (Codex).
 

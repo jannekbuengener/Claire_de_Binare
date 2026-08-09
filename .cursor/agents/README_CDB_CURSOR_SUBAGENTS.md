@@ -40,6 +40,7 @@ Evidence, LOCK, session skills, and output shape live in the shared contract.
 ## Files
 
 - `_CDB_SUBAGENT_CONTRACT.md` — shared governance (mandatory for all subagents)
+- `cdb-audit-priority-gatekeeper.md` — read-only Audit priority / escalation advisor
 - `cdb-ci-debugger.md`
 - `cdb-code-reviewer.md`
 - `cdb-context-intelligence-engineer.md`
