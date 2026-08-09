@@ -26,6 +26,8 @@ def test_gemini_uses_live_confirmed_reviewer_model() -> None:
     assert "gemini-3.1-pro-preview:generateContent" in workflow
     assert "gemini-1.5-pro" not in workflow
     assert "maxOutputTokens:4096" in workflow
+    assert "Reviewer: '\"$reviewer\"$'" in workflow
+    assert "Reviewer: <CLAUDE|CODEX|GEMINI>" not in workflow
 
 
 def test_gemini_provider_errors_are_structured_and_fail_closed() -> None:

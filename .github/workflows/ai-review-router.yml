@@ -107,7 +107,7 @@ jobs:
             exit 1
           fi
 
-          prompt=$'You are an automated governance and correctness reviewer.\n\nReturn EXACTLY this format:\nAI_REVIEW: PASS|FAIL\nReviewer: <CLAUDE|CODEX|GEMINI>\nTop Issues:\n1. <issue or \"none\">\n2. <issue or \"none\">\n3. <issue or \"none\">\n4. <issue or \"none\">\n5. <issue or \"none\">\n\nRules:\n- PASS only if no governance/safety/correctness risks.\n- Be concise and actionable.'
+          prompt=$'You are an automated governance and correctness reviewer.\n\nReturn EXACTLY this format:\nAI_REVIEW: PASS|FAIL\nReviewer: '"$reviewer"$'\nTop Issues:\n1. <issue or \"none\">\n2. <issue or \"none\">\n3. <issue or \"none\">\n4. <issue or \"none\">\n5. <issue or \"none\">\n\nRules:\n- PASS only if no governance/safety/correctness risks.\n- Be concise and actionable.'
 
           prompt="$prompt\n\nPR URL: $pr_url\nAuthor: $author\n\nDiff:\n$diff_snip"
 
