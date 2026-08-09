@@ -1,9 +1,11 @@
 from __future__ import annotations
 
 import importlib.util
+import json
 import subprocess
 import sys
 from pathlib import Path
+from types import SimpleNamespace
 
 import pytest
 
@@ -12,7 +14,9 @@ pytestmark = pytest.mark.unit
 REPO_ROOT = Path(__file__).resolve().parents[3]
 SCANNER_PATH = REPO_ROOT / ".github" / "scripts" / "post_merge_followup_scanner.py"
 
-_SPEC = importlib.util.spec_from_file_location("post_merge_followup_scanner", SCANNER_PATH)
+_SPEC = importlib.util.spec_from_file_location(
+    "post_merge_followup_scanner", SCANNER_PATH
+)
 assert _SPEC is not None and _SPEC.loader is not None
 scanner = importlib.util.module_from_spec(_SPEC)
 sys.modules[_SPEC.name] = scanner
@@ -40,6 +44,8 @@ RATE_LIMIT_HTML_STDERR = """Error: rate limited: <html>
 </html> (retry after 1m0s)"""
 
 RATE_LIMIT_SHORT_STDERR = "Error: rate limited (retry after 30s)"
+MODELS_RETIREMENT_STDERR = """Error: unexpected response from the server: 410 Gone
+{"error":{"code":"github_models_retirement_brownout","message":"GitHub Models is temporarily unavailable as part of a scheduled retirement brownout."}}"""
 
 
 def test_is_gh_models_rate_limit_error_detects_html_rate_limit() -> None:
@@ -68,6 +74,18 @@ def test_is_gh_models_rate_limit_error_returns_false_for_other_errors() -> None:
 def test_is_gh_models_rate_limit_error_returns_false_for_empty() -> None:
     assert not scanner.is_gh_models_rate_limit_error("")
     assert not scanner.is_gh_models_rate_limit_error(None)  # type: ignore[arg-type]
+
+
+def test_is_gh_models_unavailable_error_detects_retirement_brownout() -> None:
+    assert scanner.is_gh_models_unavailable_error(MODELS_RETIREMENT_STDERR)
+
+
+def test_is_gh_models_unavailable_error_detects_410_gone() -> None:
+    assert scanner.is_gh_models_unavailable_error("HTTP 410 Gone")
+
+
+def test_is_gh_models_unavailable_error_rejects_unknown_model_error() -> None:
+    assert not scanner.is_gh_models_unavailable_error("Error: invalid model name")
 
 
 # ---------------------------------------------------------------------------
@@ -99,7 +117,9 @@ def test_parse_retry_after_seconds_fallback() -> None:
 def test_run_models_with_retry_succeeds_on_first_attempt(monkeypatch) -> None:
     def fake_run(*args, **kwargs):
         return subprocess.CompletedProcess(
-            args=[], returncode=0, stdout='{"classification":"report_only","confidence":0.8,"affected_artifacts":["a"],"suggested_next_step":"none"}'
+            args=[],
+            returncode=0,
+            stdout='{"classification":"report_only","confidence":0.8,"affected_artifacts":["a"],"suggested_next_step":"none"}',
         )
 
     monkeypatch.setattr(scanner.subprocess, "run", fake_run)
@@ -118,7 +138,9 @@ def test_run_models_with_retry_succeeds_on_retry(monkeypatch) -> None:
                 args=[], returncode=1, stderr="Error: rate limited (retry after 1s)"
             )
         return subprocess.CompletedProcess(
-            args=[], returncode=0, stdout='{"classification":"follow_up_issue","confidence":0.9,"affected_artifacts":["b"],"suggested_next_step":"create issue"}'
+            args=[],
+            returncode=0,
+            stdout='{"classification":"follow_up_issue","confidence":0.9,"affected_artifacts":["b"],"suggested_next_step":"create issue"}',
         )
 
     monkeypatch.setattr(scanner.subprocess, "run", fake_run)
@@ -129,7 +151,9 @@ def test_run_models_with_retry_succeeds_on_retry(monkeypatch) -> None:
     assert len(attempts) == 2
 
 
-def test_run_models_with_retry_raises_models_rate_limited_after_exhaustion(monkeypatch) -> None:
+def test_run_models_with_retry_raises_models_rate_limited_after_exhaustion(
+    monkeypatch,
+) -> None:
     def fake_run(*args, **kwargs):
         return subprocess.CompletedProcess(
             args=[], returncode=1, stderr="Error: rate limited (retry after 1s)"
@@ -142,7 +166,27 @@ def test_run_models_with_retry_raises_models_rate_limited_after_exhaustion(monke
         scanner.run_models_with_retry(prompt_file, "test input", max_retries=2)
 
 
-def test_run_models_with_retry_non_rate_limit_error_raises_runtime_error(monkeypatch) -> None:
+def test_run_models_with_retry_raises_models_unavailable_without_retry(
+    monkeypatch,
+) -> None:
+    attempts: list[int] = []
+
+    def fake_run(*args, **kwargs):
+        attempts.append(1)
+        return subprocess.CompletedProcess(
+            args=[], returncode=1, stderr=MODELS_RETIREMENT_STDERR
+        )
+
+    monkeypatch.setattr(scanner.subprocess, "run", fake_run)
+    prompt_file = Path("/fake/prompt.yml")
+    with pytest.raises(scanner.ModelsUnavailableError, match="retirement brownout"):
+        scanner.run_models_with_retry(prompt_file, "test input", max_retries=3)
+    assert len(attempts) == 1
+
+
+def test_run_models_with_retry_non_rate_limit_error_raises_runtime_error(
+    monkeypatch,
+) -> None:
     def fake_run(*args, **kwargs):
         return subprocess.CompletedProcess(
             args=[], returncode=1, stderr="Error: invalid model name"
@@ -160,7 +204,11 @@ def test_run_models_with_retry_non_rate_limit_error_raises_runtime_error(monkeyp
 
 
 def test_build_summary_degraded_rate_limited() -> None:
-    pr = {"number": 2782, "title": "test", "url": "https://github.com/test/test/pull/2782"}
+    pr = {
+        "number": 2782,
+        "title": "test",
+        "url": "https://github.com/test/test/pull/2782",
+    }
     result = {
         "repo": "test/test",
         "publish_mode": "dry_run",
@@ -198,7 +246,11 @@ def test_build_summary_degraded_rate_limited() -> None:
 
 
 def test_build_summary_completed_no_degraded_section() -> None:
-    pr = {"number": 2782, "title": "test", "url": "https://github.com/test/test/pull/2782"}
+    pr = {
+        "number": 2782,
+        "title": "test",
+        "url": "https://github.com/test/test/pull/2782",
+    }
     result = {
         "repo": "test/test",
         "publish_mode": "dry_run",
@@ -211,6 +263,174 @@ def test_build_summary_completed_no_degraded_section() -> None:
     summary = scanner.build_summary(result)
     assert "degraded" not in summary.lower()
     assert "No repo-backed follow-up" in summary
+
+
+def test_build_summary_degraded_models_unavailable() -> None:
+    result = {
+        "repo": "test/test",
+        "publish_mode": "dry_run",
+        "pr": {
+            "number": 4413,
+            "title": "test",
+            "url": "https://github.com/test/test/pull/4413",
+        },
+        "status": "degraded_models_unavailable",
+        "degraded_reason": "models_unavailable",
+        "candidate_count": 1,
+        "findings": [
+            {
+                "rule_id": "discovery_surface_drift",
+                "title": "test finding",
+                "classification": {
+                    "classification": "unclear",
+                    "confidence": 0.0,
+                    "affected_artifacts": ["docs/index.md"],
+                    "suggested_next_step": "No model classification available",
+                },
+                "degraded_reason": "models_unavailable",
+            }
+        ],
+        "control_comment": None,
+    }
+
+    summary = scanner.build_summary(result)
+
+    assert "degraded_models_unavailable" in summary
+    assert "GitHub Models Unavailable" in summary
+    assert "HTTP 410" in summary
+    assert "Deterministic forced findings remain active" in summary
+
+
+def _finding(*, forced: bool = False) -> object:
+    return scanner.Finding(
+        fingerprint="forced" if forced else "model",
+        rule_id=(
+            "docker_runtime_rebuild_followup_required"
+            if forced
+            else "discovery_surface_drift"
+        ),
+        title="forced finding" if forced else "model finding",
+        classification_input="repo-backed finding",
+        trigger_files=["services/risk/Dockerfile" if forced else "docs/index.md"],
+        affected_candidates=["services/risk/Dockerfile" if forced else "docs/index.md"],
+        evidence_lines=[],
+        issue_title="Review deterministic follow-up" if forced else "Review drift",
+        labels=["scope:infra" if forced else "scope:docs"],
+        force_follow_up_issue=forced,
+    )
+
+
+def _run_main_with_findings(
+    monkeypatch,
+    tmp_path,
+    findings,
+    *,
+    publish_mode: str,
+    model_error: type[RuntimeError] = scanner.ModelsUnavailableError,
+):
+    result_file = tmp_path / "result.json"
+    summary_file = tmp_path / "summary.md"
+    monkeypatch.setattr(
+        scanner,
+        "parse_args",
+        lambda: SimpleNamespace(
+            repo="test/test",
+            pr_number=4413,
+            prompt_file=Path("prompt.yml"),
+            result_file=result_file,
+            summary_file=summary_file,
+            publish_mode=publish_mode,
+        ),
+    )
+    monkeypatch.setattr(
+        scanner,
+        "gh_repo_json",
+        lambda *_args, **_kwargs: {
+            "number": 4413,
+            "title": "merged PR",
+            "url": "https://github.com/test/test/pull/4413",
+            "mergedAt": "2026-08-08T00:40:59Z",
+            "files": [],
+        },
+    )
+    monkeypatch.setattr(scanner, "run_gh_repo", lambda *_args, **_kwargs: "")
+    monkeypatch.setattr(scanner, "detect_findings", lambda *_args: findings)
+    monkeypatch.setattr(
+        scanner,
+        "run_models_with_retry",
+        lambda *_args, **_kwargs: (_ for _ in ()).throw(
+            model_error("external model failure")
+        ),
+    )
+    return result_file, summary_file
+
+
+def test_main_models_unavailable_writes_degraded_outputs_and_exits_zero(
+    monkeypatch, tmp_path
+) -> None:
+    result_file, summary_file = _run_main_with_findings(
+        monkeypatch, tmp_path, [_finding()], publish_mode="dry_run"
+    )
+
+    assert scanner.main() == 0
+    result = json.loads(result_file.read_text(encoding="utf-8"))
+    assert result["status"] == "degraded_models_unavailable"
+    assert result["degraded_reason"] == "models_unavailable"
+    assert result["findings"][0]["classification"]["classification"] == "unclear"
+    assert result["findings"][0]["classification"]["confidence"] == 0.0
+    assert "publication" not in result["findings"][0]
+    assert "GitHub Models Unavailable" in summary_file.read_text(encoding="utf-8")
+
+
+def test_main_models_unavailable_keeps_forced_publication(
+    monkeypatch, tmp_path
+) -> None:
+    model_finding = _finding()
+    forced_finding = _finding(forced=True)
+    result_file, _ = _run_main_with_findings(
+        monkeypatch,
+        tmp_path,
+        [model_finding, forced_finding],
+        publish_mode="publish",
+    )
+    publications: list[str] = []
+
+    def fake_ensure_issue(**kwargs):
+        publications.append(kwargs["finding"].fingerprint)
+        return {"action": "created", "number": 5000, "url": "https://example/5000"}
+
+    monkeypatch.setattr(scanner, "ensure_issue", fake_ensure_issue)
+
+    assert scanner.main() == 0
+    result = json.loads(result_file.read_text(encoding="utf-8"))
+    by_fingerprint = {item["fingerprint"]: item for item in result["findings"]}
+    assert publications == ["forced"]
+    assert "publication" not in by_fingerprint["model"]
+    assert by_fingerprint["model"]["degraded_reason"] == "models_unavailable"
+    assert (
+        by_fingerprint["forced"]["classification"]["classification"]
+        == "follow_up_issue"
+    )
+    assert by_fingerprint["forced"]["publication"]["action"] == "created"
+
+
+def test_main_rate_limit_path_remains_degraded_and_exits_zero(
+    monkeypatch, tmp_path
+) -> None:
+    result_file, summary_file = _run_main_with_findings(
+        monkeypatch,
+        tmp_path,
+        [_finding()],
+        publish_mode="dry_run",
+        model_error=scanner.ModelsRateLimitedError,
+    )
+
+    assert scanner.main() == 0
+    result = json.loads(result_file.read_text(encoding="utf-8"))
+    assert result["status"] == "degraded_rate_limited"
+    assert result["degraded_reason"] == "rate_limited"
+    assert result["findings"][0]["degraded_reason"] == "rate_limited"
+    assert "Rate Limited" in summary_file.read_text(encoding="utf-8")
 
 
 def _make_pr(number: int, title: str, *paths: str) -> dict[str, object]:
@@ -338,7 +558,11 @@ diff --git a/infrastructure/compose/compose.blue.yml b/infrastructure/compose/co
 
 def _architecture_finding(findings: list[object]):
     return next(
-        (finding for finding in findings if finding.rule_id == "architecture_service_catalog_drift"),
+        (
+            finding
+            for finding in findings
+            if finding.rule_id == "architecture_service_catalog_drift"
+        ),
         None,
     )
 
@@ -358,7 +582,9 @@ def _architecture_finding(findings: list[object]):
         ["services/README.md", "services/validation/README.md", "core/README.md"],
     ],
 )
-def test_readme_only_under_services_or_core_no_architecture_drift(paths: list[str]) -> None:
+def test_readme_only_under_services_or_core_no_architecture_drift(
+    paths: list[str],
+) -> None:
     pr = _make_pr(4011, "docs: readme navigation", *paths)
     findings = scanner.detect_findings(pr, "")
     assert "architecture_service_catalog_drift" not in _rule_ids(findings)
@@ -546,7 +772,10 @@ diff --git a/services/README.md b/services/README.md
 
 
 def test_normalize_repo_path_preserves_dot_github_prefix() -> None:
-    assert scanner.normalize_repo_path(".github/workflows/ci.yml") == ".github/workflows/ci.yml"
+    assert (
+        scanner.normalize_repo_path(".github/workflows/ci.yml")
+        == ".github/workflows/ci.yml"
+    )
     assert scanner.normalize_repo_path("./services/README.md") == "services/README.md"
     assert scanner.normalize_repo_path("services\\README.md") == "services/README.md"
 
