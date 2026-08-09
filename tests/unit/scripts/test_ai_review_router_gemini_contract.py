@@ -54,6 +54,7 @@ def test_gemini_incomplete_or_schema_invalid_response_is_failed() -> None:
     assert '!= "STOP"' in workflow
     assert "INVALID_OR_INCOMPLETE_REVIEW_RESPONSE" in workflow
     assert "finishReason=$finish_reason" in workflow
+    assert "tr -d '\\r\\n'" in workflow
     assert "^Reviewer:[[:space:]]*GEMINI$" in workflow
     assert "REVIEWER_MISMATCH" in workflow
     assert "MISSING_AI_REVIEW_LINE" in workflow

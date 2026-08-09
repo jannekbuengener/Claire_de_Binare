@@ -151,7 +151,7 @@ jobs:
               if [ -z "$content" ]; then
                 provider_error="Gemini provider error: HTTP $http_status status=EMPTY_SUCCESS_RESPONSE message=no candidate content"
               else
-                finish_reason=$(echo "$response" | jq -r '.candidates[0].finishReason // "missing"' | tr '\r\n' ' ' | cut -c1-80)
+                finish_reason=$(echo "$response" | jq -r '.candidates[0].finishReason // "missing"' | tr -d '\r\n' | cut -c1-80)
                 if [ "$finish_reason" != "STOP" ]; then
                   review_response_error="INVALID_OR_INCOMPLETE_REVIEW_RESPONSE: finishReason=$finish_reason"
                 elif ! echo "$content" | grep -Eq '^AI_REVIEW:[[:space:]]*(PASS|FAIL)$'; then
