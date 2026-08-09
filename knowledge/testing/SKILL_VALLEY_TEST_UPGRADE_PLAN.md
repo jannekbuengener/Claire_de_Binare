@@ -57,11 +57,11 @@ Der Plan definiert 8 neue/erweiterte Skill-Regeln. Jede Regel sagt: Was muss ein
 
 ### R3: Test-Metadaten schreiben (neu)
 
-**Erklärung:** Jeder wichtige Test trägt 15 Metadaten-Felder im Docstring. Die Felder sind im Processing Contract (§3) definiert. Agenten müssen sie vollständig und korrekt ausfüllen.
+**Erklärung:** Jeder wichtige Test trägt 15 Metadaten-Felder im Docstring. Die Felder sind im Processing Contract (§4) definiert. Agenten müssen sie vollständig und korrekt ausfüllen.
 
 **Wann Agenten sie anwenden:** Beim Schreiben jedes Tests, der nicht reine Hilfsfunktionen prüft.
 
-**Beispiel:** Siehe Beispiel in `TEST_FIRST_PROCESSING_CONTRACT.md` §6. Der YAML-Block am Anfang jeder Test-Datei.
+**Beispiel:** Siehe Beispiel in `TEST_FIRST_PROCESSING_CONTRACT.md` §7. Der YAML-Block am Anfang jeder Test-Datei.
 
 **Betroffener CDB-Bereich:** Alle.
 

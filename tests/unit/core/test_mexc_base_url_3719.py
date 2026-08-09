@@ -12,7 +12,7 @@ Zielaussagen (task #3719):
 3. Mainnet spot REST/WS defaults remain correct.
 4. Unsupported spot-testnet is handled fail-closed.
 
-Test-First metadata (knowledge/testing/TEST_FIRST_PROCESSING_CONTRACT.md §3):
+Test-First metadata (knowledge/testing/TEST_FIRST_PROCESSING_CONTRACT.md §4):
     test_id: tc_mexc_base_url_3719
     test_name: mexc_spot_base_url_and_testnet_semantics
     test_type: schutz

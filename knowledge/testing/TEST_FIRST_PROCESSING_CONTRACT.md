@@ -197,7 +197,7 @@ Oder später als strukturierter JSON/YAML-Block, den ein CI-Scanner automatisch 
 
 Die 15 Testarten, die CDB unterscheidet. Jeder Test gehört zu genau einer Art. Die Art bestimmt, welche Metadaten besonders wichtig sind.
 
-### 4.1 Bauteil-Test
+### 5.1 Bauteil-Test
 
 **Was ist das?** Testet eine einzelne Funktion oder Klasse isoliert. Kein Netzwerk, keine Datenbank, keine anderen Services. Die schnellste und billigste Testart.
 
@@ -209,7 +209,7 @@ Die 15 Testarten, die CDB unterscheidet. Jeder Test gehört zu genau einer Art. 
 
 **Welche erste Mini-Übung passt?** Teste `compute_max_drawdown()` mit der Liste `[0%, -5%, -15%, -3%]` und erwarte `-15%`.
 
-### 4.2 Ketten-Test
+### 5.2 Ketten-Test
 
 **Was ist das?** Testet mehrere Services oder Module zusammen. Prüft, ob Signale, Risk und Execution als Kette funktionieren. Läuft gegen gemockte Abhängigkeiten.
 
@@ -221,7 +221,7 @@ Die 15 Testarten, die CDB unterscheidet. Jeder Test gehört zu genau einer Art. 
 
 **Welche erste Mini-Übung passt?** Signal erzeugt Order → Risk genehmigt → Execution führt aus. Prüfe, ob die Order am Ende den Status FILLED hat.
 
-### 4.3 Schutz-Test
+### 5.3 Schutz-Test
 
 **Was ist das?** Testet Sicherheitsgrenzen: Kill-Switch, Exposure-Limits, Circuit Breaker, Fail-Closed-Verhalten.
 
@@ -233,7 +233,7 @@ Die 15 Testarten, die CDB unterscheidet. Jeder Test gehört zu genau einer Art. 
 
 **Welche erste Mini-Übung passt?** Setze Kill-Switch auf aktiv → sende eine Order → prüfe, dass sie mit REJECTED endet und nie den Executor erreicht.
 
-### 4.4 Wirtschafts-Test
+### 5.4 Wirtschafts-Test
 
 **Was ist das?** Testet Geld-Flüsse: Fees, Slippage, Gewinn/Verlust, Reservierungen, Kontostand.
 
@@ -245,7 +245,7 @@ Die 15 Testarten, die CDB unterscheidet. Jeder Test gehört zu genau einer Art. 
 
 **Welche erste Mini-Übung passt?** Brutto-PnL - Fees = Netto-PnL. Prüfe mit drei Beispiel-Orders, dass die Rechnung aufgeht.
 
-### 4.5 Betriebs-Test
+### 5.5 Betriebs-Test
 
 **Was ist das?** Testet Betriebs-Robustheit: Neustart, Recovery, Langlauf, Chaos (Dienst fällt aus, Netzwerk weg).
 
@@ -257,7 +257,7 @@ Die 15 Testarten, die CDB unterscheidet. Jeder Test gehört zu genau einer Art. 
 
 **Welche erste Mini-Übung passt?** Starte Paper-Runner, sende Order, stoppe Service, starte neu → prüfe, dass keine Order doppelt ausgeführt wurde.
 
-### 4.6 Wissens-Test
+### 5.6 Wissens-Test
 
 **Was ist das?** Testet, ob Dokumentation und Code übereinstimmen. Prüft, ob alle Services dokumentiert sind, ob Contracts aktuell sind, ob Metadaten stimmen.
 
@@ -269,7 +269,7 @@ Die 15 Testarten, die CDB unterscheidet. Jeder Test gehört zu genau einer Art. 
 
 **Welche erste Mini-Übung passt?** SERVICE_CATALOG.md auflisten → prüfe, dass jeder gelistete Service auch ein README hat.
 
-### 4.7 Property-based Testing
+### 5.7 Property-based Testing
 
 **Was ist das?** Formuliert eine Invariante (eine Regel, die immer gelten muss) und testet sie mit vielen zufälligen Eingaben. Nicht "gib 5 und erwarte 10", sondern "für jede Eingabe gilt: das Ergebnis ist immer positiv".
 
@@ -281,7 +281,7 @@ Die 15 Testarten, die CDB unterscheidet. Jeder Test gehört zu genau einer Art. 
 
 **Welche erste Mini-Übung passt?** Invariante: Jeder Order-Durchlauf endet genau einmal in FILLED, REJECTED, FAILED oder CANCELLED. Kein anderer Status. Keine doppelten Terminal-States.
 
-### 4.8 Fuzzing
+### 5.8 Fuzzing
 
 **Was ist das?** Schickt zufällige, kaputte, extreme Daten an eine Funktion und prüft, ob sie abstürzt oder falsch reagiert.
 
@@ -293,7 +293,7 @@ Die 15 Testarten, die CDB unterscheidet. Jeder Test gehört zu genau einer Art. 
 
 **Welche erste Mini-Übung passt?** Fuzze `parse_ticker()` mit Binärdaten, leeren Strings, 10 MB JSON, negativen Preisen, NaN-Werten.
 
-### 4.9 Mutation Testing
+### 5.9 Mutation Testing
 
 **Was ist das?** Ändert absichtlich den Code (z.B. `>` zu `<`, `and` zu `or`) und prüft, ob der Test anschlägt. Wenn der Test trotz Mutation grün bleibt, taugt er nichts.
 
@@ -305,7 +305,7 @@ Die 15 Testarten, die CDB unterscheidet. Jeder Test gehört zu genau einer Art. 
 
 **Welche erste Mini-Übung passt?** Nimm einen existierenden Schutz-Test, mutiere `>` zu `>=` im Code → der Test MUSS fehlschlagen.
 
-### 4.10 Metamorphic Testing
+### 5.10 Metamorphic Testing
 
 **Was ist das?** Testet Beziehungen zwischen Eingabe und Ausgabe. Wenn Eingabe A zu Ergebnis B führt, muss eine transformierte Eingabe A' zu einem vorhersagbaren Ergebnis B' führen. Z.B.: doppelte Menge → doppelter Preis.
 
@@ -317,7 +317,7 @@ Die 15 Testarten, die CDB unterscheidet. Jeder Test gehört zu genau einer Art. 
 
 **Welche erste Mini-Übung passt?** Wenn Order-Größe verdoppelt → Fee verdoppelt. Wenn Order-Größe halbiert → Fee halbiert.
 
-### 4.11 API-Fuzzing
+### 5.11 API-Fuzzing
 
 **Was ist das?** Schickt kaputte API-Requests und prüft, ob der Service fail-closed reagiert (ablehnen, nicht abstürzen).
 
@@ -329,7 +329,7 @@ Die 15 Testarten, die CDB unterscheidet. Jeder Test gehört zu genau einer Art. 
 
 **Welche erste Mini-Übung passt?** Schicke `{"price": "INFINITY", "quantity": -1}` an den Risk-Endpunkt → Risk lehnt ab und stürzt nicht ab.
 
-### 4.12 Security-Test
+### 5.12 Security-Test
 
 **Was ist das?** Testet explizit auf Sicherheitslücken: Auth-Lücken, Secrets im Log, Injection, fehlende Berechtigungsprüfungen.
 
@@ -341,7 +341,7 @@ Die 15 Testarten, die CDB unterscheidet. Jeder Test gehört zu genau einer Art. 
 
 **Welche erste Mini-Übung passt?** Erstelle einen Agenten mit "nur lesen"-Berechtigung → versuche, zu schreiben → prüfe, dass der Schreibversuch blockiert wird.
 
-### 4.13 Supply-Chain-Test
+### 5.13 Supply-Chain-Test
 
 **Was ist das?** Testet die Abhängigkeiten des Projekts: Sind alle Libraries auf einem gepinnten Stand? Gibt es bekannte Sicherheitslücken (CVEs)? Sind die Lizenzen kompatibel?
 
@@ -353,7 +353,7 @@ Die 15 Testarten, die CDB unterscheidet. Jeder Test gehört zu genau einer Art. 
 
 **Welche erste Mini-Übung passt?** Neue Library hinzugefügt → prüfe, ob sie bekannte CVEs hat und ob die Lizenz mit BSL 1.1 / Apache 2.0 kompatibel ist.
 
-### 4.14 Datenbank-Test
+### 5.14 Datenbank-Test
 
 **Was ist das?** Testet Datenbank-Migrationen, Queries, Schema-Konsistenz, Daten-Integrität. Läuft gegen eine lokale/embedded DB.
 
@@ -365,7 +365,7 @@ Die 15 Testarten, die CDB unterscheidet. Jeder Test gehört zu genau einer Art. 
 
 **Welche erste Mini-Übung passt?** Migration hochfahren → Daten schreiben → Migration zurückrollen → Migration erneut hochfahren → prüfe, dass die Daten noch da sind.
 
-### 4.15 Agenten-Wissens-Test
+### 5.15 Agenten-Wissens-Test
 
 **Was ist das?** Testet, ob ein Agent eine CDB-Regel korrekt anwendet. Kein Code-Test, sondern ein Prompt-Test. Man gibt dem Agenten eine Frage und prüft, ob die Antwort den CDB-Regeln entspricht.
 

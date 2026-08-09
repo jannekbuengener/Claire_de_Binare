@@ -2,7 +2,7 @@
 Canonical Skill Source: docs/skills/cdb-session-start/SKILL.md
 Surface: codex
 Sync Status: mirrored-from-canon
-Last Verified: 2026-08-08
+Last Verified: 2026-08-09
 Drift Policy: Surface-Adapter duerfen nur mit dokumentierter Begruendung abweichen.
 -->
 ---
@@ -103,7 +103,7 @@ Establish a verified, fail-closed starting state before any repo work begins.
 
    - Load the `cdb-test-first` skill.
    - Answer the five test-first questions from
-     `knowledge/testing/TEST_FIRST_PROCESSING_CONTRACT.md` §2:
+      `knowledge/testing/TEST_FIRST_PROCESSING_CONTRACT.md` §3:
      * Welche Regel wird geschützt?
      * Welche Testart passt?
      * Welche Entscheidung wird sicherer?

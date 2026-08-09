@@ -106,7 +106,7 @@ Before writing a test, answer these five questions:
 | **Welche Metadaten braucht der Test?** | test_id, test_type, cdb_area, rule_ref, decision_ref, issue_ref, pr_ref, evidence_ref, security_relevant, live_relevant, profitability_relevant |
 | **Wie wird das Ergebnis weiterverarbeitet?** | PASS -> SurrealDB-Record + Evidence, FAIL -> Issue |
 
-Canon: `knowledge/testing/TEST_FIRST_PROCESSING_CONTRACT.md` §2
+Canon: `knowledge/testing/TEST_FIRST_PROCESSING_CONTRACT.md` §3
 
 ---
 
@@ -133,7 +133,7 @@ geprüften Regel:
 | 14 | **Datenbank-Test** | Migrationen, Queries, Schema | Neue Migration, Schema-Änderung |
 | 15 | **Agenten-Wissens-Test** | Agenten-Kenntnis von CDB-Regeln | Neue Policy, STOP-Zone, Governance-Dokument |
 
-Canon: `knowledge/testing/TEST_FIRST_PROCESSING_CONTRACT.md` §4
+Canon: `knowledge/testing/TEST_FIRST_PROCESSING_CONTRACT.md` §5
 
 ---
 
@@ -160,7 +160,7 @@ YAML-Block:
 | `surrealdb_export` | bool | `true` |
 | `ci_artifact` | bool | `false` |
 
-Canon: `knowledge/testing/TEST_FIRST_PROCESSING_CONTRACT.md` §3
+Canon: `knowledge/testing/TEST_FIRST_PROCESSING_CONTRACT.md` §4
 
 ---
 
@@ -180,7 +180,7 @@ Tests sind Wissensbausteine. Agenten planen Tests mit diesen Beziehungen:
 
 Das Feld `surrealdb_export: true` markiert Tests für den späteren Export.
 
-Canon: `knowledge/testing/TEST_FIRST_PROCESSING_CONTRACT.md` §5
+Canon: `knowledge/testing/TEST_FIRST_PROCESSING_CONTRACT.md` §6
 
 ---
 

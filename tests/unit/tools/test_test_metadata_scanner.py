@@ -36,7 +36,7 @@ VALID_BLOCK = """\
 # Test-First Metadata (Pilot: CDB-PILOT-001)
 # ===========================================================================
 #
-# Metadata fields (TEST_FIRST_PROCESSING_CONTRACT.md §6):
+# Metadata fields (TEST_FIRST_PROCESSING_CONTRACT.md §7):
 #   test_id:              cdb-test-pilot-001
 #   test_title:           Profitability Evidence Packet Assembler
 #   test_type:            mixed
