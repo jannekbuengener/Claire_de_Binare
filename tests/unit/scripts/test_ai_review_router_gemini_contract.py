@@ -26,6 +26,8 @@ def test_gemini_uses_live_confirmed_reviewer_model() -> None:
     assert "gemini-3.1-pro-preview:generateContent" in workflow
     assert "gemini-1.5-pro" not in workflow
     assert "maxOutputTokens:4096" in workflow
+    assert 'thinkingConfig:{thinkingLevel:"low"}' in workflow
+    assert "generationConfig:{temperature:0.2,maxOutputTokens:4096}" not in workflow
     assert "Reviewer: '\"$reviewer\"$'" in workflow
     assert "Reviewer: <CLAUDE|CODEX|GEMINI>" not in workflow
 

@@ -134,7 +134,7 @@ jobs:
               "https://generativelanguage.googleapis.com/v1beta/models/gemini-3.1-pro-preview:generateContent" \
               -H "x-goog-api-key: $secret_value" \
               -H "Content-Type: application/json" \
-              -d "$(jq -n --arg prompt "$prompt" '{contents:[{parts:[{text:$prompt}]}],generationConfig:{temperature:0.2,maxOutputTokens:4096}}')") || curl_exit=$?
+              -d "$(jq -n --arg prompt "$prompt" '{contents:[{parts:[{text:$prompt}]}],generationConfig:{maxOutputTokens:4096,thinkingConfig:{thinkingLevel:"low"}}}')") || curl_exit=$?
             response=$(cat "$response_file")
             rm -f "$response_file"
 
