@@ -112,6 +112,7 @@ jobs:
           prompt="$prompt\n\nPR URL: $pr_url\nAuthor: $author\n\nDiff:\n$diff_snip"
 
           content=""
+          provider_error=""
           if [ "$reviewer" = "CLAUDE" ]; then
             response=$(curl -sS https://api.anthropic.com/v1/messages \
               -H "x-api-key: $secret_value" \
@@ -126,10 +127,47 @@ jobs:
               -d "$(jq -n --arg prompt "$prompt" '{model:"gpt-4o-mini",messages:[{role:"user",content:$prompt}],temperature:0.2,max_tokens:800}')")
             content=$(echo "$response" | jq -r '.choices[0].message.content // empty')
           else
-            response=$(curl -sS "https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-pro:generateContent?key=$secret_value" \
+            response_file=$(mktemp)
+            curl_exit=0
+            http_status=$(curl -sS -o "$response_file" -w '%{http_code}' \
+              "https://generativelanguage.googleapis.com/v1beta/models/gemini-3.1-pro-preview:generateContent" \
+              -H "x-goog-api-key: $secret_value" \
               -H "Content-Type: application/json" \
-              -d "$(jq -n --arg prompt "$prompt" '{contents:[{parts:[{text:$prompt}]}],generationConfig:{temperature:0.2,maxOutputTokens:800}}')")
-            content=$(echo "$response" | jq -r '.candidates[0].content.parts[0].text // empty')
+              -d "$(jq -n --arg prompt "$prompt" '{contents:[{parts:[{text:$prompt}]}],generationConfig:{temperature:0.2,maxOutputTokens:800}}')") || curl_exit=$?
+            response=$(cat "$response_file")
+            rm -f "$response_file"
+
+            if [ "$curl_exit" -ne 0 ]; then
+              provider_error="Gemini provider error: HTTP ${http_status:-000} status=TRANSPORT_ERROR message=transport request failed"
+            elif [ "$http_status" -lt 200 ] || [ "$http_status" -ge 300 ]; then
+              error_code=$(echo "$response" | jq -r '.error.code // "unknown"')
+              error_status=$(echo "$response" | jq -r '.error.status // "UNKNOWN"')
+              error_message=$(echo "$response" | jq -r '.error.message // "no provider message"' | tr '\r\n' ' ' | cut -c1-500)
+              error_message=${error_message//$secret_value/[REDACTED]}
+              provider_error="Gemini provider error: HTTP $http_status code=$error_code status=$error_status message=$error_message"
+            else
+              content=$(echo "$response" | jq -r '.candidates[0].content.parts[0].text // empty')
+              if [ -z "$content" ]; then
+                provider_error="Gemini provider error: HTTP $http_status status=EMPTY_SUCCESS_RESPONSE message=no candidate content"
+              fi
+            fi
+          fi
+
+          if [ -n "$provider_error" ]; then
+            comment_body=$(printf '%s\n' \
+              "## 🤖 Jules Review" \
+              "" \
+              "**Reviewer:** $reviewer" \
+              "**AI_REVIEW:** ❌ FAIL" \
+              "" \
+              "### Top Issues" \
+              "1. $provider_error" \
+              "2. none" \
+              "3. none" \
+              "4. none" \
+              "5. none")
+            post_or_patch_comment "$comment_body"
+            exit 1
           fi
 
           if [ -z "$content" ]; then
