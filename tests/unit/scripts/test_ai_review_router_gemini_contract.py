@@ -52,6 +52,7 @@ def test_gemini_incomplete_or_schema_invalid_response_is_failed() -> None:
     assert ".candidates[0].finishReason" in workflow
     assert '!= "STOP"' in workflow
     assert "INVALID_OR_INCOMPLETE_REVIEW_RESPONSE" in workflow
+    assert "finishReason=$finish_reason" in workflow
     assert "^Reviewer:[[:space:]]*GEMINI$" in workflow
     assert "^5\\. .+$" in workflow
 
