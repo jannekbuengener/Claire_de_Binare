@@ -2,7 +2,7 @@
 Canonical Skill Source: docs/skills/cdb-test-first/SKILL.md
 Surface: cursor
 Sync Status: mirrored-from-canon
-Last Verified: 2026-07-30
+Last Verified: 2026-08-09
 Drift Policy: Surface-Adapter duerfen nur mit dokumentierter Begruendung abweichen.
 -->
 ---
@@ -23,6 +23,74 @@ Every CDB test is a **knowledge building block**, not just a code checker.
 Before writing any test, clarify what it protects, what type fits, which
 decision it strengthens, how it is structured, and how its result becomes
 machine-usable knowledge later.
+
+---
+
+## Verbindlicher Implementierungsvertrag
+
+Für jede wesentliche Implementierung gilt ohne Phasenübersprung:
+
+```text
+DOCS -> TESTS -> TEST FREEZE -> IMPLEMENTATION -> CHECKS
+```
+
+Der kanonische Vertrag ist
+`knowledge/testing/TEST_FIRST_PROCESSING_CONTRACT.md` §2. Dieser Skill wendet
+ihn zusätzlich zu den bestehenden Testarten, Metadaten und Wissensregeln an.
+
+### PHASE 1: DOCS_GATE
+
+Vor Produktivcode muss kanonische Doku das gewünschte Verhalten ausreichend
+bestimmen: akzeptierter Contract, Feature-/System-Spec, Issue-Acceptance
+Criteria, Policy, API-/Schema-Vertrag oder andere explizit kanonische
+Repo-Doku.
+
+Fehlt diese Doku, widerspricht sie sich oder bleiben Acceptance Criteria
+unklar, gilt `IMPLEMENTATION_BLOCKED_DOCUMENTATION_REQUIRED`. Kein
+Produktivcode darf beginnen.
+
+### PHASE 2: TEST_GATE
+
+Aus der feststehenden Doku werden vor Produktivcode die relevanten Tests
+geschrieben. Sie prüfen gewünschtes Verhalten, wichtige Fehlerfälle,
+geschützte Regeln und betroffene Contracts gegen die Anforderung, nicht gegen
+die aktuelle Implementierung. Neue Tests dürfen vor der Implementierung rot
+sein; bereits unterstütztes Verhalten darf grün sein.
+
+Fehlen erforderliche Tests, gilt `IMPLEMENTATION_BLOCKED_TESTS_REQUIRED`.
+
+### PHASE 3: TEST_FREEZE
+
+Sobald Produktivimplementierung beginnt, sind die zuvor festgelegten Tests
+eingefroren. Nicht erlaubt sind Assertion-Abschwächung, Sollwert-Anpassung an
+fehlerhaften Code, Test-Löschung, Skip, `xfail`, manipulierte Testdaten,
+reduzierte Acceptance Criteria, entfernte Grenzfälle oder eine Neuinterpretation
+nur zum Grünwerden.
+
+### PHASE 4: IMPLEMENTATION_GATE
+
+Nach dem Freeze gilt: `FROZEN TEST ROT -> CODE PRUEFEN UND KORRIGIEREN`.
+Prüfreihenfolge ist neue Implementierung, direkt betroffener bestehender
+Produktivcode und danach ihre Integration. Erst dann darf eine Vertrags- oder
+Testinkonsistenz untersucht werden.
+
+Wenn Test und kanonische Doku nachweisbar widersprechen, die Doku sich selbst
+widerspricht, der Test technisch Unmögliches fordert oder Acceptance Criteria
+nachweisbar falsch sind, gilt
+`IMPLEMENTATION_BLOCKED_CONTRACT_OR_TEST_CONFLICT`. Der Agent meldet Test,
+Doku, Widerspruch und empfohlene Änderung, ändert aber keinen Frozen-Test und
+keinen Canon ohne explizite Freigabe.
+
+### PHASE 5: CHECKS_GATE
+
+Nach der Implementierung folgen neue Fokus-Tests, relevante Regressionstests
+und vorgeschriebene Repo-Checks. Nur ein vollständig grüner Lauf ergibt
+`IMPLEMENTATION_GREEN`; ein roter Frozen-Test ergibt
+`IMPLEMENTATION_FAILED_CODE_NEEDS_FIX` und führt zurück zur Implementierung.
+
+**Brandherd-Regel:** Vor der Implementierung sind Doku und Tests fest. Während
+der Implementierung ist Produktivcode die primäre bewegliche Variable. Bewege
+nicht gleichzeitig Doku, Test und Code, nur um einen roten Test zu beseitigen.
 
 ---
 
