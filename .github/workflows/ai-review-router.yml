@@ -154,15 +154,19 @@ jobs:
                 finish_reason=$(echo "$response" | jq -r '.candidates[0].finishReason // "missing"' | tr '\r\n' ' ' | cut -c1-80)
                 if [ "$finish_reason" != "STOP" ]; then
                   review_response_error="INVALID_OR_INCOMPLETE_REVIEW_RESPONSE: finishReason=$finish_reason"
-                elif ! echo "$content" | grep -Eq '^AI_REVIEW:[[:space:]]*(PASS|FAIL)$' || \
-                     ! echo "$content" | grep -Eq '^Reviewer:[[:space:]]*GEMINI$' || \
-                     ! echo "$content" | grep -Eq '^Top Issues:$' || \
-                     ! echo "$content" | grep -Eq '^1\. .+$' || \
-                     ! echo "$content" | grep -Eq '^2\. .+$' || \
-                     ! echo "$content" | grep -Eq '^3\. .+$' || \
-                     ! echo "$content" | grep -Eq '^4\. .+$' || \
-                     ! echo "$content" | grep -Eq '^5\. .+$'; then
-                  review_response_error="INVALID_OR_INCOMPLETE_REVIEW_RESPONSE: response does not match the required review format"
+                elif ! echo "$content" | grep -Eq '^AI_REVIEW:[[:space:]]*(PASS|FAIL)$'; then
+                  review_response_error="INVALID_OR_INCOMPLETE_REVIEW_RESPONSE: MISSING_AI_REVIEW_LINE"
+                elif ! echo "$content" | grep -Eq '^Reviewer:[[:space:]]*GEMINI$'; then
+                  review_response_error="INVALID_OR_INCOMPLETE_REVIEW_RESPONSE: REVIEWER_MISMATCH"
+                elif ! echo "$content" | grep -Eq '^Top Issues:$'; then
+                  review_response_error="INVALID_OR_INCOMPLETE_REVIEW_RESPONSE: INVALID_TOP_ISSUES_HEADER"
+                else
+                  for issue_number in 1 2 3 4 5; do
+                    if ! echo "$content" | grep -Eq "^${issue_number}\\. .+$"; then
+                      review_response_error="INVALID_OR_INCOMPLETE_REVIEW_RESPONSE: MISSING_ISSUE_${issue_number}"
+                      break
+                    fi
+                  done
                 fi
               fi
             fi

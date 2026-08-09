@@ -55,7 +55,10 @@ def test_gemini_incomplete_or_schema_invalid_response_is_failed() -> None:
     assert "INVALID_OR_INCOMPLETE_REVIEW_RESPONSE" in workflow
     assert "finishReason=$finish_reason" in workflow
     assert "^Reviewer:[[:space:]]*GEMINI$" in workflow
-    assert "^5\\. .+$" in workflow
+    assert "REVIEWER_MISMATCH" in workflow
+    assert "MISSING_AI_REVIEW_LINE" in workflow
+    assert "INVALID_TOP_ISSUES_HEADER" in workflow
+    assert "MISSING_ISSUE_${issue_number}" in workflow
 
 
 def test_gemini_key_is_header_only_and_never_in_the_endpoint() -> None:
