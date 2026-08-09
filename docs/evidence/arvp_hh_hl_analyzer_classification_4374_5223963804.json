@@ -1,0 +1,37 @@
+{
+  "analyzer_profile_fingerprint": "b71efebd42f8691c598ea22aa1ca9506f4e151acd7520cd562dcb92e7e75d247",
+  "analyzer_profile_id": "hh_hl_analyzer_prep_v1",
+  "auto_promotion": false,
+  "classification": "REJECTED",
+  "classification_fingerprint": "23e7afcdf87f354953c6d456d589a1bcd7edf496cb0390e4e127040ddb4a2d7d",
+  "classifier_code_version": "hh_hl_durable_classifier.v1",
+  "fired_rules": [
+    "uniform_negative_sign_reject_v1"
+  ],
+  "forbidden_statements": [
+    "promoted",
+    "paper ready",
+    "live ready",
+    "pnl_only_ranking",
+    "production ready",
+    "4153_21_19_matrix"
+  ],
+  "input_fingerprints": {
+    "analyzer_profile_fingerprint": "b71efebd42f8691c598ea22aa1ca9506f4e151acd7520cd562dcb92e7e75d247",
+    "campaign_summary_fingerprint": "e5faae11041706e8668252387808f3bd193bdb24c8505d6ba1a7e162413adf28",
+    "reproduction_summary_fingerprint": "4687218b9d91a61522aca319e0b42ff7b081693421d69b7bbd4ba578b50a2162",
+    "threshold_policy_fingerprint": "20b2c0a866c0e192d582ab74b7f8201778e0ca370e1a1afc1b4643f24292918b",
+    "window_stability_fingerprint": "c0e0e36c2c68014a664cb5c237e6f1d581bc10ec0e7386e5de4b1565bf7798da"
+  },
+  "note": "Owner-ratified REJECTED rule fired on descriptive stability.",
+  "pnl_only_ranking_forbidden": true,
+  "policy_fingerprint": "20b2c0a866c0e192d582ab74b7f8201778e0ca370e1a1afc1b4643f24292918b",
+  "policy_id": "uniform_negative_sign_reject_v1",
+  "policy_status": "OWNER_RATIFIED",
+  "policy_version": "uniform_negative_sign_reject_v1",
+  "promising_means": "only research follow-up, no promotion",
+  "reason_code": "ANALYZER_REJECTED_UNIFORM_NEGATIVE_SIGN",
+  "reproduction_pass": true,
+  "schema_version": "cdb.hh_hl_analyzer_classification.v1",
+  "window_stability_present": true
+}
