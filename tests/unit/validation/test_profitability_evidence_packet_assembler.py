@@ -59,7 +59,7 @@ CONTRACTS_DIR = PROJECT_ROOT / "docs" / "contracts"
 #    spaetere SurrealDB-Nutzung freigegeben
 #    (surrealdb_export: true im Pilot). Kein DB-Write in diesem Slice.
 #
-# Metadata fields (TEST_FIRST_PROCESSING_CONTRACT.md §6):
+# Metadata fields (TEST_FIRST_PROCESSING_CONTRACT.md §7):
 #   test_id:              cdb-test-pilot-001
 #   test_title:           Profitability Evidence Packet Assembler
 #   test_type:            mixed (Bauteil / Schutz / Ketten; siehe Gruppe)

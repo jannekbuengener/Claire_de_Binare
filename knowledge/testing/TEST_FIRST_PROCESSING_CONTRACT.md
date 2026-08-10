@@ -10,7 +10,9 @@ Date: 2026-06-23
 
 CDB hat viele Tests, aber sie produzieren wenig Wissen. Ein Test sagt "PASS" oder "FAIL" – aber er sagt nicht: Welche Regel habe ich geprüft? Welche Entscheidung mache ich sicherer? Zu welchem Issue gehöre ich? Das ist verschwendete Arbeit: der Test läuft, aber das Wissen verdampft.
 
-Test-First bedeutet hier nicht "schreib den Test vor dem Code". Es bedeutet: **Bevor du einen Test schreibst, weißt du, was er über sich selbst aussagen wird.**
+Test-First bedeutet: **Die kanonische Doku bestimmt zuerst die Tests; die
+Tests stehen vor Produktivcode und bleiben ab Implementierungsbeginn fest.**
+Die Test-Metadaten ergänzen diesen Ablauf als Wissensmodell.
 
 **Warum Tests als Wissen behandelt werden**
 
@@ -40,7 +42,84 @@ Diese Beziehungen sind das Wissen. Ohne SurrealDB müsste man sie in fünf versc
 
 ---
 
-## 2. Grundregel
+## 2. Verbindlicher Implementierungsvertrag
+
+Für jede wesentliche Implementierungsarbeit ist diese Reihenfolge verbindlich:
+
+```text
+DOCS -> TESTS -> TEST FREEZE -> IMPLEMENTATION -> CHECKS
+```
+
+Keine Phase darf übersprungen werden. `docs/skills/cdb-test-first/SKILL.md`
+ist die Skill-Anwendung dieses kanonischen Contracts und erzeugt keine zweite
+konkurrierende Policy.
+
+### PHASE 1: DOCS_GATE
+
+Vor Produktivcode muss kanonische Doku das gewünschte Verhalten ausreichend
+bestimmen. Zulässige Grundlagen sind ein akzeptierter Contract, eine
+Feature-/System-Spec, Issue-Acceptance-Criteria, eine Policy, ein API- oder
+Schema-Vertrag oder andere explizit kanonische Repo-Doku.
+
+Fehlt die Grundlage, widerspricht sie sich oder bleiben Acceptance Criteria
+unklar, ist der Status `IMPLEMENTATION_BLOCKED_DOCUMENTATION_REQUIRED`. Es
+beginnt kein Produktivcode.
+
+### PHASE 2: TEST_GATE
+
+Aus der feststehenden Doku werden vor Produktivcode die relevanten Tests
+geschrieben. Sie prüfen gewünschtes Verhalten, wichtige Fehlerfälle,
+geschützte Regeln und relevante Contracts gegen die Anforderung, nicht gegen
+die aktuelle Implementierung. Neue Tests dürfen zunächst rot sein; bereits
+korrekt unterstütztes Verhalten darf grün sein.
+
+Fehlen erforderliche Tests, ist der Status
+`IMPLEMENTATION_BLOCKED_TESTS_REQUIRED`.
+
+### PHASE 3: TEST_FREEZE
+
+Sobald die Produktivimplementierung beginnt, sind die vorher festgelegten
+Tests eingefroren. Verboten sind Assertion-Abschwächung, Sollwert-Anpassung an
+fehlerhaften Code, Test-Löschung, Skip, `xfail`, manipulierte Testdaten,
+reduzierte Acceptance Criteria, entfernte Grenzfälle oder eine
+Neuinterpretation nur zum Grünwerden.
+
+### PHASE 4: IMPLEMENTATION_GATE
+
+Nach dem Freeze gilt standardmäßig:
+
+```text
+FROZEN TEST ROT -> CODE PRUEFEN UND KORRIGIEREN
+```
+
+Prüfreihenfolge: neue Implementierung, direkt betroffener bestehender
+Produktivcode, Integration zwischen beiden, erst danach mögliche Vertrags- oder
+Testinkonsistenz. Bei einem roten Frozen-Test ist der Status
+`IMPLEMENTATION_FAILED_CODE_NEEDS_FIX`.
+
+Wenn ein Test der kanonischen Doku widerspricht, die Doku sich selbst
+widerspricht, der Test technisch Unmögliches fordert oder Acceptance Criteria
+nachweisbar falsch sind, ist der Status
+`IMPLEMENTATION_BLOCKED_CONTRACT_OR_TEST_CONFLICT`. Der Agent meldet den
+betroffenen Test, die betroffene Doku, den konkreten Widerspruch und eine
+empfohlene Änderung. Ohne explizite Freigabe ändert er weder Frozen-Test noch
+Canon.
+
+### PHASE 5: CHECKS_GATE
+
+Nach der Implementierung laufen neue Fokus-Tests, relevante Regressionstests
+und die vorgeschriebenen Repo-Checks. Nur vollständig grüne Ergebnisse sind
+`IMPLEMENTATION_GREEN`; rote Frozen-Tests führen zurück zur
+IMPLEMENTATION_GATE.
+
+**Brandherd-Regel:** Vor Implementierung sind Doku und Tests fest. Während der
+Implementierung ist Produktivcode die primäre bewegliche Variable. Doku, Test
+und Code werden nicht gleichzeitig bewegt, nur um einen roten Test zu
+beseitigen.
+
+---
+
+## 3. Grundregel
 
 Jeder größere CDB-Slice beginnt nicht mit Code, sondern mit der Beantwortung dieser fünf Fragen:
 
@@ -56,7 +135,7 @@ Ein Slice ist ein abgeschlossener Arbeitspaket: ein Issue, ein PR, eine Feature-
 
 ---
 
-## 3. Test-Metadaten-Vertrag
+## 4. Test-Metadaten-Vertrag
 
 Jeder wichtige CDB-Test trägt ab heute ein Pflichtfeld-Set. Wichtige Tests sind alle Tests, die nicht reine Hilfsfunktionen prüfen (z.B. Tests für Risk-Regeln, Execution-States, Signal-Logik, Data-Contracts, Evidence-Bildung, Agenten-Wissen).
 
@@ -66,7 +145,7 @@ Jeder wichtige CDB-Test trägt ab heute ein Pflichtfeld-Set. Wichtige Tests sind
 |---|---|---|---|
 | `test_id` | string | Eindeutige ID des Tests | `tc_drawdown_stop_001` |
 | `test_name` | string | Menschenlesbarer Name | `max_drawdown_stops_execution` |
-| `test_type` | string | Eine der 15 Testarten aus §4 | `schutz` |
+| `test_type` | string | Eine der 15 Testarten aus §5 | `schutz` |
 | `cdb_area` | string | Betroffener CDB-Bereich | `risk` |
 | `rule_ref` | string | Geprüfte Regel/Invariante | `INV-011` |
 | `decision_ref` | string | Sicherer gemachte Entscheidung | `Kill-Switch stoppt Execution` |
@@ -114,11 +193,11 @@ Oder später als strukturierter JSON/YAML-Block, den ein CI-Scanner automatisch 
 
 ---
 
-## 4. Testarten-Atlas
+## 5. Testarten-Atlas
 
 Die 15 Testarten, die CDB unterscheidet. Jeder Test gehört zu genau einer Art. Die Art bestimmt, welche Metadaten besonders wichtig sind.
 
-### 4.1 Bauteil-Test
+### 5.1 Bauteil-Test
 
 **Was ist das?** Testet eine einzelne Funktion oder Klasse isoliert. Kein Netzwerk, keine Datenbank, keine anderen Services. Die schnellste und billigste Testart.
 
@@ -130,7 +209,7 @@ Die 15 Testarten, die CDB unterscheidet. Jeder Test gehört zu genau einer Art. 
 
 **Welche erste Mini-Übung passt?** Teste `compute_max_drawdown()` mit der Liste `[0%, -5%, -15%, -3%]` und erwarte `-15%`.
 
-### 4.2 Ketten-Test
+### 5.2 Ketten-Test
 
 **Was ist das?** Testet mehrere Services oder Module zusammen. Prüft, ob Signale, Risk und Execution als Kette funktionieren. Läuft gegen gemockte Abhängigkeiten.
 
@@ -142,7 +221,7 @@ Die 15 Testarten, die CDB unterscheidet. Jeder Test gehört zu genau einer Art. 
 
 **Welche erste Mini-Übung passt?** Signal erzeugt Order → Risk genehmigt → Execution führt aus. Prüfe, ob die Order am Ende den Status FILLED hat.
 
-### 4.3 Schutz-Test
+### 5.3 Schutz-Test
 
 **Was ist das?** Testet Sicherheitsgrenzen: Kill-Switch, Exposure-Limits, Circuit Breaker, Fail-Closed-Verhalten.
 
@@ -154,7 +233,7 @@ Die 15 Testarten, die CDB unterscheidet. Jeder Test gehört zu genau einer Art. 
 
 **Welche erste Mini-Übung passt?** Setze Kill-Switch auf aktiv → sende eine Order → prüfe, dass sie mit REJECTED endet und nie den Executor erreicht.
 
-### 4.4 Wirtschafts-Test
+### 5.4 Wirtschafts-Test
 
 **Was ist das?** Testet Geld-Flüsse: Fees, Slippage, Gewinn/Verlust, Reservierungen, Kontostand.
 
@@ -166,7 +245,7 @@ Die 15 Testarten, die CDB unterscheidet. Jeder Test gehört zu genau einer Art. 
 
 **Welche erste Mini-Übung passt?** Brutto-PnL - Fees = Netto-PnL. Prüfe mit drei Beispiel-Orders, dass die Rechnung aufgeht.
 
-### 4.5 Betriebs-Test
+### 5.5 Betriebs-Test
 
 **Was ist das?** Testet Betriebs-Robustheit: Neustart, Recovery, Langlauf, Chaos (Dienst fällt aus, Netzwerk weg).
 
@@ -178,7 +257,7 @@ Die 15 Testarten, die CDB unterscheidet. Jeder Test gehört zu genau einer Art. 
 
 **Welche erste Mini-Übung passt?** Starte Paper-Runner, sende Order, stoppe Service, starte neu → prüfe, dass keine Order doppelt ausgeführt wurde.
 
-### 4.6 Wissens-Test
+### 5.6 Wissens-Test
 
 **Was ist das?** Testet, ob Dokumentation und Code übereinstimmen. Prüft, ob alle Services dokumentiert sind, ob Contracts aktuell sind, ob Metadaten stimmen.
 
@@ -190,7 +269,7 @@ Die 15 Testarten, die CDB unterscheidet. Jeder Test gehört zu genau einer Art. 
 
 **Welche erste Mini-Übung passt?** SERVICE_CATALOG.md auflisten → prüfe, dass jeder gelistete Service auch ein README hat.
 
-### 4.7 Property-based Testing
+### 5.7 Property-based Testing
 
 **Was ist das?** Formuliert eine Invariante (eine Regel, die immer gelten muss) und testet sie mit vielen zufälligen Eingaben. Nicht "gib 5 und erwarte 10", sondern "für jede Eingabe gilt: das Ergebnis ist immer positiv".
 
@@ -202,7 +281,7 @@ Die 15 Testarten, die CDB unterscheidet. Jeder Test gehört zu genau einer Art. 
 
 **Welche erste Mini-Übung passt?** Invariante: Jeder Order-Durchlauf endet genau einmal in FILLED, REJECTED, FAILED oder CANCELLED. Kein anderer Status. Keine doppelten Terminal-States.
 
-### 4.8 Fuzzing
+### 5.8 Fuzzing
 
 **Was ist das?** Schickt zufällige, kaputte, extreme Daten an eine Funktion und prüft, ob sie abstürzt oder falsch reagiert.
 
@@ -214,7 +293,7 @@ Die 15 Testarten, die CDB unterscheidet. Jeder Test gehört zu genau einer Art. 
 
 **Welche erste Mini-Übung passt?** Fuzze `parse_ticker()` mit Binärdaten, leeren Strings, 10 MB JSON, negativen Preisen, NaN-Werten.
 
-### 4.9 Mutation Testing
+### 5.9 Mutation Testing
 
 **Was ist das?** Ändert absichtlich den Code (z.B. `>` zu `<`, `and` zu `or`) und prüft, ob der Test anschlägt. Wenn der Test trotz Mutation grün bleibt, taugt er nichts.
 
@@ -226,7 +305,7 @@ Die 15 Testarten, die CDB unterscheidet. Jeder Test gehört zu genau einer Art. 
 
 **Welche erste Mini-Übung passt?** Nimm einen existierenden Schutz-Test, mutiere `>` zu `>=` im Code → der Test MUSS fehlschlagen.
 
-### 4.10 Metamorphic Testing
+### 5.10 Metamorphic Testing
 
 **Was ist das?** Testet Beziehungen zwischen Eingabe und Ausgabe. Wenn Eingabe A zu Ergebnis B führt, muss eine transformierte Eingabe A' zu einem vorhersagbaren Ergebnis B' führen. Z.B.: doppelte Menge → doppelter Preis.
 
@@ -238,7 +317,7 @@ Die 15 Testarten, die CDB unterscheidet. Jeder Test gehört zu genau einer Art. 
 
 **Welche erste Mini-Übung passt?** Wenn Order-Größe verdoppelt → Fee verdoppelt. Wenn Order-Größe halbiert → Fee halbiert.
 
-### 4.11 API-Fuzzing
+### 5.11 API-Fuzzing
 
 **Was ist das?** Schickt kaputte API-Requests und prüft, ob der Service fail-closed reagiert (ablehnen, nicht abstürzen).
 
@@ -250,7 +329,7 @@ Die 15 Testarten, die CDB unterscheidet. Jeder Test gehört zu genau einer Art. 
 
 **Welche erste Mini-Übung passt?** Schicke `{"price": "INFINITY", "quantity": -1}` an den Risk-Endpunkt → Risk lehnt ab und stürzt nicht ab.
 
-### 4.12 Security-Test
+### 5.12 Security-Test
 
 **Was ist das?** Testet explizit auf Sicherheitslücken: Auth-Lücken, Secrets im Log, Injection, fehlende Berechtigungsprüfungen.
 
@@ -262,7 +341,7 @@ Die 15 Testarten, die CDB unterscheidet. Jeder Test gehört zu genau einer Art. 
 
 **Welche erste Mini-Übung passt?** Erstelle einen Agenten mit "nur lesen"-Berechtigung → versuche, zu schreiben → prüfe, dass der Schreibversuch blockiert wird.
 
-### 4.13 Supply-Chain-Test
+### 5.13 Supply-Chain-Test
 
 **Was ist das?** Testet die Abhängigkeiten des Projekts: Sind alle Libraries auf einem gepinnten Stand? Gibt es bekannte Sicherheitslücken (CVEs)? Sind die Lizenzen kompatibel?
 
@@ -274,7 +353,7 @@ Die 15 Testarten, die CDB unterscheidet. Jeder Test gehört zu genau einer Art. 
 
 **Welche erste Mini-Übung passt?** Neue Library hinzugefügt → prüfe, ob sie bekannte CVEs hat und ob die Lizenz mit BSL 1.1 / Apache 2.0 kompatibel ist.
 
-### 4.14 Datenbank-Test
+### 5.14 Datenbank-Test
 
 **Was ist das?** Testet Datenbank-Migrationen, Queries, Schema-Konsistenz, Daten-Integrität. Läuft gegen eine lokale/embedded DB.
 
@@ -286,7 +365,7 @@ Die 15 Testarten, die CDB unterscheidet. Jeder Test gehört zu genau einer Art. 
 
 **Welche erste Mini-Übung passt?** Migration hochfahren → Daten schreiben → Migration zurückrollen → Migration erneut hochfahren → prüfe, dass die Daten noch da sind.
 
-### 4.15 Agenten-Wissens-Test
+### 5.15 Agenten-Wissens-Test
 
 **Was ist das?** Testet, ob ein Agent eine CDB-Regel korrekt anwendet. Kein Code-Test, sondern ein Prompt-Test. Man gibt dem Agenten eine Frage und prüft, ob die Antwort den CDB-Regeln entspricht.
 
@@ -300,7 +379,7 @@ Die 15 Testarten, die CDB unterscheidet. Jeder Test gehört zu genau einer Art. 
 
 ---
 
-## 5. SurrealDB-Weiterverarbeitung
+## 6. SurrealDB-Weiterverarbeitung
 
 ### Welche Testdaten später nach SurrealDB gehen
 
@@ -352,7 +431,7 @@ Weil das die Fragen beantwortet, die CDB wirklich interessieren:
 
 ---
 
-## 6. Beispiel: Ein Test als Wissensbaustein
+## 7. Beispiel: Ein Test als Wissensbaustein
 
 ### Der Test (vereinfacht)
 

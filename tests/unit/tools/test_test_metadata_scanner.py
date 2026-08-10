@@ -36,7 +36,7 @@ VALID_BLOCK = """\
 # Test-First Metadata (Pilot: CDB-PILOT-001)
 # ===========================================================================
 #
-# Metadata fields (TEST_FIRST_PROCESSING_CONTRACT.md §6):
+# Metadata fields (TEST_FIRST_PROCESSING_CONTRACT.md §7):
 #   test_id:              cdb-test-pilot-001
 #   test_title:           Profitability Evidence Packet Assembler
 #   test_type:            mixed
@@ -230,8 +230,7 @@ class TestScanFile:
     def test_actual_pilot001_is_export_ready(self):
         result = scan_file(PILOT_METADATA_FILE, repo_root=PROJECT_ROOT)
         assert result["file"] == (
-            "tests/unit/validation/"
-            "test_profitability_evidence_packet_assembler.py"
+            "tests/unit/validation/" "test_profitability_evidence_packet_assembler.py"
         )
         assert len(result["blocks"]) == 1
         assert result["validation_errors"] == []
