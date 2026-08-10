@@ -79,3 +79,13 @@ def test_missing_secret_and_review_verdict_paths_remain_fail_closed() -> None:
     assert "missing secret $secret_name" in workflow
     assert 'if [ "$verdict" = "PASS" ]; then' in workflow
     assert 'verdict="FAIL"' in workflow
+
+def test_gemini_transport_and_non_json_errors_are_handled_without_jq_abort() -> None:
+    workflow = _workflow_text()
+
+    assert "if http_status=\$(curl" in workflow
+    assert "curl_exit=\$?" in workflow
+    assert "if error_fields=\$(printf '%s' \"\$response\" | jq -r" in workflow
+    assert 'error_status="NON_JSON"' in workflow
+    assert "no provider message" in workflow
+
