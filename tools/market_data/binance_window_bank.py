@@ -41,6 +41,7 @@ from tools.market_data.historical_common import (
     utc_now_iso,
     write_json,
 )
+from tools.market_data.market_data_storage_guard import resolve_market_data_path
 from tools.market_data.assign_regime_offline import regime_distribution
 
 WINDOW_BANK_SCHEMA = "binance_window_bank.v1"
@@ -51,6 +52,11 @@ OVERLAP_CLASSES = frozenset(
     {"monthly", "quarterly", "yearly", "stress", "smoke", "pilot"}
 )
 PURPOSES = frozenset({"development", "validation", "out_of_sample", "stress"})
+
+
+def _market_data_root(repo_root: Path) -> Path:
+    """Resolve the window-bank corpus root, including explicit bulk opt-in."""
+    return resolve_market_data_path(repo_root)
 
 
 @dataclass(frozen=True, slots=True)
@@ -72,9 +78,7 @@ class WindowSpec:
 
 def load_import_manifest(repo_root: Path = IMPORT_REPO) -> dict[str, Any]:
     path = (
-        repo_root
-        / "artifacts"
-        / "market_data"
+        _market_data_root(repo_root)
         / "manifests"
         / "binance_btcusdt_1m_full_import.json"
     )
@@ -96,9 +100,7 @@ def resolve_build_months(repo_root: Path = IMPORT_REPO) -> list[str]:
     manifest = load_import_manifest(repo_root)
     by_month = {str(entry["month"]): entry for entry in manifest.get("months") or []}
     enriched_base = (
-        repo_root
-        / "artifacts"
-        / "market_data"
+        _market_data_root(repo_root)
         / "enriched"
         / "binance"
         / "spot"
@@ -464,9 +466,7 @@ def _write_window_dataset(
     candles: list[dict[str, Any]],
 ) -> Path:
     window_dir = (
-        repo_root
-        / "artifacts"
-        / "market_data"
+        _market_data_root(repo_root)
         / "window_bank"
         / "binance"
         / "spot"
@@ -1056,9 +1056,7 @@ def rebuild_stress_windows_v2(
         raise HistoricalProbeError("No STRICT_COMPLETE months in import manifest")
 
     bank_manifest_path = (
-        repo_root
-        / "artifacts"
-        / "market_data"
+        _market_data_root(repo_root)
         / "window_bank"
         / "binance"
         / "spot"

@@ -63,6 +63,19 @@ def test_build_window_bank_requires_manifest(tmp_path: Path) -> None:
 
 
 @pytest.mark.unit
+def test_load_import_manifest_uses_explicit_bulk_root(
+    monkeypatch: pytest.MonkeyPatch, tmp_path: Path
+) -> None:
+    bulk_root = tmp_path / "bulk" / "market-history"
+    manifest_path = bulk_root / "manifests" / "binance_btcusdt_1m_full_import.json"
+    manifest_path.parent.mkdir(parents=True)
+    manifest_path.write_text('{"months": []}', encoding="utf-8")
+    monkeypatch.setattr(wb, "resolve_market_data_path", lambda _repo_root: bulk_root)
+
+    assert wb.load_import_manifest(tmp_path) == {"months": []}
+
+
+@pytest.mark.unit
 def test_enforce_contiguous_cadence_stops_at_gap() -> None:
     candles = [
         {"ts_ms": 0},
