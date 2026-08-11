@@ -76,6 +76,18 @@ def test_load_import_manifest_uses_explicit_bulk_root(
 
 
 @pytest.mark.unit
+def test_window_bank_root_uses_explicit_bulk_market_data_root(
+    monkeypatch: pytest.MonkeyPatch, tmp_path: Path
+) -> None:
+    bulk_root = tmp_path / "bulk" / "market-history"
+    monkeypatch.setattr(wb, "resolve_market_data_path", lambda _repo_root: bulk_root)
+
+    assert wb._window_bank_root(tmp_path) == (
+        bulk_root / "window_bank" / "binance" / "spot" / "BTCUSDT" / "1m"
+    )
+
+
+@pytest.mark.unit
 def test_enforce_contiguous_cadence_stops_at_gap() -> None:
     candles = [
         {"ts_ms": 0},
