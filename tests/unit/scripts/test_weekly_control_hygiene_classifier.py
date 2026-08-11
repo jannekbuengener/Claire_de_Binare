@@ -223,8 +223,20 @@ def test_different_branches_produce_different_fingerprints(monkeypatch):
             return []
         if args[:4] == ["pr", "list", "--state", "closed"]:
             return [
-                {"number": 9001, "headRefName": "feat/branch-a", "url": "https://example/pr/9001", "mergedAt": "2026-04-10T00:00:00Z", "closedAt": "2026-04-10T00:00:00Z"},
-                {"number": 9002, "headRefName": "feat/branch-b", "url": "https://example/pr/9002", "mergedAt": "2026-04-10T00:00:00Z", "closedAt": "2026-04-10T00:00:00Z"},
+                {
+                    "number": 9001,
+                    "headRefName": "feat/branch-a",
+                    "url": "https://example/pr/9001",
+                    "mergedAt": "2026-04-10T00:00:00Z",
+                    "closedAt": "2026-04-10T00:00:00Z",
+                },
+                {
+                    "number": 9002,
+                    "headRefName": "feat/branch-b",
+                    "url": "https://example/pr/9002",
+                    "mergedAt": "2026-04-10T00:00:00Z",
+                    "closedAt": "2026-04-10T00:00:00Z",
+                },
             ]
         raise AssertionError(f"Unexpected gh_json call: {args}")
 
