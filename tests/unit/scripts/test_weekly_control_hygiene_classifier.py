@@ -144,3 +144,99 @@ def test_cleanup_state_counts():
     ]
     counts = mod.cleanup_state_counts(candidates)
     assert counts == {"cleanup_ready": 1, "report_only": 1, "unclear": 1}
+
+
+def test_branch_cleanup_ready_fingerprint_stable_across_behind_by_changes(monkeypatch):
+    """Same branch with different behind_by values must produce identical fingerprint."""
+    mod = _load_module()
+
+    def make_fake_api(behind_by: int):
+        def fake_api(args, input_text=None):  # noqa: ARG001
+            endpoint = args[0]
+            if endpoint.startswith("repos/test/repo/branches"):
+                return [
+                    {"name": "main", "protected": True},
+                    {"name": "feat/stable-branch", "protected": False},
+                ]
+            if endpoint.startswith("repos/test/repo/compare/"):
+                return {"ahead_by": 0, "behind_by": behind_by, "status": "behind"}
+            raise AssertionError(f"Unexpected API call: {args}")
+
+        return fake_api
+
+    def fake_gh(repo, args):  # noqa: ARG001
+        if args[:4] == ["pr", "list", "--state", "open"]:
+            return []
+        if args[:4] == ["pr", "list", "--state", "closed"]:
+            return [
+                {
+                    "number": 9001,
+                    "headRefName": "feat/stable-branch",
+                    "url": "https://example/pr/9001",
+                    "mergedAt": "2026-04-10T00:00:00Z",
+                    "closedAt": "2026-04-10T00:00:00Z",
+                }
+            ]
+        raise AssertionError(f"Unexpected gh_json call: {args}")
+
+    # First run with behind_by=5
+    monkeypatch.setattr(mod, "gh_api_json", make_fake_api(5))
+    monkeypatch.setattr(mod, "gh_json", fake_gh)
+    candidates_1 = mod.branch_obsolescence_candidates("test/repo", open_issues=[])
+    assert len(candidates_1) == 1
+    fp_1 = candidates_1[0].fingerprint
+
+    # Second run with behind_by=50 (simulating main advancing)
+    monkeypatch.setattr(mod, "gh_api_json", make_fake_api(50))
+    monkeypatch.setattr(mod, "gh_json", fake_gh)
+    candidates_2 = mod.branch_obsolescence_candidates("test/repo", open_issues=[])
+    assert len(candidates_2) == 1
+    fp_2 = candidates_2[0].fingerprint
+
+    # Fingerprints must be identical for dedupe to work
+    assert fp_1 == fp_2, f"Fingerprint drifted: {fp_1} vs {fp_2}"
+
+    # The fingerprint should be based only on branch name
+    expected_fp = mod.make_fingerprint("branch_cleanup_ready:feat/stable-branch")
+    assert fp_1 == expected_fp
+    assert fp_2 == expected_fp
+
+
+def test_different_branches_produce_different_fingerprints(monkeypatch):
+    """Different branch names must produce different fingerprints."""
+    mod = _load_module()
+
+    def fake_api(args, input_text=None):  # noqa: ARG001
+        endpoint = args[0]
+        if endpoint.startswith("repos/test/repo/branches"):
+            return [
+                {"name": "main", "protected": True},
+                {"name": "feat/branch-a", "protected": False},
+                {"name": "feat/branch-b", "protected": False},
+            ]
+        if endpoint.startswith("repos/test/repo/compare/"):
+            return {"ahead_by": 0, "behind_by": 10, "status": "behind"}
+        raise AssertionError(f"Unexpected API call: {args}")
+
+    def fake_gh(repo, args):  # noqa: ARG001
+        if args[:4] == ["pr", "list", "--state", "open"]:
+            return []
+        if args[:4] == ["pr", "list", "--state", "closed"]:
+            return [
+                {"number": 9001, "headRefName": "feat/branch-a", "url": "https://example/pr/9001", "mergedAt": "2026-04-10T00:00:00Z", "closedAt": "2026-04-10T00:00:00Z"},
+                {"number": 9002, "headRefName": "feat/branch-b", "url": "https://example/pr/9002", "mergedAt": "2026-04-10T00:00:00Z", "closedAt": "2026-04-10T00:00:00Z"},
+            ]
+        raise AssertionError(f"Unexpected gh_json call: {args}")
+
+    monkeypatch.setattr(mod, "gh_api_json", fake_api)
+    monkeypatch.setattr(mod, "gh_json", fake_gh)
+
+    candidates = mod.branch_obsolescence_candidates("test/repo", open_issues=[])
+    assert len(candidates) == 2
+
+    fp_a = candidates[0].fingerprint
+    fp_b = candidates[1].fingerprint
+
+    assert fp_a != fp_b, "Different branches must have different fingerprints"
+    assert fp_a == mod.make_fingerprint("branch_cleanup_ready:feat/branch-a")
+    assert fp_b == mod.make_fingerprint("branch_cleanup_ready:feat/branch-b")

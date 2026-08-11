@@ -287,9 +287,7 @@ def branch_obsolescence_candidates(
             )
             continue
 
-        fingerprint = make_fingerprint(
-            f"branch_cleanup_ready:{branch_name}:{status}:{ahead_by}:{behind_by}"
-        )
+        fingerprint = make_fingerprint(f"branch_cleanup_ready:{branch_name}")
         findings.append(
             Candidate(
                 rule_id="branch_obsolescence",
