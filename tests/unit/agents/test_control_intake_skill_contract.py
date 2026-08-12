@@ -2,7 +2,6 @@ from __future__ import annotations
 
 from pathlib import Path
 
-
 SKILL = Path(__file__).parents[3] / "docs/skills/cdb-control-intake/SKILL.md"
 
 
