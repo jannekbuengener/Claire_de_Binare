@@ -11,6 +11,7 @@ from tools.market_data.market_data_storage_guard import (
     StorageGuardResult,
     VolumeInfo,
     enforce_market_data_storage,
+    resolve_market_data_path,
     validate_market_data_storage,
 )
 
@@ -78,6 +79,44 @@ def test_storage_guard_external_fixed_drive_fails(tmp_path: Path) -> None:
     )
     assert result.allowed is False
     assert result.reason_code == "DIFFERENT_VOLUME"
+
+
+@pytest.mark.unit
+def test_storage_guard_allows_only_configured_bulk_market_history(
+    monkeypatch: pytest.MonkeyPatch, tmp_path: Path
+) -> None:
+    repo = tmp_path / "repo"
+    (repo / "artifacts" / "market_data").mkdir(parents=True)
+    bulk_market_history = tmp_path / "bulk" / "market-history"
+    bulk_market_history.mkdir(parents=True)
+    probe = FakeVolumeProbe(
+        repo_volume=_vol(letter="D", unique_id="serial:AAA"),
+        target_volume=_vol(letter="Y", unique_id="serial:BBB", label="CDB-Storage"),
+    )
+    monkeypatch.setattr(
+        "tools.market_data.market_data_storage_guard.resolve_bulk_storage_path",
+        lambda _subtree, environ=None: bulk_market_history,
+    )
+    result = validate_market_data_storage(
+        repo_root=repo,
+        required_write_bytes=1_000,
+        environ={"CDB_BULK_STORAGE_ROOT": "Y:\\CDB-Storage"},
+        volume_probe=probe,
+    )
+    assert result.allowed is True
+    assert result.reason_code == "PASS"
+    assert result.details["storage_mode"] == "bulk"
+
+
+@pytest.mark.unit
+def test_resolve_market_data_path_uses_repo_path_without_bulk_opt_in(
+    tmp_path: Path,
+) -> None:
+    repo = tmp_path / "repo"
+    assert (
+        resolve_market_data_path(repo, environ={})
+        == (repo / "artifacts" / "market_data").resolve()
+    )
 
 
 @pytest.mark.unit
