@@ -14,6 +14,7 @@ Nicht exhaustiv; diese Seite zeigt die Canon-Pointer.
 | `POSTGRES_SSLMODE` | `prefer` | Postgres-DSN / SSL-Verbindung | [`core/utils/postgres_client.py`](../../core/utils/postgres_client.py) |
 | `SECRETS_PATH` | lokal: `~/Documents/.secrets/.cdb`, CI: `${{ github.workspace }}/.ci-secrets` | Compose, Bootstrap, E2E/Soak | BLUE+RED compose (`compose.blue.yml` / `compose.red.yml`), [`infrastructure/scripts/bootstrap_local.sh`](../../infrastructure/scripts/bootstrap_local.sh), [tests/fixtures/README.md](../../tests/fixtures/README.md) |
 | `CDB_EXTERNAL_TESTS` | off | Opt-in fuer externe Integrations-Tests | [`tests/integration/test_mexc_testnet.py`](../../tests/integration/test_mexc_testnet.py) |
+| `CDB_BULK_STORAGE_ROOT` | unset (opt-in) | spaetere Bulk-Storage-Consumer | [`cdb_bulk_storage_path_contract.md`](../runbooks/cdb_bulk_storage_path_contract.md) |
 | `surrealdb_enabled` / `governance_source` | `false` / `git` | SurrealDB-Mirror und Governance-Read-Quelle | [`infrastructure/config/surrealdb/feature-flags.yaml`](../../infrastructure/config/surrealdb/feature-flags.yaml), [docs/surrealdb/rollback-cutover-plan.md](../surrealdb/rollback-cutover-plan.md) |
 
 `MOCK_EXECUTION_MODE`, `SIMULATOR_ORDER_BOOK_DEPTH` und `SIMULATOR_VOLATILITY`

@@ -34,6 +34,7 @@ from core.utils.evidence_class import (
     evidence_class_warning_banner,
     validate_evidence_class,
 )
+from tools.storage.replay_arvp_storage import resolve_replay_arvp_consumer_path
 
 _READONLY_DSN_ENV = "POSTGRES_READONLY_PASSWORD_DSN"
 _EXPECTED_READONLY_LOGIN = "cdb_readonly"
@@ -45,6 +46,16 @@ SELECT
   has_table_privilege(current_user, 'public.correlation_ledger', 'UPDATE'),
   has_table_privilege(current_user, 'public.correlation_ledger', 'DELETE')
 """
+
+
+def _default_output_path() -> str:
+    """Resolve the opt-in #4421 external payload path without E: fallback."""
+    return str(
+        resolve_replay_arvp_consumer_path(
+            Path.cwd(),
+            "artifacts/paper_reference_windows/paper_reference_window.json",
+        )
+    )
 
 
 def _parse_args(argv: list[str]) -> argparse.Namespace:
@@ -63,7 +74,7 @@ def _parse_args(argv: list[str]) -> argparse.Namespace:
     )
     p.add_argument(
         "--output",
-        default="artifacts/paper_reference_windows/paper_reference_window.json",
+        default=_default_output_path(),
         help="Output path for paper_reference_window JSON.",
     )
     p.add_argument(

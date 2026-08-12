@@ -41,6 +41,7 @@ from tools.market_data.historical_common import (
     utc_now_iso,
     write_json,
 )
+from tools.market_data.market_data_storage_guard import resolve_market_data_path
 from tools.market_data.assign_regime_offline import regime_distribution
 
 WINDOW_BANK_SCHEMA = "binance_window_bank.v1"
@@ -51,6 +52,23 @@ OVERLAP_CLASSES = frozenset(
     {"monthly", "quarterly", "yearly", "stress", "smoke", "pilot"}
 )
 PURPOSES = frozenset({"development", "validation", "out_of_sample", "stress"})
+
+
+def _market_data_root(repo_root: Path) -> Path:
+    """Resolve the window-bank corpus root, including explicit bulk opt-in."""
+    return resolve_market_data_path(repo_root)
+
+
+def _window_bank_root(repo_root: Path) -> Path:
+    """Resolve the canonical root for all Binance window-bank datasets."""
+    return (
+        _market_data_root(repo_root)
+        / "window_bank"
+        / "binance"
+        / "spot"
+        / "BTCUSDT"
+        / "1m"
+    )
 
 
 @dataclass(frozen=True, slots=True)
@@ -72,9 +90,7 @@ class WindowSpec:
 
 def load_import_manifest(repo_root: Path = IMPORT_REPO) -> dict[str, Any]:
     path = (
-        repo_root
-        / "artifacts"
-        / "market_data"
+        _market_data_root(repo_root)
         / "manifests"
         / "binance_btcusdt_1m_full_import.json"
     )
@@ -96,9 +112,7 @@ def resolve_build_months(repo_root: Path = IMPORT_REPO) -> list[str]:
     manifest = load_import_manifest(repo_root)
     by_month = {str(entry["month"]): entry for entry in manifest.get("months") or []}
     enriched_base = (
-        repo_root
-        / "artifacts"
-        / "market_data"
+        _market_data_root(repo_root)
         / "enriched"
         / "binance"
         / "spot"
@@ -464,9 +478,7 @@ def _write_window_dataset(
     candles: list[dict[str, Any]],
 ) -> Path:
     window_dir = (
-        repo_root
-        / "artifacts"
-        / "market_data"
+        _market_data_root(repo_root)
         / "window_bank"
         / "binance"
         / "spot"
@@ -831,17 +843,7 @@ def write_stress_rejection_evidence(
     gaps: Sequence[Mapping[str, Any]],
 ) -> Path:
     """Persist why an original stress window was rejected (no overwrite of candles)."""
-    out_dir = (
-        repo_root
-        / "artifacts"
-        / "market_data"
-        / "window_bank"
-        / "binance"
-        / "spot"
-        / "BTCUSDT"
-        / "1m"
-        / window_id
-    )
+    out_dir = _window_bank_root(repo_root) / window_id
     out_dir.mkdir(parents=True, exist_ok=True)
     payload = {
         "schema_version": "stress_window_rejection.v1",
@@ -900,10 +902,10 @@ def _verify_stress_v2_storage_readonly(repo_root: Path, file_path: str) -> str:
     else:
         resolved = resolved.resolve()
     try:
-        resolved.relative_to(repo_root.resolve())
+        resolved.relative_to(_market_data_root(repo_root).resolve())
     except ValueError as exc:
         raise HistoricalProbeError(
-            "stress v2 file_path must live under repo_root"
+            "stress v2 file_path must live under the configured market-data root"
         ) from exc
     storage = validate_market_data_storage(
         repo_root=repo_root,
@@ -933,17 +935,7 @@ def verify_stress_v2_window(
     from core.replay.dataset_provider import FileBackedDatasetProvider
     from core.replay.dataset_spec import DatasetSpec
 
-    window_dir = (
-        repo_root
-        / "artifacts"
-        / "market_data"
-        / "window_bank"
-        / "binance"
-        / "spot"
-        / "BTCUSDT"
-        / "1m"
-        / window_id
-    )
+    window_dir = _window_bank_root(repo_root) / window_id
     spec_path = window_dir / "dataset_spec.json"
     candles_path = window_dir / "candles.jsonl"
     if not spec_path.exists() or not candles_path.exists():
@@ -1056,9 +1048,7 @@ def rebuild_stress_windows_v2(
         raise HistoricalProbeError("No STRICT_COMPLETE months in import manifest")
 
     bank_manifest_path = (
-        repo_root
-        / "artifacts"
-        / "market_data"
+        _market_data_root(repo_root)
         / "window_bank"
         / "binance"
         / "spot"
@@ -1256,16 +1246,7 @@ def build_window_bank(
             }
         )
 
-    bank_root = (
-        repo_root
-        / "artifacts"
-        / "market_data"
-        / "window_bank"
-        / "binance"
-        / "spot"
-        / "BTCUSDT"
-        / "1m"
-    )
+    bank_root = _window_bank_root(repo_root)
     by_class: dict[str, int] = {}
     for w in written:
         cls = w.get("overlap_class", "unknown")
@@ -1301,16 +1282,7 @@ def build_stress_rerun_manifest(
     source_sha: str | None = None,
 ) -> Path:
     """Manifest targeting only the two stress v2 windows (6 jobs)."""
-    bank_root = (
-        repo_root
-        / "artifacts"
-        / "market_data"
-        / "window_bank"
-        / "binance"
-        / "spot"
-        / "BTCUSDT"
-        / "1m"
-    )
+    bank_root = _window_bank_root(repo_root)
     v2_roots = [
         str(bank_root / "binance_1m_stress_max_drawdown_v2").replace("\\", "/"),
         str(bank_root / "binance_1m_stress_max_volatility_v2").replace("\\", "/"),
@@ -1634,40 +1606,15 @@ def main() -> int:
             bank = load_import_manifest()
             bank_stub = {
                 "source_sha": bank.get("source_sha"),
-                "bank_root": str(
-                    REPO_ROOT
-                    / "artifacts"
-                    / "market_data"
-                    / "window_bank"
-                    / "binance"
-                    / "spot"
-                    / "BTCUSDT"
-                    / "1m"
-                ).replace("\\", "/"),
+                "bank_root": str(_window_bank_root(REPO_ROOT)).replace("\\", "/"),
                 "windows": (
                     json.loads(
                         (
-                            REPO_ROOT
-                            / "artifacts"
-                            / "market_data"
-                            / "window_bank"
-                            / "binance"
-                            / "spot"
-                            / "BTCUSDT"
-                            / "1m"
-                            / "window_bank_manifest.json"
+                            _window_bank_root(REPO_ROOT) / "window_bank_manifest.json"
                         ).read_text(encoding="utf-8")
                     ).get("windows", [])
                     if (
-                        REPO_ROOT
-                        / "artifacts"
-                        / "market_data"
-                        / "window_bank"
-                        / "binance"
-                        / "spot"
-                        / "BTCUSDT"
-                        / "1m"
-                        / "window_bank_manifest.json"
+                        _window_bank_root(REPO_ROOT) / "window_bank_manifest.json"
                     ).exists()
                     else []
                 ),
