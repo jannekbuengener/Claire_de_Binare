@@ -55,7 +55,9 @@ def test_consumer_keeps_repo_canon_without_bulk_opt_in(tmp_path: Path) -> None:
 
 @pytest.mark.unit
 def test_worktree_bulk_root_is_rejected() -> None:
-    with pytest.raises(ReplayArvpStorageError, match="BULK_STORAGE_WORKTREE_ROOT_FORBIDDEN"):
+    with pytest.raises(
+        ReplayArvpStorageError, match="BULK_STORAGE_WORKTREE_ROOT_FORBIDDEN"
+    ):
         resolve_replay_arvp_payload_path(
             "artifacts/replay_reports/run-1/report.json",
             environ={"CDB_BULK_STORAGE_ROOT": "Y:\\Worktrees\\Claire_de_Binare"},
@@ -73,12 +75,16 @@ def test_e_drive_root_is_rejected() -> None:
 
 @pytest.mark.unit
 def test_path_traversal_and_non_conflicting_roots_are_rejected() -> None:
-    with pytest.raises(ReplayArvpStorageError, match="REPLAY_ARVP_PAYLOAD_PATH_INVALID"):
+    with pytest.raises(
+        ReplayArvpStorageError, match="REPLAY_ARVP_PAYLOAD_PATH_INVALID"
+    ):
         resolve_replay_arvp_payload_path(
             "artifacts/replay_reports/../market_data/payload.json",
             environ={"CDB_BULK_STORAGE_ROOT": "Y:\\CDB-Storage"},
         )
-    with pytest.raises(ReplayArvpStorageError, match="REPLAY_ARVP_CANON_ROOT_UNMANAGED"):
+    with pytest.raises(
+        ReplayArvpStorageError, match="REPLAY_ARVP_CANON_ROOT_UNMANAGED"
+    ):
         resolve_replay_arvp_payload_path(
             "artifacts/market_data/payload.json",
             environ={"CDB_BULK_STORAGE_ROOT": "Y:\\CDB-Storage"},

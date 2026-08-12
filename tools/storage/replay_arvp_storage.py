@@ -18,7 +18,6 @@ from tools.storage.bulk_storage_contract import (
     resolve_bulk_storage_path,
 )
 
-
 CONFLICTING_CANON_ROOTS = frozenset(
     {
         "backtests",

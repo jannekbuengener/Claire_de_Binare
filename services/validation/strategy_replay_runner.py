@@ -324,10 +324,9 @@ _FALLBACK_CODE_COMMIT = "0000000"
 def _default_output_directory() -> str:
     """Resolve replay output through the opt-in #4421 bulk-root contract."""
     return str(
-        resolve_replay_arvp_consumer_path(
-            Path.cwd(), "artifacts/replay_reports"
-        )
+        resolve_replay_arvp_consumer_path(Path.cwd(), "artifacts/replay_reports")
     )
+
 
 # ---------------------------------------------------------------------------
 # Env vars that are safe to surface in env_redacted.txt
