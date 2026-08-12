@@ -77,9 +77,12 @@ def test_last_complete_month_excludes_current() -> None:
 
     now = datetime(2026, 7, 12, tzinfo=UTC)
     assert full_import.last_complete_month(now=now) == "2026-06"
-    assert full_import.last_complete_month(
-        now=now, available=["2017-08", "2026-05", "2026-06", "2026-07"]
-    ) == "2026-06"
+    assert (
+        full_import.last_complete_month(
+            now=now, available=["2017-08", "2026-05", "2026-06", "2026-07"]
+        )
+        == "2026-06"
+    )
 
 
 @pytest.mark.unit
@@ -161,6 +164,26 @@ def test_resume_existing_valid_month(tmp_path: Path) -> None:
 
 
 @pytest.mark.unit
+def test_import_storage_paths_follow_explicit_bulk_root(
+    monkeypatch: pytest.MonkeyPatch, tmp_path: Path
+) -> None:
+    bulk_root = tmp_path / "bulk" / "market-history"
+    monkeypatch.setattr(
+        full_import, "resolve_market_data_path", lambda _repo_root: bulk_root
+    )
+
+    assert full_import._raw_dir(tmp_path, "2020-02") == (
+        bulk_root / "raw" / "binance" / "spot" / "BTCUSDT" / "1m" / "2020-02"
+    )
+    assert full_import._normalized_dir(tmp_path, "2020-02") == (
+        bulk_root / "normalized" / "binance" / "spot" / "BTCUSDT" / "1m" / "2020-02"
+    )
+    assert full_import._enriched_dir(tmp_path, "2020-02") == (
+        bulk_root / "enriched" / "binance" / "spot" / "BTCUSDT" / "1m" / "2020-02"
+    )
+
+
+@pytest.mark.unit
 def test_regime_carry_over_across_chunks() -> None:
     rows = [
         {
@@ -210,9 +233,9 @@ def test_temporal_split_reserves_oos() -> None:
     split = window_bank.compute_temporal_split(months, oos_fraction=0.20)
     assert len(split["out_of_sample"]) >= 4
     assert len(split["development"]) >= 1
-    assert set(split["development"] + split["validation"] + split["out_of_sample"]) == set(
-        months
-    )
+    assert set(
+        split["development"] + split["validation"] + split["out_of_sample"]
+    ) == set(months)
 
 
 @pytest.mark.unit

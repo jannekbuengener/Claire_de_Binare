@@ -99,6 +99,7 @@ from core.replay.dataset_provider import (
     enforce_replay_integrity,
 )
 from core.replay.dataset_spec import DatasetSpec, DatasetSpecError
+from tools.storage.replay_arvp_storage import resolve_replay_arvp_consumer_path
 from core.replay.historical_bridge import (
     HistoricalBridgeError,
     PrimaryBreakoutBridgeConfig,
@@ -318,6 +319,14 @@ _DEFAULT_REPLAY_MODE = "baseline"
 
 _CODE_COMMIT_RE = re.compile(r"^[a-f0-9]{7,40}$")
 _FALLBACK_CODE_COMMIT = "0000000"
+
+
+def _default_output_directory() -> str:
+    """Resolve replay output through the opt-in #4421 bulk-root contract."""
+    return str(
+        resolve_replay_arvp_consumer_path(Path.cwd(), "artifacts/replay_reports")
+    )
+
 
 # ---------------------------------------------------------------------------
 # Env vars that are safe to surface in env_redacted.txt
@@ -2020,7 +2029,7 @@ def _build_argument_parser() -> argparse.ArgumentParser:
     )
     parser.add_argument(
         "--output-dir",
-        default=_DEFAULT_OUTPUT_DIR,
+        default=_default_output_directory(),
         metavar="DIR",
         help=f"Root output directory for replay artifact bundles. Default: {_DEFAULT_OUTPUT_DIR!r}",
     )

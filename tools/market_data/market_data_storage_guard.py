@@ -6,9 +6,14 @@ import os
 import stat
 from dataclasses import asdict, dataclass
 from pathlib import Path
-from typing import Any, Protocol
+from typing import Any, Mapping, Protocol
 
 from tools.market_data.historical_common import HistoricalProbeError
+from tools.storage.bulk_storage_contract import (
+    BULK_STORAGE_ROOT_ENV,
+    BulkStorageContractError,
+    resolve_bulk_storage_path,
+)
 
 CANONICAL_RELATIVE = Path("artifacts") / "market_data"
 RESERVE_MULTIPLIER = 1.25
@@ -52,6 +57,18 @@ def _normalize_drive(letter: str) -> str:
 
 def canonical_market_data_path(repo_root: Path) -> Path:
     return (repo_root / CANONICAL_RELATIVE).resolve()
+
+
+def resolve_market_data_path(
+    repo_root: Path,
+    *,
+    environ: Mapping[str, str] | None = None,
+) -> Path:
+    """Resolve the historical corpus root without an implicit external fallback."""
+    env = os.environ if environ is None else environ
+    if not env.get(BULK_STORAGE_ROOT_ENV, "").strip():
+        return canonical_market_data_path(repo_root)
+    return resolve_bulk_storage_path("market-history", environ=env).resolve()
 
 
 def _is_reparse_point(path: Path) -> bool:
@@ -167,35 +184,40 @@ def validate_market_data_storage(
     required_write_bytes: int,
     expected_repo_volume_label: str | None = "DevDrive",
     volume_probe: VolumeProbe | None = None,
+    environ: Mapping[str, str] | None = None,
 ) -> StorageGuardResult:
     """Fail-closed guard before historical import writes."""
     probe_impl = volume_probe or DefaultVolumeProbe()
     details: dict[str, Any] = {}
     try:
         repo_resolved = probe_impl.resolve_path(repo_root)
-        canonical = canonical_market_data_path(repo_root)
+        repo_canonical = canonical_market_data_path(repo_root)
+        canonical = resolve_market_data_path(repo_root, environ=environ)
+        bulk_mode = canonical != repo_canonical
         target = probe_impl.resolve_path(target_path or canonical)
         details["repo_root"] = str(repo_resolved)
         details["target_path"] = str(target)
         details["canonical_path"] = str(canonical)
+        details["storage_mode"] = "bulk" if bulk_mode else "repo"
 
         if target != canonical:
             return StorageGuardResult(
                 allowed=False,
                 reason_code="NON_CANONICAL_TARGET",
-                message="target must be canonical REPO_ROOT/artifacts/market_data",
+                message="target must match the configured canonical market-data root",
                 details=details,
             )
 
-        try:
-            target.relative_to(repo_resolved)
-        except ValueError:
-            return StorageGuardResult(
-                allowed=False,
-                reason_code="TARGET_OUTSIDE_REPO",
-                message="market_data target must live under repository root",
-                details=details,
-            )
+        if not bulk_mode:
+            try:
+                target.relative_to(repo_resolved)
+            except ValueError:
+                return StorageGuardResult(
+                    allowed=False,
+                    reason_code="TARGET_OUTSIDE_REPO",
+                    message="market_data target must live under repository root",
+                    details=details,
+                )
 
         reparse_hits = _reparse_in_parent_chain(target)
         details["reparse_points"] = reparse_hits
@@ -212,21 +234,22 @@ def validate_market_data_storage(
         details["repo_volume"] = asdict(repo_vol)
         details["target_volume"] = asdict(target_vol)
 
-        if repo_vol.unique_id is None or target_vol.unique_id is None:
-            if repo_vol.drive_letter != target_vol.drive_letter:
+        if not bulk_mode:
+            if repo_vol.unique_id is None or target_vol.unique_id is None:
+                if repo_vol.drive_letter != target_vol.drive_letter:
+                    return StorageGuardResult(
+                        allowed=False,
+                        reason_code="UNKNOWN_VOLUME_ID",
+                        message="cannot prove same volume without resolvable volume identity",
+                        details=details,
+                    )
+            elif repo_vol.unique_id != target_vol.unique_id:
                 return StorageGuardResult(
                     allowed=False,
-                    reason_code="UNKNOWN_VOLUME_ID",
-                    message="cannot prove same volume without resolvable volume identity",
+                    reason_code="DIFFERENT_VOLUME",
+                    message="repository and target are on different volumes",
                     details=details,
                 )
-        elif repo_vol.unique_id != target_vol.unique_id:
-            return StorageGuardResult(
-                allowed=False,
-                reason_code="DIFFERENT_VOLUME",
-                message="repository and target are on different volumes",
-                details=details,
-            )
 
         if target_vol.drive_letter in BLOCKED_DRIVE_LETTERS:
             return StorageGuardResult(
@@ -244,7 +267,7 @@ def validate_market_data_storage(
                 details=details,
             )
 
-        if expected_repo_volume_label and repo_vol.file_system_label:
+        if not bulk_mode and expected_repo_volume_label and repo_vol.file_system_label:
             if repo_vol.file_system_label != expected_repo_volume_label:
                 return StorageGuardResult(
                     allowed=False,
@@ -279,6 +302,13 @@ def validate_market_data_storage(
             message="storage guard passed",
             details=details,
         )
+    except BulkStorageContractError as exc:
+        return StorageGuardResult(
+            allowed=False,
+            reason_code="BULK_STORAGE_CONTRACT_BLOCKED",
+            message=str(exc),
+            details=details,
+        )
     except VolumeProbeError as exc:
         return StorageGuardResult(
             allowed=False,
@@ -294,12 +324,14 @@ def enforce_market_data_storage(
     required_write_bytes: int,
     target_path: Path | None = None,
     volume_probe: VolumeProbe | None = None,
+    environ: Mapping[str, str] | None = None,
 ) -> None:
     result = validate_market_data_storage(
         repo_root=repo_root,
         target_path=target_path,
         required_write_bytes=required_write_bytes,
         volume_probe=volume_probe,
+        environ=environ,
     )
     if not result.allowed:
         raise HistoricalProbeError(

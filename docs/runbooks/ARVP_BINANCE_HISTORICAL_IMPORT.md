@@ -118,7 +118,7 @@ python -m tools.market_data.binance_window_bank --run-campaign --manifest-path a
 
 ## Storage Location & Guard (#4004)
 
-**Canonical path:** `REPO_ROOT/artifacts/market_data` (physically on the repository volume, typically DevDrive `D:`).
+**Default path:** `REPO_ROOT/artifacts/market_data` (physically on the repository volume, typically DevDrive `D:`).
 
 Historical full imports are **fail-closed** unless `tools.market_data.market_data_storage_guard` passes:
 
@@ -130,6 +130,22 @@ Historical full imports are **fail-closed** unless `tools.market_data.market_dat
 - Free space ≥ expected write volume × 1.25
 
 **No automatic external-drive fallback.** Imports must not silently redirect to `E:` or other Backup volumes.
+
+### Canonical bulk-storage opt-in (#4420)
+
+After a copy-first migration has passed file-count, byte and SHA-256 manifest
+verification, the historical corpus may be selected explicitly with:
+
+```powershell
+$env:CDB_BULK_STORAGE_ROOT = "Y:\CDB-Storage"
+```
+
+The guard, full-import paths and Window-Bank manifest paths then resolve only to
+`Y:\CDB-Storage\market-history`. Missing, non-canonical or reparse-point roots
+fail closed. `Y:\Worktrees` is never a bulk-data fallback. For ARVP reader
+workflows, set `CDB_WINDOW_BANK_ROOT` or `CDB_DATASET_ROOT` to the copied
+`window_bank\binance\spot\BTCUSDT\1m` root; do not create a junction back into
+the repository.
 
 `--list-months` and read-only offline reconcile are **not** blocked by the guard.
 
