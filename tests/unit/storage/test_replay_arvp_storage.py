@@ -11,6 +11,7 @@ from tools.storage.replay_arvp_storage import (
     JUNCTION_CUTOVER_ROOTS,
     POSTGRES_HOLD_ROOTS,
     ReplayArvpStorageError,
+    apply_replay_arvp_junction_cutover,
     resolve_replay_arvp_consumer_path,
     resolve_replay_arvp_payload_path,
 )
@@ -89,3 +90,58 @@ def test_path_traversal_and_non_conflicting_roots_are_rejected() -> None:
             "artifacts/market_data/payload.json",
             environ={"CDB_BULK_STORAGE_ROOT": "Y:\\CDB-Storage"},
         )
+
+
+@pytest.mark.unit
+def test_existing_junction_must_target_the_expected_y_path(
+    monkeypatch: pytest.MonkeyPatch, tmp_path: Path
+) -> None:
+    artifact_root = tmp_path / "artifacts"
+    destination = artifact_root / "safe"
+    destination.mkdir(parents=True)
+    target = tmp_path / "replay-arvp" / "safe"
+    target.mkdir(parents=True)
+    monkeypatch.setattr(
+        "tools.storage.replay_arvp_storage.JUNCTION_CUTOVER_ROOTS", ("safe",)
+    )
+    monkeypatch.setattr(
+        "tools.storage.replay_arvp_storage.resolve_bulk_storage_path",
+        lambda _subtree, environ=None: tmp_path / "replay-arvp",
+    )
+    monkeypatch.setattr(
+        "tools.storage.replay_arvp_storage._is_junction", lambda _: True
+    )
+    monkeypatch.setattr(
+        "tools.storage.replay_arvp_storage._junction_targets_expected", lambda *_: False
+    )
+
+    with pytest.raises(
+        ReplayArvpStorageError, match="REPLAY_ARVP_JUNCTION_TARGET_MISMATCH"
+    ):
+        apply_replay_arvp_junction_cutover(tmp_path, environ={})
+
+
+@pytest.mark.unit
+def test_junction_cutover_preflights_all_paths_before_creating_any(
+    monkeypatch: pytest.MonkeyPatch, tmp_path: Path
+) -> None:
+    target_root = tmp_path / "replay-arvp"
+    (target_root / "first").mkdir(parents=True)
+    monkeypatch.setattr(
+        "tools.storage.replay_arvp_storage.JUNCTION_CUTOVER_ROOTS", ("first", "missing")
+    )
+    monkeypatch.setattr(
+        "tools.storage.replay_arvp_storage.resolve_bulk_storage_path",
+        lambda _subtree, environ=None: target_root,
+    )
+    run_calls: list[object] = []
+    monkeypatch.setattr(
+        "tools.storage.replay_arvp_storage.subprocess.run",
+        lambda *args, **kwargs: run_calls.append((args, kwargs)),
+    )
+
+    with pytest.raises(
+        ReplayArvpStorageError, match="REPLAY_ARVP_JUNCTION_TARGET_MISSING"
+    ):
+        apply_replay_arvp_junction_cutover(tmp_path, environ={})
+    assert not run_calls

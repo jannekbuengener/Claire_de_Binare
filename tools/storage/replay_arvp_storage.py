@@ -137,7 +137,9 @@ def resolve_replay_arvp_payload_path(
         bulk_root = resolve_bulk_storage_path("replay-arvp", environ=environ)
     except BulkStorageContractError as exc:
         raise ReplayArvpStorageError(str(exc)) from exc
-    return bulk_root.joinpath(*parts[1:])
+    payload_path = bulk_root.joinpath(*parts[1:])
+    _reject_reparse_components(payload_path)
+    return payload_path
 
 
 def resolve_replay_arvp_consumer_path(
@@ -170,6 +172,25 @@ def _is_junction(path: Path) -> bool:
         return path.is_symlink()
 
 
+def _reject_reparse_components(path: Path) -> None:
+    """Refuse an existing redirected subtree below the canonical bulk root."""
+    current = path
+    while True:
+        if current.exists() and _is_junction(current):
+            raise ReplayArvpStorageError("REPLAY_ARVP_PAYLOAD_REPARSE_POINT")
+        parent = current.parent
+        if parent == current:
+            return
+        current = parent
+
+
+def _junction_targets_expected(destination: Path, target: Path) -> bool:
+    try:
+        return os.path.samefile(destination, target)
+    except OSError:
+        return False
+
+
 def apply_replay_arvp_junction_cutover(
     repo_root: Path,
     *,
@@ -183,7 +204,7 @@ def apply_replay_arvp_junction_cutover(
     """
     target_root = resolve_bulk_storage_path("replay-arvp", environ=environ)
     artifact_root = repo_root / "artifacts"
-    created: list[Path] = []
+    plan: list[tuple[Path, Path]] = []
     for name in JUNCTION_CUTOVER_ROOTS:
         destination = artifact_root / name
         target = target_root / name
@@ -192,7 +213,13 @@ def apply_replay_arvp_junction_cutover(
         if destination.exists() or destination.is_symlink():
             if not _is_junction(destination):
                 raise ReplayArvpStorageError("REPLAY_ARVP_JUNCTION_COLLISION")
-            continue
+            if not _junction_targets_expected(destination, target):
+                raise ReplayArvpStorageError("REPLAY_ARVP_JUNCTION_TARGET_MISMATCH")
+        else:
+            plan.append((destination, target))
+
+    created: list[Path] = []
+    for destination, target in plan:
         subprocess.run(
             ["cmd", "/c", "mklink", "/J", str(destination), str(target)],
             check=True,
