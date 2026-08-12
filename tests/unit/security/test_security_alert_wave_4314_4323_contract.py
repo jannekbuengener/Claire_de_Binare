@@ -40,8 +40,8 @@ GRAFANA_PIN = (
     "sha256:5a9df011defa8384ee01fc9b393854daecc6afb98132c66e2e658b3f564830e8"
 )
 CURRENT_GRAFANA_PIN = (
-    "grafana/grafana:13.1.2-ubuntu@"
-    "sha256:dbbf39afd3040b86fc6d2d9a6f0ce3dab9c18039af9af7f6404ba71e56be6c45"
+    "grafana/grafana:13.1.3-ubuntu@"
+    "sha256:ab9a06d495291c7ba210426b62e9056dba6046d0945f7e9af041f3ff29b4c7fe"
 )
 STALE_PROM = "prom/prometheus:v3.13.1@sha256:3c42b892cf723fa54d2f262c37a0e1f80aa8c8ddb1da7b9b0df9455a35a7f893"
 
