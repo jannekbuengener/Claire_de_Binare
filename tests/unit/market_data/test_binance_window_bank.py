@@ -2,9 +2,11 @@ from __future__ import annotations
 
 import json
 from pathlib import Path
+from types import SimpleNamespace
 from unittest.mock import patch
 
 import pytest
+import yaml
 
 from tools.market_data import binance_window_bank as wb
 
@@ -60,6 +62,88 @@ def test_build_window_bank_requires_manifest(tmp_path: Path) -> None:
     with patch.object(wb, "IMPORT_REPO", tmp_path):
         with pytest.raises(Exception, match="Import manifest missing"):
             wb.build_window_bank(tmp_path)
+
+
+@pytest.mark.unit
+def test_load_import_manifest_uses_explicit_bulk_root(
+    monkeypatch: pytest.MonkeyPatch, tmp_path: Path
+) -> None:
+    bulk_root = tmp_path / "bulk" / "market-history"
+    manifest_path = bulk_root / "manifests" / "binance_btcusdt_1m_full_import.json"
+    manifest_path.parent.mkdir(parents=True)
+    manifest_path.write_text('{"months": []}', encoding="utf-8")
+    monkeypatch.setattr(wb, "resolve_market_data_path", lambda _repo_root: bulk_root)
+
+    assert wb.load_import_manifest(tmp_path) == {"months": []}
+
+
+@pytest.mark.unit
+def test_window_bank_root_uses_explicit_bulk_market_data_root(
+    monkeypatch: pytest.MonkeyPatch, tmp_path: Path
+) -> None:
+    bulk_root = tmp_path / "bulk" / "market-history"
+    monkeypatch.setattr(wb, "resolve_market_data_path", lambda _repo_root: bulk_root)
+
+    assert wb._window_bank_root(tmp_path) == (
+        bulk_root / "window_bank" / "binance" / "spot" / "BTCUSDT" / "1m"
+    )
+
+
+@pytest.mark.unit
+def test_verify_stress_storage_accepts_explicit_bulk_market_data_root(
+    monkeypatch: pytest.MonkeyPatch, tmp_path: Path
+) -> None:
+    bulk_root = tmp_path / "bulk" / "market-history"
+    candles_path = bulk_root / "window_bank" / "candles.jsonl"
+    candles_path.parent.mkdir(parents=True)
+    candles_path.write_text("{}\n", encoding="utf-8")
+    monkeypatch.setattr(wb, "resolve_market_data_path", lambda _repo_root: bulk_root)
+
+    from tools.market_data import market_data_storage_guard
+
+    monkeypatch.setattr(
+        market_data_storage_guard,
+        "validate_market_data_storage",
+        lambda **_kwargs: SimpleNamespace(allowed=True, reason_code="PASS"),
+    )
+
+    assert wb._verify_stress_v2_storage_readonly(tmp_path, str(candles_path)) == "PASS"
+
+
+@pytest.mark.unit
+def test_build_stress_rerun_manifest_uses_explicit_bulk_window_bank(
+    monkeypatch: pytest.MonkeyPatch, tmp_path: Path
+) -> None:
+    bulk_root = tmp_path / "bulk" / "market-history"
+    for window_id in wb.STRESS_V2_WINDOW_IDS:
+        (
+            bulk_root
+            / "window_bank"
+            / "binance"
+            / "spot"
+            / "BTCUSDT"
+            / "1m"
+            / window_id
+        ).mkdir(parents=True)
+    monkeypatch.setattr(wb, "resolve_market_data_path", lambda _repo_root: bulk_root)
+
+    path = wb.build_stress_rerun_manifest(
+        tmp_path, campaign_id="test-campaign", source_sha="a" * 40
+    )
+
+    payload = yaml.safe_load(path.read_text(encoding="utf-8"))
+    assert payload["dataset_roots"] == [
+        str(
+            bulk_root
+            / "window_bank"
+            / "binance"
+            / "spot"
+            / "BTCUSDT"
+            / "1m"
+            / window_id
+        ).replace("\\", "/")
+        for window_id in wb.STRESS_V2_WINDOW_IDS
+    ]
 
 
 @pytest.mark.unit

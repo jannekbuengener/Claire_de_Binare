@@ -95,7 +95,7 @@ Zweck: kleiner fail-closed V1-Scanner fuer repo-backed Nachzugarbeit nach gemerg
 - kein Auto-Issue fuer unklare oder schwache Evidenz
 - kein Auto-Issue-Duplikat fuer denselben repo-backed Befund
 
-## Rate-Limit-Resilienz
+## Models-Unavailability-Resilienz
 
 - `gh models run` wird mit bounded Retry (max 3 Versuche) und Backoff aufgerufen
 - Retry-Signaturen:
@@ -104,11 +104,15 @@ Zweck: kleiner fail-closed V1-Scanner fuer repo-backed Nachzugarbeit nach gemerg
   - HTML `<title>Rate limit`
   - `retry after`
 - Bei Rate-Limit nach 3 Versuchen: `ModelsRateLimitedError` -> degraded Result
+- Bei HTTP `410 Gone` oder `github_models_retirement_brownout`:
+  `ModelsUnavailableError` -> `status: degraded_models_unavailable` und
+  `degraded_reason: models_unavailable`
 - Im degraded-Zustand:
-  - `status: degraded_rate_limited` im Result-JSON
+  - Rate-Limit bleibt `status: degraded_rate_limited` im Result-JSON
   - Summary enthaelt klaren Hinweis auf fehlende Modellklassifikation
   - **Keine** Blind-Follow-up-Issues aus unsicherer Modellklassifikation
   - `force_follow_up_issue=True` (deterministisch, z.B. `docker_runtime_rebuild_followup_required`)
     bleibt aktiv und erzeugt weiterhin Issues ohne Modell
 - Script exit 0 (kein roter Workflow), Artifact wird immer geschrieben
-- Harter Fail bleibt bei echten Input-/Contract-/Script-Fehlern erhalten
+- Harter Fail bleibt bei unbekannten Modell-/CLI-Fehlern, Auth-/Permission-Problemen
+  und echten Input-/Parsing-/Contract-/Script-Fehlern erhalten

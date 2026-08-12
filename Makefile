@@ -20,7 +20,7 @@
 
 MCP_CONFIG_PATHS ?=
 REPLAY_INPUT_CANDLES ?=
-REPLAY_OUTPUT_DIR ?= artifacts/replay_reports
+REPLAY_OUTPUT_DIR ?=
 REPLAY_STRATEGY_ID ?= primary_breakout_v1
 REPLAY_SYMBOL ?= BTCUSDT
 REPLAY_ADAPTER_ID ?= primary_breakout_runner_v1
@@ -677,35 +677,35 @@ paper-trading-stop:
 
 ifeq ($(OS),Windows_NT)
 replay-shadow-run:
-	@pwsh -NoProfile -Command "$$input='$(REPLAY_INPUT_CANDLES)'; if ([string]::IsNullOrWhiteSpace($$input)) { Write-Error 'REPLAY_INPUT_CANDLES is required'; Write-Host 'Usage: make replay-shadow-run REPLAY_INPUT_CANDLES=<candles.json|candles.jsonl> [REPLAY_OUTPUT_DIR=artifacts/replay_reports]'; exit 1 }; if (-not (Test-Path $$input)) { Write-Error ('input candles file not found: ' + $$input); exit 1 }; $$out='$(REPLAY_OUTPUT_DIR)'; New-Item -ItemType Directory -Force -Path $$out | Out-Null; $$args=@('-m','services.validation.strategy_replay_runner','--input-candles',$$input,'--output-dir',$$out,'--strategy-id','$(REPLAY_STRATEGY_ID)','--symbol','$(REPLAY_SYMBOL)','--adapter-id','$(REPLAY_ADAPTER_ID)'); if ('$(REPLAY_DRY_RUN)' -eq '1') { $$args += '--dry-run' }; if ('$(REPLAY_DETERMINISTIC_VERIFY)' -eq '1') { $$args += '--deterministic-verify' }; Write-Host '▶ replay-shadow-run'; Write-Host ('  input_candles=' + $$input); Write-Host ('  output_dir=' + $$out); Write-Host '  strategy_id=$(REPLAY_STRATEGY_ID) symbol=$(REPLAY_SYMBOL) adapter_id=$(REPLAY_ADAPTER_ID)'; Write-Host '  dry_run=$(REPLAY_DRY_RUN) deterministic_verify=$(REPLAY_DETERMINISTIC_VERIFY)'; & python @args; $$rc=$$LASTEXITCODE; if ($$rc -eq 0) { Write-Host '✅ replay-shadow-run completed (bundle_dir is printed by the runner)' } else { Write-Error ('replay-shadow-run failed with exit code ' + $$rc) }; exit $$rc"
+	@pwsh -NoProfile -Command "$$input='$(REPLAY_INPUT_CANDLES)'; if ([string]::IsNullOrWhiteSpace($$input)) { Write-Error 'REPLAY_INPUT_CANDLES is required'; Write-Host 'Usage: make replay-shadow-run REPLAY_INPUT_CANDLES=<candles.json|candles.jsonl> [REPLAY_OUTPUT_DIR=<explicit-path>]'; exit 1 }; if (-not (Test-Path $$input)) { Write-Error ('input candles file not found: ' + $$input); exit 1 }; $$out='$(REPLAY_OUTPUT_DIR)'; $$args=@('-m','services.validation.strategy_replay_runner','--input-candles',$$input,'--strategy-id','$(REPLAY_STRATEGY_ID)','--symbol','$(REPLAY_SYMBOL)','--adapter-id','$(REPLAY_ADAPTER_ID)'); if (-not [string]::IsNullOrWhiteSpace($$out)) { New-Item -ItemType Directory -Force -Path $$out | Out-Null; $$args += @('--output-dir',$$out) }; if ('$(REPLAY_DRY_RUN)' -eq '1') { $$args += '--dry-run' }; if ('$(REPLAY_DETERMINISTIC_VERIFY)' -eq '1') { $$args += '--deterministic-verify' }; Write-Host '▶ replay-shadow-run'; Write-Host ('  input_candles=' + $$input); Write-Host '  output_dir=resolver-default unless REPLAY_OUTPUT_DIR is explicit'; Write-Host '  strategy_id=$(REPLAY_STRATEGY_ID) symbol=$(REPLAY_SYMBOL) adapter_id=$(REPLAY_ADAPTER_ID)'; Write-Host '  dry_run=$(REPLAY_DRY_RUN) deterministic_verify=$(REPLAY_DETERMINISTIC_VERIFY)'; & python @args; $$rc=$$LASTEXITCODE; if ($$rc -eq 0) { Write-Host '✅ replay-shadow-run completed (bundle_dir is printed by the runner)' } else { Write-Error ('replay-shadow-run failed with exit code ' + $$rc) }; exit $$rc"
 else
 replay-shadow-run:
 	@if [ -z "$(REPLAY_INPUT_CANDLES)" ]; then \
 		echo "ERROR: REPLAY_INPUT_CANDLES is required"; \
-		echo "Usage: make replay-shadow-run REPLAY_INPUT_CANDLES=<candles.json|candles.jsonl> [REPLAY_OUTPUT_DIR=artifacts/replay_reports]"; \
+		echo "Usage: make replay-shadow-run REPLAY_INPUT_CANDLES=<candles.json|candles.jsonl> [REPLAY_OUTPUT_DIR=<explicit-path>]"; \
 		exit 1; \
 	fi
 	@if [ ! -f "$(REPLAY_INPUT_CANDLES)" ]; then \
 		echo "ERROR: input candles file not found: $(REPLAY_INPUT_CANDLES)"; \
 		exit 1; \
 	fi
-	@mkdir -p "$(REPLAY_OUTPUT_DIR)"
 	@dry_flag=""; \
 	if [ "$(REPLAY_DRY_RUN)" = "1" ]; then dry_flag="--dry-run"; fi; \
 	det_flag=""; \
 	if [ "$(REPLAY_DETERMINISTIC_VERIFY)" = "1" ]; then det_flag="--deterministic-verify"; fi; \
+	out_flag=""; \
+	if [ -n "$(REPLAY_OUTPUT_DIR)" ]; then mkdir -p "$(REPLAY_OUTPUT_DIR)"; out_flag="--output-dir $(REPLAY_OUTPUT_DIR)"; fi; \
 	echo "▶ replay-shadow-run"; \
 	echo "  input_candles=$(REPLAY_INPUT_CANDLES)"; \
-	echo "  output_dir=$(REPLAY_OUTPUT_DIR)"; \
+	echo "  output_dir=resolver-default unless REPLAY_OUTPUT_DIR is explicit"; \
 	echo "  strategy_id=$(REPLAY_STRATEGY_ID) symbol=$(REPLAY_SYMBOL) adapter_id=$(REPLAY_ADAPTER_ID)"; \
 	echo "  dry_run=$(REPLAY_DRY_RUN) deterministic_verify=$(REPLAY_DETERMINISTIC_VERIFY)"; \
 	python -m services.validation.strategy_replay_runner \
 		--input-candles "$(REPLAY_INPUT_CANDLES)" \
-		--output-dir "$(REPLAY_OUTPUT_DIR)" \
 		--strategy-id "$(REPLAY_STRATEGY_ID)" \
 		--symbol "$(REPLAY_SYMBOL)" \
 		--adapter-id "$(REPLAY_ADAPTER_ID)" \
-		$$dry_flag \
+		$$out_flag $$dry_flag \
 		$$det_flag; \
 	rc=$$?; \
 	if [ $$rc -eq 0 ]; then \

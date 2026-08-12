@@ -49,12 +49,20 @@ from tools.market_data.historical_common import (
     write_json,
     write_jsonl,
 )
+from tools.market_data.market_data_storage_guard import resolve_market_data_path
 
 MANIFEST_SCHEMA_VERSION = "binance_full_import.v1"
 S3_LISTING_URL = (
     "https://s3-ap-northeast-1.amazonaws.com/data.binance.vision"
     "?prefix=data/spot/monthly/klines/BTCUSDT/1m/"
 )
+
+
+def _market_data_root(repo_root: Path) -> Path:
+    """Resolve the current import target, including explicit bulk opt-in."""
+    return resolve_market_data_path(repo_root)
+
+
 DEFAULT_DATA_VISION_BASE = probe.DEFAULT_DATA_VISION_BASE
 IMPORT_FINAL_STATUSES = frozenset(
     {
@@ -293,9 +301,7 @@ def import_range(
     }
 
     manifest_path = (
-        repo_root
-        / "artifacts"
-        / "market_data"
+        _market_data_root(repo_root)
         / "manifests"
         / "binance_btcusdt_1m_full_import.json"
     )
@@ -306,9 +312,7 @@ def import_range(
 
 def _enriched_dir(repo_root: Path, month: str) -> Path:
     return (
-        repo_root
-        / "artifacts"
-        / "market_data"
+        _market_data_root(repo_root)
         / "enriched"
         / "binance"
         / "spot"
@@ -320,9 +324,7 @@ def _enriched_dir(repo_root: Path, month: str) -> Path:
 
 def _normalized_dir(repo_root: Path, month: str) -> Path:
     return (
-        repo_root
-        / "artifacts"
-        / "market_data"
+        _market_data_root(repo_root)
         / "normalized"
         / "binance"
         / "spot"
@@ -334,9 +336,7 @@ def _normalized_dir(repo_root: Path, month: str) -> Path:
 
 def _raw_dir(repo_root: Path, month: str) -> Path:
     return (
-        repo_root
-        / "artifacts"
-        / "market_data"
+        _market_data_root(repo_root)
         / "raw"
         / "binance"
         / "spot"
@@ -750,10 +750,10 @@ def build_coverage_report(
             return 0
         return sum(f.stat().st_size for f in base.rglob("*") if f.is_file())
 
-    repo = REPO_ROOT
-    raw_base = repo / "artifacts" / "market_data" / "raw" / "binance"
-    norm_base = repo / "artifacts" / "market_data" / "normalized" / "binance"
-    enrich_base = repo / "artifacts" / "market_data" / "enriched" / "binance"
+    market_data_root = _market_data_root(REPO_ROOT)
+    raw_base = market_data_root / "raw" / "binance"
+    norm_base = market_data_root / "normalized" / "binance"
+    enrich_base = market_data_root / "enriched" / "binance"
 
     return {
         "earliest_ts_ms": earliest_ts,
