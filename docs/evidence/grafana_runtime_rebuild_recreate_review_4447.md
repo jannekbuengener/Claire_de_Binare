@@ -1,6 +1,6 @@
 # Grafana Runtime Rebuild/Recreate Review (#4447)
 
-**Status:** Runtime evidence blocked (docs-only review)
+**Status:** Review complete (docs-only review)
 
 ## Scope and boundaries
 
@@ -19,9 +19,9 @@ volumes, networks, BLUE/RED state, or secrets.
 | Target service | `cdb_grafana` |
 | Repo expected image | `grafana/grafana:13.1.3-ubuntu@sha256:ab9a06d495291c7ba210426b62e9056dba6046d0945f7e9af041f3ff29b4c7fe` |
 | Relevant Compose path | `infrastructure/compose/compose.red.yml` declares `cdb_grafana` directly; `infrastructure/compose/base.yml` declares the same pin |
-| Runtime inspection status | blocked: Docker Desktop Linux Engine pipe `//./pipe/dockerDesktopLinuxEngine` was unavailable |
-| Runtime observed container | unavailable — `docker ps --all --filter name=^/cdb_grafana$` could not connect |
-| Runtime observed image / image ID | unavailable — `docker inspect` and `docker image inspect` could not connect |
+| Runtime inspection status | complete: Docker Engine `29.7.2` reachable via read-only inspection |
+| Runtime observed container | `911fa71b91b4`, `cdb_grafana`, healthy |
+| Runtime observed image / image ID | `grafana/grafana:13.1.2-ubuntu@sha256:dbbf39afd3040b86fc6d2d9a6f0ce3dab9c18039af9af7f6404ba71e56be6c45` / `sha256:dbbf39afd3040b86fc6d2d9a6f0ce3dab9c18039af9af7f6404ba71e56be6c45` |
 | Runtime mutation performed | `false` |
 
 ## Repo-soll
@@ -34,33 +34,31 @@ declaration for the fixed container name `cdb_grafana`.
 
 ## Runtime-ist and comparison
 
-The local Docker client reported that the Docker Desktop Linux engine endpoint
-does not exist. Consequently, no existing or running `cdb_grafana` container,
-its configured image, image ID, or local expected-image presence could be
-observed. A Soll/Ist comparison is therefore not possible.
+The running, healthy `cdb_grafana` container uses the former
+`13.1.2-ubuntu` image and its former digest. The expected
+`13.1.3-ubuntu` digest is not present locally. The runtime therefore does not
+match the current repository declaration.
 
 ## Verdict
 
-**`BLOCKED_INSUFFICIENT_RUNTIME_EVIDENCE`**
+**`REBUILD_REQUIRED`**
 
-Neither `REBUILD_REQUIRED` nor `NO_REBUILD_REQUIRED` is justified without a
-read-only observation of the local `cdb_grafana` container and its image ID.
-No runtime action is authorized or implied by this review.
+The running container is pinned to the previous image digest, while
+`origin/main` declares a new image digest. A rebuild/recreate is required
+before the local Grafana runtime can be considered aligned with the current
+repository state. No runtime action is authorized or implied by this review.
 
-## Missing evidence and exact next read-only step
+## Exact later operator step (not executed)
 
-When the Docker engine is available, obtain only the following evidence before
-making the verdict:
+Only after explicit operator approval in the matching RED runtime context:
 
 ```powershell
-docker ps --all --filter name=^/cdb_grafana$ --format "{{.ID}}|{{.Names}}|{{.Image}}|{{.Status}}"
-docker inspect cdb_grafana --format "{{.Config.Image}}|{{.Image}}"
-docker image inspect grafana/grafana:13.1.3-ubuntu@sha256:ab9a06d495291c7ba210426b62e9056dba6046d0945f7e9af041f3ff29b4c7fe --format "{{.Id}}"
+docker compose -f infrastructure/compose/compose.red.yml up -d --force-recreate cdb_grafana
 ```
 
-If the inspected container image ID differs from the expected local image ID,
-a later operator session may decide whether to recreate the service. This
-review does not perform or authorize that action.
+Afterward, repeat the same image-safe read-only inspection and require the
+expected `13.1.3-ubuntu` digest. This review does not perform or authorize the
+operator step.
 
 ## Validation
 
@@ -68,8 +66,9 @@ review does not perform or authorize that action.
   `SERVICE_CATALOG.md`.
 - Searched the scoped repository surfaces for `cdb_grafana` and the expected
   Grafana image version.
-- Performed only failed read-only Docker inspection attempts; no Docker
-  mutation was attempted.
+- Read-only Docker inspection observed the running old container image and
+  confirmed that the expected image is absent locally; no Docker mutation was
+  attempted.
 
 ## Guardrails
 
