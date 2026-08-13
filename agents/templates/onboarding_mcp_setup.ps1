@@ -85,7 +85,7 @@ if ($bridgeOk -and $stdioOk) {
     Write-Host "       $stdioDetails" -ForegroundColor Yellow
     Write-Host "       This is a local environment blocker (pydantic-core version mismatch)," -ForegroundColor Yellow
     Write-Host "       not a #2619 config defect. Bridge-level tool access works." -ForegroundColor Yellow
-    Write-Host "       Fix: pip install 'pydantic>=2.0,<3.0' 'pydantic-core==2.46.4'" -ForegroundColor Yellow
+    Write-Host "       Fix: pip install 'pydantic==2.14.0b1' 'pydantic-core==2.48.0'" -ForegroundColor Yellow
     $Warn++
 } else {
     Write-Host " FAIL" -ForegroundColor Red
