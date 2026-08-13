@@ -50,12 +50,14 @@ from ci.stages import docs as stage_docs  # noqa: E402
 from ci.stages import governance as stage_governance  # noqa: E402
 from ci.stages import integration as stage_integration  # noqa: E402
 from ci.stages import lint as stage_lint  # noqa: E402
+from ci.stages import mcp_dependency_closure  # noqa: E402
 from ci.stages import report as stage_report  # noqa: E402
 from ci.stages import security as stage_security  # noqa: E402
 from ci.stages import unit as stage_unit  # noqa: E402
 from ci.stages._common import StageContext  # noqa: E402
 
 STAGE_RUNNERS = {
+    "mcp_dependency_closure": mcp_dependency_closure.run,
     "lint": stage_lint.run,
     "unit": stage_unit.run,
     "docs": stage_docs.run,
@@ -310,6 +312,51 @@ def run_ci(
 
     ctx.temp_root = preflight.temp_root
     ctx.temp_env = temp_env_for(preflight.temp_root)
+
+    if "unit" in selected:
+        print("==> stage mcp_dependency_closure", flush=True)
+        result = mcp_dependency_closure.run(ctx)
+        print(
+            f"<== stage mcp_dependency_closure status={result.status} exit={result.exit_code}",
+            flush=True,
+        )
+        stage_results.append(result)
+        if result.status != "PASS":
+            report_result = stage_report.run(ctx, stage_results)
+            stage_results.append(report_result)
+            artifact_paths = sorted(run_dir.rglob("*"))
+            artifact_paths = [path for path in artifact_paths if path.is_file()]
+            artifact_hashes = hash_artifacts(artifact_paths, relative_to=run_dir)
+            ended = utc_now()
+            docker_v, compose_v = _docker_versions()
+            manifest = build_manifest(
+                run_id=rid,
+                commit_sha=git.commit_sha,
+                branch=git.branch,
+                dirty_worktree=git.dirty_worktree,
+                started_at_utc=started,
+                ended_at_utc=ended,
+                host_platform=platform.platform(),
+                tool_versions={
+                    "python": platform.python_version(),
+                    "ruff": _tool_version(["ruff", "--version"]),
+                    "pytest": _tool_version(
+                        [sys.executable, "-m", "pytest", "--version"]
+                    ),
+                },
+                docker_version=docker_v,
+                compose_version=compose_v,
+                profile=profile if not stage else f"stage:{stage}",
+                stages=stage_results,
+                skipped_checks=skipped_checks,
+                artifact_hashes=artifact_hashes,
+                repo_name=git.repo_name,
+                merge_evidence=merge_evidence,
+            )
+            write_manifest(run_dir, manifest)
+            print(f"overall_status={manifest['overall_status']}", flush=True)
+            print(f"evidence={run_dir}", flush=True)
+            return 1
 
     for name in selected:
         if name == "report":
