@@ -39,6 +39,10 @@ TARGET_GRAFANA_PIN = (
     "grafana/grafana:13.1.2-ubuntu@"
     "sha256:dbbf39afd3040b86fc6d2d9a6f0ce3dab9c18039af9af7f6404ba71e56be6c45"
 )
+CURRENT_GRAFANA_PIN = (
+    "grafana/grafana:13.1.3-ubuntu@"
+    "sha256:ab9a06d495291c7ba210426b62e9056dba6046d0945f7e9af041f3ff29b4c7fe"
+)
 
 EXPECTED_ISSUES = frozenset(range(4350, 4360))
 ZIPKIN_CLUSTER_ISSUES = frozenset({4350, 4351, 4352, 4353, 4354, 4355, 4356, 4359})
@@ -154,7 +158,7 @@ def test_cluster_partition_matches_dispositions() -> None:
 def test_grafana_pin_surfaces_synced_on_target_and_baseline_removed() -> None:
     for path in PIN_FILES:
         text = path.read_text(encoding="utf-8")
-        assert TARGET_GRAFANA_PIN in text, f"missing grafana 13.1.2 pin in {path}"
+        assert CURRENT_GRAFANA_PIN in text, f"missing current grafana pin in {path}"
         assert (
             BASELINE_GRAFANA_PIN not in text
         ), f"stale grafana 13.1.1 pin still in {path}"

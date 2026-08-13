@@ -140,7 +140,7 @@ Hinweis: Der Config-Default fuer `SIGNAL_PORT` liegt in `services/signal/config.
 | Service | Container | Image | Port | Status | Funktion |
 |---------|-----------|-------|------|--------|----------|
 | **Prometheus** | cdb_prometheus | prom/prometheus:v3.13.2@sha256:508729e0e2d18e11fd742a5a5ca70e557b940a93948c3c95fd0123a6fd538b69 | 19090→9090 | **AKTIV** | Metrics Collection |
-| **Grafana** | cdb_grafana | grafana/grafana:13.1.2-ubuntu@sha256:dbbf39afd3040b86fc6d2d9a6f0ce3dab9c18039af9af7f6404ba71e56be6c45 | 3000 | **AKTIV** | Dashboards |
+| **Grafana** | cdb_grafana | grafana/grafana:13.1.3-ubuntu@sha256:ab9a06d495291c7ba210426b62e9056dba6046d0945f7e9af041f3ff29b4c7fe | 3000 | **AKTIV** | Dashboards |
 | **Postgres Exporter** | cdb_postgres_exporter | prometheuscommunity/postgres-exporter | 9187 | **AKTIV** | PG Metrics; DSN-Wiring ueber `postgres_password` Secret + `PGPASSWORD`, `DATA_SOURCE_NAME` wird zur Laufzeit aus `POSTGRES_USER`/`POSTGRES_DB` und Host/Port zusammengesetzt |
 | **Redis Exporter** | cdb_redis_exporter | bitnami/redis-exporter | 9121 | **AKTIV** | Redis Metrics |
 | **cAdvisor** | cdb_cadvisor | gcr.io/cadvisor/cadvisor:v0.49.2 | — | **AKTIV** | Container Metrics |

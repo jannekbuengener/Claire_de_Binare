@@ -24,16 +24,23 @@ from typing import Any
 from core.replay.historical_bridge import VALID_PRICE_POLICIES
 from services.signal.config import SignalConfig
 from services.signal.service import SignalEngine
+from tools.storage.replay_arvp_storage import resolve_replay_arvp_consumer_path
 
 logging.disable(logging.CRITICAL)
 
 _ARTIFACT_DIR = pathlib.Path("artifacts/price_policy_evaluation_3079")
-_PILOT_CANDLES_PATH = pathlib.Path("artifacts/calibration/2961/pilot_candles.json")
-_PILOT_PAPER_PATH = pathlib.Path(
+
+
+def _consumer_path(relative_path: str) -> pathlib.Path:
+    return resolve_replay_arvp_consumer_path(pathlib.Path.cwd(), relative_path)
+
+
+_PILOT_CANDLES_PATH = _consumer_path("artifacts/calibration/2961/pilot_candles.json")
+_PILOT_PAPER_PATH = _consumer_path(
     "artifacts/recheck_2980/pilot_window_causal/paper_reference_window.json"
 )
-_W3028_CANDLES_PATH = pathlib.Path("artifacts/candles/3028_window/candles.json")
-_W3028_PAPER_PATH = pathlib.Path(
+_W3028_CANDLES_PATH = _consumer_path("artifacts/candles/3028_window/candles.json")
+_W3028_PAPER_PATH = _consumer_path(
     "artifacts/paper_reference_windows/paper_reference_window.json"
 )
 

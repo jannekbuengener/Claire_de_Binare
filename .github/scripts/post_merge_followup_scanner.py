@@ -126,6 +126,10 @@ class ModelsRateLimitedError(RuntimeError):
     """Raised when gh models run is blocked by GitHub Abuse-/Rate-Limit and retries are exhausted."""
 
 
+class ModelsUnavailableError(RuntimeError):
+    """Raised when GitHub Models reports a known external unavailability."""
+
+
 def is_gh_models_rate_limit_error(stderr: str) -> bool:
     """Detect whether stderr indicates a GitHub Models Rate-Limit or Abuse-Detection error."""
     if not stderr:
@@ -139,6 +143,14 @@ def is_gh_models_rate_limit_error(stderr: str) -> bool:
         "retry after",
     ]
     return any(sig in lower for sig in signatures)
+
+
+def is_gh_models_unavailable_error(stderr: str) -> bool:
+    """Detect the evidenced GitHub Models retirement-brownout response."""
+    if not stderr:
+        return False
+    lower = stderr.lower()
+    return "github_models_retirement_brownout" in lower or "410 gone" in lower
 
 
 MAX_RETRY_AFTER_CAP_SECONDS = 120
@@ -190,6 +202,11 @@ def run_models_with_retry(
         if result.returncode == 0:
             return result.stdout
         combined = (result.stderr or "") + (result.stdout or "")
+        if is_gh_models_unavailable_error(combined):
+            raise ModelsUnavailableError(
+                "gh models run unavailable due to GitHub Models retirement brownout:\n"
+                f"{combined.strip()}"
+            )
         if is_gh_models_rate_limit_error(combined):
             last_error = combined.strip()
             if attempt < max_retries:
@@ -907,6 +924,23 @@ def build_summary(result: dict[str, Any]) -> str:
                 "",
             ]
         )
+    elif status == "degraded_models_unavailable":
+        lines.extend(
+            [
+                "## Degraded: GitHub Models Unavailable",
+                "",
+                (
+                    "GitHub Models returned HTTP 410 / a retirement-brownout response. "
+                    "Model classification was not available for one or more findings. "
+                    "No blind follow-up issues were created from unavailable model output."
+                ),
+                (
+                    "Deterministic forced findings remain active; unknown model, auth, "
+                    "permission, parsing, and contract errors still fail closed."
+                ),
+                "",
+            ]
+        )
 
     if not result["findings"]:
         lines.extend(
@@ -922,7 +956,10 @@ def build_summary(result: dict[str, Any]) -> str:
     for finding in result["findings"]:
         cls = finding["classification"]
         degraded_note = ""
-        if finding.get("degraded_reason") == "rate_limited":
+        if finding.get("degraded_reason") in {
+            "rate_limited",
+            "models_unavailable",
+        }:
             degraded_note = " (degraded — model classification unavailable)"
         lines.extend(
             [
@@ -1005,7 +1042,7 @@ def main() -> int:
 
     results: list[dict[str, Any]] = []
     comment_findings: list[dict[str, Any]] = []
-    degraded: bool = False
+    degraded_reasons: set[str] = set()
     for finding in candidates:
         try:
             classification = classification_for_finding(
@@ -1013,7 +1050,7 @@ def main() -> int:
                 finding=finding,
             )
         except ModelsRateLimitedError:
-            degraded = True
+            degraded_reasons.add("rate_limited")
             degraded_classification = {
                 "classification": "unclear",
                 "confidence": 0.0,
@@ -1027,6 +1064,22 @@ def main() -> int:
             item = asdict(finding)
             item["classification"] = degraded_classification
             item["degraded_reason"] = "rate_limited"
+            results.append(item)
+            continue
+        except ModelsUnavailableError:
+            degraded_reasons.add("models_unavailable")
+            degraded_classification = {
+                "classification": "unclear",
+                "confidence": 0.0,
+                "affected_artifacts": finding.affected_candidates,
+                "suggested_next_step": (
+                    "No model classification available — GitHub Models returned a "
+                    "retirement-brownout response. No blind follow-up issue was created."
+                ),
+            }
+            item = asdict(finding)
+            item["classification"] = degraded_classification
+            item["degraded_reason"] = "models_unavailable"
             results.append(item)
             continue
 
@@ -1055,7 +1108,15 @@ def main() -> int:
             findings=comment_findings,
         )
 
-    status = "degraded_rate_limited" if degraded else "completed"
+    if "models_unavailable" in degraded_reasons:
+        status = "degraded_models_unavailable"
+        degraded_reason: str | None = "models_unavailable"
+    elif "rate_limited" in degraded_reasons:
+        status = "degraded_rate_limited"
+        degraded_reason = "rate_limited"
+    else:
+        status = "completed"
+        degraded_reason = None
     payload = {
         "repo": args.repo,
         "publish_mode": args.publish_mode,
@@ -1066,6 +1127,7 @@ def main() -> int:
             "mergedAt": pr["mergedAt"],
         },
         "status": status,
+        "degraded_reason": degraded_reason,
         "candidate_count": len(candidates),
         "findings": results,
         "control_comment": control_comment,
