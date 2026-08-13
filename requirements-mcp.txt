@@ -4,6 +4,6 @@ mcp==1.28.1
 mcp-server-time==2026.7.10
 # Keep the SDK/server import closure explicit: pydantic requires this exact
 # core wheel, and Fast-CI validates mcp_server_time as a Python module.
-pydantic==2.13.4
-pydantic-core==2.46.4
+pydantic==2.14.0b1
+pydantic-core==2.48.0
 pytest-asyncio==1.4.0

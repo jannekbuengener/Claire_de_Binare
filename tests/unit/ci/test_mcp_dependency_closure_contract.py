@@ -26,5 +26,5 @@ def test_mcp_fast_ci_dependency_closure_pins_pydantic_core_pair() -> None:
 
     assert requirements["mcp"] == "1.28.1"
     assert requirements["mcp-server-time"] == "2026.7.10"
-    assert requirements["pydantic"] == "2.13.4"
-    assert requirements["pydantic-core"] == "2.46.4"
+    assert requirements["pydantic"] == "2.14.0b1"
+    assert requirements["pydantic-core"] == "2.48.0"
