@@ -68,6 +68,61 @@ def test_resolve_falls_back_to_parent_worktree_layout(tmp_path: Path) -> None:
     assert resolved.source_kind == "parent"
 
 
+def _governed_y_worktree(
+    tmp_path: Path, repo_name: str = "Claire_de_Binare"
+) -> tuple[Path, Path]:
+    checkout = tmp_path / "checkouts" / repo_name
+    worktree_git_dir = checkout / ".git" / "worktrees" / "exact-sha-exec"
+    worktree_git_dir.mkdir(parents=True)
+    worktree = tmp_path / "Worktrees" / repo_name / "exact-sha-exec"
+    worktree.mkdir(parents=True)
+    (worktree / ".git").write_text(f"gitdir: {worktree_git_dir}\n", encoding="utf-8")
+    return checkout, worktree
+
+
+def test_resolve_falls_back_to_parent_governed_y_worktree_layout(
+    tmp_path: Path,
+) -> None:
+    checkout, worktree = _governed_y_worktree(tmp_path)
+    bank = _fake_complete_bank(checkout)
+
+    assert parent_checkout_root(worktree) == checkout.resolve()
+    resolved = resolve_execution_window_bank(worktree)
+
+    assert resolved is not None
+    assert resolved.window_bank_root == bank.resolve()
+    assert resolved.source_kind == "parent"
+
+
+def test_governed_y_worktree_rejects_repo_name_mismatch(tmp_path: Path) -> None:
+    checkout, worktree = _governed_y_worktree(tmp_path, repo_name="OtherRepo")
+    _fake_complete_bank(checkout)
+    misplaced = tmp_path / "Worktrees" / "Claire_de_Binare" / worktree.name
+    misplaced.parent.mkdir(parents=True)
+    worktree.rename(misplaced)
+
+    assert parent_checkout_root(misplaced) is None
+    assert resolve_execution_window_bank(misplaced) is None
+
+
+def test_incomplete_governed_y_worktree_fails_closed(tmp_path: Path) -> None:
+    incomplete = tmp_path / "Worktrees" / "Claire_de_Binare" / "exact-sha-exec"
+    incomplete.mkdir(parents=True)
+
+    assert parent_checkout_root(incomplete) is None
+    assert resolve_execution_window_bank(incomplete) is None
+
+
+def test_ensure_link_uses_governed_y_worktree_parent(tmp_path: Path) -> None:
+    checkout, worktree = _governed_y_worktree(tmp_path)
+    _fake_complete_bank(checkout)
+
+    result = ensure_worktree_market_data_link(worktree)
+
+    assert result["action"] == "linked"
+    assert Path(result["target"]) == (checkout / "artifacts" / "market_data").resolve()
+
+
 def test_assert_fail_closed_when_incomplete(tmp_path: Path) -> None:
     bank = local_window_bank_root(tmp_path)
     # Only one window — incomplete.

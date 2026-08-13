@@ -83,16 +83,37 @@ def local_window_bank_root(repo_root: Path) -> Path:
 
 
 def parent_checkout_root(repo_root: Path) -> Path | None:
-    """Best-effort parent Claire_de_Binare checkout for ``.worktrees/<name>``."""
+    """Return the deterministic parent checkout for known Git worktree layouts."""
     root = Path(repo_root).resolve()
     # Common layout: <checkout>/.worktrees/<wt-name>
     if root.parent.name == ".worktrees":
         return root.parent.parent
-    # Alternate: sibling worktree folders named Claire_de_Binare-*
-    sibling = root.parent / "Claire_de_Binare"
-    if sibling.is_dir() and (sibling / "artifacts" / "market_data").is_dir():
-        return sibling
-    return None
+
+    # Governed Windows layout: Y:/Worktrees/<repo>/<worktree>.  A worktree's
+    # .git file points to <checkout>/.git/worktrees/<worktree>; derive the
+    # checkout from that Git metadata instead of guessing from nearby folders.
+    if root.parent.parent.name != "Worktrees":
+        return None
+    git_file = root / ".git"
+    try:
+        git_pointer = git_file.read_text(encoding="utf-8").strip()
+    except OSError:
+        return None
+    if not git_pointer.startswith("gitdir: "):
+        return None
+    worktree_git_dir = Path(git_pointer.removeprefix("gitdir: ").strip())
+    if not worktree_git_dir.is_absolute():
+        worktree_git_dir = git_file.parent / worktree_git_dir
+    worktree_git_dir = worktree_git_dir.resolve()
+    if (
+        worktree_git_dir.parent.name != "worktrees"
+        or worktree_git_dir.name != root.name
+    ):
+        return None
+    checkout = worktree_git_dir.parent.parent.parent
+    if checkout.name != root.parent.name or not (checkout / ".git").is_dir():
+        return None
+    return checkout
 
 
 def _windows_complete(bank: Path) -> bool:
