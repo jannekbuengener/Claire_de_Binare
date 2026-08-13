@@ -24,7 +24,9 @@ Preference order:
 
 1. `CDB_WINDOW_BANK_ROOT` / `CDB_DATASET_ROOT`
 2. `<EXEC_ROOT>/artifacts/market_data` (local tree or junction)
-3. Parent Claire_de_Binare checkout `artifacts/market_data` (`.worktrees/<name>` layout)
+3. Parent checkout `artifacts/market_data`, discovered only from a known Git
+   worktree layout: `<checkout>/.worktrees/<name>` or
+   `Y:\\Worktrees\\<repo>\\<name>` with matching `.git/worktrees/<name>` metadata.
 
 All 39 locked Batch-A development windows must be present. No candle copy.
 No dataset content mutation.
