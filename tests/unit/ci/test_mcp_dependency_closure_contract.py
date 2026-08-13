@@ -2,9 +2,11 @@
 
 from __future__ import annotations
 
+from pathlib import Path
+
 import pytest
 
-from pathlib import Path
+from ci.stages import mcp_dependency_closure
 
 pytestmark = pytest.mark.unit
 
@@ -28,3 +30,23 @@ def test_mcp_fast_ci_dependency_closure_pins_pydantic_core_pair() -> None:
     assert requirements["mcp-server-time"] == "2026.7.10"
     assert requirements["pydantic"] == "2.14.0b1"
     assert requirements["pydantic-core"] == "2.48.0"
+
+
+def test_mcp_dependency_closure_rejects_an_incompatible_active_sdk(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    monkeypatch.setattr(
+        mcp_dependency_closure.importlib.metadata,
+        "version",
+        lambda name: "2.0.0",
+    )
+
+    with pytest.raises(ValueError, match="MCP_SDK_VERSION_MISMATCH"):
+        mcp_dependency_closure._validate_mcp_sdk(REPO_ROOT)
+
+
+def test_mcp_dependency_closure_accepts_the_pinned_sdk() -> None:
+    expected, active = mcp_dependency_closure._validate_mcp_sdk(REPO_ROOT)
+
+    assert expected == "1.28.1"
+    assert active == expected
