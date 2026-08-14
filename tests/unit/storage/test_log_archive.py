@@ -17,7 +17,6 @@ from tools.storage.log_archive import (
     verify_planned_source,
 )
 
-
 AS_OF = datetime(2026, 8, 14, 12, 0, tzinfo=timezone.utc)
 ENV = {"CDB_BULK_STORAGE_ROOT": "Y:\\CDB-Storage"}
 
@@ -91,7 +90,9 @@ def test_archive_and_quarantine_subtrees_are_excluded_from_plan_and_fingerprint(
     baseline = build_log_archive_plan(source, environ=ENV, as_of_utc=AS_OF)
 
     assert [entry["relative_path"] for entry in plan["entries"]] == [ordinary.name]
-    assert sum(entry["size_bytes"] for entry in plan["entries"]) == ordinary.stat().st_size
+    assert (
+        sum(entry["size_bytes"] for entry in plan["entries"]) == ordinary.stat().st_size
+    )
     assert plan["plan_fingerprint"] == baseline["plan_fingerprint"]
     assert all(
         path.relative_to(source).as_posix()
@@ -119,7 +120,9 @@ def test_hot_and_todays_events_are_kept(
 
 
 @pytest.mark.unit
-@pytest.mark.parametrize("name", ["unknown.jsonl", "_quarantine", "_archive_old", "paper_trading_2026.log"])
+@pytest.mark.parametrize(
+    "name", ["unknown.jsonl", "_quarantine", "_archive_old", "paper_trading_2026.log"]
+)
 def test_unknown_and_paper_logs_are_excluded(
     archive_roots: tuple[Path, Path], name: str
 ) -> None:
@@ -132,13 +135,17 @@ def test_unknown_and_paper_logs_are_excluded(
 
 
 @pytest.mark.unit
-@pytest.mark.parametrize("root", ["", "D:\\CDB-Storage", "Y:\\Worktrees\\Claire_de_Binare"])
+@pytest.mark.parametrize(
+    "root", ["", "D:\\CDB-Storage", "Y:\\Worktrees\\Claire_de_Binare"]
+)
 def test_noncanonical_bulk_root_blocks(source_root: Path, root: str) -> None:
     source_root.mkdir()
     _write(source_root, "events_20260714.jsonl")
 
     with pytest.raises(LogArchiveError, match="BULK_STORAGE"):
-        build_log_archive_plan(source_root, environ={"CDB_BULK_STORAGE_ROOT": root}, as_of_utc=AS_OF)
+        build_log_archive_plan(
+            source_root, environ={"CDB_BULK_STORAGE_ROOT": root}, as_of_utc=AS_OF
+        )
 
 
 @pytest.fixture
@@ -246,7 +253,9 @@ def test_apply_resume_requires_source_to_remain_bound(
     _write(destination, file.name, "same\n")
     plan = build_log_archive_plan(source, environ=ENV, as_of_utc=AS_OF)
 
-    result = apply_log_archive_plan(plan, plan["plan_fingerprint"], tmp_path / "evidence.json")
+    result = apply_log_archive_plan(
+        plan, plan["plan_fingerprint"], tmp_path / "evidence.json"
+    )
 
     assert result["entries"][0]["disposition"] == "RESUMED_VERIFIED_DELETED"
     assert not file.exists()
@@ -260,7 +269,9 @@ def test_apply_holds_on_source_drift_without_delete(
     plan = build_log_archive_plan(source, environ=ENV, as_of_utc=AS_OF)
     file.write_text("after\n", encoding="utf-8")
 
-    result = apply_log_archive_plan(plan, plan["plan_fingerprint"], tmp_path / "evidence.json")
+    result = apply_log_archive_plan(
+        plan, plan["plan_fingerprint"], tmp_path / "evidence.json"
+    )
 
     assert result["result"] == "BLOCKED"
     assert file.exists()
@@ -282,6 +293,8 @@ def test_apply_refuses_to_mutate_when_initial_evidence_journal_cannot_be_written
     monkeypatch.setattr("tools.storage.log_archive._write_evidence", fail_write)
 
     with pytest.raises(LogArchiveError, match="EVIDENCE_JOURNAL_INIT_FAILED"):
-        apply_log_archive_plan(plan, plan["plan_fingerprint"], tmp_path / "evidence.json")
+        apply_log_archive_plan(
+            plan, plan["plan_fingerprint"], tmp_path / "evidence.json"
+        )
 
     assert file.exists()
