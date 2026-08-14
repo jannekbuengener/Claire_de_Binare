@@ -161,8 +161,6 @@ def _run_cmd(
 
 def _terminate_process_tree(proc: subprocess.Popen[str]) -> None:
     """Terminate a timed-out child and every descendant that can hold its pipes."""
-    if proc.poll() is not None:
-        return
     if os.name == "nt":
         subprocess.run(
             ["taskkill", "/PID", str(proc.pid), "/T", "/F"],

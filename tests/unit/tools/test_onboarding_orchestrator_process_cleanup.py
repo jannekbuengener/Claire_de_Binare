@@ -15,7 +15,9 @@ def test_run_cmd_timeout_terminates_windows_process_tree_and_drains_pipes(
     """A timeout must close the child tree before captured pipes are drained."""
     process = MagicMock()
     process.pid = 4242
-    process.poll.return_value = None
+    # `communicate()` can time out on a descendant-held pipe after the direct
+    # child already exited. The timeout cleanup must still run in that case.
+    process.poll.return_value = 0
     process.communicate.side_effect = [
         subprocess.TimeoutExpired(cmd=["child"], timeout=0.2),
         ("", ""),
