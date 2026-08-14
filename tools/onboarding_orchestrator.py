@@ -123,11 +123,33 @@ def _run_cmd(
     try:
         if runner is not None:
             proc = runner(run_cmd, **kwargs)
+            out = (proc.stdout or "").strip()
+            err = (proc.stderr or "").strip()
+            return proc.returncode, out, err
+
+        popen_kwargs = dict(kwargs)
+        popen_kwargs.pop("timeout")
+        popen_kwargs.pop("capture_output")
+        popen_kwargs["stdout"] = subprocess.PIPE
+        popen_kwargs["stderr"] = subprocess.PIPE
+        if os.name == "nt":
+            popen_kwargs["creationflags"] = getattr(
+                subprocess, "CREATE_NEW_PROCESS_GROUP", 0
+            )
         else:
-            proc = subprocess.run(run_cmd, **kwargs)
-        out = (proc.stdout or "").strip()
-        err = (proc.stderr or "").strip()
-        return proc.returncode, out, err
+            popen_kwargs["start_new_session"] = True
+        proc = subprocess.Popen(run_cmd, **popen_kwargs)
+        try:
+            out, err = proc.communicate(timeout=timeout)
+        except subprocess.TimeoutExpired:
+            _terminate_process_tree(proc)
+            out, err = proc.communicate(timeout=5)
+            return (
+                -1,
+                "",
+                f"command timed out after {timeout:g}s; process tree terminated",
+            )
+        return proc.returncode, (out or "").strip(), (err or "").strip()
     except (
         FileNotFoundError,
         OSError,
@@ -135,6 +157,20 @@ def _run_cmd(
         UnicodeDecodeError,
     ) as exc:
         return -1, "", str(exc)
+
+
+def _terminate_process_tree(proc: subprocess.Popen[str]) -> None:
+    """Terminate a timed-out child and every descendant that can hold its pipes."""
+    if os.name == "nt":
+        subprocess.run(
+            ["taskkill", "/PID", str(proc.pid), "/T", "/F"],
+            capture_output=True,
+            text=True,
+            check=False,
+            timeout=5,
+        )
+        return
+    os.killpg(os.getpgid(proc.pid), 15)
 
 
 @dataclass
