@@ -101,6 +101,14 @@ def _fingerprint(plan: Mapping[str, Any]) -> str:
     return hashlib.sha256(canonical.encode("utf-8")).hexdigest()
 
 
+def _is_excluded_subtree(source_root: Path, path: Path) -> bool:
+    """Return whether a path resides under an excluded source subtree."""
+    return any(
+        component.startswith("_archive_") or component == "_quarantine"
+        for component in path.relative_to(source_root).parts[:-1]
+    )
+
+
 def build_log_archive_plan(
     source_root: Path,
     *,
@@ -122,7 +130,14 @@ def build_log_archive_plan(
     destination_root = logs_root / "events"
     _reject_reparse_components(destination_root)
     cutoff = as_of - timedelta(days=hot_days)
-    files = sorted((path for path in source_root.rglob("*") if path.is_file()), key=lambda path: path.as_posix())
+    files = sorted(
+        (
+            path
+            for path in source_root.rglob("*")
+            if path.is_file() and not _is_excluded_subtree(source_root, path)
+        ),
+        key=lambda path: path.as_posix(),
+    )
     entries = [_entry_for(source_root, destination_root, path, cutoff) for path in files]
     plan: dict[str, Any] = {
         "schema_version": SCHEMA_VERSION,

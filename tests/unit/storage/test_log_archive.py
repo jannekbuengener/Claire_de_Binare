@@ -4,6 +4,7 @@ from __future__ import annotations
 
 from datetime import datetime, timezone
 from pathlib import Path
+from shutil import rmtree
 
 import pytest
 
@@ -34,6 +35,7 @@ def archive_roots(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> tuple[Path
 
 def _write(source: Path, name: str, content: str = "{}\n") -> Path:
     path = source / name
+    path.parent.mkdir(parents=True, exist_ok=True)
     path.write_text(content, encoding="utf-8")
     return path
 
@@ -50,6 +52,55 @@ def test_cold_event_is_candidate_with_deterministic_fingerprint(
 
     assert first["entries"][0]["classification"] == "ARCHIVE_CANDIDATE"
     assert first["plan_fingerprint"] == second["plan_fingerprint"]
+
+
+@pytest.mark.unit
+def test_archive_and_quarantine_subtrees_are_excluded_from_plan_and_fingerprint(
+    archive_roots: tuple[Path, Path],
+) -> None:
+    source, _destination = archive_roots
+    ordinary = _write(source, "events_20260714.jsonl", "ordinary\n")
+    archived = _write(
+        source / "nested" / "_archive_20260424_153327",
+        "events_20260714.jsonl",
+        "archived\n",
+    )
+    quarantined = _write(
+        source / "deep" / "tree" / "_quarantine",
+        "events_20260714.jsonl",
+        "quarantined\n",
+    )
+    top_level_quarantine = _write(
+        source / "_quarantine",
+        "events_20260714.jsonl",
+        "also quarantined\n",
+    )
+    archive_with_nested_quarantine = _write(
+        source / "_archive_old" / "deeper" / "_quarantine",
+        "events_20260714.jsonl",
+        "also excluded\n",
+    )
+
+    plan = build_log_archive_plan(source, environ=ENV, as_of_utc=AS_OF)
+    rmtree(source / "nested")
+    rmtree(source / "deep")
+    rmtree(source / "_quarantine")
+    rmtree(source / "_archive_old")
+    baseline = build_log_archive_plan(source, environ=ENV, as_of_utc=AS_OF)
+
+    assert [entry["relative_path"] for entry in plan["entries"]] == [ordinary.name]
+    assert sum(entry["size_bytes"] for entry in plan["entries"]) == ordinary.stat().st_size
+    assert plan["plan_fingerprint"] == baseline["plan_fingerprint"]
+    assert all(
+        path.relative_to(source).as_posix()
+        not in {entry["relative_path"] for entry in plan["entries"]}
+        for path in (
+            archived,
+            quarantined,
+            top_level_quarantine,
+            archive_with_nested_quarantine,
+        )
+    )
 
 
 @pytest.mark.unit
