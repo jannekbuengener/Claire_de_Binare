@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import json
 from datetime import datetime, timezone
 from pathlib import Path
 from shutil import rmtree
@@ -10,6 +11,7 @@ import pytest
 
 from tools.storage.log_archive import (
     LogArchiveError,
+    apply_log_archive_plan,
     build_log_archive_plan,
     verify_copied_file,
     verify_planned_source,
@@ -203,3 +205,64 @@ def test_changed_source_or_copy_hash_mismatch_blocks_before_any_unlink(
     with pytest.raises(LogArchiveError, match="COPY_HASH_MISMATCH"):
         verify_copied_file(file, destination / file.name)
     assert file.exists()
+
+
+def test_apply_requires_the_exact_expected_fingerprint(
+    archive_roots: tuple[Path, Path], tmp_path: Path
+) -> None:
+    source, destination = archive_roots
+    file = _write(source, "events_20260714.jsonl", "bound\n")
+    plan = build_log_archive_plan(source, environ=ENV, as_of_utc=AS_OF)
+
+    result = apply_log_archive_plan(plan, "wrong", tmp_path / "evidence.json")
+
+    assert result["result"] == "BLOCKED"
+    assert not (destination / file.name).exists()
+    assert file.exists()
+
+
+def test_apply_copies_verifies_then_deletes_and_writes_evidence_atomically(
+    archive_roots: tuple[Path, Path], tmp_path: Path
+) -> None:
+    source, destination = archive_roots
+    file = _write(source, "events_20260714.jsonl", "bound\n")
+    plan = build_log_archive_plan(source, environ=ENV, as_of_utc=AS_OF)
+    evidence = tmp_path / "evidence.json"
+
+    result = apply_log_archive_plan(plan, plan["plan_fingerprint"], evidence)
+
+    assert result["result"] == "SUCCESS"
+    assert not file.exists()
+    assert (destination / file.name).read_text(encoding="utf-8") == "bound\n"
+    assert json.loads(evidence.read_text(encoding="utf-8"))["deleted_source_count"] == 1
+    assert result["entries"][0]["disposition"] == "COPIED_VERIFIED_DELETED"
+
+
+def test_apply_resume_requires_source_to_remain_bound(
+    archive_roots: tuple[Path, Path], tmp_path: Path
+) -> None:
+    source, destination = archive_roots
+    file = _write(source, "events_20260714.jsonl", "same\n")
+    _write(destination, file.name, "same\n")
+    plan = build_log_archive_plan(source, environ=ENV, as_of_utc=AS_OF)
+
+    result = apply_log_archive_plan(plan, plan["plan_fingerprint"], tmp_path / "evidence.json")
+
+    assert result["entries"][0]["disposition"] == "RESUMED_VERIFIED_DELETED"
+    assert not file.exists()
+
+
+def test_apply_holds_on_source_drift_without_delete(
+    archive_roots: tuple[Path, Path], tmp_path: Path
+) -> None:
+    source, destination = archive_roots
+    file = _write(source, "events_20260714.jsonl", "before\n")
+    plan = build_log_archive_plan(source, environ=ENV, as_of_utc=AS_OF)
+    file.write_text("after\n", encoding="utf-8")
+
+    result = apply_log_archive_plan(plan, plan["plan_fingerprint"], tmp_path / "evidence.json")
+
+    assert result["result"] == "BLOCKED"
+    assert file.exists()
+    assert not (destination / file.name).exists()
+    assert result["entries"][0]["disposition"] == "HELD_SOURCE_DRIFT"

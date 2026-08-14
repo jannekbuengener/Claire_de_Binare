@@ -35,14 +35,34 @@ read-only planbar, erscheint aber als `HOLD_DESTINATION_ROOT_REQUIRED` und
 blockiert jeden späteren Apply. Ein vorhandenes Ziel mit abweichendem Hash ist
 `HOLD`; ein identisches vorhandenes Ziel ist als Resume-Fall zulässig.
 
-## Apply-Gate (nicht Teil von #4422 v1)
+## Apply-Vertrag
 
-Ein späterer, separat autorisierter Apply darf erst nach erneutem Plan, stabiler
-Quelle und vollständigem Copy-Verify handeln: Größe und SHA-256 von Quelle und
-Ziel müssen übereinstimmen. Jede nach Planung veränderte Quelle, jeder
-Hash-Mismatch oder jede Zielkollision mit abweichendem Inhalt blockiert. Ein
-Source-Unlink ist erst danach zulässig. Dieser v1-Slice bietet keinen
-Copy/Delete-Apply.
+`python -m tools.storage.log_archive apply --plan <plan.json>
+--expected-fingerprint <sha256> --evidence-output <result.json>` verarbeitet
+nie einen neu bestimmten Scope: ausschließlich `ARCHIVE_CANDIDATE`-Einträge des
+gebundenen Plans. Der erwartete Fingerprint ist Pflicht und muss sowohl dem
+eingebetteten Plan-Fingerprint als auch der kanonischen Serialisierung des
+Plans entsprechen. Abweichungen stoppen vor jedem Copy.
+
+Vor Copy, nach Copy und unmittelbar vor Source-Delete werden Pfad, Größe und
+SHA-256 geprüft. Copy, Destination-Verify und Delete bleiben pro Datei strikt
+getrennt. Ein vorhandenes, exakt gleiches Ziel ist ein zulässiger Resume-Fall;
+ein abweichendes oder nicht reguläres Ziel ist `HELD_DESTINATION_COLLISION`.
+Source-, Größen-, Hash-, Traversal- oder Reparse-Drift hält den Apply an und
+löscht die Quelle nicht. `_archive_*`, `_quarantine`, absolute oder `..`-Pfade
+sowie Ziele außerhalb des kanonischen `logs/events`-Subtrees werden nie
+ausgeführt.
+
+Der Apply schreibt atomar maschinenlesbare Evidence. Schema
+`cdb.log-archive-apply-result/v1` enthält mindestens Schema, Issue,
+Plan-Fingerprint, Quelle/Ziel, Start/Ende, Plan-/Copy-/Resume-/Verify-/Delete-
+und Hold-Zähler samt Bytes, Ergebnis und Entry-Liste. Jeder Entry enthält
+relativen Pfad, erwartete Größe/Hash, Zielpfad, Disposition,
+Destination-Verifikation, Source-Delete und Failure-Reason.
+
+Der spätere kanonische Evidence-Pfad lautet
+`Y:\\CDB-Storage\\evidence\\issue-4422\\archive_apply_result.json`; diese
+Session erzeugt ihn nicht und führt keinen realen lokalen Apply aus.
 
 ## Nicht-Ziele
 

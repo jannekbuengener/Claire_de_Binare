@@ -5,6 +5,8 @@ from __future__ import annotations
 import argparse
 import hashlib
 import json
+import os
+import shutil
 import stat
 from datetime import datetime, timedelta, timezone
 from pathlib import Path
@@ -17,6 +19,7 @@ from tools.storage.bulk_storage_contract import (
 )
 
 SCHEMA_VERSION = "cdb.log-archive-plan/v1"
+APPLY_SCHEMA_VERSION = "cdb.log-archive-apply-result/v1"
 ISSUE_REF = "#4422"
 DEFAULT_HOT_DAYS = 30
 EVENT_FILE_PATTERN = r"events_(\d{8})\.jsonl"
@@ -170,6 +173,118 @@ def verify_copied_file(source: Path, destination: Path) -> None:
         raise LogArchiveError("COPY_SIZE_MISMATCH")
 
 
+def _plan_fingerprint(plan: Mapping[str, Any]) -> str:
+    unsigned = dict(plan)
+    unsigned.pop("plan_fingerprint", None)
+    return _fingerprint(unsigned)
+
+
+def _safe_relative_path(value: str) -> Path:
+    path = Path(value)
+    if path.is_absolute() or not value or any(part in {"", ".", ".."} for part in path.parts):
+        raise LogArchiveError("APPLY_RELATIVE_PATH_INVALID")
+    if any(part.startswith("_archive_") or part == "_quarantine" for part in path.parts):
+        raise LogArchiveError("APPLY_EXCLUDED_SUBTREE")
+    if not fullmatch(EVENT_FILE_PATTERN, path.name):
+        raise LogArchiveError("APPLY_CANDIDATE_NAME_INVALID")
+    return path
+
+
+def _write_evidence(path: Path, evidence: Mapping[str, Any]) -> None:
+    path.parent.mkdir(parents=True, exist_ok=True)
+    temporary = path.with_name(f".{path.name}.tmp")
+    temporary.write_text(json.dumps(evidence, sort_keys=True, indent=2) + "\n", encoding="utf-8")
+    os.replace(temporary, path)
+
+
+def apply_log_archive_plan(
+    plan: Mapping[str, Any], expected_fingerprint: str, evidence_output_path: Path
+) -> dict[str, Any]:
+    """Apply a previously bound plan; never derive or expand its candidate scope."""
+    started = datetime.now(timezone.utc).isoformat().replace("+00:00", "Z")
+    entries: list[dict[str, Any]] = []
+    planned_entries = list(plan.get("entries", []))
+    planned = [entry for entry in planned_entries if entry.get("classification") == "ARCHIVE_CANDIDATE"]
+    evidence: dict[str, Any] = {
+        "schema_version": APPLY_SCHEMA_VERSION,
+        "issue_ref": ISSUE_REF,
+        "plan_fingerprint": plan.get("plan_fingerprint"),
+        "source_root": plan.get("source_root"),
+        "destination_root": plan.get("destination_root"),
+        "started_at_utc": started,
+        "planned_file_count": len(planned),
+        "planned_bytes": sum(int(entry.get("size_bytes", 0)) for entry in planned),
+        "copied_file_count": 0, "copied_bytes": 0, "resumed_file_count": 0,
+        "verified_file_count": 0, "verified_bytes": 0,
+        "deleted_source_count": 0, "deleted_source_bytes": 0,
+        "held_file_count": 0, "result": "BLOCKED", "entries": entries,
+    }
+    try:
+        if not expected_fingerprint or plan.get("schema_version") != SCHEMA_VERSION or plan.get("issue_ref") != ISSUE_REF:
+            raise LogArchiveError("APPLY_PLAN_INVALID")
+        if plan.get("plan_fingerprint") != expected_fingerprint or _plan_fingerprint(plan) != expected_fingerprint:
+            raise LogArchiveError("APPLY_FINGERPRINT_MISMATCH")
+        source_root, destination_root = Path(str(plan["source_root"])), Path(str(plan["destination_root"]))
+        if not source_root.is_dir() or not destination_root.is_dir():
+            raise LogArchiveError("APPLY_ROOT_REQUIRED")
+        canonical_destination = resolve_bulk_storage_path("logs") / "events"
+        if os.path.normcase(str(destination_root)) != os.path.normcase(str(canonical_destination)):
+            raise LogArchiveError("APPLY_DESTINATION_ROOT_INVALID")
+        _reject_reparse_components(source_root)
+        _reject_reparse_components(destination_root)
+        for planned_entry in planned:
+            relative = _safe_relative_path(str(planned_entry.get("relative_path", "")))
+            event_date = datetime.strptime(relative.stem.removeprefix("events_"), "%Y%m%d").date()
+            if event_date >= datetime.fromisoformat(str(plan["cutoff_date"])).date():
+                raise LogArchiveError("APPLY_HOT_ENTRY_FORBIDDEN")
+            source, destination = source_root / relative, destination_root / relative
+            entry = {
+                "relative_path": relative.as_posix(),
+                "expected_size_bytes": planned_entry.get("size_bytes"),
+                "expected_sha256": planned_entry.get("sha256"),
+                "destination_path": str(destination),
+                "disposition": None, "destination_verified": False,
+                "source_deleted": False, "failure_reason": None,
+            }
+            entries.append(entry)
+            try:
+                _reject_reparse_components(source)
+                _reject_reparse_components(destination.parent)
+                verify_planned_source(source, planned_entry)
+                if destination.exists():
+                    if not destination.is_file() or destination.stat().st_size != source.stat().st_size or _sha256(destination) != planned_entry["sha256"]:
+                        raise LogArchiveError("DESTINATION_COLLISION")
+                    entry["disposition"] = "RESUMED_VERIFIED_DELETED"
+                    evidence["resumed_file_count"] += 1
+                else:
+                    destination.parent.mkdir(parents=True, exist_ok=True)
+                    shutil.copyfile(source, destination)
+                    entry["disposition"] = "COPIED_VERIFIED_DELETED"
+                    evidence["copied_file_count"] += 1
+                    evidence["copied_bytes"] += int(planned_entry["size_bytes"])
+                verify_copied_file(source, destination)
+                entry["destination_verified"] = True
+                evidence["verified_file_count"] += 1
+                evidence["verified_bytes"] += int(planned_entry["size_bytes"])
+                verify_planned_source(source, planned_entry)
+                source.unlink()
+                entry["source_deleted"] = True
+                evidence["deleted_source_count"] += 1
+                evidence["deleted_source_bytes"] += int(planned_entry["size_bytes"])
+            except LogArchiveError as exc:
+                entry["failure_reason"] = str(exc)
+                entry["disposition"] = "HELD_DESTINATION_COLLISION" if str(exc) == "DESTINATION_COLLISION" else "HELD_SOURCE_DRIFT"
+                evidence["held_file_count"] += 1
+                break
+        if evidence["held_file_count"] == 0:
+            evidence["result"] = "SUCCESS"
+    except LogArchiveError as exc:
+        evidence["failure_reason"] = str(exc)
+    evidence["completed_at_utc"] = datetime.now(timezone.utc).isoformat().replace("+00:00", "Z")
+    _write_evidence(evidence_output_path, evidence)
+    return evidence
+
+
 def _parse_as_of(value: str) -> datetime:
     try:
         parsed = datetime.fromisoformat(value.replace("Z", "+00:00"))
@@ -187,11 +302,18 @@ def main(argv: Sequence[str] | None = None) -> int:
     plan_parser.add_argument("--source-root", type=Path, required=True)
     plan_parser.add_argument("--as-of-utc", type=_parse_as_of, required=True)
     plan_parser.add_argument("--hot-days", type=int, default=DEFAULT_HOT_DAYS)
+    apply_parser = subparsers.add_parser("apply", help="apply a bound archive plan")
+    apply_parser.add_argument("--plan", type=Path, required=True)
+    apply_parser.add_argument("--expected-fingerprint", required=True)
+    apply_parser.add_argument("--evidence-output", type=Path, required=True)
     args = parser.parse_args(argv)
     try:
-        plan = build_log_archive_plan(
-            args.source_root, as_of_utc=args.as_of_utc, hot_days=args.hot_days
-        )
+        if args.command == "apply":
+            plan = json.loads(args.plan.read_text(encoding="utf-8"))
+            result = apply_log_archive_plan(plan, args.expected_fingerprint, args.evidence_output)
+            print(json.dumps(result, sort_keys=True, indent=2))
+            return 0 if result["result"] == "SUCCESS" else 2
+        plan = build_log_archive_plan(args.source_root, as_of_utc=args.as_of_utc, hot_days=args.hot_days)
     except LogArchiveError as exc:
         print(json.dumps({"status": "BLOCKED", "reason_code": str(exc)}, sort_keys=True))
         return 2
