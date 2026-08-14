@@ -60,6 +60,13 @@ und Hold-Zähler samt Bytes, Ergebnis und Entry-Liste. Jeder Entry enthält
 relativen Pfad, erwartete Größe/Hash, Zielpfad, Disposition,
 Destination-Verifikation, Source-Delete und Failure-Reason.
 
+Vor der ersten Datenmutation muss der Runner ein Journal mit
+`APPLY_STARTED` atomar schreiben. Vor jedem Delete wird `DELETE_PENDING`
+persistiert, danach `APPLY_IN_PROGRESS`; erst der Abschluss trägt
+`APPLY_COMPLETED`. Scheitert die Journal-Initialisierung, beginnt kein Apply.
+Scheitert ein späterer Journal-Write, stoppt der Runner vor weiteren Deletes;
+das zuletzt persistierte Journal bleibt als Grenze der Audit-Evidence erhalten.
+
 Der spätere kanonische Evidence-Pfad lautet
 `Y:\\CDB-Storage\\evidence\\issue-4422\\archive_apply_result.json`; diese
 Session erzeugt ihn nicht und führt keinen realen lokalen Apply aus.

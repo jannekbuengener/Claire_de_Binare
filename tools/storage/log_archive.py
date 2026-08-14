@@ -217,7 +217,7 @@ def apply_log_archive_plan(
         "copied_file_count": 0, "copied_bytes": 0, "resumed_file_count": 0,
         "verified_file_count": 0, "verified_bytes": 0,
         "deleted_source_count": 0, "deleted_source_bytes": 0,
-        "held_file_count": 0, "result": "BLOCKED", "entries": entries,
+        "held_file_count": 0, "result": "BLOCKED", "apply_status": "PRECHECK", "entries": entries,
     }
     try:
         if not expected_fingerprint or plan.get("schema_version") != SCHEMA_VERSION or plan.get("issue_ref") != ISSUE_REF:
@@ -232,6 +232,11 @@ def apply_log_archive_plan(
             raise LogArchiveError("APPLY_DESTINATION_ROOT_INVALID")
         _reject_reparse_components(source_root)
         _reject_reparse_components(destination_root)
+        evidence["apply_status"] = "APPLY_STARTED"
+        try:
+            _write_evidence(evidence_output_path, evidence)
+        except OSError as exc:
+            raise LogArchiveError("EVIDENCE_JOURNAL_INIT_FAILED") from exc
         for planned_entry in planned:
             relative = _safe_relative_path(str(planned_entry.get("relative_path", "")))
             event_date = datetime.strptime(relative.stem.removeprefix("events_"), "%Y%m%d").date()
@@ -243,7 +248,8 @@ def apply_log_archive_plan(
                 "expected_size_bytes": planned_entry.get("size_bytes"),
                 "expected_sha256": planned_entry.get("sha256"),
                 "destination_path": str(destination),
-                "disposition": None, "destination_verified": False,
+                "disposition": None, "source_verified_pre_copy": False,
+                "destination_verified": False, "source_verified_pre_delete": False,
                 "source_deleted": False, "failure_reason": None,
             }
             entries.append(entry)
@@ -251,6 +257,7 @@ def apply_log_archive_plan(
                 _reject_reparse_components(source)
                 _reject_reparse_components(destination.parent)
                 verify_planned_source(source, planned_entry)
+                entry["source_verified_pre_copy"] = True
                 if destination.exists():
                     if not destination.is_file() or destination.stat().st_size != source.stat().st_size or _sha256(destination) != planned_entry["sha256"]:
                         raise LogArchiveError("DESTINATION_COLLISION")
@@ -267,10 +274,15 @@ def apply_log_archive_plan(
                 evidence["verified_file_count"] += 1
                 evidence["verified_bytes"] += int(planned_entry["size_bytes"])
                 verify_planned_source(source, planned_entry)
+                entry["source_verified_pre_delete"] = True
+                evidence["apply_status"] = "DELETE_PENDING"
+                _write_evidence(evidence_output_path, evidence)
                 source.unlink()
                 entry["source_deleted"] = True
                 evidence["deleted_source_count"] += 1
                 evidence["deleted_source_bytes"] += int(planned_entry["size_bytes"])
+                evidence["apply_status"] = "APPLY_IN_PROGRESS"
+                _write_evidence(evidence_output_path, evidence)
             except LogArchiveError as exc:
                 entry["failure_reason"] = str(exc)
                 entry["disposition"] = "HELD_DESTINATION_COLLISION" if str(exc) == "DESTINATION_COLLISION" else "HELD_SOURCE_DRIFT"
@@ -280,7 +292,10 @@ def apply_log_archive_plan(
             evidence["result"] = "SUCCESS"
     except LogArchiveError as exc:
         evidence["failure_reason"] = str(exc)
+    if evidence.get("failure_reason") == "EVIDENCE_JOURNAL_INIT_FAILED":
+        raise LogArchiveError("EVIDENCE_JOURNAL_INIT_FAILED")
     evidence["completed_at_utc"] = datetime.now(timezone.utc).isoformat().replace("+00:00", "Z")
+    evidence["apply_status"] = "APPLY_COMPLETED"
     _write_evidence(evidence_output_path, evidence)
     return evidence
 

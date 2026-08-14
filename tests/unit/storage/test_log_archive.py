@@ -266,3 +266,22 @@ def test_apply_holds_on_source_drift_without_delete(
     assert file.exists()
     assert not (destination / file.name).exists()
     assert result["entries"][0]["disposition"] == "HELD_SOURCE_DRIFT"
+
+
+@pytest.mark.unit
+def test_apply_refuses_to_mutate_when_initial_evidence_journal_cannot_be_written(
+    archive_roots: tuple[Path, Path], tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    source, _destination = archive_roots
+    file = _write(source, "events_20260714.jsonl", "bound\n")
+    plan = build_log_archive_plan(source, environ=ENV, as_of_utc=AS_OF)
+
+    def fail_write(*_args: object, **_kwargs: object) -> None:
+        raise OSError("evidence unavailable")
+
+    monkeypatch.setattr("tools.storage.log_archive._write_evidence", fail_write)
+
+    with pytest.raises(LogArchiveError, match="EVIDENCE_JOURNAL_INIT_FAILED"):
+        apply_log_archive_plan(plan, plan["plan_fingerprint"], tmp_path / "evidence.json")
+
+    assert file.exists()
