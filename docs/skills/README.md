@@ -54,8 +54,9 @@ synchron gehalten werden.
 | Dokument | Pfad | Rolle |
 |---|---|---|
 | Redis Skill Routing (SSOT) | [`CDB_REDIS_SKILL_ROUTING.md`](CDB_REDIS_SKILL_ROUTING.md) | PR #3597 |
-| Verfuegbare Skills (Index) | [`CDB.VERFUEGBARE.SKILLS_LISTE_2026-07-01.md`](CDB.VERFUEGBARE.SKILLS_LISTE_2026-07-01.md) | aktueller Index |
-| Verfuegbare Skills (Vorgaenger) | [`CDB.VERFUEGBARE.SKILLS_LISTE_2026-06-30.md`](CDB.VERFUEGBARE.SKILLS_LISTE_2026-06-30.md) | PR #3598 |
+| Verfuegbare Skills (Index) | [`CDB.VERFUEGBARE.SKILLS_LISTE_2026-08-18_CHATGPT_ERKLAERT.md`](CDB.VERFUEGBARE.SKILLS_LISTE_2026-08-18_CHATGPT_ERKLAERT.md) | aktueller Routing-Index; enthält auch klar getrennte ChatGPT-only Skills, ohne den CDB-Canon zu erweitern |
+| Verfuegbare Skills (Vorgaenger) | [`CDB.VERFUEGBARE.SKILLS_LISTE_2026-07-01.md`](CDB.VERFUEGBARE.SKILLS_LISTE_2026-07-01.md) | abgeloester Index |
+| Verfuegbare Skills (historisch) | [`CDB.VERFUEGBARE.SKILLS_LISTE_2026-06-30.md`](CDB.VERFUEGBARE.SKILLS_LISTE_2026-06-30.md) | PR #3598 |
 | SurrealDB Skills Activation | [`CDB_SURREALDB_SKILLS_RULES_ACTIVATION.md`](CDB_SURREALDB_SKILLS_RULES_ACTIVATION.md) | #3482 |
 
 ## Nicht als aktive Skills
@@ -69,6 +70,7 @@ synchron gehalten werden.
 | Redis Plugin Skills | Routing-only (extern) |
 | `.claude/skills/*.skill` | Alias/Paketfläche, nicht primäre Quelle |
 | `.gemini/skills/` | Eingeschraenkt (4 Skills), nicht Domain-Mirror |
+| ChatGPT-only Skills | Routing-/Denkhilfe fuer ChatGPT; keine CDB-Repo-Skills und keine Mirror-Adapter |
 
 ## Redis Skills (extern — Routing only)
 
@@ -90,6 +92,7 @@ die Surfaces spiegeln. Workflow-Details siehe Registry, Abschnitt 9.
 - Do NOT Skills direkt in `.opencode/`, `.cursor/`, `.codex/`,
   `.claude/` ohne kanonische Datei in `docs/skills/` anlegen.
 - Do NOT Mirror-Kopien ohne Pflicht-Header aus Registry, Abschnitt 7.
+- Do NOT ChatGPT-only Skills als CDB-Slash-Skills oder Repo-Canon behandeln.
 
 ## Related Surfaces
 

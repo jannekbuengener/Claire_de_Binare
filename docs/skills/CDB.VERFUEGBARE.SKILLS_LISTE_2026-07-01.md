@@ -2,10 +2,13 @@
 
 | Field | Value |
 | --- | --- |
-| Status | **canonical** (available-skills index) |
+| Status | **superseded** (historischer available-skills index) |
 | Date | 2026-07-01 |
+| Superseded by | [`CDB.VERFUEGBARE.SKILLS_LISTE_2026-08-18_CHATGPT_ERKLAERT.md`](CDB.VERFUEGBARE.SKILLS_LISTE_2026-08-18_CHATGPT_ERKLAERT.md) |
 | Supersedes | [`CDB.VERFUEGBARE.SKILLS_LISTE_2026-06-30.md`](CDB.VERFUEGBARE.SKILLS_LISTE_2026-06-30.md) |
 | Related | PR skills-canon-sync, Issue #3598 (Vorgänger-Index) |
+
+> Historischer Stand. Für aktuelle Skill-Zahlen, Routing-Regeln und die Trennung von CDB-Repo-Skills zu ChatGPT-only Skills die oben verlinkte Fassung vom 2026-08-18 verwenden.
 
 ## Zweck
 
@@ -93,7 +96,7 @@ SSOT Activation: [`CDB_SURREALDB_SKILLS_RULES_ACTIVATION.md`](CDB_SURREALDB_SKIL
 
 | Dokument | Rolle |
 | --- | --- |
-| [`README.md`](README.md) | `docs/skills/` Index (25 Skills) |
+| [`README.md`](README.md) | `docs/skills/` Index (historischer Stand: 25 Skills) |
 | [`SKILL_SURFACE_REGISTRY.md`](SKILL_SURFACE_REGISTRY.md) | Mirror-SSOT, Drift-Matrix §16 |
 | [`CDB_REDIS_SKILL_ROUTING.md`](CDB_REDIS_SKILL_ROUTING.md) | Redis-Routing-SSOT |
 | [`agents/OPEN_CODE_AGENTS.md`](../../agents/OPEN_CODE_AGENTS.md) | OpenCode Skill Routing |
