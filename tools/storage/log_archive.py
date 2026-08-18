@@ -281,6 +281,7 @@ def _validate_apply_roots(
         raise LogArchiveError("APPLY_DESTINATION_ROOT_INVALID")
     _reject_reparse_components(source_root)
     _reject_reparse_components(destination_root)
+    _reject_reparse_components(evidence_output_path)
     _reject_overlap(source_root, destination_root, "SOURCE_DESTINATION_OVERLAP")
     _reject_overlap(evidence_output_path, source_root, "EVIDENCE_PATH_OVERLAP")
     _reject_overlap(evidence_output_path, destination_root, "EVIDENCE_PATH_OVERLAP")
@@ -400,6 +401,7 @@ def apply_log_archive_plan(
                 entry["source_verified_pre_delete"] = True
                 evidence["apply_status"] = "DELETE_PENDING"
                 _write_evidence(evidence_output_path, evidence)
+                verify_planned_source(source, planned_entry)
                 source.unlink()
                 entry["source_deleted"] = True
                 evidence["deleted_source_count"] += 1
