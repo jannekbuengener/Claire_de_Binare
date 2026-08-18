@@ -194,7 +194,11 @@ def test_watch_normalizes_activities_and_pr_handoff_without_message_text() -> No
                             "plan": {
                                 "id": "plan-1",
                                 "steps": [
-                                    {"id": "s1", "index": 0, "title": "Implement adapter"}
+                                    {
+                                        "id": "s1",
+                                        "index": 0,
+                                        "title": "Implement adapter",
+                                    }
                                 ],
                             }
                         },
@@ -215,7 +219,15 @@ def test_watch_normalizes_activities_and_pr_handoff_without_message_text() -> No
 @pytest.mark.unit
 def test_plan_approval_requires_wait_state_and_follow_up_reuses_bound_session() -> None:
     calls: list[tuple[str, str, dict | None]] = []
-    states = iter(["IN_PROGRESS", "AWAITING_PLAN_APPROVAL", "IN_PROGRESS", "PAUSED", "IN_PROGRESS"])
+    states = iter(
+        [
+            "IN_PROGRESS",
+            "AWAITING_PLAN_APPROVAL",
+            "IN_PROGRESS",
+            "PAUSED",
+            "IN_PROGRESS",
+        ]
+    )
 
     def http(*, method, url, json=None, headers=None):
         calls.append((method, url, deepcopy(json)))
@@ -270,7 +282,11 @@ def test_cancel_is_fail_closed_without_network_call() -> None:
 
 @pytest.mark.unit
 def test_http_errors_are_classified_without_blind_retry() -> None:
-    for status, code in ((401, "AUTH_BLOCKED"), (403, "AUTH_BLOCKED"), (429, "PROVIDER_RATE_LIMITED")):
+    for status, code in (
+        (401, "AUTH_BLOCKED"),
+        (403, "AUTH_BLOCKED"),
+        (429, "PROVIDER_RATE_LIMITED"),
+    ):
         driver = JulesApiDriver(http=lambda **kwargs: {"status": status, "json": {}})
         with pytest.raises(DispatchError) as exc:
             driver.dispatch(_request())
@@ -300,7 +316,9 @@ def test_jules_api_key_is_runtime_header_only_and_shared_sanitizer_rejects_it() 
 
 
 @pytest.mark.unit
-def test_recorded_acp_dispatch_uses_contract_permissions_and_never_persists_prompt() -> None:
+def test_recorded_acp_dispatch_uses_contract_permissions_and_never_persists_prompt() -> (
+    None
+):
     registry = load_registry_document(REPO / "config" / "agent-control")
     contract = _jules_contract(open_pr=False)
     text = PROMPT_PATH.read_text(encoding="utf-8")

@@ -343,7 +343,11 @@ def preflight(
     provider_recorded_ok = (
         allow_recorded_cursor
         if is_cursor
-        else bool(allow_recorded_provider or allow_recorded_cursor) if is_jules else False
+        else (
+            bool(allow_recorded_provider or allow_recorded_cursor)
+            if is_jules
+            else False
+        )
     )
     live_dispatch = bool(provider_profile.get("live_dispatch", False))
     env_profile_id = agent["environment_profile"]

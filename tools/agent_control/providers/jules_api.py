@@ -130,7 +130,9 @@ class JulesApiDriver:
         if status >= 400:
             raise DispatchError("PROVIDER_HTTP_ERROR", f"HTTP {status}")
         if not isinstance(body, dict):
-            raise DispatchError("PROVIDER_MALFORMED_RESPONSE", "Jules response is not an object")
+            raise DispatchError(
+                "PROVIDER_MALFORMED_RESPONSE", "Jules response is not an object"
+            )
         return body
 
     def dispatch(self, request: ProviderRequest) -> ProviderResult:
@@ -145,15 +147,17 @@ class JulesApiDriver:
         profile = dict(request.provider_profile or {})
         route = dict(request.route or {})
         source = self._source_name(
-            str(profile.get("source") or route.get("jules_source") or DEFAULT_CDB_SOURCE)
+            str(
+                profile.get("source") or route.get("jules_source") or DEFAULT_CDB_SOURCE
+            )
         )
         starting_branch = str(
-            route.get("starting_ref")
-            or profile.get("starting_branch")
-            or "main"
+            route.get("starting_ref") or profile.get("starting_branch") or "main"
         ).strip()
         if not starting_branch or any(ch in starting_branch for ch in "\r\n\x00"):
-            raise DispatchError("PROVIDER_ROUTE_BINDING_MISSING", "invalid Jules starting branch")
+            raise DispatchError(
+                "PROVIDER_ROUTE_BINDING_MISSING", "invalid Jules starting branch"
+            )
 
         require_plan_approval = bool(profile.get("require_plan_approval", True))
         auto_pr_requested = bool(profile.get("auto_create_pr", True))
@@ -182,7 +186,9 @@ class JulesApiDriver:
             "require_plan_approval": require_plan_approval,
             "awaiting_plan_approval": raw_state == "AWAITING_PLAN_APPROVAL",
             "auto_create_pr_requested": auto_pr_requested,
-            "auto_create_pr_effective": bool(body.get("automationMode") == "AUTO_CREATE_PR"),
+            "auto_create_pr_effective": bool(
+                body.get("automationMode") == "AUTO_CREATE_PR"
+            ),
             "pull_requests": normalize_pull_requests(created.get("outputs")),
         }
         return build_jules_provider_result(
@@ -193,13 +199,19 @@ class JulesApiDriver:
 
     def list_sessions(self, *, page_size: int = 30) -> dict[str, Any]:
         """List safe Session metadata without prompts or provider-authored text."""
-        if not isinstance(page_size, int) or isinstance(page_size, bool) or not 1 <= page_size <= 100:
+        if (
+            not isinstance(page_size, int)
+            or isinstance(page_size, bool)
+            or not 1 <= page_size <= 100
+        ):
             raise DispatchError(
                 "PROVIDER_LIST_PAGE_SIZE_INVALID",
                 "Jules sessions page_size must be an integer from 1 to 100",
             )
         payload = self._request("GET", f"/v1alpha/sessions?pageSize={page_size}")
-        rows = payload.get("sessions") if isinstance(payload.get("sessions"), list) else []
+        rows = (
+            payload.get("sessions") if isinstance(payload.get("sessions"), list) else []
+        )
         sessions: list[dict[str, Any]] = []
         for item in rows[:page_size]:
             if not isinstance(item, dict):
