@@ -299,9 +299,7 @@ def apply_log_archive_plan(
         for entry in planned_entries
         if entry.get("classification") == "ARCHIVE_CANDIDATE"
     ]
-    held = [
-        entry for entry in planned_entries if entry.get("classification") == "HOLD"
-    ]
+    held = [entry for entry in planned_entries if entry.get("classification") == "HOLD"]
     entries: list[dict[str, Any]] = [_held_evidence_entry(entry) for entry in held]
     evidence: dict[str, Any] = {
         "schema_version": APPLY_SCHEMA_VERSION,

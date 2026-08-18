@@ -496,7 +496,9 @@ def test_hold_entry_blocks_apply_and_is_preserved_in_evidence(
     assert result["failure_reason"] == "APPLY_PLAN_HELD"
     assert result["held_file_count"] == 1
     assert result["entries"][0]["disposition"] == "HELD_PLAN_ENTRY"
-    assert result["entries"][0]["failure_reason"] == "DESTINATION_COLLISION_HASH_MISMATCH"
+    assert (
+        result["entries"][0]["failure_reason"] == "DESTINATION_COLLISION_HASH_MISMATCH"
+    )
     assert file.exists()
 
 
