@@ -16,7 +16,10 @@ from tools.agent_control.environment.codes import (
 from tools.agent_control.environment.preflight import run_environment_preflight
 from tools.agent_control.errors import DispatchError, RegistryError
 from tools.agent_control.normalize import normalize_registry
-from tools.agent_control.providers.factory import CURSOR_PROVIDER_IDS
+from tools.agent_control.providers.factory import (
+    CURSOR_PROVIDER_IDS,
+    JULES_PROVIDER_IDS,
+)
 from tools.agent_control.validate import validate_registry
 from tools.agent_execution_contract.attenuation import PERMISSION_KEYS
 from tools.agent_execution_contract.errors import ContractValidationError
@@ -44,6 +47,7 @@ SLICE_FORBIDDEN_TRUE = frozenset(
         "mcp_live_mutation",
     }
 )
+EXTERNAL_PROVIDER_IDS = CURSOR_PROVIDER_IDS | JULES_PROVIDER_IDS
 
 
 def _normalized_branch(value: Any) -> str | None:
@@ -54,10 +58,7 @@ def _normalized_branch(value: Any) -> str | None:
 
 
 def _delivery_target_conflict_message(contract: dict[str, Any]) -> str | None:
-    """Return conflict message when route and delivery_target disagree.
-
-    Whitespace-only branches are absent (aligned with dispatch coalesce).
-    """
+    """Return conflict message when route and delivery_target disagree."""
     route = contract.get("route") or {}
     target = (contract.get("execution_scope") or {}).get("delivery_target") or {}
     conflicts: list[str] = []
@@ -138,7 +139,6 @@ def _fail(
     *,
     terminal_state: str = "BLOCKED",
 ) -> PreflightResult:
-    # HOLD router decisions use HOLD; integrity/safety use BLOCKED.
     return PreflightResult(
         ok=False,
         terminal_state=terminal_state,
@@ -163,12 +163,17 @@ def preflight(
     allow_recorded_cursor: bool = False,
     allow_live_cursor: bool = False,
     human_go_live_cursor: bool = False,
+    allow_recorded_provider: bool = False,
+    allow_live_provider: bool = False,
+    human_go_live_provider: bool = False,
     prompt_text_override: str | None = None,
     environment_attestation_path: Path | None = None,
     config_root: Path | None = None,
 ) -> PreflightResult:
     """Validate contract digest + registry + environment. Shared by dry-run/execute."""
-    live_ok = bool(allow_live_cursor and human_go_live_cursor)
+    cursor_live_ok = bool(allow_live_cursor and human_go_live_cursor)
+    provider_live_ok = bool(allow_live_provider and human_go_live_provider)
+    recorded_ok = bool(allow_recorded_cursor or allow_recorded_provider)
     try:
         validated = validate_contract(contract)
     except ContractValidationError as exc:
@@ -198,7 +203,6 @@ def preflight(
             terminal_state="BLOCKED",
         )
 
-    # Existing/continuation routes require concrete target binding.
     needs_target = decision in {
         "ROUTE_TO_EXISTING_BATCH_PR",
         "ROUTE_TO_EXISTING_DEDICATED_PR",
@@ -268,7 +272,6 @@ def preflight(
             terminal_state="BLOCKED",
         )
 
-    # Profile resolvability already enforced by registry validate; re-check bind.
     profiles = normalized["profiles"]
     for kind, ref in (
         ("execution_contracts", agent["execution_contract_profile"]),
@@ -304,6 +307,12 @@ def preflight(
                 f"contract permission {key}=true exceeds registry ceiling",
                 terminal_state="BLOCKED",
             )
+    # Provider receives Contract ∩ Registry, never the broader registry ceiling.
+    # This is critical for optional provider actions such as Jules AUTO_CREATE_PR.
+    agent = deepcopy(agent)
+    agent["effective_permissions"] = {
+        key: bool(permissions.get(key) and ceiling.get(key)) for key in PERMISSION_KEYS
+    }
 
     provider_profile = profiles["providers"][agent["provider_profile"]]
     provider_id = provider_profile.get("provider_id")
@@ -317,17 +326,25 @@ def preflight(
             terminal_state="BLOCKED",
         )
 
-    # Routing selector conflicts (lane) → BLOCKED.
     selectors = agent.get("labels_or_routing_selectors") or {}
     lane_selector = selectors.get("lane")
     if lane_selector is not None and route.get("lane") not in {None, lane_selector}:
         return _fail(
             "DISPATCH_ROUTING_SELECTOR_CONFLICT",
-            f"registry lane {lane_selector!r} conflicts with contract lane "
-            f"{route.get('lane')!r}",
+            f"registry lane {lane_selector!r} conflicts with contract lane {route.get('lane')!r}",
             terminal_state="BLOCKED",
         )
 
+    is_cursor = provider_id in CURSOR_PROVIDER_IDS
+    is_jules = provider_id in JULES_PROVIDER_IDS
+    live_ok = cursor_live_ok if is_cursor else provider_live_ok if is_jules else False
+    # Legacy allow_recorded_cursor is retained as the dispatch_run compatibility
+    # flag; allow_recorded_provider is the provider-neutral path for new callers.
+    provider_recorded_ok = (
+        allow_recorded_cursor
+        if is_cursor
+        else bool(allow_recorded_provider or allow_recorded_cursor) if is_jules else False
+    )
     live_dispatch = bool(provider_profile.get("live_dispatch", False))
     env_profile_id = agent["environment_profile"]
     env_profile = profiles["environments"][env_profile_id]
@@ -346,67 +363,61 @@ def preflight(
         config=config_root or root / "config" / "agent-control",
         repo_root=root,
         execute=execute,
-        allow_recorded=allow_recorded_cursor or live_ok,
+        allow_recorded=recorded_ok or live_ok,
         allow_live=live_ok,
     )
 
     if execute and provider_id != "mock":
-        if provider_id in CURSOR_PROVIDER_IDS:
-            # Durable gate: environment preflight never enables live dispatch.
-            # Profile live_dispatch=true remains forbidden; Human-GO uses flags.
-            if live_dispatch:
+        if provider_id not in EXTERNAL_PROVIDER_IDS:
+            return _fail(
+                PROVIDER_LIVE_DISPATCH_FORBIDDEN,
+                f"execute forbidden for provider_id={provider_id!r}",
+                terminal_state="BLOCKED",
+            )
+        if live_dispatch:
+            return _fail(
+                ENVIRONMENT_LIVE_DISPATCH_FORBIDDEN,
+                "provider live_dispatch=true is forbidden; use explicit Human-GO flags instead of profile flip",
+                terminal_state="BLOCKED",
+            )
+        if not provider_recorded_ok and not live_ok:
+            return _fail(
+                PROVIDER_LIVE_DISPATCH_FORBIDDEN,
+                f"execute for {provider_id!r} requires recorded/fake transport or explicit Human-GO live flags",
+                terminal_state="BLOCKED",
+            )
+        if provider_recorded_ok and not live_ok:
+            allowed_recorded_verdicts = {VERDICT_READY_FOR_RECORDED_TEST}
+            if is_jules and env_profile.get("runtime_class") == "local_repo":
+                allowed_recorded_verdicts.add(VERDICT_READY_OFFLINE_ONLY)
+            if env_result.verdict not in allowed_recorded_verdicts:
                 return _fail(
-                    ENVIRONMENT_LIVE_DISPATCH_FORBIDDEN,
-                    "provider live_dispatch=true is forbidden; "
-                    "use Human-GO allow_live_cursor flags instead of profile flip",
+                    (
+                        env_result.reason_codes[0]
+                        if env_result.reason_codes
+                        else "ENVIRONMENT_EXECUTE_NOT_READY"
+                    ),
+                    f"environment preflight verdict {env_result.verdict} blocks recorded execute: {env_result.limitations}",
                     terminal_state="BLOCKED",
                 )
-            if not allow_recorded_cursor and not live_ok:
-                return _fail(
-                    PROVIDER_LIVE_DISPATCH_FORBIDDEN,
-                    f"execute for {provider_id!r} requires recorded/fake transport "
-                    "or Human-GO live cursor flags",
-                    terminal_state="BLOCKED",
-                )
-            if allow_recorded_cursor and not live_ok:
-                if env_result.verdict != VERDICT_READY_FOR_RECORDED_TEST:
+        elif live_ok:
+            if env_result.verdict not in {
+                VERDICT_READY_FOR_RECORDED_TEST,
+                VERDICT_READY_OFFLINE_ONLY,
+            }:
+                from tools.agent_control.environment.codes import VERDICT_BLOCKED
+
+                if env_result.verdict == VERDICT_BLOCKED:
                     return _fail(
                         (
                             env_result.reason_codes[0]
                             if env_result.reason_codes
                             else "ENVIRONMENT_EXECUTE_NOT_READY"
                         ),
-                        f"environment preflight verdict {env_result.verdict} "
-                        f"blocks recorded execute: {env_result.limitations}",
+                        f"environment preflight verdict {env_result.verdict} blocks live execute: {env_result.limitations}",
                         terminal_state="BLOCKED",
                     )
-            elif live_ok:
-                if env_result.verdict not in {
-                    VERDICT_READY_FOR_RECORDED_TEST,
-                    VERDICT_READY_OFFLINE_ONLY,
-                }:
-                    # Live path still needs a non-blocked environment surface.
-                    from tools.agent_control.environment.codes import VERDICT_BLOCKED
 
-                    if env_result.verdict == VERDICT_BLOCKED:
-                        return _fail(
-                            (
-                                env_result.reason_codes[0]
-                                if env_result.reason_codes
-                                else "ENVIRONMENT_EXECUTE_NOT_READY"
-                            ),
-                            f"environment preflight verdict {env_result.verdict} "
-                            f"blocks live execute: {env_result.limitations}",
-                            terminal_state="BLOCKED",
-                        )
-        else:
-            return _fail(
-                PROVIDER_LIVE_DISPATCH_FORBIDDEN,
-                f"execute forbidden for provider_id={provider_id!r}",
-                terminal_state="BLOCKED",
-            )
-
-    # Dry-run: environment must not be schema-hard-broken for cloud profiles.
     if not execute and env_profile.get("runtime_class") == "cloud_agent":
         if env_result.verdict not in {
             VERDICT_READY_OFFLINE_ONLY,
@@ -430,14 +441,13 @@ def preflight(
             validated,
             provider_id=str(provider_id),
             repo_root=root,
-            require_for_live_provider=execute and provider_id in CURSOR_PROVIDER_IDS,
+            require_for_live_provider=execute and provider_id in EXTERNAL_PROVIDER_IDS,
             prompt_text_override=prompt_text_override,
             verify_content=execute or prompt_text_override is not None,
         )
     except ContractValidationError as exc:
         return _fail(exc.code, exc.message, terminal_state="BLOCKED")
 
-    # Effective run budget uses attenuated environment ceilings; contract stays intact.
     effective_budget = _effective_budget_from_constraints(
         budget, env_result.effective_constraints
     )

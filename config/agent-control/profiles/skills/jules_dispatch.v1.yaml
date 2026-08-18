@@ -1,0 +1,7 @@
+profile_id: jules_dispatch.v1
+description: >
+  Governed CDB Jules dispatch/lifecycle skill for issue #4461. Requires explicit
+  plan approval for nontrivial Jules runs, safe Activities normalization,
+  session-bound follow-up, and PR/result handoff without merge authority.
+skill_ids:
+  - cdb-jules-dispatch

@@ -1,4 +1,4 @@
-"""Offline capability snapshots and drift classification (#4254)."""
+"""Offline capability snapshots and drift classification (#4254/#4461)."""
 
 from __future__ import annotations
 
@@ -70,8 +70,7 @@ _BASELINES: dict[str, dict[str, Any]] = {
             "force_default": False,
         },
         "limitations": [
-            "Write/force modes remain fail-closed; live dispatch never enabled "
-            "by environment preflight alone (#4255).",
+            "Write/force modes remain fail-closed; live dispatch never enabled by environment preflight alone (#4255).",
             "Prompt must travel via stdin, never argv.",
         ],
     },
@@ -91,6 +90,50 @@ _BASELINES: dict[str, dict[str, Any]] = {
             "Public beta; additive response fields expected.",
             "GET /v1/repositories must not be polled.",
             "Permanent DELETE is never exposed.",
+        ],
+    },
+    "jules-api": {
+        "provider_id": "jules-api",
+        "surface": "rest",
+        "stability": "alpha",
+        "api_or_sdk_version": "v1alpha",
+        "required_operations": [
+            "dispatch",
+            "watch",
+            "list_sessions",
+            "approve_plan",
+            "list_activities",
+            "follow_up",
+        ],
+        "supported_operations": [
+            "dispatch",
+            "watch",
+            "list_sessions",
+            "approve_plan",
+            "list_activities",
+            "follow_up",
+            "pr_handoff",
+        ],
+        "unsupported_operations": ["cancel", "delete", "merge"],
+        "observed_capabilities": {
+            "session_states": [
+                "QUEUED",
+                "PLANNING",
+                "AWAITING_PLAN_APPROVAL",
+                "AWAITING_USER_FEEDBACK",
+                "IN_PROGRESS",
+                "PAUSED",
+                "FAILED",
+                "COMPLETED",
+            ],
+            "plan_gate": "requirePlanApproval+approvePlan",
+            "automation_mode": "AUTO_CREATE_PR",
+            "authentication": "X-Goog-Api-Key runtime injection",
+        },
+        "limitations": [
+            "Official Jules API is v1alpha; capability drift must fail closed.",
+            "No documented cancel RPC; timeout/cancel remains unconfirmed and BLOCKED.",
+            "PR output is a handoff reference, never CDB merge authority.",
         ],
     },
 }
@@ -124,9 +167,10 @@ def classify_drift(
 ) -> str:
     if observed is None:
         return "UNAVAILABLE"
+    required_ops = tuple(baseline.get("required_operations") or REQUIRED_OPS)
     missing = [
         op
-        for op in REQUIRED_OPS
+        for op in required_ops
         if op not in set(observed.get("supported_operations") or [])
     ]
     if missing:
@@ -134,6 +178,8 @@ def classify_drift(
     if any(
         op in set(observed.get("supported_operations") or []) for op in FORBIDDEN_OPS
     ):
+        return "BREAKING"
+    if observed.get("api_or_sdk_version") != baseline.get("api_or_sdk_version"):
         return "BREAKING"
     base_ops = set(baseline.get("supported_operations") or [])
     obs_ops = set(observed.get("supported_operations") or [])

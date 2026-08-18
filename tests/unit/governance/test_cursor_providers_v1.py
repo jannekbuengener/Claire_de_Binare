@@ -84,7 +84,6 @@ def _work_order_contract() -> dict:
         "source_commit": "a" * 40,
         "prompt_digest": digest,
     }
-    # Ensure allowlist covers fixture path.
     paths = contract["execution_scope"]["allowed_paths"]
     if "tests/fixtures/agent_control/cursor/*" not in paths:
         paths.append("tests/fixtures/agent_control/cursor/*")
@@ -97,6 +96,7 @@ def test_factory_registers_documented_ids() -> None:
         "cursor-cli",
         "cursor-cloud-api",
         "cursor-sdk",
+        "jules-api",
         "mock",
     )
     assert set(provider_registry()) == set(registered_provider_ids())
@@ -124,7 +124,6 @@ def test_breaking_drift_blocks_dispatch() -> None:
 
 @pytest.mark.unit
 def test_base_import_without_cursor_sdk() -> None:
-    # Import path must not require cursor-sdk package.
     driver = CursorSdkDriver(client_factory=lambda **kwargs: None)
     assert driver.package_version() is None or isinstance(driver.package_version(), str)
     with pytest.raises(DispatchError) as exc:
@@ -182,7 +181,6 @@ def test_cli_parser_success_and_duplicate_flush() -> None:
     session_id, status, events = parse_stream_json_lines(lines)
     assert session_id == "c6b62c6f-7ead-4fd6-9922-e952131177ff"
     assert status == "FINISHED"
-    # Duplicate flush events skipped.
     assert sum(1 for e in events if e.get("type") == "assistant") == 1
 
 
@@ -267,7 +265,6 @@ def test_cloud_fake_http_sse_and_guards() -> None:
             }
         if method == "POST" and url.endswith("/cancel"):
             return {"status": 200, "json": {"status": "CANCELLED"}}
-        # Documented agent-scoped usage (NOT /runs/{id}/usage).
         if (
             method == "GET"
             and "/agents/" in url
@@ -319,7 +316,6 @@ def test_cloud_fake_http_sse_and_guards() -> None:
         if method == "POST" and url.endswith("/unarchive"):
             return {"status": 200, "json": {}}
         if method == "POST" and url.endswith("/runs"):
-            # Official Cloud Agents API v1 follow-up shape.
             return {
                 "status": 200,
                 "json": {"run": {"id": "run-2", "status": "FINISHED"}},
@@ -391,7 +387,6 @@ def test_cloud_fake_http_sse_and_guards() -> None:
 
 @pytest.mark.unit
 def test_pr_url_matches_complete_pull_segment_only() -> None:
-    """P2: /pull/12 must not match /pull/123 via substring."""
     from tools.agent_control.providers.cursor_common import _pr_url_matches_target
 
     assert _pr_url_matches_target(
@@ -413,7 +408,6 @@ def test_pr_url_matches_complete_pull_segment_only() -> None:
 
 @pytest.mark.unit
 def test_forbidden_paths_reject_prompt_ref() -> None:
-    """P2: prompt_ref matching forbidden_paths must fail even if under allowed/**."""
     contract = _work_order_contract()
     scope = contract["execution_scope"]
     scope["allowed_paths"] = ["docs/**", "docs/contracts/**"]
@@ -514,7 +508,6 @@ def test_dry_run_cursor_agent_no_mutation() -> None:
 def test_recorded_cursor_dispatch_and_duplicate_idempotency(tmp_path: Path) -> None:
     registry = load_registry_document(REPO / "config" / "agent-control")
     contract = _work_order_contract()
-    # Sync attestation digests to live profile/config.
     from tools.agent_control.environment.cursor_config import (
         validate_cursor_environment_config,
     )
@@ -575,8 +568,6 @@ def test_recorded_cursor_dispatch_and_duplicate_idempotency(tmp_path: Path) -> N
 
 @pytest.mark.unit
 def test_provider_success_without_receipt_not_pass() -> None:
-    # Provider SUCCEEDED alone must not imply PASS; dispatcher still requires
-    # independent delivery receipt verification path.
     result = ProviderResult(
         provider_id="cursor-sdk",
         provider_run_id="run-x",
