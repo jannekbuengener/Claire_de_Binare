@@ -186,6 +186,13 @@ gha-creds-*.json
 codex-worktree-*/
 evals/
 
+# Codex — curated CDB skills are repository canon even when a workstation-global
+# excludes file ignores .codex; other local Codex root state stays ignored.
+!/.codex/
+/.codex/*
+!/.codex/cdb_skills/
+!/.codex/cdb_skills/**
+
 # Codex — local config (absolute paths, machine-specific)
 /.codex/config.toml
 /.codex/config.agents.snippet.toml

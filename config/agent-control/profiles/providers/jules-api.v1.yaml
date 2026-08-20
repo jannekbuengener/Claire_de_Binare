@@ -1,0 +1,12 @@
+profile_id: jules-api.v1
+provider_id: jules-api
+description: >
+  Official Jules REST API v1alpha adapter for the CDB Agent Control Plane (#4461).
+  CDB owns routing, permissions, approval and merge authority; Jules only executes
+  the bounded provider work order. Live dispatch is never enabled by this profile.
+api_surface: jules-rest-v1alpha
+live_dispatch: false
+capability_baseline_ref: jules-api-v1alpha-v1
+secret_references:
+  - class: provider_api_key
+    ref: env:JULES_API_KEY

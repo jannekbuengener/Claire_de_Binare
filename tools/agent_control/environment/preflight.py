@@ -1,4 +1,4 @@
-"""Environment gate invoked from tools.agent_control.preflight (#4255)."""
+"""Environment gate invoked from tools.agent_control.preflight (#4255/#4461)."""
 
 from __future__ import annotations
 
@@ -35,9 +35,9 @@ def run_environment_preflight(
 ) -> EnvironmentPreflightResult:
     """Shared environment preflight for dry-run and execute paths.
 
-    If ``attestation`` dict is provided (tests), write it to a temp-less path by
-    using doctor with attestation_path only when a path is given. For in-memory
-    attestations, callers should pass ``attestation_path`` to a fixture file.
+    Recorded/fake provider transports may execute against local_repo/mock
+    profiles without pretending the external provider environment is live-ready.
+    Cloud-agent profiles still require their recorded attestation path.
     """
     del attestation  # path-based only to keep doctor deterministic
     result = doctor_profile(
@@ -52,7 +52,6 @@ def run_environment_preflight(
     )
 
     if not execute:
-        # Dry-run may proceed when offline-ready even if execute_ready is false.
         if result.verdict in {
             VERDICT_READY_OFFLINE_ONLY,
             VERDICT_READY_FOR_RECORDED_TEST,
@@ -60,7 +59,22 @@ def run_environment_preflight(
             return result
         return result
 
-    # Execute path: only READY_FOR_RECORDED_TEST with allow_recorded may proceed.
+    # Recorded/fake transport on an offline-only local/mock environment is not
+    # a live-provider readiness claim. It is safe to exercise provider contracts
+    # and state normalization without network or runtime provisioning.
+    runtime_class = (result.profile_snapshot or {}).get("runtime_class")
+    if (
+        allow_recorded
+        and result.verdict == VERDICT_READY_OFFLINE_ONLY
+        and runtime_class in {"local_repo", "mock"}
+    ):
+        result.execute_ready = True
+        result.limitations = list(result.limitations) + [
+            "recorded/fake provider transport only; no live environment claim"
+        ]
+        return result
+
+    # Cloud-provider recorded/fake path still needs READY_FOR_RECORDED_TEST.
     if result.verdict == VERDICT_READY_FOR_RECORDED_TEST and allow_recorded:
         if result.execute_ready:
             return result
@@ -71,11 +85,12 @@ def run_environment_preflight(
         ]
         return result
 
-    # Human-GO live cursor: mock/offline-class pilot envs may execute under flags.
+    # Human-GO live cursor/provider: mock/offline-class pilot envs may execute
+    # under explicit live flags only. This remains separate from recorded mode.
     if allow_live and result.verdict == VERDICT_READY_OFFLINE_ONLY:
         result.execute_ready = True
         result.limitations = list(result.limitations) + [
-            "human_go_live_cursor_offline_env"
+            "human_go_live_provider_offline_env"
         ]
         return result
 
@@ -83,7 +98,6 @@ def run_environment_preflight(
         result.execute_ready = False
         return result
 
-    # Any other verdict blocks execute (including READY_OFFLINE_ONLY).
     result.execute_ready = False
     if result.verdict == VERDICT_READY_OFFLINE_ONLY:
         result.verdict = VERDICT_BLOCKED

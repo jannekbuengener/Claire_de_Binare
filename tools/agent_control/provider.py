@@ -23,7 +23,7 @@ _SECRET_HINT = re.compile(
     r"(?i)\b(api[_-]?key|secret|token|password|bearer)\b\s*[:=]\s*\S+"
 )
 _AUTH_KEY = re.compile(
-    r"(?i)^(authorization|cookie|x-api-key|api[-_]?key|token|secret|password)$"
+    r"(?i)^(authorization|cookie|x-api-key|x-goog-api-key|api[-_]?key|token|secret|password)$"
 )
 _BEARER = re.compile(r"(?i)\b(bearer|basic)\s+\S+")
 _CRSR = re.compile(r"\bcrsr_[A-Za-z0-9_\-]{8,}\b")
@@ -234,7 +234,6 @@ class MockProvider:
 
         status = "QUEUED"
         usage = {"iterations": 0, "tool_calls": 0}
-        # Never echo a caller-fabricated success receipt; observe later on SUCCEEDED.
         receipt = None
 
         if scenario == "fail_on_dispatch":
@@ -360,13 +359,11 @@ class MockProvider:
 
 
 def get_provider(provider_id: str, **kwargs: Any) -> Provider:
-    """Resolve provider via factory. Live Cursor execute remains gated."""
+    """Resolve provider via factory. Live external execution remains gated."""
     from tools.agent_control.providers.factory import build_provider
 
     if provider_id == "mock":
         return MockProvider()
-    # Cursor providers are constructible for dry-run/capabilities; live execute
-    # is still blocked inside drivers unless injected transports are supplied.
     return build_provider(provider_id, **kwargs)
 
 
@@ -378,5 +375,6 @@ def provider_registry() -> dict[str, str]:
         "cursor-sdk": "CursorSdkDriver",
         "cursor-cli": "CursorCliDriver",
         "cursor-cloud-api": "CursorCloudApiDriver",
+        "jules-api": "JulesApiDriver",
     }
     return {key: mapping[key] for key in registered_provider_ids()}
