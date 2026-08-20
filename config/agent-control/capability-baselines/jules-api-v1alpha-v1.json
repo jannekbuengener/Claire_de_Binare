@@ -1,0 +1,44 @@
+{
+  "provider_id": "jules-api",
+  "surface": "rest",
+  "stability": "alpha",
+  "api_or_sdk_version": "v1alpha",
+  "required_operations": [
+    "dispatch",
+    "watch",
+    "list_sessions",
+    "approve_plan",
+    "list_activities",
+    "follow_up"
+  ],
+  "supported_operations": [
+    "dispatch",
+    "watch",
+    "list_sessions",
+    "approve_plan",
+    "list_activities",
+    "follow_up",
+    "pr_handoff"
+  ],
+  "unsupported_operations": ["cancel", "delete", "merge"],
+  "observed_capabilities": {
+    "session_states": [
+      "QUEUED",
+      "PLANNING",
+      "AWAITING_PLAN_APPROVAL",
+      "AWAITING_USER_FEEDBACK",
+      "IN_PROGRESS",
+      "PAUSED",
+      "FAILED",
+      "COMPLETED"
+    ],
+    "plan_gate": "requirePlanApproval+approvePlan",
+    "automation_mode": "AUTO_CREATE_PR",
+    "authentication": "X-Goog-Api-Key runtime injection"
+  },
+  "limitations": [
+    "Official Jules API is v1alpha; capability drift must fail closed.",
+    "No documented cancel RPC; timeout/cancel remains unconfirmed and BLOCKED.",
+    "PR output is a handoff reference, never CDB merge authority."
+  ]
+}

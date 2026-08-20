@@ -182,3 +182,34 @@ agents:
       runtime_mutation: false
       database_mutation: false
       mcp_live_mutation: false
+
+  - agent_id: acp-jules-api-adapter
+    version: "1.0.0"
+    enabled: true
+    description: >
+      Jules REST v1alpha adapter for #4461. Reuses the existing provider-neutral
+      ACP lifecycle and adds explicit plan approval, Activities, follow-up and
+      PR/result handoff. Jules never gains merge, final-CI or runtime authority.
+    execution_contract_profile: jules_delivery_safe.v1
+    provider_profile: jules-api.v1
+    environment_profile: local_repo.v1
+    skills:
+      - session_core.v1
+      - jules_dispatch.v1
+    mcp_profiles:
+      - none.v1
+    subagents: []
+    labels_or_routing_selectors:
+      lane: agent-skills
+      batch_key: agent-skills
+      role: jules-api-adapter
+      objective: issue-4461
+    depends_on:
+      - acp-mock-dispatcher
+    permission_overrides:
+      merge: false
+      publish_cdb_local_ci: false
+      close_issue: false
+      runtime_mutation: false
+      database_mutation: false
+      mcp_live_mutation: false

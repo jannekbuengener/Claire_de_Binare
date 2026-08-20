@@ -148,6 +148,7 @@
             "cursor-sdk",
             "cursor-cli",
             "cursor-cloud-api",
+            "jules-api",
             "local"
           ]
         },
@@ -221,6 +222,7 @@
               "cursor-sdk",
               "cursor-cli",
               "cursor-cloud-api",
+              "jules-api",
               "local"
             ]
           }

@@ -1,0 +1,20 @@
+profile_id: jules_delivery_safe.v1
+description: >
+  Jules delivery ceiling for #4461. Branch/PR creation may be granted by the
+  signed execution contract, but merge, final-CI publish, issue close and all
+  runtime/DB/MCP mutations remain forbidden.
+permissions:
+  read_repo: true
+  write_code: true
+  write_docs: true
+  commit: true
+  push: true
+  open_pr: true
+  update_pr: true
+  comment_issue: true
+  close_issue: false
+  publish_cdb_local_ci: false
+  merge: false
+  runtime_mutation: false
+  database_mutation: false
+  mcp_live_mutation: false

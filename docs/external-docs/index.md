@@ -1,6 +1,6 @@
 # CDB External Documentation Index
 
-**Stand:** 2026-06-25
+**Stand:** 2026-08-18
 **Zweck:** Zentrale Liste externer Dokumentationen für Claire de Binare.
 **Canon-Regel:** Eine externe Doku kommt nur in die Liste, wenn sie zu einem aktiven Tool, Service, Agenten oder Runtime-Pfad gehört, eine direkte Repo-Abhängigkeit erklärt, für Onboarding/Debugging/CI/Security/Runtime-Betrieb gebraucht wird oder als Beispiel-/Pattern-Quelle markiert ist.
 **Lookup-Trigger:** Agenten in `cdb-external-docs` geladen → hier nachschlagen.
@@ -23,6 +23,7 @@
 | Claude Code | https://code.claude.com/docs/en/overview | Claude-Code-Bootloader, Skills, Agenten-Workflows | required | `.claude/` | CLAUDE.md, Bootloader |
 | OpenAI Codex | https://developers.openai.com/codex | Codex CLI/App/IDE, AGENTS.md, Skills, MCP und Workflows | required | `.codex/` | config.toml, agents |
 | Cursor | https://cursor.com/docs | Cursor Rules, Subagents, Skills und MCP-Konfiguration | required | `.cursor/` | rules, skills, subagents |
+| Google Jules API | https://developers.google.com/jules/api | Jules als CDB-Agent-Control-Plane-Provider; REST-v1alpha-Session/Plan/Activities/Follow-up | required | `tools/agent_control/providers/jules_api.py`, `cdb-jules-dispatch` | issue #4461, Jules provider lifecycle |
 | Gemini API / Google AI | https://ai.google.dev/gemini-api/docs | Gemini-Agentenfläche, API-/Model-Kontext | required | `.gemini/` | settings.json, onboarding |
 | GitHub Copilot | https://docs.github.com/en/copilot | Copilot-Review-/Bot-Kommentare | secondary | `.github/` | Review-Threads |
 | OpenAI Platform Docs | https://platform.openai.com/docs | Allgemeine OpenAI-API-/Model-/Tooling-Doku | secondary | `.codex/` | API-Integration |

@@ -1,4 +1,4 @@
-"""Provider factory registering mock + Cursor adapters (#4254)."""
+"""Provider factory registering mock, Cursor, and Jules adapters."""
 
 from __future__ import annotations
 
@@ -9,9 +9,11 @@ from tools.agent_control.provider import MockProvider, Provider
 from tools.agent_control.providers.cursor_cli import CursorCliDriver
 from tools.agent_control.providers.cursor_cloud_api import CursorCloudApiDriver
 from tools.agent_control.providers.cursor_sdk import CursorSdkDriver
+from tools.agent_control.providers.jules_api import JulesApiDriver
 
 CURSOR_PROVIDER_IDS = frozenset({"cursor-sdk", "cursor-cli", "cursor-cloud-api"})
-ALL_PROVIDER_IDS = frozenset({"mock"}) | CURSOR_PROVIDER_IDS
+JULES_PROVIDER_IDS = frozenset({"jules-api"})
+ALL_PROVIDER_IDS = frozenset({"mock"}) | CURSOR_PROVIDER_IDS | JULES_PROVIDER_IDS
 
 
 def registered_provider_ids() -> tuple[str, ...]:
@@ -48,6 +50,11 @@ def build_provider(
             allow_live=allow_live,
             model_catalog=transports.get("model_catalog"),
             human_go_live=bool(transports.get("human_go_live", False)),
+        )
+    if provider_id == "jules-api":
+        return JulesApiDriver(
+            http=transports.get("http"),
+            allow_live=allow_live,
         )
     if provider_id == "cursor":
         raise DispatchError(
