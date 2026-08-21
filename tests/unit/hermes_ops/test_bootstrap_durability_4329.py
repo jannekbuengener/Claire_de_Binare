@@ -154,17 +154,14 @@ def test_bootstrap_wires_web_ui_and_managed_node_for_active_profiles() -> None:
 def test_bootstrap_installs_gateway_root_owned_and_scopes_operator_sudo() -> None:
     text = _bootstrap_text()
     assert (
-        'local gateway_src="${SYSTEMD_SRC}/hermes-gateway-cdb-engineer.service"'
-        in text
+        'local gateway_src="${SYSTEMD_SRC}/hermes-gateway-cdb-engineer.service"' in text
     )
     assert (
         'install -m 0644 "${gateway_src}" '
         "/etc/systemd/system/hermes-gateway-cdb-engineer.service"
     ) in text
 
-    harden = text.split("harden_sudoers_after_bootstrap()", 1)[1].split(
-        "\n}\n", 1
-    )[0]
+    harden = text.split("harden_sudoers_after_bootstrap()", 1)[1].split("\n}\n", 1)[0]
     required = (
         "/bin/systemctl enable --now hermes-gateway-cdb-engineer.service",
         "/bin/systemctl restart hermes-gateway-cdb-engineer.service",

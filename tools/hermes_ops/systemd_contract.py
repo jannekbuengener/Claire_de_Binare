@@ -164,5 +164,7 @@ def validate_gateway_unit(path: Path | None = None) -> list[str]:
             stripped.startswith(("ExecStart=", "ExecStartPre="))
             and "API_SERVER_KEY" in stripped
         ):
-            errors.append("gateway API_SERVER_KEY must not be expanded into process argv")
+            errors.append(
+                "gateway API_SERVER_KEY must not be expanded into process argv"
+            )
     return errors
