@@ -176,6 +176,29 @@ def test_bootstrap_installs_gateway_root_owned_and_scopes_operator_sudo() -> Non
     assert "NOPASSWD:ALL" not in harden
 
 
+def test_bootstrap_installs_tailnet_transport_and_scopes_operator_sudo() -> None:
+    text = _bootstrap_text()
+    assert (
+        'local transport_src="${SYSTEMD_SRC}/hermes-runs-tailnet-transport.service"'
+        in text
+    )
+    assert (
+        'install -m 0644 "${transport_src}" '
+        "/etc/systemd/system/hermes-runs-tailnet-transport.service"
+    ) in text
+    harden = text.split("harden_sudoers_after_bootstrap()", 1)[1].split("\n}\n", 1)[0]
+    for command in (
+        "/bin/systemctl enable --now hermes-runs-tailnet-transport.service",
+        "/bin/systemctl restart hermes-runs-tailnet-transport.service",
+        "/bin/systemctl status hermes-runs-tailnet-transport.service",
+        "/bin/systemctl is-active hermes-runs-tailnet-transport.service",
+    ):
+        assert command in harden
+    assert "/usr/bin/tailscale" not in harden
+    assert "tailscale serve" not in harden
+    assert "tailscale funnel" not in harden
+
+
 def test_bootstrap_does_not_enable_validation_chief() -> None:
     text = _bootstrap_text()
     assert "systemctl enable hermes-dashboard@validation-chief" not in text

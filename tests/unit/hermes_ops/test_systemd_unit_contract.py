@@ -8,6 +8,7 @@ import pytest
 import yaml
 
 from tools.hermes_ops.systemd_contract import validate_gateway_unit, validate_unit
+from tools.hermes_ops.tailnet_transport_contract import validate_transport_unit
 
 pytestmark = [pytest.mark.unit, pytest.mark.contract]
 
@@ -36,6 +37,22 @@ def test_gateway_host_is_enforced_after_environment_file_loading() -> None:
         "/opt/hermes/bin/hermes gateway"
     ) in text
     assert "Environment=API_SERVER_HOST=127.0.0.1" not in text
+
+
+def test_hermes_runs_transport_is_root_owned_tailnet_only() -> None:
+    errors = validate_transport_unit()
+    assert errors == [], errors
+
+    text = Path(
+        "infrastructure/hermes/systemd/hermes-runs-tailnet-transport.service"
+    ).read_text(encoding="utf-8")
+    assert "User=root" in text
+    assert "EnvironmentFile=/etc/hermes/cdb-engineer.env" in text
+    assert "tailscale serve --bg --yes --tcp=${API_SERVER_PORT}" in text
+    assert "tcp://127.0.0.1:${API_SERVER_PORT}" in text
+    assert "tailscale serve --bg --yes --tcp=${API_SERVER_PORT} off" in text
+    assert "tailscale funnel" not in text.lower()
+    assert "0.0.0.0" not in text
 
 
 def test_gateway_does_not_expand_api_key_into_process_argv() -> None:
