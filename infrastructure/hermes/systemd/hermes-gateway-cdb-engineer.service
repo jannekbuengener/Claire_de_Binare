@@ -11,18 +11,16 @@ User=hermes-cdb-engineer
 Group=hermes-cdb-engineer
 Environment=HERMES_HOME=/var/lib/hermes/profiles/cdb-engineer
 Environment=HERMES_PROFILE=cdb-engineer
-# The official v0.19.1 gateway reads these non-secret API settings and the
-# protected API_SERVER_KEY from the profile environment file. Missing values
-# fail closed before the gateway can start.
+# The official v0.19.1 gateway reads API_SERVER_PORT and the protected
+# API_SERVER_KEY from the profile environment file. The key is never expanded
+# into process argv; the gateway itself fails closed when it is absent.
 Environment=API_SERVER_ENABLED=true
-Environment=API_SERVER_HOST=127.0.0.1
 EnvironmentFile=/etc/hermes/cdb-engineer.env
 WorkingDirectory=/var/lib/hermes/profiles/cdb-engineer
 ExecStartPre=/usr/bin/test -d /var/lib/hermes/profiles/cdb-engineer
 ExecStartPre=/usr/bin/test -f /var/lib/hermes/profiles/cdb-engineer/config.yaml
 ExecStartPre=/usr/bin/test -n "${API_SERVER_PORT}"
-ExecStartPre=/usr/bin/test -n "${API_SERVER_KEY}"
-ExecStart=/opt/hermes/bin/hermes gateway
+ExecStart=/usr/bin/env API_SERVER_HOST=127.0.0.1 /opt/hermes/bin/hermes gateway
 Restart=on-failure
 RestartSec=5
 TimeoutStartSec=60

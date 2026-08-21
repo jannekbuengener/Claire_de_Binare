@@ -151,6 +151,34 @@ def test_bootstrap_wires_web_ui_and_managed_node_for_active_profiles() -> None:
     assert main.find("ensure_dashboard_runtime_assets") < main.find("enable_services")
 
 
+def test_bootstrap_installs_gateway_root_owned_and_scopes_operator_sudo() -> None:
+    text = _bootstrap_text()
+    assert (
+        'local gateway_src="${SYSTEMD_SRC}/hermes-gateway-cdb-engineer.service"'
+        in text
+    )
+    assert (
+        'install -m 0644 "${gateway_src}" '
+        "/etc/systemd/system/hermes-gateway-cdb-engineer.service"
+    ) in text
+
+    harden = text.split("harden_sudoers_after_bootstrap()", 1)[1].split(
+        "\n}\n", 1
+    )[0]
+    required = (
+        "/bin/systemctl enable --now hermes-gateway-cdb-engineer.service",
+        "/bin/systemctl restart hermes-gateway-cdb-engineer.service",
+        "/bin/systemctl status hermes-gateway-cdb-engineer.service",
+        "/bin/systemctl is-active hermes-gateway-cdb-engineer.service",
+    )
+    for command in required:
+        assert command in harden
+    assert "/usr/bin/install" not in harden
+    assert "systemctl daemon-reload" not in harden
+    assert "hermes-gateway-*" not in harden
+    assert "NOPASSWD:ALL" not in harden
+
+
 def test_bootstrap_does_not_enable_validation_chief() -> None:
     text = _bootstrap_text()
     assert "systemctl enable hermes-dashboard@validation-chief" not in text

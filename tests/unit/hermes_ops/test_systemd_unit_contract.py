@@ -27,6 +27,30 @@ def test_hermes_runs_gateway_unit_is_hardened_and_loopback_only() -> None:
     assert errors == [], errors
 
 
+def test_gateway_host_is_enforced_after_environment_file_loading() -> None:
+    text = Path(
+        "infrastructure/hermes/systemd/hermes-gateway-cdb-engineer.service"
+    ).read_text(encoding="utf-8")
+    assert (
+        "ExecStart=/usr/bin/env API_SERVER_HOST=127.0.0.1 "
+        "/opt/hermes/bin/hermes gateway"
+    ) in text
+    assert "Environment=API_SERVER_HOST=127.0.0.1" not in text
+
+
+def test_gateway_does_not_expand_api_key_into_process_argv() -> None:
+    text = Path(
+        "infrastructure/hermes/systemd/hermes-gateway-cdb-engineer.service"
+    ).read_text(encoding="utf-8")
+    command_lines = [
+        line.strip()
+        for line in text.splitlines()
+        if line.strip().startswith(("ExecStart=", "ExecStartPre="))
+    ]
+    assert command_lines
+    assert all("API_SERVER_KEY" not in line for line in command_lines)
+
+
 def test_version_pin_schema_and_live_fields() -> None:
     pin = yaml.safe_load(
         Path("infrastructure/hermes/VERSION_PIN.yaml").read_text(encoding="utf-8")

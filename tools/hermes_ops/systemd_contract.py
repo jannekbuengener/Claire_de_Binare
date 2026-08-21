@@ -134,11 +134,10 @@ def validate_gateway_unit(path: Path | None = None) -> list[str]:
         "HERMES_HOME=/var/lib/hermes/profiles/cdb-engineer",
         "HERMES_PROFILE=cdb-engineer",
         "API_SERVER_ENABLED=true",
-        "API_SERVER_HOST=127.0.0.1",
         "EnvironmentFile=/etc/hermes/cdb-engineer.env",
         "${API_SERVER_PORT}",
-        "${API_SERVER_KEY}",
-        "ExecStart=/opt/hermes/bin/hermes gateway",
+        "ExecStart=/usr/bin/env API_SERVER_HOST=127.0.0.1 "
+        "/opt/hermes/bin/hermes gateway",
         "NoNewPrivileges=true",
         "ProtectSystem=strict",
         "UMask=0077",
@@ -151,6 +150,7 @@ def validate_gateway_unit(path: Path | None = None) -> list[str]:
     forbidden = (
         "0.0.0.0",
         "User=root",
+        "Environment=API_SERVER_HOST=",
         "API_SERVER_KEY=",
         "--insecure",
         "hermes serve",
@@ -158,4 +158,11 @@ def validate_gateway_unit(path: Path | None = None) -> list[str]:
     for snippet in forbidden:
         if snippet in text:
             errors.append(f"gateway forbidden snippet present: {snippet}")
+    for line in text.splitlines():
+        stripped = line.strip()
+        if (
+            stripped.startswith(("ExecStart=", "ExecStartPre="))
+            and "API_SERVER_KEY" in stripped
+        ):
+            errors.append("gateway API_SERVER_KEY must not be expanded into process argv")
     return errors
