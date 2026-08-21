@@ -20,6 +20,7 @@ import sys
 from datetime import datetime, timezone
 from pathlib import Path
 from typing import Any
+from urllib.parse import urlsplit, urlunsplit
 
 try:
     from zoneinfo import ZoneInfo
@@ -118,6 +119,38 @@ def to_sort_key(value: Any) -> str:
     return json.dumps(value, sort_keys=True, separators=(",", ":"), ensure_ascii=False)
 
 
+def normalize_github_repository_url(value: str) -> str:
+    """Normalize only the case-insensitive repository identity in GitHub API URLs."""
+    parsed = urlsplit(value)
+    if (
+        parsed.scheme.lower() != "https"
+        or parsed.hostname is None
+        or parsed.hostname.lower() != "api.github.com"
+        or parsed.port is not None
+        or parsed.username is not None
+        or parsed.password is not None
+    ):
+        return value
+
+    parts = parsed.path.split("/")
+    if len(parts) < 4 or parts[0] != "" or parts[1] != "repos":
+        return value
+    if not parts[2] or not parts[3]:
+        return value
+
+    parts[2] = parts[2].lower()
+    parts[3] = parts[3].lower()
+    return urlunsplit(
+        (
+            "https",
+            "api.github.com",
+            "/".join(parts),
+            parsed.query,
+            parsed.fragment,
+        )
+    )
+
+
 def normalize(value: Any, path: str = "") -> Any:
     if isinstance(value, dict):
         out: dict[str, Any] = {}
@@ -132,6 +165,8 @@ def normalize(value: Any, path: str = "") -> Any:
         if path in UNORDERED_LIST_PATHS:
             return sorted(normalized_items, key=to_sort_key)
         return normalized_items
+    if isinstance(value, str):
+        return normalize_github_repository_url(value)
     return value
 
 
