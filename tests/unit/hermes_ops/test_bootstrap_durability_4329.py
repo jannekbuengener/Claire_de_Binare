@@ -178,8 +178,14 @@ def test_bootstrap_installs_gateway_root_owned_and_scopes_operator_sudo() -> Non
 
 def test_bootstrap_installs_tailnet_transport_and_scopes_operator_sudo() -> None:
     text = _bootstrap_text()
-    assert 'local transport_src="${SYSTEMD_SRC}/hermes-runs-tailnet-transport.service"' in text
-    assert 'install -m 0644 "${transport_src}" /etc/systemd/system/hermes-runs-tailnet-transport.service' in text
+    assert (
+        'local transport_src="${SYSTEMD_SRC}/hermes-runs-tailnet-transport.service"'
+        in text
+    )
+    assert (
+        'install -m 0644 "${transport_src}" '
+        "/etc/systemd/system/hermes-runs-tailnet-transport.service"
+    ) in text
     harden = text.split("harden_sudoers_after_bootstrap()", 1)[1].split("\n}\n", 1)[0]
     for command in (
         "/bin/systemctl enable --now hermes-runs-tailnet-transport.service",
