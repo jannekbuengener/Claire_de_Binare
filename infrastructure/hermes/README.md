@@ -47,3 +47,12 @@ service. It cannot sudo-install a caller-writable unit or run daemon-reload.
 The loopback host is enforced at `ExecStart` after `EnvironmentFile` loading, and
 the protected API key is never expanded into process argv. The gateway must not
 be exposed through a public listener or Funnel.
+
+`hermes-runs-tailnet-transport.service` is the separate root-owned private
+transport contract. It reads the same protected `API_SERVER_PORT`, requires the
+gateway and `tailscaled` to be active, and configures only Tailscale Serve raw
+TCP on that server-side port to the exact loopback backend. `tailscale funnel`
+is absent from the unit and from operator sudo rights. The mapping is persistent
+through Serve background mode; stopping the fixed service removes only that
+Serve port. The shared `hermes` operator may control the exact systemd unit but
+never receives generic Tailscale CLI authority.

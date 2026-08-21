@@ -21,6 +21,13 @@ GATEWAY_UNIT_PATH = (
     / "systemd"
     / "hermes-gateway-cdb-engineer.service"
 )
+TRANSPORT_UNIT_PATH = (
+    REPO_ROOT
+    / "infrastructure"
+    / "hermes"
+    / "systemd"
+    / "hermes-runs-tailnet-transport.service"
+)
 
 REQUIRED_SNIPPETS = (
     "User=hermes-%i",
@@ -167,4 +174,45 @@ def validate_gateway_unit(path: Path | None = None) -> list[str]:
             errors.append(
                 "gateway API_SERVER_KEY must not be expanded into process argv"
             )
+    return errors
+
+
+def validate_transport_unit(path: Path | None = None) -> list[str]:
+    """Runs API transport is fixed root-owned Tailscale Serve to loopback only."""
+    unit = path or TRANSPORT_UNIT_PATH
+    if not unit.is_file():
+        return [f"missing transport unit file: {unit}"]
+    text = unit.read_text(encoding="utf-8")
+    required = (
+        "Type=oneshot",
+        "RemainAfterExit=yes",
+        "User=root",
+        "Group=root",
+        "EnvironmentFile=/etc/hermes/cdb-engineer.env",
+        "Requires=tailscaled.service hermes-gateway-cdb-engineer.service",
+        "ExecStart=/usr/bin/tailscale serve --bg --yes --tcp=${API_SERVER_PORT} "
+        "tcp://127.0.0.1:${API_SERVER_PORT}",
+        "ExecStop=/usr/bin/tailscale serve --tcp=${API_SERVER_PORT} off",
+        "NoNewPrivileges=true",
+        "ProtectSystem=strict",
+        "UMask=0077",
+    )
+    errors = [
+        f"transport missing required snippet: {snippet}"
+        for snippet in required
+        if snippet not in text
+    ]
+    forbidden = (
+        "tailscale funnel",
+        "0.0.0.0",
+        "--http=",
+        "--https=",
+        "--tls-terminated-tcp=",
+        "Environment=API_SERVER_PORT=",
+        "API_SERVER_KEY",
+    )
+    lower = text.lower()
+    for snippet in forbidden:
+        if snippet.lower() in lower:
+            errors.append(f"transport forbidden snippet present: {snippet}")
     return errors
