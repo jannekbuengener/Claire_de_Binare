@@ -7,7 +7,7 @@ from pathlib import Path
 import pytest
 import yaml
 
-from tools.hermes_ops.systemd_contract import validate_unit
+from tools.hermes_ops.systemd_contract import validate_gateway_unit, validate_unit
 
 pytestmark = [pytest.mark.unit, pytest.mark.contract]
 
@@ -20,6 +20,11 @@ def test_hermes_dashboard_unit_is_hardened_loopback() -> None:
 def test_legacy_serve_unit_absent() -> None:
     legacy = Path("infrastructure/hermes/systemd/hermes-serve@.service")
     assert not legacy.exists()
+
+
+def test_hermes_runs_gateway_unit_is_hardened_and_loopback_only() -> None:
+    errors = validate_gateway_unit()
+    assert errors == [], errors
 
 
 def test_version_pin_schema_and_live_fields() -> None:

@@ -14,6 +14,13 @@ BROKER_UNIT_PATH = (
 LEGACY_SERVE_PATH = (
     REPO_ROOT / "infrastructure" / "hermes" / "systemd" / "hermes-serve@.service"
 )
+GATEWAY_UNIT_PATH = (
+    REPO_ROOT
+    / "infrastructure"
+    / "hermes"
+    / "systemd"
+    / "hermes-gateway-cdb-engineer.service"
+)
 
 REQUIRED_SNIPPETS = (
     "User=hermes-%i",
@@ -112,4 +119,43 @@ def validate_broker_unit(path: Path | None = None) -> list[str]:
             errors.append(
                 f"broker forbidden snippet present: {stripped.split('=', 1)[0]}="
             )
+    return errors
+
+
+def validate_gateway_unit(path: Path | None = None) -> list[str]:
+    """Runs API gateway is a dedicated, loopback-only cdb-engineer service."""
+    unit = path or GATEWAY_UNIT_PATH
+    if not unit.is_file():
+        return [f"missing gateway unit file: {unit}"]
+    text = unit.read_text(encoding="utf-8")
+    required = (
+        "User=hermes-cdb-engineer",
+        "Group=hermes-cdb-engineer",
+        "HERMES_HOME=/var/lib/hermes/profiles/cdb-engineer",
+        "HERMES_PROFILE=cdb-engineer",
+        "API_SERVER_ENABLED=true",
+        "API_SERVER_HOST=127.0.0.1",
+        "EnvironmentFile=/etc/hermes/cdb-engineer.env",
+        "${API_SERVER_PORT}",
+        "${API_SERVER_KEY}",
+        "ExecStart=/opt/hermes/bin/hermes gateway",
+        "NoNewPrivileges=true",
+        "ProtectSystem=strict",
+        "UMask=0077",
+    )
+    errors = [
+        f"gateway missing required snippet: {snippet}"
+        for snippet in required
+        if snippet not in text
+    ]
+    forbidden = (
+        "0.0.0.0",
+        "User=root",
+        "API_SERVER_KEY=",
+        "--insecure",
+        "hermes serve",
+    )
+    for snippet in forbidden:
+        if snippet in text:
+            errors.append(f"gateway forbidden snippet present: {snippet}")
     return errors
