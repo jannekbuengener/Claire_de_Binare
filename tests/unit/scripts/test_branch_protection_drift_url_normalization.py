@@ -77,6 +77,48 @@ def test_normalization_is_limited_to_standard_github_repository_urls() -> None:
     )
 
 
+def test_url_shaped_required_check_context_remains_case_sensitive() -> None:
+    baseline = _protection_snapshot()
+    current = _protection_snapshot()
+    baseline_checks = baseline["required_status_checks"]
+    current_checks = current["required_status_checks"]
+    assert isinstance(baseline_checks, dict)
+    assert isinstance(current_checks, dict)
+    baseline_checks["checks"] = [
+        {
+            "context": "https://api.github.com/repos/Owner/Repository/check",
+            "app_id": 4410232,
+        }
+    ]
+    current_checks["checks"] = [
+        {
+            "context": "https://api.github.com/repos/owner/repository/check",
+            "app_id": 4410232,
+        }
+    ]
+
+    assert collect_drift_paths(normalize(baseline), normalize(current)) == [
+        "required_status_checks.checks[0].context"
+    ]
+
+
+def test_url_shaped_required_status_context_list_remains_case_sensitive() -> None:
+    baseline = {
+        "required_status_checks": {
+            "contexts": ["https://api.github.com/repos/Owner/Repository/check"]
+        }
+    }
+    current = {
+        "required_status_checks": {
+            "contexts": ["https://api.github.com/repos/owner/repository/check"]
+        }
+    }
+
+    assert collect_drift_paths(normalize(baseline), normalize(current)) == [
+        "required_status_checks.contexts[0]"
+    ]
+
+
 def test_material_required_check_app_id_drift_is_not_masked() -> None:
     assert collect_drift_paths(
         normalize(_protection_snapshot()), normalize(_protection_snapshot(app_id=7))
