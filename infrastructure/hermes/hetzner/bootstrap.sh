@@ -59,8 +59,11 @@ ensure_profile_linux_users() {
 install_systemd_units() {
   local unit_src="${SYSTEMD_SRC}/hermes-dashboard@.service"
   local broker_src="${SYSTEMD_SRC}/hermes-github-token.service"
+  local gateway_src="${SYSTEMD_SRC}/hermes-gateway-cdb-engineer.service"
   [[ -f "${unit_src}" ]] || die "missing systemd unit: ${unit_src}"
+  [[ -f "${gateway_src}" ]] || die "missing systemd unit: ${gateway_src}"
   install -m 0644 "${unit_src}" /etc/systemd/system/hermes-dashboard@.service
+  install -m 0644 "${gateway_src}" /etc/systemd/system/hermes-gateway-cdb-engineer.service
   if [[ -f "${broker_src}" ]]; then
     install -m 0644 "${broker_src}" /etc/systemd/system/hermes-github-token.service
   fi
@@ -318,8 +321,8 @@ harden_sudoers_after_bootstrap() {
   local limited="/etc/sudoers.d/99-cdb-hermes"
   cat >"${limited}" <<'EOF'
 # Post-bootstrap: service control only — no general root shell (#4289 B2.0).
-# Shared hermes may restart dashboards; must NOT start the GitHub token broker.
-hermes ALL=(root) NOPASSWD: /bin/systemctl start hermes-dashboard@*, /bin/systemctl stop hermes-dashboard@*, /bin/systemctl restart hermes-dashboard@*, /bin/systemctl status hermes-dashboard@*, /bin/systemctl is-active hermes-dashboard@*
+# Shared hermes may restart dashboards and control only the root-installed cdb-engineer gateway; must NOT start the GitHub token broker or install arbitrary units.
+hermes ALL=(root) NOPASSWD: /bin/systemctl start hermes-dashboard@*, /bin/systemctl stop hermes-dashboard@*, /bin/systemctl restart hermes-dashboard@*, /bin/systemctl status hermes-dashboard@*, /bin/systemctl is-active hermes-dashboard@*, /bin/systemctl enable --now hermes-gateway-cdb-engineer.service, /bin/systemctl restart hermes-gateway-cdb-engineer.service, /bin/systemctl status hermes-gateway-cdb-engineer.service, /bin/systemctl is-active hermes-gateway-cdb-engineer.service
 hermes-jannek-assistant ALL=(root) NOPASSWD: /bin/systemctl status hermes-dashboard@jannek-assistant.service, /bin/systemctl is-active hermes-dashboard@jannek-assistant.service
 hermes-cdb-engineer ALL=(root) NOPASSWD: /bin/systemctl status hermes-dashboard@cdb-engineer.service, /bin/systemctl is-active hermes-dashboard@cdb-engineer.service, /bin/systemctl start hermes-github-token.service, /bin/systemctl status hermes-github-token.service
 EOF
