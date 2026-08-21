@@ -56,6 +56,18 @@ UNORDERED_LIST_PATHS = {
     "restrictions.apps",
 }
 
+# GitHub treats repository owner/name identity case-insensitively, but only these
+# branch-protection response fields are URLs. Policy identifiers such as status
+# check contexts must remain byte-for-byte comparable even when URL-shaped.
+GITHUB_REPOSITORY_URL_PATHS = {
+    "url",
+    "required_status_checks.url",
+    "required_status_checks.contexts_url",
+    "required_pull_request_reviews.url",
+    "required_signatures.url",
+    "enforce_admins.url",
+}
+
 
 def parse_args() -> argparse.Namespace:
     parser = argparse.ArgumentParser(
@@ -165,7 +177,7 @@ def normalize(value: Any, path: str = "") -> Any:
         if path in UNORDERED_LIST_PATHS:
             return sorted(normalized_items, key=to_sort_key)
         return normalized_items
-    if isinstance(value, str):
+    if isinstance(value, str) and path in GITHUB_REPOSITORY_URL_PATHS:
         return normalize_github_repository_url(value)
     return value
 
@@ -387,7 +399,7 @@ State: **{drift_state}**
 
 - Baseline file: `{baseline_path.as_posix()}`
 - Current source: `{current_source}`
-- Normalization: sorted keys; unordered-list normalization for known set-like arrays; volatile-field stripping: none
+- Normalization: sorted keys; unordered-list normalization for known set-like arrays; GitHub repository casing normalized only on known branch-protection URL fields; volatile-field stripping: none
 
 ## Hashes (SHA256)
 
