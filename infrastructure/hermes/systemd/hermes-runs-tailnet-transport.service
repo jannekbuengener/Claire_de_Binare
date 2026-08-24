@@ -14,8 +14,10 @@ EnvironmentFile=/etc/hermes/cdb-engineer.env
 ExecStartPre=/usr/bin/test -n "${API_SERVER_PORT}"
 ExecStartPre=/usr/bin/systemctl is-active --quiet tailscaled.service
 ExecStartPre=/usr/bin/systemctl is-active --quiet hermes-gateway-cdb-engineer.service
-ExecStart=/usr/bin/tailscale serve --bg --yes --tcp=${API_SERVER_PORT} tcp://127.0.0.1:${API_SERVER_PORT}
-ExecStop=/usr/bin/tailscale serve --bg --yes --tcp=${API_SERVER_PORT} off
+# Remove a persisted legacy raw-TCP mapping before installing the TLS frontend.
+ExecStartPre=-/usr/bin/tailscale serve --bg --yes --tcp=${API_SERVER_PORT} off
+ExecStart=/usr/bin/tailscale serve --bg --yes --https=${API_SERVER_PORT} http://127.0.0.1:${API_SERVER_PORT}
+ExecStop=/usr/bin/tailscale serve --bg --yes --https=${API_SERVER_PORT} off
 NoNewPrivileges=true
 PrivateTmp=true
 ProtectSystem=strict
