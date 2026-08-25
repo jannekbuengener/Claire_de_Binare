@@ -6,6 +6,7 @@ author: "Claire de Binare"
 license: "UNLICENSED"
 cdb:
   issue: 4289
+  inference_contract_issue: 4501
   profile_class: engineering
   windows_access: dedicated_workspace_only
   windows_workspace: "D:\\Dev\\HermesWorkspace\\Claire_de_Binare"  # pragma: allowlist secret
@@ -19,6 +20,13 @@ cdb:
   reuses_auth_lineage:
     - 4170
     - 4195
+  # Inference is ChatGPT/Codex subscription OAuth only (#4501).
+  # HERMES_CDB_ENGINEER_API_KEY(_FILE) is Runs-API/gateway transport auth, not inference.
+  inference:
+    primary_provider: openai-codex
+    allowed_auth: chatgpt_codex_oauth_subscription
+    paid_api_fallback: false
+    failure_policy: fail_closed_on_oauth_or_subscription_unavailable
 env_requires:
   - name: CDB_GH_APP_ID
     description: "GitHub App ID (reuse CI App lineage when compatible)"
@@ -29,6 +37,3 @@ env_requires:
   - name: CDB_GH_APP_PRIVATE_KEY_PATH
     description: "Absolute path to PEM outside agent-readable workspace"
     required: true
-  - name: OPENROUTER_API_KEY
-    description: "Model provider key"
-    required: false

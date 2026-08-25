@@ -22,3 +22,12 @@ Versioned, non-secret Hermes profile distributions for Hetzner install.
 | `validation-chief` | no (disabled) | no | no |
 
 Omnipotent combined profiles are forbidden.
+
+## cdb-engineer inference (#4501)
+
+`cdb-engineer` inference is pinned to Hermes `openai-codex` (ChatGPT/Codex
+OAuth subscription). Pay-per-token API keys and paid provider fallbacks are
+forbidden for this profile; OAuth/subscription unavailability must fail closed.
+`HERMES_CDB_ENGINEER_API_KEY(_FILE)` remains Runs-API/gateway transport auth
+only and is not an inference key. Other profiles (e.g. `jannek-assistant`) keep
+their own provider env contracts.
