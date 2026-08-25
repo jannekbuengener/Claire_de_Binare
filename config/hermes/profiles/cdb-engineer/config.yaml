@@ -1,4 +1,4 @@
-# Non-secret config for cdb-engineer (#4289)
+# Non-secret config for cdb-engineer (#4289 / #4501)
 profile:
   name: cdb-engineer
   class: engineering
@@ -65,3 +65,56 @@ server:
   host: 127.0.0.1
   port: 9120
   require_auth_non_loopback: true
+
+# ---------------------------------------------------------------------------
+# Inference (#4501) — Hermes Agent v0.19.1 schema only
+# Fields verified against pinned DEFAULT_CONFIG / cli-config.yaml.example
+# (NousResearch/hermes-agent@cc4cab2f592e60a197e796506de9168f74baf3ea):
+#   model.provider, model.default, fallback_providers, auxiliary.<task>.provider
+# Primary: openai-codex (ChatGPT/Codex OAuth). No paid API-key fallback.
+# OAuth/subscription unavailable => fail closed (empty fallback_providers).
+# Auxiliary uses "codex" (v0.19.1 alias of openai-codex), not "auto".
+# ---------------------------------------------------------------------------
+model:
+  provider: openai-codex
+  default: gpt-5.4
+
+fallback_providers: []
+
+auxiliary:
+  vision:
+    provider: codex
+  web_extract:
+    provider: codex
+  compression:
+    provider: codex
+  skills_hub:
+    provider: codex
+  approval:
+    provider: codex
+  mcp:
+    provider: codex
+  title_generation:
+    provider: codex
+  memory_query_rewrite:
+    provider: codex
+  tts_audio_tags:
+    provider: codex
+  triage_specifier:
+    provider: codex
+  kanban_decomposer:
+    provider: codex
+  profile_describer:
+    provider: codex
+  goal_judge:
+    provider: codex
+  curator:
+    provider: codex
+  monitor:
+    provider: codex
+  background_review:
+    provider: codex
+  moa_reference:
+    provider: codex
+  moa_aggregator:
+    provider: codex

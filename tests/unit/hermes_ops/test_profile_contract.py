@@ -51,6 +51,9 @@ def test_engineer_reuses_auth_lineage_and_scopes_repos() -> None:
     assert "4170" in {str(x) for x in dist["cdb"]["reuses_auth_lineage"]}
     assert dist["cdb"]["cdb_local_ci_publish"] is False
     assert dist["cdb"]["merge_authority"] is False
+    env_names = {e["name"] for e in dist.get("env_requires") or []}
+    assert "OPENROUTER_API_KEY" not in env_names
+    assert dist["cdb"]["inference"]["primary_provider"] == "openai-codex"
 
 
 def test_validation_chief_disabled_by_default() -> None:

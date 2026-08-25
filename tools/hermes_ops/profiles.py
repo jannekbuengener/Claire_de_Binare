@@ -8,6 +8,10 @@ from typing import Any
 
 import yaml
 
+from tools.hermes_ops.inference_contract import (
+    validate_cdb_engineer_config,
+    validate_cdb_engineer_distribution,
+)
 from tools.hermes_ops.policy import validate_distribution_cdb_block
 
 REPO_ROOT = Path(__file__).resolve().parents[2]
@@ -65,6 +69,16 @@ def validate_profile(profile: str) -> ProfileReport:
             report.errors.append("distribution.cdb must be a mapping")
         else:
             report.errors.extend(validate_distribution_cdb_block(cdb, profile))
+            if profile == "cdb-engineer":
+                env_example = root / ".env.EXAMPLE"
+                env_text = (
+                    env_example.read_text(encoding="utf-8")
+                    if env_example.is_file()
+                    else ""
+                )
+                report.errors.extend(
+                    validate_cdb_engineer_distribution(dist, env_example_text=env_text)
+                )
     if cfg_path.is_file():
         try:
             cfg = _load_yaml(cfg_path)
@@ -79,6 +93,8 @@ def validate_profile(profile: str) -> ProfileReport:
             report.errors.append("server.host must be loopback")
         if server.get("require_auth_non_loopback") is not True:
             report.errors.append("require_auth_non_loopback must be true")
+        if profile == "cdb-engineer" and cfg:
+            report.errors.extend(validate_cdb_engineer_config(cfg))
     # Skills directory optional but if present must contain SKILL.md files only as docs.
     skills = root / "skills"
     if skills.is_dir():
