@@ -41,3 +41,35 @@ def test_run_cmd_timeout_terminates_windows_process_tree_and_drains_pipes(
         timeout=5,
     )
     assert process.communicate.call_args_list[1].kwargs == {"timeout": 5}
+
+
+@pytest.mark.unit
+def test_run_cmd_timeout_terminates_posix_process_group_and_drains_pipes(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    """Linux/CI timeout path must kill the process group (not only the parent)."""
+    process = MagicMock()
+    process.pid = 5150
+    process.poll.return_value = 0
+    process.communicate.side_effect = [
+        subprocess.TimeoutExpired(cmd=["child"], timeout=0.2),
+        ("", ""),
+    ]
+    popen = MagicMock(return_value=process)
+    killpg = MagicMock()
+    getpgid = MagicMock(return_value=9001)
+    monkeypatch.setattr(onboarding_orchestrator.os, "name", "posix")
+    monkeypatch.setattr(onboarding_orchestrator.os, "killpg", killpg)
+    monkeypatch.setattr(onboarding_orchestrator.os, "getpgid", getpgid)
+    monkeypatch.setattr(onboarding_orchestrator.subprocess, "Popen", popen)
+
+    rc, stdout, stderr = onboarding_orchestrator._run_cmd(["child"], timeout=0.2)
+
+    assert (rc, stdout) == (-1, "")
+    assert "timed out after 0.2s" in stderr
+    popen_kwargs = popen.call_args.kwargs
+    assert popen_kwargs["start_new_session"] is True
+    assert "creationflags" not in popen_kwargs
+    getpgid.assert_called_once_with(5150)
+    killpg.assert_called_once_with(9001, 15)
+    assert process.communicate.call_args_list[1].kwargs == {"timeout": 5}
