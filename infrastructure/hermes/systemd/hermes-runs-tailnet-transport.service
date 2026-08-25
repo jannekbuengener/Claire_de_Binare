@@ -8,6 +8,9 @@ ConditionPathExists=/etc/hermes/cdb-engineer.env
 [Service]
 Type=oneshot
 RemainAfterExit=yes
+# Bound oneshot start so a hung `tailscale serve --bg --https=...` cannot
+# remain ActiveState=activating with an unbounded start timeout.
+TimeoutStartSec=120
 User=root
 Group=root
 EnvironmentFile=/etc/hermes/cdb-engineer.env
