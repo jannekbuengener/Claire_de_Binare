@@ -24,6 +24,7 @@ def validate_transport_unit(path: Path | None = None) -> list[str]:
     required = (
         "Type=oneshot",
         "RemainAfterExit=yes",
+        "TimeoutStartSec=120",
         "User=root",
         "Group=root",
         "EnvironmentFile=/etc/hermes/cdb-engineer.env",
@@ -50,6 +51,8 @@ def validate_transport_unit(path: Path | None = None) -> list[str]:
         "ExecStart=/usr/bin/tailscale serve --bg --yes --tcp=",
         "--tls-terminated-tcp=",
         "environment=api_server_port=",
+        "timeoutstartusec=infinity",
+        "timeoutstartsec=infinity",
     ):
         if forbidden in lower:
             errors.append(f"transport forbidden snippet present: {forbidden}")

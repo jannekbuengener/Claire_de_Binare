@@ -56,5 +56,7 @@ frontend with the exact `http://127.0.0.1:${API_SERVER_PORT}` backend. Raw
 `--tcp` is not a canonical Runs API transport. `tailscale funnel` is absent from
 the unit and from operator sudo rights. The mapping is persistent through Serve
 background mode; stopping the fixed service removes only that HTTPS Serve port.
-The shared `hermes` operator may control the exact systemd unit but never
-receives generic Tailscale CLI authority.
+`TimeoutStartSec=120` bounds oneshot activation so a hung `tailscale serve --bg
+--https=...` cannot remain `activating` forever. The shared `hermes` operator
+may control the exact systemd unit but never receives generic Tailscale CLI
+authority.
