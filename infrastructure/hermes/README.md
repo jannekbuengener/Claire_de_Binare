@@ -60,3 +60,16 @@ background mode; stopping the fixed service removes only that HTTPS Serve port.
 --https=...` cannot remain `activating` forever. The shared `hermes` operator
 may control the exact systemd unit but never receives generic Tailscale CLI
 authority.
+
+Tailnet control-plane prerequisite (not a host unit defect): private HTTPS Serve
+requires the Tailnet admin setting that enables Serve / HTTPS certificates.
+On Tailscale CLI v1.98.x, `tailscale serve --https ...` calls
+`enableFeatureInteractive("serve", CapabilityHTTPS)` **before** `SetServeConfig`.
+If the node lacks the `https` capability, the CLI queries control (`QueryFeature`)
+and, when `ShouldWait=true`, blocks on the IPN bus until an admin enables the
+feature. `--yes` only skips local overwrite prompts; it does **not** skip that
+control-plane wait. Until Serve/HTTPS is enabled in the Tailscale admin console,
+the transport oneshot can time out with an empty Serve config even when the
+unit bytes, gateway loopback backend, and Funnel-absent contract are correct.
+Do not restart-loop the transport unit while that Tailnet prerequisite is missing.
+See Claire_de_Binare#4498.
