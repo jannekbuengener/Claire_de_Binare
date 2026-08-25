@@ -124,7 +124,13 @@ def run(ctx: StageContext) -> StageResult:
             "-o",
             f"cache_dir={cache_dir.as_posix()}",
         ]
-        env = ctx.temp_env
+        env = {
+            **(ctx.temp_env or {}),
+            # The Docker lint fallback is stage-local. Do not let an operator
+            # setting alter unit tests that instantiate isolated lint contexts.
+            "CDB_RUFF_RUNNER": "native",
+            "CDB_BLACK_RUNNER": "native",
+        }
     result = run_commands_as_stage(
         ctx,
         name="unit",

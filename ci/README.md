@@ -68,6 +68,18 @@ pwsh -File ci/scripts/publish_status.ps1 -Command publish -EvidenceDir ci/artifa
 | `slice` (#4204) | same stages as fast; unit may use path-selected groups | **Never** (`merge_evidence=false`) |
 | `heavy` | fast + integration, security, containers (+ report) | Eligible after publish when clean |
 
+### Windows Docker-Ruff fallback (#4487)
+
+Windows remains the Fast-CI orchestrator. If Enterprise Code Integrity blocks
+a pinned native Ruff or Black binary, set `CDB_RUFF_RUNNER=docker` and/or
+`CDB_BLACK_RUNNER=docker`, plus
+`CDB_RUFF_DOCKER_IMAGE` to a prebuilt image from `ci/Dockerfile`. The lint stage
+then runs only the allowlisted `python -m ruff check .` and/or the existing
+Black check in that image with the same checkout mounted read-only, `--network
+none`, no Docker socket, `--pull=never`, and a mandatory in-container pin
+check. Docker absence, an image mismatch, or any container-tool non-zero exit
+fails the normal lint stage; all non-lint Fast-CI stages remain native.
+
 ### Slice selection (#4204)
 
 ```bash

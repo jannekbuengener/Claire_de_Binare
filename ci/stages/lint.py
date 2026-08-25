@@ -32,10 +32,24 @@ _DEFAULT_BLACK_TIMEOUT_SECONDS = 300
 _BLACK_TIMEOUT_CAP_SECONDS = 900
 _BLACK_TIMEOUT_ENV = "CDB_BLACK_TIMEOUT_SECONDS"
 _REQUIREMENTS_DEV = "requirements-dev.txt"
+_RUFF_RUNNER_ENV = "CDB_RUFF_RUNNER"
+_BLACK_RUNNER_ENV = "CDB_BLACK_RUNNER"
+_RUFF_DOCKER_IMAGE_ENV = "CDB_RUFF_DOCKER_IMAGE"
+RUFF_RUNNER_INVALID = "RUFF_RUNNER_INVALID"
+RUFF_DOCKER_IMAGE_MISSING = "RUFF_DOCKER_IMAGE_MISSING"
+RUFF_DOCKER_UNAVAILABLE = "RUFF_DOCKER_UNAVAILABLE"
 
 
 class BlackResolutionError(RuntimeError):
     """Fail-closed Black executable / version / changed-file resolution error."""
+
+    def __init__(self, reason_code: str, message: str) -> None:
+        super().__init__(message)
+        self.reason_code = reason_code
+
+
+class RuffResolutionError(RuntimeError):
+    """Fail-closed Docker-Ruff runner selection error."""
 
     def __init__(self, reason_code: str, message: str) -> None:
         super().__init__(message)
@@ -128,6 +142,133 @@ def _black_command(python: str) -> list[str]:
     if not override:
         return [python, "-m", "black"]
     return [str(_validate_black_override(override))]
+
+
+def pinned_ruff_version(repo_root: Path) -> str:
+    """Read the single Ruff pin used by native and containerized runners."""
+    path = repo_root / _REQUIREMENTS_DEV
+    for line in path.read_text(encoding="utf-8").splitlines():
+        stripped = line.strip()
+        if stripped.startswith("ruff=="):
+            return stripped.split("==", 1)[1].strip()
+    raise RuffResolutionError(
+        RUFF_RUNNER_INVALID,
+        f"No ruff== pin found in {_REQUIREMENTS_DEV}",
+    )
+
+
+def _docker_lint_command(
+    *, tool: str, repo_root: Path, arguments: list[str]
+) -> list[str]:
+    """Build a fixed, isolated container command for an allowlisted lint tool."""
+    if tool not in {"ruff", "black"}:
+        raise RuffResolutionError(
+            RUFF_RUNNER_INVALID,
+            f"{RUFF_RUNNER_INVALID}: unsupported container lint tool",
+        )
+    image = (os.environ.get(_RUFF_DOCKER_IMAGE_ENV) or "").strip()
+    if not image:
+        raise RuffResolutionError(
+            RUFF_DOCKER_IMAGE_MISSING,
+            f"{RUFF_DOCKER_IMAGE_MISSING}: {_RUFF_DOCKER_IMAGE_ENV} is required",
+        )
+    if any(token in image for token in _BLACK_OVERRIDE_UNSAFE) or _SHELL_META.search(
+        image
+    ):
+        raise RuffResolutionError(
+            RUFF_RUNNER_INVALID,
+            f"{RUFF_RUNNER_INVALID}: {_RUFF_DOCKER_IMAGE_ENV} contains unsafe characters",
+        )
+
+    expected_version = (
+        pinned_ruff_version(repo_root)
+        if tool == "ruff"
+        else pinned_black_version(repo_root)
+    )
+
+    verify_and_run = (
+        "from importlib.metadata import version\n"
+        "import subprocess\n"
+        "import sys\n"
+        f"expected = {expected_version!r}\n"
+        f"actual = version({tool!r})\n"
+        f"print({tool!r} + '_version=' + actual)\n"
+        "if actual != expected:\n"
+        "    raise SystemExit(70)\n"
+        f"raise SystemExit(subprocess.run([sys.executable, '-m', {tool!r}, *{arguments!r}]).returncode)\n"
+    )
+    return [
+        "docker",
+        "run",
+        "--rm",
+        "--pull=never",
+        "--network",
+        "none",
+        "--read-only",
+        "--mount",
+        f"type=bind,src={repo_root.resolve()},dst=/workspace,readonly",
+        "--workdir",
+        "/workspace",
+        "--tmpfs",
+        "/tmp:rw,noexec,nosuid,size=64m",
+        "--env",
+        "HOME=/tmp",
+        "--env",
+        "RUFF_CACHE_DIR=/tmp/ruff-cache",
+        image,
+        "python",
+        "-c",
+        verify_and_run,
+    ]
+
+
+def _ruff_command(*, python: str, repo_root: Path) -> list[str]:
+    """Build the authoritative native or isolated Docker Ruff command."""
+    runner = (os.environ.get(_RUFF_RUNNER_ENV) or "native").strip().lower()
+    if runner == "native":
+        return [python, "-m", "ruff", "check", "."]
+    if runner != "docker":
+        raise RuffResolutionError(
+            RUFF_RUNNER_INVALID,
+            f"{RUFF_RUNNER_INVALID}: {_RUFF_RUNNER_ENV} must be native or docker",
+        )
+    return _docker_lint_command(
+        tool="ruff",
+        repo_root=repo_root,
+        arguments=["check", "."],
+    )
+
+
+def _black_runner_command(
+    *, python: str, repo_root: Path, files: list[str]
+) -> tuple[list[str], str, bool]:
+    """Build native Black by default, or the same bounded Docker fallback."""
+    runner = (os.environ.get(_BLACK_RUNNER_ENV) or "native").strip().lower()
+    if runner == "native":
+        command = _black_command(python)
+        return command, ensure_black_version(command, repo_root=repo_root), False
+    if runner != "docker":
+        raise BlackResolutionError(
+            BLACK_EXECUTABLE_INVALID,
+            f"{BLACK_EXECUTABLE_INVALID}: {_BLACK_RUNNER_ENV} must be native or docker",
+        )
+    version = pinned_black_version(repo_root)
+    return (
+        _docker_lint_command(
+            tool="black",
+            repo_root=repo_root,
+            arguments=[
+                "--config",
+                "pyproject.toml",
+                "--check",
+                "--workers",
+                "1",
+                *files,
+            ],
+        ),
+        version,
+        True,
+    )
 
 
 def _black_timeout_seconds(resources: dict) -> int:
@@ -249,9 +390,31 @@ def run(ctx: StageContext) -> StageResult:
             wall_start=wall_start,
         )
 
-    ruff_cmd = [py, "-m", "ruff", "check", "."]
+    try:
+        ruff_cmd = _ruff_command(python=py, repo_root=ctx.repo_root)
+    except RuffResolutionError as exc:
+        return _fail_stage(
+            ctx=ctx,
+            started=started,
+            summaries=summaries,
+            combined_parts=[str(exc)],
+            exit_code=1,
+            reason_code=exc.reason_code,
+            wall_start=wall_start,
+        )
     ruff_log = ctx.logs_dir / "lint.0.log"
-    ruff_result = run_command(ruff_cmd, cwd=ctx.repo_root, log_path=ruff_log)
+    try:
+        ruff_result = run_command(ruff_cmd, cwd=ctx.repo_root, log_path=ruff_log)
+    except OSError as exc:
+        return _fail_stage(
+            ctx=ctx,
+            started=started,
+            summaries=summaries,
+            combined_parts=[f"{RUFF_DOCKER_UNAVAILABLE}: {exc}"],
+            exit_code=1,
+            reason_code=RUFF_DOCKER_UNAVAILABLE,
+            wall_start=wall_start,
+        )
     summaries.append(" ".join(ruff_cmd))
     combined_parts.append(ruff_log.read_text(encoding="utf-8"))
     if ruff_result.exit_code != 0:
@@ -316,8 +479,11 @@ def run(ctx: StageContext) -> StageResult:
         )
 
     try:
-        black_prefix = _black_command(py)
-        version = ensure_black_version(black_prefix, repo_root=ctx.repo_root)
+        black_prefix, version, black_is_docker = _black_runner_command(
+            python=py,
+            repo_root=ctx.repo_root,
+            files=files,
+        )
     except BlackResolutionError as exc:
         combined_parts.append(str(exc))
         return _fail_stage(
@@ -343,7 +509,7 @@ def run(ctx: StageContext) -> StageResult:
         )
 
     override = (os.environ.get("CDB_BLACK_EXECUTABLE") or "").strip()
-    if override:
+    if override and not black_is_docker:
         combined_parts.append(
             f"black_override=CDB_BLACK_EXECUTABLE="
             f"{redact_path_for_evidence(override)} version={version}"
@@ -351,15 +517,19 @@ def run(ctx: StageContext) -> StageResult:
     combined_parts.append(f"black_timeout_seconds={black_timeout}")
     combined_parts.append(f"black_version={version}")
 
-    black_cmd = [
-        *black_prefix,
-        "--config",
-        "pyproject.toml",
-        "--check",
-        "--workers",
-        "1",
-        *files,
-    ]
+    black_cmd = (
+        black_prefix
+        if black_is_docker
+        else [
+            *black_prefix,
+            "--config",
+            "pyproject.toml",
+            "--check",
+            "--workers",
+            "1",
+            *files,
+        ]
+    )
     black_log = ctx.logs_dir / "lint.1.log"
     black_result = run_command(
         black_cmd,
