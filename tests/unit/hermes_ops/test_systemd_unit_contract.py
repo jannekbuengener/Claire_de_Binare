@@ -48,9 +48,10 @@ def test_hermes_runs_transport_is_root_owned_tailnet_only() -> None:
     ).read_text(encoding="utf-8")
     assert "User=root" in text
     assert "EnvironmentFile=/etc/hermes/cdb-engineer.env" in text
-    assert "tailscale serve --bg --yes --tcp=${API_SERVER_PORT}" in text
-    assert "tcp://127.0.0.1:${API_SERVER_PORT}" in text
     assert "tailscale serve --bg --yes --tcp=${API_SERVER_PORT} off" in text
+    assert "tailscale serve --bg --yes --https=${API_SERVER_PORT}" in text
+    assert "http://127.0.0.1:${API_SERVER_PORT}" in text
+    assert "tailscale serve --bg --yes --https=${API_SERVER_PORT} off" in text
     assert "tailscale funnel" not in text.lower()
     assert "0.0.0.0" not in text
 

@@ -15,7 +15,7 @@ TRANSPORT_UNIT_PATH = (
 
 
 def validate_transport_unit(path: Path | None = None) -> list[str]:
-    """Require a root-owned Tailscale Serve TCP mapping to the loopback gateway."""
+    """Require a root-owned private TLS Serve frontend to the loopback gateway."""
     unit = path or TRANSPORT_UNIT_PATH
     if not unit.is_file():
         return [f"missing transport unit file: {unit}"]
@@ -28,9 +28,10 @@ def validate_transport_unit(path: Path | None = None) -> list[str]:
         "Group=root",
         "EnvironmentFile=/etc/hermes/cdb-engineer.env",
         "Requires=tailscaled.service hermes-gateway-cdb-engineer.service",
-        "ExecStart=/usr/bin/tailscale serve --bg --yes --tcp=${API_SERVER_PORT} "
-        "tcp://127.0.0.1:${API_SERVER_PORT}",
-        "ExecStop=/usr/bin/tailscale serve --bg --yes --tcp=${API_SERVER_PORT} off",
+        "ExecStartPre=-/usr/bin/tailscale serve --bg --yes --tcp=${API_SERVER_PORT} off",
+        "ExecStart=/usr/bin/tailscale serve --bg --yes --https=${API_SERVER_PORT} "
+        "http://127.0.0.1:${API_SERVER_PORT}",
+        "ExecStop=/usr/bin/tailscale serve --bg --yes --https=${API_SERVER_PORT} off",
         "NoNewPrivileges=true",
         "ProtectSystem=strict",
         "UMask=0077",
@@ -46,7 +47,7 @@ def validate_transport_unit(path: Path | None = None) -> list[str]:
         "tailscale funnel",
         "0.0.0.0",
         "--http=",
-        "--https=",
+        "ExecStart=/usr/bin/tailscale serve --bg --yes --tcp=",
         "--tls-terminated-tcp=",
         "environment=api_server_port=",
     ):
