@@ -62,6 +62,7 @@ SECRET_PATH_DEFAULTS: list[str] = [
 
 CI_PYTHON_IMPORT_CHECKS: list[tuple[str, str, CheckResult]] = [
     ("mcp", "requirements-mcp.txt", "FAIL"),
+    ("pytest", "requirements-dev.txt", "FAIL"),
     ("numpy", "requirements.txt", "WARN"),
     ("prometheus_client", "requirements.txt", "WARN"),
 ]
@@ -296,10 +297,16 @@ def _check_ci_python_deps() -> tuple[CheckItem, list[str]]:
 
     if missing_fail:
         detail = f"missing: {', '.join(missing_fail)}"
-        warnings.append(
-            "Missing MCP test deps — canonical pytest smoke fails without "
-            "requirements-mcp.txt (see DEVELOPER_ONBOARDING.md step 4)"
-        )
+        if any("requirements-mcp.txt" in item for item in missing_fail):
+            warnings.append(
+                "Missing MCP test deps — canonical pytest smoke fails without "
+                "requirements-mcp.txt (see DEVELOPER_ONBOARDING.md step 4)"
+            )
+        if any("requirements-dev.txt" in item for item in missing_fail):
+            warnings.append(
+                "Missing dev/test tooling — ruff, make test, and pytest smoke "
+                "fail without requirements-dev.txt (see DEVELOPER_ONBOARDING.md step 4)"
+            )
         return (
             CheckItem(
                 name="CI Python deps",

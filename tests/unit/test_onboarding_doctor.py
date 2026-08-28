@@ -321,6 +321,21 @@ def test_check_ci_python_deps_fail_on_missing_mcp(
     assert any("requirements-mcp.txt" in w for w in warnings)
 
 
+def test_check_ci_python_deps_fail_on_missing_dev_deps(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    def mock_import(name: str) -> bool:
+        return name != "pytest"
+
+    monkeypatch.setattr(doctor, "_python_import_available", mock_import)
+    check, warnings = doctor._check_ci_python_deps()
+    assert check.status == "FAIL"
+    assert "pytest" in check.detail
+    assert "requirements-dev.txt" in check.detail
+    assert doctor.CI_PYTHON_DEPS_INSTALL_CMD in check.action
+    assert any("requirements-dev.txt" in w for w in warnings)
+
+
 def test_check_ci_python_deps_warn_on_missing_optional(
     monkeypatch: pytest.MonkeyPatch,
 ) -> None:
