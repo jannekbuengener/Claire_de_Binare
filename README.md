@@ -131,6 +131,14 @@ LR bleibt **NO-GO** — SSOT: [`docs/live-readiness/LR-AUDIT-STATUS-2026-03-05.m
 
 ## Dev / Test (CI mode, no containers)
 
+First-time Python setup (matches CI):
+
+```bash
+pip install -r requirements.txt -r requirements-dev.txt -r requirements-mcp.txt
+```
+
+See [`DEVELOPER_ONBOARDING.md`](DEVELOPER_ONBOARDING.md) for the full local setup path.
+
 ```bash
 make test                    # unit + integration
 ruff check .                 # CI-required lint

@@ -190,7 +190,8 @@ Only run this step if you want extra confidence beyond the read-only baseline.
 Suggested path:
 
 1. Create and activate `.venv`.
-2. Install the dev dependencies from `DEVELOPER_ONBOARDING.md`.
+2. Install the CI dependency layers from `DEVELOPER_ONBOARDING.md` step 4
+   (`requirements.txt`, `requirements-dev.txt`, `requirements-mcp.txt`).
 3. Run a small lint/test smoke without starting the stack.
 
 ```bash

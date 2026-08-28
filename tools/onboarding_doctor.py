@@ -23,6 +23,7 @@ Parent: #3226
 from __future__ import annotations
 
 import argparse
+import importlib.util
 import json
 import os
 import re
@@ -58,6 +59,16 @@ ONBOARDING_FILE_CHECKS: list[str] = [
 SECRET_PATH_DEFAULTS: list[str] = [
     str(Path.home() / "Documents" / ".secrets" / ".cdb"),
 ]
+
+CI_PYTHON_IMPORT_CHECKS: list[tuple[str, str, CheckResult]] = [
+    ("mcp", "requirements-mcp.txt", "FAIL"),
+    ("numpy", "requirements.txt", "WARN"),
+    ("prometheus_client", "requirements.txt", "WARN"),
+]
+
+CI_PYTHON_DEPS_INSTALL_CMD = (
+    "pip install -r requirements.txt -r requirements-dev.txt -r requirements-mcp.txt"
+)
 
 FORBIDDEN_OUTPUT_PATTERNS: list[re.Pattern] = [
     re.compile(r"(?i)\b(token|secret|password|passwd|api[_-]?key)\s*[:=]\s*\S+"),
@@ -143,6 +154,7 @@ class DoctorOutput:
     secrets_path: CheckResult = "FAIL"
     secrets_resolved_dir: str = ""
     onboarding_files: CheckResult = "FAIL"
+    ci_python_deps: CheckResult = "SKIP"
     context_doctor_reachable: CheckResult = "SKIP"
     lr_note: str = "NO-GO"
     blocking: bool = True
@@ -181,6 +193,7 @@ class DoctorOutput:
             "secrets_path": self.secrets_path,
             "secrets_resolved_dir": self.secrets_resolved_dir,
             "onboarding_files": self.onboarding_files,
+            "ci_python_deps": self.ci_python_deps,
             "context_doctor_reachable": self.context_doctor_reachable,
             "lr_note": self.lr_note,
             "blocking": self.blocking,
@@ -249,6 +262,68 @@ def _onboarding_files_exist(root: Path) -> tuple[CheckResult, list[str]]:
     if len(missing) <= 2:
         return "WARN", missing
     return "FAIL", missing
+
+
+def _python_import_available(module_name: str) -> bool:
+    try:
+        return importlib.util.find_spec(module_name) is not None
+    except (ImportError, ModuleNotFoundError, ValueError, AttributeError):
+        return False
+
+
+def _check_ci_python_deps() -> tuple[CheckItem, list[str]]:
+    missing_fail: list[str] = []
+    missing_warn: list[str] = []
+    warnings: list[str] = []
+
+    for module_name, req_file, severity in CI_PYTHON_IMPORT_CHECKS:
+        if _python_import_available(module_name):
+            continue
+        if severity == "FAIL":
+            missing_fail.append(f"{module_name} ({req_file})")
+        else:
+            missing_warn.append(f"{module_name} ({req_file})")
+
+    if not missing_fail and not missing_warn:
+        return (
+            CheckItem(
+                name="CI Python deps",
+                status="PASS",
+                detail="requirements.txt/dev/mcp imports available",
+            ),
+            warnings,
+        )
+
+    if missing_fail:
+        detail = f"missing: {', '.join(missing_fail)}"
+        warnings.append(
+            "Missing MCP test deps — canonical pytest smoke fails without "
+            "requirements-mcp.txt (see DEVELOPER_ONBOARDING.md step 4)"
+        )
+        return (
+            CheckItem(
+                name="CI Python deps",
+                status="FAIL",
+                detail=detail,
+                action=CI_PYTHON_DEPS_INSTALL_CMD,
+            ),
+            warnings,
+        )
+
+    detail = f"missing: {', '.join(missing_warn)}"
+    warnings.append(
+        "Missing optional CI deps from requirements.txt — some pytest modules "
+        "may fail collection (see DEVELOPER_ONBOARDING.md step 4)"
+    )
+    return (
+        CheckItem(
+            name="CI Python deps",
+            status="WARN",
+            detail=detail,
+            action="pip install -r requirements.txt",
+        ),
+        warnings,
+    )
 
 
 def _check_context_doctor_reachable(
@@ -385,6 +460,11 @@ def build_report(
     if missing_files:
         report.warnings.append(f"Missing onboarding files: {', '.join(missing_files)}")
 
+    # CI Python dependency layers (match .github/workflows/ci.yml)
+    ci_deps_check, ci_dep_warnings = _check_ci_python_deps()
+    report.ci_python_deps = ci_deps_check.status
+    report.warnings.extend(ci_dep_warnings)
+
     # Context doctor reachability
     doctor_status = _check_context_doctor_reachable(runner=context_doctor_runner)
     report.context_doctor_reachable = doctor_status
@@ -417,6 +497,7 @@ def build_report(
             detail=report.secrets_resolved_dir,
         ),
         CheckItem(name="Onboarding files", status=report.onboarding_files),
+        ci_deps_check,
         CheckItem(name="make context-doctor", status=report.context_doctor_reachable),
     ]
     report.blocking = compute_exit_code(report) == 1

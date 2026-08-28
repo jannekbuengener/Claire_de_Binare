@@ -295,6 +295,45 @@ def test_onboarding_files_warn_few_missing(tmp_path: Path) -> None:
     assert 2 <= len(missing) <= 2
 
 
+def test_python_import_available() -> None:
+    assert doctor._python_import_available("json") is True
+    assert doctor._python_import_available("cdb_nonexistent_module_xyz") is False
+
+
+def test_check_ci_python_deps_pass(monkeypatch: pytest.MonkeyPatch) -> None:
+    monkeypatch.setattr(doctor, "_python_import_available", lambda _name: True)
+    check, warnings = doctor._check_ci_python_deps()
+    assert check.status == "PASS"
+    assert not warnings
+
+
+def test_check_ci_python_deps_fail_on_missing_mcp(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    def mock_import(name: str) -> bool:
+        return name != "mcp"
+
+    monkeypatch.setattr(doctor, "_python_import_available", mock_import)
+    check, warnings = doctor._check_ci_python_deps()
+    assert check.status == "FAIL"
+    assert "mcp" in check.detail
+    assert doctor.CI_PYTHON_DEPS_INSTALL_CMD in check.action
+    assert any("requirements-mcp.txt" in w for w in warnings)
+
+
+def test_check_ci_python_deps_warn_on_missing_optional(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    def mock_import(name: str) -> bool:
+        return name not in {"numpy", "prometheus_client"}
+
+    monkeypatch.setattr(doctor, "_python_import_available", mock_import)
+    check, warnings = doctor._check_ci_python_deps()
+    assert check.status == "WARN"
+    assert "numpy" in check.detail
+    assert any("requirements.txt" in w for w in warnings)
+
+
 def test_doctor_output_to_dict(tmp_path: Path) -> None:
     r = doctor.DoctorOutput(
         repo_root_found="PASS",
@@ -308,6 +347,7 @@ def test_doctor_output_to_dict(tmp_path: Path) -> None:
         env_file="PASS",
         secrets_path="PASS",
         onboarding_files="PASS",
+        ci_python_deps="PASS",
         context_doctor_reachable="PASS",
     )
     d = r.to_dict()
@@ -316,6 +356,7 @@ def test_doctor_output_to_dict(tmp_path: Path) -> None:
     assert d["git"]["branch"] == "main"
     assert d["git"]["head"] == "abcd1234"
     assert d["lr_note"] == "NO-GO"
+    assert d["ci_python_deps"] == "PASS"
     assert "checks" in d
 
 

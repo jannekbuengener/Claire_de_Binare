@@ -129,9 +129,19 @@ source .venv/bin/activate
 
 ### 4. Install Dependencies
 
+Install the same Python dependency layers as CI (`.github/workflows/ci.yml`):
+
 ```bash
+pip install -r requirements.txt
 pip install -r requirements-dev.txt
+pip install -r requirements-mcp.txt
 ```
+
+`requirements.txt` covers runtime/test conveniences (for example `numpy`,
+`prometheus_client`). `requirements-dev.txt` covers linting and dev tooling.
+`requirements-mcp.txt` is required for pytest collection of MCP-related unit
+tests; without it, the canonical quick-test command below fails with
+`ModuleNotFoundError: mcp`.
 
 ---
 
@@ -285,6 +295,7 @@ requiring a running stack, Docker mutation, or secret exposure. It checks:
 - gh CLI and authentication (optional)
 - `.env` file presence
 - SECRETS_PATH existence (not contents)
+- CI Python dependency layers (`requirements.txt`, `requirements-mcp.txt`)
 - All key onboarding files exist
 - `make context-doctor` reachability
 
@@ -296,6 +307,21 @@ boundaries. The report is only written when `--report` is explicitly set;
 the default doctor run remains read-only and writes no files.
 
 ### 5. Repo Brain / Context Preflight
+
+Before the first `make context-doctor` on a fresh clone, initialize the local
+context query config:
+
+```bash
+make context-query-config-init
+```
+
+For the full context stack (optional), start local SurrealDB first:
+
+```bash
+make context-up
+```
+
+Then run the read-only preflight:
 
 ```bash
 make context-doctor
@@ -544,11 +570,28 @@ Common causes: missing env variable, wrong secret, port conflict.
 2. If running E2E tests: ensure the full BLUE+RED stack is running
 3. Run with verbose output: `pytest -v -s`
 
+### "ModuleNotFoundError: mcp" during pytest
+
+**Solution**: Install MCP test dependencies (CI does this too):
+```bash
+pip install -r requirements-mcp.txt
+```
+
+If other collection errors mention `numpy` or `prometheus_client`, also ensure
+`requirements.txt` is installed (see [Initial Setup](#initial-setup) step 4).
+
+### "make context-doctor fails on fresh clone"
+
+**Solution**:
+1. Run `make context-query-config-init` once
+2. If you need the full context stack, run `make context-up` before
+   `make context-doctor`
+
 ### "ruff check fails"
 
 **Solution**: Ensure dev dependencies are installed:
 ```bash
-pip install -r requirements-dev.txt
+pip install -r requirements.txt -r requirements-dev.txt -r requirements-mcp.txt
 ```
 
 ### Getting Help
