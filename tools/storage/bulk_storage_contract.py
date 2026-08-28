@@ -91,4 +91,6 @@ def resolve_bulk_storage_path(
     raw_root = env.get(BULK_STORAGE_ROOT_ENV, "")
     if not raw_root.strip():
         raise BulkStorageContractError("BULK_STORAGE_ROOT_REQUIRED")
-    return validate_bulk_storage_root(raw_root) / subtree
+    root = validate_bulk_storage_root(raw_root)
+    windows_root = PureWindowsPath(str(root).replace("/", "\\"))
+    return Path(str(windows_root / PureWindowsPath(subtree)))
