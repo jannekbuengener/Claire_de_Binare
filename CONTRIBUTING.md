@@ -75,9 +75,10 @@ python -m venv .venv
 source .venv/bin/activate  # Linux/macOS
 # or: .\.venv\Scripts\Activate.ps1  # Windows
 
-# Install dependencies
+# Install dependencies (same layers as CI — see .github/workflows/ci.yml)
 pip install -r requirements.txt
 pip install -r requirements-dev.txt
+pip install -r requirements-mcp.txt
 
 # Setup secrets directory
 # Canonical path: ~/Documents/.secrets/.cdb/
@@ -92,10 +93,11 @@ pip install -r requirements-dev.txt
 # Lint (CI-required)
 ruff check .
 
-# Quick test (no containers needed)
+# Quick test (no containers needed; requires all three requirement files above)
 pytest -q -k "not test_mcp_time_server_runtime"
 
-# Context preflight
+# Context preflight (first run on fresh clone)
+make context-query-config-init
 make context-doctor
 ```
 
