@@ -89,9 +89,10 @@ jobs:
               return `default milestone ${defaultMilestoneTitle}`;
             }
 
-            const issueNumber = context.payload.issue?.number ??
-              Number(context.payload.client_payload?.issue_number || 0) ||
-              context.payload.pull_request?.number;
+            const issueNumber =
+              context.payload.issue?.number ??
+              (Number(context.payload.client_payload?.issue_number || 0) ||
+                context.payload.pull_request?.number);
             if (!issueNumber) {
               core.warning("Could not determine the issue number for this event.");
               return;
