@@ -28,6 +28,8 @@ jobs:
       - name: Generate context refresh report
         id: generate
         shell: bash
+        env:
+          PYTHONPATH: ${{ github.workspace }}
         run: |
           set -euo pipefail
           python tools/context/generate_context_refresh_report.py \
