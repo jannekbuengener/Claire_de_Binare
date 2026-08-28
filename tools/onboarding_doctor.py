@@ -67,6 +67,17 @@ CI_PYTHON_IMPORT_CHECKS: list[tuple[str, str, CheckResult]] = [
     ("prometheus_client", "requirements.txt", "WARN"),
 ]
 
+CI_PYTHON_FAIL_WARNINGS: dict[str, str] = {
+    "requirements-mcp.txt": (
+        "Missing MCP test deps — canonical pytest smoke fails without "
+        "requirements-mcp.txt (see DEVELOPER_ONBOARDING.md step 4)"
+    ),
+    "requirements-dev.txt": (
+        "Missing dev/test tooling — ruff, make test, and pytest smoke "
+        "fail without requirements-dev.txt (see DEVELOPER_ONBOARDING.md step 4)"
+    ),
+}
+
 CI_PYTHON_DEPS_INSTALL_CMD = (
     "pip install -r requirements.txt -r requirements-dev.txt -r requirements-mcp.txt"
 )
@@ -274,6 +285,7 @@ def _python_import_available(module_name: str) -> bool:
 
 def _check_ci_python_deps() -> tuple[CheckItem, list[str]]:
     missing_fail: list[str] = []
+    missing_fail_files: set[str] = set()
     missing_warn: list[str] = []
     warnings: list[str] = []
 
@@ -282,6 +294,7 @@ def _check_ci_python_deps() -> tuple[CheckItem, list[str]]:
             continue
         if severity == "FAIL":
             missing_fail.append(f"{module_name} ({req_file})")
+            missing_fail_files.add(req_file)
         else:
             missing_warn.append(f"{module_name} ({req_file})")
 
@@ -297,16 +310,9 @@ def _check_ci_python_deps() -> tuple[CheckItem, list[str]]:
 
     if missing_fail:
         detail = f"missing: {', '.join(missing_fail)}"
-        if any("requirements-mcp.txt" in item for item in missing_fail):
-            warnings.append(
-                "Missing MCP test deps — canonical pytest smoke fails without "
-                "requirements-mcp.txt (see DEVELOPER_ONBOARDING.md step 4)"
-            )
-        if any("requirements-dev.txt" in item for item in missing_fail):
-            warnings.append(
-                "Missing dev/test tooling — ruff, make test, and pytest smoke "
-                "fail without requirements-dev.txt (see DEVELOPER_ONBOARDING.md step 4)"
-            )
+        for req_file in sorted(missing_fail_files):
+            if msg := CI_PYTHON_FAIL_WARNINGS.get(req_file):
+                warnings.append(msg)
         return (
             CheckItem(
                 name="CI Python deps",

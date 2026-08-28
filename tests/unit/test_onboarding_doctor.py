@@ -307,32 +307,44 @@ def test_check_ci_python_deps_pass(monkeypatch: pytest.MonkeyPatch) -> None:
     assert not warnings
 
 
-def test_check_ci_python_deps_fail_on_missing_mcp(
+@pytest.mark.parametrize(
+    ("missing_module", "req_file"),
+    [
+        ("mcp", "requirements-mcp.txt"),
+        ("pytest", "requirements-dev.txt"),
+    ],
+)
+def test_check_ci_python_deps_fail_on_missing_required_layer(
+    monkeypatch: pytest.MonkeyPatch,
+    missing_module: str,
+    req_file: str,
+) -> None:
+    monkeypatch.setattr(
+        doctor,
+        "_python_import_available",
+        lambda name: name != missing_module,
+    )
+    check, warnings = doctor._check_ci_python_deps()
+    assert check.status == "FAIL"
+    assert missing_module in check.detail
+    assert req_file in check.detail
+    assert doctor.CI_PYTHON_DEPS_INSTALL_CMD in check.action
+    assert any(req_file in w for w in warnings)
+
+
+def test_check_ci_python_deps_fail_on_missing_mcp_and_dev(
     monkeypatch: pytest.MonkeyPatch,
 ) -> None:
-    def mock_import(name: str) -> bool:
-        return name != "mcp"
-
-    monkeypatch.setattr(doctor, "_python_import_available", mock_import)
+    monkeypatch.setattr(
+        doctor,
+        "_python_import_available",
+        lambda name: name not in {"mcp", "pytest"},
+    )
     check, warnings = doctor._check_ci_python_deps()
     assert check.status == "FAIL"
     assert "mcp" in check.detail
-    assert doctor.CI_PYTHON_DEPS_INSTALL_CMD in check.action
-    assert any("requirements-mcp.txt" in w for w in warnings)
-
-
-def test_check_ci_python_deps_fail_on_missing_dev_deps(
-    monkeypatch: pytest.MonkeyPatch,
-) -> None:
-    def mock_import(name: str) -> bool:
-        return name != "pytest"
-
-    monkeypatch.setattr(doctor, "_python_import_available", mock_import)
-    check, warnings = doctor._check_ci_python_deps()
-    assert check.status == "FAIL"
     assert "pytest" in check.detail
-    assert "requirements-dev.txt" in check.detail
-    assert doctor.CI_PYTHON_DEPS_INSTALL_CMD in check.action
+    assert any("requirements-mcp.txt" in w for w in warnings)
     assert any("requirements-dev.txt" in w for w in warnings)
 
 
