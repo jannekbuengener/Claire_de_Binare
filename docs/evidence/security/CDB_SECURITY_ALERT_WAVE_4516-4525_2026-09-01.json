@@ -1,0 +1,253 @@
+{
+  "schema": "cdb.security_alert_wave.v1",
+  "wave_id": "security-alert-wave-2026-09-01",
+  "snapshot_date": "2026-09-01",
+  "base_sha": "41b5c04aeb4826888e7eff00ccba9d1350cfda84",
+  "base_ref": "origin/main",
+  "branch": "cloud-cursor/security-wave-4516-4525-1048",
+  "routing_decision": "CREATE_DEDICATED_PR",
+  "preferred_objective": "security-alert-wave-4516-4525",
+  "merge_mode": true,
+  "merge_allowed": true,
+  "issue_closure_before_merge_allowed": false,
+  "issue_closure_after_merge_allowed": true,
+  "alert_dismissal_allowed": false,
+  "trivyignore_growth_allowed": false,
+  "lr_verdict": "NO-GO",
+  "board_stage": "trade-capable",
+  "readout_generated_at": "2026-09-01T06:41:31Z",
+  "related_canonical_trackers": {
+    "perl_base_cluster": 2932,
+    "perl_narrow_allocation_db_writer": 4114,
+    "curl_libcurl_cluster": 4080
+  },
+  "trivy_evidence": {
+    "tool_version": "0.74.0",
+    "probe_date": "2026-09-01",
+    "representative_image": "cdb_risk:wave4516-probe",
+    "base_digest_pinned": "sha256:cea0e6040540fb2b965b6e7fb5ffa00871e632eef63719f0ea54bca189ce14a6",
+    "base_digest_latest_hub_amd64": "sha256:810da6270e43d30a1f3e0e1eabbeb6fbd9d78ad9dd2e754d5297a3d6cb42df46",
+    "digest_refresh_clears_wave_cves": false,
+    "findings": [
+      {
+        "cve": "CVE-2026-57432",
+        "package": "perl-base",
+        "installed": "5.40.1-6",
+        "fixed_version_trivy": null
+      },
+      {
+        "cve": "CVE-2026-8927",
+        "package": "curl",
+        "installed": "8.14.1-2+deb13u4",
+        "fixed_version_trivy": null
+      },
+      {
+        "cve": "CVE-2026-8927",
+        "package": "libcurl4t64",
+        "installed": "8.14.1-2+deb13u4",
+        "fixed_version_trivy": null
+      }
+    ]
+  },
+  "debian_tracker_evidence": {
+    "CVE-2026-57432": {
+      "trixie": "5.40.1-6 vulnerable",
+      "forky_sid": "5.42.3-1 fixed",
+      "trixie_note": "<no-dsa> Minor issue",
+      "suite_native_fix_available": false
+    },
+    "CVE-2026-8927": {
+      "upstream_fixed": "8.21.0",
+      "trixie_installed": "8.14.1-2+deb13u4",
+      "suite_native_fix_available": false,
+      "debian_tracker_status": "unfixed on trixie (live probe 2026-09-01)"
+    }
+  },
+  "fixability_probes": {
+    "apt_get_upgrade": "no gain — perl-base and curl remain at vulnerable versions",
+    "digest_only_refresh": "rejected — latest Hub amd64 digest still ships perl-base 5.40.1-6",
+    "forky_perl_base_5_40_1_8": "rejected — version not in trixie suite",
+    "cross_suite_curl_8_21": "rejected — policy/forbidden without approved suite migration"
+  },
+  "clusters": [
+    {
+      "cluster_id": "perl-base-cve-2026-57432",
+      "issues": [4516, 4517, 4518, 4519, 4520, 4521],
+      "disposition": "HOLD_UPSTREAM_NO_FIXED_VERSION",
+      "canonical_tracker": 2932,
+      "note": "#4114 remains narrow (allocation+db_writer only); do not expand #4114 scope"
+    },
+    {
+      "cluster_id": "curl-libcurl-cve-2026-8927",
+      "issues": [4522, 4523, 4524, 4525],
+      "disposition": "HOLD_UPSTREAM_NO_FIXED_VERSION",
+      "canonical_tracker": 4080
+    }
+  ],
+  "allowed_dispositions": [
+    "HOLD_UPSTREAM_NO_FIXED_VERSION",
+    "DUPLICATE_TRACKING"
+  ],
+  "issues": [
+    {
+      "issue": 4516,
+      "cve": "CVE-2026-57432",
+      "component": "library/cdb_execution",
+      "package": "perl-base",
+      "installed": "5.40.1-6",
+      "fixed_version": "",
+      "fingerprint": "79ad67c976efb121",
+      "runtime_reachability": "essential_os_package_no_python_perl_callpath",
+      "codex_verdict": "confirmed",
+      "cdb_disposition": "HOLD_UPSTREAM_NO_FIXED_VERSION",
+      "canonical_tracker": 2932,
+      "closure_condition": "Close as duplicate of #2932 after merge; Code Scanning alert stays open until suite-native perl-base fix + scan clear"
+    },
+    {
+      "issue": 4517,
+      "cve": "CVE-2026-57432",
+      "component": "library/cdb_market",
+      "package": "perl-base",
+      "installed": "5.40.1-6",
+      "fixed_version": "",
+      "fingerprint": "6cf444a9ba8229c8",
+      "runtime_reachability": "essential_os_package_no_python_perl_callpath",
+      "codex_verdict": "confirmed",
+      "cdb_disposition": "DUPLICATE_TRACKING",
+      "canonical_tracker": 2932,
+      "closure_condition": "Close as duplicate of #2932 after merge"
+    },
+    {
+      "issue": 4518,
+      "cve": "CVE-2026-57432",
+      "component": "library/cdb_regime",
+      "package": "perl-base",
+      "installed": "5.40.1-6",
+      "fixed_version": "",
+      "fingerprint": "5e2049e28c55e15b",
+      "runtime_reachability": "essential_os_package_no_python_perl_callpath",
+      "codex_verdict": "confirmed",
+      "cdb_disposition": "DUPLICATE_TRACKING",
+      "canonical_tracker": 2932,
+      "closure_condition": "Close as duplicate of #2932 after merge"
+    },
+    {
+      "issue": 4519,
+      "cve": "CVE-2026-57432",
+      "component": "library/cdb_risk",
+      "package": "perl-base",
+      "installed": "5.40.1-6",
+      "fixed_version": "",
+      "fingerprint": "b5f61b824b3cb74c",
+      "runtime_reachability": "essential_os_package_no_python_perl_callpath",
+      "codex_verdict": "confirmed",
+      "cdb_disposition": "DUPLICATE_TRACKING",
+      "canonical_tracker": 2932,
+      "closure_condition": "Close as duplicate of #2932 after merge"
+    },
+    {
+      "issue": 4520,
+      "cve": "CVE-2026-57432",
+      "component": "library/cdb_signal",
+      "package": "perl-base",
+      "installed": "5.40.1-6",
+      "fixed_version": "",
+      "fingerprint": "243033eca57ccbb6",
+      "runtime_reachability": "essential_os_package_no_python_perl_callpath",
+      "codex_verdict": "confirmed",
+      "cdb_disposition": "DUPLICATE_TRACKING",
+      "canonical_tracker": 2932,
+      "closure_condition": "Close as duplicate of #2932 after merge"
+    },
+    {
+      "issue": 4521,
+      "cve": "CVE-2026-57432",
+      "component": "library/cdb_ws",
+      "package": "perl-base",
+      "installed": "5.40.1-6",
+      "fixed_version": "",
+      "fingerprint": "c958e08bf104aba3",
+      "runtime_reachability": "essential_os_package_no_python_perl_callpath",
+      "codex_verdict": "confirmed",
+      "cdb_disposition": "DUPLICATE_TRACKING",
+      "canonical_tracker": 2932,
+      "closure_condition": "Close as duplicate of #2932 after merge"
+    },
+    {
+      "issue": 4522,
+      "cve": "CVE-2026-8927",
+      "component": "library/cdb_regime",
+      "package": "curl+libcurl4t64",
+      "installed": "8.14.1-2+deb13u4",
+      "fixed_version": "",
+      "fingerprint": "990f9e3b1571b473",
+      "runtime_reachability": "healthcheck_http_curl_cli_only_no_libcurl_api_reuse",
+      "codex_verdict": "confirmed",
+      "cdb_disposition": "HOLD_UPSTREAM_NO_FIXED_VERSION",
+      "canonical_tracker": 4080,
+      "closure_condition": "Close as duplicate of #4080 after merge; alert stays open until curl/libcurl >= 8.21.0 suite-native + scan clear"
+    },
+    {
+      "issue": 4523,
+      "cve": "CVE-2026-8927",
+      "component": "library/cdb_risk",
+      "package": "curl+libcurl4t64",
+      "installed": "8.14.1-2+deb13u4",
+      "fixed_version": "",
+      "fingerprint": "9b2553c567439156",
+      "runtime_reachability": "healthcheck_http_curl_cli_only_no_libcurl_api_reuse",
+      "codex_verdict": "confirmed",
+      "cdb_disposition": "DUPLICATE_TRACKING",
+      "canonical_tracker": 4080,
+      "closure_condition": "Close as duplicate of #4080 after merge"
+    },
+    {
+      "issue": 4524,
+      "cve": "CVE-2026-8927",
+      "component": "library/cdb_signal",
+      "package": "curl+libcurl4t64",
+      "installed": "8.14.1-2+deb13u4",
+      "fixed_version": "",
+      "fingerprint": "371a5539c553aaff",
+      "runtime_reachability": "healthcheck_http_curl_cli_only_no_libcurl_api_reuse",
+      "codex_verdict": "confirmed",
+      "cdb_disposition": "DUPLICATE_TRACKING",
+      "canonical_tracker": 4080,
+      "closure_condition": "Close as duplicate of #4080 after merge"
+    },
+    {
+      "issue": 4525,
+      "cve": "CVE-2026-8927",
+      "component": "library/cdb_ws",
+      "package": "curl+libcurl4t64",
+      "installed": "8.14.1-2+deb13u4",
+      "fixed_version": "",
+      "fingerprint": "07ae112e485fdf44",
+      "runtime_reachability": "healthcheck_http_curl_cli_only_no_libcurl_api_reuse",
+      "codex_verdict": "confirmed",
+      "cdb_disposition": "DUPLICATE_TRACKING",
+      "canonical_tracker": 4080,
+      "closure_condition": "Close as duplicate of #4080 after merge"
+    }
+  ],
+  "re_eval_triggers": {
+    "perl_cve_2026_57432": {
+      "canonical_tracker": 2932,
+      "next_calendar_probe": "2026-09-15",
+      "trigger": "Debian Trixie publishes non-empty FixedVersion for perl-base OR Trivy reports FixedVersion on rebuilt Trixie service image"
+    },
+    "curl_cve_2026_8927": {
+      "canonical_tracker": 4080,
+      "next_calendar_probe": "2026-09-15",
+      "trigger": "Debian Trixie publishes curl/libcurl4t64 >= 8.21.0 OR Trivy FixedVersion non-empty on rebuilt scoped images"
+    }
+  },
+  "code_scanning_alerts_remaining_open_after_issue_close": 10,
+  "non_goals": [
+    "no Dockerfile remediation",
+    "no alert dismissal",
+    "no trivyignore growth",
+    "no suite migration",
+    "no expansion of #4114 scope"
+  ]
+}
