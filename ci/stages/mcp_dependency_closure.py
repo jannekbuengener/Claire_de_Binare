@@ -10,7 +10,9 @@ from ci.lib.evidence import StageResult, utc_now
 from ci.stages._common import StageContext
 
 MCP_SDK_VERSION_MISMATCH = "MCP_SDK_VERSION_MISMATCH"
-MCP_SERVER_LIST_TOOLS_UNAVAILABLE = "MCP_SERVER_LIST_TOOLS_UNAVAILABLE"
+MCP_SERVER_HANDLER_REGISTRATION_UNAVAILABLE = (
+    "MCP_SERVER_HANDLER_REGISTRATION_UNAVAILABLE"
+)
 MCP_REQUIREMENTS_PIN_MISSING = "MCP_REQUIREMENTS_PIN_MISSING"
 
 
@@ -36,10 +38,13 @@ def _validate_mcp_sdk(repo_root: Path) -> tuple[str, str]:
             f"{MCP_SDK_VERSION_MISMATCH}: active mcp {active} does not match pin {expected}"
         )
     from mcp.server import Server
+    import inspect
 
-    if not hasattr(Server, "list_tools"):
+    init_params = inspect.signature(Server.__init__).parameters
+    if "on_list_tools" not in init_params:
         raise ValueError(
-            f"{MCP_SERVER_LIST_TOOLS_UNAVAILABLE}: mcp {active} Server.list_tools is unavailable"
+            f"{MCP_SERVER_HANDLER_REGISTRATION_UNAVAILABLE}: "
+            f"mcp {active} Server.on_list_tools constructor hook is unavailable"
         )
     return expected, active
 
@@ -59,7 +64,7 @@ def run(ctx: StageContext) -> StageResult:
                 for code in (
                     MCP_REQUIREMENTS_PIN_MISSING,
                     MCP_SDK_VERSION_MISMATCH,
-                    MCP_SERVER_LIST_TOOLS_UNAVAILABLE,
+                    MCP_SERVER_HANDLER_REGISTRATION_UNAVAILABLE,
                 )
                 if message.startswith(code)
             ),
@@ -85,7 +90,7 @@ def run(ctx: StageContext) -> StageResult:
         )
 
     log_path.write_text(
-        f"mcp_pin={expected}\nactive_mcp={active}\nServer.list_tools=available\n",
+        f"mcp_pin={expected}\nactive_mcp={active}\nServer.on_list_tools=available\n",
         encoding="utf-8",
     )
     return StageResult(

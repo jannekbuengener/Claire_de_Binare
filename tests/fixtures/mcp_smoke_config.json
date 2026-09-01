@@ -1,8 +1,8 @@
 {
   "mcpServers": {
-    "time": {
+    "cdb-context": {
       "command": "python",
-      "args": ["-m", "mcp_server_time"],
+      "args": ["-m", "tools.mcp.server"],
       "type": "stdio"
     }
   }
