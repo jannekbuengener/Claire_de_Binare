@@ -66,12 +66,14 @@ def test_wave_schema_and_upstream_hold_flags() -> None:
     assert data["alert_dismissal_allowed"] is False
     assert data["trivyignore_growth_allowed"] is False
     assert data["lr_verdict"] == "NO-GO"
-    assert data["debian_tracker_evidence"]["CVE-2026-57432"][
-        "suite_native_fix_available"
-    ] is False
-    assert data["debian_tracker_evidence"]["CVE-2026-8927"][
-        "suite_native_fix_available"
-    ] is False
+    assert (
+        data["debian_tracker_evidence"]["CVE-2026-57432"]["suite_native_fix_available"]
+        is False
+    )
+    assert (
+        data["debian_tracker_evidence"]["CVE-2026-8927"]["suite_native_fix_available"]
+        is False
+    )
     assert data["trivy_evidence"]["digest_refresh_clears_wave_cves"] is False
 
 
