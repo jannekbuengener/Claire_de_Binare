@@ -41,6 +41,8 @@ from tools.agent_control.dispatch import (
     retry_run,
     watch_run,
 )
+from ci.publisher.exceptions import PublisherError
+
 from tools.agent_control.errors import (
     AgentControlError,
     DispatchError,
@@ -947,7 +949,13 @@ def cmd_approval_publish(args: argparse.Namespace) -> int:
             "author_type": result.author_type,
             "performed_via_github_app_slug": result.performed_via_github_app_slug,
         }
-    except (ApprovalError, AgentControlError, OSError, json.JSONDecodeError) as exc:
+    except (
+        ApprovalError,
+        AgentControlError,
+        PublisherError,
+        OSError,
+        json.JSONDecodeError,
+    ) as exc:
         code = getattr(exc, "code", "APPROVAL_ERROR")
         message = getattr(exc, "message", str(exc))
         print(f"INVALID {code}: {message}", file=sys.stderr)

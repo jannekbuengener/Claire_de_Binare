@@ -38,6 +38,19 @@ REPO = "jannekbuengener/Claire_de_Binare"
 PR = 4530
 
 
+@pytest.fixture
+def publisher_app_env(monkeypatch: pytest.MonkeyPatch) -> None:
+    monkeypatch.setenv("CDB_GH_APP_ID", "4410232")
+    monkeypatch.setattr(
+        "tools.agent_control.approval.publish.load_app_private_key_pem",
+        lambda: "fake-private-key",
+    )
+    monkeypatch.setattr(
+        "tools.agent_control.approval.publish.mint_app_jwt",
+        lambda **_: "fake-jwt",
+    )
+
+
 def _bootstrap() -> dict[str, Any]:
     return yaml.safe_load(
         (
@@ -185,7 +198,9 @@ def test_validate_envelope_rejects_wrong_pr() -> None:
 
 
 @pytest.mark.unit
-def test_resolve_publisher_app_identity_requires_issues_write() -> None:
+def test_resolve_publisher_app_identity_requires_issues_write(
+    publisher_app_env: None,
+) -> None:
     transport = _app_transport(permissions={"checks": "write", "metadata": "read"})
     with pytest.raises(ApprovalError, match="PERMISSION_DENIED"):
         resolve_publisher_app_identity(_bootstrap(), transport=transport)
@@ -243,6 +258,7 @@ def test_producer_trust_matrix() -> None:
 @pytest.mark.unit
 def test_publish_acceptance_envelope_mock_happy_path(
     monkeypatch: pytest.MonkeyPatch,
+    publisher_app_env: None,
 ) -> None:
     from tools.agent_control.approval.canon_loader import (
         load_acceptance_schema_from_canon,
@@ -270,6 +286,7 @@ def test_publish_acceptance_envelope_mock_happy_path(
 @pytest.mark.unit
 def test_published_comment_trusted_by_provenance(
     monkeypatch: pytest.MonkeyPatch,
+    publisher_app_env: None,
 ) -> None:
     env = _completeness_envelope()
     monkeypatch.setattr(
@@ -308,7 +325,10 @@ def test_published_comment_trusted_by_provenance(
 
 
 @pytest.mark.unit
-def test_publish_rejects_malformed_envelope(monkeypatch: pytest.MonkeyPatch) -> None:
+def test_publish_rejects_malformed_envelope(
+    monkeypatch: pytest.MonkeyPatch,
+    publisher_app_env: None,
+) -> None:
     env = _completeness_envelope()
     broken = deepcopy(env)
     broken["lifecycle"] = {"state": "ACCEPTING_SLICES"}
@@ -326,3 +346,52 @@ def test_publish_rejects_malformed_envelope(monkeypatch: pytest.MonkeyPatch) -> 
             transport=_app_transport(),
             token_provider=lambda: "test-token",
         )
+
+
+@pytest.mark.unit
+def test_load_producer_trust_policy_prefers_protected_git_ref(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    from tools.agent_control.approval.producer_trust import load_producer_trust_policy
+
+    protected = {
+        "producers": {
+            "cdb-pr-completeness-review": {
+                "trusted_github_app_slugs": ["cdb-local-ci"],
+                "require_performed_via_github_app": True,
+            }
+        }
+    }
+    monkeypatch.setattr(
+        "tools.agent_control.approval.producer_trust.load_yaml_from_git",
+        lambda *_args, **_kwargs: protected,
+    )
+    assert load_producer_trust_policy(REPO_ROOT) == protected
+
+
+@pytest.mark.unit
+def test_cmd_approval_publish_catches_publisher_authentication_error(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    from ci.publisher.exceptions import AuthenticationError
+    from tools.agent_control.cli import cmd_approval_publish
+
+    monkeypatch.setattr(
+        "tools.agent_control.approval.publish.publish_acceptance_envelope",
+        lambda *_args, **_kwargs: (_ for _ in ()).throw(
+            AuthenticationError("AUTH_MISSING", "missing token")
+        ),
+    )
+    args = type(
+        "Args",
+        (),
+        {
+            "envelope_file": None,
+            "producer": COMPLETENESS_PRODUCER,
+            "pr": PR,
+            "repository": REPO,
+            "bootstrap_ref": None,
+            "output": None,
+        },
+    )()
+    assert cmd_approval_publish(args) == 2

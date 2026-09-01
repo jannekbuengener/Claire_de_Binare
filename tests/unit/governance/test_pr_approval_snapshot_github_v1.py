@@ -8,6 +8,10 @@ from unittest.mock import patch
 import pytest
 import yaml
 
+from tools.agent_control.approval.adapter_capabilities import (
+    GITHUB_APPROVAL_SNAPSHOT_EXPORT,
+    adapter_capability_fingerprint,
+)
 from tools.agent_control.approval.context import (
     build_approval_context,
     default_repo_paths,
@@ -48,7 +52,7 @@ def test_merge_check_runs_payload_slurped_pages() -> None:
 
 
 @pytest.mark.unit
-def test_live_snapshot_adapter_uses_baseline_fingerprint() -> None:
+def test_live_snapshot_adapter_uses_observed_capability_fingerprint() -> None:
     pr_payload = {
         "head": {"sha": "a" * 40},
         "base": {"sha": "b" * 40},
@@ -89,11 +93,21 @@ def test_live_snapshot_adapter_uses_baseline_fingerprint() -> None:
             / "config/agent-control/capability-baselines/approval-dashboard-export.redacted.v1.json"
         ).read_text(encoding="utf-8")
     )
-    assert (
-        snap["adapter"]["capability_fingerprint"] == baseline["capability_fingerprint"]
-    )
+    observed = adapter_capability_fingerprint()
+    assert snap["adapter"]["capability_fingerprint"] == observed
+    assert observed == baseline["capability_fingerprint"]
     env = build_approval_context(snap, default_repo_paths(REPO_ROOT))
     assert "ADAPTER" not in env["drift"].get("sources", [])
+
+
+@pytest.mark.unit
+def test_adapter_capability_fingerprint_detects_export_drift() -> None:
+    drifted = dict(GITHUB_APPROVAL_SNAPSHOT_EXPORT)
+    drifted["observed_capabilities"] = {
+        **drifted["observed_capabilities"],
+        "operations": ["only_one_operation"],
+    }
+    assert adapter_capability_fingerprint(drifted) != adapter_capability_fingerprint()
 
 
 @pytest.mark.unit

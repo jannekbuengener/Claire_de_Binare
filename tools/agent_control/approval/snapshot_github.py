@@ -9,6 +9,10 @@ from typing import Any
 from tools.agent_control.approval.acceptance_provenance import (
     resolve_final_head_provenance,
 )
+from tools.agent_control.approval.adapter_capabilities import (
+    GITHUB_APPROVAL_SNAPSHOT_ADAPTER_ID,
+    adapter_capability_fingerprint,
+)
 from tools.agent_control.approval.comment_provenance import CommentRecord
 from tools.agent_control.approval.drift import (
     load_baseline,
@@ -23,7 +27,6 @@ from tools.agent_control.approval.context import default_repo_paths
 from tools.agent_control.paths import REPO_ROOT
 from tools.pr_routing.engine import parse_batch_pr_metadata
 
-CDB_LOCAL_CI_APP_ID = 4410232
 DEFAULT_REPOSITORY = "jannekbuengener/Claire_de_Binare"
 
 
@@ -234,12 +237,6 @@ def _fetch_required_checks(
                 entry["mechanism"] = "unknown"
         else:
             entry = {"name": name, "mechanism": "unknown"}
-            if name == "cdb-local-ci":
-                entry = {
-                    "name": "cdb-local-ci",
-                    "mechanism": "check_run",
-                    "app_id": CDB_LOCAL_CI_APP_ID,
-                }
         out.append(entry)
     return out, True
 
@@ -247,18 +244,14 @@ def _fetch_required_checks(
 def _build_adapter_block(repo_root: Path) -> dict[str, Any]:
     paths = default_repo_paths(repo_root)
     baseline = load_baseline(paths.baseline_path)
-    adapter_id = "cursor-approval-dashboard"
-    fingerprint = None
+    adapter_id = GITHUB_APPROVAL_SNAPSHOT_ADAPTER_ID
     if isinstance(baseline, dict):
-        fingerprint = baseline.get("capability_fingerprint")
         baseline_adapter = baseline.get("adapter_id")
         if isinstance(baseline_adapter, str) and baseline_adapter.strip():
             adapter_id = baseline_adapter
-    if not isinstance(fingerprint, str) or not fingerprint.startswith("sha256:"):
-        raise RuntimeError("approval baseline capability_fingerprint missing")
     return {
         "adapter_id": adapter_id,
-        "capability_fingerprint": fingerprint,
+        "capability_fingerprint": adapter_capability_fingerprint(),
     }
 
 
