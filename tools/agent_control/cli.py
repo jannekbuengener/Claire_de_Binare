@@ -782,7 +782,9 @@ def cmd_approval_context(args: argparse.Namespace) -> int:
 
 def cmd_approval_snapshot(args: argparse.Namespace) -> int:
     """Build live GitHub approval snapshot JSON (read-only)."""
-    from tools.agent_control.approval.snapshot_github import build_github_approval_snapshot
+    from tools.agent_control.approval.snapshot_github import (
+        build_github_approval_snapshot,
+    )
     from tools.agent_control.paths import REPO_ROOT
 
     try:
@@ -812,7 +814,9 @@ def cmd_approval_eligibility(args: argparse.Namespace) -> int:
         validate_snapshot_pr_binding,
     )
     from tools.agent_control.approval.mutation import github_approve_mutation_allowed
-    from tools.agent_control.approval.snapshot_github import build_github_approval_snapshot
+    from tools.agent_control.approval.snapshot_github import (
+        build_github_approval_snapshot,
+    )
     from tools.agent_control.paths import REPO_ROOT
 
     try:
@@ -839,7 +843,13 @@ def cmd_approval_eligibility(args: argparse.Namespace) -> int:
             "context_digest": envelope.get("context_digest"),
             "final_head_state": envelope.get("final_head_state"),
         }
-    except (ApprovalError, AgentControlError, RuntimeError, OSError, json.JSONDecodeError) as exc:
+    except (
+        ApprovalError,
+        AgentControlError,
+        RuntimeError,
+        OSError,
+        json.JSONDecodeError,
+    ) as exc:
         code = getattr(exc, "code", "APPROVAL_ERROR")
         message = getattr(exc, "message", str(exc))
         print(f"INVALID {code}: {message}", file=sys.stderr)
@@ -862,7 +872,9 @@ def cmd_approval_approve_body(args: argparse.Namespace) -> int:
     )
     from tools.agent_control.approval.mutation import build_github_approve_body
     from tools.agent_control.approval.policy import load_policy
-    from tools.agent_control.approval.snapshot_github import build_github_approval_snapshot
+    from tools.agent_control.approval.snapshot_github import (
+        build_github_approval_snapshot,
+    )
     from tools.agent_control.paths import REPO_ROOT
 
     try:
@@ -879,7 +891,14 @@ def cmd_approval_approve_body(args: argparse.Namespace) -> int:
         policy = load_policy(paths.policy_path, repo_root=REPO_ROOT)
         envelope = build_approval_context(snapshot, paths)
         body = build_github_approve_body(envelope, policy)
-    except (ApprovalError, AgentControlError, RuntimeError, OSError, ValueError, json.JSONDecodeError) as exc:
+    except (
+        ApprovalError,
+        AgentControlError,
+        RuntimeError,
+        OSError,
+        ValueError,
+        json.JSONDecodeError,
+    ) as exc:
         code = getattr(exc, "code", "APPROVAL_ERROR")
         message = getattr(exc, "message", str(exc))
         print(f"INVALID {code}: {message}", file=sys.stderr)
@@ -903,7 +922,9 @@ def cmd_approval_publish(args: argparse.Namespace) -> int:
         else:
             envelope = json.load(sys.stdin)
         if not isinstance(envelope, dict):
-            raise ApprovalError("APPROVAL_PUBLISH_INVALID", "envelope must be a mapping")
+            raise ApprovalError(
+                "APPROVAL_PUBLISH_INVALID", "envelope must be a mapping"
+            )
         result = publish_acceptance_envelope(
             envelope,
             declared_producer=str(args.producer),

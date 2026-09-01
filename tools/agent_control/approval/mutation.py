@@ -11,11 +11,21 @@ def github_approve_mutation_allowed(envelope: dict[str, Any]) -> tuple[bool, lis
     reasons = list(envelope.get("reason_codes") or [])
     if rec != "APPROVE_RECOMMENDED":
         return False, reasons
-    fh = envelope.get("final_head_state") if isinstance(envelope.get("final_head_state"), dict) else {}
-    subject = envelope.get("subject") if isinstance(envelope.get("subject"), dict) else {}
+    fh = (
+        envelope.get("final_head_state")
+        if isinstance(envelope.get("final_head_state"), dict)
+        else {}
+    )
+    subject = (
+        envelope.get("subject") if isinstance(envelope.get("subject"), dict) else {}
+    )
     head = subject.get("head_sha")
     bound = fh.get("bound_final_head_sha")
-    if not isinstance(head, str) or not isinstance(bound, str) or head.lower() != bound.lower():
+    if (
+        not isinstance(head, str)
+        or not isinstance(bound, str)
+        or head.lower() != bound.lower()
+    ):
         return False, reasons + ["BOUND_HEAD_MISMATCH"]
     if fh.get("final_head_ready_for_approval") is not True:
         return False, reasons + ["FINAL_HEAD_NOT_READY"]
@@ -24,20 +34,30 @@ def github_approve_mutation_allowed(envelope: dict[str, Any]) -> tuple[bool, lis
     return True, reasons
 
 
-def build_github_approve_body(envelope: dict[str, Any], policy: dict[str, Any] | None = None) -> str:
+def build_github_approve_body(
+    envelope: dict[str, Any], policy: dict[str, Any] | None = None
+) -> str:
     """Contract body for cdb_final_head_pr_approval_gate GitHub APPROVE mutation."""
     allowed, _ = github_approve_mutation_allowed(envelope)
     if not allowed:
-        raise ValueError("approve body requires APPROVE_RECOMMENDED with bound final head")
+        raise ValueError(
+            "approve body requires APPROVE_RECOMMENDED with bound final head"
+        )
 
     doc = {}
     if policy and isinstance(policy.get("document"), dict):
         doc = policy["document"]
     elif policy:
         doc = policy
-    mutation = doc.get("github_approve_mutation") if isinstance(doc.get("github_approve_mutation"), dict) else {}
+    mutation = (
+        doc.get("github_approve_mutation")
+        if isinstance(doc.get("github_approve_mutation"), dict)
+        else {}
+    )
 
-    subject = envelope.get("subject") if isinstance(envelope.get("subject"), dict) else {}
+    subject = (
+        envelope.get("subject") if isinstance(envelope.get("subject"), dict) else {}
+    )
     head_sha = subject.get("head_sha", "")
 
     decision = mutation.get("decision_value", "APPROVE")

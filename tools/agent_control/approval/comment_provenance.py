@@ -29,7 +29,9 @@ class CommentRecord:
         return cls(
             comment_id=item.get("id") if isinstance(item.get("id"), int) else None,
             body=str(item.get("body") or ""),
-            author_login=user.get("login") if isinstance(user.get("login"), str) else None,
+            author_login=(
+                user.get("login") if isinstance(user.get("login"), str) else None
+            ),
             author_type=user.get("type") if isinstance(user.get("type"), str) else None,
             author_association=(
                 item.get("author_association")

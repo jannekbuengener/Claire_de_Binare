@@ -103,5 +103,7 @@ def load_acceptance_schema_from_canon(
     git_ref = str(canon.get("schema_git_ref") or DEFAULT_SCHEMA_GIT_REF)
     relpath = str(canon.get("schema_relpath") or "")
     if not relpath:
-        raise ApprovalError("APPROVAL_CANON_INVALID", "bootstrap canon.schema_relpath missing")
+        raise ApprovalError(
+            "APPROVAL_CANON_INVALID", "bootstrap canon.schema_relpath missing"
+        )
     return load_json_from_git(root, git_ref, relpath)

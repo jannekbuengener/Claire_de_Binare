@@ -78,7 +78,9 @@ def load_acceptance_schema(repo_root: Path | None = None) -> dict[str, Any]:
     root = repo_root or REPO_ROOT
     path = root / ACCEPTANCE_SCHEMA_RELPATH
     if not path.is_file():
-        raise ApprovalError("APPROVAL_SCHEMA_INVALID", f"missing acceptance schema: {path}")
+        raise ApprovalError(
+            "APPROVAL_SCHEMA_INVALID", f"missing acceptance schema: {path}"
+        )
     return json.loads(path.read_text(encoding="utf-8"))
 
 
@@ -137,7 +139,9 @@ def _is_conductor_ready(envelope: dict[str, Any]) -> tuple[bool, list[str]]:
         return False, ["producer is not cdb-batch-merge-conductor"]
     if envelope.get("run_status") != "COMPLETE":
         errors.append("run_status must be COMPLETE")
-    lifecycle = envelope.get("lifecycle") if isinstance(envelope.get("lifecycle"), dict) else {}
+    lifecycle = (
+        envelope.get("lifecycle") if isinstance(envelope.get("lifecycle"), dict) else {}
+    )
     if lifecycle.get("state") != "FINAL_HEAD_READY_FOR_APPROVAL":
         errors.append("lifecycle.state must be FINAL_HEAD_READY_FOR_APPROVAL")
     result = envelope.get("result") if isinstance(envelope.get("result"), dict) else {}
@@ -184,11 +188,17 @@ def _completeness_subject_matches(
     )
 
 
-def _is_completeness_semantically_green(envelope: dict[str, Any]) -> tuple[bool, list[str]]:
+def _is_completeness_semantically_green(
+    envelope: dict[str, Any],
+) -> tuple[bool, list[str]]:
     errors: list[str] = []
     if envelope.get("run_status") != "COMPLETE":
-        errors.append(f"run_status must be COMPLETE, got {envelope.get('run_status')!r}")
-    lifecycle = envelope.get("lifecycle") if isinstance(envelope.get("lifecycle"), dict) else {}
+        errors.append(
+            f"run_status must be COMPLETE, got {envelope.get('run_status')!r}"
+        )
+    lifecycle = (
+        envelope.get("lifecycle") if isinstance(envelope.get("lifecycle"), dict) else {}
+    )
     if lifecycle.get("state") != "MERGE_CANDIDATE":
         errors.append("lifecycle.state must be MERGE_CANDIDATE")
     result = envelope.get("result") if isinstance(envelope.get("result"), dict) else {}
@@ -205,15 +215,15 @@ def _find_completeness_merge_candidate(
     for envelope in reversed(envelopes):
         if envelope.get("producer") != COMPLETENESS_PRODUCER:
             continue
-        schema_errors = validate_acceptance_envelope(
-            envelope, load_acceptance_schema()
-        )
+        schema_errors = validate_acceptance_envelope(envelope, load_acceptance_schema())
         if schema_errors:
             continue
         green, _ = _is_completeness_semantically_green(envelope)
         if not green:
             return None
-        subject = envelope.get("subject") if isinstance(envelope.get("subject"), dict) else {}
+        subject = (
+            envelope.get("subject") if isinstance(envelope.get("subject"), dict) else {}
+        )
         subj_head = _normalize_sha(subject.get("head_sha"))
         if subj_head and subj_head == head:
             return envelope
@@ -259,7 +269,9 @@ def _resolve_latest_completeness_envelope(
 
     if latest is None:
         reasons.append(REASON_HANDOFF_PROVENANCE_INCOMPLETE)
-        validation_errors.append("missing trusted completeness envelope for live head/base")
+        validation_errors.append(
+            "missing trusted completeness envelope for live head/base"
+        )
         return None, None, None, reasons, validation_errors
 
     comment, envelope = latest
@@ -268,7 +280,9 @@ def _resolve_latest_completeness_envelope(
         validation_errors.extend(comp_errors)
         reasons.append(REASON_HANDOFF_SCHEMA_INVALID)
         return None, comment, None, reasons, validation_errors
-    subject = envelope.get("subject") if isinstance(envelope.get("subject"), dict) else {}
+    subject = (
+        envelope.get("subject") if isinstance(envelope.get("subject"), dict) else {}
+    )
     if not _completeness_subject_matches(
         subject,
         pr_number=pr_number,
@@ -376,7 +390,9 @@ def resolve_final_head_provenance(
         if any("conductor actor untrusted" in err for err in validation_errors):
             reasons.append(REASON_UNTRUSTED_HANDOFF)
         if not validation_errors:
-            validation_errors.append("no trusted schema-valid conductor handoff envelope")
+            validation_errors.append(
+                "no trusted schema-valid conductor handoff envelope"
+            )
         return FinalHeadProvenance(
             trusted=False,
             final_head_ready_for_approval=False,
@@ -391,7 +407,9 @@ def resolve_final_head_provenance(
 
     comment, conductor = conductor_pair
     comment_id = comment.comment_id
-    subject = conductor.get("subject") if isinstance(conductor.get("subject"), dict) else {}
+    subject = (
+        conductor.get("subject") if isinstance(conductor.get("subject"), dict) else {}
+    )
     bound_head = _normalize_sha(subject.get("head_sha"))
     bound_base = _normalize_sha(subject.get("base_sha"))
     subj_pr = subject.get("pr_number")
@@ -399,28 +417,38 @@ def resolve_final_head_provenance(
 
     if not bound_head or bound_head != head:
         reasons.append(REASON_HANDOFF_HEAD_MISMATCH)
-        validation_errors.append(f"conductor subject.head_sha {bound_head!r} != live {head!r}")
+        validation_errors.append(
+            f"conductor subject.head_sha {bound_head!r} != live {head!r}"
+        )
     if not bound_base or bound_base != base:
         reasons.append(REASON_HANDOFF_BASE_MISMATCH)
-        validation_errors.append(f"conductor subject.base_sha {bound_base!r} != live {base!r}")
+        validation_errors.append(
+            f"conductor subject.base_sha {bound_base!r} != live {base!r}"
+        )
     if isinstance(subj_pr, int) and subj_pr != pr_number:
         reasons.append(REASON_HANDOFF_HEAD_MISMATCH)
-        validation_errors.append(f"conductor subject.pr_number {subj_pr} != {pr_number}")
+        validation_errors.append(
+            f"conductor subject.pr_number {subj_pr} != {pr_number}"
+        )
     if isinstance(subj_repo, str) and subj_repo and subj_repo != repository:
         reasons.append(REASON_UNTRUSTED_HANDOFF)
         validation_errors.append("conductor subject.repository mismatch")
 
-    completeness, completeness_comment, completeness_verdict, comp_reasons, comp_errors = (
-        _resolve_latest_completeness_envelope(
-            all_envelopes,
-            pr_number=pr_number,
-            repository=repository,
-            head=head,
-            base=base,
-            schema=schema,
-            trust_policy=trust_policy,
-            repo_root=repo_root,
-        )
+    (
+        completeness,
+        completeness_comment,
+        completeness_verdict,
+        comp_reasons,
+        comp_errors,
+    ) = _resolve_latest_completeness_envelope(
+        all_envelopes,
+        pr_number=pr_number,
+        repository=repository,
+        head=head,
+        base=base,
+        schema=schema,
+        trust_policy=trust_policy,
+        repo_root=repo_root,
     )
     reasons.extend(comp_reasons)
     validation_errors.extend(comp_errors)
@@ -428,10 +456,15 @@ def resolve_final_head_provenance(
         completeness_comment.comment_id if completeness_comment is not None else None
     )
 
-    lifecycle = conductor.get("lifecycle") if isinstance(conductor.get("lifecycle"), dict) else {}
+    lifecycle = (
+        conductor.get("lifecycle")
+        if isinstance(conductor.get("lifecycle"), dict)
+        else {}
+    )
     lifecycle_state = lifecycle.get("state")
     completeness_green = (
-        completeness is not None and _is_completeness_semantically_green(completeness)[0]
+        completeness is not None
+        and _is_completeness_semantically_green(completeness)[0]
     )
     trusted = (
         REASON_HANDOFF_HEAD_MISMATCH not in reasons
@@ -471,7 +504,9 @@ def resolve_final_head_provenance(
     )
 
 
-def reject_self_declared_producer(envelope: dict[str, Any], schema: dict[str, Any]) -> bool:
+def reject_self_declared_producer(
+    envelope: dict[str, Any], schema: dict[str, Any]
+) -> bool:
     """True when producer string exists but schema validation fails (forged handoff)."""
     if "producer" not in envelope:
         return False

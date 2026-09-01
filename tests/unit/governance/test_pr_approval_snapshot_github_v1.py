@@ -8,9 +8,18 @@ from unittest.mock import patch
 import pytest
 import yaml
 
-from tools.agent_control.approval.context import build_approval_context, default_repo_paths
-from tools.agent_control.approval.gh_api import merge_check_runs_payload, merge_comment_pages
-from tools.agent_control.approval.snapshot_github import build_github_approval_snapshot
+from tools.agent_control.approval.context import (
+    build_approval_context,
+    default_repo_paths,
+)
+from tools.agent_control.approval.gh_api import (
+    merge_check_runs_payload,
+    merge_comment_pages,
+)
+from tools.agent_control.approval.snapshot_github import (
+    _parse_steward_state,
+    build_github_approval_snapshot,
+)
 from tools.agent_control.paths import REPO_ROOT
 
 FIX = REPO_ROOT / "tests" / "fixtures" / "agent_control" / "approval"
@@ -46,37 +55,89 @@ def test_live_snapshot_adapter_uses_baseline_fingerprint() -> None:
         "body": "",
         "draft": False,
     }
-    with patch(
-        "tools.agent_control.approval.snapshot_github.gh_api_json",
-        side_effect=[
-            pr_payload,
-            [],
-            {"required_status_checks": {"contexts": ["cdb-local-ci"]}},
-            {"check_runs": []},
-            {"statuses": []},
-        ],
-    ), patch(
-        "tools.agent_control.approval.snapshot_github._fetch_review_decision",
-        return_value="APPROVED",
-    ), patch(
-        "tools.agent_control.approval.snapshot_github._fetch_blocking_thread_count",
-        return_value=(0, True),
+    with (
+        patch(
+            "tools.agent_control.approval.snapshot_github.gh_api_json",
+            side_effect=[
+                pr_payload,
+                [],
+                {"required_status_checks": {"contexts": ["cdb-local-ci"]}},
+                {"check_runs": []},
+                {"statuses": []},
+            ],
+        ),
+        patch(
+            "tools.agent_control.approval.snapshot_github._fetch_review_decision",
+            return_value="APPROVED",
+        ),
+        patch(
+            "tools.agent_control.approval.snapshot_github._fetch_blocking_thread_count",
+            return_value=(0, True),
+        ),
     ):
-        snap = build_github_approval_snapshot(pr_number=1, repository="o/r", repo_root=REPO_ROOT)
+        snap = build_github_approval_snapshot(
+            pr_number=1, repository="o/r", repo_root=REPO_ROOT
+        )
     baseline = json.loads(
         (
             REPO_ROOT
             / "config/agent-control/capability-baselines/approval-dashboard-export.redacted.v1.json"
         ).read_text(encoding="utf-8")
     )
-    assert snap["adapter"]["capability_fingerprint"] == baseline["capability_fingerprint"]
+    assert (
+        snap["adapter"]["capability_fingerprint"] == baseline["capability_fingerprint"]
+    )
     env = build_approval_context(snap, default_repo_paths(REPO_ROOT))
     assert "ADAPTER" not in env["drift"].get("sources", [])
 
 
 @pytest.mark.unit
+def test_parse_steward_state_reads_frozen_from_refs_body() -> None:
+    body = f"""<!-- cdb-batch-pr:v1
+policy_id: cdb-pr-routing-v1
+batch_key: docs-governance
+lane: docs-governance
+base_branch: main
+validation_profile: docs-governance-v1
+merge_mode: batch
+steward_state: frozen
+objective_key: pr-flow
+planned_issues: #4505
+contract_keys: pr-routing
+risk_flags: none
+-->
+
+## CDB Batch Ledger
+
+| Issue | Status | Commit | Targeted Validation | Risk Class | Restunsicherheit |
+| --- | --- | --- | --- | --- | --- |
+| #4505 | SLICE_DELIVERED | {"a" * 40} | unit + contract | governance | none |
+
+Refs #4505
+"""
+    assert _parse_steward_state(body) == "frozen"
+
+
+@pytest.mark.unit
+def test_parse_steward_state_none_without_batch_marker() -> None:
+    assert _parse_steward_state("Refs #4505") is None
+
+
+@pytest.mark.unit
+def test_parse_steward_state_none_on_malformed_marker() -> None:
+    body = """<!-- cdb-batch-pr:v1
+policy_id: cdb-pr-routing-v1
+steward_state: frozen
+-->
+"""
+    assert _parse_steward_state(body) is None
+
+
+@pytest.mark.unit
 def test_live_snapshot_review_decision_none_blocks() -> None:
-    snap = json.loads((FIX / "clean_app_check_run_success.json").read_text(encoding="utf-8"))
+    snap = json.loads(
+        (FIX / "clean_app_check_run_success.json").read_text(encoding="utf-8")
+    )
     snap["pr"]["review_decision"] = None
     env = build_approval_context(snap, default_repo_paths())
     assert env["recommendation"] != "APPROVE_RECOMMENDED"
@@ -85,7 +146,9 @@ def test_live_snapshot_review_decision_none_blocks() -> None:
 
 @pytest.mark.unit
 def test_live_snapshot_changes_requested_blocks() -> None:
-    snap = json.loads((FIX / "clean_app_check_run_success.json").read_text(encoding="utf-8"))
+    snap = json.loads(
+        (FIX / "clean_app_check_run_success.json").read_text(encoding="utf-8")
+    )
     snap["pr"]["review_decision"] = "CHANGES_REQUESTED"
     env = build_approval_context(snap, default_repo_paths())
     assert env["recommendation"] == "REQUEST_CHANGES"
@@ -93,7 +156,9 @@ def test_live_snapshot_changes_requested_blocks() -> None:
 
 @pytest.mark.unit
 def test_live_snapshot_unknown_threads_blocks() -> None:
-    snap = json.loads((FIX / "clean_app_check_run_success.json").read_text(encoding="utf-8"))
+    snap = json.loads(
+        (FIX / "clean_app_check_run_success.json").read_text(encoding="utf-8")
+    )
     snap["pr"]["blocking_threads"] = None
     snap["review_thread_state"] = "unknown"
     env = build_approval_context(snap, default_repo_paths())
@@ -116,7 +181,9 @@ def test_snapshot_pr_binding_rejects_mismatch() -> None:
     from tools.agent_control.approval.codes import ApprovalError
     from tools.agent_control.approval.context import validate_snapshot_pr_binding
 
-    snap = json.loads((FIX / "clean_app_check_run_success.json").read_text(encoding="utf-8"))
+    snap = json.loads(
+        (FIX / "clean_app_check_run_success.json").read_text(encoding="utf-8")
+    )
     snap["pr"]["number"] = 99
     with pytest.raises(ApprovalError, match="APPROVAL_SNAPSHOT_PR_MISMATCH"):
         validate_snapshot_pr_binding(snap, 1)

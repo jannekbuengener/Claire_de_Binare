@@ -20,10 +20,14 @@ def load_producer_trust_policy(repo_root: Path | None = None) -> dict[str, Any]:
     root = repo_root or REPO_ROOT
     path = root / DEFAULT_TRUST_POLICY_RELPATH
     if not path.is_file():
-        raise ApprovalError("APPROVAL_TRUST_POLICY_MISSING", f"missing trust policy: {path}")
+        raise ApprovalError(
+            "APPROVAL_TRUST_POLICY_MISSING", f"missing trust policy: {path}"
+        )
     data = yaml.safe_load(path.read_text(encoding="utf-8"))
     if not isinstance(data, dict):
-        raise ApprovalError("APPROVAL_TRUST_POLICY_INVALID", "trust policy must be mapping")
+        raise ApprovalError(
+            "APPROVAL_TRUST_POLICY_INVALID", "trust policy must be mapping"
+        )
     return data
 
 
@@ -36,8 +40,12 @@ def producer_actor_trusted(
 ) -> tuple[bool, str]:
     """Return (trusted, detail). Never infer trust from envelope producer field."""
     policy = trust_policy or load_producer_trust_policy(repo_root)
-    producers = policy.get("producers") if isinstance(policy.get("producers"), dict) else {}
-    rules = producers.get(producer) if isinstance(producers.get(producer), dict) else None
+    producers = (
+        policy.get("producers") if isinstance(policy.get("producers"), dict) else {}
+    )
+    rules = (
+        producers.get(producer) if isinstance(producers.get(producer), dict) else None
+    )
     if rules is None:
         return False, f"producer {producer!r} not in trust policy"
 

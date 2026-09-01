@@ -16,7 +16,10 @@ from tools.agent_control.approval.acceptance_provenance import (
     resolve_final_head_provenance,
 )
 from tools.agent_control.approval.comment_provenance import CommentRecord
-from tools.agent_control.approval.context import build_approval_context, default_repo_paths
+from tools.agent_control.approval.context import (
+    build_approval_context,
+    default_repo_paths,
+)
 from tools.agent_control.approval.mutation import (
     build_github_approve_body,
     github_approve_mutation_allowed,
@@ -123,7 +126,9 @@ def _trusted_comment(
 
 @pytest.mark.unit
 def test_clean_fixture_still_approve_recommended_with_final_head() -> None:
-    env = build_approval_context(_load("clean_app_check_run_success"), default_repo_paths())
+    env = build_approval_context(
+        _load("clean_app_check_run_success"), default_repo_paths()
+    )
     assert env["recommendation"] == "APPROVE_RECOMMENDED"
     assert env["final_head_state"]["final_head_ready_for_approval"] is True
 
@@ -139,21 +144,27 @@ def test_draft_blocks_approve() -> None:
 
 @pytest.mark.unit
 def test_accepting_slices_blocks() -> None:
-    env = build_approval_context(_load("accepting_slices_no_final_head"), default_repo_paths())
+    env = build_approval_context(
+        _load("accepting_slices_no_final_head"), default_repo_paths()
+    )
     assert env["recommendation"] != "APPROVE_RECOMMENDED"
     assert "ACCEPTING_SLICES" in env["reason_codes"]
 
 
 @pytest.mark.unit
 def test_missing_final_head_blocks() -> None:
-    env = build_approval_context(_load("missing_final_head_state"), default_repo_paths())
+    env = build_approval_context(
+        _load("missing_final_head_state"), default_repo_paths()
+    )
     assert env["recommendation"] != "APPROVE_RECOMMENDED"
     assert "MISSING_FINAL_HEAD_STATE" in env["reason_codes"]
 
 
 @pytest.mark.unit
 def test_merge_candidate_without_final_head_blocks() -> None:
-    env = build_approval_context(_load("merge_candidate_without_final_head"), default_repo_paths())
+    env = build_approval_context(
+        _load("merge_candidate_without_final_head"), default_repo_paths()
+    )
     assert env["recommendation"] != "APPROVE_RECOMMENDED"
     assert "FINAL_HEAD_NOT_READY" in env["reason_codes"]
 
@@ -185,7 +196,9 @@ def test_head_change_invalidates_binding() -> None:
 
 @pytest.mark.unit
 def test_approve_body_contract_fields() -> None:
-    env = build_approval_context(_load("clean_app_check_run_success"), default_repo_paths())
+    env = build_approval_context(
+        _load("clean_app_check_run_success"), default_repo_paths()
+    )
     policy = load_policy(
         REPO_ROOT / "config/agent-control/policies/approval/pr_approval.v1.yaml",
         repo_root=REPO_ROOT,
@@ -204,7 +217,9 @@ def test_approve_body_contract_fields() -> None:
 
 @pytest.mark.unit
 def test_mutation_not_allowed_without_approve_recommended() -> None:
-    env = build_approval_context(_load("missing_final_head_state"), default_repo_paths())
+    env = build_approval_context(
+        _load("missing_final_head_state"), default_repo_paths()
+    )
     allowed, _ = github_approve_mutation_allowed(env)
     assert allowed is False
 

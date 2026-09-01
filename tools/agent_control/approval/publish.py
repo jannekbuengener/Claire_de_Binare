@@ -55,16 +55,26 @@ def resolve_publisher_app_identity(
     transport: Transport | None = None,
 ) -> tuple[int, str, dict[str, str]]:
     """Resolve live app slug + permissions; must match bootstrap binding."""
-    publisher = bootstrap.get("publisher") if isinstance(bootstrap.get("publisher"), dict) else {}
+    publisher = (
+        bootstrap.get("publisher")
+        if isinstance(bootstrap.get("publisher"), dict)
+        else {}
+    )
     expected_id = publisher.get("github_app_id")
     expected_slug = publisher.get("github_app_slug")
     if not isinstance(expected_id, int) or expected_id <= 0:
-        raise ApprovalError("APPROVAL_PUBLISH_BOOTSTRAP_INVALID", "publisher.github_app_id invalid")
+        raise ApprovalError(
+            "APPROVAL_PUBLISH_BOOTSTRAP_INVALID", "publisher.github_app_id invalid"
+        )
     if not isinstance(expected_slug, str) or not expected_slug.strip():
-        raise ApprovalError("APPROVAL_PUBLISH_BOOTSTRAP_INVALID", "publisher.github_app_slug invalid")
+        raise ApprovalError(
+            "APPROVAL_PUBLISH_BOOTSTRAP_INVALID", "publisher.github_app_slug invalid"
+        )
 
     governance = bootstrap.get("self_governance")
-    if isinstance(governance, dict) and governance.get("publisher_app_id_must_match_env"):
+    if isinstance(governance, dict) and governance.get(
+        "publisher_app_id_must_match_env"
+    ):
         env_id = resolve_app_id_from_env()
         if env_id != expected_id:
             raise ApprovalError(
@@ -217,7 +227,11 @@ def publish_acceptance_envelope(
     )
 
     body = format_acceptance_comment_body(envelope)
-    token = token_provider() if token_provider else mint_installation_token(transport=transport)
+    token = (
+        token_provider()
+        if token_provider
+        else mint_installation_token(transport=transport)
+    )
     comment = post_issue_comment(
         repository=repository,
         pr_number=pr_number,

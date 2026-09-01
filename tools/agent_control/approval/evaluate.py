@@ -240,7 +240,11 @@ def evaluate_final_head_gates(
 ) -> tuple[dict[str, Any], list[str]]:
     """Fail-closed Final-Head lifecycle gates from injected snapshot.final_head."""
     reasons: list[str] = []
-    fh = snapshot.get("final_head") if isinstance(snapshot.get("final_head"), dict) else {}
+    fh = (
+        snapshot.get("final_head")
+        if isinstance(snapshot.get("final_head"), dict)
+        else {}
+    )
     provenance = fh.get("provenance") if isinstance(fh.get("provenance"), dict) else {}
 
     steward = fh.get("steward_state")

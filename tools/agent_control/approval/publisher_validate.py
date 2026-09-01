@@ -71,16 +71,22 @@ def _semantic_completeness_checks(envelope: dict[str, Any]) -> list[str]:
     errors: list[str] = []
     if envelope.get("run_status") != "COMPLETE":
         errors.append("run_status must be COMPLETE")
-    lifecycle = envelope.get("lifecycle") if isinstance(envelope.get("lifecycle"), dict) else {}
+    lifecycle = (
+        envelope.get("lifecycle") if isinstance(envelope.get("lifecycle"), dict) else {}
+    )
     if lifecycle.get("state") != "MERGE_CANDIDATE":
         errors.append("lifecycle.state must be MERGE_CANDIDATE")
     result = envelope.get("result") if isinstance(envelope.get("result"), dict) else {}
     if result.get("verdict") != "MERGE_CANDIDATE":
         errors.append("result.verdict must be MERGE_CANDIDATE")
-    decision = envelope.get("decision") if isinstance(envelope.get("decision"), dict) else {}
+    decision = (
+        envelope.get("decision") if isinstance(envelope.get("decision"), dict) else {}
+    )
     block_codes = decision.get("block_codes")
     if isinstance(block_codes, list) and block_codes:
-        errors.append("decision.block_codes must be empty for positive completeness handoff")
+        errors.append(
+            "decision.block_codes must be empty for positive completeness handoff"
+        )
     return errors
 
 
@@ -88,7 +94,9 @@ def _semantic_conductor_checks(envelope: dict[str, Any]) -> list[str]:
     errors: list[str] = []
     if envelope.get("run_status") != "COMPLETE":
         errors.append("run_status must be COMPLETE")
-    lifecycle = envelope.get("lifecycle") if isinstance(envelope.get("lifecycle"), dict) else {}
+    lifecycle = (
+        envelope.get("lifecycle") if isinstance(envelope.get("lifecycle"), dict) else {}
+    )
     if lifecycle.get("state") != "FINAL_HEAD_READY_FOR_APPROVAL":
         errors.append("lifecycle.state must be FINAL_HEAD_READY_FOR_APPROVAL")
     result = envelope.get("result") if isinstance(envelope.get("result"), dict) else {}
@@ -109,7 +117,9 @@ def verify_trust_policy_publisher_binding(
 ) -> None:
     """Ensure trust allowlists only reference the canonical publisher app slug."""
     policy = load_producer_trust_policy(repo_root)
-    producers = policy.get("producers") if isinstance(policy.get("producers"), dict) else {}
+    producers = (
+        policy.get("producers") if isinstance(policy.get("producers"), dict) else {}
+    )
     for name in ALLOWED_PUBLISH_PRODUCERS:
         rules = producers.get(name) if isinstance(producers.get(name), dict) else {}
         slugs = rules.get("trusted_github_app_slugs") or []
@@ -146,7 +156,9 @@ def validate_envelope_for_publish(
     """Confused-deputy-safe validation; raises ApprovalError on any violation."""
     allowed = bootstrap.get("allowed_producers")
     if not isinstance(allowed, list):
-        raise ApprovalError("APPROVAL_PUBLISH_INVALID", "bootstrap allowed_producers missing")
+        raise ApprovalError(
+            "APPROVAL_PUBLISH_INVALID", "bootstrap allowed_producers missing"
+        )
     if declared_producer not in allowed:
         raise ApprovalError(
             "APPROVAL_PUBLISH_PRODUCER_FORBIDDEN",
@@ -196,7 +208,9 @@ def validate_envelope_for_publish(
         if sem:
             raise ApprovalError("APPROVAL_PUBLISH_SEMANTIC_INVALID", "; ".join(sem))
 
-    subject = envelope.get("subject") if isinstance(envelope.get("subject"), dict) else {}
+    subject = (
+        envelope.get("subject") if isinstance(envelope.get("subject"), dict) else {}
+    )
     subj_repo = subject.get("repository")
     subj_pr = subject.get("pr_number")
     subj_head = _normalize_sha(subject.get("head_sha"))
@@ -225,8 +239,13 @@ def validate_envelope_for_publish(
             f"subject.base_sha != live base {base}",
         )
 
-    if envelope.get("evidence_marker") and envelope.get("evidence_marker") != EVIDENCE_MARKER:
-        raise ApprovalError("APPROVAL_PUBLISH_SCHEMA_INVALID", "invalid evidence_marker")
+    if (
+        envelope.get("evidence_marker")
+        and envelope.get("evidence_marker") != EVIDENCE_MARKER
+    ):
+        raise ApprovalError(
+            "APPROVAL_PUBLISH_SCHEMA_INVALID", "invalid evidence_marker"
+        )
 
 
 def format_acceptance_comment_body(envelope: dict[str, Any]) -> str:

@@ -9,6 +9,7 @@ from tools.pr_routing.engine import (
     assess_candidate_reviewability,
     evaluate_merge_triggers,
     parse_batch_pr_body,
+    parse_batch_pr_metadata,
     route_issue,
 )
 from tools.pr_routing.policy import RoutingPolicy, load_policy
@@ -27,5 +28,6 @@ __all__ = [
     "evaluate_merge_triggers",
     "load_policy",
     "parse_batch_pr_body",
+    "parse_batch_pr_metadata",
     "route_issue",
 ]

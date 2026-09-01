@@ -48,16 +48,20 @@ def _bootstrap() -> dict[str, Any]:
 
 
 def _dims() -> list[dict[str, Any]]:
-    from tools.agent_control.approval.canon_loader import load_acceptance_schema_from_canon
+    from tools.agent_control.approval.canon_loader import (
+        load_acceptance_schema_from_canon,
+    )
 
     schema = load_acceptance_schema_from_canon(_bootstrap(), repo_root=REPO_ROOT)
-    enum = (
-        schema["$defs"]["CompletenessDimensionRow"]["properties"]["dimension"]["enum"]
-    )
+    enum = schema["$defs"]["CompletenessDimensionRow"]["properties"]["dimension"][
+        "enum"
+    ]
     return [{"dimension": name, "state": "PASS", "reason": "ok"} for name in enum]
 
 
-def _completeness_envelope(*, head: str = SHA, base: str = SHA_B, pr: int = PR) -> dict[str, Any]:
+def _completeness_envelope(
+    *, head: str = SHA, base: str = SHA_B, pr: int = PR
+) -> dict[str, Any]:
     return {
         "schema_version": "cdb-pr-acceptance-skill-family/v1",
         "policy_id": "cdb-pr-acceptance-v1",
@@ -123,7 +127,9 @@ def _app_transport(*, permissions: dict[str, str] | None = None) -> Any:
                 },
                 headers={},
             )
-        return GitHubResponse(status_code=404, body={"message": "not found"}, headers={})
+        return GitHubResponse(
+            status_code=404, body={"message": "not found"}, headers={}
+        )
 
     return _transport
 
@@ -138,7 +144,9 @@ def test_verify_trust_policy_binds_cdb_local_ci_slug() -> None:
 
 @pytest.mark.unit
 def test_validate_envelope_rejects_producer_impersonation() -> None:
-    from tools.agent_control.approval.canon_loader import load_acceptance_schema_from_canon
+    from tools.agent_control.approval.canon_loader import (
+        load_acceptance_schema_from_canon,
+    )
 
     env = _completeness_envelope()
     schema = load_acceptance_schema_from_canon(_bootstrap(), repo_root=REPO_ROOT)
@@ -157,7 +165,9 @@ def test_validate_envelope_rejects_producer_impersonation() -> None:
 
 @pytest.mark.unit
 def test_validate_envelope_rejects_wrong_pr() -> None:
-    from tools.agent_control.approval.canon_loader import load_acceptance_schema_from_canon
+    from tools.agent_control.approval.canon_loader import (
+        load_acceptance_schema_from_canon,
+    )
 
     env = _completeness_envelope(pr=999)
     schema = load_acceptance_schema_from_canon(_bootstrap(), repo_root=REPO_ROOT)
@@ -231,8 +241,12 @@ def test_producer_trust_matrix() -> None:
 
 
 @pytest.mark.unit
-def test_publish_acceptance_envelope_mock_happy_path(monkeypatch: pytest.MonkeyPatch) -> None:
-    from tools.agent_control.approval.canon_loader import load_acceptance_schema_from_canon
+def test_publish_acceptance_envelope_mock_happy_path(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    from tools.agent_control.approval.canon_loader import (
+        load_acceptance_schema_from_canon,
+    )
 
     env = _completeness_envelope()
     monkeypatch.setattr(
@@ -254,7 +268,9 @@ def test_publish_acceptance_envelope_mock_happy_path(monkeypatch: pytest.MonkeyP
 
 
 @pytest.mark.unit
-def test_published_comment_trusted_by_provenance(monkeypatch: pytest.MonkeyPatch) -> None:
+def test_published_comment_trusted_by_provenance(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
     env = _completeness_envelope()
     monkeypatch.setattr(
         "tools.agent_control.approval.publish.fetch_live_pr_subject",

@@ -6,9 +6,14 @@ import subprocess
 from pathlib import Path
 from typing import Any
 
-from tools.agent_control.approval.acceptance_provenance import resolve_final_head_provenance
+from tools.agent_control.approval.acceptance_provenance import (
+    resolve_final_head_provenance,
+)
 from tools.agent_control.approval.comment_provenance import CommentRecord
-from tools.agent_control.approval.drift import load_baseline, protection_view_fingerprint
+from tools.agent_control.approval.drift import (
+    load_baseline,
+    protection_view_fingerprint,
+)
 from tools.agent_control.approval.gh_api import (
     gh_api_json,
     merge_check_runs_payload,
@@ -16,7 +21,7 @@ from tools.agent_control.approval.gh_api import (
 )
 from tools.agent_control.approval.context import default_repo_paths
 from tools.agent_control.paths import REPO_ROOT
-from tools.pr_routing.engine import parse_batch_pr_body
+from tools.pr_routing.engine import parse_batch_pr_metadata
 
 CDB_LOCAL_CI_APP_ID = 4410232
 DEFAULT_REPOSITORY = "jannekbuengener/Claire_de_Binare"
@@ -26,12 +31,14 @@ def _parse_steward_state(body: str) -> str | None:
     if "<!-- cdb-batch-pr:v1" not in body:
         return None
     try:
-        return parse_batch_pr_body(body).steward_state
+        return parse_batch_pr_metadata(body).steward_state
     except ValueError:
         return None
 
 
-def _fetch_check_observations(owner: str, repo: str, head_sha: str) -> list[dict[str, Any]]:
+def _fetch_check_observations(
+    owner: str, repo: str, head_sha: str
+) -> list[dict[str, Any]]:
     payload = gh_api_json(
         [
             "api",
@@ -55,7 +62,9 @@ def _fetch_check_observations(owner: str, repo: str, head_sha: str) -> list[dict
     return out
 
 
-def _fetch_commit_statuses(owner: str, repo: str, head_sha: str) -> list[dict[str, Any]]:
+def _fetch_commit_statuses(
+    owner: str, repo: str, head_sha: str
+) -> list[dict[str, Any]]:
     payload = gh_api_json(["api", f"repos/{owner}/{repo}/commits/{head_sha}/status"])
     out: list[dict[str, Any]] = []
     for item in payload.get("statuses") or [] if isinstance(payload, dict) else []:
@@ -101,7 +110,9 @@ def _fetch_review_decision(owner: str, repo: str, pr_number: int) -> str | None:
     return value
 
 
-def _fetch_blocking_thread_count(owner: str, repo: str, pr_number: int) -> tuple[int | None, bool]:
+def _fetch_blocking_thread_count(
+    owner: str, repo: str, pr_number: int
+) -> tuple[int | None, bool]:
     """Return (count, retrieval_ok). count=None when retrieval failed."""
     query = """
     query($owner: String!, $name: String!, $number: Int!, $after: String) {
@@ -140,11 +151,16 @@ def _fetch_blocking_thread_count(owner: str, repo: str, pr_number: int) -> tuple
         except RuntimeError:
             return None, False
 
-        repo_node = payload.get("data", {}).get("repository") if isinstance(payload, dict) else None
+        repo_node = (
+            payload.get("data", {}).get("repository")
+            if isinstance(payload, dict)
+            else None
+        )
         pr_node = repo_node.get("pullRequest") if isinstance(repo_node, dict) else None
         threads_block = (
             pr_node.get("reviewThreads")
-            if isinstance(pr_node, dict) and isinstance(pr_node.get("reviewThreads"), dict)
+            if isinstance(pr_node, dict)
+            and isinstance(pr_node.get("reviewThreads"), dict)
             else None
         )
         if not isinstance(threads_block, dict):
@@ -190,7 +206,9 @@ def _fetch_required_checks(
     if isinstance(rsc, dict):
         raw = rsc.get("contexts")
         if isinstance(raw, list):
-            contexts = [str(item) for item in raw if isinstance(item, str) and item.strip()]
+            contexts = [
+                str(item) for item in raw if isinstance(item, str) and item.strip()
+            ]
     if not contexts:
         return [], False
     out: list[dict[str, Any]] = []
@@ -276,7 +294,7 @@ def build_github_approval_snapshot(
         thread_state = "unknown"
         blocking_threads = None
 
-    base_branch = ((pr.get("base") or {}).get("ref") or "main")
+    base_branch = (pr.get("base") or {}).get("ref") or "main"
     required_checks, protection_ok = _fetch_required_checks(owner, repo, base_branch)
     if not protection_ok:
         protection = {"required_checks": []}
