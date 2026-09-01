@@ -1,0 +1,23 @@
+# Acceptance evidence publisher bootstrap (#4505)
+# Binds trusted PR-comment publishing to the repo-canonical CDB Local CI GitHub App.
+# App ID 4410232 is SSOT on main (docs/ci/local-status-publisher.md, merge_policy_ci_gate.md).
+# Self-governance: this file may only reference that pre-existing app identity;
+# PRs must not introduce alternate publisher apps without a separate governance path.
+version: "1.0.0"
+policy_id: cdb.acceptance_publisher_bootstrap.v1
+fail_closed: true
+publisher:
+  github_app_id: 4410232
+  github_app_slug: cdb-local-ci
+  credential_env_family: CDB_GH_APP_*
+canon:
+  schema_git_ref: origin/main
+  schema_relpath: docs/contracts/pr_acceptance_skill_family.v1.schema.json
+allowed_producers:
+  - cdb-pr-completeness-review
+  - cdb-batch-merge-conductor
+self_governance:
+  forbid_trust_slugs_not_matching_publisher_app: true
+  publisher_app_id_must_match_env: true
+permissions_required:
+  - issues:write

@@ -33,6 +33,6 @@
   },
   "adapter": {
     "adapter_id": "cursor-approval-dashboard",
-    "capability_fingerprint": "sha256:e95ccd3ca7e0e7aa22e878c4f65f8e33e752aadfffcbd36c28f7a2b2402c8f0b"
+    "capability_fingerprint": "sha256:c31c550775a3f695276891e9c0dd295bec9ce687b4959207a9a1ce3b290b8823"
   }
 }

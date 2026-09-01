@@ -1,0 +1,32 @@
+---
+description: Fail-closed Final-Head GitHub APPROVE binding for CDB PR Reviewer role
+alwaysApply: true
+---
+
+# CDB Final-Head Approval Binding
+
+Native GitHub `APPROVE` is allowed only in M6 after M5 `FINAL_HEAD_READY_FOR_APPROVAL`.
+
+## Before APPROVE
+
+Run repo eligibility (fail-closed):
+
+```bash
+python -m tools.agent_control approval eligibility --pr <N>
+```
+
+No APPROVE when exit != 0 or recommendation != `APPROVE_RECOMMENDED`.
+
+## Never APPROVE when
+
+- Draft PR or `accepting_slices`
+- No schema-validated Conductor handoff bound to current HEAD
+- Missing `cdb-local-ci` App Check Run SUCCESS (`app_id=4410232`) on exact HEAD
+- Empty review body
+
+## Roles
+
+- `cdb_final_head_pr_approval_gate` — APPROVE only
+- `cdb_final_head_merge_executor` — merge only; must not APPROVE
+
+SSOT: `docs/contracts/final_head_merge_pipeline.v1.md`

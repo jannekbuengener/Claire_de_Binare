@@ -103,6 +103,19 @@
         "blocking_threads": { "type": "integer", "minimum": 0 }
       }
     },
+    "final_head_state": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "steward_state": { "type": ["string", "null"] },
+        "acceptance_lifecycle_state": { "type": ["string", "null"] },
+        "final_head_ready_for_approval": { "type": "boolean" },
+        "bound_final_head_sha": { "type": "string" },
+        "completeness_verdict": { "type": ["string", "null"] },
+        "risk": { "type": "string" },
+        "provenance_trusted": { "type": ["boolean", "null"] }
+      }
+    },
     "authority_limits": {
       "type": "object",
       "additionalProperties": false,

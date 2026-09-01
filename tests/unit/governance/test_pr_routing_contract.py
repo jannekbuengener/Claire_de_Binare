@@ -13,6 +13,7 @@ from tools.pr_routing.engine import (
     RoutingDecision,
     evaluate_merge_triggers,
     parse_batch_pr_body,
+    parse_batch_pr_metadata,
     route_issue,
 )
 from tools.pr_routing.policy import load_policy
@@ -249,6 +250,43 @@ def test_marker_ledger_and_closure_are_strictly_parseable() -> None:
     assert metadata.lane == "docs-governance"
     assert metadata.planned_issues == (4202,)
     assert metadata.ledger[4202].commit == SHA
+
+
+def _body_refs(*, issue: int = 4202, state: str = "frozen") -> str:
+    return _body(issue=issue, state=state).replace(f"Closes #{issue}", f"Refs #{issue}")
+
+
+def test_batch_metadata_parses_steward_state_without_closure() -> None:
+    metadata = parse_batch_pr_metadata(_body_refs(state="frozen"))
+    assert metadata.steward_state == "frozen"
+    assert metadata.planned_issues == (4202,)
+
+
+def test_batch_metadata_accepts_refs_for_accepting_slices() -> None:
+    metadata = parse_batch_pr_metadata(_body_refs(state="accepting_slices"))
+    assert metadata.steward_state == "accepting_slices"
+
+
+def test_batch_body_without_closure_still_fails_router_parse() -> None:
+    body = _body_refs(state="frozen")
+    with pytest.raises(ValueError, match="Closure entries"):
+        parse_batch_pr_body(body)
+
+
+def test_batch_metadata_fails_closed_without_marker() -> None:
+    with pytest.raises(ValueError):
+        parse_batch_pr_metadata("Refs #4202\n")
+
+
+def test_batch_metadata_fails_closed_on_malformed_marker() -> None:
+    with pytest.raises(ValueError):
+        parse_batch_pr_metadata(_body().replace("accepting_slices", "unknown-state"))
+
+
+def test_refs_body_still_holds_router_without_safe_closure() -> None:
+    result = route_issue(_policy(), _issue(), [_candidate(body=_body_refs())])
+    assert result.routing_decision is RoutingDecision.HOLD_NO_SAFE_ROUTE
+    assert "PR_METADATA_INVALID" in result.reason_codes
 
 
 @pytest.mark.parametrize(

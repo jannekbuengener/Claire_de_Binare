@@ -2,6 +2,10 @@
 
 from __future__ import annotations
 
+from tools.agent_control.approval.acceptance_provenance import (
+    FinalHeadProvenance,
+    resolve_final_head_provenance,
+)
 from tools.agent_control.approval.codes import ApprovalError
 from tools.agent_control.approval.context import (
     RepoPaths,
@@ -12,9 +16,11 @@ from tools.agent_control.approval.drift import audit_drift, load_baseline
 
 __all__ = [
     "ApprovalError",
+    "FinalHeadProvenance",
     "RepoPaths",
     "audit_drift",
     "build_approval_context",
     "default_repo_paths",
     "load_baseline",
+    "resolve_final_head_provenance",
 ]

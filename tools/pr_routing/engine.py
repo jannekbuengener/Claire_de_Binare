@@ -186,7 +186,8 @@ def _parse_marker(body: str) -> dict[str, str]:
     return values
 
 
-def _parse_ledger(body: str) -> dict[int, LedgerRow]:
+def _parse_ledger_rows(body: str) -> dict[int, LedgerRow]:
+    """Parse batch ledger rows without routing/closure validation."""
     heading = "## CDB Batch Ledger"
     if body.count(heading) != 1:
         raise ValueError("PR body must contain exactly one CDB Batch Ledger")
@@ -232,15 +233,25 @@ def _parse_ledger(body: str) -> dict[int, LedgerRow]:
         )
     if not rows:
         raise ValueError("Batch ledger has no issue rows")
-    closures = [int(match.group("number")) for match in CLOSURE_RE.finditer(body)]
-    if sorted(closures) != sorted(rows):
-        raise ValueError("Closure entries must map one-to-one to ledger issues")
     return rows
 
 
-def parse_batch_pr_body(body: str) -> BatchMetadata:
-    values = _parse_marker(body)
-    ledger = _parse_ledger(body)
+def _validate_closure_semantics(body: str, ledger: Mapping[int, LedgerRow]) -> None:
+    """Require explicit Closes/Fixes/Resolves lines for every ledger issue."""
+    closures = [int(match.group("number")) for match in CLOSURE_RE.finditer(body)]
+    if sorted(closures) != sorted(ledger):
+        raise ValueError("Closure entries must map one-to-one to ledger issues")
+
+
+def _parse_ledger(body: str) -> dict[int, LedgerRow]:
+    rows = _parse_ledger_rows(body)
+    _validate_closure_semantics(body, rows)
+    return rows
+
+
+def _build_batch_metadata(
+    values: dict[str, str], ledger: dict[int, LedgerRow]
+) -> BatchMetadata:
     planned = tuple(
         sorted(
             int(match.group("number"))
@@ -265,6 +276,19 @@ def parse_batch_pr_body(body: str) -> BatchMetadata:
         risk_flags=_split_sorted(values["risk_flags"]),
         ledger=ledger,
     )
+
+
+def parse_batch_pr_metadata(body: str) -> BatchMetadata:
+    """Parse batch marker + ledger without routing/closure validation."""
+    values = _parse_marker(body)
+    ledger = _parse_ledger_rows(body)
+    return _build_batch_metadata(values, ledger)
+
+
+def parse_batch_pr_body(body: str) -> BatchMetadata:
+    metadata = parse_batch_pr_metadata(body)
+    _validate_closure_semantics(body, metadata.ledger)
+    return metadata
 
 
 def _references_issue(body: str, issue_number: int) -> bool:

@@ -2,9 +2,9 @@
   "pr": {
     "number": 1,
     "is_draft": false,
-    "head_sha": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+    "head_sha": "dddddddddddddddddddddddddddddddddddddddd",
     "base_sha": "bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb",
-    "review_decision": "APPROVED",
+    "review_decision": null,
     "blocking_threads": 0
   },
   "checks": [
@@ -14,7 +14,7 @@
       "status": "completed",
       "conclusion": "success",
       "app_id": 4410232,
-      "source_sha": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"
+      "source_sha": "dddddddddddddddddddddddddddddddddddddddd"
     }
   ],
   "protection": {
@@ -28,6 +28,6 @@
   },
   "adapter": {
     "adapter_id": "cursor-approval-dashboard",
-    "capability_fingerprint": "sha256:c31c550775a3f695276891e9c0dd295bec9ce687b4959207a9a1ce3b290b8823"
+    "capability_fingerprint": "sha256:test"
   }
 }
