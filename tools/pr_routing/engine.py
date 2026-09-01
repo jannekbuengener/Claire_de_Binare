@@ -249,7 +249,9 @@ def _parse_ledger(body: str) -> dict[int, LedgerRow]:
     return rows
 
 
-def _build_batch_metadata(values: dict[str, str], ledger: dict[int, LedgerRow]) -> BatchMetadata:
+def _build_batch_metadata(
+    values: dict[str, str], ledger: dict[int, LedgerRow]
+) -> BatchMetadata:
     planned = tuple(
         sorted(
             int(match.group("number"))
