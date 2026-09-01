@@ -42,8 +42,24 @@ Machine-readable codes live in `reason_codes[]`. Important examples:
 - `MISSING_HEAD` / `INVALID_HEAD` / `CONFLICTING_HEAD`
 - `MECHANISM_MISMATCH` / `APP_ID_MISMATCH`
 - `REQUIRED_CHECK_PENDING` / `REQUIRED_CHECK_FAILED` / `REQUIRED_CHECK_MISSING`
+- `FINAL_HEAD_NOT_READY` / `FINAL_HEAD_HANDOFF_MISSING` / `FINAL_HEAD_HANDOFF_UNTRUSTED`
+- `FINAL_HEAD_STEWARD_NOT_FROZEN` / `FINAL_HEAD_HEAD_MISMATCH` / `FINAL_HEAD_RISK_NOT_LOW`
 
 `STALE_HEAD` is a **reason/error code**, not a recommendation value.
+
+## Final-Head lifecycle (`final_head_state`)
+
+When policy `approve_requires` includes `final_head_ready_for_approval`, the
+evaluator fail-closes until all gates pass on the live PR head:
+
+- Conductor handoff comment `<!-- cdb-pr-acceptance:v1 -->` schema-valid and
+  bound to the same head (no self-declared `producer` strings).
+- Upstream Completeness `MERGE_CANDIDATE` on the same head.
+- `steward_state` is `frozen` (not `accepting_slices`).
+- Risk class is `LOW` when required.
+
+Self-declared producer text in PR comments never authorizes approval. See
+[`../../runbooks/final_head_approval_eligibility.md`](../../runbooks/final_head_approval_eligibility.md).
 
 ## Head-SHA binding
 
@@ -99,10 +115,14 @@ Hash mismatch is fail-closed.
 ```bash
 python -m tools.agent_control approval context --pr <N> --snapshot <PATH>
 python -m tools.agent_control approval drift --baseline <PATH>
+python -m tools.agent_control approval snapshot --pr <N> --out <PATH>
+python -m tools.agent_control approval eligibility --pr <N>
+python -m tools.agent_control approval approve-body --pr <N>
 ```
 
-CLI reads local/injected snapshots only. No GitHub mutation. No dispatcher run.
-No merge.
+`snapshot` is read-only (live `gh api`). `eligibility` and `approve-body` are
+deterministic helpers for `cdb_final_head_pr_approval_gate`; they never mutate
+GitHub. No dispatcher run. No merge.
 
 ## Safety
 
