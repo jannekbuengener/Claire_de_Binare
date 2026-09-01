@@ -516,3 +516,272 @@ def test_final_head_roles_contract() -> None:
     roles = policy["final_head_roles"]
     assert roles["merge_executor"]["approve_pr"] is False
     assert roles["pr_approval_gate"]["merge_pr"] is False
+
+
+@pytest.mark.unit
+@pytest.mark.parametrize(
+    "steward_state,expected_reason",
+    [
+        ("frozen", None),
+        ("accepting_slices", "ACCEPTING_SLICES"),
+        ("merge_candidate", "FINAL_HEAD_NOT_FROZEN"),
+        (None, "FINAL_HEAD_NOT_FROZEN"),
+        ("unknown_state", "FINAL_HEAD_NOT_FROZEN"),
+    ],
+)
+def test_provenance_steward_state_must_be_frozen(
+    steward_state: str | None, expected_reason: str | None
+) -> None:
+    schema = load_acceptance_schema()
+    trust = _load_trust_policy()
+    comments = [
+        _trusted_comment(
+            _completeness_envelope(),
+            comment_id=1,
+            app_slug="cdb-test-completeness-app",
+        ),
+        _trusted_comment(
+            _conductor_envelope(),
+            comment_id=2,
+            app_slug="cdb-test-conductor-app",
+        ),
+    ]
+    result = resolve_final_head_provenance(
+        comments=comments,
+        pr_number=1,
+        repository=REPO,
+        live_head_sha=SHA,
+        live_base_sha=SHA_B,
+        steward_state=steward_state,
+        schema=schema,
+        trust_policy=trust,
+    )
+    if expected_reason is None:
+        assert result.final_head_ready_for_approval is True
+        assert "FINAL_HEAD_NOT_FROZEN" not in result.reason_codes
+    else:
+        assert result.final_head_ready_for_approval is False
+        assert expected_reason in result.reason_codes
+
+
+@pytest.mark.unit
+def test_provenance_completeness_wrong_pr_same_shas_blocks() -> None:
+    schema = load_acceptance_schema()
+    trust = _load_trust_policy()
+    foreign = _completeness_envelope()
+    foreign["subject"]["pr_number"] = 999
+    comments = [
+        _trusted_comment(
+            foreign,
+            comment_id=1,
+            app_slug="cdb-test-completeness-app",
+        ),
+        _trusted_comment(
+            _conductor_envelope(),
+            comment_id=2,
+            app_slug="cdb-test-conductor-app",
+        ),
+    ]
+    result = resolve_final_head_provenance(
+        comments=comments,
+        pr_number=1,
+        repository=REPO,
+        live_head_sha=SHA,
+        live_base_sha=SHA_B,
+        steward_state="frozen",
+        schema=schema,
+        trust_policy=trust,
+    )
+    assert result.final_head_ready_for_approval is False
+    assert "COMPLETENESS_SUBJECT_MISMATCH" in result.reason_codes
+
+
+@pytest.mark.unit
+def test_provenance_completeness_wrong_repository_same_shas_blocks() -> None:
+    schema = load_acceptance_schema()
+    trust = _load_trust_policy()
+    foreign = _completeness_envelope()
+    foreign["subject"]["repository"] = "other/repo"
+    comments = [
+        _trusted_comment(
+            foreign,
+            comment_id=1,
+            app_slug="cdb-test-completeness-app",
+        ),
+        _trusted_comment(
+            _conductor_envelope(),
+            comment_id=2,
+            app_slug="cdb-test-conductor-app",
+        ),
+    ]
+    result = resolve_final_head_provenance(
+        comments=comments,
+        pr_number=1,
+        repository=REPO,
+        live_head_sha=SHA,
+        live_base_sha=SHA_B,
+        steward_state="frozen",
+        schema=schema,
+        trust_policy=trust,
+    )
+    assert "COMPLETENESS_SUBJECT_MISMATCH" in result.reason_codes
+
+
+@pytest.mark.unit
+def test_provenance_completeness_wrong_head_blocks() -> None:
+    schema = load_acceptance_schema()
+    trust = _load_trust_policy()
+    comments = [
+        _trusted_comment(
+            _completeness_envelope("c" * 40),
+            comment_id=1,
+            app_slug="cdb-test-completeness-app",
+        ),
+        _trusted_comment(
+            _conductor_envelope(),
+            comment_id=2,
+            app_slug="cdb-test-conductor-app",
+        ),
+    ]
+    result = resolve_final_head_provenance(
+        comments=comments,
+        pr_number=1,
+        repository=REPO,
+        live_head_sha=SHA,
+        live_base_sha=SHA_B,
+        steward_state="frozen",
+        schema=schema,
+        trust_policy=trust,
+    )
+    assert "COMPLETENESS_SUBJECT_MISMATCH" in result.reason_codes
+
+
+@pytest.mark.unit
+def test_provenance_completeness_blocked_run_status_blocks() -> None:
+    schema = load_acceptance_schema()
+    trust = _load_trust_policy()
+    blocked = _completeness_envelope()
+    blocked["run_status"] = "BLOCKED"
+    comments = [
+        _trusted_comment(
+            blocked,
+            comment_id=1,
+            app_slug="cdb-test-completeness-app",
+        ),
+        _trusted_comment(
+            _conductor_envelope(),
+            comment_id=2,
+            app_slug="cdb-test-conductor-app",
+        ),
+    ]
+    result = resolve_final_head_provenance(
+        comments=comments,
+        pr_number=1,
+        repository=REPO,
+        live_head_sha=SHA,
+        live_base_sha=SHA_B,
+        steward_state="frozen",
+        schema=schema,
+        trust_policy=trust,
+    )
+    assert result.final_head_ready_for_approval is False
+    assert "FINAL_HEAD_NOT_READY" in result.reason_codes
+
+
+@pytest.mark.unit
+def test_provenance_completeness_invalidated_by_drift_blocks() -> None:
+    schema = load_acceptance_schema()
+    trust = _load_trust_policy()
+    drifted = _completeness_envelope()
+    drifted["run_status"] = "INVALIDATED_BY_DRIFT"
+    comments = [
+        _trusted_comment(
+            drifted,
+            comment_id=1,
+            app_slug="cdb-test-completeness-app",
+        ),
+        _trusted_comment(
+            _conductor_envelope(),
+            comment_id=2,
+            app_slug="cdb-test-conductor-app",
+        ),
+    ]
+    result = resolve_final_head_provenance(
+        comments=comments,
+        pr_number=1,
+        repository=REPO,
+        live_head_sha=SHA,
+        live_base_sha=SHA_B,
+        steward_state="frozen",
+        schema=schema,
+        trust_policy=trust,
+    )
+    assert "FINAL_HEAD_NOT_READY" in result.reason_codes
+
+
+@pytest.mark.unit
+def test_provenance_completeness_blocking_lifecycle_with_merge_verdict_blocks() -> None:
+    schema = load_acceptance_schema()
+    trust = _load_trust_policy()
+    blocking = _completeness_envelope()
+    blocking["lifecycle"] = {"state": "BLOCKED"}
+    comments = [
+        _trusted_comment(
+            blocking,
+            comment_id=1,
+            app_slug="cdb-test-completeness-app",
+        ),
+        _trusted_comment(
+            _conductor_envelope(),
+            comment_id=2,
+            app_slug="cdb-test-conductor-app",
+        ),
+    ]
+    result = resolve_final_head_provenance(
+        comments=comments,
+        pr_number=1,
+        repository=REPO,
+        live_head_sha=SHA,
+        live_base_sha=SHA_B,
+        steward_state="frozen",
+        schema=schema,
+        trust_policy=trust,
+    )
+    assert "FINAL_HEAD_NOT_READY" in result.reason_codes
+
+
+@pytest.mark.unit
+def test_provenance_latest_blocking_after_older_green_blocks() -> None:
+    schema = load_acceptance_schema()
+    trust = _load_trust_policy()
+    blocked = _completeness_envelope()
+    blocked["run_status"] = "BLOCKED"
+    comments = [
+        _trusted_comment(
+            _completeness_envelope(),
+            comment_id=1,
+            app_slug="cdb-test-completeness-app",
+        ),
+        _trusted_comment(
+            blocked,
+            comment_id=3,
+            app_slug="cdb-test-completeness-app",
+        ),
+        _trusted_comment(
+            _conductor_envelope(),
+            comment_id=2,
+            app_slug="cdb-test-conductor-app",
+        ),
+    ]
+    result = resolve_final_head_provenance(
+        comments=comments,
+        pr_number=1,
+        repository=REPO,
+        live_head_sha=SHA,
+        live_base_sha=SHA_B,
+        steward_state="frozen",
+        schema=schema,
+        trust_policy=trust,
+    )
+    assert result.final_head_ready_for_approval is False
+    assert "FINAL_HEAD_NOT_READY" in result.reason_codes

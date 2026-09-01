@@ -16,7 +16,9 @@ from tools.agent_control.approval.codes import (
     REASON_DRAFT_PR,
     REASON_DRIFT,
     REASON_DRIFT_UNKNOWN,
+    REASON_FINAL_HEAD_NOT_FROZEN,
     REASON_FINAL_HEAD_NOT_READY,
+    REASON_COMPLETENESS_SUBJECT_MISMATCH,
     REASON_HANDOFF_HEAD_MISMATCH,
     REASON_HANDOFF_BASE_MISMATCH,
     REASON_HANDOFF_PROVENANCE_INCOMPLETE,
@@ -244,6 +246,8 @@ def evaluate_final_head_gates(
     steward = fh.get("steward_state")
     if steward == "accepting_slices":
         reasons.append(REASON_ACCEPTING_SLICES)
+    elif steward != "frozen":
+        reasons.append(REASON_FINAL_HEAD_NOT_FROZEN)
 
     if not fh:
         reasons.append(REASON_MISSING_FINAL_HEAD_STATE)
@@ -258,6 +262,8 @@ def evaluate_final_head_gates(
             REASON_HANDOFF_BASE_MISMATCH,
             REASON_HANDOFF_PROVENANCE_INCOMPLETE,
             REASON_SELF_DECLARED_PRODUCER_REJECTED,
+            REASON_FINAL_HEAD_NOT_FROZEN,
+            REASON_COMPLETENESS_SUBJECT_MISMATCH,
         ):
             if code in (snapshot.get("final_head_reason_codes") or []):
                 if code not in reasons:

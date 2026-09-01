@@ -14,7 +14,8 @@ from jsonschema import Draft202012Validator
 from tools.agent_control.approval.comment_provenance import CommentRecord
 from tools.agent_control.approval.codes import (
     REASON_ACCEPTING_SLICES,
-    REASON_BOUND_HEAD_MISMATCH,
+    REASON_COMPLETENESS_SUBJECT_MISMATCH,
+    REASON_FINAL_HEAD_NOT_FROZEN,
     REASON_FINAL_HEAD_NOT_READY,
     REASON_HANDOFF_BASE_MISMATCH,
     REASON_HANDOFF_HEAD_MISMATCH,
@@ -152,6 +153,50 @@ def _is_conductor_ready(envelope: dict[str, Any]) -> tuple[bool, list[str]]:
     return len(errors) == 0, errors
 
 
+def _steward_state_reason(steward_state: str | None) -> str | None:
+    """Return blocking reason when steward_state is not exactly frozen."""
+    if steward_state == "frozen":
+        return None
+    if steward_state == "accepting_slices":
+        return REASON_ACCEPTING_SLICES
+    return REASON_FINAL_HEAD_NOT_FROZEN
+
+
+def _completeness_subject_matches(
+    subject: dict[str, Any],
+    *,
+    pr_number: int,
+    repository: str,
+    head_sha: str,
+    base_sha: str,
+) -> bool:
+    subj_head = _normalize_sha(subject.get("head_sha"))
+    subj_base = _normalize_sha(subject.get("base_sha"))
+    subj_pr = subject.get("pr_number")
+    subj_repo = subject.get("repository")
+    return (
+        subj_head == head_sha
+        and subj_base == base_sha
+        and isinstance(subj_pr, int)
+        and subj_pr == pr_number
+        and isinstance(subj_repo, str)
+        and subj_repo == repository
+    )
+
+
+def _is_completeness_semantically_green(envelope: dict[str, Any]) -> tuple[bool, list[str]]:
+    errors: list[str] = []
+    if envelope.get("run_status") != "COMPLETE":
+        errors.append(f"run_status must be COMPLETE, got {envelope.get('run_status')!r}")
+    lifecycle = envelope.get("lifecycle") if isinstance(envelope.get("lifecycle"), dict) else {}
+    if lifecycle.get("state") != "MERGE_CANDIDATE":
+        errors.append("lifecycle.state must be MERGE_CANDIDATE")
+    result = envelope.get("result") if isinstance(envelope.get("result"), dict) else {}
+    if result.get("verdict") != "MERGE_CANDIDATE":
+        errors.append("result.verdict must be MERGE_CANDIDATE")
+    return len(errors) == 0, errors
+
+
 def _find_completeness_merge_candidate(
     envelopes: list[dict[str, Any]], *, head_sha: str
 ) -> dict[str, Any] | None:
@@ -160,14 +205,97 @@ def _find_completeness_merge_candidate(
     for envelope in reversed(envelopes):
         if envelope.get("producer") != COMPLETENESS_PRODUCER:
             continue
-        result = envelope.get("result") if isinstance(envelope.get("result"), dict) else {}
-        if result.get("verdict") != "MERGE_CANDIDATE":
+        schema_errors = validate_acceptance_envelope(
+            envelope, load_acceptance_schema()
+        )
+        if schema_errors:
             continue
+        green, _ = _is_completeness_semantically_green(envelope)
+        if not green:
+            return None
         subject = envelope.get("subject") if isinstance(envelope.get("subject"), dict) else {}
         subj_head = _normalize_sha(subject.get("head_sha"))
         if subj_head and subj_head == head:
             return envelope
     return None
+
+
+def _resolve_latest_completeness_envelope(
+    all_envelopes: list[tuple[CommentRecord, dict[str, Any]]],
+    *,
+    pr_number: int,
+    repository: str,
+    head: str,
+    base: str,
+    schema: dict[str, Any],
+    trust_policy: dict[str, Any],
+    repo_root: Path | None,
+) -> tuple[
+    dict[str, Any] | None,
+    CommentRecord | None,
+    str | None,
+    list[str],
+    list[str],
+]:
+    """Resolve latest trusted completeness envelope; never fall back to older green."""
+    reasons: list[str] = []
+    validation_errors: list[str] = []
+    latest: tuple[CommentRecord, dict[str, Any]] | None = None
+
+    for comment, envelope in reversed(all_envelopes):
+        if envelope.get("producer") != COMPLETENESS_PRODUCER:
+            continue
+        actor_ok, actor_detail = producer_actor_trusted(
+            producer=COMPLETENESS_PRODUCER,
+            comment=comment,
+            trust_policy=trust_policy,
+            repo_root=repo_root,
+        )
+        if not actor_ok:
+            validation_errors.append(f"completeness actor untrusted: {actor_detail}")
+            continue
+        latest = (comment, envelope)
+        break
+
+    if latest is None:
+        reasons.append(REASON_HANDOFF_PROVENANCE_INCOMPLETE)
+        validation_errors.append("missing trusted completeness envelope for live head/base")
+        return None, None, None, reasons, validation_errors
+
+    comment, envelope = latest
+    comp_errors = validate_acceptance_envelope(envelope, schema)
+    if comp_errors:
+        validation_errors.extend(comp_errors)
+        reasons.append(REASON_HANDOFF_SCHEMA_INVALID)
+        return None, comment, None, reasons, validation_errors
+    subject = envelope.get("subject") if isinstance(envelope.get("subject"), dict) else {}
+    if not _completeness_subject_matches(
+        subject,
+        pr_number=pr_number,
+        repository=repository,
+        head_sha=head,
+        base_sha=base,
+    ):
+        reasons.append(REASON_COMPLETENESS_SUBJECT_MISMATCH)
+        validation_errors.append(
+            "completeness subject must match live repository/pr/head/base exactly"
+        )
+        return None, comment, None, reasons, validation_errors
+
+    green, sem_errors = _is_completeness_semantically_green(envelope)
+    result = envelope.get("result") if isinstance(envelope.get("result"), dict) else {}
+    verdict = result.get("verdict")
+    completeness_verdict = str(verdict) if isinstance(verdict, str) else None
+    if not green:
+        validation_errors.extend(sem_errors)
+        reasons.append(REASON_FINAL_HEAD_NOT_READY)
+        validation_errors.append(
+            f"latest completeness envelope is not semantically green "
+            f"(verdict={completeness_verdict!r})"
+        )
+        return envelope, comment, completeness_verdict, reasons, validation_errors
+
+    return envelope, comment, completeness_verdict, reasons, validation_errors
 
 
 def resolve_final_head_provenance(
@@ -192,6 +320,10 @@ def resolve_final_head_provenance(
 
     if steward_state == "accepting_slices":
         reasons.append(REASON_ACCEPTING_SLICES)
+    else:
+        steward_reason = _steward_state_reason(steward_state)
+        if steward_reason and steward_reason != REASON_ACCEPTING_SLICES:
+            reasons.append(steward_reason)
 
     all_envelopes: list[tuple[CommentRecord, dict[str, Any]]] = []
     for comment in comments:
@@ -241,6 +373,8 @@ def resolve_final_head_provenance(
 
     if conductor_pair is None:
         reasons.append(REASON_FINAL_HEAD_NOT_READY)
+        if any("conductor actor untrusted" in err for err in validation_errors):
+            reasons.append(REASON_UNTRUSTED_HANDOFF)
         if not validation_errors:
             validation_errors.append("no trusted schema-valid conductor handoff envelope")
         return FinalHeadProvenance(
@@ -276,56 +410,29 @@ def resolve_final_head_provenance(
         reasons.append(REASON_UNTRUSTED_HANDOFF)
         validation_errors.append("conductor subject.repository mismatch")
 
-    completeness: dict[str, Any] | None = None
-    completeness_comment_id: int | None = None
-    completeness_verdict: str | None = None
-    for comment_item, envelope in reversed(all_envelopes):
-        if envelope.get("producer") != COMPLETENESS_PRODUCER:
-            continue
-        subj = envelope.get("subject") if isinstance(envelope.get("subject"), dict) else {}
-        subj_head = _normalize_sha(subj.get("head_sha"))
-        subj_base = _normalize_sha(subj.get("base_sha"))
-        if subj_head != head or subj_base != base:
-            continue
-        actor_ok, actor_detail = producer_actor_trusted(
-            producer=COMPLETENESS_PRODUCER,
-            comment=comment_item,
+    completeness, completeness_comment, completeness_verdict, comp_reasons, comp_errors = (
+        _resolve_latest_completeness_envelope(
+            all_envelopes,
+            pr_number=pr_number,
+            repository=repository,
+            head=head,
+            base=base,
+            schema=schema,
             trust_policy=trust_policy,
             repo_root=repo_root,
         )
-        if not actor_ok:
-            validation_errors.append(f"completeness actor untrusted: {actor_detail}")
-            reasons.append(REASON_UNTRUSTED_HANDOFF)
-            break
-        comp_errors = validate_acceptance_envelope(envelope, schema)
-        if comp_errors:
-            validation_errors.extend(comp_errors)
-            reasons.append(REASON_HANDOFF_SCHEMA_INVALID)
-            break
-        completeness = envelope
-        completeness_comment_id = comment_item.comment_id
-        result = envelope.get("result") if isinstance(envelope.get("result"), dict) else {}
-        verdict = result.get("verdict")
-        completeness_verdict = str(verdict) if isinstance(verdict, str) else None
-        break
-
-    if completeness is None:
-        reasons.append(REASON_HANDOFF_PROVENANCE_INCOMPLETE)
-        validation_errors.append("missing trusted completeness envelope for live head/base")
-    elif completeness_verdict != "MERGE_CANDIDATE":
-        reasons.append(REASON_FINAL_HEAD_NOT_READY)
-        validation_errors.append(
-            f"latest completeness verdict is {completeness_verdict!r}, not MERGE_CANDIDATE"
-        )
-
-    if steward_state == "accepting_slices":
-        pass  # already recorded
-    elif steward_state not in (None, "frozen", "merge_candidate"):
-        reasons.append(REASON_UNTRUSTED_HANDOFF)
-        validation_errors.append(f"steward_state {steward_state!r} not frozen/merge_candidate")
+    )
+    reasons.extend(comp_reasons)
+    validation_errors.extend(comp_errors)
+    completeness_comment_id = (
+        completeness_comment.comment_id if completeness_comment is not None else None
+    )
 
     lifecycle = conductor.get("lifecycle") if isinstance(conductor.get("lifecycle"), dict) else {}
     lifecycle_state = lifecycle.get("state")
+    completeness_green = (
+        completeness is not None and _is_completeness_semantically_green(completeness)[0]
+    )
     trusted = (
         REASON_HANDOFF_HEAD_MISMATCH not in reasons
         and REASON_HANDOFF_BASE_MISMATCH not in reasons
@@ -333,8 +440,12 @@ def resolve_final_head_provenance(
         and REASON_HANDOFF_SCHEMA_INVALID not in reasons
         and REASON_UNTRUSTED_HANDOFF not in reasons
         and REASON_ACCEPTING_SLICES not in reasons
+        and REASON_FINAL_HEAD_NOT_FROZEN not in reasons
+        and REASON_COMPLETENESS_SUBJECT_MISMATCH not in reasons
+        and REASON_FINAL_HEAD_NOT_READY not in reasons
+        and steward_state == "frozen"
         and lifecycle_state == "FINAL_HEAD_READY_FOR_APPROVAL"
-        and completeness_verdict == "MERGE_CANDIDATE"
+        and completeness_green
     )
     final_ready = trusted and bound_head == head and bound_base == base
 
