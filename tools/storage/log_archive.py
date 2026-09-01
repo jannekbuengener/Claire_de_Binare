@@ -13,6 +13,7 @@ from pathlib import Path
 from re import fullmatch
 from typing import Any, Mapping, Sequence
 
+from core.utils.clock import utcnow
 from tools.storage.bulk_storage_contract import (
     BulkStorageContractError,
     resolve_bulk_storage_path,
@@ -23,6 +24,10 @@ APPLY_SCHEMA_VERSION = "cdb.log-archive-apply-result/v1"
 ISSUE_REF = "#4422"
 DEFAULT_HOT_DAYS = 30
 EVENT_FILE_PATTERN = r"events_(\d{8})\.jsonl"
+
+
+def _utc_now_iso() -> str:
+    return utcnow().replace(microsecond=0).isoformat() + "Z"
 
 
 class LogArchiveError(ValueError):
@@ -313,7 +318,7 @@ def apply_log_archive_plan(
     plan: Mapping[str, Any], expected_fingerprint: str, evidence_output_path: Path
 ) -> dict[str, Any]:
     """Apply a previously bound plan; never derive or expand its candidate scope."""
-    started = datetime.now(timezone.utc).isoformat().replace("+00:00", "Z")
+    started = _utc_now_iso()
     planned_entries = list(plan.get("entries", []))
     planned = [
         entry
@@ -447,9 +452,7 @@ def apply_log_archive_plan(
         evidence["failure_reason"] = str(exc)
     if evidence.get("failure_reason") == "EVIDENCE_JOURNAL_INIT_FAILED":
         raise LogArchiveError("EVIDENCE_JOURNAL_INIT_FAILED")
-    evidence["completed_at_utc"] = (
-        datetime.now(timezone.utc).isoformat().replace("+00:00", "Z")
-    )
+    evidence["completed_at_utc"] = _utc_now_iso()
     evidence["apply_status"] = "APPLY_COMPLETED"
     if evidence_path_safe:
         _write_evidence(evidence_output_path, evidence)
