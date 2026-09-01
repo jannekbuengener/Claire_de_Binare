@@ -59,8 +59,9 @@ def test_run_cmd_timeout_terminates_posix_process_group_and_drains_pipes(
     killpg = MagicMock()
     getpgid = MagicMock(return_value=9001)
     monkeypatch.setattr(onboarding_orchestrator.os, "name", "posix")
-    monkeypatch.setattr(onboarding_orchestrator.os, "killpg", killpg)
-    monkeypatch.setattr(onboarding_orchestrator.os, "getpgid", getpgid)
+    # Windows lacks os.killpg/getpgid; raising=False injects mocks for the POSIX path.
+    monkeypatch.setattr(onboarding_orchestrator.os, "killpg", killpg, raising=False)
+    monkeypatch.setattr(onboarding_orchestrator.os, "getpgid", getpgid, raising=False)
     monkeypatch.setattr(onboarding_orchestrator.subprocess, "Popen", popen)
 
     rc, stdout, stderr = onboarding_orchestrator._run_cmd(["child"], timeout=0.2)
