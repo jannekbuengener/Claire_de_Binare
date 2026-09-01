@@ -14,6 +14,7 @@ Guardrails:
 - No schema apply, no import, no reset, no writes, no remote DB connections.
 - LR remains NO-GO.
 """
+
 from __future__ import annotations
 
 import asyncio
@@ -51,9 +52,7 @@ async def list_tools() -> list[Tool]:
     ]
 
 
-async def call_tool(
-    name: str, arguments: dict[str, Any]
-) -> Sequence[TextContent]:
+async def call_tool(name: str, arguments: dict[str, Any]) -> Sequence[TextContent]:
     """Dispatch a tool call to ContextBridge.execute_tool()."""
     result = _bridge.execute_tool(name, arguments or {})
     return [TextContent(type="text", text=json.dumps(result, ensure_ascii=False))]

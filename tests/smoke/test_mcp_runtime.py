@@ -35,9 +35,9 @@ async def test_mcp_context_server_runtime():
                 tools = result.tools
 
                 tool_names = [t.name for t in tools]
-                assert "cdb_context_trust_summary" in tool_names, (
-                    "Missing 'cdb_context_trust_summary' tool"
-                )
+                assert (
+                    "cdb_context_trust_summary" in tool_names
+                ), "Missing 'cdb_context_trust_summary' tool"
 
                 response = await session.call_tool(
                     "cdb_context_trust_summary",
