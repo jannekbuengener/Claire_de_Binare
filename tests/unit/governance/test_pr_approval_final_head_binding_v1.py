@@ -15,6 +15,7 @@ from tools.agent_control.approval.acceptance_provenance import (
     reject_self_declared_producer,
     resolve_final_head_provenance,
 )
+from tools.agent_control.approval.comment_provenance import CommentRecord
 from tools.agent_control.approval.context import build_approval_context, default_repo_paths
 from tools.agent_control.approval.mutation import (
     build_github_approve_body,
@@ -97,6 +98,27 @@ def _completeness_envelope(head: str = SHA) -> dict:
 
 def _comment_body(envelope: dict) -> str:
     return f"{EVIDENCE_MARKER}\n```json\n{json.dumps(envelope)}\n```"
+
+
+def _load_trust_policy() -> dict:
+    return yaml.safe_load(
+        (FIX / "acceptance_producer_trust_test.v1.yaml").read_text(encoding="utf-8")
+    )
+
+
+def _trusted_comment(
+    envelope: dict,
+    *,
+    comment_id: int,
+    app_slug: str,
+) -> CommentRecord:
+    return CommentRecord(
+        comment_id=comment_id,
+        body=_comment_body(envelope),
+        author_login="cdb-test-bot",
+        author_type="Bot",
+        performed_via_github_app_slug=app_slug,
+    )
 
 
 @pytest.mark.unit
@@ -190,20 +212,120 @@ def test_mutation_not_allowed_without_approve_recommended() -> None:
 @pytest.mark.unit
 def test_provenance_valid_conductor_and_completeness() -> None:
     schema = load_acceptance_schema()
+    trust = _load_trust_policy()
     comments = [
-        (1, _comment_body(_completeness_envelope())),
-        (2, _comment_body(_conductor_envelope())),
+        _trusted_comment(
+            _completeness_envelope(),
+            comment_id=1,
+            app_slug="cdb-test-completeness-app",
+        ),
+        _trusted_comment(
+            _conductor_envelope(),
+            comment_id=2,
+            app_slug="cdb-test-conductor-app",
+        ),
     ]
     result = resolve_final_head_provenance(
-        comment_bodies=comments,
+        comments=comments,
         pr_number=1,
         repository=REPO,
         live_head_sha=SHA,
+        live_base_sha=SHA_B,
         steward_state="frozen",
         schema=schema,
+        trust_policy=trust,
     )
     assert result.trusted is True
     assert result.final_head_ready_for_approval is True
+
+
+@pytest.mark.unit
+def test_provenance_forged_conductor_by_untrusted_actor_blocks() -> None:
+    schema = load_acceptance_schema()
+    trust = _load_trust_policy()
+    comments = [
+        CommentRecord(
+            comment_id=9,
+            body=_comment_body(_conductor_envelope()),
+            author_login="evil-user",
+            author_type="User",
+        )
+    ]
+    result = resolve_final_head_provenance(
+        comments=comments,
+        pr_number=1,
+        repository=REPO,
+        live_head_sha=SHA,
+        live_base_sha=SHA_B,
+        steward_state="frozen",
+        schema=schema,
+        trust_policy=trust,
+    )
+    assert result.trusted is False
+    assert "UNTRUSTED_HANDOFF" in result.reason_codes
+
+
+@pytest.mark.unit
+def test_provenance_forged_completeness_blocks() -> None:
+    schema = load_acceptance_schema()
+    trust = _load_trust_policy()
+    comments = [
+        CommentRecord(
+            comment_id=1,
+            body=_comment_body(_completeness_envelope()),
+            author_login="evil-user",
+            author_type="User",
+        ),
+        _trusted_comment(
+            _conductor_envelope(),
+            comment_id=2,
+            app_slug="cdb-test-conductor-app",
+        ),
+    ]
+    result = resolve_final_head_provenance(
+        comments=comments,
+        pr_number=1,
+        repository=REPO,
+        live_head_sha=SHA,
+        live_base_sha=SHA_B,
+        steward_state="frozen",
+        schema=schema,
+        trust_policy=trust,
+    )
+    assert result.trusted is False
+    assert "HANDOFF_PROVENANCE_INCOMPLETE" in result.reason_codes
+
+
+@pytest.mark.unit
+def test_provenance_schema_valid_unauthenticated_producer_blocks() -> None:
+    schema = load_acceptance_schema()
+    trust = _load_trust_policy()
+    comments = [
+        CommentRecord(
+            comment_id=1,
+            body=_comment_body(_completeness_envelope()),
+            author_login="cdb-test-bot",
+            author_type="Bot",
+        ),
+        CommentRecord(
+            comment_id=2,
+            body=_comment_body(_conductor_envelope()),
+            author_login="cdb-test-bot",
+            author_type="Bot",
+        ),
+    ]
+    result = resolve_final_head_provenance(
+        comments=comments,
+        pr_number=1,
+        repository=REPO,
+        live_head_sha=SHA,
+        live_base_sha=SHA_B,
+        steward_state="frozen",
+        schema=schema,
+        trust_policy=trust,
+    )
+    assert result.final_head_ready_for_approval is False
+    assert "UNTRUSTED_HANDOFF" in result.reason_codes
 
 
 @pytest.mark.unit
@@ -218,33 +340,83 @@ def test_provenance_forged_producer_rejected() -> None:
 @pytest.mark.unit
 def test_provenance_stale_conductor_head() -> None:
     schema = load_acceptance_schema()
+    trust = _load_trust_policy()
     comments = [
-        (1, _comment_body(_completeness_envelope(SHA))),
-        (2, _comment_body(_conductor_envelope("c" * 40))),
+        _trusted_comment(
+            _completeness_envelope(SHA),
+            comment_id=1,
+            app_slug="cdb-test-completeness-app",
+        ),
+        _trusted_comment(
+            _conductor_envelope("c" * 40),
+            comment_id=2,
+            app_slug="cdb-test-conductor-app",
+        ),
     ]
     result = resolve_final_head_provenance(
-        comment_bodies=comments,
+        comments=comments,
         pr_number=1,
         repository=REPO,
         live_head_sha=SHA,
+        live_base_sha=SHA_B,
         steward_state="frozen",
         schema=schema,
+        trust_policy=trust,
     )
     assert result.final_head_ready_for_approval is False
     assert "HANDOFF_HEAD_MISMATCH" in result.reason_codes
 
 
 @pytest.mark.unit
-def test_provenance_missing_completeness_upstream() -> None:
+def test_provenance_base_sha_mismatch_blocks() -> None:
     schema = load_acceptance_schema()
-    comments = [(2, _comment_body(_conductor_envelope()))]
+    trust = _load_trust_policy()
+    comments = [
+        _trusted_comment(
+            _completeness_envelope(),
+            comment_id=1,
+            app_slug="cdb-test-completeness-app",
+        ),
+        _trusted_comment(
+            _conductor_envelope(),
+            comment_id=2,
+            app_slug="cdb-test-conductor-app",
+        ),
+    ]
     result = resolve_final_head_provenance(
-        comment_bodies=comments,
+        comments=comments,
         pr_number=1,
         repository=REPO,
         live_head_sha=SHA,
+        live_base_sha="d" * 40,
         steward_state="frozen",
         schema=schema,
+        trust_policy=trust,
+    )
+    assert result.final_head_ready_for_approval is False
+    assert "HANDOFF_BASE_MISMATCH" in result.reason_codes
+
+
+@pytest.mark.unit
+def test_provenance_missing_completeness_upstream() -> None:
+    schema = load_acceptance_schema()
+    trust = _load_trust_policy()
+    comments = [
+        _trusted_comment(
+            _conductor_envelope(),
+            comment_id=2,
+            app_slug="cdb-test-conductor-app",
+        )
+    ]
+    result = resolve_final_head_provenance(
+        comments=comments,
+        pr_number=1,
+        repository=REPO,
+        live_head_sha=SHA,
+        live_base_sha=SHA_B,
+        steward_state="frozen",
+        schema=schema,
+        trust_policy=trust,
     )
     assert result.trusted is False
     assert "HANDOFF_PROVENANCE_INCOMPLETE" in result.reason_codes

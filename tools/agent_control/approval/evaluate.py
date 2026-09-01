@@ -9,6 +9,7 @@ from tools.agent_control.approval.codes import (
     REASON_ACCEPTING_SLICES,
     REASON_APP_ID_MISMATCH,
     REASON_BLOCKING_THREAD,
+    REASON_BLOCKING_THREAD_UNKNOWN,
     REASON_BOUND_HEAD_MISMATCH,
     REASON_CHANGES_REQUESTED,
     REASON_CONFLICTING_HEAD,
@@ -17,6 +18,7 @@ from tools.agent_control.approval.codes import (
     REASON_DRIFT_UNKNOWN,
     REASON_FINAL_HEAD_NOT_READY,
     REASON_HANDOFF_HEAD_MISMATCH,
+    REASON_HANDOFF_BASE_MISMATCH,
     REASON_HANDOFF_PROVENANCE_INCOMPLETE,
     REASON_HANDOFF_SCHEMA_INVALID,
     REASON_INCOMPLETE_SNAPSHOT,
@@ -252,6 +254,7 @@ def evaluate_final_head_gates(
             REASON_UNTRUSTED_HANDOFF,
             REASON_HANDOFF_SCHEMA_INVALID,
             REASON_HANDOFF_HEAD_MISMATCH,
+            REASON_HANDOFF_BASE_MISMATCH,
             REASON_HANDOFF_PROVENANCE_INCOMPLETE,
             REASON_SELF_DECLARED_PRODUCER_REJECTED,
         ):
@@ -333,9 +336,11 @@ def evaluate_recommendation(
         reasons.append(REASON_DRAFT_PR)
 
     review = pr.get("review_decision")
-    if review == "CHANGES_REQUESTED":
+    if review is None:
+        reasons.append(REASON_UNKNOWN_REVIEW)
+    elif review == "CHANGES_REQUESTED":
         reasons.append(REASON_CHANGES_REQUESTED)
-    elif review is not None and review not in (
+    elif review not in (
         "APPROVED",
         "REVIEW_REQUIRED",
         "NONE",
@@ -344,7 +349,10 @@ def evaluate_recommendation(
         reasons.append(REASON_UNKNOWN_REVIEW)
 
     blocking = pr.get("blocking_threads")
-    if isinstance(blocking, int) and blocking > 0:
+    thread_state = snapshot.get("review_thread_state")
+    if thread_state == "unknown" or (blocking is None and thread_state is not None):
+        reasons.append(REASON_BLOCKING_THREAD_UNKNOWN)
+    elif isinstance(blocking, int) and blocking > 0:
         reasons.append(REASON_BLOCKING_THREAD)
     elif blocking is not None and not isinstance(blocking, int):
         reasons.append(REASON_INCOMPLETE_SNAPSHOT)
@@ -371,6 +379,9 @@ def evaluate_recommendation(
     if REASON_DRAFT_PR in reasons or REASON_BLOCKING_THREAD in reasons:
         return "HOLD", reasons, _limitations(reasons, limitations)
 
+    if REASON_BLOCKING_THREAD_UNKNOWN in reasons:
+        return "UNKNOWN", reasons, _limitations(reasons, limitations)
+
     final_head_blocks = {
         REASON_FINAL_HEAD_NOT_READY,
         REASON_ACCEPTING_SLICES,
@@ -381,6 +392,7 @@ def evaluate_recommendation(
         REASON_UNTRUSTED_HANDOFF,
         REASON_HANDOFF_SCHEMA_INVALID,
         REASON_HANDOFF_HEAD_MISMATCH,
+        REASON_HANDOFF_BASE_MISMATCH,
         REASON_HANDOFF_PROVENANCE_INCOMPLETE,
         REASON_SELF_DECLARED_PRODUCER_REJECTED,
     }

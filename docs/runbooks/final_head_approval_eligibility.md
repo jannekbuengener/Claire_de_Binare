@@ -39,6 +39,15 @@ Exit codes: `0`=APPROVE_RECOMMENDED, `2`=BLOCKED, `3`=HOLD, `4`=UNKNOWN.
 
 Self-declared `producer` strings without schema validation do **not** authorize approval.
 
+Producer trust is derived from GitHub comment actor metadata (`author_login`,
+`author_type`, `performed_via_github_app.slug`) per
+`config/agent-control/policies/approval/acceptance_producer_trust.v1.yaml`.
+Empty allowlists fail closed: schema-valid JSON from a normal user comment never
+enables M6.
+
+Conductor handoff must bind `subject.base_sha` to the live PR base SHA in
+addition to head, PR number, and repository.
+
 ## Provider boundary (#4505)
 
 Cursor Cloud / Plaketten-Ingo automation YAML is **outside this repo**.

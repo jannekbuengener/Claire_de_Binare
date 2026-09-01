@@ -5,16 +5,18 @@ from __future__ import annotations
 import hashlib
 import json
 import re
-from dataclasses import dataclass, field
+from dataclasses import dataclass
 from pathlib import Path
 from typing import Any
 
 from jsonschema import Draft202012Validator
 
+from tools.agent_control.approval.comment_provenance import CommentRecord
 from tools.agent_control.approval.codes import (
     REASON_ACCEPTING_SLICES,
     REASON_BOUND_HEAD_MISMATCH,
     REASON_FINAL_HEAD_NOT_READY,
+    REASON_HANDOFF_BASE_MISMATCH,
     REASON_HANDOFF_HEAD_MISMATCH,
     REASON_HANDOFF_PROVENANCE_INCOMPLETE,
     REASON_HANDOFF_SCHEMA_INVALID,
@@ -23,6 +25,10 @@ from tools.agent_control.approval.codes import (
     REASON_SELF_DECLARED_PRODUCER_REJECTED,
     REASON_UNTRUSTED_HANDOFF,
     ApprovalError,
+)
+from tools.agent_control.approval.producer_trust import (
+    load_producer_trust_policy,
+    producer_actor_trusted,
 )
 from tools.agent_control.paths import REPO_ROOT
 
@@ -149,6 +155,7 @@ def _is_conductor_ready(envelope: dict[str, Any]) -> tuple[bool, list[str]]:
 def _find_completeness_merge_candidate(
     envelopes: list[dict[str, Any]], *, head_sha: str
 ) -> dict[str, Any] | None:
+    """Legacy helper retained for direct envelope-list tests."""
     head = _normalize_sha(head_sha)
     for envelope in reversed(envelopes):
         if envelope.get("producer") != COMPLETENESS_PRODUCER:
@@ -165,27 +172,31 @@ def _find_completeness_merge_candidate(
 
 def resolve_final_head_provenance(
     *,
-    comment_bodies: list[tuple[int | None, str]],
+    comments: list[CommentRecord],
     pr_number: int,
     repository: str,
     live_head_sha: str,
+    live_base_sha: str,
     steward_state: str | None,
     schema: dict[str, Any] | None = None,
+    trust_policy: dict[str, Any] | None = None,
     repo_root: Path | None = None,
 ) -> FinalHeadProvenance:
     """Validate trusted Conductor handoff; never trust self-declared producer alone."""
     schema = schema or load_acceptance_schema(repo_root)
+    trust_policy = trust_policy or load_producer_trust_policy(repo_root)
     head = _normalize_sha(live_head_sha)
+    base = _normalize_sha(live_base_sha)
     reasons: list[str] = []
     validation_errors: list[str] = []
 
     if steward_state == "accepting_slices":
         reasons.append(REASON_ACCEPTING_SLICES)
 
-    all_envelopes: list[tuple[int | None, dict[str, Any]]] = []
-    for comment_id, body in comment_bodies:
-        for envelope in extract_json_envelopes(body):
-            all_envelopes.append((comment_id, envelope))
+    all_envelopes: list[tuple[CommentRecord, dict[str, Any]]] = []
+    for comment in comments:
+        for envelope in extract_json_envelopes(comment.body):
+            all_envelopes.append((comment, envelope))
 
     if not all_envelopes:
         reasons.append(REASON_MISSING_FINAL_HEAD_STATE)
@@ -201,30 +212,38 @@ def resolve_final_head_provenance(
             validation_errors=tuple(["no acceptance envelopes with marker"]),
         )
 
-    conductor_pair: tuple[int | None, dict[str, Any]] | None = None
-    for comment_id, envelope in reversed(all_envelopes):
+    conductor_pair: tuple[CommentRecord, dict[str, Any]] | None = None
+    for comment, envelope in reversed(all_envelopes):
         producer = envelope.get("producer")
-        if producer == CONDUCTOR_PRODUCER:
-            schema_errors = validate_acceptance_envelope(envelope, schema)
-            if schema_errors:
-                validation_errors.extend(schema_errors)
-                reasons.append(REASON_HANDOFF_SCHEMA_INVALID)
-                continue
-            ready, sem_errors = _is_conductor_ready(envelope)
-            if not ready:
-                validation_errors.extend(sem_errors)
-                reasons.append(REASON_UNTRUSTED_HANDOFF)
-                continue
-            conductor_pair = (comment_id, envelope)
-            break
-        if isinstance(producer, str) and producer != CONDUCTOR_PRODUCER:
-            # Self-declared wrong producer in marker block — ignore, not authority.
+        if producer != CONDUCTOR_PRODUCER:
             continue
+        actor_ok, actor_detail = producer_actor_trusted(
+            producer=CONDUCTOR_PRODUCER,
+            comment=comment,
+            trust_policy=trust_policy,
+            repo_root=repo_root,
+        )
+        if not actor_ok:
+            validation_errors.append(f"conductor actor untrusted: {actor_detail}")
+            reasons.append(REASON_UNTRUSTED_HANDOFF)
+            continue
+        schema_errors = validate_acceptance_envelope(envelope, schema)
+        if schema_errors:
+            validation_errors.extend(schema_errors)
+            reasons.append(REASON_HANDOFF_SCHEMA_INVALID)
+            continue
+        ready, sem_errors = _is_conductor_ready(envelope)
+        if not ready:
+            validation_errors.extend(sem_errors)
+            reasons.append(REASON_UNTRUSTED_HANDOFF)
+            continue
+        conductor_pair = (comment, envelope)
+        break
 
     if conductor_pair is None:
         reasons.append(REASON_FINAL_HEAD_NOT_READY)
         if not validation_errors:
-            validation_errors.append("no schema-valid conductor handoff envelope")
+            validation_errors.append("no trusted schema-valid conductor handoff envelope")
         return FinalHeadProvenance(
             trusted=False,
             final_head_ready_for_approval=False,
@@ -237,39 +256,65 @@ def resolve_final_head_provenance(
             validation_errors=tuple(validation_errors),
         )
 
-    comment_id, conductor = conductor_pair
+    comment, conductor = conductor_pair
+    comment_id = comment.comment_id
     subject = conductor.get("subject") if isinstance(conductor.get("subject"), dict) else {}
     bound_head = _normalize_sha(subject.get("head_sha"))
+    bound_base = _normalize_sha(subject.get("base_sha"))
     subj_pr = subject.get("pr_number")
     subj_repo = subject.get("repository")
 
     if not bound_head or bound_head != head:
         reasons.append(REASON_HANDOFF_HEAD_MISMATCH)
         validation_errors.append(f"conductor subject.head_sha {bound_head!r} != live {head!r}")
+    if not bound_base or bound_base != base:
+        reasons.append(REASON_HANDOFF_BASE_MISMATCH)
+        validation_errors.append(f"conductor subject.base_sha {bound_base!r} != live {base!r}")
     if isinstance(subj_pr, int) and subj_pr != pr_number:
         reasons.append(REASON_HANDOFF_HEAD_MISMATCH)
         validation_errors.append(f"conductor subject.pr_number {subj_pr} != {pr_number}")
     if isinstance(subj_repo, str) and subj_repo and subj_repo != repository:
         reasons.append(REASON_UNTRUSTED_HANDOFF)
-        validation_errors.append(f"conductor subject.repository mismatch")
+        validation_errors.append("conductor subject.repository mismatch")
 
-    flat_envelopes = [env for _, env in all_envelopes]
-    completeness = _find_completeness_merge_candidate(flat_envelopes, head_sha=head)
-    completeness_verdict: str | None = None
+    flat_envelopes: list[dict[str, Any]] = []
+    completeness: dict[str, Any] | None = None
     completeness_comment_id: int | None = None
+    for comment_item, envelope in all_envelopes:
+        flat_envelopes.append(envelope)
+        if envelope.get("producer") != COMPLETENESS_PRODUCER:
+            continue
+        actor_ok, actor_detail = producer_actor_trusted(
+            producer=COMPLETENESS_PRODUCER,
+            comment=comment_item,
+            trust_policy=trust_policy,
+            repo_root=repo_root,
+        )
+        if not actor_ok:
+            validation_errors.append(f"completeness actor untrusted: {actor_detail}")
+            continue
+        result = envelope.get("result") if isinstance(envelope.get("result"), dict) else {}
+        if result.get("verdict") != "MERGE_CANDIDATE":
+            continue
+        subj = envelope.get("subject") if isinstance(envelope.get("subject"), dict) else {}
+        subj_head = _normalize_sha(subj.get("head_sha"))
+        subj_base = _normalize_sha(subj.get("base_sha"))
+        if subj_head != head or subj_base != base:
+            continue
+        comp_errors = validate_acceptance_envelope(envelope, schema)
+        if comp_errors:
+            validation_errors.extend(comp_errors)
+            reasons.append(REASON_HANDOFF_SCHEMA_INVALID)
+            continue
+        completeness = envelope
+        completeness_comment_id = comment_item.comment_id
+
+    completeness_verdict: str | None = None
     if completeness is None:
         reasons.append(REASON_HANDOFF_PROVENANCE_INCOMPLETE)
-        validation_errors.append("missing upstream MERGE_CANDIDATE completeness envelope")
+        validation_errors.append("missing trusted upstream MERGE_CANDIDATE completeness envelope")
     else:
         completeness_verdict = "MERGE_CANDIDATE"
-        for cid, env in all_envelopes:
-            if env is completeness:
-                completeness_comment_id = cid
-                break
-        comp_errors = validate_acceptance_envelope(completeness, schema)
-        if comp_errors:
-            reasons.append(REASON_HANDOFF_SCHEMA_INVALID)
-            validation_errors.extend(comp_errors)
 
     if steward_state == "accepting_slices":
         pass  # already recorded
@@ -281,6 +326,7 @@ def resolve_final_head_provenance(
     lifecycle_state = lifecycle.get("state")
     trusted = (
         REASON_HANDOFF_HEAD_MISMATCH not in reasons
+        and REASON_HANDOFF_BASE_MISMATCH not in reasons
         and REASON_HANDOFF_PROVENANCE_INCOMPLETE not in reasons
         and REASON_HANDOFF_SCHEMA_INVALID not in reasons
         and REASON_UNTRUSTED_HANDOFF not in reasons
@@ -288,7 +334,7 @@ def resolve_final_head_provenance(
         and lifecycle_state == "FINAL_HEAD_READY_FOR_APPROVAL"
         and completeness_verdict == "MERGE_CANDIDATE"
     )
-    final_ready = trusted and bound_head == head
+    final_ready = trusted and bound_head == head and bound_base == base
 
     if not final_ready and REASON_FINAL_HEAD_NOT_READY not in reasons:
         if REASON_MISSING_FINAL_HEAD_STATE not in reasons:

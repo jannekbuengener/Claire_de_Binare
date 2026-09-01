@@ -1,0 +1,19 @@
+# Test-only producer trust policy (#4505 unit tests)
+version: "1.0.0"
+policy_id: cdb.acceptance_producer_trust.v1
+fail_closed: true
+producers:
+  cdb-batch-merge-conductor:
+    trusted_github_app_slugs:
+      - cdb-test-conductor-app
+    trusted_author_logins: []
+    allowed_author_types:
+      - Bot
+    require_performed_via_github_app: true
+  cdb-pr-completeness-review:
+    trusted_github_app_slugs:
+      - cdb-test-completeness-app
+    trusted_author_logins: []
+    allowed_author_types:
+      - Bot
+    require_performed_via_github_app: true
