@@ -1,6 +1,6 @@
 # MCP Server & Test Dependencies
 # Pinned for determinism and environment independence (Issue #686)
-mcp==1.29.0
+mcp==2.1.1
 mcp-server-time==2026.7.10
 # Keep the SDK/server import closure explicit: pydantic requires this exact
 # core wheel, and Fast-CI validates mcp_server_time as a Python module.
