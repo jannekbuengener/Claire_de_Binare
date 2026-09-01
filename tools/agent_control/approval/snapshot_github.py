@@ -132,63 +132,91 @@ def _fetch_review_decision(owner: str, repo: str, pr_number: int) -> str | None:
 def _fetch_blocking_thread_count(owner: str, repo: str, pr_number: int) -> tuple[int | None, bool]:
     """Return (count, retrieval_ok). count=None when retrieval failed."""
     query = """
-    query($owner: String!, $name: String!, $number: Int!) {
+    query($owner: String!, $name: String!, $number: Int!, $after: String) {
       repository(owner: $owner, name: $name) {
         pullRequest(number: $number) {
-          reviewThreads(first: 100) {
+          reviewThreads(first: 100, after: $after) {
+            pageInfo { hasNextPage endCursor }
             nodes { isResolved isOutdated }
           }
         }
       }
     }
     """
-    try:
-        payload = gh_api_json(
-            [
-                "api",
-                "graphql",
-                "-f",
-                f"query={query}",
-                "-f",
-                f"owner={owner}",
-                "-f",
-                f"name={repo}",
-                "-F",
-                f"number={pr_number}",
-            ]
+    blocking = 0
+    cursor: str | None = None
+    pages = 0
+    max_pages = 50
+    while pages < max_pages:
+        pages += 1
+        args = [
+            "api",
+            "graphql",
+            "-f",
+            f"query={query}",
+            "-f",
+            f"owner={owner}",
+            "-f",
+            f"name={repo}",
+            "-F",
+            f"number={pr_number}",
+        ]
+        if cursor:
+            args.extend(["-f", f"after={cursor}"])
+        try:
+            payload = gh_api_json(args)
+        except RuntimeError as exc:
+            _debug_log(
+                hypothesis_id="H4",
+                location="snapshot_github.py:_fetch_blocking_thread_count",
+                message="graphql thread retrieval failed",
+                data={"pr_number": pr_number, "error": str(exc)[:200], "page": pages},
+            )
+            return None, False
+
+        repo_node = payload.get("data", {}).get("repository") if isinstance(payload, dict) else None
+        pr_node = repo_node.get("pullRequest") if isinstance(repo_node, dict) else None
+        threads_block = (
+            pr_node.get("reviewThreads")
+            if isinstance(pr_node, dict) and isinstance(pr_node.get("reviewThreads"), dict)
+            else None
         )
-    except RuntimeError as exc:
+        if not isinstance(threads_block, dict):
+            return None, False
+        threads = threads_block.get("nodes")
+        if not isinstance(threads, list):
+            return None, False
+        blocking += sum(
+            1
+            for thread in threads
+            if isinstance(thread, dict)
+            and thread.get("isResolved") is False
+            and thread.get("isOutdated") is False
+        )
+        page_info = threads_block.get("pageInfo")
+        if not isinstance(page_info, dict):
+            return None, False
+        if page_info.get("hasNextPage") is True:
+            next_cursor = page_info.get("endCursor")
+            if not isinstance(next_cursor, str) or not next_cursor:
+                return None, False
+            cursor = next_cursor
+            continue
         _debug_log(
             hypothesis_id="H4",
             location="snapshot_github.py:_fetch_blocking_thread_count",
-            message="graphql thread retrieval failed",
-            data={"pr_number": pr_number, "error": str(exc)[:200]},
+            message="blocking thread count computed",
+            data={"pr_number": pr_number, "blocking": blocking, "pages": pages},
         )
-        return None, False
+        return blocking, True
 
-    repo_node = payload.get("data", {}).get("repository") if isinstance(payload, dict) else None
-    pr_node = repo_node.get("pullRequest") if isinstance(repo_node, dict) else None
-    threads = (
-        pr_node.get("reviewThreads", {}).get("nodes")
-        if isinstance(pr_node, dict) and isinstance(pr_node.get("reviewThreads"), dict)
-        else None
-    )
-    if not isinstance(threads, list):
-        return None, False
-    blocking = sum(
-        1
-        for thread in threads
-        if isinstance(thread, dict)
-        and thread.get("isResolved") is False
-        and thread.get("isOutdated") is False
-    )
     _debug_log(
         hypothesis_id="H4",
         location="snapshot_github.py:_fetch_blocking_thread_count",
-        message="blocking thread count computed",
-        data={"pr_number": pr_number, "blocking": blocking, "total": len(threads)},
+        message="review thread pagination exceeded safety limit",
+        data={"pr_number": pr_number, "pages": pages},
     )
-    return blocking, True
+    return None, False
 
 
 def _fetch_required_checks(

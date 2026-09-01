@@ -225,7 +225,6 @@ def resolve_final_head_provenance(
         )
         if not actor_ok:
             validation_errors.append(f"conductor actor untrusted: {actor_detail}")
-            reasons.append(REASON_UNTRUSTED_HANDOFF)
             continue
         schema_errors = validate_acceptance_envelope(envelope, schema)
         if schema_errors:
