@@ -98,6 +98,27 @@ def test_docker_ruff_runner_rejects_missing_image(
         _ruff_command(python="python.exe", repo_root=tmp_path)
 
 
+@pytest.mark.parametrize(
+    "unsafe_image",
+    [
+        "cdb-ci-runner:prepared;calc.exe",
+        "cdb-ci-runner:prepared|whoami",
+        "cdb-ci-runner:prepared&whoami",
+        "cdb-ci-runner:$(whoami)",
+        "cdb-ci-runner:`whoami`",
+    ],
+)
+def test_docker_ruff_runner_rejects_unsafe_image_characters(
+    monkeypatch: pytest.MonkeyPatch, tmp_path: Path, unsafe_image: str
+) -> None:
+    """#4488 residual: image argv must fail closed like CDB_BLACK_EXECUTABLE."""
+    (tmp_path / "requirements-dev.txt").write_text("ruff==0.16.1\n", encoding="utf-8")
+    monkeypatch.setenv("CDB_RUFF_RUNNER", "docker")
+    monkeypatch.setenv("CDB_RUFF_DOCKER_IMAGE", unsafe_image)
+    with pytest.raises(RuffResolutionError, match=RUFF_RUNNER_INVALID):
+        _ruff_command(python="python.exe", repo_root=tmp_path)
+
+
 def test_ruff_runner_rejects_unknown_mode(
     monkeypatch: pytest.MonkeyPatch, tmp_path: Path
 ) -> None:
