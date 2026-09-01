@@ -20,6 +20,7 @@ import sys
 from datetime import datetime, timezone
 from pathlib import Path
 from typing import Any
+from urllib.parse import urlsplit, urlunsplit
 
 try:
     from zoneinfo import ZoneInfo
@@ -53,6 +54,18 @@ UNORDERED_LIST_PATHS = {
     "restrictions.users",
     "restrictions.teams",
     "restrictions.apps",
+}
+
+# GitHub treats repository owner/name identity case-insensitively, but only these
+# branch-protection response fields are URLs. Policy identifiers such as status
+# check contexts must remain byte-for-byte comparable even when URL-shaped.
+GITHUB_REPOSITORY_URL_PATHS = {
+    "url",
+    "required_status_checks.url",
+    "required_status_checks.contexts_url",
+    "required_pull_request_reviews.url",
+    "required_signatures.url",
+    "enforce_admins.url",
 }
 
 
@@ -118,6 +131,38 @@ def to_sort_key(value: Any) -> str:
     return json.dumps(value, sort_keys=True, separators=(",", ":"), ensure_ascii=False)
 
 
+def normalize_github_repository_url(value: str) -> str:
+    """Normalize only the case-insensitive repository identity in GitHub API URLs."""
+    parsed = urlsplit(value)
+    if (
+        parsed.scheme.lower() != "https"
+        or parsed.hostname is None
+        or parsed.hostname.lower() != "api.github.com"
+        or parsed.port is not None
+        or parsed.username is not None
+        or parsed.password is not None
+    ):
+        return value
+
+    parts = parsed.path.split("/")
+    if len(parts) < 4 or parts[0] != "" or parts[1] != "repos":
+        return value
+    if not parts[2] or not parts[3]:
+        return value
+
+    parts[2] = parts[2].lower()
+    parts[3] = parts[3].lower()
+    return urlunsplit(
+        (
+            "https",
+            "api.github.com",
+            "/".join(parts),
+            parsed.query,
+            parsed.fragment,
+        )
+    )
+
+
 def normalize(value: Any, path: str = "") -> Any:
     if isinstance(value, dict):
         out: dict[str, Any] = {}
@@ -132,6 +177,8 @@ def normalize(value: Any, path: str = "") -> Any:
         if path in UNORDERED_LIST_PATHS:
             return sorted(normalized_items, key=to_sort_key)
         return normalized_items
+    if isinstance(value, str) and path in GITHUB_REPOSITORY_URL_PATHS:
+        return normalize_github_repository_url(value)
     return value
 
 
@@ -352,7 +399,7 @@ State: **{drift_state}**
 
 - Baseline file: `{baseline_path.as_posix()}`
 - Current source: `{current_source}`
-- Normalization: sorted keys; unordered-list normalization for known set-like arrays; volatile-field stripping: none
+- Normalization: sorted keys; unordered-list normalization for known set-like arrays; GitHub repository casing normalized only on known branch-protection URL fields; volatile-field stripping: none
 
 ## Hashes (SHA256)
 
