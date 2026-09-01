@@ -2,7 +2,6 @@
 
 from __future__ import annotations
 
-import json
 import subprocess
 from pathlib import Path
 from typing import Any
@@ -21,27 +20,6 @@ from tools.pr_routing.engine import parse_batch_pr_body
 
 CDB_LOCAL_CI_APP_ID = 4410232
 DEFAULT_REPOSITORY = "jannekbuengener/Claire_de_Binare"
-_DEBUG_LOG = Path("debug-6088fb.log")
-
-
-def _debug_log(*, hypothesis_id: str, location: str, message: str, data: dict[str, Any]) -> None:
-    # #region agent log
-    try:
-        import time
-
-        payload = {
-            "sessionId": "6088fb",
-            "hypothesisId": hypothesis_id,
-            "location": location,
-            "message": message,
-            "data": data,
-            "timestamp": int(time.time() * 1000),
-        }
-        with _DEBUG_LOG.open("a", encoding="utf-8") as handle:
-            handle.write(json.dumps(payload, sort_keys=True) + "\n")
-    except OSError:
-        pass
-    # #endregion
 
 
 def _parse_steward_state(body: str) -> str | None:
@@ -116,12 +94,6 @@ def _fetch_review_decision(owner: str, repo: str, pr_number: int) -> str | None:
         timeout=60,
     )
     if result.returncode != 0:
-        _debug_log(
-            hypothesis_id="H3",
-            location="snapshot_github.py:_fetch_review_decision",
-            message="review decision retrieval failed",
-            data={"pr_number": pr_number, "stderr": (result.stderr or "")[:200]},
-        )
         return None
     value = (result.stdout or "").strip()
     if not value or value == "null":
@@ -165,13 +137,7 @@ def _fetch_blocking_thread_count(owner: str, repo: str, pr_number: int) -> tuple
             args.extend(["-f", f"after={cursor}"])
         try:
             payload = gh_api_json(args)
-        except RuntimeError as exc:
-            _debug_log(
-                hypothesis_id="H4",
-                location="snapshot_github.py:_fetch_blocking_thread_count",
-                message="graphql thread retrieval failed",
-                data={"pr_number": pr_number, "error": str(exc)[:200], "page": pages},
-            )
+        except RuntimeError:
             return None, False
 
         repo_node = payload.get("data", {}).get("repository") if isinstance(payload, dict) else None
@@ -202,20 +168,8 @@ def _fetch_blocking_thread_count(owner: str, repo: str, pr_number: int) -> tuple
                 return None, False
             cursor = next_cursor
             continue
-        _debug_log(
-            hypothesis_id="H4",
-            location="snapshot_github.py:_fetch_blocking_thread_count",
-            message="blocking thread count computed",
-            data={"pr_number": pr_number, "blocking": blocking, "pages": pages},
-        )
         return blocking, True
 
-    _debug_log(
-        hypothesis_id="H4",
-        location="snapshot_github.py:_fetch_blocking_thread_count",
-        message="review thread pagination exceeded safety limit",
-        data={"pr_number": pr_number, "pages": pages},
-    )
     return None, False
 
 
@@ -228,12 +182,6 @@ def _fetch_required_checks(
             ["api", f"repos/{owner}/{repo}/branches/{base_branch}/protection"]
         )
     except RuntimeError:
-        _debug_log(
-            hypothesis_id="H5",
-            location="snapshot_github.py:_fetch_required_checks",
-            message="branch protection retrieval failed",
-            data={"base_branch": base_branch},
-        )
         return [], False
     if not isinstance(payload, dict):
         return [], False
