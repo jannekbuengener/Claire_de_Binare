@@ -257,6 +257,7 @@ def _safe_relative_path(value: str) -> Path:
     path = Path(value)
     if (
         path.is_absolute()
+        or value.startswith(("/", "\\"))
         or not value
         or any(part in {"", ".", ".."} for part in path.parts)
         or _has_drive_relative_component(path)
