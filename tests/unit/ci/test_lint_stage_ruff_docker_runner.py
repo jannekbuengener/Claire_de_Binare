@@ -34,7 +34,7 @@ def test_native_ruff_runner_preserves_canonical_python_module_command(
 def test_docker_ruff_runner_is_networkless_readonly_and_pinned(
     monkeypatch: pytest.MonkeyPatch, tmp_path: Path
 ) -> None:
-    (tmp_path / "requirements-dev.txt").write_text("ruff==0.16.1\n", encoding="utf-8")
+    (tmp_path / "requirements-dev.txt").write_text("ruff==0.16.5\n", encoding="utf-8")
     monkeypatch.setenv("CDB_RUFF_RUNNER", "docker")
     monkeypatch.setenv("CDB_RUFF_DOCKER_IMAGE", "cdb-ci-runner:prepared")
 
@@ -47,7 +47,7 @@ def test_docker_ruff_runner_is_networkless_readonly_and_pinned(
     assert "RUFF_CACHE_DIR=/tmp/ruff-cache" in command
     assert not any("docker.sock" in part.lower() for part in command)
     assert "_version=" in command[-1]
-    assert "0.16.1" in command[-1]
+    assert "0.16.5" in command[-1]
 
 
 def test_native_black_runner_preserves_the_existing_python_module_path(
@@ -112,7 +112,7 @@ def test_docker_ruff_runner_rejects_unsafe_image_characters(
     monkeypatch: pytest.MonkeyPatch, tmp_path: Path, unsafe_image: str
 ) -> None:
     """#4488 residual: image argv must fail closed like CDB_BLACK_EXECUTABLE."""
-    (tmp_path / "requirements-dev.txt").write_text("ruff==0.16.1\n", encoding="utf-8")
+    (tmp_path / "requirements-dev.txt").write_text("ruff==0.16.5\n", encoding="utf-8")
     monkeypatch.setenv("CDB_RUFF_RUNNER", "docker")
     monkeypatch.setenv("CDB_RUFF_DOCKER_IMAGE", unsafe_image)
     with pytest.raises(RuffResolutionError, match=RUFF_RUNNER_INVALID):
@@ -129,4 +129,4 @@ def test_ruff_runner_rejects_unknown_mode(
 
 def test_pinned_ruff_version_is_repo_contract() -> None:
     repo_root = Path(__file__).resolve().parents[3]
-    assert pinned_ruff_version(repo_root) == "0.16.1"
+    assert pinned_ruff_version(repo_root) == "0.16.5"
