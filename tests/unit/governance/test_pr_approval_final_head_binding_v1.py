@@ -461,6 +461,43 @@ def test_provenance_latest_completeness_verdict_wins() -> None:
 
 
 @pytest.mark.unit
+def test_provenance_unauthorized_conductor_does_not_poison_trusted_handoff() -> None:
+    schema = load_acceptance_schema()
+    trust = _load_trust_policy()
+    comments = [
+        CommentRecord(
+            comment_id=99,
+            body=_comment_body(_conductor_envelope()),
+            author_login="attacker",
+            author_type="User",
+        ),
+        _trusted_comment(
+            _completeness_envelope(),
+            comment_id=1,
+            app_slug="cdb-test-completeness-app",
+        ),
+        _trusted_comment(
+            _conductor_envelope(),
+            comment_id=2,
+            app_slug="cdb-test-conductor-app",
+        ),
+    ]
+    result = resolve_final_head_provenance(
+        comments=comments,
+        pr_number=1,
+        repository=REPO,
+        live_head_sha=SHA,
+        live_base_sha=SHA_B,
+        steward_state="frozen",
+        schema=schema,
+        trust_policy=trust,
+    )
+    assert result.trusted is True
+    assert result.final_head_ready_for_approval is True
+    assert "UNTRUSTED_HANDOFF" not in result.reason_codes
+
+
+@pytest.mark.unit
 def test_evaluator_requires_provenance_trusted_true() -> None:
     snap = deepcopy(_load("clean_app_check_run_success"))
     snap["final_head"]["provenance"]["trusted"] = None
