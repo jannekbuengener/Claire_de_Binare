@@ -2,7 +2,7 @@
 CDB Context MCP stdio server.
 
 Wraps ContextBridge and exposes all registered read-only Context Intelligence
-tools via the MCP stdio transport (mcp==1.27.1).
+tools via the MCP stdio transport (mcp==2.1.1).
 
 Usage:
     python -m tools.mcp.server
@@ -14,6 +14,7 @@ Guardrails:
 - No schema apply, no import, no reset, no writes, no remote DB connections.
 - LR remains NO-GO.
 """
+
 from __future__ import annotations
 
 import asyncio
@@ -21,26 +22,24 @@ import json
 import logging
 from typing import Any, Sequence
 
-from mcp.server import Server
+from mcp.server import Server, ServerRequestContext
 from mcp.server.stdio import stdio_server
-from mcp.types import TextContent, Tool
+from mcp.types import (
+    CallToolRequestParams,
+    CallToolResult,
+    ListToolsResult,
+    PaginatedRequestParams,
+    TextContent,
+    Tool,
+)
 
 from tools.mcp.context_bridge import create_bridge
 
 logger = logging.getLogger(__name__)
 
 _bridge = create_bridge()
-_server = Server(
-    "cdb-context",
-    instructions=(
-        "Read-only CDB Context Intelligence tools. "
-        "No writes, no live trading, no Echtgeld scope. "
-        "LR=NO-GO."
-    ),
-)
 
 
-@_server.list_tools()
 async def list_tools() -> list[Tool]:
     """Return all registered read-only Context Intelligence tools."""
     return [
@@ -53,13 +52,37 @@ async def list_tools() -> list[Tool]:
     ]
 
 
-@_server.call_tool()
-async def call_tool(
-    name: str, arguments: dict[str, Any]
-) -> Sequence[TextContent]:
+async def call_tool(name: str, arguments: dict[str, Any]) -> Sequence[TextContent]:
     """Dispatch a tool call to ContextBridge.execute_tool()."""
     result = _bridge.execute_tool(name, arguments or {})
     return [TextContent(type="text", text=json.dumps(result, ensure_ascii=False))]
+
+
+async def _handle_list_tools(
+    ctx: ServerRequestContext,
+    params: PaginatedRequestParams | None,
+) -> ListToolsResult:
+    return ListToolsResult(tools=await list_tools())
+
+
+async def _handle_call_tool(
+    ctx: ServerRequestContext,
+    params: CallToolRequestParams,
+) -> CallToolResult:
+    content = await call_tool(params.name, params.arguments or {})
+    return CallToolResult(content=list(content), isError=False)
+
+
+_server = Server(
+    "cdb-context",
+    instructions=(
+        "Read-only CDB Context Intelligence tools. "
+        "No writes, no live trading, no Echtgeld scope. "
+        "LR=NO-GO."
+    ),
+    on_list_tools=_handle_list_tools,
+    on_call_tool=_handle_call_tool,
+)
 
 
 async def _main() -> None:

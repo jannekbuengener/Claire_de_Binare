@@ -1,9 +1,10 @@
 # MCP Server & Test Dependencies
 # Pinned for determinism and environment independence (Issue #686)
-mcp==1.29.0
-mcp-server-time==2026.7.10
+mcp==2.1.1
+# mcp-server-time remains on MCP 1.x until upstream ships MCP 2 support (#4313).
+# Smoke/governance validation uses tools.mcp.server instead.
 # Keep the SDK/server import closure explicit: pydantic requires this exact
-# core wheel, and Fast-CI validates mcp_server_time as a Python module.
+# core wheel, and Fast-CI validates the CDB MCP stdio server module.
 pydantic==2.14.0b1
 pydantic-core==2.48.0
 pytest-asyncio==1.4.0
