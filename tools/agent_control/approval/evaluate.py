@@ -6,6 +6,7 @@ import re
 from typing import Any
 
 from tools.agent_control.approval.codes import (
+    REASON_ACCEPTANCE_LIFECYCLE_MISMATCH,
     REASON_ACCEPTING_SLICES,
     REASON_APP_ID_MISMATCH,
     REASON_BLOCKING_THREAD,
@@ -19,6 +20,7 @@ from tools.agent_control.approval.codes import (
     REASON_FINAL_HEAD_NOT_FROZEN,
     REASON_FINAL_HEAD_NOT_READY,
     REASON_COMPLETENESS_SUBJECT_MISMATCH,
+    REASON_COMPLETENESS_VERDICT_MISMATCH,
     REASON_HANDOFF_HEAD_MISMATCH,
     REASON_HANDOFF_BASE_MISMATCH,
     REASON_HANDOFF_PROVENANCE_INCOMPLETE,
@@ -268,6 +270,8 @@ def evaluate_final_head_gates(
             REASON_SELF_DECLARED_PRODUCER_REJECTED,
             REASON_FINAL_HEAD_NOT_FROZEN,
             REASON_COMPLETENESS_SUBJECT_MISMATCH,
+            REASON_ACCEPTANCE_LIFECYCLE_MISMATCH,
+            REASON_COMPLETENESS_VERDICT_MISMATCH,
         ):
             if code in (snapshot.get("final_head_reason_codes") or []):
                 if code not in reasons:
@@ -279,6 +283,11 @@ def evaluate_final_head_gates(
             reasons.append(REASON_FINAL_HEAD_NOT_READY)
 
     verdict = fh.get("completeness_verdict")
+    lifecycle = fh.get("acceptance_lifecycle_state")
+    if lifecycle != "FINAL_HEAD_READY_FOR_APPROVAL":
+        reasons.append(REASON_ACCEPTANCE_LIFECYCLE_MISMATCH)
+    if verdict != "MERGE_CANDIDATE":
+        reasons.append(REASON_COMPLETENESS_VERDICT_MISMATCH)
     if verdict == "MERGE_CANDIDATE" and ready is not True:
         reasons.append(REASON_MERGE_CANDIDATE_WITHOUT_FINAL_HEAD)
 
@@ -396,6 +405,8 @@ def evaluate_recommendation(
     final_head_blocks = {
         REASON_FINAL_HEAD_NOT_READY,
         REASON_ACCEPTING_SLICES,
+        REASON_ACCEPTANCE_LIFECYCLE_MISMATCH,
+        REASON_COMPLETENESS_VERDICT_MISMATCH,
         REASON_MERGE_CANDIDATE_WITHOUT_FINAL_HEAD,
         REASON_MISSING_FINAL_HEAD_STATE,
         REASON_BOUND_HEAD_MISMATCH,
@@ -406,6 +417,7 @@ def evaluate_recommendation(
         REASON_HANDOFF_BASE_MISMATCH,
         REASON_HANDOFF_PROVENANCE_INCOMPLETE,
         REASON_SELF_DECLARED_PRODUCER_REJECTED,
+        REASON_FINAL_HEAD_NOT_FROZEN,
     }
     if any(r in final_head_blocks for r in reasons):
         return "HOLD", reasons, _limitations(reasons, limitations)

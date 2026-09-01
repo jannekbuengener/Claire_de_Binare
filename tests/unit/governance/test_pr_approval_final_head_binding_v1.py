@@ -5,6 +5,7 @@ from __future__ import annotations
 import json
 from copy import deepcopy
 from pathlib import Path
+from unittest.mock import patch
 
 import pytest
 import yaml
@@ -167,6 +168,42 @@ def test_merge_candidate_without_final_head_blocks() -> None:
     )
     assert env["recommendation"] != "APPROVE_RECOMMENDED"
     assert "FINAL_HEAD_NOT_READY" in env["reason_codes"]
+
+
+@pytest.mark.unit
+def test_missing_lifecycle_state_blocks_approve() -> None:
+    snap = deepcopy(_load("clean_app_check_run_success"))
+    snap["final_head"]["acceptance_lifecycle_state"] = "COMPLETENESS_REVIEW"
+    env = build_approval_context(snap, default_repo_paths())
+    assert env["recommendation"] != "APPROVE_RECOMMENDED"
+    assert "ACCEPTANCE_LIFECYCLE_MISMATCH" in env["reason_codes"]
+
+
+@pytest.mark.unit
+def test_missing_completeness_verdict_blocks_approve() -> None:
+    snap = deepcopy(_load("clean_app_check_run_success"))
+    snap["final_head"]["completeness_verdict"] = "FOLLOWUP_SLICES_REQUIRED"
+    env = build_approval_context(snap, default_repo_paths())
+    assert env["recommendation"] != "APPROVE_RECOMMENDED"
+    assert "COMPLETENESS_VERDICT_MISMATCH" in env["reason_codes"]
+
+
+@pytest.mark.unit
+def test_live_protection_uses_checks_app_binding() -> None:
+    from tools.agent_control.approval.snapshot_github import _fetch_required_checks
+
+    with patch(
+        "tools.agent_control.approval.snapshot_github.gh_api_json",
+        return_value={
+            "required_status_checks": {
+                "contexts": ["cdb-local-ci"],
+                "checks": [{"context": "cdb-local-ci", "app_id": 9999999}],
+            }
+        },
+    ):
+        checks, ok = _fetch_required_checks("o", "r", "main")
+    assert ok is True
+    assert checks[0]["app_id"] == 9999999
 
 
 @pytest.mark.unit

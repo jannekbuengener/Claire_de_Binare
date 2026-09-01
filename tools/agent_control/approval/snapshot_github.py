@@ -203,23 +203,43 @@ def _fetch_required_checks(
         return [], False
     rsc = payload.get("required_status_checks")
     contexts: list[str] = []
+    context_bindings: dict[str, dict[str, Any]] = {}
     if isinstance(rsc, dict):
         raw = rsc.get("contexts")
         if isinstance(raw, list):
             contexts = [
                 str(item) for item in raw if isinstance(item, str) and item.strip()
             ]
+        checks_list = rsc.get("checks")
+        if isinstance(checks_list, list):
+            for item in checks_list:
+                if not isinstance(item, dict):
+                    continue
+                context = item.get("context")
+                if not isinstance(context, str) or not context.strip():
+                    continue
+                binding: dict[str, Any] = {"name": context.strip()}
+                app_id = item.get("app_id")
+                if app_id is not None:
+                    binding["app_id"] = app_id
+                    binding["mechanism"] = "check_run"
+                context_bindings[context.strip()] = binding
     if not contexts:
         return [], False
     out: list[dict[str, Any]] = []
     for name in contexts:
-        entry: dict[str, Any] = {"name": name, "mechanism": "unknown"}
-        if name == "cdb-local-ci":
-            entry = {
-                "name": "cdb-local-ci",
-                "mechanism": "check_run",
-                "app_id": CDB_LOCAL_CI_APP_ID,
-            }
+        if name in context_bindings:
+            entry = dict(context_bindings[name])
+            if "mechanism" not in entry:
+                entry["mechanism"] = "unknown"
+        else:
+            entry = {"name": name, "mechanism": "unknown"}
+            if name == "cdb-local-ci":
+                entry = {
+                    "name": "cdb-local-ci",
+                    "mechanism": "check_run",
+                    "app_id": CDB_LOCAL_CI_APP_ID,
+                }
         out.append(entry)
     return out, True
 
