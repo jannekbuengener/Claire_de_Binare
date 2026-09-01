@@ -249,9 +249,10 @@ def evaluate_final_head_gates(
         reasons.append(REASON_MISSING_FINAL_HEAD_STATE)
         return _empty_final_head_state(), reasons
 
-    if provenance.get("trusted") is False:
+    if provenance.get("trusted") is not True:
+        if REASON_UNTRUSTED_HANDOFF not in reasons:
+            reasons.append(REASON_UNTRUSTED_HANDOFF)
         for code in (
-            REASON_UNTRUSTED_HANDOFF,
             REASON_HANDOFF_SCHEMA_INVALID,
             REASON_HANDOFF_HEAD_MISMATCH,
             REASON_HANDOFF_BASE_MISMATCH,

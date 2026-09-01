@@ -39,6 +39,21 @@ from tools.agent_control.evidence.redact import assert_no_secrets, strip_secrets
 from tools.agent_control.paths import REPO_ROOT
 
 
+def validate_snapshot_pr_binding(snapshot: dict[str, Any], pr_number: int) -> None:
+    """Reject injected snapshots whose subject PR does not match the CLI --pr."""
+    pr = snapshot.get("pr") if isinstance(snapshot.get("pr"), dict) else {}
+    snap_num = pr.get("number")
+    if snap_num is None:
+        pr["number"] = int(pr_number)
+        snapshot["pr"] = pr
+        return
+    if int(snap_num) != int(pr_number):
+        raise ApprovalError(
+            "APPROVAL_SNAPSHOT_PR_MISMATCH",
+            f"snapshot pr.number={snap_num!r} != requested --pr {pr_number}",
+        )
+
+
 @dataclass(frozen=True)
 class RepoPaths:
     repo_root: Path

@@ -51,6 +51,7 @@ def test_live_snapshot_adapter_uses_baseline_fingerprint() -> None:
         side_effect=[
             pr_payload,
             [],
+            {"required_status_checks": {"contexts": ["cdb-local-ci"]}},
             {"check_runs": []},
             {"statuses": []},
         ],
@@ -70,7 +71,7 @@ def test_live_snapshot_adapter_uses_baseline_fingerprint() -> None:
     )
     assert snap["adapter"]["capability_fingerprint"] == baseline["capability_fingerprint"]
     env = build_approval_context(snap, default_repo_paths(REPO_ROOT))
-    assert env["drift"]["status"] == "NONE"
+    assert "ADAPTER" not in env["drift"].get("sources", [])
 
 
 @pytest.mark.unit
@@ -102,6 +103,23 @@ def test_live_snapshot_unknown_threads_blocks() -> None:
 
 @pytest.mark.unit
 def test_trust_policy_fixture_is_fail_closed_by_default() -> None:
+    data = yaml.safe_load(
+        (FIX / "acceptance_producer_trust_test.v1.yaml").read_text(encoding="utf-8")
+    )
+    conductor = data["producers"]["cdb-batch-merge-conductor"]
+    assert conductor["require_performed_via_github_app"] is True
+    assert conductor["trusted_github_app_slugs"]
+
+
+@pytest.mark.unit
+def test_snapshot_pr_binding_rejects_mismatch() -> None:
+    from tools.agent_control.approval.codes import ApprovalError
+    from tools.agent_control.approval.context import validate_snapshot_pr_binding
+
+    snap = json.loads((FIX / "clean_app_check_run_success.json").read_text(encoding="utf-8"))
+    snap["pr"]["number"] = 99
+    with pytest.raises(ApprovalError, match="APPROVAL_SNAPSHOT_PR_MISMATCH"):
+        validate_snapshot_pr_binding(snap, 1)
     data = yaml.safe_load(
         (FIX / "acceptance_producer_trust_test.v1.yaml").read_text(encoding="utf-8")
     )

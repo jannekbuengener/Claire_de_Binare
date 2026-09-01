@@ -423,6 +423,53 @@ def test_provenance_missing_completeness_upstream() -> None:
 
 
 @pytest.mark.unit
+def test_provenance_latest_completeness_verdict_wins() -> None:
+    schema = load_acceptance_schema()
+    trust = _load_trust_policy()
+    blocking = _completeness_envelope()
+    blocking["result"] = {"dimensions": _dims(), "verdict": "EXTENSION_REQUIRED"}
+    blocking["lifecycle"] = {"state": "EXTENSION_REQUIRED"}
+    comments = [
+        _trusted_comment(
+            _completeness_envelope(),
+            comment_id=1,
+            app_slug="cdb-test-completeness-app",
+        ),
+        _trusted_comment(
+            blocking,
+            comment_id=3,
+            app_slug="cdb-test-completeness-app",
+        ),
+        _trusted_comment(
+            _conductor_envelope(),
+            comment_id=2,
+            app_slug="cdb-test-conductor-app",
+        ),
+    ]
+    result = resolve_final_head_provenance(
+        comments=comments,
+        pr_number=1,
+        repository=REPO,
+        live_head_sha=SHA,
+        live_base_sha=SHA_B,
+        steward_state="frozen",
+        schema=schema,
+        trust_policy=trust,
+    )
+    assert result.final_head_ready_for_approval is False
+    assert "FINAL_HEAD_NOT_READY" in result.reason_codes
+
+
+@pytest.mark.unit
+def test_evaluator_requires_provenance_trusted_true() -> None:
+    snap = deepcopy(_load("clean_app_check_run_success"))
+    snap["final_head"]["provenance"]["trusted"] = None
+    env = build_approval_context(snap, default_repo_paths())
+    assert env["recommendation"] != "APPROVE_RECOMMENDED"
+    assert "UNTRUSTED_HANDOFF" in env["reason_codes"]
+
+
+@pytest.mark.unit
 def test_final_head_roles_contract() -> None:
     policy = yaml.safe_load(
         (REPO_ROOT / "config/governance/pr-acceptance-policy.v1.yaml").read_text(

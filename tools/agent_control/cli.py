@@ -741,6 +741,7 @@ def cmd_approval_context(args: argparse.Namespace) -> int:
         RepoPaths,
         build_approval_context,
         default_repo_paths,
+        validate_snapshot_pr_binding,
     )
     from tools.agent_control.paths import REPO_ROOT
 
@@ -748,11 +749,7 @@ def cmd_approval_context(args: argparse.Namespace) -> int:
         snapshot = _load_json(Path(args.snapshot))
         if not isinstance(snapshot, dict):
             raise ApprovalError("APPROVAL_SCHEMA_INVALID", "snapshot must be a mapping")
-        pr = snapshot.get("pr")
-        if not isinstance(pr, dict):
-            pr = {}
-            snapshot["pr"] = pr
-        pr["number"] = int(args.pr)
+        validate_snapshot_pr_binding(snapshot, int(args.pr))
 
         config_root = Path(args.config)
         paths = default_repo_paths(REPO_ROOT)
@@ -812,6 +809,7 @@ def cmd_approval_eligibility(args: argparse.Namespace) -> int:
         RepoPaths,
         build_approval_context,
         default_repo_paths,
+        validate_snapshot_pr_binding,
     )
     from tools.agent_control.approval.mutation import github_approve_mutation_allowed
     from tools.agent_control.approval.snapshot_github import build_github_approval_snapshot
@@ -820,6 +818,7 @@ def cmd_approval_eligibility(args: argparse.Namespace) -> int:
     try:
         if args.snapshot:
             snapshot = _load_json(Path(args.snapshot))
+            validate_snapshot_pr_binding(snapshot, int(args.pr))
         else:
             snapshot = build_github_approval_snapshot(
                 pr_number=int(args.pr),
@@ -856,7 +855,11 @@ def cmd_approval_eligibility(args: argparse.Namespace) -> int:
 
 def cmd_approval_approve_body(args: argparse.Namespace) -> int:
     """Emit contract GitHub APPROVE body when eligibility is APPROVE_RECOMMENDED."""
-    from tools.agent_control.approval.context import build_approval_context, default_repo_paths
+    from tools.agent_control.approval.context import (
+        build_approval_context,
+        default_repo_paths,
+        validate_snapshot_pr_binding,
+    )
     from tools.agent_control.approval.mutation import build_github_approve_body
     from tools.agent_control.approval.policy import load_policy
     from tools.agent_control.approval.snapshot_github import build_github_approval_snapshot
@@ -865,6 +868,7 @@ def cmd_approval_approve_body(args: argparse.Namespace) -> int:
     try:
         if args.snapshot:
             snapshot = _load_json(Path(args.snapshot))
+            validate_snapshot_pr_binding(snapshot, int(args.pr))
         else:
             snapshot = build_github_approval_snapshot(
                 pr_number=int(args.pr),

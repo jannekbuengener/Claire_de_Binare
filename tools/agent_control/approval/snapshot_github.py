@@ -191,6 +191,45 @@ def _fetch_blocking_thread_count(owner: str, repo: str, pr_number: int) -> tuple
     return blocking, True
 
 
+def _fetch_required_checks(
+    owner: str, repo: str, base_branch: str
+) -> tuple[list[dict[str, Any]], bool]:
+    """Read live branch protection required contexts; fail closed when unavailable."""
+    try:
+        payload = gh_api_json(
+            ["api", f"repos/{owner}/{repo}/branches/{base_branch}/protection"]
+        )
+    except RuntimeError:
+        _debug_log(
+            hypothesis_id="H5",
+            location="snapshot_github.py:_fetch_required_checks",
+            message="branch protection retrieval failed",
+            data={"base_branch": base_branch},
+        )
+        return [], False
+    if not isinstance(payload, dict):
+        return [], False
+    rsc = payload.get("required_status_checks")
+    contexts: list[str] = []
+    if isinstance(rsc, dict):
+        raw = rsc.get("contexts")
+        if isinstance(raw, list):
+            contexts = [str(item) for item in raw if isinstance(item, str) and item.strip()]
+    if not contexts:
+        return [], False
+    out: list[dict[str, Any]] = []
+    for name in contexts:
+        entry: dict[str, Any] = {"name": name, "mechanism": "unknown"}
+        if name == "cdb-local-ci":
+            entry = {
+                "name": "cdb-local-ci",
+                "mechanism": "check_run",
+                "app_id": CDB_LOCAL_CI_APP_ID,
+            }
+        out.append(entry)
+    return out, True
+
+
 def _build_adapter_block(repo_root: Path) -> dict[str, Any]:
     paths = default_repo_paths(repo_root)
     baseline = load_baseline(paths.baseline_path)
@@ -261,15 +300,14 @@ def build_github_approval_snapshot(
         thread_state = "unknown"
         blocking_threads = None
 
-    protection = {
-        "required_checks": [
-            {
-                "name": "cdb-local-ci",
-                "mechanism": "check_run",
-                "app_id": CDB_LOCAL_CI_APP_ID,
-            }
-        ]
-    }
+    base_branch = ((pr.get("base") or {}).get("ref") or "main")
+    required_checks, protection_ok = _fetch_required_checks(owner, repo, base_branch)
+    if not protection_ok:
+        protection = {"required_checks": []}
+        if "PROTECTION_INCOMPLETE" not in snapshot_reason_codes:
+            snapshot_reason_codes.append("PROTECTION_INCOMPLETE")
+    else:
+        protection = {"required_checks": required_checks}
 
     snapshot: dict[str, Any] = {
         "pr": {

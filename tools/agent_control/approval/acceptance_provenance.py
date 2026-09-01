@@ -277,12 +277,16 @@ def resolve_final_head_provenance(
         reasons.append(REASON_UNTRUSTED_HANDOFF)
         validation_errors.append("conductor subject.repository mismatch")
 
-    flat_envelopes: list[dict[str, Any]] = []
     completeness: dict[str, Any] | None = None
     completeness_comment_id: int | None = None
-    for comment_item, envelope in all_envelopes:
-        flat_envelopes.append(envelope)
+    completeness_verdict: str | None = None
+    for comment_item, envelope in reversed(all_envelopes):
         if envelope.get("producer") != COMPLETENESS_PRODUCER:
+            continue
+        subj = envelope.get("subject") if isinstance(envelope.get("subject"), dict) else {}
+        subj_head = _normalize_sha(subj.get("head_sha"))
+        subj_base = _normalize_sha(subj.get("base_sha"))
+        if subj_head != head or subj_base != base:
             continue
         actor_ok, actor_detail = producer_actor_trusted(
             producer=COMPLETENESS_PRODUCER,
@@ -292,29 +296,28 @@ def resolve_final_head_provenance(
         )
         if not actor_ok:
             validation_errors.append(f"completeness actor untrusted: {actor_detail}")
-            continue
-        result = envelope.get("result") if isinstance(envelope.get("result"), dict) else {}
-        if result.get("verdict") != "MERGE_CANDIDATE":
-            continue
-        subj = envelope.get("subject") if isinstance(envelope.get("subject"), dict) else {}
-        subj_head = _normalize_sha(subj.get("head_sha"))
-        subj_base = _normalize_sha(subj.get("base_sha"))
-        if subj_head != head or subj_base != base:
-            continue
+            reasons.append(REASON_UNTRUSTED_HANDOFF)
+            break
         comp_errors = validate_acceptance_envelope(envelope, schema)
         if comp_errors:
             validation_errors.extend(comp_errors)
             reasons.append(REASON_HANDOFF_SCHEMA_INVALID)
-            continue
+            break
         completeness = envelope
         completeness_comment_id = comment_item.comment_id
+        result = envelope.get("result") if isinstance(envelope.get("result"), dict) else {}
+        verdict = result.get("verdict")
+        completeness_verdict = str(verdict) if isinstance(verdict, str) else None
+        break
 
-    completeness_verdict: str | None = None
     if completeness is None:
         reasons.append(REASON_HANDOFF_PROVENANCE_INCOMPLETE)
-        validation_errors.append("missing trusted upstream MERGE_CANDIDATE completeness envelope")
-    else:
-        completeness_verdict = "MERGE_CANDIDATE"
+        validation_errors.append("missing trusted completeness envelope for live head/base")
+    elif completeness_verdict != "MERGE_CANDIDATE":
+        reasons.append(REASON_FINAL_HEAD_NOT_READY)
+        validation_errors.append(
+            f"latest completeness verdict is {completeness_verdict!r}, not MERGE_CANDIDATE"
+        )
 
     if steward_state == "accepting_slices":
         pass  # already recorded
