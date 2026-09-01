@@ -28,6 +28,7 @@ from tools.agent_control.approval.digest import attach_context_digest
 from tools.agent_control.approval.drift import audit_drift, load_baseline
 from tools.agent_control.approval.evaluate import (
     detect_stale_head,
+    evaluate_final_head_gates,
     evaluate_recommendation,
     match_required_checks,
     validate_subject,
@@ -111,6 +112,12 @@ def build_approval_context(
     subject, subject_reasons = validate_subject(cleaned)
     stale_reasons = detect_stale_head(subject, cleaned)
     required_checks, check_reasons = match_required_checks(cleaned, subject)
+    final_head_state, final_head_reasons = evaluate_final_head_gates(cleaned, subject)
+    extra_codes = cleaned.get("final_head_reason_codes")
+    if isinstance(extra_codes, list):
+        for code in extra_codes:
+            if isinstance(code, str) and code not in final_head_reasons:
+                final_head_reasons.append(code)
     drift = audit_drift(
         policy=policy, prompt=prompt, snapshot=cleaned, baseline=baseline
     )
@@ -118,6 +125,7 @@ def build_approval_context(
         subject_reasons=subject_reasons,
         check_reasons=check_reasons,
         stale_reasons=stale_reasons,
+        final_head_reasons=final_head_reasons,
         drift=drift,
         snapshot=cleaned,
         required_checks=required_checks,
@@ -160,6 +168,7 @@ def build_approval_context(
                 else 0
             ),
         },
+        "final_head_state": final_head_state,
         "authority_limits": dict(AUTHORITY_LIMITS),
         "limitations": limitations,
     }

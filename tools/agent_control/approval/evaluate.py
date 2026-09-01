@@ -6,25 +6,36 @@ import re
 from typing import Any
 
 from tools.agent_control.approval.codes import (
+    REASON_ACCEPTING_SLICES,
     REASON_APP_ID_MISMATCH,
     REASON_BLOCKING_THREAD,
+    REASON_BOUND_HEAD_MISMATCH,
     REASON_CHANGES_REQUESTED,
     REASON_CONFLICTING_HEAD,
     REASON_DRAFT_PR,
     REASON_DRIFT,
     REASON_DRIFT_UNKNOWN,
+    REASON_FINAL_HEAD_NOT_READY,
+    REASON_HANDOFF_HEAD_MISMATCH,
+    REASON_HANDOFF_PROVENANCE_INCOMPLETE,
+    REASON_HANDOFF_SCHEMA_INVALID,
     REASON_INCOMPLETE_SNAPSHOT,
     REASON_INVALID_BASE,
     REASON_INVALID_HEAD,
     REASON_MECHANISM_MISMATCH,
+    REASON_MERGE_CANDIDATE_WITHOUT_FINAL_HEAD,
     REASON_MISSING_BASE,
     REASON_MISSING_DRAFT_STATE,
+    REASON_MISSING_FINAL_HEAD_STATE,
     REASON_MISSING_HEAD,
     REASON_PROTECTION_INCOMPLETE,
     REASON_REQUIRED_CHECK_FAILED,
     REASON_REQUIRED_CHECK_MISSING,
     REASON_REQUIRED_CHECK_PENDING,
+    REASON_RISK_NOT_LOW,
+    REASON_SELF_DECLARED_PRODUCER_REJECTED,
     REASON_STALE_HEAD,
+    REASON_UNTRUSTED_HANDOFF,
     REASON_UNKNOWN_MECHANISM,
     REASON_UNKNOWN_REVIEW,
     SHA40,
@@ -220,17 +231,93 @@ def match_required_checks(
     return out, _dedupe(reasons)
 
 
+def evaluate_final_head_gates(
+    snapshot: dict[str, Any], subject: dict[str, Any]
+) -> tuple[dict[str, Any], list[str]]:
+    """Fail-closed Final-Head lifecycle gates from injected snapshot.final_head."""
+    reasons: list[str] = []
+    fh = snapshot.get("final_head") if isinstance(snapshot.get("final_head"), dict) else {}
+    provenance = fh.get("provenance") if isinstance(fh.get("provenance"), dict) else {}
+
+    steward = fh.get("steward_state")
+    if steward == "accepting_slices":
+        reasons.append(REASON_ACCEPTING_SLICES)
+
+    if not fh:
+        reasons.append(REASON_MISSING_FINAL_HEAD_STATE)
+        return _empty_final_head_state(), reasons
+
+    if provenance.get("trusted") is False:
+        for code in (
+            REASON_UNTRUSTED_HANDOFF,
+            REASON_HANDOFF_SCHEMA_INVALID,
+            REASON_HANDOFF_HEAD_MISMATCH,
+            REASON_HANDOFF_PROVENANCE_INCOMPLETE,
+            REASON_SELF_DECLARED_PRODUCER_REJECTED,
+        ):
+            if code in (snapshot.get("final_head_reason_codes") or []):
+                if code not in reasons:
+                    reasons.append(code)
+
+    ready = fh.get("final_head_ready_for_approval")
+    if ready is not True:
+        if REASON_FINAL_HEAD_NOT_READY not in reasons:
+            reasons.append(REASON_FINAL_HEAD_NOT_READY)
+
+    verdict = fh.get("completeness_verdict")
+    if verdict == "MERGE_CANDIDATE" and ready is not True:
+        reasons.append(REASON_MERGE_CANDIDATE_WITHOUT_FINAL_HEAD)
+
+    bound = fh.get("bound_final_head_sha")
+    head = subject.get("head_sha")
+    if isinstance(bound, str) and bound and isinstance(head, str) and head:
+        if bound.lower() != head.lower():
+            reasons.append(REASON_BOUND_HEAD_MISMATCH)
+
+    risk = fh.get("risk")
+    if ready is True and risk not in (None, "LOW"):
+        reasons.append(REASON_RISK_NOT_LOW)
+    elif ready is not True and risk not in (None, "LOW", "UNKNOWN"):
+        reasons.append(REASON_RISK_NOT_LOW)
+
+    state = {
+        "steward_state": steward,
+        "acceptance_lifecycle_state": fh.get("acceptance_lifecycle_state"),
+        "final_head_ready_for_approval": bool(ready is True),
+        "bound_final_head_sha": bound if isinstance(bound, str) else "",
+        "completeness_verdict": verdict,
+        "risk": risk if isinstance(risk, str) else "UNKNOWN",
+        "provenance_trusted": provenance.get("trusted"),
+    }
+    return state, _dedupe(reasons)
+
+
+def _empty_final_head_state() -> dict[str, Any]:
+    return {
+        "steward_state": None,
+        "acceptance_lifecycle_state": None,
+        "final_head_ready_for_approval": False,
+        "bound_final_head_sha": "",
+        "completeness_verdict": None,
+        "risk": "UNKNOWN",
+        "provenance_trusted": False,
+    }
+
+
 def evaluate_recommendation(
     *,
     subject_reasons: list[str],
     check_reasons: list[str],
     stale_reasons: list[str],
+    final_head_reasons: list[str],
     drift: dict[str, Any],
     snapshot: dict[str, Any],
     required_checks: list[dict[str, Any]],
 ) -> tuple[str, list[str], list[str]]:
     """Return (recommendation, reason_codes, limitations)."""
-    reasons = _dedupe(subject_reasons + check_reasons + stale_reasons)
+    reasons = _dedupe(
+        subject_reasons + check_reasons + stale_reasons + final_head_reasons
+    )
     limitations: list[str] = []
     pr = snapshot.get("pr") if isinstance(snapshot.get("pr"), dict) else {}
 
@@ -282,6 +369,22 @@ def evaluate_recommendation(
         return "REQUEST_CHANGES", reasons, _limitations(reasons, limitations)
 
     if REASON_DRAFT_PR in reasons or REASON_BLOCKING_THREAD in reasons:
+        return "HOLD", reasons, _limitations(reasons, limitations)
+
+    final_head_blocks = {
+        REASON_FINAL_HEAD_NOT_READY,
+        REASON_ACCEPTING_SLICES,
+        REASON_MERGE_CANDIDATE_WITHOUT_FINAL_HEAD,
+        REASON_MISSING_FINAL_HEAD_STATE,
+        REASON_BOUND_HEAD_MISMATCH,
+        REASON_RISK_NOT_LOW,
+        REASON_UNTRUSTED_HANDOFF,
+        REASON_HANDOFF_SCHEMA_INVALID,
+        REASON_HANDOFF_HEAD_MISMATCH,
+        REASON_HANDOFF_PROVENANCE_INCOMPLETE,
+        REASON_SELF_DECLARED_PRODUCER_REJECTED,
+    }
+    if any(r in final_head_blocks for r in reasons):
         return "HOLD", reasons, _limitations(reasons, limitations)
 
     unknown_markers = {

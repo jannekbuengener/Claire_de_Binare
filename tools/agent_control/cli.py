@@ -783,6 +783,111 @@ def cmd_approval_context(args: argparse.Namespace) -> int:
     return _approval_exit_code(str(envelope.get("recommendation")))
 
 
+def cmd_approval_snapshot(args: argparse.Namespace) -> int:
+    """Build live GitHub approval snapshot JSON (read-only)."""
+    from tools.agent_control.approval.snapshot_github import build_github_approval_snapshot
+    from tools.agent_control.paths import REPO_ROOT
+
+    try:
+        snapshot = build_github_approval_snapshot(
+            pr_number=int(args.pr),
+            repository=str(args.repository),
+            repo_root=REPO_ROOT,
+        )
+    except (RuntimeError, OSError, ValueError) as exc:
+        print(f"INVALID APPROVAL_SNAPSHOT_FAILED: {exc}", file=sys.stderr)
+        return EXIT_ERROR
+
+    text = dump_json(snapshot)
+    if args.output:
+        Path(args.output).write_text(text, encoding="utf-8")
+    else:
+        sys.stdout.write(text if text.endswith("\n") else text + "\n")
+    return EXIT_OK
+
+
+def cmd_approval_eligibility(args: argparse.Namespace) -> int:
+    """Live snapshot → approval context → eligibility exit code."""
+    from tools.agent_control.approval.context import (
+        RepoPaths,
+        build_approval_context,
+        default_repo_paths,
+    )
+    from tools.agent_control.approval.mutation import github_approve_mutation_allowed
+    from tools.agent_control.approval.snapshot_github import build_github_approval_snapshot
+    from tools.agent_control.paths import REPO_ROOT
+
+    try:
+        if args.snapshot:
+            snapshot = _load_json(Path(args.snapshot))
+        else:
+            snapshot = build_github_approval_snapshot(
+                pr_number=int(args.pr),
+                repository=str(args.repository),
+                repo_root=REPO_ROOT,
+            )
+        if not isinstance(snapshot, dict):
+            raise ApprovalError("APPROVAL_SCHEMA_INVALID", "snapshot must be a mapping")
+        paths = default_repo_paths(REPO_ROOT)
+        envelope = build_approval_context(snapshot, paths)
+        allowed, _ = github_approve_mutation_allowed(envelope)
+        payload = {
+            "schema_id": "cdb.pr_approval_eligibility.v1",
+            "pr_number": int(args.pr),
+            "recommendation": envelope.get("recommendation"),
+            "reason_codes": envelope.get("reason_codes"),
+            "github_approve_mutation_allowed": allowed,
+            "context_digest": envelope.get("context_digest"),
+            "final_head_state": envelope.get("final_head_state"),
+        }
+    except (ApprovalError, AgentControlError, RuntimeError, OSError, json.JSONDecodeError) as exc:
+        code = getattr(exc, "code", "APPROVAL_ERROR")
+        message = getattr(exc, "message", str(exc))
+        print(f"INVALID {code}: {message}", file=sys.stderr)
+        return EXIT_ERROR
+
+    text = dump_json(payload)
+    if args.output:
+        Path(args.output).write_text(text, encoding="utf-8")
+    else:
+        sys.stdout.write(text if text.endswith("\n") else text + "\n")
+    return _approval_exit_code(str(envelope.get("recommendation")))
+
+
+def cmd_approval_approve_body(args: argparse.Namespace) -> int:
+    """Emit contract GitHub APPROVE body when eligibility is APPROVE_RECOMMENDED."""
+    from tools.agent_control.approval.context import build_approval_context, default_repo_paths
+    from tools.agent_control.approval.mutation import build_github_approve_body
+    from tools.agent_control.approval.policy import load_policy
+    from tools.agent_control.approval.snapshot_github import build_github_approval_snapshot
+    from tools.agent_control.paths import REPO_ROOT
+
+    try:
+        if args.snapshot:
+            snapshot = _load_json(Path(args.snapshot))
+        else:
+            snapshot = build_github_approval_snapshot(
+                pr_number=int(args.pr),
+                repository=str(args.repository),
+                repo_root=REPO_ROOT,
+            )
+        paths = default_repo_paths(REPO_ROOT)
+        policy = load_policy(paths.policy_path, repo_root=REPO_ROOT)
+        envelope = build_approval_context(snapshot, paths)
+        body = build_github_approve_body(envelope, policy)
+    except (ApprovalError, AgentControlError, RuntimeError, OSError, ValueError, json.JSONDecodeError) as exc:
+        code = getattr(exc, "code", "APPROVAL_ERROR")
+        message = getattr(exc, "message", str(exc))
+        print(f"INVALID {code}: {message}", file=sys.stderr)
+        return EXIT_HOLD
+
+    if args.output:
+        Path(args.output).write_text(body, encoding="utf-8")
+    else:
+        sys.stdout.write(body)
+    return EXIT_OK
+
+
 def cmd_approval_drift(args: argparse.Namespace) -> int:
     """Emit machine-readable drift report against a redacted baseline."""
     from tools.agent_control.approval.drift import audit_drift, load_baseline
@@ -1115,6 +1220,35 @@ def build_parser() -> argparse.ArgumentParser:
     p_appr_ctx.add_argument("--config", default=str(DEFAULT_CONFIG_ROOT))
     p_appr_ctx.add_argument("--output", help="Optional output path (else stdout)")
     p_appr_ctx.set_defaults(func=cmd_approval_context)
+
+    p_appr_snap = appr_sub.add_parser(
+        "snapshot",
+        help="Build live GitHub approval snapshot (read-only)",
+    )
+    p_appr_snap.add_argument("--pr", type=int, required=True)
+    p_appr_snap.add_argument("--repository", default="jannekbuengener/Claire_de_Binare")
+    p_appr_snap.add_argument("--output", help="Optional output path (else stdout)")
+    p_appr_snap.set_defaults(func=cmd_approval_snapshot)
+
+    p_appr_elig = appr_sub.add_parser(
+        "eligibility",
+        help="Live/injected snapshot → eligibility verdict",
+    )
+    p_appr_elig.add_argument("--pr", type=int, required=True)
+    p_appr_elig.add_argument("--repository", default="jannekbuengener/Claire_de_Binare")
+    p_appr_elig.add_argument("--snapshot", help="Optional injected snapshot JSON")
+    p_appr_elig.add_argument("--output", help="Optional output path (else stdout)")
+    p_appr_elig.set_defaults(func=cmd_approval_eligibility)
+
+    p_appr_body = appr_sub.add_parser(
+        "approve-body",
+        help="Contract GitHub APPROVE body when APPROVE_RECOMMENDED",
+    )
+    p_appr_body.add_argument("--pr", type=int, required=True)
+    p_appr_body.add_argument("--repository", default="jannekbuengener/Claire_de_Binare")
+    p_appr_body.add_argument("--snapshot", help="Optional injected snapshot JSON")
+    p_appr_body.add_argument("--output", help="Optional output path (else stdout)")
+    p_appr_body.set_defaults(func=cmd_approval_approve_body)
 
     p_appr_drift = appr_sub.add_parser(
         "drift",
