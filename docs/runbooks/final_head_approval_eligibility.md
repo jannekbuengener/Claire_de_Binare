@@ -42,6 +42,8 @@ Self-declared `producer` strings without schema validation do **not** authorize 
 Producer trust is derived from GitHub comment actor metadata (`author_login`,
 `author_type`, `performed_via_github_app.slug`) per
 `config/agent-control/policies/approval/acceptance_producer_trust.v1.yaml`.
+Trusted publishing uses the repo-canonical `cdb-local-ci` GitHub App — see
+[`acceptance_publisher_bootstrap.md`](acceptance_publisher_bootstrap.md).
 Empty allowlists fail closed: schema-valid JSON from a normal user comment never
 enables M6.
 

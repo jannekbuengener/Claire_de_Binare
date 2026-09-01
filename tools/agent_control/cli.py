@@ -892,6 +892,54 @@ def cmd_approval_approve_body(args: argparse.Namespace) -> int:
     return EXIT_OK
 
 
+def cmd_approval_publish(args: argparse.Namespace) -> int:
+    """Publish schema-valid acceptance envelope via trusted GitHub App (#4505)."""
+    from tools.agent_control.approval.publish import publish_acceptance_envelope
+    from tools.agent_control.paths import REPO_ROOT
+
+    try:
+        if args.envelope_file:
+            envelope = _load_json(Path(args.envelope_file))
+        else:
+            envelope = json.load(sys.stdin)
+        if not isinstance(envelope, dict):
+            raise ApprovalError("APPROVAL_PUBLISH_INVALID", "envelope must be a mapping")
+        result = publish_acceptance_envelope(
+            envelope,
+            declared_producer=str(args.producer),
+            pr_number=int(args.pr),
+            repository=str(args.repository),
+            repo_root=REPO_ROOT,
+            bootstrap_git_ref=args.bootstrap_ref,
+        )
+        payload = {
+            "schema_id": "cdb.pr_approval_publish_result.v1",
+            "comment_id": result.comment_id,
+            "repository": result.repository,
+            "pr_number": result.pr_number,
+            "producer": result.producer,
+            "head_sha": result.head_sha,
+            "base_sha": result.base_sha,
+            "github_app_slug": result.github_app_slug,
+            "github_app_id": result.github_app_id,
+            "author_login": result.author_login,
+            "author_type": result.author_type,
+            "performed_via_github_app_slug": result.performed_via_github_app_slug,
+        }
+    except (ApprovalError, AgentControlError, OSError, json.JSONDecodeError) as exc:
+        code = getattr(exc, "code", "APPROVAL_ERROR")
+        message = getattr(exc, "message", str(exc))
+        print(f"INVALID {code}: {message}", file=sys.stderr)
+        return EXIT_BLOCKED
+
+    text = json.dumps(payload, indent=2, sort_keys=True) + "\n"
+    if args.output:
+        Path(args.output).write_text(text, encoding="utf-8")
+    else:
+        sys.stdout.write(text)
+    return EXIT_OK
+
+
 def cmd_approval_drift(args: argparse.Namespace) -> int:
     """Emit machine-readable drift report against a redacted baseline."""
     from tools.agent_control.approval.drift import audit_drift, load_baseline
@@ -1253,6 +1301,31 @@ def build_parser() -> argparse.ArgumentParser:
     p_appr_body.add_argument("--snapshot", help="Optional injected snapshot JSON")
     p_appr_body.add_argument("--output", help="Optional output path (else stdout)")
     p_appr_body.set_defaults(func=cmd_approval_approve_body)
+
+    p_appr_pub = appr_sub.add_parser(
+        "publish",
+        help="Publish trusted acceptance envelope to PR comments (GitHub App)",
+    )
+    p_appr_pub.add_argument("--pr", type=int, required=True)
+    p_appr_pub.add_argument(
+        "--producer",
+        required=True,
+        choices=[
+            "cdb-pr-completeness-review",
+            "cdb-batch-merge-conductor",
+        ],
+    )
+    p_appr_pub.add_argument("--repository", default="jannekbuengener/Claire_de_Binare")
+    p_appr_pub.add_argument(
+        "--envelope-file",
+        help="Schema-valid envelope JSON (else stdin)",
+    )
+    p_appr_pub.add_argument(
+        "--bootstrap-ref",
+        help="Optional git ref for bootstrap manifest (default origin/main then HEAD)",
+    )
+    p_appr_pub.add_argument("--output", help="Optional output path (else stdout)")
+    p_appr_pub.set_defaults(func=cmd_approval_publish)
 
     p_appr_drift = appr_sub.add_parser(
         "drift",

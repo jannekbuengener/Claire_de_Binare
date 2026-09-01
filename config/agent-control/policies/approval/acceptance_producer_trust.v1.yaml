@@ -6,13 +6,15 @@ policy_id: cdb.acceptance_producer_trust.v1
 fail_closed: true
 producers:
   cdb-batch-merge-conductor:
-    trusted_github_app_slugs: []
+    trusted_github_app_slugs:
+      - cdb-local-ci
     trusted_author_logins: []
     allowed_author_types:
       - Bot
     require_performed_via_github_app: true
   cdb-pr-completeness-review:
-    trusted_github_app_slugs: []
+    trusted_github_app_slugs:
+      - cdb-local-ci
     trusted_author_logins: []
     allowed_author_types:
       - Bot
