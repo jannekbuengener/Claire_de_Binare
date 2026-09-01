@@ -137,10 +137,32 @@ def _fingerprint(plan: Mapping[str, Any]) -> str:
     return hashlib.sha256(canonical.encode("utf-8")).hexdigest()
 
 
+def _is_excluded_component(component: str) -> bool:
+    normalised = os.path.normcase(component)
+    return normalised == os.path.normcase("_quarantine") or normalised.startswith(
+        os.path.normcase("_archive_")
+    )
+
+
+def _has_drive_relative_component(path: Path) -> bool:
+    return any(
+        len(part) >= 2 and part[1] == ":" and part[0].isalpha() for part in path.parts
+    )
+
+
+def _path_under_root(root: Path, path: Path) -> bool:
+    root_norm = _normalised_absolute(root)
+    path_norm = _normalised_absolute(path)
+    try:
+        return os.path.commonpath([root_norm, path_norm]) == root_norm
+    except ValueError:
+        return False
+
+
 def _is_excluded_subtree(source_root: Path, path: Path) -> bool:
     """Return whether a path resides under an excluded source subtree."""
     return any(
-        component.startswith("_archive_") or component == "_quarantine"
+        _is_excluded_component(component)
         for component in path.relative_to(source_root).parts[:-1]
     )
 
@@ -232,11 +254,10 @@ def _safe_relative_path(value: str) -> Path:
         path.is_absolute()
         or not value
         or any(part in {"", ".", ".."} for part in path.parts)
+        or _has_drive_relative_component(path)
     ):
         raise LogArchiveError("APPLY_RELATIVE_PATH_INVALID")
-    if any(
-        part.startswith("_archive_") or part == "_quarantine" for part in path.parts
-    ):
+    if any(_is_excluded_component(part) for part in path.parts):
         raise LogArchiveError("APPLY_EXCLUDED_SUBTREE")
     if not fullmatch(EVENT_FILE_PATTERN, path.name):
         raise LogArchiveError("APPLY_CANDIDATE_NAME_INVALID")
@@ -358,6 +379,10 @@ def apply_log_archive_plan(
             if event_date >= datetime.fromisoformat(str(plan["cutoff_date"])).date():
                 raise LogArchiveError("APPLY_HOT_ENTRY_FORBIDDEN")
             source, destination = source_root / relative, destination_root / relative
+            if not _path_under_root(source_root, source) or not _path_under_root(
+                destination_root, destination
+            ):
+                raise LogArchiveError("APPLY_RELATIVE_PATH_INVALID")
             entry = {
                 "relative_path": relative.as_posix(),
                 "expected_size_bytes": planned_entry.get("size_bytes"),
