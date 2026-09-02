@@ -8,3 +8,5 @@ Phase: `provider_live_proof_rebuild`
 Product logic: **none** (evidence-only)
 
 This PR exists solely to prove provider binding. Close without merge after evidence capture.
+
+invalidation_probe: 2026-09-02T13:33:00+02:00
