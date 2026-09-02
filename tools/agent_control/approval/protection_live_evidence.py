@@ -13,6 +13,7 @@ from typing import Any
 
 from jsonschema import Draft202012Validator
 
+from core.utils.clock import utcnow as cdb_utcnow
 from tools.agent_control.approval.comment_provenance import CommentRecord
 from tools.agent_control.approval.codes import ApprovalError
 from tools.agent_control.approval.producer_trust import (
@@ -56,6 +57,17 @@ class ResolvedProtectionAttestation:
     comment_id: int
     envelope_digest: str
     observed_at: str
+
+
+def _utc_now() -> datetime:
+    value = cdb_utcnow()
+    if value.tzinfo is None:
+        return value.replace(tzinfo=UTC)
+    return value.astimezone(UTC)
+
+
+def _format_observed_at(now: datetime | None = None) -> str:
+    return (now or _utc_now()).replace(microsecond=0).strftime("%Y-%m-%dT%H:%M:%SZ")
 
 
 def load_protection_attestation_schema(repo_root: Path | None = None) -> dict[str, Any]:
@@ -206,8 +218,7 @@ def build_protection_live_envelope(
             "required_checks": required_checks,
             "strict": strict,
         },
-        "observed_at": observed_at
-        or datetime.now(UTC).replace(microsecond=0).isoformat().replace("+00:00", "Z"),
+        "observed_at": observed_at or _format_observed_at(),
     }
 
 
@@ -284,7 +295,7 @@ def _attestation_is_fresh(
     observed = _parse_observed_at(observed_at)
     if observed is None:
         return False
-    clock = now or datetime.now(UTC)
+    clock = now or _utc_now()
     max_age = timedelta(hours=_protection_attestation_max_age_hours(trust_policy))
     return observed >= clock - max_age
 
