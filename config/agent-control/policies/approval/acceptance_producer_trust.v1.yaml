@@ -26,3 +26,4 @@ producers:
     allowed_author_types:
       - Bot
     require_performed_via_github_app: true
+    max_observed_age_hours: 24

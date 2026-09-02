@@ -7,7 +7,7 @@ import json
 import re
 import subprocess
 from dataclasses import dataclass
-from datetime import UTC, datetime
+from datetime import UTC, datetime, timedelta
 from pathlib import Path
 from typing import Any
 
@@ -28,6 +28,7 @@ SCHEMA_VERSION = "1.0.0"
 SCHEMA_RELPATH = "docs/contracts/cdb_protection_live_attestation.v1.schema.json"
 SHA40 = re.compile(r"^[a-f0-9]{40}$")
 _JSON_FENCE_RE = re.compile(r"```(?:json)?\s*(\{.*?\})\s*```", re.DOTALL)
+DEFAULT_PROTECTION_ATTESTATION_MAX_AGE_HOURS = 24
 
 
 @dataclass(frozen=True)
@@ -244,6 +245,54 @@ def _extract_envelope_json(body: str) -> dict[str, Any] | None:
     return None
 
 
+def _protection_attestation_max_age_hours(
+    trust_policy: dict[str, Any],
+) -> int:
+    producers = (
+        trust_policy.get("producers")
+        if isinstance(trust_policy.get("producers"), dict)
+        else {}
+    )
+    rules = (
+        producers.get(PRODUCER)
+        if isinstance(producers.get(PRODUCER), dict)
+        else {}
+    )
+    raw = rules.get("max_observed_age_hours")
+    if isinstance(raw, int) and raw > 0:
+        return raw
+    return DEFAULT_PROTECTION_ATTESTATION_MAX_AGE_HOURS
+
+
+def _parse_observed_at(value: str) -> datetime | None:
+    text = value.strip()
+    if not text:
+        return None
+    if text.endswith("Z"):
+        text = text[:-1] + "+00:00"
+    try:
+        parsed = datetime.fromisoformat(text)
+    except ValueError:
+        return None
+    if parsed.tzinfo is None:
+        parsed = parsed.replace(tzinfo=UTC)
+    return parsed.astimezone(UTC)
+
+
+def _attestation_is_fresh(
+    observed_at: str,
+    *,
+    trust_policy: dict[str, Any],
+    now: datetime | None = None,
+) -> bool:
+    observed = _parse_observed_at(observed_at)
+    if observed is None:
+        return False
+    clock = now or datetime.now(UTC)
+    max_age = timedelta(hours=_protection_attestation_max_age_hours(trust_policy))
+    return observed >= clock - max_age
+
+
 def _envelope_digest(envelope: dict[str, Any]) -> str:
     material = json.dumps(envelope, sort_keys=True, separators=(",", ":")).encode(
         "utf-8"
@@ -301,13 +350,16 @@ def resolve_protection_live_attestation(
         required = protection.get("required_checks")
         if not isinstance(required, list) or not required:
             continue
+        observed_at = str(envelope.get("observed_at") or "")
+        if not _attestation_is_fresh(observed_at, trust_policy=trust_policy):
+            continue
         strict = bool(protection.get("strict"))
         resolved = ResolvedProtectionAttestation(
             required_checks=[dict(item) for item in required if isinstance(item, dict)],
             strict=strict,
             comment_id=comment.comment_id,
             envelope_digest=_envelope_digest(envelope),
-            observed_at=str(envelope.get("observed_at") or ""),
+            observed_at=observed_at,
         )
         candidates.append((comment.comment_id, resolved))
 

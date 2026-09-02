@@ -57,13 +57,14 @@ def _attestation_comment(
     base_sha: str = BASE,
     contexts: list[str] | None = None,
     trusted: bool = True,
+    observed_at: str = "2026-09-02T00:00:00Z",
 ) -> dict[str, Any]:
     envelope = build_protection_live_envelope(
         repository=REPO,
         base_ref="main",
         base_sha=base_sha,
         protection_payload=_protection_payload(contexts=contexts),
-        observed_at="2026-09-02T00:00:00Z",
+        observed_at=observed_at,
     )
     body = format_protection_attestation_comment_body(envelope)
     user = {"login": "cdb-local-ci[bot]", "type": "Bot"}
@@ -204,8 +205,54 @@ def test_trusted_attestation_used_when_branch_protection_api_unreadable() -> Non
 
     assert snap["protection_source"] == "trusted_attestation"
     assert snap["protection"]["required_checks"][0]["name"] == "cdb-local-ci"
+    assert "strict" not in snap["protection"]
+    assert snap["protection_read"]["strict"] is True
     assert "PROTECTION_READ_UNAVAILABLE" not in snap.get("final_head_reason_codes", [])
     assert "PROTECTION_INCOMPLETE" not in snap.get("final_head_reason_codes", [])
+
+
+@pytest.mark.unit
+def test_attested_protection_view_matches_api_fingerprint() -> None:
+    from tools.agent_control.approval.drift import protection_view_fingerprint
+
+    api_view = {
+        "required_checks": [
+            {"name": "cdb-local-ci", "app_id": 4410232, "mechanism": "check_run"}
+        ]
+    }
+    attested_view = {
+        "required_checks": [
+            {"name": "cdb-local-ci", "app_id": 4410232, "mechanism": "check_run"}
+        ]
+    }
+    assert protection_view_fingerprint(api_view) == protection_view_fingerprint(
+        attested_view
+    )
+
+
+@pytest.mark.unit
+def test_stale_attestation_observed_at_is_ignored() -> None:
+    comments = [
+        CommentRecord.from_github_issue_comment(
+            _attestation_comment(
+                comment_id=4,
+                base_sha=BASE,
+                observed_at="2020-01-01T00:00:00Z",
+            )
+        )
+    ]
+    with patch(
+        "tools.agent_control.approval.protection_live_evidence.load_producer_trust_policy",
+        return_value=TRUST_POLICY,
+    ):
+        resolved = resolve_protection_live_attestation(
+            comments=comments,
+            repository=REPO,
+            live_base_sha=BASE,
+            live_base_ref="main",
+            repo_root=REPO_ROOT,
+        )
+    assert resolved is None
 
 
 @pytest.mark.unit

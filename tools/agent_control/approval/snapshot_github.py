@@ -306,16 +306,15 @@ def build_github_approval_snapshot(
             repo_root=root,
         )
         if attestation is not None:
-            protection = {
-                "required_checks": attestation.required_checks,
-                "strict": attestation.strict,
-            }
+            # Fingerprint/drift uses required_checks only (same shape as API path).
+            protection = {"required_checks": attestation.required_checks}
             protection_source = "trusted_attestation"
             protection_read = {
                 "source": "trusted_attestation",
                 "comment_id": attestation.comment_id,
                 "envelope_digest": attestation.envelope_digest,
                 "observed_at": attestation.observed_at,
+                "strict": attestation.strict,
             }
         else:
             protection = {"required_checks": []}
