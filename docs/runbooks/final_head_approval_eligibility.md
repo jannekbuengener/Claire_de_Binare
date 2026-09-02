@@ -56,6 +56,33 @@ Cursor Cloud / Plaketten-Ingo automation YAML is **outside this repo**.
 
 Repo eligibility correctness alone does **not** close `#4505`.
 
+### Branch protection read (fail-closed)
+
+The approval snapshot reads live classic branch protection via
+`GET /repos/{owner}/{repo}/branches/{base}/protection`. Cursor Cloud
+installation tokens (`ghs_…`, GitHub App slug `cursor`) typically **lack**
+`administration:read` and receive HTTP **403** on that endpoint.
+
+**Do not** infer required checks from observed check runs alone.
+
+Remediation order:
+
+1. **Provider auth (preferred):** grant `administration:read` on the Cursor
+   GitHub App installation for `jannekbuengener/Claire_de_Binare`, or run
+   eligibility on a credential that can read branch protection.
+2. **Trusted attestation (repo):** publish `<!-- cdb-protection-live:v1 -->` on
+   the PR via `cdb-local-ci` before provider eligibility:
+
+```bash
+python -m tools.agent_control approval publish \
+  --pr <N> \
+  --producer cdb-protection-live-attestation
+```
+
+Publisher host must read live branch protection (operator PAT or App with
+`administration:read`). Consumer hosts without BP read consume the trusted
+attestation bound to the live PR `base_sha`.
+
 Provider trigger MUST:
 
 1. Call `approval eligibility --pr N` before APPROVE

@@ -193,15 +193,18 @@ def test_live_protection_uses_checks_app_binding() -> None:
     from tools.agent_control.approval.snapshot_github import _fetch_required_checks
 
     with patch(
-        "tools.agent_control.approval.snapshot_github.gh_api_json",
-        return_value={
-            "required_status_checks": {
-                "contexts": ["cdb-local-ci"],
-                "checks": [{"context": "cdb-local-ci", "app_id": 9999999}],
-            }
-        },
+        "tools.agent_control.approval.snapshot_github.probe_branch_protection_api",
+        return_value=(
+            {
+                "required_status_checks": {
+                    "contexts": ["cdb-local-ci"],
+                    "checks": [{"context": "cdb-local-ci", "app_id": 9999999}],
+                }
+            },
+            None,
+        ),
     ):
-        checks, ok = _fetch_required_checks("o", "r", "main")
+        checks, ok, _read_error = _fetch_required_checks("o", "r", "main")
     assert ok is True
     assert checks[0]["app_id"] == 9999999
 

@@ -1,0 +1,84 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://claire-de-binare.local/contracts/cdb_protection_live_attestation.v1.schema.json",
+  "title": "CDB Protection Live Attestation v1",
+  "description": "Trusted live branch-protection attestation for approval snapshots when the consumer credential cannot read GET /repos/{owner}/{repo}/branches/{branch}/protection. Evidence comments use marker <!-- cdb-protection-live:v1 -->.",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "schema_id",
+    "schema_version",
+    "producer",
+    "subject",
+    "protection",
+    "observed_at"
+  ],
+  "properties": {
+    "schema_id": {
+      "const": "cdb.protection_live_attestation.v1"
+    },
+    "schema_version": {
+      "const": "1.0.0"
+    },
+    "producer": {
+      "const": "cdb-protection-live-attestation"
+    },
+    "subject": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["repository", "base_ref", "base_sha"],
+      "properties": {
+        "repository": {
+          "type": "string",
+          "minLength": 3
+        },
+        "base_ref": {
+          "type": "string",
+          "minLength": 1
+        },
+        "base_sha": {
+          "type": "string",
+          "pattern": "^[a-f0-9]{40}$"
+        }
+      }
+    },
+    "protection": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["source", "required_checks", "strict"],
+      "properties": {
+        "source": {
+          "enum": ["branch_protection_api"]
+        },
+        "required_checks": {
+          "type": "array",
+          "minItems": 1,
+          "items": {
+            "type": "object",
+            "additionalProperties": false,
+            "required": ["name", "mechanism"],
+            "properties": {
+              "name": {
+                "type": "string",
+                "minLength": 1
+              },
+              "mechanism": {
+                "enum": ["check_run", "commit_status", "unknown"]
+              },
+              "app_id": {
+                "type": "integer"
+              }
+            }
+          }
+        },
+        "strict": {
+          "type": "boolean"
+        }
+      }
+    },
+    "observed_at": {
+      "type": "string",
+      "minLength": 10
+    }
+  }
+}
