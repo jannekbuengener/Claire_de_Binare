@@ -118,17 +118,19 @@ def verify_trust_policy_publisher_binding(
     *,
     publisher_app_slug: str,
     repo_root: Any,
-    producer: str | None = None,
+    declared_producer: str | None = None,
 ) -> None:
     """Ensure trust allowlists only reference the canonical publisher app slug."""
     policy = load_producer_trust_policy(repo_root)
     producers = (
         policy.get("producers") if isinstance(policy.get("producers"), dict) else {}
     )
-    if producer is not None:
-        names = [producer]
-    else:
-        names = [name for name in ALLOWED_PUBLISH_PRODUCERS if name in producers]
+    if declared_producer is not None and declared_producer not in producers:
+        raise ApprovalError(
+            "APPROVAL_TRUST_POLICY_UNBOUND",
+            f"declared producer {declared_producer!r} missing from trust policy",
+        )
+    names = [name for name in ALLOWED_PUBLISH_PRODUCERS if name in producers]
     for name in names:
         rules = producers.get(name) if isinstance(producers.get(name), dict) else {}
         slugs = rules.get("trusted_github_app_slugs") or []

@@ -212,7 +212,7 @@ def publish_acceptance_envelope(
     verify_trust_policy_publisher_binding(
         publisher_app_slug=app_slug,
         repo_root=root,
-        producer=declared_producer,
+        declared_producer=declared_producer,
     )
 
     head_sha, base_sha, _draft = fetch_live_pr_subject(

@@ -53,7 +53,7 @@ def publish_protection_live_attestation(
     verify_trust_policy_publisher_binding(
         publisher_app_slug=app_slug,
         repo_root=root,
-        producer=PRODUCER,
+        declared_producer=PRODUCER,
     )
 
     owner, repo = repository.split("/", 1)
