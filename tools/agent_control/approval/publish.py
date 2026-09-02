@@ -209,7 +209,11 @@ def publish_acceptance_envelope(
     schema = load_acceptance_schema_from_canon(bootstrap, repo_root=root)
 
     app_id, app_slug, _ = resolve_publisher_app_identity(bootstrap, transport=transport)
-    verify_trust_policy_publisher_binding(publisher_app_slug=app_slug, repo_root=root)
+    verify_trust_policy_publisher_binding(
+        publisher_app_slug=app_slug,
+        repo_root=root,
+        declared_producer=declared_producer,
+    )
 
     head_sha, base_sha, _draft = fetch_live_pr_subject(
         repository=repository,

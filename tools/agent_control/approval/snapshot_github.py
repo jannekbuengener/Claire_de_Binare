@@ -18,10 +18,19 @@ from tools.agent_control.approval.drift import (
     load_baseline,
     protection_view_fingerprint,
 )
+from tools.agent_control.approval.codes import (
+    REASON_PROTECTION_INCOMPLETE,
+    REASON_PROTECTION_READ_UNAVAILABLE,
+)
 from tools.agent_control.approval.gh_api import (
     gh_api_json,
     merge_check_runs_payload,
     merge_comment_pages,
+)
+from tools.agent_control.approval.protection_live_evidence import (
+    parse_required_checks_from_protection_payload,
+    probe_branch_protection_api,
+    resolve_protection_live_attestation,
 )
 from tools.agent_control.approval.context import default_repo_paths
 from tools.agent_control.paths import REPO_ROOT
@@ -194,51 +203,31 @@ def _fetch_blocking_thread_count(
 
 def _fetch_required_checks(
     owner: str, repo: str, base_branch: str
-) -> tuple[list[dict[str, Any]], bool]:
-    """Read live branch protection required contexts; fail closed when unavailable."""
-    try:
-        payload = gh_api_json(
-            ["api", f"repos/{owner}/{repo}/branches/{base_branch}/protection"]
+) -> tuple[list[dict[str, Any]], str, dict[str, Any] | None]:
+    """Read live branch protection required contexts.
+
+    Returns (required_checks, status, diagnostics) where status is one of:
+    - api_ok: live protection view is authoritative
+    - read_unavailable: endpoint unreadable; attestation fallback may apply
+    - incomplete: endpoint readable but missing required contexts; no fallback
+    """
+    payload, read_error = probe_branch_protection_api(owner, repo, base_branch)
+    if payload is None:
+        if read_error is not None and read_error.http_status == 404:
+            return [], "incomplete", read_error.to_dict()
+        return [], "read_unavailable", read_error.to_dict() if read_error else None
+    parsed = parse_required_checks_from_protection_payload(payload)
+    if parsed is None:
+        return (
+            [],
+            "incomplete",
+            {
+                "endpoint": f"repos/{owner}/{repo}/branches/{base_branch}/protection",
+                "message": "protection readable but missing required_status_checks contexts",
+            },
         )
-    except RuntimeError:
-        return [], False
-    if not isinstance(payload, dict):
-        return [], False
-    rsc = payload.get("required_status_checks")
-    contexts: list[str] = []
-    context_bindings: dict[str, dict[str, Any]] = {}
-    if isinstance(rsc, dict):
-        raw = rsc.get("contexts")
-        if isinstance(raw, list):
-            contexts = [
-                str(item) for item in raw if isinstance(item, str) and item.strip()
-            ]
-        checks_list = rsc.get("checks")
-        if isinstance(checks_list, list):
-            for item in checks_list:
-                if not isinstance(item, dict):
-                    continue
-                context = item.get("context")
-                if not isinstance(context, str) or not context.strip():
-                    continue
-                binding: dict[str, Any] = {"name": context.strip()}
-                app_id = item.get("app_id")
-                if app_id is not None:
-                    binding["app_id"] = app_id
-                    binding["mechanism"] = "check_run"
-                context_bindings[context.strip()] = binding
-    if not contexts:
-        return [], False
-    out: list[dict[str, Any]] = []
-    for name in contexts:
-        if name in context_bindings:
-            entry = dict(context_bindings[name])
-            if "mechanism" not in entry:
-                entry["mechanism"] = "unknown"
-        else:
-            entry = {"name": name, "mechanism": "unknown"}
-        out.append(entry)
-    return out, True
+    required_checks, _strict = parsed
+    return required_checks, "api_ok", None
 
 
 def _build_adapter_block(repo_root: Path) -> dict[str, Any]:
@@ -308,13 +297,48 @@ def build_github_approval_snapshot(
         blocking_threads = None
 
     base_branch = (pr.get("base") or {}).get("ref") or "main"
-    required_checks, protection_ok = _fetch_required_checks(owner, repo, base_branch)
-    if not protection_ok:
-        protection = {"required_checks": []}
-        if "PROTECTION_INCOMPLETE" not in snapshot_reason_codes:
-            snapshot_reason_codes.append("PROTECTION_INCOMPLETE")
-    else:
+    required_checks, protection_status, protection_read_error = _fetch_required_checks(
+        owner, repo, base_branch
+    )
+    protection_source: str | None = None
+    protection_read: dict[str, Any] | None = None
+    if protection_status == "api_ok":
         protection = {"required_checks": required_checks}
+        protection_source = "branch_protection_api"
+    elif protection_status == "read_unavailable":
+        attestation = resolve_protection_live_attestation(
+            comments=comments,
+            repository=repository,
+            live_base_sha=base_sha,
+            live_base_ref=base_branch,
+            repo_root=root,
+        )
+        if attestation is not None:
+            # Fingerprint/drift uses required_checks only (same shape as API path).
+            protection = {"required_checks": attestation.required_checks}
+            protection_source = "trusted_attestation"
+            protection_read = {
+                "source": "trusted_attestation",
+                "comment_id": attestation.comment_id,
+                "envelope_digest": attestation.envelope_digest,
+                "observed_at": attestation.observed_at,
+                "strict": attestation.strict,
+            }
+        else:
+            protection = {"required_checks": []}
+            protection_read = protection_read_error or {
+                "source": "branch_protection_api",
+                "message": "protection unreadable and no trusted attestation",
+            }
+            if REASON_PROTECTION_READ_UNAVAILABLE not in snapshot_reason_codes:
+                snapshot_reason_codes.append(REASON_PROTECTION_READ_UNAVAILABLE)
+            if REASON_PROTECTION_INCOMPLETE not in snapshot_reason_codes:
+                snapshot_reason_codes.append(REASON_PROTECTION_INCOMPLETE)
+    else:
+        protection = {"required_checks": []}
+        protection_read = protection_read_error
+        if REASON_PROTECTION_INCOMPLETE not in snapshot_reason_codes:
+            snapshot_reason_codes.append(REASON_PROTECTION_INCOMPLETE)
 
     snapshot: dict[str, Any] = {
         "pr": {
@@ -332,6 +356,10 @@ def build_github_approval_snapshot(
         "adapter": _build_adapter_block(root),
         "protection_view_fingerprint": protection_view_fingerprint(protection),
     }
+    if protection_source is not None:
+        snapshot["protection_source"] = protection_source
+    if protection_read is not None:
+        snapshot["protection_read"] = protection_read
     if thread_state is not None:
         snapshot["review_thread_state"] = thread_state
     return snapshot

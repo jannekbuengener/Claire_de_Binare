@@ -19,3 +19,11 @@ producers:
     allowed_author_types:
       - Bot
     require_performed_via_github_app: true
+  cdb-protection-live-attestation:
+    trusted_github_app_slugs:
+      - cdb-local-ci
+    trusted_author_logins: []
+    allowed_author_types:
+      - Bot
+    require_performed_via_github_app: true
+    max_observed_age_hours: 24

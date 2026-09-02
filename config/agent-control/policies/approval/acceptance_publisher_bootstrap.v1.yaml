@@ -16,6 +16,7 @@ canon:
 allowed_producers:
   - cdb-pr-completeness-review
   - cdb-batch-merge-conductor
+  - cdb-protection-live-attestation
 self_governance:
   forbid_trust_slugs_not_matching_publisher_app: true
   publisher_app_id_must_match_env: true

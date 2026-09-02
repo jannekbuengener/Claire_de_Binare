@@ -562,9 +562,29 @@ def run_cursor_live_preflight(
 
     prot_rc, prot = do_gh([f"repos/{repository}/branches/main/protection"])
     block_creations = None
+    required_contexts: list[str] = []
     if isinstance(prot, dict):
         block_creations = (prot.get("block_creations") or {}).get("enabled")
-    # 403 may mean protection readable only to admins — still try
+        rsc = prot.get("required_status_checks")
+        if isinstance(rsc, dict) and isinstance(rsc.get("contexts"), list):
+            required_contexts = [
+                str(item)
+                for item in rsc.get("contexts")
+                if isinstance(item, str) and item.strip()
+            ]
+    _check(
+        checks,
+        "github_branch_protection_read",
+        "PASS" if prot_rc == 0 and required_contexts else "BLOCKED",
+        returncode=prot_rc,
+        required_contexts=required_contexts,
+        remediation=(
+            "Grant administration:read on the Cursor GitHub App installation, "
+            "or ensure cdb-protection-live attestation is published on the PR "
+            "before provider eligibility runs."
+        ),
+    )
+    # 403 may mean protection readable only to admins — still try creation gate
     _check(
         checks,
         "github_branch_creation_gate",

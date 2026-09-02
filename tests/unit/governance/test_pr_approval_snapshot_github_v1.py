@@ -3,10 +3,13 @@
 from __future__ import annotations
 
 import json
+from typing import Any
 from unittest.mock import patch
 
 import pytest
 import yaml
+
+from tools.agent_control.approval.protection_live_evidence import ProtectionReadError
 
 from tools.agent_control.approval.adapter_capabilities import (
     GITHUB_APPROVAL_SNAPSHOT_EXPORT,
@@ -55,9 +58,15 @@ def test_merge_check_runs_payload_slurped_pages() -> None:
 def test_live_snapshot_adapter_uses_observed_capability_fingerprint() -> None:
     pr_payload = {
         "head": {"sha": "a" * 40},
-        "base": {"sha": "b" * 40},
+        "base": {"sha": "b" * 40, "ref": "main"},
         "body": "",
         "draft": False,
+    }
+    protection_payload = {
+        "required_status_checks": {
+            "contexts": ["cdb-local-ci"],
+            "checks": [{"context": "cdb-local-ci", "app_id": 4410232}],
+        }
     }
     with (
         patch(
@@ -65,15 +74,13 @@ def test_live_snapshot_adapter_uses_observed_capability_fingerprint() -> None:
             side_effect=[
                 pr_payload,
                 [],
-                {
-                    "required_status_checks": {
-                        "contexts": ["cdb-local-ci"],
-                        "checks": [{"context": "cdb-local-ci", "app_id": 4410232}],
-                    }
-                },
                 {"check_runs": []},
                 {"statuses": []},
             ],
+        ),
+        patch(
+            "tools.agent_control.approval.snapshot_github.probe_branch_protection_api",
+            return_value=(protection_payload, None),
         ),
         patch(
             "tools.agent_control.approval.snapshot_github._fetch_review_decision",
@@ -87,6 +94,7 @@ def test_live_snapshot_adapter_uses_observed_capability_fingerprint() -> None:
         snap = build_github_approval_snapshot(
             pr_number=1, repository="o/r", repo_root=REPO_ROOT
         )
+    assert snap["protection_source"] == "branch_protection_api"
     baseline = json.loads(
         (
             REPO_ROOT
@@ -98,6 +106,63 @@ def test_live_snapshot_adapter_uses_observed_capability_fingerprint() -> None:
     assert observed == baseline["capability_fingerprint"]
     env = build_approval_context(snap, default_repo_paths(REPO_ROOT))
     assert "ADAPTER" not in env["drift"].get("sources", [])
+
+
+@pytest.mark.unit
+def test_protection_api_unreadable_without_attestation_stays_incomplete() -> None:
+    head = "a" * 40
+    base = "b" * 40
+    pr_payload = {
+        "head": {"sha": head},
+        "base": {"sha": base, "ref": "main"},
+        "body": "",
+        "draft": False,
+    }
+    read_error = ProtectionReadError(
+        endpoint="repos/o/r/branches/main/protection",
+        http_status=403,
+        gh_exit_code=1,
+        message="403 Forbidden",
+        hint="administration read required",
+    )
+
+    def _side_effect(argv: list[str]) -> Any:
+        path = argv[1] if len(argv) > 1 else ""
+        if path == "repos/o/r/pulls/1":
+            return pr_payload
+        if path == "repos/o/r/issues/1/comments":
+            return []
+        if path == f"repos/o/r/commits/{head}/check-runs":
+            return {"check_runs": []}
+        if path == f"repos/o/r/commits/{head}/status":
+            return {"statuses": []}
+        raise AssertionError(f"unexpected gh api: {argv}")
+
+    with (
+        patch(
+            "tools.agent_control.approval.snapshot_github.gh_api_json",
+            side_effect=_side_effect,
+        ),
+        patch(
+            "tools.agent_control.approval.snapshot_github.probe_branch_protection_api",
+            return_value=(None, read_error),
+        ),
+        patch(
+            "tools.agent_control.approval.snapshot_github._fetch_review_decision",
+            return_value="APPROVED",
+        ),
+        patch(
+            "tools.agent_control.approval.snapshot_github._fetch_blocking_thread_count",
+            return_value=(0, True),
+        ),
+    ):
+        snap = build_github_approval_snapshot(
+            pr_number=1, repository="o/r", repo_root=REPO_ROOT
+        )
+
+    assert snap["protection"]["required_checks"] == []
+    assert "PROTECTION_READ_UNAVAILABLE" in snap.get("final_head_reason_codes", [])
+    assert "PROTECTION_INCOMPLETE" in snap.get("final_head_reason_codes", [])
 
 
 @pytest.mark.unit
