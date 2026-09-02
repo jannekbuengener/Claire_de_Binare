@@ -253,11 +253,7 @@ def _protection_attestation_max_age_hours(
         if isinstance(trust_policy.get("producers"), dict)
         else {}
     )
-    rules = (
-        producers.get(PRODUCER)
-        if isinstance(producers.get(PRODUCER), dict)
-        else {}
-    )
+    rules = producers.get(PRODUCER) if isinstance(producers.get(PRODUCER), dict) else {}
     raw = rules.get("max_observed_age_hours")
     if isinstance(raw, int) and raw > 0:
         return raw
