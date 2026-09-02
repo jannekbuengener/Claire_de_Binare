@@ -13,6 +13,9 @@ from tools.agent_control.approval.acceptance_provenance import (
     EVIDENCE_MARKER,
 )
 from tools.agent_control.approval.codes import ApprovalError
+from tools.agent_control.approval.protection_live_evidence import (
+    PRODUCER as PROTECTION_PRODUCER,
+)
 from tools.agent_control.approval.producer_trust import load_producer_trust_policy
 
 SHA40 = re.compile(r"^[a-f0-9]{40}$")
@@ -21,6 +24,7 @@ ALLOWED_PUBLISH_PRODUCERS = frozenset(
     {
         COMPLETENESS_PRODUCER,
         CONDUCTOR_PRODUCER,
+        PROTECTION_PRODUCER,
     }
 )
 
@@ -114,13 +118,18 @@ def verify_trust_policy_publisher_binding(
     *,
     publisher_app_slug: str,
     repo_root: Any,
+    producer: str | None = None,
 ) -> None:
     """Ensure trust allowlists only reference the canonical publisher app slug."""
     policy = load_producer_trust_policy(repo_root)
     producers = (
         policy.get("producers") if isinstance(policy.get("producers"), dict) else {}
     )
-    for name in ALLOWED_PUBLISH_PRODUCERS:
+    if producer is not None:
+        names = [producer]
+    else:
+        names = [name for name in ALLOWED_PUBLISH_PRODUCERS if name in producers]
+    for name in names:
         rules = producers.get(name) if isinstance(producers.get(name), dict) else {}
         slugs = rules.get("trusted_github_app_slugs") or []
         if not isinstance(slugs, list):
@@ -142,18 +151,11 @@ def verify_trust_policy_publisher_binding(
             )
 
 
-def validate_envelope_for_publish(
-    envelope: dict[str, Any],
-    *,
-    declared_producer: str,
-    repository: str,
-    pr_number: int,
-    live_head_sha: str,
-    live_base_sha: str,
-    schema: dict[str, Any],
+def assert_producer_allowed_by_bootstrap(
     bootstrap: dict[str, Any],
+    declared_producer: str,
 ) -> None:
-    """Confused-deputy-safe validation; raises ApprovalError on any violation."""
+    """Fail closed when producer is outside bootstrap allowlist."""
     allowed = bootstrap.get("allowed_producers")
     if not isinstance(allowed, list):
         raise ApprovalError(
@@ -169,6 +171,21 @@ def validate_envelope_for_publish(
             "APPROVAL_PUBLISH_PRODUCER_FORBIDDEN",
             f"unknown producer {declared_producer!r}",
         )
+
+
+def validate_envelope_for_publish(
+    envelope: dict[str, Any],
+    *,
+    declared_producer: str,
+    repository: str,
+    pr_number: int,
+    live_head_sha: str,
+    live_base_sha: str,
+    schema: dict[str, Any],
+    bootstrap: dict[str, Any],
+) -> None:
+    """Confused-deputy-safe validation; raises ApprovalError on any violation."""
+    assert_producer_allowed_by_bootstrap(bootstrap, declared_producer)
 
     env_producer = envelope.get("producer")
     if env_producer != declared_producer:

@@ -204,8 +204,8 @@ def test_live_protection_uses_checks_app_binding() -> None:
             None,
         ),
     ):
-        checks, ok, _read_error = _fetch_required_checks("o", "r", "main")
-    assert ok is True
+        checks, status, _read_error = _fetch_required_checks("o", "r", "main")
+    assert status == "api_ok"
     assert checks[0]["app_id"] == 9999999
 
 

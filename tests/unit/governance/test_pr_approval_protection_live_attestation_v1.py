@@ -256,6 +256,58 @@ def test_stale_attestation_observed_at_is_ignored() -> None:
 
 
 @pytest.mark.unit
+def test_readable_incomplete_protection_does_not_use_attestation() -> None:
+    pr_payload = {
+        "head": {"sha": HEAD},
+        "base": {"sha": BASE, "ref": "main"},
+        "body": "",
+        "draft": False,
+    }
+
+    def _side_effect(argv: list[str]) -> Any:
+        path = argv[1] if len(argv) > 1 else ""
+        if path == f"repos/{REPO}/pulls/1":
+            return pr_payload
+        if path == f"repos/{REPO}/issues/1/comments":
+            return [_attestation_comment(comment_id=77)]
+        if path == f"repos/{REPO}/commits/{HEAD}/check-runs":
+            return {"check_runs": []}
+        if path == f"repos/{REPO}/commits/{HEAD}/status":
+            return {"statuses": []}
+        raise AssertionError(f"unexpected gh api: {argv}")
+
+    with (
+        patch(
+            "tools.agent_control.approval.snapshot_github.gh_api_json",
+            side_effect=_side_effect,
+        ),
+        patch(
+            "tools.agent_control.approval.snapshot_github.probe_branch_protection_api",
+            return_value=({"required_status_checks": None}, None),
+        ),
+        patch(
+            "tools.agent_control.approval.protection_live_evidence.load_producer_trust_policy",
+            return_value=TRUST_POLICY,
+        ),
+        patch(
+            "tools.agent_control.approval.snapshot_github._fetch_review_decision",
+            return_value="APPROVED",
+        ),
+        patch(
+            "tools.agent_control.approval.snapshot_github._fetch_blocking_thread_count",
+            return_value=(0, True),
+        ),
+    ):
+        snap = build_github_approval_snapshot(
+            pr_number=1, repository=REPO, repo_root=REPO_ROOT
+        )
+
+    assert snap.get("protection_source") != "trusted_attestation"
+    assert "PROTECTION_INCOMPLETE" in snap.get("final_head_reason_codes", [])
+    assert "PROTECTION_READ_UNAVAILABLE" not in snap.get("final_head_reason_codes", [])
+
+
+@pytest.mark.unit
 def test_stale_attestation_wrong_base_sha_is_ignored() -> None:
     comments = [
         CommentRecord.from_github_issue_comment(

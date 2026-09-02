@@ -27,6 +27,7 @@ from tools.agent_control.approval.publish import (
     resolve_publisher_app_identity,
 )
 from tools.agent_control.approval.publisher_validate import (
+    assert_producer_allowed_by_bootstrap,
     verify_trust_policy_publisher_binding,
 )
 from tools.agent_control.paths import REPO_ROOT
@@ -46,9 +47,14 @@ def publish_protection_live_attestation(
     """Read live branch protection on publisher host, publish trusted attestation."""
     root = repo_root or REPO_ROOT
     bootstrap = load_bootstrap_policy(root, git_ref=bootstrap_git_ref)
+    assert_producer_allowed_by_bootstrap(bootstrap, PRODUCER)
     schema = load_protection_attestation_schema(root)
     app_id, app_slug, _ = resolve_publisher_app_identity(bootstrap, transport=transport)
-    verify_trust_policy_publisher_binding(publisher_app_slug=app_slug, repo_root=root)
+    verify_trust_policy_publisher_binding(
+        publisher_app_slug=app_slug,
+        repo_root=root,
+        producer=PRODUCER,
+    )
 
     owner, repo = repository.split("/", 1)
     pr = gh_api_json(["api", f"repos/{owner}/{repo}/pulls/{pr_number}"])
