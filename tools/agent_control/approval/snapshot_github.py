@@ -213,6 +213,8 @@ def _fetch_required_checks(
     """
     payload, read_error = probe_branch_protection_api(owner, repo, base_branch)
     if payload is None:
+        if read_error is not None and read_error.http_status == 404:
+            return [], "incomplete", read_error.to_dict()
         return [], "read_unavailable", read_error.to_dict() if read_error else None
     parsed = parse_required_checks_from_protection_payload(payload)
     if parsed is None:
