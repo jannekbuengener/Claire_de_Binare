@@ -6,5 +6,5 @@ mcp==2.1.1
 # Keep the SDK/server import closure explicit: pydantic requires this exact
 # core wheel, and Fast-CI validates the CDB MCP stdio server module.
 pydantic==2.14.0b1
-pydantic-core==2.48.0
+pydantic-core==2.49.0
 pytest-asyncio==1.4.0
