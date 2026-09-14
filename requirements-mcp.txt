@@ -1,6 +1,6 @@
 # MCP Server & Test Dependencies
 # Pinned for determinism and environment independence (Issue #686)
-mcp==2.1.1
+mcp==2.2.0
 # mcp-server-time remains on MCP 1.x until upstream ships MCP 2 support (#4313).
 # Smoke/governance validation uses tools.mcp.server instead.
 # Keep the SDK/server import closure explicit: pydantic requires this exact
