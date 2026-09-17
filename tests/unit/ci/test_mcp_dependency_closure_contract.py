@@ -28,8 +28,8 @@ def test_mcp_fast_ci_dependency_closure_pins_pydantic_core_pair() -> None:
 
     assert requirements["mcp"] == "2.1.1"
     assert "mcp-server-time" not in requirements
-    assert requirements["pydantic"] == "2.14.0b1"
-    assert requirements["pydantic-core"] == "2.48.0"
+    assert requirements["pydantic"] == "2.14.0b2"
+    assert requirements["pydantic-core"] == "2.49.0"
 
 
 def test_mcp_dependency_closure_rejects_an_incompatible_active_sdk(
