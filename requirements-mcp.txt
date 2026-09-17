@@ -5,6 +5,6 @@ mcp==2.2.0
 # Smoke/governance validation uses tools.mcp.server instead.
 # Keep the SDK/server import closure explicit: pydantic requires this exact
 # core wheel, and Fast-CI validates the CDB MCP stdio server module.
-pydantic==2.14.0b1
-pydantic-core==2.48.0
+pydantic==2.14.0b2
+pydantic-core==2.49.0
 pytest-asyncio==1.4.0
