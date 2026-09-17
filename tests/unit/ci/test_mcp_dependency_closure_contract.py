@@ -26,7 +26,7 @@ def _pinned_requirements() -> dict[str, str]:
 def test_mcp_fast_ci_dependency_closure_pins_pydantic_core_pair() -> None:
     requirements = _pinned_requirements()
 
-    assert requirements["mcp"] == "2.1.1"
+    assert requirements["mcp"] == "2.2.0"
     assert "mcp-server-time" not in requirements
     assert requirements["pydantic"] == "2.14.0b2"
     assert requirements["pydantic-core"] == "2.49.0"
@@ -48,5 +48,5 @@ def test_mcp_dependency_closure_rejects_an_incompatible_active_sdk(
 def test_mcp_dependency_closure_accepts_the_pinned_sdk() -> None:
     expected, active = mcp_dependency_closure._validate_mcp_sdk(REPO_ROOT)
 
-    assert expected == "2.1.1"
+    assert expected == "2.2.0"
     assert active == expected
