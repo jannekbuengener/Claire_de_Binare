@@ -40,8 +40,8 @@ TARGET_GRAFANA_PIN = (
     "sha256:dbbf39afd3040b86fc6d2d9a6f0ce3dab9c18039af9af7f6404ba71e56be6c45"
 )
 CURRENT_GRAFANA_PIN = (
-    "grafana/grafana:13.1.3-ubuntu@"
-    "sha256:ab9a06d495291c7ba210426b62e9056dba6046d0945f7e9af041f3ff29b4c7fe"
+    "grafana/grafana:13.2.2-ubuntu@"
+    "sha256:9a68a82ec38931e1baacee5d471cf74aa42565eb49554caa5290663529de6941"
 )
 
 EXPECTED_ISSUES = frozenset(range(4350, 4360))
