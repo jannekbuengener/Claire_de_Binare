@@ -85,7 +85,7 @@ jobs:
           output: 'trivy-${{ env.TRIVY_SAFE_IMAGE }}.sarif'
 
       - name: Upload Trivy Results
-        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
+        uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
         with:
           name: trivy-base-${{ env.TRIVY_SAFE_IMAGE }}-${{ github.run_number }}
           path: trivy-*.json
@@ -222,7 +222,7 @@ jobs:
 
       - name: Upload Trivy Results
         if: always() && steps.build_custom_image.outcome == 'success'
-        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
+        uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
         with:
           name: trivy-custom-${{ matrix.service }}-${{ github.run_number }}
           path: trivy-*.json
@@ -268,7 +268,7 @@ jobs:
 
       - name: Upload Scan Results
         if: always()
-        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
+        uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
         with:
           name: ${{ env.SCAN_ARTIFACT_NAME }}
           path: scan-${{ env.SCAN_IMAGE_LABEL }}.txt
@@ -318,7 +318,7 @@ jobs:
 
       - name: Upload Scan Results
         if: always() && steps.build_custom_image.outcome == 'success'
-        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
+        uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
         with:
           name: scan-cdb_${{ matrix.service }}-${{ github.run_number }}
           path: scan-cdb_${{ matrix.service }}.txt
