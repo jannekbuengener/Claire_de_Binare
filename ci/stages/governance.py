@@ -91,7 +91,15 @@ def probe_main_ruleset_api(
         text=True,
         check=False,
     )
-    return proc.returncode == 0
+    if proc.returncode != 0:
+        return False
+    try:
+        payload = json.loads(proc.stdout)
+    except (json.JSONDecodeError, TypeError):
+        return False
+    # GitHub may omit bypass_actors for read-only callers. Such a response is
+    # permission-redacted and cannot prove the complete merge-governance state.
+    return isinstance(payload, dict) and isinstance(payload.get("bypass_actors"), list)
 
 
 def build_drift_checks_command(
@@ -128,8 +136,9 @@ def build_drift_checks_command(
         "baseline": BP_BASELINE_REL.as_posix(),
         "offline_current": offline.name,
         "reason": (
-            "gh api repository ruleset not readable on this host. Required-contexts drift "
-            "still runs against workflow files. Live `main-strict` ruleset verification "
+            "gh api repository ruleset is unavailable or permission-redacted on this "
+            "host (for example missing bypass_actors). Required-contexts drift still "
+            "runs against workflow files. Live `main-strict` ruleset verification "
             "remains required before merge."
         ),
         "canonical_ruleset": "main-strict",

@@ -155,7 +155,7 @@ the merged/deleted one.
 
 ## Dokumentationspflicht
 
-Änderungen an Check-Namen, Triggern oder Branch Protection müssen gemeinsam in
+Änderungen an Check-Namen, Triggern oder Ruleset/Required-Check-Policy müssen gemeinsam in
 `docs/ci/index.md`, diesem Runbook, dem Workflow-Register und den
 Required-Check-Contract-Tests aktualisiert werden.
 
@@ -170,16 +170,23 @@ Publisher (siehe [`docs/ci/local-status-publisher.md`](../ci/local-status-publis
 - Der App-gebundene `cdb-local-ci`-Check Run ist optionaler
   Developer-Preflight/Diagnose und nicht branch-protection-required.
 - Ruleset (Canon): active `main-strict` requires `ci (Unit/Integration + Lint gesammelt)` + `policy-gate`, both `integration_id=15368` (`github-actions`); classic Branch Protection is absent.
-- Dirty worktree ⇒ lokale Evidence `BLOCKED` und kein Preflight-Publish.
+- Dirty worktree -> lokale Evidence `BLOCKED` und kein Preflight-Publish.
 - Publish-Pfad erzwingt Policy-Gate-Mirror (Parität zu
   `.github/workflows/policy-gate.yml`).
 - Kein Fake-Green: dirty, stale, SHA-Mismatch, Hash-Mismatch, required SKIPPED,
   Anti-Replay, fehlende PR-Nummer oder Policy-Gate-Fails blockieren Publish.
 - Lokales CodeQL/SARIF ersetzt nicht den GitHub Security-Tab.
 
-Live Branch-Protection-Hinweis (reverify with `gh api`):
-`required_status_checks.checks` = beide hosted Contexts mit `app_id=15368`
-(`github-actions`), `strict: true`.
+Live Ruleset verification (reverify with `gh api`):
+
+```bash
+gh api repos/jannekbuengener/Claire_de_Binare/rulesets/11617228
+```
+
+Expected `main-strict` shape: `rules[].type=required_status_checks` contains both
+hosted contexts with `integration_id=15368`; the pull-request rule has
+`required_approving_review_count=0`; `bypass_actors=[]`; enforcement is `active`.
+Classic `/branches/main/protection` is intentionally absent.
 
 Windows front door (lokale Preflight-Ebene):
 

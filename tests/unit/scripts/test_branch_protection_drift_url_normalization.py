@@ -127,3 +127,38 @@ def test_ruleset_checker_creates_output_parent_directories(
     assert drift.main() == 0
     assert report.exists()
     assert apply_out.exists()
+
+
+def test_live_ruleset_missing_bypass_actors_fails_closed_as_incomplete(
+    tmp_path, monkeypatch
+) -> None:
+    import json
+    import sys
+    import scripts.governance.check_branch_protection_drift as drift
+
+    baseline = tmp_path / "baseline.json"
+    baseline.write_text(
+        json.dumps(drift.normalize(_ruleset_snapshot())), encoding="utf-8"
+    )
+    report = tmp_path / "report.md"
+    apply_out = tmp_path / "apply.json"
+
+    redacted = _ruleset_snapshot()
+    redacted.pop("bypass_actors")
+    monkeypatch.setattr(drift, "run_gh_api", lambda *a, **k: json.dumps(redacted))
+    monkeypatch.setattr(
+        sys,
+        "argv",
+        [
+            "check_branch_protection_drift.py",
+            "--baseline",
+            str(baseline),
+            "--report",
+            str(report),
+            "--apply-payload-out",
+            str(apply_out),
+        ],
+    )
+
+    assert drift.main() == 3
+    assert "permission-redacted" in report.read_text(encoding="utf-8").lower()

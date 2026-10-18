@@ -443,6 +443,29 @@ def main() -> int:
             return 1
         current_source = "live gh api"
 
+        if not isinstance(current_data, dict) or "bypass_actors" not in current_data:
+            apply_payload = build_apply_payload(baseline_data)
+            apply_payload_path.write_text(
+                json.dumps(apply_payload, sort_keys=True, indent=2, ensure_ascii=False)
+                + "\n",
+                encoding="utf-8",
+            )
+            report_path.write_text(
+                "# Main Ruleset Drift Report\n\n"
+                "State: **UNKNOWN - permission-redacted live ruleset**\n\n"
+                "GitHub returned the ruleset without `bypass_actors`. This response "
+                "cannot prove the complete merge-governance state and is therefore "
+                "not compared as if the field were absent by policy. Use a credential "
+                "with complete ruleset visibility or the disclosed CI offline fallback; "
+                "live `main-strict` verification remains required before merge.\n",
+                encoding="utf-8",
+            )
+            print(
+                "Ruleset visibility incomplete: bypass_actors is permission-redacted."
+            )
+            print(f"Diff report: {report_path.as_posix()}")
+            return 3
+
     current_norm = normalize(current_data)
     current_norm_text = canonical_json(current_norm)
 

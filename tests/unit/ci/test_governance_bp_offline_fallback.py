@@ -27,10 +27,22 @@ def test_probe_main_ruleset_api_true_on_zero(monkeypatch: pytest.MonkeyPatch) ->
     class FakeProc:
         returncode = 0
         stderr = ""
-        stdout = "{}"
+        stdout = '{"name":"main-strict","bypass_actors":[]}'
 
     monkeypatch.setattr(gov.subprocess, "run", lambda *a, **k: FakeProc())
     assert gov.probe_main_ruleset_api("example/owner-repo") is True
+
+
+def test_probe_main_ruleset_api_false_when_bypass_actors_are_permission_redacted(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    class FakeProc:
+        returncode = 0
+        stderr = ""
+        stdout = '{"name":"main-strict"}'
+
+    monkeypatch.setattr(gov.subprocess, "run", lambda *a, **k: FakeProc())
+    assert gov.probe_main_ruleset_api("example/owner-repo") is False
 
 
 def test_drift_command_uses_offline_ruleset_baseline_when_api_unavailable(
