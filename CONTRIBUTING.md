@@ -222,13 +222,13 @@ Merge contract on `main` (SSOT:
 | `ci (Unit/Integration + Lint gesammelt)` | `ci.yml` | GitHub-hosted Check Run (Actions) |
 | `policy-gate` | `policy-gate.yml` | GitHub-hosted Check Run (Actions) |
 
-Seit Migration #4540 sind genau diese beiden hosted Checks die
-branch-protection-required Merge-Gates auf `main`; seit #4600 ist die
-verifizierte stärkere Bindung kanonisch: `strict: true`, beide Checks an die
-offizielle GitHub Actions App (`app_id=15368`) gebunden. `cdb-local-ci` (Local
-CI Status Publisher) ist **kein** Required
-Context mehr; er bleibt nur optionaler lokaler Preflight/Diagnose. Verify the
-live required contexts with `gh api`, not this table.
+Seit #4602 erzwingt das aktive Repository-Ruleset `main-strict` genau diese
+beiden hosted Merge-Gates auf `main`. Beide sind an die offizielle GitHub
+Actions Integration (`integration_id=15368`) gebunden;
+`strict_required_status_checks_policy=false` ist Teil des live Ruleset-Canon.
+`cdb-local-ci` (Local CI Status Publisher) ist **kein** Required Context mehr,
+sondern nur optionaler lokaler Preflight/Diagnose. Verify the live ruleset with
+`gh api repos/jannekbuengener/Claire_de_Binare/rulesets/11617228`, not this table.
 
 Inside the CI gate: `ruff check .`, unit/integration tests, and Black on changed
 Python under `services/` and `tests/`. Coverage >= 80% applies when running

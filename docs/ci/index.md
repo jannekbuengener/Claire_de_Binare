@@ -26,9 +26,9 @@
 SSOT: [`merge_policy_ci_gate.md`](../runbooks/merge_policy_ci_gate.md). Die
 merge-relevanten Required Contexts auf `main` sind die hosted Check Runs
 `ci (Unit/Integration + Lint gesammelt)` und `policy-gate` (exakter
-PR-Head-SHA), beide branch-protection-seitig an die offizielle GitHub Actions
-App (`app_id=15368`) gebunden. Live verifizieren via `gh api` Check Runs —
-nicht via Commit Status.
+PR-Head-SHA), beide im aktiven `main-strict` Ruleset an die offizielle GitHub
+Actions Integration (`integration_id=15368`) gebunden. Live verifizieren via
+Ruleset API + Check Runs - nicht via Commit Status.
 
 | Quelle | Check-Kontext | Typ |
 |---|---|---|
@@ -41,7 +41,7 @@ nicht via Commit Status.
 | [`policy-gate.yml`](../../.github/workflows/policy-gate.yml) | Hosted lightweight PR policy gate, Required Check `policy-gate` | `pull_request` |
 
 Seit #4540 sind `ci (Unit/Integration + Lint gesammelt)` und `policy-gate`
-branch-protection-required; `cdb-local-ci` ist kein Required Context mehr.
+main-strict-ruleset-required; `cdb-local-ci` ist kein Required Context mehr.
 Der optionale `cdb-local-ci`-Preflight ersetzt die hosted Required Checks
 nicht. Ein rotes/blockiertes Hosted-Actions-Billing-/Runner-Lock ist eine
 Infrastruktur-Bedingung, kein Code-Fehler, und darf nicht mit einem

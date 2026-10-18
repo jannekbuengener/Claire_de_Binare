@@ -24,8 +24,8 @@ Transport-`steward_state=merge_candidate` startet die Acceptance-Phase
 `COMPLETENESS_REVIEW` (`cdb-pr-completeness-review`). Nur ein schema-valides
 Completeness-Verdikt `MERGE_CANDIDATE` darf in die Conductor-Phase
 (`cdb-batch-merge-conductor`: Freeze → Main-Integration → Final Validation →
-`FINAL_HEAD_READY_FOR_APPROVAL`). Conductor mergt nicht. Danach folgen
-Ruleset-/Review-Feedback-Gate durch `cdb_final_head_pr_approval_gate` und regulärer
+`FINAL_HEAD_READY_FOR_APPROVAL`). Conductor mergt nicht. Danach folgt das
+provider-unabhängige Ruleset-/Review-Feedback-Gate und anschließend der reguläre
 Merge durch `cdb_final_head_merge_executor`
 (SSOT: `docs/contracts/final_head_merge_pipeline.v1.md`). Slice-Evidence darf
 nie als Final-Head-Evidence wiederverwendet werden. Der finale Nachweis bindet
@@ -45,7 +45,7 @@ Contexts (Branch Protection, live via `gh api`):
 Seit #4540 ist `cdb-local-ci` **kein** Required Context mehr. Der lokale CI
 Status Publisher und sein App-gebundener Check Run bleiben als optionaler
 Developer-Preflight/Diagnose-Pfad bestehen, sind aber nicht
-branch-protection-required und autorisieren keinen Merge. `ci.yml` startet
+main-strict-ruleset-required und autorisieren keinen Merge. `ci.yml` startet
 ab #4540 wieder auf jedem `pull_request` (Target `main`) und liefert den
 Required Check `ci (Unit/Integration + Lint gesammelt)` auf exaktem Head.
 
@@ -168,7 +168,7 @@ Publisher (siehe [`docs/ci/local-status-publisher.md`](../ci/local-status-publis
   die hosted Required Checks `ci (Unit/Integration + Lint gesammelt)` und
   `policy-gate`.
 - Der App-gebundene `cdb-local-ci`-Check Run ist optionaler
-  Developer-Preflight/Diagnose und nicht branch-protection-required.
+  Developer-Preflight/Diagnose und nicht main-strict-ruleset-required.
 - Ruleset (Canon): active `main-strict` requires `ci (Unit/Integration + Lint gesammelt)` + `policy-gate`, both `integration_id=15368` (`github-actions`); classic Branch Protection is absent.
 - Dirty worktree -> lokale Evidence `BLOCKED` und kein Preflight-Publish.
 - Publish-Pfad erzwingt Policy-Gate-Mirror (Parität zu
