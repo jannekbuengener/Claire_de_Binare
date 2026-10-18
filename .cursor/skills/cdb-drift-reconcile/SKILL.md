@@ -108,7 +108,7 @@ report `skill surface drift unknown`.
 **Follow-up rule:** On `DRIFT_FOUND`, either re-mirror the affected adapters from
 canon within the current scope, or create a deduplicated re-mirror follow-up issue
 and hand off. Never auto-merge. Regular merge is owned only by
-`cdb_final_head_merge_executor` after HEAD-bound APPROVE and live
+`cdb_final_head_merge_executor` after ruleset/review-feedback readiness and live
 hosted Required Check SUCCESS (`ci (Unit/Integration + Lint gesammelt)`,
 `policy-gate`) on the exact PR head
 (SSOT: `docs/contracts/final_head_merge_pipeline.v1.md`).

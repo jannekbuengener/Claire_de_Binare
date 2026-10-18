@@ -221,6 +221,107 @@ steward_state: frozen
 
 
 @pytest.mark.unit
+@pytest.mark.parametrize(
+    ("body", "expected_merge_mode"),
+    [
+        ("Refs #4598", "dedicated"),
+        (
+            """<!-- cdb-batch-pr:v1
+policy_id: cdb-pr-routing-v1
+steward_state: frozen
+-->
+Refs #4598
+""",
+            None,
+        ),
+    ],
+)
+def test_snapshot_passes_fail_closed_merge_mode_to_provenance(
+    body: str, expected_merge_mode: str | None
+) -> None:
+    head = "a" * 40
+    base = "b" * 40
+    pr_payload = {
+        "head": {"sha": head},
+        "base": {"sha": base, "ref": "main"},
+        "body": body,
+        "draft": False,
+    }
+    captured: dict[str, Any] = {}
+
+    class _Provenance:
+        reason_codes: tuple[str, ...] = ()
+
+        @staticmethod
+        def to_snapshot_final_head() -> dict[str, Any]:
+            return {
+                "steward_state": None,
+                "acceptance_lifecycle_state": None,
+                "final_head_ready_for_approval": False,
+                "bound_final_head_sha": head,
+                "completeness_verdict": None,
+                "risk": "UNKNOWN",
+                "provenance": {
+                    "trusted": False,
+                    "envelope_digest": None,
+                    "conductor_comment_id": None,
+                    "completeness_comment_id": None,
+                    "validation_errors": [],
+                },
+            }
+
+    def _capture_resolve(**kwargs: Any) -> _Provenance:
+        captured.update(kwargs)
+        return _Provenance()
+
+    with (
+        patch(
+            "tools.agent_control.approval.snapshot_github.gh_api_json",
+            side_effect=[
+                pr_payload,
+                [],
+                {"check_runs": []},
+                {"statuses": []},
+            ],
+        ),
+        patch(
+            "tools.agent_control.approval.snapshot_github.resolve_final_head_provenance",
+            side_effect=_capture_resolve,
+        ),
+        patch(
+            "tools.agent_control.approval.snapshot_github.probe_branch_protection_api",
+            return_value=(
+                {
+                    "required_status_checks": {
+                        "contexts": [
+                            "ci (Unit/Integration + Lint gesammelt)",
+                            "policy-gate",
+                        ],
+                        "checks": [],
+                    }
+                },
+                None,
+            ),
+        ),
+        patch(
+            "tools.agent_control.approval.snapshot_github._fetch_review_decision",
+            return_value="APPROVED",
+        ),
+        patch(
+            "tools.agent_control.approval.snapshot_github._fetch_blocking_thread_count",
+            return_value=(0, True),
+        ),
+    ):
+        build_github_approval_snapshot(
+            pr_number=1, repository="o/r", repo_root=REPO_ROOT
+        )
+
+    assert "merge_mode" in captured
+    assert captured["merge_mode"] == expected_merge_mode
+    assert captured["steward_state"] is None
+
+
+@pytest.mark.unit
 def test_live_snapshot_review_decision_none_blocks() -> None:
     snap = json.loads(
         (FIX / "clean_app_check_run_success.json").read_text(encoding="utf-8")

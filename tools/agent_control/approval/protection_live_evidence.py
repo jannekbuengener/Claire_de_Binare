@@ -1,4 +1,4 @@
-"""Trusted live branch-protection attestation for approval snapshots (#4505)."""
+"""Trusted live merge-protection attestation for approval snapshots (#4505)."""
 
 from __future__ import annotations
 
@@ -32,12 +32,14 @@ _JSON_FENCE_RE = re.compile(r"```(?:json)?\s*(\{.*?\})\s*```", re.DOTALL)
 DEFAULT_PROTECTION_ATTESTATION_MAX_AGE_HOURS = 24
 DEFAULT_PROTECTION_ATTESTATION_MAX_FUTURE_SKEW_MINUTES = 5
 GH_TIMEOUT_EXIT_CODE = -1
+UNSUPPORTED_BRANCH_EXIT_CODE = -2
+DEFAULT_RULESET_ID = 11617228
+DEFAULT_RULESET_BRANCH = "main"
 _PROTECTION_READ_HINT = (
-    "Classic branch protection read requires repository administration "
-    "read (admin:true on PAT or administration:read on GitHub App). "
-    "Cursor Cloud ghs_ installation tokens typically lack this; "
-    "use trusted cdb-protection-live attestation from cdb-local-ci "
-    "or grant administration:read on the provider installation."
+    "Repository ruleset reads require sufficient repository rules visibility. "
+    "If the provider cannot read the complete main-strict ruleset, use trusted "
+    "cdb-protection-live attestation from cdb-local-ci or a credential with "
+    "complete ruleset visibility."
 )
 
 
@@ -109,8 +111,24 @@ def probe_branch_protection_api(
     *,
     timeout: int = 60,
 ) -> tuple[dict[str, Any] | None, ProtectionReadError | None]:
-    """Read live classic branch protection; fail closed with diagnostics."""
-    endpoint = f"repos/{owner}/{repo}/branches/{base_branch}/protection"
+    """Read Claire's canonical repository ruleset.
+
+    The legacy function name is kept for compatibility with existing callers, but
+    the authoritative merge-protection source is the repository ruleset, not the
+    classic ``/branches/{branch}/protection`` endpoint.
+    """
+    endpoint = f"repos/{owner}/{repo}/rulesets/{DEFAULT_RULESET_ID}"
+    if base_branch != DEFAULT_RULESET_BRANCH:
+        return None, ProtectionReadError(
+            endpoint=endpoint,
+            http_status=None,
+            gh_exit_code=UNSUPPORTED_BRANCH_EXIT_CODE,
+            message=(
+                "canonical ruleset probe is only defined for "
+                f"{DEFAULT_RULESET_BRANCH!r}; requested {base_branch!r}"
+            ),
+            hint="resolve the ruleset governing the requested branch before evaluating it",
+        )
     try:
         result = subprocess.run(
             ["gh", "api", endpoint],
@@ -124,7 +142,7 @@ def probe_branch_protection_api(
             endpoint=endpoint,
             http_status=None,
             gh_exit_code=GH_TIMEOUT_EXIT_CODE,
-            message=f"branch protection probe timed out after {timeout}s on {endpoint}",
+            message=f"repository ruleset probe timed out after {timeout}s on {endpoint}",
             hint=_PROTECTION_READ_HINT,
         )
     if result.returncode != 0:
@@ -143,7 +161,7 @@ def probe_branch_protection_api(
             http_status=None,
             gh_exit_code=result.returncode,
             message="empty response body",
-            hint="branch protection endpoint returned no JSON payload",
+            hint="repository ruleset endpoint returned no JSON payload",
         )
     payload = json.loads(raw)
     if not isinstance(payload, dict):
@@ -151,16 +169,28 @@ def probe_branch_protection_api(
             endpoint=endpoint,
             http_status=200,
             gh_exit_code=0,
-            message="protection payload is not a mapping",
+            message="ruleset payload is not a mapping",
             hint="unexpected GitHub API response shape",
         )
     return payload, None
 
 
-def parse_required_checks_from_protection_payload(
+def protection_payload_source(payload: dict[str, Any]) -> str | None:
+    """Identify the merge-protection API shape without guessing."""
+    if isinstance(payload.get("required_status_checks"), dict):
+        return "branch_protection_api"
+    rules = payload.get("rules")
+    if isinstance(rules, list) and any(
+        isinstance(rule, dict) and rule.get("type") == "required_status_checks"
+        for rule in rules
+    ):
+        return "repository_ruleset_api"
+    return None
+
+
+def _parse_classic_required_checks(
     payload: dict[str, Any],
 ) -> tuple[list[dict[str, Any]], bool] | None:
-    """Parse required checks and strict flag from branch protection JSON."""
     rsc = payload.get("required_status_checks")
     if not isinstance(rsc, dict):
         return None
@@ -198,6 +228,60 @@ def parse_required_checks_from_protection_payload(
     return out, strict
 
 
+def _parse_ruleset_required_checks(
+    payload: dict[str, Any],
+) -> tuple[list[dict[str, Any]], bool] | None:
+    rules = payload.get("rules")
+    if not isinstance(rules, list):
+        return None
+    status_rule = next(
+        (
+            rule
+            for rule in rules
+            if isinstance(rule, dict) and rule.get("type") == "required_status_checks"
+        ),
+        None,
+    )
+    if not isinstance(status_rule, dict):
+        return None
+    params = status_rule.get("parameters")
+    if not isinstance(params, dict):
+        return None
+    raw_checks = params.get("required_status_checks")
+    if not isinstance(raw_checks, list) or not raw_checks:
+        return None
+
+    required_checks: list[dict[str, Any]] = []
+    for item in raw_checks:
+        if not isinstance(item, dict):
+            continue
+        context = item.get("context")
+        if not isinstance(context, str) or not context.strip():
+            continue
+        entry: dict[str, Any] = {"name": context.strip(), "mechanism": "unknown"}
+        integration_id = item.get("integration_id")
+        if isinstance(integration_id, int):
+            entry["app_id"] = integration_id
+            entry["mechanism"] = "check_run"
+        required_checks.append(entry)
+    if not required_checks:
+        return None
+    strict = bool(params.get("strict_required_status_checks_policy"))
+    return required_checks, strict
+
+
+def parse_required_checks_from_protection_payload(
+    payload: dict[str, Any],
+) -> tuple[list[dict[str, Any]], bool] | None:
+    """Parse required checks from ruleset or legacy classic-protection JSON."""
+    source = protection_payload_source(payload)
+    if source == "repository_ruleset_api":
+        return _parse_ruleset_required_checks(payload)
+    if source == "branch_protection_api":
+        return _parse_classic_required_checks(payload)
+    return None
+
+
 def build_protection_live_envelope(
     *,
     repository: str,
@@ -206,11 +290,12 @@ def build_protection_live_envelope(
     protection_payload: dict[str, Any],
     observed_at: str | None = None,
 ) -> dict[str, Any]:
+    source = protection_payload_source(protection_payload)
     parsed = parse_required_checks_from_protection_payload(protection_payload)
-    if parsed is None:
+    if source is None or parsed is None:
         raise ApprovalError(
             "PROTECTION_ATTESTATION_INCOMPLETE",
-            "branch protection payload missing required_status_checks",
+            "merge protection payload missing required status checks",
         )
     required_checks, strict = parsed
     base = base_sha.lower()
@@ -226,7 +311,7 @@ def build_protection_live_envelope(
             "base_sha": base,
         },
         "protection": {
-            "source": "branch_protection_api",
+            "source": source,
             "required_checks": required_checks,
             "strict": strict,
         },

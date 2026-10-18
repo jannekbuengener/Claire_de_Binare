@@ -62,7 +62,7 @@ def test_no_separate_merge_go_or_human_authority_fields() -> None:
 def test_final_head_ready_not_merge_executor() -> None:
     text = _skill()
     assert "FINAL_HEAD_READY_FOR_APPROVAL" in text
-    assert "cdb_final_head_pr_approval_gate" in text
+    assert "cdb_final_head_merge_executor" in text
     assert "merge_policy_ci_gate.md" in text
     assert "DONE_PR_OPEN_MERGE_HANDOFF" in text
     assert "--admin" in text
@@ -126,7 +126,7 @@ def test_delegation_to_ci_guard_not_session_close_as_merge_owner() -> None:
     )
     assert (
         policy["delegation_matrix"]["cdb-batch-merge-conductor"]["handoff_role"]
-        == "cdb_final_head_pr_approval_gate"
+        == "cdb_final_head_merge_executor"
     )
 
 

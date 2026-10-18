@@ -28,8 +28,10 @@ from tools.agent_control.approval.gh_api import (
     merge_comment_pages,
 )
 from tools.agent_control.approval.protection_live_evidence import (
+    DEFAULT_RULESET_ID,
     parse_required_checks_from_protection_payload,
     probe_branch_protection_api,
+    protection_payload_source,
     resolve_protection_live_attestation,
 )
 from tools.agent_control.approval.context import default_repo_paths
@@ -39,13 +41,18 @@ from tools.pr_routing.engine import parse_batch_pr_metadata
 DEFAULT_REPOSITORY = "jannekbuengener/Claire_de_Binare"
 
 
-def _parse_steward_state(body: str) -> str | None:
-    if "<!-- cdb-batch-pr:v1" not in body:
-        return None
+def _parse_pr_flow_state(body: str) -> tuple[str | None, str | None]:
+    if "cdb-batch-pr:" not in body:
+        return "dedicated", None
     try:
-        return parse_batch_pr_metadata(body).steward_state
+        metadata = parse_batch_pr_metadata(body)
     except ValueError:
-        return None
+        return None, None
+    return metadata.merge_mode, metadata.steward_state
+
+
+def _parse_steward_state(body: str) -> str | None:
+    return _parse_pr_flow_state(body)[1]
 
 
 def _fetch_check_observations(
@@ -204,10 +211,10 @@ def _fetch_blocking_thread_count(
 def _fetch_required_checks(
     owner: str, repo: str, base_branch: str
 ) -> tuple[list[dict[str, Any]], str, dict[str, Any] | None]:
-    """Read live branch protection required contexts.
+    """Read live merge-protection required contexts from the canonical ruleset.
 
     Returns (required_checks, status, diagnostics) where status is one of:
-    - api_ok: live protection view is authoritative
+    - api_ok: live merge-protection view is authoritative
     - read_unavailable: endpoint unreadable; attestation fallback may apply
     - incomplete: endpoint readable but missing required contexts; no fallback
     """
@@ -222,12 +229,18 @@ def _fetch_required_checks(
             [],
             "incomplete",
             {
-                "endpoint": f"repos/{owner}/{repo}/branches/{base_branch}/protection",
-                "message": "protection readable but missing required_status_checks contexts",
+                "endpoint": f"repos/{owner}/{repo}/rulesets/{DEFAULT_RULESET_ID}",
+                "message": "ruleset readable but missing required status-check contexts",
             },
         )
     required_checks, _strict = parsed
-    return required_checks, "api_ok", None
+    return (
+        required_checks,
+        "api_ok",
+        {
+            "source": protection_payload_source(payload) or "unknown",
+        },
+    )
 
 
 def _build_adapter_block(repo_root: Path) -> dict[str, Any]:
@@ -273,7 +286,7 @@ def build_github_approval_snapshot(
     for item in merge_comment_pages(comments_payload):
         comments.append(CommentRecord.from_github_issue_comment(item))
 
-    steward_state = _parse_steward_state(body)
+    merge_mode, steward_state = _parse_pr_flow_state(body)
     provenance = resolve_final_head_provenance(
         comments=comments,
         pr_number=pr_number,
@@ -281,6 +294,7 @@ def build_github_approval_snapshot(
         live_head_sha=head_sha,
         live_base_sha=base_sha,
         steward_state=steward_state,
+        merge_mode=merge_mode,
         repo_root=root,
     )
     final_head = provenance.to_snapshot_final_head()
@@ -297,14 +311,20 @@ def build_github_approval_snapshot(
         blocking_threads = None
 
     base_branch = (pr.get("base") or {}).get("ref") or "main"
-    required_checks, protection_status, protection_read_error = _fetch_required_checks(
+    required_checks, protection_status, protection_diagnostics = _fetch_required_checks(
         owner, repo, base_branch
     )
     protection_source: str | None = None
     protection_read: dict[str, Any] | None = None
     if protection_status == "api_ok":
         protection = {"required_checks": required_checks}
-        protection_source = "branch_protection_api"
+        source = (protection_diagnostics or {}).get("source")
+        protection_source = (
+            str(source)
+            if isinstance(source, str) and source
+            else "repository_ruleset_api"
+        )
+        protection_read = {"source": protection_source}
     elif protection_status == "read_unavailable":
         attestation = resolve_protection_live_attestation(
             comments=comments,
@@ -326,9 +346,9 @@ def build_github_approval_snapshot(
             }
         else:
             protection = {"required_checks": []}
-            protection_read = protection_read_error or {
-                "source": "branch_protection_api",
-                "message": "protection unreadable and no trusted attestation",
+            protection_read = protection_diagnostics or {
+                "source": "repository_ruleset_api",
+                "message": "merge protection unreadable and no trusted attestation",
             }
             if REASON_PROTECTION_READ_UNAVAILABLE not in snapshot_reason_codes:
                 snapshot_reason_codes.append(REASON_PROTECTION_READ_UNAVAILABLE)
@@ -336,7 +356,7 @@ def build_github_approval_snapshot(
                 snapshot_reason_codes.append(REASON_PROTECTION_INCOMPLETE)
     else:
         protection = {"required_checks": []}
-        protection_read = protection_read_error
+        protection_read = protection_diagnostics
         if REASON_PROTECTION_INCOMPLETE not in snapshot_reason_codes:
             snapshot_reason_codes.append(REASON_PROTECTION_INCOMPLETE)
 

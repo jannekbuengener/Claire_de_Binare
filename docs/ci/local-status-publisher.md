@@ -243,7 +243,7 @@ Live required status checks on `main` are the hosted GitHub Checks:
 
 - context / check name: `ci (Unit/Integration + Lint gesammelt)`
 - context / check name: `policy-gate`
-- type: GitHub-hosted Check Runs (Actions, kein hartkodiertes `app_id`)
+- type: GitHub-hosted Check Runs, beide an die offizielle GitHub Actions App gebunden (`app_id=15368`)
 - same-named Commit Status: **not** merge-sufficient
 
 Baselines and governance guards track the live state (`docs/evidence/reports/`,

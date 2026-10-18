@@ -17,6 +17,7 @@ SURQL_FILES = (
     "infrastructure/surrealdb/context_intelligence_v0.surql",
 )
 DEFAULT_BRANCH = "main"
+MAIN_RULESET_ID = 11617228
 BP_BASELINE_REL = Path("docs/evidence/reports/BRANCH_PROTECTION_BASELINE_main.json")
 
 
@@ -78,19 +79,27 @@ def _surreal_commands(repo_root: Path) -> list[list[str]]:
     raise RuntimeError("neither surreal CLI nor Docker available for surreal-validate")
 
 
-def probe_branch_protection_api(
-    repo: str = EXPECTED_REPOSITORY, branch: str = DEFAULT_BRANCH
+def probe_main_ruleset_api(
+    repo: str = EXPECTED_REPOSITORY, ruleset_id: int = MAIN_RULESET_ID
 ) -> bool:
-    """Return True when live branch-protection JSON is readable via gh api."""
+    """Return True when the canonical main-strict repository ruleset is readable."""
     if shutil.which("gh") is None:
         return False
     proc = subprocess.run(
-        ["gh", "api", f"repos/{repo}/branches/{branch}/protection"],
+        ["gh", "api", f"repos/{repo}/rulesets/{ruleset_id}"],
         capture_output=True,
         text=True,
         check=False,
     )
-    return proc.returncode == 0
+    if proc.returncode != 0:
+        return False
+    try:
+        payload = json.loads(proc.stdout)
+    except (json.JSONDecodeError, TypeError):
+        return False
+    # GitHub may omit bypass_actors for read-only callers. Such a response is
+    # permission-redacted and cannot prove the complete merge-governance state.
+    return isinstance(payload, dict) and isinstance(payload.get("bypass_actors"), list)
 
 
 def build_drift_checks_command(
@@ -110,7 +119,7 @@ def build_drift_checks_command(
     Hosts with BP-read PAT keep the live check.
     """
     cmd = [python_exe, "scripts/governance/run_ci_drift_checks.py"]
-    if probe_branch_protection_api(repo, branch):
+    if probe_main_ruleset_api(repo):
         return cmd
 
     baseline = repo_root / BP_BASELINE_REL
@@ -121,18 +130,18 @@ def build_drift_checks_command(
     else:
         offline.write_text("{}\n", encoding="utf-8")
     disclosure = {
-        "check": "branch_protection_drift",
+        "check": "main_ruleset_drift",
         "live_status": "live_unavailable",
         "fallback": "offline_baseline_as_current",
         "baseline": BP_BASELINE_REL.as_posix(),
         "offline_current": offline.name,
         "reason": (
-            "gh api branch protection not readable (typically 403 for non-admin "
-            "integration tokens). Required-contexts drift still runs live against "
-            "workflow files. Live BP verify remains required on hosts that publish "
-            "cdb-local-ci with a PAT that can read protection."
+            "gh api repository ruleset is unavailable or permission-redacted on this "
+            "host (for example missing bypass_actors). Required-contexts drift still "
+            "runs against workflow files. Live `main-strict` ruleset verification "
+            "remains required before merge."
         ),
-        "required_context_contract": "cdb-local-ci",
+        "canonical_ruleset": "main-strict",
     }
     (reports_dir / "branch-protection-live-unavailable.json").write_text(
         json.dumps(disclosure, indent=2) + "\n", encoding="utf-8"

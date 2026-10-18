@@ -149,8 +149,8 @@ def _is_conductor_ready(envelope: dict[str, Any]) -> tuple[bool, list[str]]:
         errors.append("result.phase must be HANDOFF_APPROVAL")
     if result.get("success_decision") != "FINAL_HEAD_READY_FOR_APPROVAL":
         errors.append("result.success_decision must be FINAL_HEAD_READY_FOR_APPROVAL")
-    if result.get("handoff_role") != "cdb_final_head_pr_approval_gate":
-        errors.append("result.handoff_role must be cdb_final_head_pr_approval_gate")
+    if result.get("handoff_role") != "cdb_final_head_merge_executor":
+        errors.append("result.handoff_role must be cdb_final_head_merge_executor")
     block_codes = result.get("block_codes")
     if isinstance(block_codes, list) and block_codes:
         errors.append("result.block_codes must be empty")
@@ -320,6 +320,7 @@ def resolve_final_head_provenance(
     live_head_sha: str,
     live_base_sha: str,
     steward_state: str | None,
+    merge_mode: str | None = None,
     schema: dict[str, Any] | None = None,
     trust_policy: dict[str, Any] | None = None,
     repo_root: Path | None = None,
@@ -331,10 +332,11 @@ def resolve_final_head_provenance(
     base = _normalize_sha(live_base_sha)
     reasons: list[str] = []
     validation_errors: list[str] = []
+    dedicated_freeze_candidate = merge_mode == "dedicated" and steward_state is None
 
     if steward_state == "accepting_slices":
         reasons.append(REASON_ACCEPTING_SLICES)
-    else:
+    elif not dedicated_freeze_candidate:
         steward_reason = _steward_state_reason(steward_state)
         if steward_reason and steward_reason != REASON_ACCEPTING_SLICES:
             reasons.append(steward_reason)
@@ -476,11 +478,14 @@ def resolve_final_head_provenance(
         and REASON_FINAL_HEAD_NOT_FROZEN not in reasons
         and REASON_COMPLETENESS_SUBJECT_MISMATCH not in reasons
         and REASON_FINAL_HEAD_NOT_READY not in reasons
-        and steward_state == "frozen"
+        and (steward_state == "frozen" or dedicated_freeze_candidate)
         and lifecycle_state == "FINAL_HEAD_READY_FOR_APPROVAL"
         and completeness_green
     )
     final_ready = trusted and bound_head == head and bound_base == base
+    resolved_steward_state = (
+        "frozen" if trusted and dedicated_freeze_candidate else steward_state
+    )
 
     if not final_ready and REASON_FINAL_HEAD_NOT_READY not in reasons:
         if REASON_MISSING_FINAL_HEAD_STATE not in reasons:
@@ -489,7 +494,7 @@ def resolve_final_head_provenance(
     return FinalHeadProvenance(
         trusted=trusted,
         final_head_ready_for_approval=final_ready,
-        steward_state=steward_state,
+        steward_state=resolved_steward_state,
         acceptance_lifecycle_state=(
             str(lifecycle_state) if lifecycle_state is not None else None
         ),

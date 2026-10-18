@@ -178,12 +178,12 @@ docs(onboarding): reconcile zero-context developer setup
    the Issue.
 7. Before Final-Head, run `cdb-pr-completeness-review`; only a schema-valid
    `MERGE_CANDIDATE` may proceed. Then `cdb-batch-merge-conductor` freezes,
-   integrates main, runs Full Fast-CI, verifies the hosted Required Checks
-   `ci (Unit/Integration + Lint gesammelt)` + `policy-gate` for the exact-SHA
-   head, and hands off
-   `FINAL_HEAD_READY_FOR_APPROVAL`. PR Reviewer
-   (`cdb_final_head_pr_approval_gate`) APPROVEs the exact head; Merge Agent
-   (`cdb_final_head_merge_executor`) performs regular squash-merge. Never bypass Completeness; never `--admin`.
+   integrates main, runs Full Fast-CI, and verifies the exact-head hosted Required
+   Checks. Before merge, satisfy `docs/MERGE_REVIEW_FEEDBACK_GATE.md` and the live
+   `main-strict` ruleset. No separate GitHub APPROVE provider is required.
+   `cdb_final_head_merge_executor` performs the regular squash-merge. Never bypass
+   Completeness, review feedback, the ruleset, or use `--admin`.
+   Never bypass Completeness.
 
 **PR Title Format:** Same as commit message format.
 **PR Templates:** Dedicated PRs use `.github/pull_request_template.md`; Batch
@@ -222,11 +222,13 @@ Merge contract on `main` (SSOT:
 | `ci (Unit/Integration + Lint gesammelt)` | `ci.yml` | GitHub-hosted Check Run (Actions) |
 | `policy-gate` | `policy-gate.yml` | GitHub-hosted Check Run (Actions) |
 
-Seit Migration #4540 sind genau diese beiden hosted Checks die
-branch-protection-required Merge-Gates auf `main` (`strict: true`, kein festes
-`app_id`). `cdb-local-ci` (Local CI Status Publisher) ist **kein** Required
-Context mehr; er bleibt nur optionaler lokaler Preflight/Diagnose. Verify the
-live required contexts with `gh api`, not this table.
+Seit #4602 erzwingt das aktive Repository-Ruleset `main-strict` genau diese
+beiden hosted Merge-Gates auf `main`. Beide sind an die offizielle GitHub
+Actions Integration (`integration_id=15368`) gebunden;
+`strict_required_status_checks_policy=false` ist Teil des live Ruleset-Canon.
+`cdb-local-ci` (Local CI Status Publisher) ist **kein** Required Context mehr,
+sondern nur optionaler lokaler Preflight/Diagnose. Verify the live ruleset with
+`gh api repos/jannekbuengener/Claire_de_Binare/rulesets/11617228`, not this table.
 
 Inside the CI gate: `ruff check .`, unit/integration tests, and Black on changed
 Python under `services/` and `tests/`. Coverage >= 80% applies when running

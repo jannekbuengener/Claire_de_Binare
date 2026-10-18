@@ -11,7 +11,7 @@ description: >
   Final-Head Preparation Conductor for a MERGE_CANDIDATE PR. Freezes slices,
   integrates main, binds final head/base, delegates Final Validation, verifies
   hosted Required Checks (`ci (Unit/Integration + Lint gesammelt)`, `policy-gate`),
-  and hands off FINAL_HEAD_READY_FOR_APPROVAL to cdb_final_head_pr_approval_gate.
+  and hands off FINAL_HEAD_READY_FOR_APPROVAL to cdb_final_head_merge_executor.
   Does not approve or merge. Never --admin.
 disable-model-invocation: true
 ---
@@ -24,7 +24,7 @@ Orchestration skill of the PR-Acceptance Skill Family v1. Own freeze, main
 integration, final head/base capture, delegation of final checks, and
 required-status readiness for the Final-Head approval pipeline. Success ends at
 `FINAL_HEAD_READY_FOR_APPROVAL` with handoff to
-`cdb_final_head_pr_approval_gate` (Cursor display: PR Reviewer).
+`cdb_final_head_merge_executor` (Cursor display: Merge Agent).
 
 Policy: `config/governance/pr-acceptance-policy.v1.yaml` (`cdb-pr-acceptance-v1`)
 Schema: `docs/contracts/pr_acceptance_skill_family.v1.schema.json`
@@ -40,12 +40,12 @@ Evidence marker: `<!-- cdb-pr-acceptance:v1 -->`
 - Delegation der finalen Prüfungen
 - Required-Status-Verifikation (hosted Checks `ci (Unit/Integration + Lint
   gesammelt)` + `policy-gate`)
-- Handoff `FINAL_HEAD_READY_FOR_APPROVAL` → `cdb_final_head_pr_approval_gate`
+- Handoff `FINAL_HEAD_READY_FOR_APPROVAL` → `cdb_final_head_merge_executor`
 - Deferred closure ledger rows for later `cdb-session-close` (after Merge Agent)
 
 ## Does not own
 
-- GitHub APPROVE (`cdb_final_head_pr_approval_gate` only)
+- GitHub APPROVE (optional/advisory; not required for merge)
 - Regular merge execution (`cdb_final_head_merge_executor` only; that role runs
   `gh pr merge --squash --delete-branch`)
 - Issue closure
@@ -75,7 +75,7 @@ Evidence marker: `<!-- cdb-pr-acceptance:v1 -->`
 3. `FINAL_VALIDATION` — delegate Full Fast-CI, policy-gate mirror, hosted
    Required Checks
 4. `HANDOFF_APPROVAL` — emit `FINAL_HEAD_READY_FOR_APPROVAL` to
-   `cdb_final_head_pr_approval_gate`
+   `cdb_final_head_merge_executor`
 5. `HANDOFF_SESSION_CLOSE` — after Merge Agent live merge only, pass
    `SLICE_DELIVERED` ledger rows to `cdb-session-close`
 
@@ -102,7 +102,7 @@ invalidates the old Completeness bundle and forces a fresh
 13. Re-check head, base, reviews, and required hosted Check Runs immediately
     before handoff.
 14. Set lifecycle to `FINAL_HEAD_READY_FOR_APPROVAL` and hand off to
-    `cdb_final_head_pr_approval_gate`. Do not approve. Do not merge.
+    `cdb_final_head_merge_executor`. Do not approve. Do not merge.
 15. When Merge Agent has live-verified MERGED, hand only ledger rows with
     `SLICE_DELIVERED` to `cdb-session-close`.
 
@@ -133,7 +133,7 @@ Missing technical capability for Final-Head readiness maps to
   after squash-merge (Issue `#4218`); ledger/status lines belong
   **vor dem Freeze** in this PR or later in a `docs-governance` batch
 - capability-based autonomous merge that bypasses
-  PR Reviewer → Merge Agent
+  the live main-strict ruleset / review-feedback gate -> Merge Agent
 
 ## Required envelope fields
 
@@ -152,7 +152,7 @@ Common envelope:
 - `result.block_codes`
 - `result.final_head_ready` (optional boolean)
 - `result.success_decision` — `FINAL_HEAD_READY_FOR_APPROVAL` when ready
-- `result.handoff_role` — `cdb_final_head_pr_approval_gate`
+- `result.handoff_role` — `cdb_final_head_merge_executor`
 - `result.closure_eligible_issues` (optional issue numbers; close only after merge)
 
 ## Handoff
@@ -161,7 +161,7 @@ On Final-Head readiness:
 
 ```text
 decision: FINAL_HEAD_READY_FOR_APPROVAL
-next_role: cdb_final_head_pr_approval_gate
+next_role: cdb_final_head_merge_executor
 ```
 
 After Merge Agent live-verified merge, hand `SLICE_DELIVERED`

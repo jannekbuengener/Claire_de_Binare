@@ -1,154 +1,201 @@
-"""Regression contracts for branch-protection URL comparison."""
+"""Regression contracts for the compatibility-named main ruleset drift checker."""
 
 from __future__ import annotations
 
 from scripts.governance.check_branch_protection_drift import (
+    build_apply_payload,
     collect_drift_paths,
     normalize,
-    normalize_github_repository_url,
 )
 
 
-def _protection_snapshot(
-    *, app_id: int = 4410232, strict: bool = True
+def _ruleset_snapshot(
+    *, integration_id: int = 15368, enforcement: str = "active"
 ) -> dict[str, object]:
     return {
-        "url": "https://api.github.com/repos/jannekbuengener/Claire_de_Binare/branches/main/protection",
-        "required_status_checks": {
-            "url": "https://api.github.com/repos/jannekbuengener/Claire_de_Binare/branches/main/protection/required_status_checks",
-            "contexts_url": "https://api.github.com/repos/jannekbuengener/Claire_de_Binare/branches/main/protection/required_status_checks/contexts",
-            "strict": strict,
-            "checks": [{"context": "cdb-local-ci", "app_id": app_id}],
-        },
-        "required_pull_request_reviews": {
-            "url": "https://api.github.com/repos/jannekbuengener/Claire_de_Binare/branches/main/protection/required_pull_request_reviews",
-            "required_approving_review_count": 0,
-        },
-        "required_signatures": {
-            "url": "https://api.github.com/repos/jannekbuengener/Claire_de_Binare/branches/main/protection/required_signatures",
-            "enabled": False,
-        },
-        "enforce_admins": {
-            "url": "https://api.github.com/repos/jannekbuengener/Claire_de_Binare/branches/main/protection/enforce_admins",
-            "enabled": True,
-        },
-        "allow_force_pushes": {"enabled": False},
-        "allow_deletions": {"enabled": False},
+        "id": 11617228,
+        "name": "main-strict",
+        "target": "branch",
+        "source_type": "Repository",
+        "source": "jannekbuengener/Claire_de_Binare",
+        "enforcement": enforcement,
+        "conditions": {"ref_name": {"exclude": [], "include": ["refs/heads/main"]}},
+        "rules": [
+            {"type": "non_fast_forward"},
+            {
+                "type": "pull_request",
+                "parameters": {
+                    "required_approving_review_count": 0,
+                    "dismiss_stale_reviews_on_push": False,
+                    "required_reviewers": [],
+                    "require_code_owner_review": False,
+                    "require_last_push_approval": False,
+                    "required_review_thread_resolution": False,
+                    "require_extra_approval_for_unattributed_changes": False,
+                    "allowed_merge_methods": ["squash", "rebase"],
+                },
+            },
+            {"type": "deletion"},
+            {"type": "required_linear_history"},
+            {
+                "type": "required_status_checks",
+                "parameters": {
+                    "strict_required_status_checks_policy": False,
+                    "do_not_enforce_on_create": False,
+                    "required_status_checks": [
+                        {
+                            "context": "ci (Unit/Integration + Lint gesammelt)",
+                            "integration_id": integration_id,
+                        },
+                        {"context": "policy-gate", "integration_id": integration_id},
+                    ],
+                },
+            },
+        ],
+        "bypass_actors": [],
+        "current_user_can_bypass": "never",
+        "node_id": "volatile",
+        "created_at": "2026-01-01T00:00:00Z",
+        "updated_at": "2026-10-18T00:00:00Z",
+        "_links": {"self": {"href": "https://api.github.com/example"}},
     }
 
 
-def test_github_repository_url_owner_and_repo_casing_is_equivalent() -> None:
-    baseline = _protection_snapshot()
-    current = _protection_snapshot()
-    current["url"] = str(current["url"]).replace("Claire_de_Binare", "claire_de_binare")
-    checks = current["required_status_checks"]
-    assert isinstance(checks, dict)
-    checks["url"] = str(checks["url"]).replace("Claire_de_Binare", "claire_de_binare")
-    checks["contexts_url"] = str(checks["contexts_url"]).replace(
-        "Claire_de_Binare", "claire_de_binare"
-    )
-    reviews = current["required_pull_request_reviews"]
-    assert isinstance(reviews, dict)
-    reviews["url"] = str(reviews["url"]).replace("Claire_de_Binare", "claire_de_binare")
-    signatures = current["required_signatures"]
-    assert isinstance(signatures, dict)
-    signatures["url"] = str(signatures["url"]).replace(
-        "Claire_de_Binare", "claire_de_binare"
-    )
-    admins = current["enforce_admins"]
-    assert isinstance(admins, dict)
-    admins["url"] = str(admins["url"]).replace("Claire_de_Binare", "claire_de_binare")
-
+def test_ruleset_normalization_ignores_volatile_metadata_and_rule_order() -> None:
+    baseline = _ruleset_snapshot()
+    current = _ruleset_snapshot()
+    current["updated_at"] = "later"
+    current["node_id"] = "different"
+    current["rules"] = list(reversed(current["rules"]))
     assert collect_drift_paths(normalize(baseline), normalize(current)) == []
 
 
-def test_normalization_is_limited_to_standard_github_repository_urls() -> None:
-    assert (
-        normalize_github_repository_url(
-            "https://api.github.com/repos/Owner/Repository/branches/main/protection"
-        )
-        == "https://api.github.com/repos/owner/repository/branches/main/protection"
-    )
-    assert normalize_github_repository_url("https://example.test/Owner/Repository") == (
-        "https://example.test/Owner/Repository"
-    )
-    assert normalize_github_repository_url("https://api.github.com/users/Owner") == (
-        "https://api.github.com/users/Owner"
+def test_ruleset_required_check_integration_drift_is_not_masked() -> None:
+    assert collect_drift_paths(
+        normalize(_ruleset_snapshot()), normalize(_ruleset_snapshot(integration_id=7))
     )
 
 
-def test_url_shaped_required_check_context_remains_case_sensitive() -> None:
-    baseline = _protection_snapshot()
-    current = _protection_snapshot()
-    baseline_checks = baseline["required_status_checks"]
-    current_checks = current["required_status_checks"]
-    assert isinstance(baseline_checks, dict)
-    assert isinstance(current_checks, dict)
-    baseline_checks["checks"] = [
-        {
-            "context": "https://api.github.com/repos/Owner/Repository/check",
-            "app_id": 4410232,
-        }
-    ]
-    current_checks["checks"] = [
-        {
-            "context": "https://api.github.com/repos/owner/repository/check",
-            "app_id": 4410232,
-        }
-    ]
-
-    assert collect_drift_paths(normalize(baseline), normalize(current)) == [
-        "required_status_checks.checks[0].context"
-    ]
-
-
-def test_url_shaped_required_status_context_list_remains_case_sensitive() -> None:
-    baseline = {
-        "required_status_checks": {
-            "contexts": ["https://api.github.com/repos/Owner/Repository/check"]
-        }
-    }
-    current = {
-        "required_status_checks": {
-            "contexts": ["https://api.github.com/repos/owner/repository/check"]
-        }
-    }
-
-    assert collect_drift_paths(normalize(baseline), normalize(current)) == [
-        "required_status_checks.contexts[0]"
-    ]
-
-
-def test_material_required_check_app_id_drift_is_not_masked() -> None:
+def test_ruleset_enforcement_drift_is_not_masked() -> None:
     assert collect_drift_paths(
-        normalize(_protection_snapshot()), normalize(_protection_snapshot(app_id=7))
-    ) == ["required_status_checks.checks[0].app_id"]
+        normalize(_ruleset_snapshot()),
+        normalize(_ruleset_snapshot(enforcement="disabled")),
+    ) == ["enforcement"]
 
 
-def test_material_required_check_context_drift_is_not_masked() -> None:
-    current = _protection_snapshot()
-    checks = current["required_status_checks"]
-    assert isinstance(checks, dict)
-    checks["checks"] = [{"context": "different-check", "app_id": 4410232}]
+def test_ruleset_apply_payload_excludes_read_only_fields() -> None:
+    payload = build_apply_payload(_ruleset_snapshot())
+    assert payload["name"] == "main-strict"
+    assert payload["enforcement"] == "active"
+    assert payload["bypass_actors"] == []
+    assert "id" not in payload
+    assert "source" not in payload
+    assert "current_user_can_bypass" not in payload
+    assert "updated_at" not in payload
+    assert any(rule["type"] == "required_status_checks" for rule in payload["rules"])
 
-    assert collect_drift_paths(
-        normalize(_protection_snapshot()), normalize(current)
-    ) == ["required_status_checks.checks[0].context"]
+
+def test_ruleset_checker_creates_output_parent_directories(
+    tmp_path, monkeypatch
+) -> None:
+    import json
+    import sys
+    import scripts.governance.check_branch_protection_drift as drift
+
+    baseline = tmp_path / "baseline.json"
+    current = tmp_path / "current.json"
+    payload = _ruleset_snapshot()
+    baseline.write_text(json.dumps(drift.normalize(payload)), encoding="utf-8")
+    current.write_text(json.dumps(payload), encoding="utf-8")
+    report = tmp_path / "nested" / "report.md"
+    apply_out = tmp_path / "nested" / "apply.json"
+    monkeypatch.setattr(
+        sys,
+        "argv",
+        [
+            "check_branch_protection_drift.py",
+            "--baseline",
+            str(baseline),
+            "--current-json",
+            str(current),
+            "--report",
+            str(report),
+            "--apply-payload-out",
+            str(apply_out),
+        ],
+    )
+    assert drift.main() == 0
+    assert report.exists()
+    assert apply_out.exists()
 
 
-def test_material_strict_force_push_and_delete_drift_is_not_masked() -> None:
-    current = _protection_snapshot(strict=False)
-    admins = current["enforce_admins"]
-    assert isinstance(admins, dict)
-    current["enforce_admins"] = {**admins, "enabled": False}
-    current["allow_force_pushes"] = {"enabled": True}
-    current["allow_deletions"] = {"enabled": True}
+def test_live_ruleset_missing_bypass_actors_fails_closed_as_incomplete(
+    tmp_path, monkeypatch
+) -> None:
+    import json
+    import sys
+    import scripts.governance.check_branch_protection_drift as drift
 
-    assert collect_drift_paths(
-        normalize(_protection_snapshot()), normalize(current)
-    ) == [
-        "allow_deletions.enabled",
-        "allow_force_pushes.enabled",
-        "enforce_admins.enabled",
-        "required_status_checks.strict",
-    ]
+    baseline = tmp_path / "baseline.json"
+    baseline.write_text(
+        json.dumps(drift.normalize(_ruleset_snapshot())), encoding="utf-8"
+    )
+    report = tmp_path / "report.md"
+    apply_out = tmp_path / "apply.json"
+
+    redacted = _ruleset_snapshot()
+    redacted.pop("bypass_actors")
+    monkeypatch.setattr(drift, "run_gh_api", lambda *a, **k: json.dumps(redacted))
+    monkeypatch.setattr(
+        sys,
+        "argv",
+        [
+            "check_branch_protection_drift.py",
+            "--baseline",
+            str(baseline),
+            "--report",
+            str(report),
+            "--apply-payload-out",
+            str(apply_out),
+        ],
+    )
+
+    assert drift.main() == 3
+    assert "permission-redacted" in report.read_text(encoding="utf-8").lower()
+
+
+def test_non_main_branch_is_rejected_before_ruleset_read(tmp_path, monkeypatch) -> None:
+    import json
+    import sys
+    import scripts.governance.check_branch_protection_drift as drift
+
+    baseline = tmp_path / "baseline.json"
+    baseline.write_text(json.dumps(_ruleset_snapshot()), encoding="utf-8")
+    report = tmp_path / "report.md"
+    apply_out = tmp_path / "apply.json"
+    called = False
+
+    def _unexpected(*args, **kwargs):
+        nonlocal called
+        called = True
+        return "{}"
+
+    monkeypatch.setattr(drift, "run_gh_api", _unexpected)
+    monkeypatch.setattr(
+        sys,
+        "argv",
+        [
+            "check_branch_protection_drift.py",
+            "--branch",
+            "feature/test",
+            "--baseline",
+            str(baseline),
+            "--report",
+            str(report),
+            "--apply-payload-out",
+            str(apply_out),
+        ],
+    )
+
+    assert drift.main() == 2
+    assert called is False

@@ -393,15 +393,15 @@ LR remains NO-GO. Board stage `trade-capable` is not Live-Go. No Echtgeld-Go.
 - **Primary Source:** [`knowledge/governance/CDB_AGENT_POLICY.md`](../../knowledge/governance/CDB_AGENT_POLICY.md)
 
 ### Required Checks
-- **Definition:** The branch-protection-enforced status checks that must pass before a PR can merge.
-- **CDB Context:** Seit Migration #4540 sind auf `main` genau zwei hosted Required Checks merge-relevant: `ci (Unit/Integration + Lint gesammelt)` (Hosted GitHub Actions Check Run) und `policy-gate` — beide exakter PR head SHA, `strict: true`, kein festes `app_id`. `cdb-local-ci` (lokaler Fast-CI-Publisher) ist seit #4540 **kein** Required Context mehr, sondern nur noch optionaler Preflight/Diagnose. Verify live with `gh api`, not this glossary entry.
-- **Authority Boundary:** Required checks are enforced by branch protection. No merge bypass possible; `--admin` is never a substitute for a missing/red hosted Required Check.
+- **Definition:** The repository-ruleset-enforced status checks that must pass before a PR can merge.
+- **CDB Context:** Auf `main` sind genau zwei hosted Required Checks merge-relevant: `ci (Unit/Integration + Lint gesammelt)` und `policy-gate`. Das aktive `main-strict` Ruleset bindet beide an GitHub Actions (`integration_id=15368`) und setzt `strict_required_status_checks_policy=false`. `cdb-local-ci` bleibt nur optionaler Preflight/Diagnose. Verify live via Ruleset API, not this glossary entry.
+- **Authority Boundary:** Required checks are enforced by the active repository ruleset. No merge bypass is allowed; `--admin` is never a substitute for a missing/red hosted Required Check.
 - **Primary Source:** [`docs/runbooks/merge_policy_ci_gate.md`](../runbooks/merge_policy_ci_gate.md)
 
 ### policy-gate
 - **Definition:** A Hosted GitHub Actions workflow that validates PR compliance with CDB governance policies.
-- **CDB Context:** Runs on every PR. Since migration #4540 it is one of the two branch-protection-required merge contexts on `main` (together with `ci (Unit/Integration + Lint gesammelt)`).
-- **Authority Boundary:** `policy-gate` findings should be treated as a hard local gate before merge; a green hosted `policy-gate` Check Run on the exact head is a branch-protection-required merge condition.
+- **CDB Context:** Runs on every PR and is one of the two `main-strict` ruleset-required merge checks on `main` (together with `ci (Unit/Integration + Lint gesammelt)`).
+- **Authority Boundary:** `policy-gate` findings are a hard merge gate; a green hosted `policy-gate` Check Run on the exact head from the configured GitHub Actions integration is required.
 - **Primary Source:** [`docs/runbooks/merge_policy_ci_gate.md`](../runbooks/merge_policy_ci_gate.md)
 
 ### CI

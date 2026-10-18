@@ -1,7 +1,7 @@
 # .github Control Plane
 
 **Repo:** Claire de Binare  
-**Stand:** 2026-07-16  
+**Stand:** 2026-10-18 (#4600 Required-Check App-Binding Canon)
 **Workflow-Bestand:** 57 YAML-Dateien plus `labels.json`  
 **LR-Verdict:** NO-GO; Workflow-Hygiene ändert keine Live-Readiness.
 
@@ -41,7 +41,8 @@ SSOT: [`docs/runbooks/merge_policy_ci_gate.md`](../docs/runbooks/merge_policy_ci
 Seit Migration #4540 sind genau zwei hosted Required Checks auf `main`
 merge-relevant: `ci (Unit/Integration + Lint gesammelt)` aus `ci.yml` und
 `policy-gate` aus `policy-gate.yml` (GitHub-hosted Check Runs, exakter
-PR-Head-SHA) — live verifizieren via `gh api`, nicht aus dieser Datei ableiten.
+PR-Head-SHA), beide an die offizielle GitHub Actions App (`app_id=15368`)
+gebunden — live verifizieren via `gh api`, nicht aus dieser Datei ableiten.
 
 `cdb-local-ci` (lokaler Fast-CI-Publisher) ist seit #4540 **kein** Required
 Context mehr; er bleibt nur als optionaler lokaler Preflight-Publish erhalten.

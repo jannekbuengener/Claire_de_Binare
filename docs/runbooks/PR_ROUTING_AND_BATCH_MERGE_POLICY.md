@@ -96,7 +96,7 @@ Genau ein kompatibler PR wird gewählt. Mehrere Kandidaten führen zu HOLD.
 
 ## 6. Marker und Ledger
 
-Batch-PRs enthalten exakt einen Marker:
+Batch-PRs enthalten exakt einen Marker. Markerlose offene PRs werden vom GitHub-Inventar kanonisch als `merge_mode=dedicated` klassifiziert. Sobald ein `cdb-batch-pr:*`-Marker vorhanden ist, muss er valide und unterstützt sein; Parsefehler dürfen nicht als Dedicated-Fallback interpretiert werden:
 
 ```text
 <!-- cdb-batch-pr:v1
@@ -214,32 +214,21 @@ danach Final-Head Preparation durch `cdb-batch-merge-conductor`.
 
 ## 10. Finaler Merge-Head
 
-Pipeline-SSOT: `docs/contracts/final_head_merge_pipeline.v1.md`.
+Pipeline-SSOT: `docs/contracts/final_head_merge_pipeline.v1.md`. Live GitHub enforcement: `docs/BRANCH_PROTECTION.md`.
 
 1. `cdb-pr-completeness-review` ausführen; nur bei `MERGE_CANDIDATE` weiter.
-   `MERGE_CANDIDATE` allein autorisiert keinen Merge.
 2. `cdb-batch-merge-conductor`: PR für neue Slices einfrieren (`FROZEN`).
 3. Verlinkte Issues, Ledger und Restunsicherheiten prüfen.
-4. Aktuelles `main` integrieren und Base-SHA binden; bei Drift Completeness
-   erneut.
+4. Aktuelles `main` integrieren und Base-SHA binden; bei Drift Completeness erneut.
 5. Kombinierten Diff reviewen.
 6. Vollständige Fast-CI auf exakt dem finalen Head.
-7. Policy-Gate-Mirror und Publisher-Dry-run.
-8. Hosted Required Checks `ci (Unit/Integration + Lint gesammelt)` + `policy-gate`
-   via `gh api ./check-runs` auf exakt diesem SHA verifizieren.
-9. Head-/Base-Drift erneut prüfen; Drift invalidiert alle Final-Evidence und
-   jedes Approval.
-10. Conductor endet bei `FINAL_HEAD_READY_FOR_APPROVAL` und übergibt an
-    `cdb_final_head_pr_approval_gate` (PR Reviewer). Conductor mergt nicht.
-11. PR Reviewer: GitHub APPROVE gebunden an exakten finalen `HEAD_SHA`.
-12. Merge Agent (`cdb_final_head_merge_executor`): regulärer Squash-Merge
-    (`gh pr merge --squash --delete-branch`) nach Re-Verify; nie `--admin`.
-13. Merge-SHA auf `main` verifizieren und nur `SLICE_DELIVERED` Issues schließen
-    via `cdb-session-close`.
+7. Hosted Required Checks `ci (Unit/Integration + Lint gesammelt)` + `policy-gate` via `gh api` auf exakt diesem SHA verifizieren.
+8. Review-Feedback-Gate aus `docs/MERGE_REVIEW_FEEDBACK_GATE.md`: `unreviewed=0`, `unresolved_threads=0`, kein blocking `CHANGES_REQUESTED`.
+9. Live `main-strict` Ruleset re-verifizieren; kein separater GitHub-APPROVE-Provider ist merge-pflichtig.
+10. Merge Agent (`cdb_final_head_merge_executor`): regulärer Squash-Merge (`gh pr merge --squash --delete-branch`) nach Re-Verify; nie `--admin`.
+11. Merge-SHA auf `main` verifizieren und nur `SLICE_DELIVERED` Issues via `cdb-session-close` schließen.
 
-Keine stale Slice-Evidence, kein Zwischenstands-Publish und kein Fake-Green.
-Kein Bypass des Completeness-Gates. Kein capability-based Autonomous Merge,
-der PR Reviewer → Merge Agent umgeht.
+Keine stale Slice-Evidence, kein Zwischenstands-Publish und kein Fake-Green. Kein Bypass des Completeness-, Ruleset- oder Review-Feedback-Gates.
 
 ## 11. Machine Policy und Validatoren
 

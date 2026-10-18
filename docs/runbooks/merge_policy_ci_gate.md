@@ -24,8 +24,8 @@ Transport-`steward_state=merge_candidate` startet die Acceptance-Phase
 `COMPLETENESS_REVIEW` (`cdb-pr-completeness-review`). Nur ein schema-valides
 Completeness-Verdikt `MERGE_CANDIDATE` darf in die Conductor-Phase
 (`cdb-batch-merge-conductor`: Freeze → Main-Integration → Final Validation →
-`FINAL_HEAD_READY_FOR_APPROVAL`). Conductor mergt nicht. Danach folgen
-HEAD-gebundenes APPROVE durch `cdb_final_head_pr_approval_gate` und regulärer
+`FINAL_HEAD_READY_FOR_APPROVAL`). Conductor mergt nicht. Danach folgt das
+provider-unabhängige Ruleset-/Review-Feedback-Gate und anschließend der reguläre
 Merge durch `cdb_final_head_merge_executor`
 (SSOT: `docs/contracts/final_head_merge_pipeline.v1.md`). Slice-Evidence darf
 nie als Final-Head-Evidence wiederverwendet werden. Der finale Nachweis bindet
@@ -45,20 +45,22 @@ Contexts (Branch Protection, live via `gh api`):
 Seit #4540 ist `cdb-local-ci` **kein** Required Context mehr. Der lokale CI
 Status Publisher und sein App-gebundener Check Run bleiben als optionaler
 Developer-Preflight/Diagnose-Pfad bestehen, sind aber nicht
-branch-protection-required und autorisieren keinen Merge. `ci.yml` startet
+main-strict-ruleset-required und autorisieren keinen Merge. `ci.yml` startet
 ab #4540 wieder auf jedem `pull_request` (Target `main`) und liefert den
 Required Check `ci (Unit/Integration + Lint gesammelt)` auf exaktem Head.
 
-Branch Protection (live, Zielbild #4540):
+Repository Ruleset (live, Canon #4600):
 
 ```powershell
-gh api repos/<owner>/<repo>/branches/main/protection
+gh api repos/<owner>/<repo>/rulesets/11617228
 ```
 
-erwartet `required_status_checks.strict: true` und
-`required_status_checks.checks` mit den beiden hosted Checks
-`ci (Unit/Integration + Lint gesammelt)` und `policy-gate`, **ohne** festes
-`app_id` (Hosted GitHub Actions App, keine lokale App-Bindung).
+Erwartet aktives Ruleset `main-strict` für `refs/heads/main`: PR-Pflicht,
+`required_approving_review_count=0`, lineare Historie, Delete/Non-Fast-Forward
+blockiert, keine Bypass-Akteure, Merge-Methoden squash+rebase und exakt die
+beiden Required Checks `ci (Unit/Integration + Lint gesammelt)` + `policy-gate`,
+beide an GitHub Actions `integration_id=15368` gebunden. Classic Branch
+Protection ist nicht parallel aktiv. Siehe `docs/BRANCH_PROTECTION.md`.
 
 Lint/Format (orchestrator stage `lint`, Issue #4206): Black und Ruff kommen
 ausschließlich aus dem Pin in `requirements-dev.txt`. Black läuft als
@@ -100,32 +102,19 @@ Ersatzcheck.
    optionale `cdb-local-ci`-Preflight laufen soll.
 5. Erst nach erfolgreichen aktuellen hosted Required Checks mergen.
 
-## Final-Head Approval and Merge Pipeline
+## Final-Head Ruleset and Merge Pipeline
 
-There is exactly one canonical final merge executor:
-`cdb_final_head_merge_executor` (Cursor display: Merge Agent).
-Capability alone does **not** authorize any session to bypass
-PR Reviewer → Merge Agent.
+There is exactly one canonical final merge executor: `cdb_final_head_merge_executor`.
 
 Required sequence after Completeness `MERGE_CANDIDATE`:
 
-1. `cdb-batch-merge-conductor` prepares Final Head (freeze, integrate main,
-   Full Fast-CI) and stops at `FINAL_HEAD_READY_FOR_APPROVAL`. Hosted
-   Required Checks (`ci (Unit/Integration + Lint gesammelt)`, `policy-gate`)
-   müssen auf dem finalen Head grün sein.
-2. `cdb_final_head_pr_approval_gate` (PR Reviewer) issues GitHub APPROVE
-   bound to the exact final `HEAD_SHA` (Risk LOW, no blockers). Cannot merge.
-3. `cdb_final_head_merge_executor` re-verifies approval HEAD binding, drift,
-   required Checks, reviews, and mergeability, then runs
-   `gh pr merge <PR> --squash --delete-branch`. Cannot approve. Never `--admin`.
-4. `cdb-session-close` verifies live MERGED and closes only eligible
-   `SLICE_DELIVERED` issues.
+1. `cdb-batch-merge-conductor` prepares Final Head and stops at the compatibility token `FINAL_HEAD_READY_FOR_APPROVAL`; hosted Required Checks must be green on the final head.
+2. Apply `docs/MERGE_REVIEW_FEEDBACK_GATE.md`: all feedback seen/dispositioned, `unreviewed=0`, `unresolved_threads=0`, no blocking review.
+3. Re-read live `main-strict` ruleset and verify the PR satisfies it. No separate GitHub APPROVE provider is required.
+4. `cdb_final_head_merge_executor` re-verifies head/base, required checks, ruleset, feedback, and mergeability, then runs `gh pr merge <PR> --squash --delete-branch`. Never `--admin`.
+5. `cdb-session-close` verifies live MERGED and closes only eligible `SLICE_DELIVERED` issues.
 
-Cloud Reviewer/Merger are repo-only; they consume hosted Check Run evidence
-and must not require local `cdb_context` or fabricate CI.
-
-`--admin` is **never** a bypass for missing/red/stale required checks.
-Fake-green claims and merging an untested head are forbidden.
+Optional approval tooling remains available as advisory evidence, but provider quota/auth failure is not a merge blocker when the canonical ruleset and review-feedback gates pass.
 
 ### Honest handoff when Final-Head readiness is missing
 
@@ -166,7 +155,7 @@ the merged/deleted one.
 
 ## Dokumentationspflicht
 
-Änderungen an Check-Namen, Triggern oder Branch Protection müssen gemeinsam in
+Änderungen an Check-Namen, Triggern oder Ruleset/Required-Check-Policy müssen gemeinsam in
 `docs/ci/index.md`, diesem Runbook, dem Workflow-Register und den
 Required-Check-Contract-Tests aktualisiert werden.
 
@@ -179,19 +168,25 @@ Publisher (siehe [`docs/ci/local-status-publisher.md`](../ci/local-status-publis
   die hosted Required Checks `ci (Unit/Integration + Lint gesammelt)` und
   `policy-gate`.
 - Der App-gebundene `cdb-local-ci`-Check Run ist optionaler
-  Developer-Preflight/Diagnose und nicht branch-protection-required.
-- Branch Protection (Zielbild): contexts `ci (Unit/Integration + Lint
-  gesammelt)` + `policy-gate`, `checks[]` ohne festes `app_id`, `strict: true`.
-- Dirty worktree ⇒ lokale Evidence `BLOCKED` und kein Preflight-Publish.
+  Developer-Preflight/Diagnose und nicht main-strict-ruleset-required.
+- Ruleset (Canon): active `main-strict` requires `ci (Unit/Integration + Lint gesammelt)` + `policy-gate`, both `integration_id=15368` (`github-actions`); classic Branch Protection is absent.
+- Dirty worktree -> lokale Evidence `BLOCKED` und kein Preflight-Publish.
 - Publish-Pfad erzwingt Policy-Gate-Mirror (Parität zu
   `.github/workflows/policy-gate.yml`).
 - Kein Fake-Green: dirty, stale, SHA-Mismatch, Hash-Mismatch, required SKIPPED,
   Anti-Replay, fehlende PR-Nummer oder Policy-Gate-Fails blockieren Publish.
 - Lokales CodeQL/SARIF ersetzt nicht den GitHub Security-Tab.
 
-Live Branch-Protection-Hinweis (reverify with `gh api`):
-`required_status_checks.checks` = beide hosted Contexts, `strict: true`,
-kein `app_id` gesetzt.
+Live Ruleset verification (reverify with `gh api`):
+
+```bash
+gh api repos/jannekbuengener/Claire_de_Binare/rulesets/11617228
+```
+
+Expected `main-strict` shape: `rules[].type=required_status_checks` contains both
+hosted contexts with `integration_id=15368`; the pull-request rule has
+`required_approving_review_count=0`; `bypass_actors=[]`; enforcement is `active`.
+Classic `/branches/main/protection` is intentionally absent.
 
 Windows front door (lokale Preflight-Ebene):
 
@@ -203,3 +198,5 @@ python -m ci.publisher publish `
   --commit-sha <exact_pr_head> `
   --pr-number <n>
 ```
+
+`--admin` is **never** a bypass for Ruleset, Required-Check, or review-feedback failures.

@@ -11,6 +11,7 @@ pytestmark = pytest.mark.unit
 
 REPO_ROOT = Path(__file__).resolve().parents[3]
 BASELINE_BP = REPO_ROOT / "docs/evidence/reports/BRANCH_PROTECTION_BASELINE_main.json"
+GITHUB_ACTIONS_INTEGRATION_ID = 15368
 BASELINE_CTX = (
     REPO_ROOT / "docs/evidence/reports/REQUIRED_CHECK_CONTEXTS_BASELINE_main.json"
 )
@@ -23,25 +24,34 @@ PERMISSION_DOC_MARKERS = (
 )
 
 
+def _ruleset_rule(bp: dict[str, object], rule_type: str) -> dict[str, object]:
+    matches = [rule for rule in bp["rules"] if rule.get("type") == rule_type]
+    assert len(matches) == 1
+    return matches[0]
+
+
 def test_branch_protection_baselines_reflect_hosted_required_checks():
     bp = json.loads(BASELINE_BP.read_text(encoding="utf-8"))
-    checks = bp["required_status_checks"]["checks"]
+    required = _ruleset_rule(bp, "required_status_checks")["parameters"]
+    checks = required["required_status_checks"]
     assert checks == [
-        {"context": "ci (Unit/Integration + Lint gesammelt)"},
-        {"context": "policy-gate"},
+        {
+            "context": "ci (Unit/Integration + Lint gesammelt)",
+            "integration_id": GITHUB_ACTIONS_INTEGRATION_ID,
+        },
+        {"context": "policy-gate", "integration_id": GITHUB_ACTIONS_INTEGRATION_ID},
     ]
-    assert bp["required_status_checks"]["contexts"] == [
-        "ci (Unit/Integration + Lint gesammelt)",
-        "policy-gate",
-    ]
-    assert bp["required_status_checks"]["strict"] is True
+    assert required["strict_required_status_checks_policy"] is False
+
+    pull_request = _ruleset_rule(bp, "pull_request")["parameters"]
+    assert pull_request["required_approving_review_count"] == 0
 
     ctx = json.loads(BASELINE_CTX.read_text(encoding="utf-8"))
     assert sorted(ctx["contexts"]) == [
         "ci (Unit/Integration + Lint gesammelt)",
         "policy-gate",
     ]
-    assert ctx.get("required_app_id") is None
+    assert ctx.get("required_app_id") == GITHUB_ACTIONS_INTEGRATION_ID
     assert ctx.get("check_run_contexts") == []
 
 
@@ -109,9 +119,10 @@ def test_publisher_has_no_branch_protection_write_api():
 
 
 def test_required_checks_are_hosted_not_local():
-    # Post-#4540: required contexts are the two hosted job names, not cdb-local-ci.
+    # Post-#4602: main-strict requires the two hosted job names, not cdb-local-ci.
     bp = json.loads(BASELINE_BP.read_text(encoding="utf-8"))
-    contexts = bp["required_status_checks"]["contexts"]
+    required = _ruleset_rule(bp, "required_status_checks")["parameters"]
+    contexts = [item["context"] for item in required["required_status_checks"]]
     assert "ci (Unit/Integration + Lint gesammelt)" in contexts
     assert "policy-gate" in contexts
     assert "cdb-local-ci" not in contexts
