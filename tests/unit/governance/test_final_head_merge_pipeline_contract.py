@@ -21,6 +21,7 @@ MERGE_GATE = ROOT / "docs" / "runbooks" / "merge_policy_ci_gate.md"
 CI_README = ROOT / "ci" / "README.md"
 CHECKS_RULE = ROOT / ".cursor" / "rules" / "CDB-Checks-and-Merge-Rule.mdc"
 CONTROL_PLANE = ROOT / "knowledge" / "governance" / "CDB_AGENT_CONTROL_PLANE.md"
+PLAN_GO_RULE = ROOT / ".cursor" / "rules" / "CDB-Plan-GO-Autonomy-Rule.mdc"
 
 
 def test_single_merge_executor_and_split_roles() -> None:
@@ -133,3 +134,12 @@ def test_control_plane_authority_matrix_matches_ruleset_merge_gate() -> None:
     assert "Ruleset" in control_plane
     assert "Review-Feedback" in control_plane
     assert "optional/advisory" in control_plane.lower()
+
+
+def test_plan_go_autonomy_rule_matches_ruleset_merge_gate() -> None:
+    rule = PLAN_GO_RULE.read_text(encoding="utf-8")
+    assert "HEAD-bound APPROVE from `cdb_final_head_pr_approval_gate`" not in rule
+    assert "PR Reviewer" not in rule or "optional" in rule.lower()
+    assert "main-strict" in rule
+    assert "review-feedback" in rule.lower() or "review feedback" in rule.lower()
+    assert "cdb_final_head_merge_executor" in rule
