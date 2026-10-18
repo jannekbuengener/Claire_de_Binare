@@ -512,10 +512,7 @@ def test_probe_timeout_returns_fail_closed_error_without_traceback(
     assert isinstance(error, ProtectionReadError)
     assert error.http_status is None
     assert error.gh_exit_code == GH_TIMEOUT_EXIT_CODE
-    assert (
-        error.endpoint
-        == "repos/jannekbuengener/Claire_de_Binare/branches/main/protection"
-    )
+    assert error.endpoint == "repos/jannekbuengener/Claire_de_Binare/rulesets/11617228"
     assert "timed out" in error.message.lower()
     assert "30" in error.message
     assert error.hint
@@ -701,3 +698,43 @@ def test_small_future_skew_attestation_resolves_at_consumer() -> None:
         )
     assert resolved is not None
     assert resolved.comment_id == 7
+
+
+@pytest.mark.unit
+def test_parse_required_checks_from_main_strict_ruleset() -> None:
+    payload = json.loads(
+        (
+            REPO_ROOT / "docs/evidence/reports/BRANCH_PROTECTION_BASELINE_main.json"
+        ).read_text(encoding="utf-8")
+    )
+    parsed = parse_required_checks_from_protection_payload(payload)
+    assert parsed == (
+        [
+            {
+                "name": "ci (Unit/Integration + Lint gesammelt)",
+                "app_id": 15368,
+                "mechanism": "check_run",
+            },
+            {"name": "policy-gate", "app_id": 15368, "mechanism": "check_run"},
+        ],
+        False,
+    )
+
+
+@pytest.mark.unit
+def test_build_live_envelope_marks_ruleset_source() -> None:
+    payload = json.loads(
+        (
+            REPO_ROOT / "docs/evidence/reports/BRANCH_PROTECTION_BASELINE_main.json"
+        ).read_text(encoding="utf-8")
+    )
+    envelope = build_protection_live_envelope(
+        repository="jannekbuengener/Claire_de_Binare",
+        base_ref="main",
+        base_sha="a" * 40,
+        protection_payload=payload,
+        observed_at="2026-10-18T00:00:00Z",
+    )
+    assert envelope["protection"]["source"] == "repository_ruleset_api"
+    assert envelope["protection"]["strict"] is False
+    assert envelope["protection"]["required_checks"][0]["app_id"] == 15368

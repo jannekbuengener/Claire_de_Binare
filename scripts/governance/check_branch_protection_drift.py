@@ -410,6 +410,14 @@ Safety note: this checker is read-only and does not run apply commands.
 def main() -> int:
     args = parse_args()
 
+    if args.branch != DEFAULT_BRANCH:
+        print(
+            "ERROR: this checker is bound to the canonical main-strict ruleset; "
+            f"unsupported branch: {args.branch}",
+            file=sys.stderr,
+        )
+        return 2
+
     baseline_path = Path(args.baseline)
     report_path = Path(args.report)
     apply_payload_path = Path(args.apply_payload_out)

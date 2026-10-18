@@ -80,7 +80,7 @@ def publish_protection_live_attestation(
         detail = read_error.to_dict() if read_error else {}
         raise ApprovalError(
             "PROTECTION_ATTESTATION_READ_FAILED",
-            "publisher cannot read live branch protection: "
+            "publisher cannot read live repository ruleset: "
             + json.dumps(detail, sort_keys=True),
         )
 

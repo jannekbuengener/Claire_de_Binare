@@ -108,28 +108,27 @@ are documented here. They do not block merge.
 When a quarantined test is fixed, remove it from this table and add it
 to the required CI check suite.
 
-## Branch Protection Settings (verify live, do not trust this table alone)
+## Main Ruleset Settings (verify live, do not trust this table alone)
 
 Live lookup (authoritative; reverify before relying on any value below):
 
 ```bash
-gh api repos/jannekbuengener/Claire_de_Binare/branches/main/protection
+gh api repos/jannekbuengener/Claire_de_Binare/rulesets/11617228
 ```
 
 | Setting | Last-known live value | Purpose |
 |---------|-------|---------|
-| `required_status_checks.checks` | `[{"context":"ci (Unit/Integration + Lint gesammelt)","app_id":15368},{"context":"policy-gate","app_id":15368}]` | Merge-relevant required contexts on `main`, bound to the official GitHub Actions App |
-| `required_status_checks.strict` | `true` | Branch must be up-to-date |
-| `enforce_admins` | `true` | Admins also bound by checks |
-| `required_conversation_resolution` | `false` | Verify live — do not assume `true` |
-| `allow_force_pushes` | `false` | Force-push remains disabled on `main` |
-| `required_approving_review_count` | `0` | No fixed approving-review count |
-| `require_code_owner_reviews` | `false` | Disabled to avoid `.github/CODEOWNERS` self-deadlock in solo-maintainer mode |
-| `dismiss_stale_reviews` | `true` | Prior review state is invalidated after new pushes |
-| `required_linear_history` | `true` | Merge commits are disallowed on `main` |
-| `allow_deletions` | `false` | Cannot delete main |
+| `rules[required_status_checks].parameters.required_status_checks` | `[{"context":"ci (Unit/Integration + Lint gesammelt)","integration_id":15368},{"context":"policy-gate","integration_id":15368}]` | Merge-relevant required contexts on `main`, bound to the official GitHub Actions App |
+| `rules[required_status_checks].parameters.strict_required_status_checks_policy` | `false` | The ruleset does not require the branch to be current with `main` solely through this flag |
+| `rules[pull_request].parameters.required_approving_review_count` | `0` | No separate approving review is required by the live ruleset |
+| `rules[pull_request].parameters.required_review_thread_resolution` | `false` | GitHub does not enforce thread resolution; the repo review-feedback gate still fails closed on unresolved blocking feedback |
+| `rules[].type=required_linear_history` | present | Merge commits are disallowed on `main` |
+| `rules[].type=deletion` | present | Branch deletion is blocked |
+| `rules[].type=non_fast_forward` | present | Force/non-fast-forward updates are blocked |
+| `bypass_actors` | `[]` | No ruleset bypass actors |
+| `enforcement` | `active` | The ruleset is enforced |
 
-All other fields not confirmed by the most recent live `gh api` check must be
+All other fields not confirmed by the most recent live ruleset read must be
 re-verified rather than assumed from this table; treat this table as a
 historical snapshot, not a live source of truth.
 

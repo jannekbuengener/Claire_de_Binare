@@ -162,3 +162,40 @@ def test_live_ruleset_missing_bypass_actors_fails_closed_as_incomplete(
 
     assert drift.main() == 3
     assert "permission-redacted" in report.read_text(encoding="utf-8").lower()
+
+
+def test_non_main_branch_is_rejected_before_ruleset_read(tmp_path, monkeypatch) -> None:
+    import json
+    import sys
+    import scripts.governance.check_branch_protection_drift as drift
+
+    baseline = tmp_path / "baseline.json"
+    baseline.write_text(json.dumps(_ruleset_snapshot()), encoding="utf-8")
+    report = tmp_path / "report.md"
+    apply_out = tmp_path / "apply.json"
+    called = False
+
+    def _unexpected(*args, **kwargs):
+        nonlocal called
+        called = True
+        return "{}"
+
+    monkeypatch.setattr(drift, "run_gh_api", _unexpected)
+    monkeypatch.setattr(
+        sys,
+        "argv",
+        [
+            "check_branch_protection_drift.py",
+            "--branch",
+            "feature/test",
+            "--baseline",
+            str(baseline),
+            "--report",
+            str(report),
+            "--apply-payload-out",
+            str(apply_out),
+        ],
+    )
+
+    assert drift.main() == 2
+    assert called is False

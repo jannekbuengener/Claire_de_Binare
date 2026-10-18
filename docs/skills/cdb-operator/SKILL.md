@@ -58,14 +58,19 @@ that would discard unsaved/unmerged local work.
   (`ci (Unit/Integration + Lint gesammelt)`, `policy-gate`) on the exact SHA,
   and stops at
   `FINAL_HEAD_READY_FOR_APPROVAL`. Conductor does not approve or merge.
-- **Approval:** `cdb_final_head_pr_approval_gate` (PR Reviewer) issues GitHub
-  APPROVE bound to the exact final `HEAD_SHA`. Cannot merge.
+- **Ruleset / review-feedback gate:** verify the live `main-strict` ruleset,
+  exact-head Required Checks, unresolved review feedback, mergeability, and the
+  live approving-review requirement. With `required_approving_review_count=0`,
+  no separate GitHub APPROVE is required.
+- **Optional advisory approval:** `cdb_final_head_pr_approval_gate` may issue an
+  exact-final-HEAD APPROVE, but it is not a merge prerequisite unless the live
+  ruleset requires approving reviews. It cannot merge.
 - **Merge execution:** `cdb_final_head_merge_executor` (Merge Agent) runs
-  regular `gh pr merge <PR> --squash --delete-branch` after re-verify. Cannot
-  approve. Never `--admin`.
+  regular `gh pr merge <PR> --squash --delete-branch` after re-verifying the
+  ruleset/review-feedback gate. Never `--admin`.
 - **Close:** `cdb-session-close` verifies live MERGED (may be async).
 
 Ein Merge-Trigger ist kein Approval und keine Merge-Autorisierung. Head- oder
-Base-Drift invalidiert Final-Evidence und Approval und erzwingt erneute
+Base-Drift invalidiert Final-Evidence und Gate-Readiness und erzwingt erneute
 Completeness Review.
 

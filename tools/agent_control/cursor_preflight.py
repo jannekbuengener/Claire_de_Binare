@@ -26,6 +26,10 @@ from tools.agent_control.environment.cursor_config import (
 from tools.agent_control.errors import DispatchError
 from tools.agent_control.evidence.redact import assert_no_secrets, sanitize_result_refs
 from tools.agent_control.paths import REPO_ROOT
+from tools.agent_control.approval.protection_live_evidence import (
+    DEFAULT_RULESET_ID,
+    parse_required_checks_from_protection_payload,
+)
 
 SCHEMA_ID = "cdb.cursor_live_preflight.v1"
 SCHEMA_VERSION = "1.0.0"
@@ -560,41 +564,47 @@ def run_cursor_live_preflight(
         default_branch=default_branch,
     )
 
-    prot_rc, prot = do_gh([f"repos/{repository}/branches/main/protection"])
-    block_creations = None
+    ruleset_rc, ruleset = do_gh([f"repos/{repository}/rulesets/{DEFAULT_RULESET_ID}"])
     required_contexts: list[str] = []
-    if isinstance(prot, dict):
-        block_creations = (prot.get("block_creations") or {}).get("enabled")
-        rsc = prot.get("required_status_checks")
-        if isinstance(rsc, dict) and isinstance(rsc.get("contexts"), list):
-            required_contexts = [
-                str(item)
-                for item in rsc.get("contexts")
-                if isinstance(item, str) and item.strip()
-            ]
+    block_creations: bool | None = None
+    ruleset_name = None
+    if isinstance(ruleset, dict):
+        ruleset_name = ruleset.get("name")
+        parsed_checks = parse_required_checks_from_protection_payload(ruleset)
+        if parsed_checks is not None:
+            required_contexts = [item["name"] for item in parsed_checks[0]]
+        raw_rules = ruleset.get("rules")
+        if isinstance(raw_rules, list):
+            block_creations = any(
+                isinstance(rule, dict) and rule.get("type") == "creation"
+                for rule in raw_rules
+            )
     _check(
         checks,
-        "github_branch_protection_read",
-        "PASS" if prot_rc == 0 and required_contexts else "BLOCKED",
-        returncode=prot_rc,
+        "github_ruleset_read",
+        "PASS" if ruleset_rc == 0 and required_contexts else "BLOCKED",
+        returncode=ruleset_rc,
+        ruleset_id=DEFAULT_RULESET_ID,
+        ruleset_name=ruleset_name,
         required_contexts=required_contexts,
+        source="repository_ruleset_api",
         remediation=(
-            "Grant administration:read on the Cursor GitHub App installation, "
-            "or ensure cdb-protection-live attestation is published on the PR "
-            "before provider eligibility runs."
+            "Ensure the provider can read the active main-strict repository ruleset, "
+            "or publish trusted cdb-protection-live attestation before provider "
+            "eligibility runs."
         ),
     )
-    # 403 may mean protection readable only to admins — still try creation gate
     _check(
         checks,
         "github_branch_creation_gate",
         (
             "PASS"
             if block_creations is False
-            else ("PARTIAL" if prot_rc != 0 else "BLOCKED")
+            else ("PARTIAL" if ruleset_rc != 0 else "BLOCKED")
         ),
         block_creations=block_creations,
-        returncode=prot_rc,
+        returncode=ruleset_rc,
+        source="repository_ruleset_api",
     )
 
     # --- GitHub App: public app manifest + installation (often unreadable) ---
