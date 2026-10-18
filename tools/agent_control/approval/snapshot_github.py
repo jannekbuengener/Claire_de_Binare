@@ -41,13 +41,18 @@ from tools.pr_routing.engine import parse_batch_pr_metadata
 DEFAULT_REPOSITORY = "jannekbuengener/Claire_de_Binare"
 
 
-def _parse_steward_state(body: str) -> str | None:
-    if "<!-- cdb-batch-pr:v1" not in body:
-        return None
+def _parse_pr_flow_state(body: str) -> tuple[str | None, str | None]:
+    if "cdb-batch-pr:" not in body:
+        return "dedicated", None
     try:
-        return parse_batch_pr_metadata(body).steward_state
+        metadata = parse_batch_pr_metadata(body)
     except ValueError:
-        return None
+        return None, None
+    return metadata.merge_mode, metadata.steward_state
+
+
+def _parse_steward_state(body: str) -> str | None:
+    return _parse_pr_flow_state(body)[1]
 
 
 def _fetch_check_observations(
@@ -281,7 +286,7 @@ def build_github_approval_snapshot(
     for item in merge_comment_pages(comments_payload):
         comments.append(CommentRecord.from_github_issue_comment(item))
 
-    steward_state = _parse_steward_state(body)
+    merge_mode, steward_state = _parse_pr_flow_state(body)
     provenance = resolve_final_head_provenance(
         comments=comments,
         pr_number=pr_number,
@@ -289,6 +294,7 @@ def build_github_approval_snapshot(
         live_head_sha=head_sha,
         live_base_sha=base_sha,
         steward_state=steward_state,
+        merge_mode=merge_mode,
         repo_root=root,
     )
     final_head = provenance.to_snapshot_final_head()

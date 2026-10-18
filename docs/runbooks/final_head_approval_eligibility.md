@@ -35,7 +35,7 @@ Exit codes: `0`=APPROVE_RECOMMENDED, `2`=BLOCKED, `3`=HOLD, `4`=UNKNOWN.
 4. `result.phase=HANDOFF_APPROVAL`, `success_decision` + `handoff_role` match canon
 5. `subject.head_sha` == live PR HEAD
 6. Upstream schema-valid `CompletenessReviewEnvelope` with `MERGE_CANDIDATE` on same HEAD
-7. `steward_state` not `accepting_slices`
+7. Batch PRs require explicit `steward_state=frozen` from a valid `cdb-batch-pr:v1` marker. Markerless PRs follow the router's canonical `merge_mode=dedicated` convention and may derive the effective `frozen` state only after trusted, schema-valid, exact-head/base `MERGE_CANDIDATE` + Conductor `FINAL_HEAD_READY_FOR_APPROVAL` evidence is proven. Any present but malformed/unsupported `cdb-batch-pr:*` marker fails closed and never falls back to dedicated mode.
 
 Self-declared `producer` strings without schema validation do **not** authorize approval.
 

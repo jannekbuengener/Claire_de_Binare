@@ -96,7 +96,7 @@ Genau ein kompatibler PR wird gewählt. Mehrere Kandidaten führen zu HOLD.
 
 ## 6. Marker und Ledger
 
-Batch-PRs enthalten exakt einen Marker:
+Batch-PRs enthalten exakt einen Marker. Markerlose offene PRs werden vom GitHub-Inventar kanonisch als `merge_mode=dedicated` klassifiziert. Sobald ein `cdb-batch-pr:*`-Marker vorhanden ist, muss er valide und unterstützt sein; Parsefehler dürfen nicht als Dedicated-Fallback interpretiert werden:
 
 ```text
 <!-- cdb-batch-pr:v1

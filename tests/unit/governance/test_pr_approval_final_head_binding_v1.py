@@ -629,6 +629,115 @@ def test_provenance_steward_state_must_be_frozen(
 
 
 @pytest.mark.unit
+def test_dedicated_final_head_derives_frozen_from_trusted_acceptance() -> None:
+    schema = load_acceptance_schema()
+    trust = _load_trust_policy()
+    comments = [
+        _trusted_comment(
+            _completeness_envelope(),
+            comment_id=1,
+            app_slug="cdb-test-completeness-app",
+        ),
+        _trusted_comment(
+            _conductor_envelope(),
+            comment_id=2,
+            app_slug="cdb-test-conductor-app",
+        ),
+    ]
+    result = resolve_final_head_provenance(
+        comments=comments,
+        pr_number=1,
+        repository=REPO,
+        live_head_sha=SHA,
+        live_base_sha=SHA_B,
+        steward_state=None,
+        merge_mode="dedicated",
+        schema=schema,
+        trust_policy=trust,
+    )
+
+    assert result.trusted is True
+    assert result.final_head_ready_for_approval is True
+    assert result.steward_state == "frozen"
+    assert "FINAL_HEAD_NOT_FROZEN" not in result.reason_codes
+
+    snap = deepcopy(_load("clean_app_check_run_success"))
+    snap["final_head"] = result.to_snapshot_final_head()
+    env = build_approval_context(snap, default_repo_paths())
+    assert env["recommendation"] == "APPROVE_RECOMMENDED"
+
+
+@pytest.mark.unit
+def test_dedicated_untrusted_acceptance_does_not_derive_freeze() -> None:
+    schema = load_acceptance_schema()
+    trust = _load_trust_policy()
+    comments = [
+        CommentRecord(
+            comment_id=1,
+            body=_comment_body(_completeness_envelope()),
+            author_login="evil-user",
+            author_type="User",
+        ),
+        CommentRecord(
+            comment_id=2,
+            body=_comment_body(_conductor_envelope()),
+            author_login="evil-user",
+            author_type="User",
+        ),
+    ]
+    result = resolve_final_head_provenance(
+        comments=comments,
+        pr_number=1,
+        repository=REPO,
+        live_head_sha=SHA,
+        live_base_sha=SHA_B,
+        steward_state=None,
+        merge_mode="dedicated",
+        schema=schema,
+        trust_policy=trust,
+    )
+
+    assert result.trusted is False
+    assert result.final_head_ready_for_approval is False
+    assert result.steward_state is None
+    assert "UNTRUSTED_HANDOFF" in result.reason_codes
+
+
+@pytest.mark.unit
+def test_batch_without_frozen_steward_still_blocks_with_trusted_acceptance() -> None:
+    schema = load_acceptance_schema()
+    trust = _load_trust_policy()
+    comments = [
+        _trusted_comment(
+            _completeness_envelope(),
+            comment_id=1,
+            app_slug="cdb-test-completeness-app",
+        ),
+        _trusted_comment(
+            _conductor_envelope(),
+            comment_id=2,
+            app_slug="cdb-test-conductor-app",
+        ),
+    ]
+    result = resolve_final_head_provenance(
+        comments=comments,
+        pr_number=1,
+        repository=REPO,
+        live_head_sha=SHA,
+        live_base_sha=SHA_B,
+        steward_state=None,
+        merge_mode="batch",
+        schema=schema,
+        trust_policy=trust,
+    )
+
+    assert result.trusted is False
+    assert result.final_head_ready_for_approval is False
+    assert result.steward_state is None
+    assert "FINAL_HEAD_NOT_FROZEN" in result.reason_codes
+
+
+@pytest.mark.unit
 def test_provenance_completeness_wrong_pr_same_shas_blocks() -> None:
     schema = load_acceptance_schema()
     trust = _load_trust_policy()
