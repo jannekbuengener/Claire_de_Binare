@@ -31,6 +31,7 @@ def test_single_merge_executor_and_split_roles() -> None:
     assert roles["pr_approval_gate"]["merge_pr"] is False
     assert roles["merge_executor"]["approve_pr"] is False
     assert "cdb_final_head_merge_executor" in pipeline
+    assert "next_role: cdb_final_head_merge_executor" in pipeline
     assert "Exactly one canonical final merge executor" in pipeline
 
 
@@ -92,3 +93,32 @@ def test_cloud_path_does_not_require_cdb_context() -> None:
     assert approval["final_head_roles"]["local_cdb_context_required"] is False
     assert "must not require local" in pipeline
     assert "cdb_context" in pipeline
+
+
+def test_sample_brain_style_ruleset_is_the_merge_enforcement_boundary() -> None:
+    pipeline = PIPELINE.read_text(encoding="utf-8")
+    checks = CHECKS_RULE.read_text(encoding="utf-8")
+    branch_doc = (ROOT / "docs" / "BRANCH_PROTECTION.md").read_text(encoding="utf-8")
+    review_gate = (ROOT / "docs" / "MERGE_REVIEW_FEEDBACK_GATE.md").read_text(
+        encoding="utf-8"
+    )
+
+    assert "main-strict" in branch_doc
+    assert "required_approving_review_count = 0" in branch_doc
+    assert "ci (Unit/Integration + Lint gesammelt)" in branch_doc
+    assert "policy-gate" in branch_doc
+    assert "No open review threads at merge" in review_gate
+    assert "HEAD-bound APPROVE" not in checks
+    assert "HEAD-bound APPROVE" not in pipeline
+    assert "GitHub APPROVE" not in checks
+    assert "ruleset" in checks.lower()
+    assert "review feedback" in checks.lower()
+
+
+def test_approval_role_is_not_required_for_regular_merge() -> None:
+    policy = json.loads(POLICY.read_text(encoding="utf-8"))
+    roles = policy["final_head_roles"]
+    assert roles["pr_approval_gate"]["required_for_merge"] is False
+    assert roles["merge_executor"]["requires_github_approve"] is False
+    assert "after HEAD-bound APPROVE" not in policy["lifecycle"]["trigger_semantics"]
+    assert "ruleset" in policy["lifecycle"]["trigger_semantics"].lower()

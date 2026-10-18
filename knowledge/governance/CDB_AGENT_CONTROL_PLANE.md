@@ -121,7 +121,7 @@ Delivery Slice in routed PR
     │
     ▼  (separate Merge session)
 Completeness Review → Batch Merge Conductor (Final-Head prep) →
-hosted Required Checks (`ci` + `policy-gate`) → PR Reviewer APPROVE → Merge Agent → session-close
+hosted Required Checks (`ci` + `policy-gate`) → `main-strict` Ruleset + Review-Feedback-Gate → Merge Agent → session-close
 ```
 
 Regeln:
@@ -165,8 +165,8 @@ Für jede Komponente gilt genau eine primäre Verantwortung. Spalten:
 
 - **CDB entscheidet.** Router weist zu. Contract beschreibt. Dispatcher startet.
   Provider führt aus. Completeness bewertet Merge-Reife. Conductor bereitet
-  Final Head vor. PR Reviewer APPROVEd den exakten Head. Merge Agent mergt.
-- **PR Reviewer APPROVE ≠ Mergefreigabe durch Conductor/Delivery.**
+  Final Head vor. Ruleset und Review-Feedback-Gate entscheiden die Merge-Reife. Merge Agent mergt.
+- **`main-strict` Ruleset + Review-Feedback-Gate ≠ Mergefreigabe durch Conductor/Delivery.**
 - **Delivery-Agenten und Conductor dürfen nicht mergen.** Nur
   `cdb_final_head_merge_executor` mergt.
 - **Hosted Required Checks `ci (Unit/Integration + Lint gesammelt)` + `policy-gate`
@@ -209,7 +209,7 @@ Merge-Pfad (separate Session, nicht Teil des Delivery-Runs):
 ```text
 DELIVERED/PASS (open PR) → Completeness MERGE_CANDIDATE → FROZEN
   → Final CI SUCCESS on exact head → FINAL_HEAD_READY_FOR_APPROVAL
-  → PR Reviewer APPROVE(HEAD_SHA) → Merge Agent regular squash-merge
+  → `main-strict` Ruleset + Review-Feedback-Gate → Merge Agent regular squash-merge
   → session-close
 ```
 

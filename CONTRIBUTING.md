@@ -178,12 +178,12 @@ docs(onboarding): reconcile zero-context developer setup
    the Issue.
 7. Before Final-Head, run `cdb-pr-completeness-review`; only a schema-valid
    `MERGE_CANDIDATE` may proceed. Then `cdb-batch-merge-conductor` freezes,
-   integrates main, runs Full Fast-CI, verifies the hosted Required Checks
-   `ci (Unit/Integration + Lint gesammelt)` + `policy-gate` for the exact-SHA
-   head, and hands off
-   `FINAL_HEAD_READY_FOR_APPROVAL`. PR Reviewer
-   (`cdb_final_head_pr_approval_gate`) APPROVEs the exact head; Merge Agent
-   (`cdb_final_head_merge_executor`) performs regular squash-merge. Never bypass Completeness; never `--admin`.
+   integrates main, runs Full Fast-CI, and verifies the exact-head hosted Required
+   Checks. Before merge, satisfy `docs/MERGE_REVIEW_FEEDBACK_GATE.md` and the live
+   `main-strict` ruleset. No separate GitHub APPROVE provider is required.
+   `cdb_final_head_merge_executor` performs the regular squash-merge. Never bypass
+   Completeness, review feedback, the ruleset, or use `--admin`.
+   Never bypass Completeness.
 
 **PR Title Format:** Same as commit message format.
 **PR Templates:** Dedicated PRs use `.github/pull_request_template.md`; Batch
@@ -224,7 +224,7 @@ Merge contract on `main` (SSOT:
 
 Seit Migration #4540 sind genau diese beiden hosted Checks die
 branch-protection-required Merge-Gates auf `main`; seit #4600 ist die
-verifizierte st?rkere Bindung kanonisch: `strict: true`, beide Checks an die
+verifizierte stärkere Bindung kanonisch: `strict: true`, beide Checks an die
 offizielle GitHub Actions App (`app_id=15368`) gebunden. `cdb-local-ci` (Local
 CI Status Publisher) ist **kein** Required
 Context mehr; er bleibt nur optionaler lokaler Preflight/Diagnose. Verify the

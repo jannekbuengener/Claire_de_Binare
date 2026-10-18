@@ -7,7 +7,7 @@ Drift Policy: Surface-Adapter duerfen nur mit dokumentierter Begruendung abweich
 -->
 ---
 name: cdb-operator
-description: Enforces Claire de Binare operator workflow with router-first slice delivery as the default. Final-Head prep, Cloud PR Reviewer APPROVE, and Merge Agent regular merge are separate phases; delivery never merges; never --admin.
+description: Enforces Claire de Binare operator workflow with router-first slice delivery as the default. Final-Head prep, ruleset/review-feedback gate, and Merge Agent regular merge are separate phases; delivery never merges; never --admin.
 compatibility: opencode
 metadata:
   project: claire-de-binare

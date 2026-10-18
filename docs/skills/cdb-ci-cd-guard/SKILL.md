@@ -38,8 +38,7 @@ disable-model-invocation: true
   Developer-Preflight/Diagnose und kein branch-protection-required Context.
 - This skill validates and helps publish Final-Head CI evidence. It does
   **not** own approval or merge. Regular merge is owned only by
-  `cdb_final_head_merge_executor` after HEAD-bound APPROVE from
-  `cdb_final_head_pr_approval_gate` (see
+  `cdb_final_head_merge_executor` after the live `main-strict` ruleset and review-feedback gate are satisfied (see
   `docs/contracts/final_head_merge_pipeline.v1.md`). `--admin` is never a
   valid bypass for missing/red hosted Required Checks.
 - CI PASS / green Hosted Actions does **not** authorize blind local post-merge

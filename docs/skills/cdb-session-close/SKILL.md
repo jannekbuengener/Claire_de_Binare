@@ -563,8 +563,7 @@ Commit, Push, PR-Ledger-Update, Issue-Handoff und dokumentierte
 Restunsicherheit. Der Issue bleibt bis zum verifizierten Merge offen.
 
 Nur nach schema-validem Completeness-Verdikt `MERGE_CANDIDATE`, Conductor
-Final-Head Preparation (`FINAL_HEAD_READY_FOR_APPROVAL`), HEAD-bound APPROVE
-durch `cdb_final_head_pr_approval_gate` und regular merge durch
+Final-Head Preparation (`FINAL_HEAD_READY_FOR_APPROVAL`), Ruleset-/Review-Feedback-Gate und regular merge durch
 `cdb_final_head_merge_executor` gilt der PR als live MERGED. Session Close
 verifiziert diesen Zustand und schließt nur Ledger-Zeilen mit
 `SLICE_DELIVERED`.
