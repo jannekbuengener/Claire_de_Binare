@@ -1,7 +1,7 @@
 # Branch Protection Drift Report (main)
 
-Timestamp (Europe/Berlin): `2026-07-30T11:50:51+02:00`
-Timestamp (UTC): `2026-07-30T09:50:51Z`
+Timestamp (Europe/Berlin): `2026-10-18T12:04:10+02:00`
+Timestamp (UTC): `2026-10-18T10:04:10Z`
 Repo: `jannekbuengener/Claire_de_Binare`  
 Branch: `main`  
 State: **NO DRIFT**
@@ -10,12 +10,12 @@ State: **NO DRIFT**
 
 - Baseline file: `docs/evidence/reports/BRANCH_PROTECTION_BASELINE_main.json`
 - Current source: `live gh api`
-- Normalization: sorted keys; unordered-list normalization for known set-like arrays; volatile-field stripping: none
+- Normalization: sorted keys; unordered-list normalization for known set-like arrays; GitHub repository casing normalized only on known branch-protection URL fields; volatile-field stripping: none
 
 ## Hashes (SHA256)
 
-- Baseline snapshot hash: `ca793caaf1dc8a3d666749c4eb7d17f97437792d66ce8041f64153ffee103ff2`
-- Current snapshot hash: `ca793caaf1dc8a3d666749c4eb7d17f97437792d66ce8041f64153ffee103ff2`
+- Baseline snapshot hash: `84a663b7401f1d66bc3cd6e2fa90d853ff4beb80c81c5e4b84b755aeb43119c8`
+- Current snapshot hash: `84a663b7401f1d66bc3cd6e2fa90d853ff4beb80c81c5e4b84b755aeb43119c8`
 
 ## Drift Summary
 

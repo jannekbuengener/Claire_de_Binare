@@ -49,7 +49,7 @@ branch-protection-required und autorisieren keinen Merge. `ci.yml` startet
 ab #4540 wieder auf jedem `pull_request` (Target `main`) und liefert den
 Required Check `ci (Unit/Integration + Lint gesammelt)` auf exaktem Head.
 
-Branch Protection (live, Zielbild #4540):
+Branch Protection (live, Canon #4540 + #4600):
 
 ```powershell
 gh api repos/<owner>/<repo>/branches/main/protection
@@ -57,8 +57,10 @@ gh api repos/<owner>/<repo>/branches/main/protection
 
 erwartet `required_status_checks.strict: true` und
 `required_status_checks.checks` mit den beiden hosted Checks
-`ci (Unit/Integration + Lint gesammelt)` und `policy-gate`, **ohne** festes
-`app_id` (Hosted GitHub Actions App, keine lokale App-Bindung).
+`ci (Unit/Integration + Lint gesammelt)` und `policy-gate`, beide gebunden an
+die offizielle GitHub Actions App (`app_id=15368`). Diese App-Bindung ist eine
+zusätzliche Provenance-Grenze und darf nicht nur zur Drift-Beseitigung entfernt
+werden.
 
 Lint/Format (orchestrator stage `lint`, Issue #4206): Black und Ruff kommen
 ausschließlich aus dem Pin in `requirements-dev.txt`. Black läuft als
@@ -180,8 +182,9 @@ Publisher (siehe [`docs/ci/local-status-publisher.md`](../ci/local-status-publis
   `policy-gate`.
 - Der App-gebundene `cdb-local-ci`-Check Run ist optionaler
   Developer-Preflight/Diagnose und nicht branch-protection-required.
-- Branch Protection (Zielbild): contexts `ci (Unit/Integration + Lint
-  gesammelt)` + `policy-gate`, `checks[]` ohne festes `app_id`, `strict: true`.
+- Branch Protection (Canon): contexts `ci (Unit/Integration + Lint
+  gesammelt)` + `policy-gate`, beide `app_id=15368` (`github-actions`),
+  `strict: true`.
 - Dirty worktree ⇒ lokale Evidence `BLOCKED` und kein Preflight-Publish.
 - Publish-Pfad erzwingt Policy-Gate-Mirror (Parität zu
   `.github/workflows/policy-gate.yml`).
@@ -190,8 +193,8 @@ Publisher (siehe [`docs/ci/local-status-publisher.md`](../ci/local-status-publis
 - Lokales CodeQL/SARIF ersetzt nicht den GitHub Security-Tab.
 
 Live Branch-Protection-Hinweis (reverify with `gh api`):
-`required_status_checks.checks` = beide hosted Contexts, `strict: true`,
-kein `app_id` gesetzt.
+`required_status_checks.checks` = beide hosted Contexts mit `app_id=15368`
+(`github-actions`), `strict: true`.
 
 Windows front door (lokale Preflight-Ebene):
 

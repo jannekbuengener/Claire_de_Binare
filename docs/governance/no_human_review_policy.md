@@ -118,11 +118,11 @@ gh api repos/jannekbuengener/Claire_de_Binare/branches/main/protection
 
 | Setting | Last-known live value | Purpose |
 |---------|-------|---------|
-| `required_status_checks.checks` | `[{"context":"ci (Unit/Integration + Lint gesammelt)"},{"context":"policy-gate"}]` | Merge-relevant required contexts on `main` (hosted Check Runs, kein festes `app_id`) |
+| `required_status_checks.checks` | `[{"context":"ci (Unit/Integration + Lint gesammelt)","app_id":15368},{"context":"policy-gate","app_id":15368}]` | Merge-relevant required contexts on `main`, bound to the official GitHub Actions App |
 | `required_status_checks.strict` | `true` | Branch must be up-to-date |
 | `enforce_admins` | `true` | Admins also bound by checks |
 | `required_conversation_resolution` | `false` | Verify live — do not assume `true` |
-| `allow_force_pushes` | `true` | Verify live — do not assume `false` |
+| `allow_force_pushes` | `false` | Force-push remains disabled on `main` |
 | `required_approving_review_count` | `0` | No fixed approving-review count |
 | `require_code_owner_reviews` | `false` | Disabled to avoid `.github/CODEOWNERS` self-deadlock in solo-maintainer mode |
 | `dismiss_stale_reviews` | `true` | Prior review state is invalidated after new pushes |

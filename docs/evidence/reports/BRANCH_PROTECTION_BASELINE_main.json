@@ -10,10 +10,12 @@
     "contexts_url": "https://api.github.com/repos/jannekbuengener/Claire_de_Binare/branches/main/protection/required_status_checks/contexts",
     "checks": [
       {
-        "context": "ci (Unit/Integration + Lint gesammelt)"
+        "context": "ci (Unit/Integration + Lint gesammelt)",
+        "app_id": 15368
       },
       {
-        "context": "policy-gate"
+        "context": "policy-gate",
+        "app_id": 15368
       }
     ]
   },

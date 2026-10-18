@@ -9,20 +9,33 @@
   },
   "checks": [
     {
-      "name": "cdb-local-ci",
+      "name": "ci (Unit/Integration + Lint gesammelt)",
       "mechanism": "check_run",
       "status": "completed",
       "conclusion": "success",
-      "app_id": 4410232,
+      "app_id": 15368,
+      "source_sha": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"
+    },
+    {
+      "name": "policy-gate",
+      "mechanism": "check_run",
+      "status": "completed",
+      "conclusion": "success",
+      "app_id": 15368,
       "source_sha": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"
     }
   ],
   "protection": {
     "required_checks": [
       {
-        "name": "cdb-local-ci",
+        "name": "ci (Unit/Integration + Lint gesammelt)",
         "mechanism": "check_run",
-        "app_id": 4410232
+        "app_id": 15368
+      },
+      {
+        "name": "policy-gate",
+        "mechanism": "check_run",
+        "app_id": 15368
       }
     ]
   },

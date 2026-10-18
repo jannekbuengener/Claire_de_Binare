@@ -102,8 +102,8 @@ This skill audits CI/CD tooling with external documentation dependencies:
 - integrierter Base-SHA ist in der Evidence gebunden,
 - lokaler Policy-Gate-Mirror ist grün,
 - hosted Required Checks `ci (Unit/Integration + Lint gesammelt)` und
-  `policy-gate` sind grün auf exakt diesem Head (Branch Protection,
-  kein hartkodiertes `app_id`),
+  `policy-gate` sind grün auf exakt diesem Head und Branch Protection
+  bindet beide an die offizielle GitHub Actions App (`app_id=15368`),
 - Head-/Base-Drift erzwingt vollständige Revalidierung.
 - Slice-Validation ist **kein** Ersatz für Final-Head-Evidence.
 

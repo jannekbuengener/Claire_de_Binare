@@ -394,7 +394,7 @@ LR remains NO-GO. Board stage `trade-capable` is not Live-Go. No Echtgeld-Go.
 
 ### Required Checks
 - **Definition:** The branch-protection-enforced status checks that must pass before a PR can merge.
-- **CDB Context:** Seit Migration #4540 sind auf `main` genau zwei hosted Required Checks merge-relevant: `ci (Unit/Integration + Lint gesammelt)` (Hosted GitHub Actions Check Run) und `policy-gate` — beide exakter PR head SHA, `strict: true`, kein festes `app_id`. `cdb-local-ci` (lokaler Fast-CI-Publisher) ist seit #4540 **kein** Required Context mehr, sondern nur noch optionaler Preflight/Diagnose. Verify live with `gh api`, not this glossary entry.
+- **CDB Context:** Seit Migration #4540 sind auf `main` genau zwei hosted Required Checks merge-relevant: `ci (Unit/Integration + Lint gesammelt)` (Hosted GitHub Actions Check Run) und `policy-gate` — beide exakter PR head SHA, `strict: true`, gebunden an die offizielle GitHub Actions App (`app_id=15368`). `cdb-local-ci` (lokaler Fast-CI-Publisher) ist seit #4540 **kein** Required Context mehr, sondern nur noch optionaler Preflight/Diagnose. Verify live with `gh api`, not this glossary entry.
 - **Authority Boundary:** Required checks are enforced by branch protection. No merge bypass possible; `--admin` is never a substitute for a missing/red hosted Required Check.
 - **Primary Source:** [`docs/runbooks/merge_policy_ci_gate.md`](../runbooks/merge_policy_ci_gate.md)
 

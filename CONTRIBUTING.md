@@ -223,8 +223,10 @@ Merge contract on `main` (SSOT:
 | `policy-gate` | `policy-gate.yml` | GitHub-hosted Check Run (Actions) |
 
 Seit Migration #4540 sind genau diese beiden hosted Checks die
-branch-protection-required Merge-Gates auf `main` (`strict: true`, kein festes
-`app_id`). `cdb-local-ci` (Local CI Status Publisher) ist **kein** Required
+branch-protection-required Merge-Gates auf `main`; seit #4600 ist die
+verifizierte st?rkere Bindung kanonisch: `strict: true`, beide Checks an die
+offizielle GitHub Actions App (`app_id=15368`) gebunden. `cdb-local-ci` (Local
+CI Status Publisher) ist **kein** Required
 Context mehr; er bleibt nur optionaler lokaler Preflight/Diagnose. Verify the
 live required contexts with `gh api`, not this table.
 

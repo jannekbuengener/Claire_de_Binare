@@ -47,9 +47,9 @@ Exactly one canonical final merge executor exists:
 5. Approval is invalid when HEAD changes, a new commit lands, or relevant Base
    drift occurs.
 6. Required contexts are the hosted GitHub Checks `ci (Unit/Integration + Lint
-   gesammelt)` and `policy-gate` on the exact final head (no hardcoded
-   `app_id`; hosted GitHub Actions App). Same-named Commit Status is not
-   sufficient.
+   gesammelt)` and `policy-gate` on the exact final head, both bound by Branch
+   Protection to the official GitHub Actions App (`app_id=15368`). Same-named
+   Commit Status or a same-named Check Run from another App is not sufficient.
 7. Cloud Reviewer/Merger are repo-only by design; they must not require local
    `cdb_context` or fabricate DB evidence.
 8. `--admin` is never a bypass.

@@ -1,7 +1,7 @@
 # GitHub Workflow Register
 
 **Repo:** Claire de Binare  
-**Stand:** 2026-09-11 (#4540 hosted Required Checks)
+**Stand:** 2026-10-18 (#4600 GitHub-Actions App-Binding Canon)
 **Workflow-Dateien:** 57  
 **Entfernungs-Scope:** 13 Workflow-Dateien plus 5 exklusive Support-Dateien  
 **Daten-Datei im Workflow-Ordner:** `labels.json` (kein Workflow)
@@ -23,8 +23,9 @@ historischen Evidence- und Session-Unterlagen erwähnt.
 
 SSOT: [`merge_policy_ci_gate.md`](merge_policy_ci_gate.md). Die merge-relevanten
 Required Contexts auf `main` sind die hosted Check Runs `ci (Unit/Integration +
-Lint gesammelt)` und `policy-gate`, live verifizierbar via `gh api`, nicht aus
-dieser Tabelle.
+Lint gesammelt)` und `policy-gate`, beide an die offizielle GitHub Actions App
+(`app_id=15368`) gebunden. Live verifizierbar via `gh api`, nicht aus dieser
+Tabelle.
 
 | Quelle | Check-Kontext | Typ |
 |---|---|---|

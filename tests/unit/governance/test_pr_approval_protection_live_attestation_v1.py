@@ -24,6 +24,7 @@ from tools.agent_control.approval.protection_live_evidence import (
     _attestation_is_fresh,
     build_protection_live_envelope,
     format_protection_attestation_comment_body,
+    parse_required_checks_from_protection_payload,
     probe_branch_protection_api,
     resolve_protection_live_attestation,
 )
@@ -216,6 +217,39 @@ def test_trusted_attestation_used_when_branch_protection_api_unreadable() -> Non
     assert snap["protection_read"]["strict"] is True
     assert "PROTECTION_READ_UNAVAILABLE" not in snap.get("final_head_reason_codes", [])
     assert "PROTECTION_INCOMPLETE" not in snap.get("final_head_reason_codes", [])
+
+
+@pytest.mark.unit
+def test_approval_baseline_matches_canonical_app_bound_protection_view() -> None:
+    from tools.agent_control.approval.drift import protection_view_fingerprint
+
+    protection_payload = json.loads(
+        (
+            REPO_ROOT / "docs/evidence/reports/BRANCH_PROTECTION_BASELINE_main.json"
+        ).read_text(encoding="utf-8")
+    )
+    parsed = parse_required_checks_from_protection_payload(protection_payload)
+    assert parsed is not None
+    required_checks, strict = parsed
+    assert strict is True
+    assert required_checks == [
+        {
+            "name": "ci (Unit/Integration + Lint gesammelt)",
+            "app_id": 15368,
+            "mechanism": "check_run",
+        },
+        {"name": "policy-gate", "app_id": 15368, "mechanism": "check_run"},
+    ]
+
+    approval_baseline = json.loads(
+        (
+            REPO_ROOT
+            / "config/agent-control/capability-baselines/approval-dashboard-export.redacted.v1.json"
+        ).read_text(encoding="utf-8")
+    )
+    assert approval_baseline["protection_view_fingerprint"] == (
+        protection_view_fingerprint({"required_checks": required_checks})
+    )
 
 
 @pytest.mark.unit

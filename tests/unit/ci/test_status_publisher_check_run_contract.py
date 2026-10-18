@@ -11,6 +11,8 @@ pytestmark = pytest.mark.unit
 
 REPO_ROOT = Path(__file__).resolve().parents[3]
 BASELINE_BP = REPO_ROOT / "docs/evidence/reports/BRANCH_PROTECTION_BASELINE_main.json"
+APPLY_BP = REPO_ROOT / "docs/evidence/reports/BRANCH_PROTECTION_APPLY_PAYLOAD_main.json"
+GITHUB_ACTIONS_APP_ID = 15368
 BASELINE_CTX = (
     REPO_ROOT / "docs/evidence/reports/REQUIRED_CHECK_CONTEXTS_BASELINE_main.json"
 )
@@ -27,8 +29,11 @@ def test_branch_protection_baselines_reflect_hosted_required_checks():
     bp = json.loads(BASELINE_BP.read_text(encoding="utf-8"))
     checks = bp["required_status_checks"]["checks"]
     assert checks == [
-        {"context": "ci (Unit/Integration + Lint gesammelt)"},
-        {"context": "policy-gate"},
+        {
+            "context": "ci (Unit/Integration + Lint gesammelt)",
+            "app_id": GITHUB_ACTIONS_APP_ID,
+        },
+        {"context": "policy-gate", "app_id": GITHUB_ACTIONS_APP_ID},
     ]
     assert bp["required_status_checks"]["contexts"] == [
         "ci (Unit/Integration + Lint gesammelt)",
@@ -41,8 +46,11 @@ def test_branch_protection_baselines_reflect_hosted_required_checks():
         "ci (Unit/Integration + Lint gesammelt)",
         "policy-gate",
     ]
-    assert ctx.get("required_app_id") is None
+    assert ctx.get("required_app_id") == GITHUB_ACTIONS_APP_ID
     assert ctx.get("check_run_contexts") == []
+
+    apply_payload = json.loads(APPLY_BP.read_text(encoding="utf-8"))
+    assert apply_payload["required_status_checks"]["checks"] == checks
 
 
 def test_no_private_key_or_token_examples_in_publisher_tree():

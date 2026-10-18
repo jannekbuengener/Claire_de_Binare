@@ -1,12 +1,12 @@
 {
-  "timestamp_berlin": "2026-09-11T12:00:00+02:00",
-  "timestamp_utc": "2026-09-11T10:00:00Z",
+  "timestamp_berlin": "2026-10-18T11:57:39+02:00",
+  "timestamp_utc": "2026-10-18T09:57:39Z",
   "contexts": [
     "ci (Unit/Integration + Lint gesammelt)",
     "policy-gate"
   ],
   "check_run_contexts": [],
-  "required_app_id": null,
+  "required_app_id": 15368,
   "source": "branch_protection_main",
-  "note": "Post-#4540: required checks are hosted GitHub Actions job names (ci.yml 'ci (Unit/Integration + Lint gesammelt)', policy-gate.yml 'policy-gate'). Local Fast-CI / cdb-local-ci is developer preflight only and not merge-required."
+  "note": "Post-#4600 canon: both hosted Required Checks are bound to the GitHub Actions App (app_id=15368); cdb-local-ci remains developer preflight only and is not merge-required."
 }

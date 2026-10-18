@@ -26,8 +26,9 @@
 SSOT: [`merge_policy_ci_gate.md`](../runbooks/merge_policy_ci_gate.md). Die
 merge-relevanten Required Contexts auf `main` sind die hosted Check Runs
 `ci (Unit/Integration + Lint gesammelt)` und `policy-gate` (exakter
-PR-Head-SHA), live verifizierbar via `gh api` Check Runs — nicht via Commit
-Status.
+PR-Head-SHA), beide branch-protection-seitig an die offizielle GitHub Actions
+App (`app_id=15368`) gebunden. Live verifizieren via `gh api` Check Runs —
+nicht via Commit Status.
 
 | Quelle | Check-Kontext | Typ |
 |---|---|---|

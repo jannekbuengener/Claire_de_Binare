@@ -25,8 +25,9 @@ evidence, Completeness, and Approval and requires a fresh Completeness Review.
 Red, missing, stale, or pending required checks are not a reason to stop and ask Jannek.
 
 The merge-relevant required contexts on `main` are the hosted Check Runs
-`ci (Unit/Integration + Lint gesammelt)` and `policy-gate` (#4540, Branch
-Protection), exact PR head SHA. SSOT: `docs/runbooks/merge_policy_ci_gate.md` and
+`ci (Unit/Integration + Lint gesammelt)` and `policy-gate` (#4540/#4600,
+Branch Protection), exact PR head SHA, both bound to the official GitHub Actions
+App (`app_id=15368`). SSOT: `docs/runbooks/merge_policy_ci_gate.md` and
 `docs/contracts/final_head_merge_pipeline.v1.md`. Verify live with `gh api` —
 do not rely on stale tables. A same-named Commit Status does **not** satisfy
 Branch Protection. `cdb-local-ci` (Local CI Status Publisher, App Check Run
