@@ -2,7 +2,7 @@
   "$schema": "https://json-schema.org/draft/2020-12/schema",
   "$id": "https://claire-de-binare.local/contracts/cdb_protection_live_attestation.v1.schema.json",
   "title": "CDB Protection Live Attestation v1",
-  "description": "Trusted live branch-protection attestation for approval snapshots when the consumer credential cannot read GET /repos/{owner}/{repo}/branches/{branch}/protection. Evidence comments use marker <!-- cdb-protection-live:v1 -->.",
+  "description": "Trusted live merge-protection attestation for approval snapshots when the consumer credential cannot read the complete canonical repository ruleset. Evidence comments use marker <!-- cdb-protection-live:v1 -->.",
   "type": "object",
   "additionalProperties": false,
   "required": [
@@ -48,7 +48,7 @@
       "required": ["source", "required_checks", "strict"],
       "properties": {
         "source": {
-          "enum": ["branch_protection_api"]
+          "enum": ["repository_ruleset_api", "branch_protection_api"]
         },
         "required_checks": {
           "type": "array",

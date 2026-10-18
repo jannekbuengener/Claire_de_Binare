@@ -1,28 +1,58 @@
 {
-  "allow_deletions": false,
-  "allow_force_pushes": false,
-  "allow_fork_syncing": false,
-  "block_creations": false,
-  "enforce_admins": true,
-  "lock_branch": false,
-  "required_conversation_resolution": false,
-  "required_linear_history": true,
-  "required_pull_request_reviews": {
-    "dismiss_stale_reviews": true,
-    "require_code_owner_reviews": false,
-    "require_last_push_approval": false,
-    "required_approving_review_count": 0
+  "bypass_actors": [],
+  "conditions": {
+    "ref_name": {
+      "exclude": [],
+      "include": [
+        "refs/heads/main"
+      ]
+    }
   },
-  "required_status_checks": {
-    "checks": [
-      {
-        "context": "ci (Unit/Integration + Lint gesammelt)"
+  "enforcement": "active",
+  "name": "main-strict",
+  "rules": [
+    {
+      "parameters": {
+        "allowed_merge_methods": [
+          "rebase",
+          "squash"
+        ],
+        "dismiss_stale_reviews_on_push": false,
+        "require_code_owner_review": false,
+        "require_extra_approval_for_unattributed_changes": false,
+        "require_last_push_approval": false,
+        "required_approving_review_count": 0,
+        "required_review_thread_resolution": false,
+        "required_reviewers": []
       },
-      {
-        "context": "policy-gate"
-      }
-    ],
-    "strict": true
-  },
-  "restrictions": null
+      "type": "pull_request"
+    },
+    {
+      "parameters": {
+        "do_not_enforce_on_create": false,
+        "required_status_checks": [
+          {
+            "context": "ci (Unit/Integration + Lint gesammelt)",
+            "integration_id": 15368
+          },
+          {
+            "context": "policy-gate",
+            "integration_id": 15368
+          }
+        ],
+        "strict_required_status_checks_policy": false
+      },
+      "type": "required_status_checks"
+    },
+    {
+      "type": "deletion"
+    },
+    {
+      "type": "non_fast_forward"
+    },
+    {
+      "type": "required_linear_history"
+    }
+  ],
+  "target": "branch"
 }

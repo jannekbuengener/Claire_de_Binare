@@ -42,11 +42,10 @@ disable-model-invocation: true
   Commit Status. Verify live with `gh api` on `/commits/<sha>/check-runs`; do
   not hardcode a required-checks list from memory. `cdb-local-ci` (Local CI
   Status Publisher, App Check Run `app_id=4410232`) is seit #4540 optionaler
-  Developer-Preflight/Diagnose und kein branch-protection-required Context.
+  Developer-Preflight/Diagnose und kein main-strict-ruleset-required Context.
 - This skill validates and helps publish Final-Head CI evidence. It does
   **not** own approval or merge. Regular merge is owned only by
-  `cdb_final_head_merge_executor` after HEAD-bound APPROVE from
-  `cdb_final_head_pr_approval_gate` (see
+  `cdb_final_head_merge_executor` after the live `main-strict` ruleset and review-feedback gate are satisfied (see
   `docs/contracts/final_head_merge_pipeline.v1.md`). `--admin` is never a
   valid bypass for missing/red hosted Required Checks.
 - CI PASS / green Hosted Actions does **not** authorize blind local post-merge
@@ -102,8 +101,8 @@ This skill audits CI/CD tooling with external documentation dependencies:
 - integrierter Base-SHA ist in der Evidence gebunden,
 - lokaler Policy-Gate-Mirror ist grün,
 - hosted Required Checks `ci (Unit/Integration + Lint gesammelt)` und
-  `policy-gate` sind grün auf exakt diesem Head (Branch Protection,
-  kein hartkodiertes `app_id`),
+  `policy-gate` sind grün auf exakt diesem Head; das aktive `main-strict` Ruleset
+  bindet beide an GitHub Actions (`integration_id=15368`),
 - Head-/Base-Drift erzwingt vollständige Revalidierung.
 - Slice-Validation ist **kein** Ersatz für Final-Head-Evidence.
 

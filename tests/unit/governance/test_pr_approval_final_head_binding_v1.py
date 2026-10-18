@@ -85,7 +85,7 @@ def _conductor_envelope(head: str = SHA) -> dict:
             "block_codes": [],
             "final_head_ready": True,
             "success_decision": "FINAL_HEAD_READY_FOR_APPROVAL",
-            "handoff_role": "cdb_final_head_pr_approval_gate",
+            "handoff_role": "cdb_final_head_merge_executor",
         },
     )
 

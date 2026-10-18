@@ -29,6 +29,39 @@ from tools.agent_control.providers.cursor_cloud_api import CursorCloudApiDriver
 
 FAKE_KEY = "crsr_test_preflight_secret_value_DO_NOT_LEAK"
 REPO = "jannekbuengener/Claire_de_Binare"
+MAIN_STRICT_RULESET_ID = 11617228
+
+
+def _main_strict_ruleset_payload() -> dict:
+    return {
+        "id": MAIN_STRICT_RULESET_ID,
+        "name": "main-strict",
+        "target": "branch",
+        "enforcement": "active",
+        "conditions": {"ref_name": {"include": ["refs/heads/main"], "exclude": []}},
+        "rules": [
+            {
+                "type": "pull_request",
+                "parameters": {"required_approving_review_count": 0},
+            },
+            {
+                "type": "required_status_checks",
+                "parameters": {
+                    "required_status_checks": [
+                        {
+                            "context": "ci (Unit/Integration + Lint gesammelt)",
+                            "integration_id": 15368,
+                        },
+                        {"context": "policy-gate", "integration_id": 15368},
+                    ],
+                    "strict_required_status_checks_policy": False,
+                },
+            },
+            {"type": "deletion"},
+            {"type": "non_fast_forward"},
+            {"type": "required_linear_history"},
+        ],
+    }
 
 
 def _http_router(routes: dict[str, tuple[int, dict]]):
@@ -69,8 +102,10 @@ def _gh_ok(argv: list[str]):
             "slug": "cursor",
             "permissions": {"contents": "write", "pull_requests": "write"},
         }
+    if path == f"repos/{REPO}/rulesets/{MAIN_STRICT_RULESET_ID}":
+        return 0, _main_strict_ruleset_payload()
     if path.startswith("repos/") and "/branches/main/protection" in path:
-        return 0, {"block_creations": {"enabled": False}}
+        return 1, {"message": "Branch not protected", "status": "404"}
     if path.startswith("repos/"):
         return 0, {"full_name": REPO, "default_branch": "main"}
     return 1, {"message": "unexpected"}
@@ -151,8 +186,8 @@ def test_github_contents_readonly_blocks(tmp_path: Path) -> None:
                 "permissions": {"contents": "write", "pull_requests": "write"},
                 "slug": "cursor",
             }
-        if "protection" in path:
-            return 0, {"block_creations": {"enabled": False}}
+        if f"/rulesets/{MAIN_STRICT_RULESET_ID}" in path:
+            return 0, _main_strict_ruleset_payload()
         return 0, {"default_branch": "main", "full_name": REPO}
 
     report = run_cursor_live_preflight(
@@ -202,8 +237,8 @@ def test_suspended_installation_blocks(tmp_path: Path) -> None:
                 "permissions": {"contents": "write", "pull_requests": "write"},
                 "slug": "cursor",
             }
-        if "protection" in path:
-            return 0, {"block_creations": {"enabled": False}}
+        if f"/rulesets/{MAIN_STRICT_RULESET_ID}" in path:
+            return 0, _main_strict_ruleset_payload()
         return 0, {"default_branch": "main"}
 
     report = run_cursor_live_preflight(
@@ -256,6 +291,15 @@ def test_preflight_zero_creates_and_schema(tmp_path: Path) -> None:
     assert report["github_writes"] == 0
     assert calls["GET"] >= 3
     assert report["repo_config_status"] == "PASS"
+    checks = {item["id"]: item for item in report["checks"]}
+    assert checks["github_ruleset_read"]["status"] == "PASS"
+    assert (
+        checks["github_ruleset_read"]["detail"]["ruleset_id"] == MAIN_STRICT_RULESET_ID
+    )
+    assert checks["github_ruleset_read"]["detail"]["required_contexts"] == [
+        "ci (Unit/Integration + Lint gesammelt)",
+        "policy-gate",
+    ]
     assert report["ready_for_live_run"] is False  # installation UNKNOWN
     assert any(
         g["id"] == "PUBLIC_API_GAP_GITHUB_INSTALLATION_READ"
@@ -300,8 +344,8 @@ def test_named_mode_duplicate_blocks_ready(tmp_path: Path) -> None:
                 "slug": "cursor",
                 "permissions": {"contents": "write", "pull_requests": "write"},
             }
-        if "protection" in path:
-            return 0, {"block_creations": {"enabled": False}}
+        if f"/rulesets/{MAIN_STRICT_RULESET_ID}" in path:
+            return 0, _main_strict_ruleset_payload()
         return 0, {"default_branch": "main"}
 
     report = run_cursor_live_preflight(

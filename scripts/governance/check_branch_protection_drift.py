@@ -30,6 +30,7 @@ except ImportError:  # pragma: no cover
 
 DEFAULT_REPO = "jannekbuengener/Claire_de_Binare"
 DEFAULT_BRANCH = "main"
+DEFAULT_RULESET_ID = 11617228
 DEFAULT_BASELINE = Path("docs/evidence/reports/BRANCH_PROTECTION_BASELINE_main.json")
 DEFAULT_REPORT = Path(
     "artifacts/reports/governance/BRANCH_PROTECTION_DRIFT_REPORT_main.md"
@@ -38,22 +39,18 @@ DEFAULT_APPLY_PAYLOAD = Path(
     "artifacts/reports/governance/BRANCH_PROTECTION_APPLY_PAYLOAD_main.json"
 )
 
-# There are no volatile fields currently removed from comparison.
-VOLATILE_PATHS: set[str] = set()
+# GitHub-generated ruleset metadata is not policy state.
+VOLATILE_PATHS: set[str] = {"node_id", "created_at", "updated_at", "_links"}
 
 # These arrays are semantically sets in GitHub branch protection APIs.
 UNORDERED_LIST_PATHS = {
-    "required_status_checks.contexts",
-    "required_status_checks.checks",
-    "required_pull_request_reviews.dismissal_restrictions.users",
-    "required_pull_request_reviews.dismissal_restrictions.teams",
-    "required_pull_request_reviews.dismissal_restrictions.apps",
-    "required_pull_request_reviews.bypass_pull_request_allowances.users",
-    "required_pull_request_reviews.bypass_pull_request_allowances.teams",
-    "required_pull_request_reviews.bypass_pull_request_allowances.apps",
-    "restrictions.users",
-    "restrictions.teams",
-    "restrictions.apps",
+    "rules",
+    "bypass_actors",
+    "conditions.ref_name.include",
+    "conditions.ref_name.exclude",
+    "rules[].parameters.required_status_checks",
+    "rules[].parameters.required_reviewers",
+    "rules[].parameters.allowed_merge_methods",
 }
 
 # GitHub treats repository owner/name identity case-insensitively, but only these
@@ -102,8 +99,8 @@ def parse_args() -> argparse.Namespace:
     return parser.parse_args()
 
 
-def run_gh_api(repo: str, branch: str) -> str:
-    target = f"repos/{repo}/branches/{branch}/protection"
+def run_gh_api(repo: str, ruleset_id: int = DEFAULT_RULESET_ID) -> str:
+    target = f"repos/{repo}/rulesets/{ruleset_id}"
     proc = subprocess.run(
         ["gh", "api", target],
         check=False,
@@ -112,7 +109,7 @@ def run_gh_api(repo: str, branch: str) -> str:
     )
     if proc.returncode != 0:
         raise RuntimeError(
-            "Failed to fetch branch protection via gh api:\n"
+            "Failed to fetch main-strict ruleset via gh api:\n"
             f"{proc.stderr.strip() or proc.stdout.strip()}"
         )
     return proc.stdout
@@ -168,7 +165,7 @@ def normalize(value: Any, path: str = "") -> Any:
         out: dict[str, Any] = {}
         for key in sorted(value.keys()):
             next_path = f"{path}.{key}" if path else key
-            if next_path in VOLATILE_PATHS:
+            if key in VOLATILE_PATHS or next_path in VOLATILE_PATHS:
                 continue
             out[key] = normalize(value[key], next_path)
         return out
@@ -319,31 +316,20 @@ def enabled_flag(value: Any) -> bool:
 
 
 def build_apply_payload(state: Any) -> dict[str, Any]:
+    """Return only fields writable by the repository-ruleset update endpoint."""
     if not isinstance(state, dict):
-        raise ValueError("branch protection state must be a JSON object")
-
+        raise ValueError("ruleset state must be a JSON object")
+    required = ("name", "target", "enforcement", "conditions", "rules")
+    missing = [key for key in required if key not in state]
+    if missing:
+        raise ValueError(f"ruleset state missing required fields: {', '.join(missing)}")
     return {
-        "required_status_checks": map_required_status_checks(
-            state.get("required_status_checks")
-        ),
-        "enforce_admins": enabled_flag(state.get("enforce_admins")),
-        "required_pull_request_reviews": map_required_pull_request_reviews(
-            state.get("required_pull_request_reviews")
-        ),
-        "restrictions": (
-            map_allowances(state.get("restrictions"))
-            if state.get("restrictions") is not None
-            else None
-        ),
-        "required_linear_history": enabled_flag(state.get("required_linear_history")),
-        "allow_force_pushes": enabled_flag(state.get("allow_force_pushes")),
-        "allow_deletions": enabled_flag(state.get("allow_deletions")),
-        "block_creations": enabled_flag(state.get("block_creations")),
-        "required_conversation_resolution": enabled_flag(
-            state.get("required_conversation_resolution")
-        ),
-        "lock_branch": enabled_flag(state.get("lock_branch")),
-        "allow_fork_syncing": enabled_flag(state.get("allow_fork_syncing")),
+        "name": state["name"],
+        "target": state["target"],
+        "enforcement": state["enforcement"],
+        "bypass_actors": state.get("bypass_actors", []),
+        "conditions": state["conditions"],
+        "rules": state["rules"],
     }
 
 
@@ -371,7 +357,6 @@ def write_report(
     drift_paths: list[str],
     diff_text: str,
     current_source: str,
-    required_signatures_enabled: bool,
 ) -> None:
     berlin_ts, utc_ts = get_timestamps()
     drift_state = "DRIFT DETECTED" if drift_paths else "NO DRIFT"
@@ -381,25 +366,19 @@ def write_report(
     if len(drift_paths) > 50:
         summary_lines += f"\n- ... and {len(drift_paths) - 50} more"
 
-    required_signatures_cmd = (
-        f"gh api --method POST repos/{repo}/branches/{branch}/protection/required_signatures"
-        if required_signatures_enabled
-        else f"gh api --method DELETE repos/{repo}/branches/{branch}/protection/required_signatures"
-    )
+    report = f"""# Main Ruleset Drift Report (compatibility artifact: BRANCH_PROTECTION_*)
 
-    report = f"""# Branch Protection Drift Report (main)
-
-Timestamp (Europe/Berlin): `{berlin_ts}`  
-Timestamp (UTC): `{utc_ts}`  
-Repo: `{repo}`  
-Branch: `{branch}`  
+Timestamp (Europe/Berlin): `{berlin_ts}`
+Timestamp (UTC): `{utc_ts}`
+Repo: `{repo}`
+Branch: `{branch}`
 State: **{drift_state}**
 
 ## Inputs
 
 - Baseline file: `{baseline_path.as_posix()}`
 - Current source: `{current_source}`
-- Normalization: sorted keys; unordered-list normalization for known set-like arrays; GitHub repository casing normalized only on known branch-protection URL fields; volatile-field stripping: none
+- Normalization: sorted keys; unordered-list normalization for known set-like arrays; rules/rule-parameter set normalization; GitHub-generated ruleset metadata stripped
 
 ## Hashes (SHA256)
 
@@ -419,9 +398,8 @@ State: **{drift_state}**
 ## Manual Apply Commands (maintainer only, never auto-executed)
 
 ```bash
-gh api repos/{repo}/branches/{branch}/protection > artifacts/reports/governance/BRANCH_PROTECTION_CURRENT_main.json
-gh api --method PUT repos/{repo}/branches/{branch}/protection --input {apply_payload_path.as_posix()}
-{required_signatures_cmd}
+gh api repos/{repo}/rulesets/{DEFAULT_RULESET_ID} > artifacts/reports/governance/BRANCH_PROTECTION_CURRENT_main.json
+gh api --method PUT repos/{repo}/rulesets/{DEFAULT_RULESET_ID} --input {apply_payload_path.as_posix()}
 ```
 
 Safety note: this checker is read-only and does not run apply commands.
@@ -432,9 +410,19 @@ Safety note: this checker is read-only and does not run apply commands.
 def main() -> int:
     args = parse_args()
 
+    if args.branch != DEFAULT_BRANCH:
+        print(
+            "ERROR: this checker is bound to the canonical main-strict ruleset; "
+            f"unsupported branch: {args.branch}",
+            file=sys.stderr,
+        )
+        return 2
+
     baseline_path = Path(args.baseline)
     report_path = Path(args.report)
     apply_payload_path = Path(args.apply_payload_out)
+    report_path.parent.mkdir(parents=True, exist_ok=True)
+    apply_payload_path.parent.mkdir(parents=True, exist_ok=True)
 
     if not baseline_path.exists():
         print(f"ERROR: baseline file does not exist: {baseline_path}", file=sys.stderr)
@@ -455,13 +443,36 @@ def main() -> int:
         current_raw, current_data = load_json(current_path)
         current_source = current_path.as_posix()
     else:
-        current_raw = run_gh_api(args.repo, args.branch)
+        current_raw = run_gh_api(args.repo)
         try:
             current_data = json.loads(current_raw)
         except json.JSONDecodeError as exc:
             print(f"ERROR: gh api returned invalid JSON: {exc}", file=sys.stderr)
             return 1
         current_source = "live gh api"
+
+        if not isinstance(current_data, dict) or "bypass_actors" not in current_data:
+            apply_payload = build_apply_payload(baseline_data)
+            apply_payload_path.write_text(
+                json.dumps(apply_payload, sort_keys=True, indent=2, ensure_ascii=False)
+                + "\n",
+                encoding="utf-8",
+            )
+            report_path.write_text(
+                "# Main Ruleset Drift Report\n\n"
+                "State: **UNKNOWN - permission-redacted live ruleset**\n\n"
+                "GitHub returned the ruleset without `bypass_actors`. This response "
+                "cannot prove the complete merge-governance state and is therefore "
+                "not compared as if the field were absent by policy. Use a credential "
+                "with complete ruleset visibility or the disclosed CI offline fallback; "
+                "live `main-strict` verification remains required before merge.\n",
+                encoding="utf-8",
+            )
+            print(
+                "Ruleset visibility incomplete: bypass_actors is permission-redacted."
+            )
+            print(f"Diff report: {report_path.as_posix()}")
+            return 3
 
     current_norm = normalize(current_data)
     current_norm_text = canonical_json(current_norm)
@@ -485,11 +496,6 @@ def main() -> int:
         encoding="utf-8",
     )
 
-    signatures_enabled = enabled_flag(
-        baseline_data.get("required_signatures", {}).get("enabled", False)
-        if isinstance(baseline_data, dict)
-        else False
-    )
     write_report(
         report_path=report_path,
         repo=args.repo,
@@ -501,7 +507,6 @@ def main() -> int:
         drift_paths=drift_paths,
         diff_text=diff_text,
         current_source=current_source,
-        required_signatures_enabled=signatures_enabled,
     )
 
     if drift_paths:

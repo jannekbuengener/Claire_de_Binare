@@ -56,20 +56,20 @@ Cursor Cloud / Plaketten-Ingo automation YAML is **outside this repo**.
 
 Repo eligibility correctness alone does **not** close `#4505`.
 
-### Branch protection read (fail-closed)
+### Repository ruleset read (fail-closed)
 
-The approval snapshot reads live classic branch protection via
-`GET /repos/{owner}/{repo}/branches/{base}/protection`. Cursor Cloud
-installation tokens (`ghs_…`, GitHub App slug `cursor`) typically **lack**
-`administration:read` and receive HTTP **403** on that endpoint.
+The approval snapshot reads the live canonical `main-strict` repository ruleset via
+`GET /repos/{owner}/{repo}/rulesets/11617228`. Classic Branch Protection is
+intentionally absent on `main`; required checks and review requirements come from
+the active ruleset. Provider credentials may still receive an incomplete or denied
+ruleset response when repository-rule visibility is insufficient.
 
 **Do not** infer required checks from observed check runs alone.
 
 Remediation order:
 
-1. **Provider auth (preferred):** grant `administration:read` on the Cursor
-   GitHub App installation for `jannekbuengener/Claire_de_Binare`, or run
-   eligibility on a credential that can read branch protection.
+1. **Provider ruleset read (preferred):** use a credential that can read the complete
+   active repository ruleset for `jannekbuengener/Claire_de_Binare`.
 2. **Trusted attestation (repo):** publish `<!-- cdb-protection-live:v1 -->` on
    the PR via `cdb-local-ci` before provider eligibility:
 
@@ -79,9 +79,9 @@ python -m tools.agent_control approval publish \
   --producer cdb-protection-live-attestation
 ```
 
-Publisher host must read live branch protection (operator PAT or App with
-`administration:read`). Consumer hosts without BP read consume the trusted
-attestation bound to the live PR `base_sha`.
+The publisher host must read the live repository ruleset. Consumer hosts without
+complete ruleset visibility consume the trusted attestation bound to the live PR
+`base_sha`.
 
 Provider trigger MUST:
 

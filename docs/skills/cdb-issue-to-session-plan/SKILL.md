@@ -51,7 +51,7 @@ Use this after `cdb-control-intake` when the next concrete unit of work is one s
      Required-Check verification, an acceptance-chain run (`cdb-integration-wiring-audit`,
      `cdb-pr-gap-classifier`, `cdb-pr-completeness-review`,
      `cdb-batch-merge-conductor`), or an issue closure into a delivery
-     session.      Final-Head prep, Cloud PR Reviewer APPROVE, and Merge Agent
+     session.      Final-Head prep, ruleset/review-feedback gate, and Merge Agent
      execution belong to a separately started merge session per
      `docs/contracts/final_head_merge_pipeline.v1.md`.
    - Mark all unresolved assumptions as unconfirmed.

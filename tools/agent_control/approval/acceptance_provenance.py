@@ -149,8 +149,8 @@ def _is_conductor_ready(envelope: dict[str, Any]) -> tuple[bool, list[str]]:
         errors.append("result.phase must be HANDOFF_APPROVAL")
     if result.get("success_decision") != "FINAL_HEAD_READY_FOR_APPROVAL":
         errors.append("result.success_decision must be FINAL_HEAD_READY_FOR_APPROVAL")
-    if result.get("handoff_role") != "cdb_final_head_pr_approval_gate":
-        errors.append("result.handoff_role must be cdb_final_head_pr_approval_gate")
+    if result.get("handoff_role") != "cdb_final_head_merge_executor":
+        errors.append("result.handoff_role must be cdb_final_head_merge_executor")
     block_codes = result.get("block_codes")
     if isinstance(block_codes, list) and block_codes:
         errors.append("result.block_codes must be empty")

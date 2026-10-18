@@ -215,7 +215,7 @@
         "MERGE_CANDIDATE"
       ]
     ],
-    "trigger_semantics": "A routing merge trigger sets transport steward_state=merge_candidate, but acceptance lifecycle starts at COMPLETENESS_REVIEW. Only a green completeness verdict promotes acceptance state to MERGE_CANDIDATE. Conductor promotes FINAL_VALIDATION to FINAL_HEAD_READY_FOR_APPROVAL after Final-Head validation and hosted Required Checks readiness (ci (Unit/Integration + Lint gesammelt) + policy-gate on the exact final head). MERGE_CANDIDATE and FINAL_HEAD_READY_FOR_APPROVAL never authorize merge by themselves. Regular merge is owned only by cdb_final_head_merge_executor after HEAD-bound APPROVE from cdb_final_head_pr_approval_gate."
+    "trigger_semantics": "A routing merge trigger sets transport steward_state=merge_candidate, but acceptance lifecycle starts at COMPLETENESS_REVIEW. Only a green completeness verdict promotes acceptance state to MERGE_CANDIDATE. Conductor promotes FINAL_VALIDATION to FINAL_HEAD_READY_FOR_APPROVAL after Final-Head validation and hosted Required Checks readiness (ci (Unit/Integration + Lint gesammelt) + policy-gate on the exact final head). MERGE_CANDIDATE and FINAL_HEAD_READY_FOR_APPROVAL never authorize merge by themselves. The lifecycle token FINAL_HEAD_READY_FOR_APPROVAL is retained for compatibility. Regular merge is owned only by cdb_final_head_merge_executor after the live main-strict ruleset predicate and review-feedback gate are satisfied. No separate GitHub APPROVE is required for merge."
   },
   "steward_acceptance_mapping": {
     "accepting_slices": [
@@ -456,7 +456,7 @@
         "own_routing_logic"
       ],
       "success_decision": "FINAL_HEAD_READY_FOR_APPROVAL",
-      "handoff_role": "cdb_final_head_pr_approval_gate"
+      "handoff_role": "cdb_final_head_merge_executor"
     }
   },
   "sha_rules": {
@@ -472,7 +472,8 @@
       "merge_pr": false,
       "modify_code": false,
       "success_mutation": "APPROVE",
-      "context_mode": "repo-only"
+      "context_mode": "repo-only",
+      "required_for_merge": false
     },
     "merge_executor": {
       "role_id": "cdb_final_head_merge_executor",
@@ -482,7 +483,8 @@
       "modify_code": false,
       "success_mutation": "regular_merge",
       "admin_bypass": false,
-      "context_mode": "repo-only"
+      "context_mode": "repo-only",
+      "requires_github_approve": false
     }
   },
   "conductor_phases": [

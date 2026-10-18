@@ -86,5 +86,5 @@ def test_drift_report_and_baseline_metadata_exist() -> None:
     assert "cdb-local-ci" not in report_text
     payload = json.loads(helpers.REQUIRED_CHECKS_BASELINE.read_text(encoding="utf-8"))
     assert payload.get("source") == "branch_protection_main"
-    assert payload.get("required_app_id") is None
+    assert payload.get("required_app_id") == 15368
     assert (payload.get("check_run_contexts") or []) == []

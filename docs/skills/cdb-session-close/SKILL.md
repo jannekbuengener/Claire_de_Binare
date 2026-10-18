@@ -84,7 +84,7 @@ Close a working session so the repo, git state, and issue thread reflect reality
      require the implementation session itself to have executed the merge.
    - If a PR is live MERGED (by Merge Agent or otherwise), proceed to step 6.
      If no PR exists: skip steps 6–7. If the PR is still open awaiting
-     Final-Head readiness, APPROVE, or Merge Agent execution: record the
+     Final-Head readiness, the ruleset/review-feedback gate, or Merge Agent execution: record the
      honest handoff status (`FINAL_HEAD_READY_FOR_APPROVAL`,
      `DONE_PR_OPEN_MERGE_HANDOFF`, or waiting-for-Merge-Agent) and skip
      steps 6–7. Do not use `--admin` and do not loop retries.
@@ -282,9 +282,10 @@ Close a working session so the repo, git state, and issue thread reflect reality
 - Use `erledigt` only when the issue-facing work is actually verified and the claimed git or GitHub state is real.
 - Do not imply LR uplift, live approval, or a Board-stage interpretation from a successful session close.
 - Respect solo-maintainer reality; do not invent ad-hoc reviewer chains.
-  Canonical Cloud roles `cdb_final_head_pr_approval_gate` and
-  `cdb_final_head_merge_executor` are required Final-Head pipeline roles
-  (see `docs/contracts/final_head_merge_pipeline.v1.md`).
+  `cdb_final_head_merge_executor` is the canonical merge-execution role.
+  `cdb_final_head_pr_approval_gate` is optional/advisory unless the live
+  `main-strict` ruleset requires approving reviews (see
+  `docs/contracts/final_head_merge_pipeline.v1.md`).
 - Do not auto-start more than one follow-up issue per session close (step 8
   auto-start hop). Step 9 may create or link **multiple deduplicated** residual
   follow-up issues when rest points are independent.
@@ -563,8 +564,7 @@ Commit, Push, PR-Ledger-Update, Issue-Handoff und dokumentierte
 Restunsicherheit. Der Issue bleibt bis zum verifizierten Merge offen.
 
 Nur nach schema-validem Completeness-Verdikt `MERGE_CANDIDATE`, Conductor
-Final-Head Preparation (`FINAL_HEAD_READY_FOR_APPROVAL`), HEAD-bound APPROVE
-durch `cdb_final_head_pr_approval_gate` und regular merge durch
+Final-Head Preparation (`FINAL_HEAD_READY_FOR_APPROVAL`), Ruleset-/Review-Feedback-Gate und regular merge durch
 `cdb_final_head_merge_executor` gilt der PR als live MERGED. Session Close
 verifiziert diesen Zustand und schließt nur Ledger-Zeilen mit
 `SLICE_DELIVERED`.

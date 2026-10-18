@@ -298,8 +298,10 @@ def test_cli_context_and_drift(tmp_path: Path) -> None:
     envelope = json.loads(out.read_text(encoding="utf-8"))
     assert envelope["schema_id"] == SCHEMA_ID
     assert envelope["recommendation"] == "APPROVE_RECOMMENDED"
-    # Committed examples must remain schema-valid (no test-time writes).
-    assert (EXAMPLES / "positive_approve_recommended.json").is_file()
+    # Committed examples must remain schema-valid and match current canon.
+    positive_example = EXAMPLES / "positive_approve_recommended.json"
+    assert positive_example.is_file()
+    assert json.loads(positive_example.read_text(encoding="utf-8")) == envelope
     assert (EXAMPLES / "negative_mechanism_mismatch.json").is_file()
 
     neg_out = tmp_path / "neg.json"

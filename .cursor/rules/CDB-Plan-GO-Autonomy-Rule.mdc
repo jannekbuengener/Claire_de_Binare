@@ -43,22 +43,22 @@ Allowed after Plan-GO, if explicitly inside scope:
 - post comments
 - apply or remove labels
 - close issues after live MERGED verification when in scope
-- hand off Final Head to `cdb_final_head_pr_approval_gate` / Merge Agent
-  when the plan explicitly includes that pipeline
+- hand off Final Head to `cdb_final_head_merge_executor` only after the live
+  `main-strict` ruleset and review-feedback gate are satisfied
 - create deduplicated follow-up issues
 - report final status
 
 Plan-GO does **not** authorize Delivery or Conductor sessions to bypass the
-PR Reviewer → Merge Agent pipeline with a direct `gh pr merge`.
+live `main-strict` ruleset / review-feedback gate with a direct `gh pr merge`.
 
 This is not a blank check. Productive DB writes, MCP mutations, BLUE/RED runtime changes, LR/live/echtgeld actions, secret handling, and scope expansion still require their own explicit scope or gate.
 
 ## Merge authority is role-bound
 
 Merge authority is granted only to `cdb_final_head_merge_executor` after
-HEAD-bound APPROVE from `cdb_final_head_pr_approval_gate` and live Final-Head
-gates in `CDB-Checks-and-Merge-Rule.mdc` /
-`docs/contracts/final_head_merge_pipeline.v1.md`. It is never granted merely
+the live `main-strict` ruleset, review-feedback gate, exact-head Required Checks,
+and Final-Head gates in `CDB-Checks-and-Merge-Rule.mdc` /
+`docs/contracts/final_head_merge_pipeline.v1.md` are satisfied. It is never granted merely
 because a session can prove technical capability.
 
 If a session lacks Final-Head readiness (e.g. no App Check Run publish

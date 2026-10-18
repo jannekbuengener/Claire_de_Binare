@@ -20,6 +20,14 @@ CONDUCTOR = ROOT / "docs" / "skills" / "cdb-batch-merge-conductor" / "SKILL.md"
 MERGE_GATE = ROOT / "docs" / "runbooks" / "merge_policy_ci_gate.md"
 CI_README = ROOT / "ci" / "README.md"
 CHECKS_RULE = ROOT / ".cursor" / "rules" / "CDB-Checks-and-Merge-Rule.mdc"
+CONTROL_PLANE = ROOT / "knowledge" / "governance" / "CDB_AGENT_CONTROL_PLANE.md"
+PLAN_GO_RULE = ROOT / ".cursor" / "rules" / "CDB-Plan-GO-Autonomy-Rule.mdc"
+OPERATOR_SKILL = ROOT / "docs" / "skills" / "cdb-operator" / "SKILL.md"
+SESSION_CLOSE_SKILL = ROOT / "docs" / "skills" / "cdb-session-close" / "SKILL.md"
+NO_HUMAN_REVIEW_POLICY = ROOT / "docs" / "governance" / "no_human_review_policy.md"
+APPROVAL_ELIGIBILITY_RUNBOOK = (
+    ROOT / "docs" / "runbooks" / "final_head_approval_eligibility.md"
+)
 
 
 def test_single_merge_executor_and_split_roles() -> None:
@@ -31,6 +39,7 @@ def test_single_merge_executor_and_split_roles() -> None:
     assert roles["pr_approval_gate"]["merge_pr"] is False
     assert roles["merge_executor"]["approve_pr"] is False
     assert "cdb_final_head_merge_executor" in pipeline
+    assert "next_role: cdb_final_head_merge_executor" in pipeline
     assert "Exactly one canonical final merge executor" in pipeline
 
 
@@ -92,3 +101,77 @@ def test_cloud_path_does_not_require_cdb_context() -> None:
     assert approval["final_head_roles"]["local_cdb_context_required"] is False
     assert "must not require local" in pipeline
     assert "cdb_context" in pipeline
+
+
+def test_sample_brain_style_ruleset_is_the_merge_enforcement_boundary() -> None:
+    pipeline = PIPELINE.read_text(encoding="utf-8")
+    checks = CHECKS_RULE.read_text(encoding="utf-8")
+    branch_doc = (ROOT / "docs" / "BRANCH_PROTECTION.md").read_text(encoding="utf-8")
+    review_gate = (ROOT / "docs" / "MERGE_REVIEW_FEEDBACK_GATE.md").read_text(
+        encoding="utf-8"
+    )
+
+    assert "main-strict" in branch_doc
+    assert "required_approving_review_count = 0" in branch_doc
+    assert "ci (Unit/Integration + Lint gesammelt)" in branch_doc
+    assert "policy-gate" in branch_doc
+    assert "No open review threads at merge" in review_gate
+    assert "HEAD-bound APPROVE" not in checks
+    assert "HEAD-bound APPROVE" not in pipeline
+    assert "GitHub APPROVE" not in checks
+    assert "ruleset" in checks.lower()
+    assert "review feedback" in checks.lower()
+
+
+def test_approval_role_is_not_required_for_regular_merge() -> None:
+    policy = json.loads(POLICY.read_text(encoding="utf-8"))
+    roles = policy["final_head_roles"]
+    assert roles["pr_approval_gate"]["required_for_merge"] is False
+    assert roles["merge_executor"]["requires_github_approve"] is False
+    assert "after HEAD-bound APPROVE" not in policy["lifecycle"]["trigger_semantics"]
+    assert "ruleset" in policy["lifecycle"]["trigger_semantics"].lower()
+
+
+def test_control_plane_authority_matrix_matches_ruleset_merge_gate() -> None:
+    control_plane = CONTROL_PLANE.read_text(encoding="utf-8")
+    assert "Regular Merge nach HEAD-gebundenem APPROVE" not in control_plane
+    assert "Approval-HEAD" not in control_plane
+    assert "main-strict" in control_plane
+    assert "Ruleset" in control_plane
+    assert "Review-Feedback" in control_plane
+    assert "optional/advisory" in control_plane.lower()
+
+
+def test_plan_go_autonomy_rule_matches_ruleset_merge_gate() -> None:
+    rule = PLAN_GO_RULE.read_text(encoding="utf-8")
+    assert "HEAD-bound APPROVE from `cdb_final_head_pr_approval_gate`" not in rule
+    assert "PR Reviewer" not in rule or "optional" in rule.lower()
+    assert "main-strict" in rule
+    assert "review-feedback" in rule.lower() or "review feedback" in rule.lower()
+    assert "cdb_final_head_merge_executor" in rule
+
+
+def test_operator_and_session_close_do_not_require_approval_provider() -> None:
+    operator = OPERATOR_SKILL.read_text(encoding="utf-8")
+    session_close = SESSION_CLOSE_SKILL.read_text(encoding="utf-8")
+    assert "**Approval:** `cdb_final_head_pr_approval_gate`" not in operator
+    assert "roles `cdb_final_head_pr_approval_gate` and" not in session_close
+    assert "main-strict" in operator
+    assert (
+        "review-feedback" in operator.lower() or "review feedback" in operator.lower()
+    )
+
+
+def test_no_human_review_policy_uses_main_strict_ruleset_api() -> None:
+    text = NO_HUMAN_REVIEW_POLICY.read_text(encoding="utf-8")
+    assert "/branches/main/protection" not in text
+    assert "/rulesets/11617228" in text
+    assert "integration_id" in text
+    assert "strict_required_status_checks_policy" in text
+
+
+def test_approval_eligibility_runbook_uses_repository_ruleset() -> None:
+    text = APPROVAL_ELIGIBILITY_RUNBOOK.read_text(encoding="utf-8")
+    assert "/branches/{base}/protection" not in text
+    assert "/rulesets/11617228" in text
+    assert "repository ruleset" in text.lower()

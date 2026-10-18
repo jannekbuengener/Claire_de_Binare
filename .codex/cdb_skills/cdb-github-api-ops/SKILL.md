@@ -160,8 +160,8 @@ collection_errors:
 | Create issue/PR | Only if Plan-GO explicitly allows it |
 | Label/milestone changes | Only if Plan-GO explicitly allows it |
 | Rebase/push | Only if Plan-GO explicitly allows it |
-| Squash merge (`gh pr merge --squash --delete-branch`) | Never a Delivery Mode or Conductor action. Only `cdb_final_head_merge_executor` (Merge Agent) may execute regular merge after HEAD-bound APPROVE from `cdb_final_head_pr_approval_gate`, with Final-Head gates re-verified (`FINAL_HEAD_READY_FOR_APPROVAL`, exact head/base, hosted Required Checks `ci (Unit/Integration + Lint gesammelt)` + `policy-gate` SUCCESS on the exact head). Read/write capability is not governance authority. `--admin` is never a substitute. |
-| GitHub APPROVE review | Only `cdb_final_head_pr_approval_gate` (PR Reviewer) on the exact final `HEAD_SHA`. Cannot merge. |
+| Squash merge (`gh pr merge --squash --delete-branch`) | Never a Delivery Mode or Conductor action. Only `cdb_final_head_merge_executor` (Merge Agent) may execute regular merge after the live `main-strict` ruleset and review-feedback gate are satisfied, with Final-Head gates re-verified (`FINAL_HEAD_READY_FOR_APPROVAL`, exact head/base, hosted Required Checks `ci (Unit/Integration + Lint gesammelt)` + `policy-gate` SUCCESS on the exact head). Read/write capability is not governance authority. `--admin` is never a substitute. |
+| GitHub APPROVE review | Optional/advisory only; when used, `cdb_final_head_pr_approval_gate` binds it to exact final `HEAD_SHA`. Cannot merge. |
 | Repo settings/admin | Separate scope, never automatic |
 | Branch protection changes | Separate scope, never automatic |
 

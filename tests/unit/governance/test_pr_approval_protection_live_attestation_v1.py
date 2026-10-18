@@ -24,6 +24,7 @@ from tools.agent_control.approval.protection_live_evidence import (
     _attestation_is_fresh,
     build_protection_live_envelope,
     format_protection_attestation_comment_body,
+    parse_required_checks_from_protection_payload,
     probe_branch_protection_api,
     resolve_protection_live_attestation,
 )
@@ -216,6 +217,33 @@ def test_trusted_attestation_used_when_branch_protection_api_unreadable() -> Non
     assert snap["protection_read"]["strict"] is True
     assert "PROTECTION_READ_UNAVAILABLE" not in snap.get("final_head_reason_codes", [])
     assert "PROTECTION_INCOMPLETE" not in snap.get("final_head_reason_codes", [])
+
+
+@pytest.mark.unit
+def test_approval_baseline_matches_canonical_app_bound_protection_view() -> None:
+    from tools.agent_control.approval.drift import protection_view_fingerprint
+
+    # Approval tooling remains a compatibility/advisory surface. Its fingerprint
+    # is intentionally independent from the main-strict ruleset snapshot shape;
+    # ruleset integration identity is covered by the ruleset governance contracts.
+    required_checks = [
+        {
+            "name": "ci (Unit/Integration + Lint gesammelt)",
+            "app_id": 15368,
+            "mechanism": "check_run",
+        },
+        {"name": "policy-gate", "app_id": 15368, "mechanism": "check_run"},
+    ]
+
+    approval_baseline = json.loads(
+        (
+            REPO_ROOT
+            / "config/agent-control/capability-baselines/approval-dashboard-export.redacted.v1.json"
+        ).read_text(encoding="utf-8")
+    )
+    assert approval_baseline["protection_view_fingerprint"] == (
+        protection_view_fingerprint({"required_checks": required_checks})
+    )
 
 
 @pytest.mark.unit
@@ -484,10 +512,7 @@ def test_probe_timeout_returns_fail_closed_error_without_traceback(
     assert isinstance(error, ProtectionReadError)
     assert error.http_status is None
     assert error.gh_exit_code == GH_TIMEOUT_EXIT_CODE
-    assert (
-        error.endpoint
-        == "repos/jannekbuengener/Claire_de_Binare/branches/main/protection"
-    )
+    assert error.endpoint == "repos/jannekbuengener/Claire_de_Binare/rulesets/11617228"
     assert "timed out" in error.message.lower()
     assert "30" in error.message
     assert error.hint
@@ -673,3 +698,43 @@ def test_small_future_skew_attestation_resolves_at_consumer() -> None:
         )
     assert resolved is not None
     assert resolved.comment_id == 7
+
+
+@pytest.mark.unit
+def test_parse_required_checks_from_main_strict_ruleset() -> None:
+    payload = json.loads(
+        (
+            REPO_ROOT / "docs/evidence/reports/BRANCH_PROTECTION_BASELINE_main.json"
+        ).read_text(encoding="utf-8")
+    )
+    parsed = parse_required_checks_from_protection_payload(payload)
+    assert parsed == (
+        [
+            {
+                "name": "ci (Unit/Integration + Lint gesammelt)",
+                "app_id": 15368,
+                "mechanism": "check_run",
+            },
+            {"name": "policy-gate", "app_id": 15368, "mechanism": "check_run"},
+        ],
+        False,
+    )
+
+
+@pytest.mark.unit
+def test_build_live_envelope_marks_ruleset_source() -> None:
+    payload = json.loads(
+        (
+            REPO_ROOT / "docs/evidence/reports/BRANCH_PROTECTION_BASELINE_main.json"
+        ).read_text(encoding="utf-8")
+    )
+    envelope = build_protection_live_envelope(
+        repository="jannekbuengener/Claire_de_Binare",
+        base_ref="main",
+        base_sha="a" * 40,
+        protection_payload=payload,
+        observed_at="2026-10-18T00:00:00Z",
+    )
+    assert envelope["protection"]["source"] == "repository_ruleset_api"
+    assert envelope["protection"]["strict"] is False
+    assert envelope["protection"]["required_checks"][0]["app_id"] == 15368

@@ -94,7 +94,7 @@ Hard rules:
 - Operative truth is the **injected protection/ruleset snapshot**.
 - Current default documentation (not hardcoded universal truth): two hosted
   Required Checks `ci (Unit/Integration + Lint gesammelt)` and `policy-gate`
-  (no fixed `app_id`) — see
+  (both bound to the official GitHub Actions App, `app_id=15368`) — see
   [`../../runbooks/merge_policy_ci_gate.md`](../../runbooks/merge_policy_ci_gate.md).
 
 ## Drift

@@ -1,26 +1,22 @@
 # CDB Final-Head Merge Pipeline v1
 
 Status: Canonical
-Issue: `#4411`
-Related: `config/governance/pr-acceptance-policy.v1.yaml`,
-`docs/runbooks/merge_policy_ci_gate.md`,
-`docs/runbooks/PR_ROUTING_AND_BATCH_MERGE_POLICY.md`,
-`docs/contracts/agent_approval/CDB_PR_APPROVAL_CONTEXT_V1.md`
+Issue: `#4411`; merge-enforcement reconciliation: `#4602`
+Related: `config/governance/pr-acceptance-policy.v1.yaml`, `docs/BRANCH_PROTECTION.md`, `docs/MERGE_REVIEW_FEEDBACK_GATE.md`, `docs/runbooks/merge_policy_ci_gate.md`.
 
 ## Purpose
 
-Define a single ownership matrix for the Final-Head path after
-`MERGE_CANDIDATE`. No parallel merge authorities remain.
+Define one merge authority after `MERGE_CANDIDATE`, while letting GitHub's live `main-strict` ruleset enforce the same merge boundary used by Sample Brain.
 
-## Stable role IDs vs Cursor display names
+## Stable roles
 
-| Stable role id | Cursor display name | Authority |
+| Stable role id | Authority | Merge-required? |
 |---|---|---|
-| `cdb_final_head_pr_approval_gate` | PR Reviewer | GitHub `APPROVE` only |
-| `cdb_final_head_merge_executor` | Merge Agent | Regular merge only |
+| `cdb_final_head_pr_approval_gate` | Optional/advisory GitHub `APPROVE` helper | no |
+| `cdb_final_head_merge_executor` | Regular merge only | yes |
 
-Display names are UI labels. Governance, contracts, and skills MUST bind
-behavior to the stable role ids.
+Exactly one canonical final merge executor exists: `cdb_final_head_merge_executor`.
+The repo-only merge path must not require local `cdb_context` or private operator state.
 
 ## Canonical flow
 
@@ -29,69 +25,49 @@ behavior to the stable role ids.
 | M1 | delivery | Issue slice delivered to routed PR | false |
 | M2 | acceptance | Integration Wiring Audit | false |
 | M3 | acceptance | Gap Classification | false |
-| M4 | acceptance | Completeness → `MERGE_CANDIDATE` | false |
-| M5 | `cdb-batch-merge-conductor` | Freeze, integrate main, bind final head/base, Final Validation, verify hosted Required Checks (`ci (Unit/Integration + Lint gesammelt)`, `policy-gate`) → `FINAL_HEAD_READY_FOR_APPROVAL` | false |
-| M6 | `cdb_final_head_pr_approval_gate` | `APPROVE` bound to exact final `HEAD_SHA` | false |
-| M7 | `cdb_final_head_merge_executor` | Regular merge after re-verify | true (only this role) |
+| M4 | acceptance | Completeness -> `MERGE_CANDIDATE` | false |
+| M5 | `cdb-batch-merge-conductor` | Freeze, integrate main, bind final head/base, Final Validation, verify hosted Required Checks -> `FINAL_HEAD_READY_FOR_APPROVAL` | false |
+| M6 | process gate | Recheck all review feedback on the final head; require `unreviewed=0`, `unresolved_threads=0`, and no blocking review | false |
+| M7 | `cdb_final_head_merge_executor` | Re-verify live `main-strict` ruleset, exact-head Required Checks, review-feedback gate, mergeability; regular merge | true |
 | M8 | `cdb-session-close` | Verify MERGED, issue close eligibility, safe cleanup | false |
+
+`FINAL_HEAD_READY_FOR_APPROVAL` is retained as a compatibility lifecycle token. It no longer means that a separate GitHub approval-provider mutation is required before merge.
 
 ## Hard rules
 
-Exactly one canonical final merge executor exists:
-`cdb_final_head_merge_executor`.
-
-1. `MERGE_CANDIDATE` alone never authorizes merge or approval.
-2. Conductor must not approve, merge, or close issues.
-3. PR Reviewer must not merge or modify code.
-4. Merge Agent must not approve or modify code.
-5. Approval is invalid when HEAD changes, a new commit lands, or relevant Base
-   drift occurs.
-6. Required contexts are the hosted GitHub Checks `ci (Unit/Integration + Lint
-   gesammelt)` and `policy-gate` on the exact final head (no hardcoded
-   `app_id`; hosted GitHub Actions App). Same-named Commit Status is not
-   sufficient.
-7. Cloud Reviewer/Merger are repo-only by design; they must not require local
-   `cdb_context` or fabricate DB evidence.
-8. `--admin` is never a bypass.
-9. Delivery/implementation sessions do not merge by default.
-10. Session Close verifies live delivery after the Merge Agent executed merge;
-    it does not require the implementation session to have merged.
+1. `MERGE_CANDIDATE` alone never authorizes merge.
+2. Conductor must not merge or close issues.
+3. Optional approval tooling may review/approve, but approval is not required for regular merge when the live ruleset requires zero approving reviews.
+4. Merge Agent must not modify code while acting as merge executor.
+5. HEAD or relevant Base drift invalidates final-head evidence and requires revalidation.
+6. Required contexts are enforced by active GitHub ruleset `main-strict`: `ci (Unit/Integration + Lint gesammelt)` and `policy-gate`, both bound to GitHub Actions integration `15368`.
+7. Review feedback is a mandatory process gate; see `docs/MERGE_REVIEW_FEEDBACK_GATE.md`.
+8. Same-named Commit Status or Check Run from another integration is insufficient.
+9. `--admin` is never a normal merge bypass.
+10. Delivery/implementation sessions do not merge by default; merge authority remains explicit.
+11. If the live ruleset later requires approving reviews, the merge path must fail closed until that live requirement is satisfied.
 
 ## Conductor success handoff
 
 ```text
 decision: FINAL_HEAD_READY_FOR_APPROVAL
-next_role: cdb_final_head_pr_approval_gate
+next_role: cdb_final_head_merge_executor
+legacy_state_name: true
 ```
 
-## Approval mutation contract (PR Reviewer)
+## Optional approval tooling
 
-Required fields in the approval evidence / review body:
-
-- `DECISION: APPROVE`
-- `RISK: LOW`
-- `HEAD_SHA: <exact-final-head>`
-- `COMPLETENESS_VERDICT: MERGE_CANDIDATE`
-- `BLOCKERS: NONE`
-- `REQUIRED_NEXT_ACTION: HANDOFF_TO_MERGE_AGENT`
+`cdb.pr_approval_context.v1`, `approval eligibility`, and `approve-body` remain deterministic advisory/reviewer helpers. If an APPROVE review is emitted, it must stay exact-head-bound, but absence of such a review is not a merge blocker while the live ruleset requires zero approving reviews.
 
 ## Merge Agent re-verify
 
-Before regular merge command
-`gh pr merge <PR> --squash --delete-branch`:
+Before `gh pr merge <PR> --squash --delete-branch`:
 
-- approval identity and approval `HEAD_SHA`
-- current `HEAD_SHA` equals approval binding
-- base/drift gates
-- hosted Required Checks `ci (Unit/Integration + Lint gesammelt)` and
-  `policy-gate` SUCCESS on the exact final head
-- reviews / mergeability / branch protection
-- loop guard: HEAD change or stale approval → re-request Reviewer, do not merge
-
-## Relationship to `cdb.pr_approval_context.v1`
-
-The read-only recommendation envelope
-(`APPROVE_RECOMMENDED` / …) remains a deterministic context builder. It does
-not merge and does not publish CI. The Cloud PR Reviewer may consume that
-context, but the governance mutation is a GitHub review `APPROVE` bound to the
-exact final head, not the recommendation enum alone.
+- current head/base match final validation evidence
+- active `main-strict` ruleset applies to `refs/heads/main`
+- live ruleset review requirement is satisfied (`required_approving_review_count = 0` currently)
+- `ci (Unit/Integration + Lint gesammelt)` + `policy-gate` are successful on exact head from integration `15368`
+- all review feedback is seen/dispositioned; `unreviewed=0`; `unresolved_threads=0`
+- no blocking `CHANGES_REQUESTED` review
+- PR is not draft and is mergeable
+- no admin/force bypass

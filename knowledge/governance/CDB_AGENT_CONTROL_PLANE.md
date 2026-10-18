@@ -121,7 +121,7 @@ Delivery Slice in routed PR
     │
     ▼  (separate Merge session)
 Completeness Review → Batch Merge Conductor (Final-Head prep) →
-hosted Required Checks (`ci` + `policy-gate`) → PR Reviewer APPROVE → Merge Agent → session-close
+hosted Required Checks (`ci` + `policy-gate`) → `main-strict` Ruleset + Review-Feedback-Gate → Merge Agent → session-close
 ```
 
 Regeln:
@@ -154,19 +154,19 @@ Für jede Komponente gilt genau eine primäre Verantwortung. Spalten:
 | **Dispatcher** | Run-Start und erlaubte Lifecycle-Übergänge | Provider-Dispatch gemäß Contract + Route + Environment | Preflight (Contract/Route/Env) | HOLD/BLOCKED/FAILED bei Preflight- oder Lauf-Fehler | Merge, Approval ersetzen, Final-CI vortäuschen |
 | **Provider Adapter** | Provider-spezifische Aufrufabbildung | Provider-API/CLI/SDK laut öffentlicher Capability | Capability Probe / Drift gegen Registry | STOP wenn Capability fehlt oder Drift kritisch | Private API / UI-Scraping als Kern; Merge; Secrets speichern |
 | **Cursor** | nichts in CDB-Authority | Zugewiesene Delivery-Arbeit im Provider-Environment | Provider-lokale Logs/Status an Adapter | Provider-seitiger Abbruch melden | Merge, `cdb-local-ci`, Issue-Close, Live-Go, Governance-Override |
-| **PR Reviewer (`cdb_final_head_pr_approval_gate`)** | GitHub APPROVE gebunden an exakten Final-Head SHA | APPROVE-Review gemäß Final-Head Pipeline | Diff/Evidence/hosted Required Checks gegen Contract und Safety | HOLD bei Policy-/Safety-/Drift-Findings | Merge, Code ändern, Final-CI publishen, Branch Protection, Live-Go |
+| **PR Reviewer (`cdb_final_head_pr_approval_gate`)** | Optional/advisory exact-head review helper | Optional GitHub APPROVE review when useful; not required for merge while live ruleset requires zero approvals | Diff/Evidence/hosted Required Checks against contract and safety | HOLD on policy/safety/drift findings in its advisory scope | Merge; code changes; Final-CI publish; ruleset mutation; Live-Go |
 | **Agent Run Evidence** | nichts | Evidence-Bundle schreiben (Schema später `#4256`) | Vollständigkeit/Integrität des Run-Bundles | BLOCKED bei fehlender Pflicht-Evidence | Brain-Evidence ersetzen; Final-CI vortäuschen; Merge |
 | **Final CI / hosted Required Checks** | Merge-relevante Check-Run-Wahrheit: `ci (Unit/Integration + Lint gesammelt)` + `policy-gate` (GitHub-hosted, exakter Head); SSOT [`docs/runbooks/merge_policy_ci_gate.md`](../../docs/runbooks/merge_policy_ci_gate.md) | Publish nur durch `ci.yml`/`policy-gate.yml` (Hosted GitHub Actions) | Fast-CI/Evidence-Bindung an Head SHA | BLOCKED_REQUIRED_STATUS bei missing/red/stale | Slice-Validation als Final-CI zählen; Admin-Bypass; lokalen `cdb-local-ci` Preflight als Merge-Gate zählen |
 | **Completeness Review** | `MERGE_CANDIDATE` / Nicht-Kandidat (read-only Aggregat) | nichts | Acht Dimensionen der PR-Completeness | HOLD bei Lücken/Scope-/Wiring-Findings | Merge ausführen; Delivery-Session ersetzen |
 | **Batch Merge Conductor** | Freeze, Final-Validation-Orchestrierung, `FINAL_HEAD_READY_FOR_APPROVAL` | Freeze, Rebase/Integrate nach Canon, hosted Required Checks verifizieren | Final-Head-Evidence, Main-Drift | HOLD bei Drift/Capability-/Gate-Fehlern | APPROVE; Merge; Delivery-Slice mergen ohne Freeze; `--admin`; Fake-Green |
-| **Merge Agent (`cdb_final_head_merge_executor`)** | Regular Merge nach HEAD-gebundenem APPROVE | `gh pr merge --squash --delete-branch` nach Re-Verify | Approval-HEAD, Drift, required Check Run, Mergeability | HOLD/Re-Review bei Drift/stale Approval | APPROVE; Code ändern; `--admin`; Fake-Green |
+| **Merge Agent (`cdb_final_head_merge_executor`)** | Regular merge after live `main-strict` Ruleset + Review-Feedback gate | `gh pr merge --squash --delete-branch` after re-verify | Head/Base drift, required Check Runs, live ruleset review requirement, review-feedback state, mergeability | HOLD/Re-review on drift, red/missing checks, unresolved feedback, or unsatisfied live review requirement | APPROVE; code changes; `--admin`; Fake-Green |
 
 ### 4.1 Kurzform Authority
 
 - **CDB entscheidet.** Router weist zu. Contract beschreibt. Dispatcher startet.
   Provider führt aus. Completeness bewertet Merge-Reife. Conductor bereitet
-  Final Head vor. PR Reviewer APPROVEd den exakten Head. Merge Agent mergt.
-- **PR Reviewer APPROVE ≠ Mergefreigabe durch Conductor/Delivery.**
+  Final Head vor. Ruleset und Review-Feedback-Gate entscheiden die Merge-Reife. Merge Agent mergt.
+- **`main-strict` Ruleset + Review-Feedback-Gate ≠ Mergefreigabe durch Conductor/Delivery.**
 - **Delivery-Agenten und Conductor dürfen nicht mergen.** Nur
   `cdb_final_head_merge_executor` mergt.
 - **Hosted Required Checks `ci (Unit/Integration + Lint gesammelt)` + `policy-gate`
@@ -209,7 +209,7 @@ Merge-Pfad (separate Session, nicht Teil des Delivery-Runs):
 ```text
 DELIVERED/PASS (open PR) → Completeness MERGE_CANDIDATE → FROZEN
   → Final CI SUCCESS on exact head → FINAL_HEAD_READY_FOR_APPROVAL
-  → PR Reviewer APPROVE(HEAD_SHA) → Merge Agent regular squash-merge
+  → `main-strict` Ruleset + Review-Feedback-Gate → Merge Agent regular squash-merge
   → session-close
 ```
 

@@ -1,7 +1,7 @@
 # GitHub Workflow Register
 
 **Repo:** Claire de Binare  
-**Stand:** 2026-09-11 (#4540 hosted Required Checks)
+**Stand:** 2026-10-18 (#4600 GitHub-Actions App-Binding Canon)
 **Workflow-Dateien:** 57  
 **Entfernungs-Scope:** 13 Workflow-Dateien plus 5 exklusive Support-Dateien  
 **Daten-Datei im Workflow-Ordner:** `labels.json` (kein Workflow)
@@ -23,8 +23,9 @@ historischen Evidence- und Session-Unterlagen erwähnt.
 
 SSOT: [`merge_policy_ci_gate.md`](merge_policy_ci_gate.md). Die merge-relevanten
 Required Contexts auf `main` sind die hosted Check Runs `ci (Unit/Integration +
-Lint gesammelt)` und `policy-gate`, live verifizierbar via `gh api`, nicht aus
-dieser Tabelle.
+Lint gesammelt)` und `policy-gate`, beide im aktiven `main-strict` Ruleset an
+die offizielle GitHub Actions Integration (`integration_id=15368`) gebunden.
+Live verifizierbar via Ruleset API + Check Runs, nicht aus dieser Tabelle.
 
 | Quelle | Check-Kontext | Typ |
 |---|---|---|
@@ -37,7 +38,7 @@ dieser Tabelle.
 | `policy-gate.yml` | Hosted Actions, Required Check `policy-gate` (PR Safety-Gate) |
 
 Seit #4540 sind `ci (Unit/Integration + Lint gesammelt)` und `policy-gate`
-Branch-Protection-Required-Checks. `cdb-local-ci` (Local CI Status Publisher,
+main-strict Ruleset Required Checks. `cdb-local-ci` (Local CI Status Publisher,
 App Check Run `app_id=4410232`) ist seit #4540 **kein** Required Context mehr,
 sondern optionaler Developer-Preflight/Diagnose. Andere Workflows liefern
 ergänzende Prüfungen, Reports oder Automatisierung, ersetzen aber die hosted
