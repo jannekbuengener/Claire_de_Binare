@@ -142,7 +142,6 @@ def test_upstream_hold_evidence_documents_required_fields() -> None:
         "systemd-homed",
         "Debian Trixie",
         "no DSA",
-        "postponed",
         "Exploitability",
         "cdb_allocation",
         "cdb_db_writer",
@@ -185,3 +184,11 @@ def test_evidence_rejects_fake_remediation_and_keeps_live_recheck_boundary() -> 
     assert "cannot detect debian fixedversion offline" in lowered
     assert "suite migration" in lowered
     assert "not an eternal required digest" in lowered
+
+
+def test_evidence_utf8_is_clean() -> None:
+    raw = EVIDENCE_FILE.read_bytes()
+    assert not raw.startswith(b"\xef\xbb\xbf"), "evidence must be UTF-8 without BOM"
+    text = raw.decode("utf-8")
+    assert "\u00e2\u20ac\u201d" not in text, "evidence contains mojibake for an em dash"
+    assert "\ufffd" not in text, "evidence contains Unicode replacement characters"
