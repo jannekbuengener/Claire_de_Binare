@@ -20,6 +20,7 @@ CONDUCTOR = ROOT / "docs" / "skills" / "cdb-batch-merge-conductor" / "SKILL.md"
 MERGE_GATE = ROOT / "docs" / "runbooks" / "merge_policy_ci_gate.md"
 CI_README = ROOT / "ci" / "README.md"
 CHECKS_RULE = ROOT / ".cursor" / "rules" / "CDB-Checks-and-Merge-Rule.mdc"
+CONTROL_PLANE = ROOT / "knowledge" / "governance" / "CDB_AGENT_CONTROL_PLANE.md"
 
 
 def test_single_merge_executor_and_split_roles() -> None:
@@ -122,3 +123,13 @@ def test_approval_role_is_not_required_for_regular_merge() -> None:
     assert roles["merge_executor"]["requires_github_approve"] is False
     assert "after HEAD-bound APPROVE" not in policy["lifecycle"]["trigger_semantics"]
     assert "ruleset" in policy["lifecycle"]["trigger_semantics"].lower()
+
+
+def test_control_plane_authority_matrix_matches_ruleset_merge_gate() -> None:
+    control_plane = CONTROL_PLANE.read_text(encoding="utf-8")
+    assert "Regular Merge nach HEAD-gebundenem APPROVE" not in control_plane
+    assert "Approval-HEAD" not in control_plane
+    assert "main-strict" in control_plane
+    assert "Ruleset" in control_plane
+    assert "Review-Feedback" in control_plane
+    assert "optional/advisory" in control_plane.lower()
