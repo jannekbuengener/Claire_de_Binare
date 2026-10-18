@@ -133,7 +133,7 @@ Missing technical capability for Final-Head readiness maps to
   after squash-merge (Issue `#4218`); ledger/status lines belong
   **vor dem Freeze** in this PR or later in a `docs-governance` batch
 - capability-based autonomous merge that bypasses
-  Merge Agent → Merge Agent
+  the live main-strict ruleset / review-feedback gate -> Merge Agent
 
 ## Required envelope fields
 
