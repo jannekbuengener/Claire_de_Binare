@@ -2,7 +2,7 @@
 Canonical Skill Source: docs/skills/cdb-external-docs/SKILL.md
 Surface: claude
 Sync Status: mirrored-from-canon
-Last Verified: 2026-07-01
+Last Verified: 2026-10-20
 Drift Policy: Surface-Adapter duerfen nur mit dokumentierter Begruendung abweichen.
 -->
 ---
@@ -24,7 +24,7 @@ This skill tells agents:
 
 Canonical external docs list: `docs/external-docs/index.md`
 
-This file contains all known external documentation references grouped by category, with priority levels and CDB usage notes.
+This file contains all known external documentation references grouped by category, with `P0`/`P1`/`P2` relevance and CDB usage notes. Priority expresses repo relevance, not source authority.
 
 ## When to use
 
@@ -47,8 +47,9 @@ Load this skill when the task involves any of these external doc dependencies:
 1. Identify the problem domain (e.g., "MEXC WebSocket reconnect").
 2. Load this skill.
 3. Look up `docs/external-docs/index.md` for the relevant category.
-4. Before writing code, fetch the official docs for the tool.
-5. If multiple docs apply, read all that are `required` priority first, then `secondary`.
+4. Select only references whose repo signal / lookup trigger matches the current task.
+5. Before writing code, fetch the highest-authority applicable official/upstream docs for the tool.
+6. If multiple active references apply, read `P0` first, then relevant `P1`. Load `P2` only when the concrete parked scope is activated.
 
 ## When internet/browsing is unavailable
 
@@ -66,11 +67,11 @@ When official external docs seem to contradict CDB canon (code, docs, runbooks):
 
 | Priority | Rule |
 |----------|------|
-| 1 | External official docs win for tool/API behavior |
-| 2 | CDB canon (custom wrappers, adapters, policies) defines CDB-specific behavior |
+| 1 | External official docs win for upstream tool/API behavior |
+| 2 | CDB canon (custom wrappers, adapters, policies) defines CDB-specific behavior and actual repo usage |
 | 3 | Report the contradiction in an evidence snippet |
 | 4 | If the mismatch is governance-relevant, create a decision event |
-| 5 | Do not silently override external behavior with assumptions |
+| 5 | Do not silently override either source with assumptions |
 
 ## Lookup Hooks
 
