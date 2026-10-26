@@ -1,5 +1,5 @@
 # Paper Trading Runner - Containerized Service
-FROM python:3.14-slim-bookworm@sha256:4ff4b92a68355dbdb52584ab3391dff8d371a61d4e063468bfd0130e3189c6d9
+FROM python:3.15-slim-bookworm@sha256:575f8bc12ec26542e0678bc6b60e385218248019d433157ec327264a78c3a853
 
 # Install system dependencies
 RUN apt-get update && apt-get install -y \
