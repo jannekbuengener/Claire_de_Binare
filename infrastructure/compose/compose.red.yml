@@ -93,7 +93,7 @@ services:
   # ==================== MONITORING ====================
 
   cdb_prometheus:
-    image: prom/prometheus:v3.13.2@sha256:508729e0e2d18e11fd742a5a5ca70e557b940a93948c3c95fd0123a6fd538b69
+    image: prom/prometheus:v3.15.1@sha256:fa3302279710be2f21a8301ec17a8b4f2301fd829bd113839b3b6b02b6f191a2
     container_name: cdb_prometheus
     restart: unless-stopped
     volumes:
