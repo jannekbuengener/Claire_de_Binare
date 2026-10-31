@@ -82,6 +82,8 @@ jobs:
           pip install -r requirements.txt
           pip install -r requirements-dev.txt
           pip install -r requirements-mcp.txt
+          # Exact Agent Brain pin for #13 consumer cutover smoke (immutable git tag).
+          pip install -r requirements-agent-brain.txt
           # Toolchain SSOT (#4206): black/ruff pins from requirements-dev.txt only.
           # Do not reinstall unversioned ruff/black after the requirements install.
 

@@ -1,0 +1,5 @@
+# Exact immutable Agent Brain pin for Claire consumer cutover (#13).
+# #17 Consumer Contract: no main/branch/latest/local-path pins.
+# Git-tag form is canonical until a package index publish exists for 0.2.0.
+# Version must include Slice #12 public protocol surface (not v0.1.0).
+agent-brain @ git+https://github.com/jannekbuengener/agent-brain.git@v0.2.0

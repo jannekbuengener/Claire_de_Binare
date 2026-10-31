@@ -53,6 +53,7 @@
     "opencode.jsonc",
     "pyproject.toml",
     "pytest.ini",
+    "requirements-agent-brain.txt",
     "requirements-dev.txt",
     "requirements-mcp.txt",
     "requirements.txt"
