@@ -1,0 +1,13 @@
+{
+  "schema_version": "consumer_cutover/v1",
+  "consumer_path": "legacy",
+  "pinned_agent_brain_version": "0.2.0",
+  "pinned_requirement": "agent-brain @ git+https://github.com/jannekbuengener/agent-brain.git@v0.2.0",
+  "allow_live_or_echtgeld": false,
+  "memory_writes": false,
+  "notes": [
+    "Default remains legacy for safety; enable agent_brain explicitly for #13 smoke / #18 dual-run.",
+    "Rollback = set consumer_path back to legacy (or CDB_AGENT_BRAIN_CONSUMER_PATH=legacy).",
+    "Refs jannekbuengener/agent-brain#13"
+  ]
+}
