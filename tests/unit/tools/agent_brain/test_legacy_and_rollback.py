@@ -55,7 +55,11 @@ def test_path_selection_legacy_vs_agent_brain() -> None:
         if operation == "capabilities":
             return R(
                 ok=True,
-                data={"capabilities": [{"capability": "context_read", "state": "available"}]},
+                data={
+                    "capabilities": [
+                        {"capability": "context_read", "state": "available"}
+                    ]
+                },
             )
         return R(ok=True, data={"via": "agent_brain"})
 
@@ -105,5 +109,7 @@ def test_rollback_to_legacy_after_agent_brain_failure() -> None:
 
 def test_policy_stays_outside_agent_brain_on_legacy() -> None:
     with pytest.raises(ConsumerError) as exc:
-        LegacyContextPath().context_read(target_scope="live-trade", artifacts=[_artifact()])
+        LegacyContextPath().context_read(
+            target_scope="live-trade", artifacts=[_artifact()]
+        )
     assert exc.value.code is ConsumerErrorCode.POLICY_BLOCKED

@@ -83,7 +83,9 @@ def select_consumer_path(
 
 
 def _coerce_path(value: str | ConsumerPath) -> ConsumerPath:
-    text = value.value if isinstance(value, ConsumerPath) else str(value).strip().lower()
+    text = (
+        value.value if isinstance(value, ConsumerPath) else str(value).strip().lower()
+    )
     try:
         return ConsumerPath(text)
     except ValueError as exc:

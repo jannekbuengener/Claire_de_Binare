@@ -61,7 +61,9 @@ def assert_claire_consumer_policy(
     }
 
 
-def attach_claire_policy(payload: Mapping[str, Any], policy: Mapping[str, Any]) -> dict[str, Any]:
+def attach_claire_policy(
+    payload: Mapping[str, Any], policy: Mapping[str, Any]
+) -> dict[str, Any]:
     """Attach Claire policy metadata without mutating Agent Brain core shapes."""
     out = dict(payload)
     out["claire_policy"] = dict(policy)

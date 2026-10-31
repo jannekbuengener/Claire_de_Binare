@@ -34,7 +34,9 @@ def test_pin_mismatch_fail_closed(monkeypatch: pytest.MonkeyPatch) -> None:
         "tools.agent_brain.pin.installed_version",
         lambda: "0.1.0",
     )
-    adapter = AgentBrainAdapter(invoke_fn=lambda *_a, **_k: _FakeResponse(ok=True, data={}))
+    adapter = AgentBrainAdapter(
+        invoke_fn=lambda *_a, **_k: _FakeResponse(ok=True, data={})
+    )
     with pytest.raises(ConsumerError) as exc:
         adapter.verify_pin()
     assert exc.value.code is ConsumerErrorCode.CONTRACT_VERSION_MISMATCH
