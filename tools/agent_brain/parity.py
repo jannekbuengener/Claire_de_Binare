@@ -227,7 +227,7 @@ def normalize_package_for_compare(package: Mapping[str, Any]) -> dict[str, Any]:
         # package.guardrails compared separately: legacy embeds Claire defaults;
         # Agent Brain keeps the package product-neutral (policy on claire_policy).
         "artifacts_semantic": _artifacts_semantic(package.get("artifacts") or []),
-        "has_ranked_context": package.get("ranked_context") is not None,
+        "ranked_context": _ranked_context_semantic(package.get("ranked_context")),
     }
     # Normalize evidence / decision identities under alias map.
     evidence = package.get("evidence_refs")
@@ -308,6 +308,32 @@ def _ref_identities(refs: Sequence[Any]) -> list[str]:
         elif item is not None and str(item).strip():
             identities.append(str(item).strip())
     return sorted(identities)
+
+
+def _ranked_context_semantic(ranked: Any) -> list[str] | None:
+    """Preserve ranked-context identities/order; None means absent."""
+    if ranked is None:
+        return None
+    if isinstance(ranked, Mapping):
+        items = ranked.get("items") or ranked.get("records") or ranked.get("ranked")
+        if items is None:
+            return [json.dumps(ranked, sort_keys=True, default=str)]
+        ranked = items
+    if not isinstance(ranked, (list, tuple)):
+        return [json.dumps(ranked, sort_keys=True, default=str)]
+    identities: list[str] = []
+    for item in ranked:
+        if isinstance(item, Mapping):
+            for key in ("record_id", "artifact_id", "id", "candidate_id", "ref"):
+                value = item.get(key)
+                if value is not None and str(value).strip():
+                    identities.append(str(value).strip())
+                    break
+            else:
+                identities.append(json.dumps(item, sort_keys=True, default=str))
+        elif item is not None:
+            identities.append(str(item))
+    return identities
 
 
 def normalize_policy(data: Mapping[str, Any] | None) -> dict[str, Any] | None:
@@ -442,8 +468,11 @@ def compare_context_results(
     leg_guards = list(leg_pkg.get("guardrails") or [])
     ab_guards = list(ab_pkg.get("guardrails") or [])
     if leg_guards != ab_guards:
-        # Safety remains on claire_policy for both paths after #13.
+        # Only the documented default→neutral transition is accepted:
+        # legacy embeds Claire defaults; agent_brain package guardrails are empty
+        # while claire_policy carries the safety statements.
         policy_ok = bool(leg_policy and ab_policy and leg_policy == ab_policy)
+        accepted_neutral_transition = policy_ok and bool(leg_guards) and ab_guards == []
         deltas.append(
             FieldDelta(
                 field="package.guardrails",
@@ -451,18 +480,21 @@ def compare_context_results(
                 agent_brain_value=ab_guards,
                 parity_class=(
                     ParityClass.ACCEPTED_CONTRACT_CHANGE
-                    if policy_ok
+                    if accepted_neutral_transition
                     else ParityClass.UNACCEPTED_DELTA
                 ),
                 reason=(
                     "Legacy embeds Claire default guardrails in package; "
                     "Agent Brain keeps package neutral and Claire attaches "
                     "claire_policy.guardrails"
-                    if policy_ok
-                    else "package guardrails diverge without claire_policy parity"
+                    if accepted_neutral_transition
+                    else (
+                        "package guardrails diverge outside the documented "
+                        "legacy-default → agent_brain-neutral transition"
+                    )
                 ),
                 contract_ref="agent-brain context package neutrality + Claire policy",
-                risk="low" if policy_ok else "high",
+                risk="low" if accepted_neutral_transition else "high",
             )
         )
     else:
