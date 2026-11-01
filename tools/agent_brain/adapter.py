@@ -138,6 +138,102 @@ class AgentBrainAdapter:
             )
         return result
 
+    def evidence(
+        self,
+        *,
+        scope: str,
+        topic: str | None = None,
+        tags: list[str] | None = None,
+    ) -> ConsumerResult:
+        policy = assert_claire_consumer_policy(target_scope=scope, tags=tags)
+        self.verify_pin()
+        self.require_capability("evidence")
+        payload: dict[str, Any] = {"scope": scope}
+        if topic is not None:
+            payload["topic"] = topic
+        result = self._call("evidence", payload)
+        if result.ok and result.data is not None:
+            return ConsumerResult(
+                ok=True,
+                operation=result.operation,
+                path=result.path,
+                data=attach_claire_policy(result.data, policy),
+                error=None,
+                agent_brain_version=result.agent_brain_version,
+                limitations=result.limitations,
+            )
+        return result
+
+    def retrieval(
+        self,
+        *,
+        query: Mapping[str, Any],
+        records: list[Mapping[str, Any]] | None = None,
+        edges: list[Mapping[str, Any]] | None = None,
+        source_priority: list[str] | None = None,
+        tags: list[str] | None = None,
+        policy_scope: str = "claire:retrieval",
+    ) -> ConsumerResult:
+        policy = assert_claire_consumer_policy(target_scope=policy_scope, tags=tags)
+        self.verify_pin()
+        self.require_capability("retrieval")
+        payload: dict[str, Any] = {
+            "query": dict(query),
+            "records": list(records or []),
+        }
+        if edges is not None:
+            payload["edges"] = list(edges)
+        if source_priority is not None:
+            payload["source_priority"] = list(source_priority)
+        result = self._call("retrieval", payload)
+        if result.ok and result.data is not None:
+            return ConsumerResult(
+                ok=True,
+                operation=result.operation,
+                path=result.path,
+                data=attach_claire_policy(result.data, policy),
+                error=None,
+                agent_brain_version=result.agent_brain_version,
+                limitations=result.limitations,
+            )
+        return result
+
+    def memory_read(
+        self,
+        *,
+        scope: Mapping[str, Any],
+        as_of: str,
+        query_id: str = "claire-memory-read",
+        subject_ref: str | None = None,
+        limit: int = 20,
+        tags: list[str] | None = None,
+        policy_scope: str = "claire:memory-read",
+    ) -> ConsumerResult:
+        policy = assert_claire_consumer_policy(target_scope=policy_scope, tags=tags)
+        self.verify_pin()
+        # Do not require_capability here: unbound memory must surface as
+        # capability_unavailable / backend_unavailable, not Claire policy skip.
+        payload: dict[str, Any] = {
+            "scope": dict(scope),
+            "as_of": as_of,
+            "query_id": query_id,
+            "limit": limit,
+        }
+        if subject_ref is not None:
+            payload["subject_ref"] = subject_ref
+        result = self._call("memory_read", payload)
+        if result.ok and result.data is not None:
+            return ConsumerResult(
+                ok=True,
+                operation=result.operation,
+                path=result.path,
+                data=attach_claire_policy(result.data, policy),
+                error=None,
+                agent_brain_version=result.agent_brain_version,
+                limitations=result.limitations,
+            )
+        return result
+
     def _call(self, operation: str, payload: Mapping[str, Any]) -> ConsumerResult:
         response = self._invoke(operation, dict(payload))
         version = self._expected_version

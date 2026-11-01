@@ -19,6 +19,7 @@ from __future__ import annotations
 
 from tools.agent_brain.adapter import AgentBrainAdapter, ConsumerResult
 from tools.agent_brain.errors import ConsumerError, ConsumerErrorCode
+from tools.agent_brain.parity import ParityClass, run_dual_suite
 from tools.agent_brain.path_selection import (
     ConsumerPath,
     resolve_consumer_path,
@@ -38,7 +39,9 @@ __all__ = [
     "ConsumerErrorCode",
     "ConsumerPath",
     "ConsumerResult",
+    "ParityClass",
     "resolve_consumer_path",
+    "run_dual_suite",
     "select_consumer_path",
     "verify_runtime_pin",
 ]

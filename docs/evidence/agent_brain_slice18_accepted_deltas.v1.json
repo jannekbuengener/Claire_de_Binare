@@ -1,0 +1,40 @@
+{
+  "schema_version": "agent-brain-accepted-deltas/v1",
+  "source_issue": "agent-brain#18",
+  "claire_tracking_issue": 4615,
+  "pinned_agent_brain_version": "0.2.0",
+  "notes": [
+    "Catalog entries authorize non-exact deltas during dual-run comparison.",
+    "UNACCEPTED_DELTA is never listed here."
+  ],
+  "accepted_deltas": [
+    {
+      "field": "package.artifact_wire_shape",
+      "parity_class": "ACCEPTED_CONTRACT_CHANGE",
+      "reason": "Agent Brain canonical ArtifactRef vs legacy flat artifact_id",
+      "contract_ref": "artifact-ref/v1 + consumer cutover #13",
+      "risk": "low"
+    },
+    {
+      "field": "agent_brain_version",
+      "parity_class": "ACCEPTED_CONTRACT_CHANGE",
+      "reason": "Only agent_brain path reports the immutable pin",
+      "contract_ref": "distribution consumer contract #17",
+      "risk": "none"
+    },
+    {
+      "field": "path",
+      "parity_class": "SEMANTIC_PARITY",
+      "reason": "Path label identifies consumer implementation",
+      "contract_ref": "consumer_cutover/v1",
+      "risk": "none"
+    },
+    {
+      "field": "package.guardrails",
+      "parity_class": "ACCEPTED_CONTRACT_CHANGE",
+      "reason": "Legacy embeds Claire defaults in package; Agent Brain keeps package product-neutral and Claire attaches claire_policy.guardrails",
+      "contract_ref": "agent-brain context package neutrality + Claire consumer policy",
+      "risk": "low"
+    }
+  ]
+}

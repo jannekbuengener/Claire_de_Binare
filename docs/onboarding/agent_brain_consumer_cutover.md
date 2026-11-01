@@ -36,7 +36,15 @@ Rollback: set path back to `legacy` (explicit switch; not a silent fallback; not
 
 ## Non-goals (#13)
 
-- No Dual Run / Parity Proof → #18
+- No Dual Run / Parity Proof → #18 (see `docs/onboarding/agent_brain_parity_dual_run.md`)
 - No Altcode cleanup → #19
 - No Live-Go / Echtgeld-Go
 - No productive memory writes
+
+## Slice #18 follow-on
+
+Parity / Dual Run / E2E evidence lives under:
+
+- `tools/agent_brain/parity.py`
+- `tools/agent_brain/e2e_proof.py`
+- `docs/evidence/agent_brain_slice18_*.json`
