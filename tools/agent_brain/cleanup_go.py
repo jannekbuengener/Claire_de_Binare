@@ -150,7 +150,9 @@ def write_cleanup_go(
     if extra:
         payload.update(extra)
     out.parent.mkdir(parents=True, exist_ok=True)
-    out.write_text(json.dumps(payload, indent=2, sort_keys=True) + "\n", encoding="utf-8")
+    out.write_text(
+        json.dumps(payload, indent=2, sort_keys=True) + "\n", encoding="utf-8"
+    )
     return out
 
 
@@ -174,6 +176,7 @@ def assert_cleanup_go_ready(payload: Mapping[str, Any]) -> None:
     ]
     if blocked:
         raise AssertionError(f"cleanup blocked by deltas: {blocked}")
+
 
 __all__ = [
     "DEFAULT_CLEANUP_GO_PATH",

@@ -380,7 +380,9 @@ def compare_context_results(
 
     # Artifact wire-shape difference is an accepted contract change (#13/#15).
     if (leg_pkg.get("artifacts") or []) and (ab_pkg.get("artifacts") or []):
-        leg_shape = "flat" if "artifact_id" in (leg_pkg["artifacts"][0] or {}) else "ref"
+        leg_shape = (
+            "flat" if "artifact_id" in (leg_pkg["artifacts"][0] or {}) else "ref"
+        )
         ab_shape = "ref" if "ref" in (ab_pkg["artifacts"][0] or {}) else "flat"
         if leg_shape != ab_shape:
             deltas.append(

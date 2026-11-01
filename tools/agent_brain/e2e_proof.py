@@ -97,7 +97,8 @@ def run_e2e_proof(
     steps.append(
         E2EStepResult(
             "capabilities",
-            caps.ok and {"context_read", "retrieval", "evidence"}.issubset(set(cap_names)),
+            caps.ok
+            and {"context_read", "retrieval", "evidence"}.issubset(set(cap_names)),
             {"capabilities": cap_names},
         )
     )
@@ -133,9 +134,9 @@ def run_e2e_proof(
             context.ok is True and isinstance(package, Mapping),
             {
                 "scope": (package or {}).get("target_scope") if package else None,
-                "schema_version": (package or {}).get("schema_version")
-                if package
-                else None,
+                "schema_version": (
+                    (package or {}).get("schema_version") if package else None
+                ),
             },
         )
     )
@@ -163,9 +164,11 @@ def run_e2e_proof(
             retrieval.ok is True
             and isinstance((retrieval.data or {}).get("result"), Mapping),
             {
-                "query_id": ((retrieval.data or {}).get("result") or {}).get("query_id")
-                if retrieval.data
-                else None
+                "query_id": (
+                    ((retrieval.data or {}).get("result") or {}).get("query_id")
+                    if retrieval.data
+                    else None
+                )
             },
         )
     )
@@ -178,9 +181,9 @@ def run_e2e_proof(
             evidence.ok is True and isinstance(trust, Mapping),
             {
                 "trust_level": (trust or {}).get("trust_level") if trust else None,
-                "limitations_present": bool((trust or {}).get("limitations"))
-                if trust
-                else False,
+                "limitations_present": (
+                    bool((trust or {}).get("limitations")) if trust else False
+                ),
             },
         )
     )
@@ -224,12 +227,12 @@ def run_e2e_proof(
                 "memory_bound_read",
                 bound.ok is True and isinstance(result, Mapping),
                 {
-                    "availability": (result or {}).get("availability")
-                    if result
-                    else None,
-                    "item_count": len((result or {}).get("items") or [])
-                    if result
-                    else 0,
+                    "availability": (
+                        (result or {}).get("availability") if result else None
+                    ),
+                    "item_count": (
+                        len((result or {}).get("items") or []) if result else 0
+                    ),
                 },
             )
         )

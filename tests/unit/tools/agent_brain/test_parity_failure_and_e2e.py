@@ -115,7 +115,11 @@ def test_e2e_context_evidence_memory_trust_and_rollback(tmp_path) -> None:
     _require_pinned_agent_brain()
     from agent_brain.memory.in_memory import InMemoryMemoryStore
     from agent_brain.memory.types import MEMORY_RECORD_SCHEMA, MemoryRecord
-    from agent_brain.memory.scope import MEMORY_SCOPE_SCHEMA, MemoryScope, MemoryScopeKind
+    from agent_brain.memory.scope import (
+        MEMORY_SCOPE_SCHEMA,
+        MemoryScope,
+        MemoryScopeKind,
+    )
     from agent_brain.protocol import ProtocolGateway, ProtocolRequest
     from agent_brain.protocol.runtime import ProtocolRuntime
 
@@ -168,11 +172,18 @@ def test_memory_freshness_states_via_public_memory_read_api() -> None:
     from agent_brain.contracts.provenance import PROVENANCE_SCHEMA, Provenance
     from agent_brain.contracts.resolution import RESOLUTION_META_SCHEMA, ResolutionMeta
     from agent_brain.contracts.resolution import ResolutionState
-    from agent_brain.contracts.temporal import TEMPORAL_ENVELOPE_SCHEMA, TemporalEnvelope
+    from agent_brain.contracts.temporal import (
+        TEMPORAL_ENVELOPE_SCHEMA,
+        TemporalEnvelope,
+    )
     from agent_brain.memory.in_memory import InMemoryMemoryStore
     from agent_brain.memory.read import MemoryEntryCatalog, MemoryReadService
     from agent_brain.memory.read.models import MEMORY_ENTRY_SCHEMA, MemoryEntry
-    from agent_brain.memory.scope import MEMORY_SCOPE_SCHEMA, MemoryScope, MemoryScopeKind
+    from agent_brain.memory.scope import (
+        MEMORY_SCOPE_SCHEMA,
+        MemoryScope,
+        MemoryScopeKind,
+    )
     from agent_brain.memory.types import MEMORY_RECORD_SCHEMA, MemoryRecord
 
     as_of = datetime(2026, 10, 31, 12, 0, 0)
@@ -250,7 +261,10 @@ def test_live_state_contradicts_memory_via_public_api() -> None:
     _require_pinned_agent_brain()
     from agent_brain.contracts.provenance import PROVENANCE_SCHEMA, Provenance
     from agent_brain.contracts.resolution import RESOLUTION_META_SCHEMA, ResolutionMeta
-    from agent_brain.contracts.temporal import TEMPORAL_ENVELOPE_SCHEMA, TemporalEnvelope
+    from agent_brain.contracts.temporal import (
+        TEMPORAL_ENVELOPE_SCHEMA,
+        TemporalEnvelope,
+    )
     from agent_brain.core.source_priority import SourcePriority
     from agent_brain.memory.read.live_state import (
         LiveStateObservation,
@@ -264,7 +278,11 @@ def test_live_state_contradicts_memory_via_public_api() -> None:
         LiveStateClaim,
         MemoryEntry,
     )
-    from agent_brain.memory.scope import MEMORY_SCOPE_SCHEMA, MemoryScope, MemoryScopeKind
+    from agent_brain.memory.scope import (
+        MEMORY_SCOPE_SCHEMA,
+        MemoryScope,
+        MemoryScopeKind,
+    )
     from agent_brain.memory.types import MEMORY_RECORD_SCHEMA, MemoryRecord
 
     scope = MemoryScope(
