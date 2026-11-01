@@ -1,0 +1,88 @@
+{
+  "schema_version": "agent-brain-genericity-cleanup/v1",
+  "source_issue": "agent-brain#19",
+  "parent_meta_issue": "agent-brain#2",
+  "predecessor": {
+    "issue": "agent-brain#18",
+    "exit": "CLAIRE_PARITY_DUAL_RUN_GO",
+    "cleanup_authority": "docs/evidence/agent_brain_slice18_cleanup_go.v1.json"
+  },
+  "exit_token": null,
+  "status": "IN_PROGRESS",
+  "agent_brain": {
+    "version": "0.2.1",
+    "tag": "v0.2.1",
+    "commit": "f565508c7d0f39073e1253ffaf3a54ac72af1642",
+    "pr": "https://github.com/jannekbuengener/agent-brain/pull/77",
+    "post_merge_ci": "success"
+  },
+  "claire_pin": {
+    "version": "0.2.1",
+    "requirement": "agent-brain @ git+https://github.com/jannekbuengener/agent-brain.git@v0.2.1",
+    "files": [
+      "tools/agent_brain/pin.py",
+      "requirements-agent-brain.txt",
+      "config/agent-brain/consumer_cutover.v1.json"
+    ]
+  },
+  "genericity": {
+    "neutral_consumer": "PASS",
+    "clean_environment": "PASS",
+    "claire_runtime_dependencies": 0,
+    "trading_runtime_dependencies": 0,
+    "private_cdb_core_runtime_dependencies": 0
+  },
+  "cleanup_actions": [
+    {
+      "surface_id": "slice13_temporary_notes_in_cutover_doc",
+      "disposition_from_18": "SAFE_TO_REMOVE",
+      "action": "REMOVED_COLLAPSED",
+      "path": "docs/onboarding/agent_brain_consumer_cutover.md",
+      "evidence": "Rewrote cutover doc to live #18/#19 state; temporary #13 non-goals removed"
+    },
+    {
+      "surface_id": "duplicate_flat_artifact_helpers_if_any",
+      "disposition_from_18": "SAFE_TO_REMOVE",
+      "action": "RETAINED",
+      "path": "tools/agent_brain/parity_fixtures.py::artifact_pair",
+      "evidence": "No standalone legacy_flat_only helper exists; flat wire form still required by COMPATIBILITY_SHIM_REQUIRED legacy dual-run/rollback path; production legacy callers remain"
+    },
+    {
+      "surface_id": "consumer_cutover_config_default_legacy",
+      "disposition_from_18": "KEEP_FOR_NOW",
+      "action": "RECLASSIFIED_FLIPPED",
+      "path": "config/agent-brain/consumer_cutover.v1.json",
+      "evidence": "After #18 parity GO + #19 genericity on v0.2.1, default consumer_path=agent_brain; legacy remains explicit rollback"
+    },
+    {
+      "surface_id": "legacy_context_path_facade",
+      "disposition_from_18": "COMPATIBILITY_SHIM_REQUIRED",
+      "action": "RETAINED",
+      "evidence": "Rollback + dual-run still require selectable legacy facade"
+    },
+    {
+      "surface_id": "path_selection_dual_path",
+      "disposition_from_18": "COMPATIBILITY_SHIM_REQUIRED",
+      "action": "RETAINED",
+      "evidence": "Rollback control plane"
+    },
+    {
+      "surface_id": "claire_context_package_v2_builder",
+      "disposition_from_18": "KEEP_FOR_NOW",
+      "action": "RETAINED",
+      "evidence": "Still backs legacy path; no new evidence for safe removal"
+    },
+    {
+      "surface_id": "claire_surrealdb_mcp_context_tools",
+      "disposition_from_18": "KEEP_FOR_NOW",
+      "action": "RETAINED",
+      "evidence": "Claire-owned MCP presentation; not redundant"
+    },
+    {
+      "surface_id": "agent_brain_adapter_public_only",
+      "disposition_from_18": "KEEP_FOR_NOW",
+      "action": "RETAINED",
+      "evidence": "New path adapter — not a cleanup target"
+    }
+  ]
+}

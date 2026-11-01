@@ -1,8 +1,8 @@
-"""Exact Agent Brain pin for the Claire consumer cutover (#13 / #17).
+"""Exact Agent Brain pin for the Claire consumer cutover (#13 / #17 / #19).
 
 Canonical pin forms (Consumer Contract #17):
-- ``agent-brain==0.2.0`` when the package is published to an index
-- ``agent-brain @ git+https://github.com/jannekbuengener/agent-brain.git@v0.2.0``
+- ``agent-brain==0.2.1`` when the package is published to an index
+- ``agent-brain @ git+https://github.com/jannekbuengener/agent-brain.git@v0.2.1``
 
 Moving refs (``main``, branches, ``latest``, local paths) are forbidden.
 """
@@ -13,8 +13,8 @@ from importlib import metadata
 
 from tools.agent_brain.errors import ConsumerError, ConsumerErrorCode
 
-# AGENT_BRAIN_CUTOVER_VERSION — immutable release that includes #12 protocol surface.
-PINNED_AGENT_BRAIN_VERSION = "0.2.0"
+# AGENT_BRAIN_CUTOVER_VERSION — immutable release including #12 + #19 genericity.
+PINNED_AGENT_BRAIN_VERSION = "0.2.1"
 PINNED_GIT_TAG = f"v{PINNED_AGENT_BRAIN_VERSION}"
 PINNED_REQUIREMENT = (
     "agent-brain @ "
