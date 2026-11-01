@@ -229,15 +229,15 @@ def normalize_package_for_compare(package: Mapping[str, Any]) -> dict[str, Any]:
         "artifacts_semantic": _artifacts_semantic(package.get("artifacts") or []),
         "has_ranked_context": package.get("ranked_context") is not None,
     }
-    # Normalize evidence / decision ref presence under alias map.
+    # Normalize evidence / decision identities under alias map.
     evidence = package.get("evidence_refs")
     if evidence is None:
         evidence = package.get("evidence_links")
     decisions = package.get("decision_refs")
     if decisions is None:
         decisions = package.get("decision_replay_links")
-    out["evidence_ref_count"] = len(list(evidence or []))
-    out["decision_ref_count"] = len(list(decisions or []))
+    out["evidence_refs"] = _ref_identities(evidence or [])
+    out["decision_refs"] = _ref_identities(decisions or [])
     return out
 
 
@@ -283,6 +283,31 @@ def _artifacts_semantic(
             }
         )
     return sorted(records, key=lambda row: row["artifact_id"])
+
+
+def _ref_identities(refs: Sequence[Any]) -> list[str]:
+    """Extract stable identities from evidence/decision refs across wire shapes."""
+    identities: list[str] = []
+    for item in refs:
+        if isinstance(item, Mapping):
+            for key in (
+                "evidence_id",
+                "evidence_ref",
+                "ref",
+                "id",
+                "decision_id",
+                "decision_ref",
+                "replay_id",
+            ):
+                value = item.get(key)
+                if value is not None and str(value).strip():
+                    identities.append(str(value).strip())
+                    break
+            else:
+                identities.append(json.dumps(item, sort_keys=True, default=str))
+        elif item is not None and str(item).strip():
+            identities.append(str(item).strip())
+    return sorted(identities)
 
 
 def normalize_policy(data: Mapping[str, Any] | None) -> dict[str, Any] | None:

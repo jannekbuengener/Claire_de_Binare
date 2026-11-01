@@ -192,12 +192,22 @@ def run_e2e_proof(
 
     evidence = brain.evidence(scope="parity:e2e-evidence", topic="trust")
     trust = (evidence.data or {}).get("trust_summary") if evidence.data else None
+    trust_ok = (
+        evidence.ok is True
+        and isinstance(trust, Mapping)
+        and bool((trust or {}).get("schema_version"))
+        and bool((trust or {}).get("trust_level"))
+        and bool((trust or {}).get("limitations"))
+    )
     steps.append(
         E2EStepResult(
             "evidence_trust",
-            evidence.ok is True and isinstance(trust, Mapping),
+            trust_ok,
             {
                 "trust_level": (trust or {}).get("trust_level") if trust else None,
+                "schema_version": (
+                    (trust or {}).get("schema_version") if trust else None
+                ),
                 "limitations_present": (
                     bool((trust or {}).get("limitations")) if trust else False
                 ),
