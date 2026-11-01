@@ -226,10 +226,7 @@ def normalize_package_for_compare(package: Mapping[str, Any]) -> dict[str, Any]:
         "limitations": _normalize_limitations(package.get("limitations")),
         # package.guardrails compared separately: legacy embeds Claire defaults;
         # Agent Brain keeps the package product-neutral (policy on claire_policy).
-        "artifact_ids": _artifact_ids(package.get("artifacts") or []),
-        "artifact_types": _artifact_types(package.get("artifacts") or []),
-        "artifact_summaries": _artifact_summaries(package.get("artifacts") or []),
-        "artifact_source_paths": _artifact_source_paths(package.get("artifacts") or []),
+        "artifacts_semantic": _artifacts_semantic(package.get("artifacts") or []),
         "has_ranked_context": package.get("ranked_context") is not None,
     }
     # Normalize evidence / decision ref presence under alias map.
@@ -244,54 +241,48 @@ def normalize_package_for_compare(package: Mapping[str, Any]) -> dict[str, Any]:
     return out
 
 
-def _artifact_ids(artifacts: Sequence[Mapping[str, Any] | Any]) -> list[str]:
-    ids: list[str] = []
+def _artifact_id(item: Mapping[str, Any]) -> str | None:
+    ref = item.get("ref")
+    if isinstance(ref, Mapping) and ref.get("artifact_id"):
+        return str(ref["artifact_id"])
+    if item.get("artifact_id"):
+        return str(item["artifact_id"])
+    if item.get("id"):
+        return str(item["id"])
+    return None
+
+
+def _artifact_source_path(item: Mapping[str, Any]) -> str | None:
+    ref = item.get("ref")
+    if isinstance(ref, Mapping) and ref.get("source_path"):
+        return str(ref["source_path"])
+    if item.get("source_path"):
+        return str(item["source_path"])
+    return None
+
+
+def _artifacts_semantic(
+    artifacts: Sequence[Mapping[str, Any] | Any],
+) -> list[dict[str, str]]:
+    """Preserve per-artifact associations (id↔type↔summary↔path)."""
+    records: list[dict[str, str]] = []
     for item in artifacts:
         if not isinstance(item, Mapping):
             continue
-        ref = item.get("ref")
-        if isinstance(ref, Mapping) and ref.get("artifact_id"):
-            ids.append(str(ref["artifact_id"]))
-        elif item.get("artifact_id"):
-            ids.append(str(item["artifact_id"]))
-        elif item.get("id"):
-            ids.append(str(item["id"]))
-    return sorted(ids)
-
-
-def _artifact_types(artifacts: Sequence[Mapping[str, Any] | Any]) -> list[str]:
-    types: list[str] = []
-    for item in artifacts:
-        if not isinstance(item, Mapping):
+        artifact_id = _artifact_id(item)
+        if not artifact_id:
             continue
-        value = item.get("artifact_type") or item.get("type")
-        if value:
-            types.append(str(value))
-    return sorted(types)
-
-
-def _artifact_summaries(artifacts: Sequence[Mapping[str, Any] | Any]) -> list[str]:
-    values: list[str] = []
-    for item in artifacts:
-        if not isinstance(item, Mapping):
-            continue
-        summary = item.get("summary")
-        if summary is not None and str(summary).strip():
-            values.append(str(summary).strip())
-    return sorted(values)
-
-
-def _artifact_source_paths(artifacts: Sequence[Mapping[str, Any] | Any]) -> list[str]:
-    values: list[str] = []
-    for item in artifacts:
-        if not isinstance(item, Mapping):
-            continue
-        ref = item.get("ref")
-        if isinstance(ref, Mapping) and ref.get("source_path"):
-            values.append(str(ref["source_path"]))
-        elif item.get("source_path"):
-            values.append(str(item["source_path"]))
-    return sorted(values)
+        records.append(
+            {
+                "artifact_id": artifact_id,
+                "artifact_type": str(
+                    item.get("artifact_type") or item.get("type") or ""
+                ),
+                "summary": str(item.get("summary") or "").strip(),
+                "source_path": str(_artifact_source_path(item) or ""),
+            }
+        )
+    return sorted(records, key=lambda row: row["artifact_id"])
 
 
 def normalize_policy(data: Mapping[str, Any] | None) -> dict[str, Any] | None:

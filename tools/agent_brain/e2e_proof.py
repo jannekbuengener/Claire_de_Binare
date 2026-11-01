@@ -158,17 +158,34 @@ def run_e2e_proof(
         records=[_index_record()],
         source_priority=["repo"],
     )
+    retrieval_result = (retrieval.data or {}).get("result") if retrieval.data else None
+    retrieval_candidates = (
+        list((retrieval_result or {}).get("candidates") or [])
+        if isinstance(retrieval_result, Mapping)
+        else []
+    )
+    retrieval_record_ids = [
+        str(item.get("record_id"))
+        for item in retrieval_candidates
+        if isinstance(item, Mapping) and item.get("record_id")
+    ]
+    retrieval_ok = (
+        retrieval.ok is True
+        and isinstance(retrieval_result, Mapping)
+        and (retrieval_result or {}).get("query_id") == "e2e-q1"
+        and "rec-parity-e2e-1" in retrieval_record_ids
+    )
     steps.append(
         E2EStepResult(
             "retrieval",
-            retrieval.ok is True
-            and isinstance((retrieval.data or {}).get("result"), Mapping),
+            retrieval_ok,
             {
                 "query_id": (
-                    ((retrieval.data or {}).get("result") or {}).get("query_id")
-                    if retrieval.data
+                    (retrieval_result or {}).get("query_id")
+                    if retrieval_result
                     else None
-                )
+                ),
+                "record_ids": retrieval_record_ids,
             },
         )
     )
