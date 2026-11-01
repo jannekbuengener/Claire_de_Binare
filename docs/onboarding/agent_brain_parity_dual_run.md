@@ -2,7 +2,8 @@
 
 Status: Claire consumer evidence pack for [agent-brain#18](https://github.com/jannekbuengener/agent-brain/issues/18)  
 Claire tracking: #4615  
-Pin: Agent Brain `v0.2.0`
+Pin at #18 acceptance: Agent Brain `v0.2.0`  
+Current Claire pin after #19: Agent Brain `v0.2.1` (see `requirements-agent-brain.txt`)
 
 ## Goal exit
 
@@ -13,7 +14,7 @@ Pin: Agent Brain `v0.2.0`
 ```text
 Same DualRunCase fixture
         ├─→ LegacyContextPath → tools.surrealdb.context_package_v2
-        └─→ AgentBrainAdapter → agent_brain.protocol (pinned 0.2.0)
+        └─→ AgentBrainAdapter → agent_brain.protocol (immutable pin)
                     ↓
             normalize_package_for_compare
                     ↓
