@@ -23,6 +23,7 @@ class LegacyContextPath:
         target_scope: str,
         artifacts: list[Mapping[str, Any]] | None = None,
         tags: list[str] | None = None,
+        generated_at_or_as_of: str | None = None,
     ) -> ConsumerResult:
         policy = assert_claire_consumer_policy(target_scope=target_scope, tags=tags)
         from tools.surrealdb.context_package_v2 import (
@@ -34,6 +35,7 @@ class LegacyContextPath:
             ContextPackageV2Request(
                 target_scope=target_scope,
                 artifacts=list(artifacts or ()),
+                generated_at_or_as_of=generated_at_or_as_of,
             )
         )
         data = attach_claire_policy(

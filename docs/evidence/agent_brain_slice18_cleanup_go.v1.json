@@ -1,0 +1,85 @@
+{
+  "#19_READY": true,
+  "agent_brain_version": "0.2.0",
+  "claire_tracking_issue": 4615,
+  "cleanup_go": true,
+  "dual_run_counts": {
+    "ACCEPTED_CONTRACT_CHANGE": 45,
+    "EXACT_PARITY": 117,
+    "LEGACY_BUG_FIXED": 0,
+    "SEMANTIC_PARITY": 9,
+    "UNACCEPTED_DELTA": 0,
+    "UNCOMPARABLE": 0
+  },
+  "follow_up_issue": "agent-brain#19",
+  "items": [
+    {
+      "disposition": "COMPATIBILITY_SHIM_REQUIRED",
+      "evidence": "path_selection + dual-run harness + rollback probe",
+      "owner_issue": "agent-brain#19",
+      "path_glob": "tools/agent_brain/legacy.py",
+      "rationale": "Selectable legacy facade still required until #19 completes genericity proof and explicit removal wave",
+      "surface_id": "legacy_context_path_facade"
+    },
+    {
+      "disposition": "COMPATIBILITY_SHIM_REQUIRED",
+      "evidence": "rollback probe + consumer_cutover.v1.json",
+      "owner_issue": "agent-brain#19",
+      "path_glob": "tools/agent_brain/path_selection.py",
+      "rationale": "Dual-path switch is the rollback and parity control plane",
+      "surface_id": "path_selection_dual_path"
+    },
+    {
+      "disposition": "KEEP_FOR_NOW",
+      "evidence": "consumer_cutover.v1.json consumer_path=legacy",
+      "owner_issue": "agent-brain#19",
+      "path_glob": "config/agent-brain/consumer_cutover.v1.json",
+      "rationale": "Default remains legacy until #19 flips cutover after cleanup",
+      "surface_id": "consumer_cutover_config_default_legacy"
+    },
+    {
+      "disposition": "KEEP_FOR_NOW",
+      "evidence": "LegacyContextPath + dual-run EXACT/SEMANTIC fields",
+      "owner_issue": "agent-brain#19",
+      "path_glob": "tools/surrealdb/context_package_v2.py",
+      "rationale": "Still the live legacy builder; removable only after dual-run consumers migrate fully and #19 genericity proof lands",
+      "surface_id": "claire_context_package_v2_builder"
+    },
+    {
+      "disposition": "KEEP_FOR_NOW",
+      "evidence": "PARITY_GATES.md Slice 13/14 ownership notes",
+      "owner_issue": "agent-brain#19",
+      "path_glob": "tools/mcp/**/*context*",
+      "rationale": "MCP presentation/consumer tools remain Claire-owned; not proven redundant by #18 dual-run alone",
+      "surface_id": "claire_surrealdb_mcp_context_tools"
+    },
+    {
+      "disposition": "KEEP_FOR_NOW",
+      "evidence": "consumer smoke + E2E proof",
+      "owner_issue": "agent-brain#19",
+      "path_glob": "tools/agent_brain/adapter.py",
+      "rationale": "New path \u2014 retain; not cleanup target",
+      "surface_id": "agent_brain_adapter_public_only"
+    },
+    {
+      "disposition": "SAFE_TO_REMOVE",
+      "evidence": "ACCEPTED_CONTRACT_CHANGE artifact_wire_shape; only remove once no production caller uses flat artifact_id",
+      "owner_issue": "agent-brain#19",
+      "path_glob": "tools/agent_brain/parity_fixtures.py::legacy_flat_only",
+      "rationale": "After #19 migrates remaining Claire callers to ArtifactRef, legacy-flat expansion helpers may be deleted",
+      "surface_id": "duplicate_flat_artifact_helpers_if_any"
+    },
+    {
+      "disposition": "SAFE_TO_REMOVE",
+      "evidence": "docs superseded by parity + cleanup evidence packs",
+      "owner_issue": "agent-brain#19",
+      "path_glob": "docs/onboarding/agent_brain_consumer_cutover.md",
+      "rationale": "Non-goals / temporary #13 wording can be collapsed after #19",
+      "surface_id": "slice13_temporary_notes_in_cutover_doc"
+    }
+  ],
+  "parity_passed": true,
+  "rule": "#19 may only remove SAFE_TO_REMOVE surfaces",
+  "schema_version": "agent-brain-cleanup-go/v1",
+  "source_issue": "agent-brain#18"
+}

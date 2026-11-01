@@ -8,6 +8,8 @@
   "notes": [
     "Default remains legacy for safety; enable agent_brain explicitly for #13 smoke / #18 dual-run.",
     "Rollback = set consumer_path back to legacy (or CDB_AGENT_BRAIN_CONSUMER_PATH=legacy).",
-    "Refs jannekbuengener/agent-brain#13"
+    "Parity harness: tools.agent_brain.parity + docs/onboarding/agent_brain_parity_dual_run.md",
+    "Refs jannekbuengener/agent-brain#13",
+    "Refs jannekbuengener/agent-brain#18"
   ]
 }
