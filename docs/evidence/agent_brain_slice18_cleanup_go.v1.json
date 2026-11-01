@@ -5,7 +5,7 @@
   "cleanup_go": true,
   "dual_run_counts": {
     "ACCEPTED_CONTRACT_CHANGE": 45,
-    "EXACT_PARITY": 117,
+    "EXACT_PARITY": 135,
     "LEGACY_BUG_FIXED": 0,
     "SEMANTIC_PARITY": 9,
     "UNACCEPTED_DELTA": 0,

@@ -361,7 +361,7 @@ def test_rollback_probe_under_parity_setup() -> None:
     assert brain.data is not None
 
 
-def test_cleanup_go_written_after_parity_pass() -> None:
+def test_cleanup_go_written_after_parity_pass(tmp_path) -> None:
     _require_pinned_agent_brain()
     from tools.agent_brain.parity import assert_parity_pass, run_dual_suite
     from tools.agent_brain.parity_fixtures import representative_dual_run_cases
@@ -370,9 +370,11 @@ def test_cleanup_go_written_after_parity_pass() -> None:
     assert_parity_pass(report)
     path = write_cleanup_go(
         parity_passed=True,
+        path=tmp_path / "cleanup_go.v1.json",
         extra={
             "dual_run_counts": report.counts(),
             "agent_brain_version": PINNED_AGENT_BRAIN_VERSION,
+            "#19_READY": True,
         },
     )
     payload = path.read_text(encoding="utf-8")
@@ -382,6 +384,7 @@ def test_cleanup_go_written_after_parity_pass() -> None:
 
     loaded = load_cleanup_go(path)
     assert_cleanup_go_ready(loaded)
+    assert loaded.get("#19_READY") is True
     dispositions = {item["disposition"] for item in loaded["items"]}
     assert CleanupDisposition.BLOCKED_BY_DELTA.value not in dispositions
     assert CleanupDisposition.SAFE_TO_REMOVE.value in dispositions

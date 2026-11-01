@@ -228,6 +228,8 @@ def normalize_package_for_compare(package: Mapping[str, Any]) -> dict[str, Any]:
         # Agent Brain keeps the package product-neutral (policy on claire_policy).
         "artifact_ids": _artifact_ids(package.get("artifacts") or []),
         "artifact_types": _artifact_types(package.get("artifacts") or []),
+        "artifact_summaries": _artifact_summaries(package.get("artifacts") or []),
+        "artifact_source_paths": _artifact_source_paths(package.get("artifacts") or []),
         "has_ranked_context": package.get("ranked_context") is not None,
     }
     # Normalize evidence / decision ref presence under alias map.
@@ -268,6 +270,30 @@ def _artifact_types(artifacts: Sequence[Mapping[str, Any] | Any]) -> list[str]:
     return sorted(types)
 
 
+def _artifact_summaries(artifacts: Sequence[Mapping[str, Any] | Any]) -> list[str]:
+    values: list[str] = []
+    for item in artifacts:
+        if not isinstance(item, Mapping):
+            continue
+        summary = item.get("summary")
+        if summary is not None and str(summary).strip():
+            values.append(str(summary).strip())
+    return sorted(values)
+
+
+def _artifact_source_paths(artifacts: Sequence[Mapping[str, Any] | Any]) -> list[str]:
+    values: list[str] = []
+    for item in artifacts:
+        if not isinstance(item, Mapping):
+            continue
+        ref = item.get("ref")
+        if isinstance(ref, Mapping) and ref.get("source_path"):
+            values.append(str(ref["source_path"]))
+        elif item.get("source_path"):
+            values.append(str(item["source_path"]))
+    return sorted(values)
+
+
 def normalize_policy(data: Mapping[str, Any] | None) -> dict[str, Any] | None:
     if not data:
         return None
@@ -279,7 +305,7 @@ def normalize_policy(data: Mapping[str, Any] | None) -> dict[str, Any] | None:
         "live_or_echtgeld": policy.get("live_or_echtgeld"),
         "memory_writes": policy.get("memory_writes"),
         "target_scope": policy.get("target_scope"),
-        "guardrail_count": len(list(policy.get("guardrails") or [])),
+        "guardrails": sorted(str(item) for item in (policy.get("guardrails") or [])),
     }
 
 
@@ -571,15 +597,27 @@ def run_dual_context_case(
         tags=list(case.tags),
         generated_at_or_as_of=case.generated_at_or_as_of,
     )
-    if case.expect_ok and (not legacy_result.ok or not brain_result.ok):
-        # Still compare; harness records failure deltas.
-        pass
-    return compare_context_results(
+    compared = compare_context_results(
         case_id=case.case_id,
         legacy=legacy_result,
         agent_brain=brain_result,
         accepted_catalog=accepted_catalog,
     )
+    if case.expect_ok and (not legacy_result.ok or not brain_result.ok):
+        compared.deltas.append(
+            FieldDelta(
+                field="expect_ok",
+                legacy_value=legacy_result.ok,
+                agent_brain_value=brain_result.ok,
+                parity_class=ParityClass.UNACCEPTED_DELTA,
+                reason=(
+                    "case expects successful context on both paths; "
+                    "shared or single-path failure must not pass parity"
+                ),
+                risk="high",
+            )
+        )
+    return compared
 
 
 def run_dual_suite(

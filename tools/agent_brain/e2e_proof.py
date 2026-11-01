@@ -222,17 +222,33 @@ def run_e2e_proof(
             subject_ref="subject-e2e",
         )
         result = (bound.data or {}).get("result") if bound.data else None
+        items = list((result or {}).get("items") or []) if result else []
+        record_ids: list[str] = []
+        for item in items:
+            if not isinstance(item, Mapping):
+                continue
+            entry = item.get("entry") if isinstance(item.get("entry"), Mapping) else {}
+            record = (
+                entry.get("record") if isinstance(entry.get("record"), Mapping) else {}
+            )
+            if record.get("record_id"):
+                record_ids.append(str(record["record_id"]))
+        memory_ok = (
+            bound.ok is True
+            and isinstance(result, Mapping)
+            and (result or {}).get("availability") == "available"
+            and "mem-e2e-1" in record_ids
+        )
         steps.append(
             E2EStepResult(
                 "memory_bound_read",
-                bound.ok is True and isinstance(result, Mapping),
+                memory_ok,
                 {
                     "availability": (
                         (result or {}).get("availability") if result else None
                     ),
-                    "item_count": (
-                        len((result or {}).get("items") or []) if result else 0
-                    ),
+                    "item_count": len(items),
+                    "record_ids": record_ids,
                 },
             )
         )
