@@ -228,6 +228,7 @@ def normalize_package_for_compare(package: Mapping[str, Any]) -> dict[str, Any]:
         # Agent Brain keeps the package product-neutral (policy on claire_policy).
         "artifacts_semantic": _artifacts_semantic(package.get("artifacts") or []),
         "ranked_context": _ranked_context_semantic(package.get("ranked_context")),
+        "required_reads": _required_reads_semantic(package.get("required_reads") or []),
     }
     # Normalize evidence / decision identities under alias map.
     evidence = package.get("evidence_refs")
@@ -299,6 +300,22 @@ def _ref_identities(refs: Sequence[Any]) -> list[str]:
                 "decision_ref",
                 "replay_id",
             ):
+                value = item.get(key)
+                if value is not None and str(value).strip():
+                    identities.append(str(value).strip())
+                    break
+            else:
+                identities.append(json.dumps(item, sort_keys=True, default=str))
+        elif item is not None and str(item).strip():
+            identities.append(str(item).strip())
+    return sorted(identities)
+
+
+def _required_reads_semantic(reads: Sequence[Any]) -> list[str]:
+    identities: list[str] = []
+    for item in reads:
+        if isinstance(item, Mapping):
+            for key in ("path", "read_id", "id", "ref", "uri", "source_path"):
                 value = item.get(key)
                 if value is not None and str(value).strip():
                     identities.append(str(value).strip())
