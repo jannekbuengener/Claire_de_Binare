@@ -1,0 +1,35 @@
+event_id: cdb-20261101-4617-2b490249
+timestamp: '2026-11-01T00:49:12Z'
+agent:
+  id: CHATGPT
+  vendor: openai
+  role: execution-host
+action:
+  type: automation.pause
+  summary: Temporarily pause Dependabot version updates and repository GitHub Actions for an owner-requested dormant period
+  reversible: true
+scope:
+  repo: Claire_de_Binare
+  issue: '#4617'
+uncertainty:
+  flag: false
+  reason: Owner explicitly requested a long repository pause; live GitHub inventory and official GitHub behavior were verified before delivery
+  options:
+  - keep automation active
+  - pause automation reversibly
+policy_refs:
+- CDB_CONSTITUTION.md §3.5
+- CDB_GOVERNANCE.md §5
+- CDB_AGENT_POLICY.md §6
+- CDB_AGENT_POLICY.md §9.1
+evidence:
+- 'Owner GO: pause Dependabot and all currently active workflows'
+- 'GitHub live: 22 open PRs, 21 authored by Dependabot at intake'
+- 'GitHub live: repository Actions permissions enabled=true at intake'
+- 'GitHub live: Dependabot security updates enabled=false at intake'
+- '.github/dependabot.yml'
+- 'GitHub Docs: Dependabot version updates can be temporarily disabled with open-pull-requests-limit: 0'
+- 'GitHub Docs: repository Actions permissions support enabled=false'
+outcome:
+  result: approved_for_delivery
+  notes: Versioned Dependabot pause lands first. Repository-wide GitHub Actions is disabled only after this PR is merged, then verified live. Existing PRs/issues and main-strict ruleset remain untouched.

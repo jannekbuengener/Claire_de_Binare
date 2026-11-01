@@ -11,7 +11,7 @@ updates:
       day: "monday"
       time: "04:00"
       timezone: "Europe/Berlin"
-    open-pull-requests-limit: 10
+    open-pull-requests-limit: 0
     labels:
       - "dependencies"
       - "python"
@@ -27,6 +27,7 @@ updates:
       day: "monday"
       time: "04:15"
       timezone: "Europe/Berlin"
+    open-pull-requests-limit: 0
     groups:
       codeql-action:
         patterns:
@@ -47,6 +48,7 @@ updates:
       day: "monday"
       time: "04:30"
       timezone: "Europe/Berlin"
+    open-pull-requests-limit: 0
     labels:
       - "dependencies"
       - "docker"
@@ -60,6 +62,7 @@ updates:
       day: "monday"
       time: "04:30"
       timezone: "Europe/Berlin"
+    open-pull-requests-limit: 0
     labels:
       - "dependencies"
       - "docker"
@@ -73,6 +76,7 @@ updates:
       day: "monday"
       time: "04:30"
       timezone: "Europe/Berlin"
+    open-pull-requests-limit: 0
     labels:
       - "dependencies"
       - "docker"
@@ -86,6 +90,7 @@ updates:
       day: "monday"
       time: "04:30"
       timezone: "Europe/Berlin"
+    open-pull-requests-limit: 0
     labels:
       - "dependencies"
       - "docker"
@@ -99,6 +104,7 @@ updates:
       day: "monday"
       time: "04:30"
       timezone: "Europe/Berlin"
+    open-pull-requests-limit: 0
     labels:
       - "dependencies"
       - "docker"
@@ -112,6 +118,7 @@ updates:
       day: "monday"
       time: "04:30"
       timezone: "Europe/Berlin"
+    open-pull-requests-limit: 0
     labels:
       - "dependencies"
       - "docker"
@@ -125,6 +132,7 @@ updates:
       day: "monday"
       time: "04:30"
       timezone: "Europe/Berlin"
+    open-pull-requests-limit: 0
     labels:
       - "dependencies"
       - "docker"
@@ -138,6 +146,7 @@ updates:
       day: "monday"
       time: "04:30"
       timezone: "Europe/Berlin"
+    open-pull-requests-limit: 0
     labels:
       - "dependencies"
       - "docker"
@@ -151,6 +160,7 @@ updates:
       day: "monday"
       time: "04:30"
       timezone: "Europe/Berlin"
+    open-pull-requests-limit: 0
     labels:
       - "dependencies"
       - "docker"
@@ -164,6 +174,7 @@ updates:
       day: "monday"
       time: "04:30"
       timezone: "Europe/Berlin"
+    open-pull-requests-limit: 0
     labels:
       - "dependencies"
       - "docker"
@@ -177,6 +188,7 @@ updates:
       day: "monday"
       time: "04:30"
       timezone: "Europe/Berlin"
+    open-pull-requests-limit: 0
     labels:
       - "dependencies"
       - "docker"
@@ -190,6 +202,7 @@ updates:
       day: "monday"
       time: "04:30"
       timezone: "Europe/Berlin"
+    open-pull-requests-limit: 0
     labels:
       - "dependencies"
       - "docker"
@@ -203,6 +216,7 @@ updates:
       day: "monday"
       time: "04:30"
       timezone: "Europe/Berlin"
+    open-pull-requests-limit: 0
     labels:
       - "dependencies"
       - "docker"
@@ -217,6 +231,7 @@ updates:
       day: "monday"
       time: "04:35"
       timezone: "Europe/Berlin"
+    open-pull-requests-limit: 0
     labels:
       - "dependencies"
       - "docker"
@@ -230,6 +245,7 @@ updates:
       day: "monday"
       time: "04:35"
       timezone: "Europe/Berlin"
+    open-pull-requests-limit: 0
     labels:
       - "dependencies"
       - "docker"
