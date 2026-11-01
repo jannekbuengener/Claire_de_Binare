@@ -7,8 +7,8 @@
     "exit": "CLAIRE_PARITY_DUAL_RUN_GO",
     "cleanup_authority": "docs/evidence/agent_brain_slice18_cleanup_go.v1.json"
   },
-  "exit_token": null,
-  "status": "IN_PROGRESS",
+  "exit_token": "GENERICITY_CLEANUP_GO",
+  "status": "PASS",
   "agent_brain": {
     "version": "0.2.1",
     "tag": "v0.2.1",
@@ -82,7 +82,25 @@
       "surface_id": "agent_brain_adapter_public_only",
       "disposition_from_18": "KEEP_FOR_NOW",
       "action": "RETAINED",
-      "evidence": "New path adapter — not a cleanup target"
+      "evidence": "New path adapter \u2014 not a cleanup target"
     }
-  ]
+  ],
+  "claire_final": {
+    "commit": "3a0ec267e6d8b365782d70dfe2346708a0b72562",
+    "pr": "https://github.com/jannekbuengener/Claire_de_Binare/pull/4619",
+    "pin": "0.2.1",
+    "consumer_smoke": "PASS",
+    "unit_tools_agent_brain": "38 passed"
+  },
+  "acceptance": {
+    "neutral_consumer": "PASS",
+    "clean_environment": "PASS",
+    "runtime_dependency_audit": "PASS",
+    "claire_runtime_deps_in_ab": 0,
+    "trading_runtime_deps_in_ab": 0,
+    "private_cdb_core_runtime_deps": 0,
+    "behavioral_coverage_preserved": "PASS",
+    "docs_reconciled": "PASS",
+    "cross_repo_evidence": "PASS"
+  }
 }
