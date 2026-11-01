@@ -128,15 +128,37 @@ def run_e2e_proof(
         and "memory" in source_priority
         and source_priority.index("github_live") < source_priority.index("memory")
     )
+    package_artifacts = (
+        list((package or {}).get("artifacts") or [])
+        if isinstance(package, Mapping)
+        else []
+    )
+    package_artifact_ids: list[str] = []
+    for item in package_artifacts:
+        if not isinstance(item, Mapping):
+            continue
+        ref = item.get("ref")
+        if isinstance(ref, Mapping) and ref.get("artifact_id"):
+            package_artifact_ids.append(str(ref["artifact_id"]))
+        elif item.get("artifact_id"):
+            package_artifact_ids.append(str(item["artifact_id"]))
+    context_ok = (
+        context.ok is True
+        and isinstance(package, Mapping)
+        and (package or {}).get("schema_version") == "context-package/v2"
+        and (package or {}).get("target_scope") == "parity:e2e-context"
+        and "AGENTS.md" in package_artifact_ids
+    )
     steps.append(
         E2EStepResult(
             "context",
-            context.ok is True and isinstance(package, Mapping),
+            context_ok,
             {
                 "scope": (package or {}).get("target_scope") if package else None,
                 "schema_version": (
                     (package or {}).get("schema_version") if package else None
                 ),
+                "artifact_ids": package_artifact_ids,
             },
         )
     )
